@@ -1,0 +1,1644 @@
+# RADAR TEHRAN
+# GOLD MASTER — AUTONOMOUS CLOUD, AI & DIGITAL COMMERCE ARCHITECTURE
+## Version 1.0 — Cloudflare-First | Portable-by-Design | AI-Native | Monetization-Ready
+
+---
+
+# 0. AUTHORITY, SCOPE AND EXECUTION
+
+This document is a strategic engineering and product architecture module for the existing Radar Tehran application.
+
+It MUST operate under the existing Radar Tehran Master Engineering Protocol.
+
+The Master Engineering Protocol remains authoritative for:
+- Engineering execution.
+- Autonomous auditing.
+- Debugging and repair.
+- Security.
+- Testing and verification.
+- Change control.
+- GitHub workflow.
+- Deployment permissions.
+- Progress tracking.
+- Rollback.
+- Workstream completion.
+
+This document defines the long-term architectural direction and the requirements for Cloudflare adoption, portability, AI capabilities, and digital commerce.
+
+Do not treat this document as permission to rebuild the application from scratch.
+
+Do not replace existing product functionality with an imagined product.
+
+Do not assume that Radar Tehran is a generic classified-advertising marketplace.
+
+First reconstruct the actual product, repository, business logic, user workflows, data structures, and infrastructure.
+
+Every implementation decision must serve the real Radar Tehran product.
+
+## Primary mission
+
+Evolve Radar Tehran into a fast, reliable, understandable, secure, data-driven, AI-enabled platform with a Cloudflare-first infrastructure strategy and practical freedom to change hosting providers or replace individual infrastructure components.
+
+The target architecture must support:
+
+1. Progressive adoption of Cloudflare capabilities.
+2. Independent deployment of frontend and backend.
+3. Independent replacement of databases and storage systems where technically justified.
+4. Multiple runtime and hosting environments.
+5. Centralized AI model management.
+6. Controlled AI Gateway integration.
+7. Commercial APIs and data products.
+8. MCP-based access to authorized Radar Tehran capabilities.
+9. Optional monetization through Cloudflare Monetization Gateway when genuinely eligible.
+10. Alternative payment and monetization providers.
+11. Future web and mobile clients.
+12. Controlled migration without unnecessary user disruption.
+
+The objective is not maximum technology adoption.
+
+The objective is maximum useful capability with minimum unnecessary coupling.
+
+---
+
+# 1. NON-NEGOTIABLE PRODUCT PRINCIPLES
+
+Preserve Radar Tehran's actual identity, domain, and user value.
+
+Never introduce generic classified-advertising functionality unless it is an independently verified product requirement.
+
+Do not copy Divar's branding, assets, interface identity, or trade dress.
+
+Do not assume that every feature in an external reference prompt belongs in Radar Tehran.
+
+Preserve:
+- Existing working features.
+- Existing user data.
+- Existing business rules.
+- Existing calculations.
+- Existing validated datasets.
+- Existing URLs and API contracts where required.
+- Existing RTL Persian interface.
+- Existing responsive behavior.
+- Existing user workflows.
+
+Do not reset localStorage or application data to install a new demo dataset.
+
+Do not replace production data with sample records.
+
+Do not silently alter calculation logic.
+
+Do not introduce artificial features simply to demonstrate Cloudflare or AI capabilities.
+
+Product quality is more important than feature count.
+
+The first user experience must remain simple, fast, understandable, and trustworthy.
+
+---
+
+# 2. PHASE ZERO — FORENSIC ARCHITECTURE RECONSTRUCTION
+
+Before making changes, inspect the real project.
+
+Reconstruct the current architecture from repository evidence.
+
+Inspect:
+
+- Frontend framework and rendering model.
+- Build system and bundling.
+- Backend runtime and framework.
+- API routes and contracts.
+- Business logic and calculation modules.
+- Database engine.
+- Schema and migrations.
+- Object and file storage.
+- Authentication and authorization.
+- Session management.
+- Cache.
+- Search and indexing.
+- Background processing.
+- Queues and scheduled jobs.
+- External integrations.
+- AI integrations.
+- Current hosting and deployment.
+- Cloudflare configuration.
+- GitHub workflow.
+- Testing.
+- Logging and monitoring.
+- Backup and recovery.
+
+Do not rely on previous AI-generated reports as proof of the current architecture.
+
+Verify each important component through evidence.
+
+For each component distinguish:
+
+- PRESENT IN SOURCE.
+- DECLARED IN CONFIGURATION.
+- ACCOUNT CONFIGURED.
+- DEPLOYED.
+- TESTED.
+- PREVIEW VERIFIED.
+- STAGING VERIFIED.
+- PRODUCTION VERIFIED.
+
+Never confuse installed packages with operational services.
+
+Never confuse source-code bindings with provisioned Cloudflare resources.
+
+Never claim a service is deployed or operational without evidence.
+
+When an account permission, external credential, or environment is inaccessible, explicitly mark the relevant work as BLOCKED or UNVERIFIABLE.
+
+Create a concise dependency map showing how the current application actually works.
+
+---
+
+# 3. TARGET ARCHITECTURE — CLOUDFLARE-FIRST, PORTABLE-BY-DESIGN
+
+Use Cloudflare as a preferred infrastructure ecosystem where it provides measurable benefits.
+
+However, do not make Cloudflare an unavoidable dependency for every application component.
+
+Prefer a well-structured modular monolith unless actual workload, reliability, scaling, security, or deployment requirements justify a different architecture.
+
+Maintain clear boundaries between:
+
+1. Product domain and business rules.
+2. Application services.
+3. Infrastructure contracts.
+4. Provider-specific adapters.
+5. Runtime entry points.
+6. Deployment configuration.
+
+Keep domain logic independent of Cloudflare-specific bindings and SDKs.
+
+Use selective ports and adapters only when they provide real value.
+
+Do not create an abstraction for every service.
+
+Do not force databases, queues, caches, object storage, AI providers, and realtime systems into identical generic interfaces.
+
+Preserve useful provider-specific capabilities through isolated extensions.
+
+Avoid:
+- Empty adapters.
+- Fake integrations.
+- Speculative microservices.
+- Unnecessary abstraction layers.
+- Multiple competing sources of truth.
+- Infrastructure complexity without a measurable benefit.
+
+## Required architectural flexibility
+
+The application should be capable of supporting these deployment models:
+
+### A. Cloudflare-centric
+
+Cloudflare provides the appropriate application execution, delivery, storage, database, networking, security, and related services.
+
+### B. Split hosting
+
+Frontend, backend, database, and object storage can be deployed independently.
+
+### C. External backend with Cloudflare edge
+
+The application backend runs on Node.js, a VPS, containers, or another suitable runtime while Cloudflare continues to provide selected edge services.
+
+### D. Partial Cloudflare replacement
+
+Individual Cloudflare components can be replaced without forcing migration of unrelated components.
+
+### E. Complete application hosting migration
+
+The frontend and backend can be moved to another suitable infrastructure platform while retaining or replacing other Cloudflare services independently.
+
+Do not interpret a hosting migration as an automatic requirement to abandon Cloudflare DNS, CDN, WAF, or other independent services.
+
+---
+
+# 4. PORTABILITY MUST BE PROVEN
+
+Never use PORTABLE as an unsupported general claim.
+
+Evaluate five independent dimensions.
+
+## Code portability
+
+Can the relevant application code execute on another runtime?
+
+Inspect:
+- Runtime APIs.
+- Native modules.
+- Filesystem assumptions.
+- Environment configuration.
+- Streams.
+- Networking.
+- Background execution.
+- Timers.
+- Package compatibility.
+- Provider-specific SDKs.
+
+## Data portability
+
+Can data be exported, transformed, imported, and validated elsewhere?
+
+Inspect:
+- Schema.
+- Data types.
+- Relations.
+- Constraints.
+- Indexes.
+- Transactions.
+- Numeric precision.
+- Metadata.
+- Export and restoration.
+- Consistency during migration.
+
+## Operational portability
+
+Can the component be provisioned, secured, monitored, backed up, and operated on another provider?
+
+## Protocol portability
+
+Can existing clients and dependent services continue using stable application contracts after a provider change?
+
+## Migration portability
+
+Can the component be moved with acceptable cost, risk, disruption, and rollback capability?
+
+For every major component, classify:
+
+- VERIFIED REPLACEABLE.
+- ARCHITECTURALLY PREPARED.
+- PARTIALLY REPLACEABLE.
+- PROVIDER-LOCKED.
+- UNVERIFIED.
+
+A component is VERIFIED REPLACEABLE only when a real alternative implementation and relevant verification evidence exist.
+
+A theoretical interface is not proof of replaceability.
+
+A successful local build is not proof of operational portability.
+
+---
+
+# 5. RUNTIME AND FRONTEND INDEPENDENCE
+
+Keep frontend and backend deployment concerns separate.
+
+Inspect whether the current frontend is:
+
+- Static.
+- Client-rendered.
+- Server-side rendered.
+- Edge-rendered.
+- Hybrid.
+
+Do not assume a Vite project is entirely static without examining its actual output and runtime dependencies.
+
+The frontend must not directly depend on private database credentials, server bindings, or infrastructure secrets.
+
+Use controlled runtime configuration for approved backend endpoints.
+
+Do not hardcode production hostnames throughout the application.
+
+Preserve:
+- RTL Persian rendering.
+- Responsive behavior.
+- Authentication redirects.
+- Deep links.
+- API connectivity.
+- Asset loading.
+- Service-worker behavior.
+- CORS and CSRF protections.
+- Browser compatibility.
+
+For Workers, inspect the exact compatibility date, flags, runtime behavior, and supported APIs.
+
+Do not assume that successful package installation guarantees runtime compatibility.
+
+Test the exact methods and operations used by the application.
+
+Prefer standard Web APIs where they provide genuine cross-runtime value.
+
+Use distinct runtime entry points where necessary while sharing domain and application services.
+
+Do not create an elaborate multi-runtime build system unless its expected benefits justify its cost.
+
+---
+
+# 6. DATABASE AND STORAGE INDEPENDENCE
+
+The actual database audit and workload must determine the database architecture.
+
+Evaluate the existing database before recommending replacement.
+
+Potential targets may include D1, PostgreSQL, or other justified systems.
+
+Do not assume an ORM makes different databases interchangeable.
+
+Evaluate:
+- Transactions.
+- SQL dialect.
+- Monetary precision.
+- Indexes.
+- Foreign keys.
+- Constraints.
+- Concurrency.
+- Search.
+- Geographic queries.
+- Query patterns.
+- Data growth.
+- Capacity.
+- Cost.
+- Backup and recovery.
+- Migration complexity.
+
+For D1, verify actual transaction semantics, size limits, execution constraints, and workload suitability.
+
+For PostgreSQL, evaluate connection management, pooling, networking, and operational requirements.
+
+For storage, evaluate R2 and appropriate external object-storage alternatives.
+
+Do not assume S3 compatibility guarantees complete feature equivalence.
+
+Verify the actual operations used.
+
+## Data migration requirements
+
+For any future database or storage migration:
+
+1. Backup.
+2. Export.
+3. Schema and metadata mapping.
+4. Transformation.
+5. Import.
+6. Record and relationship validation.
+7. Numeric precision validation.
+8. Application compatibility testing.
+9. Controlled cutover.
+10. Rollback readiness.
+
+Maintain one authoritative source of truth for each live dataset.
+
+Do not introduce dual writes without an explicit consistency protocol.
+
+Do not execute production migrations without explicit authorization.
+
+Preserve file identity and relationships when moving media.
+
+Do not break existing media URLs silently.
+
+---
+
+# 7. IDENTITY AND USER CONTINUITY
+
+Authentication and identity must be treated as independent migration concerns.
+
+Inspect:
+
+- User identity model.
+- Authentication provider.
+- Password hashing where applicable.
+- OAuth.
+- Session storage.
+- Cookies.
+- Cookie domains.
+- SameSite and Secure settings.
+- Token issuer and audience.
+- Signing keys.
+- Refresh tokens.
+- Revocation.
+- Password reset.
+- Email verification.
+- Redirect URLs.
+
+A hosting migration must not accidentally invalidate all user sessions or weaken authentication.
+
+If reauthentication, token rotation, or session migration is necessary, document it before implementation.
+
+Never expose signing keys or authentication secrets.
+
+Never make production administration publicly accessible.
+
+---
+
+# 8. CLOUDFLARE ECOSYSTEM DISCOVERY
+
+The long-term objective is to understand and progressively use the full relevant Cloudflare ecosystem.
+
+Do not restrict discovery to a static list of products.
+
+Use current official Cloudflare documentation, product catalogue, API references, changelog, pricing, and availability information.
+
+Discover capabilities across:
+
+- DNS and networking.
+- CDN and edge delivery.
+- Workers and application compute.
+- Databases.
+- Object storage.
+- Cache and stateful coordination.
+- Queues and workflows.
+- Security and access control.
+- Images and media.
+- Realtime communication.
+- AI and model access.
+- AI Gateway.
+- Search and vector capabilities.
+- Analytics and observability.
+- Email and communication.
+- Automation and developer tooling.
+- Feature management.
+- Data processing and event systems.
+- Monetization and commerce capabilities.
+
+This list is not exhaustive.
+
+Discover new, renamed, deprecated, experimental, or changed products when reviewing the ecosystem.
+
+For each capability record:
+
+- Official product name.
+- Purpose.
+- Actual Radar Tehran use case.
+- Product maturity.
+- Availability.
+- Account and plan requirements.
+- Geographic eligibility.
+- Limits.
+- Security implications.
+- Cost.
+- Operational complexity.
+- Data ownership.
+- Provider dependencies.
+- Replacement options.
+- Official documentation.
+- Verification date.
+
+Use these statuses:
+
+- DISCOVERED.
+- RELEVANCE ASSESSED.
+- NOT CURRENTLY NEEDED.
+- ARCHITECTURAL PREPARATION COMPLETE.
+- IMPLEMENTATION IN PROGRESS.
+- IMPLEMENTED IN SOURCE.
+- ACCOUNT CONFIGURED.
+- DEPLOYED.
+- PREVIEW VERIFIED.
+- PRODUCTION VERIFIED.
+- BLOCKED.
+- DEPRECATED OR SUPERSEDED.
+
+Do not confuse these statuses.
+
+Discover the ecosystem broadly, but perform detailed implementation planning only for services with a credible product requirement.
+
+Do not repeatedly audit the entire ecosystem without new evidence or a material change.
+
+---
+
+# 9. CLOUDFLARE ADOPTION GOVERNANCE
+
+For every proposed service, answer:
+
+1. What real requirement does it solve?
+2. Is the requirement already solved?
+3. What measurable advantage does Cloudflare provide?
+4. Is the account eligible?
+5. Does the current plan support it?
+6. Is it compatible with the actual runtime?
+7. What are its limits and failure modes?
+8. What does it cost?
+9. What data or state will it own?
+10. How difficult will it be to replace?
+11. Is adoption justified now?
+
+Use these decisions:
+
+- ADOPT NOW.
+- PREPARE A MINIMAL BOUNDARY.
+- DEFER.
+- RETAIN EXISTING IMPLEMENTATION.
+- REJECT WITH EVIDENCE.
+
+Never adopt a service just to increase the number of Cloudflare products used.
+
+Do not provision paid resources without authorization.
+
+Do not create fake integration dashboards.
+
+Do not report an available service as configured or deployed.
+
+---
+
+# 10. CENTRAL AI MODEL MANAGEMENT ARCHITECTURE
+
+Create a modular AI architecture that can use Cloudflare-hosted models and third-party providers through appropriate interfaces.
+
+The architecture must not depend exclusively on Cloudflare AI.
+
+Cloudflare AI Gateway should be evaluated as a preferred routing, observability, and governance layer for relevant model requests.
+
+The system should support alternative AI providers when appropriate.
+
+## AI architecture
+
+Separate:
+
+1. AI application workflows.
+2. Model selection and routing.
+3. Provider adapters.
+4. Prompt and response contracts.
+5. Usage and cost tracking.
+6. Security and authorization.
+7. Evaluation and quality testing.
+
+Suggested conceptual module:
+
+`/src/backend/ai/`
+
+Potential components:
+
+- `model-registry.ts`
+- `model-router.ts`
+- `provider-adapters/`
+- `ai-gateway.ts`
+- `ai-workflows/`
+- `ai-evaluation.ts`
+- `ai-usage.ts`
+- `ai-security.ts`
+
+These are proposed boundaries, not mandatory files.
+
+Inspect the actual repository and follow its existing conventions.
+
+Do not create files that duplicate existing architecture.
+
+## Dynamic model discovery
+
+Use the current official Cloudflare AI Models catalogue.
+
+Do not hardcode a fixed model list as the permanent source of truth.
+
+For each model, record:
+
+- Exact official model identifier.
+- Provider.
+- Hosting type.
+- Supported modalities.
+- Input and output limits.
+- Context window where officially documented.
+- Available operations.
+- Availability and maturity.
+- Account requirements.
+- Pricing.
+- Latency characteristics where measurable.
+- Data handling.
+- Known limitations.
+- Verification date.
+
+Distinguish:
+
+- Cloudflare-hosted models.
+- Third-party models routed through AI Gateway.
+- Direct external provider integrations.
+- Local or simulated development implementations.
+
+Never invent model identifiers, context windows, free tiers, capabilities, or availability.
+
+Use the exact model identifier required by the actual provider API.
+
+For Workers AI, verify the required model identifier format.
+
+For third-party models, verify the actual provider integration and credentials.
+
+Do not assume a model's display name is a valid API identifier.
+
+---
+
+# 11. AI WORKFLOWS FOR RADAR TEHRAN
+
+Discover actual product workflows where AI provides measurable value.
+
+Potential capabilities include:
+
+## A. Intelligent search
+
+Allow users to express complex searches in natural Persian.
+
+Examples may include:
+
+- جست‌وجوی ملک در یک محدوده قیمتی.
+- مقایسه محله‌ها.
+- یافتن مناطق دارای روند رشد مشخص.
+- جست‌وجوی خودرو با چند شرط هم‌زمان.
+- پرسش درباره شاخص‌های بازار.
+
+Convert natural-language input into a validated structured query.
+
+Never let an AI-generated query bypass authorization, database restrictions, or query limits.
+
+## B. Data extraction and normalization
+
+Use AI to extract structured information from authorized input documents, descriptions, or images where applicable.
+
+Validate extracted data before saving.
+
+Do not treat model-generated attributes as verified facts.
+
+## C. Price analysis
+
+AI may assist with:
+- Explanation.
+- Pattern recognition.
+- Data summarization.
+- Anomaly detection.
+- Comparison interpretation.
+- Forecasting experiments.
+
+However, authoritative property and vehicle pricing must be grounded in verified data, explicit formulas, and validated calculation logic.
+
+Do not allow an LLM to replace deterministic calculation engines without rigorous evaluation.
+
+For property valuation, consider relevant variables such as:
+
+- Neighborhood.
+- Property type.
+- Area.
+- Age.
+- Building characteristics.
+- Location.
+- Amenities.
+- Data freshness.
+- Comparable observations.
+- Sample size.
+- Market coverage.
+
+Display uncertainty honestly.
+
+Never invent a confidence percentage.
+
+A model's self-reported confidence is not statistical calibration.
+
+Only show calibrated confidence scores when supported by historical evaluation.
+
+## D. Multimodal analysis
+
+Evaluate image, audio, and video models only for real product workflows.
+
+Verify supported input formats, file sizes, resolution, processing limits, and output formats.
+
+Do not assume that a model supporting image understanding also supports image generation or image upscaling.
+
+Do not assume that video generation and video restoration are the same operation.
+
+## E. AI assistant
+
+Build an assistant that can explain actual Radar Tehran data and authorized features.
+
+Its answers must:
+- Identify relevant data sources.
+- Respect user permissions.
+- Distinguish observed facts from interpretation.
+- Disclose missing or outdated data.
+- Avoid fabricated statistics.
+- Avoid unsupported certainty.
+
+---
+
+# 12. AI PREVIEW AND PRODUCTION SEPARATION
+
+This requirement is mandatory.
+
+Browser preview simulations are not actual AI inference.
+
+For preview and local development, deterministic simulations may be used to demonstrate:
+- UI workflows.
+- Loading states.
+- Validation.
+- Error states.
+- Structured output.
+- Model selection.
+- Usage visualization.
+
+Every simulated result must be visibly labeled:
+
+`SIMULATED — NOT A REAL AI RESPONSE`
+
+Do not claim that Canvas processing is equivalent to Topaz or another commercial AI enhancement service.
+
+Do not display a model-provider success badge for a local filter.
+
+Do not claim a model generated an answer when no model request occurred.
+
+Actual AI inference must run through a secure server-side integration.
+
+Never expose:
+- API keys.
+- Provider secrets.
+- Private tokens.
+- Workers bindings.
+- Gateway credentials.
+
+Do not import uninstalled server-only packages into frontend modules scanned by Vite.
+
+Keep server-only dependencies in their appropriate backend or runtime boundary.
+
+A successful preview build does not prove production AI connectivity.
+
+---
+
+# 13. AI GATEWAY AND MODEL CONTROL CENTER
+
+Evaluate a dedicated AI administration interface.
+
+Suggested location:
+
+`پنل مدیریت ← مرکز هوش مصنوعی`
+
+It may include:
+
+### Model catalogue
+
+Display:
+- Model name.
+- Provider.
+- Hosting type.
+- Capabilities.
+- Availability.
+- Cost information.
+- Verification status.
+
+### Model routing
+
+Allow authorized administrators to select default models for appropriate workflows, such as:
+
+- Search.
+- Text analysis.
+- Image understanding.
+- Data extraction.
+- Price-analysis assistance.
+- Voice and audio.
+- Other verified workflows.
+
+### Usage monitoring
+
+Display:
+- Request volume.
+- Success and failure.
+- Latency.
+- Token usage where available.
+- Estimated cost.
+- Provider errors.
+- Rate-limit events.
+
+Clearly distinguish estimated cost from actual billed cost.
+
+### Model testing
+
+Provide a controlled testing environment with:
+- Input validation.
+- Sample requests.
+- Response inspection.
+- Latency measurement.
+- Error reporting.
+- Cost visibility.
+
+### Configuration export
+
+Generate configuration examples from actual verified settings.
+
+Do not generate fake deployment files.
+
+Do not expose secrets in code previews or exports.
+
+### Administration security
+
+Model selection and routing changes must require authorized server-side permissions.
+
+Do not rely on localStorage or hidden frontend controls as security mechanisms.
+
+Record administrative changes in an audit log.
+
+Provide rollback to the previous verified configuration.
+
+---
+
+# 14. AI QUALITY, SAFETY AND COST CONTROL
+
+For each important AI workflow, define evaluation criteria.
+
+Test:
+- Accuracy.
+- Persian-language quality.
+- Numerical correctness.
+- Hallucination rate.
+- Structured-output validity.
+- Latency.
+- Cost.
+- Failure behavior.
+- Data freshness.
+- Security.
+- Prompt injection resistance.
+
+Treat user-supplied text, uploaded documents, model output, and retrieved content as untrusted data.
+
+Do not allow instructions embedded in external content to override system rules or authorization.
+
+Apply:
+- Input size limits.
+- Output validation.
+- Rate limits.
+- Timeouts.
+- Retry limits.
+- Usage budgets.
+- Caching where safe.
+- Model fallback where justified.
+- Human review for consequential actions.
+
+Do not retry expensive AI requests indefinitely.
+
+Do not use AI output as the sole authority for high-impact financial decisions.
+
+---
+
+# 15. DIGITAL DATA COMMERCE AND MONETIZATION ARCHITECTURE
+
+Prepare Radar Tehran for future commercial distribution of authorized data and application capabilities.
+
+This must be a separate commercial layer.
+
+Potential products include:
+
+1. Market-data APIs.
+2. Neighborhood price indexes.
+3. Historical market datasets.
+4. Aggregated statistical reports.
+5. Vehicle-market data products.
+6. Authorized analytical services.
+7. MCP tools for external AI agents.
+8. Enterprise data access.
+9. Paid analytical subscriptions.
+10. Other validated digital products.
+
+Do not assume every dataset is legally or commercially distributable.
+
+Before commercialization, inspect:
+- Data ownership.
+- Source licenses.
+- User consent.
+- Privacy.
+- Personal data.
+- Redistribution rights.
+- Retention requirements.
+- Aggregation and anonymization.
+- Data quality.
+- Geographic coverage.
+- Update frequency.
+- Data freshness.
+- Commercial restrictions.
+
+Never expose personal or sensitive user information through commercial APIs or datasets.
+
+Never sell unverified data as authoritative market data.
+
+Clearly document dataset coverage, definitions, limitations, update time, and provenance.
+
+## Commercial architecture
+
+Separate:
+
+1. Product catalogue.
+2. Customer identity.
+3. Authentication.
+4. Authorization.
+5. Subscription or entitlement.
+6. Usage measurement.
+7. Pricing.
+8. Billing.
+9. Payment provider.
+10. Settlement.
+11. Audit and reporting.
+
+Do not hardwire the entire commercial system to one payment provider.
+
+Create provider-specific adapters only where needed.
+
+Support the possibility of alternative payment providers and contractual billing models.
+
+Do not treat a payment request as proof of payment.
+
+Do not treat a successful HTTP response as proof of settlement.
+
+---
+
+# 16. API AND DATASET COMMERCE
+
+Prepare versioned APIs for authorized external consumers.
+
+Potential API resources may include:
+
+- Tehran market indexes.
+- Neighborhood statistics.
+- Property-market summaries.
+- Vehicle-market summaries.
+- Historical observations.
+- Validated analytical results.
+
+These are examples, not authorization to invent data endpoints.
+
+Use actual existing data and business logic.
+
+Requirements:
+
+- Versioned API contracts.
+- Authentication.
+- Fine-grained authorization.
+- Rate limits.
+- Usage tracking.
+- Idempotency where required.
+- Error contracts.
+- Pagination.
+- Data provenance.
+- Freshness metadata.
+- Usage quotas.
+- Cost controls.
+- Audit logs.
+
+Do not expose internal database tables directly as public API contracts.
+
+Design stable application-level data contracts.
+
+Document API compatibility and deprecation policies.
+
+For downloadable datasets, document:
+- Format.
+- Schema.
+- Units.
+- Geographic scope.
+- Time period.
+- Data source.
+- Update schedule.
+- Known limitations.
+
+---
+
+# 17. MCP SERVER AND EXTERNAL AI ACCESS
+
+Evaluate an MCP server as a commercial and integration channel.
+
+Expose only authorized, well-defined Radar Tehran operations.
+
+Potential tools may include:
+- Search approved market data.
+- Retrieve neighborhood statistics.
+- Compare available market indicators.
+- Retrieve authorized historical observations.
+- Request a validated analytical result.
+
+Tool names and contracts must reflect actual supported capabilities.
+
+Each tool must define:
+- Input schema.
+- Output schema.
+- Authentication.
+- Authorization.
+- Rate limits.
+- Usage measurement.
+- Error behavior.
+- Data freshness.
+- Provenance.
+
+Do not give external AI agents unrestricted database access.
+
+Do not allow arbitrary SQL through MCP.
+
+Treat all tool input as untrusted.
+
+Validate requests server-side.
+
+Apply customer entitlements and quotas.
+
+Never expose private user records.
+
+Design MCP as a replaceable application interface rather than a permanently Cloudflare-dependent business layer.
+
+---
+
+# 18. CLOUDFLARE MONETIZATION GATEWAY — CONDITIONAL INTEGRATION
+
+Evaluate Cloudflare Monetization Gateway as one possible commercial payment mechanism.
+
+Do not assume the project or account is eligible.
+
+Before implementation, verify using current official Cloudflare documentation:
+
+- Product availability.
+- Beta or general-availability status.
+- Seller eligibility.
+- Buyer eligibility.
+- Geographic restrictions.
+- Account requirements.
+- Zone requirements.
+- Payment infrastructure.
+- Supported transaction flows.
+- Pricing restrictions.
+- API capabilities.
+- Settlement process.
+- Security requirements.
+
+If the project is ineligible, do not pretend the integration is operational.
+
+Build a provider-independent monetization architecture first.
+
+Cloudflare Monetization Gateway may be adopted only when:
+- Eligibility is verified.
+- The required account access exists.
+- The commercial model is compatible.
+- The payment flow is understood.
+- Security verification is implemented.
+- Testing is possible.
+
+## x402 correctness
+
+Do not invent payment headers or verification mechanisms.
+
+Use the exact current x402 protocol and Cloudflare documentation.
+
+Verify the current protocol version and actual header names.
+
+Implement the documented payment challenge and verification flow.
+
+For the documented Cloudflare flow, inspect the use of:
+- `402 Payment Required`.
+- `PAYMENT-REQUIRED`.
+- `PAYMENT-SIGNATURE`.
+- `PAYMENT-CONTEXT`.
+
+Validate the signed payment context using the documented mechanism.
+
+Do not trust a client-supplied token merely because it exists.
+
+Do not equate an HTTP 200 response with settled revenue.
+
+Record payment authorization and confirmed settlement as separate states.
+
+## Payment failure behavior
+
+Distinguish:
+- Payment required.
+- Payment rejected.
+- Invalid payment proof.
+- Unauthorized access.
+- Forbidden resource.
+- Service unavailable.
+
+Do not use 403 as a substitute for a proper payment challenge.
+
+Do not charge users through a frontend simulation.
+
+---
+
+# 19. MONETIZATION ADMINISTRATION CENTER
+
+Evaluate a dedicated section inside the real authenticated Admin Panel.
+
+Suggested location:
+
+`پنل مدیریت ← تجارت داده و درآمدزایی`
+
+It may contain:
+
+### A. Product and pricing management
+
+Manage:
+- API products.
+- Dataset products.
+- MCP access plans.
+- Usage quotas.
+- Pricing rules.
+- Customer entitlements.
+- Subscription rules where supported.
+
+Display currencies and conversions accurately.
+
+For USD-to-Toman conversion, record:
+- Exchange-rate source.
+- Rate.
+- Timestamp.
+- Conversion policy.
+
+Do not present an outdated exchange rate as current.
+
+Do not use browser localStorage as the authoritative pricing database.
+
+### B. Usage and revenue monitoring
+
+Display separately:
+- Requests.
+- Successful authorized requests.
+- Payment challenges.
+- Rejected requests.
+- Simulated transactions.
+- Authorized payments.
+- Confirmed settlements.
+- Refunds where supported.
+- Estimated revenue.
+- Actual settled revenue.
+
+Never combine simulated and actual revenue.
+
+### C. Agent and customer monitoring
+
+Identify authenticated customers and integrations.
+
+Do not assume that user-agent strings establish verified bot identity.
+
+Use trusted authentication and documented bot verification mechanisms where applicable.
+
+Protect human users, legitimate search engines, and essential application workflows.
+
+Do not block crawlers indiscriminately.
+
+### D. Administrative controls
+
+Administrative settings must be persisted through an authorized backend.
+
+A localStorage setting is only a local preference or simulation.
+
+A button labeled PUBLISH must not claim to publish rules unless a real authenticated deployment or configuration API operation succeeds.
+
+Use:
+- Permission checks.
+- Confirmation for consequential actions.
+- Audit logs.
+- Configuration versioning.
+- Validation.
+- Rollback.
+
+Do not allow an unauthenticated visitor to access production administration.
+
+Preview may offer a clearly labeled demo mode without real privileges.
+
+---
+
+# 20. PAYMENT SIMULATION AND PREVIEW
+
+A payment simulator may be provided for development and demonstration.
+
+It must be explicitly labeled:
+
+`SIMULATION — NO REAL PAYMENT OR SETTLEMENT`
+
+The simulator may:
+- Evaluate current local pricing rules.
+- Simulate payment-required responses.
+- Simulate successful authorization.
+- Show expected billing.
+- Generate test audit entries.
+
+It must never:
+- Transfer money.
+- Claim that a real payment occurred.
+- Modify real customer balances.
+- Record simulated income as actual income.
+- Generate real settlement records.
+- Trigger production billing.
+
+Maintain separate simulation and production datasets.
+
+Never mix demo transactions with actual financial records.
+
+---
+
+# 21. DOMAIN, DNS, SECURITY AND DEPLOYMENT
+
+Treat hosting and domain services as independent architectural decisions.
+
+Inspect:
+- DNS.
+- Nameservers.
+- CDN.
+- TLS.
+- Origin configuration.
+- WAF.
+- Rate limits.
+- Access policies.
+- Redirects.
+- API hostnames.
+- OAuth callbacks.
+- Webhooks.
+- Email DNS records.
+
+A backend migration must not accidentally break domain routing, TLS, authentication, or integrations.
+
+Maintain infrastructure configuration in version control where appropriate.
+
+Use one authoritative management mechanism for each resource class.
+
+Do not let Dashboard changes, Wrangler, Terraform, and scripts conflict without an explicit ownership model.
+
+Separate:
+- Local development.
+- Preview.
+- Staging.
+- Production.
+
+Verify environment-specific bindings and settings.
+
+Never assume Wrangler child environments automatically inherit all parent configuration.
+
+Keep secrets outside source code and browser bundles.
+
+Do not change production DNS, production secrets, or live infrastructure without explicit authorization.
+
+---
+
+# 22. SECURITY AND DATA GOVERNANCE
+
+Apply security by design across every new component.
+
+Inspect:
+- Authentication.
+- Authorization.
+- Object-level access.
+- Cross-user isolation.
+- IDOR.
+- XSS.
+- CSRF.
+- SSRF where relevant.
+- File upload security.
+- API abuse.
+- Rate limiting.
+- Secret management.
+- Prompt injection.
+- Data leakage.
+- Administrative privilege escalation.
+- Payment verification.
+- Webhook verification.
+- Audit logging.
+
+Never trust:
+- Frontend-only permissions.
+- User-agent identity.
+- Client-supplied prices.
+- Client-supplied payment status.
+- AI-generated authorization decisions.
+- External content instructions.
+- Unverified provider callbacks.
+
+Do not expose secrets in:
+- Frontend bundles.
+- Generated code previews.
+- Logs.
+- Public API responses.
+- Exported configuration.
+- Error messages.
+
+---
+
+# 23. USER EXPERIENCE AND PRODUCT QUALITY
+
+New infrastructure must not make Radar Tehran more complicated for ordinary users.
+
+Preserve the product's core interface.
+
+The experience must be:
+- Fast.
+- Clear.
+- Understandable at first glance.
+- Responsive.
+- Accessible.
+- Consistent in Persian RTL.
+- Reliable on mobile and desktop.
+
+Do not expose infrastructure terminology to ordinary users.
+
+AI controls and commercial administration belong in authorized management interfaces.
+
+Do not add every AI feature to every screen.
+
+Add a capability only when it improves an actual user workflow.
+
+For every new interface, test:
+- First-use comprehension.
+- Navigation clarity.
+- Loading states.
+- Empty states.
+- Error recovery.
+- Accessibility.
+- Responsive layout.
+- Performance.
+- Data freshness.
+- Trust and transparency.
+
+Never show simulated AI results as real analysis.
+
+Never show estimated prices as verified transaction prices.
+
+Never show stale information without disclosing its age.
+
+---
+
+# 24. COST AND CAPACITY GOVERNANCE
+
+Every major infrastructure or AI adoption decision must include a realistic cost assessment.
+
+Evaluate:
+- Request volume.
+- Compute.
+- Storage.
+- Database operations.
+- Egress.
+- AI tokens.
+- Model pricing.
+- Gateway charges.
+- Background processing.
+- Monitoring.
+- Backup.
+- Paid account requirements.
+- Operational maintenance.
+
+Use current official pricing and limits.
+
+Record the date and assumptions.
+
+If usage data is unavailable, state what must be measured.
+
+Do not invent cost estimates.
+
+Do not introduce paid services without understanding their billing model.
+
+Add usage limits and budget controls for AI and commercial APIs where technically possible.
+
+---
+
+# 25. IMPLEMENTATION STRATEGY
+
+Do not implement every capability in one enormous change.
+
+Work progressively.
+
+Use the following priorities:
+
+## Priority 1 — Foundation
+
+- Reconstruct actual architecture.
+- Identify infrastructure dependencies.
+- Establish portability boundaries.
+- Protect existing functionality.
+- Resolve critical security and data risks.
+- Confirm database and storage direction.
+
+## Priority 2 — Cloudflare readiness
+
+- Verify relevant Cloudflare capabilities.
+- Establish runtime compatibility.
+- Prepare selective provider adapters.
+- Improve deployment configuration.
+- Establish environment separation.
+- Document migration paths.
+
+## Priority 3 — AI foundation
+
+- Establish model registry.
+- Establish secure model routing.
+- Evaluate AI Gateway.
+- Implement usage tracking.
+- Create evaluation tests.
+- Add one genuinely useful AI workflow at a time.
+
+## Priority 4 — Data commerce
+
+- Identify legally distributable data.
+- Define commercial API contracts.
+- Prepare dataset products.
+- Establish customer authorization.
+- Implement usage measurement.
+- Evaluate MCP access.
+
+## Priority 5 — Monetization
+
+- Verify payment-provider eligibility.
+- Evaluate Cloudflare Monetization Gateway.
+- Evaluate alternative payment integrations.
+- Implement a real payment provider only after its requirements are satisfied.
+- Separate simulation from production billing.
+
+These priorities establish a default sequence, not an excuse to ignore a more urgent verified defect.
+
+Do not proceed to a higher-risk phase while its critical prerequisites remain unresolved.
+
+---
+
+# 26. AUTONOMOUS WORKSTREAM CONTROL
+
+For each invocation, select one coherent high-value workstream.
+
+Before implementation:
+
+1. Define the actual problem.
+2. Identify affected components.
+3. Establish acceptance criteria.
+4. Identify dependencies.
+5. Classify risk.
+6. Define rollback.
+7. Determine the tests required.
+
+Then:
+
+1. Implement the smallest useful change.
+2. Run relevant tests.
+3. Independently inspect the result.
+4. Update authoritative documentation.
+5. Record evidence.
+6. Close the workstream when acceptance criteria are met.
+
+Do not reopen a completed workstream without:
+- New evidence.
+- A regression.
+- A material requirement change.
+- A newly discovered security or reliability issue.
+
+Do not repeat the same audit indefinitely.
+
+Do not create endless recommendations without implementation.
+
+Do not perform high-risk or irreversible production actions without explicit authorization.
+
+This includes:
+- Production deployment.
+- Production database migrations.
+- DNS changes.
+- Production secret rotation.
+- Bulk data modification.
+- Resource deletion.
+- Paid infrastructure provisioning.
+- Production authentication changes.
+- Real payment activation.
+
+---
+
+# 27. AUTHORITATIVE DOCUMENTATION
+
+Inspect existing documentation before creating new files.
+
+Avoid overlapping documents.
+
+Maintain or update these authoritative documents only where they provide unique value:
+
+1. `docs/architecture/ARCHITECTURE-AND-PORTABILITY.md`
+   - Actual architecture and migration strategy.
+
+2. `docs/architecture/CLOUDFLARE-CAPABILITY-REGISTRY.md`
+   - Cloudflare discovery, capability status, requirements, and adoption decisions.
+
+3. `docs/architecture/AI-MODEL-AND-GATEWAY-ARCHITECTURE.md`
+   - Model catalogue, routing, AI Gateway, evaluation, usage, and security.
+
+4. `docs/architecture/DATA-COMMERCE-AND-MONETIZATION.md`
+   - Commercial products, APIs, datasets, MCP, payment architecture, and eligibility.
+
+5. `docs/architecture/PROVIDER-REPLACEMENT-MATRIX.md`
+   - Actual provider dependencies, alternatives, migration effort, evidence, and status.
+
+6. `docs/architecture/ARCHITECTURE-DECISIONS.md`
+   - Accepted and rejected decisions and their reasons.
+
+Create missing documents only.
+
+If equivalent authoritative documents already exist, update them instead.
+
+Do not create multiple competing sources of truth.
+
+---
+
+# 28. VERIFICATION AND ACCEPTANCE CRITERIA
+
+The overall workstream must not be declared complete until the following are assessed:
+
+## Product integrity
+- Existing Radar Tehran functionality is preserved.
+- Existing data is preserved.
+- Core calculations remain correct.
+- RTL and responsive behavior remain intact.
+
+## Architecture
+- Actual dependencies are identified.
+- Major provider-specific boundaries are documented.
+- Portability is assessed independently by component.
+- Migration risks are explicit.
+
+## Cloudflare
+- Relevant products are verified using current official sources.
+- Availability and account eligibility are checked.
+- Configured, deployed, and verified services are distinguished.
+- No fake integrations exist.
+
+## AI
+- Model identifiers and capabilities are verified.
+- Server-side security is implemented.
+- Preview simulation is clearly separated.
+- Costs and usage are measured or explicitly unknown.
+- Important AI workflows have evaluation tests.
+
+## Commerce
+- Data ownership and redistribution rights are assessed.
+- API contracts are defined.
+- MCP authorization is controlled.
+- Simulated and actual financial records are separated.
+- Payment-provider eligibility is verified before claiming integration.
+
+## Operations
+- Environment separation is understood.
+- Backup and recovery are documented.
+- Rollback paths are defined.
+- Relevant tests pass.
+- No unauthorized production changes occurred.
+
+A completed document is not proof of a working system.
+
+A generated code file is not proof of deployment.
+
+A passing build is not proof of correct application behavior.
+
+A simulated transaction is not revenue.
+
+A model catalogue is not a functioning AI integration.
+
+A theoretical migration path is not verified portability.
+
+---
+
+# 29. REQUIRED FINAL REPORT
+
+After each workstream, provide a concise Persian report.
+
+Include only:
+
+1. What was actually inspected.
+2. What was actually changed.
+3. Which tests were actually executed.
+4. What was verified.
+5. What remains blocked or unverified.
+6. The highest-priority next workstream.
+
+Use actual file paths and evidence where useful.
+
+Do not reproduce the entire audit.
+
+Do not report speculative improvements as completed work.
+
+Do not claim production success without production evidence.
+
+Keep the report short and token-efficient.
+
+---
+
+# 30. FINAL STRATEGIC DIRECTIVE
+
+Build Radar Tehran as a product whose business logic, data ownership, AI workflows, commercial interfaces, and infrastructure responsibilities are clearly separated.
+
+Use Cloudflare as a powerful preferred ecosystem.
+
+Discover its capabilities continuously and adopt relevant services progressively.
+
+Make the application capable of changing hosting providers or replacing individual infrastructure components without unnecessary rebuilding.
+
+Build an AI architecture that can use Cloudflare-hosted models and third-party providers without becoming dependent on one model vendor.
+
+Prepare Radar Tehran to commercialize authorized market data, APIs, datasets, and AI-accessible tools.
+
+Use Cloudflare Monetization Gateway only when its actual eligibility, payment flow, and operational requirements are verified.
+
+Keep alternative providers possible.
+
+Never sacrifice:
+- Correctness.
+- Security.
+- User privacy.
+- Data integrity.
+- Performance.
+- Simplicity.
+- Reliability.
+- Maintainability.
+
+The ultimate goal is not to build the largest possible infrastructure.
+
+It is to build a product that can grow, earn revenue, adopt new technologies, and change its infrastructure without losing control of its own data, business logic, users, or future choices.
+
+**CLOUDFLARE-FIRST, NOT CLOUDFLARE-LOCKED.**
+
+**AI-POWERED, NOT AI-DEPENDENT.**
+
+**MONETIZATION-READY, NOT PAYMENT-SIMULATED.**
+
+**PORTABLE-BY-DESIGN, VERIFIED-BY-TESTING.**
+
+Begin by reconstructing the actual Radar Tehran system.
+
+Do not start with a speculative rewrite.
+
+Execute the highest-priority justified workstream under the existing Master Engineering Protocol.

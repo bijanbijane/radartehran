@@ -1,0 +1,1618 @@
+{
+  "schema_version": 1,
+  "project_identity": {
+    "repository": "radar-maskan-tehran",
+    "applet_id": "1b7f1cd5-314b-4917-bfe4-cab0c714119b",
+    "rmep_target_applet_id": "e48df7a4-9535-4bf0-a948-61a6a0f37a6a",
+    "firebase_project_id": "gen-lang-client-0713157837",
+    "firestore_database_id": "ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a",
+    "git_metadata_available": false,
+    "branch": null,
+    "baseline_commit": "FILESYSTEM_VERIFIED_CHK_171_FINAL_MASTER_PROMPT_4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63"
+  },
+  "last_reconciled_at": "2026-11-04T16:53:00.000Z",
+  "architecture_summary": {
+    "application_type": "Full-stack TypeScript Web Application (React 19 SPA + Node.js/Express 4 Backend + Firebase Auth & Firestore + S3-Compatible/Local Media Object Storage)",
+    "languages_and_runtimes": [
+      "TypeScript ^7.0.2",
+      "Node.js v22.23.3",
+      "React ^19.0.1",
+      "Vite ^8.3.0",
+      "Express ^4.21.2"
+    ],
+    "entrypoints": [
+      "server.ts (Express HTTP server on port 3000)",
+      "src/main.tsx & src/App.tsx (React SPA client entry)",
+      "firestore.rules (Firestore security rules for 10 collections)"
+    ],
+    "trust_boundaries": [
+      "Public Internet -> Express Delivery & Abuse Guard (src/utils/serverDeliveryAndAbuseGuard.ts)",
+      "Client Browser -> Firebase Authentication & Firestore Rules (firestore.rules, src/firebase.ts)",
+      "Authenticated User / Admin -> Express API Routes (src/utils/serverAdminAndTelegramSecurity.ts)",
+      "Express Server -> External Providers (Gemini API, Telegram Bot API, OpenStreetMap Tile/Nominatim/Overpass, Open-Meteo, S3 Object Storage)"
+    ],
+    "data_stores": [
+      "Cloud Firestore (ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a: /admins, /votes, /bargains, /bargainOwners, /neighborhoodOverrides, /sponsorRequests, /publicSponsors, /buyerAlerts, /appConfig, /userPreferences)",
+      "Local/S3 Object Storage (.object-storage-bucket/index.json with 0o600 atomic writes)",
+      "Server Disk Cache (.cache-data.json and .runtime-config.json with 0o600 permissions, zero secrets, zero buyer PII)"
+    ]
+  },
+  "security_domains": [
+    {
+      "domain_id": "DOMAIN_01",
+      "name": "Authentication, Identity & Session Management",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverAdminAndTelegramSecurity.ts",
+        "src/utils/domainSecurityValidators.ts",
+        "firestore.rules"
+      ],
+      "notes": "Firebase ID token verification enforces checkRevoked=true, project aud/iss match (gen-lang-client-0713157837), email_verified===true, canonical email normalization, single-header extraction (rejecting duplicate Authorization/X-Admin-Token headers), and constant-time secret comparison via crypto.timingSafeEqual."
+    },
+    {
+      "domain_id": "DOMAIN_02",
+      "name": "Authorization, Access Control & Tenant Isolation",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "firestore.rules",
+        "src/utils/serverAdminAndTelegramSecurity.ts",
+        "src/utils/serverPublisherBargains.ts",
+        "src/utils/serverObjectStorage.ts"
+      ],
+      "notes": "Enforces RBAC/BOLA across all 10 Firestore collections and Express routes. Remediated SEC-FINDING-003 in firestore.rules to validate all array elements (0..N) of imageUrls, objectStorageKeys, and objectStorageObjectIds in /bargains, and SEC-FINDING-004 in serverPublisherBargains.ts to enforce doc ID validation and per-owner listing quotas."
+    },
+    {
+      "domain_id": "DOMAIN_03",
+      "name": "Secrets, Keys, Credentials & Environment Hygiene",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverRuntimeEnvStore.ts",
+        "src/utils/serverAdminSodAndBackupSecurity.ts",
+        ".env.example"
+      ],
+      "notes": "SECRET_ENV_KEYS (TELEGRAM_BOT_TOKEN, ADMIN_API_SECRET, OBJECT_STORAGE_ACCESS_KEY, OBJECT_STORAGE_SECRET_KEY) are never persisted to .runtime-config.json or .cache-data.json, masked in Admin UI via maskSecretValue(), and scrubbed from backups via scrubSecretsFromBackupObject()."
+    },
+    {
+      "domain_id": "DOMAIN_04",
+      "name": "API, Transport, CORS, CSRF, Headers & Network Boundaries",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "server.ts",
+        "src/utils/serverDeliveryAndAbuseGuard.ts",
+        "src/utils/serverConfigValidator.ts"
+      ],
+      "notes": "Enforces CSP, HSTS in production, X-Content-Type-Options: nosniff, X-Frame-Options: DENY on /api/*, Referrer-Policy, Permissions-Policy, query credential rejection (CREDENTIALS_IN_QUERY_FORBIDDEN), and HTTP server timeout hardening."
+    },
+    {
+      "domain_id": "DOMAIN_05",
+      "name": "Database, Data Store, Query, ORM & Storage Security",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "firestore.rules",
+        "firebase-blueprint.json",
+        "src/utils/serverMarketPulseEngine.ts"
+      ],
+      "notes": "No SQL/ORM is used; data store is Cloud Firestore + atomic 0o600 local JSON caches. Remediated SEC-FINDING-003 in firestore.rules so bounded list fields on /bargains validate every index 0..N."
+    },
+    {
+      "domain_id": "DOMAIN_06",
+      "name": "Input Validation, Parsing, Serialization & Output Encoding",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "src/utils/security.ts",
+        "src/utils/domainSecurityValidators.ts",
+        "src/utils/serverBoundaryProtocol.ts",
+        "src/utils/serverSeoAndSitemap.ts"
+      ],
+      "notes": "Enforces prototype-pollution-safe JSON parsing, CSV formula injection escaping, Leaflet HTML attribute escaping (escapeHtmlAttr), safe JSON-LD serialization, and remediated SEC-FINDING-005 (Overpass QL regex metacharacter stripping and Iran geographic coordinate bounds in serverBoundaryProtocol.ts)."
+    },
+    {
+      "domain_id": "DOMAIN_07",
+      "name": "Frontend, Browser, DOM, Mobile & Client-Side Security",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "index.html",
+        "src/utils/security.ts",
+        "src/components/InteractiveMap.tsx"
+      ],
+      "notes": "Leaflet 1.9.4 loaded with SHA-256 Subresource Integrity (SRI) and crossorigin=anonymous in index.html; all dynamic map tooltips and divIcons escape untrusted strings via escapeHtmlAttr(); external links use buildExternalDivarUrl() and rel='noopener noreferrer'."
+    },
+    {
+      "domain_id": "DOMAIN_08",
+      "name": "Payment, Monetization, Credits, Billing & Financial Logic",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "src/utils/dataCommerceMcpAndMonetization.ts",
+        "src/utils/serverAiAndCommerceRoutes.ts",
+        "src/utils/serverSponsorAndBargainRoutes.ts"
+      ],
+      "notes": "Sponsor tariffs and expiration dates are computed exclusively server-side. Remediated SEC-FINDING-001 in verifyX402PaymentHeaders() (enforcing minimum product price, timestamp freshness window, and replay deduplication) and redacted paid dossier fields in ?simulate=1 mode."
+    },
+    {
+      "domain_id": "DOMAIN_09",
+      "name": "File Upload, Media Processing, Parsing & Object Storage",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "src/utils/serverObjectStorage.ts",
+        "src/utils/serverObjectStorageHelpers.ts",
+        "src/utils/serverBackupAndChunkUploadRoutes.ts",
+        "src/utils/fileSignature.ts"
+      ],
+      "notes": "Enforces magic-byte signature validation, WebP re-encoding via sharp, video container safety checks, atomic 0o600 writes, and path traversal containment. Remediated SEC-FINDING-002 in serverBackupAndChunkUploadRoutes.ts by bounding concurrent chunk sessions per user (<=2) and globally (<=25), validating Base64 chunks, using canonical object keys, and stripping internal localFileName/ownerUid metadata from responses."
+    },
+    {
+      "domain_id": "DOMAIN_10",
+      "name": "SSRF, Outbound Requests, Webhooks & Third-Party Integrations",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "src/utils/serverConfigValidator.ts",
+        "src/utils/serverAdminAndTelegramSecurity.ts",
+        "src/utils/serverBoundaryProtocol.ts",
+        "src/utils/osmTileProxy.ts"
+      ],
+      "notes": "Outbound requests use strict timeouts, fixed upstream origins, DNS/private-IP SSRF guards (validateOutboundUrlAndResolveDns), and Telegram webhook secret + replay deduplication. Remediated SEC-FINDING-005 in serverBoundaryProtocol.ts to strip regex metacharacters from Overpass QL queries and enforce Iran coordinate bounds."
+    },
+    {
+      "domain_id": "DOMAIN_11",
+      "name": "Background Jobs, Queues, Workers, Crons, WebSockets & Async Flows",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverMarketPulseEngine.ts",
+        "src/utils/serverObjectStorageOrphanAudit.ts",
+        "src/utils/telegramAndAsyncJobSecurity801To820.ts"
+      ],
+      "notes": "Single-flight market pulse deduplication (marketPulseFlights), bounded orphan audit pagination (ORPHAN_AUDIT_MAX_JOBS, ORPHAN_AUDIT_MAX_PAGES_PER_STEP), and lease/idempotency guards prevent overlapping background task storms."
+    },
+    {
+      "domain_id": "DOMAIN_12",
+      "name": "Rate Limiting, Quotas, Abuse Prevention & Cost Protection",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "src/utils/serverDeliveryAndAbuseGuard.ts",
+        "src/utils/serverAiAndCommerceRoutes.ts",
+        "src/utils/serverBackupAndChunkUploadRoutes.ts",
+        "src/utils/serverPublisherBargains.ts"
+      ],
+      "notes": "Enforces IP rate buckets, exponential abuse cooldowns, and per-UID quotas. Remediated SEC-FINDING-001, SEC-FINDING-002, and SEC-FINDING-004 by rate-limiting commercial dataset routes, chunked upload init/complete routes, contact-reveal routes, and data-correction routes."
+    },
+    {
+      "domain_id": "DOMAIN_13",
+      "name": "Logging, Monitoring, Auditability, Error Handling & Privacy",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverForensicsAndIncidentResponse.ts",
+        "src/utils/privacyAndDataLifecycle861To880.ts",
+        "src/utils/serverUtilityRoutes.ts"
+      ],
+      "notes": "Enforces explicit privacy consent (buyer-alert-2026-10-v1), 90-day retention metadata, zero buyer PII persistence to disk (.cache-data.json), credential redaction in logs, and hash-chained admin security audit trails."
+    },
+    {
+      "domain_id": "DOMAIN_14",
+      "name": "Cryptography, Randomness, Hashing, Signing & Token Security",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "src/utils/serverAdminSodAndBackupSecurity.ts",
+        "src/utils/dataCommerceMcpAndMonetization.ts",
+        "src/utils/domainSecurityValidators.ts"
+      ],
+      "notes": "Uses AES-256-GCM + scrypt KDF + AAD + HMAC-SHA256 for encrypted backups, CSPRNG (crypto.randomBytes / crypto.getRandomValues) for IDs, and timingSafeEqual for secret/HMAC comparisons. Remediated SEC-FINDING-001 to prevent x402 HMAC signature replay."
+    },
+    {
+      "domain_id": "DOMAIN_15",
+      "name": "Dependencies, Supply Chain, Build, CI/CD & Runtime Containers",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "package.json",
+        "index.html",
+        "scripts/check-architecture.ts"
+      ],
+      "notes": "CDN assets in index.html use pinned versions and SHA-256 SRI hashes; build and architecture integrity are verified via scripts/check-architecture.ts and pinned SHA-256 digests."
+    },
+    {
+      "domain_id": "DOMAIN_16",
+      "name": "Infrastructure, Cloud, IaC, Reverse Proxy, Edge, DNS & Deployment",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverDeliveryAndAbuseGuard.ts",
+        "src/utils/serverConfigValidator.ts",
+        "src/utils/cloudflarePortabilityAndCapabilities.ts"
+      ],
+      "notes": "Trusted proxy hops are strictly bounded (resolveTrustedProxySetting 1..5, default false); canonical redirects validate safe return paths and never trust unvalidated Host headers."
+    },
+    {
+      "domain_id": "DOMAIN_17",
+      "name": "AI / LLM / Agent / Prompt / Tool / RAG / MCP Security",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverUtilityRoutes.ts",
+        "src/utils/serverAiAndCommerceRoutes.ts",
+        "src/utils/dataCommerceMcpAndMonetization.ts",
+        "src/utils/security.ts"
+      ],
+      "notes": "Enforces prompt injection detection (detectPromptInjection), XML delimiter isolation (<untrusted_contract_clause>), strict responseSchema, concurrency cap (activeContractAiCalls < 3), 8s AbortSignal timeout, and read-only zero-PII allowlisted MCP tools."
+    },
+    {
+      "domain_id": "DOMAIN_18",
+      "name": "Search, Indexing, Scraping, Public Content, SEO & Enumeration",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverSeoAndSitemap.ts",
+        "src/utils/freeLiveMarketScraper.ts",
+        "src/utils/httpFirestoreAndStorage701To740.ts"
+      ],
+      "notes": "SSR SEO meta injection escapes HTML text/attributes and serializes JSON-LD safely; robots.txt disallows /api/; public listings never expose ownerUid or unredacted phone numbers in JSON-LD."
+    },
+    {
+      "domain_id": "DOMAIN_19",
+      "name": "State Machines, Concurrency, Idempotency & Business Invariants",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverSponsorAndBargainRoutes.ts",
+        "src/utils/listingLifecycleAndPlatformSecurity.ts",
+        "src/utils/serverObjectStorageCleanup.ts"
+      ],
+      "notes": "Enforces bargain and listing lifecycle state transitions, sponsor reservation idempotency keys, file-locked journal updates, and atomic Firestore batch invariants between /bargains and /bargainOwners."
+    },
+    {
+      "domain_id": "DOMAIN_20",
+      "name": "Feature Flags, Remote Config, Admin Panels & Internal Tools",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/security.ts",
+        "firestore.rules",
+        "src/utils/serverAdminSodAndBackupSecurity.ts"
+      ],
+      "notes": "Client feature flags (loadValidatedFeatureFlags) are strictly UI toggles and never grant privilege; /appConfig/{configId} writes require isAdmin() in Firestore rules; high-risk admin operations support separation-of-duties (SoD) and require primary bootstrap admin."
+    },
+    {
+      "domain_id": "DOMAIN_21",
+      "name": "Import / Export, Archives, Reports, Templates & Document Generation",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverAdminSodAndBackupSecurity.ts",
+        "src/utils/security.ts",
+        "src/utils/serverBackupAndChunkUploadRoutes.ts"
+      ],
+      "notes": "CSV exports neutralize formula injection (escapeCsvCell); archive inspection blocks Zip Slip path traversal, symlinks, and compression bombs (inspectArchiveExtractionSafety); encrypted backups verify AES-256-GCM authTag and HMAC before JSON parsing."
+    },
+    {
+      "domain_id": "DOMAIN_22",
+      "name": "Notifications, Email, SMS, Push, Chat & Messaging Channels",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverAdminAndTelegramSecurity.ts",
+        "src/utils/serverUtilityRoutes.ts",
+        "src/utils/telegramAndAsyncJobSecurity801To820.ts"
+      ],
+      "notes": "Telegram send endpoint rejects client-supplied botToken/channelId (FORBIDDEN_CLIENT_CREDENTIALS), requires admin auth, enforces 60s content hash deduplication, and sanitizes notification templates and links."
+    },
+    {
+      "domain_id": "DOMAIN_23",
+      "name": "Internationalization, Unicode, Encoding, Locale & Text Normalization",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/security.ts",
+        "src/utils/domainSecurityValidators.ts",
+        "src/utils/areaUnit.ts"
+      ],
+      "notes": "Normalizes Persian/Arabic digits before numeric/phone validation (normalizeDigitsToEnglish), strips zero-width/bidi control characters in search normalization, and enforces ASCII-only canonical email identities."
+    },
+    {
+      "domain_id": "DOMAIN_24",
+      "name": "Caching, CDN, Edge State, Browser Storage & Shared Data Leakage",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverDeliveryAndAbuseGuard.ts",
+        "src/utils/security.ts"
+      ],
+      "notes": "Authenticated, admin, and mutation API responses enforce Cache-Control: private, no-store, no-cache, must-revalidate and Vary: Origin, Authorization, X-Admin-Token, Accept-Encoding."
+    },
+    {
+      "domain_id": "DOMAIN_25",
+      "name": "Account Lifecycle, Recovery, Invitations, Delegation & Offboarding",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverAdminAndTelegramSecurity.ts",
+        "src/utils/serverPublisherBargains.ts",
+        "src/utils/identityLifecycleAndBackendGovernance.ts"
+      ],
+      "notes": "Delegated admin lookup verifies role==='admin', canonical email match, and revoked!==true && disabled!==true; account export (/api/account/export-data) and deletion (/api/account/delete) require verified user auth and explicit confirmation."
+    },
+    {
+      "domain_id": "DOMAIN_26",
+      "name": "Testing, Fuzzing, Regression Coverage & Security Verification",
+      "applicable": true,
+      "status": "REMEDIATED",
+      "evidence_files": [
+        "tests/security-remediation-421-840.test.ts",
+        "tests/security-telegram-and-admin.test.ts",
+        "tests/object-storage-security.test.ts",
+        "tests/object-storage-upload-auth.test.ts",
+        "firestore.rules.test.ts"
+      ],
+      "notes": "Added automated regression assertions in tests/security-remediation-421-840.test.ts covering SEC-FINDING-001 through SEC-FINDING-005 and validating .security-remediation/STATE.json and EXECUTION_PROTOCOL.md integrity."
+    },
+    {
+      "domain_id": "DOMAIN_27",
+      "name": "Backup, Restore, Disaster Recovery, Migration & Operational Resilience",
+      "applicable": true,
+      "status": "VERIFIED",
+      "evidence_files": [
+        "src/utils/serverBackupAndChunkUploadRoutes.ts",
+        "src/utils/serverAdminSodAndBackupSecurity.ts",
+        "src/utils/backupConcurrencyAndBusinessInvariants641To660.ts"
+      ],
+      "notes": "Backup export/restore requires primary bootstrap admin (disallowStaticToken: true), AES-256-GCM + HMAC verification, key rotation support, and excludes protected collection keys (admins) during restore preflight."
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-FINDING-001",
+      "title": "x402 Payment Proof Replay, Underpayment Acceptance, and Unredacted Dossier Simulation Bypass",
+      "domain_id": "DOMAIN_08",
+      "classification": "CONFIRMED_VULNERABILITY",
+      "severity": "HIGH",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/dataCommerceMcpAndMonetization.ts",
+        "src/utils/serverAiAndCommerceRoutes.ts"
+      ],
+      "entrypoint": "GET /api/v1/commerce/neighborhood-index & GET /api/v1/commerce/neighborhood-dossier/:hoodId",
+      "evidence": "verifyX402PaymentHeaders() only checked Number(parsed.amountUsdMicros) <= 0 rather than comparing against the product's pricePerRequestUsdMicros, did not validate timestampIso freshness or deduplicate consumed payment proofs against replay, and GET /api/v1/commerce/neighborhood-dossier/:hoodId?simulate=1 returned full unredacted buyPerSqm and rahn80m values without rate limiting.",
+      "remediation_id": "SEC-REM-001"
+    },
+    {
+      "id": "SEC-FINDING-002",
+      "title": "Unbounded Concurrent Chunked Upload Sessions and Internal Storage Metadata Disclosure",
+      "domain_id": "DOMAIN_09",
+      "classification": "CONFIRMED_VULNERABILITY",
+      "severity": "HIGH",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverBackupAndChunkUploadRoutes.ts",
+        "src/utils/serverDeliveryAndAbuseGuard.ts"
+      ],
+      "entrypoint": "POST /api/object-storage/upload-init, POST /api/object-storage/upload-chunk, POST /api/object-storage/upload-complete",
+      "evidence": "activeChunkSessions had no per-user or global session cap and upload-init/upload-complete were not in the upload rate-limit bucket, allowing authenticated callers to allocate unbounded in-memory chunk buffers; upload-complete also returned internal localFileName and ownerUid fields in the HTTP response.",
+      "remediation_id": "SEC-REM-002"
+    },
+    {
+      "id": "SEC-FINDING-003",
+      "title": "Firestore Rules List-Tail Validation Bypass on Bargain Media Arrays",
+      "domain_id": "DOMAIN_05",
+      "classification": "CONFIRMED_VULNERABILITY",
+      "severity": "MEDIUM",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "firestore.rules"
+      ],
+      "entrypoint": "match /bargains/{bargainId} -> isValidBargainSubmission(data)",
+      "evidence": "isValidBargainSubmission() in firestore.rules validated only index [0] of imageUrls (max 5), objectStorageKeys (max 6), and objectStorageObjectIds (max 6), leaving elements at indices 1..N unvalidated for type and string length.",
+      "remediation_id": "SEC-REM-003"
+    },
+    {
+      "id": "SEC-FINDING-004",
+      "title": "Unbounded Publisher Bargain Map Growth, Unvalidated Listing ID, and Unthrottled Contact Reveal / Data Corrections",
+      "domain_id": "DOMAIN_12",
+      "classification": "CONFIRMED_VULNERABILITY",
+      "severity": "MEDIUM",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverPublisherBargains.ts"
+      ],
+      "entrypoint": "POST /api/my-bargains, POST /api/bargains/:id/reveal-contact, POST /api/data-corrections",
+      "evidence": "POST /api/my-bargains did not validate rawId with isValidFirestoreDocId or enforce per-owner/global listing caps on serverPublishedBargains; POST /api/bargains/:id/reveal-contact and POST /api/data-corrections lacked dedicated rate/account quota checks.",
+      "remediation_id": "SEC-REM-004"
+    },
+    {
+      "id": "SEC-FINDING-005",
+      "title": "Overpass QL Regex Metacharacter Injection and Missing Coordinate Bounds on Boundary Resolve Endpoint",
+      "domain_id": "DOMAIN_10",
+      "classification": "CONFIRMED_VULNERABILITY",
+      "severity": "MEDIUM",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverBoundaryProtocol.ts"
+      ],
+      "entrypoint": "POST /api/neighborhood-boundaries/resolve & fetchOverpassWayPolygon()",
+      "evidence": "fetchOverpassWayPolygon() interpolated q.name into an Overpass QL regex clause ([\"name\"~\"...\"]) while only stripping [\"\\\\<>], leaving regex metacharacters unescaped; POST /api/neighborhood-boundaries/resolve did not enforce Iran geographic bounds (lat 24..41, lng 43..64).",
+      "remediation_id": "SEC-REM-005"
+    },
+    {
+      "id": "SEC-FINDING-006",
+      "title": "OSM Tile Proxy Stored XSS via image/svg+xml, Unchecked Raster Magic Bytes, and Unbounded Upstream Tile Size / Inflight Concurrency",
+      "domain_id": "DOMAIN_09",
+      "classification": "CONFIRMED_VULNERABILITY",
+      "severity": "HIGH",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/osmTileProxy.ts"
+      ],
+      "entrypoint": "GET /api/osm-tile/:z/:x/:y & fetchTileFromMirror()",
+      "evidence": "fetchTileFromMirror() only checked contentType.startsWith('image/'), accepting image/svg+xml payloads with executable scripts and caching them for 7 days without magic-byte verification, X-Content-Type-Options: nosniff, a maximum tile byte cap, or an inflight request concurrency limit.",
+      "remediation_id": "SEC-REM-006"
+    },
+    {
+      "id": "SEC-FINDING-007",
+      "title": "Unpersisted pending_delete Media State on Bargain Rejection, Unbounded sponsorIdempotencyMap, and Unthrottled Financial Validation",
+      "domain_id": "DOMAIN_19",
+      "classification": "CONFIRMED_VULNERABILITY",
+      "severity": "MEDIUM",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverSponsorAndBargainRoutes.ts"
+      ],
+      "entrypoint": "POST /api/admin/bargains/approve, POST /api/sponsors/reserve, POST /api/bargains/validate-financials",
+      "evidence": "POST /api/admin/bargains/approve mutated item.deletionState = 'pending_delete' in memory on objectStoreIndex when rejecting a bargain without calling persistObjectStoreIndexNow(), allowing rejected media to become accessible again after server restart; sponsorIdempotencyMap had no size cap; POST /api/bargains/validate-financials lacked IP rate limiting.",
+      "remediation_id": "SEC-REM-007"
+    },
+    {
+      "id": "SEC-FINDING-008",
+      "title": "Unthrottled /api/telegram-digest Market Pulse Trigger and Unbounded recentTelegramIdempotency Map",
+      "domain_id": "DOMAIN_12",
+      "classification": "MISSING_SECURITY_CONTROL",
+      "severity": "MEDIUM",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverUtilityRoutes.ts"
+      ],
+      "entrypoint": "GET /api/telegram-digest & POST /api/send-telegram",
+      "evidence": "GET /api/telegram-digest invoked getOrUpdateMarketPulse() without IP rate limiting, and recentTelegramIdempotency stored message hashes without a capacity cap.",
+      "remediation_id": "SEC-REM-008"
+    },
+    {
+      "id": "SEC-FINDING-009",
+      "domain_id": "DOMAIN_20",
+      "severity": "HIGH",
+      "title": "Runtime Env Config Privilege Boundary, Static Token Mutation & Storage Endpoint SSRF",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverRuntimeEnvStore.ts",
+        "server.ts"
+      ],
+      "entrypoint": "POST /api/admin/env-config (/api/admin/runtime-config, /api/admin/runtime-env)",
+      "evidence": "updateRuntimeEnvConfig() accepted arbitrary strings for FIREBASE_PROJECT_ID, ADMIN_EMAIL, OBJECT_STORAGE_ENDPOINT, and OBJECT_STORAGE_PUBLIC_BASE_URL without validating HTTPS/non-private hostnames or locking FIREBASE_PROJECT_ID, and POST /api/admin/env-config did not set disallowStaticToken: true.",
+      "remediation_id": "SEC-REM-009"
+    },
+    {
+      "id": "SEC-FINDING-010",
+      "domain_id": "DOMAIN_06",
+      "severity": "MEDIUM",
+      "title": "Unvalidated Gemini Grounding URI Scheme and Unbounded Disk Cache Macro Rate Hydration",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverMarketPulseEngine.ts"
+      ],
+      "entrypoint": "performGeminiDeepMarketSearch() & loadDiskPersistedCache()",
+      "evidence": "performGeminiDeepMarketSearch() pushed grounding chunk.web.uri directly into sources without enforcing https:// scheme, and loadDiskPersistedCache() spread parsed.liveMacroRates without numeric clamping.",
+      "remediation_id": "SEC-REM-010"
+    },
+    {
+      "id": "SEC-FINDING-011",
+      "domain_id": "DOMAIN_12",
+      "severity": "LOW",
+      "title": "Unthrottled Air Quality Endpoint Invoking Market Pulse Engine",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "server.ts"
+      ],
+      "entrypoint": "GET /api/air-quality",
+      "evidence": "GET /api/air-quality invoked getOrUpdateMarketPulse(city, false) without per-IP rate limiting.",
+      "remediation_id": "SEC-REM-011"
+    },
+    {
+      "id": "SEC-FINDING-012",
+      "domain_id": "DOMAIN_18",
+      "severity": "MEDIUM",
+      "title": "BREACH Compression Side-Channel on Authenticated Responses & Missing Private Cache Prefixes",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverDeliveryAndAbuseGuard.ts"
+      ],
+      "entrypoint": "compressPayloadIfAccepted() & resolveApiCacheControlHeader()",
+      "evidence": "compressPayloadIfAccepted() applied Brotli/Gzip compression even when hasAuthenticationHeaders(req) or /api/admin/ was true, and resolveApiCacheControlHeader() omitted /api/my- and /api/publisher/ prefixes.",
+      "remediation_id": "SEC-REM-012"
+    },
+    {
+      "id": "SEC-FINDING-013",
+      "domain_id": "DOMAIN_12",
+      "severity": "MEDIUM",
+      "title": "Unbounded Coordinate-Keyed Weather Cache Map",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/freeLiveMarketScraper.ts"
+      ],
+      "entrypoint": "fetchFreeCityWeather()",
+      "evidence": "weatherCache keyed by lat.toFixed(2),lng.toFixed(2) across the Iran bounding box had no maximum entry cap or expired-entry eviction.",
+      "remediation_id": "SEC-REM-013"
+    },
+    {
+      "id": "SEC-FINDING-014",
+      "domain_id": "DOMAIN_11",
+      "severity": "LOW",
+      "title": "Missing X-Content-Type-Options: nosniff on Metadata Routes and Unbounded compareParam Pattern",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverSeoAndSitemap.ts"
+      ],
+      "entrypoint": "injectDynamicSeoMeta() & registerSeoAndSitemapRoutes()",
+      "evidence": "injectDynamicSeoMeta() split compareParam on '-' without validating /^\\d{1,4}-\\d{1,4}$/, and /manifest.json, /sitemap.xml, /robots.txt, and /api/openapi.json did not set X-Content-Type-Options: nosniff.",
+      "remediation_id": "SEC-REM-014"
+    },
+    {
+      "id": "SEC-FINDING-015",
+      "domain_id": "DOMAIN_09",
+      "severity": "MEDIUM",
+      "title": "Unbounded Sharp Image Processing Wait Queue and Unvalidated Env Public Base URL",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/objectStorageUpload.ts"
+      ],
+      "entrypoint": "acquireSharpSlot() & resolveObjectStorageRuntimeConfig()",
+      "evidence": "sharpWaitQueue had no maximum depth limit under concurrent upload spikes, and resolveObjectStorageRuntimeConfig() did not validate OBJECT_STORAGE_PUBLIC_BASE_URL via validateObjectStorageEndpoint().",
+      "remediation_id": "SEC-REM-015"
+    },
+    {
+      "id": "SEC-FINDING-016",
+      "domain_id": "DOMAIN_20",
+      "severity": "MEDIUM",
+      "title": "Unrestricted HTTP or Cloud Metadata Host in getValidatedServerConfig().appUrl",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverConfigValidator.ts"
+      ],
+      "entrypoint": "getValidatedServerConfig()",
+      "evidence": "getValidatedServerConfig() accepted http:// URLs in production and link-local metadata hosts (169.254.169.254, metadata.google.internal) for APP_URL when called outside startup validation.",
+      "remediation_id": "SEC-REM-016"
+    },
+    {
+      "id": "SEC-FINDING-017",
+      "domain_id": "DOMAIN_19",
+      "severity": "MEDIUM",
+      "title": "Unbounded In-Memory Deletion Journal Fallback Store",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/deletionJournal.ts"
+      ],
+      "entrypoint": "InMemoryJournalStore.create()",
+      "evidence": "InMemoryJournalStore.entries Map had no maximum size cap and never evicted completed terminal entries during reconciliation fallback.",
+      "remediation_id": "SEC-REM-017"
+    },
+    {
+      "id": "SEC-FINDING-018",
+      "domain_id": "DOMAIN_24",
+      "severity": "MEDIUM",
+      "title": "Video Container Polyglot and External dref Inspection Limited to First 4096 Bytes",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/fileSignature.ts"
+      ],
+      "entrypoint": "validateVideoContainerSafety() & verifyMediaMagicBytes()",
+      "evidence": "validateVideoContainerSafety() and verifyMediaMagicBytes() only inspected the first 4096 bytes of video/media buffers, missing trailing polyglot <script> payloads or end-of-file moov/dref external URL atoms.",
+      "remediation_id": "SEC-REM-018"
+    },
+    {
+      "id": "SEC-FINDING-019",
+      "domain_id": "DOMAIN_12",
+      "severity": "MEDIUM",
+      "title": "Chunked Upload Routes Missing Per-IP Upload Rate Limiting & TTL Pruning on Chunk/Complete",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverBackupAndChunkUploadRoutes.ts",
+        "src/utils/serverSponsorAndBargainRoutes.ts"
+      ],
+      "entrypoint": "POST /api/object-storage/upload-init, POST /api/object-storage/upload-chunk, POST /api/object-storage/upload-complete",
+      "evidence": "registerBackupAndChunkUploadRoutes() was invoked without rate-limit dependencies and only ran cleanupExpiredChunkSessions() during upload-init, leaving upload-chunk and upload-complete without upload-bucket IP rate limiting or active session TTL pruning.",
+      "remediation_id": "SEC-REM-019"
+    },
+    {
+      "id": "SEC-FINDING-020",
+      "domain_id": "DOMAIN_06",
+      "severity": "MEDIUM",
+      "title": "Unbounded Recursion Depth and Incomplete Credential Key Stripping in serializeFirestoreAndDomainPayloadSafely",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/apiContractsAndSerializationEngine.ts"
+      ],
+      "entrypoint": "serializeFirestoreAndDomainPayloadSafely()",
+      "evidence": "serializeFirestoreAndDomainPayloadSafely() tracked circular references via WeakSet but had no recursion depth cap, array length cap, or stripping of __proto__/constructor/prototype and apiKey/botToken/accessToken/refreshToken keys.",
+      "remediation_id": "SEC-REM-020"
+    },
+    {
+      "id": "SEC-FINDING-021",
+      "domain_id": "DOMAIN_09",
+      "severity": "LOW",
+      "title": "Object Storage Index Loader & Temp File Cleaner Missing lstat Symlink and Size Guards",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverObjectStorageHelpers.ts"
+      ],
+      "entrypoint": "ensureBucketLoaded() & cleanupStaleTemporaryFiles()",
+      "evidence": "ensureBucketLoaded() called readFile(INDEX_FILE) without verifying via lstat that INDEX_FILE is a non-symlink regular file <=10MB, and cleanupStaleTemporaryFiles() used stat() instead of lstat().",
+      "remediation_id": "SEC-REM-021"
+    },
+    {
+      "id": "SEC-FINDING-022",
+      "domain_id": "DOMAIN_21",
+      "severity": "MEDIUM",
+      "title": "Unbounded Backup Ciphertext Length, Prototype Keys in Backup Restore JSON, and Unbounded One-Time Token Store",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverAdminSodAndBackupSecurity.ts",
+        "src/utils/serverForensicsAndIncidentResponse.ts"
+      ],
+      "entrypoint": "decryptAndVerifyEncryptedBackup() & AccountSessionAndRecoveryGuard.issueOneTimeToken()",
+      "evidence": "decryptAndVerifyEncryptedBackup() did not bound ciphertextBase64 length before scryptSync or strip __proto__/constructor/prototype in JSON.parse, and AccountSessionAndRecoveryGuard.tokensByHash had no capacity cap.",
+      "remediation_id": "SEC-REM-022"
+    },
+    {
+      "id": "SEC-FINDING-023",
+      "domain_id": "DOMAIN_19",
+      "severity": "MEDIUM",
+      "title": "Unbounded IdempotencyLedger Store, Circular Reference Crash in canonicalizeJsonValue, and Prototype Keys in OptimisticConcurrencyStore",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverIdempotencyAndConcurrency.ts"
+      ],
+      "entrypoint": "computeCanonicalPayloadFingerprint(), IdempotencyLedger.beginExecution(), OptimisticConcurrencyStore.applyPartialUpdate()",
+      "evidence": "canonicalizeJsonValue() lacked circular reference and depth bounds, IdempotencyLedger.store had no TTL pruning or size ceiling, and OptimisticConcurrencyStore.applyPartialUpdate() did not filter __proto__/constructor/prototype keys.",
+      "remediation_id": "SEC-REM-023"
+    },
+    {
+      "id": "SEC-FINDING-024",
+      "domain_id": "DOMAIN_01",
+      "severity": "MEDIUM",
+      "title": "Unbounded App Check Replay Sets, Unbounded Failure Reason Keys, and Array/CRLF Header Handling",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/appCheck.ts",
+        "src/utils/firebaseAppCheckSecurity901To920.ts"
+      ],
+      "entrypoint": "createRequireAppCheckTokenMiddleware() & verifyAndEnforceAppCheckAndAuthSeparation()",
+      "evidence": "consumedMiddlewareTokenHashes and consumedLimitedUseTokenDigests grew without bound, observabilityStats.byFailureReason had no distinct key cap, and verifyAndEnforceAppCheckAndAuthSeparation() did not reject multi-element array or CRLF/whitespace tokens.",
+      "remediation_id": "SEC-REM-024"
+    },
+    {
+      "id": "SEC-FINDING-025",
+      "domain_id": "DOMAIN_17",
+      "severity": "LOW",
+      "title": "Journal Lock and Record Readers Missing lstat Symlink and Size Guards",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverJournalAdapters.ts"
+      ],
+      "entrypoint": "tryReclaimStaleLockFile() & FileJournalStore.readUnlocked()",
+      "evidence": "tryReclaimStaleLockFile() used stat() instead of lstat() without a lock file size limit, and FileJournalStore.readUnlocked() read journal JSON files without checking lstat() for symlinks or oversized files.",
+      "remediation_id": "SEC-REM-025"
+    },
+    {
+      "id": "SEC-FINDING-026",
+      "domain_id": "DOMAIN_12",
+      "severity": "MEDIUM",
+      "title": "Unbounded DistributedTraceCollector Spans, W3C All-Zero ParentSpanId Acceptance, and Unsanitized PortableMemoryStorageAdapter Metadata",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverStoragePortabilityAndTracing.ts"
+      ],
+      "entrypoint": "DistributedTraceCollector.withSpan(), parseTraceparent(), PortableMemoryStorageAdapter.putObject()",
+      "evidence": "DistributedTraceCollector.spans grew without bound on every traced span and parseTraceparent() accepted all-zero parentSpanId (0000000000000000); PortableMemoryStorageAdapter.putObject() lacked backslash/control-char key validation, capacity bounds, and __proto__/constructor/prototype metadata filtering.",
+      "remediation_id": "SEC-REM-026"
+    },
+    {
+      "id": "SEC-FINDING-027",
+      "domain_id": "DOMAIN_09",
+      "severity": "MEDIUM",
+      "title": "Symlink Following via stat() in Orphan Audit Job Reader/Cleaner and Media File Serving Route",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverObjectStorageOrphanAudit.ts",
+        "src/utils/serverObjectStorage.ts"
+      ],
+      "entrypoint": "loadOrphanAuditJob(), cleanupExpiredOrphanAuditJobs(), GET /api/object-storage/file/:objectId",
+      "evidence": "loadOrphanAuditJob(), cleanupExpiredOrphanAuditJobs(), and GET /api/object-storage/file/:objectId used fs.promises.stat() instead of lstat() with symlink rejection, and loadOrphanAuditJob() did not strip prototype-pollution keys in JSON.parse.",
+      "remediation_id": "SEC-REM-027"
+    },
+    {
+      "id": "SEC-FINDING-028",
+      "domain_id": "DOMAIN_06",
+      "severity": "LOW",
+      "title": "Unbounded Clause Length and Unsanitized contractType Reflection in Local Legal Rule Engines",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/serverLegalRuleEngine.ts",
+        "src/utils/serverAdminAndTelegramSecurity.ts"
+      ],
+      "entrypoint": "runLocalLegalRuleEngine()",
+      "evidence": "runLocalLegalRuleEngine() executed regexes and echoed clauseText/contractType without clamping input length (<=8000 chars) or stripping control characters and HTML angle brackets.",
+      "remediation_id": "SEC-REM-028"
+    },
+    {
+      "id": "SEC-FINDING-029",
+      "domain_id": "DOMAIN_21",
+      "severity": "MEDIUM",
+      "title": "Non-Constant-Time HMAC Comparison on Pagination Cursors & Audit Checkpoints, and Unbounded Rate-Limit Counter Map",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/deepInfrastructureAndRecovery661To700.ts"
+      ],
+      "entrypoint": "decodeAndVerifyPaginationCursor(), verifyAuditChainAgainstCheckpoint(), PersistentRateLimitCoordinator.evaluateLimit()",
+      "evidence": "decodeAndVerifyPaginationCursor() and verifyAuditChainAgainstCheckpoint() used !== instead of crypto.timingSafeEqual for HMAC verification, decodeAndVerifyPaginationCursor() lacked cursor length and prototype-key guards, and PersistentRateLimitCoordinator.sharedCounters grew without bound.",
+      "remediation_id": "SEC-REM-029"
+    },
+    {
+      "id": "SEC-FINDING-030",
+      "domain_id": "DOMAIN_27",
+      "severity": "MEDIUM",
+      "title": "Unbounded Incident/Webhook/Preflight/Tombstone/Challenge Stores and Prototype/ID Mutation in applyVersionedDocumentMutation",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/backupConcurrencyAndBusinessInvariants641To660.ts"
+      ],
+      "entrypoint": "createSecurityIncidentTicket(), DurableWebhookEventIdempotencyStore, runBackupRestorePreflight(), markRecordTombstoned(), applyVersionedDocumentMutation(), issueDestructiveActionChallenge()",
+      "evidence": "In-memory Maps for incidentTickets, webhook idempotency, restorePreflightStore, tombstonedDocumentIds, and destructiveChallenges had no capacity bounds, and applyVersionedDocumentMutation() spread proposedPatch without stripping __proto__/constructor/prototype or locking storedRecord.id.",
+      "remediation_id": "SEC-REM-030"
+    },
+    {
+      "id": "SEC-FINDING-031",
+      "domain_id": "DOMAIN_10",
+      "severity": "MEDIUM",
+      "title": "Unbounded TelegramCallbackTokenRegistry, Unbounded CSV Row Serialization, and /\\ Open-Redirect Path in Notification Links",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/telegramAndAsyncJobSecurity801To820.ts"
+      ],
+      "entrypoint": "TelegramCallbackTokenRegistry.issueCallbackToken(), serializeSafeCsvDocument(), sanitizeNotificationTemplateAndLink()",
+      "evidence": "TelegramCallbackTokenRegistry.tokens grew without pruning expired/consumed tokens, serializeSafeCsvDocument() had no maximum row limit, and sanitizeNotificationTemplateAndLink() did not reject /\\ or control characters in targetPath.",
+      "remediation_id": "SEC-REM-031"
+    },
+    {
+      "id": "SEC-FINDING-032",
+      "domain_id": "DOMAIN_06",
+      "severity": "MEDIUM",
+      "title": "Case-Sensitive HTTP Method-Override Header Check, Unhandled Circular Reference in validateFirestoreDocumentComplexity, and Prefix-Collision Origin Bypass in validateSafeClipboardWriteRequest",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/httpFirestoreAndStorage701To740.ts"
+      ],
+      "entrypoint": "detectForbiddenMethodOverride(), validateFirestoreDocumentComplexity(), validateSafeClipboardWriteRequest()",
+      "evidence": "detectForbiddenMethodOverride() only checked lowercase header keys on raw header maps, validateFirestoreDocumentComplexity() called JSON.stringify(doc) before checking for circular references via WeakSet, and validateSafeClipboardWriteRequest() used raw.startsWith(canonicalOrigin) instead of strict URL origin comparison.",
+      "remediation_id": "SEC-REM-032"
+    },
+    {
+      "id": "SEC-FINDING-033",
+      "domain_id": "DOMAIN_09",
+      "severity": "MEDIUM",
+      "title": "Unbounded Chunk Assembly & Non-Constant-Time Checksum Comparison in verifyUploadedChunksIntegrity, and Encoded Traversal / Root Config Exposure in validateSafeStaticFileTarget",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/domainAndAuthSecurity741To800.ts"
+      ],
+      "entrypoint": "verifyUploadedChunksIntegrity() & validateSafeStaticFileTarget()",
+      "evidence": "verifyUploadedChunksIntegrity() did not bound chunk count or expectedTotalBytes before Buffer.concat or use crypto.timingSafeEqual on SHA-256 hex digests, and validateSafeStaticFileTarget() did not block URL-encoded traversal (%2e/%2f/%5c/%00) or root config files (package.json, tsconfig.json, vite.config.ts, firebase-blueprint.json, architecture-baseline.json).",
+      "remediation_id": "SEC-REM-033"
+    },
+    {
+      "id": "SEC-FINDING-034",
+      "domain_id": "DOMAIN_19",
+      "severity": "LOW",
+      "title": "Unbounded Buffer-to-String Conversion in detectPolyglotOrTrailingPayloadInMedia, Unvalidated Hex Digest in evaluateMediaQuarantineStateTransition, and Unbounded Sponsor/Lease Maps",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/privacyAndDataLifecycle861To880.ts",
+        "src/utils/securityGovernanceLifecycleAndListings.ts"
+      ],
+      "entrypoint": "detectPolyglotOrTrailingPayloadInMedia(), evaluateMediaQuarantineStateTransition(), allocateExclusiveSponsorSlotAtomically(), MarketRefreshGenerationTracker, DistributedJobLeaseCoordinator",
+      "evidence": "detectPolyglotOrTrailingPayloadInMedia() converted full media buffers to strings instead of bounded head/tail windows, evaluateMediaQuarantineStateTransition() did not verify hex SHA-256 format, and activeSponsorSlotByHood / committedGenByCity / DistributedJobLeaseCoordinator.leases lacked TTL pruning and capacity bounds.",
+      "remediation_id": "SEC-REM-034"
+    },
+    {
+      "id": "SEC-FINDING-035",
+      "domain_id": "DOMAIN_10",
+      "severity": "MEDIUM",
+      "title": "Unbounded InboundWebhookAuthenticator Replay Set and Head-Only Polyglot Scan in inspectAndSanitizeImageUploadBuffer",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/supplyChainWebhooksMediaSearchRouting.ts"
+      ],
+      "entrypoint": "InboundWebhookAuthenticator.verifyAndRegisterWebhookEvent() & inspectAndSanitizeImageUploadBuffer()",
+      "evidence": "InboundWebhookAuthenticator.processedEvents grew without bound on every verified webhook event, and inspectAndSanitizeImageUploadBuffer() only inspected the first 128 bytes for active markup, missing trailing PHP/script/SVG polyglot payloads.",
+      "remediation_id": "SEC-REM-035"
+    },
+    {
+      "id": "SEC-FINDING-036",
+      "domain_id": "DOMAIN_06",
+      "severity": "MEDIUM",
+      "title": "Non-Constant-Time CSRF Token Comparison, Unhandled Circular Reference & Prototype Keys in validateBoundedRequestPayload, and Prototype-Backed Patch in filterAllowedMutationFields",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/advancedAppSecAndSupplyChainGovernance.ts"
+      ],
+      "entrypoint": "evaluateCsrfProtection(), validateBoundedRequestPayload(), filterAllowedMutationFields()",
+      "evidence": "evaluateCsrfProtection() used !== instead of crypto.timingSafeEqual, validateBoundedRequestPayload() called JSON.stringify before checking circular references or __proto__/constructor/prototype keys, and filterAllowedMutationFields() used a standard prototype object for sanitizedPatch.",
+      "remediation_id": "SEC-REM-036"
+    },
+    {
+      "id": "SEC-FINDING-037",
+      "domain_id": "DOMAIN_09",
+      "severity": "MEDIUM",
+      "title": "Unbounded Sponsor/Consent Event Stores, Unbounded Listing Price History Revisions, and Head-Only PDF Script Scan in validateContractDocumentBuffer",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/securityGovernance601To639.ts",
+        "src/utils/listingLifecycleAndPlatformSecurity.ts"
+      ],
+      "entrypoint": "appendSponsorFinancialEvent(), recordPurposeSpecificConsent(), appendListingPriceHistory(), validateContractDocumentBuffer()",
+      "evidence": "sponsorFinancialEvents, immutableConsentTrail, currentConsentStateByUidAndPurpose, and appendListingPriceHistory() had no upper capacity bounds, and validateContractDocumentBuffer() only scanned the first 256KB of PDFs up to 5MB for /JavaScript, missing trailer-positioned scripts.",
+      "remediation_id": "SEC-REM-037"
+    },
+    {
+      "id": "SEC-FINDING-038",
+      "domain_id": "DOMAIN_01",
+      "severity": "MEDIUM",
+      "title": "Unbounded OIDC State Map, Unbounded Notification Suppression/Idempotency Stores, and Prototype Keys in Telemetry & Notification Template Maps",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/accessibilityOidcIntegrityAnalyticsCircuit.ts",
+        "src/utils/notificationMobileResidencyPortabilityIam.ts"
+      ],
+      "entrypoint": "OidcAndOAuthFlowSecurityGuard.issueStateAndNonce(), sanitizeTelemetryEventAndUrl(), NotificationDeliverabilityPipeline.submitNotification()",
+      "evidence": "OidcAndOAuthFlowSecurityGuard.activeStates and NotificationDeliverabilityPipeline suppressionSet/sentIdempotencyKeys grew without bound, and sanitizeTelemetryEventAndUrl() / submitNotification() copied untrusted keys into standard objects without filtering __proto__/constructor/prototype.",
+      "remediation_id": "SEC-REM-038"
+    },
+    {
+      "id": "SEC-FINDING-039",
+      "domain_id": "DOMAIN_17",
+      "severity": "MEDIUM",
+      "title": "Protocol-Relative (//) and Traversal (..) Bypass in Printable Report SSRF Check & Push Click URL, and Symlink Following in Build Artifact Auditor",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/pdfJalaliPushErrorBuildAudit.ts"
+      ],
+      "entrypoint": "isSsrfOrLocalResourceUrl(), WebPushSubscriptionLifecycleGuard.buildSafePushNotificationPayload(), auditProductionBuildArtifacts()",
+      "evidence": "isSsrfOrLocalResourceUrl() and buildSafePushNotificationPayload() accepted protocol-relative URLs (//evil.example) and .. segments via permissive /^\\/[A-Za-z0-9_\\-/?.]+$/ regexes, subscriptionsByEndpoint had no size cap, and auditProductionBuildArtifacts() did not skip symbolic links before readFileSync().",
+      "remediation_id": "SEC-REM-039"
+    },
+    {
+      "id": "SEC-FINDING-040",
+      "domain_id": "DOMAIN_19",
+      "severity": "LOW",
+      "title": "Unbounded In-Memory Maps Across Inquiry Lead Guard, Media Provenance Registry, Conversion Funnel, Contact Reveal Guard, and Multi-Tab / Bulk Coordinators",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/leadsMediaOnboardingFunnelTransportAudit.ts",
+        "src/utils/paymentFinopsDesignBoundaryPrivacyAudit.ts",
+        "src/utils/multiTabListingDedupeBulkRaceAudit.ts"
+      ],
+      "entrypoint": "RealEstateInquiryAndLeadGuard, MediaProvenanceAndReuseRegistry, AuthoritativeConversionFunnelTracker, ContactAndLocationPrivacyDisclosureGuard, CrossTabSessionAndDraftCoordinator, SafeBulkOperationCoordinator",
+      "evidence": "In-memory Maps/Sets for inquiries, media provenance, funnel events, contact reveal counters, multi-tab sessions/revisions, listing transition history, and bulk idempotency keys lacked capacity bounds.",
+      "remediation_id": "SEC-REM-040"
+    },
+    {
+      "id": "SEC-FINDING-041",
+      "domain_id": "DOMAIN_11",
+      "severity": "MEDIUM",
+      "title": "Protocol-Relative URL Bypass in Client HREF_OR_SRC_URL Sanitizer and Unbounded Recursion in inspectNestedPrivilegeEscalation",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/xssMassAssignChartBrowserThirdParty.ts"
+      ],
+      "entrypoint": "auditAndSanitizeClientRenderingPayload, enforcePropertyLevelAuthorization, projectPublicListingResponse",
+      "evidence": "auditAndSanitizeClientRenderingPayload matched HREF_OR_SRC_URL against /^\\/[A-Za-z0-9_\\-/?.=&%]*$/ which permitted protocol-relative //evil.example URLs and .. traversal; inspectNestedPrivilegeEscalation recursively traversed nested objects without depth or WeakSet circular-reference guards; projectPublicListingResponse used {} instead of Object.create(null).",
+      "remediation_id": "SEC-REM-041"
+    },
+    {
+      "id": "SEC-FINDING-042",
+      "domain_id": "DOMAIN_19",
+      "severity": "LOW",
+      "title": "Unbounded In-Memory Caches and Sets in Offline Mutation Queue, Viewing Slot Guard, Saved Search Manager, Cache Coherence Manager, and Leased Job Coordinator",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/offlineAppointmentsFavoritesTimeSeriesAuthority.ts",
+        "src/utils/cacheJobsGeospatialIngestionFlags.ts"
+      ],
+      "entrypoint": "OfflineMutationQueueAndConflictResolver, ViewingSlotConcurrencyGuard, FavoritesAndSavedSearchAlertManager, MarketTimeSeriesRevisionGovernor, ScopedCacheCoherenceManager, LeasedBackgroundJobCoordinator",
+      "evidence": "processedIdempotencyKeys, reservedSlots, userFavorites, savedSearches, dispatchedAlertKeys, HistoricalPricePointRecord maps/revisions, ScopedCacheCoherenceManager store/tombstones, and LeasedBackgroundJobCoordinator activeLeases/completedKeys/deadLetterQueue lacked capacity bounds.",
+      "remediation_id": "SEC-REM-042"
+    },
+    {
+      "id": "SEC-FINDING-043",
+      "domain_id": "DOMAIN_03",
+      "severity": "MEDIUM",
+      "title": "Non-Constant-Time HMAC Comparison in Confidential Document Vault, Unvalidated Counter-Offer Price, Shallow Audit Redaction, and Unbounded State Maps",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/sponsoredVaultMapNegotiationAndAuditTrail.ts"
+      ],
+      "entrypoint": "ConfidentialDocumentVaultLifecycleGuard.verifyShortLivedSignedToken, PropertyOfferNegotiationStateMachine.counterOffer, TamperEvidentAdministrativeAuditLedger.appendAdminEvent",
+      "evidence": "verifyShortLivedSignedToken compared HMAC signatures using !== instead of crypto.timingSafeEqual; counterOffer did not validate positive finite newProposedPriceMillionToman or cap revisions; redactAuditSnapshot only redacted top-level keys; in-memory Maps/arrays lacked capacity bounds.",
+      "remediation_id": "SEC-REM-043"
+    },
+    {
+      "id": "SEC-FINDING-044",
+      "domain_id": "DOMAIN_15",
+      "severity": "MEDIUM",
+      "title": "Encoded Slash/Traversal Bypass in validateExternalBrowserNavigationSafety, Unbounded Recursion in redactSensitiveLogPayload, and Unbounded SafeBrowserStorageAdapter",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/webPlatformPwaAndPrivacyEngine.ts"
+      ],
+      "entrypoint": "SafeBrowserStorageAdapter, validateExternalBrowserNavigationSafety, redactSensitiveLogPayload",
+      "evidence": "validateExternalBrowserNavigationSafety allowed /%2f, /%5c, .., and control characters when isInternalRedirectParam=true; redactSensitiveLogPayload recursively traversed nested objects without depth or WeakSet circular-reference guards; SafeBrowserStorageAdapter lacked prototype-key blocking and capacity bounds.",
+      "remediation_id": "SEC-REM-044"
+    },
+    {
+      "id": "SEC-FINDING-045",
+      "domain_id": "DOMAIN_21",
+      "severity": "MEDIUM",
+      "title": "Non-Advancing Migration Loop DoS, Prototype Keys in AI JSON Parser, Symlink/Traversal in Build HTML Asset Verifier, and Unbounded Blob/Moderation Maps",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/timeSeriesLicensingAndBrowserLifecycleGovernance.ts",
+        "src/utils/bootstrapLocalizationAndModerationGovernance.ts",
+        "src/utils/buildReleaseAndSupplyChainEngine.ts"
+      ],
+      "entrypoint": "runVersionedLocalDataMigrations, BlobUrlLifecycleRegistry, parseAndValidateStructuredAiJson, ModerationTaskClaimCoordinator, verifyProductionBuildIntegrityAndHtmlAssets",
+      "evidence": "runVersionedLocalDataMigrations lacked a step-progression and iteration guard; parseAndValidateStructuredAiJson parsed raw LLM JSON without stripping __proto__/constructor/prototype or bounding length; verifyProductionBuildIntegrityAndHtmlAssets did not verify distDir path containment or skip symlinks; BlobUrlLifecycleRegistry and ModerationTaskClaimCoordinator Maps lacked capacity bounds.",
+      "remediation_id": "SEC-REM-045"
+    },
+    {
+      "id": "SEC-FINDING-046",
+      "domain_id": "DOMAIN_09",
+      "severity": "MEDIUM",
+      "title": "Non-Constant-Time Media Signature Verification in MediaDeliveryAndSignedUrlGuard, Shallow Forensic Metadata Redaction, and Unbounded Forensic/Session Maps",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/operationalScaleAndGameDay.ts",
+        "src/utils/serverForensicsAndIncidentResponse.ts"
+      ],
+      "entrypoint": "MediaDeliveryAndSignedUrlGuard.verifySignedMediaAccess, redactMetadataObject, TamperResistantForensicLedger, AccountSessionAndRecoveryGuard",
+      "evidence": "verifySignedMediaAccess compared HMAC signatures using !== instead of crypto.timingSafeEqual; redactMetadataObject only redacted top-level keys and left nested sensitive keys unredacted; TamperResistantForensicLedger.events, AccountSessionAndRecoveryGuard Maps, and MediaDeliveryAndSignedUrlGuard Sets lacked capacity bounds.",
+      "remediation_id": "SEC-REM-046"
+    },
+    {
+      "id": "SEC-FINDING-047",
+      "domain_id": "DOMAIN_06",
+      "severity": "MEDIUM",
+      "title": "Overly Broad .run.app Suffix Match in evaluateCorsOriginPolicy, Unbounded Recursion in computeCanonicalPayloadFingerprint, and Unbounded Cursor Length in decodeAndValidatePaginationCursor",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/idempotencyContentionAndOpsGovernance.ts"
+      ],
+      "entrypoint": "evaluateCorsOriginPolicy, computeCanonicalPayloadFingerprint, decodeAndValidatePaginationCursor",
+      "evidence": "evaluateCorsOriginPolicy allowed any origin ending in .run.app with credentials instead of restricting to HTTPS ais-(dev|pre) Cloud Run origins; computeCanonicalPayloadFingerprint lacked WeakSet circular-reference and depth<=12 bounds; decodeAndValidatePaginationCursor lacked cursor length bounds and prototype-key filtering.",
+      "remediation_id": "SEC-REM-047"
+    },
+    {
+      "id": "SEC-FINDING-048",
+      "domain_id": "DOMAIN_11",
+      "severity": "MEDIUM",
+      "title": "Unfiltered Prototype Keys in sanitizeUserEditableProfilePayload, Unsanitized hoodName/id in migrateLegacyPriceThresholdSubscription, and Unsanitized AI Fields in validateContractAnalysisResult",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/identityLifecycleAndBackendGovernance.ts",
+        "src/utils/buyerAlertsAndCommunityTrust.ts",
+        "src/utils/buyerCorrectionAndAdminGovernance.ts"
+      ],
+      "entrypoint": "sanitizeUserEditableProfilePayload, migrateLegacyPriceThresholdSubscription, validateContractAnalysisResult",
+      "evidence": "SERVER_MANAGED_PROFILE_FIELDS did not include __proto__/constructor/prototype or inspect own property names; migrateLegacyPriceThresholdSubscription passed raw r.hoodName and unbounded r.id without sanitizeInput; validateContractAnalysisResult returned raw AI strings without stripping HTML/control characters or bounding array/field lengths.",
+      "remediation_id": "SEC-REM-048"
+    },
+    {
+      "id": "SEC-FINDING-049",
+      "domain_id": "DOMAIN_21",
+      "severity": "MEDIUM",
+      "title": "Unescaped </AUTHORITATIVE_FACTS> Tag Breakout in buildSandboxedAiPromptEnvelope, Unvalidated modelId Path in buildCloudflareAiGatewayEndpoint, and Unbounded AI Governance Stores",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/aiGovernanceAndObservability.ts",
+        "src/utils/aiModelRegistryAndGateway.ts"
+      ],
+      "entrypoint": "buildSandboxedAiPromptEnvelope, AiContentPublicationLifecycleGate, AiTokenUsageAndCostLedger, ReproducibleBugReportCollector, AiModelRoutingManager, buildCloudflareAiGatewayEndpoint",
+      "evidence": "buildSandboxedAiPromptEnvelope serialized authoritativeFacts without stripping closing </AUTHORITATIVE_FACTS> tags; buildCloudflareAiGatewayEndpoint interpolated modelId without validating against .. traversal or invalid characters; in-memory AI governance Maps/arrays lacked upper capacity bounds.",
+      "remediation_id": "SEC-REM-049"
+    },
+    {
+      "id": "SEC-FINDING-050",
+      "domain_id": "DOMAIN_09",
+      "severity": "MEDIUM",
+      "title": "Unbounded In-Memory Event Deduplication Set, Pending Batch, Committed Events, and Feedback Rate-Limit Maps in productAnalyticsEngine.ts",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/productAnalyticsEngine.ts"
+      ],
+      "entrypoint": "CentralizedRadarAnalyticsCollector.track, CentralizedRadarAnalyticsCollector.flushBatch, InAppFeedbackManager.submitFeedback",
+      "evidence": "seenEventIds, pendingBatch, committedEvents, items, and hourlySubmissionsByActor grew without upper capacity limits or FIFO eviction.",
+      "remediation_id": "SEC-REM-050"
+    },
+    {
+      "id": "SEC-FINDING-051",
+      "domain_id": "DOMAIN_24",
+      "severity": "MEDIUM",
+      "title": "CSV Header Formula Injection & Embedded Newlines in buildReproducibleCrmReport, Unredacted Phone/Email PII in createSanitizedAgencyAuditEvent, and Prototype Keys in CRM Deduplication Maps",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/agencyCrmWorkflowAndReportingEngine.ts",
+        "src/utils/agencyEnterpriseOperationsAndGovernanceEngine.ts"
+      ],
+      "entrypoint": "detectCustomerContactDuplicates, buildReproducibleCrmReport, detectAndResolveLeadOwnershipConflicts, appendCounterOfferImmutable, createSanitizedAgencyAuditEvent",
+      "evidence": "buildReproducibleCrmReport joined raw header keys without quoting/formula escaping and left CR/LF newlines inside CSV cells; createSanitizedAgencyAuditEvent did not redact Iranian mobile numbers or email addresses; CRM duplicate/ownership maps used plain {} instead of Object.create(null).",
+      "remediation_id": "SEC-REM-051"
+    },
+    {
+      "id": "SEC-FINDING-052",
+      "domain_id": "DOMAIN_19",
+      "severity": "HIGH",
+      "title": "Unbounded 15-Minute Step Loop CPU DoS in computeBusinessHoursElapsed, Unbounded Outbox Processed IDs, and Unchecked NaN/Infinity Inputs in simulateMortgageEarlyRepaymentAndSellerProceeds",
+      "status": "VERIFIED_FIXED",
+      "affected_files": [
+        "src/utils/agencyAutomationOutboxAndSlaEngine.ts",
+        "src/utils/legalContractIntelligenceAndAgencyWorkspace.ts"
+      ],
+      "entrypoint": "computeBusinessHoursElapsed, processBusinessEventDeterministic, redactSensitiveContractContent, simulateMortgageEarlyRepaymentAndSellerProceeds",
+      "evidence": "computeBusinessHoursElapsed iterated in 15-minute increments from startMs to endMs without clamping the time span or checking Number.isFinite, allowing multi-year or MAX_SAFE_INTEGER timestamps to lock the Node.js event loop; simulateMortgageEarlyRepaymentAndSellerProceeds did not guard against NaN/Infinity inputs.",
+      "remediation_id": "SEC-REM-052"
+    }
+  ],
+  "remediations": [
+    {
+      "id": "SEC-REM-001",
+      "finding_id": "SEC-FINDING-001",
+      "summary": "Enforced minimum product price (pricePerRequestUsdMicros), timestamp freshness window (10m TTL), and SHA-256 proof digest replay protection in verifyX402PaymentHeaders(); added rate limiting and redacted paid dossier pricing fields in ?simulate=1 mode on commercial routes.",
+      "modified_files": [
+        "src/utils/dataCommerceMcpAndMonetization.ts",
+        "src/utils/serverAiAndCommerceRoutes.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-002",
+      "finding_id": "SEC-FINDING-002",
+      "summary": "Enforced MAX_ACTIVE_CHUNK_SESSIONS_PER_USER (2) and MAX_ACTIVE_CHUNK_SESSIONS_TOTAL (25), strict Base64 chunk validation, canonical buildListingObjectKey generation, and stripping of internal localFileName/ownerUid metadata in upload-complete, plus upload rate-bucket enforcement in serverDeliveryAndAbuseGuard.ts.",
+      "modified_files": [
+        "src/utils/serverBackupAndChunkUploadRoutes.ts",
+        "src/utils/serverDeliveryAndAbuseGuard.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-003",
+      "finding_id": "SEC-FINDING-003",
+      "summary": "Hardened isValidBargainSubmission() in firestore.rules to validate type and maximum length across all indices 0..4 of imageUrls and 0..5 of objectStorageKeys and objectStorageObjectIds.",
+      "modified_files": [
+        "firestore.rules"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-004",
+      "finding_id": "SEC-FINDING-004",
+      "summary": "Enforced isValidFirestoreDocId(rawId), valid Iranian mobile check on contactPhone, per-owner active listing quota (<=25), and global listing cap (<=500) in POST /api/my-bargains, plus IP rate limiting and per-account quotas on POST /api/bargains/:id/reveal-contact and POST /api/data-corrections.",
+      "modified_files": [
+        "src/utils/serverPublisherBargains.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-005",
+      "finding_id": "SEC-FINDING-005",
+      "summary": "Added sanitizeOverpassNeighborhoodName() stripping all regex/Overpass metacharacters before Overpass QL interpolation, and enforced Iran geographic bounding box (lat 24..41, lng 43..64) in computeApproxHexRing() and POST /api/neighborhood-boundaries/resolve.",
+      "modified_files": [
+        "src/utils/serverBoundaryProtocol.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-006",
+      "finding_id": "SEC-FINDING-006",
+      "summary": "Restricted fetchTileFromMirror() to explicit raster MIME types (image/png, image/jpeg, image/webp), added PNG/JPEG/WebP magic-byte verification, enforced MAX_TILE_BYTES (512 KB) and MAX_INFLIGHT_TILE_REQUESTS (64), and set X-Content-Type-Options: nosniff on /api/osm-tile/:z/:x/:y.",
+      "modified_files": [
+        "src/utils/osmTileProxy.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-007",
+      "finding_id": "SEC-FINDING-007",
+      "summary": "Persisted objectStoreIndex via persistObjectStoreIndexNow() when marking rejected bargain media as pending_delete, bounded sponsorIdempotencyMap to <=250 entries, and rate-limited POST /api/bargains/validate-financials.",
+      "modified_files": [
+        "src/utils/serverSponsorAndBargainRoutes.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-008",
+      "finding_id": "SEC-FINDING-008",
+      "summary": "Added IP rate limiting to GET /api/telegram-digest and bounded recentTelegramIdempotency to <=200 entries in POST /api/send-telegram.",
+      "modified_files": [
+        "src/utils/serverUtilityRoutes.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-009",
+      "finding_id": "SEC-FINDING-009",
+      "summary": "Locked FIREBASE_PROJECT_ID against runtime hijacking, enforced HTTPS + non-private hostname validation (isSafeHttpsStorageUrl) on OBJECT_STORAGE_ENDPOINT and OBJECT_STORAGE_PUBLIC_BASE_URL, validated ADMIN_EMAIL format in updateRuntimeEnvConfig(), and enforced disallowStaticToken: true on POST /api/admin/env-config.",
+      "modified_files": [
+        "src/utils/serverRuntimeEnvStore.ts",
+        "server.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-010",
+      "finding_id": "SEC-FINDING-010",
+      "summary": "Restricted grounding chunk URIs in performGeminiDeepMarketSearch() to strict https:// URLs and clamped gold18kToman/usdToman bounds during loadDiskPersistedCache() hydration.",
+      "modified_files": [
+        "src/utils/serverMarketPulseEngine.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-011",
+      "finding_id": "SEC-FINDING-011",
+      "summary": "Added per-IP rate limiting (60 req/min) to GET /api/air-quality in server.ts.",
+      "modified_files": [
+        "server.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-012",
+      "finding_id": "SEC-FINDING-012",
+      "summary": "Bypassed HTTP compression in compressPayloadIfAccepted() when hasAuthenticationHeaders(req) or /api/admin/ is present (BREACH defense), and added /api/my- and /api/publisher/ to private no-store paths in resolveApiCacheControlHeader().",
+      "modified_files": [
+        "src/utils/serverDeliveryAndAbuseGuard.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-013",
+      "finding_id": "SEC-FINDING-013",
+      "summary": "Bounded weatherCache in fetchFreeCityWeather() to MAX_WEATHER_CACHE_ENTRIES (128) with TTL pruning and oldest-entry eviction.",
+      "modified_files": [
+        "src/utils/freeLiveMarketScraper.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-014",
+      "finding_id": "SEC-FINDING-014",
+      "summary": "Enforced strict /^\\d{1,4}-\\d{1,4}$/ validation on compareParam in injectDynamicSeoMeta() and set X-Content-Type-Options: nosniff on /manifest.json, /sitemap.xml, /robots.txt, and /api/openapi.json.",
+      "modified_files": [
+        "src/utils/serverSeoAndSitemap.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-015",
+      "finding_id": "SEC-FINDING-015",
+      "summary": "Validated OBJECT_STORAGE_PUBLIC_BASE_URL via validateObjectStorageEndpoint() in resolveObjectStorageRuntimeConfig() and bounded sharpWaitQueue to MAX_SHARP_WAIT_QUEUE (16) in acquireSharpSlot().",
+      "modified_files": [
+        "src/utils/objectStorageUpload.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-016",
+      "finding_id": "SEC-FINDING-016",
+      "summary": "Enforced HTTPS-only APP_URL in production and rejected cloud metadata/private hosts (169.254.169.254, metadata.google.internal) in getValidatedServerConfig().",
+      "modified_files": [
+        "src/utils/serverConfigValidator.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-017",
+      "finding_id": "SEC-FINDING-017",
+      "summary": "Bounded InMemoryJournalStore.entries to <=1000 records with completed-entry pruning and oldest-entry eviction in deletionJournal.ts.",
+      "modified_files": [
+        "src/utils/deletionJournal.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-018",
+      "finding_id": "SEC-FINDING-018",
+      "summary": "Extended validateVideoContainerSafety() and verifyMediaMagicBytes() in fileSignature.ts to inspect both the first 4096 bytes and the trailing 4096 bytes for polyglot scripts and external dref URLs.",
+      "modified_files": [
+        "src/utils/fileSignature.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-019",
+      "finding_id": "SEC-FINDING-019",
+      "summary": "Passed rate-limit dependencies from registerSponsorAndBargainRoutes into registerBackupAndChunkUploadRoutes and enforced upload-bucket IP rate limiting and cleanupExpiredChunkSessions() across upload-init, upload-chunk, and upload-complete.",
+      "modified_files": [
+        "src/utils/serverBackupAndChunkUploadRoutes.ts",
+        "src/utils/serverSponsorAndBargainRoutes.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-020",
+      "finding_id": "SEC-FINDING-020",
+      "summary": "Enforced maximum recursion depth (<=12), array length cap (<=500), prototype-key stripping (__proto__, constructor, prototype), and extended credential key scrubbing (apiKey, botToken, accessToken, refreshToken) in serializeFirestoreAndDomainPayloadSafely().",
+      "modified_files": [
+        "src/utils/apiContractsAndSerializationEngine.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-021",
+      "finding_id": "SEC-FINDING-021",
+      "summary": "Added lstat symlink and <=10MB file size validation before reading INDEX_FILE in ensureBucketLoaded() and switched cleanupStaleTemporaryFiles() to lstat() with symlink rejection.",
+      "modified_files": [
+        "src/utils/serverObjectStorageHelpers.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-022",
+      "finding_id": "SEC-FINDING-022",
+      "summary": "Bounded ciphertextBase64 length (<=20MB) and stripped __proto__/constructor/prototype in JSON.parse reviver inside decryptAndVerifyEncryptedBackup(), and bounded AccountSessionAndRecoveryGuard.tokensByHash to <=1000 entries.",
+      "modified_files": [
+        "src/utils/serverAdminSodAndBackupSecurity.ts",
+        "src/utils/serverForensicsAndIncidentResponse.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-023",
+      "finding_id": "SEC-FINDING-023",
+      "summary": "Added circular-reference WeakSet and depth<=12 bounds to canonicalizeJsonValue(), bounded IdempotencyLedger.store to <=2000 entries with TTL pruning, and stripped __proto__/constructor/prototype in OptimisticConcurrencyStore.applyPartialUpdate().",
+      "modified_files": [
+        "src/utils/serverIdempotencyAndConcurrency.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-024",
+      "finding_id": "SEC-FINDING-024",
+      "summary": "Bounded consumedMiddlewareTokenHashes and consumedLimitedUseTokenDigests to <=5000 entries, capped observabilityStats.byFailureReason to <=64 distinct keys, and rejected multi-value array or CRLF/whitespace App Check headers.",
+      "modified_files": [
+        "src/utils/appCheck.ts",
+        "src/utils/firebaseAppCheckSecurity901To920.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-025",
+      "finding_id": "SEC-FINDING-025",
+      "summary": "Switched tryReclaimStaleLockFile() and FileJournalStore.readUnlocked() in serverJournalAdapters.ts to lstat() with symlink rejection and strict file size bounds (<=16KB for locks, <=256KB for journal entries).",
+      "modified_files": [
+        "src/utils/serverJournalAdapters.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-026",
+      "finding_id": "SEC-FINDING-026",
+      "summary": "Capped DistributedTraceCollector.spans to <=2000 entries, rejected all-zero W3C parentSpanId in parseTraceparent(), and hardened PortableMemoryStorageAdapter.putObject() against backslash/control-char keys, oversized objects, unbounded store growth (<=1000), and prototype-pollution metadata keys.",
+      "modified_files": [
+        "src/utils/serverStoragePortabilityAndTracing.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-027",
+      "finding_id": "SEC-FINDING-027",
+      "summary": "Switched loadOrphanAuditJob(), cleanupExpiredOrphanAuditJobs(), and GET /api/object-storage/file/:objectId from stat() to lstat() with symlink rejection, and stripped __proto__/constructor/prototype in loadOrphanAuditJob() JSON.parse.",
+      "modified_files": [
+        "src/utils/serverObjectStorageOrphanAudit.ts",
+        "src/utils/serverObjectStorage.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-028",
+      "finding_id": "SEC-FINDING-028",
+      "summary": "Clamped legal clause input to <=8000 chars and stripped ASCII control characters and HTML angle brackets from both clauseText and contractType in runLocalLegalRuleEngine() across serverLegalRuleEngine.ts and serverAdminAndTelegramSecurity.ts.",
+      "modified_files": [
+        "src/utils/serverLegalRuleEngine.ts",
+        "src/utils/serverAdminAndTelegramSecurity.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-029",
+      "finding_id": "SEC-FINDING-029",
+      "summary": "Enforced crypto.timingSafeEqual HMAC verification in decodeAndVerifyPaginationCursor() and verifyAuditChainAgainstCheckpoint(), bounded cursor length (<=4096) with prototype-key stripping, and capped PersistentRateLimitCoordinator.sharedCounters at <=5000 entries.",
+      "modified_files": [
+        "src/utils/deepInfrastructureAndRecovery661To700.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-030",
+      "finding_id": "SEC-FINDING-030",
+      "summary": "Bounded incidentTickets (<=500), DurableWebhookEventIdempotencyStore (<=2000), restorePreflightStore (<=100), tombstonedDocumentIds (<=5000), and destructiveChallenges (<=250), and stripped __proto__/constructor/prototype while preserving immutable id in applyVersionedDocumentMutation().",
+      "modified_files": [
+        "src/utils/backupConcurrencyAndBusinessInvariants641To660.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-031",
+      "finding_id": "SEC-FINDING-031",
+      "summary": "Bounded TelegramCallbackTokenRegistry.tokens to <=1000 entries with expired/consumed pruning, enforced <=5000 row limit in serializeSafeCsvDocument(), and blocked /\\ and control-char open-redirect paths in sanitizeNotificationTemplateAndLink().",
+      "modified_files": [
+        "src/utils/telegramAndAsyncJobSecurity801To820.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-032",
+      "finding_id": "SEC-FINDING-032",
+      "summary": "Normalized header keys to lowercase in detectForbiddenMethodOverride(), added WeakSet circular-reference detection and try/catch around JSON.stringify in validateFirestoreDocumentComplexity(), and enforced parsed URL origin equality in validateSafeClipboardWriteRequest().",
+      "modified_files": [
+        "src/utils/httpFirestoreAndStorage701To740.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-033",
+      "finding_id": "SEC-FINDING-033",
+      "summary": "Enforced <=500 chunks, <=64MB expectedTotalBytes, pre-concat byte accounting, and crypto.timingSafeEqual SHA-256 verification in verifyUploadedChunksIntegrity(), and blocked URL-encoded traversal (%2e/%2f/%5c/%00) and root config files in validateSafeStaticFileTarget().",
+      "modified_files": [
+        "src/utils/domainAndAuthSecurity741To800.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-034",
+      "finding_id": "SEC-FINDING-034",
+      "summary": "Bounded detectPolyglotOrTrailingPayloadInMedia() to 8KB head+tail windows with onload=/onerror= detection, enforced hex SHA-256 validation in evaluateMediaQuarantineStateTransition(), and added TTL pruning, lease TTL validation, and Map capacity bounds in securityGovernanceLifecycleAndListings.ts.",
+      "modified_files": [
+        "src/utils/privacyAndDataLifecycle861To880.ts",
+        "src/utils/securityGovernanceLifecycleAndListings.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-035",
+      "finding_id": "SEC-FINDING-035",
+      "summary": "Bounded InboundWebhookAuthenticator.processedEvents to <=5000 entries with FIFO eviction and expanded inspectAndSanitizeImageUploadBuffer() to scan both 2KB head and 2KB tail windows for <svg, <html, <script, <?php, and javascript:.",
+      "modified_files": [
+        "src/utils/supplyChainWebhooksMediaSearchRouting.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-036",
+      "finding_id": "SEC-FINDING-036",
+      "summary": "Enforced crypto.timingSafeEqual in evaluateCsrfProtection(), added WeakSet circular-reference and __proto__/constructor/prototype rejection before JSON.stringify in validateBoundedRequestPayload(), and switched filterAllowedMutationFields() to Object.create(null).",
+      "modified_files": [
+        "src/utils/advancedAppSecAndSupplyChainGovernance.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-037",
+      "finding_id": "SEC-FINDING-037",
+      "summary": "Capped sponsorFinancialEvents (<=2000), immutableConsentTrail (<=5000), currentConsentStateByUidAndPurpose (<=5000), and appendListingPriceHistory() (<=200 revisions), and extended validateContractDocumentBuffer() to inspect both the first 256KB and trailing 256KB of PDF files for /JavaScript, /JS, /Launch, /EmbeddedFiles, and /RichMedia.",
+      "modified_files": [
+        "src/utils/securityGovernance601To639.ts",
+        "src/utils/listingLifecycleAndPlatformSecurity.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-038",
+      "finding_id": "SEC-FINDING-038",
+      "summary": "Pruned expired/consumed OIDC states and capped activeStates (<=2000), capped NotificationDeliverabilityPipeline suppressionSet (<=5000) and sentIdempotencyKeys (<=2000), and switched sanitizeTelemetryEventAndUrl() and submitNotification() to Object.create(null) with __proto__/constructor/prototype filtering.",
+      "modified_files": [
+        "src/utils/accessibilityOidcIntegrityAnalyticsCircuit.ts",
+        "src/utils/notificationMobileResidencyPortabilityIam.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-039",
+      "finding_id": "SEC-FINDING-039",
+      "summary": "Blocked protocol-relative (//, /\\) and .. traversal URLs in isSsrfOrLocalResourceUrl() and buildSafePushNotificationPayload(), capped subscriptionsByEndpoint (<=5000), and skipped symbolic links in auditProductionBuildArtifacts().",
+      "modified_files": [
+        "src/utils/pdfJalaliPushErrorBuildAudit.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-040",
+      "finding_id": "SEC-FINDING-040",
+      "summary": "Enforced capacity bounds across RealEstateInquiryAndLeadGuard, MediaProvenanceAndReuseRegistry, AuthoritativeConversionFunnelTracker, ContactAndLocationPrivacyDisclosureGuard, CrossTabSessionAndDraftCoordinator, executeListingStateTransition history, and SafeBulkOperationCoordinator.",
+      "modified_files": [
+        "src/utils/leadsMediaOnboardingFunnelTransportAudit.ts",
+        "src/utils/paymentFinopsDesignBoundaryPrivacyAudit.ts",
+        "src/utils/multiTabListingDedupeBulkRaceAudit.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-041",
+      "finding_id": "SEC-FINDING-041",
+      "summary": "Blocked protocol-relative (//, /\\) and .. URLs in auditAndSanitizeClientRenderingPayload(), added WeakSet circular-reference and depth<=12 protection in inspectNestedPrivilegeEscalation(), and switched projectPublicListingResponse() to Object.create(null).",
+      "modified_files": [
+        "src/utils/xssMassAssignChartBrowserThirdParty.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-042",
+      "finding_id": "SEC-FINDING-042",
+      "summary": "Enforced FIFO capacity bounds and TTL clamping across OfflineMutationQueueAndConflictResolver, ViewingSlotConcurrencyGuard, FavoritesAndSavedSearchAlertManager, MarketTimeSeriesRevisionGovernor, ScopedCacheCoherenceManager, and LeasedBackgroundJobCoordinator.",
+      "modified_files": [
+        "src/utils/offlineAppointmentsFavoritesTimeSeriesAuthority.ts",
+        "src/utils/cacheJobsGeospatialIngestionFlags.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-043",
+      "finding_id": "SEC-FINDING-043",
+      "summary": "Enforced crypto.timingSafeEqual signature verification and token length bounds in ConfidentialDocumentVaultLifecycleGuard, positive finite price and revision bounds in PropertyOfferNegotiationStateMachine.counterOffer(), recursive sensitive key redaction with Object.create(null) in TamperEvidentAdministrativeAuditLedger, and FIFO capacity bounds across all Maps/logs.",
+      "modified_files": [
+        "src/utils/sponsoredVaultMapNegotiationAndAuditTrail.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-044",
+      "finding_id": "SEC-FINDING-044",
+      "summary": "Blocked prototype keys and capped memoryFallback (<=500) in SafeBrowserStorageAdapter, blocked /%2f, /%5c, .., and control characters in validateExternalBrowserNavigationSafety(), and added WeakSet circular-reference and depth<=8 protection with Object.create(null) in redactSensitiveLogPayload().",
+      "modified_files": [
+        "src/utils/webPlatformPwaAndPrivacyEngine.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-045",
+      "finding_id": "SEC-FINDING-045",
+      "summary": "Added step progression and <=50 iteration guard in runVersionedLocalDataMigrations(), capped BlobUrlLifecycleRegistry.activeUrls (<=1000) and ModerationTaskClaimCoordinator.claims (<=2000), stripped __proto__/constructor/prototype in parseAndValidateStructuredAiJson(), and enforced distDir path containment and symlink skipping in verifyProductionBuildIntegrityAndHtmlAssets().",
+      "modified_files": [
+        "src/utils/timeSeriesLicensingAndBrowserLifecycleGovernance.ts",
+        "src/utils/bootstrapLocalizationAndModerationGovernance.ts",
+        "src/utils/buildReleaseAndSupplyChainEngine.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-046",
+      "finding_id": "SEC-FINDING-046",
+      "summary": "Enforced crypto.timingSafeEqual in MediaDeliveryAndSignedUrlGuard.verifySignedMediaAccess(), recursively redacted nested objects with Object.create(null) in redactMetadataObject(), and enforced capacity bounds across MediaDeliveryAndSignedUrlGuard, SloBurnRateAndAlertDeduplicator, TamperResistantForensicLedger, and AccountSessionAndRecoveryGuard.",
+      "modified_files": [
+        "src/utils/operationalScaleAndGameDay.ts",
+        "src/utils/serverForensicsAndIncidentResponse.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-047",
+      "finding_id": "SEC-FINDING-047",
+      "summary": "Restricted .run.app CORS origins in evaluateCorsOriginPolicy() to /^https:\\/\\/ais-(dev|pre)-[a-z0-9-]+-\\d+\\.[a-z0-9-]+\\.run\\.app$/, added WeakSet circular-reference and depth<=12 protection in computeCanonicalPayloadFingerprint(), and added <=2048 length bound and prototype-key filtering in decodeAndValidatePaginationCursor().",
+      "modified_files": [
+        "src/utils/idempotencyContentionAndOpsGovernance.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-048",
+      "finding_id": "SEC-FINDING-048",
+      "summary": "Added __proto__/constructor/prototype blocking via Object.getOwnPropertyNames in sanitizeUserEditableProfilePayload(), sanitized id and hoodName in migrateLegacyPriceThresholdSubscription(), and sanitized/bounded all AI output fields in validateContractAnalysisResult().",
+      "modified_files": [
+        "src/utils/identityLifecycleAndBackendGovernance.ts",
+        "src/utils/buyerAlertsAndCommunityTrust.ts",
+        "src/utils/buyerCorrectionAndAdminGovernance.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-049",
+      "finding_id": "SEC-FINDING-049",
+      "summary": "Stripped </AUTHORITATIVE_FACTS> and </UNTRUSTED_USER_CONTENT> breakout tags from serialized authoritativeFacts in buildSandboxedAiPromptEnvelope(), validated modelId against /^[@a-zA-Z0-9._/-]{2,80}$/ (without ..) in buildCloudflareAiGatewayEndpoint(), and enforced capacity bounds across AiContentPublicationLifecycleGate, AiTokenUsageAndCostLedger, ReproducibleBugReportCollector, and AiModelRoutingManager.",
+      "modified_files": [
+        "src/utils/aiGovernanceAndObservability.ts",
+        "src/utils/aiModelRegistryAndGateway.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-050",
+      "finding_id": "SEC-FINDING-050",
+      "summary": "Capped CentralizedRadarAnalyticsCollector.seenEventIds (<=5000), pendingBatch (<=1000), and committedEvents (<=5000), and capped InAppFeedbackManager.items (<=2000) and hourlySubmissionsByActor (<=2000) in productAnalyticsEngine.ts.",
+      "modified_files": [
+        "src/utils/productAnalyticsEngine.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-051",
+      "finding_id": "SEC-FINDING-051",
+      "summary": "Switched detectCustomerContactDuplicates() and detectAndResolveLeadOwnershipConflicts() to Object.create(null) with prototype-key filtering, sanitized CSV headers and stripped CR/LF with <=5000 row cap in buildReproducibleCrmReport(), capped counter-offer history (<=100) in appendCounterOfferImmutable(), and added Iranian mobile and email redaction to createSanitizedAgencyAuditEvent().",
+      "modified_files": [
+        "src/utils/agencyCrmWorkflowAndReportingEngine.ts",
+        "src/utils/agencyEnterpriseOperationsAndGovernanceEngine.ts"
+      ],
+      "verified": true
+    },
+    {
+      "id": "SEC-REM-052",
+      "finding_id": "SEC-FINDING-052",
+      "summary": "Clamped endMs to startMs + 366 days and guarded non-finite timestamps in computeBusinessHoursElapsed(), capped nextProcessedIds (<=5000) in processBusinessEventDeterministic(), bounded input length (<=100,000) in redactSensitiveContractContent(), and guarded against NaN/Infinity inputs in simulateMortgageEarlyRepaymentAndSellerProceeds().",
+      "modified_files": [
+        "src/utils/agencyAutomationOutboxAndSlaEngine.ts",
+        "src/utils/legalContractIntelligenceAndAgencyWorkspace.ts"
+      ],
+      "verified": true
+    }
+  ],
+  "tests": [
+    {
+      "suite": "tests/security-remediation-421-840.test.ts",
+      "command": "npx tsx tests/security-remediation-421-840.test.ts",
+      "status": "PASSED",
+      "coverage_notes": "Verifies Tasks 421-920 plus SEC-FINDING-001 through SEC-FINDING-052 (x402 underpayment & replay rejection, chunk upload session quota, rate limiting & Base64 validation, Firestore rules full-array index validation, publisher listing quota & ID validation, Overpass QL regex sanitization, OSM tile proxy SVG/magic-byte/size hardening, sponsor & bargain index persistence, runtime env SSRF/project-ID protection, BREACH compression defense, Sharp queue cap, APP_URL SSRF/HTTPS validation, video tail polyglot detection, safe domain payload serialization depth/secret scrubbing, backup restore ciphertext & prototype guards, idempotency ledger circular/depth & capacity bounds, App Check replay & header hardening, trace/storage portability bounds, orphan audit & media serving symlink protection, legal engine sanitization, constant-time cursor/checkpoint verification, versioned mutation prototype/ID protection, notification redirect hardening, case-insensitive method override & circular Firestore doc & strict URL origin clipboard guards, static file root config & encoded traversal guards, media quarantine SHA-256 & job lease TTL bounds, image tail polyglot & bounded request payload circular/prototype guards, PDF trailer script detection, protocol-relative SSRF/push/HREF URL guards, circular nested privilege escalation guard, constant-time vault & media token verification, counterOffer price validation, recursive audit & forensic redaction, migration cycle guard, AI JSON prototype stripping, Cloud Run CORS prefix restriction, AUTHORITATIVE_FACTS breakout stripping, Cloudflare AI Gateway modelId validation, CRM CSV header/newline sanitization, agency audit mobile/email redaction, SLA business-hours CPU DoS clamp, and .security-remediation state schema)."
+    },
+    {
+      "suite": "scripts/run-firestore-rules-tests.ts",
+      "command": "npm run test:rules:static",
+      "status": "PASSED",
+      "coverage_notes": "Verifies static structural audit and data integrity regressions on firestore.rules."
+    },
+    {
+      "suite": "tests/architecture-guardrails.test.ts",
+      "command": "npx tsx tests/architecture-guardrails.test.ts",
+      "status": "PASSED",
+      "coverage_notes": "Verifies zero architecture violations, universal <=290-line ceiling across all 242 repository source files, and RMEP-001 reconciliation."
+    },
+    {
+      "suite": "Full Mandatory Verification Suite (AGENTS.md Rule 4)",
+      "command": "npm run lint && npm run arch:check && npm test && npx tsx tests/stress-50-cycles.test.ts && npx tsx tests/object-storage-upload-auth.test.ts && npx tsx tests/object-storage-security.test.ts && npx tsx tests/object-storage-range.test.ts && npm run build",
+      "status": "PASSED",
+      "coverage_notes": "End-to-end typecheck, architecture check, unit/security/storage/assessment/insights suites, 50-cycle stress test, and production Vite bundle build."
+    }
+  ],
+  "blockers": [
+    {
+      "id": "SEC-BLOCKER-EXT-001",
+      "status": "BLOCKED",
+      "title": "Live Production Firestore Rules Rollout & Cloud Secret Provisioning",
+      "reason": "Per Section 8 of the Autonomous Security Remediation Protocol, autonomous deployment to live production (deploy_firebase) and rotation/provisioning of live external secrets (BACKUP_ENCRYPTION_KEY, X402_SIGNING_SECRET, TELEGRAM_BOT_TOKEN, Cloudflare R2/AI Gateway credentials) require explicit operator authorization outside local code remediation.",
+      "required_operator_action": "Review local diff and run deploy_firebase / provision production environment secrets when ready for live rollout."
+    }
+  ],
+  "remaining_actions": [],
+  "completion_status": "REMEDIATION_COMPLETE_WITH_RECORDED_RESIDUAL_RISKS",
+  "completion_evidence": {
+    "all_27_domains_reviewed": true,
+    "all_local_findings_remediated_and_verified": true,
+    "residual_risks": [
+      "In-memory rate limiting, x402 replay deduplication, and chunk upload session tracking operate per Node.js process instance; multi-instance horizontal scaling requires a shared Redis/Cloudflare Durable Object backing store.",
+      "Live production Firestore rules deployment and external secret rotation remain gated on explicit operator authorization (SEC-BLOCKER-EXT-001)."
+    ]
+  }
+}

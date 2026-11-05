@@ -1,0 +1,294 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Explicit administrator role registry for Tehran Housing Radar (keyed by Firebase UID)",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["admin"], "description": "Explicit administrator role" },
+        "email": { "type": "string", "description": "Optional verified administrator email address" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Role assignment timestamp" }
+      },
+      "required": ["role"]
+    },
+    "ResidentVote": {
+      "title": "ResidentVote",
+      "description": "A resident's quality-of-life scorecard vote for a neighborhood (1 doc per user per neighborhood: {uid}_hood_{hoodId})",
+      "type": "object",
+      "properties": {
+        "hoodId": { "type": "number", "description": "Neighborhood ID (1 to 999)" },
+        "hoodName": { "type": "string", "description": "Neighborhood Persian name" },
+        "userId": { "type": "string", "description": "Firebase Auth UID of the voter" },
+        "userDisplayName": { "type": "string", "description": "Display name of the voter" },
+        "air": { "type": "number", "description": "Air quality score (1-10)" },
+        "powerWater": { "type": "number", "description": "Power & water stability score (1-10)" },
+        "internet": { "type": "number", "description": "Internet & mobile signal score (1-10)" },
+        "metro": { "type": "number", "description": "Public transit access score (1-10)" },
+        "security": { "type": "number", "description": "Night security & lighting score (1-10)" },
+        "flatTerrain": { "type": "number", "description": "Walkability & flat slope score (1-10)" },
+        "comment": { "type": "string", "description": "Short resident review (max 500 chars)" },
+        "locationVerified": { "type": "boolean", "description": "Whether browser geolocation matched neighborhood" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Initial vote creation timestamp" },
+        "lastUpdatedAt": { "type": "string", "format": "date-time", "description": "Last vote update timestamp (enforces 24h cooldown)" }
+      },
+      "required": [
+        "hoodId",
+        "hoodName",
+        "userId",
+        "userDisplayName",
+        "air",
+        "powerWater",
+        "internet",
+        "metro",
+        "security",
+        "flatTerrain",
+        "comment",
+        "locationVerified",
+        "createdAt",
+        "lastUpdatedAt"
+      ]
+    },
+    "BargainSubmission": {
+      "title": "BargainSubmission",
+      "description": "Publicly visible below-market property listing (>10% below neighborhood average) without exposing creator UID",
+      "type": "object",
+      "properties": {
+        "hoodId": { "type": "number", "description": "Neighborhood ID (1 to 999)" },
+        "title": { "type": "string", "description": "Property title (max 160 chars)" },
+        "type": { "type": "string", "enum": ["خرید", "اجاره"], "description": "Deal type" },
+        "sqm": { "type": "number", "description": "Area in square meters (25 to 1000)" },
+        "priceText": { "type": "string", "description": "Formatted price description" },
+        "discountPercent": { "type": "number", "description": "Verified discount below neighborhood average (10 to 60)" },
+        "buyerProfitText": { "type": "string", "description": "Formatted buyer profit summary" },
+        "street": { "type": "string", "description": "Approximate street or alley" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Moderation lifecycle status" },
+        "imageUrl": { "type": "string", "description": "Optional primary property photo URL" },
+        "imageUrls": { "type": "array", "items": { "type": "string" }, "description": "Optional list of uploaded image URLs" },
+        "videoUrl": { "type": "string", "description": "Optional short property video URL" },
+        "objectStorageBucket": { "type": "string", "description": "Optional S3/Object Storage bucket name" },
+        "objectStorageKeys": { "type": "array", "items": { "type": "string" }, "description": "Optional S3 object keys" },
+        "objectStorageObjectIds": { "type": "array", "items": { "type": "string" }, "description": "Optional Object Storage object IDs" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Submission timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Optional last moderation update timestamp" }
+      },
+      "required": [
+        "hoodId",
+        "title",
+        "type",
+        "sqm",
+        "priceText",
+        "discountPercent",
+        "buyerProfitText",
+        "street",
+        "createdAt"
+      ]
+    },
+    "BargainOwnership": {
+      "title": "BargainOwnership",
+      "description": "Private ownership mapping linking a public bargain listing to its creator UID",
+      "type": "object",
+      "properties": {
+        "bargainId": { "type": "string", "description": "Document ID of the corresponding bargain in /bargains/{bargainId}" },
+        "userId": { "type": "string", "description": "Firebase Auth UID of the creator" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["bargainId", "userId", "createdAt"]
+    },
+    "NeighborhoodOverride": {
+      "title": "NeighborhoodOverride",
+      "description": "Overrides for static seed neighborhood prices and sponsor status across all cities (keyed by hoodId 1 to 999)",
+      "type": "object",
+      "properties": {
+        "hoodId": { "type": "number", "description": "Neighborhood ID (1 to 999)" },
+        "buyPerSqm": { "type": "number", "description": "Updated average buy price per sqm (Million Tomans)" },
+        "rahn80m": { "type": "number", "description": "Updated average 80m full deposit (Million Tomans)" },
+        "pros": { "type": "string", "description": "Updated neighborhood pros text" },
+        "cons": { "type": "string", "description": "Updated neighborhood cons text" },
+        "sponsor": { "type": "object", "description": "Optional active neighborhood sponsor metadata" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last admin update timestamp" }
+      },
+      "required": ["hoodId", "buyPerSqm", "rahn80m", "updatedAt"]
+    },
+    "SponsorRequest": {
+      "title": "SponsorRequest",
+      "description": "CRM request for exclusive neighborhood realtor sponsorship",
+      "type": "object",
+      "properties": {
+        "hoodId": { "type": "number", "description": "Target neighborhood ID (1 to 999)" },
+        "hoodName": { "type": "string", "description": "Target neighborhood name" },
+        "agencyName": { "type": "string", "description": "Real estate agency or agent name" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "specialty": { "type": "string", "description": "Agent specialty description" },
+        "experienceYears": { "type": "number", "description": "Years of experience" },
+        "monthlyTariffMillion": { "type": "number", "description": "Monthly tariff in Million Tomans" },
+        "planMonths": { "type": "number", "description": "Subscription duration in months (1 or 3)" },
+        "totalPayableMillion": { "type": "number", "description": "Total payable amount in Million Tomans" },
+        "trackingCode": { "type": "string", "description": "Payment tracking code" },
+        "expiresAtIso": { "type": "string", "description": "Expiration ISO date string" },
+        "status": { "type": "string", "enum": ["pending", "approved"], "description": "Approval status" },
+        "createdBy": { "type": "string", "description": "Firebase Auth UID of the requester" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Submission timestamp" }
+      },
+      "required": [
+        "hoodId",
+        "hoodName",
+        "agencyName",
+        "phone",
+        "specialty",
+        "experienceYears",
+        "monthlyTariffMillion",
+        "planMonths",
+        "totalPayableMillion",
+        "trackingCode",
+        "expiresAtIso",
+        "status",
+        "createdBy",
+        "createdAt"
+      ]
+    },
+    "PublicSponsorProjection": {
+      "title": "PublicSponsorProjection",
+      "description": "Publicly readable approved neighborhood sponsor card (keyed by hoodId 1 to 999)",
+      "type": "object",
+      "properties": {
+        "hoodId": { "type": "number", "description": "Neighborhood ID (1 to 999)" },
+        "hoodName": { "type": "string", "description": "Neighborhood Persian name" },
+        "agencyName": { "type": "string", "description": "Approved agency or advisor name" },
+        "phone": { "type": "string", "description": "Public business contact number" },
+        "specialty": { "type": "string", "description": "Specialty description" },
+        "experienceYears": { "type": "number", "description": "Years of experience (1 to 60)" },
+        "planMonths": { "type": "number", "description": "Subscription duration in months (1 or 3)" },
+        "expiresAtIso": { "type": "string", "description": "Subscription expiration ISO timestamp" },
+        "verified": { "type": "boolean", "description": "Verified badge status" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last projection update timestamp" }
+      },
+      "required": [
+        "hoodId",
+        "hoodName",
+        "agencyName",
+        "phone",
+        "specialty",
+        "experienceYears",
+        "planMonths",
+        "expiresAtIso",
+        "verified",
+        "updatedAt"
+      ]
+    },
+    "BuyerAlertLead": {
+      "title": "BuyerAlertLead",
+      "description": "Buyer or renter alert subscription for below-market property notifications",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the subscriber" },
+        "hoodId": { "type": "number", "description": "Target neighborhood ID (1 to 999)" },
+        "hoodName": { "type": "string", "description": "Target neighborhood name" },
+        "fullName": { "type": "string", "description": "Subscriber full name" },
+        "phone": { "type": "string", "description": "Subscriber mobile number" },
+        "dealType": { "type": "string", "enum": ["خرید", "رهن و اجاره", "اجاره"], "description": "Deal type" },
+        "maxBudgetText": { "type": "string", "description": "Maximum budget description" },
+        "privacyConsent": { "type": "boolean", "description": "Explicit 90-day privacy consent flag" },
+        "consentVersion": { "type": "string", "description": "Privacy consent policy version identifier" },
+        "consentAtIso": { "type": "string", "description": "Consent grant ISO timestamp" },
+        "expiresAtIso": { "type": "string", "description": "90-day retention expiration ISO timestamp" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Subscription timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Optional update timestamp" }
+      },
+      "required": ["userId", "hoodId", "hoodName", "fullName", "phone", "dealType", "maxBudgetText", "createdAt"]
+    },
+    "FeatureFlagsConfig": {
+      "title": "FeatureFlagsConfig",
+      "description": "Global feature toggles managed from the Admin dashboard",
+      "type": "object",
+      "properties": {
+        "enableCommissionCalc": { "type": "boolean", "description": "Toggle commission calculator module" },
+        "enableMultiCity": { "type": "boolean", "description": "Toggle multi-city radar module" },
+        "enableSponsorBilling": { "type": "boolean", "description": "Toggle paid sponsor billing plans" },
+        "enableAiContractCheck": { "type": "boolean", "description": "Toggle AI contract legal advisor" },
+        "enableTelegramFeed": { "type": "boolean", "description": "Toggle Telegram channel digest generator" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": [
+        "enableCommissionCalc",
+        "enableMultiCity",
+        "enableSponsorBilling",
+        "enableAiContractCheck",
+        "enableTelegramFeed",
+        "updatedAt"
+      ]
+    },
+    "UserPreference": {
+      "title": "UserPreference",
+      "description": "Saved user budget, commute hub, and favorite neighborhoods",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner" },
+        "mode": { "type": "string", "enum": ["rent", "buy"], "description": "Last active radar mode" },
+        "deposit": { "type": "number", "description": "Saved deposit in Million Tomans" },
+        "monthlyRent": { "type": "number", "description": "Saved monthly rent in Million Tomans" },
+        "buyTotalBudget": { "type": "number", "description": "Saved total buy budget in Million Tomans" },
+        "targetSqm": { "type": "number", "description": "Saved target apartment area in sqm" },
+        "workHubId": { "type": "string", "description": "Selected commute work hub ID" },
+        "favoriteHoodIds": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "List of bookmarked neighborhood IDs (max 25)"
+        },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last saved timestamp" }
+      },
+      "required": [
+        "userId",
+        "mode",
+        "deposit",
+        "monthlyRent",
+        "buyTotalBudget",
+        "targetSqm",
+        "workHubId",
+        "favoriteHoodIds",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Explicit administrator role registry keyed by Firebase Auth UID"
+    },
+    "/votes/{voteId}": {
+      "schema": { "$ref": "#/entities/ResidentVote" },
+      "description": "Public resident scorecard votes for neighborhoods"
+    },
+    "/bargains/{bargainId}": {
+      "schema": { "$ref": "#/entities/BargainSubmission" },
+      "description": "Public below-market bargain listings (PII-free)"
+    },
+    "/bargainOwners/{bargainId}": {
+      "schema": { "$ref": "#/entities/BargainOwnership" },
+      "description": "Private ownership records for bargain listings"
+    },
+    "/neighborhoodOverrides/{hoodId}": {
+      "schema": { "$ref": "#/entities/NeighborhoodOverride" },
+      "description": "Admin price and sponsor overrides for neighborhoods (1..999)"
+    },
+    "/sponsorRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/SponsorRequest" },
+      "description": "Realtor sponsorship CRM requests"
+    },
+    "/publicSponsors/{hoodId}": {
+      "schema": { "$ref": "#/entities/PublicSponsorProjection" },
+      "description": "Publicly visible approved sponsor projection per neighborhood"
+    },
+    "/buyerAlerts/{alertId}": {
+      "schema": { "$ref": "#/entities/BuyerAlertLead" },
+      "description": "Buyer alert leads (writeable by authenticated owner, readable only by owner or admin)"
+    },
+    "/appConfig/{configId}": {
+      "schema": { "$ref": "#/entities/FeatureFlagsConfig" },
+      "description": "Global application configuration and feature flags"
+    },
+    "/userPreferences/{userId}": {
+      "schema": { "$ref": "#/entities/UserPreference" },
+      "description": "Private user preferences and bookmarked neighborhoods"
+    }
+  }
+}

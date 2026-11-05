@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#059669" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="رادار مسکن" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Primary SEO Meta Tags -->
+    <title>رادار مسکن و محله‌های تهران و کلان‌شهرها | مقایسه قیمت خرید، رهن و اجاره، ترافیک و هوا</title>
+    <meta name="description" content="رادار هوشمند محله‌های تهران، کرج، مشهد، اصفهان و شیراز: مقایسه زنده میانگین قیمت خرید و رهن آپارتمان، شاخص کیفیت هوا (AQI)، دسترسی مترو و ترافیک، بودجه‌سنج هوشمند و امتیاز واقعی ساکنین." />
+    <meta name="keywords" content="رادار مسکن تهران, قیمت آپارتمان تهران, رهن و اجاره تهران, مقایسه محله های تهران, بهترین محله تهران برای زندگی, شاخص آلودگی هوای محلات تهران, بودجه خرید خانه تهران, قیمت مسکن کرج مشهد اصفهان شیراز" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link rel="canonical" href="https://radartehran.ir/" id="canonical-url-tag" />
+
+    <!-- Open Graph / Telegram / WhatsApp / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fa_IR" />
+    <meta property="og:url" content="https://radartehran.ir/" id="og-url-tag" />
+    <meta property="og:site_name" content="رادار هوشمند مسکن ایران" />
+    <meta property="og:title" content="رادار مسکن و محله‌های تهران و کلان‌شهرها | نقشه حرارتی قیمت، هوا و ترافیک" />
+    <meta property="og:description" content="با بودجه شما کدام محله تهران یا کلان‌شهرها برای خرید یا اجاره مناسب‌تر است؟ بررسی زنده قیمت متری، رهن کامل، آلودگی هوا، مترو و نظرات واقعی ساکنین." />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="رادار مسکن و محله‌های تهران و کلان‌شهرها | مقایسه هوشمند محلات" />
+    <meta name="twitter:description" content="مقایسه زنده قیمت خرید و رهن آپارتمان، کیفیت هوا، دسترسی مترو و امتیاز ساکنین در محله‌های تهران و کلان‌شهرها." />
+
+    <!-- JSON-LD Structured Data (Schema.org WebApplication + RealEstateAgent Dataset) -->
+    <script type="application/ld+json" id="seo-jsonld-schema">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "رادار هوشمند محله‌ها و مسکن تهران و کلان‌شهرها",
+        "alternateName": "Tehran & Iran Multi-City Housing & Neighborhood Radar",
+        "applicationCategory": "RealEstateApplication",
+        "operatingSystem": "Web, iOS, Android (PWA)",
+        "inLanguage": "fa-IR",
+        "description": "سامانه تحلیل مکانی، مقایسه قیمت خرید و رهن و اجاره مسکن، پایش زنده کیفیت هوا و دسترسی ترافیکی محله‌های تهران، کرج، مشهد، اصفهان و شیراز.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "IRR"
+        }
+      }
+    </script>
+
+    <!-- فونت وزیرمتن (Vazirmatn) برای خوانایی عالی اعداد و متون فارسی -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- استایل و اسکریپت نقشه واقعی Leaflet با Subresource Integrity (SRI) -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body class="bg-slate-50 text-slate-900 select-none overflow-hidden">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

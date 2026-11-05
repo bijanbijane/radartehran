@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "1.0.0",
+  "thresholds": {
+    "warningLines": 300,
+    "reviewLines": 400,
+    "maxLinesNewFile": 500
+  },
+  "datasetExclusions": {
+    "src/data/neighborhoods.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains the canonical Tehran neighborhoods seed dataset, landmarks, and core evaluation formulas."
+    },
+    "src/data/neighborhoodInsights.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains street-by-street Micro-Hoods, schools, metro stations, and hidden traps for neighborhoods."
+    },
+    "src/data/multiCityData.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains seed datasets for Karaj, Mashhad, Isfahan, and Shiraz plus statutory commission tables."
+    },
+    "src/data/tehranCityRemainingHoods.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains static seed dataset for remaining Tehran city neighborhoods (IDs 36..60)."
+    },
+    "src/data/tehranCountiesHoods.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains static seed dataset for Tehran province counties and suburbs (IDs 61..80)."
+    },
+    "src/data/tehranExtendedInsights.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains static growth, traffic, and street-level insights for extended Tehran neighborhoods (IDs 36..99)."
+    },
+    "src/data/iranNorthWestEastHoods.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains static seed dataset for North, North-West, East, and North-East Iran neighborhoods."
+    },
+    "src/data/iranCentralSouthHoods.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains static seed dataset for Central, Zagros, South, and Persian Gulf Iran neighborhoods."
+    },
+    "src/data/iranProvincesDirectory.ts": {
+      "category": "static-dataset-and-domain-seed",
+      "maxLines": 290,
+      "rationale": "Contains static directory of all 31 Iranian provinces and their target coordinates."
+    }
+  },
+  "trackedLegacyFiles": {
+    "src/App.tsx": {
+      "baselineLines": 560,
+      "maxLines": 100,
+      "targetLines": 100,
+      "rationale": "Root composition & provider shell; decomposed to 62 lines (< 100 LOC per ARGON-4 [RULE-01]) with layout extracted to src/components/RadarWorkspaceShell.tsx."
+    }
+  }
+}

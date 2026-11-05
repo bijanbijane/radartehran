@@ -1,0 +1,85 @@
+:root {
+  /* Strict Z-Index Token System [RULE-15] */
+  --z-map-canvas: 0;
+  --z-map-overlays: 10;
+  --z-floating-pills: 20;
+  --z-inspector-drawer: 30;
+  --z-top-navigation: 40;
+  --z-active-dropdown: 50;
+  --z-modal-backdrop: 60;
+  --z-toast-notification: 70;
+  --z-critical-error-banner: 80;
+
+  /* Dynamic Viewport Safe Area [RULE-05] */
+  --app-height: 100dvh;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Tabular Numerals & RTL Number Isolation [RULE-10] */
+.radar-tabular-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  display: inline-block;
+}
+
+/* High-Contrast GIS Price Badges (WCAG 2.2 AA >= 4.5:1) [RULE-10] */
+.radar-map-price-badge {
+  background-color: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+/* Mobile Ergonomics & Scroll Trap Prevention [RULE-05] */
+.radar-drawer-scroll-container {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.radar-drawer-drag-handle {
+  touch-action: none;
+  user-select: none;
+}
+
+.radar-interactive-chip {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* GPU-Composited Marker Pulse Animation [RULE-06] */
+@keyframes radarMarkerPulseGpu {
+  0%, 100% {
+    transform: scale3d(1, 1, 1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale3d(1.16, 1.16, 1);
+    opacity: 0.65;
+  }
+}
+
+.radar-gpu-marker-pulse {
+  will-change: transform, opacity;
+  animation: radarMarkerPulseGpu 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Landscape Mobile Guard [RULE-05] */
+@media (max-height: 480px) and (orientation: landscape) {
+  .radar-floating-top-bar {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .radar-modal-dialog,
+  .radar-drawer-scroll-container {
+    max-height: 88dvh !important;
+    overflow-y: auto !important;
+  }
+}

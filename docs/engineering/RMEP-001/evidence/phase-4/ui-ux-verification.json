@@ -1,0 +1,25 @@
+{
+  "phase": "PHASE-4",
+  "program_id": "RMEP-001",
+  "timestamp_utc": "2026-11-01T21:02:00Z",
+  "verification_status": "VERIFIED",
+  "accessibility": {
+    "standard": "WCAG 2.2 AA",
+    "touch_target_min_px": 44,
+    "contrast_ratio_min_text": "4.5:1",
+    "focus_management": "useDialogFocus trap + Escape key handler",
+    "status": "PASS"
+  },
+  "localization": {
+    "direction": "rtl",
+    "font": "Vazirmatn",
+    "language": "fa-IR",
+    "currency_display": "تومان / میلیون تومان",
+    "plain_persian_glossary": "RADAR_PLAIN_PERSIAN_TERMINOLOGY_GLOSSARY (verified)"
+  },
+  "tests": [
+    "tests/prompts-541-to-600-docs-ux-and-architecture.test.ts (PASS)",
+    "tests/mode-switcher-highlight.test.ts (PASS)",
+    "tests/expandable-comparison.test.ts (PASS)"
+  ]
+}

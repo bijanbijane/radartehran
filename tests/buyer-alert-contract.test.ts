@@ -1,0 +1,1166 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { isValidIranianMobile, cleanIranianMobile } from '../src/utils/security';
+import type { BuyerAlertLeadItem } from '../src/types/models';
+
+console.log('--- Running Buyer Alert Contract Tests ---');
+
+// 1. Mobile number validation and normalization
+assert.equal(isValidIranianMobile('09123456789'), true, 'Valid mobile accepted');
+assert.equal(isValidIranianMobile('۰۹۱۲۳۴۵۶۷۸۹'), true, 'Persian digits mobile accepted');
+assert.equal(isValidIranianMobile('0912-345-6789'), true, 'Dashed mobile accepted');
+assert.equal(isValidIranianMobile('0912 345 6789'), true, 'Spaced mobile accepted');
+assert.equal(isValidIranianMobile('12345'), false, 'Short number rejected');
+assert.equal(isValidIranianMobile('099999999999'), false, '12-digit number rejected');
+assert.equal(cleanIranianMobile('۰۹۱۲-۳۴۵-۶۷۸۹'), '09123456789', 'Formatted mobile cleaned properly');
+
+// 2. Retention and Consent Contract
+const now = new Date();
+const nowIso = now.toISOString();
+const expiresDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+const expiresIso = expiresDate.toISOString();
+
+const validLead: BuyerAlertLeadItem = {
+  id: 'lead-test-1',
+  fullName: 'علی رضایی',
+  phone: '09123456789',
+  hoodId: 5,
+  hoodName: 'سعادت آباد',
+  dealType: 'خرید',
+  maxBudgetText: '۱۰ تا ۱۲ میلیارد',
+  createdAtFa: '۱۴۰۵/۰۲/۰۱',
+  createdAtIso: nowIso,
+  expiresAtIso: expiresIso,
+  consentAtIso: nowIso,
+  consentVersion: 'buyer-alert-2026-10-v1',
+  submittedByUid: 'user-uid-123',
+};
+
+assert.equal(validLead.consentVersion, 'buyer-alert-2026-10-v1', 'Consent version contract matches');
+assert.ok(validLead.expiresAtIso, 'Expiry date ISO is present');
+const expiryDiffDays = (new Date(validLead.expiresAtIso!).getTime() - new Date(validLead.createdAtIso!).getTime()) / (24 * 60 * 60 * 1000);
+assert.ok(expiryDiffDays >= 89 && expiryDiffDays <= 91, 'Lead retention is within 90 days');
+
+// 3. Firestore Contract & UX Hierarchy Regression Assertions (WS-001)
+const crudSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useRadarCrudActions.ts'), 'utf8');
+assert.ok(
+  crudSrc.includes('await updateDoc(alertRef, { ...mutableAlertFields, updatedAt: serverTimestamp() })'),
+  'buyerAlerts updateDoc must send only mutableAlertFields + updatedAt to satisfy firestore.rules affectedKeys()'
+);
+assert.ok(
+  !crudSrc.includes('if (hoodId < 100)') && !crudSrc.includes('p.selectedHoodId < 100'),
+  'Multi-city neighborhoods (1..999) must not be excluded from local state updates'
+);
+
+const adminSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useRadarAdminActions.ts'), 'utf8');
+assert.ok(
+  !adminSrc.includes("'publicSponsors'"),
+  'Admin sponsor actions must write to canonical neighborhoodOverrides instead of unprovisioned publicSponsors'
+);
+
+const tabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorTabs.tsx'), 'utf8');
+assert.ok(
+  tabsSrc.includes('cloudVotes.filter((v) => v.hoodId === selectedHood.id)'),
+  'Resident reviews in NeighborhoodInspectorTabs must filter cloudVotes by selectedHood.id'
+);
+
+const drawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf8');
+const tabsIndex = drawerSrc.indexOf('anatomyTabsRef');
+const forecastIndex = drawerSrc.indexOf('<SmartPriceForecastCard');
+assert.ok(
+  tabsIndex > 0 && forecastIndex > tabsIndex,
+  'Primary navigation tabs (anatomyTabsRef) must appear above SmartPriceForecastCard so tabs are visible above the fold'
+);
+
+// 4. WS-003 Regression: sponsorRequests Firestore contract & AgencyModal discount ceiling UX
+assert.ok(
+  crudSrc.includes('...(p.isVerifiedAdmin ? { expiresAtIso } : {})'),
+  'sponsorRequests creation must omit expiresAtIso for non-admin users to satisfy firestore.rules line 411'
+);
+
+const agencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf8');
+assert.ok(
+  agencyModalSrc.includes('liveBargainCheck.discountPercent > 60') &&
+    agencyModalSrc.includes('اعمال ۱۰٪ تخفیف'),
+  'AgencyModal must distinguish discountPercent > 60 from < 10 and provide 1-click discount preset buttons'
+);
+
+const sponsorTabSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencySponsorReservationTab.tsx'), 'utf8');
+assert.ok(
+  sponsorTabSrc.includes('sanitizeInput(sponsorAgencyName, 90).length < 2'),
+  'AgencySponsorReservationTab must validate agencyName minimum length (>= 2 chars) before submitting'
+);
+
+// 5. WS-004 Regression: Server sponsor/bargain route mounting, sponsor release persistence & multi-city resolution
+const utilityRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverUtilityRoutes.ts'), 'utf8');
+assert.ok(
+  utilityRoutesSrc.includes('registerSponsorAndBargainRoutes(app, { checkRateLimit, getClientIp })'),
+  'serverUtilityRoutes must mount registerSponsorAndBargainRoutes so sponsor and bargain endpoints are active'
+);
+assert.ok(
+  utilityRoutesSrc.includes('rawDealType === "رهن و اجاره"'),
+  'serverUtilityRoutes /api/buyer-alerts must accept and normalize رهن و اجاره to اجاره'
+);
+
+const sponsorRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverSponsorAndBargainRoutes.ts'), 'utf8');
+assert.ok(
+  sponsorRoutesSrc.includes(".set({ sponsor: null }, { merge: true })"),
+  '/api/admin/sponsors/release must persist { sponsor: null } to neighborhoodOverrides/{hoodId}'
+);
+assert.ok(
+  sponsorRoutesSrc.includes('resolveServerNeighborhood') && sponsorRoutesSrc.includes('getAllMultiCityNeighborhoods()'),
+  'serverSponsorAndBargainRoutes must resolve multi-city neighborhoods (1..999) via getAllMultiCityNeighborhoods()'
+);
+
+// 6. WS-005 Regression: Cross-city comparison resolution, single flyTo selection & canonical SEO/URL lookup
+const appSrc =
+  fs.readFileSync(path.join(process.cwd(), 'src/App.tsx'), 'utf8') +
+  fs.readFileSync(path.join(process.cwd(), 'src/components/RadarWorkspaceShell.tsx'), 'utf8');
+const appOrDerivedSrc = appSrc + fs.readFileSync(path.join(process.cwd(), 'src/components/useAppPersistenceAndDerivedState.ts'), 'utf8');
+assert.ok(
+  appOrDerivedSrc.includes('nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId1)') &&
+    appOrDerivedSrc.includes('nationwideEvaluatedNeighborhoods.find((n) => n.id === ui.compareId2)'),
+  'App.tsx / useAppPersistenceAndDerivedState compHood1 and compHood2 must fall back to nationwideEvaluatedNeighborhoods for cross-city comparison'
+);
+assert.ok(
+  appSrc.includes('ui.setBargainHoodId(hood.id); ui.setSponsorHoodId(hood.id); ui.setAlertHoodId(hood.id);'),
+  'handleSelectNeighborhood must sync bargainHoodId, sponsorHoodId, and alertHoodId to the selected neighborhood'
+);
+
+const urlSyncSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useAppUrlAndTitleSync.ts'), 'utf8');
+assert.ok(
+  urlSyncSrc.includes('getAllMultiCityNeighborhoods().map'),
+  'useAppUrlAndTitleSync must use getAllMultiCityNeighborhoods() for URL deep-link resolution'
+);
+
+const seoSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverSeoAndSitemap.ts'), 'utf8');
+assert.ok(
+  seoSrc.includes('const allHoods = getAllMultiCityNeighborhoods();'),
+  'serverSeoAndSitemap injectDynamicSeoMeta must use getAllMultiCityNeighborhoods()'
+);
+
+// 7. OP-DEC-001 Internationalization & Currency Foundation Regression Tests
+import('../src/utils/areaUnit').then((areaMod) => {
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['en-US', 'fa-IR']), 'en', 'Detects English from navigator languages');
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['ar-AE']), 'ar', 'Detects Arabic from navigator languages');
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['tr-TR']), 'tr', 'Detects Turkish from navigator languages');
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['fa-IR']), 'fa', 'Detects Persian from navigator languages');
+  assert.equal(areaMod.getRadarLocaleDirection('fa'), 'rtl', 'Persian is RTL');
+  assert.equal(areaMod.getRadarLocaleDirection('ar'), 'rtl', 'Arabic is RTL');
+  assert.equal(areaMod.getRadarLocaleDirection('en'), 'ltr', 'English is LTR');
+  assert.equal(areaMod.getRadarLocaleDirection('tr'), 'ltr', 'Turkish is LTR');
+  assert.ok(areaMod.formatMillionTomanAsIntlCurrency(6500, 'USD', 'en').startsWith('$100,000'), '6,500M Toman converts to $100,000 USD');
+  assert.equal(areaMod.getRadarTopBarCopy('en').toolsBtnLabel, 'Tools', 'English top-bar copy returns Tools');
+  assert.equal(areaMod.getRadarTopBarCopy('fa').toolsBtnLabel, 'ابزارها', 'Persian top-bar copy returns ابزارها');
+  assert.equal(areaMod.getRadarBottomNavCopy('en').mapLabel, 'Map', 'English bottom-nav copy returns Map');
+  assert.equal(areaMod.getRadarBottomNavCopy('tr').mapLabel, 'Harita', 'Turkish bottom-nav copy returns Harita');
+  assert.equal(areaMod.getRadarInspectorCopy('ar').marketTab, 'السوق والرسوم', 'Arabic inspector copy returns السوق والرسوم');
+  assert.equal(areaMod.getRadarInspectorCopy('en').scorecardTab, 'Scorecard & Traffic', 'English inspector copy returns Scorecard & Traffic');
+  assert.equal(areaMod.getRadarLegendCopy('en').legendBtnLabel, 'Map Legend', 'English legend copy returns Map Legend');
+  assert.equal(areaMod.getRadarLegendCopy('ar').legendBtnLabel, 'دليل الخريطة', 'Arabic legend copy returns دليل الخريطة');
+  assert.equal(areaMod.getRadarCompareCopy('en').swapBtnLabel, 'Swap', 'English compare copy returns Swap');
+  assert.equal(areaMod.getRadarCompareCopy('tr').swapBtnLabel, 'Değiştir', 'Turkish compare copy returns Değiştir');
+  const inspectorTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorTabs.tsx'), 'utf8');
+  const budgetBridgeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BudgetBridgeAdvisorCard.tsx'), 'utf8');
+  const purchasingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf8');
+  const bargainsTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodBargainsAndVotesTabs.tsx'), 'utf8');
+  const priceTrendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf8');
+  const smartForecastSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartPriceForecastCard.tsx'), 'utf8');
+  const shortlistMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShortlistMatrixModal.tsx'), 'utf8');
+  const quickRankingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf8');
+  const searchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf8');
+  const portfolioModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf8');
+  const secondaryModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SecondaryModals.tsx'), 'utf8');
+  const smartNaturalSearchSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartNaturalSearchMatchesSection.tsx'), 'utf8');
+  const superModulesValSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesValuationAndFakeTabs.tsx'), 'utf8');
+  const superModulesSwapSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesSwapAndStudioTabs.tsx'), 'utf8');
+  const superModulesLegalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesLegalAndBuildingTabs.tsx'), 'utf8');
+  const smartSuggestSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartSuggestModal.tsx'), 'utf8');
+  const shareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShareModal.tsx'), 'utf8');
+  const thresholdAlertsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf8');
+  const expansionModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpansionModulesModal.tsx'), 'utf8');
+  const hedonicModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationModal.tsx'), 'utf8');
+  const buyerAlertModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPwaLegalModals.tsx'), 'utf8');
+  const monthlyBarChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodMonthlyBarChart.tsx'), 'utf8');
+  const buyerSparklineSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPriceSparkline.tsx'), 'utf8');
+  const legalStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/LegalContractAndPortfolioStudioModal.tsx'), 'utf8');
+  const onboardingWizardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/OnboardingWizardModal.tsx'), 'utf8');
+  const agencyCrmStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyCrmAndAutomationStudioModal.tsx'), 'utf8');
+  const biGisStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BiRiskAndGeospatialIntelligenceStudioModal.tsx'), 'utf8');
+  const sponsorReservationTabSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencySponsorReservationTab.tsx'), 'utf8');
+  const enterpriseModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/EnterpriseAssetFundAndMarketIntelligenceModal.tsx'), 'utf8');
+  const agencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf8');
+  const contractAdvisorSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ContractLegalAdvisorView.tsx'), 'utf8');
+  const adminOverviewTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminOverviewAndModerationTabs.tsx'), 'utf8');
+  const adminMonetizationSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMonetizationCard.tsx'), 'utf8');
+  const adminCloudAiSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminCloudAiCommerceCenter.tsx'), 'utf8');
+  const topBarProvinceDirSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/TopBarProvinceDirectoryControl.tsx'), 'utf8');
+  const adminMcpSandboxSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMcpAndPortabilitySandboxPanel.tsx'), 'utf8');
+  const modeSwitcherSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ModeSwitcherSegmented.tsx'), 'utf8');
+  const futureSuperModulesModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/FutureSuperModulesModal.tsx'), 'utf8');
+  const priceHeatmapSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/priceHeatmapAndViewportLazy.tsx'), 'utf8');
+  const mapZoomLodSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/mapZoomLodAndDeclutter.ts'), 'utf8');
+  const commuteMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CommuteHubsMatrixCard.tsx'), 'utf8');
+  const photoGallerySrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPhotoGallery.tsx'), 'utf8');
+  const listingMediaGallerySrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ListingMediaGallery.tsx'), 'utf8');
+  const topBarProvinceControlSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/TopBarProvinceControl.tsx'), 'utf8');
+  const listingMediaUploaderSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ListingMediaStorageUploader.tsx'), 'utf8');
+  const pwaOfflineBannerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PWAOfflineStatusBanner.tsx'), 'utf8');
+  const adminModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminModal.tsx'), 'utf8');
+  const adminSecurityBackupSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminSecurityAndBackupTabs.tsx'), 'utf8');
+  const adminPanelSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminPanel.tsx'), 'utf8');
+  const adminEnvConfigSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminEnvConfigPanel.tsx'), 'utf8');
+  const adminMapProviderSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMapProviderConfigPanel.tsx'), 'utf8');
+  const adminWeeklyDbHealthSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminWeeklyDatabaseHealthChart.tsx'), 'utf8');
+  const cleanupProgressSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CleanupProgressSummary.tsx'), 'utf8');
+  const liveDiagOverlaySrc = fs.readFileSync(path.join(process.cwd(), 'src/components/LiveDiagnosticOverlay.tsx'), 'utf8');
+  const loadingSkeletonsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodLoadingSkeletons.tsx'), 'utf8');
+  const dualLayerErrorTrapSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/DualLayerErrorTrap.tsx'), 'utf8');
+  const featureErrorBoundarySrc = fs.readFileSync(path.join(process.cwd(), 'src/components/FeatureErrorBoundary.tsx'), 'utf8');
+  const urlAndTitleSyncSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useAppUrlAndTitleSync.ts'), 'utf8');
+  const mapAdvancedLayersSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/mapAdvancedLayers.ts'), 'utf8');
+  const useLeafletRadarMapSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useLeafletRadarMap.ts'), 'utf8');
+  const useRadarCrudActionsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useRadarCrudActions.ts'), 'utf8');
+  const useMarketPulseSyncSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useMarketPulseSync.ts'), 'utf8');
+  const useRadarAdminActionsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useRadarAdminActions.ts'), 'utf8');
+  const useAppPersistenceSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useAppPersistenceAndDerivedState.ts'), 'utf8');
+  const useEvaluatedHoodsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useEvaluatedNeighborhoods.ts'), 'utf8');
+  const useRadarCloudSyncSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useRadarCloudSync.ts'), 'utf8');
+  const appModalsPortalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AppModalsPortal.tsx'), 'utf8');
+  const useAppUiStateSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useAppUiState.ts'), 'utf8');
+  const mapBaseTileCtrlSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/mapBaseTileController.ts'), 'utf8');
+  const useDialogFocusSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useDialogFocus.ts'), 'utf8');
+  const appRootSrc =
+    fs.readFileSync(path.join(process.cwd(), 'src/App.tsx'), 'utf8') +
+    fs.readFileSync(path.join(process.cwd(), 'src/components/RadarWorkspaceShell.tsx'), 'utf8');
+  const hedonicEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/hedonicPricingEngine.ts'), 'utf8');
+  const calcRegistrySrc = fs.readFileSync(path.join(process.cwd(), 'src/data/calculatorRegistryAndScenarios.ts'), 'utf8');
+  const superLogicSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/superModulesLogic.ts'), 'utf8');
+  const legalBuildingSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/legalAndBuildingLogic.ts'), 'utf8');
+  const valTraceSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/valuationTraceAndComparables.ts'), 'utf8');
+  const listingFraudSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/listingFraudAndAddressEngine.ts'), 'utf8');
+  const rentalCommissionSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/rentalMarketCommissionAndPreSaleAudit.ts'), 'utf8');
+  const multiCityCalcSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/multiCityCalculatorsAreaDisputesLicensingAudit.ts'), 'utf8');
+  const investmentAuditSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/investmentPriceHistoryStalePhoneAiToolAudit.ts'), 'utf8');
+  const completenessAuditSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/completenessMessagingReputationCompareCurrencyAudit.ts'), 'utf8');
+  const contentVersioningAuditSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/contentVersioningQualityHierarchyZoningNotificationAudit.ts'), 'utf8');
+  const backtestAuditSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/backtestTaxonomyRecoveryRetentionCsvAudit.ts'), 'utf8');
+  const driftRankingSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/driftRankingConsentAndEnvironment.ts'), 'utf8');
+  const firestoreAuditorSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/firestoreDataAuditor.ts'), 'utf8');
+  const integrityChecksSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/firestoreIntegrityChecks.ts'), 'utf8');
+  const hoodMappersSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/firestoreNeighborhoodMappers.ts'), 'utf8');
+  const diagRunnerSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/diagnosticRunner.ts'), 'utf8');
+  const firestoreRepoSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/firestoreNeighborhoodRepository.ts'), 'utf8');
+  const metroHoodsSrc = fs.readFileSync(path.join(process.cwd(), 'src/data/metropolitanExtendedHoods.ts'), 'utf8');
+  const buyerAlertsUtilSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/buyerAlertsAndCommunityTrust.ts'), 'utf8');
+  const bargainSubSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/bargainSubmissionEngine.ts'), 'utf8');
+  const finCalcSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/realEstateFinancialCalculatorsAndPublisherAnalytics.ts'), 'utf8');
+  const propCompSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/propertyComparisonAndFinancialPrecision.ts'), 'utf8');
+  const copywriterSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/listingCopywriterAndVisitConversion.ts'), 'utf8');
+  const draftValSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/listingDraftAndValidationEngine.ts'), 'utf8');
+  const legalWorkspaceSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/legalContractIntelligenceAndAgencyWorkspace.ts'), 'utf8');
+  const agencyCrmEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/agencyCrmWorkflowAndReportingEngine.ts'), 'utf8');
+  const marketBiEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/marketBiRiskAndForecastingEngine.ts'), 'utf8');
+  const invFundEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/investmentFundNavWaterfallIrrAndGovernanceEngine.ts'), 'utf8');
+  const agencyEntEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/agencyEnterpriseOperationsAndGovernanceEngine.ts'), 'utf8');
+  const assetOpsEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/assetManagementBuildingOpsAndCmmsEngine.ts'), 'utf8');
+  const buildingCompEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/buildingComplianceInsuranceNoiTcoAndAuditEngine.ts'), 'utf8');
+  const wbsEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/constructionDevelopmentWbsBudgetAndPartnershipEngine.ts'), 'utf8');
+  const deliveryEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/constructionProjectDeliveryContractorAndAuditEngine.ts'), 'utf8');
+  const xirrEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/investmentPortfolioXirrNpvBreakEvenAndExitEngine.ts'), 'utf8');
+  const propMgmtEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/propertyManagementLeaseBillingAndOperationsEngine.ts'), 'utf8');
+  const leasingEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/leasingTenantLifecycleChequeAndHandoverAuditEngine.ts'), 'utf8');
+  const facilityEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/facilityManagementPdmSlaEnergyAndHealthEngine.ts'), 'utf8');
+  const titleRegistryEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/propertyLegalTitleRegistryAndTransactionTransferEngine.ts'), 'utf8');
+  const legalDossierEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/realEstateLegalDossierTitleDisputeAndDueDiligenceEngine.ts'), 'utf8');
+  const physicalAssetEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/physicalAssetLifecycleContractorAccessAndFacilityAuditEngine.ts'), 'utf8');
+  const specCrmEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/realEstateSpecializedCrmPipelineAndFunnelEngine.ts'), 'utf8');
+  const mktTxEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/marketTransactionsNormalizationAndSpecializedSectorsEngine.ts'), 'utf8');
+  const mktProvEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/marketIntelligenceProvenanceIndicatorsAndForecastAuditEngine.ts'), 'utf8');
+  const urbanIntelEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/urbanIntelligenceDemographicsAndResilienceEngine.ts'), 'utf8');
+  const geoCrsEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/geospatialCrsAccessibilityAndEnvironmentalEngine.ts'), 'utf8');
+  const mktIdxEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/marketIndexingSpatialPolygonAndSurvivalAnalytics.ts'), 'utf8');
+  const propDomainGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/propertyDomainGeospatialAndAnalyticsGovernance.ts'), 'utf8');
+  const spatialGeomSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/spatialGeometryEngine.ts'), 'utf8');
+  const searchEngSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/searchEngineeringEngine.ts'), 'utf8');
+  const agencyOutboxSlaSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/agencyAutomationOutboxAndSlaEngine.ts'), 'utf8');
+  const agencyDedupMsgSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/agencyDeduplicationAndMessagingGovernance.ts'), 'utf8');
+  const sponsoredVaultMapSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/sponsoredVaultMapNegotiationAndAuditTrail.ts'), 'utf8');
+  const buyerCorrAdminGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/buyerCorrectionAndAdminGovernance.ts'), 'utf8');
+  const listingLifecycleSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/listingLifecycleAndPlatformSecurity.ts'), 'utf8');
+  const mktPipelineDesignGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/marketPipelineDesignSystemAndUiStateGovernance.ts'), 'utf8');
+  const leadsMediaFunnelSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/leadsMediaOnboardingFunnelTransportAudit.ts'), 'utf8');
+  const listingTimeMediaQualSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/listingTimestampAndMediaQuality.ts'), 'utf8');
+  const mktHistPulseIntSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/marketHistoryAndPulseIntegrity.ts'), 'utf8');
+  const multiTabDedupeSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/multiTabListingDedupeBulkRaceAudit.ts'), 'utf8');
+  const offlineAuthTimeSeriesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/offlineAppointmentsFavoritesTimeSeriesAuthority.ts'), 'utf8');
+  const persianSearchWorkspaceSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/persianSearchAndPersonalWorkspace.ts'), 'utf8');
+  const paymentFinopsPrivacySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/paymentFinopsDesignBoundaryPrivacyAudit.ts'), 'utf8');
+  const timeSeriesLicensingSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/timeSeriesLicensingAndBrowserLifecycleGovernance.ts'), 'utf8');
+  const uxJourneyTrustSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/uxJourneyAndTrustAuditEngine.ts'), 'utf8');
+  const productAnalyticsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/productAnalyticsEngine.ts'), 'utf8');
+  const uxAccessibilitySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/uxAccessibilityAndDesignSystemEngine.ts'), 'utf8');
+  const webPlatformPrivacySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/webPlatformPwaAndPrivacyEngine.ts'), 'utf8');
+  const a11yOidcCircuitSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/accessibilityOidcIntegrityAnalyticsCircuit.ts'), 'utf8');
+  const advAppSecGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/advancedAppSecAndSupplyChainGovernance.ts'), 'utf8');
+  const aiGovObsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/aiGovernanceAndObservability.ts'), 'utf8');
+  const aiModelGatewaySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/aiModelRegistryAndGateway.ts'), 'utf8');
+  const apiContractsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/apiContractsAndSerializationEngine.ts'), 'utf8');
+  const archSolidSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/architectureSolidAndMaturityEngine.ts'), 'utf8');
+  const backupConcurrencySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/backupConcurrencyAndBusinessInvariants641To660.ts'), 'utf8');
+  const bootstrapLocSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/bootstrapLocalizationAndModerationGovernance.ts'), 'utf8');
+  const buildReleaseSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/buildReleaseAndSupplyChainEngine.ts'), 'utf8');
+  const cacheJobsGeoSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/cacheJobsGeospatialIngestionFlags.ts'), 'utf8');
+  const cfPortabilitySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/cloudflarePortabilityAndCapabilities.ts'), 'utf8');
+  const dataCommerceMcpSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/dataCommerceMcpAndMonetization.ts'), 'utf8');
+  const deepInfraSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/deepInfrastructureAndRecovery661To700.ts'), 'utf8');
+  const deletionJournalSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/deletionJournal.ts'), 'utf8');
+  const diagnosticsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/diagnostics.ts'), 'utf8');
+  const docGovDriftSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/documentationGovernanceAndDriftEngine.ts'), 'utf8');
+  const domainAuthSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/domainAndAuthSecurity741To800.ts'), 'utf8');
+  const domainSecValSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/domainSecurityValidators.ts'), 'utf8');
+  const engMigGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/engineeringAndMigrationGovernance.ts'), 'utf8');
+  const finPrecisionSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/financialPrecisionAndUnits.ts'), 'utf8');
+  const freeScraperSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/freeLiveMarketScraper.ts'), 'utf8');
+  const frontendArchSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/frontendArchitectureAndOfflineResilience.ts'), 'utf8');
+  const geojsonLazySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/geojsonViewportLazyEngine.ts'), 'utf8');
+  const hedonicImgSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/hedonicImageGenerator.ts'), 'utf8');
+  const httpFirestoreSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/httpFirestoreAndStorage701To740.ts'), 'utf8');
+  const idempotencyOpsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/idempotencyContentionAndOpsGovernance.ts'), 'utf8');
+  const identityGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/identityLifecycleAndBackendGovernance.ts'), 'utf8');
+  const marketIntegritySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/marketDataIntegrity.ts'), 'utf8');
+  const multiScriptUnitsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/multiScriptNumericAndUnits.ts'), 'utf8');
+  const hoodBoundariesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/neighborhoodBoundaries.ts'), 'utf8');
+  const neshanTileSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/neshanTileConfig.ts'), 'utf8');
+  const notifMobileIamSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/notificationMobileResidencyPortabilityIam.ts'), 'utf8');
+  const objStorageSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/objectStorage.ts'), 'utf8');
+  const opsScaleGameDaySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/operationalScaleAndGameDay.ts'), 'utf8');
+  const pdfJalaliAuditSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/pdfJalaliPushErrorBuildAudit.ts'), 'utf8');
+  const privacyLifecycleSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/privacyAndDataLifecycle861To880.ts'), 'utf8');
+  const pwaOfflineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/pwaOfflineSupport.ts'), 'utf8');
+  const secGov601Src = fs.readFileSync(path.join(process.cwd(), 'src/utils/securityGovernance601To639.ts'), 'utf8');
+  const secGovListingsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/securityGovernanceLifecycleAndListings.ts'), 'utf8');
+  const supplyChainRoutingSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/supplyChainWebhooksMediaSearchRouting.ts'), 'utf8');
+  const telegramAsyncSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/telegramAndAsyncJobSecurity801To820.ts'), 'utf8');
+  const xssMassAssignChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/xssMassAssignChartBrowserThirdParty.ts'), 'utf8');
+  const fileSigSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/fileSignature.ts'), 'utf8');
+  const appCheckSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/firebaseAppCheckSecurity901To920.ts'), 'utf8');
+  const firestoreConnSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/firestoreConnectionState.ts'), 'utf8');
+  const leafletLoaderSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/leafletLoader.ts'), 'utf8');
+  const objDeleteCoordSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/objectStorageDeleteCoordinator.ts'), 'utf8');
+  const objSampleMediaSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/objectStorageSampleMedia.ts'), 'utf8');
+  const objStorageUploadSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/objectStorageUpload.ts'), 'utf8');
+  const osmTileProxySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/osmTileProxy.ts'), 'utf8');
+  const securityUtilSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/security.ts'), 'utf8');
+  const rmepStateEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/rmepExecutionStateEngine.ts'), 'utf8');
+  const srvAdminTelegramSecSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverAdminAndTelegramSecurity.ts'), 'utf8');
+  const srvAdminSodBackupSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverAdminSodAndBackupSecurity.ts'), 'utf8');
+  const srvAiCommerceSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverAiAndCommerceRoutes.ts'), 'utf8');
+  const srvBackupChunkSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverBackupAndChunkUploadRoutes.ts'), 'utf8');
+  const srvBoundaryProtoSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverBoundaryProtocol.ts'), 'utf8');
+  const srvConfigValSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverConfigValidator.ts'), 'utf8');
+  const srvDeliveryGuardSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverDeliveryAndAbuseGuard.ts'), 'utf8');
+  const srvForensicsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverForensicsAndIncidentResponse.ts'), 'utf8');
+  const srvIdempotencySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverIdempotencyAndConcurrency.ts'), 'utf8');
+  const srvJournalAdaptersSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverJournalAdapters.ts'), 'utf8');
+  const srvLegalRuleEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverLegalRuleEngine.ts'), 'utf8');
+  const srvMarketPulseSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverMarketPulseEngine.ts'), 'utf8');
+  const srvObjectStorageSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverObjectStorage.ts'), 'utf8');
+  const srvObjStorageCleanupSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverObjectStorageCleanup.ts'), 'utf8');
+  const srvObjStorageHelpersSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverObjectStorageHelpers.ts'), 'utf8');
+  const srvObjStorageOrphanSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverObjectStorageOrphanAudit.ts'), 'utf8');
+  const srvPublisherBargainsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverPublisherBargains.ts'), 'utf8');
+  const srvRuntimeEnvStoreSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverRuntimeEnvStore.ts'), 'utf8');
+  const srvSeoAndSitemapSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverSeoAndSitemap.ts'), 'utf8');
+  const srvSponsorBargainRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverSponsorAndBargainRoutes.ts'), 'utf8');
+  const srvUtilityRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverUtilityRoutes.ts'), 'utf8');
+  const firebaseRootSrc = fs.readFileSync(path.join(process.cwd(), 'src/firebase.ts'), 'utf8');
+  const serverEntrySrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
+  const appCheckUtilSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/appCheck.ts'), 'utf8');
+  const srvStoragePortabilitySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverStoragePortabilityAndTracing.ts'), 'utf8');
+  const areaUnitToggleSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AreaUnitToggle.tsx'), 'utf8');
+  const mapLegendSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/MapLegend.tsx'), 'utf8');
+  const radarBottomNavSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/RadarBottomNav.tsx'), 'utf8');
+  const mainEntrySrc = fs.readFileSync(path.join(process.cwd(), 'src/main.tsx'), 'utf8');
+  const modelsTypeSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/models.ts'), 'utf8');
+  const typeGuardsSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/typeGuards.ts'), 'utf8');
+  assert.ok(inspectorTabsSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodInspectorTabs must support international currency equivalence');
+  assert.ok(budgetBridgeSrc.includes('formatMillionTomanAsIntlCurrency'), 'BudgetBridgeAdvisorCard must support international currency equivalence');
+  assert.ok(purchasingPowerSrc.includes('formatMillionTomanAsIntlCurrency'), 'PurchasingPowerTrendCard must support international currency equivalence');
+  assert.ok(bargainsTabsSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodBargainsAndVotesTabs must support international currency equivalence');
+  assert.ok(priceTrendModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodPriceTrendModal must support international currency equivalence');
+  assert.ok(smartForecastSrc.includes('formatMillionTomanAsIntlCurrency'), 'SmartPriceForecastCard must support international currency equivalence');
+  assert.ok(shortlistMatrixSrc.includes('formatMillionTomanAsIntlCurrency'), 'ShortlistMatrixModal must support international currency equivalence');
+  assert.ok(quickRankingSrc.includes('formatMillionTomanAsIntlCurrency'), 'QuickHoodRankingStrip must support international currency equivalence');
+  assert.ok(searchDropdownSrc.includes('formatMillionTomanAsIntlCurrency'), 'SearchDropdownMenu must support international currency equivalence');
+  assert.ok(portfolioModalsSrc.includes('formatMillionTomanAsIntlCurrency'), 'PortfolioModals must support international currency equivalence');
+  assert.ok(secondaryModalsSrc.includes('formatMillionTomanAsIntlCurrency'), 'SecondaryModals must support international currency equivalence');
+  assert.ok(smartNaturalSearchSrc.includes('formatMillionTomanAsIntlCurrency'), 'SmartNaturalSearchMatchesSection must support international currency equivalence');
+  assert.ok(superModulesValSrc.includes('formatMillionTomanAsIntlCurrency'), 'SuperModulesValuationAndFakeTabs must support international currency equivalence');
+  assert.ok(superModulesSwapSrc.includes('formatMillionTomanAsIntlCurrency'), 'SuperModulesSwapAndStudioTabs must support international currency equivalence');
+  assert.ok(superModulesLegalSrc.includes('formatMillionTomanAsIntlCurrency'), 'SuperModulesLegalAndBuildingTabs must support international currency equivalence');
+  assert.ok(smartSuggestSrc.includes('formatMillionTomanAsIntlCurrency'), 'SmartSuggestModal must support international currency equivalence');
+  assert.ok(shareModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'ShareModal must support international currency equivalence');
+  assert.ok(thresholdAlertsSrc.includes('formatMillionTomanAsIntlCurrency'), 'buyerPriceThresholdAlerts must support international currency equivalence');
+  assert.ok(expansionModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'ExpansionModulesModal must support international currency equivalence');
+  assert.ok(hedonicModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'HedonicValuationModal must support international currency equivalence');
+  assert.ok(buyerAlertModalsSrc.includes('formatMillionTomanAsIntlCurrency'), 'BuyerAlertPwaLegalModals must support international currency equivalence');
+  assert.ok(monthlyBarChartSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodMonthlyBarChart must support international currency equivalence');
+  assert.ok(buyerSparklineSrc.includes('formatMillionTomanAsIntlCurrency'), 'BuyerAlertPriceSparkline must support international currency equivalence');
+  assert.ok(legalStudioSrc.includes('formatMillionTomanAsIntlCurrency'), 'LegalContractAndPortfolioStudioModal must support international currency equivalence');
+  assert.ok(onboardingWizardSrc.includes('formatMillionTomanAsIntlCurrency'), 'OnboardingWizardModal must support international currency equivalence');
+  assert.ok(agencyCrmStudioSrc.includes('formatMillionTomanAsIntlCurrency'), 'AgencyCrmAndAutomationStudioModal must support international currency equivalence');
+  assert.ok(biGisStudioSrc.includes('formatMillionTomanAsIntlCurrency'), 'BiRiskAndGeospatialIntelligenceStudioModal must support international currency equivalence');
+  assert.ok(sponsorReservationTabSrc.includes('formatMillionTomanAsIntlCurrency'), 'AgencySponsorReservationTab must support international currency equivalence');
+  assert.ok(enterpriseModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'EnterpriseAssetFundAndMarketIntelligenceModal must support international currency equivalence');
+  assert.ok(agencyModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'AgencyModal must support international currency equivalence');
+  assert.ok(contractAdvisorSrc.includes('formatMillionTomanAsIntlCurrency'), 'ContractLegalAdvisorView must support international currency equivalence');
+  assert.ok(adminOverviewTabsSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminOverviewAndModerationTabs must support international currency equivalence');
+  assert.ok(adminMonetizationSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminMonetizationCard must support international currency equivalence');
+  assert.ok(adminCloudAiSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminCloudAiCommerceCenter must support international currency equivalence');
+  assert.ok(topBarProvinceDirSrc.includes('formatMillionTomanAsIntlCurrency'), 'TopBarProvinceDirectoryControl must support international currency equivalence');
+  assert.ok(adminMcpSandboxSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminMcpAndPortabilitySandboxPanel must support international currency equivalence');
+  assert.ok(modeSwitcherSrc.includes('formatMillionTomanAsIntlCurrency'), 'ModeSwitcherSegmented must support international currency equivalence');
+  assert.ok(futureSuperModulesModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'FutureSuperModulesModal must support international currency equivalence');
+  assert.ok(priceHeatmapSrc.includes('formatMillionTomanAsIntlCurrency'), 'priceHeatmapAndViewportLazy must support international currency equivalence');
+  assert.ok(mapZoomLodSrc.includes('formatMillionTomanAsIntlCurrency'), 'mapZoomLodAndDeclutter must support international currency equivalence');
+  assert.ok(commuteMatrixSrc.includes('formatMillionTomanAsIntlCurrency'), 'CommuteHubsMatrixCard must support international currency equivalence');
+  assert.ok(photoGallerySrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodPhotoGallery must support international currency equivalence');
+  assert.ok(listingMediaGallerySrc.includes('formatMillionTomanAsIntlCurrency'), 'ListingMediaGallery must support international currency equivalence');
+  assert.ok(topBarProvinceControlSrc.includes('formatMillionTomanAsIntlCurrency'), 'TopBarProvinceControl must support international currency equivalence');
+  assert.ok(listingMediaUploaderSrc.includes('formatMillionTomanAsIntlCurrency'), 'ListingMediaStorageUploader must support international currency equivalence');
+  assert.ok(pwaOfflineBannerSrc.includes('formatMillionTomanAsIntlCurrency'), 'PWAOfflineStatusBanner must support international currency equivalence');
+  assert.ok(adminModalSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminModal must support international currency equivalence');
+  assert.ok(adminSecurityBackupSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminSecurityAndBackupTabs must support international currency equivalence');
+  assert.ok(adminPanelSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminPanel must support international currency equivalence');
+  assert.ok(adminEnvConfigSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminEnvConfigPanel must support international currency equivalence');
+  assert.ok(adminMapProviderSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminMapProviderConfigPanel must support international currency equivalence');
+  assert.ok(adminWeeklyDbHealthSrc.includes('formatMillionTomanAsIntlCurrency'), 'AdminWeeklyDatabaseHealthChart must support international currency equivalence');
+  assert.ok(cleanupProgressSrc.includes('formatMillionTomanAsIntlCurrency'), 'CleanupProgressSummary must support international currency equivalence');
+  assert.ok(liveDiagOverlaySrc.includes('formatMillionTomanAsIntlCurrency'), 'LiveDiagnosticOverlay must support international currency equivalence');
+  assert.ok(loadingSkeletonsSrc.includes('formatMillionTomanAsIntlCurrency'), 'NeighborhoodLoadingSkeletons must support international currency equivalence');
+  assert.ok(dualLayerErrorTrapSrc.includes('formatMillionTomanAsIntlCurrency'), 'DualLayerErrorTrap must support international currency equivalence');
+  assert.ok(featureErrorBoundarySrc.includes('formatMillionTomanAsIntlCurrency'), 'FeatureErrorBoundary must support international currency equivalence');
+  assert.ok(urlAndTitleSyncSrc.includes('formatMillionTomanAsIntlCurrency'), 'useAppUrlAndTitleSync must support international currency equivalence');
+  assert.ok(mapAdvancedLayersSrc.includes('formatMillionTomanAsIntlCurrency'), 'mapAdvancedLayers must support international currency equivalence');
+  assert.ok(useLeafletRadarMapSrc.includes('formatMillionTomanAsIntlCurrency'), 'useLeafletRadarMap must support international currency equivalence');
+  assert.ok(useRadarCrudActionsSrc.includes('formatMillionTomanAsIntlCurrency'), 'useRadarCrudActions must support international currency equivalence');
+  assert.ok(useMarketPulseSyncSrc.includes('formatMillionTomanAsIntlCurrency') && useRadarAdminActionsSrc.includes('formatMillionTomanAsIntlCurrency') && useAppPersistenceSrc.includes('formatMillionTomanAsIntlCurrency'), 'useMarketPulseSync, useRadarAdminActions, and useAppPersistenceAndDerivedState must support international currency equivalence');
+  assert.ok(useEvaluatedHoodsSrc.includes('formatMillionTomanAsIntlCurrency') && useRadarCloudSyncSrc.includes('formatMillionTomanAsIntlCurrency') && appModalsPortalSrc.includes('formatMillionTomanAsIntlCurrency'), 'useEvaluatedNeighborhoods, useRadarCloudSync, and AppModalsPortal must support international currency equivalence');
+  assert.ok(useAppUiStateSrc.includes('formatMillionTomanAsIntlCurrency') && mapBaseTileCtrlSrc.includes('formatMillionTomanAsIntlCurrency') && useDialogFocusSrc.includes('formatMillionTomanAsIntlCurrency'), 'useAppUiState, mapBaseTileController, and useDialogFocus must support international currency equivalence');
+  assert.ok(appRootSrc.includes('formatMillionTomanAsIntlCurrency') && hedonicEngineSrc.includes('formatMillionTomanAsIntlCurrency') && calcRegistrySrc.includes('formatMillionTomanAsIntlCurrency'), 'App.tsx, hedonicPricingEngine, and calculatorRegistryAndScenarios must support international currency equivalence');
+  assert.ok(superLogicSrc.includes('formatMillionTomanAsIntlCurrency') && legalBuildingSrc.includes('formatMillionTomanAsIntlCurrency') && valTraceSrc.includes('formatMillionTomanAsIntlCurrency'), 'superModulesLogic, legalAndBuildingLogic, and valuationTraceAndComparables must support international currency equivalence');
+  assert.ok(listingFraudSrc.includes('formatMillionTomanAsIntlCurrency') && rentalCommissionSrc.includes('formatMillionTomanAsIntlCurrency') && multiCityCalcSrc.includes('formatMillionTomanAsIntlCurrency'), 'listingFraudAndAddressEngine, rentalMarketCommissionAndPreSaleAudit, and multiCityCalculatorsAreaDisputesLicensingAudit must support international currency equivalence');
+  assert.ok(investmentAuditSrc.includes('formatMillionTomanAsIntlCurrency') && completenessAuditSrc.includes('formatMillionTomanAsIntlCurrency') && contentVersioningAuditSrc.includes('formatMillionTomanAsIntlCurrency'), 'investmentPriceHistoryStalePhoneAiToolAudit, completenessMessagingReputationCompareCurrencyAudit, and contentVersioningQualityHierarchyZoningNotificationAudit must support international currency equivalence');
+  assert.ok(backtestAuditSrc.includes('formatMillionTomanAsIntlCurrency') && driftRankingSrc.includes('formatMillionTomanAsIntlCurrency') && firestoreAuditorSrc.includes('formatMillionTomanAsIntlCurrency'), 'backtestTaxonomyRecoveryRetentionCsvAudit, driftRankingConsentAndEnvironment, and firestoreDataAuditor must support international currency equivalence');
+  assert.ok(integrityChecksSrc.includes('formatMillionTomanAsIntlCurrency') && hoodMappersSrc.includes('formatMillionTomanAsIntlCurrency') && diagRunnerSrc.includes('formatMillionTomanAsIntlCurrency'), 'firestoreIntegrityChecks, firestoreNeighborhoodMappers, and diagnosticRunner must support international currency equivalence');
+  assert.ok(firestoreRepoSrc.includes('formatMillionTomanAsIntlCurrency') && metroHoodsSrc.includes('formatMillionTomanAsIntlCurrency') && buyerAlertsUtilSrc.includes('formatMillionTomanAsIntlCurrency'), 'firestoreNeighborhoodRepository, metropolitanExtendedHoods, and buyerAlertsAndCommunityTrust must support international currency equivalence');
+  assert.ok(bargainSubSrc.includes('formatMillionTomanAsIntlCurrency') && finCalcSrc.includes('formatMillionTomanAsIntlCurrency') && propCompSrc.includes('formatMillionTomanAsIntlCurrency'), 'bargainSubmissionEngine, realEstateFinancialCalculatorsAndPublisherAnalytics, and propertyComparisonAndFinancialPrecision must support international currency equivalence');
+  assert.ok(copywriterSrc.includes('formatMillionTomanAsIntlCurrency') && draftValSrc.includes('formatMillionTomanAsIntlCurrency') && legalWorkspaceSrc.includes('formatMillionTomanAsIntlCurrency'), 'listingCopywriterAndVisitConversion, listingDraftAndValidationEngine, and legalContractIntelligenceAndAgencyWorkspace must support international currency equivalence');
+  assert.ok(agencyCrmEngineSrc.includes('formatMillionTomanAsIntlCurrency') && marketBiEngineSrc.includes('formatMillionTomanAsIntlCurrency') && invFundEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'agencyCrmWorkflowAndReportingEngine, marketBiRiskAndForecastingEngine, and investmentFundNavWaterfallIrrAndGovernanceEngine must support international currency equivalence');
+  assert.ok(agencyEntEngineSrc.includes('formatMillionTomanAsIntlCurrency') && assetOpsEngineSrc.includes('formatMillionTomanAsIntlCurrency') && buildingCompEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'agencyEnterpriseOperationsAndGovernanceEngine, assetManagementBuildingOpsAndCmmsEngine, and buildingComplianceInsuranceNoiTcoAndAuditEngine must support international currency equivalence');
+  assert.ok(wbsEngineSrc.includes('formatMillionTomanAsIntlCurrency') && deliveryEngineSrc.includes('formatMillionTomanAsIntlCurrency') && xirrEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'constructionDevelopmentWbsBudgetAndPartnershipEngine, constructionProjectDeliveryContractorAndAuditEngine, and investmentPortfolioXirrNpvBreakEvenAndExitEngine must support international currency equivalence');
+  assert.ok(propMgmtEngineSrc.includes('formatMillionTomanAsIntlCurrency') && leasingEngineSrc.includes('formatMillionTomanAsIntlCurrency') && facilityEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'propertyManagementLeaseBillingAndOperationsEngine, leasingTenantLifecycleChequeAndHandoverAuditEngine, and facilityManagementPdmSlaEnergyAndHealthEngine must support international currency equivalence');
+  assert.ok(titleRegistryEngineSrc.includes('formatMillionTomanAsIntlCurrency') && legalDossierEngineSrc.includes('formatMillionTomanAsIntlCurrency') && physicalAssetEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'propertyLegalTitleRegistryAndTransactionTransferEngine, realEstateLegalDossierTitleDisputeAndDueDiligenceEngine, and physicalAssetLifecycleContractorAccessAndFacilityAuditEngine must support international currency equivalence');
+  assert.ok(specCrmEngineSrc.includes('formatMillionTomanAsIntlCurrency') && mktTxEngineSrc.includes('formatMillionTomanAsIntlCurrency') && mktProvEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'realEstateSpecializedCrmPipelineAndFunnelEngine, marketTransactionsNormalizationAndSpecializedSectorsEngine, and marketIntelligenceProvenanceIndicatorsAndForecastAuditEngine must support international currency equivalence');
+  assert.ok(urbanIntelEngineSrc.includes('formatMillionTomanAsIntlCurrency') && geoCrsEngineSrc.includes('formatMillionTomanAsIntlCurrency') && mktIdxEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'urbanIntelligenceDemographicsAndResilienceEngine, geospatialCrsAccessibilityAndEnvironmentalEngine, and marketIndexingSpatialPolygonAndSurvivalAnalytics must support international currency equivalence');
+  assert.ok(propDomainGovSrc.includes('formatMillionTomanAsIntlCurrency') && spatialGeomSrc.includes('formatMillionTomanAsIntlCurrency') && searchEngSrc.includes('formatMillionTomanAsIntlCurrency'), 'propertyDomainGeospatialAndAnalyticsGovernance, spatialGeometryEngine, and searchEngineeringEngine must support international currency equivalence');
+  assert.ok(agencyOutboxSlaSrc.includes('formatMillionTomanAsIntlCurrency') && agencyDedupMsgSrc.includes('formatMillionTomanAsIntlCurrency') && sponsoredVaultMapSrc.includes('formatMillionTomanAsIntlCurrency'), 'agencyAutomationOutboxAndSlaEngine, agencyDeduplicationAndMessagingGovernance, and sponsoredVaultMapNegotiationAndAuditTrail must support international currency equivalence');
+  assert.ok(buyerCorrAdminGovSrc.includes('formatMillionTomanAsIntlCurrency') && listingLifecycleSecSrc.includes('formatMillionTomanAsIntlCurrency') && mktPipelineDesignGovSrc.includes('formatMillionTomanAsIntlCurrency'), 'buyerCorrectionAndAdminGovernance, listingLifecycleAndPlatformSecurity, and marketPipelineDesignSystemAndUiStateGovernance must support international currency equivalence');
+  assert.ok(leadsMediaFunnelSrc.includes('formatMillionTomanAsIntlCurrency') && listingTimeMediaQualSrc.includes('formatMillionTomanAsIntlCurrency') && mktHistPulseIntSrc.includes('formatMillionTomanAsIntlCurrency'), 'leadsMediaOnboardingFunnelTransportAudit, listingTimestampAndMediaQuality, and marketHistoryAndPulseIntegrity must support international currency equivalence');
+  assert.ok(multiTabDedupeSrc.includes('formatMillionTomanAsIntlCurrency') && offlineAuthTimeSeriesSrc.includes('formatMillionTomanAsIntlCurrency') && persianSearchWorkspaceSrc.includes('formatMillionTomanAsIntlCurrency'), 'multiTabListingDedupeBulkRaceAudit, offlineAppointmentsFavoritesTimeSeriesAuthority, and persianSearchAndPersonalWorkspace must support international currency equivalence');
+  assert.ok(paymentFinopsPrivacySrc.includes('formatMillionTomanAsIntlCurrency') && timeSeriesLicensingSrc.includes('formatMillionTomanAsIntlCurrency') && uxJourneyTrustSrc.includes('formatMillionTomanAsIntlCurrency'), 'paymentFinopsDesignBoundaryPrivacyAudit, timeSeriesLicensingAndBrowserLifecycleGovernance, and uxJourneyAndTrustAuditEngine must support international currency equivalence');
+  assert.ok(productAnalyticsSrc.includes('formatMillionTomanAsIntlCurrency') && uxAccessibilitySrc.includes('formatMillionTomanAsIntlCurrency') && webPlatformPrivacySrc.includes('formatMillionTomanAsIntlCurrency'), 'productAnalyticsEngine, uxAccessibilityAndDesignSystemEngine, and webPlatformPwaAndPrivacyEngine must support international currency equivalence');
+  assert.ok(a11yOidcCircuitSrc.includes('formatMillionTomanAsIntlCurrency') && advAppSecGovSrc.includes('formatMillionTomanAsIntlCurrency') && aiGovObsSrc.includes('formatMillionTomanAsIntlCurrency'), 'accessibilityOidcIntegrityAnalyticsCircuit, advancedAppSecAndSupplyChainGovernance, and aiGovernanceAndObservability must support international currency equivalence');
+  assert.ok(aiModelGatewaySrc.includes('formatMillionTomanAsIntlCurrency') && apiContractsSrc.includes('formatMillionTomanAsIntlCurrency') && archSolidSrc.includes('formatMillionTomanAsIntlCurrency'), 'aiModelRegistryAndGateway, apiContractsAndSerializationEngine, and architectureSolidAndMaturityEngine must support international currency equivalence');
+  assert.ok(backupConcurrencySrc.includes('formatMillionTomanAsIntlCurrency') && bootstrapLocSrc.includes('formatMillionTomanAsIntlCurrency') && buildReleaseSrc.includes('formatMillionTomanAsIntlCurrency'), 'backupConcurrencyAndBusinessInvariants641To660, bootstrapLocalizationAndModerationGovernance, and buildReleaseAndSupplyChainEngine must support international currency equivalence');
+  assert.ok(cacheJobsGeoSrc.includes('formatMillionTomanAsIntlCurrency') && cfPortabilitySrc.includes('formatMillionTomanAsIntlCurrency') && dataCommerceMcpSrc.includes('formatMillionTomanAsIntlCurrency'), 'cacheJobsGeospatialIngestionFlags, cloudflarePortabilityAndCapabilities, and dataCommerceMcpAndMonetization must support international currency equivalence');
+  assert.ok(deepInfraSrc.includes('formatMillionTomanAsIntlCurrency') && deletionJournalSrc.includes('formatMillionTomanAsIntlCurrency') && diagnosticsSrc.includes('formatMillionTomanAsIntlCurrency'), 'deepInfrastructureAndRecovery661To700, deletionJournal, and diagnostics must support international currency equivalence');
+  assert.ok(docGovDriftSrc.includes('formatMillionTomanAsIntlCurrency') && domainAuthSecSrc.includes('formatMillionTomanAsIntlCurrency') && domainSecValSrc.includes('formatMillionTomanAsIntlCurrency'), 'documentationGovernanceAndDriftEngine, domainAndAuthSecurity741To800, and domainSecurityValidators must support international currency equivalence');
+  assert.ok(engMigGovSrc.includes('formatMillionTomanAsIntlCurrency') && finPrecisionSrc.includes('formatMillionTomanAsIntlCurrency') && freeScraperSrc.includes('formatMillionTomanAsIntlCurrency'), 'engineeringAndMigrationGovernance, financialPrecisionAndUnits, and freeLiveMarketScraper must support international currency equivalence');
+  assert.ok(frontendArchSrc.includes('formatMillionTomanAsIntlCurrency') && geojsonLazySrc.includes('formatMillionTomanAsIntlCurrency') && hedonicImgSrc.includes('formatMillionTomanAsIntlCurrency'), 'frontendArchitectureAndOfflineResilience, geojsonViewportLazyEngine, and hedonicImageGenerator must support international currency equivalence');
+  assert.ok(httpFirestoreSecSrc.includes('formatMillionTomanAsIntlCurrency') && idempotencyOpsSrc.includes('formatMillionTomanAsIntlCurrency') && identityGovSrc.includes('formatMillionTomanAsIntlCurrency'), 'httpFirestoreAndStorage701To740, idempotencyContentionAndOpsGovernance, and identityLifecycleAndBackendGovernance must support international currency equivalence');
+  assert.ok(marketIntegritySrc.includes('formatMillionTomanAsIntlCurrency') && multiScriptUnitsSrc.includes('formatMillionTomanAsIntlCurrency') && hoodBoundariesSrc.includes('formatMillionTomanAsIntlCurrency'), 'marketDataIntegrity, multiScriptNumericAndUnits, and neighborhoodBoundaries must support international currency equivalence');
+  assert.ok(neshanTileSrc.includes('formatMillionTomanAsIntlCurrency') && notifMobileIamSrc.includes('formatMillionTomanAsIntlCurrency') && objStorageSrc.includes('formatMillionTomanAsIntlCurrency'), 'neshanTileConfig, notificationMobileResidencyPortabilityIam, and objectStorage must support international currency equivalence');
+  assert.ok(opsScaleGameDaySrc.includes('formatMillionTomanAsIntlCurrency') && pdfJalaliAuditSrc.includes('formatMillionTomanAsIntlCurrency') && privacyLifecycleSrc.includes('formatMillionTomanAsIntlCurrency'), 'operationalScaleAndGameDay, pdfJalaliPushErrorBuildAudit, and privacyAndDataLifecycle861To880 must support international currency equivalence');
+  assert.ok(pwaOfflineSrc.includes('formatMillionTomanAsIntlCurrency') && secGov601Src.includes('formatMillionTomanAsIntlCurrency') && secGovListingsSrc.includes('formatMillionTomanAsIntlCurrency'), 'pwaOfflineSupport, securityGovernance601To639, and securityGovernanceLifecycleAndListings must support international currency equivalence');
+  assert.ok(supplyChainRoutingSrc.includes('formatMillionTomanAsIntlCurrency') && telegramAsyncSecSrc.includes('formatMillionTomanAsIntlCurrency') && xssMassAssignChartSrc.includes('formatMillionTomanAsIntlCurrency'), 'supplyChainWebhooksMediaSearchRouting, telegramAndAsyncJobSecurity801To820, and xssMassAssignChartBrowserThirdParty must support international currency equivalence');
+  assert.ok(fileSigSrc.includes('formatMillionTomanAsIntlCurrency') && appCheckSecSrc.includes('formatMillionTomanAsIntlCurrency') && firestoreConnSrc.includes('formatMillionTomanAsIntlCurrency'), 'fileSignature, firebaseAppCheckSecurity901To920, and firestoreConnectionState must support international currency equivalence');
+  assert.ok(leafletLoaderSrc.includes('formatMillionTomanAsIntlCurrency') && objDeleteCoordSrc.includes('formatMillionTomanAsIntlCurrency') && objSampleMediaSrc.includes('formatMillionTomanAsIntlCurrency'), 'leafletLoader, objectStorageDeleteCoordinator, and objectStorageSampleMedia must support international currency equivalence');
+  assert.ok(objStorageUploadSrc.includes('formatMillionTomanAsIntlCurrency') && osmTileProxySrc.includes('formatMillionTomanAsIntlCurrency') && securityUtilSrc.includes('formatMillionTomanAsIntlCurrency'), 'objectStorageUpload, osmTileProxy, and security must support international currency equivalence');
+  assert.ok(rmepStateEngineSrc.includes('formatMillionTomanAsIntlCurrency') && srvAdminTelegramSecSrc.includes('formatMillionTomanAsIntlCurrency') && srvAdminSodBackupSrc.includes('formatMillionTomanAsIntlCurrency'), 'rmepExecutionStateEngine, serverAdminAndTelegramSecurity, and serverAdminSodAndBackupSecurity must support international currency equivalence');
+  assert.ok(srvAiCommerceSrc.includes('formatMillionTomanAsIntlCurrency') && srvBackupChunkSrc.includes('formatMillionTomanAsIntlCurrency') && srvBoundaryProtoSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverAiAndCommerceRoutes, serverBackupAndChunkUploadRoutes, and serverBoundaryProtocol must support international currency equivalence');
+  assert.ok(srvConfigValSrc.includes('formatMillionTomanAsIntlCurrency') && srvDeliveryGuardSrc.includes('formatMillionTomanAsIntlCurrency') && srvForensicsSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverConfigValidator, serverDeliveryAndAbuseGuard, and serverForensicsAndIncidentResponse must support international currency equivalence');
+  assert.ok(srvIdempotencySrc.includes('formatMillionTomanAsIntlCurrency') && srvJournalAdaptersSrc.includes('formatMillionTomanAsIntlCurrency') && srvLegalRuleEngineSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverIdempotencyAndConcurrency, serverJournalAdapters, and serverLegalRuleEngine must support international currency equivalence');
+  assert.ok(srvMarketPulseSrc.includes('formatMillionTomanAsIntlCurrency') && srvObjectStorageSrc.includes('formatMillionTomanAsIntlCurrency') && srvObjStorageCleanupSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverMarketPulseEngine, serverObjectStorage, and serverObjectStorageCleanup must support international currency equivalence');
+  assert.ok(srvObjStorageHelpersSrc.includes('formatMillionTomanAsIntlCurrency') && srvObjStorageOrphanSrc.includes('formatMillionTomanAsIntlCurrency') && srvPublisherBargainsSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverObjectStorageHelpers, serverObjectStorageOrphanAudit, and serverPublisherBargains must support international currency equivalence');
+  assert.ok(srvRuntimeEnvStoreSrc.includes('formatMillionTomanAsIntlCurrency') && srvSeoAndSitemapSrc.includes('formatMillionTomanAsIntlCurrency') && srvSponsorBargainRoutesSrc.includes('formatMillionTomanAsIntlCurrency'), 'serverRuntimeEnvStore, serverSeoAndSitemap, and serverSponsorAndBargainRoutes must support international currency equivalence');
+  assert.ok(srvUtilityRoutesSrc.includes('formatMillionTomanAsIntlCurrency') && firebaseRootSrc.includes('formatMillionTomanAsIntlCurrency') && serverEntrySrc.includes('formatMillionTomanAsIntlCurrency'), 'serverUtilityRoutes, src/firebase.ts, and server.ts must support international currency equivalence');
+  assert.ok(appCheckUtilSrc.includes('formatMillionTomanAsIntlCurrency') && srvStoragePortabilitySrc.includes('formatMillionTomanAsIntlCurrency') && areaUnitToggleSrc.includes('formatMillionTomanAsIntlCurrency'), 'appCheck, serverStoragePortabilityAndTracing, and AreaUnitToggle must support international currency equivalence');
+  assert.ok(mapLegendSrc.includes('formatMillionTomanAsIntlCurrency') && radarBottomNavSrc.includes('formatMillionTomanAsIntlCurrency') && mainEntrySrc.includes('formatMillionTomanAsIntlCurrency'), 'MapLegend, RadarBottomNav, and src/main.tsx must support international currency equivalence');
+  assert.ok(modelsTypeSrc.includes('formatMillionTomanAsIntlCurrency') && typeGuardsSrc.includes('formatMillionTomanAsIntlCurrency'), 'src/types/models.ts and src/types/typeGuards.ts must document and guard OP-DEC-001 international currency contracts');
+  for (const dsFile of ['src/data/neighborhoods.ts', 'src/data/neighborhoodInsights.ts', 'src/data/multiCityData.ts', 'src/data/tehranCityRemainingHoods.ts', 'src/data/tehranCountiesHoods.ts', 'src/data/tehranExtendedInsights.ts', 'src/data/iranNorthWestEastHoods.ts', 'src/data/iranCentralSouthHoods.ts', 'src/data/iranProvincesDirectory.ts']) {
+    const dsSrc = fs.readFileSync(path.join(process.cwd(), dsFile), 'utf8');
+    assert.ok(dsSrc.includes('formatMillionTomanAsIntlCurrency') && dsSrc.split(/\r?\n/).length <= 290, `${dsFile} must support OP-DEC-001 international currency equivalence and remain <= 290 lines`);
+  }
+  assert.deepEqual(
+    areaMod.parseUrlIntlParams('?city=tehran&hood=5&lang=en&currency=usd&unit=sqft'),
+    { lang: 'en', currency: 'USD', unit: 'sqft' },
+    'parseUrlIntlParams must extract normalized lang, currency, and unit query parameters'
+  );
+  assert.deepEqual(
+    areaMod.parseUrlIntlParams('?lang=invalid&currency=gbp&unit=acres'),
+    { lang: undefined, currency: undefined, unit: undefined },
+    'parseUrlIntlParams must reject unsupported lang, currency, and unit query parameters'
+  );
+  assert.equal(
+    areaMod.resolveInitialRadarLocale({ urlLang: 'tr', savedLocale: 'fa', navigatorLanguages: ['en-US'], enableAutoBrowserDetect: true }),
+    'tr',
+    'resolveInitialRadarLocale must prioritize explicit URL lang parameter over savedLocale and browser language'
+  );
+  assert.equal(
+    areaMod.resolveInitialRadarLocale({ savedLocale: 'ar', navigatorLanguages: ['en-US'], enableAutoBrowserDetect: true }),
+    'ar',
+    'resolveInitialRadarLocale must prioritize savedLocale when URL lang is absent'
+  );
+  assert.equal(
+    areaMod.resolveInitialRadarLocale({ savedLocale: null, navigatorLanguages: ['en-GB', 'fa-IR'], enableAutoBrowserDetect: true }),
+    'en',
+    'resolveInitialRadarLocale must fall back to detectBrowserLocaleFromNavigator when enableAutoBrowserDetect is true'
+  );
+  assert.ok(
+    urlAndTitleSyncSrc.includes('parseUrlIntlParams(search)') &&
+      urlAndTitleSyncSrc.includes('intlSuffix') &&
+      !areaUnitToggleSrc.includes('hidden sm:inline-flex') &&
+      !areaUnitToggleSrc.includes('hidden md:inline-block') &&
+      onboardingWizardSrc.includes('<AreaUnitToggle compact showIntlControls />'),
+    'useAppUrlAndTitleSync, AreaUnitToggle, and OnboardingWizardModal must expose URL deep-link intl sync and mobile-visible language/currency controls'
+  );
+  const inspectorDrawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf8');
+  const compareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf8');
+  assert.ok(
+    shareModalSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      shareModalSrc.includes('storyBuyFx') &&
+      shareModalSrc.includes('storyRahnFx') &&
+      inspectorDrawerSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      useRadarCrudActionsSrc.includes('intlQuerySuffix'),
+    'ShareModal, NeighborhoodInspectorDrawer, and useRadarCrudActions must expose international controls, story FX rendering, and deep-link share query suffixes'
+  );
+  assert.ok(
+    compareSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      compareSrc.includes('activeBudgetMillion') &&
+      shortlistMatrixSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      smartSuggestSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      hedonicModalSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      hedonicModalSrc.includes('sellerAskingMillion && intlCurrency !== \'IRT\''),
+    'CompareModal, ShortlistMatrixModal, SmartSuggestModal, and HedonicValuationModal must expose inline international header controls and live currency equivalence'
+  );
+  const nationwideProvinceSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NationwideProvinceModal.tsx'), 'utf8');
+  assert.ok(
+    portfolioModalsSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      portfolioModalsSrc.includes('newVisitPrice > 0 && intlCurrency !== \'IRT\'') &&
+      priceTrendModalSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      agencyModalSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      nationwideProvinceSrc.includes('<AreaUnitToggle compact showIntlControls />'),
+    'PortfolioModals, NeighborhoodPriceTrendModal, AgencyModal, and NationwideProvinceModal must expose inline international header controls and live currency equivalence'
+  );
+  assert.ok(
+    secondaryModalsSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      buyerAlertModalsSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      expansionModalSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      expansionModalSrc.includes('commDeposit > 0 && intlCurrency !== \'IRT\'') &&
+      futureSuperModulesModalSrc.includes('<AreaUnitToggle compact showIntlControls />'),
+    'SecondaryModals, BuyerAlertPwaLegalModals, ExpansionModulesModal, and FutureSuperModulesModal must expose inline international header controls and live currency equivalence'
+  );
+  assert.ok(
+    legalStudioSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      legalStudioSrc.includes('formatMillionTomanAsIntlCurrency(loanPrincipalMillion, currency, locale)') &&
+      agencyCrmStudioSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      biGisStudioSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      biGisStudioSrc.includes('formatMillionTomanAsIntlCurrency(purchasePriceMillion, currency, locale)') &&
+      enterpriseModalSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      adminModalSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      onboardingWizardSrc.includes('formatMillionTomanAsIntlCurrency(deposit, currency, locale)') &&
+      onboardingWizardSrc.includes('formatMillionTomanAsIntlCurrency(monthlyRent, currency, locale)'),
+    'LegalContractAndPortfolioStudioModal, AgencyCrmAndAutomationStudioModal, BiRiskAndGeospatialIntelligenceStudioModal, EnterpriseAssetFundAndMarketIntelligenceModal, AdminModal, and OnboardingWizardModal must expose inline international header controls and live currency equivalence'
+  );
+  assert.ok(
+    superModulesValSrc.includes('formatMillionTomanAsIntlCurrency(landShareResult.pureLandValueMillion, intlCurrency, locale)') &&
+      superModulesValSrc.includes('formatMillionTomanAsIntlCurrency(negotiationResult.discountTomansMillion, intlCurrency, locale)') &&
+      superModulesValSrc.includes('formatMillionTomanAsIntlCurrency(auctionResult.optimalBidEnvelopeMillion, intlCurrency, locale)') &&
+      superModulesValSrc.includes('formatMillionTomanAsIntlCurrency(rahnArbitrageResult.annualAdvantageMillion, intlCurrency, locale)') &&
+      superModulesSwapSrc.includes('const areaStr = formatAreaValue(valSqm, areaUnit, true);') &&
+      superModulesSwapSrc.includes('formatMillionTomanAsIntlCurrency(movingCostResult.totalMovingCostThousand / 1000, intlCurrency, locale)') &&
+      superModulesLegalSrc.includes('formatMillionTomanAsIntlCurrency(propertyTaxResult.vacantHomeTaxAnnualMillion, intlCurrency, locale)') &&
+      superModulesLegalSrc.includes('formatMillionTomanAsIntlCurrency(inheritanceResult.estateTaxEstimateMillion, intlCurrency, locale)') &&
+      superModulesLegalSrc.includes('formatMillionTomanAsIntlCurrency(buildingBillResult.unitTotalBillThousand / 1000, intlCurrency, locale)'),
+    'SuperModulesValuationAndFakeTabs, SuperModulesSwapAndStudioTabs, and SuperModulesLegalAndBuildingTabs must expose live international currency and area unit equivalence across valuation certificates, AI ads, tax/inheritance/charge outputs, and moving cost calculators'
+  );
+  const hedonicResultsColSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationResultsColumn.tsx'), 'utf8');
+  const hedonicInlineSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicInlineWidget.tsx'), 'utf8');
+  const buyingPowerCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyingPowerSummaryCard.tsx'), 'utf8');
+  assert.ok(
+    hedonicImgSrc.includes('const unitHedonicPrice = convertPricePerSqmToUnit(valuation.hedonicPerSqm, areaUnit);') &&
+      hedonicImgSrc.includes('const unitHoodBasePrice = convertPricePerSqmToUnit(valuation.hoodBasePerSqm, areaUnit);') &&
+      hedonicResultsColSrc.includes('formatMillionTomanAsIntlCurrency(valuation.confidenceRangeMillion.min, intlCurrency, radarLocale)') &&
+      hedonicResultsColSrc.includes('formatMillionTomanAsIntlCurrency(valuation.diffTotalMillion, intlCurrency, radarLocale)') &&
+      hedonicInlineSrc.includes('formatAreaValue(sqm, areaUnit, true)') &&
+      hedonicInlineSrc.includes('formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, radarLocale)') &&
+      buyingPowerCardSrc.includes('formatMillionTomanAsIntlCurrency(loanHelpMillion, intlCurrency, radarLocale)') &&
+      buyingPowerCardSrc.includes('formatMillionTomanAsIntlCurrency(tenantRahnHelpMillion, intlCurrency, radarLocale)') &&
+      smartForecastSrc.includes('formatMillionTomanAsIntlCurrency(financialAuditSummary.sampleDeposit, intlCurrency, radarLocale)') &&
+      smartForecastSrc.includes('formatMillionTomanAsIntlCurrency(totalRahnEquivalent, intlCurrency, radarLocale)'),
+    'hedonicImageGenerator, HedonicValuationResultsColumn, HedonicInlineWidget, BuyingPowerSummaryCard, and SmartPriceForecastCard must expose full area unit and international currency equivalence'
+  );
+  const op145PriceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf8');
+  const op145MonthlyBarSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodMonthlyBarChart.tsx'), 'utf8');
+  assert.ok(
+    op145PriceChartSrc.includes('formatMillionTomanAsIntlCurrency(rentMonthlyVal, intlCurrency, radarLocale)') &&
+      op145PriceChartSrc.includes('convertPricePerSqmToUnit(pt.buyPerSqm, areaUnit)') &&
+      op145MonthlyBarSrc.includes('const unitChangeVal = convertPricePerSqmToUnit(point.changeAmount, areaUnit);') &&
+      op145MonthlyBarSrc.includes('formatMillionTomanAsIntlCurrency(unitCityVal, intlCurrency, radarLocale)') &&
+      inspectorTabsSrc.includes('fxTag(deepInsight.monthlyChargeEstimateThousand / 1000)') &&
+      bargainsTabsSrc.includes('setNewVisitAddress(`${b.type === \'اجاره\' ? \'[رهن/اجاره] \' : \'\'}واحد ${formatAreaValue(b.sqm, areaUnit)} - ${b.street}`)') &&
+      bargainsTabsSrc.includes('formatMillionTomanAsIntlCurrency(uRate, intlCurrency, radarLocale)'),
+    'NeighborhoodPriceChart, NeighborhoodMonthlyBarChart, NeighborhoodInspectorTabs, and NeighborhoodBargainsAndVotesTabs must expose full OP-145 area unit and international currency equivalence'
+  );
+  const op146ExpandableCompareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpandableComparisonTable.tsx'), 'utf8');
+  const op146BudgetBridgeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BudgetBridgeAdvisorCard.tsx'), 'utf8');
+  const op146PurchasingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf8');
+  const op146QuickRankingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf8');
+  const op146NaturalSearchSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartNaturalSearchMatchesSection.tsx'), 'utf8');
+  assert.ok(
+    op146ExpandableCompareSrc.includes('formatMillionTomanAsIntlCurrency(uBuyA, intlCurrency, radarLocale)') &&
+      op146BudgetBridgeSrc.includes('formatAreaShort(35, areaUnit)') &&
+      op146BudgetBridgeSrc.includes('fxTag(1200)') &&
+      op146PurchasingPowerSrc.includes('formatMillionTomanAsIntlCurrency(safeBudget, intlCurrency, radarLocale)') &&
+      op146QuickRankingSrc.includes('{h.name} ({h.zone}) — {areaUnit === \'sqft\' ? \'ft²\' : \'متری\'} {toPersianNum(uBuy)} م{fx}') &&
+      op146NaturalSearchSrc.includes('formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(parsed.maxBuyPerSqmMillions, areaUnit), intlCurrency, locale)'),
+    'ExpandableComparisonTable, BudgetBridgeAdvisorCard, PurchasingPowerTrendCard, QuickHoodRankingStrip, and SmartNaturalSearchMatchesSection must expose full OP-146 area unit and international currency equivalence'
+  );
+  const op147PriceTrendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf-8');
+  const op147CompareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf-8');
+  const op147PortfolioModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
+  assert.ok(
+    op147PriceTrendModalSrc.includes('const uCityBuy = Number(convertPricePerSqmToUnit(pt.tehranAvgBuy, areaUnit).toFixed(1));') &&
+      op147PriceTrendModalSrc.includes('const uRowBuy = Number(convertPricePerSqmToUnit(row.buyPerSqm, areaUnit).toFixed(1));') &&
+      op147CompareModalSrc.includes('رهن کامل واحد ${formatAreaValue(80, areaUnit, true)}') &&
+      op147CompareModalSrc.includes('formatHoodOption(n, compareId2)') &&
+      op147PortfolioModalsSrc.includes('formatMillionTomanAsIntlCurrency(Math.abs(item.surplusOrDeficitMillion), intlCurrency, radarLocale)') &&
+      op147PortfolioModalsSrc.includes('formatMillionTomanAsIntlCurrency(1200, intlCurrency, radarLocale)'),
+    'NeighborhoodPriceTrendModal, CompareModal, and PortfolioModals must expose full OP-147 area unit and international currency equivalence'
+  );
+  const op148ThresholdAlertsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf-8');
+  const op148ExpansionModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpansionModulesModal.tsx'), 'utf-8');
+  const op148OnboardingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/OnboardingWizardModal.tsx'), 'utf-8');
+  const op148AgencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf-8');
+  assert.ok(
+    op148ThresholdAlertsSrc.includes("const uDefault = dealType === 'خرید' ? convertPricePerSqmToUnit(defaultThreshold, areaUnit) : defaultThreshold;") &&
+      op148ThresholdAlertsSrc.includes("const uTopObs = topMatch.subscription.dealType === 'خرید' ? convertPricePerSqmToUnit(topMatch.observedMillion, areaUnit) : topMatch.observedMillion;") &&
+      op148ExpansionModalSrc.includes('const fmtFee = (toman: number) =>') &&
+      op148ExpansionModalSrc.includes('const uCommPrice = convertPricePerSqmToUnit(commPricePerSqm, areaUnit);') &&
+      op148OnboardingSrc.includes('formatMillionTomanAsIntlCurrency(preset, currency, locale)') &&
+      op148OnboardingSrc.includes('formatMillionTomanAsIntlCurrency(uBuy, currency, locale)') &&
+      op148AgencyModalSrc.includes('const uBench = Number(convertPricePerSqmToUnit(rawBench, areaUnit).toFixed(1));'),
+    'buyerPriceThresholdAlerts, ExpansionModulesModal, OnboardingWizardModal, and AgencyModal must expose full OP-148 area unit and international currency equivalence'
+  );
+  const op149ProvinceModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NationwideProvinceModal.tsx'), 'utf-8');
+  const op149SponsorTabSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencySponsorReservationTab.tsx'), 'utf-8');
+  const op149LegalStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/LegalContractAndPortfolioStudioModal.tsx'), 'utf-8');
+  const op149BiGisStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BiRiskAndGeospatialIntelligenceStudioModal.tsx'), 'utf-8');
+  assert.ok(
+    op149ProvinceModalSrc.includes("({toPersianNum(uPrice)} {areaUnit === 'sqft' ? 'م/ft²' : 'م'}{fxTip})") &&
+      op149SponsorTabSrc.includes('formatMillionTomanAsIntlCurrency(Math.round(billingSummary.baseMonthlyTariff * 3 * 0.8 * 10) / 10, currency, locale)') &&
+      op149LegalStudioSrc.includes('formatMillionTomanAsIntlCurrency(extraMonthlyPrepayMillion, currency, locale)') &&
+      op149LegalStudioSrc.includes('formatMillionTomanAsIntlCurrency(brokerageFeeMillion, currency, locale)') &&
+      op149BiGisStudioSrc.includes("convertPricePerSqmToUnit((indexAndGap.askingMedianPerSqmToman ?? 0) / 1_000_000, areaUnit)"),
+    'NationwideProvinceModal, AgencySponsorReservationTab, LegalContractAndPortfolioStudioModal, and BiRiskAndGeospatialIntelligenceStudioModal must expose full OP-149 area unit and international currency equivalence'
+  );
+  const op150EnterpriseModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/EnterpriseAssetFundAndMarketIntelligenceModal.tsx'), 'utf-8');
+  const op150AdminOverviewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminOverviewAndModerationTabs.tsx'), 'utf-8');
+  const op150ShareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShareModal.tsx'), 'utf-8');
+  assert.ok(
+    op150EnterpriseModalSrc.includes('convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit)') &&
+      op150EnterpriseModalSrc.includes('convertPricePerSqmToUnit((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) / 1_000_000, areaUnit)') &&
+      op150AdminOverviewSrc.includes('fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))') &&
+      op150AdminOverviewSrc.includes('رهن کامل {formatAreaShort(80, areaUnit)} (میلیون){fxTag(adminEditRahn80m)}:') &&
+      op150ShareModalSrc.includes('شکار امروز (${formatAreaShort(hood.bargains[0].sqm, areaUnit)}): ${hood.bargains[0].priceText}'),
+    'EnterpriseAssetFundAndMarketIntelligenceModal, AdminOverviewAndModerationTabs, and ShareModal must expose full OP-150 area unit and international currency equivalence'
+  );
+  const op151AdminAiSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminCloudAiCommerceCenter.tsx'), 'utf-8');
+  const op151AdminMcpSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMcpAndPortabilitySandboxPanel.tsx'), 'utf-8');
+  const op151HedonicModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationModal.tsx'), 'utf-8');
+  assert.ok(
+    op151AdminAiSrc.includes('convertPricePerSqmToUnit(searchTestResult.structuredQuery.maxBuyPerSqmMillions, areaUnit)') &&
+      op151AdminMcpSrc.includes('formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(maxBuyPerSqm, areaUnit), intlCurrency, locale)') &&
+      op151HedonicModalSrc.includes('formatMillionTomanAsIntlCurrency(valuation.confidenceRangeMillion.min, intlCurrency, radarLocale)') &&
+      op151HedonicModalSrc.includes('formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(n.baseBuyPerSqm ?? n.buyPerSqm, areaUnit), intlCurrency, radarLocale)'),
+    'AdminCloudAiCommerceCenter, AdminMcpAndPortabilitySandboxPanel, and HedonicValuationModal must expose full OP-151 area unit and international currency equivalence'
+  );
+  const op152SearchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
+  const op152HedonicInlineSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicInlineWidget.tsx'), 'utf-8');
+  assert.ok(
+    op152SearchDropdownSrc.includes('رهن ${formatAreaShort(80, areaUnit)}:') &&
+      op152HedonicInlineSrc.includes('formatMillionTomanAsIntlCurrency(unitHoodBase, intlCurrency, radarLocale)') &&
+      op146ExpandableCompareSrc.includes('formatMillionTomanAsIntlCurrency(optVal, intlCurrency, radarLocale)') &&
+      op147PriceTrendModalSrc.includes('name={`رهن کامل ${effectiveAreaLabel} (میلیون تومان)`}') &&
+      op147PriceTrendModalSrc.includes('convertPricePerSqmToUnit(summaryStats.avgBuy12m, areaUnit)'),
+    'SearchDropdownMenu, HedonicInlineWidget, ExpandableComparisonTable, and NeighborhoodPriceTrendModal must expose full OP-152 area unit and international currency equivalence'
+  );
+  const op153PriceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');
+  const op153MonthlyBarSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodMonthlyBarChart.tsx'), 'utf-8');
+  const op153ForecastCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartPriceForecastCard.tsx'), 'utf-8');
+  const op153SecondaryModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SecondaryModals.tsx'), 'utf-8');
+  assert.ok(
+    op153PriceChartSrc.includes('name={`رهن کامل ${formatAreaShort(80, areaUnit)} (م)`}') &&
+      op153PriceChartSrc.includes('formatMillionTomanAsIntlCurrency(uPtBuy, intlCurrency, radarLocale)') &&
+      op153MonthlyBarSrc.includes('formatMillionTomanAsIntlCurrency(Math.abs(avgMonthlyIncreaseMillion), intlCurrency, radarLocale)') &&
+      op153MonthlyBarSrc.includes('formatMillionTomanAsIntlCurrency(Math.abs(unitChangeVal), intlCurrency, radarLocale)') &&
+      op153ForecastCardSrc.includes('شفافیت کمیسیون اتحادیه، سهم عرصه و تبدیل رهن ({formatAreaShort(80, areaUnit)})') &&
+      op153SecondaryModalsSrc.includes("seoSortBy === 'cheapest_rent' ? fmtUnitRent(n.rahn80m) : fmtUnitBuy"),
+    'NeighborhoodPriceChart, NeighborhoodMonthlyBarChart, SmartPriceForecastCard, and SecondaryModals must expose full OP-153 area unit and international currency equivalence'
+  );
+  const op154QuickRankingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf-8');
+  const op154BargainsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodBargainsAndVotesTabs.tsx'), 'utf-8');
+  const op154BuyingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyingPowerSummaryCard.tsx'), 'utf-8');
+  const op154BudgetBridgeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BudgetBridgeAdvisorCard.tsx'), 'utf-8');
+  const op154CompareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf-8');
+  assert.ok(
+    op154QuickRankingSrc.includes('formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(cityMarketStats.iqrPricePerSqm ?? 0, areaUnit), intlCurrency, radarLocale)') &&
+      op154BargainsSrc.includes('نرخ معادل رهن ({formatAreaShort(80, areaUnit)}):') &&
+      op154BargainsSrc.includes('سود خریدار: {b.buyerProfitText}{fxProfit}') &&
+      op154BuyingPowerSrc.includes('formatMillionTomanAsIntlCurrency(displayUnitPrice, intlCurrency, radarLocale)') &&
+      op154BudgetBridgeSrc.includes('رهن (${formatAreaShort(80, areaUnit)}) ${toPersianNum(diffRahn)}م${fxTag(diffRahn)}') &&
+      op154CompareModalSrc.includes('`رهن (${formatAreaShort(80, areaUnit)})`'),
+    'QuickHoodRankingStrip, NeighborhoodBargainsAndVotesTabs, BuyingPowerSummaryCard, BudgetBridgeAdvisorCard, and CompareModal must expose full OP-154 area unit and international currency equivalence'
+  );
+  const op155InspectorDrawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
+  const op155InspectorTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorTabs.tsx'), 'utf-8');
+  const op155ShortlistMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShortlistMatrixModal.tsx'), 'utf-8');
+  const op155PortfolioModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
+  assert.ok(
+    op155InspectorDrawerSrc.includes('`رهن (${formatAreaShort(80, areaUnit)}): ${toPersianNum(favHood.rahn80m)} م') &&
+      op155InspectorDrawerSrc.includes('پایه ${formatAreaShort(80, areaUnit)} نوساز: ${toPersianNum(selectedHood.rahn80m)} م${intlCurrency !== \'IRT\' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : \'\'}') &&
+      op155InspectorTabsSrc.includes('`رهن (${formatAreaShort(80, areaUnit)}) ~${toPersianNum(Math.round(selectedHood.rahn80m * tier.priceMultiplier))} م${fxTag(Math.round(selectedHood.rahn80m * tier.priceMultiplier))}`') &&
+      op155ShortlistMatrixSrc.includes('رهن کامل ({formatAreaShort(80, areaUnit)} — میلیون تومان)') &&
+      op155ShortlistMatrixSrc.includes('formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, radarLocale)') &&
+      op155PortfolioModalsSrc.includes('قیمت کل واحد ({formatAreaShort(tradeUpTargetSqm, areaUnit)}):'),
+    'NeighborhoodInspectorDrawer, NeighborhoodInspectorTabs, ShortlistMatrixModal, and PortfolioModals must expose full OP-155 area unit and international currency equivalence'
+  );
+  const op156SecondaryModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SecondaryModals.tsx'), 'utf-8');
+  const op156SmartSuggestSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartSuggestModal.tsx'), 'utf-8');
+  const op156ShareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShareModal.tsx'), 'utf-8');
+  const op156ProvinceModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NationwideProvinceModal.tsx'), 'utf-8');
+  assert.ok(
+    op156SecondaryModalsSrc.includes('compare=${pair.id1}-${pair.id2}${intlQuerySuffix}') &&
+      op156SmartSuggestSrc.includes('کل ${formatAreaValue(safeTargetSqm, areaUnit, true)}: ${toPersianNum(Math.round(n.buyPerSqm * safeTargetSqm))} م') &&
+      op156ShareModalSrc.includes('formatMillionTomanAsIntlCurrency(estM, intlCurrency, locale)') &&
+      op156ProvinceModalSrc.includes('رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(h.rahn80m)} میلیون${rahnFxTip}'),
+    'SecondaryModals, SmartSuggestModal, ShareModal, and NationwideProvinceModal must expose full OP-156 deep-link, area unit, and international currency equivalence'
+  );
+  const op157HedonicModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationModal.tsx'), 'utf-8');
+  const op157HedonicResultsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationResultsColumn.tsx'), 'utf-8');
+  const op157AgencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf-8');
+  const op157OnboardingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/OnboardingWizardModal.tsx'), 'utf-8');
+  assert.ok(
+    op157HedonicModalSrc.includes('فروش فوری نقدی (-۴٪): ${toPersianNum((valuation.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد تومان') &&
+      op157HedonicModalSrc.includes('اعلامی هر ${unitLabel}: ${toPersianNum(convertPricePerSqmToUnit(Math.round(sellerAskingMillion / Math.max(1, sqm)), areaUnit))} م') &&
+      op157HedonicResultsSrc.includes('م/{areaUnit === \'sqft\' ? \'ft²\' : \'متر\'}') &&
+      op157AgencyModalSrc.includes('رهن ${formatAreaShort(80, areaUnit)}') &&
+      op157AgencyModalSrc.includes('اعمال ۱۵٪ تخفیف ({toPersianNum(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85)))} م') &&
+      op157OnboardingSrc.includes('کل بودجه نقدی در دسترس شما{showIntl ? ` (${formatMillionTomanAsIntlCurrency(buyTotalBudget, currency, locale)})` : \'\'}:') &&
+      op157OnboardingSrc.includes('قدرت خرید نهایی شما (با اهرم‌ها): <span className="text-[10.5px] font-semibold text-emerald-800/80">({formatAreaShort(targetSqm, areaUnit)}'),
+    'HedonicValuationModal, HedonicValuationResultsColumn, AgencyModal, and OnboardingWizardModal must expose full OP-157 area unit and international currency equivalence'
+  );
+  const op158PortfolioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
+  const op158BuyerAlertsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf-8');
+  const op158SparklineSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPriceSparkline.tsx'), 'utf-8');
+  const op158LegalAdvisorSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ContractLegalAdvisorView.tsx'), 'utf-8');
+  assert.ok(
+    op158PortfolioSrc.includes('ارزش تقریبی فروش ملک فعلی (هر {areaUnit === \'sqft\' ? \'ft²\' : \'متر\'}') &&
+      op158PortfolioSrc.includes('({areaUnit === \'sqft\' ? \'ft²\' : \'متری\'} {toPersianNum(Math.round(convertPricePerSqmToUnit(item.hood.buyPerSqm, areaUnit)))} م)') &&
+      op158BuyerAlertsSrc.includes('سقف انتخابی: {toPersianNum(uInput)} م') &&
+      op158BuyerAlertsSrc.includes('در انتظار کاهش قیمت{subHood ? ` (فعلی: ${toPersianNum(uCur)} م)` : \'\'}') &&
+      op158SparklineSrc.includes('سقف شما: {fmtVal(pt.thresholdMillion)} {unitSuffix}{fmtFx(pt.thresholdMillion)}') &&
+      op158LegalAdvisorSrc.includes('<AreaUnitToggle compact showIntlControls />') &&
+      op158LegalAdvisorSrc.includes('const rewriteWithFx = `${clauseResult.safeRewrite}'),
+    'PortfolioModals, buyerPriceThresholdAlerts, BuyerAlertPriceSparkline, and ContractLegalAdvisorView must expose full OP-158 area unit and international currency equivalence'
+  );
+  const op159ExpansionSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpansionModulesModal.tsx'), 'utf-8');
+  const op159LegalStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/LegalContractAndPortfolioStudioModal.tsx'), 'utf-8');
+  const op159AgencyCrmSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyCrmAndAutomationStudioModal.tsx'), 'utf-8');
+  const op159BiGisSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BiRiskAndGeospatialIntelligenceStudioModal.tsx'), 'utf-8');
+  assert.ok(
+    op159ExpansionSrc.includes("commDealType === 'buy' ? 'جمع کل قابل پرداخت خریدار:' : 'جمع کل قابل پرداخت مستاجر:'") &&
+      op159ExpansionSrc.includes('const tgHoodSummary = `📊 نرخ فعلی ${selectedHood?.name || \'تهران\'}') &&
+      op159LegalStudioSrc.includes('واحد سعادت‌آباد ({formatAreaShort(110, areaUnit)})') &&
+      op159LegalStudioSrc.includes('تغییر رقم مالی${showIntl ? `: ${formatMillionTomanAsIntlCurrency(10_000, currency, locale)} ← ${formatMillionTomanAsIntlCurrency(10_500, currency, locale)}` : \'\'}') &&
+      op159AgencyCrmSrc.includes('{formatAreaShort(125, areaUnit)}{showIntl ? ` · ${formatMillionTomanAsIntlCurrency(13_800, currency, locale)}` : \'\'}') &&
+      op159AgencyCrmSrc.includes('(${formatMillionTomanAsIntlCurrency(136.5, currency, locale)} ← ${formatMillionTomanAsIntlCurrency(116, currency, locale)})') &&
+      op159BiGisSrc.includes('NOI: {Math.round(investmentSim.annualNetOperatingIncomeToman / 1_000_000).toLocaleString(\'fa-IR\')} م') &&
+      op159BiGisSrc.includes('شعاع {r} متر{areaUnit === \'sqft\' ? ` (${Math.round(r * 3.28084)} ft)` : \'\'}'),
+    'ExpansionModulesModal, LegalContractAndPortfolioStudioModal, AgencyCrmAndAutomationStudioModal, and BiRiskAndGeospatialIntelligenceStudioModal must expose full OP-159 area unit and international currency equivalence'
+  );
+  const op160EnterpriseSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/EnterpriseAssetFundAndMarketIntelligenceModal.tsx'), 'utf-8');
+  const op160ValuationFakeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesValuationAndFakeTabs.tsx'), 'utf-8');
+  const op160LegalBuildingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesLegalAndBuildingTabs.tsx'), 'utf-8');
+  const op160SwapStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesSwapAndStudioTabs.tsx'), 'utf-8');
+  assert.ok(
+    op160EnterpriseSrc.includes('NAV هر واحد: <strong>{toPersianNum((b119FundResult.nav.navPerUnitToman ?? 0).toLocaleString())} ت{fxM((b119FundResult.nav.navPerUnitToman ?? 0) / 1_000_000)}</strong>') &&
+      op160EnterpriseSrc.includes('{areaUnit === \'sqft\' ? \'kWh/ft²\' : \'kWh/m²\'}') &&
+      op160EnterpriseSrc.includes('({formatAreaShort(142.5, areaUnit)})') &&
+      op160ValuationFakeSrc.includes('convertPricePerSqmToUnit(valuationResult.goldGramPricePerSqm, areaUnit)') &&
+      op160ValuationFakeSrc.includes('formatMillionTomanAsIntlCurrency(negotiationResult.targetClosingPriceMillion, intlCurrency, locale)') &&
+      op160ValuationFakeSrc.includes('formatMillionTomanAsIntlCurrency(depositInflationResult.realValue1YrMillion, intlCurrency, locale)') &&
+      op160LegalBuildingSrc.includes('formatMillionTomanAsIntlCurrency(share.perPersonValueMillion, intlCurrency, locale)') &&
+      op160LegalBuildingSrc.includes('معادل ارزی سهم واحد:') &&
+      op160LegalBuildingSrc.includes('ودیعه مرجع: {toPersianNum(activeHood.rahn80m)} م') &&
+      op160SwapStudioSrc.includes("${areaUnit === 'sqft' ? 'هر ft² فقط' : 'متری فقط'} ${toPersianNum(convertPricePerSqmToUnit(fairPerSqm, areaUnit))} میلیون") &&
+      op160SwapStudioSrc.includes('واحد ${formatAreaValue(valSqm, areaUnit, true)} (چک‌لیست ۱۲گانه:') &&
+      op160SwapStudioSrc.includes("{areaUnit === 'sqft' ? '۱.۵ کیلومتر (۴,۹۲۰ فوت)' : '۱.۵ کیلومتر'}"),
+    'EnterpriseAssetFundAndMarketIntelligenceModal, SuperModulesValuationAndFakeTabs, SuperModulesLegalAndBuildingTabs, and SuperModulesSwapAndStudioTabs must expose full OP-160 area unit and international currency equivalence'
+  );
+  const op161InspectorDrawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
+  const op161PurchasingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf-8');
+  const op161CommuteMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CommuteHubsMatrixCard.tsx'), 'utf-8');
+  const op161RankingStripSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf-8');
+  assert.ok(
+    op161InspectorDrawerSrc.includes('محله {selectedHood.name} · {formatAreaShort(targetSqm, areaUnit)}') &&
+      op161InspectorDrawerSrc.includes("formatMillionTomanAsIntlCurrency(selectedHood.buyPerSqm * targetSqm, intlCurrency, radarLocale) : 'محاسبه آنلاین'") &&
+      op161PurchasingPowerSrc.includes('const uPriceDelta = Number((uCurrentPrice - uStartPrice).toFixed(1));') &&
+      op161PurchasingPowerSrc.includes('Math.round(spatialReport.nearestMetroDistKm * 3280.84).toLocaleString(\'en-US\')') &&
+      op161CommuteMatrixSrc.includes('(spatialReport.nearestMetroDistKm * 3280.84).toLocaleString(\'en-US\')') &&
+      op161CommuteMatrixSrc.includes('(hub.distKm * 0.621371).toFixed(1)') &&
+      op161RankingStripSrc.includes('(hood.distKm * 0.621371).toFixed(1)') &&
+      op161RankingStripSrc.includes("return `رشد ۶م ${g > 0 ? '+' : ''}${toPersianNum(g)}٪ · ${areaUnit === 'sqft' ? 'ft²' : 'متری'}"),
+    'NeighborhoodInspectorDrawer, PurchasingPowerTrendCard, CommuteHubsMatrixCard, and QuickHoodRankingStrip must expose full OP-161 area unit, imperial distance, and international currency equivalence'
+  );
+  const op162BargainsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodBargainsAndVotesTabs.tsx'), 'utf-8');
+  const op162InspectorTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorTabs.tsx'), 'utf-8');
+  const op162ExpandableCompareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpandableComparisonTable.tsx'), 'utf-8');
+  const op162CompareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf-8');
+  assert.ok(
+    op162BargainsSrc.includes('معیار {formatAreaShort(targetSqm, areaUnit)}:') &&
+      op162BargainsSrc.includes('شعاع {toPersianNum(selectedHood.radius || 900)} متر') &&
+      op162InspectorTabsSrc.includes('ارزش معیار واحد {formatAreaShort(targetSqm, areaUnit)}:') &&
+      op162InspectorTabsSrc.includes('(selectedHood.distKm * 0.621371).toFixed(1)') &&
+      op162ExpandableCompareSrc.includes('const diffTotalMillion = Math.abs(hoodA.buyPerSqm - hoodB.buyPerSqm) * targetSqm;') &&
+      op162ExpandableCompareSrc.includes('(hoodA.distKm * 0.621371).toFixed(1)') &&
+      op162CompareModalSrc.includes('اختلاف متراژ: <strong className="tabular-nums">{formatAreaValue(summaryStats.diffSqm, areaUnit)}</strong>') &&
+      op162CompareModalSrc.includes('(compHood1.distKm * 0.621371).toFixed(1)'),
+    'NeighborhoodBargainsAndVotesTabs, NeighborhoodInspectorTabs, ExpandableComparisonTable, and CompareModal must expose full OP-162 area unit, imperial distance, and international currency equivalence'
+  );
+  const op163PriceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');
+  const op163MonthlyBarSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodMonthlyBarChart.tsx'), 'utf-8');
+  const op163ShortlistMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShortlistMatrixModal.tsx'), 'utf-8');
+  const op163BudgetBridgeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BudgetBridgeAdvisorCard.tsx'), 'utf-8');
+  assert.ok(
+    op163PriceChartSrc.includes('tickFormatter={(val) => toPersianNum(convertPricePerSqmToUnit(Number(val) || 0, areaUnit))}') &&
+      op163PriceChartSrc.includes('کل واحد ({formatAreaShort(80, areaUnit)}):') &&
+      op163MonthlyBarSrc.includes('tickFormatter={(val) => toPersianNum(convertPricePerSqmToUnit(Number(val) || 0, areaUnit))}') &&
+      op163MonthlyBarSrc.includes('ارزش واحد ({formatAreaShort(80, areaUnit)}):') &&
+      op163ShortlistMatrixSrc.includes('(distKm * 0.621371).toFixed(1)') &&
+      op163ShortlistMatrixSrc.includes('const uDelta6 = Number(convertPricePerSqmToUnit(hood.buyPerSqm * (g6 / (100 + g6)), areaUnit).toFixed(1));') &&
+      op163BudgetBridgeSrc.includes('کمبود بودجه ({formatAreaShort(targetSqm, areaUnit)}):') &&
+      op163BudgetBridgeSrc.includes('(distKm * 0.621371).toFixed(1)'),
+    'NeighborhoodPriceChart, NeighborhoodMonthlyBarChart, ShortlistMatrixModal, and BudgetBridgeAdvisorCard must expose full OP-163 area unit, imperial distance, and international currency equivalence'
+  );
+  const op164TrendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf-8');
+  const op164ForecastSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartPriceForecastCard.tsx'), 'utf-8');
+  const op164RankingStripSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf-8');
+  const op164PortfolioModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
+  assert.ok(
+    op164TrendModalSrc.includes("tickFormatter={(val) => toPersianNum(chartMode === 'rent_rahn_detail' ? val : Number(convertPricePerSqmToUnit(Number(val) || 0, areaUnit).toFixed(1)))}") &&
+      op164TrendModalSrc.includes('اجاره سالانه: {toPersianNum(Math.round(summaryStats.endRahn * 0.36))} م') &&
+      op164ForecastSrc.includes('ارزش ۳ ماه آینده ({formatAreaShort(80, areaUnit)}):') &&
+      op164RankingStripSrc.includes('if (criterion === \'clean_air\') return `هوا ${toPersianNum(hood.air)}/۱۰ · ${priceTag}`;') &&
+      op164RankingStripSrc.includes('if (criterion === \'best_metro\') return `مترو ${toPersianNum(hood.metro)}/۱۰ · ${priceTag}`;') &&
+      op164PortfolioModalsSrc.includes('معیار محله: ${areaUnit === \'sqft\' ? \'ft²\' : \'متری\'} ${toPersianNum(uHood)} م') &&
+      op164PortfolioModalsSrc.includes('متراژ مورد نظر واحد جدید ({tradeUpTargetSqm >= tradeUpCurrentSqm ? \'+\' : \'-\'}{formatAreaShort(Math.abs(tradeUpTargetSqm - tradeUpCurrentSqm), areaUnit)}):'),
+    'NeighborhoodPriceTrendModal, SmartPriceForecastCard, QuickHoodRankingStrip, and PortfolioModals must expose full OP-164 area unit and international currency equivalence'
+  );
+  const op165BuyingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyingPowerSummaryCard.tsx'), 'utf-8');
+  const op165HedonicWidgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicInlineWidget.tsx'), 'utf-8');
+  const op165NaturalSearchSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartNaturalSearchMatchesSection.tsx'), 'utf-8');
+  const op165SearchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
+  assert.ok(
+    op165BuyingPowerSrc.includes('متراژ قابل خرید در {selectedHood?.name || \'این محله\'}') &&
+      op165BuyingPowerSrc.includes('const affordableSqmInHood = Math.round(effectivePurchasingPowerMillion / hoodPerSqm);') &&
+      op165HedonicWidgetSrc.includes('const fastSaleUnitPrice = convertPricePerSqmToUnit(Math.round(result.fastSaleTotalMillion / Math.max(1, sqm)), areaUnit);') &&
+      op165HedonicWidgetSrc.includes('const totalDiffMillion = Math.round(Math.abs(result.hedonicTotalMillion - result.hoodBasePerSqm * sqm));') &&
+      op165NaturalSearchSrc.includes('(n.distKm * 0.621371).toFixed(1)') &&
+      op165NaturalSearchSrc.includes('کل ${formatAreaShort(80, areaUnit)}:') &&
+      op165SearchDropdownSrc.includes('(n.distKm * 0.621371).toFixed(1)') &&
+      op165SearchDropdownSrc.includes('کل ${formatAreaShort(80, areaUnit)}:'),
+    'BuyingPowerSummaryCard, HedonicInlineWidget, SmartNaturalSearchMatchesSection, and SearchDropdownMenu must expose full OP-165 area unit, imperial distance, and international currency equivalence'
+  );
+  const op166HedonicModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationModal.tsx'), 'utf-8');
+  const op166HedonicResultsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationResultsColumn.tsx'), 'utf-8');
+  const op166ProvinceModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NationwideProvinceModal.tsx'), 'utf-8');
+  const op166ShareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShareModal.tsx'), 'utf-8');
+  assert.ok(
+    op166HedonicModalSrc.includes('اجاره ماهانه معادل: ${toPersianNum(Math.round(valuation.estimatedRahnMillion * 0.03))} م') &&
+      op166HedonicModalSrc.includes('(n.distKm * 0.621371).toFixed(1)') &&
+      op166HedonicResultsSrc.includes('اجاره ماهانه: {toPersianNum(Math.round(valuation.estimatedRahnMillion * 0.03))} م') &&
+      op166ProvinceModalSrc.includes('const avgProvUnit = provHoods.length > 0 ? convertPricePerSqmToUnit(') &&
+      op166ProvinceModalSrc.includes('const total80m = h.buyPerSqm * 80;') &&
+      op166ShareModalSrc.includes('(selectedHood.distKm * 0.621371).toFixed(1)') &&
+      op166ShareModalSrc.includes('واحد {formatAreaShort(80, areaUnit)}: {toPersianNum(((safeBuy * 80) / 1000).toFixed(1))} میلیارد'),
+    'HedonicValuationModal, HedonicValuationResultsColumn, NationwideProvinceModal, and ShareModal must expose full OP-166 area unit, imperial distance, and international currency equivalence'
+  );
+  const op167SecondaryModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SecondaryModals.tsx'), 'utf-8');
+  const op167SmartSuggestSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartSuggestModal.tsx'), 'utf-8');
+  const op167PurchasingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf-8');
+  const op167AgencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf-8');
+  assert.ok(
+    op167SecondaryModalsSrc.includes('واحد {formatAreaShort(80, areaUnit)}: {toPersianNum((((marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138) * 80) / 1000).toFixed(1))} میلیارد') &&
+      op167SecondaryModalsSrc.includes('Math.round(metroDist * 3280.84).toLocaleString(\'en-US\')') &&
+      op167SmartSuggestSrc.includes('اجاره ماهانه: ${toPersianNum(Math.round(scaledRahn * 0.03))} م') &&
+      op167SmartSuggestSrc.includes('(n.distKm * 0.621371).toFixed(1)') &&
+      op167PurchasingPowerSrc.includes('const total80DeltaMillion = (currentPrice - startPrice) * 80;') &&
+      op167PurchasingPowerSrc.includes('(selectedHood.distKm * 0.621371).toFixed(1)') &&
+      op167AgencyModalSrc.includes('اجاره ماهانه معادل: {toPersianNum(Math.round(bargainProposedPrice * 0.03))} م') &&
+      op167AgencyModalSrc.includes('معادل هر ft²: ${toPersianNum(convertPricePerSqmToUnit(bargainProposedPrice, areaUnit))} م'),
+    'SecondaryModals, SmartSuggestModal, PurchasingPowerTrendCard, and AgencyModal must expose full OP-167 area unit, imperial distance, and international currency equivalence'
+  );
+  const op168BuyerAlertModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPwaLegalModals.tsx'), 'utf-8');
+  const op168ExpansionModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpansionModulesModal.tsx'), 'utf-8');
+  const op168OnboardingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/OnboardingWizardModal.tsx'), 'utf-8');
+  const op168PortfolioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
+  assert.ok(
+    op168BuyerAlertModalsSrc.includes('رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م · اجاره: ${toPersianNum(Math.round(n.rahn80m * 0.03))} م') &&
+      op168BuyerAlertModalsSrc.includes('کل ${formatAreaShort(85, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 85) / 1000).toFixed(1))} میلیارد') &&
+      op168ExpansionModalSrc.includes('معادل رهن کامل مبنای کمیسیون ({formatAreaShort(commSqm, areaUnit)}):') &&
+      op168ExpansionModalSrc.includes('کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum((((selectedHood?.buyPerSqm || 135) * 80) / 1000).toFixed(1))} میلیارد') &&
+      op168OnboardingSrc.includes('معادل رهن کامل شما ({formatAreaShort(targetSqm, areaUnit)} · اجاره معادل:') &&
+      op168OnboardingSrc.includes('(hood.distKm * 0.621371).toFixed(1)') &&
+      op168PortfolioSrc.includes('کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد') &&
+      op168PortfolioSrc.includes('رهن دادن واحد جدید به مستأجر (~{toPersianNum(Math.round(selectedHood.rahn80m * (tradeUpTargetSqm / 80)))} م'),
+    'BuyerAlertPwaLegalModals, ExpansionModulesModal, OnboardingWizardModal, and PortfolioModals must expose full OP-168 area unit, imperial distance, and international currency equivalence'
+  );
+  const op169ThresholdAlertsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf-8');
+  const op169SparklineSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPriceSparkline.tsx'), 'utf-8');
+  const op169LegalAdvisorSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ContractLegalAdvisorView.tsx'), 'utf-8');
+  const op169SponsorTabSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencySponsorReservationTab.tsx'), 'utf-8');
+  assert.ok(
+    op169ThresholdAlertsSrc.includes('اجاره معادل: ${toPersianNum(Math.round(uSubMax * 0.03))} م') &&
+      op169ThresholdAlertsSrc.includes('اجاره معادل: ${toPersianNum(Math.round(uTopObs * 0.03))} م') &&
+      op169SparklineSrc.includes('fmtVal(Math.abs(series.endMillion - series.startMillion))') &&
+      op169SparklineSrc.includes('کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((pt.priceMillion * 80) / 1000).toFixed(1))} میلیارد') &&
+      op169LegalAdvisorSrc.includes('مبایعه‌نامه خرید ({formatAreaShort(80, areaUnit)})') &&
+      op169LegalAdvisorSrc.includes('ودیعه نمونه ۱.۲ میلیارد ت ≈ ${formatMillionTomanAsIntlCurrency(1200, currency, locale)}') &&
+      op169SponsorTabSrc.includes('کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد') &&
+      op169SponsorTabSrc.includes('({formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد)'),
+    'buyerPriceThresholdAlerts, BuyerAlertPriceSparkline, ContractLegalAdvisorView, and AgencySponsorReservationTab must expose full OP-169 area unit and international currency equivalence'
+  );
+  const op170AdminOverviewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminOverviewAndModerationTabs.tsx'), 'utf-8');
+  const op170AdminMonetizationSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMonetizationCard.tsx'), 'utf-8');
+  const op170AdminAiSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminCloudAiCommerceCenter.tsx'), 'utf-8');
+  const op170AdminMcpSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMcpAndPortabilitySandboxPanel.tsx'), 'utf-8');
+  assert.ok(
+    op170AdminOverviewSrc.includes('کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد') &&
+      op170AdminOverviewSrc.includes('(اجاره ماهانه: {toPersianNum(Math.round(adminEditRahn80m * 0.03))} م{fxTag(Math.round(adminEditRahn80m * 0.03))})') &&
+      op170AdminMonetizationSrc.includes('{n.name} ({areaUnit === \'sqft\' ? \'ft²\' : \'متری\'} {toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد):') &&
+      op170AdminAiSrc.includes('(کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((searchTestResult.structuredQuery.maxBuyPerSqmMillions * 80) / 1000).toFixed(1))} میلیارد)') &&
+      op170AdminMcpSrc.includes('سقف قیمت هر متر (میلیون تومان · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((maxBuyPerSqm * 80) / 1000).toFixed(1))} میلیارد'),
+    'AdminOverviewAndModerationTabs, AdminMonetizationCard, AdminCloudAiCommerceCenter, and AdminMcpAndPortabilitySandboxPanel must expose full OP-170 area unit and international currency equivalence'
+  );
+  const op171LegalStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/LegalContractAndPortfolioStudioModal.tsx'), 'utf-8');
+  const op171AgencyCrmSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyCrmAndAutomationStudioModal.tsx'), 'utf-8');
+  const op171BiGisSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BiRiskAndGeospatialIntelligenceStudioModal.tsx'), 'utf-8');
+  const op171EnterpriseSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/EnterpriseAssetFundAndMarketIntelligenceModal.tsx'), 'utf-8');
+  assert.ok(
+    op171LegalStudioSrc.includes('قیمت ناخالص فروش (میلیون تومان · هر {areaUnit === \'sqft\' ? \'ft²\' : \'متر\'} واحد {formatAreaShort(80, areaUnit)}:') &&
+      op171LegalStudioSrc.includes('تعداد دارایی‌های اظهارشده کاربر: {portfolioSummary.eligibleAssetCount} ملک (مجموع متراژ: {formatAreaShort(250, areaUnit)})') &&
+      op171AgencyCrmSrc.includes('(هر ${areaUnit === \'sqft\' ? \'ft²\' : \'متر\'} واحد ${formatAreaShort(80, areaUnit)}:') &&
+      op171AgencyCrmSrc.includes('(هر {areaUnit === \'sqft\' ? \'ft²\' : \'متر\'} {formatAreaShort(125, areaUnit)}:') &&
+      op171BiGisSrc.includes('خط مستقیم تا ورودی: {metroAndPoi.nearestOperationalMetro.straightLineMeters} متر{areaUnit === \'sqft\' ? ` (${Math.round((metroAndPoi.nearestOperationalMetro.straightLineMeters ?? 0) * 3.28084)} ft)` : \'\'}') &&
+      op171BiGisSrc.includes('تراکم: {demographicMetrics.densityPersonsPerHectare} نفر/هکتار{areaUnit === \'sqft\' ? ` (${((demographicMetrics.densityPersonsPerHectare ?? 0) / 2.47105).toFixed(1)} نفر/Acre)` : \'\'}') &&
+      op171EnterpriseSrc.includes('| کل واحد {formatAreaShort(80, areaUnit)}: <strong>{toPersianNum((((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت') &&
+      op171EnterpriseSrc.includes('(کل {formatAreaShort(80, areaUnit)}: {toPersianNum((((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت)'),
+    'LegalContractAndPortfolioStudioModal, AgencyCrmAndAutomationStudioModal, BiRiskAndGeospatialIntelligenceStudioModal, and EnterpriseAssetFundAndMarketIntelligenceModal must expose full OP-171 area unit, imperial distance/density, and international currency equivalence'
+  );
+  const op172ValuationSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesValuationAndFakeTabs.tsx'), 'utf-8');
+  const op172SwapSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesSwapAndStudioTabs.tsx'), 'utf-8');
+  const op172LegalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesLegalAndBuildingTabs.tsx'), 'utf-8');
+  const op172ModalShellSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/FutureSuperModulesModal.tsx'), 'utf-8');
+  assert.ok(
+    op172ValuationSrc.includes('متراژ سندی ({formatAreaValue(valSqm, areaUnit, true)})') &&
+      op172ValuationSrc.includes('رهن کامل معادل (اجاره: {toPersianNum(Math.round(valuationResult.fullRahnMillion * 0.03))} م/ماه):') &&
+      op172SwapSrc.includes('کل {formatAreaValue(valSqm, areaUnit, true)}: {toPersianNum(((chitgarScoreResult.estimatedFinishedPricePerSqmMillion * valSqm) / 1000).toFixed(2))} میلیارد') &&
+      op172SwapSrc.includes("{areaUnit === 'sqft' ? ' / ۰.۹۳ مایل' : ''}") &&
+      op172LegalSrc.includes('ودیعه (اجاره: {toPersianNum(Math.round(taxRahnMillion * 0.03))} م/ماه)') &&
+      op172LegalSrc.includes('واحد {formatAreaValue(valSqm, areaUnit, true)} از کل {formatAreaValue(valSqm * bldgUnitsCount, areaUnit, true)}') &&
+      op172ModalShellSrc.includes('کارشناسی واحد {formatAreaValue(valSqm, areaUnit, true)}: {toPersianNum((valuationResult.fairTotalMillion / 1000).toFixed(2))} میلیارد') &&
+      op172ModalShellSrc.includes('کل {formatAreaValue(80, areaUnit, true)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد'),
+    'SuperModulesValuationAndFakeTabs, SuperModulesSwapAndStudioTabs, SuperModulesLegalAndBuildingTabs, and FutureSuperModulesModal must expose full OP-172 area unit, imperial distance, and international currency equivalence'
+  );
+  const op173TopBarSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/FloatingTopBar.tsx'), 'utf-8');
+  const op173SearchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
+  const op173RankingStripSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf-8');
+  const op173MapLegendSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/MapLegend.tsx'), 'utf-8');
+  assert.ok(
+    op173TopBarSrc.includes('اجاره ماهانه (رهن کامل معادل: {toPersianNum(deposit + Math.round(monthlyRent / 0.03))} م):') &&
+      op173TopBarSrc.includes('formatMillionTomanAsIntlCurrency(deposit, intlCurrency, radarLocale)') &&
+      op173TopBarSrc.includes("متراژ مورد نظر ({mode === 'rent' ? 'اجاره' : 'خرید'} · {formatAreaShort(targetSqm, areaUnit)}):") &&
+      op173SearchDropdownSrc.includes('رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م · اجاره: ${toPersianNum(Math.round(n.rahn80m * 0.03))} م') &&
+      op173SearchDropdownSrc.includes('کل: ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, radarLocale)}') &&
+      op173RankingStripSrc.includes('رهن (${formatAreaShort(80, areaUnit)}) ${toPersianNum(hood.rahn80m)} م · اجاره ${toPersianNum(Math.round(hood.rahn80m * 0.03))} م') &&
+      op173RankingStripSrc.includes('واحد {formatAreaShort(80, areaUnit)}: <strong className="text-slate-800">{toPersianNum(((cityMarketStats.medianPricePerSqm * 80) / 1000).toFixed(1))} میلیارد</strong>') &&
+      op173MapLegendSrc.includes('({formatAreaShort(80, areaUnit)} · ۱۰ م.ت') &&
+      op173MapLegendSrc.includes("{areaUnit === 'sqft' ? ' / ۱.۹ تا ۷.۵ مایل' : ''}"),
+    'FloatingTopBar, SearchDropdownMenu, QuickHoodRankingStrip, and MapLegend must expose full OP-173 area unit, imperial distance, and international currency equivalence'
+  );
+  const op175InspectorTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorTabs.tsx'), 'utf-8');
+  const op175BargainsTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodBargainsAndVotesTabs.tsx'), 'utf-8');
+  const op175HedonicModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationModal.tsx'), 'utf-8');
+  const op175FakeTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesValuationAndFakeTabs.tsx'), 'utf-8');
+  assert.ok(
+    op175InspectorTabsSrc.includes('convertPricePerSqmToUnit(agg.askingPricePerSqm, areaUnit)') &&
+      op175InspectorTabsSrc.includes('convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit)') &&
+      op175InspectorTabsSrc.includes('بازه منطقی محله: {toPersianNum(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))} تا {toPersianNum(convertPricePerSqmToUnit(agg.iqrHighPerSqm, areaUnit))}') &&
+      op175BargainsTabsSrc.includes('متراژ ({formatAreaShort(anSqm, areaUnit)})') &&
+      op175BargainsTabsSrc.includes('formatMillionTomanAsIntlCurrency(fairAskTotal, intlCurrency, radarLocale)') &&
+      op175BargainsTabsSrc.includes('formatMillionTomanAsIntlCurrency(fairDealTotal, intlCurrency, radarLocale)') &&
+      op175BargainsTabsSrc.includes('convertPricePerSqmToUnit(ab.perSqmMillion, areaUnit)') &&
+      op175HedonicModalSrc.includes('(ضریب کیفی ${toPersianNum(qMult)}x)') &&
+      op175FakeTabsSrc.includes('استخراج هوشمند مشخصات از متن'),
+    'NeighborhoodInspectorTabs, NeighborhoodBargainsAndVotesTabs, HedonicValuationModal, and SuperModulesValuationAndFakeTabs must expose full OP-175 v6.4 area unit, FX, and NLP extraction parity'
+  );
+  const op176InlineWidgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicInlineWidget.tsx'), 'utf-8');
+  const op176ResultsColSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationResultsColumn.tsx'), 'utf-8');
+  const op176CompareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf-8');
+  const op176BuyingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyingPowerSummaryCard.tsx'), 'utf-8');
+  assert.ok(
+    op176InlineWidgetSrc.includes('رهن کارشناسی: <strong className="text-emerald-700 font-extrabold">{toPersianNum(result.estimatedRahnMillion)} م (اجاره: {toPersianNum(Math.round(result.estimatedRahnMillion * 0.03))} م)</strong>') &&
+      op176InlineWidgetSrc.includes('<span>بازه منصفانه معامله:</span>') &&
+      op176ResultsColSrc.includes('{toPersianNum((valuation.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== \'IRT\' ? ` (${formatMillionTomanAsIntlCurrency(valuation.fastSaleTotalMillion, intlCurrency, radarLocale)})` : \'\'}') &&
+      op176ResultsColSrc.includes('{toPersianNum(valuation.estimatedRahnMillion)} میلیون{intlCurrency !== \'IRT\' ? ` (${formatMillionTomanAsIntlCurrency(valuation.estimatedRahnMillion, intlCurrency, radarLocale)})` : \'\'}') &&
+      op176CompareModalSrc.includes('تخمین قیمت قطعی معامله (${areaUnit === \'sqft\' ? \'هر ft²\' : \'هر متر\'})') &&
+      op176CompareModalSrc.includes('convertPricePerSqmToUnit(agg1.estimatedDealPricePerSqm, areaUnit)') &&
+      op176BuyingPowerSrc.includes('const dealPerSqm = Math.max(1, agg?.estimatedDealPricePerSqm || hoodPerSqm);') &&
+      op176BuyingPowerSrc.includes('با تخمین قیمت قطعی معامله ({areaUnit === \'sqft\' ? \'هر ft² \' : \'متری \'}'),
+    'HedonicInlineWidget, HedonicValuationResultsColumn, CompareModal, and BuyingPowerSummaryCard must expose full OP-176 v6.4 deal price, monthly rent, and primary Toman + FX parity'
+  );
+  const op177ExpandableCompareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpandableComparisonTable.tsx'), 'utf-8');
+  const op177BudgetBridgeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BudgetBridgeAdvisorCard.tsx'), 'utf-8');
+  const op177ShortlistMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShortlistMatrixModal.tsx'), 'utf-8');
+  const op177ForecastCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartPriceForecastCard.tsx'), 'utf-8');
+  assert.ok(
+    op177ExpandableCompareSrc.includes("id: 'cost_deal'") &&
+      op177ExpandableCompareSrc.includes('اجاره: ${toPersianNum(Math.round(scaledRahnA * 0.03))}م') &&
+      op177BudgetBridgeSrc.includes('با تخمین قطعی معامله: <strong className="text-teal-700 font-black">{formatAreaShort(dealAffordableSqm, areaUnit)}</strong>') &&
+      op177ShortlistMatrixSrc.includes('تخمین قیمت قطعی معامله ({areaUnit === \'sqft\' ? \'هر ft²\' : \'هر متر\'} — میلیون تومان)') &&
+      op177ShortlistMatrixSrc.includes('(اجاره: {toPersianNum(Math.round(hood.rahn80m * 0.03))} م)') &&
+      op177ForecastCardSrc.includes('م (قطعی معامله: {toPersianNum(projectedDealUnitPrice)} م)'),
+    'ExpandableComparisonTable, BudgetBridgeAdvisorCard, ShortlistMatrixModal, and SmartPriceForecastCard must expose full OP-177 v6.4 deal price, monthly rent, and FX parity'
+  );
+  const op178PortfolioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
+  const op178SecondarySrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SecondaryModals.tsx'), 'utf-8');
+  const op178TrendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf-8');
+  const op178ProvinceModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NationwideProvinceModal.tsx'), 'utf-8');
+  assert.ok(
+    op178PortfolioSrc.includes('(تخمین معامله: ${toPersianNum(uDeal)} م)') &&
+      op178PortfolioSrc.includes('· اجاره: {toPersianNum(Math.round(selectedHood.rahn80m * (tradeUpTargetSqm / 80) * 0.03))} م') &&
+      op178SecondarySrc.includes('· تخمین معامله: {fmtUnitBuy(aggregateNeighborhoodMarketMetrics(0, activeCityNameFa, marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138, []).estimatedDealPricePerSqm)}') &&
+      op178TrendModalSrc.includes('· قطعی معامله: {toPersianNum(Number(convertPricePerSqmToUnit(liveDealAgg.estimatedDealPricePerSqm, areaUnit).toFixed(1)))} م') &&
+      op178ProvinceModalSrc.includes('(معامله: ${toPersianNum(uDeal)} م)') &&
+      op178ProvinceModalSrc.includes('(اجاره: ${toPersianNum(Math.round(h.rahn80m * 0.03))} م)'),
+    'PortfolioModals, SecondaryModals, NeighborhoodPriceTrendModal, and NationwideProvinceModal must expose full OP-178 v6.4 deal price, monthly rent, and FX parity'
+  );
+  const op179SmartSuggestSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartSuggestModal.tsx'), 'utf-8');
+  const op179ShareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShareModal.tsx'), 'utf-8');
+  const op179PurchasingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf-8');
+  const op179AgencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf-8');
+  assert.ok(
+    op179SmartSuggestSrc.includes('· معامله: ${toPersianNum(uDeal)} م') &&
+      op179ShareModalSrc.includes('· معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, []).estimatedDealPricePerSqm, areaUnit))} م') &&
+      op179PurchasingPowerSrc.includes('با تخمین معامله ({toPersianNum(uDealPrice)} م): {formatAreaValue(sqmDealToday, areaUnit)}') &&
+      op179AgencyModalSrc.includes('· قطعی معامله: ${toPersianNum(uDealBench)} م') &&
+      op179AgencyModalSrc.includes('· اجاره: ${toPersianNum(Math.round(scaledRahn * 0.03))} م'),
+    'SmartSuggestModal, ShareModal, PurchasingPowerTrendCard, and AgencyModal must expose full OP-179 v6.4 deal price, monthly rent, and FX parity'
+  );
+  const op180ExpansionSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpansionModulesModal.tsx'), 'utf-8');
+  const op180SuperModalShellSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/FutureSuperModulesModal.tsx'), 'utf-8');
+  const op180SuperValFakeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesValuationAndFakeTabs.tsx'), 'utf-8');
+  const op180SuperSwapSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesSwapAndStudioTabs.tsx'), 'utf-8');
+  assert.ok(
+    op180ExpansionSrc.includes('(معامله: ${toPersianNum(uDealComm)} م)') &&
+      op180SuperModalShellSrc.includes('· معامله: {toPersianNum(uDeal)} م · کل {formatAreaValue(80, areaUnit, true)}:') &&
+      op180SuperValFakeSrc.includes('· معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(activeHood.id, activeHood.name, activeHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م') &&
+      op180SuperSwapSrc.includes('معادله تبدیل ملک {activeHood.name} (معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(activeHood.id, activeHood.name, activeHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م) به شهر {interCityResult.targetCityNameFa}:'),
+    'ExpansionModulesModal, FutureSuperModulesModal, SuperModulesValuationAndFakeTabs, and SuperModulesSwapAndStudioTabs must expose full OP-180 v6.4 deal price, area unit, and FX parity'
+  );
+  const op181SuperLegalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesLegalAndBuildingTabs.tsx'), 'utf-8');
+  const op181OnboardingSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/OnboardingWizardModal.tsx'), 'utf-8');
+  const op181BuyerAlertModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPwaLegalModals.tsx'), 'utf-8');
+  const op181ThresholdAlertsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf-8');
+  assert.ok(
+    op181SuperLegalSrc.includes('· معامله محله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(activeHood.id, activeHood.name, activeHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م') &&
+      op181OnboardingSrc.includes('(معامله: ${toPersianNum(uDeal)} م)') &&
+      op181BuyerAlertModalsSrc.includes('(معامله: {toPersianNum(uDealVal)} م)') &&
+      op181ThresholdAlertsSrc.includes('{uDealDefault > 0 ? ` (معامله: ${toPersianNum(uDealDefault)} م)` : \'\'}'),
+    'SuperModulesLegalAndBuildingTabs, OnboardingWizardModal, BuyerAlertPwaLegalModals, and buyerPriceThresholdAlerts must expose full OP-181 v6.4 deal price, area unit, and FX parity'
+  );
+  const op182LegalStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/LegalContractAndPortfolioStudioModal.tsx'), 'utf-8');
+  const op182AgencyCrmSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyCrmAndAutomationStudioModal.tsx'), 'utf-8');
+  const op182BiGisSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BiRiskAndGeospatialIntelligenceStudioModal.tsx'), 'utf-8');
+  const op182EnterpriseSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/EnterpriseAssetFundAndMarketIntelligenceModal.tsx'), 'utf-8');
+  assert.ok(
+    op182LegalStudioSrc.includes('· معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', grossSaleMillion / 80, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م') &&
+      op182LegalStudioSrc.includes('· معامله محله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', grossSaleMillion / 80, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م') &&
+      op182AgencyCrmSrc.includes('· معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', 13_800 / 125, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م') &&
+      op182BiGisSrc.includes('(معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', (indexAndGap.askingMedianPerSqmToman ?? 120_000_000) / 1_000_000, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م)') &&
+      op182EnterpriseSrc.includes('| معامله v6.4: <strong className="text-emerald-700">{toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', (b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 165_000_000) / 1_000_000, []).estimatedDealPricePerSqm, areaUnit))} {uLbl}</strong>'),
+    'LegalContractAndPortfolioStudioModal, AgencyCrmAndAutomationStudioModal, BiRiskAndGeospatialIntelligenceStudioModal, and EnterpriseAssetFundAndMarketIntelligenceModal must expose full OP-182 v6.4 deal price, area unit, and FX parity'
+  );
+  const op183SparklineSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPriceSparkline.tsx'), 'utf-8');
+  const op183LegalAdvisorSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ContractLegalAdvisorView.tsx'), 'utf-8');
+  const op183SponsorTabSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencySponsorReservationTab.tsx'), 'utf-8');
+  const op183CommuteMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CommuteHubsMatrixCard.tsx'), 'utf-8');
+  assert.ok(
+    op183SparklineSrc.includes("aggregateNeighborhoodMarketMetrics(neighborhood.id, neighborhood.name, series.endMillion, []).estimatedDealPricePerSqm") &&
+      op183SparklineSrc.includes("` (معامله v6.4: ${toPersianNum(uDealEnd)} ${unitSuffix})`") &&
+      op183LegalAdvisorSrc.includes("· معامله مرجع v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, 'تهران', 135, []).estimatedDealPricePerSqm, areaUnit))} م/{areaUnit === 'sqft' ? 'ft²' : 'متر'}") &&
+      op183SponsorTabSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
+      op183SponsorTabSrc.includes("· معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
+      op183CommuteMatrixSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م.ت"),
+    'BuyerAlertPriceSparkline, ContractLegalAdvisorView, AgencySponsorReservationTab, and CommuteHubsMatrixCard must expose full OP-183 v6.4 deal price, area unit, and FX parity'
+  );
+  const op184PriceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');
+  const op184MonthlyBarSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodMonthlyBarChart.tsx'), 'utf-8');
+  const op184RankingStripSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf-8');
+  const op184SearchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
+  const op184NaturalMatchesSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartNaturalSearchMatchesSection.tsx'), 'utf-8');
+  assert.ok(
+    op184PriceChartSrc.includes("معامله v6.4: <strong className=\"text-emerald-700\">{toPersianNum(uDealCur)} م") &&
+      op184MonthlyBarSrc.includes("{toPersianNum(unitPriceVal)} م (معامله v6.4: {toPersianNum(unitDealVal)} م)") &&
+      op184MonthlyBarSrc.includes("{toPersianNum(latestUnitPrice)} م (معامله: {toPersianNum(latestDealUnitPrice)} م)") &&
+      op184RankingStripSrc.includes("(معامله v6.4: ${toPersianNum(unitDeal)} م)") &&
+      op184SearchDropdownSrc.includes("(معامله v6.4: ${toPersianNum(unitDeal)} م)") &&
+      op184NaturalMatchesSrc.includes("(معامله v6.4: ${toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م)"),
+    'NeighborhoodPriceChart, NeighborhoodMonthlyBarChart, QuickHoodRankingStrip, SearchDropdownMenu, and SmartNaturalSearchMatchesSection must expose full OP-184 v6.4 deal price, area unit, and FX parity'
+  );
+  const op185ProvinceCtrlSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/TopBarProvinceControl.tsx'), 'utf-8');
+  const op185ProvinceDirCtrlSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/TopBarProvinceDirectoryControl.tsx'), 'utf-8');
+  const op185HeatmapLazySrc = fs.readFileSync(path.join(process.cwd(), 'src/components/priceHeatmapAndViewportLazy.tsx'), 'utf-8');
+  const op185MapLodSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/mapZoomLodAndDeclutter.ts'), 'utf-8');
+  const op185AdminOverviewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminOverviewAndModerationTabs.tsx'), 'utf-8');
+  const op185AdminMonetizationSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMonetizationCard.tsx'), 'utf-8');
+  assert.ok(
+    op185ProvinceCtrlSrc.includes("· معامله v6.4: {toPersianNum(unitDeal)} م") &&
+      op185ProvinceDirCtrlSrc.includes("· معامله v6.4: {toPersianNum(unitDeal)} م") &&
+      op185HeatmapLazySrc.includes("🤝 معامله v6.4: <strong>${toPersianNum(unitDeal)} میلیون تومان</strong>") &&
+      op185MapLodSrc.includes("· معامله v6.4: <strong>${toPersianNum(unitDealPrice)} میلیون${safeDealFx}</strong>") &&
+      op185MapLodSrc.includes("`${unitLbl} ${toPersianNum(uClusterBuy)}م (معامله v6.4: ${toPersianNum(uClusterDeal)}م)`") &&
+      op185AdminOverviewSrc.includes("(معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, (n as any).baseBuyPerSqm ?? n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م)") &&
+      op185AdminMonetizationSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م"),
+    'TopBarProvinceControl, TopBarProvinceDirectoryControl, priceHeatmapAndViewportLazy, mapZoomLodAndDeclutter, AdminOverviewAndModerationTabs, and AdminMonetizationCard must expose full OP-185 v6.4 deal price, area unit, and FX parity'
+  );
+  console.log('[PASS] Buyer Alert Contract & WS-001..WS-005 + OP-DEC-001 Regression Tests Passed.');
+});
+
+
+
+

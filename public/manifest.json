@@ -1,0 +1,88 @@
+{
+  "id": "/",
+  "name": "رادار محله‌های تهران | ابزار تحلیل قیمت مسکن و کیفیت زندگی",
+  "short_name": "رادار تهران",
+  "description": "مقایسهٔ محله‌ها، کاوش آفلاین داده‌های بازار مسکن، نقشهٔ تعاملی و استفاده از محاسبه‌گرهای خرید، رهن، اجاره و وام مسکن حتی بدون اتصال فعال اینترنت.",
+  "dir": "rtl",
+  "lang": "fa-IR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#020617",
+  "theme_color": "#10b981",
+  "prefer_related_applications": false,
+  "offline_enabled": true,
+  "categories": ["finance", "lifestyle", "navigation", "utilities"],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "کاوش خرید محله‌ها (آفلاین)",
+      "short_name": "خرید مسکن",
+      "description": "مشاهده و مقایسه قیمت خرید آپارتمان در محله‌ها با بودجه و وام",
+      "url": "/?mode=buy",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "کاوش رهن و اجاره (آفلاین)",
+      "short_name": "رهن و اجاره",
+      "description": "بررسی ودیعه و اجاره ماهانه محله‌ها بر اساس بودجه",
+      "url": "/?mode=rent",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "مقایسه دو محله",
+      "short_name": "مقایسه",
+      "description": "مقایسه مستقیم شاخص‌های قیمت، هوا، مترو و کیفیت زندگی دو محله",
+      "url": "/?compare=5-13",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

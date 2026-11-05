@@ -1,0 +1,93 @@
+# System Architecture — Tehran Housing Radar (رادار مسکن)
+
+> **Authoritative Policy & Guardrails**: See [`/ARCHITECTURE.md`](../ARCHITECTURE.md) for strict module dependency rules, the `< 500` line ceiling on implementation files, and the legacy file ratchet (`architecture-baseline.json`).
+
+## 1. High-Level Topology & C4 Architecture Model (Prompt 542)
+
+```mermaid
+flowchart TB
+  subgraph Users["1. System Context (Actors)"]
+    Visitor["Homebuyer / Renter (Browser / PWA)"]
+    AuthUser["Verified Firebase User"]
+    Admin["Verified Administrator"]
+  end
+
+  subgraph Container["2. Container Level (Single-Port 3000 Modular Monolith)"]
+    SPA["React 19 + TypeScript + Leaflet + Recharts SPA"]
+    Express["Express API Server (server.ts + src/utils/server*.ts)"]
+    LocalCache[".cache-data.json & .runtime-config.json (0o600 Atomic Disk)"]
+  end
+
+  subgraph CloudAndExt["3. External Cloud & Upstream Services"]
+    Firestore[("Cloud Firestore\nai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a")]
+    FirebaseAuth["Firebase Auth (Google OAuth Popup)"]
+    ObjStorage[("Object Storage\nLocal .object-storage-local/ or HTTPS S3")]
+    OpenMeteo["Open-Meteo Air Quality & Weather API"]
+    Gemini["Google Gemini 2.5 Flash API (Server-Only)"]
+    Telegram["Telegram Bot API (Server-Only)"]
+    MapProviders["Neshan / CARTO / OSM / Overpass APIs"]
+  end
+
+  Visitor --> SPA
+  AuthUser --> SPA
+  Admin --> SPA
+  SPA <-->|"Direct SDK (firestore.rules)"| Firestore
+  SPA <-->|"Google Sign-In"| FirebaseAuth
+  SPA <-->|"REST JSON + Bearer JWT"| Express
+  Express <--> LocalCache
+  Express <-->|"Firebase Admin SDK"| Firestore
+  Express <--> ObjStorage
+  Express --> OpenMeteo
+  Express --> Gemini
+  Express --> Telegram
+  Express --> MapProviders
+```
+
+- **Component & Code Layer Hierarchy (`ARCHITECTURE.md`)**:
+  - `src/App.tsx` & `server.ts` (Composition roots) → `src/components/*` (UI & hooks) → `src/data/*` (Pure domain datasets, Hedonic engine, legal & tax calculators) → `src/utils/*` (Security, storage, API contracts, caching, governance) → `src/types/models.ts` (Canonical TypeScript interfaces & runtime type guards).
+
+---
+
+## 2. Runtime Communication Sequence Flows (Prompt 543)
+
+### 2.1 Authenticated Property Media Upload & Bargain Creation
+```mermaid
+sequenceDiagram
+  actor User as Verified User
+  participant UI as SubmitBargainModal
+  participant API as POST /api/object-storage/upload
+  participant Sharp as Sharp Transcoder (Semaphore <=2)
+  participant Store as Object Storage (.object-storage-local / S3)
+  participant FS as Cloud Firestore (/bargains + /bargainOwners)
+
+  User->>UI: Select image/video & fill bargain form
+  UI->>API: POST base64 + Bearer Firebase ID Token
+  API->>API: Verify JWT + Magic Bytes + Quota (<=300 objects / 2GB)
+  API->>Sharp: Transcode image to WebP <=800px (failOn: error)
+  Sharp-->>API: Normalized WebP buffer
+  API->>Store: Atomic write (0o600) + .metadata.json
+  Store-->>API: { objectId, key, url }
+  API-->>UI: 201 Created { objectId, key, url }
+  UI->>FS: WriteBatch.set(/bargains/{id}) + WriteBatch.set(/bargainOwners/{id})
+  FS-->>UI: Commit confirmed (firestore.rules batch ownership check)
+```
+
+---
+
+## 3. Firestore Data Model & Collection Dictionary (Prompt 544)
+
+Database ID: `ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a` (Project: `gen-lang-client-0713157837`).
+
+| Collection Path | Document ID Strategy | Public Read? | Write Authorization (`firestore.rules`) | Key Fields & Constraints |
+| :--- | :--- | :--- | :--- | :--- |
+| `/votes/{voteId}` | Deterministic: `${uid}_hood_${hoodId}` | Owner or Admin | Verified owner (`24h` cooldown on `update`) | `userId`, `hoodId` (`1..999`), `vote` (`'up' \| 'down'`), `createdAt`, `lastUpdatedAt` |
+| `/bargains/{bargainId}` | Auto ID / UUID | Public (`get` & bounded `list`) | Verified owner with matching `/bargainOwners/{bargainId}` in batch, or Admin | `hoodId` (`1..999`), `title`, `type`, `sqm` (`25..1000`), `priceText`, `discountPercent` (`1..60`), `objectStorageKeys` (`<=6`) |
+| `/bargainOwners/{bargainId}` | Matches `bargainId` | Owner or Admin (`list: false`) | Verified owner on `create`; Owner/Admin on `delete` | `userId` (`== request.auth.uid`), `createdAtIso` |
+| `/buyerAlerts/{alertId}` | Deterministic: `${uid}_hood_${hoodId}` | Owner or Admin (`list`: Admin) | Verified owner (`^09[0-9]{9}$` phone) | `userId`, `hoodId` (`1..999`), `hoodName`, `fullName`, `phone`, `dealType`, `maxBudgetText`, `expiresAtIso` |
+| `/sponsorRequests/{requestId}` | Auto ID | Admin only | Verified user (`status == 'pending'`); Admin for `update`/`delete` | `hoodId` (`1..999`), `agencyName`, `phone`, `specialty`, `experienceYears`, `monthlyTariffMillion`, `status` |
+| `/publicSponsors/{hoodId}` | `<hoodId>` or `hood_<hoodId>` (`1..999`) | Public (`get` & bounded `list`) | Verified Admin only (`isValidPublicSponsorDoc`) | `hoodId` (`1..999`), `agencyName`, `phone` (`^09[0-9]{9}$`), `specialty`, `experienceYears` (`0..80`), `status: 'approved'`, `approvedAtIso`, `expiresAtIso` |
+| `/neighborhoodOverrides/{hoodId}` | `<hoodId>` or `hood_<hoodId>` (`1..999`) | Public | Verified Admin only | `hoodId` (`1..999`), `buyPerSqm` (`10..2000`), `rahn80m` (`50..50000`), `sponsor`, `bargains` |
+| `/appConfig/{configId}` | `'featureFlags'` or `'monetization'` | Public `get` (`list: false`) | Verified Admin only (`delete: false`) | Boolean feature flags (`isValidFeatureFlags`) or monetization settings |
+| `/userPreferences/{userId}` | `${request.auth.uid}` | Owner or Admin | Verified owner | `userId`, `favoriteHoodIds` (`list <= 25`, integers `1..999`), `updatedAtIso` |
+| `/admins/{adminId}` | `${uid}` | Verified Admin (`role == 'admin'`) | Managed out-of-band (`allow write: if false`) | `role: 'admin'`, `email` |
+

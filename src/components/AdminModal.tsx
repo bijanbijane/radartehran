@@ -1,0 +1,275 @@
+import React, { useState, useEffect, useMemo } from 'react'; import { KeyRound, Lock, X } from 'lucide-react'; import { BuyerAlertLeadItem, MapTileServerId, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { FeatureFlags, ServerAuditLogEntry, SystemHealthData } from '../types/models'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, getDiagnosticSnapshots, recordDiagnosticEvent, } from '../utils/security'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; import { AdminOverviewAndModerationTabs } from './AdminOverviewAndModerationTabs'; import { AdminSecurityAndBackupTabs } from './AdminSecurityAndBackupTabs'; import { AdminMapProviderConfigPanel } from './AdminMapProviderConfigPanel'; export type AdminTabId = 'crm' | 'leads' | 'bargains' | 'prices' | 'security' | 'backup'; export type { ServerAuditLogEntry, SystemHealthData };
+export interface AdminModalProps { open: boolean; onClose: () => void; adminUnlocked: boolean; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; adminPassError: string; onAdminLogin: (e: React.FormEvent) => void; adminTab: AdminTabId; setAdminTab: React.Dispatch<React.SetStateAction<AdminTabId>>; sponsorRequests: SponsorCrmRequestItem[]; buyerLeads: BuyerAlertLeadItem[]; totalLiveBargainsCount: number; neighborhoods: Neighborhood[]; activeCity?: CityId; onAdminApproveSponsor: (req: SponsorCrmRequestItem) => void; onAdminDeleteSponsorRequest: (reqId: string) => void; onDownloadBuyerLeadsCsv: () => void; onAdminDeleteBargain: (hoodId: number, bargainId: string) => void; adminEditHoodId: number; setAdminEditHoodId: React.Dispatch<React.SetStateAction<number>>; adminEditBuySqm: number;
+  setAdminEditBuySqm: React.Dispatch<React.SetStateAction<number>>; adminEditRahn80m: number; setAdminEditRahn80m: React.Dispatch<React.SetStateAction<number>>; adminPriceSavedMsg: string; onAdminQuickPriceSave: (e: React.FormEvent) => void; deepSyncing: boolean; onDeepWebSync: () => void; newAdminPassword: string;
+  setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; adminPassChangeMsg: string;
+  onAdminChangePassword: (e: React.FormEvent) => void; systemHealth: SystemHealthData | null; loadingSystemHealth: boolean; onRefreshSystemHealth: () => void; featureFlags: FeatureFlags; onToggleFeatureFlag: (key: keyof FeatureFlags) => void; onDownloadFullBackupJson: () => void;
+  onRestoreFullBackupJson: (e: React.ChangeEvent<HTMLInputElement>) => void; backupStatusMsg: { type: 'success' | 'error'; text: string } | null; isVerifiedAdmin?: boolean; currentUserEmail?: string | null;
+  onGoogleSignIn?: () => void; onExtendSponsor30Days?: (hoodId: number) => void; onReleaseHoodSponsor?: (hoodId: number) => void; mapTileStyle?: MapTileServerId; onSelectMapTileStyle?: (style: MapTileServerId) => void; onRetryNeshan?: () => void; isFallbackActive?: boolean; }
+export function AdminModal(props: AdminModalProps) { const { open, onClose, adminUnlocked, setAdminUnlocked, adminPassInput,
+    setAdminPassInput, adminPassError, onAdminLogin, adminTab, setAdminTab, sponsorRequests, buyerLeads, totalLiveBargainsCount, neighborhoods, activeCity = 'tehran', onAdminApproveSponsor, onAdminDeleteSponsorRequest, onDownloadBuyerLeadsCsv, onAdminDeleteBargain, adminEditHoodId,
+    setAdminEditHoodId, adminEditBuySqm, setAdminEditBuySqm, adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg, onAdminQuickPriceSave, deepSyncing, onDeepWebSync, newAdminPassword, setNewAdminPassword, adminPassChangeMsg, onAdminChangePassword, systemHealth, loadingSystemHealth,
+    onRefreshSystemHealth, featureFlags, onToggleFeatureFlag, onDownloadFullBackupJson, onRestoreFullBackupJson, backupStatusMsg, isVerifiedAdmin = false, currentUserEmail = null, onGoogleSignIn,
+    onExtendSponsor30Days, onReleaseHoodSponsor, mapTileStyle, onSelectMapTileStyle, onRetryNeshan, isFallbackActive,
+  } = props; const dialogRef = useDialogFocus(open, onClose); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const unitEditBuy = convertPricePerSqmToUnit(adminEditBuySqm || 120, areaUnit);
+  const [adminTelegramText, setAdminTelegramText] = useState<string>('');
+  const [adminTgSending, setAdminTgSending] = useState<boolean>(false);
+  const [adminTgStatus, setAdminTgStatus] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const clientDiagnosticsCount = useMemo(() => {
+    return getDiagnosticSnapshots().length;
+  }, [open, adminTab]);
+  const loadAdminTelegramDigest = async (cityToLoad: CityId = activeCity) => {
+    const finishTimer = createExecutionTimer('AdminModal', 'loadAdminTelegramDigest');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(`/api/telegram-digest?city=${encodeURIComponent(cityToLoad)}`, {
+        signal: controller.signal, });
+      if (res.ok) {
+        const d = await res.json();
+        if (d?.telegramText) {
+          setAdminTelegramText(d.telegramText);
+          finishTimer('success'); }
+      }
+    } catch {
+      finishTimer('fallback');
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+  useEffect(() => {
+    if (open && isVerifiedAdmin && adminUnlocked && featureFlags.enableTelegramFeed) {
+      loadAdminTelegramDigest(activeCity);
+    }
+  }, [open, isVerifiedAdmin, adminUnlocked, featureFlags.enableTelegramFeed, activeCity]);
+  const handleAdminSendTelegram = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminTgSending || !isVerifiedAdmin) return;
+    setAdminTgSending(true);
+    setAdminTgStatus(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    try {
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (idToken) {
+        headers.Authorization = `Bearer ${idToken}`;
+      }
+      const res = await fetch(`/api/send-telegram?city=${encodeURIComponent(activeCity)}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          city: activeCity,
+          text: adminTelegramText,
+        }),
+        signal: controller.signal,
+      });
+      const data = await res.json();
+      setAdminTgStatus({
+        type: data?.sent ? 'success' : 'error',
+        text: data?.message || 'پاسخ از سرور دریافت شد.',
+      });
+      recordDiagnosticEvent(
+        'AdminModal',
+        'handleAdminSendTelegram',
+        data?.sent ? 'success' : 'fallback'
+      );
+    } catch {
+      setAdminTgStatus({
+        type: 'error',
+        text: 'خطا در ارتباط با سرور؛ متن آماده را کپی و در کانال منتشر کنید.',
+      });
+    } finally {
+      clearTimeout(timeoutId);
+      setAdminTgSending(false);
+    }
+  };
+  if (!open) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="پنل مدیریت سایت"
+      onClick={onClose}
+      className="fixed inset-0 bg-black/30 backdrop-blur-[3px] flex items-center justify-center p-4 z-50"
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="apple-window-sheet max-w-4xl w-full p-5 max-h-[90vh] overflow-y-auto focus:outline-none"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-3.5 mb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
+              <Lock className="w-4 h-4 stroke-[1.75]" />
+            </span>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900">
+                پنل مدیریت سایت (CRM، سلامت سرور، پشتیبان‌گیری و ماژول‌ها)
+              </h3>
+              <p className="text-[11px] text-slate-500 tabular-nums">
+                نرخ محله انتخابی ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(unitEditBuy)} م
+                {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitEditBuy, intlCurrency, locale)})` : ''} · {formatAreaShort(80, areaUnit)}: {toPersianNum((adminEditBuySqm || 120) * 80)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency((adminEditBuySqm || 120) * 80, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(Math.round((adminEditRahn80m || 1500) * 0.03))} م
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <AreaUnitToggle compact showIntlControls />
+            {isVerifiedAdmin && adminUnlocked && (
+              <button
+                type="button"
+                onClick={() => setAdminUnlocked(false)}
+                className="px-2.5 py-1.5 rounded-[10px] bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold cursor-pointer"
+              >
+                قفل پنل
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label="بستن پنل مدیریت"
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
+            >
+              <X className="w-4 h-4 stroke-[2]" />
+            </button>
+          </div>
+        </div>
+        {!isVerifiedAdmin || !adminUnlocked ? (
+          <form onSubmit={onAdminLogin} className="max-w-md mx-auto py-6 space-y-4 text-xs">
+            <div className="apple-grouped-card p-4 space-y-3">
+              <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                <KeyRound className="w-4 h-4 stroke-[1.75] text-emerald-600" />
+                <span>احراز هویت مدیر سیستم (Firebase Admin Auth)</span>
+              </div>
+              <p className="text-slate-600 leading-relaxed">
+                دسترسی به اطلاعات CRM املاک، شماره متقاضیان خرید و تنظیمات کلود توسط قوانین امنیتی
+                سرور (Firestore Security Rules) محافظت می‌شود و نیازمند ورود با حساب رسمی مدیر
+                سیستم است.
+              </p>
+              {!currentUserEmail ? (
+                <div className="p-3 rounded-[10px] bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
+                  <div className="font-bold">وضعیت فعلی: وارد حساب کاربری نشده‌اید</div>
+                  <p className="text-[11px] leading-relaxed">
+                    لطفاً ابتدا با حساب گوگل مدیریت وارد شوید. کاربران مهمان مجوز مشاهده یا ویرایش
+                    داده‌های مدیریتی را ندارند.
+                  </p>
+                  {onGoogleSignIn && (
+                    <button
+                      type="button"
+                      onClick={onGoogleSignIn}
+                      className="w-full py-2 rounded-[10px] bg-slate-900 hover:bg-slate-800 text-white font-bold transition cursor-pointer"
+                    >
+                      ورود با حساب گوگل مدیریت
+                    </button>
+                  )}
+                </div>
+              ) : !isVerifiedAdmin ? (
+                <div
+                  role="alert"
+                  className="p-3 rounded-[10px] bg-rose-50 border border-rose-200 text-rose-800 space-y-1.5"
+                >
+                  <div className="font-extrabold">
+                    دسترسی غیرمجاز (403 Unauthorized) — حساب فاقد مجوز مدیریت
+                  </div>
+                  <p className="text-[11px] leading-relaxed">
+                    حساب فعلی (<code className="font-mono">{currentUserEmail}</code>) دارای سطح
+                    دسترسی ادمین نیست. عملیات خواندن/نوشتن مجموعه‌های مدیریتی در فایراستور برای این
+                    حساب مسدود است.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 rounded-[10px] bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-2">
+                  <div className="font-bold">
+                    هویت ادمین تایید شد (<code className="font-mono">{currentUserEmail}</code>)
+                  </div>
+                  <input
+                    type="password"
+                    value={adminPassInput}
+                    onChange={(e) => setAdminPassInput(e.target.value)}
+                    placeholder="رمز قفل جلسه (اختیاری در صورت تنظیم)..."
+                    className="w-full bg-white border border-slate-200/80 rounded-[10px] px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+              )}
+              {adminPassError && (
+                <div role="alert" className="text-rose-600 font-semibold">
+                  {adminPassError}
+                </div>
+              )}
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-[10px] bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer"
+              >
+                بررسی مجوز و بازگشایی پنل مدیریت
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 apple-segmented p-1 rounded-[12px] font-bold">
+              {[
+                { id: 'crm' as const, label: `۱. حامیان (${toPersianNum((sponsorRequests || []).length)})`, isEm: false },
+                { id: 'leads' as const, label: `۲. خریداران (${toPersianNum((buyerLeads || []).length)})`, isEm: false },
+                { id: 'bargains' as const, label: `۳. شکارها (${toPersianNum(totalLiveBargainsCount)})`, isEm: false },
+                { id: 'prices' as const, label: '۴. ویرایش قیمت‌ها', isEm: false },
+                { id: 'security' as const, label: 'امنیت و سلامت سرور', isEm: true },
+                { id: 'backup' as const, label: 'پشتیبان‌گیری و ماژول‌های آینده', isEm: true },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setAdminTab(t.id);
+                    if (t.id === 'security') onRefreshSystemHealth();
+                  }}
+                  className={`py-2 px-2.5 rounded-[9px] transition cursor-pointer ${
+                    adminTab === t.id
+                      ? `apple-segmented-pill-active ${t.isEm ? 'text-emerald-700' : 'text-slate-900'}`
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {(adminTab === 'crm' || adminTab === 'leads' || adminTab === 'bargains' || adminTab === 'prices') && (
+              <AdminOverviewAndModerationTabs
+                adminTab={adminTab} featureFlags={featureFlags} onToggleFeatureFlag={onToggleFeatureFlag}
+                neighborhoods={neighborhoods} sponsorRequests={sponsorRequests} buyerLeads={buyerLeads}
+                totalLiveBargainsCount={totalLiveBargainsCount} onAdminApproveSponsor={onAdminApproveSponsor}
+                onAdminDeleteSponsorRequest={onAdminDeleteSponsorRequest} onDownloadBuyerLeadsCsv={onDownloadBuyerLeadsCsv}
+                onAdminDeleteBargain={onAdminDeleteBargain} adminEditHoodId={adminEditHoodId}
+                setAdminEditHoodId={setAdminEditHoodId} adminEditBuySqm={adminEditBuySqm}
+                setAdminEditBuySqm={setAdminEditBuySqm} adminEditRahn80m={adminEditRahn80m}
+                setAdminEditRahn80m={setAdminEditRahn80m} adminPriceSavedMsg={adminPriceSavedMsg}
+                onAdminQuickPriceSave={onAdminQuickPriceSave} deepSyncing={deepSyncing}
+                onDeepWebSync={onDeepWebSync} newAdminPassword={newAdminPassword}
+                setNewAdminPassword={setNewAdminPassword} adminPassChangeMsg={adminPassChangeMsg}
+                onAdminChangePassword={onAdminChangePassword} onExtendSponsor30Days={onExtendSponsor30Days}
+                onReleaseHoodSponsor={onReleaseHoodSponsor}
+              />
+            )}
+            {onSelectMapTileStyle && mapTileStyle && (adminTab === 'security' || adminTab === 'backup') && (
+              <AdminMapProviderConfigPanel
+                currentStyle={mapTileStyle} onSelectStyle={onSelectMapTileStyle}
+                onRetryNeshan={onRetryNeshan} isFallbackActive={isFallbackActive} areaUnit={areaUnit} intlCurrency={intlCurrency}
+              />
+            )}
+            {(adminTab === 'security' || adminTab === 'backup') && (
+              <AdminSecurityAndBackupTabs
+                adminTab={adminTab} activeCity={activeCity} clientDiagnosticsCount={clientDiagnosticsCount}
+                systemHealth={systemHealth} loadingSystemHealth={loadingSystemHealth}
+                onRefreshSystemHealth={onRefreshSystemHealth} featureFlags={featureFlags}
+                onToggleFeatureFlag={onToggleFeatureFlag} onDownloadFullBackupJson={onDownloadFullBackupJson}
+                onRestoreFullBackupJson={onRestoreFullBackupJson} backupStatusMsg={backupStatusMsg}
+                neighborhoods={neighborhoods} totalLiveBargainsCount={totalLiveBargainsCount}
+                sponsorRequests={sponsorRequests} buyerLeads={buyerLeads} adminTelegramText={adminTelegramText}
+                setAdminTelegramText={setAdminTelegramText} loadAdminTelegramDigest={loadAdminTelegramDigest}
+                handleAdminSendTelegram={handleAdminSendTelegram} adminTgSending={adminTgSending} adminTgStatus={adminTgStatus} />
+            )} </div>
+        )} </div>
+    </div>
+  ); }

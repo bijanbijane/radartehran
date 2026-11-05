@@ -1,0 +1,64 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "bargains",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "city", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "bargains",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "hoodId", "order": "ASCENDING" },
+        { "fieldPath": "offeredTotalMillion", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "bargains",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdByUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sponsorRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "sponsorRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hoodId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "expiresAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "buyerAlerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "votes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hoodId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

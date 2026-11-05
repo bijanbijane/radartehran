@@ -1,0 +1,1206 @@
+# پروژه بازطراحی فرانت‌اند رادار تهران
+
+
+
+بسته ۸۶
+
+&#x20;ممیزی عمیق معماری React، TypeScript، مدیریت وضعیت و استانداردهای توسعه فرانت‌اند
+
+
+
+## ۶۱۱. ممیزی هویت کامپوننت‌ها و پایداری React Reconciliation
+
+```
+
+ROLE: Senior React Runtime Architect specializing in reconciliation and component identity.
+
+TASK: Audit component identity, reconciliation behavior, and rendering stability throughout Tehran Radar.
+
+OBJECTIVE:
+Identify frontend defects caused by unstable component identity, incorrect keys, unnecessary remounts, and unintended state resets.
+
+INSPECT:
+
+1. React list keys.
+2. Dynamic component creation.
+3. Component identity.
+4. Conditional rendering.
+5. Nested component definitions.
+6. Array rendering.
+7. Key generation strategies.
+8. Index-based keys.
+9. State preservation across renders.
+10. Component remount behavior.
+11. Form state during list updates.
+12. Map marker component identity.
+13. Table row identity.
+14. Modal component lifecycle.
+15. Dynamic tab content.
+
+VERIFY:
+
+- Whether list keys are stable and unique.
+- Whether array indices are used where record identity is required.
+- Whether components are unnecessarily remounted.
+- Whether user-entered values disappear after unrelated updates.
+- Whether selected items become associated with different records after reordering.
+- Whether component identity changes during parent rendering.
+- Whether dynamic content produces reconciliation warnings.
+
+TEST:
+
+- Reorder property cards.
+- Add and remove list items.
+- Filter a result collection.
+- Change tabs.
+- Update a selected property.
+- Expand and collapse dynamic content.
+- Reorder table rows.
+
+REQUIRED DELIVERABLES:
+
+A. React identity and key inventory.
+B. Unstable key findings.
+C. Unexpected remount risks.
+D. State preservation defects.
+E. Recommended key conventions.
+F. Component-specific acceptance criteria.
+G. Regression test scenarios.
+
+Use actual source evidence and runtime warnings where available.
+Do not invent rendering defects.
+Do not modify components.
+
+```
+
+## ۶۱۲. ممیزی استفاده از React Hooks و رعایت قواعد اجرای آن‌ها
+
+```
+
+ROLE: Senior React Hooks Architecture Auditor.
+
+TASK: Audit all custom hooks and React Hooks usage across Tehran Radar.
+
+OBJECTIVE:
+Identify incorrect hook usage, hidden state dependencies, stale closures, and lifecycle problems that can cause unpredictable frontend behavior.
+
+INSPECT:
+
+1. useState.
+2. useEffect.
+3. useMemo.
+4. useCallback.
+5. useRef.
+6. useContext.
+7. Custom hooks.
+8. Hook dependency arrays.
+9. Conditional hook invocation.
+10. Hook invocation inside loops.
+11. Hook invocation inside callbacks.
+12. Derived state.
+13. Stale closures.
+14. Effect cleanup.
+15. Effect dependency cycles.
+16. Shared hook state.
+
+VERIFY:
+
+- Whether the Rules of Hooks are respected.
+- Whether effect dependencies are complete.
+- Whether memoization is necessary and correct.
+- Whether stale values are captured.
+- Whether state is duplicated unnecessarily.
+- Whether effects perform work that belongs in event handlers.
+- Whether custom hooks have clear responsibilities.
+- Whether hooks return predictable contracts.
+
+TEST:
+
+- Rapid state updates.
+- Repeated route changes.
+- Component mount and unmount.
+- Changes to hook dependencies.
+- Concurrent asynchronous updates.
+- Development StrictMode behavior.
+
+REQUIRED DELIVERABLES:
+
+A. Hook usage inventory.
+B. Rules-of-Hooks violations.
+C. Stale closure findings.
+D. Dependency and cleanup defects.
+E. Derived-state duplication inventory.
+F. Recommended hook conventions.
+G. Reproducible test scenarios.
+
+Do not recommend memoization indiscriminately.
+Do not invent runtime behavior.
+Do not refactor or modify source code.
+
+```
+
+## ۶۱۳. ممیزی سخت‌گیری TypeScript و ایمنی نوع داده‌ها در فرانت‌اند
+
+```
+
+ROLE: Principal TypeScript Architect and Frontend Type Safety Auditor.
+
+TASK: Audit TypeScript configuration and actual type safety across the Tehran Radar frontend.
+
+OBJECTIVE:
+Determine whether TypeScript meaningfully prevents invalid UI states, incorrect data handling, and inconsistent component contracts.
+
+INSPECT:
+
+1. tsconfig configuration.
+2. strict mode.
+3. strictNullChecks.
+4. noImplicitAny.
+5. any usage.
+6. unknown usage.
+7. Type assertions.
+8. Non-null assertions.
+9. Optional properties.
+10. Union types.
+11. Discriminated unions.
+12. Generic components.
+13. API response types.
+14. Form data types.
+15. Component prop types.
+16. Shared domain types.
+17. Type duplication.
+18. Runtime validation boundaries.
+
+VERIFY:
+
+- Whether important data structures are typed accurately.
+- Whether API responses are incorrectly trusted without validation.
+- Whether any and unknown are used appropriately.
+- Whether null and undefined states are distinguished.
+- Whether component props allow invalid combinations.
+- Whether types are duplicated across modules.
+- Whether enum and status values reflect actual backend contracts.
+- Whether strict compilation is meaningful or bypassed frequently.
+
+RUN WHERE POSSIBLE:
+
+- TypeScript compiler.
+- Existing type-check scripts.
+- Relevant lint rules.
+- Build-time type validation.
+
+REQUIRED DELIVERABLES:
+
+A. TypeScript configuration assessment.
+B. Unsafe type usage inventory.
+C. Runtime validation gaps.
+D. Shared domain type inconsistencies.
+E. Recommended type safety standards.
+F. Prioritized findings with exact files.
+G. Actual command results and exit codes.
+
+Do not claim that a project is type-safe merely because it uses TypeScript.
+Do not invent compiler results.
+Do not modify TypeScript configuration or source files.
+
+```
+
+## ۶۱۴. ممیزی لایه ارتباط با API و یکپارچگی سرویس‌های فرانت‌اند
+
+```
+
+ROLE: Senior Frontend API Client Architect.
+
+TASK: Audit the architecture responsible for frontend communication with backend APIs and external services in Tehran Radar.
+
+OBJECTIVE:
+Determine whether network communication is centralized, consistent, testable, and sufficiently separated from presentation components.
+
+INSPECT:
+
+1. Fetch usage.
+2. Axios usage, if present.
+3. API client modules.
+4. Service modules.
+5. Endpoint definitions.
+6. Request construction.
+7. Authentication headers.
+8. Request serialization.
+9. Response parsing.
+10. Error normalization.
+11. Retry policies.
+12. Timeout handling.
+13. Request cancellation.
+14. Response validation.
+15. API versioning.
+16. Query parameter construction.
+17. Duplicate service implementations.
+
+VERIFY:
+
+- Whether components make direct network calls unnecessarily.
+- Whether error handling is consistent.
+- Whether authentication behavior is centralized.
+- Whether response formats are normalized.
+- Whether request types reflect actual contracts.
+- Whether endpoints are duplicated or hardcoded.
+- Whether services can be tested independently.
+- Whether presentation components contain business or transport logic.
+
+REQUIRED DELIVERABLES:
+
+A. API communication architecture map.
+B. Endpoint and service inventory.
+C. Duplicated request logic findings.
+D. Error handling consistency assessment.
+E. Component-to-service dependency map.
+F. Recommended service boundaries.
+G. Testability assessment.
+H. Exact source evidence.
+
+Do not invent API endpoints.
+Do not assume successful frontend parsing means backend persistence.
+Do not modify service modules or application code.
+
+```
+
+## ۶۱۵. ممیزی وابستگی‌های ماژولار و جلوگیری از وابستگی دوری
+
+```
+
+ROLE: Senior Frontend Module Architecture Auditor.
+
+TASK: Audit module dependencies, import relationships, and architectural boundaries throughout the Tehran Radar frontend.
+
+OBJECTIVE:
+Identify circular dependencies, unintended coupling, duplicated responsibilities, and architectural patterns that make future frontend changes difficult.
+
+INSPECT:
+
+1. Feature modules.
+2. Shared components.
+3. Shared utilities.
+4. Domain models.
+5. API service modules.
+6. Context providers.
+7. Hooks.
+8. Route modules.
+9. Cross-feature imports.
+10. Barrel exports.
+11. Circular dependencies.
+12. Global singleton modules.
+13. Repeated business logic.
+14. Dependency direction.
+
+VERIFY:
+
+- Whether feature modules depend on one another unnecessarily.
+- Whether shared modules contain unrelated responsibilities.
+- Whether circular imports exist.
+- Whether one feature can be tested without loading unrelated modules.
+- Whether domain logic is separated from presentation.
+- Whether import paths reveal clear module ownership.
+- Whether barrel exports create hidden dependency problems.
+- Whether changes in one feature unnecessarily affect other features.
+
+REQUIRED DELIVERABLES:
+
+A. Dependency graph.
+B. Circular import inventory.
+C. Module coupling assessment.
+D. Shared module responsibility findings.
+E. Recommended dependency direction.
+F. Candidate module boundary improvements.
+G. Risk-ranked architecture findings.
+
+Use static analysis tools if available.
+Distinguish detected cycles from suspected coupling.
+Do not reorganize the repository.
+
+```
+
+## ۶۱۶. ممیزی مالکیت وضعیت و جلوگیری از چندمنبعی شدن State
+
+```
+
+ROLE: Principal Frontend State Ownership Architect.
+
+TASK: Audit ownership, lifetime, and synchronization of application state across React components and frontend modules.
+
+OBJECTIVE:
+Ensure that every important piece of state has a clear owner and that multiple components do not maintain conflicting copies of the same information.
+
+INSPECT:
+
+1. Component-local state.
+2. Global state.
+3. Context state.
+4. URL state.
+5. Server state.
+6. Form state.
+7. Browser storage state.
+8. Derived state.
+9. Cached state.
+10. Temporary interaction state.
+11. Selected entity state.
+12. Cross-module shared state.
+
+FOR EACH IMPORTANT STATE VARIABLE, IDENTIFY:
+
+- Its authoritative owner.
+- Its lifetime.
+- Its initialization source.
+- Its update mechanism.
+- Its persistence behavior.
+- Its consumers.
+- Its invalidation conditions.
+- Its synchronization dependencies.
+
+VERIFY:
+
+- Whether multiple components duplicate the same state.
+- Whether the URL and application state disagree.
+- Whether local and server state diverge.
+- Whether derived values are stored unnecessarily.
+- Whether unrelated components depend on a large global state object.
+- Whether a state change triggers excessive updates.
+- Whether state ownership is documented and predictable.
+
+REQUIRED DELIVERABLES:
+
+A. Frontend state ownership matrix.
+B. Multiple-source-of-truth inventory.
+C. State synchronization defects.
+D. Global versus local state assessment.
+E. Recommended state ownership conventions.
+F. Module-specific examples.
+G. Acceptance criteria and regression tests.
+
+Do not recommend a new state library without evidence.
+Do not invent state behavior.
+Do not modify state architecture.
+
+```
+
+## ۶۱۷. ممیزی ردیابی تغییرات فرم و تشخیص داده‌های ذخیره‌نشده
+
+```
+
+ROLE: Senior Frontend Form State Architect.
+
+TASK: Audit dirty-state detection, unsaved change tracking, and draft lifecycle behavior across Tehran Radar forms.
+
+OBJECTIVE:
+Prevent users from losing important edits and ensure that the UI accurately distinguishes untouched, modified, saving, saved, and failed form states.
+
+INSPECT:
+
+1. Initial form values.
+2. Dirty-state calculation.
+3. Field-level dirty state.
+4. Form-level dirty state.
+5. Reset behavior.
+6. Cancel behavior.
+7. Autosave.
+8. Manual save.
+9. Navigation guards.
+10. beforeunload usage.
+11. Draft restoration.
+12. Server state comparison.
+13. Validation state.
+14. Concurrent updates.
+
+TEST:
+
+- Change a field and restore its original value.
+- Modify several fields.
+- Save successfully.
+- Save with a failed request.
+- Refresh with unsaved edits.
+- Navigate to another route.
+- Receive newer server data while editing.
+- Reset the form.
+- Cancel a multi-step workflow.
+
+VERIFY:
+
+- Whether dirty-state indicators reflect actual changes.
+- Whether formatting changes are treated as data changes incorrectly.
+- Whether saved indicators appear prematurely.
+- Whether users receive proportionate warnings.
+- Whether autosave and manual save conflict.
+- Whether a failed save preserves user input.
+- Whether restored drafts correspond to the intended record.
+
+REQUIRED DELIVERABLES:
+
+A. Form dirty-state inventory.
+B. Unsaved change detection assessment.
+C. False saved-state findings.
+D. Draft restoration defects.
+E. Recommended form state model.
+F. Navigation and confirmation requirements.
+G. Acceptance criteria and regression scenarios.
+
+Do not invent autosave functionality.
+Do not claim persistence without confirmation.
+Do not modify form state logic.
+
+```
+
+## ۶۱۸. ممیزی مرزبندی Suspense و بارگذاری تدریجی اجزای رابط
+
+```
+
+ROLE: Senior React Suspense and Asynchronous Rendering Architect.
+
+TASK: Audit Suspense boundaries, asynchronous component loading, and fallback behavior in Tehran Radar.
+
+OBJECTIVE:
+Ensure slow or unavailable components do not unnecessarily block unrelated application content and that loading transitions remain understandable.
+
+INSPECT:
+
+1. React Suspense usage.
+2. Suspense boundaries.
+3. React.lazy.
+4. Dynamic imports.
+5. Async data dependencies.
+6. Loading fallbacks.
+7. Nested Suspense boundaries.
+8. Error boundary placement.
+9. Route-level loading.
+10. Component-level loading.
+11. Streaming rendering, if implemented.
+12. Suspense interactions with state updates.
+
+VERIFY:
+
+- Whether the fallback appears at an appropriate scope.
+- Whether a slow widget blocks the entire page unnecessarily.
+- Whether nested fallbacks create confusing visual transitions.
+- Whether previously visible content disappears unnecessarily.
+- Whether loading and failure states are distinguishable.
+- Whether lazy-loaded components recover from failed chunk requests.
+- Whether boundaries are consistent across routes.
+
+TEST:
+
+- Slow map component.
+- Slow chart component.
+- Failed dynamic import.
+- Multiple asynchronous components.
+- Navigation during loading.
+- Component refresh after failure.
+
+REQUIRED DELIVERABLES:
+
+A. Suspense boundary inventory.
+B. Loading scope architecture map.
+C. Excessive blocking findings.
+D. Fallback consistency assessment.
+E. Error recovery findings.
+F. Recommended boundary placement principles.
+G. Acceptance criteria and regression scenarios.
+
+Do not assume every asynchronous operation requires Suspense.
+Do not invent runtime behavior.
+Do not modify component boundaries.
+
+```
+
+## ۶۱۹. ممیزی معماری Context Providerها و هزینه انتشار تغییرات
+
+```
+
+ROLE: Senior React Context Architecture Specialist.
+
+TASK: Audit React Context providers and their impact on application state propagation, rendering, and module coupling.
+
+OBJECTIVE:
+Determine whether context providers are appropriately scoped and whether context updates trigger unnecessary rendering across the application.
+
+INSPECT:
+
+1. Provider hierarchy.
+2. Global providers.
+3. Feature-specific providers.
+4. Context value construction.
+5. Context memoization.
+6. Provider nesting depth.
+7. Context consumer distribution.
+8. State mutation patterns.
+9. Provider lifecycle.
+10. Context duplication.
+11. Context and routing integration.
+12. Context and authentication integration.
+
+VERIFY:
+
+- Whether providers expose excessive responsibilities.
+- Whether a single value change rerenders unrelated consumers.
+- Whether context objects are recreated unnecessarily.
+- Whether providers are nested more deeply than needed.
+- Whether provider dependencies create circular relationships.
+- Whether feature contexts can be isolated.
+- Whether context is being used for data that belongs in URL or server state.
+
+REQUIRED DELIVERABLES:
+
+A. Provider hierarchy diagram.
+B. Context ownership inventory.
+C. Unnecessary rerender risks.
+D. Provider coupling assessment.
+E. Recommended context boundaries.
+F. Performance verification scenarios.
+G. Acceptance criteria.
+
+Do not recommend removing Context universally.
+Do not invent render counts.
+Do not modify providers or application code.
+
+```
+
+## ۶۲۰. ممیزی قواعد طراحی و قراردادهای ورودی و خروجی کامپوننت‌های مشترک
+
+```
+
+ROLE: Senior React Component API Architect.
+
+TASK: Audit the public interfaces and usage contracts of reusable frontend components in Tehran Radar.
+
+OBJECTIVE:
+Ensure that shared components are predictable, composable, accessible, and difficult to misuse.
+
+INSPECT:
+
+1. Component prop definitions.
+2. Required props.
+3. Optional props.
+4. Default values.
+5. Boolean prop combinations.
+6. Callback contracts.
+7. Controlled versus uncontrolled inputs.
+8. Ref forwarding.
+9. Child composition.
+10. Slot patterns.
+11. Variant definitions.
+12. Component events.
+13. Accessibility props.
+14. Error behavior.
+15. Deprecation patterns.
+
+VERIFY:
+
+- Whether props have clear meanings.
+- Whether invalid prop combinations are possible.
+- Whether default behavior is predictable.
+- Whether callbacks have consistent signatures.
+- Whether components expose unnecessary implementation details.
+- Whether components handle missing optional content.
+- Whether shared interfaces are consistent across modules.
+- Whether component APIs encourage accessibility.
+
+REQUIRED DELIVERABLES:
+
+A. Shared component API inventory.
+B. Prop contract consistency report.
+C. Invalid configuration risks.
+D. Controlled/uncontrolled behavior findings.
+E. Recommended component API conventions.
+F. Candidate typed prop improvements.
+G. Acceptance criteria and component tests.
+
+Do not refactor components.
+Do not invent shared components.
+Do not modify component APIs.
+
+```
+
+## ۶۲۱. ممیزی معماری Design Tokens و جلوگیری از پراکندگی مقادیر بصری
+
+```
+
+ROLE: Senior Design Token Systems Architect.
+
+TASK: Audit the design token implementation and actual token adoption across Tehran Radar.
+
+OBJECTIVE:
+Determine whether colors, spacing, typography, dimensions, radii, shadows, and interaction states are governed by a coherent reusable design system.
+
+INSPECT:
+
+1. Color tokens.
+2. Semantic color tokens.
+3. Typography tokens.
+4. Spacing tokens.
+5. Border radius tokens.
+6. Shadow tokens.
+7. Elevation tokens.
+8. Breakpoint tokens.
+9. Z-index tokens.
+10. Animation tokens.
+11. Theme-specific tokens.
+12. Component-specific tokens.
+13. Hardcoded style values.
+14. Duplicate token definitions.
+
+VERIFY:
+
+- Whether tokens have clear semantic names.
+- Whether components actually use shared tokens.
+- Whether equivalent visual concepts use different values.
+- Whether obsolete tokens remain.
+- Whether dark and light themes use matching semantic structures.
+- Whether RTL and responsive behavior rely on consistent tokens.
+- Whether component-specific exceptions are justified.
+
+REQUIRED DELIVERABLES:
+
+A. Design token inventory.
+B. Token coverage assessment.
+C. Hardcoded value inventory.
+D. Semantic duplication findings.
+E. Recommended token hierarchy.
+F. Theme consistency report.
+G. Migration priorities without implementation.
+H. Acceptance criteria.
+
+Do not invent brand colors.
+Do not redesign the visual identity.
+Do not modify CSS variables or design tokens.
+
+```
+
+## ۶۲۲. ممیزی استفاده از CSS Logical Properties و استانداردهای RTL
+
+```
+
+ROLE: Senior RTL CSS Architecture Engineer.
+
+TASK: Audit whether the Tehran Radar styling system uses direction-aware CSS and logical properties appropriately.
+
+OBJECTIVE:
+Reduce fragile direction-specific CSS and ensure layouts behave consistently when Persian and Latin content coexist.
+
+INSPECT:
+
+1. margin-left and margin-right.
+2. padding-left and padding-right.
+3. left and right positioning.
+4. border-left and border-right.
+5. float usage.
+6. text-align assumptions.
+7. flex direction.
+8. grid placement.
+9. directional icons.
+10. logical properties.
+11. dir attributes.
+12. component-level RTL overrides.
+13. media-query direction overrides.
+
+VERIFY:
+
+- Whether physical CSS properties create RTL bugs.
+- Whether logical properties are used where appropriate.
+- Whether flex and grid layouts reverse unintentionally.
+- Whether directional icons communicate correct navigation.
+- Whether mixed-direction components need local direction control.
+- Whether left-to-right embedded values remain readable.
+- Whether RTL exceptions are documented.
+
+TEST:
+
+- Persian-only layout.
+- English-only layout.
+- Mixed-script cards.
+- Forms with numeric inputs.
+- Tables containing identifiers.
+- Map controls.
+- Side panels.
+- Navigation menus.
+
+REQUIRED DELIVERABLES:
+
+A. Directional CSS inventory.
+B. Physical-versus-logical property findings.
+C. RTL override duplication report.
+D. Mixed-direction component defects.
+E. Recommended logical CSS conventions.
+F. Migration priority assessment.
+G. Regression scenarios.
+
+Do not mechanically replace every left/right property.
+Preserve intentional directional layouts.
+Do not modify CSS.
+
+```
+
+## ۶۲۳. ممیزی SSR، Hydration و تفاوت رندر سمت سرور و مرورگر
+
+```
+
+ROLE: Senior React SSR and Hydration Reliability Architect.
+
+TASK: Determine whether Tehran Radar uses server-side rendering, static generation, streaming rendering, or client-only rendering, then audit the corresponding rendering lifecycle.
+
+OBJECTIVE:
+Identify hydration mismatches, server/client rendering inconsistencies, and runtime assumptions that can create blank pages, flicker, or inconsistent content.
+
+FIRST ESTABLISH THE ACTUAL RENDERING ARCHITECTURE.
+
+INSPECT WHERE APPLICABLE:
+
+1. Server rendering entry points.
+2. Client hydration.
+3. Hydration root creation.
+4. Static generation.
+5. Streaming.
+6. Browser-only API usage.
+7. Initial state serialization.
+8. Date and timezone rendering.
+9. Random value generation.
+10. Authentication-dependent content.
+11. Theme initialization.
+12. DOM-dependent libraries.
+13. Map initialization.
+14. Chart initialization.
+
+VERIFY:
+
+- Whether server and client produce equivalent initial markup.
+- Whether browser-only globals are accessed during server rendering.
+- Whether dates or random values create mismatches.
+- Whether authentication changes initial content unexpectedly.
+- Whether theme initialization causes visible flashes.
+- Whether third-party libraries require client-only boundaries.
+- Whether hydration warnings are present.
+
+REQUIRED DELIVERABLES:
+
+A. Actual rendering architecture.
+B. SSR and hydration applicability assessment.
+C. Confirmed mismatch findings.
+D. Browser API compatibility defects.
+E. Recommended rendering boundaries.
+F. Runtime verification scenarios.
+G. Acceptance criteria.
+
+If the application is client-only, explicitly report SSR/Hydration as not applicable rather than inventing a problem.
+
+Do not modify the rendering architecture.
+
+```
+
+## ۶۲۴. ممیزی تنظیمات محیطی فرانت‌اند و جداسازی Development، Test و Production
+
+```
+
+ROLE: Senior Frontend Build Configuration and Environment Architecture Auditor.
+
+TASK: Audit frontend environment configuration and determine whether development, testing, staging, and production environments are safely separated.
+
+OBJECTIVE:
+Prevent incorrect service connections, inconsistent feature availability, and accidental exposure of development configuration in production.
+
+INSPECT:
+
+1. Environment variable declarations.
+2. Build-time configuration.
+3. Runtime configuration.
+4. Development settings.
+5. Test settings.
+6. Staging settings.
+7. Production settings.
+8. API base URLs.
+9. Firebase client configuration.
+10. Analytics identifiers.
+11. Feature flags.
+12. Debug settings.
+13. Source map configuration.
+14. Environment detection logic.
+15. Hardcoded endpoints.
+
+VERIFY:
+
+- Whether environment selection is deterministic.
+- Whether development endpoints can enter production bundles.
+- Whether runtime and build-time configuration are confused.
+- Whether missing environment values cause useful errors.
+- Whether environment-specific features are exposed correctly.
+- Whether the frontend points to the intended backend.
+- Whether secrets are incorrectly placed in public build variables.
+
+REQUIRED DELIVERABLES:
+
+A. Frontend environment configuration inventory.
+B. Environment separation assessment.
+C. Hardcoded configuration findings.
+D. Production exposure risks.
+E. Recommended configuration boundaries.
+F. Build verification scenarios.
+G. Acceptance criteria.
+
+Do not expose secret values in the report.
+Do not assume every environment variable is private.
+Do not modify build configuration.
+
+```
+
+## ۶۲۵. ممیزی افشای اطلاعات حساس در Bundle و فایل‌های خروجی فرانت‌اند
+
+```
+
+ROLE: Senior Frontend Bundle Security Auditor.
+
+TASK: Audit production frontend artifacts for accidental exposure of secrets, internal configuration, development data, and sensitive implementation information.
+
+OBJECTIVE:
+Identify information that should not be publicly available through JavaScript bundles, CSS, HTML, source maps, or static assets.
+
+INSPECT WHERE POSSIBLE:
+
+1. Built JavaScript bundles.
+2. CSS output.
+3. HTML output.
+4. Source maps.
+5. Environment variables.
+6. API keys.
+7. Private endpoints.
+8. Internal hostnames.
+9. Debug configuration.
+10. Test fixtures.
+11. Mock user records.
+12. Development credentials.
+13. Internal feature flags.
+14. Error details.
+15. Embedded configuration objects.
+
+VERIFY:
+
+- Whether secrets are embedded in client-side code.
+- Whether test data enters production artifacts.
+- Whether source maps reveal unintended internal information.
+- Whether private server endpoints are exposed unnecessarily.
+- Whether debug features remain enabled.
+- Whether public Firebase configuration is incorrectly treated as a secret.
+- Whether sensitive backend credentials are exposed.
+
+REQUIRED DELIVERABLES:
+
+A. Built artifact inspection report.
+B. Sensitive string exposure inventory.
+C. Source map exposure assessment.
+D. Development artifact contamination findings.
+E. Public configuration versus secret classification.
+F. Recommended build security controls.
+G. Actual scan commands and results where available.
+
+Do not display secret values in the report.
+Redact any discovered credentials immediately.
+Do not use exposed credentials.
+Do not modify build artifacts or source code.
+
+```
+
+## ۶۲۶. ممیزی سیاست امنیتی محتوا و محدودسازی منابع مرورگر
+
+```
+
+ROLE: Senior Frontend Content Security Policy Architect.
+
+TASK: Audit browser-enforced security controls affecting the Tehran Radar frontend.
+
+OBJECTIVE:
+Determine whether the application applies appropriate restrictions to scripts, styles, images, connections, frames, fonts, and other external resources.
+
+INSPECT:
+
+1. Content-Security-Policy headers.
+2. CSP meta tags.
+3. script-src.
+4. style-src.
+5. connect-src.
+6. img-src.
+7. font-src.
+8. frame-src.
+9. object-src.
+10. base-uri.
+11. form-action.
+12. frame-ancestors.
+13. Nonce usage.
+14. Hash-based policies.
+15. Trusted Types, if applicable.
+16. Third-party dependencies.
+
+VERIFY:
+
+- Whether policy directives match actual resource requirements.
+- Whether unsafe-inline or unsafe-eval is unnecessarily allowed.
+- Whether external sources are overly permissive.
+- Whether report-only policies are distinguished from enforced policies.
+- Whether legitimate resources are blocked.
+- Whether violations are monitored.
+- Whether policy changes could break maps, charts, authentication, or media.
+
+REQUIRED DELIVERABLES:
+
+A. Browser security policy inventory.
+B. Actual versus intended CSP assessment.
+C. Overly permissive directives.
+D. Blocked resource and compatibility risks.
+E. Recommended CSP hardening plan.
+F. Safe testing procedure.
+G. Acceptance criteria.
+
+Do not invent existing response headers.
+Do not weaken security policies to resolve unrelated UI errors.
+Do not modify server headers or frontend code.
+
+```
+
+## ۶۲۷. ممیزی کتابخانه‌های واسط و مؤلفه‌های خارجی در تجربه رابط کاربری
+
+```
+
+ROLE: Senior Third-Party Frontend Integration Architect.
+
+TASK: Audit all third-party UI libraries, embedded widgets, scripts, SDKs, and browser integrations used in Tehran Radar.
+
+OBJECTIVE:
+Determine whether external dependencies create reliability, privacy, accessibility, performance, or visual consistency problems.
+
+INSPECT:
+
+1. Map libraries.
+2. Charting libraries.
+3. UI component libraries.
+4. Authentication SDKs.
+5. Analytics SDKs.
+6. Notification SDKs.
+7. File processing libraries.
+8. Date libraries.
+9. Rich-text editors.
+10. Document viewers.
+11. External widgets.
+12. Embedded frames.
+13. External font services.
+14. Payment integrations.
+15. Script loading mechanisms.
+
+VERIFY:
+
+- Whether each dependency has a clear product purpose.
+- Whether its UI matches the design system.
+- Whether its accessibility behavior is adequate.
+- Whether its lifecycle is managed correctly.
+- Whether failures are isolated.
+- Whether dependencies load only where needed.
+- Whether external scripts collect unnecessary information.
+- Whether third-party widgets create layout or navigation conflicts.
+
+REQUIRED DELIVERABLES:
+
+A. Third-party integration inventory.
+B. Dependency-to-feature mapping.
+C. Visual and behavioral inconsistency findings.
+D. Failure isolation assessment.
+E. Privacy and accessibility risks.
+F. Recommended integration boundaries.
+G. Replacement candidates only where justified.
+H. Regression scenarios.
+
+Do not invent third-party integrations.
+Do not recommend replacing a library solely because it is external.
+Do not modify dependencies or application code.
+
+```
+
+## ۶۲۸. ممیزی سازگاری و بازیابی Chunkهای جاوااسکریپت پس از انتشار نسخه جدید
+
+```
+
+ROLE: Senior Frontend Deployment Runtime Reliability Engineer.
+
+TASK: Audit dynamic import and JavaScript chunk recovery behavior after new frontend deployments.
+
+OBJECTIVE:
+Prevent users from encountering blank screens, failed route transitions, or unrecoverable errors when cached application shells reference chunks that are no longer available.
+
+INSPECT:
+
+1. Dynamic imports.
+2. Route-level chunks.
+3. Content-hashed assets.
+4. Deployment asset retention.
+5. Chunk load errors.
+6. Retry mechanisms.
+7. Old browser sessions.
+8. Runtime version identifiers.
+9. Cache behavior.
+10. Service worker interactions, if present.
+11. Error boundaries.
+12. User refresh prompts.
+
+TEST:
+
+- Open a page before a new deployment.
+- Deploy or simulate a new asset version.
+- Navigate to a lazy-loaded route.
+- Force a missing chunk response.
+- Refresh after the chunk error.
+- Open an old deep link.
+- Retry a failed import.
+
+VERIFY:
+
+- Whether chunk errors are caught.
+- Whether users receive a recoverable message.
+- Whether a refresh loop can occur.
+- Whether old assets remain available where necessary.
+- Whether the frontend can detect version mismatch.
+- Whether current user work is protected before refreshing.
+
+REQUIRED DELIVERABLES:
+
+A. Chunk loading architecture.
+B. Deployment transition failure assessment.
+C. Unhandled chunk error inventory.
+D. Recovery and refresh UX findings.
+E. Recommended chunk failure recovery policy.
+F. Acceptance criteria and regression scenarios.
+
+Do not invent deployment behavior.
+Do not force real production deployments.
+Do not modify asset hosting or build configuration.
+
+```
+
+## ۶۲۹. ممیزی رفتار React StrictMode و تفاوت اجرای توسعه و تولید
+
+```
+
+ROLE: Senior React Development Runtime and StrictMode Auditor.
+
+TASK: Audit how Tehran Radar behaves under React StrictMode and determine whether development-only lifecycle behavior exposes underlying component design defects.
+
+OBJECTIVE:
+Identify side effects that are unsafe under repeated mounting, effects that are not properly cleaned up, and discrepancies between development and production behavior.
+
+INSPECT:
+
+1. StrictMode configuration.
+2. Effect setup and cleanup.
+3. Subscription creation.
+4. Event listener registration.
+5. Network request initiation.
+6. Timer creation.
+7. Map initialization.
+8. Chart initialization.
+9. Global singleton modifications.
+10. DOM manipulation.
+11. Async initialization.
+12. Third-party widget mounting.
+
+VERIFY:
+
+- Whether effects are safe under repeated setup and cleanup.
+- Whether duplicate subscriptions occur.
+- Whether operations are unintentionally duplicated.
+- Whether initialization assumes exactly one mount.
+- Whether cleanup fully reverses setup.
+- Whether development warnings are ignored.
+- Whether actual production behavior has distinct issues.
+
+TEST:
+
+- Development mode with StrictMode.
+- Repeated route navigation.
+- Mount/unmount cycles.
+- Rapid component switching.
+- Development and production build comparison.
+
+REQUIRED DELIVERABLES:
+
+A. StrictMode configuration assessment.
+B. Side-effect safety inventory.
+C. Duplicate initialization findings.
+D. Cleanup defects.
+E. Development-versus-production behavior differences.
+F. Recommended lifecycle conventions.
+G. Reproducible test scenarios.
+
+Do not treat every development-only duplicate operation as a production defect.
+Do not remove StrictMode merely to hide defects.
+Do not modify React configuration or component code.
+
+```
+
+## ۶۳۰. ممیزی استانداردهای کدنویسی، ساختار فایل‌ها و قابلیت نگهداری فرانت‌اند
+
+```
+
+ROLE: Principal Frontend Maintainability Architect and Code Quality Auditor.
+
+TASK: Audit the maintainability standards of the Tehran Radar frontend across source organization, coding conventions, component responsibilities, and development tooling.
+
+OBJECTIVE:
+Determine whether the frontend can be safely extended and redesigned without introducing duplicated logic, inconsistent implementations, or unnecessary architectural complexity.
+
+INSPECT:
+
+1. Directory structure.
+2. Naming conventions.
+3. Component file organization.
+4. Hook organization.
+5. Service organization.
+6. Type organization.
+7. Shared utility structure.
+8. CSS ownership.
+9. Error handling conventions.
+10. Import conventions.
+11. Lint configuration.
+12. Formatting configuration.
+13. Type-check scripts.
+14. Build scripts.
+15. Dead code.
+16. Duplicate functions.
+17. Unused components.
+18. Oversized components.
+19. Abstraction quality.
+20. Documentation quality.
+
+EVALUATE:
+
+- Whether file locations communicate responsibility.
+- Whether large components combine unrelated concerns.
+- Whether similar features use inconsistent patterns.
+- Whether abstraction reduces duplication or simply hides complexity.
+- Whether developer tooling enforces consistent quality.
+- Whether dead code creates confusion.
+- Whether naming helps developers identify feature ownership.
+- Whether changes can be tested and reviewed independently.
+
+REQUIRED DELIVERABLES:
+
+A. Frontend repository structure map.
+B. Maintainability findings.
+C. Duplicate and dead code inventory.
+D. Oversized component assessment.
+E. Coding convention consistency report.
+F. Recommended maintainability standards.
+G. Prioritized technical debt register.
+H. Acceptance criteria for a future implementation phase.
+
+STRICT CONSTRAINTS:
+
+AUDIT ONLY.
+Do not rename files.
+Do not reorganize folders.
+Do not refactor components.
+Do not change lint rules.
+Do not replace frameworks or libraries.
+Do not invent build or test results.
+Use exact source paths and code evidence.
+
+```

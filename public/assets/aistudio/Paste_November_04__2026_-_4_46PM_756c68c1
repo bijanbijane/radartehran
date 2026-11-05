@@ -1,0 +1,1097 @@
+# Mission: Establish a Reliable Engineering Quality, Testing, and CI Foundation for Tehran Radar
+
+You are acting as a senior software engineer and engineering-quality specialist working directly inside the existing Tehran Radar repository.
+
+Your responsibility is to **inspect, implement, execute, and verify** a reliable engineering quality foundation for this project.
+
+This is an implementation task, not an audit-only task. Do not merely describe recommendations or produce a proposed plan. Make the necessary, justified changes directly in the repository, run the available checks, resolve problems introduced by your changes, and provide evidence of what was actually completed.
+
+The objective is to make future development safer, more reproducible, and easier to validate without changing the application's existing product behavior.
+
+Do not assume the repository's framework, package manager, runtime, deployment architecture, database, testing tools, or directory structure. Discover them from the actual codebase before making decisions.
+
+---
+
+# 1. Mission Boundaries and Non-Negotiable Restrictions
+
+This mission concerns engineering infrastructure, automated testing, development quality, and CI.
+
+It is NOT permission to redesign, refactor, or change the product itself.
+
+## 1.1 Changes within scope
+
+You may make justified changes to:
+
+- Package management and dependency reproducibility.
+- Test infrastructure and test configuration.
+- Type-checking configuration where necessary.
+- Linting configuration where necessary.
+- Unit, integration, contract, and end-to-end tests.
+- Test fixtures and isolated test data.
+- Local test-runtime configuration.
+- Build and test scripts.
+- GitHub Actions or the repository's existing CI system.
+- Test artifact and coverage configuration.
+- `.gitignore`, but only after inspecting and preserving its existing rules.
+- Minimal documentation necessary to explain how to run the implemented quality checks.
+
+## 1.2 Changes outside scope
+
+Do not change:
+
+- Product business logic.
+- Property-price calculations or valuation formulas.
+- Neighborhood pricing data or market datasets.
+- Data-generation assumptions or statistical models.
+- Confidence scores, estimates, or other domain-specific outputs.
+- Existing user-facing workflows.
+- UI design, layout, visual identity, or product content.
+- Authentication or authorization behavior.
+- Existing production database schemas.
+- Existing database migrations.
+- API business behavior.
+- Production environment configuration.
+- Deployment architecture.
+- Production infrastructure or resources.
+
+You may inspect these components to understand their dependencies and design valid tests. Inspection does not authorize modifying them.
+
+If a product defect prevents a quality check from running, do not silently fix the product logic. Record the blocker, explain its impact, and continue with independent tasks that can safely proceed.
+
+## 1.3 No automatic release or repository operations
+
+Unless explicitly authorized by the user:
+
+- Do not commit.
+- Do not push.
+- Do not deploy.
+- Do not publish a release.
+- Do not modify production resources.
+- Do not connect tests to production services.
+- Do not trigger destructive remote operations.
+
+Changes must remain in the local working tree for review.
+
+---
+
+# 2. Protect the Existing Repository Before Doing Anything
+
+Before modifying any file:
+
+1. Confirm the repository root.
+2. Inspect the current Git branch.
+3. Run `git status`.
+4. Inspect existing tracked modifications.
+5. Identify untracked files.
+6. Inspect relevant existing diffs.
+7. Identify files that may already contain unfinished user work.
+8. Record the initial repository state for comparison.
+
+The repository may contain uncommitted changes. Treat all pre-existing modifications and untracked files as user-owned unless their ownership is clearly established.
+
+**Never overwrite, discard, reset, clean, or revert existing user work.**
+
+Do not use destructive commands such as:
+
+- `git reset --hard`
+- `git clean -fd`
+- `git checkout .`
+- `git restore .`
+
+Do not use broad commands that restore or delete files without first establishing exactly which changes belong to this mission.
+
+If a file already has user modifications, make only the smallest necessary changes and preserve its existing content.
+
+At the end, distinguish your changes from the initial repository state.
+
+---
+
+# 3. Discover the Actual Architecture Before Choosing Tools
+
+Do not begin by installing dependencies or creating configuration files.
+
+First, inspect the actual repository and understand the minimum architecture needed to build valid tests.
+
+Investigate:
+
+- Application framework and build system.
+- Frontend and backend boundaries.
+- Application entry points.
+- API routes and handlers.
+- Internal services and modules.
+- Data access layers.
+- Database technology and existing migrations.
+- Runtime and deployment configuration.
+- Environment-variable requirements.
+- Existing test frameworks and test files.
+- Existing linting and type-checking configuration.
+- Existing CI workflows.
+- Existing package manager and lockfiles.
+- External service dependencies.
+
+If the repository uses Cloudflare infrastructure, determine which components are actually used. For example, distinguish between Workers, Pages, D1, R2, Queues, Durable Objects, or other bindings only when they are present in the real project.
+
+Do not assume that the presence of a configuration file proves that a particular service is actively used.
+
+## 3.1 Trace critical execution paths
+
+Identify the actual critical paths through the application.
+
+For example, where applicable:
+
+- Browser interaction to API request.
+- API request to internal service.
+- Internal service to database.
+- Data retrieval to calculation or transformation.
+- API response to frontend rendering.
+- Authentication and authorization checks.
+- Error handling and external service boundaries.
+
+Trace these paths through actual imports, call sites, route handlers, and runtime configuration. Do not infer architecture from filenames alone.
+
+The purpose is not to generate an extensive architecture document. The purpose is to understand enough of the real system to create meaningful tests.
+
+## 3.2 Classify modules by risk
+
+Prioritize testing based on actual functional importance and failure impact.
+
+Use these categories:
+
+**Critical**
+- Authentication and authorization.
+- Sensitive APIs.
+- Data persistence and integrity.
+- Critical application configuration.
+- Operations that could corrupt or expose user data.
+
+**High**
+- Core calculations.
+- Data processing and transformation.
+- Search and filtering.
+- Important API contracts.
+- Main user workflows.
+
+**Medium**
+- General application components.
+- Secondary workflows.
+- Non-critical data presentation.
+
+**Low**
+- Static content.
+- Non-interactive presentation elements.
+
+Derive these classifications from actual application behavior, not directory names or arbitrary assumptions.
+
+---
+
+# 4. Establish a Baseline Before Making Changes
+
+Before implementation, identify what currently works and what already fails.
+
+Run the relevant existing commands where possible:
+
+- Dependency installation or integrity verification.
+- Existing type checks.
+- Existing lint checks.
+- Existing unit tests.
+- Existing integration tests.
+- Existing production build.
+- Existing E2E tests.
+
+Do not invent commands. Discover the real scripts and tools first.
+
+For each command, record:
+
+- Exact command.
+- Whether it was actually executed.
+- Exit status.
+- Relevant failure output.
+- Environment limitations.
+- Whether the failure existed before your changes.
+
+Classify existing problems separately from regressions introduced by your implementation.
+
+Do not silently treat pre-existing failures as successful checks.
+
+A baseline failure must not become an excuse to weaken future quality gates. Where necessary, document the existing blocker and establish a narrowly scoped, visible exception rather than disabling an entire test suite.
+
+---
+
+# 5. Package Management and Dependency Reproducibility
+
+The project must have a reproducible dependency installation process.
+
+## 5.1 Preserve the existing package manager
+
+Determine the intended package manager from:
+
+- Existing lockfiles.
+- `package.json` and `packageManager`.
+- Existing scripts.
+- Repository documentation.
+- Existing CI workflows.
+- Runtime and deployment conventions.
+
+Preserve the current package manager whenever it is functional and appropriate.
+
+Do not migrate from npm to pnpm, yarn, or bun merely because another tool is available.
+
+Do not leave conflicting or unnecessary lockfiles.
+
+If the project lacks a required lockfile, create the appropriate lockfile using the selected package manager and a valid installation process.
+
+Do not claim reproducibility if the lockfile does not correspond to the actual dependencies.
+
+## 5.2 Dependency changes must be minimal
+
+Do not upgrade all dependencies.
+
+Do not blindly run commands such as `npm audit fix` when they could introduce unrelated upgrades or breaking changes.
+
+Before adding or upgrading a package:
+
+1. Determine whether an existing dependency already provides the capability.
+2. Verify compatibility with the current runtime and framework.
+3. Inspect direct and relevant transitive dependency constraints.
+4. Limit the change to the necessary packages.
+5. Validate the affected application and test paths.
+
+Consider vulnerability severity, exploitability, reachability, and whether the affected package is used in production or only development.
+
+Do not introduce a new testing framework when the existing one can perform the required work reliably.
+
+---
+
+# 6. Implement a Clear and Reliable Quality-Check Structure
+
+Create or improve the project's quality-check commands using its existing conventions.
+
+Where technically appropriate, expose distinct commands for:
+
+- Type checking.
+- Linting.
+- Unit tests.
+- Integration tests.
+- Production build.
+- End-to-end tests.
+- Coverage reporting, if useful and supported.
+
+Do not create meaningless placeholder scripts.
+
+Do not classify tests only by filename. Understand their actual dependencies and execution requirements.
+
+Preserve existing custom test runners where they serve a real purpose.
+
+Each command must execute the intended checks and return an accurate exit status.
+
+Do not create multiple overlapping tools or scripts that perform the same operation without a clear reason.
+
+## 6.1 Type checking
+
+Run the project's actual type checker.
+
+Do not hide errors through broad use of:
+
+- `any`
+- `@ts-ignore`
+- `@ts-nocheck`
+- Blanket exclusions.
+- Broad compiler-option relaxation.
+
+If existing type errors prevent a clean baseline, distinguish them from newly introduced errors.
+
+## 6.2 Linting
+
+Use the existing linting tool where possible.
+
+Do not introduce mass formatting changes or rewrite unrelated files merely to achieve a clean lint result.
+
+Do not disable rules globally to hide existing problems.
+
+Separate pre-existing violations from new violations.
+
+If a rule must be adjusted for compatibility, explain why and keep the adjustment narrow.
+
+---
+
+# 7. Build Meaningful Tests, Not Merely More Tests
+
+Test quality matters more than test count.
+
+Every test must have a meaningful purpose and an independently justifiable expected result.
+
+Do not write tests merely to increase coverage percentages or make the report look complete.
+
+## 7.1 Test independence and reliable expectations
+
+Expected outcomes must come from reliable sources, such as:
+
+- Existing product requirements.
+- Established API contracts.
+- Verified current behavior.
+- Documented system constraints.
+- Known mathematical properties.
+- Trusted test fixtures.
+
+Do not derive expected values solely from the implementation you have just written.
+
+Avoid tautological tests that repeat the implementation's logic.
+
+Avoid tests that pass simply because a mocked response was programmed to match an expected result.
+
+Use mocks at appropriate external boundaries, but do not replace the internal functionality being tested with mocks.
+
+## 7.2 Unit tests
+
+Prioritize meaningful unit tests for:
+
+- Critical pure functions.
+- Input validation.
+- Data transformations.
+- Calculation boundaries.
+- Error handling.
+- Important business-independent utilities.
+
+Do not change product algorithms merely to make them easier to test.
+
+Use the existing architecture and public interfaces wherever possible.
+
+## 7.3 Integration tests
+
+Test important interactions between actual components.
+
+Where applicable, cover:
+
+- API handlers and internal services.
+- Services and data-access layers.
+- Database operations.
+- Request validation and response generation.
+- Error propagation.
+- Application configuration and runtime bindings.
+
+Integration tests must exercise the real integration boundary wherever feasible.
+
+Do not replace an integration test with isolated unit tests and claim that the integration has been verified.
+
+## 7.4 API contract tests
+
+Where the application has APIs, verify meaningful consumer-provider contracts.
+
+Cover relevant cases:
+
+- Request structure.
+- Response structure.
+- Data types.
+- Required and optional fields.
+- HTTP status codes.
+- Invalid requests.
+- Error responses.
+- Compatibility between frontend consumers and backend providers.
+
+Use the actual API definitions, handlers, types, and existing consumer expectations.
+
+Do not invent a new contract or alter API behavior for the sake of adding tests.
+
+If existing consumers and providers disagree, identify the conflict instead of arbitrarily choosing one as correct.
+
+Do not introduce a heavy contract-testing framework unless the repository genuinely needs it.
+
+## 7.5 Numeric and calculation tests
+
+For existing calculations, test the established behavior without redesigning or scientifically validating the underlying pricing model.
+
+Where relevant, cover:
+
+- Exact comparisons for values that require exact equality.
+- Appropriate tolerances for floating-point calculations.
+- Zero values.
+- Negative values.
+- Very large and very small values.
+- Missing, null, and undefined values.
+- Rounding behavior.
+- Unit conversions.
+- Invalid numeric inputs.
+- Boundary conditions.
+
+Do not invent arbitrary tolerances.
+
+Derive tolerances from existing requirements, established implementation constraints, or reliable numerical expectations.
+
+Do not change pricing formulas, statistical assumptions, confidence scores, or market data.
+
+If a correct expected result cannot be established independently, do not fabricate one. Mark that verification as unresolved.
+
+## 7.6 Negative and boundary testing
+
+Where applicable, test:
+
+- Empty input.
+- Malformed input.
+- Missing fields.
+- Unexpected characters.
+- Out-of-range numbers.
+- Inconsistent values.
+- Duplicate submissions.
+- Invalid JSON.
+- Oversized requests.
+- Invalid API parameters.
+- Unauthorized or forbidden requests.
+- Database failures.
+- External service failures.
+
+Tests must reflect actual application entry points and validation rules.
+
+This is not permission to perform a full penetration test or redesign security controls.
+
+## 7.7 Regression tests
+
+Identify important existing user journeys and protect them against unintended changes.
+
+Select journeys from the actual application, not from assumptions.
+
+Where applicable, include:
+
+- Main page loading.
+- Primary search and filtering.
+- Important data views.
+- Main interactive workflows.
+- API-backed rendering.
+- Error states.
+- Relevant data persistence and retrieval.
+
+A regression test must verify behavior, not merely confirm that a page or element exists.
+
+For example, checking that a button is visible is not sufficient when the important requirement is that clicking it performs a specific operation.
+
+## 7.8 End-to-end tests
+
+Use the existing E2E framework if suitable.
+
+If Playwright is already present and appropriate, preserve and configure it correctly.
+
+If it is absent, add it only when a real E2E requirement justifies the dependency.
+
+E2E tests must use the actual application execution model.
+
+Do not blindly assume:
+
+- A particular local port.
+- A Vite development server.
+- A generic Node server.
+- A runtime that is incompatible with the actual deployment architecture.
+
+If the application depends on Cloudflare runtime features, use an appropriate local execution environment where necessary.
+
+Do not create test-only application behavior to make E2E tests pass.
+
+Test important real interactions and verify meaningful results.
+
+Avoid excessive browser tests that duplicate unit or integration coverage.
+
+## 7.9 Desktop and mobile smoke tests
+
+Where browser tests are appropriate, include a small, meaningful set of checks for:
+
+- Desktop viewport.
+- Mobile viewport.
+
+Prioritize actual layout and interaction risks.
+
+Do not duplicate the complete E2E suite for every viewport.
+
+## 7.10 Accessibility checks
+
+Add proportionate accessibility checks for important application workflows.
+
+Where applicable, verify:
+
+- Accessible names for important controls.
+- Keyboard interaction.
+- Form labels.
+- Error identification.
+- Logical heading structure.
+- Accessible interaction with primary navigation and forms.
+
+Use existing tooling where possible. Do not add an unnecessarily large accessibility framework for a small set of basic checks.
+
+---
+
+# 8. Test Runtime, Database, and Data Isolation
+
+Testing must never endanger production data.
+
+Before running integration or E2E tests, determine exactly where test data will be stored and which services the tests will access.
+
+Requirements:
+
+- Use isolated test databases or local test bindings.
+- Never point tests at production databases.
+- Never use production credentials for test execution.
+- Use unique test records or fixtures.
+- Ensure parallel tests do not interfere with each other.
+- Clean up only records created by the relevant test.
+- Never perform broad database wipes.
+- Never modify or delete existing user data.
+- Do not alter production schemas or migrations for this mission.
+
+If the application uses D1, use an appropriate isolated local database configuration where supported by the actual architecture.
+
+If safe isolation cannot be established, do not execute the potentially destructive test. Report it as `BLOCKED`.
+
+External services such as market-data providers, currency services, weather services, or AI APIs must not be required for ordinary unit and integration test execution unless the specific test is explicitly designed for that purpose.
+
+Use controlled test doubles at external boundaries. Keep core application logic real.
+
+Separate external-service contract or integration checks from the ordinary reliable CI gates.
+
+---
+
+# 9. Production Build and Runtime Verification
+
+A successful development server is not proof that the production application works.
+
+The quality system must validate the actual production build.
+
+Where technically possible:
+
+1. Run the production build.
+2. Verify that it completes successfully.
+3. Execute the built application using a runtime compatible with the actual deployment architecture.
+4. Verify critical application startup and behavior.
+5. Check important API and asset-loading paths.
+6. Inspect runtime errors.
+
+Consider relevant differences between development and production, including:
+
+- Environment variables.
+- Runtime APIs.
+- Cloudflare bindings.
+- Asset paths.
+- Base paths.
+- Case-sensitive file paths.
+- Build-time versus runtime configuration.
+- Dependency availability.
+- Environment-specific behavior.
+
+Do not claim production-runtime verification if only the development server was tested.
+
+If the final production runtime cannot be reproduced locally, identify exactly what was and was not verified.
+
+---
+
+# 10. Verify Test Quality and Prevent False Confidence
+
+## 10.1 Meaningful assertions
+
+Tests should verify actual outcomes.
+
+Avoid tests that only assert:
+
+- A component exists.
+- A page loads.
+- A button is visible.
+- A function was called without checking its meaningful outcome.
+- A mock returned a predetermined response.
+
+For interactive tests, verify the resulting application behavior.
+
+For API tests, verify response structure, status, and relevant behavior.
+
+For database tests, verify persisted or retrieved data where appropriate.
+
+## 10.2 Prevent test bypasses
+
+Do not make tests pass by:
+
+- Deleting failing tests.
+- Using `skip`, `only`, or equivalent mechanisms to exclude relevant tests.
+- Weakening assertions without a documented technical reason.
+- Catching and suppressing unexpected errors.
+- Increasing timeouts without diagnosing the cause.
+- Disabling validation or security controls.
+- Replacing real functionality with hardcoded responses.
+- Adding test-only shortcuts to production code.
+- Broadly suppressing warnings or errors.
+
+A legitimately unsupported test may be marked as skipped or blocked only with a specific explanation. It must not be represented as passed.
+
+## 10.3 Flaky tests
+
+For intermittent failures:
+
+1. Reproduce the failure.
+2. Investigate timing, concurrency, network, data isolation, and environment causes.
+3. Fix the underlying cause where possible.
+4. Rerun the relevant test.
+5. Report unresolved instability accurately.
+
+Do not conceal flaky tests by blindly increasing retries or disabling them.
+
+## 10.4 Mutation testing
+
+Use targeted mutation testing for critical and high-risk logic when compatible tooling is already available or a minimal addition is clearly justified.
+
+Examples of meaningful mutations include:
+
+- Changing a comparison operator.
+- Reversing a condition.
+- Removing an important validation.
+- Changing a calculation operand.
+- Removing a required API field.
+- Altering an important error-handling condition.
+
+Requirements:
+
+- Target only selected critical modules.
+- Keep mutation execution bounded.
+- Do not mutate the entire repository unnecessarily.
+- Do not leave mutated code in the working tree.
+- Do not introduce heavyweight dependencies without a real need.
+- Do not invent a universal mutation-score threshold.
+- Investigate surviving meaningful mutations.
+
+If mutation testing is not feasible, report `NOT IMPLEMENTED` or `BLOCKED` with the reason. Do not claim that test quality has been proven through mutation testing when it has not.
+
+---
+
+# 11. Prevent Unintended UI, Product, and Architecture Changes
+
+The visual and functional product experience must remain unchanged by this mission.
+
+Before and after implementation, inspect relevant diffs and verify that no unrelated changes have occurred.
+
+Do not:
+
+- Redesign components.
+- Reorganize unrelated pages.
+- Rewrite product copy.
+- Change layout or visual styling.
+- Change data values.
+- Change formulas.
+- Change API business behavior.
+- Change authentication or authorization.
+- Refactor unrelated modules.
+
+If an infrastructure change requires a minor application-level adjustment, first determine whether it can be achieved without changing product behavior.
+
+If the required adjustment would change business logic or user-facing behavior, do not proceed without explicit authorization.
+
+Do not establish new visual screenshot baselines from an unverified or incorrect UI state.
+
+If visual comparison is useful, use a trusted existing baseline. Otherwise, use limited functional and responsive smoke checks without claiming full visual-regression coverage.
+
+---
+
+# 12. GitHub Actions and CI Security
+
+If the repository uses GitHub, integrate the required checks into its existing workflow structure.
+
+If it uses another CI provider, preserve the existing provider instead of introducing GitHub Actions unnecessarily.
+
+CI must be reliable, secure, reproducible, and proportionate to the project.
+
+## 12.1 Workflow security
+
+- Use the minimum necessary workflow permissions.
+- Separate CI from deployment.
+- Do not introduce production deployment steps.
+- Do not expose secrets to untrusted pull-request code.
+- Avoid executing untrusted pull-request code through privileged events such as an unsafe `pull_request_target` workflow.
+- Do not print secrets or sensitive environment values.
+- Use trusted actions and the repository's established version-pinning policy.
+- Prefer immutable references for newly introduced actions where practical and compatible with repository policy.
+
+Never add secrets to source code, workflow files, test fixtures, logs, screenshots, or reports.
+
+## 12.2 Workflow structure
+
+Create the minimum useful CI structure.
+
+Where appropriate, include:
+
+- Dependency installation using the selected lockfile.
+- Type checking.
+- Linting.
+- Unit tests.
+- Relevant integration tests.
+- Production build.
+- Appropriate E2E checks.
+
+Do not create multiple redundant workflows.
+
+Do not run slow mutation testing on every routine push unless the project genuinely requires it. It may be separated into an appropriate scheduled or manually triggered workflow.
+
+However, do not move critical correctness checks outside the required merge-validation path merely to make CI faster.
+
+## 12.3 Runtime and resource management
+
+- Use the repository's supported runtime version.
+- Avoid arbitrary upgrades.
+- Configure dependency caching using the correct lockfile.
+- Use appropriate step timeouts.
+- Avoid port collisions.
+- Ensure test processes started by the workflow are properly terminated.
+- Prevent cleanup commands from killing unrelated processes.
+
+Do not claim that a GitHub Actions workflow has passed unless it was actually executed in GitHub Actions and its result was observed.
+
+A local validation of the workflow configuration is not the same as a successful remote workflow execution.
+
+---
+
+# 13. Artifact, Report, and Environment File Hygiene
+
+Inspect existing `.gitignore` rules before changing them.
+
+Manage files generated by:
+
+- Coverage.
+- Playwright.
+- Browser screenshots and traces.
+- Build output.
+- Temporary databases.
+- Test caches.
+- Logs.
+- Temporary runtime files.
+
+Do not accidentally commit generated artifacts unless the repository intentionally tracks them.
+
+Keep useful CI artifacts, such as failure screenshots, traces, and test reports, where appropriate.
+
+Use bounded artifact retention.
+
+Do not include secrets, personal information, production data, or sensitive request contents in artifacts.
+
+Treat files such as `.env`, `.env.local`, `.dev.vars`, and environment-specific configuration as potentially sensitive.
+
+Do not overwrite real environment files.
+
+Maintain a clear distinction between:
+
+- Real local environment configuration.
+- Example configuration.
+- Test-only configuration.
+- CI secrets.
+
+Do not pretend that creating an example environment file supplies the actual credentials or runtime bindings required for a real execution.
+
+---
+
+# 14. Handle Ambiguity and Technical Blockers Correctly
+
+Do not guess when a decision could affect product behavior, data, security, or architecture.
+
+Use the following decision policy:
+
+**Low-risk, reversible decisions**
+
+Make the most compatible decision independently and keep the change minimal.
+
+**Technical decisions with multiple reasonable options**
+
+Inspect the existing repository conventions and choose the simplest compatible option. Record the reason.
+
+**High-impact or destructive decisions**
+
+Do not proceed without explicit authorization.
+
+Examples include:
+
+- Production data changes.
+- Database schema changes.
+- Destructive migrations.
+- Authentication redesign.
+- Production deployment.
+- Major architecture changes.
+- Significant dependency migration.
+- Changes to business logic.
+
+Distinguish between:
+
+- A capability that exists and works.
+- A capability that exists but is broken.
+- A capability that is incomplete.
+- A capability that is absent.
+- A capability that is not required by the current architecture.
+
+Do not install duplicate tooling to solve a problem that does not exist.
+
+If an existing tool is suitable, preserve it.
+
+If there is a conflict between existing tests, contracts, or requirements, do not arbitrarily declare one correct. Investigate the evidence and mark unresolved conflicts explicitly.
+
+## 14.1 Stop only the unsafe or blocked work
+
+A blocker in one area does not automatically justify abandoning all independent work.
+
+For example, if production-compatible E2E execution is blocked by an unavailable runtime, continue with safe unit tests, type checks, linting, and other independent tasks.
+
+Use these statuses:
+
+- `PASS`: Executed and passed.
+- `FAIL`: Executed and failed.
+- `BLOCKED`: Could not be executed because of a specific blocker.
+- `SKIPPED`: Intentionally not executed, with justification.
+- `NOT IMPLEMENTED`: Not implemented in this mission.
+- `NOT APPLICABLE`: Not relevant to the discovered architecture.
+
+Never report a blocked or skipped check as passed.
+
+---
+
+# 15. Implementation Strategy: Small, Reversible Stages
+
+Do not make all changes at once.
+
+Implement the work in logical stages and validate each stage before proceeding.
+
+## Stage 1 — Repository protection and baseline
+
+- Inspect the repository.
+- Protect existing work.
+- Discover the architecture.
+- Identify existing tools.
+- Run baseline checks.
+- Separate existing failures from new failures.
+
+## Stage 2 — Dependency and execution reproducibility
+
+- Preserve the existing package manager.
+- Correct missing or inconsistent lockfile arrangements when necessary.
+- Align the runtime version with repository conventions.
+- Verify deterministic installation.
+- Avoid unnecessary package upgrades.
+
+## Stage 3 — Quality commands and core testing
+
+- Configure reliable type checking.
+- Configure linting.
+- Preserve existing test runners.
+- Establish meaningful unit and integration test commands.
+- Add only justified tests.
+
+## Stage 4 — Application and runtime integration
+
+- Add relevant API contract coverage.
+- Add required negative and boundary tests.
+- Establish isolated test data and database execution.
+- Validate important application execution paths.
+
+## Stage 5 — Browser and E2E validation
+
+- Configure the appropriate browser testing runtime.
+- Test real critical user workflows.
+- Add limited desktop and mobile smoke checks.
+- Add proportionate accessibility checks.
+
+## Stage 6 — CI implementation
+
+- Integrate the required quality checks.
+- Apply workflow security restrictions.
+- Configure appropriate caching and timeouts.
+- Separate CI from deployment.
+- Preserve existing CI conventions.
+
+## Stage 7 — Final regression and independent verification
+
+- Run the relevant checks again.
+- Verify the production build.
+- Inspect all changes.
+- Review test quality.
+- Perform targeted mutation testing where feasible.
+- Confirm no unintended product, data, architecture, or UI changes occurred.
+
+After each stage, inspect the diff and validate its results.
+
+If a stage introduces a regression, correct it before building further changes on top of the broken state.
+
+Do not use destructive rollback operations. Revert only changes that you can positively identify as your own, and preserve all pre-existing user work.
+
+---
+
+# 16. Acceptance Criteria
+
+The mission is complete only when the actual implementation has been validated against the applicable requirements below.
+
+## A. Repository integrity
+
+- Existing user modifications have been preserved.
+- No unrelated files have been overwritten or deleted.
+- No destructive Git operation has been used.
+- No automatic commit, push, deployment, or release has occurred.
+
+## B. Dependency reproducibility
+
+- The package manager has been identified correctly.
+- Dependency installation follows the selected lockfile.
+- No unnecessary package-manager migration has occurred.
+- No broad dependency upgrade has occurred.
+
+## C. Quality commands
+
+- The relevant type-check command works.
+- The relevant lint command works.
+- Test commands execute actual tests.
+- Production build executes independently of development mode.
+- Commands return meaningful exit statuses.
+
+## D. Test quality
+
+- Important existing functionality has meaningful regression protection.
+- Critical APIs have appropriate contract coverage where applicable.
+- Negative and boundary cases are covered where relevant.
+- Numeric calculations are tested against defensible expectations.
+- Integration tests use real integration boundaries where feasible.
+- E2E tests verify actual behavior rather than element existence alone.
+- Tests do not depend unnecessarily on production services or data.
+- Test failures are not hidden through weakened assertions or disabled tests.
+
+## E. Runtime and data safety
+
+- Tests use isolated data and runtime configuration.
+- Production services and data are not modified.
+- Existing migrations and schemas remain unchanged.
+- Runtime limitations are accurately documented.
+
+## F. CI
+
+- The CI workflow uses the appropriate runtime and package manager.
+- CI permissions are restricted.
+- Secrets are protected.
+- CI is separate from deployment.
+- The required checks are connected to the appropriate workflow.
+- Unexecuted remote workflows are not reported as successful.
+
+## G. Scope and regression protection
+
+- Product business logic remains unchanged.
+- Pricing logic and market datasets remain unchanged.
+- User-facing design and behavior remain unchanged.
+- Authentication behavior remains unchanged.
+- No unrelated architecture refactoring has occurred.
+
+## H. Evidence
+
+- Every claimed successful check has actual execution evidence.
+- Existing failures are distinguished from newly introduced failures.
+- Blocked, skipped, and unimplemented checks are clearly identified.
+- Important changes can be reviewed through Git diffs.
+
+Do not invent coverage targets such as 80% merely to satisfy an arbitrary metric. Establish meaningful coverage of critical behavior first. Report actual coverage if the existing tools support it.
+
+A green test suite alone is not sufficient if its assertions are weak, its tests are skipped, or its runtime does not represent the real application.
+
+---
+
+# 17. Final Verification and Deliverable
+
+After completing implementation, perform a final review of the entire change set.
+
+Inspect:
+
+- `git status`.
+- The complete diff.
+- Changed and newly created files.
+- Dependency and lockfile changes.
+- Test and build configuration.
+- CI workflow configuration.
+- Environment and database configuration.
+- Generated files.
+- Any remaining warnings or failures.
+
+Confirm that all changes are relevant to this mission.
+
+Do not leave temporary mutations, experimental files, or unnecessary generated files in the repository.
+
+Do not stage or commit changes.
+
+## Final response format
+
+Provide a concise but technically precise implementation report containing:
+
+### 1. Overall result
+
+Use one of:
+
+- `PASS`
+- `PARTIAL`
+- `FAIL`
+- `BLOCKED`
+
+Explain the status in one or two sentences.
+
+### 2. Implemented changes
+
+List the actual changes made, grouped by functionality.
+
+### 3. Files changed
+
+List the modified and newly created files and explain their purpose.
+
+### 4. Verification results
+
+Provide a table with:
+
+| Check | Exact command or method | Result | Evidence or limitation |
+|---|---|---|---|
+
+Include relevant installation, type checking, linting, unit, integration, contract, E2E, production build, runtime, CI, and mutation-testing checks where applicable.
+
+Do not claim a check passed if it was not executed.
+
+### 5. Existing versus new issues
+
+Separate:
+
+- Pre-existing failures.
+- Problems introduced during implementation and subsequently fixed.
+- New unresolved failures.
+- Environment-related blockers.
+
+### 6. Scope integrity
+
+Explicitly state whether any changes were made to:
+
+- Business logic.
+- Pricing calculations.
+- Market datasets.
+- UI design or product behavior.
+- Authentication.
+- Database schema or migrations.
+- Deployment configuration.
+
+If an exception occurred, identify the exact file and reason.
+
+### 7. Remaining work
+
+List only genuine unresolved items, with their impact and reason.
+
+### 8. Repository state
+
+Confirm that:
+
+- Pre-existing user work was preserved.
+- No commit was made.
+- No push was made.
+- No deployment was performed.
+- Changes remain available for user review.
+
+Do not claim the project is fully reliable, defect-free, or production-ready merely because the implemented checks passed.
+
+---
+
+# Final Operating Principle
+
+**Your job is to establish trustworthy engineering controls, not to make the project appear healthy.**
+
+Prefer a smaller set of meaningful, reproducible tests over a large set of superficial tests.
+
+Prefer minimal, compatible changes over architectural expansion.
+
+Prefer an explicit blocker over an unsafe assumption.
+
+Prefer evidence over claims.
+
+Never weaken product behavior, security, data integrity, or test assertions merely to obtain a green build.
+
+Begin by inspecting and protecting the current repository state. Then implement the mission directly, stage by stage, and verify every relevant change.

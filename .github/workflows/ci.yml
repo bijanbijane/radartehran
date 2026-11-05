@@ -1,0 +1,122 @@
+name: Tehran Radar CI Quality Gates
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "true"
+  NODE_ENV: test
+  PORT: "3000"
+  APP_URL: "http://127.0.0.1:3000"
+
+jobs:
+  quality-gates:
+    name: TypeScript, Architecture, Unit, Storage, Stress & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Clean repository checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22 with npm lockfile cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Deterministic dependency installation
+        run: npm ci
+
+      - name: Gate A — TypeScript Lint & Typecheck
+        run: |
+          npm run lint
+          npm run typecheck
+
+      - name: Gate B — Architecture & Module Boundary Guardrails
+        run: npm run arch:check
+
+      - name: Gate C — Automated Unit, Security, Rules, Contract, Mutation & Insights Suite
+        run: |
+          npm test
+          npm run test:contracts
+          npm run test:mutation
+
+      - name: Gate D — 50-Cycle Stress & Fuzzing Suite
+        run: npx tsx tests/stress-50-cycles.test.ts
+
+      - name: Gate E — Object Storage Auth, Security & Byte-Range Suites
+        run: |
+          npx tsx tests/object-storage-upload-auth.test.ts
+          npx tsx tests/object-storage-security.test.ts
+          npx tsx tests/object-storage-range.test.ts
+
+      - name: Gate F — Production Bundle Build
+        run: npm run build
+
+      - name: Retain production build summary on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gates-diagnostics
+          path: |
+            architecture-baseline.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-browser:
+    name: Real Browser E2E & Accessibility Suite (Playwright)
+    runs-on: ubuntu-latest
+    needs: quality-gates
+    timeout-minutes: 20
+
+    steps:
+      - name: Clean repository checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22 with npm lockfile cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Deterministic dependency installation
+        run: npm ci
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Execute Real Browser E2E Suite
+        run: npm run test:e2e
+
+      - name: Retain Playwright traces, screenshots, and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

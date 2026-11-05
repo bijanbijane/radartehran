@@ -1,0 +1,195 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-05T13:13:14.659Z",
+    "component": {
+      "type": "application",
+      "name": "react-example",
+      "version": "0.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "@google/genai",
+      "version": "2.4.0",
+      "purl": "pkg:npm/%40google%2Fgenai@2.4.0"
+    },
+    {
+      "type": "library",
+      "name": "@tailwindcss/vite",
+      "version": "4.3.3",
+      "purl": "pkg:npm/%40tailwindcss%2Fvite@4.3.3"
+    },
+    {
+      "type": "library",
+      "name": "@types/d3-scale",
+      "version": "4.0.9",
+      "purl": "pkg:npm/%40types%2Fd3-scale@4.0.9"
+    },
+    {
+      "type": "library",
+      "name": "@vitejs/plugin-react",
+      "version": "6.1.1",
+      "purl": "pkg:npm/%40vitejs%2Fplugin-react@6.1.1"
+    },
+    {
+      "type": "library",
+      "name": "d3-scale",
+      "version": "4.0.2",
+      "purl": "pkg:npm/d3-scale@4.0.2"
+    },
+    {
+      "type": "library",
+      "name": "dotenv",
+      "version": "17.2.3",
+      "purl": "pkg:npm/dotenv@17.2.3"
+    },
+    {
+      "type": "library",
+      "name": "express",
+      "version": "4.21.2",
+      "purl": "pkg:npm/express@4.21.2"
+    },
+    {
+      "type": "library",
+      "name": "firebase",
+      "version": "13.1.0",
+      "purl": "pkg:npm/firebase@13.1.0"
+    },
+    {
+      "type": "library",
+      "name": "firebase-admin",
+      "version": "14.5.0",
+      "purl": "pkg:npm/firebase-admin@14.5.0"
+    },
+    {
+      "type": "library",
+      "name": "lucide-react",
+      "version": "0.546.0",
+      "purl": "pkg:npm/lucide-react@0.546.0"
+    },
+    {
+      "type": "library",
+      "name": "motion",
+      "version": "12.23.24",
+      "purl": "pkg:npm/motion@12.23.24"
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "19.0.1",
+      "purl": "pkg:npm/react@19.0.1"
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "19.0.1",
+      "purl": "pkg:npm/react-dom@19.0.1"
+    },
+    {
+      "type": "library",
+      "name": "recharts",
+      "version": "3.10.1",
+      "purl": "pkg:npm/recharts@3.10.1"
+    },
+    {
+      "type": "library",
+      "name": "sharp",
+      "version": "0.35.5",
+      "purl": "pkg:npm/sharp@0.35.5"
+    },
+    {
+      "type": "library",
+      "name": "vite",
+      "version": "8.3.0",
+      "purl": "pkg:npm/vite@8.3.0"
+    },
+    {
+      "type": "library",
+      "name": "@firebase/eslint-plugin-security-rules",
+      "version": "0.0.2",
+      "purl": "pkg:npm/%40firebase%2Feslint-plugin-security-rules@0.0.2"
+    },
+    {
+      "type": "library",
+      "name": "@firebase/rules-unit-testing",
+      "version": "6.0.0",
+      "purl": "pkg:npm/%40firebase%2Frules-unit-testing@6.0.0"
+    },
+    {
+      "type": "library",
+      "name": "@playwright/test",
+      "version": "1.64.1",
+      "purl": "pkg:npm/%40playwright%2Ftest@1.64.1"
+    },
+    {
+      "type": "library",
+      "name": "@types/express",
+      "version": "4.17.21",
+      "purl": "pkg:npm/%40types%2Fexpress@4.17.21"
+    },
+    {
+      "type": "library",
+      "name": "@types/node",
+      "version": "22.14.0",
+      "purl": "pkg:npm/%40types%2Fnode@22.14.0"
+    },
+    {
+      "type": "library",
+      "name": "@types/react",
+      "version": "19.3.0",
+      "purl": "pkg:npm/%40types%2Freact@19.3.0"
+    },
+    {
+      "type": "library",
+      "name": "@types/react-dom",
+      "version": "19.3.0",
+      "purl": "pkg:npm/%40types%2Freact-dom@19.3.0"
+    },
+    {
+      "type": "library",
+      "name": "autoprefixer",
+      "version": "10.4.21",
+      "purl": "pkg:npm/autoprefixer@10.4.21"
+    },
+    {
+      "type": "library",
+      "name": "esbuild",
+      "version": "0.28.0",
+      "purl": "pkg:npm/esbuild@0.28.0"
+    },
+    {
+      "type": "library",
+      "name": "eslint",
+      "version": "10.13.0",
+      "purl": "pkg:npm/eslint@10.13.0"
+    },
+    {
+      "type": "library",
+      "name": "tailwindcss",
+      "version": "4.3.3",
+      "purl": "pkg:npm/tailwindcss@4.3.3"
+    },
+    {
+      "type": "library",
+      "name": "tsx",
+      "version": "4.21.0",
+      "purl": "pkg:npm/tsx@4.21.0"
+    },
+    {
+      "type": "library",
+      "name": "typescript",
+      "version": "7.0.2",
+      "purl": "pkg:npm/typescript@7.0.2"
+    },
+    {
+      "type": "library",
+      "name": "vitest",
+      "version": "5.0.5",
+      "purl": "pkg:npm/vitest@5.0.5"
+    }
+  ]
+}

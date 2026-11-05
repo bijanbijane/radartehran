@@ -1,0 +1,591 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function hasDelegatedAdminRole() {
+      return isVerifiedUser() &&
+        exists(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        ) &&
+        get(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        ).data.role == 'admin';
+    }
+
+    // Task 423: Canonical bootstrap admin emails + delegated /admins/{uid} role == 'admin'
+    function isAdmin() {
+      return isVerifiedUser() &&
+        (
+          request.auth.token.email == 'masirsalamatt@gmail.com' ||
+          request.auth.token.email == 'radio837isf@gmail.com' ||
+          request.auth.token.email == 'bijanbijane.1@gmail.com' ||
+          request.auth.token.email == 'eskandar8dll@gmail.com' ||
+          (
+            exists(
+              /databases/$(database)/documents/admins/$(request.auth.uid)
+            ) &&
+            get(
+              /databases/$(database)/documents/admins/$(request.auth.uid)
+            ).data.role == 'admin'
+          )
+        );
+    }
+
+    function isValidScore(val) {
+      return val is number && val >= 1 && val <= 10;
+    }
+
+    // Blueprint Validation: ResidentVote
+    function isValidResidentVote(data) {
+      return data.keys().hasAll([
+        'hoodId', 'hoodName', 'userId', 'userDisplayName',
+        'air', 'powerWater', 'internet', 'metro', 'security', 'flatTerrain',
+        'comment', 'locationVerified', 'createdAt', 'lastUpdatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'hoodId', 'hoodName', 'userId', 'userDisplayName',
+        'air', 'powerWater', 'internet', 'metro', 'security', 'flatTerrain',
+        'comment', 'locationVerified', 'createdAt', 'lastUpdatedAt'
+      ]) &&
+      data.hoodId is number && data.hoodId >= 1 && data.hoodId <= 999 &&
+      data.hoodName is string && data.hoodName.size() >= 1 && data.hoodName.size() <= 80 &&
+      data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+      data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.userId == request.auth.uid &&
+      data.userDisplayName is string && data.userDisplayName.size() >= 1 && data.userDisplayName.size() <= 100 &&
+      isValidScore(data.air) &&
+      isValidScore(data.powerWater) &&
+      isValidScore(data.internet) &&
+      isValidScore(data.metro) &&
+      isValidScore(data.security) &&
+      isValidScore(data.flatTerrain) &&
+      data.comment is string && data.comment.size() <= 500 &&
+      data.locationVerified is bool &&
+      data.createdAt is timestamp &&
+      data.lastUpdatedAt is timestamp;
+    }
+
+    // Blueprint Validation: UserPreference
+    function isValidUserPreference(data) {
+      return data.keys().hasAll([
+        'userId', 'mode', 'deposit', 'monthlyRent',
+        'buyTotalBudget', 'targetSqm', 'workHubId', 'favoriteHoodIds', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'mode', 'deposit', 'monthlyRent',
+        'buyTotalBudget', 'targetSqm', 'workHubId', 'favoriteHoodIds', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+      data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.userId == request.auth.uid &&
+      data.mode is string && (data.mode == 'rent' || data.mode == 'buy') && data.mode.size() <= 10 &&
+      data.deposit is number && data.deposit >= 0 && data.deposit <= 100000 &&
+      data.monthlyRent is number && data.monthlyRent >= 0 && data.monthlyRent <= 1000 &&
+      data.buyTotalBudget is number && data.buyTotalBudget >= 500 && data.buyTotalBudget <= 1000000 &&
+      data.targetSqm is number && data.targetSqm >= 20 && data.targetSqm <= 1000 &&
+      data.workHubId is string && data.workHubId.size() >= 1 && data.workHubId.size() <= 40 &&
+      data.favoriteHoodIds is list && data.favoriteHoodIds.size() <= 25 &&
+      (data.favoriteHoodIds.size() == 0 || (
+        data.favoriteHoodIds[0] is number && data.favoriteHoodIds[0] >= 1 && data.favoriteHoodIds[0] <= 999 &&
+        data.favoriteHoodIds[data.favoriteHoodIds.size() - 1] is number &&
+        data.favoriteHoodIds[data.favoriteHoodIds.size() - 1] >= 1 &&
+        data.favoriteHoodIds[data.favoriteHoodIds.size() - 1] <= 999
+      )) &&
+      data.updatedAt is timestamp;
+    }
+
+    // Blueprint Validation: BargainSubmission (Public document without userId; ownership in /bargainOwners)
+    function isValidBargainSubmission(data) {
+      return data.keys().hasAll([
+        'hoodId', 'title', 'type', 'sqm',
+        'priceText', 'discountPercent', 'buyerProfitText', 'street', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'hoodId', 'title', 'type', 'sqm',
+        'priceText', 'discountPercent', 'buyerProfitText', 'street',
+        'status', 'approvedAt', 'approvedBy', 'updatedAt',
+        'imageUrl', 'imageUrls', 'videoUrl', 'objectStorageBucket',
+        'objectStorageKeys', 'objectStorageObjectIds', 'createdAt'
+      ]) &&
+      data.hoodId is number && data.hoodId >= 1 && data.hoodId <= 999 &&
+      data.title is string && data.title.size() >= 3 && data.title.size() <= 160 &&
+      data.type is string && (data.type == 'خرید' || data.type == 'اجاره') && data.type.size() <= 20 &&
+      data.sqm is number && data.sqm >= 25 && data.sqm <= 1000 &&
+      data.priceText is string && data.priceText.size() >= 3 && data.priceText.size() <= 160 &&
+      data.discountPercent is number && data.discountPercent >= 10 && data.discountPercent <= 60 &&
+      data.buyerProfitText is string && data.buyerProfitText.size() >= 3 && data.buyerProfitText.size() <= 160 &&
+      data.street is string && data.street.size() >= 2 && data.street.size() <= 120 &&
+      (!('status' in data) || (data.status is string && (data.status == 'pending' || data.status == 'approved' || data.status == 'rejected'))) &&
+      (!('approvedAt' in data) || (data.approvedAt is timestamp || (data.approvedAt is string && data.approvedAt.size() <= 60))) &&
+      (!('approvedBy' in data) || (data.approvedBy is string && data.approvedBy.size() <= 128)) &&
+      (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+      (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 500)) &&
+      (!('imageUrls' in data) || (
+        data.imageUrls is list && data.imageUrls.size() <= 5 &&
+        (data.imageUrls.size() < 1 || (data.imageUrls[0] is string && data.imageUrls[0].size() <= 500)) &&
+        (data.imageUrls.size() < 2 || (data.imageUrls[1] is string && data.imageUrls[1].size() <= 500)) &&
+        (data.imageUrls.size() < 3 || (data.imageUrls[2] is string && data.imageUrls[2].size() <= 500)) &&
+        (data.imageUrls.size() < 4 || (data.imageUrls[3] is string && data.imageUrls[3].size() <= 500)) &&
+        (data.imageUrls.size() < 5 || (data.imageUrls[4] is string && data.imageUrls[4].size() <= 500))
+      )) &&
+      (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 500)) &&
+      (!('objectStorageBucket' in data) || (data.objectStorageBucket is string && data.objectStorageBucket.size() <= 120)) &&
+      (!('objectStorageKeys' in data) || (
+        data.objectStorageKeys is list && data.objectStorageKeys.size() <= 6 &&
+        (data.objectStorageKeys.size() < 1 || (data.objectStorageKeys[0] is string && data.objectStorageKeys[0].size() <= 240)) &&
+        (data.objectStorageKeys.size() < 2 || (data.objectStorageKeys[1] is string && data.objectStorageKeys[1].size() <= 240)) &&
+        (data.objectStorageKeys.size() < 3 || (data.objectStorageKeys[2] is string && data.objectStorageKeys[2].size() <= 240)) &&
+        (data.objectStorageKeys.size() < 4 || (data.objectStorageKeys[3] is string && data.objectStorageKeys[3].size() <= 240)) &&
+        (data.objectStorageKeys.size() < 5 || (data.objectStorageKeys[4] is string && data.objectStorageKeys[4].size() <= 240)) &&
+        (data.objectStorageKeys.size() < 6 || (data.objectStorageKeys[5] is string && data.objectStorageKeys[5].size() <= 240))
+      )) &&
+      (!('objectStorageObjectIds' in data) || (
+        data.objectStorageObjectIds is list && data.objectStorageObjectIds.size() <= 6 &&
+        (data.objectStorageObjectIds.size() < 1 || (data.objectStorageObjectIds[0] is string && data.objectStorageObjectIds[0].size() <= 80)) &&
+        (data.objectStorageObjectIds.size() < 2 || (data.objectStorageObjectIds[1] is string && data.objectStorageObjectIds[1].size() <= 80)) &&
+        (data.objectStorageObjectIds.size() < 3 || (data.objectStorageObjectIds[2] is string && data.objectStorageObjectIds[2].size() <= 80)) &&
+        (data.objectStorageObjectIds.size() < 4 || (data.objectStorageObjectIds[3] is string && data.objectStorageObjectIds[3].size() <= 80)) &&
+        (data.objectStorageObjectIds.size() < 5 || (data.objectStorageObjectIds[4] is string && data.objectStorageObjectIds[4].size() <= 80)) &&
+        (data.objectStorageObjectIds.size() < 6 || (data.objectStorageObjectIds[5] is string && data.objectStorageObjectIds[5].size() <= 80))
+      )) &&
+      data.createdAt is timestamp;
+    }
+
+    function isValidBargainOwner(bargainId, data) {
+      return data.keys().hasAll(['bargainId', 'userId', 'createdAt']) &&
+        data.keys().hasOnly(['bargainId', 'userId', 'createdAt']) &&
+        data.bargainId == bargainId &&
+        data.userId is string &&
+        data.userId.size() >= 1 &&
+        data.userId.size() <= 128 &&
+        data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.userId == request.auth.uid &&
+        data.createdAt is timestamp;
+    }
+
+    function ownsBargain(bargainId) {
+      return isVerifiedUser() &&
+        exists(/databases/$(database)/documents/bargainOwners/$(bargainId)) &&
+        get(/databases/$(database)/documents/bargainOwners/$(bargainId)).data.userId == request.auth.uid;
+    }
+
+    function hasBargainOwnerInCurrentBatch(bargainId) {
+      return isVerifiedUser() &&
+        existsAfter(/databases/$(database)/documents/bargainOwners/$(bargainId)) &&
+        isValidBargainOwner(
+          bargainId,
+          getAfter(/databases/$(database)/documents/bargainOwners/$(bargainId)).data
+        ) &&
+        getAfter(/databases/$(database)/documents/bargainOwners/$(bargainId)).data.createdAt == request.time;
+    }
+
+    // Blueprint Validation: BuyerAlertLead
+    function isValidBuyerAlertLead(data) {
+      return data.keys().hasAll([
+        'userId', 'hoodId', 'hoodName', 'fullName', 'phone', 'dealType', 'maxBudgetText', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'hoodId', 'hoodName', 'fullName', 'phone', 'dealType', 'maxBudgetText', 'createdAt',
+        'updatedAt', 'consentVersion', 'consentAt', 'expiresAt'
+      ]) &&
+      data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+      data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.userId == request.auth.uid &&
+      data.hoodId is number && data.hoodId >= 1 && data.hoodId <= 999 &&
+      data.hoodName is string && data.hoodName.size() >= 1 && data.hoodName.size() <= 80 &&
+      data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+      data.phone is string && data.phone.size() == 11 && data.phone.matches('^09[0-9]{9}$') &&
+      data.dealType is string && (data.dealType == 'خرید' || data.dealType == 'اجاره') && data.dealType.size() <= 20 &&
+      data.maxBudgetText is string && data.maxBudgetText.size() >= 2 && data.maxBudgetText.size() <= 120 &&
+      data.createdAt is timestamp &&
+      (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+      (!('consentVersion' in data) || (data.consentVersion is string && data.consentVersion.size() <= 50)) &&
+      (!('consentAt' in data) || (data.consentAt is timestamp)) &&
+      (!('expiresAt' in data) || (data.expiresAt is timestamp && data.expiresAt <= request.time + duration.value(91, 'd') && data.expiresAt <= data.createdAt + duration.value(91, 'd')));
+    }
+
+    // Blueprint Validation: SponsorRequest
+    function isValidSponsorRequest(data) {
+      return data.keys().hasAll([
+        'hoodId', 'hoodName', 'agencyName', 'phone', 'specialty',
+        'experienceYears', 'monthlyTariffMillion', 'status', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'hoodId', 'hoodName', 'agencyName', 'phone', 'specialty',
+        'experienceYears', 'monthlyTariffMillion', 'planMonths',
+        'totalPayableMillion', 'trackingCode', 'expiresAtIso', 'status', 'createdAt'
+      ]) &&
+      data.hoodId is number && data.hoodId >= 1 && data.hoodId <= 999 &&
+      data.hoodName is string && data.hoodName.size() >= 1 && data.hoodName.size() <= 80 &&
+      data.agencyName is string && data.agencyName.size() >= 2 && data.agencyName.size() <= 120 &&
+      data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30 &&
+      data.specialty is string && data.specialty.size() >= 2 && data.specialty.size() <= 140 &&
+      data.experienceYears is number && data.experienceYears >= 1 && data.experienceYears <= 60 &&
+      data.monthlyTariffMillion is number && data.monthlyTariffMillion >= 0 && data.monthlyTariffMillion <= 1000 &&
+      (!('planMonths' in data) || (data.planMonths is number && (data.planMonths == 1 || data.planMonths == 3))) &&
+      (!('totalPayableMillion' in data) || (data.totalPayableMillion is number && data.totalPayableMillion >= 0 && data.totalPayableMillion <= 5000)) &&
+      (!('trackingCode' in data) || (data.trackingCode is string && data.trackingCode.size() <= 80)) &&
+      (!('expiresAtIso' in data) || (data.expiresAtIso is string && data.expiresAtIso.size() <= 60)) &&
+      data.status is string && (data.status == 'pending' || data.status == 'approved') && data.status.size() <= 20 &&
+      data.createdAt is timestamp;
+    }
+
+    // Collection: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isAdmin() && isValidId(adminId);
+      allow list: if isAdmin() && existing().role == 'admin';
+      allow create, update, delete: if false;
+    }
+
+    // Collection: /votes/{voteId}
+    match /votes/{voteId} {
+      allow get: if isValidId(voteId) &&
+        (
+          isAdmin() ||
+          (isVerifiedUser() && (resource == null || existing().userId == request.auth.uid))
+        );
+      allow list: if isAdmin() && existing().hoodId >= 1 && existing().hoodId <= 999 ||
+        (
+          isVerifiedUser() &&
+          existing().userId == request.auth.uid
+        );
+      allow create: if isVerifiedUser() &&
+        isValidId(voteId) &&
+        isValidResidentVote(incoming()) &&
+        voteId == request.auth.uid + '_hood_' + string(incoming().hoodId) &&
+        incoming().createdAt == request.time &&
+        incoming().lastUpdatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(voteId) &&
+        isValidResidentVote(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().hoodId == existing().hoodId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().lastUpdatedAt == request.time &&
+        (
+          !('lastUpdatedAt' in existing()) ||
+          request.time >= existing().lastUpdatedAt + duration.value(24, 'h')
+        ) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'air', 'powerWater', 'internet', 'metro', 'security', 'flatTerrain',
+          'comment', 'locationVerified', 'userDisplayName', 'hoodName', 'lastUpdatedAt'
+        ]);
+      // Task 445: Prevent cooldown reset via delete + re-create before 24h window
+      allow delete: if isValidId(voteId) &&
+        (
+          isAdmin() ||
+          (
+            isVerifiedUser() &&
+            resource != null &&
+            existing().userId == request.auth.uid &&
+            voteId == request.auth.uid + '_hood_' + string(existing().hoodId) &&
+            (
+              !('lastUpdatedAt' in existing()) ||
+              request.time >= existing().lastUpdatedAt + duration.value(24, 'h')
+            )
+          )
+        );
+    }
+
+    // Collection: /userPreferences/{userId}
+    match /userPreferences/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserPreference(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserPreference(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'mode', 'deposit', 'monthlyRent', 'buyTotalBudget', 'targetSqm', 'workHubId', 'favoriteHoodIds', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId;
+    }
+
+    // Collection: /bargains/{bargainId}
+    match /bargains/{bargainId} {
+      allow get: if isValidId(bargainId);
+      allow list: if existing().hoodId is number && existing().hoodId >= 1 && existing().hoodId <= 999;
+      allow create: if isVerifiedUser() &&
+        isValidId(bargainId) &&
+        isValidBargainSubmission(incoming()) &&
+        (!('status' in incoming()) || incoming().status == 'pending' || isAdmin()) &&
+        (!('approvedAt' in incoming()) || isAdmin()) &&
+        (!('approvedBy' in incoming()) || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        hasBargainOwnerInCurrentBatch(bargainId);
+      allow update: if isVerifiedUser() &&
+        isValidId(bargainId) &&
+        isValidBargainSubmission(incoming()) &&
+        incoming().hoodId == existing().hoodId &&
+        incoming().createdAt == existing().createdAt &&
+        (
+          (
+            isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'sqm', 'priceText', 'discountPercent', 'buyerProfitText', 'street',
+              'status', 'approvedAt', 'approvedBy', 'updatedAt',
+              'imageUrl', 'imageUrls', 'videoUrl', 'objectStorageBucket',
+              'objectStorageKeys', 'objectStorageObjectIds'
+            ])
+          ) ||
+          (
+            ownsBargain(bargainId) &&
+            (!('status' in incoming()) || incoming().status == 'pending') &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'sqm', 'priceText', 'discountPercent', 'buyerProfitText', 'street',
+              'status', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isValidId(bargainId) &&
+        (ownsBargain(bargainId) || isAdmin()) &&
+        !existsAfter(/databases/$(database)/documents/bargainOwners/$(bargainId));
+    }
+
+    // Collection: /bargainOwners/{bargainId}
+    match /bargainOwners/{bargainId} {
+      allow get: if isValidId(bargainId) &&
+        (
+          isAdmin() ||
+          (isVerifiedUser() && (resource == null || existing().userId == request.auth.uid))
+        );
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(bargainId) &&
+        isValidBargainOwner(bargainId, incoming()) &&
+        incoming().createdAt == request.time &&
+        existsAfter(/databases/$(database)/documents/bargains/$(bargainId));
+      allow update: if false;
+      allow delete: if isValidId(bargainId) &&
+        (isAdmin() || (isVerifiedUser() && resource != null && existing().userId == request.auth.uid)) &&
+        !existsAfter(/databases/$(database)/documents/bargains/$(bargainId));
+    }
+
+    // Collection: /buyerAlerts/{alertId} (Private Buyer Leads — Owner & Admin Access)
+    match /buyerAlerts/{alertId} {
+      allow get: if isValidId(alertId) &&
+        (
+          isAdmin() ||
+          (isVerifiedUser() && (resource == null || existing().userId == request.auth.uid))
+        );
+      allow list: if isAdmin() && existing().hoodId >= 1 && existing().hoodId <= 999;
+      allow create: if isVerifiedUser() &&
+        isValidId(alertId) &&
+        isValidBuyerAlertLead(incoming()) &&
+        alertId == request.auth.uid + '_hood_' + string(incoming().hoodId) &&
+        incoming().createdAt == request.time;
+      // Task 461 & 504: Field-level allowlist on buyerAlert update
+      allow update: if isValidId(alertId) &&
+        isValidBuyerAlertLead(incoming()) &&
+        ((isVerifiedUser() && existing().userId == request.auth.uid) || isAdmin()) &&
+        incoming().userId == existing().userId &&
+        incoming().hoodId == existing().hoodId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'hoodName', 'fullName', 'phone', 'dealType', 'maxBudgetText', 'updatedAt'
+        ]);
+      allow delete: if isValidId(alertId) &&
+        ((isVerifiedUser() && resource != null && existing().userId == request.auth.uid) || isAdmin());
+    }
+
+    // Collection: /sponsorRequests/{requestId} (Agency CRM Billing — Read/Update/Delete Restricted to Admin)
+    match /sponsorRequests/{requestId} {
+      allow get: if isAdmin() && isValidId(requestId);
+      allow list: if isAdmin() && existing().hoodId >= 1 && existing().hoodId <= 999;
+      allow create: if isVerifiedUser() &&
+        isValidId(requestId) &&
+        isValidSponsorRequest(incoming()) &&
+        (incoming().status == 'pending' || isAdmin()) &&
+        (!('expiresAtIso' in incoming()) || isAdmin()) &&
+        (
+          !('totalPayableMillion' in incoming()) ||
+          !('planMonths' in incoming()) ||
+          (incoming().planMonths == 1 && incoming().totalPayableMillion == incoming().monthlyTariffMillion) ||
+          (incoming().planMonths == 3 && incoming().totalPayableMillion * 10 == incoming().monthlyTariffMillion * 24) ||
+          isAdmin()
+        ) &&
+        incoming().createdAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(requestId) &&
+        isValidSponsorRequest(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'expiresAtIso']);
+      allow delete: if isAdmin() && isValidId(requestId);
+    }
+
+    // Blueprint Validation: AppFeatureFlags / FeatureFlags & Monetization
+    function isValidFeatureFlags(data) {
+      return data.keys().hasAll([
+        'enableCommissionCalc', 'enableMultiCity', 'enableSponsorBilling',
+        'enableAiContractCheck', 'enableTelegramFeed', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'enableCommissionCalc', 'enableMultiCity', 'enableSponsorBilling',
+        'enableAiContractCheck', 'enableTelegramFeed',
+        'enableAiValuation', 'enableFakeAdDetector', 'enableMortgageSimulator',
+        'enableTenantRights', 'enableMunicipalityCalc', 'enablePropertySwap',
+        'enableVisitChecklist', 'enableSchoolRadar', 'enableRealtorStudio',
+        'enableRenovationCalc', 'enableInvestmentSim', 'enableSafetyRadar',
+        'enableCommercialRadar', 'enableSuburbRadar', 'enablePreSaleRadar',
+        'enableMovingPlanner', 'enableFractionalInvest', 'enableTrafficZoneCalc',
+        'enableSeoContentGen', 'updatedAt'
+      ]) &&
+      data.enableCommissionCalc is bool &&
+      data.enableMultiCity is bool &&
+      data.enableSponsorBilling is bool &&
+      data.enableAiContractCheck is bool &&
+      data.enableTelegramFeed is bool &&
+      (!('enableAiValuation' in data) || data.enableAiValuation is bool) &&
+      (!('enableFakeAdDetector' in data) || data.enableFakeAdDetector is bool) &&
+      (!('enableMortgageSimulator' in data) || data.enableMortgageSimulator is bool) &&
+      (!('enableTenantRights' in data) || data.enableTenantRights is bool) &&
+      (!('enableMunicipalityCalc' in data) || data.enableMunicipalityCalc is bool) &&
+      (!('enablePropertySwap' in data) || data.enablePropertySwap is bool) &&
+      (!('enableVisitChecklist' in data) || data.enableVisitChecklist is bool) &&
+      (!('enableSchoolRadar' in data) || data.enableSchoolRadar is bool) &&
+      (!('enableRealtorStudio' in data) || data.enableRealtorStudio is bool) &&
+      (!('enableRenovationCalc' in data) || data.enableRenovationCalc is bool) &&
+      (!('enableInvestmentSim' in data) || data.enableInvestmentSim is bool) &&
+      (!('enableSafetyRadar' in data) || data.enableSafetyRadar is bool) &&
+      (!('enableCommercialRadar' in data) || data.enableCommercialRadar is bool) &&
+      (!('enableSuburbRadar' in data) || data.enableSuburbRadar is bool) &&
+      (!('enablePreSaleRadar' in data) || data.enablePreSaleRadar is bool) &&
+      (!('enableMovingPlanner' in data) || data.enableMovingPlanner is bool) &&
+      (!('enableFractionalInvest' in data) || data.enableFractionalInvest is bool) &&
+      (!('enableTrafficZoneCalc' in data) || data.enableTrafficZoneCalc is bool) &&
+      (!('enableSeoContentGen' in data) || data.enableSeoContentGen is bool) &&
+      data.updatedAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidMonetizationConfig(data) {
+      return data.keys().hasAll(['updatedAt']) &&
+        data.keys().hasOnly([
+          'enableSponsorBilling',
+          'baseMonthlyTariffMillion',
+          'quarterlyDiscountMultiplier',
+          'campaignDiscountPercent',
+          'updatedAt'
+        ]) &&
+        (!('enableSponsorBilling' in data) || data.enableSponsorBilling is bool) &&
+        (!('baseMonthlyTariffMillion' in data) || (data.baseMonthlyTariffMillion is number && data.baseMonthlyTariffMillion >= 1 && data.baseMonthlyTariffMillion <= 500)) &&
+        (!('quarterlyDiscountMultiplier' in data) || (data.quarterlyDiscountMultiplier is number && data.quarterlyDiscountMultiplier >= 1 && data.quarterlyDiscountMultiplier <= 3)) &&
+        (!('campaignDiscountPercent' in data) || (data.campaignDiscountPercent is number && data.campaignDiscountPercent >= 0 && data.campaignDiscountPercent <= 100)) &&
+        data.updatedAt is timestamp &&
+        data.updatedAt == request.time;
+    }
+
+    // Collection: /appConfig/{configId} (Public Read, Admin-Only Write with Schema Validation)
+    match /appConfig/{configId} {
+      allow get: if configId == 'featureFlags' || configId == 'monetization';
+      allow list: if false;
+      allow create: if isAdmin() &&
+        (
+          (configId == 'featureFlags' && isValidFeatureFlags(incoming())) ||
+          (configId == 'monetization' && isValidMonetizationConfig(incoming()))
+        );
+      allow update: if isAdmin() &&
+        (
+          (configId == 'featureFlags' && isValidFeatureFlags(incoming())) ||
+          (configId == 'monetization' && isValidMonetizationConfig(incoming()))
+        );
+      allow delete: if false;
+    }
+
+    function isValidOverrideSponsor(sponsor) {
+      return sponsor == null ||
+        (
+          sponsor is map &&
+          sponsor.keys().hasAll(['name', 'phone', 'specialty', 'experienceYears']) &&
+          sponsor.keys().hasOnly([
+            'name', 'phone', 'specialty', 'experienceYears', 'expiresAtIso', 'planType'
+          ]) &&
+          sponsor.name is string && sponsor.name.size() <= 120 &&
+          sponsor.phone is string && sponsor.phone.size() <= 30 &&
+          sponsor.specialty is string && sponsor.specialty.size() <= 140 &&
+          sponsor.experienceYears is number && sponsor.experienceYears >= 0 && sponsor.experienceYears <= 60 &&
+          (!('expiresAtIso' in sponsor) || (sponsor.expiresAtIso is string && sponsor.expiresAtIso.size() <= 60)) &&
+          (!('planType' in sponsor) || (sponsor.planType in ['free', 'paid_1m', 'paid_3m']))
+        );
+    }
+
+    // Tasks 425, 442, 443, 451: Canonical IDs 1..999, unified rahn80m 50..100000, optional sponsor override
+    function isValidNeighborhoodOverride(hoodId) {
+      return hoodId is string &&
+        hoodId.matches('^(hood_)?([1-9][0-9]{0,2})$') &&
+        incoming().keys().hasAll([
+          'hoodId',
+          'buyPerSqm',
+          'rahn80m',
+          'updatedAt'
+        ]) &&
+        incoming().keys().hasOnly([
+          'hoodId',
+          'buyPerSqm',
+          'rahn80m',
+          'sponsor',
+          'updatedAt'
+        ]) &&
+        incoming().hoodId is int &&
+        incoming().hoodId >= 1 &&
+        incoming().hoodId <= 999 &&
+        (
+          string(incoming().hoodId) == hoodId ||
+          ('hood_' + string(incoming().hoodId)) == hoodId
+        ) &&
+        incoming().buyPerSqm is number &&
+        incoming().buyPerSqm >= 10 &&
+        incoming().buyPerSqm <= 5000 &&
+        incoming().rahn80m is number &&
+        incoming().rahn80m >= 50 &&
+        incoming().rahn80m <= 100000 &&
+        (!('sponsor' in incoming()) || isValidOverrideSponsor(incoming().sponsor)) &&
+        incoming().updatedAt is timestamp &&
+        incoming().updatedAt == request.time;
+    }
+
+    // Collection: /neighborhoodOverrides/{hoodId} (Public Read, Admin Write)
+    match /neighborhoodOverrides/{hoodId} {
+      allow get: if true;
+      allow list: if existing().hoodId is number && existing().hoodId >= 1 && existing().hoodId <= 999;
+      allow create, update: if isAdmin() && isValidNeighborhoodOverride(hoodId);
+      allow delete: if isAdmin() && hoodId.matches('^(hood_)?([1-9][0-9]{0,2})$');
+    }
+  }
+}
