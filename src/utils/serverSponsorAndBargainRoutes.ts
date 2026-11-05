@@ -1,4 +1,4 @@
-import crypto from 'node:crypto'; import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam, validateNeighborhoodId, isValidIranMobilePhone, isValidFirestoreDocId, computeCanonicalSponsorPricing, computeSponsorExpirationIso, computeExtendedSponsorExpirationIso, computeCanonicalBargainFinancials, isValidBargainStateTransition, sanitizeSponsorRecord } from './security'; import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization, getFirebaseAdminFirestoreForServer, executeAuthorizedAdminFirestoreOperation } from './serverAdminAndTelegramSecurity'; import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { calculateDynamicSponsorTariff } from './objectStorage'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
+import crypto from 'node:crypto'; import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam, validateNeighborhoodId, isValidIranMobilePhone, isValidFirestoreDocId, computeCanonicalSponsorPricing, computeSponsorExpirationIso, computeExtendedSponsorExpirationIso, computeCanonicalBargainFinancials, isValidBargainStateTransition, sanitizeSponsorRecord } from './security'; import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization, verifyFirebaseAppCheckHeader, getFirebaseAdminFirestoreForServer, executeAuthorizedAdminFirestoreOperation } from './serverAdminAndTelegramSecurity'; import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { calculateDynamicSponsorTariff } from './objectStorage'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
 import { registerBackupAndChunkUploadRoutes, getBackupVersionHistoryMetadata, type BackupVersionMetadata } from './serverBackupAndChunkUploadRoutes'; export { getBackupVersionHistoryMetadata, type BackupVersionMetadata }; export interface SponsorBargainRoutesDeps { checkRateLimit: (ip: string, bucketType: RateBucketType, maxRequests: number, windowMs: number, now?: number) => boolean; getClientIp: (req: Request) => string; }
 export async function executePostCommitSideEffectsTransaction<TResult>(params: { runDatabaseCommit: () => Promise<TResult>; runPostCommitSideEffects?: (committedResult: TResult) => Promise<void>; }): Promise<{ ok: true; result: TResult; postCommitWarning?: string } | { ok: false; code: string; messageFa: string }> { let result: TResult; try { result = await params.runDatabaseCommit(); } catch (err: any) { const rawMsg = String(err?.message || ''); const isConflict = /aborted|contention|conflict|precondition/i.test(rawMsg); return { ok: false, code: isConflict ? 'TRANSACTION_CONFLICT_RETRYABLE' : 'DATABASE_COMMIT_FAILED', messageFa: isConflict
         ? 'تداخل هم‌زمانی در ثبت تراکنش رخ داد؛ لطفاً مجدداً تلاش کنید.'
@@ -16,6 +16,7 @@ const ALLOWED_SPONSOR_RESERVE_KEYS: ReadonlySet<string> = new Set([
 export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBargainRoutesDeps, ): void { if (registeredSponsorBargainApps.has(app)) return; registeredSponsorBargainApps.add(app); const { checkRateLimit, getClientIp } = deps; registerBackupAndChunkUploadRoutes(app, { checkRateLimit, getClientIp }); app.post('/api/sponsors/reserve', (req: Request, res: Response) => { void (async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const ip = getClientIp(req); if (!checkRateLimit(ip, 'lead', 10, 10 * 60 * 1000)) { res.status(429).json({ status: 'error', code: 'SPONSOR_RATE_LIMIT_EXCEEDED',
           message: 'تعداد درخواست‌های رزرو اسپانسر بیش از حد مجاز است.', }); return; }
+      const appCheck = await verifyFirebaseAppCheckHeader(req.headers as Record<string, string | string[] | undefined>, process.env); if (!appCheck.allowed) { res.status(appCheck.statusCode).json({ status: 'error', code: appCheck.reason, message: 'توکن App Check معتبر نیست.' }); return; }
       const userAuth = await verifyAuthenticatedUserHeader(req.headers, process.env); if (!userAuth.authenticated || !userAuth.uid || !userAuth.email) { recordAbuseSignal(ip, 'auth_failure'); res.status(userAuth.statusCode).json({
           status: 'error', code: userAuth.reason, message: 'برای ثبت درخواست اسپانسرینگ، ورود با حساب کاربری تاییدشده الزامی است.',
         });
@@ -84,6 +85,8 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           },
         });
       } catch {
+        res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'ثبت درخواست اسپانسر در پایگاه داده انجام نشد.' });
+        return;
       }
       const responsePayload = { status: 'ok', request: sponsorRequestDoc };
       if (idemHeader) {
@@ -128,22 +131,19 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           expiresAtIso,
         },
       );
-      await executePostCommitSideEffectsTransaction({
+      const committed = await executePostCommitSideEffectsTransaction({
         runDatabaseCommit: async () => {
-          try {
-            const db = getFirebaseAdminFirestoreForServer(process.env);
-            if (requestId) {
-              await db
-                .collection('sponsorRequests')
-                .doc(requestId)
-                .set({ status: 'approved', expiresAtIso }, { merge: true });
-            }
+          const db = getFirebaseAdminFirestoreForServer(process.env);
+          if (requestId) {
             await db
-              .collection('neighborhoodOverrides')
-              .doc(String(hoodId))
-              .set({ sponsor: sponsorRecord }, { merge: true });
-          } catch {
+              .collection('sponsorRequests')
+              .doc(requestId)
+              .set({ status: 'approved', expiresAtIso }, { merge: true });
           }
+          await db
+            .collection('neighborhoodOverrides')
+            .doc(String(hoodId))
+            .set({ sponsor: sponsorRecord }, { merge: true });
           return { expiresAtIso, sponsor: sponsorRecord };
         },
         runPostCommitSideEffects: async () => {
@@ -156,6 +156,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           });
         },
       });
+      if (!committed.ok) { res.status(503).json({ status: 'error', code: committed.code, message: committed.messageFa }); return; }
       res.status(200).json({ status: 'ok', hoodId, expiresAtIso, sponsor: sponsorRecord });
     })();
   });
@@ -183,6 +184,8 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           .doc(String(hoodId))
           .set({ sponsor: { expiresAtIso } }, { merge: true });
       } catch {
+        res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'تمدید اسپانسر در پایگاه داده انجام نشد.' });
+        return;
       }
       recordLiveAdminSecurityAudit({
         action: 'SPONSOR_EXTEND_30D',
@@ -214,6 +217,8 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           .doc(String(hoodId))
           .set({ sponsor: null }, { merge: true });
       } catch {
+        res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'آزادسازی اسپانسر در پایگاه داده انجام نشد.' });
+        return;
       }
       recordLiveAdminSecurityAudit({
         action: 'SPONSOR_RELEASE',

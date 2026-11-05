@@ -4,6 +4,11 @@ import { formatMillionTomanAsIntlCurrency } from './areaUnit';
 export const PUBLIC_SPONSOR_COLLECTION = 'neighborhoodOverrides';
 export const PUBLIC_SPONSOR_HOOD_MIN = 1;
 export const PUBLIC_SPONSOR_HOOD_MAX = 999;
+export const CLOUD_COLLECTION_LISTENER_LIMIT = 999;
+
+export function isPubliclyVisibleBargainStatus(status: unknown): boolean {
+  return status === 'approved';
+}
 
 export function sponsorFromNeighborhoodOverride(data: Record<string, unknown>, nowMs = Date.now()): NeighborhoodSponsor | null {
   const raw = data.sponsor;

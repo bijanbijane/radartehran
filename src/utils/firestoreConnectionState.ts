@@ -228,3 +228,16 @@ export function getFirestoreStatusMicrocopyFa(
  * Reset state for deterministic unit testing.
  */
 export function resetFirestoreStatusForTests(): void { currentStatus.backendConnectivity = 'connecting'; currentStatus.dataOrigin = 'unknown'; currentStatus.writeSync = 'no_pending_writes'; currentStatus.lastErrorCategory = null; currentStatus.probeGeneration = 0; emitStatusChange(); }
+
+export type CloudSyncListenerId = 'featureFlags' | 'votes' | 'bargains' | 'sponsors' | 'buyerAlerts' | 'overrides';
+export interface CloudSyncListenerHealth { active: CloudSyncListenerId[]; failed: CloudSyncListenerId[]; succeeded: CloudSyncListenerId[]; }
+export function createCloudSyncListenerHealth(): CloudSyncListenerHealth { return { active: [], failed: [], succeeded: [] }; }
+function withCloudListener(ids: CloudSyncListenerId[], id: CloudSyncListenerId): CloudSyncListenerId[] { return ids.includes(id) ? ids : [...ids, id]; }
+function withoutCloudListener(ids: CloudSyncListenerId[], id: CloudSyncListenerId): CloudSyncListenerId[] { return ids.filter((item) => item !== id); }
+export function activateCloudListener(health: CloudSyncListenerHealth, id: CloudSyncListenerId): CloudSyncListenerHealth { return { ...health, active: withCloudListener(health.active, id) }; }
+export function deactivateCloudListener(health: CloudSyncListenerHealth, id: CloudSyncListenerId): CloudSyncListenerHealth { return { ...health, active: withoutCloudListener(health.active, id), failed: withoutCloudListener(health.failed, id), succeeded: withoutCloudListener(health.succeeded, id) }; }
+export function noteCloudListenerSnapshot(health: CloudSyncListenerHealth, id: CloudSyncListenerId): CloudSyncListenerHealth { return { ...health, active: withCloudListener(health.active, id), failed: withoutCloudListener(health.failed, id), succeeded: withCloudListener(health.succeeded, id) }; }
+export function noteCloudListenerError(health: CloudSyncListenerHealth, id: CloudSyncListenerId): CloudSyncListenerHealth { return { ...health, active: withCloudListener(health.active, id), failed: withCloudListener(health.failed, id), succeeded: withoutCloudListener(health.succeeded, id) }; }
+export function noteExplicitCloudReconnect(health: CloudSyncListenerHealth): CloudSyncListenerHealth { const failed = new Set(health.failed); return { ...health, failed: [], succeeded: health.succeeded.filter((id) => !failed.has(id)) }; }
+export function isCloudSyncLive(health: CloudSyncListenerHealth): boolean { return health.active.length > 0 && health.active.every((id) => health.succeeded.includes(id) && !health.failed.includes(id)); }
+export function cloudSyncConnectionStatus(params: { authReady: boolean; navigatorOnLine: boolean; health: CloudSyncListenerHealth }): 'LIVE_SYNC' | 'CACHED_OFFLINE' | 'RECONNECTING' { if (!params.navigatorOnLine) return 'CACHED_OFFLINE'; if (!params.authReady || !isCloudSyncLive(params.health)) return 'RECONNECTING'; return 'LIVE_SYNC'; }

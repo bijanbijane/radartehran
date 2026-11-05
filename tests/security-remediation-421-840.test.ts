@@ -213,7 +213,9 @@ async function runAllRemediationTests(): Promise<void> {
 
   const sponsorPricing = calculateCanonicalSponsorPricing(1, 3);
   assert.equal(sponsorPricing.monthlyTariffMillion, 15);
-  assert.equal(sponsorPricing.totalPayableMillion, 45);
+  assert.equal(sponsorPricing.planMonths, 3);
+  assert.equal(sponsorPricing.totalPayableMillion, 36);
+  assert.equal(sponsorPricing.durationDays, 90);
   const exp1 = computeSponsorExpirationIso(1, 1700000000000);
   const expExt = computeExtendedSponsorExpirationIso(exp1, 30, 1700000000000);
   assert.ok(Date.parse(expExt) > Date.parse(exp1));

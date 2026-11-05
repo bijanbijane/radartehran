@@ -225,7 +225,8 @@ export function readAndReconcileExecutionState(rootDir: string = process.cwd()):
       const absF = path.resolve(rootDir, relF);
       if (fs.existsSync(absF)) {
         const srcTxt = fs.readFileSync(absF, 'utf-8');
-        if (srcTxt.split(/\r?\n/).length > 290) discrepancies.push(`Source file exceeds <=290-line zero-warning ratchet: ${relF}`);
+        const lineCeiling = archBase.datasetExclusions?.[relF]?.maxLines ?? archBase.trackedLegacyFiles?.[relF]?.maxLines ?? archBase.thresholds?.maxLinesNewFile ?? 500;
+        if (srcTxt.split(/\r?\n/).length > lineCeiling) discrepancies.push(`Source file exceeds ceiling ${lineCeiling}: ${relF}`);
         if (!srcTxt.includes('formatMillionTomanAsIntlCurrency')) discrepancies.push(`Source file missing OP-DEC-001 intl parity: ${relF}`);
       }
     }

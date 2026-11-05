@@ -208,8 +208,7 @@ export function calculateCanonicalBargainFinancials(
 }
 export function calculateCanonicalSponsorPricing(hoodTierOrTariff: number, planMonths: 1 | 3) {
   const baseTariff = hoodTierOrTariff <= 3 ? 15 : hoodTierOrTariff;
-  const res = computeCanonicalSponsorPricing(baseTariff, planMonths);
-  return { ...res, totalPayableMillion: baseTariff * planMonths };
+  return computeCanonicalSponsorPricing(baseTariff, planMonths);
 }
 export type BargainLifecycleStatus = 'pending' | 'approved' | 'rejected';
 export function isValidBargainStateTransition(

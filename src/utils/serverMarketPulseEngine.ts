@@ -52,6 +52,7 @@ export function saveDiskPersistedCache(): void { diskCacheDirty = true; schedule
 export const scheduleSaveCacheToDisk = saveDiskPersistedCache;
 export function getBuyerLeads(): any[] { return serverSideBuyerLeads; }
 export function appendBuyerLead(lead: any): void { serverSideBuyerLeads.unshift(lead); if (serverSideBuyerLeads.length > 500) serverSideBuyerLeads = serverSideBuyerLeads.slice(0, 500); }
+export function cacheBuyerAlertAfterDurableCommit(committed: boolean, lead: BuyerAlertLeadItem): boolean { if (!committed) return false; const nowMs = Date.now(); for (let i = serverSideBuyerLeads.length - 1; i >= 0; i--) { const exp = Date.parse(serverSideBuyerLeads[i]?.expiresAtIso || ''); if (Number.isFinite(exp) && exp <= nowMs) serverSideBuyerLeads.splice(i, 1); } const idx = serverSideBuyerLeads.findIndex((existing) => existing.id === lead.id); if (idx >= 0) serverSideBuyerLeads[idx] = lead; else serverSideBuyerLeads.unshift(lead); if (serverSideBuyerLeads.length > 200) serverSideBuyerLeads.length = 200; return true; }
 export function getCityCache(cityId: CityId = "tehran", areaUnit: AreaUnit = "sqm", intlCurrency: IntlCurrencyCode = "USD") {
   const pulse = cachedMarketPulseByCity[cityId]; const hoods = getCityNeighborhoods(cityId);
   const avgBuy = pulse?.marketSummary.tehranAverageBuyPerSqm ?? Math.round(hoods.reduce((s, h) => s + h.buyPerSqm, 0) / Math.max(1, hoods.length));
@@ -185,6 +186,13 @@ export async function performGeminiDeepMarketSearch(cityId: CityId = "tehran"): 
     return { usedGemini: true, sources: sources.slice(0, 6) };
   } catch { return { usedGemini: false, sources }; }
 }
+export function describeLiveTrafficWithWeather(baseStatus: string, weather: { snowfallCm: number; isRainingOrSnowing: boolean; provenance?: { qualityStatus?: string } }): { status: string; weatherLive: boolean } {
+  const weatherLive = weather.provenance?.qualityStatus === 'verified_live';
+  if (!weatherLive) return { status: baseStatus, weatherLive: false };
+  if (weather.snowfallCm > 0) return { status: `❄️ بارش برف و کندی تردد (${baseStatus})`, weatherLive: true };
+  if (weather.isRainingOrSnowing) return { status: `🌧️ بارندگی و ترافیک سنگینتر (${baseStatus})`, weatherLive: true };
+  return { status: baseStatus, weatherLive: true };
+}
 export async function buildMarketPulseSnapshot(
   cityId: CityId = "tehran", cacheState: MarketPulseData["cacheStatus"] = "REFRESHED", sources: GroundingSourceLink[] = []
 ): Promise<MarketPulseData> {
@@ -226,13 +234,13 @@ export async function buildMarketPulseSnapshot(
     const hoodAqi = nearestStation?.aqi ?? avgAqi;
     const hoodPm25 = nearestStation?.pm25 ?? avgPm25;
     const liveAirScore = clampNumber(Number((10 - (hoodAqi - 45) / 28).toFixed(1)), 3.5, 9.8, h.air);
-    const realChangePct = Number((((liveBuyPerSqm - h.buyPerSqm) / Math.max(1, h.buyPerSqm)) * 100).toFixed(2));
-    const weatherPenalty = weather.snowfallCm > 0 ? (h.flatTerrain <= 6 ? 2.2 : 1.2) : weather.isRainingOrSnowing ? (h.flatTerrain <= 6 ? 1.3 : 0.7) : 0;
+    const trafficWithWeather = describeLiveTrafficWithWeather(traffic.liveStatus, weather);
+    const weatherPenalty = !trafficWithWeather.weatherLive ? 0 : weather.snowfallCm > 0 ? (h.flatTerrain <= 6 ? 2.2 : 1.2) : weather.isRainingOrSnowing ? (h.flatTerrain <= 6 ? 1.3 : 0.7) : 0;
     const liveTrafficScore = clampNumber(Number((traffic.trafficScore - weatherPenalty).toFixed(1)), 2.5, 9.8, traffic.trafficScore);
-    const liveTrafficStatus = weather.snowfallCm > 0 ? `❄️ بارش برف و کندی تردد (${traffic.liveStatus})` : weather.isRainingOrSnowing ? `🌧️ بارندگی و ترافیک سنگینتر (${traffic.liveStatus})` : traffic.liveStatus;
+    const liveTrafficStatus = trafficWithWeather.status;
     return {
       id: h.id, name: h.name, liveBuyPerSqm, liveRahn80m, liveAirScore, stationAqi: hoodAqi, pm25: hoodPm25,
-      hourlyChangePercent: realChangePct, liveTrafficStatus, liveTrafficScore, peakHours: traffic.peakHours,
+      hourlyChangePercent: 0, liveTrafficStatus, liveTrafficScore, peakHours: traffic.peakHours,
       seasonalAnalysis: traffic.seasonalAnalysis, bottlenecks: traffic.bottlenecks, liveBargains: override?.liveBargains,
     };
   });

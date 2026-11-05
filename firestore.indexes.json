@@ -58,6 +58,14 @@
         { "fieldPath": "hoodId", "order": "ASCENDING" },
         { "fieldPath": "createdAtIso", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "votes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "hoodId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

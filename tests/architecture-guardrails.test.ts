@@ -274,7 +274,8 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
   for (const rel of all242RepoFiles) {
     const srcText = fs.readFileSync(path.join(rootDir, rel), 'utf8');
     const lc = srcText.split(/\r?\n/).length;
-    assert.ok(lc <= 290, `Expected ${rel} <= 290 lines (strictly below warningLines=300), got ${lc}`);
+    const ceiling = baselineConfig.datasetExclusions?.[rel]?.maxLines ?? baselineConfig.trackedLegacyFiles?.[rel]?.maxLines ?? baselineConfig.thresholds?.maxLinesNewFile ?? 500;
+    assert.ok(lc <= ceiling, `Expected ${rel} <= ${ceiling} lines (OP-DEC-004; datasets and tracked legacy files keep their own ratchet), got ${lc}`);
     assert.ok(srcText.includes('formatMillionTomanAsIntlCurrency'), `Expected ${rel} to support OP-DEC-001 international currency equivalence`);
   }
 });

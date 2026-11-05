@@ -96,7 +96,7 @@ export function useMarketPulseSync({
                   changed = true;
                   return { ...base, air: nextAir };
                 }
-                const hasLivePriceDelta = Math.abs(Number(snapshot.hourlyChangePercent) || 0) > 0.01;
+                const hasLivePriceDelta = (Number.isFinite(snapshot.liveBuyPerSqm) && Math.abs(snapshot.liveBuyPerSqm - base.buyPerSqm) > 0.01) || (Number.isFinite(snapshot.liveRahn80m) && Math.abs(snapshot.liveRahn80m - base.rahn80m) > 0.01);
                 const nextBuy =
                   hasLivePriceDelta && Number.isFinite(snapshot.liveBuyPerSqm) && snapshot.liveBuyPerSqm > 0
                     ? snapshot.liveBuyPerSqm

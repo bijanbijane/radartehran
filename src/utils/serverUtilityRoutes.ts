@@ -1,4 +1,4 @@
-import crypto from "node:crypto"; import type { Express, Request, Response } from "express"; import { GoogleGenAI, Type } from "@google/genai"; import { INITIAL_NEIGHBORHOODS, toPersianNum } from "../data/neighborhoods"; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, CityId } from "../data/multiCityData"; import type { ContractCheckResponse } from "../types/models"; import { cleanIranianMobile, detectPromptInjection, isValidIranianMobile, sanitizeInput, validateCityParam } from "./security"; import { getValidatedServerConfig, runLocalLegalRuleEngine, validateTelegramSendRequest, verifyAdminApiAuthorization, verifyFirebaseUserAuthorization } from "./serverAdminAndTelegramSecurity"; import { getOrUpdateMarketPulse, pushAuditLog, saveDiskPersistedCache, serverSideBuyerLeads } from "./serverMarketPulseEngine"; import { checkAccountQuota, recordAbuseSignal, type RateBucketType } from "./serverDeliveryAndAbuseGuard";
+import crypto from "node:crypto"; import type { Express, Request, Response } from "express"; import { GoogleGenAI, Type } from "@google/genai"; import { INITIAL_NEIGHBORHOODS, toPersianNum } from "../data/neighborhoods"; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, CityId } from "../data/multiCityData"; import type { ContractCheckResponse } from "../types/models"; import { cleanIranianMobile, detectPromptInjection, isValidIranianMobile, sanitizeInput, validateCityParam } from "./security"; import { getValidatedServerConfig, runLocalLegalRuleEngine, validateTelegramSendRequest, verifyAdminApiAuthorization, verifyFirebaseAppCheckHeader, verifyFirebaseUserAuthorization } from "./serverAdminAndTelegramSecurity"; import { listDurableBuyerAlerts, persistBuyerAlertDocument } from "./identityLifecycleAndBackendGovernance"; import { cacheBuyerAlertAfterDurableCommit, getOrUpdateMarketPulse, pushAuditLog, saveDiskPersistedCache } from "./serverMarketPulseEngine"; import { checkAccountQuota, recordAbuseSignal, type RateBucketType } from "./serverDeliveryAndAbuseGuard";
 import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes"; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from "./areaUnit"; const contractCheckCache = new Map<string, { expiresAt: number; payload: ContractCheckResponse }>(); const recentTelegramIdempotency = new Map<string, number>(); let activeContractAiCalls = 0; function pruneTelegramIdempotency(now = Date.now()): void { for (const [k, ts] of recentTelegramIdempotency) { if (now - ts >= 60_000) recentTelegramIdempotency.delete(k); } while (recentTelegramIdempotency.size >= 500) { const oldest = recentTelegramIdempotency.keys().next().value; if (!oldest) break; recentTelegramIdempotency.delete(oldest); } } export function buildTelegramDigestPost(cityId: CityId = "tehran", areaUnit: AreaUnit = "sqm", currency: IntlCurrencyCode = "IRT"): string { const cityCfg = MULTI_CITY_CONFIGS[cityId] || MULTI_CITY_CONFIGS.tehran; const hoods = cityId === "tehran" ? INITIAL_NEIGHBORHOODS : cityCfg.neighborhoods; const allCandidates = hoods
     .flatMap((h) => (h.bargains || []).map((b) => ({ hoodId: h.id, hoodName: h.name, zone: h.zone, buyPerSqm: h.buyPerSqm, ...b })))
     .sort((a, b) => b.discountPercent - a.discountPercent); const seenHoods = new Set<number>(); const sortedBargains = allCandidates.filter((b) => { if (seenHoods.has(b.hoodId)) return false; seenHoods.add(b.hoodId); return true; }).slice(0, 4); const avgBuy = Math.round(hoods.reduce((acc, h) => acc + h.buyPerSqm, 0) / Math.max(1, hoods.length)); const avgRahn = Math.round(hoods.reduce((acc, h) => acc + h.rahn80m, 0) / Math.max(1, hoods.length)); const unitLabel = formatAreaUnitLabel(areaUnit); const avgBuyIntl = formatMillionTomanAsIntlCurrency(avgBuy, currency); const lines: string[] = [
@@ -157,10 +157,17 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
       });
       return;
     }
-    const nowMs = Date.now(); for (let i = serverSideBuyerLeads.length - 1; i >= 0; i--) { const exp = Date.parse(serverSideBuyerLeads[i]?.expiresAtIso || ""); if (Number.isFinite(exp) && exp <= nowMs) serverSideBuyerLeads.splice(i, 1); }
-    res.status(200).json({ status: "ok", leads: serverSideBuyerLeads });
+    if (!authCheck.uid) { res.status(503).json({ status: "error", code: "BUYER_ALERT_PERSIST_FAILED", message: "فهرست خریداران از پایگاه داده خوانده نشد." }); return; }
+    try {
+      const leads = await listDurableBuyerAlerts(authCheck.uid, authCheck.email);
+      res.status(200).json({ status: "ok", leads });
+    } catch {
+      res.status(503).json({ status: "error", code: "BUYER_ALERT_PERSIST_FAILED", message: "فهرست خریداران از پایگاه داده خوانده نشد." });
+    }
   });
   app.post("/api/buyer-alerts", async (req: Request, res: Response) => {
+    const appCheck = await verifyFirebaseAppCheckHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!appCheck.allowed) { res.status(appCheck.statusCode).json({ status: "error", code: appCheck.reason, message: "توکن App Check معتبر نیست." }); return; }
     const clientIp = getClientIp(req);
     if (!checkRateLimit(clientIp, "lead", 5, 60 * 60 * 1000)) {
       res.setHeader("Retry-After", "3600");
@@ -242,40 +249,25 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     }
     const dealType: "خرید" | "اجاره" = rawDealType === "اجاره" || rawDealType === "رهن و اجاره" ? "اجاره" : "خرید";
     const maxBudgetText = sanitizeInput(req.body?.maxBudgetText || "", 120) || "متناسب با میانگین محله";
-    const now = new Date();
-    for (let i = serverSideBuyerLeads.length - 1; i >= 0; i--) { const exp = Date.parse(serverSideBuyerLeads[i]?.expiresAtIso || ""); if (Number.isFinite(exp) && exp <= now.getTime()) serverSideBuyerLeads.splice(i, 1); }
-    const duplicateExists = serverSideBuyerLeads.some((existing) => existing.phone === phone && existing.hoodId === canonicalHood.id && existing.dealType === dealType);
-    const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-    if (!duplicateExists) {
-      serverSideBuyerLeads.unshift({
-        id: `srv-lead-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        hoodId: canonicalHood.id,
-        hoodName: canonicalHood.name,
-        fullName: fullName.trim(),
-        phone,
-        dealType,
-        maxBudgetText,
-        createdAtFa: now.toLocaleString("fa-IR", { timeZone: "Asia/Tehran" }),
-        createdAtIso: now.toISOString(),
-        expiresAtIso: expiresAt.toISOString(),
-        consentAtIso: now.toISOString(),
-        consentVersion: "buyer-alert-2026-10-v1",
-        submittedByUid: authCheck.uid,
-      });
-      if (serverSideBuyerLeads.length > 200) {
-        serverSideBuyerLeads.length = 200;
-      }
-      pushAuditLog("INFO", `ثبت درخواست پیگیری خریدار برای محلهٔ ${canonicalHood.name}`);
-      saveDiskPersistedCache();
+    if (!authCheck.uid) { res.status(401).json({ status: "error", code: "MISSING_SUBJECT_UID", message: "ثبت شمارهٔ خریدار نیازمند ورود به حساب کاربری تأییدشده است." }); return; }
+    let persisted: { duplicate: boolean; expiresAtIso: string; id: string };
+    try {
+      persisted = await persistBuyerAlertDocument({ uid: authCheck.uid, email: authCheck.email, hoodId: canonicalHood.id, hoodName: canonicalHood.name, fullName: fullName.trim(), phone, dealType, maxBudgetText });
+    } catch {
+      res.status(503).json({ status: "error", code: "BUYER_ALERT_PERSIST_FAILED", message: "ثبت درخواست خریدار در پایگاه داده انجام نشد." });
+      return;
     }
+    cacheBuyerAlertAfterDurableCommit(true, { id: persisted.id, hoodId: canonicalHood.id, hoodName: canonicalHood.name, fullName: fullName.trim(), phone, dealType, maxBudgetText, createdAtFa: new Date().toLocaleString("fa-IR", { timeZone: "Asia/Tehran" }), createdAtIso: new Date().toISOString(), expiresAtIso: persisted.expiresAtIso, consentAtIso: new Date().toISOString(), consentVersion: "buyer-alert-2026-10-v1", submittedByUid: authCheck.uid });
+    pushAuditLog("INFO", `ثبت درخواست پیگیری خریدار برای محلهٔ ${canonicalHood.name}`);
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({
       status: "ok",
-      duplicate: duplicateExists,
+      durable: true,
+      duplicate: persisted.duplicate,
       smsConfigured: false,
       retentionDays: 90,
-      expiresAtIso: expiresAt.toISOString(),
-      message: duplicateExists
+      expiresAtIso: persisted.expiresAtIso,
+      message: persisted.duplicate
         ? `درخواست شما برای محلهٔ ${canonicalHood.name} پیش‌تر ثبت شده است.`
         : `درخواست شما برای محلهٔ ${canonicalHood.name} با مهلت نگهداری ۹۰ روزه ثبت شد.`,
     }); }); app.post("/api/track-call", (req: Request, res: Response) => { const ip = getClientIp(req); if (!checkRateLimit(ip, "call_track", 20, 60 * 1000)) { res.status(429).json({ status: "error", code: "CALL_TRACK_RATE_LIMIT" }); return; } const hoodName = sanitizeInput(req.body?.hoodName || "محله", 60);
