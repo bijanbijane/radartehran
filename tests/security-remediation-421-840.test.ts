@@ -253,7 +253,10 @@ async function runAllRemediationTests(): Promise<void> {
   assert.equal(resolveAllowedViteDevHosts({}).includes('localhost'), true);
   assert.ok(resolveServerHttpTimeouts({}).headersTimeoutMs > resolveServerHttpTimeouts({}).keepAliveTimeoutMs);
   assert.equal(validateProductionStartupConfiguration({ NODE_ENV: 'production' }).valid, false);
-  assert.ok(Object.keys(buildOpenApiSpecification().paths as Record<string, unknown>).length >= API_ENDPOINT_CONTRACTS.length - 2);
+  const openApiPaths = Object.keys(buildOpenApiSpecification().paths as Record<string, unknown>);
+  const contractPaths = new Set(API_ENDPOINT_CONTRACTS.map((ep) => ep.path));
+  assert.equal(openApiPaths.length, contractPaths.size);
+  assert.equal(openApiPaths.includes('/api/v1/enterprise/audit-pipeline'), false);
   const ssrfLocal = await validateOutboundUrlAndResolveDns('http://127.0.0.1:8080/internal');
   assert.equal(ssrfLocal.allowed, false);
   await assert.rejects(() =>
@@ -807,7 +810,7 @@ async function runAllRemediationTests(): Promise<void> {
     ownedMediaObjectIds: ['obj-1'],
   });
   assert.equal(delResult.allowed, true);
-  assert.ok(delResult.purgedDerivedProjectionPaths.includes('/publicSponsors/5'));
+  assert.ok(delResult.purgedDerivedProjectionPaths.includes('/neighborhoodOverrides/5'));
   assert.equal(buildPrivacySafeAggregateNeighborhoodStats({ hoodId: 5, samplePrices: [120, 130] }).kAnonymitySatisfied, false);
   assert.equal(buildPrivacySafeAggregateNeighborhoodStats({ hoodId: 5, samplePrices: [110, 120, 130] }).kAnonymitySatisfied, true);
   assert.match(derivePseudonymousAnalyticsActorId('u1', 'server-hmac-secret-123456'), /^pseudo_[0-9a-f]{24}$/);

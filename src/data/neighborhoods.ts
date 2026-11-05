@@ -204,7 +204,22 @@ export function isAuthorizedAdminUser( user: { uid?: string | null; email?: stri
   return false; }
 export const INITIAL_BUYER_LEADS: BuyerAlertLeadItem[] = [
   { id: 'lead-1', hoodId: 5, hoodName: 'پونک', fullName: 'امیرحسین رضایی (نمونه)', phone: '0912***6789', dealType: 'خرید', maxBudgetText: '۱۱.۵ میلیارد تومان (واحد ۸۵ متری)', createdAtFa: '۱۴۰۵/۰۲/۱۸ - ۱۱:۲۰', }, { id: 'lead-2', hoodId: 26, hoodName: 'گیشا (کوی نصر)', fullName: 'سارا محمدی (نمونه)', phone: '0912***6543', dealType: 'اجاره', maxBudgetText: '۱.۴ میلیارد رهن کامل', createdAtFa: '۱۴۰۵/۰۲/۱۸ - ۱۴:۰۵', }, { id: 'lead-3', hoodId: 14, hoodName: 'تهرانپارس', fullName: 'مهدی کاظمی (نمونه)', phone: '0935***3344', dealType: 'خرید', maxBudgetText: '۹.۲ میلیارد تومان (واحد ۸۰ متری)', createdAtFa: '۱۴۰۵/۰۲/۱۹ - ۰۹:۴۵', }, ]; export const INITIAL_SPONSOR_CRM: SponsorCrmRequestItem[] = [
-  { id: 'crm-1', hoodId: 26, hoodName: 'گیشا (کوی نصر)', agencyName: 'دپارتمان املاک بزرگ کوی نصر', phone: '021-88274500', specialty: 'فایل‌های شخصی، نوساز و کلنگی گیشا', experienceYears: 16, monthlyTariffMillion: 15, planMonths: 3, totalPayableMillion: 36, trackingCode: 'TR-98412055', expiresAtIso: new Date(Date.now() + 26 * 24 * 60 * 60 * 1000).toISOString(), status: 'pending', createdAtFa: '۱۴۰۵/۰۲/۱۸ - ۱۲:۳۰', }, { id: 'crm-2', hoodId: 27, hoodName: 'مرزداران', agencyName: 'مسکن الف مرزداران', phone: '021-44269100', specialty: 'آپارتمان‌های برند بلوار مرزداران و سپهر', experienceYears: 14, monthlyTariffMillion: 15, planMonths: 1, totalPayableMillion: 15, trackingCode: 'TR-77319042', expiresAtIso: new Date(Date.now() + 19 * 24 * 60 * 60 * 1000).toISOString(), status: 'pending', createdAtFa: '۱۴۰۵/۰۲/۱۹ - ۱۰:۱۵', }, ]; export type FreeKeylessTileServerId = 'voyager' | 'osm_hot' | 'carto_dark' | 'osm' | 'satellite'; export type MapTileServerId = 'neshan' | FreeKeylessTileServerId; export const FREE_KEYLESS_TILE_SERVERS: Record<
+  { id: 'crm-1', hoodId: 26, hoodName: 'گیشا (کوی نصر)', agencyName: 'دپارتمان املاک بزرگ کوی نصر', phone: '021-88274500', specialty: 'فایل‌های شخصی، نوساز و کلنگی گیشا', experienceYears: 16, monthlyTariffMillion: 15, planMonths: 3, totalPayableMillion: 36, trackingCode: 'TR-98412055', expiresAtIso: new Date(Date.now() + 26 * 24 * 60 * 60 * 1000).toISOString(), status: 'pending', createdAtFa: '۱۴۰۵/۰۲/۱۸ - ۱۲:۳۰', }, { id: 'crm-2', hoodId: 27, hoodName: 'مرزداران', agencyName: 'مسکن الف مرزداران', phone: '021-44269100', specialty: 'آپارتمان‌های برند بلوار مرزداران و سپهر', experienceYears: 14, monthlyTariffMillion: 15, planMonths: 1, totalPayableMillion: 15, trackingCode: 'TR-77319042', expiresAtIso: new Date(Date.now() + 19 * 24 * 60 * 60 * 1000).toISOString(), status: 'pending', createdAtFa: '۱۴۰۵/۰۲/۱۹ - ۱۰:۱۵', }, ];
+const DEMONSTRATION_LEAD_IDS = new Set(['lead-1', 'lead-2', 'lead-3']);
+const DEMONSTRATION_SPONSOR_IDS = new Set(['crm-1', 'crm-2']);
+export function isDemonstrationBuyerLead(item: { id?: string; fullName?: string }): boolean {
+  return DEMONSTRATION_LEAD_IDS.has(String(item?.id || '')) || String(item?.fullName || '').includes('(نمونه)');
+}
+export function isDemonstrationSponsorRequest(item: { id?: string; agencyName?: string }): boolean {
+  return DEMONSTRATION_SPONSOR_IDS.has(String(item?.id || '')) || String(item?.agencyName || '').includes('(نمونه)');
+}
+export function withoutDemonstrationBuyerLeads(items: BuyerAlertLeadItem[]): BuyerAlertLeadItem[] {
+  return items.filter((item) => item && !isDemonstrationBuyerLead(item));
+}
+export function withoutDemonstrationSponsorRequests(items: SponsorCrmRequestItem[]): SponsorCrmRequestItem[] {
+  return items.filter((item) => item && !isDemonstrationSponsorRequest(item));
+}
+export type FreeKeylessTileServerId = 'voyager' | 'osm_hot' | 'carto_dark' | 'osm' | 'satellite'; export type MapTileServerId = 'neshan' | FreeKeylessTileServerId; export const FREE_KEYLESS_TILE_SERVERS: Record<
   FreeKeylessTileServerId, { url: string; label: string; next: FreeKeylessTileServerId }
 > = { osm: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',

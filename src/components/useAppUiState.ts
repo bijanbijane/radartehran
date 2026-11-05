@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { BuyerAlertLeadItem, SponsorCrmRequestItem, ResidentVoteDoc, MarketPulseData, CityId } from '../data/neighborhoods';
-import { INITIAL_BUYER_LEADS, INITIAL_SPONSOR_CRM, BUYER_ALERTS_STORAGE_KEY, SPONSOR_CRM_STORAGE_KEY } from '../data/neighborhoods';
+import { withoutDemonstrationBuyerLeads, withoutDemonstrationSponsorRequests, BUYER_ALERTS_STORAGE_KEY, SPONSOR_CRM_STORAGE_KEY } from '../data/neighborhoods';
 import type { AdminTabId, SystemHealthData } from './AdminModal';
 import type { ExpansionModalType } from './ExpansionModulesModal';
 import type { SuperModuleTabId } from './FutureSuperModulesModal';
@@ -129,15 +129,17 @@ export function useAppUiState(initialUrlState: any) {
   const [buyerLeads, setBuyerLeads] = useState<BuyerAlertLeadItem[]>(() => {
     try {
       const saved = localStorage.getItem(BUYER_ALERTS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_BUYER_LEADS;
-    } catch { return INITIAL_BUYER_LEADS; }
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? withoutDemonstrationBuyerLeads(parsed) : [];
+    } catch { return []; }
   });
 
   const [sponsorRequests, setSponsorRequests] = useState<SponsorCrmRequestItem[]>(() => {
     try {
       const saved = localStorage.getItem(SPONSOR_CRM_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_SPONSOR_CRM;
-    } catch { return INITIAL_SPONSOR_CRM; }
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? withoutDemonstrationSponsorRequests(parsed) : [];
+    } catch { return []; }
   });
 
   const [hasDelegatedAdminDoc, setHasDelegatedAdminDoc] = useState<boolean>(false);

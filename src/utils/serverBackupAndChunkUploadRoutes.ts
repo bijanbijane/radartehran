@@ -14,7 +14,7 @@ export function buildCascadeDeletionPlan(params: { bargainId: string; ownerUid: 
     if (!isValidFirestoreDocId(mediaId)) continue; if (shared.has(mediaId)) mediaIdsPreservedBecauseShared.push(mediaId); else mediaIdsMarkedPendingDelete.push(mediaId); }
   return { authorized: true,
     firestorePathsToDelete: [`/bargains/${params.bargainId}`, `/bargainOwners/${params.bargainId}`],
-    preservedSharedPaths: ['/neighborhoodOverrides', '/publicSponsors'], mediaIdsMarkedPendingDelete, mediaIdsPreservedBecauseShared, }; }
+    preservedSharedPaths: ['/neighborhoodOverrides'], mediaIdsMarkedPendingDelete, mediaIdsPreservedBecauseShared, }; }
 interface ChunkedUploadSession { sessionId: string; ownerUid: string; city: 'tehran' | 'karaj' | 'mashhad' | 'isfahan' | 'shiraz';
   hoodId: number; mediaType: 'image' | 'video'; mimeType: string; fileName: string; totalChunks: number; maxBytes: number; chunks: Map<number, Buffer>;
   receivedBytes: number; createdAtMs: number; completed: boolean; }

@@ -100,11 +100,9 @@
       "type": "object",
       "properties": {
         "hoodId": { "type": "number", "description": "Neighborhood ID (1 to 999)" },
-        "buyPerSqm": { "type": "number", "description": "Updated average buy price per sqm (Million Tomans)" },
-        "rahn80m": { "type": "number", "description": "Updated average 80m full deposit (Million Tomans)" },
-        "pros": { "type": "string", "description": "Updated neighborhood pros text" },
-        "cons": { "type": "string", "description": "Updated neighborhood cons text" },
-        "sponsor": { "type": "object", "description": "Optional active neighborhood sponsor metadata" },
+        "buyPerSqm": { "type": "number", "description": "Updated average buy price per sqm (Million Tomans, 10..5000)" },
+        "rahn80m": { "type": "number", "description": "Updated average 80m full deposit (Million Tomans, 50..100000)" },
+        "sponsor": { "type": "object", "description": "Public sponsor card: name, phone, specialty, experienceYears, optional expiresAtIso and planType" },
         "updatedAt": { "type": "string", "format": "date-time", "description": "Last admin update timestamp" }
       },
       "required": ["hoodId", "buyPerSqm", "rahn80m", "updatedAt"]
@@ -144,35 +142,6 @@
         "status",
         "createdBy",
         "createdAt"
-      ]
-    },
-    "PublicSponsorProjection": {
-      "title": "PublicSponsorProjection",
-      "description": "Publicly readable approved neighborhood sponsor card (keyed by hoodId 1 to 999)",
-      "type": "object",
-      "properties": {
-        "hoodId": { "type": "number", "description": "Neighborhood ID (1 to 999)" },
-        "hoodName": { "type": "string", "description": "Neighborhood Persian name" },
-        "agencyName": { "type": "string", "description": "Approved agency or advisor name" },
-        "phone": { "type": "string", "description": "Public business contact number" },
-        "specialty": { "type": "string", "description": "Specialty description" },
-        "experienceYears": { "type": "number", "description": "Years of experience (1 to 60)" },
-        "planMonths": { "type": "number", "description": "Subscription duration in months (1 or 3)" },
-        "expiresAtIso": { "type": "string", "description": "Subscription expiration ISO timestamp" },
-        "verified": { "type": "boolean", "description": "Verified badge status" },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "Last projection update timestamp" }
-      },
-      "required": [
-        "hoodId",
-        "hoodName",
-        "agencyName",
-        "phone",
-        "specialty",
-        "experienceYears",
-        "planMonths",
-        "expiresAtIso",
-        "verified",
-        "updatedAt"
       ]
     },
     "BuyerAlertLead": {
@@ -268,15 +237,11 @@
     },
     "/neighborhoodOverrides/{hoodId}": {
       "schema": { "$ref": "#/entities/NeighborhoodOverride" },
-      "description": "Admin price and sponsor overrides for neighborhoods (1..999)"
+      "description": "Admin price overrides and the public neighborhoodOverrides.sponsor card (list requires hoodId 1..999)"
     },
     "/sponsorRequests/{requestId}": {
       "schema": { "$ref": "#/entities/SponsorRequest" },
       "description": "Realtor sponsorship CRM requests"
-    },
-    "/publicSponsors/{hoodId}": {
-      "schema": { "$ref": "#/entities/PublicSponsorProjection" },
-      "description": "Publicly visible approved sponsor projection per neighborhood"
     },
     "/buyerAlerts/{alertId}": {
       "schema": { "$ref": "#/entities/BuyerAlertLead" },

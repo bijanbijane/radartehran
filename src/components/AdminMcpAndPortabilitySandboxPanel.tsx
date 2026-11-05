@@ -2,7 +2,7 @@
 import React, { useState } from 'react'; import { Cpu, Database, Play, Server, ShieldCheck } from 'lucide-react'; import { toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { MANDATORY_PAYMENT_SIMULATION_BANNER, type AuthorizedMcpToolName } from '../utils/dataCommerceMcpAndMonetization'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; interface AdminMcpAndPortabilitySandboxPanelProps { cloudflareAndPortability: any | null; monetizationSummary: any | null; aiRoutingAuditTrail: any[]; }
 const MCP_TOOLS_SPEC: ReadonlyArray<{ id: AuthorizedMcpToolName; labelFa: string; descFa: string; }> = [ { id: 'compute_hedonic_valuation', labelFa: 'ارزش‌گذاری قطعی هدانیک (compute_hedonic_valuation)', descFa: 'فراخوانی مستقیم موتور قطعی هدانیک (FAST_SALE_FACTOR=0.95) بدون دخالت LLM در محاسبه عدد.', }, { id: 'get_neighborhood_statistics', labelFa: 'شاخص آماری محله (get_neighborhood_statistics)', descFa: 'دریافت قیمت خرید، رهن ۸۰ متری، امتیاز امنیت و مترو برای محله انتخاب‌شده (Zero PII).', }, { id: 'search_approved_market_data', labelFa: 'فیلتر محلات بر اساس سقف بودجه (search_approved_market_data)', descFa: 'جست‌وجوی محلات مجاز بر اساس سقف قیمت هر متر مربع در کلان‌شهر انتخابی.', }, { id: 'compare_market_indicators', labelFa: 'مقایسه دو محله (compare_market_indicators)', descFa: 'محاسبه اختلاف قیمت خرید و رهن میان دو محله منتخب.', }, ];
 export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, monetizationSummary, aiRoutingAuditTrail, }: AdminMcpAndPortabilitySandboxPanelProps): React.ReactElement { const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const [selectedTool, setSelectedTool] = useState<AuthorizedMcpToolName>('compute_hedonic_valuation'); const [city, setCity] = useState<CityId>('tehran'); const [hoodId, setHoodId] = useState<number>(1); const [secondHoodId, setSecondHoodId] = useState<number>(2); const [sqm, setSqm] = useState<number>(90); const [buildingAge, setBuildingAge] = useState<number>(4); const [maxBuyPerSqm, setMaxBuyPerSqm] = useState<number>(160); const [mcpResult, setMcpResult] = useState<any | null>(null); const [isExecuting, setIsExecuting] = useState<boolean>(false); const [aiWorkflow, setAiWorkflow] = useState<string>('valuation_explanation'); const [aiGatewayResult, setAiGatewayResult] = useState<any | null>(null);
-  const [isRunningAiGateway, setIsRunningAiGateway] = useState<boolean>(false); const [dossierResult, setDossierResult] = useState<any | null>(null); const [isRunningDossier, setIsRunningDossier] = useState<boolean>(false); const [enterpriseAuditResult, setEnterpriseAuditResult] = useState<any | null>(null); const [isRunningEnterpriseAudit, setIsRunningEnterpriseAudit] = useState<boolean>(false); const handleRunMcpTool = async () => { setIsExecuting(true); try { const res = await fetch('/api/v1/mcp/execute', { method: 'POST',
+  const [isRunningAiGateway, setIsRunningAiGateway] = useState<boolean>(false); const [dossierResult, setDossierResult] = useState<any | null>(null); const [isRunningDossier, setIsRunningDossier] = useState<boolean>(false); const handleRunMcpTool = async () => { setIsExecuting(true); try { const res = await fetch('/api/v1/mcp/execute', { method: 'POST',
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ toolName: selectedTool, args: { city, hoodId, firstHoodId: hoodId, secondHoodId, sqm, buildingAge, maxBuyPerSqm, hasElevator: true, hasParking: true, hasStorage: true, }, }), }); const data = await res.json(); setMcpResult(data); } catch {
       setMcpResult({ status: 'error', message: 'خطا در ارتباط با وب‌سرویس /api/v1/mcp/execute', }); } finally { setIsExecuting(false); } };
   const handleRunAiGatewayInfer = async () => { setIsRunningAiGateway(true); try { const res = await fetch('/api/ai/gateway/infer', {
@@ -18,14 +18,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
       const res = await fetch(url); const paymentHeader = res.headers.get('PAYMENT-REQUIRED'); const data = await res.json();
       setDossierResult({ httpStatus: res.status, paymentHeaderPresent: Boolean(paymentHeader), payload: data });
     } catch { setDossierResult({ httpStatus: 500, payload: { status: 'error', message: 'خطا در فراخوانی پرونده محله x402' } });
-    } finally { setIsRunningDossier(false); } };
-  const handleRunEnterpriseAudit = async () => {
-    setIsRunningEnterpriseAudit(true);
-    try {
-      const res = await fetch('/api/v1/enterprise/audit-pipeline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'آپارتمان ۸۵ متری در سعادت آباد متری ۱۲۰ میلیون سند شاهنشاهی', currency: intlCurrency }) });
-      setEnterpriseAuditResult(await res.json());
-    } catch { setEnterpriseAuditResult({ status: 'error' }); } finally { setIsRunningEnterpriseAudit(false); }
-  }; return (
+    } finally { setIsRunningDossier(false); } }; return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
       {/* Interactive MCP Read-Only Tool Sandbox */}
       <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5">
@@ -216,9 +209,6 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
             <button type="button" onClick={() => handleTestNeighborhoodDossier(true)} disabled={isRunningDossier} className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold cursor-pointer">
               تست شبیه‌سازی پرونده (`?simulate=1`)
             </button>
-            <button type="button" onClick={handleRunEnterpriseAudit} disabled={isRunningEnterpriseAudit} className="px-2 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold cursor-pointer">
-              {isRunningEnterpriseAudit ? 'ممیزی ۴ ماژول...' : 'تست خط لوله ۴ ماژول (`/api/v1/enterprise/audit-pipeline`)'}
-            </button>
           </div>
           {aiGatewayResult && (
             <div className="p-2 rounded bg-slate-900 text-slate-100 text-[10px] font-mono space-y-0.5" dir="ltr">
@@ -229,11 +219,6 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
             <div className="p-2 rounded bg-slate-900 text-slate-100 text-[10px] font-mono space-y-0.5" dir="ltr">
               <div className="text-emerald-300">HTTP {dossierResult.httpStatus} · PAYMENT-REQUIRED Header: {String(dossierResult.paymentHeaderPresent)}</div>
               {dossierResult.payload?.simulationBanner && <div className="text-amber-300">{dossierResult.payload.simulationBanner}</div>}
-            </div>
-          )} {enterpriseAuditResult && (
-            <div className="p-2 rounded bg-slate-900 text-slate-100 text-[10px] font-mono space-y-0.5" dir="ltr">
-              <div className="text-indigo-300">H3: {enterpriseAuditResult.h3Res9} · Bitmask: {enterpriseAuditResult.defectBitmaskHex} · Cohort: {enterpriseAuditResult.cohort?.status}</div>
-              <div className="text-emerald-300 truncate">ZK Nullifier: {enterpriseAuditResult.zkNullifier?.nullifierHash}</div>
             </div>
           )} </div>
         <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 space-y-1 text-[11px]">

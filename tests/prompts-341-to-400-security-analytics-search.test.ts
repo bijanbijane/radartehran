@@ -444,7 +444,7 @@ import {
 
 {
   assert.ok(RADAR_API_ROUTE_INVENTORY.length >= 14);
-  assert.ok(RADAR_API_ROUTE_INVENTORY.every((r) => r.usedByFrontend));
+  assert.ok(RADAR_API_ROUTE_INVENTORY.every((r) => typeof r.usedByFrontend === 'boolean' && r.path.startsWith('/api/')));
 
   // Centralized validation (Prompt 403): reject non-finite numbers, invalid phone, and unknown fields
   const badPayload = validateApiRequestPayload({

@@ -225,7 +225,7 @@ verify('calculateDetailedValuation delegates core hedonic factors and FAST_SALE_
 });
 
 // 10. RMEP-001 Contract, Route Registration & Blueprint Parity Verification
-verify('server.ts mounts all contracted route modules and firebase-blueprint.json covers all 10 Firestore collections', () => {
+verify('server.ts mounts all contracted route modules and firebase-blueprint.json covers the 9 provisioned Firestore collections', () => {
   const serverSrc = fs.readFileSync(path.join(rootDir, 'server.ts'), 'utf8');
   for (const requiredToken of [
     'registerSponsorAndBargainRoutes(app',
@@ -241,13 +241,14 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
 
   const blueprint = JSON.parse(fs.readFileSync(path.join(rootDir, 'firebase-blueprint.json'), 'utf8'));
   const firestorePaths = Object.keys(blueprint.firestore || {});
-  assert.equal(firestorePaths.length, 10, `Expected 10 Firestore collection paths in firebase-blueprint.json, got ${firestorePaths.length}`);
-  assert.ok(firestorePaths.includes('/publicSponsors/{hoodId}'), 'Expected /publicSponsors/{hoodId} in firebase-blueprint.json');
+  assert.equal(firestorePaths.length, 9, `Expected 9 Firestore collection paths in firebase-blueprint.json, got ${firestorePaths.length}`);
+  assert.ok(firestorePaths.includes('/neighborhoodOverrides/{hoodId}'), 'Expected /neighborhoodOverrides/{hoodId} in firebase-blueprint.json');
+  assert.equal(firestorePaths.includes('/publicSponsors/{hoodId}'), false, 'publicSponsors is not a provisioned collection');
 
   const sysArchDoc = fs.readFileSync(path.join(rootDir, 'docs/system-architecture.md'), 'utf8');
   const secDoc = fs.readFileSync(path.join(rootDir, 'docs/security.md'), 'utf8');
-  assert.ok(sysArchDoc.includes('/publicSponsors/{hoodId}'), 'Expected docs/system-architecture.md to document /publicSponsors/{hoodId}');
-  assert.ok(secDoc.includes('/publicSponsors/{hoodId}'), 'Expected docs/security.md to document /publicSponsors/{hoodId}');
+  assert.ok(sysArchDoc.includes('neighborhoodOverrides.sponsor'), 'Expected docs/system-architecture.md to document neighborhoodOverrides.sponsor');
+  assert.ok(secDoc.includes('neighborhoodOverrides.sponsor'), 'Expected docs/security.md to document neighborhoodOverrides.sponsor');
 
   const appLineCount = fs.readFileSync(path.join(rootDir, 'src/App.tsx'), 'utf8').replace(/\r?\n$/, '').split(/\r?\n/).length;
   assert.ok(appLineCount <= 270, `Expected src/App.tsx <= 270 lines, got ${appLineCount}`);
@@ -267,9 +268,9 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
       if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !staticDatasets.has(`${relDir}/${entry}`)) allNonDatasetFiles.push(`${relDir}/${entry}`);
     }
   }
-  assert.equal(allNonDatasetFiles.length, 242, `Expected 242 non-dataset source files, got ${allNonDatasetFiles.length}`);
+  assert.equal(allNonDatasetFiles.length, 244, `Expected 244 non-dataset source files, got ${allNonDatasetFiles.length}`);
   const all242RepoFiles = [...allNonDatasetFiles, ...staticDatasets];
-  assert.equal(all242RepoFiles.length, 251, `Expected 251 total repository source files, got ${all242RepoFiles.length}`);
+  assert.equal(all242RepoFiles.length, 253, `Expected 253 total repository source files, got ${all242RepoFiles.length}`);
   for (const rel of all242RepoFiles) {
     const srcText = fs.readFileSync(path.join(rootDir, rel), 'utf8');
     const lc = srcText.split(/\r?\n/).length;
