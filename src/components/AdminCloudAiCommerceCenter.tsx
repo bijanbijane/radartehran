@@ -29,6 +29,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
   };
 
   const fetchControlCenterState = useCallback(async () => {
+    if (!auth.currentUser) return;
     try {
       const headers = await getAdminHeaders();
       const res = await fetch('/api/admin/architecture-and-ai-registry', { headers });
@@ -56,9 +57,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
     }
   }, []);
 
-  useEffect(() => {
-    fetchControlCenterState();
-  }, [fetchControlCenterState]);
+  useEffect(() => { void fetchControlCenterState(); const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u) void fetchControlCenterState(); }) : undefined; return () => { if (typeof unsub === 'function') unsub(); }; }, [fetchControlCenterState]);
 
   const handleSaveRouting = async () => {
     setStatusMsg(null);

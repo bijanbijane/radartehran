@@ -69,7 +69,7 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
         }
         if (structured.maxBuyPerSqmMillions !== null && h.buyPerSqm > structured.maxBuyPerSqmMillions) return false;
         if (structured.maxRahnMillions !== null && h.rahn80m > structured.maxRahnMillions) return false;
-        if (structured.positiveGrowthOnly && h.security < 70) return false;
+        if (structured.positiveGrowthOnly && h.security < 7) return false;
         return true;
       })
       .slice(0, 8)

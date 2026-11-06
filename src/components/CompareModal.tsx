@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo } from 'react'; import { AlertCircle, ArrowLeftRight, Award, MapPin, Printer, RefreshCw, Sparkles, X } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { clampNumber, recordDiagnosticEvent, validateNeighborhoodId } from '../utils/security'; import { useDialogFocus } from './useDialogFocus'; import { getMapAdvancedOverlayState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from './mapAdvancedLayers'; import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit'; export interface CompareModalProps { open: boolean; onClose: () => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
+import React, { useEffect, useMemo, useState } from 'react'; import { AlertCircle, ArrowLeftRight, Award, Check, Copy, MapPin, Printer, RefreshCw, Sparkles, X } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { clampNumber, recordDiagnosticEvent, validateNeighborhoodId } from '../utils/security'; import { useDialogFocus } from './useDialogFocus'; import { getMapAdvancedOverlayState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from './mapAdvancedLayers'; import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit'; export interface CompareModalProps { open: boolean; onClose: () => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
   compareId1: number; setCompareId1: React.Dispatch<React.SetStateAction<number>>; compareId2: number; setCompareId2: React.Dispatch<React.SetStateAction<number>>; compHood1: EvaluatedNeighborhood; compHood2: EvaluatedNeighborhood; mode?: 'rent' | 'buy'; buyTotalBudget?: number; totalRahnEquivalent?: number; rentAgeMultiplier?: number; deductTenantRahnInBuy?: boolean; onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void; } interface ComparisonMetricRow { label: string; v1: string; v2: string; win: 0 | 1 | 2; }
 export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1, setCompareId1, compareId2, setCompareId2, compHood1, compHood2, mode = 'buy', buyTotalBudget = 8500, totalRahnEquivalent = 1500, rentAgeMultiplier = 1, deductTenantRahnInBuy = false, onSelectNeighborhood, }: CompareModalProps): React.ReactElement | null { const dialogRef = useDialogFocus(open, onClose); const overlayState = useMapAdvancedOverlayState(); const [areaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const isEn = radarLocale === 'en'; const compareCopy = getRadarCompareCopy(radarLocale);
+  const [copied, setCopied] = useState(false);
   const isArcPinned = overlayState.comparisonArc.isPinned; useEffect(() => { if (open && compHood1 && compHood2 && compHood1.id !== compHood2.id) { updateMapAdvancedOverlayState({ comparisonArc: { active: true, isPinned: getMapAdvancedOverlayState().comparisonArc.isPinned, hoodA: compHood1, hoodB: compHood2 }, }); }
   }, [open, compHood1, compHood2]); const safeNeighborhoods = useMemo(() => (Array.isArray(evaluatedNeighborhoods) ? evaluatedNeighborhoods : []), [evaluatedNeighborhoods]); const rows: ComparisonMetricRow[] = useMemo(() => { if (!compHood1 || !compHood2) return []; try { const buy1 = clampNumber(compHood1.buyPerSqm, 10, 2000, 100); const buy2 = clampNumber(compHood2.buyPerSqm, 10, 2000, 100);
       const uBuy1 = convertPricePerSqmToUnit(buy1, areaUnit); const uBuy2 = convertPricePerSqmToUnit(buy2, areaUnit);
@@ -50,6 +51,18 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
   const handleSwapHoods = (): void => { const id1 = validateNeighborhoodId(compareId1, compHood1?.id || 1); const id2 = validateNeighborhoodId(compareId2, compHood2?.id || 2); setCompareId1(id2); setCompareId2(id1); };
   const handleSelectHood1 = (rawVal: string) => { const newId = validateNeighborhoodId(rawVal, 1); if (newId === compareId2) setCompareId2(compareId1); setCompareId1(newId); };
   const handleSelectHood2 = (rawVal: string) => { const newId = validateNeighborhoodId(rawVal, 5); if (newId === compareId1) setCompareId1(compareId2); setCompareId2(newId); };
+  const handleCopySummary = async () => {
+    try {
+      const summaryText = `رادار مسکن: مقایسه ${compHood1.name} با ${compHood2.name}\n` +
+        `• بودجه: ${toPersianNum(activeBudgetMillion)} م.ت\n` +
+        `• متراژ قابل تامین: ${formatAreaValue(summaryStats.sqm1, areaUnit)} در برابر ${formatAreaValue(summaryStats.sqm2, areaUnit)} (اختلاف: ${formatAreaValue(summaryStats.diffSqm, areaUnit)})\n` +
+        `• قیمت ${areaUnit === 'sqft' ? 'هر ft²' : 'متری'}: ${toPersianNum(summaryStats.uSpread)} م.ت اختلاف\n` +
+        `• جمع‌بندی: ${summaryStats.win1 > summaryStats.win2 ? `برتری با ${compHood1.name}` : summaryStats.win2 > summaryStats.win1 ? `برتری با ${compHood2.name}` : 'برابر'}`;
+      await navigator.clipboard.writeText(summaryText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch { /* clipboard fallback */ }
+  };
   return (
     <div role="dialog" aria-modal="true" aria-label={compareCopy.modalTitle} onClick={onClose} className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-w-3xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
@@ -75,6 +88,10 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
             >
               <MapPin className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{isArcPinned ? 'کمان نقشه پین شد' : 'پین کمان روی نقشه'}</span>
+            </button>
+            <button type="button" onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
+              {copied ? <Check className="w-3.5 h-3.5 stroke-[2]" /> : <Copy className="w-3.5 h-3.5 stroke-[1.75]" />}
+              <span>{copied ? 'کپی شد' : 'کپی خلاصه'}</span>
             </button>
             <button type="button" onClick={() => window.print()} aria-label={compareCopy.printBtnLabel} title="چاپ یا ذخیره PDF جدول مقایسه" className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs">
               <Printer className="w-3.5 h-3.5 stroke-[1.75]" />

@@ -81,21 +81,19 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
               <LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span>
             </button>
           )}
-          {p.isVerifiedAdmin && (
-            <button type="button" onClick={p.onOpenAdminModal} className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
-              <Shield className="w-3.5 h-3.5 text-indigo-600" /><span>{isEn ? 'Admin Console' : 'پنل مدیریت رادار'}</span>
-            </button>
-          )}
+          <button type="button" onClick={p.onOpenAdminModal} className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+            <Shield className="w-3.5 h-3.5 text-indigo-600" /><span>{isEn ? 'Admin Console' : 'پنل مدیریت رادار'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Preferences & Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      {/* Preferences & Quick Stats (4-Card Hub) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Your Active Budget:' : 'مبنای بودجه شما:'}</span>
-            <strong className="text-base font-black text-slate-900 dark:text-white tabular-nums mt-0.5 block">
-              {p.mode === 'buy' ? `${toPersianNum(p.buyTotalBudget)} م.ت خرید` : `${toPersianNum(p.deposit)}م / ${toPersianNum(p.monthlyRent)}م`}<span className="text-xs font-normal text-slate-500">{budgetFx}</span>
+            <strong className="text-sm font-black text-slate-900 dark:text-white tabular-nums mt-0.5 block">
+              {p.mode === 'buy' ? `${toPersianNum(p.buyTotalBudget)} م خرید` : `${toPersianNum(p.deposit)}م / ${toPersianNum(p.monthlyRent)}م`}<span className="text-[10px] font-normal text-slate-500">{budgetFx}</span>
             </strong>
           </div>
           <button type="button" onClick={p.onOpenBudgetFilter} aria-label="تنظیم بودجه" className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
@@ -103,26 +101,42 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           </button>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Property Visit Log:' : 'دفترچه بازدیدها:'}</span>
-            <strong className="text-base font-black text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5 block">
-              {toPersianNum(p.visitedHomesCount)} {isEn ? 'recorded visits' : 'آپارتمان ثبت‌شده'}
+            <strong className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5 block">
+              {toPersianNum(p.visitedHomesCount)} {isEn ? 'recorded visits' : 'ملک ثبت‌شده'}
             </strong>
           </div>
-          <button type="button" onClick={p.onOpenVisitedModal} aria-label={isEn ? 'Open property visit log' : 'مشاهده دفترچه بازدیدها'} className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer">
+          <button type="button" onClick={p.onOpenVisitedModal} aria-label={isEn ? 'Open property visit log' : 'مشاهده دفترچه بازدیدها'} className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer">
             {isEn ? 'Open Log' : 'مشاهده'}
           </button>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Under-Market Alerts:' : 'پایش فایل‌های زیر قیمت:'}</span>
-            <strong className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">{isEn ? 'Smart Deal Alert' : 'پیامک هوشمند شکار'}</strong>
+            <strong className="text-sm font-black text-slate-900 dark:text-white mt-0.5 block">{isEn ? 'Smart Deal Alert' : 'پیامک هوشمند شکار'}</strong>
           </div>
-          <button type="button" onClick={p.onOpenBuyerAlertModal} aria-label={isEn ? 'Configure under-market deal alert' : 'ثبت و تنظیم هشدار خرید'} className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer hover:opacity-90">
+          <button type="button" onClick={p.onOpenBuyerAlertModal} aria-label={isEn ? 'Configure under-market deal alert' : 'ثبت و تنظیم هشدار خرید'} className="px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer hover:opacity-90">
             {isEn ? 'Configure' : 'ثبت هشدار'}
           </button>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Shortlist Average:' : 'میانگین امتیاز منتخب‌ها:'}</span>
+            <strong className="text-sm font-black text-slate-900 dark:text-white tabular-nums mt-0.5 block">
+              {avgShortlistScore ? `${toPersianNum(avgShortlistScore)} / ۱۰` : (isEn ? 'No saves' : 'بدون منتخب')}
+            </strong>
+          </div>
+          {favoriteHoods.length >= 2 && p.onOpenShortlistMatrix ? (
+            <button type="button" onClick={p.onOpenShortlistMatrix} aria-label="مقایسه ماتریسی منتخب‌ها" className="p-2 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 transition cursor-pointer">
+              <ArrowLeftRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <span className="text-[11px] text-slate-400 tabular-nums">{toPersianNum(favoriteHoods.length)} محله</span>
+          )}
         </div>
       </div>
 

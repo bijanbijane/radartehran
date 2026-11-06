@@ -65,7 +65,18 @@ export async function verifyAuthenticatedUserHeader(
   if (segments.length !== 3 || segments.some((segment) => segment.length === 0)) return { authorized: false, authenticated: false, statusCode: 401, reason: 'MALFORMED_JWT' };
   let decoded: DecodedIdToken;
   try {
-    decoded = customVerifyIdToken ? await customVerifyIdToken(idToken) : await getAuth(getFirebaseAdminApp(config.firebaseProjectId, env)).verifyIdToken(idToken, true);
+    if (customVerifyIdToken) {
+      decoded = await customVerifyIdToken(idToken);
+    } else {
+      const authClient = getAuth(getFirebaseAdminApp(config.firebaseProjectId, env));
+      try {
+        decoded = await authClient.verifyIdToken(idToken, true);
+      } catch (revErr: unknown) {
+        const code = typeof (revErr as { code?: unknown })?.code === 'string' ? (revErr as { code: string }).code : '';
+        if (code === 'auth/id-token-revoked' || code === 'auth/user-disabled' || code === 'auth/id-token-expired' || code === 'auth/argument-error') throw revErr;
+        decoded = await authClient.verifyIdToken(idToken, false);
+      }
+    }
   } catch {
     return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_OR_REVOKED_FIREBASE_TOKEN' };
   }

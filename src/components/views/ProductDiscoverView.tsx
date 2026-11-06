@@ -23,6 +23,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
   const [query, setQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'green' | 'yellow' | 'red'>('all');
   const [zoneFilter, setZoneFilter] = useState<string>('all');
+  const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
   const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
   const [onlyWithBargains, setOnlyWithBargains] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'score' | 'price_asc' | 'price_desc' | 'rahn_asc' | 'air'>('score');
@@ -43,6 +44,15 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
   const filtered = useMemo(() => {
     let list = filterRankingByViewport ? inViewportHoods : p.evaluatedNeighborhoods;
     if (statusFilter !== 'all') list = list.filter((h) => h.status === statusFilter);
+    if (priceBracket === 'under5b') {
+      list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : h.buyPerSqm * p.targetSqm < 5000);
+    } else if (priceBracket === '5to10b') {
+      list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val >= 1000 && val <= 2000 : val >= 5000 && val <= 10000; });
+    } else if (priceBracket === '10to20b') {
+      list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val > 2000 && val <= 4000 : val > 10000 && val <= 20000; });
+    } else if (priceBracket === 'luxury') {
+      list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : h.buyPerSqm * p.targetSqm > 20000);
+    }
     if (zoneFilter !== 'all') list = list.filter((h) => h.zone === zoneFilter);
     if (onlyFavorites) list = list.filter((h) => p.favoriteHoodIds.includes(h.id));
     if (onlyWithBargains) list = list.filter((h) => (h.bargains?.length || 0) > 0);
@@ -57,11 +67,11 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
       if (sortBy === 'price_asc') return aggregateNeighborhoodMarketMetrics(a.id, a.name, a.buyPerSqm, []).estimatedDealPricePerSqm - aggregateNeighborhoodMarketMetrics(b.id, b.name, b.buyPerSqm, []).estimatedDealPricePerSqm;
       return b.buyPerSqm - a.buyPerSqm;
     });
-  }, [p.evaluatedNeighborhoods, inViewportHoods, filterRankingByViewport, statusFilter, zoneFilter, onlyFavorites, onlyWithBargains, p.favoriteHoodIds, query, sortBy]);
+  }, [p.evaluatedNeighborhoods, inViewportHoods, filterRankingByViewport, statusFilter, priceBracket, zoneFilter, onlyFavorites, onlyWithBargains, p.favoriteHoodIds, p.mode, p.targetSqm, query, sortBy]);
 
-  const hasActiveFilters = Boolean(query.trim() || statusFilter !== 'all' || zoneFilter !== 'all' || onlyFavorites || onlyWithBargains || filterRankingByViewport);
+  const hasActiveFilters = Boolean(query.trim() || statusFilter !== 'all' || priceBracket !== 'all' || zoneFilter !== 'all' || onlyFavorites || onlyWithBargains || filterRankingByViewport);
   const resetAllFilters = () => {
-    setQuery(''); setStatusFilter('all'); setZoneFilter('all'); setOnlyFavorites(false); setOnlyWithBargains(false);
+    setQuery(''); setStatusFilter('all'); setPriceBracket('all'); setZoneFilter('all'); setOnlyFavorites(false); setOnlyWithBargains(false);
     updateMapAdvancedOverlayState({ filterRankingByViewport: false });
   };
 
@@ -123,6 +133,19 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           </div>
         </div>
 
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+          <span className="text-slate-400 text-[11px] shrink-0 font-medium">{isEn ? 'Price Bracket:' : 'بازه قیمتی:'}</span>
+          {[
+            { id: 'all' as const, label: isEn ? 'All Prices' : 'همه قیمت‌ها' },
+            { id: 'under5b' as const, label: p.mode === 'rent' ? (isEn ? '< 1B Rahn' : 'زیر ۱ م.ت') : (isEn ? '< 5B' : 'زیر ۵ میلیارد') },
+            { id: '5to10b' as const, label: p.mode === 'rent' ? (isEn ? '1-2B Rahn' : '۱ تا ۲ م.ت') : (isEn ? '5-10B' : '۵ تا ۱۰ میلیارد') },
+            { id: '10to20b' as const, label: p.mode === 'rent' ? (isEn ? '2-4B Rahn' : '۲ تا ۴ م.ت') : (isEn ? '10-20B' : '۱۰ تا ۲۰ میلیارد') },
+            { id: 'luxury' as const, label: p.mode === 'rent' ? (isEn ? '4B+ Luxury' : 'لوکس ۴+ م.ت') : (isEn ? '20B+ Luxury' : 'لوکس ۲۰+ میلیارد') },
+          ].map((tier) => (
+            <button key={tier.id} type="button" onClick={() => setPriceBracket(tier.id)} className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer shrink-0 ${priceBracket === tier.id ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>{tier.label}</button>
+          ))}
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-400 text-[11px]">{isEn ? 'District:' : 'منطقه شهرداری:'}</span>
@@ -139,11 +162,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           <div className="flex items-center gap-2">
             <span className="text-slate-400 text-[11px]">{isEn ? 'Sort by:' : 'ترتیب نمایش:'}</span>
             <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
-              <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option>
-              <option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت معامله v6.4'}</option>
-              <option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option>
-              <option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option>
-              <option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
+              <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option><option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت معامله v6.4'}</option><option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option><option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option><option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
             </select>
           </div>
         </div>
@@ -154,9 +173,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         <div className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
           <div className="text-sm font-black text-slate-900 dark:text-white">{isEn ? 'No neighborhoods match your active filters' : 'هیچ محله‌ای با فیلترهای انتخابی یافت نشد'}</div>
           <p className="text-xs text-slate-500 dark:text-slate-400">{isEn ? 'Try adjusting your search query, budget filter, map viewport, or district selection.' : 'عبارت جستجو، فیلتر وضعیت بودجه، کادر نقشه یا منطقه شهرداری را تغییر دهید.'}</p>
-          <button type="button" onClick={resetAllFilters} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">
-            {isEn ? 'Reset All Filters' : 'پاک کردن فیلترها و نمایش همه محله‌ها'}
-          </button>
+          <button type="button" onClick={resetAllFilters} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">{isEn ? 'Reset All Filters' : 'پاک کردن فیلترها و نمایش همه محله‌ها'}</button>
         </div>
       ) : layoutMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -188,7 +205,10 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
 
                   <div className="my-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-3 tabular-nums">
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">اعلامی / معامله v6.4:</span>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                        <span>اعلامی / معامله:</span>
+                        {unitBuy > unitDeal && <span className="text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded">~{toPersianNum(Math.max(1, Math.round(((unitBuy - unitDeal) / unitBuy) * 100)))}٪ تخفیف</span>}
+                      </div>
                       <strong className="text-sm font-black text-slate-900 dark:text-white mt-0.5 block">
                         {toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> <span className="text-[10px] font-normal text-slate-400">م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}</span>
                       </strong>

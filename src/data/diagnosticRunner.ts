@@ -270,4 +270,8 @@ export function runClient100StepAudit(
     sampleValuationIntlText: formatMillionTomanAsIntlCurrency(hedonicLuxury.hedonicTotalMillion, referenceCurrency),
   };
 }
+export function runClientSecurityAudit(areaUnit: AreaUnit = getStoredAreaUnit(), referenceCurrency: IntlCurrencyCode = getStoredIntlCurrency()): ClientAuditReport {
+  const full = runClient100StepAudit(areaUnit, referenceCurrency); const secSteps = full.steps.filter((s) => s.domain === 'امنیت'); const passed = secSteps.filter((s) => s.status === 'PASS').length;
+  return { ...full, allPassed: passed === secSteps.length, totalPassed: passed, totalSteps: secSteps.length, steps: secSteps };
+}
 export const runClient50StepAudit = runClient100StepAudit;

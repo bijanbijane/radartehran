@@ -195,9 +195,14 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
               <div className="text-sm font-black text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit))} میلیون تومان/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit))}</div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-1.5 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800 rounded-[9px] px-2.5 py-1.5 text-[11px]">
-            <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">بازه منطقی محله: {toPersianNum(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))} تا {toPersianNum(convertPricePerSqmToUnit(agg.iqrHighPerSqm, areaUnit))} میلیون/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))}</span>
-            <span className="text-emerald-800 dark:text-emerald-300 font-semibold">{regimeNote}</span>
+          <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800 rounded-[10px] p-2.5 space-y-1.5 text-[11px]">
+            <div className="flex flex-wrap items-center justify-between gap-1">
+              <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">بازه منطقی محله: {toPersianNum(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))} تا {toPersianNum(convertPricePerSqmToUnit(agg.iqrHighPerSqm, areaUnit))} میلیون/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))}</span>
+              <span className="text-emerald-800 dark:text-emerald-300 font-semibold text-[10px]">{regimeNote}</span>
+            </div>
+            <div className="relative h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden="true">
+              <div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-500" style={{ width: `${Math.min(95, Math.max(10, Math.round(((agg.estimatedDealPricePerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.iqrHighPerSqm - agg.iqrLowPerSqm)) * 100)))}%` }} />
+            </div>
           </div>
           <div className="flex items-center justify-between gap-2 pt-1">
             <span className="text-slate-500 dark:text-slate-400 font-medium">وضعیت حباب یا جاماندگی:</span>

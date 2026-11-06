@@ -203,14 +203,14 @@ export function getAdminSafeRuntimeConfigView(areaUnit: AreaUnit = 'sqm', intlCu
     values[key] = maskedOrPlain;
   }
 
+  const providerNorm = current.OBJECT_STORAGE_PROVIDER === 'arvan' ? 'arvancloud' : current.OBJECT_STORAGE_PROVIDER;
   return {
-    status: 'ok' as const,
-    updatedAtIso: lastUpdatedAtIso,
-    values,
-    fields,
-    fieldList,
-    displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
-    referenceValuationIntlText: formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en'),
+    status: 'ok' as const, updatedAtIso: lastUpdatedAtIso, lastUpdatedIso: lastUpdatedAtIso, values, fields, fieldList,
+    gemini: { configured: Boolean((process.env.GEMINI_API_KEY || process.env.API_KEY || '').trim()), model: current.GEMINI_MODEL || 'gemini-2.5-flash', deploymentManaged: true },
+    telegram: { botTokenConfigured: Boolean(current.TELEGRAM_BOT_TOKEN.trim()), channelId: current.TELEGRAM_CHANNEL_ID || '', deploymentManagedToken: true },
+    firebase: { projectId: current.FIREBASE_PROJECT_ID || 'gen-lang-client-0713157837', firestoreDatabaseId: (process.env.FIRESTORE_DATABASE_ID || 'ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a').trim(), adminEmail: current.ADMIN_EMAIL || 'radio837isf@gmail.com', adminSecretConfigured: Boolean(current.ADMIN_API_SECRET.trim()), deploymentManaged: true },
+    objectStorage: { provider: providerNorm as any, endpoint: current.OBJECT_STORAGE_ENDPOINT || 'https://s3.ir-thr-at1.arvanstorage.ir', bucket: current.OBJECT_STORAGE_BUCKET || 'tehran-housing-radar-media', region: current.OBJECT_STORAGE_REGION || 'ir-thr-at1', accessKeyConfigured: Boolean(current.OBJECT_STORAGE_ACCESS_KEY.trim()), secretKeyConfigured: Boolean(current.OBJECT_STORAGE_SECRET_KEY.trim()), publicBaseUrl: current.OBJECT_STORAGE_PUBLIC_BASE_URL || '', maxImageMb: current.OBJECT_STORAGE_MAX_IMAGE_MB || 5, maxVideoMb: current.OBJECT_STORAGE_MAX_VIDEO_MB || 50, deploymentManagedCredentials: true },
+    displayAreaUnitLabel: formatAreaUnitLabel(areaUnit), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en'),
   };
 }
 

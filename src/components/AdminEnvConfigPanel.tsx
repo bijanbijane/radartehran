@@ -5,20 +5,21 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
   const [statusMsg, setStatusMsg] = useState<string | null>(null); const [errorMsg, setErrorMsg] = useState<string | null>(null); const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash'); const [telegramChannelId, setTelegramChannelId] = useState('');
   const [storageProvider, setStorageProvider] = useState<ObjectStorageProviderId>('arvancloud'); const [storageRegion, setStorageRegion] = useState('ir-thr-at1'); const [storagePublicUrl, setStoragePublicUrl] = useState(''); const [maxImageMb, setMaxImageMb] = useState(5);
   const [maxVideoMb, setMaxVideoMb] = useState(50); const fetchEnvStatus = async () => {
+    const currentUser = auth.currentUser; if (!currentUser) { setLoading(false); return; }
     setLoading(true); setErrorMsg(null);
     try {
-      const currentUser = auth.currentUser; const idToken = currentUser ? await currentUser.getIdToken() : '';
+      const idToken = await currentUser.getIdToken();
       const res = await fetch('/api/admin/env-config', { headers: idToken ? { Authorization: `Bearer ${idToken}` } : {} });
       if (!res.ok) throw new Error('عدم دسترسی به وضعیت متغیرهای محیطی سرور');
-      const data = (await res.json()) as PublicRuntimeEnvReport;
+      const data = (await res.json()) as PublicRuntimeEnvReport & { values?: Record<string, any> };
       if (data && data.status === 'ok') {
-        setReport(data); setGeminiModel(data.gemini.model || 'gemini-2.5-flash'); setTelegramChannelId(data.telegram.channelId || '');
-        setStorageProvider(data.objectStorage.provider || 'arvancloud'); setStorageRegion(data.objectStorage.region || 'ir-thr-at1');
-        setStoragePublicUrl(data.objectStorage.publicBaseUrl || ''); setMaxImageMb(data.objectStorage.maxImageMb || 5); setMaxVideoMb(data.objectStorage.maxVideoMb || 50);
+        setReport(data); setGeminiModel(data.gemini?.model || String(data.values?.GEMINI_MODEL || 'gemini-2.5-flash')); setTelegramChannelId(data.telegram?.channelId || String(data.values?.TELEGRAM_CHANNEL_ID || ''));
+        setStorageProvider((data.objectStorage?.provider || data.values?.OBJECT_STORAGE_PROVIDER || 'arvancloud') as ObjectStorageProviderId); setStorageRegion(data.objectStorage?.region || String(data.values?.OBJECT_STORAGE_REGION || 'ir-thr-at1'));
+        setStoragePublicUrl(data.objectStorage?.publicBaseUrl || String(data.values?.OBJECT_STORAGE_PUBLIC_BASE_URL || '')); setMaxImageMb(Number(data.objectStorage?.maxImageMb ?? data.values?.OBJECT_STORAGE_MAX_IMAGE_MB) || 5); setMaxVideoMb(Number(data.objectStorage?.maxVideoMb ?? data.values?.OBJECT_STORAGE_MAX_VIDEO_MB) || 50);
       }
     } catch (err: any) { setErrorMsg(err?.message || 'خطا در دریافت وضعیت متغیرهای محیطی'); } finally { setLoading(false); }
   };
-  useEffect(() => { void fetchEnvStatus(); }, []);
+  useEffect(() => { void fetchEnvStatus(); const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u) void fetchEnvStatus(); }) : undefined; return () => { if (typeof unsub === 'function') unsub(); }; }, []);
   const handleSaveEnv = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setStatusMsg(null); setErrorMsg(null);
     try {
@@ -33,7 +34,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
       });
       const data = await res.json();
       if (!res.ok || data?.status !== 'ok') throw new Error(data?.message || 'خطا در ذخیره متغیرهای عملیاتی سرور');
-      if (data.report) setReport(data.report);
+      if (data.report || data.gemini) setReport(data.report || data);
       setStatusMsg('تنظیمات عملیاتی مجاز با موفقیت در سرور ذخیره شد.');
     } catch (err: any) { setErrorMsg(err?.message || 'خطا در بروزرسانی متغیرهای عملیاتی سرور'); } finally { setSaving(false); }
   };
@@ -80,37 +81,37 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">FIREBASE_PROJECT_ID (فقط‌خواندنی):</div>
             <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 select-all">
-              {report?.firebase.projectId || 'gen-lang-client-0713157837'}
+              {report?.firebase?.projectId || 'gen-lang-client-0713157837'}
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">FIRESTORE_DATABASE_ID (فقط‌خواندنی):</div>
             <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate select-all">
-              {report?.firebase.firestoreDatabaseId || 'ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a'}
+              {report?.firebase?.firestoreDatabaseId || 'ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a'}
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">ADMIN_EMAIL (ریشه مدیر اصلی):</div>
             <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 select-all">
-              {report?.firebase.adminEmail || 'radio837isf@gmail.com'}
+              {report?.firebase?.adminEmail || 'radio837isf@gmail.com'}
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">OBJECT_STORAGE_ENDPOINT & BUCKET:</div>
             <div dir="ltr" className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
-              {report?.objectStorage.endpoint || '(local_bucket)'} / {report?.objectStorage.bucket || 'tehran-housing-radar-media'}
+              {report?.objectStorage?.endpoint || '(local_bucket)'} / {report?.objectStorage?.bucket || 'tehran-housing-radar-media'}
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">وضعیت کلیدهای استوریج و تلگرام:</div>
             <div className="font-bold text-slate-800 dark:text-slate-200">
-              S3 Keys: {report?.objectStorage.accessKeyConfigured && report?.objectStorage.secretKeyConfigured ? 'تنظیم‌شده' : 'خالی'} · Bot Token: {report?.telegram.botTokenConfigured ? 'تنظیم‌شده' : 'خالی'}
+              S3 Keys: {report?.objectStorage?.accessKeyConfigured && report?.objectStorage?.secretKeyConfigured ? 'تنظیم‌شده' : 'خالی'} · Bot Token: {report?.telegram?.botTokenConfigured ? 'تنظیم‌شده' : 'خالی'}
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
             <div className="text-slate-500 dark:text-slate-400 font-semibold">وضعیت کلیدهای Gemini و Admin Secret:</div>
             <div className="font-bold text-slate-800 dark:text-slate-200">
-              Gemini Key: {report?.gemini.configured ? 'تنظیم‌شده' : 'خالی'} · Admin Secret: {report?.firebase.adminSecretConfigured ? 'تنظیم‌شده' : 'خالی'}
+              Gemini Key: {report?.gemini?.configured ? 'تنظیم‌شده' : 'خالی'} · Admin Secret: {report?.firebase?.adminSecretConfigured ? 'تنظیم‌شده' : 'خالی'}
             </div>
           </div>
         </div>

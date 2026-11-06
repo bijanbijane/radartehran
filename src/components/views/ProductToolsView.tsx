@@ -162,14 +162,14 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
               {cat.items.map((tool) => {
                 const IconC = tool.icon;
                 return (
-                  <button key={tool.id} type="button" onClick={tool.action} className="p-5 rounded-2xl text-start w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-900 dark:hover:border-white transition cursor-pointer flex items-start gap-4 group">
-                    <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-slate-900 transition shrink-0">
+                  <button key={tool.id} type="button" onClick={tool.action} className="p-5 rounded-2xl text-start w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-600 dark:hover:border-emerald-400 hover:shadow-md transition cursor-pointer flex items-start gap-4 group focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none">
+                    <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 transition shrink-0">
                       <IconC className="w-5 h-5 stroke-[2]" />
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
-                        <h3 className="font-extrabold text-slate-900 dark:text-white text-sm transition truncate">{tool.title}</h3>
-                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-[-2px] transition shrink-0" />
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-sm transition truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-400">{tool.title}</h3>
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-[-2px] group-hover:text-emerald-600 transition shrink-0" />
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{tool.desc}</p>
                     </div>

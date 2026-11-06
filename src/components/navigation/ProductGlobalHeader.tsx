@@ -2,7 +2,7 @@
 import React from 'react';
 import {
   Compass, Home, TrendingUp, Wrench, User, Map as MapIcon,
-  Search, Moon, Sun, SlidersHorizontal, Calculator,
+  Search, Moon, Sun, SlidersHorizontal, Calculator, Shield,
 } from 'lucide-react';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { PrimaryViewId, formatMillionTomanAsIntlCurrency, getRadarGlobalNavCopy } from '../../utils/areaUnit';
@@ -18,6 +18,7 @@ export interface ProductGlobalHeaderProps {
   onOpenBudgetFilter?: () => void;
   onOpenReverseBudget?: () => void;
   onOpenSearch?: () => void;
+  onOpenSecurityAdmin?: () => void;
   searchQuery?: string;
 }
 
@@ -39,6 +40,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   onOpenBudgetFilter,
   onOpenReverseBudget,
   onOpenSearch,
+  onOpenSecurityAdmin,
   searchQuery,
 }) => {
   const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
@@ -115,7 +117,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
         </div>
 
         {/* Primary View Tabs (Desktop / Tablet) */}
-        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0">
+        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 overflow-x-auto no-scrollbar shrink">
           {navItems.map((item) => {
             const isActive = primaryView === item.id;
             return (
@@ -125,10 +127,10 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                 data-testid={`global-nav-${item.id}`}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => onSelectPrimaryView(item.id)}
-                className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer ${
+                className={`relative flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
                   isActive
-                    ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800/90'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'text-slate-900 dark:text-white bg-slate-100/90 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
                 {item.icon}
@@ -146,7 +148,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               onClick={onOpenSearch}
               aria-label={isEn ? 'Search neighborhood' : 'جستجوی محله'}
               title={isEn ? 'Search neighborhood (/)' : 'جستجوی محله (/)'}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
             >
               <Search className="w-3.5 h-3.5 text-slate-400" />
               <span className="hidden 2xl:inline max-w-[90px] truncate">{searchQuery?.trim() || (isEn ? 'Search...' : 'جستجو...')}</span>
@@ -159,7 +161,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               onClick={onOpenReverseBudget}
               aria-label={isEn ? 'Reverse Budget Finder' : 'محاسبه با بودجه معکوس'}
               title={isEn ? 'Where can I buy with my budget?' : 'محاسبه با بودجه معکوس'}
-              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800 hover:bg-emerald-100/70 transition cursor-pointer whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800 hover:bg-emerald-100/70 transition cursor-pointer whitespace-nowrap"
             >
               <Calculator className="w-3.5 h-3.5" />
               <span className="hidden 2xl:inline">{isEn ? 'Reverse Budget' : 'بودجه معکوس'}</span>
@@ -172,16 +174,30 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               onClick={onOpenBudgetFilter}
               aria-label={isEn ? 'Budget & Filters' : 'تنظیمات بودجه و فیلترها'}
               title={isEn ? 'Budget & Filters' : 'تنظیمات بودجه و فیلترها'}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">{isEn ? 'Budget' : 'بودجه'}</span>
+              <span className="hidden xl:inline">{isEn ? 'Budget' : 'بودجه'}</span>
+            </button>
+          )}
+
+          {onOpenSecurityAdmin && (
+            <button
+              type="button"
+              onClick={onOpenSecurityAdmin}
+              aria-label={isEn ? 'Security & Diagnostics' : 'دیباگ و امنیت سیستم'}
+              title={isEn ? 'Security & Server Diagnostics' : 'بخش امنیت و دیباگ سلامت سرور'}
+              data-testid="global-header-security-btn"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 hover:bg-indigo-100/80 transition cursor-pointer whitespace-nowrap"
+            >
+              <Shield className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="hidden xl:inline">{isEn ? 'Security' : 'امنیت'}</span>
             </button>
           )}
 
           {/* Area Unit (m²/ft²), Language (FA/EN/AR/TR) & International Currency (IRT/USD/EUR/AED) */}
           <div className="flex items-center">
-            <AreaUnitToggle compact showIntlControls />
+            <AreaUnitToggle compact showIntlControls className="flex-nowrap" />
           </div>
 
           {/* Theme Switcher */}

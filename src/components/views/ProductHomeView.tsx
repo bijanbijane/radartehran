@@ -36,11 +36,17 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const isEn = radarLocale === 'en';
   const [homeQuery, setHomeQuery] = useState<string>('');
   const { comparisonArc } = useMapAdvancedOverlayState();
+  const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
   const featuredHoods = useMemo(() => {
+    let list = p.evaluatedNeighborhoods;
+    if (priceBracket === 'under5b') list = list.filter((h) => h.buyPerSqm * p.targetSqm < 5000);
+    else if (priceBracket === '5to10b') list = list.filter((h) => { const tot = h.buyPerSqm * p.targetSqm; return tot >= 5000 && tot <= 10000; });
+    else if (priceBracket === '10to20b') list = list.filter((h) => { const tot = h.buyPerSqm * p.targetSqm; return tot > 10000 && tot <= 20000; });
+    else if (priceBracket === 'luxury') list = list.filter((h) => h.buyPerSqm * p.targetSqm > 20000);
     const q = homeQuery.trim();
-    if (!q) return p.evaluatedNeighborhoods.slice(0, 6);
-    return p.evaluatedNeighborhoods.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q)).slice(0, 8);
-  }, [p.evaluatedNeighborhoods, homeQuery]);
+    if (!q) return list.slice(0, 6);
+    return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q)).slice(0, 8);
+  }, [p.evaluatedNeighborhoods, homeQuery, priceBracket, p.targetSqm]);
   const bargainsCount = p.evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0);
   const budgetDisplay = p.mode === 'buy'
     ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} م.ت`)
@@ -163,6 +169,28 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
           <button type="button" onClick={() => p.onNavigateView('discover')} className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
             <span>{isEn ? 'All Neighborhoods' : 'همه محله‌ها'}</span><ChevronLeft className="w-4 h-4" />
           </button>
+        </div>
+        <div role="group" aria-label={isEn ? 'Price brackets' : 'بازه قیمتی خرید'} className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
+          {[
+            { id: 'all' as const, label: isEn ? 'All Budgets' : 'همه قیمت‌ها' },
+            { id: 'under5b' as const, label: isEn ? '< 5B' : 'زیر ۵ میلیارد' },
+            { id: '5to10b' as const, label: isEn ? '5B – 10B' : '۵ تا ۱۰ میلیارد' },
+            { id: '10to20b' as const, label: isEn ? '10B – 20B' : '۱۰ تا ۲۰ میلیارد' },
+            { id: 'luxury' as const, label: isEn ? 'Luxury (20B+)' : 'لوکس (۲۰+ میلیارد)' },
+          ].map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => setPriceBracket(b.id)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                priceBracket === b.id
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'
+              }`}
+            >
+              {b.label}
+            </button>
+          ))}
         </div>
         {featuredHoods.length === 0 ? (
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">

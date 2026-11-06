@@ -150,7 +150,7 @@ export function useAppUiState(initialUrlState: any) {
   const [savedAdminPassword, setSavedAdminPassword] = useState<string>('');
   const [newAdminPassword, setNewAdminPassword] = useState<string>('');
   const [adminPassChangeMsg, setAdminPassChangeMsg] = useState<string>('');
-  const [adminTab, setAdminTab] = useState<AdminTabId>('crm');
+  const [adminTab, setAdminTab] = useState<AdminTabId>('security');
   const [adminEditHoodId, setAdminEditHoodId] = useState<number>(5);
   const [adminEditBuySqm, setAdminEditBuySqm] = useState<number>(142);
   const [adminEditRahn80m, setAdminEditRahn80m] = useState<number>(1750);

@@ -143,7 +143,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           await db
             .collection('neighborhoodOverrides')
             .doc(String(hoodId))
-            .set({ sponsor: sponsorRecord }, { merge: true });
+            .set({ hoodId, sponsor: sponsorRecord }, { merge: true });
           return { expiresAtIso, sponsor: sponsorRecord };
         },
         runPostCommitSideEffects: async () => {
@@ -182,7 +182,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         await db
           .collection('neighborhoodOverrides')
           .doc(String(hoodId))
-          .set({ sponsor: { expiresAtIso } }, { merge: true });
+          .set({ hoodId, sponsor: { expiresAtIso } }, { merge: true });
       } catch {
         res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'تمدید اسپانسر در پایگاه داده انجام نشد.' });
         return;

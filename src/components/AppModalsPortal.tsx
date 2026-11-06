@@ -146,7 +146,7 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
           onToggleFeatureFlag={p.handleToggleFeatureFlag} onDownloadFullBackupJson={p.handleDownloadFullBackupJson}
           onRestoreFullBackupJson={p.handleRestoreFullBackupJson} backupStatusMsg={ui.backupStatusMsg}
           isVerifiedAdmin={p.isVerifiedAdmin} currentUserEmail={p.currentUser?.email || null}
-          onGoogleSignIn={() => signInWithPopup(auth, googleProvider).catch(() => {})}
+          onGoogleSignIn={() => { ui.setAdminPassError(''); signInWithPopup(auth, googleProvider).catch((err) => ui.setAdminPassError(err?.code === 'auth/popup-blocked' ? 'پنجره ورود گوگل توسط مرورگر مسدود شد؛ لطفاً مسدودکننده پاپ‌آپ را غیرفعال کنید.' : err?.code === 'auth/popup-closed-by-user' ? 'پنجره ورود گوگل بسته شد.' : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.')); }}
           onExtendSponsor30Days={p.handleExtendSponsor30Days} onReleaseHoodSponsor={p.handleReleaseHoodSponsor}
           mapTileStyle={p.mapTileStyle} onSelectMapTileStyle={p.setMapTileStyle}
           onRetryNeshan={triggerManualNeshanRetry} isFallbackActive={readPersistedFallbackCircuit()}

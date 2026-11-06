@@ -97,6 +97,7 @@ export function useAppPersistenceAndDerivedState({
       } catch { /* ignore */ }
       return;
     }
+    if (!ui.savedAdminPassword) ui.setAdminUnlocked(true);
     try { localStorage.setItem(SPONSOR_CRM_STORAGE_KEY, JSON.stringify(ui.sponsorRequests)); } catch { /* ignore */ }
   }, [ui.sponsorRequests, isVerifiedAdmin]);
 

@@ -185,6 +185,16 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             </strong>
           </div>
         </div>
+        <div className="space-y-1.5 pt-1 tabular-nums">
+          <div className="flex justify-between items-center text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
+            <span>کف آماری محله ({toPersianNum(uIqrLow)} م)</span>
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold">جایگاه معامله قطعی: صدک {toPersianNum(uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50)}٪ دامنه</span>
+            <span>سقف آماری محله ({toPersianNum(uIqrHigh)} م)</span>
+          </div>
+          <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden relative">
+            <div className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-300" style={{ width: `${uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50}%` }} />
+          </div>
+        </div>
 
         <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div>

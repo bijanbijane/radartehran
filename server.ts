@@ -61,7 +61,7 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
     const result = updateRuntimeEnvConfig(updates);
     pushAuditLog("INFO", `بروزرسانی تنظیمات محیطی سرور توسط ادمین (${result.updatedKeys.join(", ") || "بدون تغییر"})`);
     saveDiskPersistedCache();
-    res.status(200).json({ ...result.view, updatedKeys: result.updatedKeys, items: result.view.fieldList });
+    res.status(200).json({ ...result.view, report: result.view, updatedKeys: result.updatedKeys, items: result.view.fieldList });
   });
   app.get("/api/system-health", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
