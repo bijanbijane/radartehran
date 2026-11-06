@@ -144,7 +144,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
           value={selectedHoodId}
           onChange={(e) => {
             const targetId = Number(e.target.value);
-            const found = nationwideHoods.find((h) => h.id === targetId);
+            const found = evaluatedNeighborhoods.find((h) => h.id === targetId) || nationwideHoods.find((h) => h.id === targetId);
             if (!found) return;
             const targetCity = resolveCityIdForNeighborhood(found.id);
             if (onSwitchCity && targetCity !== activeCity) {

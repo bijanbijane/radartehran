@@ -225,7 +225,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               <label className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 border-dashed font-bold flex items-center justify-center gap-2 transition cursor-pointer">
                 <Upload className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
                 <span>انتخاب فایل JSON و بازیابی فوری اطلاعات</span>
-                <input type="file" accept=".json,application/json" onChange={onRestoreFullBackupJson} className="hidden" />
+                <input type="file" aria-label="انتخاب فایل پشتیبان JSON دیتابیس" accept=".json,application/json" onChange={onRestoreFullBackupJson} className="hidden" />
               </label>
             </div>
             {backupStatusMsg && (
@@ -257,7 +257,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
                   بروزرسانی متن
                 </button>
               </div>
-              <textarea rows={6} value={adminTelegramText} onChange={(e) => setAdminTelegramText(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-200 text-[11px] leading-relaxed" />
+              <textarea rows={6} aria-label="متن خروجی کانال تلگرام" value={adminTelegramText} onChange={(e) => setAdminTelegramText(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-200 text-[11px] leading-relaxed" />
               <button
                 type="button"
                 onClick={() => { navigator.clipboard?.writeText(adminTelegramText).catch(() => {}); setAdminTgCopied(true); setTimeout(() => setAdminTgCopied(false), 2000); }} className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"

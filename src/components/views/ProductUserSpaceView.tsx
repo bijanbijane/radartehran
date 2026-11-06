@@ -189,9 +189,9 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
               const isArcActive = p.selectedHood && comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 
               return (
-                <div key={hood.id} onClick={() => p.onSelectNeighborhood(hood)} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition cursor-pointer flex flex-col justify-between ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'}`}>
+                <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition flex flex-col justify-between ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'}`}>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
                       <div className="flex items-center gap-1.5">
                         <h3 className="font-black text-slate-900 dark:text-white text-sm">محله {hood.name}</h3>
                         {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">فعال روی نقشه</span>}

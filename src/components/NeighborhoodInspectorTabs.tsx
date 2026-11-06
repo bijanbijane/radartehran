@@ -228,7 +228,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
               <span className="text-slate-600 dark:text-slate-400">ودیعه انتخابی:</span>
               <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(Math.min(hoodCustomDeposit, scaledFullRahn))} میلیون تومان{fxTag(Math.min(hoodCustomDeposit, scaledFullRahn))}</strong>
             </div>
-            <input type="range" min={50} max={scaledFullRahn} step={25} value={Math.min(hoodCustomDeposit, scaledFullRahn)} onChange={(e) => setHoodCustomDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+            <input type="range" aria-label="اسلایدر ودیعه انتخابی تبدیل رهن و اجاره" min={50} max={scaledFullRahn} step={25} value={Math.min(hoodCustomDeposit, scaledFullRahn)} onChange={(e) => setHoodCustomDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
           </div>
           <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2.5 flex items-center justify-between">
             <span className="text-slate-500 dark:text-slate-400 text-[11px]">اجاره ماهانه واحد {formatAreaShort(targetSqm, areaUnit)}:</span>

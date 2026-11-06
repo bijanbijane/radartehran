@@ -13,7 +13,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
             className="apple-window-sheet dark:bg-slate-900 max-w-lg w-full p-5 space-y-3.5 max-h-[90vh] overflow-y-auto focus:outline-none dark:border dark:border-slate-800" >
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800"> <span className="text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Bookmark className="w-5 h-5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" /> <span>دفترچه بازدیدهای میدانی من ({toPersianNum(visitedHomes.length)} فایل)</span>
-              </span> <div className="flex items-center gap-2"><AreaUnitToggle compact showIntlControls /><button type="button" onClick={() => setShowVisitedModal(false)} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><X className="w-4 h-4 stroke-[1.75]" /></button></div>
+              </span> <div className="flex items-center gap-2"><AreaUnitToggle compact showIntlControls /><button type="button" aria-label="بستن دفترچه بازدیدها" onClick={() => setShowVisitedModal(false)} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><X className="w-4 h-4 stroke-[1.75]" /></button></div>
             </div> <form
               onSubmit={(e) => { e.preventDefault(); const cleanAddr = sanitizeInput(newVisitAddress, 180); if (!cleanAddr) { setVisitFormError('لطفاً آدرس یا مشخصات کوتاه واحد بازدیدشده را وارد کنید.'); return; }
                 setVisitFormError(''); const targetVisitHood = evaluatedNeighborhoods.find((n) => n.id === visitHoodId) || selectedHood; const entry: VisitedHomeEntry = {
@@ -35,7 +35,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                 <div>
                   <label className="text-slate-500 dark:text-slate-400 text-[11px] block mb-1">آدرس یا مشخصات واحد:</label>
                   <input
-                    type="text" value={newVisitAddress}
+                    type="text" aria-label="آدرس یا مشخصات واحد" value={newVisitAddress}
                     onChange={(e) => { setNewVisitAddress(e.target.value); if (visitFormError) setVisitFormError(''); }}
                     placeholder={`مثال: ${formatAreaShort(85, areaUnit)}، طبقه ۳، فرعی دنج`}
                     className="w-full bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600"
@@ -44,7 +44,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                 <div>
                   <label className="text-slate-500 dark:text-slate-400 text-[11px] block mb-1">قیمت پیشنهادی مالک (میلیون){newVisitPrice > 0 && intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(newVisitPrice, intlCurrency, radarLocale)}` : ''}:</label>
                   <input
-                    type="number" min={0} value={newVisitPrice || ''} onChange={(e) => setNewVisitPrice(Math.max(0, Number(e.target.value) || 0))}
+                    type="number" aria-label="قیمت پیشنهادی مالک" min={0} value={newVisitPrice || ''} onChange={(e) => setNewVisitPrice(Math.max(0, Number(e.target.value) || 0))}
                     placeholder="مثال: ۸۲۰۰"
                     className="w-full bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 tabular-nums"
                   />
@@ -53,7 +53,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
               <div>
                 <label className="text-slate-500 dark:text-slate-400 text-[11px] block mb-1">یادداشت‌های میدانی، نقاط ضعف و قوت:</label>
                 <input
-                  type="text" value={newVisitNotes} onChange={(e) => setNewVisitNotes(e.target.value)}
+                  type="text" aria-label="یادداشت‌های میدانی" value={newVisitNotes} onChange={(e) => setNewVisitNotes(e.target.value)}
                   placeholder="مثال: نورگیر عالی، مشاعات نیازمند نقاشی، پارک مهمان سخت"
                   className="w-full bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600"
                 />
@@ -65,7 +65,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-slate-500 dark:text-slate-400">نمره من به ملک:</span>
                   <select
-                    value={newVisitRating} onChange={(e) => setNewVisitRating(Number(e.target.value))}
+                    aria-label="نمره من به ملک" value={newVisitRating} onChange={(e) => setNewVisitRating(Number(e.target.value))}
                     className="bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2 py-1 font-bold text-emerald-700 dark:text-emerald-400"
                   >
                     {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((r) => ( <option key={r} value={r}>{toPersianNum(r)} از ۱۰</option> ))}
@@ -163,7 +163,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
               </span>
               <div className="flex items-center gap-2">
                 <AreaUnitToggle compact showIntlControls />
-                <button type="button" onClick={() => setShowTradeUpModal(false)} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><X className="w-4 h-4 stroke-[1.75]" /></button>
+                <button type="button" aria-label="بستن ماشین‌حساب معاوضه" onClick={() => setShowTradeUpModal(false)} className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><X className="w-4 h-4 stroke-[1.75]" /></button>
               </div>
             </div>
             <div className="apple-grouped-card dark:bg-slate-800/80 dark:border-slate-700 p-3.5 space-y-3 text-xs">
@@ -172,7 +172,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                 <div>
                   <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">محله فعلی:</label>
                   <select
-                    value={tradeUpCurrentHoodId} onChange={(e) => setTradeUpCurrentHoodId(Number(e.target.value))} className="w-full bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2 py-1.5 font-bold text-slate-800 dark:text-slate-100"
+                    aria-label="محله فعلی" value={tradeUpCurrentHoodId} onChange={(e) => setTradeUpCurrentHoodId(Number(e.target.value))} className="w-full bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2 py-1.5 font-bold text-slate-800 dark:text-slate-100"
                   >
                     {evaluatedNeighborhoods.map((n) => { const uBuy = Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1)); const fx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uBuy, intlCurrency, radarLocale)}` : ''; return (
                       <option key={n.id} value={n.id}>{n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(uBuy)} م{fx} · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد)</option>
@@ -182,13 +182,13 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                   <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">
                     متراژ فعلی: <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{formatAreaValue(tradeUpCurrentSqm, areaUnit, true)}</strong>
                   </label>
-                  <input type="range" min={40} max={250} step={5} value={tradeUpCurrentSqm} onChange={(e) => setTradeUpCurrentSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
+                  <input type="range" aria-label="متراژ فعلی" min={40} max={250} step={5} value={tradeUpCurrentSqm} onChange={(e) => setTradeUpCurrentSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                 </div>
                 <div>
                   <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">
                     سن بنا: <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{toPersianNum(tradeUpCurrentAge)} سال</strong>
                   </label>
-                  <input type="range" min={0} max={30} step={1} value={tradeUpCurrentAge} onChange={(e) => setTradeUpCurrentAge(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
+                  <input type="range" aria-label="سن بنا" min={0} max={30} step={1} value={tradeUpCurrentAge} onChange={(e) => setTradeUpCurrentAge(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                 </div>
               </div>
               <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-[11px]">
@@ -206,15 +206,15 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                     <span className="text-slate-600 dark:text-slate-300">پس‌انداز نقدی مازاد:</span>
                     <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum((tradeUpExtraCash / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(tradeUpExtraCash, intlCurrency, radarLocale)})` : ''}</strong>
                   </div>
-                  <input type="range" min={0} max={15000} step={250} value={tradeUpExtraCash} onChange={(e) => setTradeUpExtraCash(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
+                  <input type="range" aria-label="پس‌انداز نقدی مازاد" min={0} max={15000} step={250} value={tradeUpExtraCash} onChange={(e) => setTradeUpExtraCash(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                 </div>
                 <div className="space-y-1.5 text-slate-700 dark:text-slate-200">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={tradeUpUseLoan} onChange={(e) => setTradeUpUseLoan(e.target.checked)} className="rounded text-emerald-600" />
+                    <input type="checkbox" checked={tradeUpUseLoan} onChange={(e) => setTradeUpUseLoan(e.target.checked)} aria-label="دریافت وام مسکن برای ارتقای ملک" className="rounded text-emerald-600" />
                     <span>دریافت وام مسکن (+۱.۲ میلیارد تومان{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(1200, intlCurrency, radarLocale)}` : ''})</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={tradeUpUseRahn} onChange={(e) => setTradeUpUseRahn(e.target.checked)} className="rounded text-emerald-600" />
+                    <input type="checkbox" checked={tradeUpUseRahn} onChange={(e) => setTradeUpUseRahn(e.target.checked)} aria-label="رهن دادن واحد جدید به مستأجر" className="rounded text-emerald-600" />
                     <span>رهن دادن واحد جدید به مستأجر (~{toPersianNum(Math.round(selectedHood.rahn80m * (tradeUpTargetSqm / 80)))} م · اجاره: {toPersianNum(Math.round(selectedHood.rahn80m * (tradeUpTargetSqm / 80) * 0.03))} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(Math.round(selectedHood.rahn80m * (tradeUpTargetSqm / 80)), intlCurrency, radarLocale)}` : ''})</span>
                   </label>
                 </div>
@@ -240,7 +240,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                 <span className="text-slate-600 dark:text-slate-300">متراژ مورد نظر واحد جدید ({tradeUpTargetSqm >= tradeUpCurrentSqm ? '+' : '-'}{formatAreaShort(Math.abs(tradeUpTargetSqm - tradeUpCurrentSqm), areaUnit)}):</span>
                 <strong className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">{formatAreaValue(tradeUpTargetSqm, areaUnit, true)}</strong>
               </div>
-              <input type="range" min={50} max={250} step={5} value={tradeUpTargetSqm} onChange={(e) => setTradeUpTargetSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
+              <input type="range" aria-label="متراژ مورد نظر واحد جدید" min={50} max={250} step={5} value={tradeUpTargetSqm} onChange={(e) => setTradeUpTargetSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
             </div>
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">

@@ -181,8 +181,8 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                  (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 
               return (
-                <div key={hood.id} onClick={() => p.onSelectNeighborhood(hood)} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition-all cursor-pointer flex flex-col justify-between group shadow-xs hover:shadow-md ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'}`}>
-                  <div>
+                <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col justify-between group shadow-xs hover:shadow-md ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'}`}>
+                  <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
                       <span className="truncate max-w-[180px]">{hood.zone}</span>
                       <div className="flex items-center gap-1.5">

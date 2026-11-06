@@ -122,6 +122,7 @@ export function useAppPersistenceAndDerivedState({
     [evaluatedNeighborhoods, ui.bargainHoodId]
   );
 
+  const areaUnit = getStoredAreaUnit(), intlCurrency = getStoredIntlCurrency(), locale = getStoredRadarLocale();
   const liveBargainCheck = useMemo(() => {
     const avgBenchmark =
       ui.bargainType === 'خرید'
@@ -135,9 +136,6 @@ export function useAppPersistenceAndDerivedState({
       ui.bargainType === 'خرید'
         ? Math.max(0, Math.round((avgBenchmark - ui.bargainProposedPrice) * ui.bargainSqm))
         : Math.max(0, Math.round(avgBenchmark - ui.bargainProposedPrice));
-    const areaUnit = getStoredAreaUnit();
-    const intlCurrency = getStoredIntlCurrency();
-    const locale = getStoredRadarLocale();
     const unitShortLabel = formatAreaUnitLabel(areaUnit);
     const avgBenchmarkUnitPrice =
       ui.bargainType === 'خرید' ? convertPricePerSqmToUnit(avgBenchmark, areaUnit) : avgBenchmark;
@@ -147,7 +145,7 @@ export function useAppPersistenceAndDerivedState({
       avgBenchmark, maxAllowedFor10Percent, discountPercent, isEligible, buyerProfitMillion,
       unitShortLabel, avgBenchmarkUnitPrice, buyerProfitIntlText,
     };
-  }, [targetBargainHood, ui.bargainType, ui.bargainSqm, ui.bargainProposedPrice]);
+  }, [targetBargainHood, ui.bargainType, ui.bargainSqm, ui.bargainProposedPrice, areaUnit, intlCurrency, locale]);
 
   useEffect(() => {
     const h = evaluatedNeighborhoods.find((n) => n.id === ui.bargainHoodId) || evaluatedNeighborhoods[0];

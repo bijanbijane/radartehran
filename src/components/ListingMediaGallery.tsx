@@ -164,6 +164,9 @@ export function ListingMediaGallery({
         <div
           role="dialog"
           aria-modal="true"
+          aria-label={`پیش‌نمایش تصویر ${listing.title}`}
+          tabIndex={-1}
+          onKeyDown={(e) => { if (e.key === 'Escape') setSelectedImageUrl(null); }}
           onClick={() => setSelectedImageUrl(null)}
           className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50"
         >
@@ -177,6 +180,7 @@ export function ListingMediaGallery({
               </span>
               <button
                 type="button"
+                aria-label="بستن پیش‌نمایش تصویر"
                 onClick={() => setSelectedImageUrl(null)}
                 className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
               >

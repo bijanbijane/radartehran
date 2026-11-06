@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useComparisonFilter } from '../../context/ComparisonFilterContext';
 import {
   normalizeFinancialInput,
@@ -28,6 +28,9 @@ interface ReverseBudgetDiscoveryModalProps {
   onClose: () => void;
   neighborhoods: ReadonlyArray<HoodDiscoverySummary>;
   onSelectNeighborhood: (hoodId: string, budgetMillion?: number, areaSqm?: number, maxBuildingAgeYears?: number) => void;
+  initialBudgetMillion?: number;
+  initialAreaSqm?: number;
+  initialMaxAgeYears?: number;
 }
 
 const BUDGET_PRESETS_MILLION = [
@@ -42,6 +45,9 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
   onClose,
   neighborhoods,
   onSelectNeighborhood,
+  initialBudgetMillion,
+  initialAreaSqm,
+  initialMaxAgeYears,
 }) => {
   const dialogRef = useDialogFocus(isOpen, onClose);
   const [areaUnit] = useAreaUnit();
@@ -49,6 +55,15 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
   const [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const { totalBudgetMillion, desiredAreaSqm, maxBuildingAgeYears, setBudgetFilter } = useComparisonFilter();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setBudgetFilter({
+      ...(typeof initialBudgetMillion === 'number' && initialBudgetMillion > 0 ? { totalBudgetMillion: initialBudgetMillion } : {}),
+      ...(typeof initialAreaSqm === 'number' && initialAreaSqm >= 35 ? { desiredAreaSqm: initialAreaSqm } : {}),
+      ...(typeof initialMaxAgeYears === 'number' && initialMaxAgeYears >= 0 ? { maxBuildingAgeYears: initialMaxAgeYears } : {}),
+    });
+  }, [isOpen, initialBudgetMillion, initialAreaSqm, initialMaxAgeYears, setBudgetFilter]);
 
   const budgetCheck = validateAndScaleTomanInput(totalBudgetMillion, 'TOTAL_BUY_PRICE');
   const ageFactor = useMemo(() => calculateTehranAgeFactor(maxBuildingAgeYears), [maxBuildingAgeYears]);
@@ -134,6 +149,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
             <input
               type="text"
               inputMode="decimal"
+              aria-label={isEn ? 'Total Buy Budget (Million Toman)' : 'بودجه کل خرید شما (میلیون تومان)'}
               value={totalBudgetMillion}
               onChange={(e) => setBudgetFilter({ totalBudgetMillion: normalizeFinancialInput(e.target.value) })}
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-base font-black text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
@@ -180,7 +196,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                 <span className="tabular-nums">{formatAreaShort(desiredAreaSqm, areaUnit)}</span>
               </div>
               <input
-                type="range" min={40} max={250} step={5} value={desiredAreaSqm}
+                type="range" min={40} max={250} step={5} value={desiredAreaSqm} aria-label={isEn ? 'Desired Area' : 'متراژ مورد نظر'}
                 onChange={(e) => setBudgetFilter({ desiredAreaSqm: normalizeFinancialInput(e.target.value) })}
                 className="w-full accent-slate-900 dark:accent-white cursor-pointer"
               />
@@ -191,7 +207,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                 <span className="tabular-nums">{isEn ? `Up to ${fmt.format(maxBuildingAgeYears)} yrs` : `تا ${fmt.format(maxBuildingAgeYears)} سال`}</span>
               </div>
               <input
-                type="range" min={0} max={25} step={1} value={maxBuildingAgeYears}
+                type="range" min={0} max={25} step={1} value={maxBuildingAgeYears} aria-label={isEn ? 'Max Building Age' : 'حداکثر سن بنا'}
                 onChange={(e) => setBudgetFilter({ maxBuildingAgeYears: normalizeFinancialInput(e.target.value) })}
                 className="w-full accent-slate-900 dark:accent-white cursor-pointer"
               />
@@ -237,6 +253,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                       onSelectNeighborhood(hood.id, totalBudgetMillion, desiredAreaSqm, maxBuildingAgeYears);
                       onClose();
                     }}
+                    aria-label={isEn ? `Inspect ${hood.nameFa}` : `بررسی محله ${hood.nameFa}`}
                     className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1.5 text-xs font-bold text-white dark:text-slate-900 hover:opacity-90 cursor-pointer transition shrink-0"
                   >
                     {isEn ? 'Inspect' : 'بررسی'}

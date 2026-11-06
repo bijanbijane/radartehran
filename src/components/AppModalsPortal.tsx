@@ -13,7 +13,7 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
     } finally { ui.setLoadingSystemHealth(false); } };
   const handleOpenSeoComparison = (id1: number, id2: number) => {
     ui.setCompareId1(id1); ui.setCompareId2(id2); ui.setSelectedHoodId(id1); ui.setShowCompareModal(true);
-    const h1 = p.evaluatedNeighborhoods.find((n) => n.id === id1);
+    const h1 = p.evaluatedNeighborhoods.find((n) => n.id === id1) || p.allNeighborhoods?.find((n) => n.id === id1);
     if (h1 && p.onFlyTo) p.onFlyTo(h1.lat, h1.lng);
   };
   const handleTriggerPwaInstall = async () => {

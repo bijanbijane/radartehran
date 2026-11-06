@@ -80,7 +80,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
           </div>
           <form onSubmit={handleAnalyzeClause} className="space-y-2.5">
             <textarea
-              rows={3} maxLength={2500} value={clauseInput} onChange={(e) => setClauseInput(e.target.value)}
+              rows={3} maxLength={2500} aria-label="متن بند قرارداد جهت بررسی حقوقی" value={clauseInput} onChange={(e) => setClauseInput(e.target.value)}
               placeholder="متن بند یا شرط مورد نظر از مبایعه‌نامه یا اجاره‌نامه را اینجا وارد کنید..."
               className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-emerald-600"
             />
@@ -216,14 +216,8 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
           <div className="space-y-2 max-h-[52vh] overflow-y-auto pr-1">
             {ANTI_FRAUD_CHECKLIST_ITEMS.map((item, idx) => {
               const checked = checkedFraudIds.includes(item.id); return (
-                <div
-                  key={item.id} onClick={() =>
-                    setCheckedFraudIds((prev) =>
-                      prev.includes(item.id)
-                        ? prev.filter((id) => id !== item.id)
-                        : [...prev, item.id]
-                    )
-                  }
+                <label
+                  key={item.id}
                   className={`p-3 rounded-2xl border transition cursor-pointer flex items-start gap-3 ${
                     checked
                       ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800'
@@ -232,7 +226,16 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                 >
                   <input
                     type="checkbox"
-                    checked={checked} onChange={() => {}} className="mt-1 accent-emerald-600 w-4 h-4 cursor-pointer"
+                    checked={checked}
+                    aria-label={item.title}
+                    onChange={() =>
+                      setCheckedFraudIds((prev) =>
+                        prev.includes(item.id)
+                          ? prev.filter((id) => id !== item.id)
+                          : [...prev, item.id]
+                      )
+                    }
+                    className="mt-1 accent-emerald-600 w-4 h-4 cursor-pointer"
                   />
                   <div className="space-y-0.5">
                     <div className="font-extrabold text-slate-900 dark:text-white">
@@ -240,7 +243,7 @@ export function ContractLegalAdvisorView({ onClose }: ContractLegalAdvisorViewPr
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                       {item.detail} </div>
                   </div>
-                </div>
+                </label>
               ); })} </div>
         </div>
       )} </div>

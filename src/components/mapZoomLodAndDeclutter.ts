@@ -197,7 +197,7 @@ export function buildNeighborhoodRichTooltipHtml(params: {
   const { hood, activeCity, mode, safeSqmPill, scaledRahnPill, isDarkMap } = params; const areaUnit = getStoredAreaUnit(); const intlCurrency = getStoredIntlCurrency(); const locale = getStoredRadarLocale();
   const safeHoodName = escapeHtmlAttr(hood.name); const safeZone = escapeHtmlAttr(hood.zone); const safeTrafficStatus = escapeHtmlAttr(hood.trafficInfo?.liveStatus || 'تردد عادی'); const divarUrl = escapeHtmlAttr(buildExternalDivarUrl(activeCity, mode, hood.name));
   const unitPrice = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit); const unitDealPrice = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit); const safeUnitLabel = escapeHtmlAttr(formatAreaUnitLabel(areaUnit)); const safeAreaShort = escapeHtmlAttr(formatAreaShort(safeSqmPill, areaUnit));
-  const total80mMillions = Math.round((hood.buyPerSqm * 80) / 1000); const monthlyRent80mMillions = Math.round(hood.rahn80m * 0.03);
+  const total80mMillions = Number(((hood.buyPerSqm * 80) / 1000).toFixed(1)); const monthlyRent80mMillions = Math.round(hood.rahn80m * 0.03);
   const safeBuyFx = intlCurrency !== 'IRT' ? escapeHtmlAttr(` (${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, locale)})`) : ''; const safeDealFx = intlCurrency !== 'IRT' ? escapeHtmlAttr(` (${formatMillionTomanAsIntlCurrency(unitDealPrice, intlCurrency, locale)})`) : ''; const safeRahnFx = intlCurrency !== 'IRT' ? escapeHtmlAttr(` (${formatMillionTomanAsIntlCurrency(scaledRahnPill, intlCurrency, locale)})`) : '';
   const titleColor = isDarkMap ? '#34d399' : '#047857'; const scoreBg = isDarkMap ? 'rgba(16,185,129,0.22)' : '#ecfdf5'; const scoreColor = isDarkMap ? '#6ee7b7' : '#065f46'; const bodyTextColor = isDarkMap ? '#e2e8f0' : '#1e293b';
   return `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;min-width:215px;padding:3px 2px;">
@@ -206,7 +206,7 @@ export function buildNeighborhoodRichTooltipHtml(params: {
       <span style="background:${scoreBg};color:${scoreColor};padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:800;">${toPersianNum(hood.overallScore)} / ۱۰</span>
     </div>
     <div style="font-size:11px;line-height:1.65;color:${bodyTextColor};">
-      <div>💰 میانگین خرید (${safeUnitLabel}): <strong>${toPersianNum(unitPrice)} میلیون${safeBuyFx}</strong> · معامله v6.4: <strong>${toPersianNum(unitDealPrice)} میلیون${safeDealFx}</strong> (کل: ${toPersianNum(total80mMillions)} م)</div>
+      <div>💰 میانگین خرید (${safeUnitLabel}): <strong>${toPersianNum(unitPrice)} میلیون${safeBuyFx}</strong> · معامله v6.4: <strong>${toPersianNum(unitDealPrice)} میلیون${safeDealFx}</strong> (کل: ${toPersianNum(total80mMillions)} میلیارد)</div>
       <div>🏠 رهن کامل (${safeAreaShort}): <strong>${toPersianNum(scaledRahnPill)} میلیون${safeRahnFx}</strong> (اجاره: ${toPersianNum(monthlyRent80mMillions)} م)</div>
       <div>🚦 ترافیک: <span>${safeTrafficStatus}</span></div>
     </div>

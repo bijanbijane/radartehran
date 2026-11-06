@@ -36,7 +36,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
             <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
               انتخاب ابزار مجاز پروتکل MCP:
             </label>
-            <select
+            <select aria-label="انتخاب ابزار مجاز پروتکل MCP"
               value={selectedTool}
               onChange={(e) => setSelectedTool(e.target.value as AuthorizedMcpToolName)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-100"
@@ -54,7 +54,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
               <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">کلان‌شهر</label>
-              <select
+              <select aria-label="انتخاب کلان‌شهر MCP"
                 value={city}
                 onChange={(e) => setCity(e.target.value as CityId)}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
@@ -69,7 +69,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
             <div>
               <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله اول</label>
               <input
-                type="number"
+                type="number" aria-label="شناسه محله اول MCP"
                 min={1}
                 max={80}
                 value={hoodId}
@@ -82,7 +82,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">متراژ ({formatAreaUnitLabel(areaUnit)}: {formatAreaShort(sqm, areaUnit)})</label>
                   <input
-                    type="number"
+                    type="number" aria-label="متراژ ملک MCP"
                     min={25}
                     max={1000}
                     value={sqm}
@@ -93,7 +93,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">سن بنا (سال)</label>
                   <input
-                    type="number"
+                    type="number" aria-label="سن بنا MCP"
                     min={0}
                     max={50}
                     value={buildingAge}
@@ -109,7 +109,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                   سقف قیمت هر متر (میلیون تومان · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((maxBuyPerSqm * 80) / 1000).toFixed(1))} میلیارد{areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(maxBuyPerSqm, 'sqft'))} م/ft²` : ''}{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(maxBuyPerSqm, areaUnit), intlCurrency, locale)}` : ''})
                 </label>
                 <input
-                  type="number"
+                  type="number" aria-label="سقف قیمت هر متر MCP"
                   min={20}
                   max={900}
                   value={maxBuyPerSqm}
@@ -122,7 +122,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
               <div className="col-span-2">
                 <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله دوم</label>
                 <input
-                  type="number"
+                  type="number" aria-label="شناسه محله دوم MCP"
                   min={1}
                   max={80}
                   value={secondHoodId}
@@ -187,7 +187,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
         <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-[11px]">
           <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-1">
             <span>تست مسیریاب چندمدلی AI Gateway (`/api/ai/gateway/infer`)</span>
-            <select
+            <select aria-label="انتخاب جریان کاری AI Gateway"
               value={aiWorkflow}
               onChange={(e) => setAiWorkflow(e.target.value)}
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-900 dark:text-slate-100"

@@ -79,9 +79,9 @@ export function AdminMapProviderConfigPanel({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Option 1: Neshan Map (Default) */}
-        <div
-          onClick={() => onSelectStyle('neshan')}
-          className={`relative p-3.5 rounded-[12px] border-2 cursor-pointer transition-all ${
+        <button
+          type="button" aria-pressed={currentStyle === 'neshan'} onClick={() => onSelectStyle('neshan')}
+          className={`relative text-right w-full p-3.5 rounded-[12px] border-2 cursor-pointer transition-all ${
             currentStyle === 'neshan'
               ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs ring-1 ring-emerald-600/20'
               : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50/50 dark:bg-slate-800/50'
@@ -119,12 +119,12 @@ export function AdminMapProviderConfigPanel({
             </div>
             <span className="font-medium text-emerald-700 dark:text-emerald-400">سرویس پایدار</span>
           </div>
-        </div>
+        </button>
 
         {/* Option 2: Free OpenStreetMap */}
-        <div
-          onClick={() => onSelectStyle('osm')}
-          className={`relative p-3.5 rounded-[12px] border-2 cursor-pointer transition-all ${
+        <button
+          type="button" aria-pressed={currentStyle === 'osm'} onClick={() => onSelectStyle('osm')}
+          className={`relative text-right w-full p-3.5 rounded-[12px] border-2 cursor-pointer transition-all ${
             currentStyle === 'osm'
               ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs ring-1 ring-emerald-600/20'
               : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-slate-50/50 dark:bg-slate-800/50'
@@ -159,7 +159,7 @@ export function AdminMapProviderConfigPanel({
             </div>
             <span className="font-medium text-slate-600 dark:text-slate-300">منبع باز</span>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Secondary styles */}

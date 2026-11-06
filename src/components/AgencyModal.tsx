@@ -106,7 +106,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               </div>
               <div className="flex gap-1.5">
                 <input
-                  type="text"
+                  type="text" aria-label="متن آگهی جهت استخراج هوشمند"
                   value={adRawText}
                   onChange={(e) => setAdRawText(e.target.value)}
                   placeholder="متن آگهی را پیست کنید (مثلاً: ۷۵ متر طبقه ۲ با پارکینگ متری ۱۱۰ م...)"
@@ -134,7 +134,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             <div className="apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">انتخاب محله:</label>
-                <select value={bargainHoodId} onChange={(e) => setBargainHoodId(Number(e.target.value))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
+                <select aria-label="انتخاب محله" value={bargainHoodId} onChange={(e) => setBargainHoodId(Number(e.target.value))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
                   {safeNeighborhoods.map((n) => {
                     const uVal = bargainType === 'اجاره' ? n.rahn80m : Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1));
                     const fx = showIntl ? ` · ${formatMillionTomanAsIntlCurrency(uVal, currency, locale)}` : '';
@@ -148,14 +148,14 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               </div>
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">نوع معامله:</label>
-                <select value={bargainType} onChange={(e) => setBargainType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید')} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
+                <select aria-label="نوع معامله" value={bargainType} onChange={(e) => setBargainType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید')} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
                   <option value="خرید">فروش ملک (خرید)</option>
                   <option value="اجاره">رهن و اجاره</option>
                 </select>
               </div>
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">متراژ واحد (متر مربع — معادل {formatAreaShort(bargainSqm, areaUnit)}):</label>
-                <input type="number" min={30} max={500} value={bargainSqm} onChange={(e) => setBargainSqm(validateSqmAmount(e.target.value, 80))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
+                <input type="number" aria-label="متراژ واحد" min={30} max={500} value={bargainSqm} onChange={(e) => setBargainSqm(validateSqmAmount(e.target.value, 80))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -173,7 +173,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                         return `مبلغ رهن کامل پیشنهادی (میانگین ${formatAreaShort(bargainSqm, areaUnit)} ${targetBargainHood.name}: ${toPersianNum(scaledRahn)} میلیون · اجاره: ${toPersianNum(Math.round(scaledRahn * 0.03))} م${showIntl ? ` · ${formatMillionTomanAsIntlCurrency(scaledRahn, currency, locale)}` : ''}):`;
                       })()}
                 </label>
-                <input type="number" min={10} max={50000} value={bargainProposedPrice} onChange={(e) => setBargainProposedPrice(clampNumber(e.target.value, 1, 50000, 100))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums focus:outline-none focus:border-emerald-600" />
+                <input type="number" aria-label="قیمت پیشنهادی" min={10} max={50000} value={bargainProposedPrice} onChange={(e) => setBargainProposedPrice(clampNumber(e.target.value, 1, 50000, 100))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums focus:outline-none focus:border-emerald-600" />
                 <div className="flex flex-wrap items-center justify-between gap-1.5 mt-1.5 text-[11px]">
                   <div className="flex items-center gap-1">
                     <button type="button" onClick={() => setBargainProposedPrice(liveBargainCheck.maxAllowedFor10Percent)} className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold transition cursor-pointer">
@@ -196,12 +196,12 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               </div>
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">نام خیابان یا فرعی در محله:</label>
-                <input type="text" maxLength={100} value={bargainStreet} onChange={(e) => setBargainStreet(sanitizeInput(e.target.value, 100))} placeholder={`مثلاً: فرعی دنج ${targetBargainHood.name}`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+                <input type="text" aria-label="نام خیابان یا فرعی در محله" maxLength={100} value={bargainStreet} onChange={(e) => setBargainStreet(sanitizeInput(e.target.value, 100))} placeholder={`مثلاً: فرعی دنج ${targetBargainHood.name}`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
               </div>
             </div>
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">عنوان و مشخصات ملک:</label>
-              <input type="text" maxLength={140} value={bargainTitle} onChange={(e) => setBargainTitle(sanitizeInput(e.target.value, 140))} placeholder={`مثلاً: آپارتمان ${formatAreaShort(bargainSqm, areaUnit)} ۲ خواب، فول امکانات`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+              <input type="text" aria-label="عنوان و مشخصات ملک" maxLength={140} value={bargainTitle} onChange={(e) => setBargainTitle(sanitizeInput(e.target.value, 140))} placeholder={`مثلاً: آپارتمان ${formatAreaShort(bargainSqm, areaUnit)} ۲ خواب، فول امکانات`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
             </div>
             <ListingMediaStorageUploader hoodId={bargainHoodId} hoodName={targetBargainHood.name} sqm={bargainSqm} city={activeCity} uploadedMedia={mediaList} onChangeMedia={setMediaList} />
             <div

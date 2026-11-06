@@ -132,7 +132,7 @@ export function NationwideProvinceModal({
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none stroke-[2]" />
             <input
-              type="text"
+              type="text" aria-label="جست‌وجوی استان، شهر یا محله"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جست‌وجوی استان، شهر یا محله (تبریز، گلسار رشت، ساری، اهواز، کیش، کاشان، یزد، لواسان...)"

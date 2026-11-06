@@ -79,7 +79,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
           <div>
             <label className="block text-slate-600 dark:text-slate-400 mb-1">انتخاب محله جهت رزرو:</label>
             <select
-              value={sponsorHoodId}
+              aria-label="انتخاب محله جهت رزرو" value={sponsorHoodId}
               onChange={(e) => setSponsorHoodId(Number(e.target.value))}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:border-emerald-600"
             >
@@ -94,7 +94,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
           <div>
             <label className="block text-slate-600 dark:text-slate-400 mb-1">نام دفتر مشاور املاک:</label>
             <input
-              type="text"
+              type="text" aria-label="نام دفتر مشاور املاک"
               required
               maxLength={90}
               value={sponsorAgencyName}
@@ -117,7 +117,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
             </label>
             <div className="relative">
               <input
-                type="text"
+                type="text" aria-label="شماره تماس مستقیم"
                 required
                 maxLength={30}
                 value={sponsorPhone}
@@ -138,7 +138,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
           <div>
             <label className="block text-slate-600 dark:text-slate-400 mb-1">تخصص دفتر در محله:</label>
             <input
-              type="text"
+              type="text" aria-label="تخصص دفتر در محله"
               maxLength={110}
               value={sponsorSpecialty}
               onChange={(e) => setSponsorSpecialty(sanitizeInput(e.target.value, 110))}
@@ -149,7 +149,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
           <div>
             <label className="block text-slate-600 dark:text-slate-400 mb-1">سابقه فعالیت (سال):</label>
             <input
-              type="number"
+              type="number" aria-label="سابقه فعالیت به سال"
               min={1}
               max={50}
               value={sponsorExpYears}
@@ -220,7 +220,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                   <span>کد پیگیری واریز بانکی:</span>
                 </label>
                 <input
-                  type="text"
+                  type="text" aria-label="کد پیگیری واریز بانکی"
                   maxLength={50}
                   value={sponsorTrackingCode}
                   onChange={(e) =>
@@ -266,10 +266,10 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
         {safeNeighborhoods.map((n) => {
           const active = isSponsorActive(n.sponsor, enableSponsorBilling);
           return (
-            <div
-              key={n.id}
+            <button
+              key={n.id} type="button"
               onClick={() => setSponsorHoodId(n.id)}
-              className="grid grid-cols-3 items-center py-2 px-3 border-b border-slate-100 dark:border-slate-800 last:border-none hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+              className="w-full text-right grid grid-cols-3 items-center py-2 px-3 border-b border-slate-100 dark:border-slate-800 last:border-none hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
             >
               <div className="font-bold text-slate-900 dark:text-slate-100">{n.name} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 tabular-nums">({formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد) · معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م</span></div>
               <div className="text-slate-500 dark:text-slate-400 truncate">
@@ -280,7 +280,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                   ? `${toPersianNum(getHoodMonthlySponsorTariff(n))} میلیون تومان${showIntl ? ` (${formatMillionTomanAsIntlCurrency(getHoodMonthlySponsorTariff(n), currency, locale)})` : ''}`
                   : 'رایگان'}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

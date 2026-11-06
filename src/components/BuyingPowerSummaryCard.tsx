@@ -121,7 +121,7 @@ export function BuyingPowerSummaryCard({
       <div className="pt-1 border-t border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between text-[10.5px] text-emerald-900 dark:text-emerald-200 tabular-nums">
         <span>
           متراژ قابل خرید در {selectedHood?.name || 'این محله'} ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
-          {toPersianNum(hoodUnitRate)} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(hoodTotal80mMillions)} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(hoodUnitRate, intlCurrency, radarLocale)}` : ''}):
+          {toPersianNum(hoodUnitRate)} م · {formatAreaShort(80, areaUnit)}: {toPersianNum((hoodTotal80mMillions / 1000).toFixed(1))} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(hoodUnitRate, intlCurrency, radarLocale)}` : ''}):
         </span>
         <strong className="font-black text-emerald-700 dark:text-emerald-400">{formatAreaValue(affordableSqmInHood, areaUnit)}</strong>
       </div>

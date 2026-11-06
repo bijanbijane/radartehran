@@ -188,7 +188,9 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
                 key={item.label}
                 type="button"
                 onClick={item.toggle}
-                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition ${item.active ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                aria-pressed={item.active}
+                aria-label={item.label}
+                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer ${item.active ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
               >
                 {item.label}
               </button>
@@ -198,11 +200,11 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-slate-500 dark:text-slate-400">طبقه واحد</label>
-              <input type="text" inputMode="numeric" value={floorNumber} onChange={(e) => setFloorNumber(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
+              <input type="text" aria-label="طبقه واحد" inputMode="numeric" value={floorNumber} onChange={(e) => setFloorNumber(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
             <div>
               <label className="block text-xs text-slate-500 dark:text-slate-400">تعداد اتاق خواب</label>
-              <input type="text" inputMode="numeric" value={bedrooms} onChange={(e) => setBedrooms(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
+              <input type="text" aria-label="تعداد اتاق خواب" inputMode="numeric" value={bedrooms} onChange={(e) => setBedrooms(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
           </div>
 
@@ -215,11 +217,11 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
             <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400">نسبت ودیعه (رهن) به اجاره</label>
-                <input type="range" min={0} max={1} step={0.1} value={depositShareRatio} onChange={(e) => setDepositShareRatio(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
+                <input type="range" aria-label="نسبت ودیعه به اجاره" min={0} max={1} step={0.1} value={depositShareRatio} onChange={(e) => setDepositShareRatio(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
               </div>
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400">نرخ تبدیل ماهانه (۱.۵٪ تا ۴٪)</label>
-                <input type="range" min={1.5} max={4.0} step={0.25} value={monthlyConversionRate} onChange={(e) => setMonthlyConversionRate(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
+                <input type="range" aria-label="نرخ تبدیل ماهانه" min={1.5} max={4.0} step={0.25} value={monthlyConversionRate} onChange={(e) => setMonthlyConversionRate(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
               </div>
             </div>
             <div className="mt-2 flex flex-wrap justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
@@ -233,6 +235,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">بررسی قیمت پیشنهادی فروشنده (به میلیون تومان)</label>
             <input
               type="text"
+              aria-label="قیمت پیشنهادی فروشنده به میلیون تومان"
               inputMode="decimal"
               placeholder="مثلاً ۶۵۰۰ برای ۶ میلیارد و ۵۰۰ میلیون"
               value={offeredTotalInput}
@@ -244,7 +247,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
             {offeredValidation.warningMessage && (
               <div className="mt-1 flex items-center justify-between rounded-lg bg-amber-500/15 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
                 <span>{offeredValidation.warningMessage}</span>
-                <button type="button" onClick={() => setOfferedTotalInput(String(offeredValidation.normalizedMillionValue * 1000))} className="rounded bg-amber-500 px-2 py-0.5 font-bold text-slate-950">
+                <button type="button" onClick={() => setOfferedTotalInput(String(offeredValidation.normalizedMillionValue * 1000))} aria-label="اصلاح قیمت به میلیارد تومان" className="rounded bg-amber-500 px-2 py-0.5 font-bold text-slate-950 cursor-pointer">
                   اصلاح به میلیارد
                 </button>
               </div>

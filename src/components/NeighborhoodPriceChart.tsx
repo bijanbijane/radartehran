@@ -58,7 +58,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
   };
   const [areaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency();
   const isEn = radarLocale === 'en';
-  const hoodTotal80m = Math.round((selectedHood.buyPerSqm * 80) / 1000);
+  const hoodTotal80m = Number(((selectedHood.buyPerSqm * 80) / 1000).toFixed(1));
   const monthlyRent80mMillions = Math.round(selectedHood.rahn80m * 0.03);
   const dealMetrics = useMemo(() => aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []), [selectedHood.id, selectedHood.name, selectedHood.buyPerSqm]);
   const uDealCur = convertPricePerSqmToUnit(dealMetrics.estimatedDealPricePerSqm, areaUnit);
@@ -133,7 +133,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
               </div>
             </div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tabular-nums">
-              معامله v6.4: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(uDealCur)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealCur, intlCurrency, radarLocale)})` : ''}</strong> · کل ۸۰م: {toPersianNum(hoodTotal80m)} م · اجاره: {toPersianNum(monthlyRent80mMillions)} م · بازده اجاره: {toPersianNum((((selectedHood.rahn80m * 0.36) / Math.max(1, selectedHood.buyPerSqm * 80)) * 100).toFixed(1))}٪
+              معامله v6.4: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(uDealCur)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealCur, intlCurrency, radarLocale)})` : ''}</strong> · کل ۸۰م: {toPersianNum(hoodTotal80m)} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م · بازده اجاره: {toPersianNum((((selectedHood.rahn80m * 0.36) / Math.max(1, selectedHood.buyPerSqm * 80)) * 100).toFixed(1))}٪
             </span>
           </div>
           <div dir="ltr" className={`w-full min-w-[240px] ${compact ? 'h-[185px]' : 'h-[215px]'}`}>

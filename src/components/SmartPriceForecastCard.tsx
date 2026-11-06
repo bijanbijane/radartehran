@@ -138,7 +138,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
           </div>
         </div>
         <div className="col-span-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-400 px-1">
-          <span>ارزش ۳ ماه آینده ({formatAreaShort(80, areaUnit)}): <strong className="text-slate-900 dark:text-white">{toPersianNum(((forecast.projectedBuyPerSqm * 80) / 1000).toFixed(2))} م.ت{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(forecast.projectedBuyPerSqm * 80, intlCurrency, radarLocale)})` : ''}</strong></span>
+          <span>ارزش ۳ ماه آینده ({formatAreaShort(80, areaUnit)}): <strong className="text-slate-900 dark:text-white">{toPersianNum(((forecast.projectedBuyPerSqm * 80) / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(forecast.projectedBuyPerSqm * 80, intlCurrency, radarLocale)})` : ''}</strong></span>
           <span className={isPositiveChange ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
             {isPositiveChange ? '+' : ''}{toPersianNum(Math.round((forecast.projectedBuyPerSqm - effectiveBuySqm) * 80))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(Math.round((forecast.projectedBuyPerSqm - effectiveBuySqm) * 80)), intlCurrency, radarLocale)})` : ''}
           </span>
@@ -165,7 +165,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
               </div>
               <div className="border-x border-slate-200/70 dark:border-slate-800 px-1">
                 <div className="text-slate-500 dark:text-slate-400">سهم زمین (بدون استهلاک)</div>
-                <div className="font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum((financialAuditSummary.landValueMillion / 1000).toFixed(1))} م.ت{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.landValueMillion, intlCurrency, radarLocale)})` : ''}</div>
+                <div className="font-extrabold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum((financialAuditSummary.landValueMillion / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(financialAuditSummary.landValueMillion, intlCurrency, radarLocale)})` : ''}</div>
               </div>
               <div>
                 <div className="text-slate-500 dark:text-slate-400">تبدیل ۵۰٪ رهن (نرخ ۳٪)</div>

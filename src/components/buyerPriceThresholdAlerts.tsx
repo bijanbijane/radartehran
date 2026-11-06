@@ -135,7 +135,7 @@ export function BuyerPriceThresholdManagerSection({
             </strong>
           </label>
           <input
-            type="number" min={10} max={50000} step={dealType === 'خرید' ? 2 : 25} value={thresholdInput}
+            type="number" aria-label="سقف قیمت انتخابی" min={10} max={50000} step={dealType === 'خرید' ? 2 : 25} value={thresholdInput}
             onChange={(e) => setThresholdInput(clampNumber(Number(e.target.value), 10, 50000, defaultThreshold))}
             className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-black tabular-nums focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-600"
           />

@@ -115,7 +115,7 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                   <h3 className="font-bold text-sky-400">موتور املاک مشابه (Comps) و برآورد بازه ارزش بازار (۱۲۶۱–۱۲۶۲)</h3>
                   <label className="inline-flex items-center gap-2 text-slate-300">
                     متراژ ملک هدف ({formatAreaShort(subjectAreaSqm, areaUnit)}):
-                    <input type="number" value={subjectAreaSqm} onChange={(e) => setSubjectAreaSqm(Number(e.target.value) || 100)} className="w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
+                    <input type="number" value={subjectAreaSqm} onChange={(e) => setSubjectAreaSqm(Number(e.target.value) || 100)} aria-label="متراژ ملک هدف جهت برآورد املاک مشابه" className="w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
                   </label>
                 </div>
                 {compValuation.estimatedRangeToman ? (
@@ -136,10 +136,10 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
               <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                 <h3 className="mb-3 font-bold text-emerald-400">تحلیل بازده سرمایه‌گذاری، جریان نقدی، نقطه سربه‌سر و شبیه‌سازی مونت‌کارلو (۱۲۶۶–۱۲۷۰)</h3>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <label className="block"><span className="text-[11px] text-slate-400">قیمت خرید (میلیون تومان){showIntl ? ` (${formatMillionTomanAsIntlCurrency(purchasePriceMillion, currency, locale)})` : ''}</span><input type="number" value={purchasePriceMillion} onChange={(e) => setPurchasePriceMillion(Number(e.target.value) || 1000)} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
-                  <label className="block"><span className="text-[11px] text-slate-400">اجاره ماهانه (میلیون تومان){showIntl ? ` (${formatMillionTomanAsIntlCurrency(monthlyRentMillion, currency, locale)})` : ''}</span><input type="number" value={monthlyRentMillion} onChange={(e) => setMonthlyRentMillion(Number(e.target.value) || 10)} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
-                  <label className="block"><span className="text-[11px] text-slate-400">نرخ خالی‌ماندن (%)</span><input type="number" value={vacancyPercent} onChange={(e) => setVacancyPercent(Number(e.target.value) || 0)} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
-                  <label className="block"><span className="text-[11px] text-slate-400">بذر مونت‌کارلو (Seed)</span><input type="number" value={mcSeed} onChange={(e) => setMcSeed(Number(e.target.value) || 1)} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
+                  <label className="block"><span className="text-[11px] text-slate-400">قیمت خرید (میلیون تومان){showIntl ? ` (${formatMillionTomanAsIntlCurrency(purchasePriceMillion, currency, locale)})` : ''}</span><input type="number" value={purchasePriceMillion} onChange={(e) => setPurchasePriceMillion(Number(e.target.value) || 1000)} aria-label="قیمت خرید ملک به میلیون تومان" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
+                  <label className="block"><span className="text-[11px] text-slate-400">اجاره ماهانه (میلیون تومان){showIntl ? ` (${formatMillionTomanAsIntlCurrency(monthlyRentMillion, currency, locale)})` : ''}</span><input type="number" value={monthlyRentMillion} onChange={(e) => setMonthlyRentMillion(Number(e.target.value) || 10)} aria-label="اجاره ماهانه ملک به میلیون تومان" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
+                  <label className="block"><span className="text-[11px] text-slate-400">نرخ خالی‌ماندن (%)</span><input type="number" value={vacancyPercent} onChange={(e) => setVacancyPercent(Number(e.target.value) || 0)} aria-label="نرخ خالی‌ماندن ملک به درصد" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
+                  <label className="block"><span className="text-[11px] text-slate-400">بذر مونت‌کارلو (Seed)</span><input type="number" value={mcSeed} onChange={(e) => setMcSeed(Number(e.target.value) || 1)} aria-label="بذر شبیه‌سازی مونت‌کارلو" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" /></label>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
@@ -194,7 +194,7 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                   <button type="button" onClick={() => setViewerAuthorizedExact((p) => !p)} className="inline-flex items-center gap-1 rounded bg-slate-800 px-2.5 py-1 text-[11px] text-slate-200">
                     {viewerAuthorizedExact ? <Unlock className="h-3.5 w-3.5 text-emerald-400" /> : <Lock className="h-3.5 w-3.5 text-amber-400" />} {viewerAuthorizedExact ? 'مجوز مکان دقیق فعال' : 'حالت عمومی (مختصات تقریب‌خورده)'} </button>
                   <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-300">
-                    <input type="checkbox" checked={floodLayerAvailable} onChange={(e) => setFloodLayerAvailable(e.target.checked)} /> لایه رسمی سیلاب موجود است
+                    <input type="checkbox" checked={floodLayerAvailable} onChange={(e) => setFloodLayerAvailable(e.target.checked)} aria-label="فعال‌سازی لایه رسمی سیلاب" /> لایه رسمی سیلاب موجود است
                   </label>
                 </div>
               </div>
@@ -222,7 +222,7 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="text-[11px] text-slate-300">
                       جمعیت محله:
-                      <input type="number" value={hoodPopulation} onChange={(e) => setHoodPopulation(Number(e.target.value) || 0)} className="mr-1 w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
+                      <input type="number" value={hoodPopulation} onChange={(e) => setHoodPopulation(Number(e.target.value) || 0)} aria-label="جمعیت آماری محله" className="mr-1 w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
                     </label>
                     <button
                       type="button"

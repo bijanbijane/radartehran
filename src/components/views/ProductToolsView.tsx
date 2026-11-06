@@ -135,7 +135,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input type="text" value={toolQuery} onChange={(e) => setToolQuery(e.target.value)} placeholder={isEn ? 'Search calculators (e.g. mortgage, tax, commission, R122)...' : 'جستجوی سریع ابزار (مثلاً: وام، مالیات، کمیسیون، قولنامه، R122)...'} className="w-full pr-9 pl-7 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+          <input type="text" aria-label={isEn ? 'Search calculators' : 'جستجوی سریع ابزار'} value={toolQuery} onChange={(e) => setToolQuery(e.target.value)} placeholder={isEn ? 'Search calculators (e.g. mortgage, tax, commission, R122)...' : 'جستجوی سریع ابزار (مثلاً: وام، مالیات، کمیسیون، قولنامه، R122)...'} className="w-full pr-9 pl-7 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
           {toolQuery && <button type="button" aria-label="پاک کردن جستجوی ابزار" onClick={() => setToolQuery('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
         </div>
         <div className="flex items-center gap-1 overflow-x-auto text-xs">
@@ -162,7 +162,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
               {cat.items.map((tool) => {
                 const IconC = tool.icon;
                 return (
-                  <div key={tool.id} onClick={tool.action} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-900 dark:hover:border-white transition cursor-pointer flex items-start gap-4 group">
+                  <button key={tool.id} type="button" onClick={tool.action} className="p-5 rounded-2xl text-start w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-900 dark:hover:border-white transition cursor-pointer flex items-start gap-4 group">
                     <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-slate-900 transition shrink-0">
                       <IconC className="w-5 h-5 stroke-[2]" />
                     </span>
@@ -173,7 +173,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{tool.desc}</p>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

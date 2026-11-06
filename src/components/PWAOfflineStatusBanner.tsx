@@ -169,6 +169,7 @@ export function PWAOfflineStatusBanner({
         <button
           type="button"
           onClick={onTriggerPwaInstall}
+          aria-label="نصب وب‌اپ رادار برای کاوش آفلاین"
           className="flex items-center gap-1.5 font-extrabold text-emerald-800 dark:text-emerald-300 hover:text-emerald-600 dark:hover:text-emerald-200 cursor-pointer"
         >
           <Download className="w-3.5 h-3.5 stroke-[2] text-emerald-600 dark:text-emerald-400" />

@@ -189,7 +189,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
           {(Object.keys(WORKFLOW_LABELS_FA) as RadarAiWorkflowId[]).map((wf) => (
             <div key={wf} className="flex flex-wrap items-center justify-between gap-2 py-1 border-b border-slate-100 dark:border-slate-800 last:border-0">
               <span className="font-bold text-slate-700 dark:text-slate-200">{WORKFLOW_LABELS_FA[wf]}</span>
-              <select
+              <select aria-label={`انتخاب مدل هوش مصنوعی برای ${WORKFLOW_LABELS_FA[wf]}`}
                 value={routes[wf]}
                 onChange={(e) => setRoutes((prev) => ({ ...prev, [wf]: e.target.value }))}
                 className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] font-mono text-slate-800 dark:text-slate-100"
@@ -210,7 +210,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
             </div>
             <div className="flex gap-1.5">
               <input
-                type="text"
+                type="text" aria-label="نمونه متن جست‌وجوی فارسی جهت تبدیل به کوئری ساختاریافته"
                 value={searchSample}
                 onChange={(e) => setSearchSample(e.target.value)}
                 className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-900 dark:text-slate-100"

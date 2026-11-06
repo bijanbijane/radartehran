@@ -1021,6 +1021,190 @@ async function runSuite(): Promise<void> {
     assert.equal(jCompleted.lastErrorCode, null, 'transitionJournalOperation must clear lastErrorCode on completed status');
   });
 
+  await verify('Frontend Debugging & Accessibility Invariants (Batch 4.11, 4.12, 4.13, 4.14, 4.15 & 4.16)', () => {
+    const readComp = (rel: string) => fs.readFileSync(path.resolve(process.cwd(), rel), 'utf8');
+
+    const diagSrc = readComp('src/components/LiveDiagnosticOverlay.tsx');
+    assert.equal(diagSrc.includes('bottom-16 lg:bottom-3 left-3'), true, 'LiveDiagnosticOverlay trigger button must sit above RadarBottomNav on mobile viewports (bottom-16 lg:bottom-3)');
+
+    const compTableSrc = readComp('src/components/ExpandableComparisonTable.tsx');
+    assert.equal(compTableSrc.includes('role="button"'), false, 'ExpandableComparisonTable header must not wrap nested buttons inside a div[role="button"]');
+    assert.equal(compTableSrc.includes('انتخاب محله دوم برای مقایسه'), true, 'ExpandableComparisonTable select must have an accessible aria-label');
+
+    const uiStateSrc = readComp('src/components/useAppUiState.ts');
+    assert.equal(uiStateSrc.includes('setMobileFilterOpen(false); setShowNationwideProvinceModal(false); setMobileSheetOpen(false);'), true, 'useAppUiState Escape handler must close mobile filter popover, nationwide modal, and mobile sheet');
+
+    const shellSrc = readComp('src/components/RadarWorkspaceShell.tsx');
+    assert.equal(shellSrc.includes('ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false);'), true, 'RadarWorkspaceShell onOpenBudgetFilter must close competing header popovers');
+    assert.equal(shellSrc.includes('input[aria-label="جست‌وجوی محله"]'), true, 'RadarWorkspaceShell onOpenSearch must focus the search input');
+    assert.equal(shellSrc.includes('initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm}'), true, 'RadarWorkspaceShell must pass active buyTotalBudget and targetSqm to ReverseBudgetDiscoveryModal');
+    assert.equal(shellSrc.includes('onSelectPrimaryView={(v) => { ui.setShowSearchDropdown(false); ui.setPrimaryView(v); }}'), true, 'RadarWorkspaceShell must close showSearchDropdown when switching primary views via RadarBottomNav');
+
+    const topBarSrc = readComp('src/components/FloatingTopBar.tsx');
+    assert.equal(topBarSrc.includes('aria-label="بودجه کل خرید"'), true, 'FloatingTopBar budget input must have aria-label');
+    assert.equal(topBarSrc.includes('aria-label="اسلایدر بودجه کل خرید"'), true, 'FloatingTopBar budget slider must have aria-label');
+    assert.equal(topBarSrc.includes("با بودجه من کجای {MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟"), true, 'FloatingTopBar reverse budget button must use activeCity name instead of hardcoded تهران');
+
+    const navCtxSrc = readComp('src/context/RadarNavigationContext.tsx');
+    assert.equal(navCtxSrc.includes('if (typeof window === \'undefined\' || !hasExplicitNavChangeRef.current) return;'), true, 'RadarNavigationContext must guard initial URL replaceState with hasExplicitNavChangeRef');
+
+    const revBudgetSrc = readComp('src/components/modals/ReverseBudgetDiscoveryModal.tsx');
+    assert.equal(revBudgetSrc.includes('typeof initialBudgetMillion === \'number\' && initialBudgetMillion > 0 ? { totalBudgetMillion: initialBudgetMillion } : {}'), true, 'ReverseBudgetDiscoveryModal must sync initialBudgetMillion into ComparisonFilterContext when opened');
+
+    const searchDropdownSrc = readComp('src/components/SearchDropdownMenu.tsx');
+    assert.equal(searchDropdownSrc.includes('const crossMatched = allNationwideHoods.find((h) => h.name.trim().toLowerCase() === norm);'), true, 'SearchDropdownMenu recent search selection must resolve cross-city neighborhoods');
+
+    const derivedStateSrc = readComp('src/components/useAppPersistenceAndDerivedState.ts');
+    assert.equal(derivedStateSrc.includes('[targetBargainHood, ui.bargainType, ui.bargainSqm, ui.bargainProposedPrice, areaUnit, intlCurrency, locale]'), true, 'useAppPersistenceAndDerivedState liveBargainCheck must depend on areaUnit, intlCurrency, and locale');
+
+    const quickRankingSrc = readComp('src/components/QuickHoodRankingStrip.tsx');
+    assert.equal(quickRankingSrc.includes('const found = evaluatedNeighborhoods.find((h) => h.id === targetId) || nationwideHoods.find((h) => h.id === targetId);'), true, 'QuickHoodRankingStrip nationwide select must prefer evaluatedNeighborhoods over raw nationwideHoods');
+
+    const modalsPortalSrc = readComp('src/components/AppModalsPortal.tsx');
+    assert.equal(modalsPortalSrc.includes('const h1 = p.evaluatedNeighborhoods.find((n) => n.id === id1) || p.allNeighborhoods?.find((n) => n.id === id1);'), true, 'AppModalsPortal handleOpenSeoComparison must fall back to p.allNeighborhoods for cross-city neighborhoods');
+
+    const intelSrc = readComp('src/components/views/ProductIntelligenceView.tsx');
+    assert.equal(/[\uAC00-\uD7AF]/.test(intelSrc), false, 'ProductIntelligenceView must not contain stray Korean Hangul characters');
+    assert.equal(intelSrc.includes('<button type="button" onClick={p.onOpenPriceTrend}'), true, 'ProductIntelligenceView Metric Card 04 must be a semantic button');
+    assert.equal(intelSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer"'), true, 'ProductIntelligenceView neighborhood rows must be keyboard-accessible and handle click on inner role=button');
+    assert.equal(intelSrc.includes('<div key={hood.id} onClick='), false, 'ProductIntelligenceView outer card wrapper must not intercept clicks');
+
+    const discoverSrc = readComp('src/components/views/ProductDiscoverView.tsx');
+    assert.equal(discoverSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer"'), true, 'ProductDiscoverView grid cards must handle click on inner role=button');
+    assert.equal(discoverSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="flex items-center gap-3 cursor-pointer"'), true, 'ProductDiscoverView list rows must handle click on inner role=button');
+    assert.equal(discoverSrc.includes('<div key={hood.id} onClick='), false, 'ProductDiscoverView outer card wrappers must not intercept clicks');
+
+    const homeSrc = readComp('src/components/views/ProductHomeView.tsx');
+    assert.equal(homeSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer"'), true, 'ProductHomeView featured neighborhood cards must handle click on inner role=button');
+    assert.equal(homeSrc.includes('<div key={hood.id} onClick='), false, 'ProductHomeView outer card wrapper must not intercept clicks');
+
+    const userSpaceSrc = readComp('src/components/views/ProductUserSpaceView.tsx');
+    assert.equal(userSpaceSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer"'), true, 'ProductUserSpaceView saved neighborhood cards must handle click on inner role=button');
+    assert.equal(userSpaceSrc.includes('<div key={hood.id} onClick='), false, 'ProductUserSpaceView outer card wrapper must not intercept clicks');
+
+    const toolsSrc = readComp('src/components/views/ProductToolsView.tsx');
+    assert.equal(toolsSrc.includes('<button key={tool.id} type="button" onClick={tool.action}'), true, 'ProductToolsView calculator cards must be semantic buttons');
+
+    const legalSrc = readComp('src/components/ContractLegalAdvisorView.tsx');
+    assert.equal(legalSrc.includes('onChange={() => {}}'), false, 'ContractLegalAdvisorView checklist checkboxes must not use a no-op onChange');
+    assert.equal(legalSrc.includes('aria-label="متن بند قرارداد جهت بررسی حقوقی"'), true, 'ContractLegalAdvisorView textarea must have aria-label');
+
+    const drawerSrc = readComp('src/components/NeighborhoodInspectorDrawer.tsx');
+    assert.equal(drawerSrc.includes('role="button" tabIndex={0} onClick={() => { setMobileSheetOpen(true); setDesktopCollapsed(false); }}'), true, 'NeighborhoodInspectorDrawer collapsed summary must be keyboard-accessible as a sibling of the expand button');
+    assert.equal(drawerSrc.includes('if (isOtherCity && onSwitchCity) onSwitchCity(favCityId, favHood.id);'), true, 'NeighborhoodInspectorDrawer cross-city favorite click must invoke onSwitchCity');
+
+    const mapProviderSrc = readComp('src/components/AdminMapProviderConfigPanel.tsx');
+    assert.equal(mapProviderSrc.includes('aria-pressed={currentStyle === \'neshan\'}'), true, 'AdminMapProviderConfigPanel Neshan card must be a semantic button with aria-pressed');
+
+    const sponsorTabSrc = readComp('src/components/AgencySponsorReservationTab.tsx');
+    assert.equal(sponsorTabSrc.includes('key={n.id} type="button"') && sponsorTabSrc.includes('onClick={() => setSponsorHoodId(n.id)}'), true, 'AgencySponsorReservationTab tariff rows must be semantic buttons');
+
+    const smartSuggestSrc = readComp('src/components/SmartSuggestModal.tsx');
+    assert.equal(smartSuggestSrc.includes('className="flex items-center gap-3 flex-1 min-w-[220px] cursor-pointer"'), true, 'SmartSuggestModal neighborhood summary block must be a sibling of the comparison arc button');
+
+    const mediaGallerySrc = readComp('src/components/ListingMediaGallery.tsx');
+    assert.equal(mediaGallerySrc.includes('aria-label="بستن پیش‌نمایش تصویر"'), true, 'ListingMediaGallery lightbox close button must have an accessible aria-label');
+
+    const mediaUploaderSrc = readComp('src/components/ListingMediaStorageUploader.tsx');
+    assert.equal(mediaUploaderSrc.includes('aria-label="آپلود عکس ملک"') && mediaUploaderSrc.includes('aria-label="آپلود فیلم ملک"'), true, 'ListingMediaStorageUploader file inputs must have accessible aria-labels');
+
+    const buyingPowerSrc = readComp('src/components/BuyingPowerSummaryCard.tsx');
+    assert.equal(buyingPowerSrc.includes('{toPersianNum((hoodTotal80mMillions / 1000).toFixed(1))} میلیارد'), true, 'BuyingPowerSummaryCard 80m total price must divide hoodTotal80mMillions by 1000 when labeled میلیارد');
+
+    const priceChartSrc = readComp('src/components/NeighborhoodPriceChart.tsx');
+    assert.equal(priceChartSrc.includes('· کل ۸۰م: {toPersianNum(hoodTotal80m)} میلیارد ·'), true, 'NeighborhoodPriceChart 80m total price must be labeled میلیارد');
+
+    const forecastCardSrc = readComp('src/components/SmartPriceForecastCard.tsx');
+    assert.equal(forecastCardSrc.includes('{toPersianNum(((forecast.projectedBuyPerSqm * 80) / 1000).toFixed(2))} میلیارد'), true, 'SmartPriceForecastCard 80m projected value must be labeled میلیارد');
+
+    const mapLodSrc = readComp('src/components/mapZoomLodAndDeclutter.ts');
+    assert.equal(mapLodSrc.includes('(کل: ${toPersianNum(total80mMillions)} میلیارد)'), true, 'mapZoomLodAndDeclutter rich tooltip 80m total must be labeled میلیارد');
+
+    const hedonicModalSrc = readComp('src/components/HedonicValuationModal.tsx');
+    assert.equal(hedonicModalSrc.includes('id="hedonic-hood-select" aria-label="انتخاب محله جهت کارشناسی هوشمند"'), true, 'HedonicValuationModal hood select must have accessible aria-label');
+    assert.equal(hedonicModalSrc.includes('aria-label="پارکینگ سندی"') && hedonicModalSrc.includes('aria-label="آسانسور"') && hedonicModalSrc.includes('aria-label="انباری سندی"'), true, 'HedonicValuationModal amenities checkboxes must have accessible aria-labels');
+    assert.equal(hedonicModalSrc.includes('id="hedonic-asking-input" type="number" step="0.1" aria-label="قیمت اعلامی فروشنده به میلیارد تومان"'), true, 'HedonicValuationModal asking price input must have accessible aria-label');
+
+    const compareModalSrc = readComp('src/components/CompareModal.tsx');
+    assert.equal(compareModalSrc.includes('aria-label={`انتخاب محله ${compHood1.name}`}') && compareModalSrc.includes('aria-label={`انتخاب محله ${compHood2.name}`}'), true, 'CompareModal neighborhood selection buttons must have accessible aria-labels');
+
+    const shareModalSrc = readComp('src/components/ShareModal.tsx');
+    assert.equal(shareModalSrc.includes('aria-label={isEn ? \'Download Story Image\' : \'دانلود تصویر آماده استوری\'}'), true, 'ShareModal story download button must have accessible aria-label');
+    assert.equal(shareModalSrc.includes('aria-label={isEn ? \'Copy text summary\' : \'کپی متن کارنامه برای پیام‌رسان‌ها\'}'), true, 'ShareModal copy text button must have accessible aria-label');
+
+    const revBudgetModalSrc = readComp('src/components/modals/ReverseBudgetDiscoveryModal.tsx');
+    assert.equal(revBudgetModalSrc.includes('aria-label={isEn ? `Inspect ${hood.nameFa}` : `بررسی محله ${hood.nameFa}`}'), true, 'ReverseBudgetDiscoveryModal match inspect button must have accessible aria-label');
+
+    const shortlistMatrixSrc = readComp('src/components/ShortlistMatrixModal.tsx');
+    assert.equal(shortlistMatrixSrc.includes('aria-label={isEn ? `Jump to ${hood.name} on map` : `پرش به ${hood.name} روی نقشه`}'), true, 'ShortlistMatrixModal jump button must have accessible aria-label');
+    assert.equal(shortlistMatrixSrc.includes('aria-label={isEn ? `Comparison Arc between ${anchorHood.name} and ${hood.name}` : `کمان مقایسه بین ${anchorHood.name} و ${hood.name}`}'), true, 'ShortlistMatrixModal arc button must have accessible aria-label');
+
+    const wizardSrc = readComp('src/components/OnboardingWizardModal.tsx');
+    assert.equal(wizardSrc.includes('aria-label={isEn ? \'Deduct tenant deposit\' : \'کسر خودکار رهن به مستأجر\'}'), true, 'OnboardingWizardModal deduct tenant checkbox must have aria-label');
+    assert.equal(wizardSrc.includes('aria-label={isEn ? \'Enable housing loan\' : \'محاسبه با وام مسکن جعاله\'}'), true, 'OnboardingWizardModal housing loan checkbox must have aria-label');
+    assert.equal(wizardSrc.includes('aria-label={isEn ? `Select ${hood.name}` : `انتخاب محله ${hood.name}`}'), true, 'OnboardingWizardModal recommendation button must have aria-label');
+
+    const powerTrendSrc = readComp('src/components/PurchasingPowerTrendCard.tsx');
+    assert.equal(powerTrendSrc.includes('aria-label={overlayState.showMetroLines && overlayState.showTrafficZones ? \'مخفی‌سازی لایه‌های مترو و طرح ترافیک در نقشه\' : \'نمایش خطوط مترو و محدوده طرح ترافیک روی نقشه\'}'), true, 'PurchasingPowerTrendCard metro toggle button must have accessible aria-label');
+
+    const expandableTableSrc = readComp('src/components/ExpandableComparisonTable.tsx');
+    assert.equal(expandableTableSrc.includes('aria-label={isPinnedA ? (isEn ? \'Map Arc Active\' : \'کمان نقشه فعال\') : (isEn ? \'Pin comparison arc on map\' : \'پین کمان مقایسه روی نقشه\')}'), true, 'ExpandableComparisonTable isPinnedA button must have accessible aria-label');
+
+    const commuteHubsSrc = readComp('src/components/CommuteHubsMatrixCard.tsx');
+    assert.equal(commuteHubsSrc.includes('aria-label={overlayState.showMetroLines ? \'مخفی‌سازی خطوط مترو در نقشه\' : \'نمایش خطوط مترو روی نقشه\'}'), true, 'CommuteHubsMatrixCard metro lines button must have accessible aria-label');
+    assert.equal(commuteHubsSrc.includes('aria-label={overlayState.showTrafficZones ? \'مخفی‌سازی محدوده طرح ترافیک در نقشه\' : \'نمایش محدوده طرح ترافیک روی نقشه\'}'), true, 'CommuteHubsMatrixCard traffic zones button must have accessible aria-label');
+    assert.equal(commuteHubsSrc.includes('aria-label={`انتخاب مرکز اشتغال ${hub.name}`}'), true, 'CommuteHubsMatrixCard hub selection button must have accessible aria-label');
+
+    const photoGallerySrc = readComp('src/components/NeighborhoodPhotoGallery.tsx');
+    assert.equal(photoGallerySrc.includes('aria-label={isEn ? \'Fullscreen photo\' : \'مشاهده تمام‌صفحه تصویر\'}'), true, 'NeighborhoodPhotoGallery fullscreen button must have accessible aria-label');
+    assert.equal(photoGallerySrc.includes('role="dialog" aria-modal="true" aria-label={activeItem.title} tabIndex={-1} onKeyDown={(e) => { if (e.key === \'Escape\') setShowLightbox(false); }}'), true, 'NeighborhoodPhotoGallery lightbox must be an accessible dialog with Escape key dismissal');
+
+    const shareableCardSrc = readComp('src/components/modals/ShareableNeighborhoodCard.tsx');
+    assert.equal(shareableCardSrc.includes('aria-label={isExporting ? \'در حال ساخت تصویر گزارش محله\' : \'دانلود کارت گرافیکی گزارش محله مناسب تلگرام و واتس‌اپ\'}'), true, 'ShareableNeighborhoodCard export button must have accessible aria-label');
+
+    const pwaBannerSrc = readComp('src/components/PWAOfflineStatusBanner.tsx');
+    assert.equal(pwaBannerSrc.includes('aria-label="نصب وب‌اپ رادار برای کاوش آفلاین"'), true, 'PWAOfflineStatusBanner install trigger button must have accessible aria-label');
+
+    const liveDiagSrc = readComp('src/components/LiveDiagnosticOverlay.tsx');
+    assert.equal(liveDiagSrc.includes('aria-label="باز کردن دیباگر زنده سیستم"'), true, 'LiveDiagnosticOverlay trigger button must have accessible aria-label');
+    assert.equal(liveDiagSrc.includes('aria-label="اجرای تست‌های خودکار دیباگر سیستم"'), true, 'LiveDiagnosticOverlay run auto-tests button must have accessible aria-label');
+
+    const hedonicInlineSrc = readComp('src/components/inspector/HedonicInlineWidget.tsx');
+    assert.equal(hedonicInlineSrc.includes('aria-pressed={item.active}') && hedonicInlineSrc.includes('aria-label={item.label}'), true, 'HedonicInlineWidget amenity toggles must have aria-pressed and aria-label');
+    assert.equal(hedonicInlineSrc.includes('aria-label="اصلاح قیمت به میلیارد تومان"'), true, 'HedonicInlineWidget normalize price button must have accessible aria-label');
+
+    const floatingTopBarSrc = readComp('src/components/FloatingTopBar.tsx');
+    assert.equal(floatingTopBarSrc.includes('aria-label="کسر خودکار رهن مستأجر و ۱۰٪ تنفس سند"'), true, 'FloatingTopBar deduct tenant rahn checkbox must have accessible aria-label');
+
+    const contractLegalSrc = readComp('src/components/ContractLegalAdvisorView.tsx');
+    assert.equal(contractLegalSrc.includes('aria-label={item.title}'), true, 'ContractLegalAdvisorView checklist checkboxes must have accessible aria-label={item.title}');
+
+    const portfolioModalsSrc = readComp('src/components/PortfolioModals.tsx');
+    assert.equal(portfolioModalsSrc.includes('aria-label="دریافت وام مسکن برای ارتقای ملک"') && portfolioModalsSrc.includes('aria-label="رهن دادن واحد جدید به مستأجر"'), true, 'PortfolioModals tradeUp checkboxes must have accessible aria-labels');
+
+    const bargainsTabsSrc = readComp('src/components/NeighborhoodBargainsAndVotesTabs.tsx');
+    assert.equal(bargainsTabsSrc.includes('aria-label="متراژ آپارتمان جهت کارشناسی آگهی"') && bargainsTabsSrc.includes('aria-label="سال ساخت یا سن بنا جهت کارشناسی آگهی"') && bargainsTabsSrc.includes('aria-label="طبقه واحد جهت کارشناسی آگهی"') && bargainsTabsSrc.includes('aria-label="قیمت اعلامی آگهی به میلیون تومان"'), true, 'NeighborhoodBargainsAndVotesTabs analyzer inputs must have accessible aria-labels');
+    assert.equal(bargainsTabsSrc.includes('aria-label="پارکینگ سندی در کارشناسی آگهی"') && bargainsTabsSrc.includes('aria-label="آسانسور در کارشناسی آگهی"') && bargainsTabsSrc.includes('aria-label="انباری سندی در کارشناسی آگهی"'), true, 'NeighborhoodBargainsAndVotesTabs analyzer checkboxes must have accessible aria-labels');
+
+    const crmModalSrc = readComp('src/components/AgencyCrmAndAutomationStudioModal.tsx');
+    assert.equal(crmModalSrc.includes('aria-label="رضایت صریح مشتری جهت ارسال پیامک"'), true, 'AgencyCrmAndAutomationStudioModal consent checkbox must have aria-label');
+
+    const biRiskModalSrc = readComp('src/components/BiRiskAndGeospatialIntelligenceStudioModal.tsx');
+    assert.equal(biRiskModalSrc.includes('aria-label="متراژ ملک هدف جهت برآورد املاک مشابه"') && biRiskModalSrc.includes('aria-label="فعال‌سازی لایه رسمی سیلاب"'), true, 'BiRiskModal inputs must have aria-labels');
+
+    const legalStudioSrc = readComp('src/components/LegalContractAndPortfolioStudioModal.tsx');
+    assert.equal(legalStudioSrc.includes('aria-label="اصل مبلغ وام به میلیون تومان"') && legalStudioSrc.includes('aria-label="قیمت ناخالص فروش ملک به میلیون تومان"'), true, 'LegalContractStudioModal inputs must have aria-labels');
+
+    const superLegalSrc = readComp('src/components/SuperModulesLegalAndBuildingTabs.tsx');
+    assert.equal(superLegalSrc.includes('aria-label="بررسی مستقل شرایط معافیت متراژی مالیات اجاره"') && superLegalSrc.includes('aria-label="پدر در قید حیات در تقسیم ارث"'), true, 'SuperModulesLegalAndBuildingTabs checkboxes must have aria-labels');
+
+    const superSwapSrc = readComp('src/components/SuperModulesSwapAndStudioTabs.tsx');
+    assert.equal(superSwapSrc.includes('aria-label="حمل از پله بدون آسانسور باربر"'), true, 'SuperModulesSwapAndStudioTabs move elevator checkbox must have aria-label');
+
+    const superValSrc = readComp('src/components/SuperModulesValuationAndFakeTabs.tsx');
+    assert.equal(superValSrc.includes('aria-label="آسانسور در کارشناسی تفصیلی"') && superValSrc.includes('aria-label="انباری سندی در کارشناسی تفصیلی"'), true, 'SuperModulesValuationAndFakeTabs checkboxes must have aria-labels');
+  });
+
   console.log(`\n🎉 ALL ${passed} ENGINEERING QUALITY & CONTRACT FOUNDATION TESTS PASSED!\n`);
 }
 

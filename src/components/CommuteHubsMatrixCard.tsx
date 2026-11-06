@@ -125,6 +125,7 @@ export function CommuteHubsMatrixCard({
                 onClick={() =>
                   updateMapAdvancedOverlayState({ showMetroLines: !overlayState.showMetroLines })
                 }
+                aria-label={overlayState.showMetroLines ? 'مخفی‌سازی خطوط مترو در نقشه' : 'نمایش خطوط مترو روی نقشه'}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                   overlayState.showMetroLines
                     ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
@@ -138,6 +139,7 @@ export function CommuteHubsMatrixCard({
                 onClick={() =>
                   updateMapAdvancedOverlayState({ showTrafficZones: !overlayState.showTrafficZones })
                 }
+                aria-label={overlayState.showTrafficZones ? 'مخفی‌سازی محدوده طرح ترافیک در نقشه' : 'نمایش محدوده طرح ترافیک روی نقشه'}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                   overlayState.showTrafficZones
                     ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
@@ -154,6 +156,7 @@ export function CommuteHubsMatrixCard({
                       showCommuteIsochrones: !overlayState.showCommuteIsochrones,
                     })
                   }
+                  aria-label={overlayState.showCommuteIsochrones ? 'مخفی‌سازی حلقه‌های تردد زمانی در نقشه' : 'نمایش حلقه‌های تردد زمانی روی نقشه'}
                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                     overlayState.showCommuteIsochrones
                       ? 'bg-emerald-600 text-white border-emerald-600'
@@ -176,6 +179,7 @@ export function CommuteHubsMatrixCard({
               key={hub.id}
               type="button"
               onClick={() => onSelectWorkHubId(isSelected ? 'none' : hub.id)}
+              aria-label={`انتخاب مرکز اشتغال ${hub.name}`}
               className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex flex-col gap-1.5 ${
                 isSelected
                   ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-2xs'

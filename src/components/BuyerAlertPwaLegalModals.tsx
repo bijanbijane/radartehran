@@ -98,7 +98,7 @@ export function BuyerAlertPwaLegalModals({
                   <div>
                     <label className="block text-slate-600 dark:text-slate-300 mb-1">نام و نام خانوادگی:</label>
                     <input
-                      type="text" required maxLength={80} value={alertFullName}
+                      type="text" aria-label="نام و نام خانوادگی" required maxLength={80} value={alertFullName}
                       onChange={(e) => setAlertFullName(sanitizeInput(e.target.value, 80))}
                       placeholder="مثلاً: علی محمدی"
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
@@ -110,7 +110,7 @@ export function BuyerAlertPwaLegalModals({
                       {!mobileHintValid && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">موبایل ۱۱ رقمی (09...)</span>}
                     </label>
                     <input
-                      type="tel" required maxLength={15} dir="ltr" value={alertPhone}
+                      type="tel" aria-label="شماره موبایل" required maxLength={15} dir="ltr" value={alertPhone}
                       onChange={(e) => setAlertPhone(sanitizeInput(e.target.value, 15))}
                       placeholder="0912xxxxxxx"
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums focus:outline-none focus:border-emerald-600"
@@ -121,7 +121,7 @@ export function BuyerAlertPwaLegalModals({
                   <div>
                     <label className="block text-slate-600 dark:text-slate-300 mb-1">محله مورد نظر:</label>
                     <select
-                      value={alertHoodId} onChange={(e) => setAlertHoodId(Number(e.target.value))}
+                      aria-label="محله مورد نظر" value={alertHoodId} onChange={(e) => setAlertHoodId(Number(e.target.value))}
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
                     >
                       {safeNeighborhoods.map((n) => {
@@ -138,7 +138,7 @@ export function BuyerAlertPwaLegalModals({
                   <div>
                     <label className="block text-slate-600 dark:text-slate-300 mb-1">نوع معامله:</label>
                     <select
-                      value={alertDealType} onChange={(e) => setAlertDealType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید')}
+                      aria-label="نوع معامله" value={alertDealType} onChange={(e) => setAlertDealType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید')}
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
                     >
                       <option value="خرید">خرید آپارتمان زیر قیمت</option>
@@ -156,7 +156,7 @@ export function BuyerAlertPwaLegalModals({
                     )}
                   </label>
                   <input
-                    type="text" maxLength={90} value={alertMaxBudget}
+                    type="text" aria-label="حداکثر بودجه مد نظر" maxLength={90} value={alertMaxBudget}
                     onChange={(e) => setAlertMaxBudget(sanitizeInput(e.target.value, 90))}
                     placeholder="مثلاً: ۱۰ میلیارد خرید یا ۱.۵ میلیارد رهن کامل"
                     className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"

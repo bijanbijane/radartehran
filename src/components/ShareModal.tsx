@@ -198,7 +198,7 @@ export function ShareModal({
         </div>
 
         <div className="space-y-2 pt-1">
-          <button type="button" onClick={handleDownloadStoryClick} disabled={isGeneratingStory} className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60">
+          <button type="button" onClick={handleDownloadStoryClick} disabled={isGeneratingStory} aria-label={isEn ? 'Download Story Image' : 'دانلود تصویر آماده استوری'} className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60">
             {isGeneratingStory ? (
               <><Loader2 className="w-4 h-4 animate-spin" /><span>{isEn ? 'Rendering Story (1080×1920)...' : 'در حال رندر تصویر استوری (1080×1920)...'}</span></>
             ) : storyGeneratedSuccess ? (
@@ -207,7 +207,7 @@ export function ShareModal({
               <><ImageIcon className="w-4 h-4 stroke-[1.75]" /><Download className="w-4 h-4 stroke-[1.75]" /><span>{isEn ? 'Download Story Image (PNG HD)' : 'دانلود تصویر آماده استوری (PNG HD)'}</span></>
             )}
           </button>
-          <button type="button" onClick={handleSafeCopyClick} className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+          <button type="button" onClick={handleSafeCopyClick} aria-label={isEn ? 'Copy text summary' : 'کپی متن کارنامه برای پیام‌رسان‌ها'} className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
             {copiedShare ? (
               <><Check className="w-4 h-4 stroke-[1.75]" /><span>{isEn ? 'Copied to clipboard!' : 'کپی شد! آماده ارسال'}</span></>
             ) : (

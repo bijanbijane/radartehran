@@ -12,11 +12,11 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"> <Building2 className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
             <span>محاسبه‌گر امتیاز تعاونی‌های مسکن منطقه ۲۲ چیتگر</span> </div>
           <div className="grid grid-cols-3 gap-2 text-[10px]"> <div>
-              <label className="text-slate-500 dark:text-slate-400">واریزی تا امروز (م)</label> <input type="number" value={coopPaidMillion} onChange={(e) => setCoopPaidMillion(clampNumber(e.target.value, 100, 20000, 1800))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
+              <label className="text-slate-500 dark:text-slate-400">واریزی تا امروز (م)</label> <input type="number" aria-label="واریزی تا امروز" value={coopPaidMillion} onChange={(e) => setCoopPaidMillion(clampNumber(e.target.value, 100, 20000, 1800))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
             </div> <div>
-              <label className="text-slate-500 dark:text-slate-400">حق امتیاز (م)</label> <input type="number" value={coopPremiumMillion} onChange={(e) => setCoopPremiumMillion(clampNumber(e.target.value, 100, 20000, 1150))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
+              <label className="text-slate-500 dark:text-slate-400">حق امتیاز (م)</label> <input type="number" aria-label="حق امتیاز تعاونی" value={coopPremiumMillion} onChange={(e) => setCoopPremiumMillion(clampNumber(e.target.value, 100, 20000, 1150))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
             </div> <div>
-              <label className="text-slate-500 dark:text-slate-400">برآورد ساخت ({areaUnit === 'sqft' ? `${toPersianNum(convertPricePerSqmToUnit(coopPromiseSqmMillion, areaUnit))} م/ft²` : `${toPersianNum(coopPromiseSqmMillion)} م/m²`})</label> <input type="number" value={coopPromiseSqmMillion} onChange={(e) => setCoopPromiseSqmMillion(clampNumber(e.target.value, 15, 100, 35))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
+              <label className="text-slate-500 dark:text-slate-400">برآورد ساخت ({areaUnit === 'sqft' ? `${toPersianNum(convertPricePerSqmToUnit(coopPromiseSqmMillion, areaUnit))} م/ft²` : `${toPersianNum(coopPromiseSqmMillion)} م/m²`})</label> <input type="number" aria-label="برآورد ساخت تعاونی" value={coopPromiseSqmMillion} onChange={(e) => setCoopPromiseSqmMillion(clampNumber(e.target.value, 15, 100, 35))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
             </div> </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5 text-[11px]"> <div className="flex items-center justify-between">
               <span className="text-slate-600 dark:text-slate-400">نقدینگی لازم امروز:</span> <span className="font-black text-slate-900 dark:text-slate-100">{toPersianNum(chitgarScoreResult.cashNeededTodayMillion)} میلیون تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(chitgarScoreResult.cashNeededTodayMillion, intlCurrency, locale)})` : ''}</span>
@@ -43,7 +43,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
               <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
               <span>سود مهاجرت مالی بین کلان‌شهرها</span>
             </span>
-            <select value={targetMigrationCity} onChange={(e) => setTargetMigrationCity(e.target.value as CityId)} className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-bold text-slate-900 dark:text-slate-100 text-xs">
+            <select aria-label="شهر مقصد مهاجرت" value={targetMigrationCity} onChange={(e) => setTargetMigrationCity(e.target.value as CityId)} className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-bold text-slate-900 dark:text-slate-100 text-xs">
               <option value="shiraz">شیراز</option><option value="isfahan">اصفهان</option>
               <option value="mashhad">مشهد</option><option value="karaj">کرج</option>
             </select>
@@ -250,7 +250,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
           <div>
             <label className="text-slate-500 dark:text-slate-400">نوع خودرو باربری</label>
-            <select value={moveTruckType} onChange={(e) => setMoveTruckType(e.target.value as 'van' | 'khavar' | 'isuzu_large')} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+            <select aria-label="نوع خودرو باربری" value={moveTruckType} onChange={(e) => setMoveTruckType(e.target.value as 'van' | 'khavar' | 'isuzu_large')} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5">
               <option value="khavar">خاور مسقف VIP</option>
               <option value="van">وانت نیسان</option>
               <option value="isuzu_large">ایسوزو ۶ متری{areaUnit === 'sqft' ? ' (۲۰ فوت)' : ''}</option>
@@ -258,19 +258,19 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           </div>
           <div>
             <label className="text-slate-500 dark:text-slate-400">تعداد کارگران</label>
-            <input type="number" value={moveWorkers} onChange={(e) => setMoveWorkers(clampNumber(e.target.value, 2, 8, 4))} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
+            <input type="number" aria-label="تعداد کارگران" value={moveWorkers} onChange={(e) => setMoveWorkers(clampNumber(e.target.value, 2, 8, 4))} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
           </div>
           <div>
             <label className="text-slate-500 dark:text-slate-400">مدت زمان (ساعت)</label>
-            <input type="number" value={moveHours} onChange={(e) => setMoveHours(clampNumber(e.target.value, 3, 10, 4))} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
+            <input type="number" aria-label="مدت زمان اسباب‌کشی" value={moveHours} onChange={(e) => setMoveHours(clampNumber(e.target.value, 3, 10, 4))} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
           </div>
           <div>
             <label className="text-slate-500 dark:text-slate-400">اقلام سنگین (ساید/گاوصندوق)</label>
-            <input type="number" min={0} max={10} value={moveHeavyItems} onChange={(e) => setMoveHeavyItems(clampNumber(e.target.value, 0, 10, 2))} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
+            <input type="number" aria-label="تعداد اقلام سنگین" min={0} max={10} value={moveHeavyItems} onChange={(e) => setMoveHeavyItems(clampNumber(e.target.value, 0, 10, 2))} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
           </div>
         </div>
         <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-          <input type="checkbox" checked={!moveHasElevator} onChange={(e) => setMoveHasElevator(!e.target.checked)} className="rounded text-emerald-600" />
+          <input type="checkbox" checked={!moveHasElevator} onChange={(e) => setMoveHasElevator(!e.target.checked)} aria-label="حمل از پله بدون آسانسور باربر" className="rounded text-emerald-600" />
           <span>حمل از پله (بدون آسانسور باربر)</span>
         </label>
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 flex items-center justify-between text-xs">

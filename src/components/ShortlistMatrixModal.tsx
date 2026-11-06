@@ -124,18 +124,18 @@ export function ShortlistMatrixModal({
                     <th key={hood.id} className="p-3 min-w-[165px] align-top text-center">
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <span className="font-black text-sm text-slate-900 dark:text-white">{hood.name}</span>
-                        <button type="button" onClick={() => onRemoveFavorite(hood.id)} title={isEn ? 'Remove from favorites' : 'حذف از منتخب‌ها'} className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 cursor-pointer transition">
+                        <button type="button" aria-label={isEn ? `Remove ${hood.name} from favorites` : `حذف ${hood.name} از منتخب‌ها`} onClick={() => onRemoveFavorite(hood.id)} title={isEn ? 'Remove from favorites' : 'حذف از منتخب‌ها'} className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 cursor-pointer transition">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                       <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mb-2">{hood.zone}</div>
                       <div className="space-y-1">
-                        <button type="button" onClick={() => { onSelectNeighborhood(hood); onClose(); }} className="w-full py-1 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer transition">
+                        <button type="button" onClick={() => { onSelectNeighborhood(hood); onClose(); }} aria-label={isEn ? `Jump to ${hood.name} on map` : `پرش به ${hood.name} روی نقشه`} className="w-full py-1 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer transition">
                           <MapPin className="w-3 h-3" />
                           <span>{isEn ? 'Jump on Map' : 'پرش روی نقشه'}</span>
                         </button>
                         {idx > 0 && anchorHood && (
-                          <button type="button" onClick={() => { updateMapAdvancedOverlayState({ comparisonArc: { active: true, isPinned: true, hoodA: anchorHood, hoodB: hood } }); onSelectNeighborhood(hood); onClose(); }} className="w-full py-1 px-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition">
+                          <button type="button" onClick={() => { updateMapAdvancedOverlayState({ comparisonArc: { active: true, isPinned: true, hoodA: anchorHood, hoodB: hood } }); onSelectNeighborhood(hood); onClose(); }} aria-label={isEn ? `Comparison Arc between ${anchorHood.name} and ${hood.name}` : `کمان مقایسه بین ${anchorHood.name} و ${hood.name}`} className="w-full py-1 px-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition">
                             <Scale className="w-3 h-3" />
                             <span>{isEn ? `Arc with ${anchorHood.name}` : `کمان با ${anchorHood.name}`}</span>
                           </button>

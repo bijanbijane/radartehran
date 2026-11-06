@@ -175,15 +175,20 @@ export function SmartSuggestModal({
               return (
                 <div
                   key={n.id}
-                  onClick={() => handleSelectItem(n)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') handleSelectItem(n);
-                  }}
-                  className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50/90 dark:hover:bg-slate-800/70 p-3.5 flex flex-wrap items-center justify-between gap-3 transition cursor-pointer"
+                  className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50/90 dark:hover:bg-slate-800/70 p-3.5 flex flex-wrap items-center justify-between gap-3 transition"
                 >
-                  <div className="flex items-center gap-3">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSelectItem(n)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectItem(n);
+                      }
+                    }}
+                    className="flex items-center gap-3 flex-1 min-w-[220px] cursor-pointer"
+                  >
                     <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center font-black text-slate-900 dark:text-white text-xs tabular-nums shrink-0">
                       {toPersianNum(index + 1)}
                     </div>
@@ -261,9 +266,13 @@ export function SmartSuggestModal({
                           <span>{isEn ? `Compare with #1` : `کمان مقایسه با رتبه ۱`}</span>
                         </button>
                       )}
-                      <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectItem(n)}
+                        className="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline font-bold cursor-pointer"
+                      >
                         {isEn ? 'View on map →' : 'مشاهده روی نقشه ←'}
-                      </span>
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -96,7 +96,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">متراژ ملک ({formatAreaValue(commSqm, areaUnit)}):</label>
                   <input
-                    type="number" min={25} max={1000} value={commSqm}
+                    type="number" aria-label="متراژ ملک" min={25} max={1000} value={commSqm}
                     onChange={(e) => setCommSqm(clampNumber(e.target.value, 20, 1000, 85))}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-slate-900 dark:text-white tabular-nums"
                   />
@@ -104,7 +104,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">قیمت هر متر (معادل {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(uCommPrice)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uCommPrice, intlCurrency, locale)}` : ''}):</label>
                   <input
-                    type="number" min={10} max={2000} value={commPricePerSqm}
+                    type="number" aria-label="قیمت هر متر" min={10} max={2000} value={commPricePerSqm}
                     onChange={(e) => setCommPricePerSqm(clampNumber(e.target.value, 5, 2000, 135))}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
@@ -121,7 +121,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">مبلغ ودیعه / رهن (میلیون تومان{commDeposit > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commDeposit, intlCurrency, locale)}` : ''}):</label>
                   <input
-                    type="number" min={0} max={50000} value={commDeposit}
+                    type="number" aria-label="مبلغ ودیعه" min={0} max={50000} value={commDeposit}
                     onChange={(e) => setCommDeposit(clampNumber(e.target.value, 0, 50000, 500))}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
@@ -129,7 +129,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">اجاره ماهانه (میلیون تومان{commMonthlyRent > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commMonthlyRent, intlCurrency, locale)}` : ''}):</label>
                   <input
-                    type="number" min={0} max={2000} value={commMonthlyRent}
+                    type="number" aria-label="اجاره ماهانه" min={0} max={2000} value={commMonthlyRent}
                     onChange={(e) => setCommMonthlyRent(clampNumber(e.target.value, 0, 2000, 15))}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-slate-900 dark:text-white tabular-nums"
                   />
@@ -246,7 +246,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 </button>
               </div>
               <textarea
-                rows={10} value={telegramText} onChange={(e) => setTelegramText(e.target.value)}
+                aria-label="متن آماده پست تلگرام" rows={10} value={telegramText} onChange={(e) => setTelegramText(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-slate-900 dark:text-white leading-relaxed font-medium focus:outline-none focus:border-emerald-600"
               />
               <button

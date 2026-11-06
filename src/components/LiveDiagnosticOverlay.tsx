@@ -172,7 +172,7 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
       <button
         type="button"
         onClick={() => { setIsDismissed(false); try { localStorage.setItem('radar_hide_dev_overlay', 'false'); } catch {} }}
-        className="fixed bottom-3 left-3 z-[95] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer"
+        className="fixed bottom-16 lg:bottom-3 left-3 z-[95] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer"
         title="دیباگر سیستم"
         aria-label="دیباگر سیستم"
       >
@@ -184,7 +184,7 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
     <div dir="rtl" className="fixed bottom-[148px] lg:bottom-3 left-3 z-[95] max-w-[95vw] sm:max-w-xl font-sans select-none">
       {!isOpen ? (
         <div className="flex items-center gap-1.5 bg-slate-900/95 text-white px-3 py-2 rounded-2xl shadow-2xl border border-slate-700/90 backdrop-blur-md text-xs">
-          <button type="button" onClick={() => setIsOpen(true)} className="flex items-center gap-2 font-extrabold cursor-pointer hover:text-emerald-300 transition">
+          <button type="button" onClick={() => setIsOpen(true)} aria-label="باز کردن دیباگر زنده سیستم" className="flex items-center gap-2 font-extrabold cursor-pointer hover:text-emerald-300 transition">
             <Bug className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>دیباگر زنده</span>
             <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${errors.length > 0 ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-300'}`}>{toPersianNum(errors.length)} خطا</span>
@@ -195,7 +195,7 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
             )}
             <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
           </button>
-          <button type="button" onClick={() => { setIsOpen(true); void runLiveAutoTests(); }} className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] font-extrabold flex items-center gap-1 cursor-pointer transition">
+          <button type="button" onClick={() => { setIsOpen(true); void runLiveAutoTests(); }} aria-label="اجرای تست‌های خودکار دیباگر سیستم" className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] font-extrabold flex items-center gap-1 cursor-pointer transition">
             <Play className="w-3 h-3" /><span>Run Auto-Test</span>
           </button>
           <button type="button" onClick={() => { setIsDismissed(true); try { localStorage.setItem('radar_hide_dev_overlay', 'true'); } catch {} }} className="p-1 text-slate-400 hover:text-white cursor-pointer ml-1" title="پنهان‌سازی" aria-label="پنهان‌سازی">

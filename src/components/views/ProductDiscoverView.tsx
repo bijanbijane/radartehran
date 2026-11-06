@@ -105,7 +105,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={isEn ? 'Search neighborhood or district...' : 'جست‌وجوی سریع نام محله یا منطقه...'} className="w-full pr-9 pl-7 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition" />
+            <input type="text" aria-label={isEn ? 'Search neighborhood or district' : 'جست‌وجوی سریع نام محله یا منطقه'} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={isEn ? 'Search neighborhood or district...' : 'جست‌وجوی سریع نام محله یا منطقه...'} className="w-full pr-9 pl-7 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-slate-900 dark:focus:border-white transition" />
             {query && <button type="button" aria-label="پاک کردن عبارت جستجو" onClick={() => setQuery('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
           </div>
           <div className="flex items-center gap-1 overflow-x-auto text-xs">
@@ -168,10 +168,10 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 
             return (
-              <div key={hood.id} onClick={() => p.onSelectNeighborhood(hood)} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col justify-between cursor-pointer ${isSelected ? 'border-emerald-600 dark:border-emerald-400 ring-1 ring-emerald-600 dark:ring-emerald-400 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}`}>
+              <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col justify-between ${isSelected ? 'border-emerald-600 dark:border-emerald-400 ring-1 ring-emerald-600 dark:ring-emerald-400 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}`}>
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
                       <div className="text-[11px] text-slate-400 font-medium">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)} از ۱۰</div>
                       <h3 className="text-base font-black text-slate-900 dark:text-white mt-0.5 flex items-center gap-1.5">
                         <span>محله {hood.name}</span>
@@ -231,8 +231,8 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
             const isSelected = hood.id === p.selectedHood.id;
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
             return (
-              <div key={hood.id} onClick={() => p.onSelectNeighborhood(hood)} className={`p-3.5 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${isSelected ? 'bg-emerald-50/50 dark:bg-emerald-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
-                <div className="flex items-center gap-3">
+              <div key={hood.id} className={`p-3.5 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${isSelected ? 'bg-emerald-50/50 dark:bg-emerald-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="flex items-center gap-3 cursor-pointer">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black tabular-nums ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'}`}>{toPersianNum(hood.overallScore)}</div>
                   <div>
                     <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">

@@ -222,7 +222,7 @@ export function AdminOverviewAndModerationTabs(
         </div>
         <div>
           <label className="block text-slate-600 dark:text-slate-300 mb-1">انتخاب محله:</label>
-          <select
+          <select aria-label="انتخاب محله جهت ویرایش قیمت"
             value={adminEditHoodId}
             onChange={(e) => {
               const nextId = Number(e.target.value);
@@ -243,11 +243,11 @@ export function AdminOverviewAndModerationTabs(
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-slate-600 dark:text-slate-300 mb-1">میانگین هر متر خرید (میلیون · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(adminEditHoodId, 'تهران', adminEditBuySqm, []).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد){areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(adminEditBuySqm, 'sqft'))} م/ft²` : ''}{fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))}:</label>
-            <input type="number" min={10} max={5000} value={adminEditBuySqm} onChange={(e) => setAdminEditBuySqm(clampNumber(e.target.value, 10, 5000, 130))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums" />
+            <input type="number" aria-label="میانگین هر متر خرید محله" min={10} max={5000} value={adminEditBuySqm} onChange={(e) => setAdminEditBuySqm(clampNumber(e.target.value, 10, 5000, 130))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums" />
           </div>
           <div>
             <label className="block text-slate-600 dark:text-slate-300 mb-1">رهن کامل {formatAreaShort(80, areaUnit)} (میلیون){fxTag(adminEditRahn80m)}: <span className="text-[10.5px] text-slate-500 dark:text-slate-400">(اجاره ماهانه: {toPersianNum(Math.round(adminEditRahn80m * 0.03))} م{fxTag(Math.round(adminEditRahn80m * 0.03))})</span></label>
-            <input type="number" min={0} max={100000} value={adminEditRahn80m} onChange={(e) => setAdminEditRahn80m(clampNumber(e.target.value, 0, 100000, 1400))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-extrabold tabular-nums" />
+            <input type="number" aria-label="رهن کامل ۸۰ متری محله" min={0} max={100000} value={adminEditRahn80m} onChange={(e) => setAdminEditRahn80m(clampNumber(e.target.value, 0, 100000, 1400))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-extrabold tabular-nums" />
           </div>
         </div>
         {adminPriceSavedMsg && (
@@ -275,7 +275,7 @@ export function AdminOverviewAndModerationTabs(
             <span>تغییر رمز عبور پنل مدیریت</span>
           </div>
           <div className="flex gap-2">
-            <input type="password" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} placeholder="رمز عبور جدید..." className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100" />
+            <input type="password" aria-label="رمز عبور جدید پنل مدیریت" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} placeholder="رمز عبور جدید..." className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100" />
             <button type="submit" className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold cursor-pointer">تغییر رمز</button>
           </div>
           {adminPassChangeMsg && <div className="text-emerald-700 dark:text-emerald-400 font-semibold">{adminPassChangeMsg}</div>}

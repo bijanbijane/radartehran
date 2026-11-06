@@ -114,7 +114,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                       {revealPhones ? 'پوشاندن شماره' : 'نمایش شماره'}
                     </button>
                   </div>
-                  <input type="search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="جست‌وجوی نام، موبایل یا کد مشتری..." className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" />
+                  <input type="search" aria-label="جست‌وجوی نام، موبایل یا کد مشتری" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="جست‌وجوی نام، موبایل یا کد مشتری..." className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" />
                   <div className="space-y-2">
                     {filteredCustomers.map((c) => (
                       <button key={c.customerId} type="button" onClick={() => setSelectedCustomerId(c.customerId)} className={`w-full rounded-lg border p-2.5 text-right transition ${selectedCustomerId === c.customerId ? 'border-emerald-500 bg-emerald-950/20' : 'border-slate-800 bg-slate-900'}`}>
@@ -138,7 +138,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                       setNewInteractionSubject(''); }}
                     className="flex gap-2"
                   >
-                    <input type="text" value={newInteractionSubject} onChange={(e) => setNewInteractionSubject(e.target.value)} placeholder="ثبت خلاصه تماس تلفنی یا جلسه حضوری جدید (۱۲۰۴)..." className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" />
+                    <input type="text" aria-label="خلاصه تماس تلفنی یا جلسه حضوری جدید" value={newInteractionSubject} onChange={(e) => setNewInteractionSubject(e.target.value)} placeholder="ثبت خلاصه تماس تلفنی یا جلسه حضوری جدید (۱۲۰۴)..." className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" />
                     <button type="submit" className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white"><PhoneCall className="h-3.5 w-3.5" /> ثبت تعامل</button>
                   </form>
                   <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-3">
@@ -226,7 +226,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                     <p className="text-[11px] text-slate-400">{approvalReq.beforeSummaryFa} ← {approvalReq.afterSummaryFa}{showIntl ? ` (${formatMillionTomanAsIntlCurrency(136.5, currency, locale)} ← ${formatMillionTomanAsIntlCurrency(116, currency, locale)})` : ''}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <input type="text" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="علت تایید یا رد..." className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" />
+                    <input type="text" aria-label="علت تایید یا رد درخواست" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="علت تایید یا رد..." className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" />
                     <button type="button" onClick={() => handleApprovalAction('APPROVED')} className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white">تأیید درخواست</button>
                     <button type="button" onClick={() => handleApprovalAction('REJECTED')} className="rounded-lg bg-rose-600 px-3 py-1.5 font-semibold text-white">رد درخواست</button>
                   </div>
@@ -256,8 +256,8 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
               <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                 <h3 className="mb-2 font-bold text-emerald-400">صندوق ارتباطات مشتری، مدیریت رضایت (Consent) و تضمین Idempotency (۱۲۴۰–۱۲۴۳)</h3>
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center gap-1.5 text-slate-200"><input type="checkbox" checked={consentGranted} onChange={(e) => setConsentGranted(e.target.checked)} /> رضایت صریح مشتری (cust-101) فعال است</label>
-                  <input type="text" value={idempotencyKeyInput} onChange={(e) => setIdempotencyKeyInput(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" dir="ltr" />
+                  <label className="inline-flex items-center gap-1.5 text-slate-200"><input type="checkbox" checked={consentGranted} onChange={(e) => setConsentGranted(e.target.checked)} aria-label="رضایت صریح مشتری جهت ارسال پیامک" /> رضایت صریح مشتری (cust-101) فعال است</label>
+                  <input type="text" aria-label="کلید Idempotency ارسال پیام" value={idempotencyKeyInput} onChange={(e) => setIdempotencyKeyInput(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" dir="ltr" />
                   <button type="button" onClick={handleSendTrackedMessage} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white"><Send className="h-3.5 w-3.5" /> ارسال پیام</button>
                 </div>
                 {msgFeedbackFa && <div className="mt-2 rounded bg-slate-900 p-2 text-[11px] text-sky-300">{msgFeedbackFa}</div>} </div>

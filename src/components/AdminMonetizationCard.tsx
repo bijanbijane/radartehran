@@ -161,7 +161,7 @@ export function AdminMonetizationCard({
 
           <div className="flex items-center gap-2 w-full sm:w-56">
             <input
-              type="range"
+              type="range" aria-label="تخفیف کمپین سراسری تعرفه تابلو محلات"
               min={0}
               max={100}
               step={5}

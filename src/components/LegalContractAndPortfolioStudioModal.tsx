@@ -96,6 +96,7 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
                 </div>
                 <input
                   type="search"
+                  aria-label="جست‌وجوی بند حقوقی"
                   value={taxonomySearch}
                   onChange={(e) => setTaxonomySearch(e.target.value)}
                   placeholder="جست‌وجوی بند حقوقی (فارسی یا شناسه انگلیسی)..."
@@ -130,7 +131,7 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
                   </span>
                 </div>
                 <textarea
-                  rows={2}
+                  rows={2} aria-label="متن نمونه قرارداد جهت تحلیل OCR"
                   value={rawContractSample}
                   onChange={(e) => {
                     setRawContractSample(e.target.value);
@@ -172,10 +173,10 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
               <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                 <h3 className="font-bold text-emerald-400">ماشین‌حساب اقساط وام و تسویه زودتر از موعد (۱۱۸۹–۱۱۹۰)</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <label className="block"><span className="text-slate-400">اصل وام (میلیون تومان){showIntl ? ` (${formatMillionTomanAsIntlCurrency(loanPrincipalMillion, currency, locale)})` : ''}</span><input type="number" value={loanPrincipalMillion} onChange={(e) => setLoanPrincipalMillion(Math.max(0, Number(e.target.value)))} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
-                  <label className="block"><span className="text-slate-400">نرخ سود اسمی سالانه (%)</span><input type="number" value={loanRatePercent} onChange={(e) => setLoanRatePercent(Math.max(0, Number(e.target.value)))} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
-                  <label className="block"><span className="text-slate-400">مدت بازپرداخت (ماه)</span><input type="number" value={loanTermMonths} onChange={(e) => setLoanTermMonths(Math.max(1, Number(e.target.value)))} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
-                  <label className="block"><span className="text-slate-400">پرداخت مازاد ماهانه (میلیون){showIntl ? ` (${formatMillionTomanAsIntlCurrency(extraMonthlyPrepayMillion, currency, locale)})` : ''}</span><input type="number" value={extraMonthlyPrepayMillion} onChange={(e) => setExtraMonthlyPrepayMillion(Math.max(0, Number(e.target.value)))} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
+                  <label className="block"><span className="text-slate-400">اصل وام (میلیون تومان){showIntl ? ` (${formatMillionTomanAsIntlCurrency(loanPrincipalMillion, currency, locale)})` : ''}</span><input type="number" value={loanPrincipalMillion} onChange={(e) => setLoanPrincipalMillion(Math.max(0, Number(e.target.value)))} aria-label="اصل مبلغ وام به میلیون تومان" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
+                  <label className="block"><span className="text-slate-400">نرخ سود اسمی سالانه (%)</span><input type="number" value={loanRatePercent} onChange={(e) => setLoanRatePercent(Math.max(0, Number(e.target.value)))} aria-label="نرخ سود اسمی وام مسکن به درصد" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
+                  <label className="block"><span className="text-slate-400">مدت بازپرداخت (ماه)</span><input type="number" value={loanTermMonths} onChange={(e) => setLoanTermMonths(Math.max(1, Number(e.target.value)))} aria-label="مدت بازپرداخت وام به ماه" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
+                  <label className="block"><span className="text-slate-400">پرداخت مازاد ماهانه (میلیون){showIntl ? ` (${formatMillionTomanAsIntlCurrency(extraMonthlyPrepayMillion, currency, locale)})` : ''}</span><input type="number" value={extraMonthlyPrepayMillion} onChange={(e) => setExtraMonthlyPrepayMillion(Math.max(0, Number(e.target.value)))} aria-label="مبلغ پرداخت مازاد ماهانه جهت تسویه زودتر" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
                 </div>
                 <div className="rounded-lg border border-slate-800 bg-slate-900 p-3 space-y-1">
                   <div>کل سود سناریوی پایه: {mortgageAndProceeds.baselineTotalInterestToman.toLocaleString('fa-IR')} تومان{showIntl ? ` (${formatMillionTomanAsIntlCurrency(mortgageAndProceeds.baselineTotalInterestToman / 1_000_000, currency, locale)})` : ''}</div>
@@ -186,8 +187,8 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
               <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                 <h3 className="font-bold text-sky-400">ماشین‌حساب خالص دریافتی فروشنده پس از کسر تعهدات (۱۱۹۱)</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <label className="block"><span className="text-slate-400">قیمت ناخالص فروش (میلیون تومان · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'} واحد {formatAreaShort(80, areaUnit)}: {Math.round(convertPricePerSqmToUnit(grossSaleMillion / 80, areaUnit)).toLocaleString('fa-IR')} م · معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, 'سعادت‌آباد', grossSaleMillion / 80, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString('fa-IR')} م){showIntl ? ` (${formatMillionTomanAsIntlCurrency(grossSaleMillion, currency, locale)})` : ''}</span><input type="number" value={grossSaleMillion} onChange={(e) => setGrossSaleMillion(Math.max(0, Number(e.target.value)))} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
-                  <label className="block"><span className="text-slate-400">حق‌الزحمه مشاور املاک (میلیون){showIntl ? ` (${formatMillionTomanAsIntlCurrency(brokerageFeeMillion, currency, locale)})` : ''}</span><input type="number" value={brokerageFeeMillion} onChange={(e) => setBrokerageFeeMillion(Math.max(0, Number(e.target.value)))} className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
+                  <label className="block"><span className="text-slate-400">قیمت ناخالص فروش (میلیون تومان · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'} واحد {formatAreaShort(80, areaUnit)}: {Math.round(convertPricePerSqmToUnit(grossSaleMillion / 80, areaUnit)).toLocaleString('fa-IR')} م · معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, 'سعادت‌آباد', grossSaleMillion / 80, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString('fa-IR')} م){showIntl ? ` (${formatMillionTomanAsIntlCurrency(grossSaleMillion, currency, locale)})` : ''}</span><input type="number" value={grossSaleMillion} onChange={(e) => setGrossSaleMillion(Math.max(0, Number(e.target.value)))} aria-label="قیمت ناخالص فروش ملک به میلیون تومان" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
+                  <label className="block"><span className="text-slate-400">حق‌الزحمه مشاور املاک (میلیون){showIntl ? ` (${formatMillionTomanAsIntlCurrency(brokerageFeeMillion, currency, locale)})` : ''}</span><input type="number" value={brokerageFeeMillion} onChange={(e) => setBrokerageFeeMillion(Math.max(0, Number(e.target.value)))} aria-label="حق‌الزحمه مشاور املاک به میلیون تومان" className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" /></label>
                 </div>
                 <div className="rounded-lg border border-slate-800 bg-slate-900 p-3 space-y-1">
                   <div>تسویه مانده وام فعلی: {(loanPrincipalMillion * 1_000_000).toLocaleString('fa-IR')} تومان{showIntl ? ` (${formatMillionTomanAsIntlCurrency(loanPrincipalMillion, currency, locale)})` : ''}</div>
@@ -224,11 +225,11 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
                   <p className="text-[11px] text-slate-400">تفکیک کامل فضای کاری سازمانی (Multi-Tenant) از حساب ناشر حقیقی</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select value={activeOrgId} onChange={(e) => setActiveOrgId(e.target.value as 'org-tehran-prime' | 'org-shemiran')} className="rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-white">
+                  <select aria-label="انتخاب آژانس املاک" value={activeOrgId} onChange={(e) => setActiveOrgId(e.target.value as 'org-tehran-prime' | 'org-shemiran')} className="rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-white">
                     <option value="org-tehran-prime">آژانس املاک تهران پرایم</option>
                     <option value="org-shemiran">هلدینگ مسکن شمیرانات</option>
                   </select>
-                  <select value={actorRole} onChange={(e) => setActorRole(e.target.value as 'ORG_ADMIN' | 'ORG_AGENT')} className="rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-white">
+                  <select aria-label="انتخاب نقش کاربری" value={actorRole} onChange={(e) => setActorRole(e.target.value as 'ORG_ADMIN' | 'ORG_AGENT')} className="rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-white">
                     <option value="ORG_ADMIN">نقش فعلی: مدیر آژانس (ORG_ADMIN)</option>
                     <option value="ORG_AGENT">نقش فعلی: مشاور (ORG_AGENT)</option>
                   </select>

@@ -55,7 +55,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2.5">
               <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white"><SlidersHorizontal className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" /><span>تنظیم بودجه، وام مسکن و محل کار</span></div>
               <div className="flex items-center gap-1.5">
-                {onOpenReverseBudgetModal && <button type="button" onClick={() => { onOpenReverseBudgetModal(); setMobileFilterOpen(false); }} className="px-2 py-1 rounded-[8px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-[10.5px] font-bold border border-indigo-200 dark:border-indigo-800 cursor-pointer">با بودجه من کجای تهران می‌تونم خانه بخرم؟</button>}
+                {onOpenReverseBudgetModal && <button type="button" onClick={() => { onOpenReverseBudgetModal(); setMobileFilterOpen(false); }} className="px-2 py-1 rounded-[8px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-[10.5px] font-bold border border-indigo-200 dark:border-indigo-800 cursor-pointer">با بودجه من کجای {MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟</button>}
                 <button type="button" onClick={() => { setShowOnboardingModal(true); setMobileFilterOpen(false); }} className="px-2 py-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-[10.5px] font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 cursor-pointer"><Compass className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /><span>راهنما</span></button>
                 <button type="button" aria-label="بستن تنظیمات بودجه" onClick={() => setMobileFilterOpen(false)} className="w-7 h-7 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer"><X className="w-3.5 h-3.5 stroke-[2]" /></button>
               </div>
@@ -67,43 +67,43 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-slate-600 dark:text-slate-300">مبلغ ودیعه (پول پیش):</span>
                       <div className="flex items-center gap-1.5">
-                        <input type="number" min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                        <input type="number" aria-label="مبلغ ودیعه" min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                         <span className="text-[10px] text-slate-400">میلیون ({intlCurrency === 'IRT' ? formatMillionToVerbalPersian(deposit) : formatMillionTomanAsIntlCurrency(deposit, intlCurrency, radarLocale)})</span>
                       </div>
                     </div>
-                    <input type="range" min={100} max={3500} step={50} value={deposit} onChange={(e) => setDeposit(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <input type="range" aria-label="اسلایدر مبلغ ودیعه" min={100} max={3500} step={50} value={deposit} onChange={(e) => setDeposit(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-slate-600 dark:text-slate-300">اجاره ماهانه (رهن کامل معادل: {toPersianNum(deposit + Math.round(monthlyRent / 0.03))} م):</span>
                       <div className="flex items-center gap-1.5">
-                        <input type="number" min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                        <input type="number" aria-label="اجاره ماهانه" min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(Math.max(0, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-20 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                         <span className="text-[10px] text-slate-400">میلیون</span>
                       </div>
                     </div>
-                    <input type="range" min={0} max={90} step={2} value={monthlyRent} onChange={(e) => setMonthlyRent(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <input type="range" aria-label="اسلایدر اجاره ماهانه" min={0} max={90} step={2} value={monthlyRent} onChange={(e) => setMonthlyRent(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
                   </div>
                 </>
               ) : ( <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-slate-600 dark:text-slate-300">بودجه کل خرید:</span>
                     <div className="flex items-center gap-1.5">
-                      <input type="number" min={1000} max={100000} step={250} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Math.max(500, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-24 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                      <input type="number" aria-label="بودجه کل خرید" min={1000} max={100000} step={250} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Math.max(500, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-24 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                       <span className="text-[10px] text-slate-400">میلیون ({intlCurrency === 'IRT' ? formatMillionToVerbalPersian(buyTotalBudget) : formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, radarLocale)})</span>
                     </div>
                   </div>
-                  <input type="range" min={3000} max={30000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                  <input type="range" aria-label="اسلایدر بودجه کل خرید" min={3000} max={30000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
                 </div> )}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-slate-600 dark:text-slate-300">متراژ مورد نظر ({mode === 'rent' ? 'اجاره' : 'خرید'} · {formatAreaShort(targetSqm, areaUnit)}):</span>
                   <div className="flex items-center gap-1.5">
                     <AreaUnitToggle compact />
-                    <input type="number" min={30} max={500} step={5} value={targetSqm} onChange={(e) => setTargetSqm(Math.max(25, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-16 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
+                    <input type="number" aria-label="متراژ مورد نظر" min={30} max={500} step={5} value={targetSqm} onChange={(e) => setTargetSqm(Math.max(25, normalizeFinancialInput(e.target.value)))} className="radar-tabular-num w-16 px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 tabular-nums focus:outline-none focus:border-emerald-600" />
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tabular-nums">{areaUnit === 'sqft' ? `≈ ${toPersianNum(convertAreaFromSqm(targetSqm, 'sqft'))} ft²` : formatAreaUnitLabel('sqm')}</span>
                   </div>
                 </div>
-                <input type="range" min={50} max={180} step={5} value={targetSqm} onChange={(e) => setTargetSqm(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                <input type="range" aria-label="اسلایدر متراژ مورد نظر" min={50} max={180} step={5} value={targetSqm} onChange={(e) => setTargetSqm(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
               </div>
               <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800">
                 <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">سن بنای هدف:</div>
@@ -118,7 +118,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                 </div>
               </div>
               {mode === 'buy' && ( <label className="flex items-start gap-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 cursor-pointer">
-                  <input type="checkbox" checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
+                  <input type="checkbox" checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} aria-label="کسر خودکار رهن مستأجر و ۱۰٪ تنفس سند" className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
                   <div className="text-[11px] leading-tight">
                     <span className="font-extrabold text-slate-900 dark:text-white">کسر خودکار رهن مستأجر + ۱۰٪ تنفس سند</span>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">رهن مستأجر و ۱۰٪ تحویل سند از نقدینگی موردنیاز کسر می‌گردد.</p>

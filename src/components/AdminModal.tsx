@@ -186,7 +186,7 @@ export function AdminModal(props: AdminModalProps) { const { open, onClose, admi
                     هویت ادمین تایید شد (<code className="font-mono">{currentUserEmail}</code>)
                   </div>
                   <input
-                    type="password"
+                    type="password" aria-label="رمز قفل جلسه پنل مدیریت"
                     value={adminPassInput}
                     onChange={(e) => setAdminPassInput(e.target.value)}
                     placeholder="رمز قفل جلسه (اختیاری در صورت تنظیم)..."

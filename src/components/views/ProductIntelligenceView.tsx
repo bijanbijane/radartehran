@@ -125,7 +125,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           <div className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">{isEn ? 'Requires strong negotiation' : 'احتیاط معاملاتی و چانه‌زنی بالا'}</div>
         </button>
 
-        <div onClick={p.onOpenPriceTrend} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 flex flex-col justify-between cursor-pointer transition group">
+        <button type="button" onClick={p.onOpenPriceTrend} className="p-5 rounded-2xl text-start bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 flex flex-col justify-between cursor-pointer transition group">
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
             <span>{isEn ? '04 · v6.4 Closing Discount' : '۰۴ · شکاف تخفیف قطعی v6.4'}</span>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 group-hover:underline">{isEn ? 'Trend ↗' : 'تحلیل روند ↗'}</span>
@@ -139,7 +139,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           <div className="text-[11px] text-slate-500 font-medium truncate">
             وضعیت: <strong className="text-slate-800 dark:text-slate-200">{selectedAgg.marketRegime === 'HOT' ? 'داغ و رقابتی' : selectedAgg.marketRegime === 'FROZEN' ? 'رکودی (به نفع خریدار)' : 'متعادل و پایدار'}</strong>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Selected Neighborhood Deep Analysis + Provenance */}
@@ -150,7 +150,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">محله {p.selectedHood.name} {p.selectedHood.zone ? `· ${p.selectedHood.zone}` : ''}</h3>
           </div>
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold tabular-nums" title="신뢰도 / ضریب اطمینان آماری و تعداد نمونه‌های پالایش‌شده">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold tabular-nums" title="ضریب اطمینان آماری و تعداد نمونه‌های پالایش‌شده">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>اطمینان {toPersianNum(selectedAgg.confidenceScore)}٪ · {toPersianNum(selectedAgg.validSampleCount)} نمونه معتبر</span>
             </span>
@@ -210,7 +210,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           </h3>
           <div className="relative w-full sm:w-64">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input type="text" value={segQuery} onChange={(e) => setSegQuery(e.target.value)} placeholder={isEn ? 'Filter segment...' : 'فیلتر سریع در این دسته...'} className="w-full pr-8 pl-6 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+            <input type="text" aria-label={isEn ? 'Filter segment' : 'فیلتر سریع در این دسته'} value={segQuery} onChange={(e) => setSegQuery(e.target.value)} placeholder={isEn ? 'Filter segment...' : 'فیلتر سریع در این دسته...'} className="w-full pr-8 pl-6 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
             {segQuery && <button type="button" aria-label="پاک کردن فیلتر دسته" onClick={() => setSegQuery('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
           </div>
         </div>
@@ -223,8 +223,8 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 
             return (
-              <div key={hood.id} onClick={() => p.onSelectNeighborhood(hood)} className={`p-4 rounded-xl bg-white dark:bg-slate-900 border transition cursor-pointer flex items-center justify-between ${isSelected ? 'border-emerald-600 dark:border-emerald-400 ring-1 ring-emerald-600 dark:ring-emerald-400' : 'border-slate-200 dark:border-slate-800 hover:border-slate-900 dark:hover:border-white'}`}>
-                <div>
+              <div key={hood.id} className={`p-4 rounded-xl bg-white dark:bg-slate-900 border transition flex items-center justify-between ${isSelected ? 'border-emerald-600 dark:border-emerald-400 ring-1 ring-emerald-600 dark:ring-emerald-400' : 'border-slate-200 dark:border-slate-800 hover:border-slate-900 dark:hover:border-white'}`}>
+                <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
                   <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
                     <span>محله {hood.name}</span>
                     {isSelected && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">فعال روی نقشه</span>}

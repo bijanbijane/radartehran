@@ -122,6 +122,7 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
       type="button"
       disabled={isExporting}
       onClick={handleExportPng}
+      aria-label={isExporting ? 'در حال ساخت تصویر گزارش محله' : 'دانلود کارت گرافیکی گزارش محله مناسب تلگرام و واتس‌اپ'}
       data-area-unit={areaUnit}
       data-intl-currency={intlCurrency}
       className="radar-interactive-chip inline-flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-50 cursor-pointer"

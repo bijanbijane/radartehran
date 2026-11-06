@@ -184,12 +184,12 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
         <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-dashed border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-bold cursor-pointer transition">
           <ImageIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>آپلود عکس ملک (تا {toPersianNum(maxImageMb)}MB · WebP)</span>
-          <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading} onChange={(e) => handleFileSelect(e, 'image')} className="hidden" />
+          <input type="file" aria-label="آپلود عکس ملک" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading} onChange={(e) => handleFileSelect(e, 'image')} className="hidden" />
         </label>
         <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-sky-50 dark:hover:bg-sky-950/50 border border-dashed border-sky-400 dark:border-sky-700 text-sky-800 dark:text-sky-300 font-bold cursor-pointer transition">
           <Film className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
           <span>آپلود فیلم ملک (تا {toPersianNum(maxVideoMb)}MB)</span>
-          <input type="file" accept="video/mp4,video/webm,video/quicktime" disabled={uploading} onChange={(e) => handleFileSelect(e, 'video')} className="hidden" />
+          <input type="file" aria-label="آپلود فیلم ملک" accept="video/mp4,video/webm,video/quicktime" disabled={uploading} onChange={(e) => handleFileSelect(e, 'video')} className="hidden" />
         </label>
         <button type="button" disabled={uploading} onClick={handleQuickDemoUpload} className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600/10 dark:bg-emerald-950/60 hover:bg-emerald-600/20 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 font-bold cursor-pointer transition">
           {uploading ? (
@@ -253,6 +253,7 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
                 </div>
                 <button
                   type="button"
+                  aria-label="حذف فایل از فضای ذخیره‌سازی"
                   onClick={() => { void handleRemoveItem(item.id); }} className="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 shrink-0 cursor-pointer"
                   title="حذف فایل از فضای ذخیره‌سازی"
                 >

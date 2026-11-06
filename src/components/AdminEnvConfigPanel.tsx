@@ -130,7 +130,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
             </div>
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">مدل پیش‌فرض پردازش (GEMINI_MODEL):</label>
-              <select
+              <select aria-label="مدل پیش‌فرض پردازش هوش مصنوعی"
                 value={geminiModel}
                 onChange={(e) => setGeminiModel(e.target.value)}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
@@ -153,7 +153,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">شناسه کانال یا گروه مقصد (TELEGRAM_CHANNEL_ID):</label>
               <input
-                type="text"
+                type="text" aria-label="شناسه کانال یا گروه مقصد تلگرام"
                 dir="ltr"
                 value={telegramChannelId}
                 onChange={(e) => setTelegramChannelId(e.target.value)}
@@ -176,7 +176,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">سرویس‌دهنده استوریج (PROVIDER):</label>
-              <select
+              <select aria-label="سرویس‌دهنده آبجکت استوریج"
                 value={storageProvider}
                 onChange={(e) => setStorageProvider(e.target.value as ObjectStorageProviderId)}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
@@ -192,7 +192,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">منطقه دیتاسنتر (REGION):</label>
               <input
-                type="text"
+                type="text" aria-label="منطقه دیتاسنتر استوریج"
                 dir="ltr"
                 value={storageRegion}
                 onChange={(e) => setStorageRegion(e.target.value)}
@@ -203,7 +203,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">دامنه عمومی CDN (PUBLIC_BASE_URL):</label>
               <input
-                type="text"
+                type="text" aria-label="دامنه عمومی CDN استوریج"
                 dir="ltr"
                 value={storagePublicUrl}
                 onChange={(e) => setStoragePublicUrl(e.target.value)}
@@ -216,14 +216,14 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">سقف عکس (MB):</label>
               <input
-                type="number"
+                type="number" aria-label="سقف حجم عکس به مگابایت"
                 min={1} max={25} value={maxImageMb} onChange={(e) => setMaxImageMb(Number(e.target.value))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
               />
             </div>
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">سقف ویدیو (MB):</label>
               <input
-                type="number"
+                type="number" aria-label="سقف حجم ویدیو به مگابایت"
                 min={5} max={200} value={maxVideoMb} onChange={(e) => setMaxVideoMb(Number(e.target.value))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
               />
             </div>

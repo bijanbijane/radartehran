@@ -88,7 +88,7 @@ export function NeighborhoodPriceTrendModal({
             {evaluatedNeighborhoods.length > 1 && onSelectNeighborhood && (
               <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs">
                 <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <select value={selectedHood.id} onChange={(e) => { const f = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value)); if (f) onSelectNeighborhood(f); }} className="bg-transparent font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer max-w-[140px] truncate">
+                <select aria-label={isEn ? 'Select neighborhood' : 'انتخاب محله'} value={selectedHood.id} onChange={(e) => { const f = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value)); if (f) onSelectNeighborhood(f); }} className="bg-transparent font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer max-w-[140px] truncate">
                   {evaluatedNeighborhoods.map((h) => <option key={h.id} value={h.id}>{h.name} ({h.zone}) — {toPersianNum(Number(convertPricePerSqmToUnit(h.buyPerSqm, areaUnit).toFixed(1)))} م</option>)}
                 </select>
               </div>

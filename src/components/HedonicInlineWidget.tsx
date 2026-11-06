@@ -120,6 +120,7 @@ export function HedonicInlineWidget({
           <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">متراژ ({formatAreaValue(sqm, areaUnit, true)})</label>
           <input
             type="number"
+            aria-label="متراژ واحد"
             min={35}
             max={400}
             value={sqm}
@@ -131,6 +132,7 @@ export function HedonicInlineWidget({
           <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">سال ساخت</label>
           <input
             type="number"
+            aria-label="سال ساخت"
             min={1370}
             max={1405}
             value={buildYear}
@@ -142,6 +144,7 @@ export function HedonicInlineWidget({
           <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">طبقه واحد</label>
           <input
             type="number"
+            aria-label="طبقه واحد"
             min={-1}
             max={25}
             value={floor}

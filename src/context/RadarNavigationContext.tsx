@@ -46,22 +46,33 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
     selectedHoodId ? 'HALF' : 'CLOSED'
   );
 
-  const [marketMode, setMarketMode] = useState<MarketMode>(() => {
+  const [marketMode, setMarketModeState] = useState<MarketMode>(() => {
     if (typeof window === 'undefined') return 'BUY';
     return new URLSearchParams(window.location.search).get('mode') === 'RENT' ? 'RENT' : 'BUY';
   });
 
-  const [activeTab, setActiveTab] = useState<InspectorTabId>('OVERVIEW');
+  const [activeTab, setActiveTabState] = useState<InspectorTabId>('OVERVIEW');
   const [activeModalId, setActiveModalId] = useState<string | null>(null);
   const [activeToast, setActiveToast] = useState<ToastMessage | null>(null);
   const toastTimerRef = useRef<number | null>(null);
+  const hasExplicitNavChangeRef = useRef<boolean>(false);
+
+  const setMarketMode = useCallback((mode: MarketMode) => {
+    hasExplicitNavChangeRef.current = true;
+    setMarketModeState(mode);
+  }, []);
+
+  const setActiveTab = useCallback((tab: InspectorTabId) => {
+    hasExplicitNavChangeRef.current = true;
+    setActiveTabState(tab);
+  }, []);
 
   // [RULE-15] Focus trapping is disabled in PEEK/HALF modes so the map stays interactive
   const isFocusTrapEnabled = activeModalId !== null || sheetDetent === 'FULL';
 
   // Sync state to URL Search Params without triggering full page reload [RULE-16]
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !hasExplicitNavChangeRef.current) return;
     const params = new URLSearchParams(window.location.search);
     if (selectedHoodId) params.set('hood', selectedHoodId);
     else params.delete('hood');
@@ -93,6 +104,7 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
 
   const selectNeighborhood = useCallback(
     (hoodId: string | null, initialDetent: InspectorSheetDetent = 'HALF') => {
+      hasExplicitNavChangeRef.current = true;
       setSelectedHoodId(hoodId);
       setSheetDetent(hoodId ? initialDetent : 'CLOSED');
       if (hoodId && typeof window !== 'undefined') {
@@ -103,6 +115,7 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
   );
 
   const openModal = useCallback((modalId: string) => {
+    hasExplicitNavChangeRef.current = true;
     setActiveModalId(modalId);
     if (typeof window !== 'undefined') {
       window.history.pushState({ modalId }, '');

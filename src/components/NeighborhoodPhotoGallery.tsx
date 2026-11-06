@@ -182,7 +182,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
               {activeItem.icon}
               <span>{activeItem.category}</span>
             </span>
-            <button type="button" onClick={() => setShowLightbox(true)} title={isEn ? 'Fullscreen' : 'مشاهده تمام‌صفحه'} className="p-1 rounded-[6px] bg-black/60 hover:bg-black/80 backdrop-blur-md text-white transition cursor-pointer pointer-events-auto">
+            <button type="button" onClick={() => setShowLightbox(true)} aria-label={isEn ? 'Fullscreen photo' : 'مشاهده تمام‌صفحه تصویر'} title={isEn ? 'Fullscreen' : 'مشاهده تمام‌صفحه'} className="p-1 rounded-[6px] bg-black/60 hover:bg-black/80 backdrop-blur-md text-white transition cursor-pointer pointer-events-auto">
               <Maximize2 className="w-3.5 h-3.5 stroke-[2]" />
             </button>
           </div>
@@ -228,7 +228,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1">
           {galleryItems.map((item, idx) => (
             <button
-              key={item.id} type="button" onClick={() => setActiveIndex(idx)}
+              key={item.id} type="button" onClick={() => setActiveIndex(idx)} aria-label={item.title} aria-pressed={activeIndex === idx}
               className={`relative rounded-[9px] overflow-hidden shrink-0 w-16 h-11 border-2 transition-all cursor-pointer ${
                 activeIndex === idx ? 'border-emerald-600 scale-105 shadow-xs' : 'border-slate-200 dark:border-slate-700 opacity-65 hover:opacity-100 hover:border-slate-400'
               }`}
@@ -240,14 +240,14 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
       </div>
 
       {showLightbox && (
-        <div onClick={() => setShowLightbox(false)} className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in-0 duration-200">
+        <div role="dialog" aria-modal="true" aria-label={activeItem.title} tabIndex={-1} onKeyDown={(e) => { if (e.key === 'Escape') setShowLightbox(false); }} onClick={() => setShowLightbox(false)} className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in-0 duration-200 focus:outline-none">
           <div onClick={(e) => e.stopPropagation()} className="relative max-w-xl w-full bg-slate-900 rounded-[20px] overflow-hidden border border-white/10 shadow-2xl space-y-3 p-4 text-white">
             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-emerald-400" />
                 <span className="font-black text-sm">{activeItem.title}</span>
               </div>
-              <button type="button" onClick={() => setShowLightbox(false)} className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer">
+              <button type="button" aria-label={isEn ? 'Close fullscreen image' : 'بستن تصویر تمام‌صفحه'} onClick={() => setShowLightbox(false)} className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer">
                 <X className="w-4 h-4 stroke-[2]" />
               </button>
             </div>

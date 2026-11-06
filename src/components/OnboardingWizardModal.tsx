@@ -142,14 +142,14 @@ export function OnboardingWizardModal({
                   <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{isEn ? 'Target Area:' : 'متراژ دلخواه شما:'}</span>
                   <div className="flex items-center gap-2">
                     <input
-                      type="number" min={30} max={400} value={targetSqm}
+                      type="number" aria-label={isEn ? 'Target area' : 'متراژ دلخواه'} min={30} max={400} value={targetSqm}
                       onChange={(e) => setTargetSqm(clampNumber(Number(e.target.value), 30, 400, 80))}
                       className="w-20 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden"
                     />
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">{areaUnit === 'sqft' ? formatAreaShort(targetSqm, 'sqft') : `${toPersianNum(targetSqm)} متر`}</span>
                   </div>
                 </div>
-                <input type="range" min={40} max={250} step={5} value={targetSqm} onChange={(e) => setTargetSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
+                <input type="range" aria-label={isEn ? 'Target area slider' : 'اسلایدر متراژ دلخواه'} min={40} max={250} step={5} value={targetSqm} onChange={(e) => setTargetSqm(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
               </div>
             </div>
           )}
@@ -162,7 +162,7 @@ export function OnboardingWizardModal({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{isEn ? 'Cash Budget (Million):' : 'کل بودجه نقدی در دسترس شما:'}</span>
                       <input
-                        type="number" min={500} max={150000} step={500} value={buyTotalBudget}
+                        type="number" aria-label={isEn ? 'Cash budget' : 'بودجه نقدی خرید'} min={500} max={150000} step={500} value={buyTotalBudget}
                         onChange={(e) => setBuyTotalBudget(clampNumber(Number(e.target.value), 500, 150000, 10500))}
                         className="w-28 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden"
                       />
@@ -174,17 +174,17 @@ export function OnboardingWizardModal({
                         </button>
                       ))}
                     </div>
-                    <input type="range" min={1000} max={40000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
+                    <input type="range" aria-label={isEn ? 'Cash budget slider' : 'اسلایدر بودجه نقدی خرید'} min={1000} max={40000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                   </div>
                   <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 space-y-3">
                     <label className="flex items-start gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 cursor-pointer">
-                      <input type="checkbox" checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} className="mt-0.5 rounded text-emerald-600" />
+                      <input type="checkbox" aria-label={isEn ? 'Deduct tenant deposit' : 'کسر خودکار رهن به مستأجر'} checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} className="mt-0.5 rounded text-emerald-600" />
                       <div className="text-xs">
                         <strong className="text-slate-900 dark:text-white block font-bold">{isEn ? 'Tenant Deposit Deduction' : 'کسر خودکار رهن به مستأجر + ۱۰٪ تنفس سند'}</strong>
                       </div>
                     </label>
                     <label className="flex items-start gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 cursor-pointer">
-                      <input type="checkbox" checked={useLoanBooster} onChange={(e) => setUseLoanBooster(e.target.checked)} className="mt-0.5 rounded text-emerald-600" />
+                      <input type="checkbox" aria-label={isEn ? 'Enable housing loan' : 'محاسبه با وام مسکن جعاله'} checked={useLoanBooster} onChange={(e) => setUseLoanBooster(e.target.checked)} className="mt-0.5 rounded text-emerald-600" />
                       <div className="text-xs">
                         <strong className="text-slate-900 dark:text-white block font-bold">{isEn ? 'Housing Loan (+1.2B Toman)' : 'محاسبه با وام مسکن جعاله (+۱.۲ میلیارد تومان)'}</strong>
                       </div>
@@ -200,12 +200,12 @@ export function OnboardingWizardModal({
                         {showIntl && <span className="font-normal text-[10px] text-emerald-700 dark:text-emerald-400 block" dir="ltr">{formatMillionTomanAsIntlCurrency(deposit, currency, locale)}</span>}
                       </span>
                       <input
-                        type="number" min={50} max={15000} step={50} value={deposit}
+                        type="number" aria-label={isEn ? 'Available deposit' : 'ودیعه در دسترس'} min={50} max={15000} step={50} value={deposit}
                         onChange={(e) => setDeposit(clampNumber(Number(e.target.value), 50, 15000, 500))}
                         className="w-24 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden"
                       />
                     </div>
-                    <input type="range" min={100} max={4000} step={50} value={deposit} onChange={(e) => setDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
+                    <input type="range" aria-label={isEn ? 'Available deposit slider' : 'اسلایدر ودیعه در دسترس'} min={100} max={4000} step={50} value={deposit} onChange={(e) => setDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                     <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/70 dark:border-slate-700">
                       <span>{isEn ? 'Monthly Rent Equiv:' : 'معادل اجاره ماهانه:'}</span>
                       <strong className="text-slate-800 dark:text-slate-200 tabular-nums">
@@ -233,7 +233,7 @@ export function OnboardingWizardModal({
                       const uBuy = convertPricePerSqmToUnit(effectiveBuySqm, areaUnit);
                       const uDeal = convertPricePerSqmToUnit(Math.round(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm * buyAgeMultiplier), areaUnit);
                       return (
-                        <div key={hood.id} onClick={() => handleFinish(hood)} className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
+                        <button key={hood.id} type="button" onClick={() => handleFinish(hood)} aria-label={isEn ? `Select ${hood.name}` : `انتخاب محله ${hood.name}`} className="p-2.5 rounded-xl text-start w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
                           <div>
                             <strong className="text-xs font-black text-slate-900 dark:text-white block">{hood.name}</strong>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -243,7 +243,7 @@ export function OnboardingWizardModal({
                           <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
                             ★ {toPersianNum(hood.overallScore)}
                           </span>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

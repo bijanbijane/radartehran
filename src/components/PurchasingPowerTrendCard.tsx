@@ -146,6 +146,7 @@ export function PurchasingPowerTrendCard({
                 showTrafficZones: !overlayState.showTrafficZones,
               })
             }
+            aria-label={overlayState.showMetroLines && overlayState.showTrafficZones ? 'مخفی‌سازی لایه‌های مترو و طرح ترافیک در نقشه' : 'نمایش خطوط مترو و محدوده طرح ترافیک روی نقشه'}
             className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold cursor-pointer transition shrink-0"
           >
             {overlayState.showMetroLines && overlayState.showTrafficZones

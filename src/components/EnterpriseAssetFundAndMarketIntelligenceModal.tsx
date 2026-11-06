@@ -150,7 +150,7 @@ import { evaluateOwnershipSeparationRegistryAndTitleConflicts, evaluateSettlemen
                   <button type="button" onClick={() => setSelfApproveAttempt((v) => !v)} className="px-2 py-1 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-[10.5px] font-bold cursor-pointer">SoD: {selfApproveAttempt ? 'تایید توسط ایجادکننده' : 'تایید بازرس مستقل'}</button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="text" dir="ltr" value={irrCashFlowsText} onChange={(e) => setIrrCashFlowsText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-[11px] font-mono" />
+                  <input type="text" dir="ltr" aria-label="جریان‌های نقدی جهت محاسبه IRR" value={irrCashFlowsText} onChange={(e) => setIrrCashFlowsText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-[11px] font-mono" />
                   <span className="font-bold text-indigo-700 dark:text-indigo-400">{b119FundResult.irr.status}</span>
                 </div>
               </div>
