@@ -47,7 +47,7 @@ export function validateOutboundServiceDestinationUrl(rawUrl: string): { allowed
   if (parsed.port && parsed.port !== '443') {
     return { allowed: false, hostname: parsed.hostname, reason: 'NON_STANDARD_OUTBOUND_PORT_FORBIDDEN' };
   }
-  const host = parsed.hostname.toLowerCase();
+  const host = parsed.hostname.toLowerCase().replace(/\.+$/, '');
   if (
     host === 'localhost' ||
     host === '169.254.169.254' ||
@@ -104,7 +104,7 @@ export function validateAndCreateBackgroundJob(params: {
   for (const k of keys) {
     if (forbiddenKeys.has(k)) return { ok: false, reason: `FORBIDDEN_JOB_PAYLOAD_KEY_${k}` };
     const v = params.payload[k];
-    if (typeof v !== 'string' && typeof v !== 'number' && typeof v !== 'boolean') {
+    if ((typeof v !== 'string' && typeof v !== 'number' && typeof v !== 'boolean') || (typeof v === 'number' && !Number.isFinite(v))) {
       return { ok: false, reason: `NON_PRIMITIVE_JOB_PAYLOAD_FIELD_${k}` };
     }
     if (typeof v === 'string' && v.length > 256) return { ok: false, reason: `OVERSIZED_JOB_PAYLOAD_STRING_${k}` };

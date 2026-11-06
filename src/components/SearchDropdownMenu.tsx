@@ -166,6 +166,9 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
                       />
                       <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#007AFF] transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
+                      {searchQuery.trim() && !n.name.includes(searchQuery.trim()) && (n.pros.includes(searchQuery.trim()) || (n.bargains?.[0]?.street && n.bargains[0].street.includes(searchQuery.trim()))) && (
+                        <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[9.5px] font-bold">زیرمحله / خیابان</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold tabular-nums">

@@ -95,7 +95,7 @@ export function estimatePropertyValueRangeFromComparables(params: {
   const seenProps = new Set<string>();
   const scored: Array<{ observationId: string; propertyId: string; priceBasis: 'ASKING_LISTING' | 'CONFIRMED_TRANSACTION'; similarityScore0To100: number; adjustedPerSqmToman: number; selectionReasonsFa: string[] }> = [];
   for (const c of candidates) {
-    if (c.propertyId === subject.propertyId || excludedObservationIds.includes(c.observationId) || c.propertyType !== subject.propertyType || c.districtId !== subject.districtId || seenProps.has(c.propertyId)) continue;
+    if (c.propertyId === subject.propertyId || excludedObservationIds.includes(c.observationId) || c.propertyType !== subject.propertyType || c.districtId !== subject.districtId || seenProps.has(c.propertyId) || !Number.isFinite(c.areaSqm) || c.areaSqm <= 0 || !Number.isFinite(c.totalPriceToman) || c.totalPriceToman <= 0) continue;
     const areaDiffRatio = Math.abs(c.areaSqm - subject.areaSqm) / subject.areaSqm;
     if (areaDiffRatio > 0.35) continue;
     seenProps.add(c.propertyId);
@@ -249,8 +249,8 @@ export function evaluateChronologicalForecastAndRisk(params: {
   vacancyRatePercent: number;
   concentrationSharePercent: number;
 }) {
-  const series = params.chronologicalMonthlyPerSqmToman;
-  const cpi = params.cpiIndexSeries;
+  const series = params.chronologicalMonthlyPerSqmToman.filter((v) => Number.isFinite(v) && v > 0);
+  const cpi = params.cpiIndexSeries.filter((v) => Number.isFinite(v) && v > 0);
   let inflationAdjustedGrowthPercent: number | null = null;
   if (series.length >= 2 && cpi.length === series.length && cpi[0] > 0 && cpi[cpi.length - 1] > 0) {
     const realStart = series[0] / cpi[0];

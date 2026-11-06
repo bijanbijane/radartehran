@@ -1,14 +1,14 @@
-import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { sanitizeInput, validateCityParam } from './security'; import { verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { pushAuditLog } from './serverMarketPulseEngine'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { evaluateCloudflareRuntimePortability } from './cloudflarePortabilityAndCapabilities'; import { OFFICIAL_AI_MODEL_REGISTRY, MANDATORY_AI_SIMULATION_BANNER, globalAiRoutingManager, buildCloudflareAiGatewayEndpoint, parseNaturalPersianHousingQuery, type RadarAiWorkflowId, } from './aiModelRegistryAndGateway'; import { RADAR_COMMERCIAL_PRODUCTS, REFERENCE_EXCHANGE_RATE, AUTHORIZED_MCP_TOOL_DESCRIPTORS, auditDatasetCommercialEligibility, buildX402PaymentChallenge, verifyX402PaymentHeaders, globalMonetizationLedger,
+import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam } from './security'; import { verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { pushAuditLog } from './serverMarketPulseEngine'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { evaluateCloudflareRuntimePortability } from './cloudflarePortabilityAndCapabilities'; import { OFFICIAL_AI_MODEL_REGISTRY, MANDATORY_AI_SIMULATION_BANNER, globalAiRoutingManager, buildCloudflareAiGatewayEndpoint, parseNaturalPersianHousingQuery, type RadarAiWorkflowId, } from './aiModelRegistryAndGateway'; import { RADAR_COMMERCIAL_PRODUCTS, REFERENCE_EXCHANGE_RATE, AUTHORIZED_MCP_TOOL_DESCRIPTORS, auditDatasetCommercialEligibility, buildX402PaymentChallenge, verifyX402PaymentHeaders, globalMonetizationLedger,
   executeAuthorizedMcpTool, } from './dataCommerceMcpAndMonetization'; import { readAndReconcileExecutionState } from './rmepExecutionStateEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; const registeredAiCommerceApps = new WeakSet<Express>(); export function registerAiAndCommerceRoutes( app: Express, deps: { checkRateLimit: (ip: string, bucket: RateBucketType, max: number, windowMs: number) => boolean; getClientIp: (req: Request) => string; }
-): void { if (registeredAiCommerceApps.has(app)) return; registeredAiCommerceApps.add(app); const { checkRateLimit, getClientIp } = deps; app.get('/api/admin/rmep-status', async (req: Request, res: Response) => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined> ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error',
+): void { if (registeredAiCommerceApps.has(app)) return; registeredAiCommerceApps.add(app); const { checkRateLimit, getClientIp } = deps; app.get('/api/admin/rmep-status', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined> ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error',
         code: auth.reason, message: 'مشاهده وضعیت اجرای مهندسی RMEP-001 نیازمند احراز هویت مدیر سیستم است.', }); return; } const rmep = readAndReconcileExecutionState();
-    res.status(200).json({ status: 'ok', ...rmep }); }); app.get('/api/admin/architecture-and-ai-registry', async (req: Request, res: Response) => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined>
+    res.status(200).json({ status: 'ok', ...rmep }); })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); }); app.get('/api/admin/architecture-and-ai-registry', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined>
     ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason, message: 'مشاهده مرکز هوش مصنوعی و تجارت داده نیازمند احراز هویت مدیر سیستم است.', }); return; }
     const routing = globalAiRoutingManager.getCurrentConfig(); const gatewayPreview = buildCloudflareAiGatewayEndpoint({ accountId: process.env.CLOUDFLARE_ACCOUNT_ID, gatewayId: process.env.CLOUDFLARE_AI_GATEWAY_ID, provider: 'google-ai-studio', modelId: routing.routes.intelligent_search, }); res.status(200).json({
       status: 'ok', cloudflareAndPortability: evaluateCloudflareRuntimePortability(process.env), aiModels: OFFICIAL_AI_MODEL_REGISTRY, aiRouting: routing,
       aiRoutingAuditTrail: globalAiRoutingManager.getAuditTrail().slice(0, 15), aiGatewayPreview: gatewayPreview, commercialProducts: RADAR_COMMERCIAL_PRODUCTS, exchangeRateReference: REFERENCE_EXCHANGE_RATE,
-      monetizationSummary: globalMonetizationLedger.getSummary(), rmepExecutionSummary: readAndReconcileExecutionState(), }); });
-  app.post('/api/admin/ai-routing', async (req: Request, res: Response) => { res.setHeader('Cache-Control', 'no-store');
+      monetizationSummary: globalMonetizationLedger.getSummary(), rmepExecutionSummary: readAndReconcileExecutionState(), }); })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); });
+  app.post('/api/admin/ai-routing', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store');
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) {
       recordAbuseSignal(getClientIp(req), 'auth_failure');
@@ -27,8 +27,8 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
     } catch (err) {
       res.status(400).json({ status: 'error', code: err instanceof Error ? err.message : 'INVALID_AI_ROUTING_UPDATE', message: 'شناسه مدل یا جریان کاری انتخاب‌شده معتبر نیست.' });
     }
-  });
-  app.post('/api/admin/ai-routing/rollback', async (req: Request, res: Response) => {
+  })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); });
+  app.post('/api/admin/ai-routing/rollback', (req: Request, res: Response) => { void (async () => {
     res.setHeader('Cache-Control', 'no-store');
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) {
@@ -44,7 +44,7 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
     } catch (err) {
       res.status(400).json({ status: 'error', code: err instanceof Error ? err.message : 'ROLLBACK_UNAVAILABLE', message: 'نسخه قبلی برای بازگشت (Rollback) ثبت نشده است.' });
     }
-  });
+  })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); }); });
   app.post('/api/v1/ai/intelligent-search', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     const ip = getClientIp(req);
@@ -129,8 +129,8 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
       return;
     }
     const verification = verifyX402PaymentHeaders({
-      paymentContextHeader: req.headers['payment-context'] as string | undefined,
-      paymentSignatureHeader: req.headers['payment-signature'] as string | undefined,
+      paymentContextHeader: (req.headers['payment-context'] ?? req.headers['x-payment-context']) as string | undefined,
+      paymentSignatureHeader: (req.headers['payment-signature'] ?? req.headers['x-payment-signature']) as string | undefined,
       expectedProductId: requestedDataset,
     });
     if (!verification.verified) {
@@ -232,7 +232,7 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
     const hoodId = Math.max(1, Number(req.params.hoodId) || 1);
     const city = validateCityParam(req.query.city, 'tehran');
     const hoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city].neighborhoods;
-    const hood = hoods.find((h) => h.id === hoodId) || hoods[0];
+    const hood = hoods.find((h) => h.id === hoodId) || getAllMultiCityNeighborhoods().find((h) => h.id === hoodId) || hoods[0];
     const productId = 'tehran_neighborhood_price_index_v1';
     if (req.query.simulate === '1') {
       const sim = globalMonetizationLedger.runPaymentSimulation(productId);
@@ -244,8 +244,8 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
       return;
     }
     const verification = verifyX402PaymentHeaders({
-      paymentContextHeader: req.headers['payment-context'] as string | undefined,
-      paymentSignatureHeader: req.headers['payment-signature'] as string | undefined,
+      paymentContextHeader: (req.headers['payment-context'] ?? req.headers['x-payment-context']) as string | undefined,
+      paymentSignatureHeader: (req.headers['payment-signature'] ?? req.headers['x-payment-signature']) as string | undefined,
       expectedProductId: productId,
     });
     if (!verification.verified) {

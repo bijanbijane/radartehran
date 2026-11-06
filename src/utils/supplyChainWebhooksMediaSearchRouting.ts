@@ -66,7 +66,7 @@ export class InboundWebhookAuthenticator {
       return { accepted: false, statusCode: 413, reason: 'PAYLOAD_TOO_LARGE' };
     }
     const nowSec = params.nowSec ?? Math.floor(Date.now() / 1000);
-    if (Math.abs(nowSec - params.timestampSec) > this.maxTimestampSkewSec) {
+    if (!Number.isFinite(params.timestampSec) || !Number.isFinite(nowSec) || Math.abs(nowSec - params.timestampSec) > this.maxTimestampSkewSec) {
       return { accepted: false, statusCode: 401, reason: 'TIMESTAMP_OUTSIDE_REPLAY_WINDOW' };
     }
     const expectedPrimary = this.computeSignatureHex(params.rawBodyBuffer, params.timestampSec, this.primarySecret);
@@ -109,6 +109,8 @@ export function inspectAndSanitizeImageUploadBuffer(
   if (declaredDimensions) {
     const totalPixels = declaredDimensions.width * declaredDimensions.height;
     if (
+      !Number.isFinite(declaredDimensions.width) ||
+      !Number.isFinite(declaredDimensions.height) ||
       declaredDimensions.width <= 0 ||
       declaredDimensions.height <= 0 ||
       declaredDimensions.width > 12_000 ||

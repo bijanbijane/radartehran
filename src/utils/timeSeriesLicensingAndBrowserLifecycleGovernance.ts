@@ -13,7 +13,7 @@ export interface DownsampledChartPoint extends TimeSeriesPoint { pointOrigin: 'r
 export function computeSeasonallyAdjustedSeries( monthlyObservations: Array<{ monthIndex1to12: number; rawValue: number }>, calculationVersion = 'seasonal-v1'
 ): { eligibleForSeasonalAdjustment: boolean; reason?: string; calculationVersion: string; points: Array<{ monthIndex1to12: number; rawObserved: number; seasonalIndex: number; seasonallyAdjusted: number }>; } { if (monthlyObservations.length < 12) {
     return { eligibleForSeasonalAdjustment: false, reason: 'INSUFFICIENT_TEMPORAL_DEPTH_REQUIRES_12_MONTHS', calculationVersion, points: [], }; }
-  const mean = monthlyObservations.reduce((s, p) => s + p.rawValue, 0) / monthlyObservations.length; if (mean <= 0) { return { eligibleForSeasonalAdjustment: false, reason: 'NON_POSITIVE_SERIES_MEAN', calculationVersion, points: [] }; }
+  const mean = monthlyObservations.reduce((s, p) => s + p.rawValue, 0) / monthlyObservations.length; if (!Number.isFinite(mean) || mean <= 0 || monthlyObservations.some((p) => !Number.isFinite(p.rawValue) || p.rawValue < 0)) { return { eligibleForSeasonalAdjustment: false, reason: 'NON_POSITIVE_SERIES_MEAN', calculationVersion, points: [] }; }
   const IRAN_HOUSING_SEASONAL_FACTORS: Record<number, number> = { 1: 0.94, 2: 1.03, 3: 1.05, 4: 1.07, 5: 1.08, 6: 1.06, 7: 0.98, 8: 0.96, 9: 0.95, 10: 0.94, 11: 0.96, 12: 0.98, };
   const points = monthlyObservations.map((obs) => { const seasonalIndex = IRAN_HOUSING_SEASONAL_FACTORS[obs.monthIndex1to12] || 1.0; return { monthIndex1to12: obs.monthIndex1to12,
       rawObserved: obs.rawValue, seasonalIndex, seasonallyAdjusted: Number((obs.rawValue / seasonalIndex).toFixed(1)), };

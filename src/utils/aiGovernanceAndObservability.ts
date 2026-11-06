@@ -86,7 +86,11 @@ export function evaluateAiOutputGroundednessAndAccuracy(params: {
   if (!text.includes(params.requiredNeighborhoodName)) {
     reasons.push(`Missing target neighborhood name: ${params.requiredNeighborhoodName}`);
   }
-  const matches = text.match(/\b\d+(?:\.\d+)?\b/g) || [];
+  const normalizedDigitsText = text
+    .split(params.requiredNeighborhoodName).join(' ')
+    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+  const matches = normalizedDigitsText.match(/(?:^|[^\d.])(\d+(?:\.\d+)?)(?=[^\d.]|$)/g)?.map((s) => s.replace(/^[^\d.]+/, '')) || [];
   const hallucinatedNumbers: number[] = [];
   for (const m of matches) {
     const num = Number(m);
@@ -186,8 +190,8 @@ export class AiTokenUsageAndCostLedger {
     inputTokens: number; outputTokens: number;
     tokenAccountingBasis: 'PROVIDER_REPORTED' | 'CHARACTER_HEURISTIC_ESTIMATE'; succeeded: boolean;
   }): AiUsageEntry {
-    const billableInput = params.succeeded ? Math.max(0, params.inputTokens) : 0;
-    const billableOutput = params.succeeded ? Math.max(0, params.outputTokens) : 0;
+    const billableInput = params.succeeded && Number.isFinite(params.inputTokens) ? Math.max(0, params.inputTokens) : 0;
+    const billableOutput = params.succeeded && Number.isFinite(params.outputTokens) ? Math.max(0, params.outputTokens) : 0;
     const estimatedCostUsdMicros = Math.round(billableInput * 0.1 + billableOutput * 0.4);
     if (params.succeeded) {
       if (!this.userWindowTokens.has(params.userId) && this.userWindowTokens.size >= 5000) {

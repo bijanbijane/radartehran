@@ -56,12 +56,10 @@ export function evaluateTenantApplicationAmendmentAndRentEscalation(params: {
       : 'NO_LEASE_CREATED';
 
   const esc = params.rentEscalationInput;
-  const escalatedAmount = Math.round(
-    esc.preservedOriginalMonthlyRentToman * (1 + esc.escalationPercent / 100)
-  );
-  const effectiveCurrentRentToman = esc.isAmendmentApprovedAndEffective
-    ? escalatedAmount
-    : esc.preservedOriginalMonthlyRentToman;
+  const baseRent = Number.isFinite(esc.preservedOriginalMonthlyRentToman) ? Math.max(0, esc.preservedOriginalMonthlyRentToman) : 0;
+  const escPct = Number.isFinite(esc.escalationPercent) ? esc.escalationPercent : 0;
+  const escalatedAmount = Math.round(baseRent * (1 + escPct / 100));
+  const effectiveCurrentRentToman = esc.isAmendmentApprovedAndEffective ? escalatedAmount : baseRent;
 
   return {
     tenantIdentityVerified,
@@ -72,7 +70,7 @@ export function evaluateTenantApplicationAmendmentAndRentEscalation(params: {
       autoExecutedAgreementFromApplication: false,
     },
     rentEscalationOutcome: {
-      preservedHistoricalRentToman: esc.preservedOriginalMonthlyRentToman,
+      preservedHistoricalRentToman: baseRent,
       effectiveCurrentRentToman,
       unapprovedEscalationAppliedToObligations: false,
     },
@@ -136,7 +134,7 @@ export function evaluateDepositDeductionArrearsChequesAndAlerts(params: {
   let undisputedOverdueArrearsToman = 0;
   let disputedQuarantinedBalanceToman = 0;
   for (const r of params.receivablesLedger) {
-    if (r.daysOverdue <= 0) continue;
+    if (!Number.isFinite(r.daysOverdue) || r.daysOverdue <= 0 || !Number.isFinite(r.amountToman) || r.amountToman <= 0) continue;
     if (r.isDisputedByTenant) {
       disputedQuarantinedBalanceToman += r.amountToman;
     } else {
@@ -149,10 +147,11 @@ export function evaluateDepositDeductionArrearsChequesAndAlerts(params: {
   let bouncedReturnedChequesCount = 0;
 
   for (const chq of params.rentalChequeInstruments) {
+    const amt = Number.isFinite(chq.amountToman) && chq.amountToman > 0 ? chq.amountToman : 0;
     if (chq.status === 'CLEARED_SETTLED') {
-      clearedSettledCashFromChequesToman += chq.amountToman;
+      clearedSettledCashFromChequesToman += amt;
     } else if (chq.status === 'RECEIVED_IN_CUSTODY' || chq.status === 'DEPOSITED_TO_BANK') {
-      unclearedPendingChequesToman += chq.amountToman;
+      unclearedPendingChequesToman += amt;
     } else if (chq.status === 'RETURNED_BOUNCED') {
       bouncedReturnedChequesCount += 1;
     }

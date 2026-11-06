@@ -18,7 +18,11 @@ export function registerAndReplaceBuildingEquipment(params: { existingRegistry: 
     params.newEquipment.replacesEquipmentId && item.equipmentId === params.newEquipment.replacesEquipmentId
       ? { ...item, status: 'REPLACED_HISTORICAL' as const, replacedByEquipmentId: params.newEquipment.equipmentId }
       : item );
-  const warrantyExpired = Date.parse(params.newEquipment.warrantyExpiresIso) < Date.parse(params.nowIso); nextRegistry.push({
+  const wExpMs = Date.parse(params.newEquipment.warrantyExpiresIso);
+  const nowMs = Date.parse(params.nowIso);
+  const validWarrantyDates = Number.isFinite(wExpMs) && Number.isFinite(nowMs);
+  const warrantyExpired = !validWarrantyDates || wExpMs < nowMs;
+  nextRegistry.push({
     equipmentId: params.newEquipment.equipmentId, buildingId: params.newEquipment.buildingId, category: params.newEquipment.category, serialNumber: normalizedSerial,
     equipmentOwnerId: params.newEquipment.equipmentOwnerId, serviceResponsiblePartyId: params.newEquipment.serviceResponsiblePartyId,
     warrantyExpiresIso: params.newEquipment.warrantyExpiresIso, status: 'ACTIVE', replacedByEquipmentId: null,
@@ -38,29 +42,31 @@ export function calculateAssetAccountingDepreciation(params: {
 }) {
   const areaUnit = params.areaUnit ?? getStoredAreaUnit();
   const intlCurrency = params.intlCurrency ?? getStoredIntlCurrency();
-  const depreciableBase = Math.max(
-    0,
-    params.totalAcquisitionCostToman - params.nonDepreciableLandAllocationToman + params.capitalizedImprovementsToman - params.residualSalvageValueToman
-  );
-  const safeLife = Math.max(1, params.usefulLifeMonths);
+  const acq = Number.isFinite(params.totalAcquisitionCostToman) && params.totalAcquisitionCostToman >= 0 ? params.totalAcquisitionCostToman : 0;
+  const land = Number.isFinite(params.nonDepreciableLandAllocationToman) && params.nonDepreciableLandAllocationToman >= 0 ? params.nonDepreciableLandAllocationToman : 0;
+  const cap = Number.isFinite(params.capitalizedImprovementsToman) && params.capitalizedImprovementsToman >= 0 ? params.capitalizedImprovementsToman : 0;
+  const salv = Number.isFinite(params.residualSalvageValueToman) && params.residualSalvageValueToman >= 0 ? params.residualSalvageValueToman : 0;
+  const depreciableBase = Math.max(0, acq - land + cap - salv);
+  const safeLife = Math.max(1, Number.isFinite(params.usefulLifeMonths) ? params.usefulLifeMonths : 1);
+  const elapsed = Math.max(0, Number.isFinite(params.elapsedServiceMonths) ? params.elapsedServiceMonths : 0);
+  const currPeriod = Math.max(0, Number.isFinite(params.currentPeriodMonths) ? params.currentPeriodMonths : 0);
   const monthlyStraightLine = depreciableBase / safeLife;
   let periodDepreciation = 0;
   let accumulatedPrior = 0;
   if (params.method === 'STRAIGHT_LINE') {
-    accumulatedPrior = Math.min(depreciableBase, Math.round(monthlyStraightLine * params.elapsedServiceMonths));
+    accumulatedPrior = Math.min(depreciableBase, Math.round(monthlyStraightLine * elapsed));
     const remainingDepreciable = Math.max(0, depreciableBase - accumulatedPrior);
-    periodDepreciation = Math.min(remainingDepreciable, Math.round(monthlyStraightLine * params.currentPeriodMonths));
+    periodDepreciation = Math.min(remainingDepreciable, Math.round(monthlyStraightLine * currPeriod));
   } else {
-    const monthlyRate = 2 / safeLife;
-    const grossDepreciableComponent =
-      params.totalAcquisitionCostToman - params.nonDepreciableLandAllocationToman + params.capitalizedImprovementsToman;
-    const bookBefore = grossDepreciableComponent * Math.pow(1 - monthlyRate, params.elapsedServiceMonths);
-    const bookAfter = Math.max(params.residualSalvageValueToman, bookBefore * Math.pow(1 - monthlyRate, params.currentPeriodMonths));
+    const monthlyRate = Math.min(1, 2 / safeLife);
+    const grossDepreciableComponent = acq - land + cap;
+    const bookBefore = grossDepreciableComponent * Math.pow(1 - monthlyRate, elapsed);
+    const bookAfter = Math.max(salv, bookBefore * Math.pow(1 - monthlyRate, currPeriod));
     accumulatedPrior = Math.max(0, Math.round(grossDepreciableComponent - bookBefore));
     periodDepreciation = Math.max(0, Math.round(bookBefore - bookAfter));
   }
   const totalAccumulatedDepreciationToman = accumulatedPrior + periodDepreciation;
-  const accountingCarryingValueToman = params.totalAcquisitionCostToman + params.capitalizedImprovementsToman - totalAccumulatedDepreciationToman;
+  const accountingCarryingValueToman = acq + cap - totalAccumulatedDepreciationToman;
   const isDuplicatePosting = params.alreadyPostedPeriodKeys.has(params.periodKey);
   return {
     assetId: params.assetId,
@@ -100,9 +106,12 @@ export function evaluateBuildingOperatorAssignment(params: {
 }) {
   const propStart = Date.parse(params.proposedAssignment.effectiveFromIso);
   const propEnd = Date.parse(params.proposedAssignment.effectiveToIso);
-  const hasOverlap = params.existingAssignments.some((a) => {
+  const datesValid = Number.isFinite(propStart) && Number.isFinite(propEnd) && propStart < propEnd;
+  const hasOverlap = datesValid && params.existingAssignments.some((a) => {
     if (a.buildingId !== params.proposedAssignment.buildingId || a.role !== params.proposedAssignment.role) return false;
-    return propStart < Date.parse(a.effectiveToIso) && propEnd > Date.parse(a.effectiveFromIso);
+    const aFrom = Date.parse(a.effectiveFromIso);
+    const aTo = Date.parse(a.effectiveToIso);
+    return Number.isFinite(aFrom) && Number.isFinite(aTo) && propStart < aTo && propEnd > aFrom;
   });
   return {
     hasRoleOverlapConflict: hasOverlap,
@@ -118,22 +127,20 @@ export function allocateBuildingServiceCharges(params: {
   approvedBudgetToman: number;
   actualOperatingExpenseToman: number;
   alreadyIssuedPeriodKeys: ReadonlySet<string>;
-  units: Array<{
-    unitId: string;
-    areaSqm: number;
-    ownershipSharePercent: number;
-    isVacant: boolean;
-    collectedPaymentToman: number;
-  }>;
+  units: Array<{ unitId: string; areaSqm: number; ownershipSharePercent: number; isVacant: boolean; collectedPaymentToman: number; }>;
 }) {
   const duplicateKey = `${params.buildingId}:${params.billingPeriodKey}:${params.allocationMethod}`;
   if (params.alreadyIssuedPeriodKeys.has(duplicateKey)) {
     return { status: 'DUPLICATE_BILLING_PERIOD_BLOCKED' as const, unitCharges: [], reconciliationDeltaToman: 0 };
   }
+  const approvedBudget = Number.isFinite(params.approvedBudgetToman) && params.approvedBudgetToman >= 0 ? params.approvedBudgetToman : 0;
+  const actualExpense = Number.isFinite(params.actualOperatingExpenseToman) && params.actualOperatingExpenseToman >= 0 ? params.actualOperatingExpenseToman : 0;
   const weights = params.units.map((u) => {
-    if (params.allocationMethod === 'AREA_SQM') return Math.max(1, u.areaSqm);
-    if (params.allocationMethod === 'OWNERSHIP_SHARE') return Math.max(0.01, u.ownershipSharePercent);
-    if (params.allocationMethod === 'VACANT_DISCOUNTED_AREA') return Math.max(1, u.areaSqm) * (u.isVacant ? 0.5 : 1.0);
+    const area = Number.isFinite(u.areaSqm) && u.areaSqm > 0 ? u.areaSqm : 1;
+    const share = Number.isFinite(u.ownershipSharePercent) && u.ownershipSharePercent > 0 ? u.ownershipSharePercent : 0.01;
+    if (params.allocationMethod === 'AREA_SQM') return Math.max(1, area);
+    if (params.allocationMethod === 'OWNERSHIP_SHARE') return Math.max(0.01, share);
+    if (params.allocationMethod === 'VACANT_DISCOUNTED_AREA') return Math.max(1, area) * (u.isVacant ? 0.5 : 1.0);
     return 1;
   });
   const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
@@ -141,20 +148,21 @@ export function allocateBuildingServiceCharges(params: {
   const unitCharges = params.units.map((u, idx) => {
     const isLast = idx === params.units.length - 1;
     const allocatedChargeToman = isLast
-      ? params.actualOperatingExpenseToman - runningAllocated
-      : Math.round((params.actualOperatingExpenseToman * weights[idx]) / totalWeight);
+      ? actualExpense - runningAllocated
+      : Math.round((actualExpense * weights[idx]) / totalWeight);
     runningAllocated += allocatedChargeToman;
-    const outstandingReceivableToman = Math.max(0, allocatedChargeToman - u.collectedPaymentToman);
+    const collected = Number.isFinite(u.collectedPaymentToman) && u.collectedPaymentToman >= 0 ? u.collectedPaymentToman : 0;
+    const outstandingReceivableToman = Math.max(0, allocatedChargeToman - collected);
     return {
       unitId: u.unitId,
       isVacant: u.isVacant,
       allocatedChargeToman,
-      collectedPaymentToman: u.collectedPaymentToman,
+      collectedPaymentToman: collected,
       outstandingReceivableToman,
       paymentStatus:
-        u.collectedPaymentToman >= allocatedChargeToman
+        collected >= allocatedChargeToman
           ? ('PAID_CONFIRMED' as const)
-          : u.collectedPaymentToman > 0
+          : collected > 0
           ? ('PARTIALLY_PAID' as const)
           : ('ISSUED_UNPAID' as const),
     };
@@ -162,15 +170,10 @@ export function allocateBuildingServiceCharges(params: {
   const totalAllocatedToman = unitCharges.reduce((s, u) => s + u.allocatedChargeToman, 0);
   const totalCollectedToman = unitCharges.reduce((s, u) => s + u.collectedPaymentToman, 0);
   return {
-    status: 'ISSUED_AND_RECONCILED' as const,
-    allocationRuleVersion: params.allocationRuleVersion,
-    approvedBudgetToman: params.approvedBudgetToman,
-    actualOperatingExpenseToman: params.actualOperatingExpenseToman,
-    totalAllocatedToman,
-    totalCollectedToman,
-    totalOutstandingReceivablesToman: totalAllocatedToman - totalCollectedToman,
-    reconciliationDeltaToman: params.actualOperatingExpenseToman - totalAllocatedToman,
-    unitCharges,
+    status: 'ISSUED_AND_RECONCILED' as const, allocationRuleVersion: params.allocationRuleVersion,
+    approvedBudgetToman: approvedBudget, actualOperatingExpenseToman: actualExpense,
+    totalAllocatedToman, totalCollectedToman, totalOutstandingReceivablesToman: totalAllocatedToman - totalCollectedToman,
+    reconciliationDeltaToman: actualExpense - totalAllocatedToman, unitCharges,
   };
 }
 export function validateMeterAndAllocateUtilityCosts(params: {

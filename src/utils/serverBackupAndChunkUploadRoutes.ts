@@ -1,4 +1,4 @@
-import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'node:path'; import type { Express, Request, Response } from 'express'; import { sanitizeInput, validateCityParam, isValidFirestoreDocId } from './security'; import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { resolveBackupEncryptionKeysFromEnv, createAuthenticatedEncryptedBackup, decryptAndVerifyEncryptedBackupWithRotation, type EncryptedBackupEnvelope } from './serverAdminSodAndBackupSecurity'; import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse'; import { getClientIp as resolveClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; import { BUCKET_DIR, ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow, reserveUploadCapacity, writeFileAtomically } from './serverObjectStorageHelpers'; import { validateMediaMagicBytesAndExtension, validateVideoContainerSafety } from './fileSignature'; import { buildListingObjectKey, buildObjectStorageKey } from './objectStorage'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface BackupVersionMetadata { versionId: string; createdAtIso: string; createdByEmail: string; schemaVersion: string; encryptionFormatVersion: string; manifestHmacSha256: string;
+import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'node:path'; import type { Express, Request, Response } from 'express'; import { sanitizeInput, validateCityParam, isValidFirestoreDocId } from './security'; import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { resolveBackupEncryptionKeysFromEnv, createAuthenticatedEncryptedBackup, decryptAndVerifyEncryptedBackupWithRotation, type EncryptedBackupEnvelope } from './serverAdminSodAndBackupSecurity'; import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse'; import { getClientIp as resolveClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; import { BUCKET_DIR, ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow, reserveUploadCapacity, writeFileAtomically } from './serverObjectStorageHelpers'; import { deleteFromRemoteS3Compatible, resolveObjectStorageRuntimeConfig, uploadToRemoteS3Compatible } from './objectStorageUpload'; import { validateMediaMagicBytesAndExtension, validateVideoContainerSafety } from './fileSignature'; import { buildListingObjectKey, buildObjectStorageKey } from './objectStorage'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface BackupVersionMetadata { versionId: string; createdAtIso: string; createdByEmail: string; schemaVersion: string; encryptionFormatVersion: string; manifestHmacSha256: string;
   recordCounts: { neighborhoods: number; bargains: number; sponsorRequests: number }; } const backupVersionHistory: BackupVersionMetadata[] = []; export function getBackupVersionHistoryMetadata(): readonly BackupVersionMetadata[] { return backupVersionHistory; }
 export type ExternalIntegrationId = 'gemini_ai' | 'market_scraper' | 'telegram_bot' | 'remote_s3_storage'; export type CircuitBreakerState = 'enabled' | 'temporarily_disabled' | 'degraded' | 'recovery_testing'; const integrationCircuitBreakers: Record<
   ExternalIntegrationId, { state: CircuitBreakerState; updatedAtIso: string; updatedByEmail: string; reason: string } > = { gemini_ai: { state: 'enabled', updatedAtIso: new Date(0).toISOString(), updatedByEmail: 'system', reason: 'initial' }, market_scraper: { state: 'enabled', updatedAtIso: new Date(0).toISOString(), updatedByEmail: 'system', reason: 'initial' }, telegram_bot: { state: 'enabled', updatedAtIso: new Date(0).toISOString(), updatedByEmail: 'system', reason: 'initial' }, remote_s3_storage: { state: 'enabled', updatedAtIso: new Date(0).toISOString(), updatedByEmail: 'system', reason: 'initial' }, }; export function getIntegrationCircuitBreakerState(id: ExternalIntegrationId): { state: CircuitBreakerState; updatedAtIso: string; updatedByEmail: string; reason: string; coreSecurityRemainsActive: true; } { return { ...integrationCircuitBreakers[id], coreSecurityRemainsActive: true }; }
@@ -51,7 +51,7 @@ export function registerBackupAndChunkUploadRoutes(
       if (!validIds.includes(id) || !validStates.includes(state)) { res.status(400).json({ status: 'error', code: 'INVALID_CIRCUIT_BREAKER_TARGET_OR_STATE' }); return; }
       const updated = setIntegrationCircuitBreakerState(id, state, auth.actorEmail || 'primary-admin', req.body?.reason || '');
       res.status(200).json({ status: 'ok', circuitBreaker: updated });
-    })();
+    })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
   });
   app.post('/api/admin/backup/export', (req: Request, res: Response) => {
     void (async () => {
@@ -76,7 +76,7 @@ export function registerBackupAndChunkUploadRoutes(
       res.setHeader('Content-Disposition', `attachment; filename="radar-backup-${versionId}.enc.json"`);
       recordLiveAdminSecurityAudit({ action: 'ENCRYPTED_BACKUP_EXPORT', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: versionId });
       res.status(200).json({ status: 'ok', versionId, envelope });
-    })();
+    })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
   });
   app.post('/api/admin/backup/restore', (req: Request, res: Response) => {
     void (async () => {
@@ -95,7 +95,7 @@ export function registerBackupAndChunkUploadRoutes(
         recordLiveAdminSecurityAudit({ action: 'ENCRYPTED_BACKUP_RESTORE', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'denied', reason: err?.message || 'INTEGRITY_FAILURE' });
         res.status(400).json({ status: 'error', code: 'BACKUP_INTEGRITY_VERIFICATION_FAILED', message: err?.message });
       }
-    })();
+    })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
   });
   app.post('/api/object-storage/upload-init', (req: Request, res: Response) => {
     void (async () => {
@@ -118,14 +118,15 @@ export function registerBackupAndChunkUploadRoutes(
       if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999 || !Number.isInteger(totalChunks) || totalChunks < 1 || totalChunks > 30 || (mimeType !== '' && !allowedInitMimes.includes(mimeType))) {
         res.status(400).json({ status: 'error', code: 'INVALID_UPLOAD_INIT_PARAMS' }); return;
       }
+      const cfg = resolveObjectStorageRuntimeConfig();
       const sessionId = `upl_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
       activeChunkSessions.set(sessionId, {
         sessionId, ownerUid: userAuth.uid, city, hoodId, mediaType, mimeType, fileName, totalChunks,
-        maxBytes: mediaType === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024,
+        maxBytes: (mediaType === 'video' ? cfg.maxVideoMb : Math.max(10, cfg.maxImageMb)) * 1024 * 1024,
         chunks: new Map(), receivedBytes: 0, createdAtMs: Date.now(), completed: false,
       });
       res.status(200).json({ status: 'ok', sessionId, totalChunks });
-    })();
+    })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
   });
   app.post('/api/object-storage/upload-chunk', (req: Request, res: Response) => {
     void (async () => {
@@ -153,7 +154,7 @@ export function registerBackupAndChunkUploadRoutes(
       sess.chunks.set(chunkIndex, buf);
       sess.receivedBytes += buf.length;
       res.status(200).json({ status: 'ok', chunkIndex, receivedChunks: sess.chunks.size });
-    })();
+    })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
   });
   app.post('/api/object-storage/upload-complete', (req: Request, res: Response) => {
     void (async () => {
@@ -178,36 +179,33 @@ export function registerBackupAndChunkUploadRoutes(
       const fullBuffer = Buffer.concat(orderedBuffers);
       const ext = path.extname(sess.fileName).toLowerCase() || (sess.mediaType === 'video' ? '.mp4' : '.webp');
       const magicCheck = validateMediaMagicBytesAndExtension(fullBuffer, sess.mediaType, sess.mimeType, ext);
-      if (!magicCheck.valid) {
-        res.status(415).json({ status: 'error', code: magicCheck.code });
-        return;
-      }
+      if (!magicCheck.valid) { res.status(415).json({ status: 'error', code: magicCheck.code }); return; }
       if (sess.mediaType === 'video') {
         const videoCheck = validateVideoContainerSafety(fullBuffer, magicCheck.detectedFormat);
-        if (!videoCheck.valid) {
-          res.status(415).json({ status: 'error', code: videoCheck.code });
-          return;
-        }
+        if (!videoCheck.valid) { res.status(415).json({ status: 'error', code: videoCheck.code }); return; }
       }
       await ensureBucketLoaded();
       const reservation = reserveUploadCapacity(sess.ownerUid, fullBuffer.length);
-      if (!reservation) {
-        res.status(507).json({ status: 'error', code: 'STORAGE_CAPACITY_EXCEEDED' });
-        return;
-      }
+      if (!reservation) { res.status(507).json({ status: 'error', code: 'STORAGE_CAPACITY_EXCEEDED' }); return; }
       let localFilePath = '';
       let objectId = '';
+      let objectKey = '';
+      let remoteS3Synced = false;
+      const cfg = resolveObjectStorageRuntimeConfig();
       try {
         objectId = `obj-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
         const canonicalMime = magicCheck.canonicalMimeType || sess.mimeType || 'image/webp';
-        const objectKey = buildListingObjectKey({ city: sess.city, hoodId: sess.hoodId, mediaType: sess.mediaType, mimeType: canonicalMime, objectId }) || buildObjectStorageKey(sess.city, sess.hoodId, sess.mediaType, `${objectId}${magicCheck.canonicalExtension}`);
+        objectKey = buildListingObjectKey({ city: sess.city, hoodId: sess.hoodId, mediaType: sess.mediaType, mimeType: canonicalMime, objectId }) || buildObjectStorageKey(sess.city, sess.hoodId, sess.mediaType, `${objectId}${magicCheck.canonicalExtension}`);
         const localFileName = path.basename(objectKey);
         localFilePath = path.join(BUCKET_DIR, localFileName);
         await writeFileAtomically(localFilePath, fullBuffer, 0o600);
+        if (getIntegrationCircuitBreakerState('remote_s3_storage').state !== 'temporarily_disabled') {
+          remoteS3Synced = await uploadToRemoteS3Compatible(objectKey, fullBuffer, canonicalMime, cfg);
+        }
         const record = {
-          id: objectId, objectKey, bucket: 'tehran-housing-radar-media', provider: 'local_bucket' as const,
+          id: objectId, objectKey, bucket: cfg.bucket || 'tehran-housing-radar-media', provider: remoteS3Synced ? cfg.provider : ('local_bucket' as const),
           mediaType: sess.mediaType, mimeType: canonicalMime, sizeBytes: fullBuffer.length,
-          url: `/api/object-storage/file/${objectId}`, remoteS3Synced: false, createdAtIso: new Date().toISOString(),
+          url: `/api/object-storage/file/${objectId}`, remoteS3Synced, createdAtIso: new Date().toISOString(),
           localFileName, ownerUid: sess.ownerUid, deletionState: 'active' as const,
         };
         objectStoreIndex.unshift(record); await persistObjectStoreIndexNow();
@@ -216,6 +214,10 @@ export function registerBackupAndChunkUploadRoutes(
       } catch {
         const idx = objectStoreIndex.findIndex((item) => item.id === objectId);
         if (idx >= 0) objectStoreIndex.splice(idx, 1);
+        if (remoteS3Synced && objectKey) await deleteFromRemoteS3Compatible(objectKey, cfg).catch(() => {});
         if (localFilePath) await fs.promises.unlink(localFilePath).catch(() => {});
         res.status(500).json({ status: 'error', code: 'CHUNK_UPLOAD_PERSIST_FAILED' });
-      } finally { reservation.release(); } })(); }); }
+      } finally { reservation.release(); }
+    })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'CHUNK_UPLOAD_PERSIST_FAILED' }); });
+  });
+}

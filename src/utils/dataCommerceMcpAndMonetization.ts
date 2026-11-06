@@ -1,4 +1,4 @@
-import crypto from 'node:crypto'; import { calculateHedonicValuation, FAST_SALE_FACTOR, getCurrentJalaliYear } from '../data/hedonicPricingEngine'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, type CityId } from '../data/multiCityData'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export const MANDATORY_PAYMENT_SIMULATION_BANNER = 'SIMULATION — NO REAL PAYMENT OR SETTLEMENT' as const; export interface CommercialDatasetAuditResult { datasetId: string; distributable: boolean; httpStatusIfRequested: 200 | 402 | 403; reasonCode: 'APPROVED_AGGREGATED_INDEX' | 'FORBIDDEN_PII_OR_PRIVATE_DATA' | 'UNVERIFIED_DATASET'; provenance: string; }
+import crypto from 'node:crypto'; import { calculateHedonicValuation, FAST_SALE_FACTOR, getCurrentJalaliYear } from '../data/hedonicPricingEngine'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, type CityId } from '../data/multiCityData'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export const MANDATORY_PAYMENT_SIMULATION_BANNER = 'SIMULATION — NO REAL PAYMENT OR SETTLEMENT' as const; export interface CommercialDatasetAuditResult { datasetId: string; distributable: boolean; httpStatusIfRequested: 200 | 402 | 403; reasonCode: 'APPROVED_AGGREGATED_INDEX' | 'FORBIDDEN_PII_OR_PRIVATE_DATA' | 'UNVERIFIED_DATASET'; provenance: string; }
 const PROHIBITED_PII_DATASETS = new Set([ 'buyerLeads', 'buyer_alerts', 'sponsorRequests', 'bargainOwners', 'private_user_drafts', 'user_phones', ]); const APPROVED_COMMERCIAL_DATASETS = new Set([ 'tehran_neighborhood_price_index_v1', 'multicity_housing_summary_v1', 'hedonic_valuation_api_v1', 'mcp_authorized_market_tools_v1', ]); export function auditDatasetCommercialEligibility(datasetId: string): CommercialDatasetAuditResult { const cleanId = (datasetId || '').trim(); if (PROHIBITED_PII_DATASETS.has(cleanId) || /phone|lead|pii|private|owner/i.test(cleanId)) { return { datasetId: cleanId, distributable: false, httpStatusIfRequested: 403, reasonCode: 'FORBIDDEN_PII_OR_PRIVATE_DATA', provenance: 'Restricted User / CRM Data — Never Commercially Distributable', }; }
   if (APPROVED_COMMERCIAL_DATASETS.has(cleanId)) { return { datasetId: cleanId, distributable: true, httpStatusIfRequested: 200, reasonCode: 'APPROVED_AGGREGATED_INDEX', provenance: 'Radar Tehran Aggregated & Validated Market Index (Zero PII)', }; }
   return { datasetId: cleanId, distributable: false, httpStatusIfRequested: 403, reasonCode: 'UNVERIFIED_DATASET', provenance: 'Unverified dataset identifier', }; } export interface ExchangeRateReference { source: string; usdToTomanRate: number; recordedAtIso: string; isStaleWarningFa: string; conversionPolicyFa: string; }
@@ -224,6 +224,8 @@ export function executeAuthorizedMcpTool(params: { toolName: string; args: Recor
   const { toolName, args } = params;
   const city = (typeof args.city === 'string' && args.city in MULTI_CITY_CONFIGS ? args.city : 'tehran') as CityId;
   const hoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city].neighborhoods;
+  const allHoods = getAllMultiCityNeighborhoods();
+  const findHood = (id: number) => hoods.find((h) => h.id === id) || allHoods.find((h) => h.id === id);
   if (toolName === 'search_approved_market_data') {
     const maxBuy = Number(args.maxBuyPerSqm) || 999_999;
     const matches = hoods.filter((h) => h.buyPerSqm <= maxBuy).slice(0, 10)
@@ -235,7 +237,7 @@ export function executeAuthorizedMcpTool(params: { toolName: string; args: Recor
   }
   if (toolName === 'get_neighborhood_statistics') {
     const hoodId = Number(args.hoodId) || 1;
-    const found = hoods.find((h) => h.id === hoodId) || hoods[0];
+    const found = findHood(hoodId) || hoods[0];
     return {
       ok: true, toolName, provenance: 'Radar Tehran Approved Neighborhood Statistics',
       freshnessIso: new Date().toISOString(),
@@ -243,8 +245,8 @@ export function executeAuthorizedMcpTool(params: { toolName: string; args: Recor
     };
   }
   if (toolName === 'compare_market_indicators') {
-    const first = hoods.find((h) => h.id === Number(args.firstHoodId)) || hoods[0];
-    const second = hoods.find((h) => h.id === Number(args.secondHoodId)) || hoods[1] || hoods[0];
+    const first = findHood(Number(args.firstHoodId)) || hoods[0];
+    const second = findHood(Number(args.secondHoodId)) || hoods[1] || hoods[0];
     return {
       ok: true, toolName, provenance: 'Radar Tehran Deterministic Indicator Comparison',
       freshnessIso: new Date().toISOString(),
@@ -257,7 +259,7 @@ export function executeAuthorizedMcpTool(params: { toolName: string; args: Recor
   }
   if (toolName === 'compute_hedonic_valuation') {
     const hoodId = Number(args.hoodId) || 1;
-    const baseNeighborhood = hoods.find((h) => h.id === hoodId) || hoods[0];
+    const baseNeighborhood = findHood(hoodId) || hoods[0];
     const customBuySqm = Number(args.basePricePerSqm);
     const targetNeighborhood = Number.isFinite(customBuySqm) && customBuySqm >= 10 && customBuySqm <= 2000
       ? { ...baseNeighborhood, buyPerSqm: customBuySqm } : baseNeighborhood;

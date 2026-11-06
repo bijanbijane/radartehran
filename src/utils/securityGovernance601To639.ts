@@ -87,6 +87,7 @@ export function validateMapTileResourceUrl(
   nodeEnv = process.env.NODE_ENV,
 ): { valid: boolean; reason?: string } {
   if (rawUrl.startsWith('/api/osm-tile/') || rawUrl.startsWith('/api/neshan-tile/')) {
+    if (rawUrl.includes('..') || rawUrl.includes('\\')) return { valid: false, reason: 'INVALID_TILE_URL' };
     return /\b(phone|email|token|uid|search|lat|lng)=/i.test(rawUrl)
       ? { valid: false, reason: 'SENSITIVE_QUERY_IN_TILE_URL' }
       : { valid: true };
@@ -237,7 +238,7 @@ export function evaluateTrustedServerTimeWindow(params: {
       return { allowed: false, authoritativeTimestampIso: iso, reason: 'CLIENT_TIMESTAMP_OUTSIDE_ALLOWED_SKEW' };
     }
   }
-  if (typeof params.lastActionServerMs === 'number' && params.serverNowMs - params.lastActionServerMs < params.cooldownMs) {
+  if (typeof params.lastActionServerMs === 'number' && (!Number.isFinite(params.lastActionServerMs) || params.serverNowMs - params.lastActionServerMs < params.cooldownMs)) {
     return { allowed: false, authoritativeTimestampIso: iso, reason: 'SERVER_COOLDOWN_ACTIVE' };
   }
   return { allowed: true, authoritativeTimestampIso: iso };

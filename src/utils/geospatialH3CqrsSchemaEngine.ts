@@ -53,9 +53,11 @@ export function filterRecordsByBitmaskNegation(
 }
 
 export function computeDeterministicH3Index(lat: number, lng: number, resolution: 8 | 9): string {
+  const safeLat = Number.isFinite(lat) ? lat : 35.6892;
+  const safeLng = Number.isFinite(lng) ? lng : 51.389;
   const scale = resolution === 8 ? 1000 : 2500;
-  const latHex = Math.abs(Math.round((lat + 90) * scale)).toString(16).padStart(6, '0');
-  const lngHex = Math.abs(Math.round((lng + 180) * scale)).toString(16).padStart(6, '0');
+  const latHex = Math.abs(Math.round((safeLat + 90) * scale)).toString(16).padStart(6, '0');
+  const lngHex = Math.abs(Math.round((safeLng + 180) * scale)).toString(16).padStart(6, '0');
   return `8${resolution}${latHex}${lngHex}f`;
 }
 
@@ -71,11 +73,19 @@ export function evaluateHighTrafficCircuitBreaker(input: {
   writeRoutingTarget: 'DIRECT_OLTP_PRIMARY' | 'DURABLE_QUEUE_STREAM';
   shouldFlush5MinKnowledgeGraphBatch: boolean;
 } {
-  const base = Math.max(1, input.baselineRequestsPerMinute);
-  const spikePercent = Math.round(((input.currentRequestsPerMinute - base) / base) * 100);
+  const rawBase = Number(input.baselineRequestsPerMinute);
+  const base = Math.max(1, Number.isFinite(rawBase) ? rawBase : 1);
+  const rawCurrent = Number(input.currentRequestsPerMinute);
+  const current = Number.isFinite(rawCurrent) ? Math.max(0, rawCurrent) : 0;
+  const spikePercent = Math.round(((current - base) / base) * 100);
   const circuitOpen = spikePercent > 300;
-  const shouldFlush5MinKnowledgeGraphBatch =
-    input.queuedEventsCount > 0 && input.nowEpochMs - input.lastKnowledgeGraphBatchEpochMs >= 5 * 60 * 1000;
+  const rawQueued = Number(input.queuedEventsCount);
+  const queuedCount = Number.isFinite(rawQueued) ? rawQueued : 0;
+  const rawNow = Number(input.nowEpochMs);
+  const rawLast = Number(input.lastKnowledgeGraphBatchEpochMs);
+  const nowMs = Number.isFinite(rawNow) ? rawNow : Date.now();
+  const lastMs = Number.isFinite(rawLast) ? rawLast : 0;
+  const shouldFlush5MinKnowledgeGraphBatch = queuedCount > 0 && nowMs - lastMs >= 5 * 60 * 1000;
 
   return {
     circuitOpen,
@@ -88,8 +98,9 @@ export function evaluateHighTrafficCircuitBreaker(input: {
 export function classifyTelemetryStorageTier(
   recordAgeDays: number
 ): 'HOT_OPERATIONAL_90D' | 'WARM_AGGREGATED_3_TO_12M' | 'COLD_PARQUET_ARCHIVE' {
-  if (recordAgeDays < 90) return 'HOT_OPERATIONAL_90D';
-  if (recordAgeDays <= 365) return 'WARM_AGGREGATED_3_TO_12M';
+  const age = Number.isFinite(recordAgeDays) ? recordAgeDays : 0;
+  if (age < 90) return 'HOT_OPERATIONAL_90D';
+  if (age <= 365) return 'WARM_AGGREGATED_3_TO_12M';
   return 'COLD_PARQUET_ARCHIVE';
 }
 
@@ -100,9 +111,15 @@ export function lazyEvaluateAnalyticalRecordOnRead(
   locale: RadarLocale = 'fa'
 ): GeospatialH3Record & { intlUnitPriceLabel: string; migratedOnRead: boolean } {
   const migratedOnRead = record.formulaVersion < targetFormulaVersion;
+  let safePrice = record.pricePerSqmDecimal;
+  try {
+    if (!safePrice.isFinite()) safePrice = new Decimal(0);
+  } catch {
+    safePrice = new Decimal(0);
+  }
   const adjustedPrice = migratedOnRead
-    ? record.pricePerSqmDecimal.mul(new Decimal('1.0000'))
-    : record.pricePerSqmDecimal;
+    ? safePrice.mul(new Decimal('1.0000'))
+    : safePrice;
 
   return {
     ...record,

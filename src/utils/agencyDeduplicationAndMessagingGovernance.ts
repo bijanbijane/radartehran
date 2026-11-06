@@ -265,13 +265,16 @@ export function reconcileProviderDeliveryCallback(params: {
   callbackTimestampMs: number;
 }): TrackedOutboundMessage {
   const { message, providerMessageId, reportedState, callbackTimestampMs } = params;
-  if (message.deliveryState === 'DELIVERED' && (reportedState === 'SENT' || reportedState === 'QUEUED')) {
+  if (
+    (message.deliveryState === 'DELIVERED' && (reportedState === 'SENT' || reportedState === 'QUEUED' || reportedState === 'UNKNOWN')) ||
+    (message.deliveryState === 'SENT' && (reportedState === 'QUEUED' || reportedState === 'UNKNOWN'))
+  ) {
     return message;
   }
   return {
     ...message,
     providerMessageId: message.providerMessageId || providerMessageId,
     deliveryState: reportedState,
-    updatedAtMs: Math.max(message.updatedAtMs, callbackTimestampMs),
+    updatedAtMs: Number.isFinite(callbackTimestampMs) ? Math.max(message.updatedAtMs, callbackTimestampMs) : message.updatedAtMs,
   };
 }

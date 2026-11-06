@@ -73,7 +73,7 @@ export function executeListingStateTransition(input: {
   if (matchingRule.requiresReason && (!input.reason || input.reason.trim().length < 4)) {
     return { transitioned: false, rejectionCode: 'TRANSITION_REASON_REQUIRED', updatedRecord: record, isVisibleInPublicSearch: currentVis, isIncludedInMarketStats: currentVis };
   }
-  if ((targetStatus === 'PENDING_REVIEW' || targetStatus === 'PUBLISHED') && (record.sqm < 25 || record.priceMillion <= 0 || record.hoodId <= 0 || !record.hasVerifiedContact)) {
+  if ((targetStatus === 'PENDING_REVIEW' || targetStatus === 'PUBLISHED') && (!Number.isFinite(record.sqm) || record.sqm < 25 || !Number.isFinite(record.priceMillion) || record.priceMillion <= 0 || !Number.isInteger(record.hoodId) || record.hoodId <= 0 || !record.hasVerifiedContact)) {
     return { transitioned: false, rejectionCode: 'PUBLICATION_PREREQUISITES_INCOMPLETE', updatedRecord: record, isVisibleInPublicSearch: false, isIncludedInMarketStats: false };
   }
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;

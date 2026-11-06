@@ -93,7 +93,7 @@ export function parseContextAwareNumericInput(
     const validId = /^[a-zA-Z0-9_]+$/.test(cleanId);
     return { isEmpty: false, isValid: validId, numericValue: null, identifierText: validId ? cleanId : null, errorFa: validId ? null : 'شناسه یا شماره واردشده حاوی کاراکتر غیرمجاز است.' };
   }
-  const strippedSeparators = ascii.replace(/[,٬_ ]+/g, '').replace(/٫/g, '.');
+  const strippedSeparators = ascii.replace(/[,٬،_ ]+/g, '').replace(/٫/g, '.');
   if (!/^-?\d+(\.\d+)?$/.test(strippedSeparators)) {
     return { isEmpty: false, isValid: false, numericValue: null, identifierText: null, errorFa: 'لطفاً یک مقدار عددی معتبر وارد کنید.' };
   }

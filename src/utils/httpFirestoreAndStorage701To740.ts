@@ -166,6 +166,7 @@ export function validateFirestoreDocumentComplexity(
   const seen = new WeakSet<object>();
   const walk = (node: unknown, depth: number): string | null => {
     if (depth > limits.maxDepth) return 'MAX_NESTING_DEPTH_EXCEEDED';
+    if (typeof node === 'number' && !Number.isFinite(node)) return 'NON_FINITE_NUMBER_IN_DOCUMENT';
     if (typeof node === 'string') return node.length > limits.maxStringLength ? 'STRING_FIELD_TOO_LONG' : null;
     if (Array.isArray(node)) {
       if (seen.has(node)) return 'CIRCULAR_OR_UNSERIALIZABLE_DOCUMENT';

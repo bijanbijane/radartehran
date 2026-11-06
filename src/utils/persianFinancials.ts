@@ -22,8 +22,8 @@ export function normalizeFinancialInput(raw: string | number | null | undefined)
     str = str.replace(PERSIAN_DIGITS[i], String(i)).replace(ARABIC_DIGITS[i], String(i));
   }
 
-  // Strip Persian/Arabic thousand separators (٬), commas, spaces, and non-numeric characters except decimal dot
-  const cleaned = str.replace(/[^0-9.]/g, '');
+  // Convert Persian decimal separator (٫) to dot, then strip thousand separators (٬), commas, spaces, and non-numeric characters
+  const cleaned = str.replace(/[٫\u066B]/g, '.').replace(/[^0-9.]/g, '');
   const parts = cleaned.split('.');
   const normalized = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleaned;
 

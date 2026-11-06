@@ -226,8 +226,8 @@ export function detectEnvironmentConfigDrift(env: Record<string, string | undefi
   if (isProd && env.APP_URL && !env.APP_URL.trim().startsWith('https://')) drifts.push('INSECURE_APP_URL_IN_PRODUCTION');
   if (clientConfig?.projectId && clientConfig.projectId !== EXPECTED_FIREBASE_PROJECT_ID) drifts.push('FIREBASE_PROJECT_ID_DRIFT');
   if (clientConfig?.firestoreDatabaseId && clientConfig.firestoreDatabaseId !== EXPECTED_FIRESTORE_DATABASE_ID) drifts.push('FIRESTORE_DATABASE_ID_DRIFT');
-  if ((env.OBJECT_STORAGE_ACCESS_KEY && !env.OBJECT_STORAGE_SECRET_KEY) || (!env.OBJECT_STORAGE_ACCESS_KEY && env.OBJECT_STORAGE_SECRET_KEY)) drifts.push('PARTIAL_OBJECT_STORAGE_S3_CONFIG');
-  if ((env.TELEGRAM_BOT_TOKEN && !env.TELEGRAM_CHANNEL_ID) || (!env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHANNEL_ID)) drifts.push('PARTIAL_TELEGRAM_CONFIG');
+  if (!isPlaceholderValue(env.OBJECT_STORAGE_ACCESS_KEY) !== !isPlaceholderValue(env.OBJECT_STORAGE_SECRET_KEY)) drifts.push('PARTIAL_OBJECT_STORAGE_S3_CONFIG');
+  if (!isPlaceholderValue(env.TELEGRAM_BOT_TOKEN) !== !isPlaceholderValue(env.TELEGRAM_CHANNEL_ID)) drifts.push('PARTIAL_TELEGRAM_CONFIG');
   return { valid: drifts.length === 0, drifts };
 }
 export function buildOpenApiSpecification(baseUrl = 'http://localhost:3000', areaUnit: AreaUnit = 'sqm', intlCurrency: IntlCurrencyCode = 'USD'): Record<string, unknown> {

@@ -6,7 +6,7 @@ export function evaluateMarketProvenanceIngestionAndNormalization(params: { sour
     recordId: string; reason: 'SOURCE_NOT_ACTIVE' | 'MISSING_EXPLICIT_CURRENCY_OR_AREA_UNIT' | 'NON_POSITIVE_PRICE_OR_AREA'; }[] = []; if (!isDuplicateIdempotentBatch) { for (const rec of params.ingestionBatch.rawRecords) { if (params.sourceRegistration.status !== 'ACTIVE') { quarantinedRecordsForReview.push({ recordId: rec.recordId, reason: 'SOURCE_NOT_ACTIVE' });
         continue; }
       if (rec.explicitCurrencyUnit === null || rec.explicitAreaUnit === null) { quarantinedRecordsForReview.push({ recordId: rec.recordId, reason: 'MISSING_EXPLICIT_CURRENCY_OR_AREA_UNIT' }); continue; }
-      if (rec.rawPriceAmount === null || rec.rawPriceAmount <= 0 || rec.rawAreaAmount === null || rec.rawAreaAmount <= 0) { quarantinedRecordsForReview.push({ recordId: rec.recordId, reason: 'NON_POSITIVE_PRICE_OR_AREA' }); continue; }
+      if (rec.rawPriceAmount === null || !Number.isFinite(rec.rawPriceAmount) || rec.rawPriceAmount <= 0 || rec.rawAreaAmount === null || !Number.isFinite(rec.rawAreaAmount) || rec.rawAreaAmount <= 0) { quarantinedRecordsForReview.push({ recordId: rec.recordId, reason: 'NON_POSITIVE_PRICE_OR_AREA' }); continue; }
       const normalizedTextFa = rec.rawTextFa.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s+/g, ' ').trim(); const normalizedPriceToman = rec.explicitCurrencyUnit === 'RIAL' ? Math.round(rec.rawPriceAmount / 10) : rec.rawPriceAmount;
       const normalizedAreaSqm = rec.explicitAreaUnit === 'HECTARE' ? rec.rawAreaAmount * 10_000 : rec.rawAreaAmount; acceptedNormalizedRecords.push({ recordId: rec.recordId, valueNature: rec.valueNature, normalizedTextFa, preservedRawTextFa: rec.rawTextFa, normalizedPriceToman, normalizedAreaSqm,
         sourceId: params.sourceRegistration.sourceId, }); } }
@@ -147,12 +147,15 @@ export function evaluateMarketIndicatorsSpreadLiquidityAndOutliers(
   const askStats = computeStats(params.askingSqmPricesToman);
   const txStats = computeStats(params.verifiedTransactionSqmPricesToman);
   const minSample = Math.max(1, params.minRequiredSampleSize);
-  const pairedCount = params.pairedObservations.length;
+  const validPairs = params.pairedObservations.filter(
+    (p) => Number.isFinite(p.initialAskingToman) && p.initialAskingToman > 0 && Number.isFinite(p.verifiedTransactionToman) && p.verifiedTransactionToman >= 0
+  );
+  const pairedCount = validPairs.length;
   const meanNegotiationDiscountPercent =
     pairedCount > 0
       ? Number(
           (
-            params.pairedObservations.reduce(
+            validPairs.reduce(
               (acc, p) => acc + ((p.initialAskingToman - p.verifiedTransactionToman) / p.initialAskingToman) * 100,
               0
             ) / pairedCount
@@ -161,12 +164,15 @@ export function evaluateMarketIndicatorsSpreadLiquidityAndOutliers(
       : null;
   const meanDaysToSale =
     pairedCount > 0
-      ? Math.round(params.pairedObservations.reduce((acc, p) => acc + p.daysFromListingToSale, 0) / pairedCount)
+      ? Math.round(validPairs.reduce((acc, p) => acc + (Number.isFinite(p.daysFromListingToSale) && p.daysFromListingToSale >= 0 ? p.daysFromListingToSale : 0), 0) / pairedCount)
       : null;
   const rentObs = params.rentalObservation;
+  const dep = Number.isFinite(rentObs.depositToman) && rentObs.depositToman >= 0 ? rentObs.depositToman : 0;
+  const rent = Number.isFinite(rentObs.monthlyRentToman) && rentObs.monthlyRentToman >= 0 ? rentObs.monthlyRentToman : 0;
+  const convRate = Number.isFinite(rentObs.explicitConversionRateAnnualPercent) && rentObs.explicitConversionRateAnnualPercent !== null && rentObs.explicitConversionRateAnnualPercent > 0 ? rentObs.explicitConversionRateAnnualPercent : null;
   const rentalNormalizedMonthlyToman =
-    rentObs.explicitConversionRateAnnualPercent !== null && rentObs.explicitMethodologyId !== null
-      ? Math.round(rentObs.monthlyRentToman + (rentObs.depositToman * (rentObs.explicitConversionRateAnnualPercent / 100)) / 12)
+    convRate !== null && rentObs.explicitMethodologyId !== null
+      ? Math.round(rent + (dep * (convRate / 100)) / 12)
       : null;
   const liq = params.liquidityInput;
   const monthlyAbsorptionRatePercent =
@@ -232,7 +238,7 @@ export function evaluateMarketCyclesMacroAndForecastingAudits(params: {
 } {
   const cyc = params.cycleSeries;
   const realInflationAdjustedIndex =
-    cyc.cpiInflationIndex !== null && cyc.cpiInflationIndex > 0 && cyc.cpiSourceId !== null
+    cyc.cpiInflationIndex !== null && Number.isFinite(cyc.cpiInflationIndex) && cyc.cpiInflationIndex > 0 && cyc.cpiSourceId !== null && Number.isFinite(cyc.nominalPriceIndex)
       ? Number(((cyc.nominalPriceIndex / cyc.cpiInflationIndex) * 100).toFixed(2))
       : null;
   const cmp = params.neighborhoodComparison;

@@ -241,7 +241,7 @@ export function verifyAndDeduplicateTelegramWebhook(params: {
   if (msg !== undefined && (typeof msg !== 'object' || msg === null || Array.isArray(msg))) return { accepted: false, statusCode: 400, reason: 'MALFORMED_MESSAGE_ENVELOPE' };
   const chat = msg?.chat as Record<string, unknown> | undefined;
   const chatId = chat?.id !== undefined ? String(chat.id) : '';
-  if (params.allowedChatIds && params.allowedChatIds.length > 0 && chatId && !params.allowedChatIds.includes(chatId)) {
+  if (params.allowedChatIds && params.allowedChatIds.length > 0 && (!chatId || !params.allowedChatIds.includes(chatId))) {
     return { accepted: false, statusCode: 403, reason: 'UNAUTHORIZED_TELEGRAM_CHAT_ID' };
   }
   const now = params.nowMs ?? Date.now();

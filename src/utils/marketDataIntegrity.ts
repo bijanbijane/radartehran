@@ -116,11 +116,11 @@ export function deduplicateHistoricalObservations<
 }
 export function resolveCanonicalCityForHoodId(hoodId: number): CityId | null {
   if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) return null;
-  if (hoodId >= 1 && hoodId < 100) return 'tehran';
-  if (hoodId >= 101 && hoodId < 200) return 'karaj';
-  if (hoodId >= 201 && hoodId < 300) return 'mashhad';
-  if (hoodId >= 301 && hoodId < 400) return 'isfahan';
-  if (hoodId >= 401 && hoodId < 500) return 'shiraz';
+  if ((hoodId >= 1 && hoodId < 100) || (hoodId >= 500 && hoodId <= 599)) return 'tehran';
+  if ((hoodId >= 100 && hoodId < 200) || (hoodId >= 600 && hoodId <= 699)) return 'karaj';
+  if ((hoodId >= 200 && hoodId < 300) || (hoodId >= 700 && hoodId <= 776) || (hoodId >= 778 && hoodId <= 799)) return 'mashhad';
+  if ((hoodId >= 300 && hoodId < 400) || (hoodId >= 800 && hoodId <= 887) || (hoodId >= 889 && hoodId <= 899)) return 'isfahan';
+  if ((hoodId >= 400 && hoodId < 500) || (hoodId >= 900 && hoodId <= 998)) return 'shiraz';
   return 'tehran';
 }
 export function validateCityNeighborhoodScope(
@@ -270,9 +270,9 @@ export function sanitizeSafeExternalUrl(rawUrl: unknown): string | null {
   try {
     const parsed = new URL(trimmed);
     if ((parsed.protocol !== 'https:' && parsed.protocol !== 'http:') || parsed.username || parsed.password) return null;
-    const host = parsed.hostname.toLowerCase();
+    const host = parsed.hostname.toLowerCase().replace(/\.+$/, '');
     if (!host || host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost') || host.includes('[') || host.includes(':')) return null;
-    if (/^(?:127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(host)) return null;
+    if (/^(?:127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(host)) return null;
     return parsed.toString();
   } catch { return null; }
 }

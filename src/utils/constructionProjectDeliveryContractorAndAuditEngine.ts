@@ -11,10 +11,12 @@ export function evaluateProjectPhaseWeightedProgressAndSiteProvenance(params: { 
   let naiveSum = 0;
   let unverifiedReportedPackagesExcludedCount = 0;
   for (const wp of params.workPackagesProgress) {
-    totalWeight += wp.budgetWeight0To100;
-    naiveSum += wp.engineerApprovedProgressPercent;
+    const w = Number.isFinite(wp.budgetWeight0To100) && wp.budgetWeight0To100 >= 0 ? wp.budgetWeight0To100 : 0;
+    const p = Number.isFinite(wp.engineerApprovedProgressPercent) && wp.engineerApprovedProgressPercent >= 0 ? wp.engineerApprovedProgressPercent : 0;
+    totalWeight += w;
+    naiveSum += p;
     if (wp.hasSupportingMeasurementEvidence) {
-      weightedApprovedSum += wp.budgetWeight0To100 * wp.engineerApprovedProgressPercent;
+      weightedApprovedSum += w * p;
     } else {
       unverifiedReportedPackagesExcludedCount += 1;
     }
@@ -112,15 +114,19 @@ export function evaluateSCurveEvmTenderingAndMaterialLifecycle(params: {
   };
 } {
   const missingPeriodsCount = params.sCurveSeries.filter(
-    (p) => p.measuredApprovedPercent === null
+    (p) => p.measuredApprovedPercent === null || !Number.isFinite(p.measuredApprovedPercent)
   ).length;
   const evm = params.evmInput;
   const hasValidEvmInputs =
     evm.plannedValuePvToman !== null &&
     evm.earnedValueEvToman !== null &&
     evm.actualCostAcToman !== null &&
+    Number.isFinite(evm.plannedValuePvToman) &&
+    Number.isFinite(evm.earnedValueEvToman) &&
+    Number.isFinite(evm.actualCostAcToman) &&
     evm.plannedValuePvToman > 0 &&
-    evm.actualCostAcToman > 0;
+    evm.actualCostAcToman > 0 &&
+    evm.earnedValueEvToman >= 0;
   const spi = hasValidEvmInputs
     ? Number((evm.earnedValueEvToman! / evm.plannedValuePvToman!).toFixed(2))
     : null;
@@ -136,8 +142,8 @@ export function evaluateSCurveEvmTenderingAndMaterialLifecycle(params: {
   for (const b of params.tenderEvaluation.bids) {
     const score =
       params.tenderEvaluation.awardPolicy === 'LOWEST_PRICE_ONLY'
-        ? 1 / Math.max(1, b.priceToman)
-        : b.technicalScore0To100 * 0.6 + b.commercialScore0To100 * 0.4;
+        ? (Number.isFinite(b.priceToman) && b.priceToman > 0 ? 1 / b.priceToman : -1)
+        : (Number.isFinite(b.technicalScore0To100) ? b.technicalScore0To100 : 0) * 0.6 + (Number.isFinite(b.commercialScore0To100) ? b.commercialScore0To100 : 0) * 0.4;
     if (score > bestComposite) {
       bestComposite = score;
       recommendedBidderId = b.bidderId;
@@ -218,14 +224,15 @@ export function evaluateCostPerSqmEacHandoverAndFourConstructionAudits(params: {
   const area =
     uc.selectedBasis === 'GROSS_AREA' ? uc.grossBuiltAreaSqm : uc.netSaleableAreaSqm;
   const costPerSqmToman =
-    area !== null && area > 0
+    area !== null && Number.isFinite(area) && area > 0 && Number.isFinite(uc.verifiedActualConstructionCostToman) && uc.verifiedActualConstructionCostToman >= 0
       ? Math.round(uc.verifiedActualConstructionCostToman / area)
       : null;
   const eac = params.eacForecastInput;
-  const estimateAtCompletionEacToman =
-    eac.actualCostIncurredToman + eac.estimatedCostToCompleteEtcToman;
-  const forecastedVarianceAtCompletionVacToman =
-    eac.approvedBaselineBudgetToman - estimateAtCompletionEacToman;
+  const actualCost = Number.isFinite(eac.actualCostIncurredToman) ? eac.actualCostIncurredToman : 0;
+  const etcCost = Number.isFinite(eac.estimatedCostToCompleteEtcToman) ? eac.estimatedCostToCompleteEtcToman : 0;
+  const baselineCost = Number.isFinite(eac.approvedBaselineBudgetToman) ? eac.approvedBaselineBudgetToman : 0;
+  const estimateAtCompletionEacToman = actualCost + etcCost;
+  const forecastedVarianceAtCompletionVacToman = baselineCost - estimateAtCompletionEacToman;
   const ph = params.punchListAndHandover;
   const overbillingDiscrepancyDetected =
     params.financialVsPhysicalAuditInput.contractorClaimedBillingPercent >

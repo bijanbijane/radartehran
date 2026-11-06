@@ -18,7 +18,7 @@ export class RealEstateInquiryAndLeadGuard { private readonly inquiriesById = ne
     if (existingId) {
       return { accepted: true, deduplicated: true, rejectionReason: null, record: this.inquiriesById.get(existingId) ?? null };
     }
-    if (input.listingStatus !== 'PUBLISHED' || input.listingExpiresAtMs <= input.nowMs) {
+    if (input.listingStatus !== 'PUBLISHED' || !Number.isFinite(input.listingExpiresAtMs) || !Number.isFinite(input.nowMs) || input.listingExpiresAtMs <= input.nowMs) {
       return { accepted: false, deduplicated: false, rejectionReason: `INQUIRY_REJECTED_LISTING_NOT_ACTIVE:${input.listingStatus}`, record: null };
     }
     const usedHour = this.hourlyCountByUser.get(input.inquirerUid) ?? 0;

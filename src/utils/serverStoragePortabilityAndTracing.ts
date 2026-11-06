@@ -142,7 +142,7 @@ export async function migrateAndVerifyStorageObjects(
         continue;
       }
       const existingHead = await target.headObject(key);
-      if (existingHead && existingHead.sha256Hex === srcObj.sha256Hex && existingHead.contentType === srcObj.contentType) {
+      if (existingHead && existingHead.sha256Hex === srcObj.sha256Hex && existingHead.contentType === srcObj.contentType && JSON.stringify(existingHead.customMetadata) === JSON.stringify(srcObj.customMetadata)) {
         skippedAlreadyIdentical++;
         continue;
       }

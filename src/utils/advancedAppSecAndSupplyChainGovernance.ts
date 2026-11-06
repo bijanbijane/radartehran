@@ -12,10 +12,10 @@ function safeExtractOrigin(urlStr: string): string { try { return new URL(urlStr
 const ALLOWED_EXTERNAL_FETCH_HOSTS = new Set([
   'air-quality-api.open-meteo.com', 'api.open-meteo.com', 'nominatim.openstreetmap.org', 'a.tile.openstreetmap.org', 'b.tile.openstreetmap.org', 'c.tile.openstreetmap.org', 'api.divar.ir', ]); export function validateOutboundUrlAgainstSsrf( rawUrl: string, redirectDepth = 0, maxRedirects = 2
 ): { allowed: boolean; reason?: string; normalizedUrl?: string } { if (redirectDepth > maxRedirects) return { allowed: false, reason: 'MAX_REDIRECTS_EXCEEDED' }; try { const parsed = new URL(rawUrl);
-    if (parsed.protocol !== 'https:') return { allowed: false, reason: 'HTTPS_REQUIRED' }; if (parsed.username || parsed.password) return { allowed: false, reason: 'EMBEDDED_CREDENTIALS_FORBIDDEN' }; const host = parsed.hostname.toLowerCase(); if (
-      host === 'localhost' || host.endsWith('.local') ||
+    if (parsed.protocol !== 'https:') return { allowed: false, reason: 'HTTPS_REQUIRED' }; if (parsed.username || parsed.password) return { allowed: false, reason: 'EMBEDDED_CREDENTIALS_FORBIDDEN' }; const host = parsed.hostname.toLowerCase().replace(/\.+$/, ''); if (
+      host === 'localhost' || host.endsWith('.local') || host.endsWith('.localhost') ||
       host.endsWith('.internal') || host === '169.254.169.254' ||
-      /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|0\.|169\.254\.)/.test(host) || host.startsWith('[')
+      /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|0\.|169\.254\.)/.test(host) || host.startsWith('[')
     ) { return { allowed: false, reason: 'PRIVATE_OR_METADATA_ADDRESS_BLOCKED' }; }
     if (parsed.port && parsed.port !== '443') return { allowed: false, reason: 'NON_STANDARD_PORT_BLOCKED' }; if (!ALLOWED_EXTERNAL_FETCH_HOSTS.has(host)) return { allowed: false, reason: 'HOST_NOT_IN_ALLOWLIST' }; return { allowed: true, normalizedUrl: parsed.toString() }; } catch {
     return { allowed: false, reason: 'MALFORMED_URL' }; }
@@ -32,7 +32,7 @@ export function sanitizeNavigationRedirectTarget(
   }
   if (
     !decoded.startsWith('/') || decoded.startsWith('//') || decoded.startsWith('/\\') ||
-    /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(decoded) || decoded.includes('@') || decoded.includes('\r') || decoded.includes('\n')
+    /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(decoded) || decoded.includes('@') || /[\u0000-\u001F\u007F]/.test(decoded)
   ) {
     return { safeTarget: fallbackInternalPath, wasRejected: true, reason: 'UNTRUSTED_REDIRECT_DESTINATION' };
   }
@@ -49,6 +49,7 @@ export function validateBoundedRequestPayload(
   const seen = new WeakSet<object>();
   function checkDepth(node: unknown, depth: number): boolean {
     if (depth > maxDepth) return false;
+    if (typeof node === 'number' && !Number.isFinite(node)) return false;
     if (!node || typeof node !== 'object') return true;
     if (seen.has(node)) return false;
     seen.add(node);
@@ -188,17 +189,17 @@ export function validateImageProcessingSafety(input: {
   frameCount?: number;
   magicHeaderHex: string;
 }): { safe: boolean; reason?: string; detectedFormat?: 'jpeg' | 'png' | 'webp' } {
-  if (input.byteLength <= 0 || input.byteLength > 8 * 1024 * 1024) return { safe: false, reason: 'FILE_SIZE_OUT_OF_BOUNDS' };
+  if (!Number.isFinite(input.byteLength) || input.byteLength <= 0 || input.byteLength > 8 * 1024 * 1024) return { safe: false, reason: 'FILE_SIZE_OUT_OF_BOUNDS' };
   const hex = input.magicHeaderHex.toLowerCase();
   const format = hex.startsWith('ffd8ff') ? 'jpeg' : hex.startsWith('89504e47') ? 'png' : hex.startsWith('52494646') ? 'webp' : undefined;
   if (!format) return { safe: false, reason: 'UNSUPPORTED_OR_SPOOFED_IMAGE_MAGIC' };
-  if (input.widthPx <= 0 || input.heightPx <= 0 || input.widthPx > 8192 || input.heightPx > 8192) {
+  if (!Number.isFinite(input.widthPx) || !Number.isFinite(input.heightPx) || input.widthPx <= 0 || input.heightPx <= 0 || input.widthPx > 8192 || input.heightPx > 8192) {
     return { safe: false, reason: 'EXCESSIVE_IMAGE_DIMENSIONS' };
   }
   if (input.widthPx * input.heightPx > 25_000_000) {
     return { safe: false, reason: 'DECOMPRESSION_BOMB_PIXEL_LIMIT_EXCEEDED' };
   }
-  if ((input.frameCount ?? 1) > 1) return { safe: false, reason: 'ANIMATED_IMAGE_NOT_ALLOWED' };
+  if (!Number.isFinite(input.frameCount ?? 1) || (input.frameCount ?? 1) < 1 || (input.frameCount ?? 1) > 1) return { safe: false, reason: 'ANIMATED_IMAGE_NOT_ALLOWED' };
   return { safe: true, detectedFormat: format };
 }
 export function inspectSvgContentSecurity(rawSvgText: string): {

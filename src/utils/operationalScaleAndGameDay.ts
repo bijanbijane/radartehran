@@ -82,7 +82,7 @@ const SAFE_INLINE_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp'
     const nowMs = params.nowMs ?? Date.now();
     if (this.deletedObjectKeys.has(params.objectKey)) return { allowed: false, statusCode: 404, reason: 'MEDIA_DELETED_AFTER_URL_ISSUED' };
     if (this.revokedObjectKeys.has(params.objectKey)) return { allowed: false, statusCode: 403, reason: 'MEDIA_REVOKED_AFTER_URL_ISSUED' };
-    if (nowMs > params.expiresAtMs) return { allowed: false, statusCode: 410, reason: 'SIGNED_URL_EXPIRED' };
+    if (!Number.isFinite(params.expiresAtMs) || !Number.isFinite(nowMs) || nowMs > params.expiresAtMs) return { allowed: false, statusCode: 410, reason: 'SIGNED_URL_EXPIRED' };
     const payload = `${params.objectKey}|${params.visibility}|${params.expiresAtMs}`;
     const expectedSig = crypto.createHmac('sha256', this.signingSecret).update(payload).digest('hex').slice(0, 32);
     const actualBuf = Buffer.from(String(params.sig || ''), 'utf8');
@@ -112,7 +112,7 @@ export function validateCrossServiceBackupConsistency(
   const jrnTime = Date.parse(manifest.deletionJournalSnapshotAtIso);
   const maxTime = Math.max(fsTime, objTime, jrnTime);
   const minTime = Math.min(fsTime, objTime, jrnTime);
-  const snapshotSkewSeconds = Math.round((maxTime - minTime) / 1000);
+  const snapshotSkewSeconds = Number.isFinite(maxTime - minTime) ? Math.round((maxTime - minTime) / 1000) : Number.POSITIVE_INFINITY;
   const storageSet = new Set(manifest.objectStorageKeysPresent);
   const metaSet = new Set(manifest.metadataObjectKeysPresent);
   const pendingSet = new Set(manifest.pendingDeleteJournalKeys);
@@ -129,7 +129,7 @@ export function validateCrossServiceBackupConsistency(
   const interruptedPendingDeletesToReconcile = manifest.pendingDeleteJournalKeys.filter((k) => storageSet.has(k));
   const schemaCompatible = manifest.schemaVersion === currentConfigSchemaVersion;
   const consistentForAutomaticRestore =
-    schemaCompatible && snapshotSkewSeconds <= 300 && missingMediaKeysReferencedByListings.length === 0 && missingOwnerIdentities.length === 0;
+    schemaCompatible && Number.isFinite(snapshotSkewSeconds) && snapshotSkewSeconds <= 300 && missingMediaKeysReferencedByListings.length === 0 && missingOwnerIdentities.length === 0;
   return {
     consistentForAutomaticRestore,
     reconciliationRequiredBeforeBackgroundJobs: interruptedPendingDeletesToReconcile.length > 0 || orphanBinaryKeysWithoutMetadata.length > 0,

@@ -82,7 +82,7 @@ export function evaluateDeclarativeBusinessRules(
       curr = ruleMap.get(curr)?.dependsOnRuleId || null;
     }
   }
-  const matchedRuleIds: string[] = [];
+  const rawMatched = new Set<string>();
   const appliedRuleVersions: Record<string, number> = {};
   for (const r of rules) {
     const actual = context[r.field];
@@ -92,15 +92,23 @@ export function evaluateDeclarativeBusinessRules(
     }
     let matched = false;
     if (r.operator === 'EQ') matched = actual === r.expectedValue;
-    else if (typeof actual === 'number' && typeof r.expectedValue === 'number') {
+    else if (typeof actual === 'number' && typeof r.expectedValue === 'number' && Number.isFinite(actual) && Number.isFinite(r.expectedValue)) {
       if (r.operator === 'GT') matched = actual > r.expectedValue;
       else if (r.operator === 'GTE') matched = actual >= r.expectedValue;
       else if (r.operator === 'LT') matched = actual < r.expectedValue;
       else if (r.operator === 'LTE') matched = actual <= r.expectedValue;
     }
     appliedRuleVersions[r.ruleId] = r.version;
-    if (matched) matchedRuleIds.push(r.ruleId);
+    if (matched) rawMatched.add(r.ruleId);
   }
+  const matchedRuleIds = rules.filter((r) => {
+    let curr: DeclarativeRuleCondition | undefined = r;
+    while (curr) {
+      if (!rawMatched.has(curr.ruleId)) return false;
+      curr = curr.dependsOnRuleId ? ruleMap.get(curr.dependsOnRuleId) : undefined;
+    }
+    return true;
+  }).map((r) => r.ruleId);
   return { validSyntax: errorsFa.length === 0, hasCircularDependency: false, matchedRuleIds, appliedRuleVersions, errorsFa, displayAreaUnitLabel, dealThresholdBenchmarkIntlText };
 }
 export function instantiateWorkflowFromTemplate(params: {
@@ -146,8 +154,8 @@ export function evaluateMultiLevelApprovalDecision(params: {
   nowMs: number;
 }) {
   const { request, actorUserId, actorIsActiveMember, actorHasApprovePermission, decision, reasonFa, nowMs } = params;
-  if (request.status !== 'PENDING' || nowMs >= request.expiresAtMs) {
-    return { allowed: false, violationCode: 'REQUEST_ALREADY_FINALIZED_OR_EXPIRED' as const, updatedRequest: nowMs >= request.expiresAtMs && request.status === 'PENDING' ? { ...request, status: 'EXPIRED' as const } : request, explanationFa: 'این درخواست قبلاً نهایی یا منقضی شده است.' };
+  if (request.status !== 'PENDING' || !Number.isFinite(nowMs) || !Number.isFinite(request.expiresAtMs) || nowMs >= request.expiresAtMs) {
+    return { allowed: false, violationCode: 'REQUEST_ALREADY_FINALIZED_OR_EXPIRED' as const, updatedRequest: (!Number.isFinite(nowMs) || nowMs >= request.expiresAtMs) && request.status === 'PENDING' ? { ...request, status: 'EXPIRED' as const } : request, explanationFa: 'این درخواست قبلاً نهایی یا منقضی شده است.' };
   }
   if (!actorIsActiveMember || !actorHasApprovePermission) {
     return { allowed: false, violationCode: 'ACTOR_INACTIVE_OR_UNAUTHORIZED' as const, updatedRequest: request, explanationFa: 'کاربر فعلی دارای مجوز تأیید سازمانی نیست.' };
@@ -244,15 +252,15 @@ export interface AgentWorkloadSummary {
   statusLabelFa: string;
 }
 export function computeAgentWorkloadCapacity(params: {
-  agentId: string;
-  availability: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
-  activeLeadsCount: number;
-  overdueTasksCount: number;
-  upcomingVisitsCount: number;
-  maxWeightedScoreCap: number;
+  agentId: string; availability: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+  activeLeadsCount: number; overdueTasksCount: number; upcomingVisitsCount: number; maxWeightedScoreCap: number;
 }): AgentWorkloadSummary {
-  const weightedWorkloadScore = params.activeLeadsCount * 2 + params.upcomingVisitsCount * 3 + params.overdueTasksCount * 4;
-  const capacityUtilizationPercent = Math.min(100, Math.round((weightedWorkloadScore / Math.max(10, params.maxWeightedScoreCap)) * 100));
+  const leads = Number.isFinite(params.activeLeadsCount) && params.activeLeadsCount >= 0 ? params.activeLeadsCount : 0;
+  const visits = Number.isFinite(params.upcomingVisitsCount) && params.upcomingVisitsCount >= 0 ? params.upcomingVisitsCount : 0;
+  const tasks = Number.isFinite(params.overdueTasksCount) && params.overdueTasksCount >= 0 ? params.overdueTasksCount : 0;
+  const cap = Number.isFinite(params.maxWeightedScoreCap) && params.maxWeightedScoreCap > 0 ? params.maxWeightedScoreCap : 10;
+  const weightedWorkloadScore = leads * 2 + visits * 3 + tasks * 4;
+  const capacityUtilizationPercent = Math.min(100, Math.round((weightedWorkloadScore / Math.max(10, cap)) * 100));
   const statusLabelFa = params.availability === 'OFFLINE' ? 'خارج از دسترس' : capacityUtilizationPercent >= 85 ? 'ظرفیت تکمیل' : capacityUtilizationPercent >= 50 ? 'ظرفیت متعادل' : 'ظرفیت آزاد';
   return { ...params, weightedWorkloadScore, capacityUtilizationPercent, statusLabelFa };
 }

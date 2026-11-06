@@ -168,11 +168,11 @@ export interface NeighborhoodGeoCityHealthIssue {
 const VALID_CITY_ID_SET = new Set(['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz']);
 function inferCanonicalCityByHoodId(id: number): string | null {
   if (!Number.isInteger(id) || id < 1 || id > 999) return null;
-  if (id >= 1 && id <= 99) return 'tehran';
-  if (id >= 101 && id <= 199) return 'karaj';
-  if (id >= 201 && id <= 299) return 'mashhad';
-  if (id >= 301 && id <= 399) return 'isfahan';
-  if (id >= 401 && id <= 499) return 'shiraz';
+  if ((id >= 1 && id <= 99) || (id >= 500 && id <= 599)) return 'tehran';
+  if ((id >= 100 && id <= 199) || (id >= 600 && id <= 699)) return 'karaj';
+  if ((id >= 200 && id <= 299) || (id >= 700 && id <= 776) || (id >= 778 && id <= 799)) return 'mashhad';
+  if ((id >= 300 && id <= 399) || (id >= 800 && id <= 887) || (id >= 889 && id <= 899)) return 'isfahan';
+  if ((id >= 400 && id <= 499) || (id >= 900 && id <= 998)) return 'shiraz';
   return null;
 }
 export function checkNeighborhoodGeoAndCityHealth(

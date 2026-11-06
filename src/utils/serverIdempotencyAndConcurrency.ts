@@ -65,6 +65,7 @@ export class IdempotencyLedger { private readonly store = new Map<string, Idempo
       existing.status = 'IN_PROGRESS';
       existing.updatedAtMs = nowMs;
       existing.expiresAtMs = nowMs + this.ttlMs;
+      delete existing.errorMessage; delete existing.httpStatus; delete existing.responseBody;
       return { status: 'RETRY_AFTER_FAILURE', httpStatus: 200, record: existing };
     }
 
@@ -158,6 +159,7 @@ export class OptimisticConcurrencyStore<T extends Record<string, unknown>> {
   }
 
   upsertInitial(entityKey: string, initialData: T, actorId: string, nowIso = new Date().toISOString()): VersionedEntityRecord<T> {
+    if (!this.records.has(entityKey) && this.records.size >= 5000) { const oldest = this.records.keys().next().value; if (oldest !== undefined) this.records.delete(oldest); }
     const rec: VersionedEntityRecord<T> = {
       entityKey,
       revision: 1,

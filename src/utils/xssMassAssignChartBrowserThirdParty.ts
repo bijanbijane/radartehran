@@ -91,8 +91,11 @@ export function enforcePropertyLevelAuthorization(req: PropertyAuthorizationRequ
   }
   const allowlist = OPERATION_FIELD_ALLOWLISTS[req.operation];
   const sanitizedPatch: Record<string, unknown> = Object.create(null);
+  if (!req.rawRequestBody || typeof req.rawRequestBody !== 'object' || Array.isArray(req.rawRequestBody)) {
+    return { authorized: false, rejectionReason: 'INVALID_REQUEST_BODY_OBJECT', sanitizedPatch, blockedMassAssignmentFields, blockedNestedPrivilegeFields };
+  }
   for (const [field, value] of Object.entries(req.rawRequestBody)) {
-    if (!allowlist.has(field)) { blockedMassAssignmentFields.push(field); continue; }
+    if (!allowlist.has(field) || (typeof value === 'number' && !Number.isFinite(value))) { blockedMassAssignmentFields.push(field); continue; }
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       const nestedViolations = inspectNestedPrivilegeEscalation(value, field);
       if (nestedViolations.length > 0) { blockedNestedPrivilegeFields.push(...nestedViolations); continue; }

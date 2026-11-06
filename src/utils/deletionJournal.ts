@@ -262,8 +262,9 @@ export async function syncDeletionJournalReconciliationMetrics(input: {
   let journalSyncedCount = 0;
   const now = new Date();
   const syncWithStore = async (targetStore: JournalStore, objectId: string, finalStatus: JournalStatus, errorCode: string | null = null) => {
-    const opId = `reconcile_${objectId}_${now.getTime()}_${journalSyncedCount}`.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120);
-    const entry = createDeletionJournalEntry({ operationId: opId, objectId, objectKey: `reconcile/${objectId}`, now });
+    const safeObjId = (typeof objectId === "string" && objectId.trim() ? objectId.trim() : "unknown_object").slice(0, 200);
+    const opId = `reconcile_${safeObjId}_${now.getTime()}_${journalSyncedCount}`.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 120);
+    const entry = createDeletionJournalEntry({ operationId: opId, objectId: safeObjId, objectKey: `reconcile/${safeObjId}`, now });
     await createJournalOperation(targetStore, entry);
     const running = await transitionJournalOperation(targetStore, opId, 0, "running", { now, incrementAttempt: true });
     if (finalStatus === "completed") {

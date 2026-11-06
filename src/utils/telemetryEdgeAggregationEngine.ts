@@ -105,10 +105,11 @@ export class BoundedEdgeTelemetryRingBuffer {
       const idx = (this.head - this.size + i + this.capacity) % this.capacity;
       const item = this.buffer[idx];
       if (!item) continue;
-      activeDwellMs += Math.max(0, item.dwellDeltaMs);
+      const safeDwell = Number.isFinite(item.dwellDeltaMs) ? Math.max(0, item.dwellDeltaMs) : 0;
+      activeDwellMs += safeDwell;
       if (item.h3Cell) h3Set.add(item.h3Cell);
       if (item.flag) flagSet.add(item.flag);
-      if (item.toolId) toolDwell.set(item.toolId, (toolDwell.get(item.toolId) ?? 0) + Math.max(1, item.dwellDeltaMs));
+      if (item.toolId) toolDwell.set(item.toolId, (toolDwell.get(item.toolId) ?? 0) + Math.max(1, safeDwell));
     }
 
     let maxInteractedTool = 'none';
@@ -133,8 +134,8 @@ export class BoundedEdgeTelemetryRingBuffer {
 
   public flushViaBeaconOrKeepalive(endpointUrl: string): boolean {
     const cleanUrl = String(endpointUrl || '').trim();
-    const isSafeRelative = cleanUrl.startsWith('/api/') && !cleanUrl.startsWith('//') && !cleanUrl.includes('..');
-    const isSafeHttps = /^https:\/\/[a-zA-Z0-9.-]+(?::\d{1,5})?\/api\//.test(cleanUrl);
+    const isSafeRelative = cleanUrl.startsWith('/api/') && !cleanUrl.startsWith('//') && !cleanUrl.includes('..') && !/[\s<>"'`\\]/.test(cleanUrl);
+    const isSafeHttps = /^https:\/\/[a-zA-Z0-9.-]+(?::\d{1,5})?\/api\//.test(cleanUrl) && !cleanUrl.includes('..') && !/[\s<>"'`\\]/.test(cleanUrl);
     if (!isSafeRelative && !isSafeHttps) return false;
     const payload = JSON.stringify(this.buildSummaryPayload());
     this.head = 0;

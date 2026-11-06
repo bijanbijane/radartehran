@@ -25,7 +25,7 @@ export function buildScreenReaderChartAndStatusSummary(params: { hoodName: strin
       | 'OK' | 'INVALID_OR_REPLAYED_STATE' | 'STATE_EXPIRED' | 'DISALLOWED_REDIRECT_URI'
       | 'INVALID_ISSUER_OR_AUDIENCE' | 'TOKEN_EXPIRED' | 'NONCE_MISMATCH' | 'UNVERIFIED_EMAIL_CANNOT_LINK_OR_ELEVATE'; } { const nowMs = params.nowMs ?? Date.now(); const storedState = this.activeStates.get(params.state);
     if (!storedState || storedState.consumed) { return { authenticated: false, grantedAdminRole: false, reason: 'INVALID_OR_REPLAYED_STATE' }; }
-    if (nowMs > storedState.expiresAtMs) { storedState.consumed = true;
+    if (!Number.isFinite(nowMs) || nowMs > storedState.expiresAtMs) { storedState.consumed = true;
       return { authenticated: false, grantedAdminRole: false, reason: 'STATE_EXPIRED' }; }
     storedState.consumed = true; // One-time state consumption
     let parsedOrigin = '';
@@ -44,7 +44,7 @@ export function buildScreenReaderChartAndStatusSummary(params: { hoodName: strin
     if (params.claims.iss !== this.expectedIssuer || params.claims.aud !== this.expectedAudience) {
       return { authenticated: false, grantedAdminRole: false, reason: 'INVALID_ISSUER_OR_AUDIENCE' };
     }
-    if (params.claims.exp * 1000 <= nowMs) {
+    if (!Number.isFinite(params.claims.exp) || params.claims.exp * 1000 <= nowMs) {
       return { authenticated: false, grantedAdminRole: false, reason: 'TOKEN_EXPIRED' };
     }
     if (params.claims.nonce !== storedState.nonce) {

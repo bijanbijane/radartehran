@@ -1,17 +1,25 @@
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
 /** Prompt 1445: Periodic Building Inspection & Safety Compliance. */
 export function evaluateBuildingInspectionCompliance(params: { buildingId: string; category: 'FIRE_PROTECTION' | 'ELEVATOR_STANDARD' | 'ELECTRICAL_SAFETY' | 'BOILER_PRESSURE'; inspectionType: 'INTERNAL_CHECKLIST' | 'EXTERNAL_CERTIFIED_AUTHORITY'; issuingAuthorityName: string | null; certificateExpiresIso: string | null; unresolvedFindingsCount: number; hasSignedCertificateAttachment: boolean; nowIso: string;
-}) { const isExpired =
-    params.certificateExpiresIso !== null && Date.parse(params.certificateExpiresIso) < Date.parse(params.nowIso); const canClaimStatutoryCompliance = params.inspectionType === 'EXTERNAL_CERTIFIED_AUTHORITY' &&
+}) {
+  const expMs = params.certificateExpiresIso !== null ? Date.parse(params.certificateExpiresIso) : NaN;
+  const nowMs = Date.parse(params.nowIso);
+  const datesValid = Number.isFinite(nowMs) && (params.certificateExpiresIso === null || Number.isFinite(expMs));
+  const isExpired = !datesValid || (params.certificateExpiresIso !== null && expMs < nowMs);
+  const canClaimStatutoryCompliance = datesValid && params.inspectionType === 'EXTERNAL_CERTIFIED_AUTHORITY' &&
     Boolean(params.issuingAuthorityName) && params.hasSignedCertificateAttachment &&
-    !isExpired && params.unresolvedFindingsCount === 0; return { buildingId: params.buildingId, category: params.category, inspectionType: params.inspectionType, isExpired, unresolvedFindingsCount: params.unresolvedFindingsCount,
+    !isExpired && params.unresolvedFindingsCount === 0;
+  return {
+    buildingId: params.buildingId, category: params.category, inspectionType: params.inspectionType, isExpired, unresolvedFindingsCount: params.unresolvedFindingsCount,
     statutoryComplianceStatus: canClaimStatutoryCompliance
       ? ('VERIFIED_EXTERNAL_CERTIFICATE_ACTIVE' as const)
       : params.inspectionType === 'INTERNAL_CHECKLIST'
       ? ('INTERNAL_CHECKLIST_ONLY_NOT_STATUTORY_CERTIFICATE' as const)
       : isExpired
       ? ('EXPIRED_CERTIFICATE_RENEWAL_REQUIRED' as const)
-      : ('INCOMPLETE_OR_OPEN_FINDINGS' as const), }; }
+      : ('INCOMPLETE_OR_OPEN_FINDINGS' as const),
+  };
+}
 /**
  * Prompt 1446: Building Insurance Policy & Claim Tracking.
  * Distinguishes policy quotations from active issued policies and separates
@@ -169,44 +177,22 @@ export function calculatePropertyNoiAndInvestmentYields(params: {
     realizedCashNoiToman -
     params.capitalExpendituresToman -
     params.debtServiceInterestAndPrincipalToman;
-  const grossYieldOnMarketValuePercent =
-    params.currentMarketValuationToman > 0
-      ? Number(((effectiveGrossIncomeContractedToman / params.currentMarketValuationToman) * 100).toFixed(2))
-      : null;
-  const netYieldCapRateOnMarketValuePercent =
-    params.currentMarketValuationToman > 0
-      ? Number(((realizedCashNoiToman / params.currentMarketValuationToman) * 100).toFixed(2))
-      : null;
-  const yieldOnAcquisitionCostPercent =
-    params.historicalAcquisitionCostToman > 0
-      ? Number(((realizedCashNoiToman / params.historicalAcquisitionCostToman) * 100).toFixed(2))
-      : null;
-  const cashOnCashReturnPercent =
-    params.totalEquityInvestedToman > 0
-      ? Number(((preTaxCashFlowAfterDebtAndCapexToman / params.totalEquityInvestedToman) * 100).toFixed(2))
-      : null;
+  const mv = Number.isFinite(params.currentMarketValuationToman) && params.currentMarketValuationToman > 0 ? params.currentMarketValuationToman : null;
+  const acq = Number.isFinite(params.historicalAcquisitionCostToman) && params.historicalAcquisitionCostToman > 0 ? params.historicalAcquisitionCostToman : null;
+  const eq = Number.isFinite(params.totalEquityInvestedToman) && params.totalEquityInvestedToman > 0 ? params.totalEquityInvestedToman : null;
+  const grossYieldOnMarketValuePercent = mv ? Number(((effectiveGrossIncomeContractedToman / mv) * 100).toFixed(2)) : null;
+  const netYieldCapRateOnMarketValuePercent = mv ? Number(((realizedCashNoiToman / mv) * 100).toFixed(2)) : null;
+  const yieldOnAcquisitionCostPercent = acq ? Number(((realizedCashNoiToman / acq) * 100).toFixed(2)) : null;
+  const cashOnCashReturnPercent = eq ? Number(((preTaxCashFlowAfterDebtAndCapexToman / eq) * 100).toFixed(2)) : null;
   return {
-    assetId: params.assetId,
-    reportingPeriodLabel: params.reportingPeriodLabel,
-    effectiveGrossIncomeContractedToman,
-    actualCollectedGrossIncomeToman,
+    assetId: params.assetId, reportingPeriodLabel: params.reportingPeriodLabel,
+    effectiveGrossIncomeContractedToman, actualCollectedGrossIncomeToman,
     operatingExpensesToman: params.operatingExpensesToman,
-    excludedFromNoi: {
-      capitalExpendituresToman: params.capitalExpendituresToman,
-      debtServiceToman: params.debtServiceInterestAndPrincipalToman,
-      accountingDepreciationToman: params.accountingDepreciationToman,
-    },
-    contractedNoiToman,
-    realizedCashNoiToman,
-    displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
+    excludedFromNoi: { capitalExpendituresToman: params.capitalExpendituresToman, debtServiceToman: params.debtServiceInterestAndPrincipalToman, accountingDepreciationToman: params.accountingDepreciationToman },
+    contractedNoiToman, realizedCashNoiToman, displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
     realizedCashNoiIntlText: formatMillionTomanAsIntlCurrency(realizedCashNoiToman / 1_000_000, intlCurrency),
     preTaxCashFlowAfterDebtAndCapexToman,
-    yields: {
-      grossYieldOnMarketValuePercent,
-      netYieldCapRateOnMarketValuePercent,
-      yieldOnAcquisitionCostPercent,
-      cashOnCashReturnPercent,
-    },
+    yields: { grossYieldOnMarketValuePercent, netYieldCapRateOnMarketValuePercent, yieldOnAcquisitionCostPercent, cashOnCashReturnPercent },
   };
 }
 /**
@@ -231,22 +217,23 @@ export function calculateAssetTcoAndRepairVsReplaceDecision(params: {
     expectedDownTimeCostIfReplacedToman: number;
   };
 }) {
-  const r = Math.max(0, params.annualDiscountRatePercent) / 100;
+  const r = Math.max(0, Number.isFinite(params.annualDiscountRatePercent) ? params.annualDiscountRatePercent : 0) / 100;
   const horizonYears = Math.max(
     params.annualOperatingAndMaintenanceFlowsToman.length,
     params.plannedCapexFlowsToman.length
   );
-  let nominalTotalToman = params.initialAcquisitionToman + params.terminalDisposalCostOrSalvageToman;
-  let discountedNpvTotalToman = params.initialAcquisitionToman;
+  const acq = Number.isFinite(params.initialAcquisitionToman) ? params.initialAcquisitionToman : 0;
+  const salvage = Number.isFinite(params.terminalDisposalCostOrSalvageToman) ? params.terminalDisposalCostOrSalvageToman : 0;
+  let nominalTotalToman = acq + salvage;
+  let discountedNpvTotalToman = acq;
   for (let t = 0; t < horizonYears; t++) {
-    const opex = params.annualOperatingAndMaintenanceFlowsToman[t] ?? 0;
-    const capex = params.plannedCapexFlowsToman[t] ?? 0;
+    const opex = Number.isFinite(params.annualOperatingAndMaintenanceFlowsToman[t]) ? params.annualOperatingAndMaintenanceFlowsToman[t] : 0;
+    const capex = Number.isFinite(params.plannedCapexFlowsToman[t]) ? params.plannedCapexFlowsToman[t] : 0;
     const yearCost = opex + capex;
     nominalTotalToman += yearCost;
     discountedNpvTotalToman += yearCost / Math.pow(1 + r, t + 1);
   }
-  discountedNpvTotalToman +=
-    params.terminalDisposalCostOrSalvageToman / Math.pow(1 + r, Math.max(1, horizonYears));
+  discountedNpvTotalToman += salvage / Math.pow(1 + r, Math.max(1, horizonYears));
   const eq = params.equipmentDecisionInput;
   const hasCompleteDecisionInputs =
     eq.immediateRepairCostToman !== null &&

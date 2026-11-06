@@ -8,6 +8,9 @@ export interface SyntheticFinancialReconciliationInput { transactionId: string; 
 export function verifyFinancialTransactionReconciliation(input: SyntheticFinancialReconciliationInput): {
   reconciledAndAuthorized: boolean; serviceActivationPermitted: boolean; rejectionReason: string | null; trustedAmountRials: number;
 } {
+  if (!input.transactionId?.trim() || !input.orderOwnerUid?.trim() || !Number.isSafeInteger(input.authoritativeServerAmountRials) || input.authoritativeServerAmountRials <= 0) {
+    return { reconciledAndAuthorized: false, serviceActivationPermitted: false, rejectionReason: 'INVALID_TRANSACTION_OR_AMOUNT_PARAMETERS', trustedAmountRials: 0 };
+  }
   if (input.orderOwnerUid !== input.callbackActorUid) {
     return { reconciledAndAuthorized: false, serviceActivationPermitted: false, rejectionReason: 'CROSS_USER_TRANSACTION_SUBSTITUTION_BLOCKED', trustedAmountRials: input.authoritativeServerAmountRials };
   }

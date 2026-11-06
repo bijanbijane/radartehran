@@ -93,14 +93,16 @@ export function validateContractAnalysisResult(raw: unknown): ContractCheckRespo
   const r = raw as Record<string, unknown>;
   const riskScore = Number(r.riskScore);
   const riskLevel = r.riskLevel;
+  const rawTraps = Array.isArray(r.detectedTraps) ? r.detectedTraps : Array.isArray(r.traps) ? r.traps : null;
   const isValidRiskLevel =
+    riskLevel === 'LOW' || riskLevel === 'MEDIUM' || riskLevel === 'HIGH' ||
     riskLevel === 'امن' || riskLevel === 'نیازمند احتیاط' || riskLevel === 'خطرناک و پرریسک';
   if (
     !Number.isFinite(riskScore) ||
     riskScore < 0 ||
     riskScore > 100 ||
     !isValidRiskLevel ||
-    !Array.isArray(r.detectedTraps) ||
+    !rawTraps ||
     typeof r.legalAdvice !== 'string' ||
     !r.legalAdvice.trim() ||
     typeof r.safeRewrite !== 'string' ||
@@ -108,7 +110,7 @@ export function validateContractAnalysisResult(raw: unknown): ContractCheckRespo
   ) {
     return null;
   }
-  const detectedTraps = r.detectedTraps.slice(0, 25).map((t) => sanitizeInput(String(t || ''), 300).trim()).filter(Boolean);
+  const detectedTraps = rawTraps.slice(0, 25).map((t) => sanitizeInput(String(t || ''), 300).trim()).filter(Boolean);
   const legalAdvice = sanitizeInput(r.legalAdvice, 2000).trim();
   const safeRewrite = sanitizeInput(r.safeRewrite, 2000).trim();
   if (!legalAdvice || !safeRewrite) return null;

@@ -19,14 +19,14 @@ export function computeCanonicalPropertyIdentityKey(input: { cityId: string; nei
 }
 export function validateOutboundUrlAgainstSsrf( rawUrl: string, allowedHostnames: readonly string[], ): { allowed: boolean; reason: string | null; parsedUrl: URL | null } {
   try { const parsed = new URL(rawUrl); if (parsed.protocol !== 'https:') return { allowed: false, reason: 'NON_HTTPS_SCHEME_BLOCKED', parsedUrl: null }; if (parsed.username || parsed.password) return { allowed: false, reason: 'URL_CREDENTIALS_BLOCKED', parsedUrl: null };
-    const host = parsed.hostname.toLowerCase(); const bareHost = host.replace(/^\[|\]$/g, ''); if (
-      host === 'localhost' || host === '0.0.0.0' || bareHost === '::1' || bareHost.includes(':') ||
-      host.endsWith('.local') || host.endsWith('.internal') ||
-      /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) ||
-      /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+    const host = parsed.hostname.toLowerCase().replace(/\.$/, ''); const bareHost = host.replace(/^\[|\]$/g, ''); if (
+      !host || host === 'localhost' || host === '0.0.0.0' || bareHost === '::1' || bareHost.includes(':') ||
+      host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost') ||
+      /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^0\./.test(host) ||
+      /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host) || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)
     ) { return { allowed: false, reason: 'PRIVATE_OR_LOOPBACK_HOST_BLOCKED', parsedUrl: null };
     }
-    const normalizedAllowlist = allowedHostnames.map((h) => h.toLowerCase());
+    const normalizedAllowlist = allowedHostnames.map((h) => h.toLowerCase().replace(/\.$/, ''));
     if (normalizedAllowlist.length > 0 && !normalizedAllowlist.includes(host)) {
       return { allowed: false, reason: 'HOSTNAME_NOT_IN_ALLOWLIST', parsedUrl: null };
     }

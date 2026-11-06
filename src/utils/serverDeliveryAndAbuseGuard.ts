@@ -149,7 +149,7 @@ export function applyDeliveryBoundarySecurityHeaders(
 export function hasAuthenticationHeaders(req: Request): boolean {
   for (const [key, val] of Object.entries(req.headers || {})) {
     const lower = key.toLowerCase();
-    if ((lower === 'authorization' || lower === 'x-admin-token' || lower === 'x-payment-context' || lower === 'x-payment-signature') && val !== undefined && val !== '') return true;
+    if ((lower === 'authorization' || lower === 'x-admin-token' || lower === 'x-payment-context' || lower === 'x-payment-signature' || lower === 'payment-context' || lower === 'payment-signature') && val !== undefined && val !== '') return true;
   }
   return false;
 }
@@ -180,7 +180,7 @@ const FORBIDDEN_QUERY_CREDENTIAL_KEYS: ReadonlySet<string> = new Set([
   'x_admin_token', 'x-admin-token', 'api_key', 'apikey', 'secret', 'password', 'bottoken', 'bot_token',
 ]);
 const SINGLE_VALUE_QUERY_KEYS: ReadonlySet<string> = new Set([
-  'city', 'hood', 'hoodid', 'id', 'mode', 'refresh', 'objectid', 'key', 'returnto', 'redirect', 'next', 'lat', 'lng', 'compare',
+  'city', 'hood', 'hoodid', 'id', 'mode', 'refresh', 'objectid', 'key', 'returnto', 'redirect', 'next', 'lat', 'lng', 'compare', 'areaunit', 'intlcurrency', 'limit', 'offset', 'pages',
 ]);
 export function validateQueryParametersAndRejectCreds(
   queryObj: Record<string, unknown> | undefined,

@@ -9,13 +9,13 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     lines.push(`   💰 قیمت اعلامی: ${b.priceText} (${toPersianNum(b.discountPercent)}٪ پایین‌تر از میانگین محله | ${b.buyerProfitText})`);
   });
   lines.push(``, `ℹ️ این ارقام میانگین داده‌های پیکربندی هستند و جایگزین کارشناسی رسمی یا استعلام ثبتی نمی‌شوند.`);
-  return lines.join("\n"); } const registeredUtilityApps = new WeakSet<Express>(); export function registerUtilityRoutes( app: Express, deps: { checkRateLimit: (ip: string, bucket: RateBucketType, max: number, windowMs: number) => boolean; getClientIp: (req: Request) => string }
-): void { if (registeredUtilityApps.has(app)) return; registeredUtilityApps.add(app); const { checkRateLimit, getClientIp } = deps; registerSponsorAndBargainRoutes(app, { checkRateLimit, getClientIp }); app.post("/api/contract-check", async (req: Request, res: Response) => { const clientIp = getClientIp(req); if (!checkRateLimit(clientIp, "ai", 12, 10 * 60 * 1000)) { res.status(429).json({ status: "error", message: "تعداد درخواست‌های بررسی حقوقی بیش از حد مجاز است. لطفاً چند دقیقه دیگر تلاش کنید." }); return; } const rawClause = sanitizeInput(req.body?.clauseText || req.body?.contractText || "", 2500); const contractType = req.body?.contractType === "rent" ? "اجاره‌نامه" : "مبایعه‌نامه خرید"; if (!rawClause || rawClause.length < 10) { res.status(400).json({ status: "error", message: "لطفاً متن بند قرارداد را وارد کنید (حداقل ۱۰ کاراکتر)." }); return; }
-    const localRuleResult = runLocalLegalRuleEngine(rawClause, contractType);
+  return lines.join("\n"); } const registeredUtilityApps = new WeakSet<Express>(); const safeUtilAsync = (fn: (req: Request, res: Response) => Promise<void>) => (req: Request, res: Response) => { void fn(req, res).catch(() => { if (!res.headersSent) res.status(500).json({ status: "error", code: "INTERNAL_UTILITY_ERROR" }); }); }; export function registerUtilityRoutes( app: Express, deps: { checkRateLimit: (ip: string, bucket: RateBucketType, max: number, windowMs: number) => boolean; getClientIp: (req: Request) => string }
+): void { if (registeredUtilityApps.has(app)) return; registeredUtilityApps.add(app); const { checkRateLimit, getClientIp } = deps; registerSponsorAndBargainRoutes(app, { checkRateLimit, getClientIp }); app.post("/api/contract-check", safeUtilAsync(async (req: Request, res: Response) => { const clientIp = getClientIp(req); if (!checkRateLimit(clientIp, "ai", 12, 10 * 60 * 1000)) { res.status(429).json({ status: "error", message: "تعداد درخواست‌های بررسی حقوقی بیش از حد مجاز است. لطفاً چند دقیقه دیگر تلاش کنید." }); return; } const rawClause = sanitizeInput(req.body?.clauseText || req.body?.contractText || "", 2500); const contractType = req.body?.contractType === "rent" ? "اجاره‌نامه" : "مبایعه‌نامه خرید"; const areaUnit: AreaUnit = req.body?.areaUnit === "sqft" ? "sqft" : "sqm"; const intlCurrency: IntlCurrencyCode = ["IRT", "USD", "EUR", "AED"].includes(String(req.body?.intlCurrency)) ? (req.body.intlCurrency as IntlCurrencyCode) : "USD"; if (!rawClause || rawClause.length < 10) { res.status(400).json({ status: "error", message: "لطفاً متن بند قرارداد را وارد کنید (حداقل ۱۰ کاراکتر)." }); return; }
+    const localRuleResult = runLocalLegalRuleEngine(rawClause, contractType, areaUnit, intlCurrency);
     const injectionCheck = detectPromptInjection(rawClause); if (injectionCheck.blocked) {
       pushAuditLog("WARN", `تلاش تزریق پرامپت در بررسی حقوقی قرارداد مسدود شد (${injectionCheck.reason}).`);
       res.status(200).json(localRuleResult); return; }
-    const cacheKey = crypto.createHash("sha256").update(`${contractType}:${rawClause}`).digest("hex");
+    const cacheKey = crypto.createHash("sha256").update(`${contractType}:${areaUnit}:${intlCurrency}:${rawClause}`).digest("hex");
     const cached = contractCheckCache.get(cacheKey); if (cached && cached.expiresAt > Date.now()) { res.status(200).json(cached.payload); return; } const cfg = getValidatedServerConfig(); if (cfg.geminiConfigured && cfg.geminiApiKey && activeContractAiCalls < 3) { activeContractAiCalls += 1; try { const ai = new GoogleGenAI({ apiKey: cfg.geminiApiKey, httpOptions: { headers: { "User-Agent": "aistudio-build" } } }); const response = await ai.models.generateContent({ model: cfg.geminiModel || "gemini-2.5-flash",
           contents: `<untrusted_contract_clause>\n${rawClause}\n</untrusted_contract_clause>`,
           config: { abortSignal: AbortSignal.timeout(8_000),
@@ -33,48 +33,26 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
         pushAuditLog("INFO", `تحلیل حقوقی بند قرارداد (${contractType}) با Gemini انجام شد.`);
         res.status(200).json(payload); return; } catch { } finally { activeContractAiCalls = Math.max(0, activeContractAiCalls - 1); } }
     pushAuditLog("INFO", `تحلیل حقوقی بند قرارداد (${contractType}) با موتور قواعد داخلی انجام شد.`);
-    res.status(200).json(localRuleResult); }); app.get("/api/telegram-digest", async (req: Request, res: Response) => { if (!checkRateLimit(getClientIp(req), "general", 30, 60 * 1000)) { res.status(429).json({ status: "error", code: "DIGEST_RATE_LIMIT" }); return; } const city = validateCityParam(req.query.city, "tehran");
-    await getOrUpdateMarketPulse(city, false); const telegramText = buildTelegramDigestPost(city);
-    res.status(200).json({ status: "ok", city, telegramText, displayAreaUnitLabel: formatAreaUnitLabel("sqm"), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(100, "USD") });
-  });
-  app.post("/api/send-telegram", async (req: Request, res: Response) => {
+    res.status(200).json(localRuleResult); })); app.get("/api/telegram-digest", safeUtilAsync(async (req: Request, res: Response) => { if (!checkRateLimit(getClientIp(req), "general", 30, 60 * 1000)) { res.status(429).json({ status: "error", code: "DIGEST_RATE_LIMIT" }); return; } const city = validateCityParam(req.query.city, "tehran");
+    const areaUnit: AreaUnit = req.query.areaUnit === "sqft" ? "sqft" : "sqm"; const intlCurrency: IntlCurrencyCode = ["IRT", "USD", "EUR", "AED"].includes(String(req.query.intlCurrency)) ? (req.query.intlCurrency as IntlCurrencyCode) : "USD";
+    await getOrUpdateMarketPulse(city, false); const telegramText = buildTelegramDigestPost(city, areaUnit, intlCurrency);
+    res.status(200).json({ status: "ok", city, telegramText, displayAreaUnitLabel: formatAreaUnitLabel(areaUnit), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(100, intlCurrency) });
+  }));
+  app.post("/api/send-telegram", safeUtilAsync(async (req: Request, res: Response) => {
     const clientIp = getClientIp(req);
     if (!checkRateLimit(clientIp, "sync", 6, 10 * 60 * 1000)) {
-      res.status(429).json({
-        status: "error",
-        sent: false,
-        deliveryState: "rate_limited",
-        message: "تعداد درخواست‌های ارسال به تلگرام بیش از حد مجاز است.",
-      });
+      res.status(429).json({ status: "error", sent: false, deliveryState: "rate_limited", message: "تعداد درخواست‌های ارسال به تلگرام بیش از حد مجاز است." });
       return;
     }
-    const validation = validateTelegramSendRequest(
-      req.body,
-      req.headers["content-type"],
-      req.query.city
-    );
+    const validation = validateTelegramSendRequest(req.body, req.headers["content-type"], req.query.city);
     if (!validation.valid) {
-      res.status(validation.statusCode).json({
-        status: "error",
-        sent: false,
-        deliveryState: "permanently_failed",
-        code: validation.code,
-        message: validation.errorMessage,
-      });
+      res.status(validation.statusCode).json({ status: "error", sent: false, deliveryState: "permanently_failed", code: validation.code, message: validation.errorMessage });
       return;
     }
-    const authCheck = await verifyAdminApiAuthorization(
-      req.headers as Record<string, string | string[] | undefined>
-    );
+    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!authCheck.authorized) {
       recordAbuseSignal(clientIp, "auth_failure");
-      res.status(authCheck.statusCode).json({
-        status: "error",
-        sent: false,
-        deliveryState: "unauthorized",
-        code: authCheck.reason,
-        message: "ارسال مستقیم به کانال تلگرام نیازمند احراز هویت مدیر سیستم است.",
-      });
+      res.status(authCheck.statusCode).json({ status: "error", sent: false, deliveryState: "unauthorized", code: authCheck.reason, message: "ارسال مستقیم به کانال تلگرام نیازمند احراز هویت مدیر سیستم است." });
       return;
     }
     const cfg = getValidatedServerConfig();
@@ -82,79 +60,38 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     const msgHash = crypto.createHash("sha256").update(`${validation.city}:${messageToSend}`).digest("hex");
     const lastSentAt = recentTelegramIdempotency.get(msgHash);
     if (lastSentAt && Date.now() - lastSentAt < 60_000) {
-      res.status(200).json({
-        status: "ok",
-        sent: true,
-        duplicate: true,
-        deliveryState: "deduplicated",
-        message: "این پیام در یک دقیقه گذشته ارسال شده و از ارسال تکراری جلوگیری شد.",
-      });
+      res.status(200).json({ status: "ok", sent: true, duplicate: true, deliveryState: "deduplicated", message: "این پیام در یک دقیقه گذشته ارسال شده و از ارسال تکراری جلوگیری شد." });
       return;
     }
     if (!cfg.telegramConfigured || !cfg.telegramBotToken || !cfg.telegramChannelId) {
-      res.status(200).json({
-        status: "ok",
-        sent: false,
-        deliveryState: "unconfigured_fallback",
-        message:
-          "تنظیمات TELEGRAM_BOT_TOKEN یا TELEGRAM_CHANNEL_ID روی سرور فعال نیست؛ متن آماده کپی شد.",
-        telegramText: messageToSend,
-      });
+      res.status(200).json({ status: "ok", sent: false, deliveryState: "unconfigured_fallback", message: "تنظیمات TELEGRAM_BOT_TOKEN یا TELEGRAM_CHANNEL_ID روی سرور فعال نیست؛ متن آماده کپی شد.", telegramText: messageToSend });
       return;
     }
     try {
-      const tgRes = await fetch(
-        `https://api.telegram.org/bot${cfg.telegramBotToken}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: cfg.telegramChannelId,
-            text: messageToSend,
-          }),
-          signal: AbortSignal.timeout(8000),
-        }
-      );
+      const tgRes = await fetch(`https://api.telegram.org/bot${cfg.telegramBotToken}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: cfg.telegramChannelId, text: messageToSend }),
+        signal: AbortSignal.timeout(8000),
+      });
       const tgData = await tgRes.json();
       if (!tgRes.ok || !tgData?.ok) {
-        res.status(200).json({
-          status: "error",
-          sent: false,
-          deliveryState: tgRes.status >= 500 || tgRes.status === 429 ? "retryable_failure" : "permanently_failed",
-          message: "خطا از سمت سرور تلگرام در ارسال پیام به کانال.",
-        });
+        res.status(200).json({ status: "error", sent: false, deliveryState: tgRes.status >= 500 || tgRes.status === 429 ? "retryable_failure" : "permanently_failed", message: "خطا از سمت سرور تلگرام در ارسال پیام به کانال." });
         return;
       }
       pruneTelegramIdempotency(); recentTelegramIdempotency.set(msgHash, Date.now());
       pushAuditLog("SYNC", `پست گزارش بازار مسکن (${validation.city}) به کانال تلگرام ارسال شد.`);
       saveDiskPersistedCache();
-      res.status(200).json({
-        status: "ok",
-        sent: true,
-        deliveryState: "accepted_by_provider",
-        message: `پست گزارش بازار مسکن با موفقیت در کانال ${cfg.telegramChannelId} منتشر شد.`,
-      });
+      res.status(200).json({ status: "ok", sent: true, deliveryState: "accepted_by_provider", message: `پست گزارش بازار مسکن با موفقیت در کانال ${cfg.telegramChannelId} منتشر شد.` });
     } catch {
-      res.status(200).json({
-        status: "error",
-        sent: false,
-        deliveryState: "retryable_failure",
-        message: "ارتباط با API تلگرام برقرار نشد؛ لطفاً متن آماده را کپی کنید.",
-      });
+      res.status(200).json({ status: "error", sent: false, deliveryState: "retryable_failure", message: "ارتباط با API تلگرام برقرار نشد؛ لطفاً متن آماده را کپی کنید." });
     }
-  });
-  app.get(["/api/admin/buyer-alerts", "/api/admin/crm/leads"], async (req: Request, res: Response) => {
+  }));
+  app.get(["/api/admin/buyer-alerts", "/api/admin/crm/leads"], safeUtilAsync(async (req: Request, res: Response) => {
     res.setHeader("Cache-Control", "no-store");
-    const authCheck = await verifyAdminApiAuthorization(
-      req.headers as Record<string, string | string[] | undefined>
-    );
+    const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!authCheck.authorized) {
       recordAbuseSignal(getClientIp(req), "auth_failure");
-      res.status(authCheck.statusCode).json({
-        status: "error",
-        code: authCheck.reason,
-        message: "مشاهده لیست خریداران نیازمند احراز هویت مدیر سیستم است.",
-      });
+      res.status(authCheck.statusCode).json({ status: "error", code: authCheck.reason, message: "مشاهده لیست خریداران نیازمند احراز هویت مدیر سیستم است." });
       return;
     }
     if (!authCheck.uid) { res.status(503).json({ status: "error", code: "BUYER_ALERT_PERSIST_FAILED", message: "فهرست خریداران از پایگاه داده خوانده نشد." }); return; }
@@ -164,65 +101,39 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     } catch {
       res.status(503).json({ status: "error", code: "BUYER_ALERT_PERSIST_FAILED", message: "فهرست خریداران از پایگاه داده خوانده نشد." });
     }
-  });
-  app.post("/api/buyer-alerts", async (req: Request, res: Response) => {
+  }));
+  app.post("/api/buyer-alerts", safeUtilAsync(async (req: Request, res: Response) => {
     const appCheck = await verifyFirebaseAppCheckHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!appCheck.allowed) { res.status(appCheck.statusCode).json({ status: "error", code: appCheck.reason, message: "توکن App Check معتبر نیست." }); return; }
     const clientIp = getClientIp(req);
     if (!checkRateLimit(clientIp, "lead", 5, 60 * 60 * 1000)) {
       res.setHeader("Retry-After", "3600");
-      res.status(429).json({
-        status: "error",
-        code: "BUYER_LEAD_RATE_LIMIT",
-        message: "تعداد درخواست‌های ثبت علاقه‌مندی بیش از حد مجاز است. لطفاً بعداً دوباره تلاش کنید.",
-      });
+      res.status(429).json({ status: "error", code: "BUYER_LEAD_RATE_LIMIT", message: "تعداد درخواست‌های ثبت علاقه‌مندی بیش از حد مجاز است. لطفاً بعداً دوباره تلاش کنید." });
       return;
     }
     const contentType = String(req.headers["content-type"] || "");
     if (!contentType.toLowerCase().includes("application/json")) {
-      res.status(415).json({
-        status: "error",
-        code: "INVALID_CONTENT_TYPE",
-        message: "قالب درخواست باید JSON باشد.",
-      });
+      res.status(415).json({ status: "error", code: "INVALID_CONTENT_TYPE", message: "قالب درخواست باید JSON باشد." });
       return;
     }
-    const authCheck = await verifyFirebaseUserAuthorization(
-      req.headers as Record<string, string | string[] | undefined>
-    );
+    const authCheck = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!authCheck.authorized) {
       recordAbuseSignal(clientIp, "auth_failure");
-      res.status(authCheck.statusCode).json({
-        status: "error",
-        code: authCheck.reason,
-        message: "ثبت شمارهٔ خریدار نیازمند ورود به حساب کاربری تأییدشده است.",
-      });
+      res.status(authCheck.statusCode).json({ status: "error", code: authCheck.reason, message: "ثبت شمارهٔ خریدار نیازمند ورود به حساب کاربری تأییدشده است." });
       return;
     }
     if (authCheck.uid && !checkAccountQuota(authCheck.uid, "buyer_alert", 6, 15 * 60 * 1000)) {
-      res.status(429).json({
-        status: "error",
-        code: "ACCOUNT_QUOTA_EXCEEDED",
-        message: "سقف مجاز ثبت درخواست برای حساب کاربری شما تکمیل شده است.",
-      });
+      res.status(429).json({ status: "error", code: "ACCOUNT_QUOTA_EXCEEDED", message: "سقف مجاز ثبت درخواست برای حساب کاربری شما تکمیل شده است." });
       return;
     }
     if (req.body?.privacyConsent !== true || req.body?.consentVersion !== "buyer-alert-2026-10-v1") {
-      res.status(400).json({
-        status: "error",
-        code: "PRIVACY_CONSENT_REQUIRED",
-        message: "پذیرش صریح شرایط حریم خصوصی و رضایت از نگهداری ۹۰ روزه الزامی است.",
-      });
+      res.status(400).json({ status: "error", code: "PRIVACY_CONSENT_REQUIRED", message: "پذیرش صریح شرایط حریم خصوصی و رضایت از نگهداری ۹۰ روزه الزامی است." });
       return;
     }
     const phone = cleanIranianMobile(req.body?.phone || "");
     const fullName = sanitizeInput(req.body?.fullName || "", 80);
     if (!isValidIranianMobile(phone) || fullName.trim().length < 2) {
-      res.status(400).json({
-        status: "error",
-        code: "INVALID_BUYER_LEAD",
-        message: "لطفاً نام و شماره موبایل معتبر ۱۱ رقمی ایران وارد کنید.",
-      });
+      res.status(400).json({ status: "error", code: "INVALID_BUYER_LEAD", message: "لطفاً نام و شماره موبایل معتبر ۱۱ رقمی ایران وارد کنید." });
       return;
     }
     const requestedCity = validateCityParam(req.body?.city, "tehran");
@@ -231,20 +142,12 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     const rawHoodId = Number(req.body?.hoodId);
     const canonicalHood = cityHoods.find((hood) => hood.id === rawHoodId) || allHoods.find((hood) => hood.id === rawHoodId);
     if (!canonicalHood) {
-      res.status(400).json({
-        status: "error",
-        code: "UNKNOWN_NEIGHBORHOOD",
-        message: "محلهٔ انتخاب‌شده معتبر نیست.",
-      });
+      res.status(400).json({ status: "error", code: "UNKNOWN_NEIGHBORHOOD", message: "محلهٔ انتخاب‌شده معتبر نیست." });
       return;
     }
     const rawDealType = req.body?.dealType;
     if (rawDealType !== undefined && rawDealType !== "خرید" && rawDealType !== "اجاره" && rawDealType !== "رهن و اجاره") {
-      res.status(400).json({
-        status: "error",
-        code: "INVALID_DEAL_TYPE",
-        message: "نوع معامله باید خرید یا اجاره باشد.",
-      });
+      res.status(400).json({ status: "error", code: "INVALID_DEAL_TYPE", message: "نوع معامله باید خرید یا اجاره باشد." });
       return;
     }
     const dealType: "خرید" | "اجاره" = rawDealType === "اجاره" || rawDealType === "رهن و اجاره" ? "اجاره" : "خرید";
@@ -261,15 +164,11 @@ import { registerSponsorAndBargainRoutes } from "./serverSponsorAndBargainRoutes
     pushAuditLog("INFO", `ثبت درخواست پیگیری خریدار برای محلهٔ ${canonicalHood.name}`);
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({
-      status: "ok",
-      durable: true,
-      duplicate: persisted.duplicate,
-      smsConfigured: false,
-      retentionDays: 90,
+      status: "ok", durable: true, duplicate: persisted.duplicate, smsConfigured: false, retentionDays: 90,
       expiresAtIso: persisted.expiresAtIso,
       message: persisted.duplicate
         ? `درخواست شما برای محلهٔ ${canonicalHood.name} پیش‌تر ثبت شده است.`
         : `درخواست شما برای محلهٔ ${canonicalHood.name} با مهلت نگهداری ۹۰ روزه ثبت شد.`,
-    }); }); app.post("/api/track-call", (req: Request, res: Response) => { const ip = getClientIp(req); if (!checkRateLimit(ip, "call_track", 20, 60 * 1000)) { res.status(429).json({ status: "error", code: "CALL_TRACK_RATE_LIMIT" }); return; } const hoodName = sanitizeInput(req.body?.hoodName || "محله", 60);
+    }); })); app.post("/api/track-call", (req: Request, res: Response) => { const ip = getClientIp(req); if (!checkRateLimit(ip, "call_track", 20, 60 * 1000)) { res.status(429).json({ status: "error", code: "CALL_TRACK_RATE_LIMIT" }); return; } const hoodName = sanitizeInput(req.body?.hoodName || "محله", 60);
     pushAuditLog("INFO", `ثبت تماس تلفنی با مشاور منتخب محله ${hoodName}`);
     res.status(200).json({ status: "ok" }); }); }

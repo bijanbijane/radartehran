@@ -96,12 +96,9 @@ export async function fetchFreeLiveGoldAndUsdRates(fallback: FreeMacroRates): Pr
     const html = await readBoundedResponseText(res, MAX_UPSTREAM_TEXT_BYTES);
     if (!html) return fallbackWithProvenance;
 
-    const goldMatch =
-      html.match(/geram18[\s\S]{1,350}?data-col="info\.last_trade\.PDrCotVal"[^>]*>([\d,]+)</i) ||
-      html.match(/طلای 18 عیار[\s\S]{1,350}?([\d,]{7,12})/i);
-    const usdMatch =
-      html.match(/price_dollar_rl[\s\S]{1,350}?data-col="info\.last_trade\.PDrCotVal"[^>]*>([\d,]+)</i) ||
-      html.match(/دلار[\s\S]{1,250}?([\d,]{6,10})/i);
+    const normHtml = html.replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 0x06f0)).replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x0660)).replace(/[٬،\u066C\u060C]/g, ',');
+    const goldMatch = normHtml.match(/geram18[\s\S]{1,350}?data-col="info\.last_trade\.PDrCotVal"[^>]*>([\d,]+)</i) || normHtml.match(/طلای 18 عیار[\s\S]{1,350}?([\d,]{7,12})/i);
+    const usdMatch = normHtml.match(/price_dollar_rl[\s\S]{1,350}?data-col="info\.last_trade\.PDrCotVal"[^>]*>([\d,]+)</i) || normHtml.match(/دلار[\s\S]{1,250}?([\d,]{6,10})/i);
 
     let gold18kToman = fallback.gold18kToman;
     let usdToman = fallback.usdToman;
@@ -202,7 +199,7 @@ export async function fetchFreeDivarNeighborhoodStats(
 
     const sortedPrices = validSamples.map((s) => s.perSqmMillion).sort((a, b) => a - b);
     const mid = Math.floor(sortedPrices.length / 2);
-    const medianBuyPerSqm = Math.round(sortedPrices[mid]);
+    const medianBuyPerSqm = Math.round(sortedPrices.length % 2 === 1 ? sortedPrices[mid] : (sortedPrices[mid - 1] + sortedPrices[mid]) / 2);
 
     const bargains: BargainListing[] = validSamples
       .filter((s) => s.perSqmMillion <= medianBuyPerSqm * 0.89 && s.perSqmMillion >= medianBuyPerSqm * 0.68)

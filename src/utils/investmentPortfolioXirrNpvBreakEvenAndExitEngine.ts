@@ -2,12 +2,41 @@ import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUni
 export function evaluatePortfolioExposureOpportunityAndCostBasis(params: { portfolioPositions: readonly { positionId: string; underlyingPropertyId: string; participationSharePercent: number; grossPropertyValuationToman: number; }[]; investorCommitments: { committedCapitalToman: number; paidInContributionsToman: number; calledAmountToman: number; }; opportunityConversionAttempt: { opportunityId: string; stage: 'APPROVED_BY_IC' | 'DUE_DILIGENCE' | 'ACQUIRED'; hasAuthorizedAcquisitionSettlementEvent: boolean; }; acquisitionCostItems: readonly { costId: string; amountToman: number; category: 'PURCHASE_CONSIDERATION' | 'REGISTRATION_DEED_TAX' | 'BROKERAGE_CAPITALIZABLE' | 'ROUTINE_OPERATING_MAINTENANCE'; isCapitalizableUnderPolicy: boolean; }[]; areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; }) {
   const areaUnit = params.areaUnit ?? getStoredAreaUnit();
   const intlCurrency = params.intlCurrency ?? getStoredIntlCurrency();
-  const shareByPropertyBp = new Map<string, { totalBp: number; grossValuationToman: number; count: number }>(); for (const pos of params.portfolioPositions) { const bp = Math.round(pos.participationSharePercent * 100); const prev = shareByPropertyBp.get(pos.underlyingPropertyId); if (!prev) { shareByPropertyBp.set(pos.underlyingPropertyId, { totalBp: Math.min(10_000, bp),
-        grossValuationToman: pos.grossPropertyValuationToman, count: 1, }); } else { shareByPropertyBp.set(pos.underlyingPropertyId, { totalBp: Math.min(10_000, prev.totalBp + bp), grossValuationToman: pos.grossPropertyValuationToman, count: prev.count + 1, }); } }
-  let deduplicatedPortfolioExposureToman = 0; let duplicatePropertyOvercountPrevented = false; for (const entry of shareByPropertyBp.values()) { if (entry.count > 1) duplicatePropertyOvercountPrevented = true; deduplicatedPortfolioExposureToman += Math.round((entry.grossValuationToman * entry.totalBp) / 10_000); }
-  const ic = params.investorCommitments; const unfundedCommitmentGapToman = Math.max(0, ic.committedCapitalToman - ic.paidInContributionsToman); const opp = params.opportunityConversionAttempt; const opportunityConvertedToActivePosition =
-    opp.hasAuthorizedAcquisitionSettlementEvent && opp.stage === 'ACQUIRED'; let capitalizedCostBasisToman = 0; let expensedOperatingItemsToman = 0; for (const item of params.acquisitionCostItems) {
-    if (item.isCapitalizableUnderPolicy && item.category !== 'ROUTINE_OPERATING_MAINTENANCE') { capitalizedCostBasisToman += item.amountToman; } else { expensedOperatingItemsToman += item.amountToman; } }
+  const shareByPropertyBp = new Map<string, { totalBp: number; grossValuationToman: number; count: number }>();
+  for (const pos of params.portfolioPositions) {
+    const rawShare = Number(pos.participationSharePercent);
+    const bp = Number.isFinite(rawShare) ? Math.max(0, Math.round(rawShare * 100)) : 0;
+    const rawVal = Number(pos.grossPropertyValuationToman);
+    const grossVal = Number.isFinite(rawVal) ? Math.max(0, rawVal) : 0;
+    const prev = shareByPropertyBp.get(pos.underlyingPropertyId);
+    if (!prev) {
+      shareByPropertyBp.set(pos.underlyingPropertyId, { totalBp: Math.min(10_000, bp), grossValuationToman: grossVal, count: 1 });
+    } else {
+      shareByPropertyBp.set(pos.underlyingPropertyId, { totalBp: Math.min(10_000, prev.totalBp + bp), grossValuationToman: grossVal, count: prev.count + 1 });
+    }
+  }
+  let deduplicatedPortfolioExposureToman = 0;
+  let duplicatePropertyOvercountPrevented = false;
+  for (const entry of shareByPropertyBp.values()) {
+    if (entry.count > 1) duplicatePropertyOvercountPrevented = true;
+    deduplicatedPortfolioExposureToman += Math.round((entry.grossValuationToman * entry.totalBp) / 10_000);
+  }
+  const ic = params.investorCommitments;
+  const committed = Number.isFinite(ic.committedCapitalToman) ? Math.max(0, ic.committedCapitalToman) : 0;
+  const paidIn = Number.isFinite(ic.paidInContributionsToman) ? Math.max(0, ic.paidInContributionsToman) : 0;
+  const unfundedCommitmentGapToman = Math.max(0, committed - paidIn);
+  const opp = params.opportunityConversionAttempt;
+  const opportunityConvertedToActivePosition = opp.hasAuthorizedAcquisitionSettlementEvent && opp.stage === 'ACQUIRED';
+  let capitalizedCostBasisToman = 0;
+  let expensedOperatingItemsToman = 0;
+  for (const item of params.acquisitionCostItems) {
+    const amt = Number.isFinite(item.amountToman) ? Math.max(0, item.amountToman) : 0;
+    if (item.isCapitalizableUnderPolicy && item.category !== 'ROUTINE_OPERATING_MAINTENANCE') {
+      capitalizedCostBasisToman += amt;
+    } else {
+      expensedOperatingItemsToman += amt;
+    }
+  }
   return {
     deduplicatedPortfolioExposureToman,
     displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
@@ -30,9 +59,9 @@ export function evaluateXirrNpvRentalYieldAndReturnDecomposition(params: {
   rentalYieldMetrics: { refundableDepositExcludedFromIncome: true; netOperatingIncomeNoiToman: number; cashFlowAfterFinancingToman: number; grossYieldPercent: number | null; netYieldCapRatePercent: number | null };
   returnDecomposition: { incomeReturnToman: number; unrealizedValuationGainToman: number; realizedCapitalGainToman: number | null; unrealizedGainClassifiedAsRealizedProfit: false };
 } {
-  const flows = [...params.datedCashFlows].sort(
-    (a, b) => Date.parse(a.dateIso) - Date.parse(b.dateIso)
-  );
+  const flows = params.datedCashFlows
+    .filter((f) => Number.isFinite(f.amountToman) && Number.isFinite(Date.parse(f.dateIso)))
+    .sort((a, b) => Date.parse(a.dateIso) - Date.parse(b.dateIso));
   let signChanges = 0;
   let prevSign = 0;
   for (const f of flows) {

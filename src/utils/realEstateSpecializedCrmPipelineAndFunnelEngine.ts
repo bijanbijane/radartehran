@@ -17,11 +17,14 @@ export function evaluateCrmContactLeadAndExplainableScore(params: { contact: { c
     .map((c) => c.contactId);
   const s = params.leadScoringInput;
   const budgetComponent = s.statedBudgetVerified ? 30 : 10;
-  const urgencyComponent = s.timelineUrgencyDays <= 14 ? 25 : s.timelineUrgencyDays <= 45 ? 15 : 5;
-  const fitComponent = Math.round(Math.max(0, Math.min(1, s.propertyFitRatio0To1)) * 30);
-  const engagementComponent = Math.min(15, s.recordedInteractionsCount * 5);
+  const urgencyDays = Number.isFinite(s.timelineUrgencyDays) ? s.timelineUrgencyDays : 999;
+  const urgencyComponent = urgencyDays <= 14 ? 25 : urgencyDays <= 45 ? 15 : 5;
+  const fitRatio = Number.isFinite(s.propertyFitRatio0To1) ? Math.max(0, Math.min(1, s.propertyFitRatio0To1)) : 0;
+  const fitComponent = Math.round(fitRatio * 30);
+  const interactions = Number.isFinite(s.recordedInteractionsCount) && s.recordedInteractionsCount > 0 ? s.recordedInteractionsCount : 0;
+  const engagementComponent = Math.min(15, interactions * 5);
   const manualDelta =
-    s.manualOverrideAdjustment && s.manualOverrideAdjustment.reason.trim().length > 0
+    s.manualOverrideAdjustment && Number.isFinite(s.manualOverrideAdjustment.deltaPoints) && s.manualOverrideAdjustment.reason.trim().length > 0
       ? s.manualOverrideAdjustment.deltaPoints
       : 0;
   const finalScore0To100 = Math.max(
@@ -161,12 +164,13 @@ export function evaluatePipelineViewingNegotiationAndDealConversion(params: {
   // 1572: Viewing Appointment Conflict Check
   const reqStart = Date.parse(params.viewingRequest.proposedStartIso);
   const reqEnd = Date.parse(params.viewingRequest.proposedEndIso);
-  const hasScheduleConflict = params.viewingRequest.existingAgentAppointments.some((a) => {
+  const datesValid = Number.isFinite(reqStart) && Number.isFinite(reqEnd) && reqStart < reqEnd;
+  const hasScheduleConflict = datesValid && params.viewingRequest.existingAgentAppointments.some((a) => {
     const aStart = Date.parse(a.startIso);
     const aEnd = Date.parse(a.endIso);
-    return reqStart < aEnd && reqEnd > aStart;
+    return Number.isFinite(aStart) && Number.isFinite(aEnd) && reqStart < aEnd && reqEnd > aStart;
   });
-  const appointmentStatus = hasScheduleConflict
+  const appointmentStatus = !datesValid || hasScheduleConflict
     ? ('REJECTED_AGENT_SCHEDULE_CONFLICT' as const)
     : ('CONFIRMED_SLOT_RESERVED' as const);
   // 1574: Controlled Opportunity-to-Deal Conversion
@@ -227,36 +231,26 @@ export function evaluateCrmAttributionPerformanceFunnelAndAutomation(params: {
   );
   const firstTouchChannel = sortedTouches[0]?.channel ?? null;
   const latestTouchChannel = sortedTouches[sortedTouches.length - 1]?.channel ?? null;
-  const agentAttributedVolume = params.sharedDealCreditSplits.map((s) => ({
-    agentId: s.agentId,
-    sharePercent: s.sharePercent,
-    attributedDealVolumeToman: Math.round(s.dealValueToman * (s.sharePercent / 100)),
-  }));
-  const participationRatePercent =
-    params.csatSurvey.invitationsSentCount > 0
-      ? Number(
-          ((params.csatSurvey.responsesSubmittedCount / params.csatSurvey.invitationsSentCount) * 100).toFixed(1)
-        )
-      : 0;
-  const avgCsatScore =
-    params.csatSurvey.ratingsOneToFive.length > 0
-      ? Number(
-          (
-            params.csatSurvey.ratingsOneToFive.reduce((a, b) => a + b, 0) /
-            params.csatSurvey.ratingsOneToFive.length
-          ).toFixed(2)
-        )
-      : null;
-  const stageQualificationRatePercent =
-    params.cohortFunnel.cohortLeadsCount > 0
-      ? Number(((params.cohortFunnel.stageQualifiedCount / params.cohortFunnel.cohortLeadsCount) * 100).toFixed(1))
-      : 0;
-  const finalDealConversionRatePercent =
-    params.cohortFunnel.cohortLeadsCount > 0
-      ? Number(((params.cohortFunnel.closedWonDealsCount / params.cohortFunnel.cohortLeadsCount) * 100).toFixed(1))
-      : 0;
-  const loopBlocked =
-    params.automationTrigger.recursionDepth > params.automationTrigger.maxAllowedRecursionDepth;
+  const agentAttributedVolume = params.sharedDealCreditSplits.map((s) => {
+    const share = Number.isFinite(s.sharePercent) && s.sharePercent >= 0 ? s.sharePercent : 0;
+    const dealVal = Number.isFinite(s.dealValueToman) && s.dealValueToman >= 0 ? s.dealValueToman : 0;
+    return {
+      agentId: s.agentId,
+      sharePercent: share,
+      attributedDealVolumeToman: Math.round(dealVal * (share / 100)),
+    };
+  });
+  const invSent = Number.isFinite(params.csatSurvey.invitationsSentCount) && params.csatSurvey.invitationsSentCount > 0 ? params.csatSurvey.invitationsSentCount : 0;
+  const respSub = Number.isFinite(params.csatSurvey.responsesSubmittedCount) && params.csatSurvey.responsesSubmittedCount > 0 ? params.csatSurvey.responsesSubmittedCount : 0;
+  const participationRatePercent = invSent > 0 ? Number(((respSub / invSent) * 100).toFixed(1)) : 0;
+  const validRatings = params.csatSurvey.ratingsOneToFive.filter((r) => Number.isFinite(r) && r >= 1 && r <= 5);
+  const avgCsatScore = validRatings.length > 0 ? Number((validRatings.reduce((a, b) => a + b, 0) / validRatings.length).toFixed(2)) : null;
+  const cohortLeads = Number.isFinite(params.cohortFunnel.cohortLeadsCount) && params.cohortFunnel.cohortLeadsCount > 0 ? params.cohortFunnel.cohortLeadsCount : 0;
+  const qualified = Number.isFinite(params.cohortFunnel.stageQualifiedCount) && params.cohortFunnel.stageQualifiedCount >= 0 ? params.cohortFunnel.stageQualifiedCount : 0;
+  const closedWon = Number.isFinite(params.cohortFunnel.closedWonDealsCount) && params.cohortFunnel.closedWonDealsCount >= 0 ? params.cohortFunnel.closedWonDealsCount : 0;
+  const stageQualificationRatePercent = cohortLeads > 0 ? Number(((qualified / cohortLeads) * 100).toFixed(1)) : 0;
+  const finalDealConversionRatePercent = cohortLeads > 0 ? Number(((closedWon / cohortLeads) * 100).toFixed(1)) : 0;
+  const loopBlocked = params.automationTrigger.recursionDepth > params.automationTrigger.maxAllowedRecursionDepth;
   return {
     attribution: { firstTouchChannel, latestTouchChannel },
     agentAttributedVolume,

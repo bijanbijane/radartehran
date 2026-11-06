@@ -243,13 +243,14 @@ export async function listDurableBuyerAlerts(callerUid: string, callerEmail?: st
     if (Number.isFinite(expiresMs) && expiresMs <= nowMs) return;
     const hoodId = Number(data.hoodId);
     if (!Number.isInteger(hoodId) || typeof data.fullName !== 'string' || typeof data.phone !== 'string') return;
+    const createdAtIso = typeof data.createdAtIso === 'string' ? data.createdAtIso : undefined;
+    const rawCreatedAtFa = typeof data.createdAtFa === 'string' ? data.createdAtFa.trim() : '';
+    const createdAtFa = rawCreatedAtFa || (createdAtIso && Number.isFinite(Date.parse(createdAtIso)) ? new Date(createdAtIso).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }) : '');
     leads.push({
       id: docSnap.id, hoodId, hoodName: typeof data.hoodName === 'string' ? data.hoodName : '',
       fullName: data.fullName, phone: data.phone, dealType: data.dealType === 'اجاره' ? 'اجاره' : 'خرید',
       maxBudgetText: typeof data.maxBudgetText === 'string' ? data.maxBudgetText : '',
-      createdAtFa: typeof data.createdAtFa === 'string' ? data.createdAtFa : '',
-      createdAtIso: typeof data.createdAtIso === 'string' ? data.createdAtIso : undefined,
-      expiresAtIso: expiresAtIso || undefined,
+      createdAtFa, createdAtIso, expiresAtIso: expiresAtIso || undefined,
       consentAtIso: typeof data.consentAtIso === 'string' ? data.consentAtIso : undefined,
       consentVersion: typeof data.consentVersion === 'string' ? data.consentVersion : undefined,
       submittedByUid: typeof data.userId === 'string' ? data.userId : undefined,
@@ -267,9 +268,10 @@ export async function persistBuyerAlertDocument(params: { uid: string; email?: s
     operation: async () => {
       const ref = getFirebaseAdminFirestoreForServer().collection('buyerAlerts').doc(alertDocId);
       const existing = await ref.get();
+      const createdAtFa = now.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
       const fields = { userId: params.uid, hoodId: params.hoodId, hoodName: params.hoodName.slice(0, 80), fullName: params.fullName, phone: params.phone, dealType: params.dealType, maxBudgetText: params.maxBudgetText, consentVersion: 'buyer-alert-2026-10-v1', expiresAtIso: expiresAt.toISOString(), updatedAtIso: now.toISOString() };
       if (existing.exists) { await ref.set(fields, { merge: true }); return true; }
-      await ref.set({ ...fields, createdAtIso: now.toISOString(), consentAtIso: now.toISOString() });
+      await ref.set({ ...fields, createdAtFa, createdAtIso: now.toISOString(), consentAtIso: now.toISOString() });
       return false;
     },
   });

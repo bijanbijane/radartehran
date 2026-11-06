@@ -2,9 +2,9 @@ import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'no
 export interface PrintableValuationReportInput { reportId: string; requesterUid: string | null; reportOwnerUid: string; neighborhoodNameFa: string; sqm: number; authoritativeBuyPerSqmMillion: number; authoritativeTotalMillion: number; renderedBuyPerSqmMillion: number; renderedTotalMillion: number; valuationMethod: 'CALCULATED_HEDONIC' | 'ESTIMATED_MARKET_BASELINE'; generatedAtIsoUtc: string; embeddedResourceUrls: string[]; requestedFilename: string; }
 export interface PrintableValuationReportAudit { authorized: boolean; numericalParityVerified: boolean; ssrfSafe: boolean; blockedSsrfUrls: string[]; safeContentDispositionFilename: string; rtlVazirmatnConfigured: boolean; sanitizedPrintableHtml: string; issues: string[]; displayAreaUnitLabel: string; authoritativeTotalIntlText: string; }
 function isSsrfOrLocalResourceUrl(rawUrl: string): boolean { const trimmed = rawUrl.trim(); const lower = trimmed.toLowerCase(); if (lower.startsWith('//') || lower.startsWith('/\\') || trimmed.includes('..') || lower.startsWith('file:') || lower.startsWith('ftp:') || lower.startsWith('gopher:') || lower.startsWith('data:text/html') || lower.startsWith('javascript:')) { return true; }
-  try { const parsed = new URL(trimmed); const host = parsed.hostname.toLowerCase(); if (
-      host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '::1' || host === '[::1]' || host === '169.254.169.254' || host.startsWith('10.') || host.startsWith('192.168.') ||
-      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) || host.endsWith('.internal') || host.endsWith('.local')
+  try { const parsed = new URL(trimmed); const host = parsed.hostname.toLowerCase().replace(/\.+$/, ''); if (
+      !host || host === 'localhost' || host.endsWith('.localhost') || host === '127.0.0.1' || host === '0.0.0.0' || host === '::1' || host === '[::1]' || host === '169.254.169.254' || host.startsWith('10.') || host.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host) || /^\[?(?:fc|fd|fe80):/i.test(host) || host.endsWith('.internal') || host.endsWith('.local')
     ) { return true; }
     return parsed.protocol !== 'https:'; } catch { return !/^\/[A-Za-z0-9_\-/?.]+$/.test(trimmed); }
 }
@@ -15,6 +15,9 @@ export function buildAndAuditPrintableValuationReport(
   const issues: string[] = [];
   const authorized = Boolean(input.requesterUid && input.requesterUid === input.reportOwnerUid); if (!authorized) issues.push('UNAUTHORIZED_REPORT_ACCESS');
   const numericalParityVerified =
+    Number.isFinite(input.sqm) && input.sqm > 0 &&
+    Number.isFinite(input.authoritativeBuyPerSqmMillion) && input.authoritativeBuyPerSqmMillion > 0 &&
+    Number.isFinite(input.authoritativeTotalMillion) && input.authoritativeTotalMillion > 0 &&
     Math.abs(input.authoritativeBuyPerSqmMillion - input.renderedBuyPerSqmMillion) < 0.001 &&
     Math.abs(input.authoritativeTotalMillion - input.renderedTotalMillion) < 0.001 &&
     Math.abs(input.sqm * input.authoritativeBuyPerSqmMillion - input.authoritativeTotalMillion) < 1;
@@ -96,6 +99,10 @@ export function convertGregorianIsoToJalali(isoOrDateOnly: string): JalaliDatePa
   let gy: number, gm: number, gd: number;
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     [gy, gm, gd] = trimmed.split('-').map(Number);
+    const check = d2g(g2d(gy, gm, gd));
+    if (gm < 1 || gm > 12 || gd < 1 || gd > 31 || check.gy !== gy || check.gm !== gm || check.gd !== gd) {
+      throw new Error(`INVALID_ISO_TIMESTAMP:${isoOrDateOnly}`);
+    }
   } else {
     const parsedMs = Date.parse(trimmed);
     if (!Number.isFinite(parsedMs)) throw new Error(`INVALID_ISO_TIMESTAMP:${isoOrDateOnly}`);

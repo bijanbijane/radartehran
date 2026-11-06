@@ -249,9 +249,12 @@ ${xmlItems}
   });
   app.get('/api/openapi.json', (req: Request, res: Response) => {
     const baseUrl = resolveBaseUrl(req);
+    const areaUnit: AreaUnit = req.query?.areaUnit === 'sqft' ? 'sqft' : 'sqm';
+    const rawCurr = String(req.query?.intlCurrency || '');
+    const intlCurrency: IntlCurrencyCode = ['IRT', 'USD', 'EUR', 'AED', 'GBP'].includes(rawCurr) ? (rawCurr as IntlCurrencyCode) : 'USD';
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'public, max-age=300');
-    res.status(200).json(buildOpenApiSpecification(baseUrl));
+    res.status(200).json(buildOpenApiSpecification(baseUrl, areaUnit, intlCurrency));
   });
 }

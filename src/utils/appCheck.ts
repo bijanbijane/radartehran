@@ -239,11 +239,11 @@ export function createRequireAppCheckTokenMiddleware(
       }
       const decodedToken = verificationResult.token ?? {};
       const nowSec = Math.floor(Date.now() / 1000);
-      if (typeof decodedToken.exp === 'number' && decodedToken.exp <= nowSec) {
+      if (typeof decodedToken.exp === 'number' && (!Number.isFinite(decodedToken.exp) || decodedToken.exp <= nowSec)) {
         failClosed(401, 'APP_CHECK_TOKEN_EXPIRED', 'مهلت اعتبار توکن X-Firebase-AppCheck به پایان رسیده است.');
         return;
       }
-      if (typeof decodedToken.iat === 'number' && (decodedToken.iat > nowSec + 86400 || (typeof decodedToken.exp === 'number' && decodedToken.iat > decodedToken.exp))) {
+      if (typeof decodedToken.iat === 'number' && (!Number.isFinite(decodedToken.iat) || decodedToken.iat > nowSec + 86400 || (typeof decodedToken.exp === 'number' && decodedToken.iat > decodedToken.exp))) {
         failClosed(401, 'APP_CHECK_TOKEN_FUTURE_IAT', 'زمان صدور توکن X-Firebase-AppCheck نامعتبر است.');
         return;
       }

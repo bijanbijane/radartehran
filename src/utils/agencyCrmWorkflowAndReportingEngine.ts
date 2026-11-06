@@ -217,7 +217,7 @@ export function detectViewingScheduleConflicts(viewings: readonly PropertyViewin
   for (let i = 0; i < active.length; i++) {
     for (let j = i + 1; j < active.length; j++) {
       const a = active[i], b = active[j];
-      if (a.assignedAgentId !== b.assignedAgentId) continue;
+      if (a.organizationId !== b.organizationId || a.assignedAgentId !== b.assignedAgentId) continue;
       if (Date.parse(a.startAtIso) < Date.parse(b.endAtIso) && Date.parse(b.startAtIso) < Date.parse(a.endAtIso)) {
         conflicts.push({ viewingA: a.viewingId, viewingB: b.viewingId, agentId: a.assignedAgentId });
       }
@@ -270,7 +270,7 @@ export function buildReproducibleCrmReport(params: {
   const sanitizeCell = (val: string | number | null | undefined): string => {
     if (val === null || val === undefined || val === '') return 'ثبت نشده';
     const str = String(val).replace(/[\r\n]+/g, ' ');
-    return /^[=+\-@\t]/.test(str) ? `'${str}` : str;
+    return /^\s*[=+\-@\t]/.test(str) ? `'${str}` : str;
   };
   const headerLine = headers.map((h) => `"${sanitizeCell(h).replace(/"/g, '""')}"`).join(',');
   const boundedRows = params.rows.slice(0, 5000);

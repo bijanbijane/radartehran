@@ -90,7 +90,7 @@ export function extractVerifiedBargainPriceInDealUnit(
   listing: BargainListing,
   dealType: 'خرید' | 'اجاره'
 ): { price: number | null; isDirectObservation: boolean } {
-  const norm = normalizeMultiScriptDigits(listing.priceText || '').replace(/[,٬\u066C]/g, '');
+  const norm = normalizeMultiScriptDigits(listing.priceText || '').replace(/[,٬،\u066C\u060C]/g, '');
   if (!norm) return { price: null, isDirectObservation: false };
   const compoundMatch = norm.match(/(\d+(?:\.\d+)?)\s*میلیارد\s*و\s*(\d+(?:\.\d+)?)\s*میلیون/);
   if (dealType === 'خرید') {
@@ -100,6 +100,10 @@ export function extractVerifiedBargainPriceInDealUnit(
     if ((compoundMatch || totalBillionMatch) && Number(listing.sqm) >= 20) {
       const totalMillion = compoundMatch ? Number(compoundMatch[1]) * 1000 + Number(compoundMatch[2]) : Number(totalBillionMatch![1]) * 1000;
       if (Number.isFinite(totalMillion) && totalMillion > 0) return { price: Math.round((totalMillion / listing.sqm) * 10) / 10, isDirectObservation: true };
+    }
+    const totalMillionMatch = norm.match(/^(\d+(?:\.\d+)?)\s*میلیون(?:\s*تومان)?$/);
+    if (totalMillionMatch && Number(totalMillionMatch[1]) >= 500 && Number(listing.sqm) >= 20) {
+      return { price: Math.round((Number(totalMillionMatch[1]) / listing.sqm) * 10) / 10, isDirectObservation: true };
     }
     return { price: null, isDirectObservation: false };
   }

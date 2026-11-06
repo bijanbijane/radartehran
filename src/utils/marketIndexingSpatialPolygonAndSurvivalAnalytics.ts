@@ -1,6 +1,6 @@
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
 export interface ListingLifecycleEvent { type: 'FIRST_PUBLISHED' | 'RENEWED' | 'EXPIRED' | 'WITHDRAWN' | 'REJECTED' | 'REPUBLISHED'; timestampMs: number; } export function calculateListingDaysOnMarket( events: ListingLifecycleEvent[], evaluationNowMs: number
-) { if (!events || events.length === 0) { return { valid: false, error: 'MISSING_PUBLICATION_LIFECYCLE', currentActiveDays: 0, cumulativePublishedDays: 0, renewalCount: 0, currentStatus: 'unobserved' as const, isCompletedSaleConfirmed: false as const, }; } const sorted = [...events].sort((a, b) => a.timestampMs - b.timestampMs); if (sorted[0].timestampMs > evaluationNowMs) { return { valid: false, error: 'FUTURE_LIFECYCLE_TIMESTAMP', currentActiveDays: 0, cumulativePublishedDays: 0, renewalCount: 0, currentStatus: 'unobserved' as const, isCompletedSaleConfirmed: false as const, }; } let activeSinceMs: number | null = null; let cumulativeMs = 0; let renewalCount = 0; let currentStatus: 'active' | 'expired' | 'withdrawn' | 'rejected' | 'unobserved' = 'unobserved';
+) { if (!events || events.length === 0 || !Number.isFinite(evaluationNowMs)) { return { valid: false, error: 'MISSING_PUBLICATION_LIFECYCLE', currentActiveDays: 0, cumulativePublishedDays: 0, renewalCount: 0, currentStatus: 'unobserved' as const, isCompletedSaleConfirmed: false as const, }; } const sorted = [...events].sort((a, b) => a.timestampMs - b.timestampMs); if (sorted[0].timestampMs > evaluationNowMs) { return { valid: false, error: 'FUTURE_LIFECYCLE_TIMESTAMP', currentActiveDays: 0, cumulativePublishedDays: 0, renewalCount: 0, currentStatus: 'unobserved' as const, isCompletedSaleConfirmed: false as const, }; } let activeSinceMs: number | null = null; let cumulativeMs = 0; let renewalCount = 0; let currentStatus: 'active' | 'expired' | 'withdrawn' | 'rejected' | 'unobserved' = 'unobserved';
   for (const ev of sorted) { if (ev.timestampMs > evaluationNowMs) break; if (ev.type === 'FIRST_PUBLISHED' || ev.type === 'REPUBLISHED') { if (activeSinceMs === null) activeSinceMs = ev.timestampMs; currentStatus = 'active'; } else if (ev.type === 'RENEWED') { renewalCount++; if (activeSinceMs === null) activeSinceMs = ev.timestampMs; currentStatus = 'active';
     } else { if (activeSinceMs !== null && ev.timestampMs >= activeSinceMs) { cumulativeMs += ev.timestampMs - activeSinceMs; activeSinceMs = null; }
       currentStatus = ev.type === 'EXPIRED' ? 'expired' : ev.type === 'WITHDRAWN' ? 'withdrawn' : 'rejected'; } }
@@ -105,8 +105,8 @@ export function calculateMarketPriceIndices(
   intlCurrency: IntlCurrencyCode = getStoredIntlCurrency()
 ) {
   const displayAreaUnitLabel = formatAreaUnitLabel(areaUnit);
-  const eligible = params.observations.filter((o) => o.pricePerSqm > 0 && o.areaSqm > 0);
-  if (eligible.length === 0 || params.basePeriodValuePerSqm <= 0) {
+  const eligible = params.observations.filter((o) => Number.isFinite(o.pricePerSqm) && o.pricePerSqm > 0 && Number.isFinite(o.areaSqm) && o.areaSqm > 0);
+  if (eligible.length === 0 || !Number.isFinite(params.basePeriodValuePerSqm) || params.basePeriodValuePerSqm <= 0) {
     return {
       valid: false, indexId: params.indexId, methodologyVersion: params.methodologyVersion,
       basePeriodLabel: params.basePeriodLabel, unweightedMeanPerSqm: 0, areaWeightedMeanPerSqm: 0,

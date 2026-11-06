@@ -239,7 +239,7 @@ export async function updateMyPublishedBargain(params: {
 }> {
   const cleanId = String(params.bargainId || '').trim();
   if (!cleanId || !/^[A-Za-z0-9_-]{3,128}$/.test(cleanId)) return { ok: false, errorMessageFa: 'شناسه آگهی نامعتبر است.' };
-  const isSafeMediaUrl = (u: string) => /^(?:https:\/\/|\/api\/object-storage\/)/i.test(u.trim());
+  const isSafeMediaUrl = (u: string) => /^(?:https:\/\/[^\s<>"'`]+|\/api\/object-storage\/[^\s<>"'`]+)$/i.test(u.trim()) && !u.includes('..');
   if (params.updates.imageUrl !== undefined && params.updates.imageUrl !== '' && !isSafeMediaUrl(params.updates.imageUrl)) {
     return { ok: false, errorMessageFa: 'آدرس تصویر نامعتبر است.' };
   }

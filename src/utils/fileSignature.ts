@@ -220,10 +220,7 @@ export function verifyMediaMagicBytes(
 ): boolean {
   if (!Buffer.isBuffer(buffer) || buffer.length < 12) return false;
   const normalizedMime = (mimeType || '').trim().toLowerCase();
-  if (isSvgOrXmlPayload(buffer, normalizedMime, expectedExtension)) return false;
-  const headText = buffer.subarray(0, Math.min(buffer.length, 4096)).toString('latin1').toLowerCase();
-  const tailText = buffer.length > 4096 ? buffer.subarray(Math.max(0, buffer.length - 4096)).toString('latin1').toLowerCase() : '';
-  if (headText.includes('<script') || headText.includes('javascript:') || tailText.includes('<script') || tailText.includes('javascript:')) return false;
+  if (isSvgOrXmlPayload(buffer, normalizedMime, expectedExtension) || hasPolyglotScriptBytes(buffer)) return false;
   const detected = detectMediaFormatByMagicBytes(buffer);
   if (!detected || !detected.supportedMimeTypes.includes(normalizedMime)) return false;
   if (expectedExtension !== undefined && expectedExtension.trim() !== '') {

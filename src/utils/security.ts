@@ -53,7 +53,7 @@ export function clampNumber(value: unknown, min: number, max: number, fallback: 
     }
     const parsed = typeof value === 'number'
       ? value
-      : Number(normalizeDigitsToEnglish(String(value ?? '')).replace(/[,٬،]/g, '').trim());
+      : Number(normalizeDigitsToEnglish(String(value ?? '')).replace(/[,٬،\u066C\u060C]/g, '').replace(/[٫\u066B]/g, '.').trim());
     if (!Number.isFinite(parsed)) return fallback;
     return Math.min(max, Math.max(min, parsed));
   } catch {
@@ -248,6 +248,8 @@ export function matchesPersianSearch(candidate: unknown, query: unknown): boolea
   const normCandidate = normalizePersianSearchText(candidate);
   if (!normCandidate) return false;
   if (normCandidate.includes(normQuery)) return true;
+  const tokens = normQuery.split(' ').filter(Boolean);
+  if (tokens.length > 1 && tokens.every((tk) => normCandidate.includes(tk))) return true;
   const compactQuery = normQuery.replace(/\s+/g, '');
   const compactCandidate = normCandidate.replace(/\s+/g, '');
   return compactQuery.length > 0 && compactCandidate.includes(compactQuery);
@@ -256,7 +258,7 @@ export function normalizePriceToMillionToman(
   rawAmount: unknown,
   unit: 'million_toman' | 'toman' | 'rial' = 'million_toman',
 ): number | null {
-  const cleaned = normalizeDigitsToEnglish(String(rawAmount ?? '')).replace(/[,٬،]/g, '').trim();
+  const cleaned = normalizeDigitsToEnglish(String(rawAmount ?? '')).replace(/[,٬،\u066C\u060C]/g, '').replace(/[٫\u066B]/g, '.').trim();
   if (!cleaned) return null;
   const num = Number(cleaned);
   if (!Number.isFinite(num) || num <= 0) return null;

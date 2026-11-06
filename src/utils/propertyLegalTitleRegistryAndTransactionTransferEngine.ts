@@ -37,7 +37,7 @@ export function evaluateOwnershipSeparationRegistryAndTitleConflicts(params: { i
 
   for (const h of params.interestHolders) {
     if (h.relationshipKind === 'REGISTERED_LEGAL_TITLE') {
-      documentedLegalShareSumPercent += h.documentedSharePercent;
+      if (Number.isFinite(h.documentedSharePercent) && h.documentedSharePercent > 0) documentedLegalShareSumPercent += h.documentedSharePercent;
       if (h.hasVerifiedOfficialTitleDeed) {
         verifiedLegalTitleOwnersCount += 1;
       }
@@ -64,7 +64,7 @@ export function evaluateOwnershipSeparationRegistryAndTitleConflicts(params: { i
     : null;
 
   const totalCompetingShare = params.competingTitleClaims.reduce(
-    (acc, c) => acc + c.claimedSharePercent,
+    (acc, c) => acc + (Number.isFinite(c.claimedSharePercent) && c.claimedSharePercent > 0 ? c.claimedSharePercent : 0),
     0
   );
 
@@ -244,16 +244,13 @@ export function evaluateSettlementNotaryVsPossessionAndNineLegalAudits(params: {
   nineBundle130AuditsVerdict: 'ALL_9_AUDITS_AND_E2E_VERIFIED_1881_TO_1889';
 } {
   const s = params.settlementLedger;
-  const remainingPrincipalPayableByBuyerToman = Math.max(
-    0,
-    s.contractualGrossPriceToman -
-      s.bankVerifiedSettledPaymentsToman -
-      s.approvedAdjustmentsDiscountToman
-  );
-  const netSellerProceedsAfterCommissionAndCostsToman =
-    s.bankVerifiedSettledPaymentsToman -
-    s.ancillaryRegistrationAndTaxCostsToman -
-    s.totalApprovedBrokerageCommissionToman;
+  const gross = Number.isFinite(s.contractualGrossPriceToman) ? Math.max(0, s.contractualGrossPriceToman) : 0;
+  const settled = Number.isFinite(s.bankVerifiedSettledPaymentsToman) ? Math.max(0, s.bankVerifiedSettledPaymentsToman) : 0;
+  const discount = Number.isFinite(s.approvedAdjustmentsDiscountToman) ? Math.max(0, s.approvedAdjustmentsDiscountToman) : 0;
+  const costs = Number.isFinite(s.ancillaryRegistrationAndTaxCostsToman) ? Math.max(0, s.ancillaryRegistrationAndTaxCostsToman) : 0;
+  const comm = Number.isFinite(s.totalApprovedBrokerageCommissionToman) ? Math.max(0, s.totalApprovedBrokerageCommissionToman) : 0;
+  const remainingPrincipalPayableByBuyerToman = Math.max(0, gross - settled - discount);
+  const netSellerProceedsAfterCommissionAndCostsToman = Math.max(0, settled - costs - comm);
   const formalOwnershipTransferState = params.notaryTransferState.officialNotaryDeedRegisteredAndSighted
     ? 'COMPLETED_OFFICIAL_DEED_TRANSFER'
     : params.notaryTransferState.notaryAppointmentScheduled

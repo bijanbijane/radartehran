@@ -94,23 +94,24 @@ export function evaluateUrbanMorphologyAndLandUseBalance(
   estimatedRenewalCapexPerSqmIntlText: string;
   morphologyDisclaimerFa: string;
 } {
-  const validParcel = params.totalParcelAreaSqm > 0;
+  const validParcel = Number.isFinite(params.totalParcelAreaSqm) && params.totalParcelAreaSqm > 0;
+  const footprint = Number.isFinite(params.totalBuildingFootprintSqm) && params.totalBuildingFootprintSqm >= 0 ? params.totalBuildingFootprintSqm : 0;
   const buildingCoverageRatioPercent = validParcel
-    ? Number(Math.min(100, (params.totalBuildingFootprintSqm / params.totalParcelAreaSqm) * 100).toFixed(1))
+    ? Number(Math.min(100, (footprint / params.totalParcelAreaSqm) * 100).toFixed(1))
     : null;
   const floorAreaRatioFar =
-    validParcel && typeof params.verifiedTotalFloorAreaSqm === 'number' && params.verifiedTotalFloorAreaSqm > 0
+    validParcel && typeof params.verifiedTotalFloorAreaSqm === 'number' && Number.isFinite(params.verifiedTotalFloorAreaSqm) && params.verifiedTotalFloorAreaSqm > 0
       ? Number((params.verifiedTotalFloorAreaSqm / params.totalParcelAreaSqm).toFixed(2))
       : null;
-  const knownAgeTotal =
-    params.buildingsByAgeCategory.under10Years +
-    params.buildingsByAgeCategory.years10To25 +
-    params.buildingsByAgeCategory.over25Years;
+  const u10 = Number.isFinite(params.buildingsByAgeCategory.under10Years) && params.buildingsByAgeCategory.under10Years >= 0 ? params.buildingsByAgeCategory.under10Years : 0;
+  const y1025 = Number.isFinite(params.buildingsByAgeCategory.years10To25) && params.buildingsByAgeCategory.years10To25 >= 0 ? params.buildingsByAgeCategory.years10To25 : 0;
+  const o25 = Number.isFinite(params.buildingsByAgeCategory.over25Years) && params.buildingsByAgeCategory.over25Years >= 0 ? params.buildingsByAgeCategory.over25Years : 0;
+  const knownAgeTotal = u10 + y1025 + o25;
   const agedBuildingsOver25PctOfKnown =
     knownAgeTotal > 0
-      ? Number(((params.buildingsByAgeCategory.over25Years / knownAgeTotal) * 100).toFixed(1))
+      ? Number(((o25 / knownAgeTotal) * 100).toFixed(1))
       : null;
-  const luValues = Object.values(params.landUseSharesSqm).filter((v) => v > 0);
+  const luValues = Object.values(params.landUseSharesSqm).filter((v) => Number.isFinite(v) && v > 0);
   const totalLu = luValues.reduce((s, v) => s + v, 0);
   let entropy = 0;
   if (totalLu > 0 && luValues.length > 1) {
@@ -252,7 +253,7 @@ export function evaluateUrbanHazardsResilienceAndSpatialAutocorrelation(params: 
       ? Math.round(knownDims.reduce((s, v) => s + v, 0) / knownDims.length)
       : null;
   let globalMoransI: number | null = null;
-  const nodes = params.neighborhoodValuesForMoran;
+  const nodes = params.neighborhoodValuesForMoran.filter((n) => Number.isFinite(n.value));
   if (nodes.length >= 3) {
     const mean = nodes.reduce((s, n) => s + n.value, 0) / nodes.length;
     const nodeMap = new Map(nodes.map((n) => [n.hoodId, n]));

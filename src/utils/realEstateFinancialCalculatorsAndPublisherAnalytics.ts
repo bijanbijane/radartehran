@@ -49,39 +49,29 @@ export function calculatePurchaseAffordabilityBudget(params: {
   };
 }
 export function compareRentVersusBuyScenarios(params: {
-  horizonYears: number;
-  buyPropertyPrice: number;
-  buyAcquisitionCostPercent: number;
-  buyAnnualMaintenanceCost: number;
-  buyAssumedAnnualAppreciationPercent: number;
-  rentInitialDepositRahn: number;
-  rentInitialMonthlyPayment: number;
-  rentAssumedAnnualIncreasePercent: number;
+  horizonYears: number; buyPropertyPrice: number; buyAcquisitionCostPercent: number; buyAnnualMaintenanceCost: number;
+  buyAssumedAnnualAppreciationPercent: number; rentInitialDepositRahn: number; rentInitialMonthlyPayment: number; rentAssumedAnnualIncreasePercent: number;
 }) {
   const years = Math.min(30, Math.max(1, Math.floor(params.horizonYears || 1)));
-  const price = Math.max(0, params.buyPropertyPrice);
-  const acqCost = Math.round(price * (Math.max(0, params.buyAcquisitionCostPercent) / 100));
+  const price = Number.isFinite(params.buyPropertyPrice) && params.buyPropertyPrice >= 0 ? params.buyPropertyPrice : 0;
+  const acqPct = Number.isFinite(params.buyAcquisitionCostPercent) && params.buyAcquisitionCostPercent >= 0 ? params.buyAcquisitionCostPercent : 0;
+  const acqCost = Math.round(price * (acqPct / 100));
   const buyInitialCapitalCommitted = price + acqCost;
-  const buyCumulativeMaintenanceCost = Math.round(Math.max(0, params.buyAnnualMaintenanceCost) * years);
-  const buyHypotheticalResaleValue = Math.round(
-    price * Math.pow(1 + params.buyAssumedAnnualAppreciationPercent / 100, years)
-  );
-  const buyNetWealthChangeNominal =
-    buyHypotheticalResaleValue - buyInitialCapitalCommitted - buyCumulativeMaintenanceCost;
+  const maint = Number.isFinite(params.buyAnnualMaintenanceCost) && params.buyAnnualMaintenanceCost >= 0 ? params.buyAnnualMaintenanceCost : 0;
+  const buyCumulativeMaintenanceCost = Math.round(maint * years);
+  const apprecRate = Number.isFinite(params.buyAssumedAnnualAppreciationPercent) ? params.buyAssumedAnnualAppreciationPercent : 0;
+  const buyHypotheticalResaleValue = Math.round(price * Math.pow(1 + apprecRate / 100, years));
+  const buyNetWealthChangeNominal = buyHypotheticalResaleValue - buyInitialCapitalCommitted - buyCumulativeMaintenanceCost;
+  const initRent = Number.isFinite(params.rentInitialMonthlyPayment) && params.rentInitialMonthlyPayment >= 0 ? params.rentInitialMonthlyPayment : 0;
+  const rentIncRate = Number.isFinite(params.rentAssumedAnnualIncreasePercent) ? params.rentAssumedAnnualIncreasePercent : 0;
   let rentTotalOutOfPocketPayments = 0;
   for (let y = 0; y < years; y++) {
-    const monthly = Math.max(0, params.rentInitialMonthlyPayment) *
-      Math.pow(1 + params.rentAssumedAnnualIncreasePercent / 100, y);
-    rentTotalOutOfPocketPayments += Math.round(monthly * 12);
+    rentTotalOutOfPocketPayments += Math.round(initRent * Math.pow(1 + rentIncRate / 100, y) * 12);
   }
+  const rentDeposit = Number.isFinite(params.rentInitialDepositRahn) && params.rentInitialDepositRahn >= 0 ? params.rentInitialDepositRahn : 0;
   return {
-    horizonYears: years,
-    rentTotalOutOfPocketPayments,
-    rentRefundableDepositNominal: Math.max(0, params.rentInitialDepositRahn),
-    buyInitialCapitalCommitted,
-    buyCumulativeMaintenanceCost,
-    buyHypotheticalResaleValue,
-    buyNetWealthChangeNominal,
+    horizonYears: years, rentTotalOutOfPocketPayments, rentRefundableDepositNominal: rentDeposit,
+    buyInitialCapitalCommitted, buyCumulativeMaintenanceCost, buyHypotheticalResaleValue, buyNetWealthChangeNominal,
     netBuyAdvantageOverRentNominal: buyNetWealthChangeNominal + rentTotalOutOfPocketPayments,
   };
 }
@@ -123,13 +113,14 @@ export function calculateNetPresentValueAndIrr(
   irrPercent: number | null;
   irrStatus: 'converged' | 'no_sign_change' | 'multiple_sign_changes' | 'non_convergent';
 } {
-  const r = periodicDiscountRatePercent / 100;
+  const r = (Number.isFinite(periodicDiscountRatePercent) ? periodicDiscountRatePercent : 0) / 100;
+  const validCfs = cashFlows.filter((cf) => Number.isFinite(cf));
   let npv = 0;
-  for (let t = 0; t < cashFlows.length; t++) npv += cashFlows[t] / Math.pow(1 + r, t);
+  for (let t = 0; t < validCfs.length; t++) npv += validCfs[t] / Math.pow(Math.max(0.01, 1 + r), t);
   npv = Math.round(npv);
   let signChanges = 0;
   let prevSign = 0;
-  for (const cf of cashFlows) {
+  for (const cf of validCfs) {
     const sign = cf > 0 ? 1 : cf < 0 ? -1 : 0;
     if (sign !== 0) {
       if (prevSign !== 0 && sign !== prevSign) signChanges++;
@@ -139,7 +130,7 @@ export function calculateNetPresentValueAndIrr(
   if (signChanges === 0) return { npv, irrPercent: null, irrStatus: 'no_sign_change' };
   if (signChanges > 1) return { npv, irrPercent: null, irrStatus: 'multiple_sign_changes' };
   const evalNpv = (rate: number) =>
-    cashFlows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + rate, t), 0);
+    validCfs.reduce((sum, cf, t) => sum + cf / Math.pow(Math.max(0.01, 1 + rate), t), 0);
   let low = -0.95;
   let high = 10.0;
   let fLow = evalNpv(low);

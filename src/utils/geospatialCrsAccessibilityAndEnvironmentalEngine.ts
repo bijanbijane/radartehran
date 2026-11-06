@@ -65,6 +65,14 @@ export function classifyPointAgainstVersionedBoundaries(params: {
   recordedBoundaryVersion: string | null;
   explanationFa: string;
 } {
+  if (!Number.isFinite(params.lat) || !Number.isFinite(params.lng)) {
+    return {
+      status: 'OUTSIDE_KNOWN_BOUNDARIES',
+      matchedBoundaries: [],
+      recordedBoundaryVersion: null,
+      explanationFa: 'مختصات نامعتبر است.',
+    };
+  }
   if (params.coordinatePrecision === 'CITY_COARSE') {
     return {
       status: 'INSUFFICIENT_COORDINATE_PRECISION',
@@ -104,6 +112,9 @@ export function classifyPointAgainstVersionedBoundaries(params: {
   };
 }
 export function computeGeodesicDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  if (!Number.isFinite(lat1) || !Number.isFinite(lng1) || !Number.isFinite(lat2) || !Number.isFinite(lng2)) {
+    return 999999;
+  }
   const R = 6371000;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -111,7 +122,8 @@ export function computeGeodesicDistanceMeters(lat1: number, lng1: number, lat2: 
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return Math.round(2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  const clampedA = Math.max(0, Math.min(1, a));
+  return Math.round(2 * R * Math.atan2(Math.sqrt(clampedA), Math.sqrt(1 - clampedA)));
 }
 export interface MetroStationFacilityRecord {
   stationId: string;
@@ -256,25 +268,14 @@ export function evaluateWalkabilityEnvironmentalAndPrivacy(params: {
     params.greenSpaceScore0To100,
     params.pedestrianConnectivityScore0To100,
   ].filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-  const compositeScore0To100 =
-    indicators.length >= 2
-      ? Math.round(indicators.reduce((s, v) => s + v, 0) / indicators.length)
-      : null;
-  const freshnessStatus =
-    params.airQualitySensorReadingAqi === null
-      ? 'UNAVAILABLE'
-      : (params.airSensorDistanceMeters ?? 9999) > 3000 || (params.airSensorAgeHours ?? 999) > 6
-      ? 'STALE_OR_DISTANT_WARNING'
-      : 'FRESH_DIRECT_OR_NEARBY';
-  const floodRiskClassification = !params.floodHazardLayerAvailable
-    ? 'UNKNOWN_LAYER_UNAVAILABLE'
-    : params.intersectsFloodZone
-    ? 'INTERSECTS_HAZARD'
-    : 'NO_INTERSECTION_OBSERVED';
+  const compositeScore0To100 = indicators.length >= 2 ? Math.round(indicators.reduce((s, v) => s + v, 0) / indicators.length) : null;
+  const freshnessStatus = params.airQualitySensorReadingAqi === null ? 'UNAVAILABLE' : (params.airSensorDistanceMeters ?? 9999) > 3000 || (params.airSensorAgeHours ?? 999) > 6 ? 'STALE_OR_DISTANT_WARNING' : 'FRESH_DIRECT_OR_NEARBY';
+  const floodRiskClassification = !params.floodHazardLayerAvailable ? 'UNKNOWN_LAYER_UNAVAILABLE' : params.intersectsFloodZone ? 'INTERSECTS_HAZARD' : 'NO_INTERSECTION_OBSERVED';
   const immutableSnapshotId = `snap-${params.workspaceId}-${params.propertyId}-${params.boundaryVersion}-${params.poiDatasetVersion}`;
   return {
     displayCoordinates,
-    walkabilityIndex: {
-      compositeScore0To100,
-      availableIndicatorsCount: indicators.length,
-      confidence: indicators.length === 4 ? 'HIGH' : indicators.length >= 2 ? 'MEDIUM' : 'LOW', configurationVersion: 'walk-cfg-v1.4', }, environmentalStatus: { aqiValue: params.airQualitySensorReadingAqi, freshnessStatus, floodRiskClassification, }, immutableSnapshotId, }; }
+    walkabilityIndex: { compositeScore0To100, availableIndicatorsCount: indicators.length, confidence: indicators.length === 4 ? 'HIGH' : indicators.length >= 2 ? 'MEDIUM' : 'LOW', configurationVersion: 'walk-cfg-v1.4' },
+    environmentalStatus: { aqiValue: params.airQualitySensorReadingAqi, freshnessStatus, floodRiskClassification },
+    immutableSnapshotId,
+  };
+}

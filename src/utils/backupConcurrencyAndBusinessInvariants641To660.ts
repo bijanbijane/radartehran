@@ -6,7 +6,7 @@ export function exportIncidentEvidencePackage(params: { incidentId: string; call
   | { ok: false; code: 'UNAUTHORIZED_EVIDENCE_ACCESS' | 'INCIDENT_NOT_FOUND' } { if (params.callerRole === 'ORDINARY_USER') return { ok: false, code: 'UNAUTHORIZED_EVIDENCE_ACCESS' }; const t = incidentTickets.get(params.incidentId); if (!t) return { ok: false, code: 'INCIDENT_NOT_FOUND' }; const { detailedTechnicalEvidence, ...summary } = t; return { ok: true, view: params.callerRole === 'PRIMARY_ADMIN' ? { ...summary, detailedTechnicalEvidence } : summary, }; }
 export class DurableWebhookEventIdempotencyStore { private readonly records = new Map<string, { state: 'PROCESSING' | 'COMPLETED' | 'FAILED'; firstSeenMs: number; completedAtMs?: number }>(); beginEvent(provider: string, eventId: string, nowMs = Date.now()): 'PROCEED' | 'DUPLICATE_IGNORED' {
     const key = `${sanitizeInput(provider, 24)}:${sanitizeInput(eventId, 64)}`;
-    const existing = this.records.get(key); if (existing && (existing.state === 'PROCESSING' || existing.state === 'COMPLETED')) return 'DUPLICATE_IGNORED';
+    const existing = this.records.get(key); if (existing && (existing.state === 'COMPLETED' || (existing.state === 'PROCESSING' && nowMs - existing.firstSeenMs < 5 * 60_000))) return 'DUPLICATE_IGNORED';
     if (!existing && this.records.size >= 2000) { const oldest = this.records.keys().next().value; if (oldest !== undefined) this.records.delete(oldest); }
     this.records.set(key, { state: 'PROCESSING', firstSeenMs: nowMs }); return 'PROCEED'; }
   completeEvent(provider: string, eventId: string, success: boolean, nowMs = Date.now()): void {

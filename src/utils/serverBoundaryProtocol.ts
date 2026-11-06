@@ -91,7 +91,7 @@ async function fetchNominatimPolygon(q: ResolveQueryInput): Promise<[number, num
     },
     signal: AbortSignal.timeout(4500),
   });
-  if (!res.ok) return null;
+  if (!res.ok || Number(res.headers.get('content-length') || '0') > MAX_OSM_RESPONSE_BYTES) return null;
   const text = await res.text();
   if (Buffer.byteLength(text, 'utf-8') > MAX_OSM_RESPONSE_BYTES) return null;
   const items = JSON.parse(text);
@@ -125,7 +125,7 @@ async function fetchOverpassWayPolygon(q: ResolveQueryInput): Promise<[number, n
     body: `data=${encodeURIComponent(overpassQuery)}`,
     signal: AbortSignal.timeout(4500),
   });
-  if (!res.ok) return null;
+  if (!res.ok || Number(res.headers.get('content-length') || '0') > MAX_OSM_RESPONSE_BYTES) return null;
   const text = await res.text();
   if (Buffer.byteLength(text, 'utf-8') > MAX_OSM_RESPONSE_BYTES) return null;
   const data = JSON.parse(text);
@@ -191,64 +191,62 @@ const registeredBoundaryApps = new WeakSet<Express>();
 export function registerBoundaryProtocolRoutes(app: Express): void {
   if (registeredBoundaryApps.has(app)) return;
   registeredBoundaryApps.add(app);
-  app.post('/api/neighborhood-boundaries/resolve', (req, res) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 'public, max-age=300');
-    const rawCityNameFa = sanitizeInput(req.body?.cityNameFa || 'تهران', 40);
-    const rawHoods = Array.isArray(req.body?.neighborhoods) ? req.body.neighborhoods.slice(0, 24) : [];
-    const boundaries: Record<
-      number,
-      {
-        hoodId: number;
-        name: string;
-        source: 'osm_nominatim_geojson' | 'osm_overpass_relation' | 'voronoi_urban_tessellation';
-        sourceLabelFa: string;
-        coordinates: [number, number][];
-        updatedAtIso: string;
+  app.post('/api/neighborhood-boundaries/resolve', (req, res, next) => {
+    try {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      const rawCityNameFa = sanitizeInput(req.body?.cityNameFa || 'تهران', 40);
+      const rawHoods = Array.isArray(req.body?.neighborhoods) ? req.body.neighborhoods.slice(0, 24) : [];
+      const boundaries: Record<
+        number,
+        {
+          hoodId: number;
+          name: string;
+          source: 'osm_nominatim_geojson' | 'osm_overpass_relation' | 'voronoi_urban_tessellation';
+          sourceLabelFa: string;
+          coordinates: [number, number][];
+          updatedAtIso: string;
+        }
+      > = {};
+
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+      for (const item of rawHoods) {
+        const id = Number(item?.id);
+        const lat = Number(item?.lat);
+        const lng = Number(item?.lng);
+        if (!Number.isInteger(id) || id < 1 || id > 999 || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < 24 || lat > 41 || lng < 43 || lng > 64) {
+          continue;
+        }
+        const name = sanitizeInput(item?.name || `محله ${id}`, 60);
+        const cacheKey = `${rawCityNameFa}:${id}:${name}`;
+        const rawCached = serverBoundaryMemoryCache.get(cacheKey);
+        const cached = rawCached && nowMs - rawCached.updatedAtMs < CACHE_TTL_MS ? rawCached : undefined;
+        const radiusMeters = Math.max(500, Math.min(2500, Number(item?.radius) || 1150));
+        const areaSqKm = (Math.PI * (radiusMeters / 1000) ** 2);
+        const coordinates = cached ? cached.ring : computeApproxHexRing(lat, lng, areaSqKm, id);
+
+        boundaries[id] = {
+          hoodId: id,
+          name,
+          source:
+            cached?.source === 'osm_nominatim_polygon'
+              ? 'osm_nominatim_geojson'
+              : cached?.source === 'osm_overpass_polygon'
+                ? 'osm_overpass_relation'
+                : 'voronoi_urban_tessellation',
+          sourceLabelFa:
+            cached?.source === 'osm_nominatim_polygon'
+              ? 'مرز ثبت‌شده OpenStreetMap (Nominatim)'
+              : cached?.source === 'osm_overpass_polygon'
+                ? 'مرز ثبت‌شده OpenStreetMap (Overpass)'
+                : 'تسهیم هندسی شهری (Voronoi)',
+          coordinates,
+          updatedAtIso: nowIso,
+        };
       }
-    > = {};
 
-    const nowMs = Date.now();
-    const nowIso = new Date(nowMs).toISOString();
-    for (const item of rawHoods) {
-      const id = Number(item?.id);
-      const lat = Number(item?.lat);
-      const lng = Number(item?.lng);
-      if (!Number.isInteger(id) || id < 1 || id > 999 || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < 24 || lat > 41 || lng < 43 || lng > 64) {
-        continue;
-      }
-      const name = sanitizeInput(item?.name || `محله ${id}`, 60);
-      const cacheKey = `${rawCityNameFa}:${id}:${name}`;
-      const rawCached = serverBoundaryMemoryCache.get(cacheKey);
-      const cached = rawCached && nowMs - rawCached.updatedAtMs < CACHE_TTL_MS ? rawCached : undefined;
-      const radiusMeters = Math.max(500, Math.min(2500, Number(item?.radius) || 1150));
-      const areaSqKm = (Math.PI * (radiusMeters / 1000) ** 2);
-      const coordinates = cached ? cached.ring : computeApproxHexRing(lat, lng, areaSqKm, id);
-
-      boundaries[id] = {
-        hoodId: id,
-        name,
-        source:
-          cached?.source === 'osm_nominatim_polygon'
-            ? 'osm_nominatim_geojson'
-            : cached?.source === 'osm_overpass_polygon'
-              ? 'osm_overpass_relation'
-              : 'voronoi_urban_tessellation',
-        sourceLabelFa:
-          cached?.source === 'osm_nominatim_polygon'
-            ? 'مرز ثبت‌شده OpenStreetMap (Nominatim)'
-            : cached?.source === 'osm_overpass_polygon'
-              ? 'مرز ثبت‌شده OpenStreetMap (Overpass)'
-              : 'تسهیم هندسی شهری (Voronoi)',
-        coordinates,
-        updatedAtIso: nowIso,
-      };
-    }
-
-    res.status(200).json({
-      status: 'ok',
-      cityNameFa: rawCityNameFa,
-      boundaries,
-    });
+      res.status(200).json({ status: 'ok', cityNameFa: rawCityNameFa, boundaries });
+    } catch (e) { next(e); }
   });
 }

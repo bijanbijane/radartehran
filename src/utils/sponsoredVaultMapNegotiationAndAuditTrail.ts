@@ -77,7 +77,7 @@ export class ConfidentialDocumentVaultLifecycleGuard {
     if (docId !== requestedDocId) return { valid: false, reason: 'CROSS_DOCUMENT_TOKEN_REPLAY' };
     if (!tokenActorId || (expectedActorUserId && tokenActorId !== expectedActorUserId)) return { valid: false, reason: 'ACTOR_MISMATCH' };
     if (action !== requestedAction) return { valid: false, reason: 'ACTION_SCOPE_MISMATCH' };
-    if (nowMs > Number(expiresStr)) return { valid: false, reason: 'TOKEN_EXPIRED' };
+    if (!Number.isFinite(nowMs) || !Number.isFinite(Number(expiresStr)) || nowMs > Number(expiresStr)) return { valid: false, reason: 'TOKEN_EXPIRED' };
     const doc = this.docs.get(docId);
     if (!doc || doc.version !== Number(versionStr) || doc.tokenRevocationEpoch !== Number(epochStr) || doc.state === 'SUPERSEDED_BY_NEW_VERSION' || doc.state === 'WITHDRAWN_DELETED') {
       return { valid: false, reason: 'TOKEN_REVOKED_BY_LIFECYCLE_CHANGE' };
@@ -270,10 +270,11 @@ export class TamperEvidentAdministrativeAuditLedger {
     return { ...record };
   }
   public verifyIntegrity(recordsToInspect: AdminAuditEventRecord[] = this.chain) {
-    let expectedPrevHash = 'GENESIS_0000000000000000';
+    const baseSeq = recordsToInspect[0]?.sequenceNumber ?? 1;
+    let expectedPrevHash = baseSeq === 1 ? 'GENESIS_0000000000000000' : recordsToInspect[0]?.prevRecordHash ?? 'GENESIS_0000000000000000';
     for (let i = 0; i < recordsToInspect.length; i++) {
       const r = recordsToInspect[i];
-      if (r.sequenceNumber !== i + 1) return { intact: false, brokenAtSequence: i + 1, reason: 'SEQUENCE_GAP_OR_REORDERING_DETECTED' };
+      if (r.sequenceNumber !== baseSeq + i) return { intact: false, brokenAtSequence: baseSeq + i, reason: 'SEQUENCE_GAP_OR_REORDERING_DETECTED' };
       if (r.prevRecordHash !== expectedPrevHash) return { intact: false, brokenAtSequence: r.sequenceNumber, reason: 'PREV_HASH_CHAIN_LINK_BROKEN' };
       const { recordHash, ...body } = r;
       const recomputed = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');

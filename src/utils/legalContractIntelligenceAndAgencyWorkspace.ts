@@ -101,7 +101,7 @@ export function compareContractVersionsByClause(
   const revMap = new Map(revisedClauses.map((c) => [c.clauseNumber, c]));
   const allKeys = Array.from(new Set([...baseMap.keys(), ...revMap.keys()]));
   const extractDigits = (s: string) =>
-    s.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776)).replace(/\D+/g, ' ').trim();
+    s.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632)).replace(/\D+/g, ' ').trim();
 
   return allKeys.map((key) => {
     const b = baseMap.get(key);
@@ -272,7 +272,7 @@ export function evaluateAgencyInvitationAndTenantAccess(params: {
   if (inv.status !== 'PENDING') {
     return { tenantResourceAccessAllowed, canIssueAdminInvitation, invitationClaimStatus: 'REJECTED_ALREADY_USED_OR_REVOKED' as const };
   }
-  if (params.nowMs > inv.expiresAtMs) {
+  if (!Number.isFinite(params.nowMs) || !Number.isFinite(inv.expiresAtMs) || params.nowMs > inv.expiresAtMs) {
     return { tenantResourceAccessAllowed, canIssueAdminInvitation, invitationClaimStatus: 'REJECTED_EXPIRED' as const };
   }
   if (inv.intendedRecipientUid !== params.actorUid || inv.organizationId !== params.targetResourceOrganizationId) {

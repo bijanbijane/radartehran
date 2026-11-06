@@ -217,7 +217,7 @@ export function getAdminSafeRuntimeConfigView(areaUnit: AreaUnit = 'sqm', intlCu
 export function isSafeHttpsStorageUrl(raw: string): boolean {
   try {
     const u = new URL(raw);
-    const h = u.hostname.toLowerCase();
+    const h = u.hostname.toLowerCase().replace(/\.+$/, '');
     return u.protocol === 'https:' && !u.username && !u.password && h.includes('.') && !h.includes(':') && !/^\d+\.\d+\.\d+\.\d+$/.test(h) && !/(^localhost$|\.(local|internal|localhost)$)/i.test(h);
   } catch { return false; }
 }

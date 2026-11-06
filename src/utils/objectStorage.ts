@@ -56,7 +56,8 @@ export function buildListingObjectKey(params: {
     'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
     'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
   };
-  const extension = extensionByMime[params.mimeType] || (params.mediaType === 'video' ? 'mp4' : 'jpg');
+  const cleanMime = String(params.mimeType || '').trim().toLowerCase();
+  const extension = extensionByMime[cleanMime] || (params.mediaType === 'video' ? 'mp4' : 'jpg');
   const cleanId = sanitizeInput(params.objectId, 48).replace(/[^a-zA-Z0-9_-]/g, '');
   if (!cleanId) {
     throw new Error('INVALID_OBJECT_ID');

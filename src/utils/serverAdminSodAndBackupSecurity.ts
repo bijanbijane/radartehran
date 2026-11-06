@@ -244,12 +244,12 @@ export function inspectArchiveExtractionSafety(
     violations.push({ entryName: '$archive', code: 'ENTRY_COUNT_EXCEEDED', message: `Archive entry count (${entries.length}) exceeds maximum (${maxEntries})` });
   }
   for (const entry of entries) {
-    const rawName = entry.entryName.replace(/\\/g, '/');
+    const rawName = String(entry.entryName || '').replace(/\\/g, '/');
     if (rawName.startsWith('/') || /^[A-Za-z]:\//.test(rawName)) {
       violations.push({ entryName: entry.entryName, code: 'ABSOLUTE_PATH_FORBIDDEN', message: 'Absolute paths are forbidden' });
     }
     const normalized = path.posix.normalize(rawName);
-    if (normalized.startsWith('..') || normalized.includes('/../') || rawName.includes('..')) {
+    if (normalized.startsWith('..') || normalized.includes('/../') || rawName.includes('..') || rawName.includes('\u0000')) {
       violations.push({ entryName: entry.entryName, code: 'PATH_TRAVERSAL', message: 'Zip Slip path traversal detected' });
     }
     if (entry.isSymbolicLink) {
@@ -260,14 +260,15 @@ export function inspectArchiveExtractionSafety(
       violations.push({ entryName: entry.entryName, code: 'DUPLICATE_NORMALIZED_ENTRY', message: 'Duplicate entry collision detected' });
     }
     seenNormalized.add(canonicalLower);
-    if (entry.uncompressedBytes > maxSingleEntryBytes) {
-      violations.push({ entryName: entry.entryName, code: 'ENTRY_SIZE_EXCEEDED', message: 'Single entry exceeds maximum size' });
+    const validSizes = Number.isFinite(entry.uncompressedBytes) && entry.uncompressedBytes >= 0 && Number.isFinite(entry.compressedBytes) && entry.compressedBytes >= 0;
+    if (!validSizes || entry.uncompressedBytes > maxSingleEntryBytes) {
+      violations.push({ entryName: entry.entryName, code: 'ENTRY_SIZE_EXCEEDED', message: 'Single entry has invalid or excessive size' });
     }
-    const ratio = entry.uncompressedBytes / Math.max(1, entry.compressedBytes);
-    if (entry.uncompressedBytes > 64 * 1024 && ratio > maxCompressionRatio) {
+    const ratio = validSizes ? entry.uncompressedBytes / Math.max(1, entry.compressedBytes) : 0;
+    if (validSizes && entry.uncompressedBytes > 64 * 1024 && ratio > maxCompressionRatio) {
       violations.push({ entryName: entry.entryName, code: 'COMPRESSION_RATIO_BOMB', message: `Suspicious compression ratio ${Math.round(ratio)}:1` });
     }
-    totalUncompressedBytes += Math.max(0, entry.uncompressedBytes);
+    if (validSizes) totalUncompressedBytes += entry.uncompressedBytes;
   }
   if (totalUncompressedBytes > maxTotalUncompressedBytes) {
     violations.push({ entryName: '$archive', code: 'TOTAL_ARCHIVE_SIZE_EXCEEDED', message: `Total uncompressed size (${totalUncompressedBytes}) exceeds ceiling (${maxTotalUncompressedBytes})` });

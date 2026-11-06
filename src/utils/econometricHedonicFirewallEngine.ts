@@ -50,19 +50,30 @@ export function stratifyCohortAndAuditOutlier(input: {
   if (!input.userBlindAppraisalSubmitted) {
     throw new Error('BLIND_APPRAISAL_REQUIRED: User per-sqm estimate must be collected before revealing asking or hedonic price');
   }
-  const deedAreaSqm = new Decimal(input.deedAreaSqm);
-  const asking = new Decimal(input.askingPricePerSqmMillion);
-  const mean = Decimal.max(new Decimal(1), new Decimal(input.cohortHedonicMeanMillion));
-  const q3 = new Decimal(input.cohortQ3Million);
-  const sigma = new Decimal(input.cohortSigmaMillion);
+  const toSafeDecimal = (v: Decimal | number | string | undefined, defaultVal = 0): Decimal => {
+    try {
+      const d = new Decimal(v ?? defaultVal);
+      return d.isFinite() ? d : new Decimal(defaultVal);
+    } catch {
+      return new Decimal(defaultVal);
+    }
+  };
+  const deedAreaSqm = Decimal.max(new Decimal(1), toSafeDecimal(input.deedAreaSqm, 1));
+  const asking = Decimal.max(new Decimal(0), toSafeDecimal(input.askingPricePerSqmMillion, 0));
+  const mean = Decimal.max(new Decimal(1), toSafeDecimal(input.cohortHedonicMeanMillion, 1));
+  const q3 = Decimal.max(new Decimal(0), toSafeDecimal(input.cohortQ3Million, 0));
+  const sigma = Decimal.max(new Decimal(0), toSafeDecimal(input.cohortSigmaMillion, 0));
+  const rawAge = Number(input.buildingAgeYears);
+  const safeAge = Number.isFinite(rawAge) ? rawAge : 0;
 
   const cohort: HedonicCohortType = input.isPenthouseOrUltraLuxury
     ? 'Luxury_Penthouse'
-    : input.buildingAgeYears >= 25
+    : safeAge >= 25
       ? 'Klengi_Land'
       : 'Standard_60_100m';
 
-  const stagflation = Math.max(0, Math.min(1, input.stagflationSpreadRatio ?? 0.4));
+  const rawStagflation = Number(input.stagflationSpreadRatio ?? 0.4);
+  const stagflation = Math.max(0, Math.min(1, Number.isFinite(rawStagflation) ? rawStagflation : 0.4));
   const haircut = new Decimal('0.03').plus(new Decimal('0.05').mul(stagflation));
   const effectiveAsking = asking.mul(new Decimal(1).minus(haircut));
   const deviationPercent = asking.minus(mean).div(mean).mul(100).toDecimalPlaces(1);
@@ -105,17 +116,25 @@ export function evaluateRenovationRegressionAndRoi(input: {
   landShareStatus: 'VERIFIED_OFFICIAL_DEED' | 'TENTATIVE_ESTIMATE';
   effectiveTransitPremiumMultiplier: Decimal;
 } {
-  const preVal = new Decimal(input.preRenovationValueMillion);
-  const spend = new Decimal(input.renovationSpendMillion);
-  const ceiling = new Decimal(input.neighborhoodCeilingCapMillion);
-  const sqm = Decimal.max(new Decimal(1), new Decimal(input.deedAreaSqm));
+  const toSafeDecimal = (v: Decimal | number | string | undefined, defaultVal = 0): Decimal => {
+    try {
+      const d = new Decimal(v ?? defaultVal);
+      return d.isFinite() ? d : new Decimal(defaultVal);
+    } catch {
+      return new Decimal(defaultVal);
+    }
+  };
+  const preVal = Decimal.max(new Decimal(0), toSafeDecimal(input.preRenovationValueMillion, 0));
+  const spend = Decimal.max(new Decimal(0), toSafeDecimal(input.renovationSpendMillion, 0));
+  const ceiling = Decimal.max(new Decimal(0), toSafeDecimal(input.neighborhoodCeilingCapMillion, 0));
+  const sqm = Decimal.max(new Decimal(1), toSafeDecimal(input.deedAreaSqm, 1));
   const spendPerSqm = spend.div(sqm);
   const nationalFloorPerSqm = input.executionModel === 'DIY_MATERIAL_ONLY' ? new Decimal('4.5') : new Decimal('8.0');
 
   const rawPostVal = preVal.plus(spend.mul(new Decimal('1.25')));
   const cappedPostRenovationMillion = Decimal.min(ceiling, rawPostVal);
-  const inflation = new Decimal(input.housingInflationRate);
-  const frictionCost = new Decimal(input.commissionAndSleepRate ?? '0.06');
+  const inflation = toSafeDecimal(input.housingInflationRate, 0);
+  const frictionCost = toSafeDecimal(input.commissionAndSleepRate, 0.06);
   const realCostBasis = preVal.plus(spend).mul(new Decimal(1).plus(inflation).plus(frictionCost));
   const realAdjustedRoiPercent = cappedPostRenovationMillion
     .minus(realCostBasis)
@@ -123,7 +142,8 @@ export function evaluateRenovationRegressionAndRoi(input: {
     .mul(100)
     .toDecimalPlaces(2);
 
-  const metroProgress = input.unbuiltMetroProgressRatio ?? 1;
+  const rawMetro = Number(input.unbuiltMetroProgressRatio ?? 1);
+  const metroProgress = Number.isFinite(rawMetro) ? rawMetro : 1;
   const effectiveTransitPremiumMultiplier = metroProgress < 0.3 ? new Decimal('0.30') : new Decimal('1.00');
 
   return {
@@ -221,14 +241,22 @@ export function createZeroKnowledgeDealNullifier(input: {
     input.serverSecret,
     `${input.userId.trim()}:${input.contractCode.trim()}`,
   );
+  const toSafeFixed4 = (v: Decimal | number | string): string => {
+    try {
+      const d = new Decimal(v);
+      return d.isFinite() ? d.toFixed(4) : new Decimal(0).toFixed(4);
+    } catch {
+      return new Decimal(0).toFixed(4);
+    }
+  };
 
   return {
     nullifierHash,
     anonymizedClosingRecord: {
       nullifierHash,
       h3CellRes9: input.h3CellRes9,
-      closingPriceDecimal18_4: new Decimal(input.closingPriceToman).toFixed(4),
-      deedAreaDecimal18_4: new Decimal(input.deedAreaSqm).toFixed(4),
+      closingPriceDecimal18_4: toSafeFixed4(input.closingPriceToman),
+      deedAreaDecimal18_4: toSafeFixed4(input.deedAreaSqm),
       judicialWatermarkFa: 'ارقام جدول صرفاً جنبه تحلیلی داشته و فاقد اعتبار استناد قضایی یا مالیاتی است.',
     },
   };

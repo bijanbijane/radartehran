@@ -176,9 +176,11 @@ export function resolveAuthoritativeNeighborhoodPrice(params: {
   const enrich = (buyPerSqm: number, rahn80m: number, activeSource: 'ADMIN_OVERRIDE' | 'VERIFIED_LIVE_MARKET' | 'STATIC_SEED_BASELINE') => ({
     buyPerSqm, rahn80m, activeSource, displayAreaUnitLabel: formatAreaUnitLabel(getStoredAreaUnit()), buyPerSqmIntlText: formatMillionTomanAsIntlCurrency(buyPerSqm, getStoredIntlCurrency()),
   });
-  if (validBuy(params.adminOverrideBuyPerSqm) && validRahn(params.adminOverrideRahn80m)) return enrich(params.adminOverrideBuyPerSqm, params.adminOverrideRahn80m, 'ADMIN_OVERRIDE');
-  if (validBuy(params.liveScrapedBuyPerSqm) && validRahn(params.liveScrapedRahn80m)) return enrich(params.liveScrapedBuyPerSqm, params.liveScrapedRahn80m, 'VERIFIED_LIVE_MARKET');
-  return enrich(params.seedBuyPerSqm, params.seedRahn80m, 'STATIC_SEED_BASELINE');
+  const hasAdmin = validBuy(params.adminOverrideBuyPerSqm) || validRahn(params.adminOverrideRahn80m);
+  const hasLive = validBuy(params.liveScrapedBuyPerSqm) || validRahn(params.liveScrapedRahn80m);
+  const buy = validBuy(params.adminOverrideBuyPerSqm) ? params.adminOverrideBuyPerSqm : validBuy(params.liveScrapedBuyPerSqm) ? params.liveScrapedBuyPerSqm : params.seedBuyPerSqm;
+  const rahn = validRahn(params.adminOverrideRahn80m) ? params.adminOverrideRahn80m : validRahn(params.liveScrapedRahn80m) ? params.liveScrapedRahn80m : params.seedRahn80m;
+  return enrich(buy, rahn, hasAdmin ? 'ADMIN_OVERRIDE' : hasLive ? 'VERIFIED_LIVE_MARKET' : 'STATIC_SEED_BASELINE');
 }
 export function normalizeCanonicalIranianMobile(rawInput: string): {
   ok: boolean;

@@ -83,11 +83,12 @@ export function buildPrivacySafeAggregateNeighborhoodStats(params: {
 }): { kAnonymitySatisfied: boolean; count: number; medianPrice: number | null; coarsenedCountBand: string; displayAreaUnitLabel: string; medianPriceIntlText: string } {
   const displayAreaUnitLabel = formatAreaUnitLabel(params.areaUnit ?? 'sqm');
   const threshold = Math.max(3, params.minGroupThreshold ?? 3);
-  const count = params.samplePrices.length;
+  const validPrices = params.samplePrices.filter((v) => typeof v === 'number' && Number.isFinite(v) && v > 0);
+  const count = validPrices.length;
   if (count < threshold) {
     return { kAnonymitySatisfied: false, count: 0, medianPrice: null, coarsenedCountBand: `<${threshold}`, displayAreaUnitLabel, medianPriceIntlText: formatMillionTomanAsIntlCurrency(0, params.intlCurrency ?? 'IRT') };
   }
-  const sorted = [...params.samplePrices].sort((a, b) => a - b);
+  const sorted = [...validPrices].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   const medianPrice = sorted.length % 2 === 0 ? Math.round((sorted[mid - 1] + sorted[mid]) / 2) : sorted[mid];
   const coarsenedCountBand = count < 10 ? '3-9' : count < 50 ? '10-49' : '50+';

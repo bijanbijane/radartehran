@@ -37,7 +37,7 @@ export class ViewingSlotConcurrencyGuard {
     if (input.listingStatus !== 'PUBLISHED') {
       return { accepted: false, autoConfirmed: false, status: 'REJECTED', rejectionReason: `LISTING_NOT_AVAILABLE_FOR_VIEWING:${input.listingStatus}` };
     }
-    if (input.slotStartMs <= input.nowMs) {
+    if (!Number.isFinite(input.slotStartMs) || !Number.isFinite(input.nowMs) || input.slotStartMs <= input.nowMs) {
       return { accepted: false, autoConfirmed: false, status: 'REJECTED', rejectionReason: 'APPOINTMENT_IN_PAST_FORBIDDEN' };
     }
     const slotKey = `${input.listingId}:${input.slotStartMs}`;
@@ -94,7 +94,7 @@ export class FavoritesAndSavedSearchAlertManager {
   evaluateListingAgainstSavedSearches(listing: {
     listingId: string; city: string; mode: 'buy' | 'rent'; hoodId: number; pricePerSqmMillion: number; status: 'PUBLISHED' | 'DRAFT' | 'SUSPENDED';
   }): { triggeredSearchIds: string[]; deduplicatedSkipCount: number } {
-    if (listing.status !== 'PUBLISHED') {
+    if (listing.status !== 'PUBLISHED' || !Number.isFinite(listing.pricePerSqmMillion) || listing.pricePerSqmMillion <= 0) {
       return { triggeredSearchIds: [], deduplicatedSkipCount: 0 };
     }
     const triggeredSearchIds: string[] = [];
@@ -156,6 +156,9 @@ export class MarketTimeSeriesRevisionGovernor {
   }): {
     updatedRecord: HistoricalPricePointRecord; originallyPublishedValuePreserved: boolean; downstreamCacheInvalidationRequired: true;
   } {
+    if (!Number.isFinite(input.correctedBuyPerSqmMillion) || input.correctedBuyPerSqmMillion <= 0) {
+      throw new Error('INVALID_ZERO_OR_NEGATIVE_HISTORICAL_PRICE');
+    }
     const key = `${input.hoodId}:${input.periodJalaliMonth}`;
     const existing = this.points.get(key);
     if (!existing) throw new Error('HISTORICAL_PERIOD_NOT_FOUND');

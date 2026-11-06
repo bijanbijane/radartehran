@@ -26,7 +26,7 @@ export class ServerLifecycleCoordinator {
     this.inflightCount++;
     return true;
   }
-  leaveRequest(): void { if (this.inflightCount > 0) this.inflightCount--; }
+  leaveRequest(): void { if (this.inflightCount > 0) this.inflightCount--; if (this.state === 'DRAINING' && this.inflightCount === 0) this.state = 'STOPPED'; }
   initiateGracefulShutdown(): { alreadyShuttingDown: boolean; inflightRemaining: number } {
     const alreadyShuttingDown = this.state !== 'RUNNING';
     if (this.state === 'RUNNING') this.state = 'DRAINING';

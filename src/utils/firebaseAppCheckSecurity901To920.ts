@@ -222,7 +222,7 @@ export async function verifyAndEnforceAppCheckAndAuthSeparation(params: {
       try {
         const claims = await params.adminVerifier(token, { consume: policy.requiresLimitedUseToken });
         const nowSec = Math.floor(Date.now() / 1000);
-        if (claims.exp <= nowSec) {
+        if (!Number.isFinite(claims.exp) || claims.exp <= nowSec) {
           recordAppCheckVerificationDiagnostic('APP_CHECK_TOKEN_EXPIRED');
           return { allowed: false, httpStatus: 401, errorCode: 'APP_CHECK_TOKEN_EXPIRED', isolatedContext };
         }

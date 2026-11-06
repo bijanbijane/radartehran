@@ -177,7 +177,7 @@ export function assignNearestAirQualityStation(
     stationName: nearest.stationName,
     stationDistanceKm: roundedDist,
     stationAqi: Math.round(nearest.aqi),
-    pm25: nearest.pm25 !== undefined ? Math.round(nearest.pm25 * 10) / 10 : null,
+    pm25: typeof nearest.pm25 === 'number' && Number.isFinite(nearest.pm25) && nearest.pm25 >= 0 ? Math.round(nearest.pm25 * 10) / 10 : null,
     coverageStatus: withinRange ? 'nearest_station_within_range' : 'distant_station_extrapolated',
   };
 }

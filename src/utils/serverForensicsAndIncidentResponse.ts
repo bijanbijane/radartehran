@@ -74,7 +74,7 @@ export class TamperResistantForensicLedger {
     return this.events.map((e) => ({ ...e, redactedMetadata: { ...e.redactedMetadata } }));
   }
   verifyChainIntegrity(): { intact: boolean; tamperedSequenceNumber?: number } {
-    let expectedPrev = 'GENESIS_0000000000000000';
+    let expectedPrev = this.events.length > 0 && this.events[0].sequenceNumber > 1 && /^[a-f0-9]{64}$/i.test(this.events[0].previousHash) ? this.events[0].previousHash : 'GENESIS_0000000000000000';
     for (const ev of this.events) {
       if (ev.previousHash !== expectedPrev) return { intact: false, tamperedSequenceNumber: ev.sequenceNumber };
       const canonicalPayload = JSON.stringify({

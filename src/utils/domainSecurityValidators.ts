@@ -120,10 +120,11 @@ export function validateStrictPriceNumber(
   if (raw === null || raw === undefined || typeof raw === 'boolean' || typeof raw === 'object') {
     return { ok: false, code: 'INVALID_PRICE_TYPE', messageFa: `مقدار ${fieldLabelFa} نامعتبر است و نباید خالی یا غیرعددی باشد.` };
   }
-  const num = typeof raw === 'string' ? (raw.trim().length === 0 ? NaN : Number(raw.trim())) : typeof raw === 'number' ? raw : NaN;
-  if (typeof raw === 'string' && raw.trim().length === 0) {
+  const normStr = typeof raw === 'string' ? raw.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632)).replace(/[\u066B]/g, '.').replace(/[,٬،\u066C\u060C\s]/g, '') : '';
+  if (typeof raw === 'string' && normStr.length === 0) {
     return { ok: false, code: 'EMPTY_PRICE_STRING', messageFa: `مقدار ${fieldLabelFa} نمی‌تواند خالی باشد.` };
   }
+  const num = typeof raw === 'string' ? Number(normStr) : typeof raw === 'number' ? raw : NaN;
   if (!Number.isFinite(num)) {
     return { ok: false, code: 'NON_FINITE_PRICE', messageFa: `مقدار ${fieldLabelFa} باید یک عدد متناهی معتبر باشد.` };
   }

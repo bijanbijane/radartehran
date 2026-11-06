@@ -246,12 +246,17 @@ describe('neighborhoodInsights - getTrafficZoneStatus', () => {
     expect(getTrafficZoneStatus(18).zoneType).toBe('main_traffic');
     expect(getTrafficZoneStatus(19).zoneType).toBe('main_traffic');
     expect(getTrafficZoneStatus(20).zoneType).toBe('main_traffic');
+    expect(getTrafficZoneStatus(86).zoneType).toBe('main_traffic');
+    expect(getTrafficZoneStatus(87).zoneType).toBe('main_traffic');
     expect(getTrafficZoneStatus(18).label).toContain('طرح ترافیک اصلی');
 
     // Air control (even/odd) scheme
     expect(getTrafficZoneStatus(8).zoneType).toBe('air_control');
     expect(getTrafficZoneStatus(28).zoneType).toBe('air_control');
     expect(getTrafficZoneStatus(41).zoneType).toBe('air_control');
+    expect(getTrafficZoneStatus(88).zoneType).toBe('air_control');
+    expect(getTrafficZoneStatus(94).zoneType).toBe('air_control');
+    expect(getTrafficZoneStatus(98).zoneType).toBe('air_control');
     expect(getTrafficZoneStatus(8).label).toContain('کنترل آلودگی');
 
     // Free zones

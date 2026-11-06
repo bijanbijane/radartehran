@@ -1019,6 +1019,985 @@ async function runSuite(): Promise<void> {
     assert.equal(jCompleted.leaseOwner, null, 'transitionJournalOperation must clear leaseOwner on completed status');
     assert.equal(jCompleted.leaseExpiresAt, null, 'transitionJournalOperation must clear leaseExpiresAt on completed status');
     assert.equal(jCompleted.lastErrorCode, null, 'transitionJournalOperation must clear lastErrorCode on completed status');
+
+    const serverMainSrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
+    const identityGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/identityLifecycleAndBackendGovernance.ts'), 'utf8');
+    assert.ok(
+      pubBargainsSrc.includes('await ensureBucketLoaded()') &&
+        pubBargainsSrc.includes('persistObjectStoreIndexNow()') &&
+        pubBargainsSrc.includes('globalBackendLifecycle.onRequestStart()') &&
+        pubBargainsSrc.includes('registeredPublisherApps') &&
+        pubBargainsSrc.includes('safeAsync('),
+      'serverPublisherBargains must load/persist objectStoreIndex on account/bargain delete, guard activeRequests, and guard async routes with safeAsync',
+    );
+    assert.ok(
+      chunkUploadSrc.includes('uploadToRemoteS3Compatible(objectKey, fullBuffer, canonicalMime, cfg)') &&
+        aiRoutesSrc.includes("req.headers['x-payment-context']") &&
+        aiRoutesSrc.includes('getAllMultiCityNeighborhoods().find((h) => h.id === hoodId)') &&
+        serverMainSrc.includes('code: "AIR_QUALITY_FAILED"') &&
+        serverMainSrc.includes('globalBackendLifecycle.initiateGracefulShutdown') &&
+        serverObjStorageSrc.includes('safeStorageAsync(') &&
+        serverObjStorageSrc.includes("!rangeHeader.includes(',') ? parseSingleByteRange") &&
+        utilityRoutesSrc.includes('safeUtilAsync(') &&
+        utilityRoutesSrc.includes('buildTelegramDigestPost(city, areaUnit, intlCurrency)') &&
+        marketPulseSrc.includes('parsed.lastPulseUpdatedMs <= Date.now() + 60_000') &&
+        deliveryGuardSrc.includes("lower === 'payment-context'") &&
+        identityGovSrc.includes('await ref.set({ ...fields, createdAtFa,') &&
+        orphanAuditSrc.includes('try { remoteDeleted = await deleteFromRemoteS3Compatible(') &&
+        seoSrc.includes('buildOpenApiSpecification(baseUrl, areaUnit, intlCurrency)'),
+      'Chunk upload S3 sync, x402 header aliases, multi-city dossier lookup, air-quality error boundary, safeStorageAsync, safeUtilAsync, buyerAlerts createdAtFa, and graceful shutdown lifecycle must be wired',
+    );
+    assert.equal(
+      detectEnvironmentConfigDrift({ TELEGRAM_BOT_TOKEN: 'YOUR_TELEGRAM_BOT_TOKEN', TELEGRAM_CHANNEL_ID: '' }).drifts.includes('PARTIAL_TELEGRAM_CONFIG'),
+      false,
+      'detectEnvironmentConfigDrift must ignore placeholder TELEGRAM_BOT_TOKEN values when checking PARTIAL_TELEGRAM_CONFIG',
+    );
+    assert.equal(
+      serializeFirestoreAndDomainPayloadSafely({ seconds: Number.NaN, nanoseconds: 0 }),
+      null,
+      'serializeFirestoreAndDomainPayloadSafely must return null for non-finite Timestamp seconds instead of throwing RangeError',
+    );
+    assert.equal(
+      serializeFirestoreAndDomainPayloadSafely({ latitude: Number.NaN, longitude: 51.4 }),
+      null,
+      'serializeFirestoreAndDomainPayloadSafely must return null for non-finite GeoPoint coordinates',
+    );
+    const parsedThousandNl = parseNaturalPersianHousingQuery('رهن آپارتمان تا ۱٬۵۰۰ میلیون');
+    assert.equal(parsedThousandNl.maxRahnMillions, 1500, 'parseNaturalPersianHousingQuery must parse Persian thousand separators (۱٬۵۰۰)');
+    const parsedDecimalBillionNl = parseNaturalPersianHousingQuery('رهن آپارتمان تا ۲٫۵ میلیارد');
+    assert.equal(parsedDecimalBillionNl.maxRahnMillions, 2500, 'parseNaturalPersianHousingQuery must parse Persian decimal separator (۲٫۵ میلیارد)');
+    assert.ok(
+      chunkUploadSrc.includes("getIntegrationCircuitBreakerState('remote_s3_storage')") &&
+        chunkUploadSrc.includes('deleteFromRemoteS3Compatible(objectKey, cfg)') &&
+        sponsorRoutesSrc.includes("rawTargetStatus !== 'approved' && rawTargetStatus !== 'rejected'"),
+      'Chunk upload must respect remote_s3_storage circuit breaker, roll back remote S3 on index failure, and bargain moderation must validate targetStatus',
+    );
+    const { validateContractAnalysisResult } = await import('../src/utils/buyerCorrectionAndAdminGovernance');
+    const validRuleContract = validateContractAnalysisResult(singleTrapLegal);
+    assert.ok(validRuleContract && validRuleContract.riskLevel === 'HIGH', 'validateContractAnalysisResult must accept canonical LOW/MEDIUM/HIGH riskLevel from serverLegalRuleEngine');
+    const buyTotalMillionBargain = extractVerifiedBargainPriceInDealUnit(
+      { id: 'b3', title: 'فروش', type: 'خرید', sqm: 85, priceText: '۸،۵۰۰ میلیون تومان', discountPercent: 12, buyerProfitText: '', street: 'اصلی' },
+      'خرید',
+    );
+    assert.equal(buyTotalMillionBargain.price, 100, 'extractVerifiedBargainPriceInDealUnit must strip Arabic comma ، and compute per-sqm price from total million in buy mode');
+    assert.equal(validateOutboundUrlAgainstSsrf('https://evil.localhost/hook', []).allowed, false, 'validateOutboundUrlAgainstSsrf must block .localhost subdomains');
+    assert.equal(validateOutboundUrlAgainstSsrf('https://100.64.1.1/hook', []).allowed, false, 'validateOutboundUrlAgainstSsrf must block CGNAT 100.64.0.0/10');
+    const { validateBuyPerSqmInput } = await import('../src/utils/domainSecurityValidators');
+    const persianBuyPrice = validateBuyPerSqmInput('۱٬۲۵۰');
+    assert.equal(persianBuyPrice.ok && persianBuyPrice.value === 1250, true, 'validateBuyPerSqmInput must normalize Persian digits and thousand separators');
+    const polyglotJpeg = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x00]),
+      Buffer.from('<!doctype html><script>alert(1)</script>', 'utf8'),
+    ]);
+    assert.equal(
+      validateObjectStoragePayload({ buffer: polyglotJpeg, mediaType: 'image', mimeType: 'image/jpeg', cfg: resolveObjectStorageRuntimeConfig({}) }).ok,
+      false,
+      'validateObjectStoragePayload must reject image polyglot script payloads',
+    );
+    const upperMimeKey = buildListingObjectKey({ city: 'tehran', hoodId: 5, mediaType: 'image', mimeType: ' IMAGE/WEBP ', objectId: 'obj-1700000000-aabbccdd' });
+    assert.equal(upperMimeKey.endsWith('.webp'), true, 'buildListingObjectKey must normalize uppercase/padded mimeType to .webp');
+    const { verifyAndDeduplicateTelegramWebhook } = await import('../src/utils/serverAdminAndTelegramSecurity');
+    assert.equal(
+      verifyAndDeduplicateTelegramWebhook({
+        secretHeader: 'valid_webhook_secret_12345',
+        expectedSecret: 'valid_webhook_secret_12345',
+        allowedChatIds: ['-100123456'],
+        payload: { update_id: 9001, message: { text: 'no chat id' } },
+      }).statusCode,
+      403,
+      'verifyAndDeduplicateTelegramWebhook must reject payloads missing chat.id when allowedChatIds is enforced',
+    );
+    const { inspectArchiveExtractionSafety } = await import('../src/utils/serverAdminSodAndBackupSecurity');
+    assert.equal(
+      inspectArchiveExtractionSafety([{ entryName: 'data.json', compressedBytes: 100, uncompressedBytes: Number.NaN }]).safe,
+      false,
+      'inspectArchiveExtractionSafety must reject NaN uncompressedBytes',
+    );
+    assert.equal(clampNumber('۷٫۵', 1, 10, 5), 7.5, 'clampNumber must parse Persian decimal separator ٫');
+    assert.equal(normalizePriceToMillionToman('۱۲٫۵', 'million_toman'), 12.5, 'normalizePriceToMillionToman must parse Persian decimal separator ٫');
+    const { sanitizeSafeExternalUrl } = await import('../src/utils/marketDataIntegrity');
+    assert.equal(sanitizeSafeExternalUrl('https://localhost./admin'), null, 'sanitizeSafeExternalUrl must reject trailing-dot localhost.');
+    assert.equal(sanitizeSafeExternalUrl('https://100.64.1.1/api'), null, 'sanitizeSafeExternalUrl must reject CGNAT 100.64.0.0/10');
+    const { assignNearestAirQualityStation } = await import('../src/utils/marketHistoryAndPulseIntegrity');
+    const negPmStation = assignNearestAirQualityStation(35.75, 51.41, [
+      { stationId: 's1', stationName: 'تست', lat: 35.75, lng: 51.41, aqi: 95, pm25: -5 },
+    ]);
+    assert.equal(negPmStation.pm25, null, 'assignNearestAirQualityStation must sanitize negative or non-finite pm25 to null');
+    assert.ok(
+      freeScraperSrc.includes('sortedPrices.length % 2 === 1 ? sortedPrices[mid] : (sortedPrices[mid - 1] + sortedPrices[mid]) / 2'),
+      'fetchFreeDivarNeighborhoodStats must average middle pair for even-length sample sets',
+    );
+    assert.equal(normalizeFinancialInput('۱۲٫۵'), 12.5, 'normalizeFinancialInput must parse Persian decimal separator ٫');
+    assert.equal(isSafeHttpsStorageUrl('https://evil.internal./bucket'), false, 'isSafeHttpsStorageUrl must reject trailing-dot .internal.');
+    const { IdempotencyLedger } = await import('../src/utils/serverIdempotencyAndConcurrency');
+    const idemLedger = new IdempotencyLedger();
+    const idemStart = idemLedger.beginExecution({ scope: 'test', actorId: 'u1', idempotencyKey: 'k1', payload: { a: 1 }, nowMs: 1000 });
+    idemLedger.failExecution({ scope: 'test', actorId: 'u1', idempotencyKey: 'k1', operationId: idemStart.record.operationId, errorMessage: 'boom', nowMs: 1005 });
+    const idemRetry = idemLedger.beginExecution({ scope: 'test', actorId: 'u1', idempotencyKey: 'k1', payload: { a: 1 }, nowMs: 1010 });
+    assert.equal(idemRetry.status, 'RETRY_AFTER_FAILURE');
+    assert.equal(idemRetry.record.errorMessage, undefined, 'IdempotencyLedger must clear stale errorMessage on RETRY_AFTER_FAILURE');
+    const { syncDeletionJournalReconciliationMetrics } = await import('../src/utils/deletionJournal');
+    const syncEmptyObj = await syncDeletionJournalReconciliationMetrics({
+      deletedIds: [],
+      blocked: [{ objectId: '', reason: 'invalid_record' }],
+      failures: [],
+      skippedNonBlockedCount: 0,
+      store: new InMemoryJournalStore(),
+    });
+    assert.equal(syncEmptyObj.journalSyncedCount, 1, 'syncDeletionJournalReconciliationMetrics must safely handle empty objectId on blocked invalid records');
+    const { verifyAndEnforceAppCheckAndAuthSeparation } = await import('../src/utils/firebaseAppCheckSecurity901To920');
+    const nanExpAppCheck = await verifyAndEnforceAppCheckAndAuthSeparation({
+      method: 'POST',
+      pathname: '/api/contract-check',
+      headers: { 'x-firebase-appcheck': 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl' },
+      enforcementMode: 'enforced',
+      adminVerifier: async () => ({ appId: '1:935427453422:web:25817d32df713f2a68deff', exp: Number.NaN, iat: 1000 }),
+    });
+    assert.equal(nanExpAppCheck.allowed, false, 'verifyAndEnforceAppCheckAndAuthSeparation must reject NaN exp');
+    const { validateOutboundServiceDestinationUrl, validateAndCreateBackgroundJob } = await import('../src/utils/telegramAndAsyncJobSecurity801To820');
+    assert.equal(validateOutboundServiceDestinationUrl('https://localhost./webhook').allowed, false, 'validateOutboundServiceDestinationUrl must reject trailing-dot localhost.');
+    assert.equal(
+      validateAndCreateBackgroundJob({ jobId: 'j1', jobType: 'MARKET_PULSE_SYNC', initiatingActorUid: 'u1', payload: { price: Number.NaN }, maxAttempts: 3 }).ok,
+      false,
+      'validateAndCreateBackgroundJob must reject NaN payload fields',
+    );
+    const { validateFirestoreDocumentComplexity } = await import('../src/utils/httpFirestoreAndStorage701To740');
+    assert.equal(
+      validateFirestoreDocumentComplexity({ nested: { score: Number.NaN } }).ok,
+      false,
+      'validateFirestoreDocumentComplexity must reject NaN numeric fields',
+    );
+    const { resolveAuthoritativeNeighborhoodPrice } = await import('../src/utils/domainAndAuthSecurity741To800');
+    const partialLive = resolveAuthoritativeNeighborhoodPrice({
+      seedBuyPerSqm: 100,
+      seedRahn80m: 800,
+      liveScrapedBuyPerSqm: 115,
+    });
+    assert.equal(partialLive.buyPerSqm, 115, 'resolveAuthoritativeNeighborhoodPrice must apply single-field liveScrapedBuyPerSqm');
+    assert.equal(partialLive.rahn80m, 800);
+    assert.equal(partialLive.activeSource, 'VERIFIED_LIVE_MARKET');
+    const { stripCredentialsFromUrlAndRedirect, verifyFirebaseTokenWithRevocationAndDisabledCheck } = await import('../src/utils/deepInfrastructureAndRecovery661To700');
+    assert.equal(stripCredentialsFromUrlAndRedirect('//evil.com/phish?token=secret'), '/', 'stripCredentialsFromUrlAndRedirect must neutralize protocol-relative //evil.com');
+    assert.equal(
+      verifyFirebaseTokenWithRevocationAndDisabledCheck({
+        uid: 'u1',
+        email: 'user@example.com',
+        tokenIssuedAtSec: 1000,
+        tokenExpiresAtSec: Number.NaN,
+        userDisabled: false,
+        userDeleted: false,
+        tokensValidAfterTimeMs: 900_000,
+        serverNowMs: 1_010_000,
+      }).valid,
+      false,
+      'verifyFirebaseTokenWithRevocationAndDisabledCheck must reject NaN tokenExpiresAtSec',
+    );
+    const { DurableWebhookEventIdempotencyStore } = await import('../src/utils/backupConcurrencyAndBusinessInvariants641To660');
+    const whStore = new DurableWebhookEventIdempotencyStore();
+    assert.equal(whStore.beginEvent('telegram', 'ev-1', 1000), 'PROCEED');
+    assert.equal(whStore.beginEvent('telegram', 'ev-1', 2000), 'DUPLICATE_IGNORED');
+    assert.equal(whStore.beginEvent('telegram', 'ev-1', 1000 + 300_001), 'PROCEED', 'DurableWebhookEventIdempotencyStore must allow retry of stale PROCESSING lock after 5m');
+    const { buildPrivacySafeAggregateNeighborhoodStats } = await import('../src/utils/privacyAndDataLifecycle861To880');
+    const kAnon = buildPrivacySafeAggregateNeighborhoodStats({ hoodId: 1, samplePrices: [100, 110, 120, 130, 140, Number.NaN, -50], minGroupThreshold: 5 });
+    assert.equal(kAnon.medianPrice, 120, 'buildPrivacySafeAggregateNeighborhoodStats must filter out NaN and negative prices');
+    const { ServerLifecycleCoordinator } = await import('../src/utils/securityGovernanceLifecycleAndListings');
+    const coord = new ServerLifecycleCoordinator();
+    coord.tryEnterRequest();
+    coord.initiateGracefulShutdown();
+    assert.equal(coord.getState(), 'DRAINING');
+    coord.leaveRequest();
+    assert.equal(coord.getState(), 'STOPPED', 'ServerLifecycleCoordinator must transition from DRAINING to STOPPED when last inflight request leaves');
+    const { InboundWebhookAuthenticator, inspectAndSanitizeImageUploadBuffer } = await import('../src/utils/supplyChainWebhooksMediaSearchRouting');
+    const whAuth = new InboundWebhookAuthenticator({ primarySecret: 's3cr3t-key-12345' });
+    assert.equal(
+      whAuth.verifyAndRegisterWebhookEvent({
+        providerId: 'p1',
+        eventId: 'e1',
+        timestampSec: Number.NaN,
+        signatureHeaderHex: 'deadbeef',
+        rawBodyBuffer: Buffer.from('{}'),
+      }).accepted,
+      false,
+      'InboundWebhookAuthenticator must reject NaN timestampSec',
+    );
+    assert.equal(
+      inspectAndSanitizeImageUploadBuffer(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]), { width: Number.NaN, height: 100 }).safe,
+      false,
+      'inspectAndSanitizeImageUploadBuffer must reject NaN dimensions',
+    );
+    const { validateMapTileResourceUrl } = await import('../src/utils/securityGovernance601To639');
+    assert.equal(validateMapTileResourceUrl('/api/osm-tile/12/../../admin').valid, false, 'validateMapTileResourceUrl must block path traversal');
+    const { validateBoundedRequestPayload, validateImageProcessingSafety, sanitizeNavigationRedirectTarget } = await import('../src/utils/advancedAppSecAndSupplyChainGovernance');
+    assert.equal(validateBoundedRequestPayload({ nested: { val: Number.NaN } }).valid, false, 'validateBoundedRequestPayload must reject NaN numeric fields');
+    assert.equal(
+      validateImageProcessingSafety({ byteLength: Number.NaN, widthPx: 100, heightPx: 100, magicHeaderHex: 'ffd8ffe0' }).safe,
+      false,
+      'validateImageProcessingSafety must reject NaN byteLength',
+    );
+    assert.equal(sanitizeNavigationRedirectTarget('/\t/evil.com').wasRejected, true, 'sanitizeNavigationRedirectTarget must reject control chars');
+    const { CentralizedMutationIdempotencyStore } = await import('../src/utils/idempotencyContentionAndOpsGovernance');
+    const cmStore = new CentralizedMutationIdempotencyStore();
+    assert.equal(cmStore.evaluateOrClaim({ idempotencyKey: 'k1', actorScope: 'u1', operationType: 'op1', payload: { a: 1 }, nowMs: 1000 }).status, 'new_execution');
+    assert.equal(cmStore.evaluateOrClaim({ idempotencyKey: 'k1', actorScope: 'u1', operationType: 'op1', payload: { a: 1 }, nowMs: 2000 }).status, 'in_progress');
+    assert.equal(
+      cmStore.evaluateOrClaim({ idempotencyKey: 'k1', actorScope: 'u1', operationType: 'op1', payload: { a: 1 }, nowMs: 1000 + 300_001 }).status,
+      'new_execution',
+      'CentralizedMutationIdempotencyStore must allow retry of stale in_progress lock after 5m',
+    );
+    const { executeTraceableIngestionBatch } = await import('../src/utils/cacheJobsGeospatialIngestionFlags');
+    const ingBatch = executeTraceableIngestionBatch({
+      batchId: 'b1',
+      incomingRecords: [{ hoodId: 1, buyPerSqm: 100, rahn80m: Number.NaN, sourceId: 's1', sourcePublishedAtIso: '2026-10-01T00:00:00Z' }],
+      existingRecordsByHoodId: new Map(),
+    });
+    assert.equal(ingBatch.isolatedMalformedCount, 1, 'executeTraceableIngestionBatch must isolate NaN rahn80m as malformed');
+    const { verifyFinancialTransactionReconciliation } = await import('../src/utils/paymentFinopsDesignBoundaryPrivacyAudit');
+    assert.equal(
+      verifyFinancialTransactionReconciliation({
+        transactionId: 'tx1',
+        orderOwnerUid: 'u1',
+        callbackActorUid: 'u1',
+        authoritativeServerAmountRials: 0,
+        clientSubmittedAmountRials: 0,
+        providerVerifiedAmountRials: 0,
+        providerVerificationStatus: 'VERIFIED_OK',
+        alreadyActivatedOnce: false,
+      }).reconciledAndAuthorized,
+      false,
+      'verifyFinancialTransactionReconciliation must reject zero or negative authoritativeServerAmountRials',
+    );
+    const { enforcePropertyLevelAuthorization } = await import('../src/utils/xssMassAssignChartBrowserThirdParty');
+    const propAuth = enforcePropertyLevelAuthorization({
+      operation: 'UPDATE_LISTING',
+      actorRole: 'AUTHENTICATED_USER',
+      actorUid: 'u1',
+      resourceOwnerUid: 'u1',
+      rawRequestBody: { sqm: Number.NaN, title: 'آپارتمان' },
+    });
+    assert.equal(propAuth.sanitizedPatch.sqm, undefined, 'enforcePropertyLevelAuthorization must block NaN numeric fields');
+    const { ViewingSlotConcurrencyGuard, MarketTimeSeriesRevisionGovernor } = await import('../src/utils/offlineAppointmentsFavoritesTimeSeriesAuthority');
+    const slotGuard = new ViewingSlotConcurrencyGuard();
+    assert.equal(
+      slotGuard.requestViewingSlot({ requestId: 'r1', listingId: 'l1', listingStatus: 'PUBLISHED', buyerUid: 'u1', slotStartMs: Number.NaN, nowMs: 1000 }).accepted,
+      false,
+      'ViewingSlotConcurrencyGuard must reject NaN slotStartMs',
+    );
+    const tsGov = new MarketTimeSeriesRevisionGovernor();
+    tsGov.recordInitialPeriodObservation({ hoodId: 1, periodJalaliMonth: '1405-01', buyPerSqmMillion: 100, provenance: 'VERIFIED_ADMIN_MARKET_OBSERVATION' });
+    assert.throws(
+      () => tsGov.applyAuditedHistoricalRevision({ hoodId: 1, periodJalaliMonth: '1405-01', correctedBuyPerSqmMillion: Number.NaN, reason: 'اصلاح خطا', revisedAtIso: '2026-10-01T00:00:00Z' }),
+      /INVALID_ZERO_OR_NEGATIVE_HISTORICAL_PRICE/,
+      'MarketTimeSeriesRevisionGovernor.applyAuditedHistoricalRevision must reject NaN or non-positive price',
+    );
+    const { executeListingStateTransition } = await import('../src/utils/multiTabListingDedupeBulkRaceAudit');
+    assert.equal(
+      executeListingStateTransition({
+        record: { listingId: 'l1', ownerUid: 'u1', status: 'DRAFT', sqm: Number.NaN, priceMillion: 100, hoodId: 1, hasVerifiedContact: true, publishedAtMs: null, expiresAtMs: null, history: [] },
+        targetStatus: 'PENDING_REVIEW',
+        actorRole: 'OWNER',
+        actorUid: 'u1',
+        nowMs: 1000,
+      }).transitioned,
+      false,
+      'executeListingStateTransition must reject NaN sqm',
+    );
+    const { RealEstateInquiryAndLeadGuard } = await import('../src/utils/leadsMediaOnboardingFunnelTransportAudit');
+    const inqGuard = new RealEstateInquiryAndLeadGuard();
+    assert.equal(
+      inqGuard.submitInquiry({
+        inquiryId: 'i1',
+        idempotencyKey: 'ik1',
+        inquirerUid: 'u2',
+        inquirerSuspended: false,
+        inquirerPhone: '09123456789',
+        messageFa: 'سلام',
+        listingId: 'l1',
+        listingOwnerUid: 'u1',
+        listingStatus: 'PUBLISHED',
+        listingExpiresAtMs: Number.NaN,
+        nowMs: 1000,
+      }).accepted,
+      false,
+      'RealEstateInquiryAndLeadGuard must reject NaN listingExpiresAtMs',
+    );
+    const { parseContextAwareNumericInput } = await import('../src/utils/bootstrapLocalizationAndModerationGovernance');
+    assert.equal(parseContextAwareNumericInput('۱۲،۵۰۰', 'monetary_amount').numericValue, 12500, 'parseContextAwareNumericInput must strip Arabic comma ،');
+    const badMediaRes = await updateMyPublishedBargain({
+      bargainId: 'b-12345',
+      updates: { imageUrl: '/api/object-storage/../../admin' },
+      getIdToken: async () => 'tok',
+    });
+    assert.equal(badMediaRes.ok, false, 'updateMyPublishedBargain must reject path traversal in imageUrl');
+    const { MediaDeliveryAndSignedUrlGuard } = await import('../src/utils/operationalScaleAndGameDay');
+    const mediaGuard = new MediaDeliveryAndSignedUrlGuard();
+    assert.equal(
+      mediaGuard.verifySignedMediaAccess({ objectKey: 'k1', visibility: 'PUBLIC_LISTING_MEDIA', expiresAtMs: Number.NaN, sig: 'deadbeef', nowMs: 1000 }).allowed,
+      false,
+      'MediaDeliveryAndSignedUrlGuard must reject NaN expiresAtMs',
+    );
+    const { computeSeasonallyAdjustedSeries } = await import('../src/utils/timeSeriesLicensingAndBrowserLifecycleGovernance');
+    const nanSeasonal = computeSeasonallyAdjustedSeries(
+      Array.from({ length: 12 }, (_, idx) => ({ monthIndex1to12: idx + 1, rawValue: idx === 0 ? Number.NaN : 100 })),
+    );
+    assert.equal(nanSeasonal.eligibleForSeasonalAdjustment, false, 'computeSeasonallyAdjustedSeries must reject NaN observations');
+    const { OidcAndOAuthFlowSecurityGuard } = await import('../src/utils/accessibilityOidcIntegrityAnalyticsCircuit');
+    const oidcGuard = new OidcAndOAuthFlowSecurityGuard({
+      expectedIssuer: 'https://accounts.google.com',
+      expectedAudience: 'radar-client',
+      allowedRedirectOrigins: ['https://radar.example.com'],
+    });
+    const issued = oidcGuard.issueStateAndNonce(1000);
+    assert.equal(
+      oidcGuard.validateCallbackAndIdToken({
+        state: issued.state,
+        redirectUri: 'https://radar.example.com/cb',
+        claims: { iss: 'https://accounts.google.com', aud: 'radar-client', sub: 's1', exp: Number.NaN, iat: 1, nonce: issued.nonce },
+        nowMs: 2000,
+      }).reason,
+      'TOKEN_EXPIRED',
+      'OidcAndOAuthFlowSecurityGuard must reject NaN claims.exp as TOKEN_EXPIRED',
+    );
+    const { buildAndAuditPrintableValuationReport, convertGregorianIsoToJalali } = await import('../src/utils/pdfJalaliPushErrorBuildAudit');
+    const ssrfTrailingDot = buildAndAuditPrintableValuationReport({
+      reportId: 'r1',
+      requesterUid: 'u1',
+      reportOwnerUid: 'u1',
+      neighborhoodNameFa: 'ونک',
+      sqm: 100,
+      authoritativeBuyPerSqmMillion: 150,
+      authoritativeTotalMillion: 15000,
+      renderedBuyPerSqmMillion: 150,
+      renderedTotalMillion: 15000,
+      valuationMethod: 'CALCULATED_HEDONIC',
+      generatedAtIsoUtc: '2026-10-01T00:00:00Z',
+      embeddedResourceUrls: ['https://localhost./secret'],
+      requestedFilename: 'rep',
+    });
+    assert.equal(ssrfTrailingDot.ssrfSafe, false, 'buildAndAuditPrintableValuationReport must block trailing-dot localhost. SSRF');
+    assert.throws(() => convertGregorianIsoToJalali('2026-02-30'), /INVALID_ISO_TIMESTAMP/, 'convertGregorianIsoToJalali must reject impossible calendar date 2026-02-30');
+    const { evaluateDeclarativeBusinessRules } = await import('../src/utils/agencyAutomationOutboxAndSlaEngine');
+    const depRules = evaluateDeclarativeBusinessRules({
+      rules: [
+        { ruleId: 'r-parent', version: 1, field: 'dealAmountToman', operator: 'GT', expectedValue: 1000 },
+        { ruleId: 'r-child', version: 1, field: 'daysInactive', operator: 'GT', expectedValue: 5, dependsOnRuleId: 'r-parent' },
+      ],
+      context: { dealAmountToman: 500, daysInactive: 10 },
+    });
+    assert.equal(depRules.matchedRuleIds.includes('r-child'), false, 'evaluateDeclarativeBusinessRules must not match child rule when parent rule fails');
+    const { reconcileProviderDeliveryCallback } = await import('../src/utils/agencyDeduplicationAndMessagingGovernance');
+    const msgBefore = {
+      messageId: 'm1',
+      workspaceId: 'ws1',
+      customerId: 'c1',
+      channelType: 'SMS' as const,
+      idempotencyKey: 'ik1',
+      providerMessageId: 'p1',
+      deliveryState: 'DELIVERED' as const,
+      sentAtMs: 1000,
+      updatedAtMs: 2000,
+    };
+    const msgAfter = reconcileProviderDeliveryCallback({
+      message: msgBefore,
+      providerMessageId: 'p1',
+      reportedState: 'UNKNOWN',
+      callbackTimestampMs: Number.NaN,
+    });
+    assert.equal(msgAfter.deliveryState, 'DELIVERED', 'reconcileProviderDeliveryCallback must not regress DELIVERED to UNKNOWN');
+    assert.equal(msgAfter.updatedAtMs, 2000, 'reconcileProviderDeliveryCallback must ignore NaN callbackTimestampMs');
+    const { evaluateAiOutputGroundednessAndAccuracy, AiTokenUsageAndCostLedger } = await import('../src/utils/aiGovernanceAndObservability');
+    const persianHallucination = evaluateAiOutputGroundednessAndAccuracy({
+      aiResponseText: 'در محله ونک میانگین تخمینی قیمت متری ۹۹۹ میلیون تومان است.',
+      allowedNumericFacts: [180],
+      requiredNeighborhoodName: 'ونک',
+    });
+    assert.equal(persianHallucination.passed, false, 'evaluateAiOutputGroundednessAndAccuracy must detect hallucinated Persian digits');
+    const ledger = new AiTokenUsageAndCostLedger({ maxTokensPerUserWindow: 1000, maxSinglePromptTokens: 500 });
+    ledger.recordUsage({
+      requestId: 'req-nan',
+      userId: 'u-nan',
+      featureName: 'f1',
+      modelName: 'm1',
+      inputTokens: Number.NaN,
+      outputTokens: 200,
+      tokenAccountingBasis: 'PROVIDER_REPORTED',
+      succeeded: true,
+    });
+    assert.equal(ledger.getUserSummary('u-nan').totalTokens, 200, 'AiTokenUsageAndCostLedger must guard against NaN inputTokens');
+    const { BoundedEdgeTelemetryRingBuffer } = await import('../src/utils/telemetryEdgeAggregationEngine');
+    const ring = new BoundedEdgeTelemetryRingBuffer(8);
+    ring.push({ timestampMs: 1000, dwellDeltaMs: Number.NaN, toolId: 't1' });
+    assert.equal(ring.buildSummaryPayload().activeDwellMs, 0, 'BoundedEdgeTelemetryRingBuffer must ignore NaN dwellDeltaMs');
+    const { buildReproducibleCrmReport } = await import('../src/utils/agencyCrmWorkflowAndReportingEngine');
+    const csvRep = buildReproducibleCrmReport({
+      organizationId: 'org1',
+      reportType: 'LEADS',
+      appliedFilters: {},
+      rows: [{ note: ' =CMD|' }],
+    });
+    assert.ok(csvRep.csvContent.includes("' =CMD|"), 'buildReproducibleCrmReport must neutralize leading-whitespace CSV formula injection');
+    const { evaluateTransactionDocumentReadiness, validateMemberOffboardingAndHandover } = await import('../src/utils/agencyEnterpriseOperationsAndGovernanceEngine');
+    assert.equal(
+      evaluateTransactionDocumentReadiness([{ itemId: 'd1', titleFa: 'سند', mandatoryForClosing: true, state: 'VERIFIED', expiresAtIso: 'invalid-date' }], 1000).readyForClosing,
+      false,
+      'evaluateTransactionDocumentReadiness must reject malformed expiresAtIso',
+    );
+    assert.equal(
+      validateMemberOffboardingAndHandover({
+        memberUid: 'ag-1',
+        operation: 'REMOVE',
+        activeOwnedLeadIds: ['l1'],
+        activeOwnedCaseIds: [],
+        reassignedToAgentUid: 'ag-1',
+        reassignedTargetActive: true,
+      }).canCompleteOffboarding,
+      false,
+      'validateMemberOffboardingAndHandover must forbid self-reassignment during offboarding',
+    );
+    const { compareContractVersionsByClause, evaluateAgencyInvitationAndTenantAccess } = await import('../src/utils/legalContractIntelligenceAndAgencyWorkspace');
+    const diffArabic = compareContractVersionsByClause(
+      [{ clauseNumber: '1', text: 'مبلغ ١٠٠ میلیون', pageIndex: 0 }],
+      [{ clauseNumber: '1', text: 'مبلغ ٢٠٠ میلیون', pageIndex: 0 }],
+    );
+    assert.equal(diffArabic[0]?.numericValueChanged, true, 'compareContractVersionsByClause must detect Arabic-Indic digit changes');
+    assert.equal(
+      evaluateAgencyInvitationAndTenantAccess({
+        actorUid: 'u1',
+        actorOrganizationId: 'o1',
+        actorRoleInOrg: 'ORG_AGENT',
+        targetResourceOrganizationId: 'o1',
+        invitation: { invitationId: 'i1', organizationId: 'o1', intendedRecipientUid: 'u1', proposedRole: 'ORG_AGENT', status: 'PENDING', expiresAtMs: Number.NaN },
+        nowMs: 1000,
+      }).invitationClaimStatus,
+      'REJECTED_EXPIRED',
+      'evaluateAgencyInvitationAndTenantAccess must reject NaN expiresAtMs',
+    );
+    const { evaluateOwnershipSeparationRegistryAndTitleConflicts } = await import('../src/utils/propertyLegalTitleRegistryAndTransactionTransferEngine');
+    const ownSep = evaluateOwnershipSeparationRegistryAndTitleConflicts({
+      interestHolders: [
+        { holderId: 'h1', relationshipKind: 'REGISTERED_LEGAL_TITLE', documentedSharePercent: 60, hasVerifiedOfficialTitleDeed: true },
+        { holderId: 'h2', relationshipKind: 'REGISTERED_LEGAL_TITLE', documentedSharePercent: Number.NaN, hasVerifiedOfficialTitleDeed: true },
+      ],
+      registryIdentifierCheck: { mainParcelNumber: '10', subParcelNumber: '2', registrySection: '01', registryDistrict: 'Tehran' },
+      recordedActiveEncumbrancesCount: 0,
+      competingTitleClaims: [],
+    });
+    assert.equal(ownSep.ownershipSeparation.documentedLegalShareSumPercent, 60, 'evaluateOwnershipSeparationRegistryAndTitleConflicts must ignore NaN documentedSharePercent');
+    const { evaluatePoaEncumbrancesRegistryDiscrepanciesAndSuccession } = await import('../src/utils/realEstateLegalDossierTitleDisputeAndDueDiligenceEngine');
+    const poaRes = evaluatePoaEncumbrancesRegistryDiscrepanciesAndSuccession({
+      powerOfAttorneyAttempt: { poaId: 'p1', isGeneralAdministrativeOnly: false, enumeratedPowers: ['SALE_TRANSFER'], requestedTransactionAction: 'SALE_TRANSFER', isRevokedOrExpired: false, hasVerifiedNotaryRevocationCheck: true },
+      encumbrances: [],
+      registryInquiry: { inquiryId: 'inq1', sourceType: 'AUTHORIZED_NOTARY_REGISTRY_RESPONSE', expiresAtMs: Number.NaN, nowMs: 1000 },
+      areaDiscrepancy: { titleDeedAreaSqm: 100, municipalCompletionCertAreaSqm: 100, cadastralSubdivisionAreaSqm: 100 },
+      inheritanceRecord: { hasOfficialSuccessionCertificate: true, declaredHeirsShareSumPercent: 100 },
+    });
+    assert.equal(poaRes.registryInquiryStatus, 'EXPIRED_INQUIRY', 'evaluatePoaEncumbrancesRegistryDiscrepanciesAndSuccession must treat NaN expiresAtMs as EXPIRED_INQUIRY');
+    const { evaluateDepositDeductionArrearsChequesAndAlerts } = await import('../src/utils/leasingTenantLifecycleChequeAndHandoverAuditEngine');
+    const leaseAudit = evaluateDepositDeductionArrearsChequesAndAlerts({
+      depositLedger: { receivedDepositCashToman: 1000, proposedUnapprovedDeductionToman: 0, approvedVerifiedDeductionToman: 0, refundedCashToman: 0 },
+      receivablesLedger: [{ obligationId: 'ob1', amountToman: Number.NaN, daysOverdue: 10, isDisputedByTenant: false }],
+      rentalChequeInstruments: [{ chequeSayadId: 'c1', amountToman: -500, status: 'CLEARED_SETTLED' }],
+      alertEvent: { alertId: 'a1', scheduledInQueue: true, providerConfirmedDeliveryReceipt: true },
+    });
+    assert.equal(leaseAudit.arrearsSummary.undisputedOverdueArrearsToman, 0, 'evaluateDepositDeductionArrearsChequesAndAlerts must ignore NaN receivable amounts');
+    assert.equal(leaseAudit.chequeReconciliation.clearedSettledCashFromChequesToman, 0, 'evaluateDepositDeductionArrearsChequesAndAlerts must ignore negative cheque amounts');
+    const { evaluateOccupancyLeaseLifecycleAndAmendments } = await import('../src/utils/propertyManagementLeaseBillingAndOperationsEngine');
+    const occRes = evaluateOccupancyLeaseLifecycleAndAmendments({
+      unitId: 'u1',
+      viewerIsAuthorizedManagerOrOwner: true,
+      physicalOccupancyState: 'TENANT_OCCUPIED',
+      occupantFullNamePii: 'علی',
+      leases: [{ leaseId: 'l1', category: 'RESIDENTIAL', contractStatus: 'EXECUTED_ACTIVE', startIso: '2026-01-01T00:00:00Z', endIso: '2027-01-01T00:00:00Z', monthlyRentToman: 1000, depositAmountToman: 5000, autoRenewalExplicitlyConfigured: false }],
+      proposedAmendment: { amendmentId: 'am1', targetLeaseId: 'l1', effectiveFromIso: '2026-06-01T00:00:00Z', newMonthlyRentToman: -100, approvedByLandlordAndTenant: true },
+    });
+    assert.equal(occRes.amendmentOutcome.applied, false, 'evaluateOccupancyLeaseLifecycleAndAmendments must reject non-positive newMonthlyRentToman');
+    const { calculateSafePeriodicIrrAndPerformance } = await import('../src/utils/investmentFundNavWaterfallIrrAndGovernanceEngine');
+    assert.equal(
+      calculateSafePeriodicIrrAndPerformance({ cashFlowsToman: [-1000, Number.NaN, 1200], isProjectedScenario: true }).status,
+      'NO_VALID_IRR_SIGN_CHANGE',
+      'calculateSafePeriodicIrrAndPerformance must reject cash flows containing NaN',
+    );
+    const { evaluateXirrNpvRentalYieldAndReturnDecomposition } = await import('../src/utils/investmentPortfolioXirrNpvBreakEvenAndExitEngine');
+    const xirrRes = evaluateXirrNpvRentalYieldAndReturnDecomposition({
+      datedCashFlows: [
+        { dateIso: '2025-01-01T00:00:00Z', amountToman: -1000, nature: 'ACTUAL_SETTLED' },
+        { dateIso: 'invalid-date', amountToman: 500, nature: 'PROJECTED_FORECAST' },
+        { dateIso: '2026-01-01T00:00:00Z', amountToman: 1200, nature: 'PROJECTED_FORECAST' },
+      ],
+      npvModelInput: { cashFlowConvention: 'NOMINAL', discountRateConvention: 'NOMINAL', annualDiscountRatePercent: 10 },
+      rentalIncomeInput: { collectedGrossRentAnnualToman: 100, refundableTenantDepositToman: 50, operatingExpensesAnnualToman: 20, annualDebtServiceToman: 0, propertyValuationBasisToman: 1000 },
+      returnDecompositionInput: { initialCapitalizedBasisToman: 1000, currentEstimatedValuationToman: 1200, realizedNetDisposalProceedsToman: null, realizedCumulativeNetIncomeToman: 80 },
+    });
+    assert.equal(Number.isFinite(xirrRes.npvResult.npvToman), true, 'evaluateXirrNpvRentalYieldAndReturnDecomposition must ignore invalid dateIso entries');
+    const { estimatePropertyValueRangeFromComparables } = await import('../src/utils/marketBiRiskAndForecastingEngine');
+    const compRes = estimatePropertyValueRangeFromComparables({
+      subject: { propertyId: 'p0', hoodId: 1, districtId: 1, propertyType: 'APARTMENT', areaSqm: 100, ageYears: 5, bedrooms: 2 },
+      candidates: [
+        { observationId: 'o1', workspaceId: 'w1', propertyId: 'p1', city: 'tehran', districtId: 1, hoodId: 1, propertyType: 'APARTMENT', areaBasis: 'BUILT_AREA_SQM', areaSqm: Number.NaN, ageYears: 5, bedrooms: 2, priceBasis: 'CONFIRMED_TRANSACTION', totalPriceToman: 10000, observedAtIso: '2026-10-01', lifecycleState: 'SOLD' },
+        { observationId: 'o2', workspaceId: 'w1', propertyId: 'p2', city: 'tehran', districtId: 1, hoodId: 1, propertyType: 'APARTMENT', areaBasis: 'BUILT_AREA_SQM', areaSqm: 100, ageYears: 5, bedrooms: 2, priceBasis: 'CONFIRMED_TRANSACTION', totalPriceToman: 10000, observedAtIso: '2026-10-01', lifecycleState: 'SOLD' },
+      ],
+    });
+    assert.equal(compRes.comparables.length, 1, 'estimatePropertyValueRangeFromComparables must skip candidates with NaN areaSqm');
+    const { evaluateProjectPhaseWeightedProgressAndSiteProvenance, evaluateSCurveEvmTenderingAndMaterialLifecycle } = await import('../src/utils/constructionProjectDeliveryContractorAndAuditEngine');
+    const constrPhaseRes = evaluateProjectPhaseWeightedProgressAndSiteProvenance({
+      phaseTransitionAttempt: { phaseId: 'ph1', unresolvedMandatoryPrerequisitesCount: 0, internallyMarkedCompleted: true, hasOfficialRegulatoryPermitApproval: true },
+      siteGeospatialRecord: { siteId: 's1', coordinateSource: 'LICENSED_CADASTRAL_SURVEY' },
+      workPackagesProgress: [
+        { workPackageId: 'wp1', budgetWeight0To100: Number.NaN, plannedProgressPercent: 50, contractorReportedProgressPercent: 50, engineerApprovedProgressPercent: 50, hasSupportingMeasurementEvidence: true },
+        { workPackageId: 'wp2', budgetWeight0To100: 100, plannedProgressPercent: 80, contractorReportedProgressPercent: 80, engineerApprovedProgressPercent: 80, hasSupportingMeasurementEvidence: true },
+      ],
+    });
+    assert.equal(constrPhaseRes.physicalProgressSummary.weightedApprovedProjectProgressPercent, 80, 'evaluateProjectPhaseWeightedProgressAndSiteProvenance must ignore NaN budgetWeight');
+    const evmTenderRes = evaluateSCurveEvmTenderingAndMaterialLifecycle({
+      sCurveSeries: [],
+      evmInput: { plannedValuePvToman: 1000, earnedValueEvToman: Number.NaN, actualCostAcToman: 1000 },
+      changeRequest: { changeId: 'c1', approvedByAuthorizedBoard: true, activeBaselineBudgetToman: 1000, proposedDeltaToman: 100 },
+      tenderEvaluation: { awardPolicy: 'LOWEST_PRICE_ONLY', bids: [{ bidderId: 'b1', technicalScore0To100: 90, commercialScore0To100: 90, priceToman: -500 }, { bidderId: 'b2', technicalScore0To100: 90, commercialScore0To100: 90, priceToman: 1000 }] },
+      materialRecord: { materialCode: 'm1', orderedOnPurchaseOrderQty: 10, physicallyDeliveredAndAcceptedQty: 10, consumedInVerifiedWorkQty: 5 },
+    });
+    assert.equal(evmTenderRes.evmAnalytics.metricsAvailable, false, 'evaluateSCurveEvmTenderingAndMaterialLifecycle must reject NaN earnedValue');
+    assert.equal(evmTenderRes.tenderOutcome.recommendedBidderId, 'b2', 'evaluateSCurveEvmTenderingAndMaterialLifecycle must reject negative price bids');
+    const { evaluateBudgetProgressPaymentBoqAndSiteInventory, evaluateSiteOpsQaHsePartnershipAndPresale } = await import('../src/utils/constructionDevelopmentWbsBudgetAndPartnershipEngine');
+    const progPayRes = evaluateBudgetProgressPaymentBoqAndSiteInventory({
+      budgetLedger: { initialEstimatedCostToman: 1000, approvedBaselineBudgetToman: 1000, committedPurchaseOrdersToman: 500, incurredVerifiedWorkToman: 500, invoicedPayableToman: 500, settledPaidCashToman: 500 },
+      progressPaymentApplication: { applicationId: 'app1', alreadyCertifiedApplicationIds: new Set(), contractorSubmittedGrossToman: 1000, engineerVerifiedGrossToman: Number.NaN, retentionRatePercent: 10, advanceAmortizationDeductionToman: 0, taxAndInsuranceDeductionToman: 0, isApprovedByProjectManager: true },
+      boqItems: [], siteInventoryMovements: [],
+    });
+    assert.equal(progPayRes.paymentCertificate.netPayableToContractorToman, 0, 'evaluateBudgetProgressPaymentBoqAndSiteInventory must return 0 payable when engineerVerifiedGross is NaN');
+    const equipRes = evaluateSiteOpsQaHsePartnershipAndPresale({
+      equipmentReservations: [
+        { reservationId: 'r1', equipmentId: 'eq1', startMs: Number.NaN, endMs: 2000 },
+        { reservationId: 'r2', equipmentId: 'eq1', startMs: 1000, endMs: 3000 },
+      ],
+      qaAndHse: { ncrId: 'n1', hasReinspectionVerificationEvidence: true, hseIncidentCount: 0, viewerAuthorizedForConfidentialHse: true },
+      changeOrder: { originalApprovedBudgetToman: 1000, proposedBudgetDeltaToman: 0, isChangeOrderApproved: true },
+      unitAllocationAttempt: { unitId: 'u1', currentStatus: 'AVAILABLE', treatReservationAsCompletedSale: false },
+      jointPartnership: { landownerLandValuationToman: 1000, developerCashConstructionContributionToman: 1000, contractualLandownerUnitSharePercent: 50, contractualDeveloperUnitSharePercent: 50, simulatedLandownerSharePercent: 50, totalCompletedUnitsCount: 10 },
+    });
+    assert.equal(equipRes.hasEquipmentOverlapConflict, false, 'evaluateSiteOpsQaHsePartnershipAndPresale must ignore reservations with NaN timestamps');
+    const { evaluateBuildingInspectionCompliance, calculatePropertyNoiAndInvestmentYields } = await import('../src/utils/buildingComplianceInsuranceNoiTcoAndAuditEngine');
+    const inspRes = evaluateBuildingInspectionCompliance({
+      buildingId: 'b1', category: 'FIRE_PROTECTION', inspectionType: 'EXTERNAL_CERTIFIED_AUTHORITY',
+      issuingAuthorityName: 'آتشنشانی', certificateExpiresIso: 'not-a-valid-date', unresolvedFindingsCount: 0,
+      hasSignedCertificateAttachment: true, nowIso: '2026-11-01T00:00:00Z',
+    });
+    assert.equal(inspRes.isExpired, true, 'evaluateBuildingInspectionCompliance must treat invalid certificateExpiresIso as expired');
+    const noiRes = calculatePropertyNoiAndInvestmentYields({
+      assetId: 'a1', reportingPeriodLabel: 'Q3', potentialGrossRentToman: 1000, vacancyAndCreditLossToman: 100, collectedOperatingRevenueToman: 900, otherOperatingIncomeToman: 50, operatingExpensesToman: 200, capitalExpendituresToman: 50, debtServiceInterestAndPrincipalToman: 100, accountingDepreciationToman: 50, historicalAcquisitionCostToman: 10000, currentMarketValuationToman: Number.NaN, totalEquityInvestedToman: 5000,
+    });
+    assert.equal(noiRes.yields.grossYieldOnMarketValuePercent, null, 'calculatePropertyNoiAndInvestmentYields must return null yield when valuation is NaN');
+    const { evaluateFacilityAssetTaxonomyCommissioningAndWarranty, evaluateMaintenancePdmSlaRcaAndLifeCycleCost, evaluateEnergyServicesHealthIndexAndFacilityAudits } = await import('../src/utils/facilityManagementPdmSlaEnergyAndHealthEngine');
+    const facWarrRes = evaluateFacilityAssetTaxonomyCommissioningAndWarranty({
+      actorTenantId: 't1', assetTenantId: 't1', operatingModel: 'OWNER_OPERATED',
+      assetRecord: { immutableInternalAssetId: 'a1', humanReadableAssetCode: 'AC-01', editableDisplayNameFa: 'چیلر', previousDisplayNamesFa: [], legalOwnerId: 'o1', physicalCustodianId: 'c1', operationalResponsiblePartyId: 'p1', locationNodeId: 'l1' },
+      commissioningAttempt: { requestedState: 'OPERATIONAL', mandatoryChecklistCompleted: true, commissioningAuthoritySignedOff: true, failedChecksCount: 0 },
+      warrantyClaimAttempt: { claimId: 'wc1', alreadySubmittedClaimIds: new Set(), incidentIso: 'invalid-date', warrantyStartIso: '2026-01-01T00:00:00Z', warrantyExpiryIso: '2027-01-01T00:00:00Z', isComponentExplicitlyExcluded: false },
+    });
+    assert.equal(facWarrRes.warrantyClaimOutcome.coverageStatus, 'REJECTED_EXPIRED', 'evaluateFacilityAssetTaxonomyCommissioningAndWarranty must reject claims with invalid incidentIso');
+    const lccRes = evaluateMaintenancePdmSlaRcaAndLifeCycleCost({
+      pdmReadinessInput: { historicalFailureEventsCount: 5, continuousTelemetrySamplesCount: 100, minRequiredEventsForStatisticalTrend: 3, minRequiredSamplesForPredictiveModel: 50 },
+      slaEvaluation: { userReportedUrgency: 'HIGH', safetyImpactHigh: false, assetCriticalityHigh: true, reportedAtMs: 1000, respondedAtMs: Number.NaN, pausedDurationMs: 0, targetResponseBudgetMs: 5000 },
+      technicianAssignment: { requiredSkillCode: 'ELEC', technicianSkills: ['ELEC'], certificationExpiresMs: 50000, nowMs: 1000 },
+      sparePartStock: { physicalOnHandQty: 10, reservedForOtherWorkOrdersQty: 2, requestedWithdrawalQty: 1 },
+      rcaInvestigation: { hasVerifiedRootCauseEvidence: true, isMajorIncident: true },
+      lccComponentsToman: { verifiedAcquisitionToman: 1000, verifiedInstallationToman: 200, verifiedPreventiveAndCorrectiveMaintenanceToman: Number.NaN, verifiedReplacementAndDisposalToman: null },
+    });
+    assert.equal(Number.isFinite(lccRes.slaResult.netElapsedActiveResponseMs), true, 'evaluateMaintenancePdmSlaRcaAndLifeCycleCost must handle NaN respondedAtMs');
+    assert.equal(lccRes.lccSummary.totalVerifiedLifeCycleCostToman, 1200, 'evaluateMaintenancePdmSlaRcaAndLifeCycleCost must ignore NaN maintenance costs');
+    const energyRes = evaluateEnergyServicesHealthIndexAndFacilityAudits({
+      energyBenchmarkInput: { buildingCategory: 'RESIDENTIAL', peerBenchmarkCategory: 'RESIDENTIAL', verifiedMeasuredKwh: 5000, grossFloorAreaSqm: Number.NaN },
+      cleaningAndParking: { scheduledCleaningTimePassed: true, supervisorVerifiedExecutionEvidence: true, parkingSpaceId: 'p1', activeAssignedUnitIdsForSpace: ['u1'] },
+      residentComplaintPrivacy: { reporterResidentId: 'r1', viewerResidentId: 'r1', viewerIsAuthorizedBuildingManager: false, complaintSummaryFa: 'صدا', internalOperationalNoteFa: 'محرمانه' },
+      assetHealthInput: { policyVersion: 'v1', verifiedInspectionScore0To100: 90, maintenanceComplianceScore0To100: 85, operationalAvailabilityScore0To100: 95 },
+    });
+    assert.equal(energyRes.energyPerformance.euiKwhPerSqm, null, 'evaluateEnergyServicesHealthIndexAndFacilityAudits must return null EUI when grossFloorArea is NaN');
+    assert.equal(energyRes.energyPerformance.missingDenominatorWarning, true, 'missingDenominatorWarning must be true when grossFloorArea is NaN');
+    const { registerAndReplaceBuildingEquipment, calculateAssetAccountingDepreciation, allocateBuildingServiceCharges } = await import('../src/utils/assetManagementBuildingOpsAndCmmsEngine');
+    const equipRegRes = registerAndReplaceBuildingEquipment({
+      existingRegistry: [],
+      newEquipment: { equipmentId: 'eq1', buildingId: 'b1', category: 'ELEVATOR', serialNumber: 'ELV-1', equipmentOwnerId: 'o1', serviceResponsiblePartyId: 'p1', warrantyExpiresIso: 'invalid-date', replacesEquipmentId: null },
+      nowIso: '2026-11-01T00:00:00Z',
+    });
+    assert.equal(equipRegRes.warrantyExpired, true, 'registerAndReplaceBuildingEquipment must treat invalid warranty date as expired');
+    const deprRes = calculateAssetAccountingDepreciation({
+      assetId: 'a1', accountingPolicyVersion: 'v1', totalAcquisitionCostToman: Number.NaN, nonDepreciableLandAllocationToman: 0, capitalizedImprovementsToman: 0, residualSalvageValueToman: 0, usefulLifeMonths: 120, elapsedServiceMonths: 12, currentPeriodMonths: 1, method: 'STRAIGHT_LINE', currentMarketValuationToman: 1000, alreadyPostedPeriodKeys: new Set(), periodKey: '2026-01',
+    });
+    assert.equal(deprRes.depreciableBuildingBaseToman, 0, 'calculateAssetAccountingDepreciation must handle NaN totalAcquisitionCostToman');
+    const srvChgRes = allocateBuildingServiceCharges({
+      buildingId: 'b1', billingPeriodKey: '2026-01', allocationRuleVersion: 'v1', allocationMethod: 'AREA_SQM', approvedBudgetToman: 1000, actualOperatingExpenseToman: 1000, alreadyIssuedPeriodKeys: new Set(),
+      units: [{ unitId: 'u1', areaSqm: Number.NaN, ownershipSharePercent: 50, isVacant: false, collectedPaymentToman: 0 }, { unitId: 'u2', areaSqm: 100, ownershipSharePercent: 50, isVacant: false, collectedPaymentToman: 0 }],
+    });
+    assert.equal(Number.isFinite(srvChgRes.totalAllocatedToman), true, 'allocateBuildingServiceCharges must handle NaN unit area');
+    const { evaluatePhysicalAssetRegistrySymptomAndWorkOrderGate, evaluateMaintenanceBudgetContractorAccessAndSevenAudits } = await import('../src/utils/physicalAssetLifecycleContractorAccessAndFacilityAuditEngine');
+    const physAssetRes = evaluatePhysicalAssetRegistrySymptomAndWorkOrderGate({
+      technicalSpecification: { declaredAreaSqm: 100, inspectorMeasuredAreaSqm: null, hasVerifiedEngineeringInspectionReport: false },
+      equipmentLifecycle: { equipmentId: 'e1', serialNumber: 'S1', existingActiveSerialNumbers: new Set(), commissionedYear: 2020, expectedServiceLifeYears: 10, currentYear: Number.NaN, physicalConditionScore0To100: 80, explicitAccountingPolicyLinksConditionToDepreciation: false },
+      serviceRequest: { requestId: 'sr1', residentReportedSymptomFa: 'نقص فنی', engineerVerifiedDiagnosisFa: null },
+      workOrderAttempt: { workOrderId: 'wo1', contractorSubmittedCompletedStatus: false, technicalInspectorVerified: false, requesterAcceptedOrSignedOff: false },
+    });
+    assert.equal(Number.isFinite(physAssetRes.equipmentRegistration.estimatedRemainingPhysicalLifeYears), true, 'evaluatePhysicalAssetRegistrySymptomAndWorkOrderGate must handle NaN currentYear');
+    const visitRes = evaluateMaintenanceBudgetContractorAccessAndSevenAudits({
+      maintenanceBudgetLedger: { allocatedAnnualBudgetToman: 1000, workOrderEstimatesTotalToman: 500, committedPurchaseOrdersToman: 0, verifiedInvoicedActualExpenseToman: 200, settledPaidCashToman: 200 },
+      utilityMonitoring: { hasActiveOperationalIotMeterFeed: false },
+      contractorVisitRequest: { visitId: 'v1', linkedApprovedWorkOrderId: 'wo1', hostApproved: true, emergencyRevoked: false, scheduledStartMs: 1000, scheduledEndMs: 2000, nowMs: Number.NaN, hasVerifiedPhysicalAccessHardwareIntegration: false },
+    });
+    assert.equal(visitRes.contractorVisitAuthorization.entryPermittedNow, false, 'evaluateMaintenanceBudgetContractorAccessAndSevenAudits must reject NaN nowMs');
+    const { evaluateTransactionObservationAndDedupe, evaluateSpecializedPropertySectorIntelligence } = await import('../src/utils/marketTransactionsNormalizationAndSpecializedSectorsEngine');
+    const txObsRes = evaluateTransactionObservationAndDedupe({
+      candidate: { observationId: 'o1', propertyId: 'p1', priceToman: 1000, areaSqm: 100, observationDateIso: '2026-11-01', priceNature: 'OFFICIAL_REGISTERED_TRANSACTION', ownershipTransferredSharePercent: Number.NaN, buyerSellerPiiNames: [] },
+      existingObservations: [], isPublicMarketDatasetView: true,
+    });
+    assert.equal(txObsRes.normalizedFullPropertyEquivalentToman, 1000, 'evaluateTransactionObservationAndDedupe must handle NaN share percent');
+    const specSectorRes = evaluateSpecializedPropertySectorIntelligence({
+      landParcel: { parcelAreaSqm: Number.NaN, frontageMeters: 10, totalLandPriceToman: 1000, hasOfficialMunicipalityZoningPermitRecord: false, permittedFarFromOfficialRecord: null },
+      industrialFacility: { usableWarehouseSqm: 500, clearCeilingHeightMeters: 8, threePhasePowerKw: 100, hasUtilityCompanyPowerCertificate: true },
+      presaleProject: { projectId: 'pr1', stage: 'ADVERTISED_PRESALE_OFFER', developerReportedProgressPercent: 50, independentInspectorVerifiedProgressPercent: null },
+    });
+    assert.equal(specSectorRes.landSector.landPricePerSqmToman, 0, 'evaluateSpecializedPropertySectorIntelligence must handle NaN parcelAreaSqm');
+    const { evaluateMarketProvenanceIngestionAndNormalization, evaluateMarketIndicatorsSpreadLiquidityAndOutliers } = await import('../src/utils/marketIntelligenceProvenanceIndicatorsAndForecastAuditEngine');
+    const provNormRes = evaluateMarketProvenanceIngestionAndNormalization({
+      sourceRegistration: { sourceId: 'src1', sourceClass: 'OFFICIAL_REGISTRY', status: 'ACTIVE', redistributionPermitted: true, reputationScore0To100: 90 },
+      ingestionBatch: {
+        batchId: 'b1', alreadyProcessedBatchIds: new Set(),
+        rawRecords: [{ recordId: 'r1', valueNature: 'VERIFIED_TRANSACTION_PRICE', rawTextFa: 'فروش آپارتمان', rawPriceAmount: Number.NaN, explicitCurrencyUnit: 'TOMAN', rawAreaAmount: 100, explicitAreaUnit: 'SQM' }],
+      },
+    });
+    assert.equal(provNormRes.quarantinedRecordsForReview.length, 1, 'evaluateMarketProvenanceIngestionAndNormalization must quarantine records with NaN price');
+    const spreadRes = evaluateMarketIndicatorsSpreadLiquidityAndOutliers({
+      askingSqmPricesToman: [1000, 1100, 1200, 1300], verifiedTransactionSqmPricesToman: [1000, 1100], minRequiredSampleSize: 2,
+      pairedObservations: [
+        { propertyId: 'p1', initialAskingToman: Number.NaN, verifiedTransactionToman: 1000, daysFromListingToSale: 10 },
+        { propertyId: 'p2', initialAskingToman: 1200, verifiedTransactionToman: 1100, daysFromListingToSale: 20 },
+      ],
+      rentalObservation: { depositToman: 1000, monthlyRentToman: 100, explicitConversionRateAnnualPercent: 36, explicitMethodologyId: 'M1' },
+      liquidityInput: { activeInventoryCount: 10, verifiedCompletedSalesInPeriodCount: 2, withdrawnListingsInPeriodCount: 1 },
+    });
+    assert.equal(spreadRes.pairedSpreadAnalysis.pairedCount, 1, 'evaluateMarketIndicatorsSpreadLiquidityAndOutliers must filter out paired observations with NaN asking price');
+    const { evaluateCrmContactLeadAndExplainableScore, evaluatePipelineViewingNegotiationAndDealConversion } = await import('../src/utils/realEstateSpecializedCrmPipelineAndFunnelEngine');
+    const crmScoreRes = evaluateCrmContactLeadAndExplainableScore({
+      contact: { contactId: 'c1', workspaceId: 'w1', fullName: 'مشتری', entityType: 'INDIVIDUAL', hasPlatformLoginAccount: false, phoneNumbers: ['09121111111'] },
+      existingWorkspaceContacts: [],
+      leadScoringInput: { statedBudgetVerified: true, timelineUrgencyDays: Number.NaN, propertyFitRatio0To1: Number.NaN, recordedInteractionsCount: 2, manualOverrideAdjustment: null },
+      viewerWorkspaceId: 'w1',
+    });
+    assert.equal(crmScoreRes.allowed, true);
+    if (crmScoreRes.allowed) {
+      assert.equal(Number.isFinite(crmScoreRes.leadScoreExplanation.finalScore0To100), true, 'evaluateCrmContactLeadAndExplainableScore must handle NaN timelineUrgencyDays and propertyFitRatio');
+    }
+    const viewApptRes = evaluatePipelineViewingNegotiationAndDealConversion({
+      pipelineType: 'BUYER_ACQUISITION', currentStage: 'QUALIFICATION', requestedStage: 'VIEWING_SCHEDULED',
+      viewingRequest: { agentId: 'ag1', proposedStartIso: 'invalid-date', proposedEndIso: '2026-11-01T12:00:00Z', existingAgentAppointments: [], viewerIsAuthorizedAgentOrParty: true, privateAccessCodeNote: 'کد ۱۲۳' },
+      offerChain: [], dealConversionAttempt: { opportunityId: 'op1', hasAcceptedOffer: false, hasVerifiedBuyerAndSellerIdentities: false, alreadyConvertedOpportunityIds: new Set() },
+    });
+    assert.equal(viewApptRes.viewingAppointment.appointmentStatus, 'REJECTED_AGENT_SCHEDULE_CONFLICT', 'evaluatePipelineViewingNegotiationAndDealConversion must reject invalid startIso');
+    const { compareRentVersusBuyScenarios, calculateNetPresentValueAndIrr } = await import('../src/utils/realEstateFinancialCalculatorsAndPublisherAnalytics');
+    const rentBuyRes = compareRentVersusBuyScenarios({
+      horizonYears: 5, buyPropertyPrice: 1000, buyAcquisitionCostPercent: 2, buyAnnualMaintenanceCost: 10, buyAssumedAnnualAppreciationPercent: Number.NaN, rentInitialDepositRahn: 100, rentInitialMonthlyPayment: 10, rentAssumedAnnualIncreasePercent: Number.NaN,
+    });
+    assert.equal(Number.isFinite(rentBuyRes.buyHypotheticalResaleValue), true, 'compareRentVersusBuyScenarios must handle NaN appreciation rate');
+    const npvRes = calculateNetPresentValueAndIrr([-1000, Number.NaN, 500, 700], Number.NaN);
+    assert.equal(Number.isFinite(npvRes.npv), true, 'calculateNetPresentValueAndIrr must filter out NaN cash flows and discount rates');
+    const { calculateListingDaysOnMarket, calculateMarketPriceIndices } = await import('../src/utils/marketIndexingSpatialPolygonAndSurvivalAnalytics');
+    const domRes = calculateListingDaysOnMarket([{ type: 'FIRST_PUBLISHED', timestampMs: 1000 }], Number.NaN);
+    assert.equal(domRes.valid, false, 'calculateListingDaysOnMarket must return invalid for NaN evaluationNowMs');
+    const idxRes = calculateMarketPriceIndices({
+      indexId: 'idx1', methodologyVersion: 'v1', basePeriodLabel: '2025', basePeriodValuePerSqm: Number.NaN,
+      observations: [{ pricePerSqm: 1000, areaSqm: 100, stratumKey: 'A' }],
+    });
+    assert.equal(idxRes.valid, false, 'calculateMarketPriceIndices must return invalid for NaN basePeriodValuePerSqm');
+    const { evaluateUrbanMorphologyAndLandUseBalance, evaluateUrbanHazardsResilienceAndSpatialAutocorrelation } = await import('../src/utils/urbanIntelligenceDemographicsAndResilienceEngine');
+    const morphRes = evaluateUrbanMorphologyAndLandUseBalance({
+      totalParcelAreaSqm: 1000, totalBuildingFootprintSqm: Number.NaN, verifiedTotalFloorAreaSqm: 2000,
+      buildingsByAgeCategory: { under10Years: 5, years10To25: 5, over25Years: 2, unknownConstructionYear: 0 },
+      landUseSharesSqm: { residentialSqm: 500, commercialSqm: 200, serviceAndAdminSqm: 100, greenAndOpenSqm: 200 },
+      previousTaxonomyVersion: 'v1', currentTaxonomyVersion: 'v1',
+    });
+    assert.equal(morphRes.buildingCoverageRatioPercent, 0, 'evaluateUrbanMorphologyAndLandUseBalance must handle NaN building footprint');
+    const hazardRes = evaluateUrbanHazardsResilienceAndSpatialAutocorrelation({
+      measuredNoiseDb: 55, satelliteLandSurfaceTempCelsius: 32, insarVerticalSubsidenceMmPerYear: -10, distanceToMappedFaultMeters: 500,
+      resilienceDimensions: { infrastructureRedundancy0To100: 80, emergencyAccess0To100: 75, environmentalSafety0To100: 85, publicServiceAccess0To100: 90 },
+      neighborhoodValuesForMoran: [
+        { hoodId: 1, value: Number.NaN, adjacentHoodIds: [2] },
+        { hoodId: 2, value: 10, adjacentHoodIds: [1, 3] },
+        { hoodId: 3, value: 20, adjacentHoodIds: [2, 4] },
+        { hoodId: 4, value: 30, adjacentHoodIds: [3] },
+      ],
+    });
+    assert.equal(Number.isFinite(hazardRes.globalMoransI!), true, 'evaluateUrbanHazardsResilienceAndSpatialAutocorrelation must handle NaN node value');
+
+    const { stratifyCohortAndAuditOutlier, evaluateRenovationRegressionAndRoi, createZeroKnowledgeDealNullifier } = await import('../src/utils/econometricHedonicFirewallEngine');
+    const outlierAudit = stratifyCohortAndAuditOutlier({
+      deedAreaSqm: Number.NaN,
+      buildingAgeYears: Number.NaN,
+      askingPricePerSqmMillion: Number.NaN,
+      cohortHedonicMeanMillion: Number.NaN,
+      cohortQ3Million: Number.NaN,
+      cohortSigmaMillion: Number.NaN,
+      stagflationSpreadRatio: Number.NaN,
+      userBlindAppraisalSubmitted: true,
+    });
+    assert.equal(outlierAudit.status, 'OUTLIER_PENDING_AUDIT', 'stratifyCohortAndAuditOutlier must gracefully handle NaN inputs');
+    assert.equal(Number.isFinite(outlierAudit.estimatedMonthsToSell), true, 'estimatedMonthsToSell must be finite');
+    const renoRes = evaluateRenovationRegressionAndRoi({
+      preRenovationValueMillion: Number.NaN,
+      renovationSpendMillion: Number.NaN,
+      neighborhoodCeilingCapMillion: Number.NaN,
+      deedAreaSqm: Number.NaN,
+      executionModel: 'DIY_MATERIAL_ONLY',
+      housingInflationRate: Number.NaN,
+      commissionAndSleepRate: Number.NaN,
+      hasVerifiedPayanKarOrDeedImage: false,
+      unbuiltMetroProgressRatio: Number.NaN,
+    });
+    assert.equal(renoRes.budgetClassification, 'NON_STANDARD_EXPERIMENTAL_BUDGET', 'evaluateRenovationRegressionAndRoi must handle NaN amounts');
+    const zkNull = createZeroKnowledgeDealNullifier({
+      userId: 'u1',
+      contractCode: 'c1',
+      closingPriceToman: Number.NaN,
+      deedAreaSqm: Number.NaN,
+      h3CellRes9: 'h3_res9',
+      serverSecret: 'secret',
+    });
+    assert.equal(zkNull.anonymizedClosingRecord.closingPriceDecimal18_4, '0.0000', 'createZeroKnowledgeDealNullifier must handle NaN price');
+
+    const { decomposeCapitalStack } = await import('../src/utils/persianRealEstateNlpEngine');
+    const capStack = decomposeCapitalStack({
+      cashRequiredToman: Number.NaN,
+      assumedMortgageLoanToman: Number.NaN,
+      tenantRahnDepositToman: Number.NaN,
+    });
+    assert.equal(capStack.totalPriceToman.toString(), '0', 'decomposeCapitalStack must handle NaN values');
+
+    const { computeDeterministicH3Index, evaluateHighTrafficCircuitBreaker, classifyTelemetryStorageTier } = await import('../src/utils/geospatialH3CqrsSchemaEngine');
+    assert.ok(computeDeterministicH3Index(Number.NaN, Number.NaN, 9).startsWith('89'), 'computeDeterministicH3Index must handle NaN coordinates');
+    const circuitRes = evaluateHighTrafficCircuitBreaker({
+      baselineRequestsPerMinute: Number.NaN,
+      currentRequestsPerMinute: Number.NaN,
+      queuedEventsCount: Number.NaN,
+      lastKnowledgeGraphBatchEpochMs: Number.NaN,
+      nowEpochMs: Number.NaN,
+    });
+    assert.equal(circuitRes.circuitOpen, false, 'evaluateHighTrafficCircuitBreaker must handle NaN requests');
+    assert.equal(classifyTelemetryStorageTier(Number.NaN), 'HOT_OPERATIONAL_90D', 'classifyTelemetryStorageTier must handle NaN recordAgeDays');
+
+    const { computeGeodesicDistanceMeters, classifyPointAgainstVersionedBoundaries } = await import('../src/utils/geospatialCrsAccessibilityAndEnvironmentalEngine');
+    assert.equal(computeGeodesicDistanceMeters(Number.NaN, 51.3, 35.7, 51.4), 999999, 'computeGeodesicDistanceMeters must return default fallback for NaN coordinates');
+    const boundMatch = classifyPointAgainstVersionedBoundaries({
+      lat: Number.NaN,
+      lng: Number.NaN,
+      coordinatePrecision: 'ROOFTOP_EXACT',
+      boundaries: [],
+    });
+    assert.equal(boundMatch.status, 'OUTSIDE_KNOWN_BOUNDARIES', 'classifyPointAgainstVersionedBoundaries must handle NaN coordinates');
+
+    const { evaluateSettlementNotaryVsPossessionAndNineLegalAudits } = await import('../src/utils/propertyLegalTitleRegistryAndTransactionTransferEngine');
+    const settleRes = evaluateSettlementNotaryVsPossessionAndNineLegalAudits({
+      settlementLedger: {
+        contractualGrossPriceToman: Number.NaN,
+        bankVerifiedSettledPaymentsToman: Number.NaN,
+        unverifiedInternalRecordedPaymentsToman: Number.NaN,
+        approvedAdjustmentsDiscountToman: Number.NaN,
+        ancillaryRegistrationAndTaxCostsToman: Number.NaN,
+        totalApprovedBrokerageCommissionToman: Number.NaN,
+      },
+      notaryTransferState: { notaryAppointmentScheduled: false, officialNotaryDeedRegisteredAndSighted: false },
+      possessionHandoverState: { keysAndMetersHandedOver: false, signedHandoverProtocolPresent: false },
+      legalDueDiligenceChecklist: { mandatoryItemsTotal: 1, acceptedWithLinkedEvidenceCount: 1 },
+    });
+    assert.equal(settleRes.settlementStatement.remainingPrincipalPayableByBuyerToman, 0, 'evaluateSettlementNotaryVsPossessionAndNineLegalAudits must handle NaN settlement amounts');
+
+    const { evaluatePropertyLegalDossierAndChainOfTitle } = await import('../src/utils/realEstateLegalDossierTitleDisputeAndDueDiligenceEngine');
+    const chainRes = evaluatePropertyLegalDossierAndChainOfTitle({
+      propertyId: 'p1',
+      asOfHistoricalDateIso: 'invalid-date',
+      uploadedDocuments: [],
+      chainOfTitleEvents: [
+        {
+          eventId: 'e1',
+          transferorId: 'INITIAL_CADASTRE',
+          transfereeId: 'buyer1',
+          transferredSharePercent: 100,
+          executionDateIso: '2026-01-01',
+          registrationDateIso: '2026-01-01',
+          effectiveDateIso: 'invalid-effective-date',
+          interestKind: 'REGISTERED_LEGAL_OWNERSHIP',
+          hasVerifiedRegistryInstrument: true,
+        },
+      ],
+    });
+    assert.equal(chainRes.totalRegisteredSharePercentAsOfDate, 0, 'evaluatePropertyLegalDossierAndChainOfTitle must ignore events with invalid effectiveDateIso');
+
+    const { evaluateTenantApplicationAmendmentAndRentEscalation } = await import('../src/utils/leasingTenantLifecycleChequeAndHandoverAuditEngine');
+    const escRes = evaluateTenantApplicationAmendmentAndRentEscalation({
+      tenantProfile: { tenantId: 't1', hasUploadedIdentityDocument: true, reviewerVerifiedIdentity: true },
+      rentalApplication: { applicationId: 'app1', targetUnitId: 'u1', applicationDecision: 'APPROVED', otherActiveApprovedApplicationIdsForUnit: [] },
+      rentEscalationInput: {
+        preservedOriginalMonthlyRentToman: Number.NaN,
+        adjustmentMechanism: 'PERCENTAGE_ESCALATION',
+        escalationPercent: Number.NaN,
+        isAmendmentApprovedAndEffective: true,
+      },
+    });
+    assert.equal(escRes.rentEscalationOutcome.effectiveCurrentRentToman, 0, 'evaluateTenantApplicationAmendmentAndRentEscalation must handle NaN rent amounts');
+
+    const { calculateFundNavAndUnitValuation } = await import('../src/utils/investmentFundNavWaterfallIrrAndGovernanceEngine');
+    const navRes = calculateFundNavAndUnitValuation({
+      vehicleId: 'v1',
+      valuationEffectiveDateIso: 'invalid-date',
+      maxValuationAgeDays: 30,
+      cashAndEligibleReceivablesToman: Number.NaN,
+      accruedLiabilitiesAndDebtToman: Number.NaN,
+      outstandingUnitsCount: Number.NaN,
+      holdings: [
+        {
+          assetId: 'a1',
+          valuationAmountToman: Number.NaN,
+          ownershipSharePercent: Number.NaN,
+          valuationDateIso: 'invalid-date',
+          evidenceSource: 'INDEPENDENT_CERTIFIED_APPRAISAL',
+        },
+      ],
+    });
+    assert.equal(navRes.netAssetValueNavToman, 0, 'calculateFundNavAndUnitValuation must handle NaN values');
+    assert.equal(navRes.navPerUnitToman, null, 'calculateFundNavAndUnitValuation must return null navPerUnit for NaN units');
+
+    const { evaluatePortfolioExposureOpportunityAndCostBasis } = await import('../src/utils/investmentPortfolioXirrNpvBreakEvenAndExitEngine');
+    const expRes = evaluatePortfolioExposureOpportunityAndCostBasis({
+      portfolioPositions: [
+        { positionId: 'pos1', underlyingPropertyId: 'prop1', participationSharePercent: Number.NaN, grossPropertyValuationToman: Number.NaN },
+      ],
+      investorCommitments: { committedCapitalToman: Number.NaN, paidInContributionsToman: Number.NaN, calledAmountToman: Number.NaN },
+      opportunityConversionAttempt: { opportunityId: 'opp1', stage: 'APPROVED_BY_IC', hasAuthorizedAcquisitionSettlementEvent: false },
+      acquisitionCostItems: [{ costId: 'c1', amountToman: Number.NaN, category: 'PURCHASE_CONSIDERATION', isCapitalizableUnderPolicy: true }],
+    });
+    assert.equal(expRes.deduplicatedPortfolioExposureToman, 0, 'evaluatePortfolioExposureOpportunityAndCostBasis must handle NaN valuations');
+    assert.equal(expRes.costBasisSummary.capitalizedCostBasisToman, 0, 'evaluatePortfolioExposureOpportunityAndCostBasis must handle NaN cost items');
+
+    const { evaluateChronologicalForecastAndRisk } = await import('../src/utils/marketBiRiskAndForecastingEngine');
+    const foreRes = evaluateChronologicalForecastAndRisk({
+      chronologicalMonthlyPerSqmToman: [100, Number.NaN, 110, 120, 130, 140, 150],
+      cpiIndexSeries: [100, 105, 110, 115, 120, 125, 130],
+      hasVerifiedTitleDeed: true,
+      vacancyRatePercent: 5,
+      concentrationSharePercent: 20,
+    });
+    assert.equal(foreRes.forecastAllowed, true, 'evaluateChronologicalForecastAndRisk must filter out NaN series entries');
+
+    const { evaluateProjectWbsCriticalPathAndMilestones } = await import('../src/utils/constructionDevelopmentWbsBudgetAndPartnershipEngine');
+    const wbsRes = evaluateProjectWbsCriticalPathAndMilestones({
+      actorWorkspaceId: 'w1',
+      projectWorkspaceId: 'w1',
+      projectCategory: 'RESIDENTIAL',
+      activities: [
+        { activityId: 'a1', parentId: null, wbsCode: '1.0', titleFa: 'فونداسیون', durationDays: 10, predecessorIds: [], baselineCostToman: 1000 },
+        { activityId: 'a2', parentId: null, wbsCode: '2.0', titleFa: 'اسکلت', durationDays: 20, predecessorIds: ['a1'], baselineCostToman: 2000 },
+      ],
+      milestones: [{ milestoneId: 'm1', titleFa: 'تکمیل اسکلت', hasRequiredAcceptanceEvidence: false, contractuallyAcceptedByClient: false, internalTeamMarkedComplete: true }],
+    });
+    assert.equal(wbsRes.criticalPathCalculated, true, 'evaluateProjectWbsCriticalPathAndMilestones must calculate critical path');
+    assert.equal(wbsRes.projectDurationDays, 30, 'projectDurationDays must equal sum of critical path durations');
+
+    const { calculateAssetTcoAndRepairVsReplaceDecision } = await import('../src/utils/buildingComplianceInsuranceNoiTcoAndAuditEngine');
+    const tcoRes = calculateAssetTcoAndRepairVsReplaceDecision({
+      initialAcquisitionToman: Number.NaN,
+      annualOperatingAndMaintenanceFlowsToman: [100, Number.NaN, 120],
+      plannedCapexFlowsToman: [50, 60],
+      terminalDisposalCostOrSalvageToman: Number.NaN,
+      annualDiscountRatePercent: Number.NaN,
+      equipmentDecisionInput: {
+        equipmentId: 'eq1',
+        immediateRepairCostToman: null,
+        annualMaintenanceIfRepairedToman: 10,
+        expectedRemainingYearsIfRepaired: 0,
+        fullReplacementCostToman: null,
+        annualMaintenanceIfReplacedToman: 5,
+        expectedDownTimeCostIfRepairedToman: 0,
+        expectedDownTimeCostIfReplacedToman: 0,
+      },
+    });
+    assert.equal(Number.isFinite(tcoRes.tcoSummary.nominalTotalTcoToman), true, 'calculateAssetTcoAndRepairVsReplaceDecision must handle NaN financial inputs');
+    assert.equal(Number.isFinite(tcoRes.tcoSummary.discountedNpvTcoToman), true, 'discountedNpvTcoToman must be finite');
+
+    const facilityEng = await import('../src/utils/facilityManagementPdmSlaEnergyAndHealthEngine');
+    const pdmRes = facilityEng.evaluateMaintenancePdmSlaRcaAndLifeCycleCost({
+      pdmReadinessInput: { historicalFailureEventsCount: Number.NaN, continuousTelemetrySamplesCount: Number.NaN, minRequiredEventsForStatisticalTrend: Number.NaN, minRequiredSamplesForPredictiveModel: Number.NaN },
+      slaEvaluation: { userReportedUrgency: 'MEDIUM', safetyImpactHigh: false, assetCriticalityHigh: false, reportedAtMs: Number.NaN, respondedAtMs: Number.NaN, pausedDurationMs: Number.NaN, targetResponseBudgetMs: Number.NaN },
+      technicianAssignment: { requiredSkillCode: 'ELEC', technicianSkills: ['ELEC'], certificationExpiresMs: 1000, nowMs: 500 },
+      sparePartStock: { physicalOnHandQty: Number.NaN, reservedForOtherWorkOrdersQty: Number.NaN, requestedWithdrawalQty: Number.NaN },
+      rcaInvestigation: { hasVerifiedRootCauseEvidence: true, isMajorIncident: false },
+      lccComponentsToman: { verifiedAcquisitionToman: Number.NaN, verifiedInstallationToman: Number.NaN, verifiedPreventiveAndCorrectiveMaintenanceToman: Number.NaN, verifiedReplacementAndDisposalToman: null },
+    });
+    assert.equal(pdmRes.pdmReadiness.readinessTier, 'INSUFFICIENT_DATA_NO_PDM', 'pdmReadiness must handle NaN counts defensively');
+    assert.equal(pdmRes.sparePartWithdrawal.netAvailableStockQty, 0, 'sparePartWithdrawal netAvailableStockQty must be 0 for NaN stock');
+    assert.equal(pdmRes.lccSummary.totalVerifiedLifeCycleCostToman, 0, 'lccSummary totalVerifiedLifeCycleCostToman must be 0 for NaN cost inputs');
+
+    const assetOpsEng = await import('../src/utils/assetManagementBuildingOpsAndCmmsEngine');
+    const allocRes = assetOpsEng.allocateBuildingServiceCharges({
+      buildingId: 'bld1',
+      billingPeriodKey: '1405-01',
+      allocationRuleVersion: 'v1',
+      allocationMethod: 'AREA_SQM',
+      approvedBudgetToman: Number.NaN,
+      actualOperatingExpenseToman: Number.NaN,
+      alreadyIssuedPeriodKeys: new Set(),
+      units: [{ unitId: 'u1', areaSqm: Number.NaN, ownershipSharePercent: Number.NaN, isVacant: false, collectedPaymentToman: Number.NaN }],
+    });
+    assert.equal(allocRes.actualOperatingExpenseToman, 0, 'allocateBuildingServiceCharges must fallback NaN expense to 0');
+    assert.equal(allocRes.unitCharges[0].allocatedChargeToman, 0, 'allocatedChargeToman must be 0 for fallback expense');
+    assert.equal(allocRes.unitCharges[0].collectedPaymentToman, 0, 'collectedPaymentToman must fallback NaN to 0');
+
+    const agencyOpsEng = await import('../src/utils/agencyEnterpriseOperationsAndGovernanceEngine');
+    const commRes = agencyOpsEng.calculateAgencyCommissionAllocation({
+      transactionId: 'tx-1',
+      ruleVersion: 'v1',
+      transactionValueToman: Number.NaN,
+      grossCommissionRatePercent: Number.NaN,
+      taxAndLegalDeductionsToman: Number.NaN,
+      agencySharePercent: Number.NaN,
+      participatingAgents: [{ agentUid: 'ag-1', splitOfAgentPoolPercent: Number.NaN }],
+    });
+    assert.equal(commRes.grossCommissionToman, 0, 'calculateAgencyCommissionAllocation must handle NaN transaction value');
+    assert.equal(commRes.netDistributableToman, 0, 'netDistributableToman must be 0 for NaN inputs');
+    assert.equal(commRes.agentAllocations[0].allocatedAmountToman, 0, 'agent allocatedAmountToman must be 0 for NaN split');
+
+    const autoSlaEng = await import('../src/utils/agencyAutomationOutboxAndSlaEngine');
+    const workloadRes = autoSlaEng.computeAgentWorkloadCapacity({
+      agentId: 'ag-1',
+      availability: 'AVAILABLE',
+      activeLeadsCount: Number.NaN,
+      overdueTasksCount: Number.NaN,
+      upcomingVisitsCount: Number.NaN,
+      maxWeightedScoreCap: Number.NaN,
+    });
+    assert.equal(workloadRes.weightedWorkloadScore, 0, 'computeAgentWorkloadCapacity must handle NaN counts');
+    assert.equal(workloadRes.capacityUtilizationPercent, 0, 'capacityUtilizationPercent must be 0 for NaN counts');
+
+    const crmFunnelEng = await import('../src/utils/realEstateSpecializedCrmPipelineAndFunnelEngine');
+    const funnelRes = crmFunnelEng.evaluateCrmAttributionPerformanceFunnelAndAutomation({
+      touchpoints: [{ channel: 'DIVAR', timestampIso: '2026-11-01T10:00:00Z' }],
+      sharedDealCreditSplits: [{ agentId: 'ag-1', sharePercent: Number.NaN, dealValueToman: Number.NaN }],
+      csatSurvey: { invitationsSentCount: Number.NaN, responsesSubmittedCount: Number.NaN, ratingsOneToFive: [5, Number.NaN, 4] },
+      cohortFunnel: { cohortLeadsCount: Number.NaN, stageQualifiedCount: Number.NaN, closedWonDealsCount: Number.NaN },
+      automationTrigger: { workflowId: 'wf-1', recursionDepth: 1, maxAllowedRecursionDepth: 5, isDryRunMode: true },
+      workspaceBusinessModel: 'SMALL_BOUTIQUE_AGENCY',
+    });
+    assert.equal(funnelRes.agentAttributedVolume[0].attributedDealVolumeToman, 0, 'agent attributedDealVolumeToman must be 0 for NaN inputs');
+    assert.equal(funnelRes.csatReport.participationRatePercent, 0, 'participationRatePercent must be 0 for NaN invitations');
+    assert.equal(funnelRes.csatReport.averageSatisfactionScoreOutOf5, 4.5, 'averageSatisfactionScoreOutOf5 must ignore NaN ratings');
+    assert.equal(funnelRes.cohortFunnelReport.stageQualificationRatePercent, 0, 'stageQualificationRatePercent must be 0 for NaN cohort');
+
+    const urbanEng = await import('../src/utils/urbanIntelligenceDemographicsAndResilienceEngine');
+    const urbanMorphRes = urbanEng.evaluateUrbanMorphologyAndLandUseBalance({
+      totalParcelAreaSqm: Number.NaN,
+      totalBuildingFootprintSqm: Number.NaN,
+      verifiedTotalFloorAreaSqm: Number.NaN,
+      buildingsByAgeCategory: { under10Years: Number.NaN, years10To25: Number.NaN, over25Years: Number.NaN, unknownConstructionYear: 0 },
+      landUseSharesSqm: { residentialSqm: Number.NaN, commercialSqm: Number.NaN, serviceAndAdminSqm: 0, greenAndOpenSqm: 0 },
+      previousTaxonomyVersion: 'v1',
+      currentTaxonomyVersion: 'v1',
+    });
+    assert.equal(urbanMorphRes.buildingCoverageRatioPercent, null, 'buildingCoverageRatioPercent must be null for NaN parcel area');
+    assert.equal(urbanMorphRes.agedBuildingsOver25PctOfKnown, null, 'agedBuildingsOver25PctOfKnown must be null for NaN building counts');
+    assert.equal(urbanMorphRes.landUseDiversityIndex0To1, 0, 'landUseDiversityIndex0To1 must fallback to 0 for NaN land use shares');
   });
 
   await verify('Frontend Debugging & Accessibility Invariants (Batch 4.11, 4.12, 4.13, 4.14, 4.15 & 4.16)', () => {

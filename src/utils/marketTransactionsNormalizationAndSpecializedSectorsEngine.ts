@@ -20,15 +20,15 @@ export function evaluateTransactionObservationAndDedupe(
     }
     if (daysApart > 30) { classification = 'SEPARATE_REPEAT_TRANSACTION'; matchedObservationId = ex.observationId; }
   }
+  const share = Number.isFinite(c.ownershipTransferredSharePercent) ? c.ownershipTransferredSharePercent : 100;
+  const price = Number.isFinite(c.priceToman) && c.priceToman >= 0 ? c.priceToman : 0;
   const normalizedFullPropertyEquivalentToman =
-    c.ownershipTransferredSharePercent > 0 && c.ownershipTransferredSharePercent < 100
-      ? Math.round(c.priceToman / (c.ownershipTransferredSharePercent / 100))
-      : c.priceToman;
+    share > 0 && share < 100 ? Math.round(price / (share / 100)) : price;
   return {
     observationId: c.observationId, priceNature: c.priceNature,
     isVerifiedOfficialTransaction: c.priceNature === 'OFFICIAL_REGISTERED_TRANSACTION',
-    isPartialShareTransfer: c.ownershipTransferredSharePercent < 100,
-    recordedTransferAmountToman: c.priceToman, normalizedFullPropertyEquivalentToman,
+    isPartialShareTransfer: share < 100,
+    recordedTransferAmountToman: price, normalizedFullPropertyEquivalentToman,
     displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
     normalizedFullPropertyEquivalentIntlText: formatMillionTomanAsIntlCurrency(normalizedFullPropertyEquivalentToman / 1_000_000, intlCurrency),
     deduplicationResult: { classification, matchedObservationId, sourceRecordPreserved: true as const },
@@ -66,23 +66,17 @@ export function normalizeHeterogeneousPropertyRecord(params: {
       normalizedPriceToman = Math.round(numericPrice);
     }
   }
-  const normalizedAreaSqm =
-    params.rawAreaUnit === 'HECTARE' ? params.rawAreaValue * 10_000 : params.rawAreaValue;
+  const areaVal = Number.isFinite(params.rawAreaValue) && params.rawAreaValue > 0 ? params.rawAreaValue : 0;
+  const normalizedAreaSqm = params.rawAreaUnit === 'HECTARE' ? areaVal * 10_000 : areaVal;
   return {
     normalizationRuleVersion: params.normalizationRuleVersion,
     rawPreserved: {
-      rawTitleAndAddress: params.rawTitleAndAddress,
-      rawPriceString: params.rawPriceString,
-      rawCurrencyUnit: params.rawCurrencyUnit,
-      rawAreaValue: params.rawAreaValue,
-      rawAreaUnit: params.rawAreaUnit,
+      rawTitleAndAddress: params.rawTitleAndAddress, rawPriceString: params.rawPriceString,
+      rawCurrencyUnit: params.rawCurrencyUnit, rawAreaValue: params.rawAreaValue, rawAreaUnit: params.rawAreaUnit,
     },
     normalized: {
-      text: normalizedText,
-      priceToman: normalizedPriceToman,
-      currencyConversionBasis,
-      areaSqm: normalizedAreaSqm,
-      areaConversionBasis: params.rawAreaUnit === 'HECTARE' ? '1_HECTARE_EQ_10000_SQM' : '1:1_SQM',
+      text: normalizedText, priceToman: normalizedPriceToman, currencyConversionBasis,
+      areaSqm: normalizedAreaSqm, areaConversionBasis: params.rawAreaUnit === 'HECTARE' ? '1_HECTARE_EQ_10000_SQM' : '1:1_SQM',
     },
   };
 }
@@ -126,12 +120,13 @@ export function analyzeMarketPricingRentAndTimeOnMarket(params: {
   }
   confirmedSaleDurationsDays.sort((a, b) => a - b);
   withdrawnExposureDurationsDays.sort((a, b) => a - b);
-  const monthlyConvFactor = Math.max(0, params.depositToMonthlyRentConversionRateAnnualPercent) / 12 / 100;
+  const rate = Number.isFinite(params.depositToMonthlyRentConversionRateAnnualPercent) ? params.depositToMonthlyRentConversionRateAnnualPercent : 0;
+  const monthlyConvFactor = Math.max(0, rate) / 12 / 100;
   const fullRahnEquivalents = params.records
-    .filter((r) => typeof r.depositToman === 'number')
+    .filter((r) => typeof r.depositToman === 'number' && Number.isFinite(r.depositToman))
     .map((r) => {
-      const dep = r.depositToman ?? 0;
-      const rent = r.monthlyRentToman ?? 0;
+      const dep = Number.isFinite(r.depositToman) && r.depositToman! >= 0 ? r.depositToman! : 0;
+      const rent = typeof r.monthlyRentToman === 'number' && Number.isFinite(r.monthlyRentToman) && r.monthlyRentToman > 0 ? r.monthlyRentToman : 0;
       return monthlyConvFactor > 0 ? Math.round(dep + rent / monthlyConvFactor) : dep;
     });
   return {
@@ -248,40 +243,26 @@ export function evaluateSpecializedPropertySectorIntelligence(params: {
     independentInspectorVerifiedProgressPercent: number | null;
   };
 }) {
-  const landSqmPriceToman =
-    params.landParcel.parcelAreaSqm > 0
-      ? Math.round(params.landParcel.totalLandPriceToman / params.landParcel.parcelAreaSqm)
-      : 0;
-  const verifiedBuildableAreaSqm =
-    params.landParcel.hasOfficialMunicipalityZoningPermitRecord &&
-    params.landParcel.permittedFarFromOfficialRecord !== null
-      ? Math.round(params.landParcel.parcelAreaSqm * params.landParcel.permittedFarFromOfficialRecord)
-      : null;
+  const pArea = Number.isFinite(params.landParcel.parcelAreaSqm) && params.landParcel.parcelAreaSqm > 0 ? params.landParcel.parcelAreaSqm : null;
+  const pPrice = Number.isFinite(params.landParcel.totalLandPriceToman) && params.landParcel.totalLandPriceToman >= 0 ? params.landParcel.totalLandPriceToman : 0;
+  const landSqmPriceToman = pArea !== null ? Math.round(pPrice / pArea) : 0;
+  const far = Number.isFinite(params.landParcel.permittedFarFromOfficialRecord) && params.landParcel.permittedFarFromOfficialRecord !== null && params.landParcel.permittedFarFromOfficialRecord > 0 ? params.landParcel.permittedFarFromOfficialRecord : null;
+  const verifiedBuildableAreaSqm = params.landParcel.hasOfficialMunicipalityZoningPermitRecord && far !== null && pArea !== null ? Math.round(pArea * far) : null;
   return {
     landSector: {
-      landPricePerSqmToman: landSqmPriceToman,
-      verifiedBuildableAreaSqm,
-      zoningBasisStatus: verifiedBuildableAreaSqm !== null
-        ? ('SOURCED_OFFICIAL_PLANNING_RECORD' as const)
-        : ('UNVERIFIED_ZONING_NO_BUILDABLE_INFERENCE' as const),
+      landPricePerSqmToman: landSqmPriceToman, verifiedBuildableAreaSqm,
+      zoningBasisStatus: verifiedBuildableAreaSqm !== null ? ('SOURCED_OFFICIAL_PLANNING_RECORD' as const) : ('UNVERIFIED_ZONING_NO_BUILDABLE_INFERENCE' as const),
     },
     industrialSector: {
-      usableWarehouseSqm: params.industrialFacility.usableWarehouseSqm,
-      clearCeilingHeightMeters: params.industrialFacility.clearCeilingHeightMeters,
+      usableWarehouseSqm: params.industrialFacility.usableWarehouseSqm, clearCeilingHeightMeters: params.industrialFacility.clearCeilingHeightMeters,
       threePhasePowerKw: params.industrialFacility.threePhasePowerKw,
-      powerSpecVerification: params.industrialFacility.hasUtilityCompanyPowerCertificate
-        ? ('VERIFIED_UTILITY_CERTIFICATE' as const)
-        : ('USER_CLAIMED_UNVERIFIED_SPEC' as const),
+      powerSpecVerification: params.industrialFacility.hasUtilityCompanyPowerCertificate ? ('VERIFIED_UTILITY_CERTIFICATE' as const) : ('USER_CLAIMED_UNVERIFIED_SPEC' as const),
     },
     presaleSector: {
-      projectId: params.presaleProject.projectId,
-      countsAsCompletedSaleTransaction: params.presaleProject.stage === 'COMPLETED_DELIVERED',
+      projectId: params.presaleProject.projectId, countsAsCompletedSaleTransaction: params.presaleProject.stage === 'COMPLETED_DELIVERED',
       verifiedProgressPercent: params.presaleProject.independentInspectorVerifiedProgressPercent,
       developerSelfReportedProgressPercent: params.presaleProject.developerReportedProgressPercent,
-      progressProvenanceStatus:
-        params.presaleProject.independentInspectorVerifiedProgressPercent !== null
-          ? ('INDEPENDENT_ENGINEERING_INSPECTION' as const)
-          : ('DEVELOPER_SELF_REPORTED_UNVERIFIED' as const),
+      progressProvenanceStatus: params.presaleProject.independentInspectorVerifiedProgressPercent !== null ? ('INDEPENDENT_ENGINEERING_INSPECTION' as const) : ('DEVELOPER_SELF_REPORTED_UNVERIFIED' as const),
     },
   };
 }

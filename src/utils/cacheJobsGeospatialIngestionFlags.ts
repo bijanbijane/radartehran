@@ -175,9 +175,10 @@ export function executeTraceableIngestionBatch(params: {
   let appliedCount = 0; let skippedStaleOrProtectedCount = 0; let isolatedMalformedCount = 0;
   for (const raw of params.incomingRecords) {
     if (
-      typeof raw.hoodId !== 'number' || typeof raw.buyPerSqm !== 'number' ||
-      !Number.isFinite(raw.buyPerSqm) || raw.buyPerSqm < 5 ||
-      typeof raw.rahn80m !== 'number' || !raw.sourceId || !raw.sourcePublishedAtIso
+      typeof raw.hoodId !== 'number' || !Number.isInteger(raw.hoodId) || raw.hoodId < 1 ||
+      typeof raw.buyPerSqm !== 'number' || !Number.isFinite(raw.buyPerSqm) || raw.buyPerSqm < 5 ||
+      typeof raw.rahn80m !== 'number' || !Number.isFinite(raw.rahn80m) || raw.rahn80m < 1 ||
+      !raw.sourceId || !raw.sourcePublishedAtIso || !Number.isFinite(Date.parse(raw.sourcePublishedAtIso))
     ) {
       isolatedMalformedCount++;
       continue;

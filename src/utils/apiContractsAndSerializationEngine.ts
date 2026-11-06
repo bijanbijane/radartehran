@@ -202,9 +202,12 @@ export function serializeFirestoreAndDomainPayloadSafely(
       }
     }
     if (typeof candidate.seconds === 'number' && typeof candidate.nanoseconds === 'number' && Object.keys(candidate).length <= 2) {
-      return new Date(candidate.seconds * 1000 + Math.round(candidate.nanoseconds / 1e6)).toISOString();
+      if (!Number.isFinite(candidate.seconds) || !Number.isFinite(candidate.nanoseconds)) return null;
+      const d = new Date(candidate.seconds * 1000 + Math.round(candidate.nanoseconds / 1e6));
+      return Number.isFinite(d.getTime()) ? d.toISOString() : null;
     }
     if (typeof candidate.latitude === 'number' && typeof candidate.longitude === 'number' && Object.keys(candidate).length === 2) {
+      if (!Number.isFinite(candidate.latitude) || !Number.isFinite(candidate.longitude)) return null;
       return { lat: Number(candidate.latitude.toFixed(6)), lng: Number(candidate.longitude.toFixed(6)) };
     }
     if (Array.isArray(input)) {

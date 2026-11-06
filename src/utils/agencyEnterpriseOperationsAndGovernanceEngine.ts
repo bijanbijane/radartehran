@@ -202,7 +202,8 @@ export function evaluateTransactionDocumentReadiness(items: readonly Transaction
   const blockingItemsFa: string[] = [];
   let verifiedMandatoryCount = 0;
   for (const item of mandatory) {
-    const isExpired = item.expiresAtIso ? Date.parse(item.expiresAtIso) < nowMs : false;
+    const expMs = item.expiresAtIso ? Date.parse(item.expiresAtIso) : Number.POSITIVE_INFINITY;
+    const isExpired = item.expiresAtIso ? !Number.isFinite(expMs) || !Number.isFinite(nowMs) || expMs < nowMs : false;
     if (item.state === 'VERIFIED' && !isExpired) verifiedMandatoryCount++;
     else blockingItemsFa.push(`${item.titleFa} (${isExpired ? 'EXPIRED' : item.state})`);
   }
@@ -222,27 +223,28 @@ export interface CommissionAllocationInput {
 export function calculateAgencyCommissionAllocation(input: CommissionAllocationInput) {
   const areaUnit = input.areaUnit ?? getStoredAreaUnit();
   const intlCurrency = input.intlCurrency ?? getStoredIntlCurrency();
-  const grossCommissionToman = Math.round(multiplyMonetaryExact(input.transactionValueToman, input.grossCommissionRatePercent / 100, 0));
-  const netDistributableToman = Math.max(0, Math.round(subtractMonetaryExact(grossCommissionToman, Math.max(0, input.taxAndLegalDeductionsToman))));
-  const agencyShareToman = Math.round(multiplyMonetaryExact(netDistributableToman, input.agencySharePercent / 100, 0));
+  const txVal = Number.isFinite(input.transactionValueToman) && input.transactionValueToman >= 0 ? input.transactionValueToman : 0;
+  const commRate = Number.isFinite(input.grossCommissionRatePercent) && input.grossCommissionRatePercent >= 0 ? input.grossCommissionRatePercent : 0;
+  const taxDed = Number.isFinite(input.taxAndLegalDeductionsToman) && input.taxAndLegalDeductionsToman >= 0 ? input.taxAndLegalDeductionsToman : 0;
+  const agencySharePct = Number.isFinite(input.agencySharePercent) && input.agencySharePercent >= 0 ? input.agencySharePercent : 0;
+  const grossCommissionToman = Math.round(multiplyMonetaryExact(txVal, commRate / 100, 0));
+  const netDistributableToman = Math.max(0, Math.round(subtractMonetaryExact(grossCommissionToman, taxDed)));
+  const agencyShareToman = Math.round(multiplyMonetaryExact(netDistributableToman, agencySharePct / 100, 0));
   const totalAgentPoolToman = Math.max(0, Math.round(subtractMonetaryExact(netDistributableToman, agencyShareToman)));
-  const agentAllocations = input.participatingAgents.map((a) => ({
-    agentUid: a.agentUid,
-    splitPercent: a.splitOfAgentPoolPercent,
-    allocatedAmountToman: Math.round(multiplyMonetaryExact(totalAgentPoolToman, a.splitOfAgentPoolPercent / 100, 0)),
-    paymentStatus: 'CALCULATED_UNPAID' as const,
-  }));
+  const agentAllocations = input.participatingAgents.map((a) => {
+    const splitPct = Number.isFinite(a.splitOfAgentPoolPercent) && a.splitOfAgentPoolPercent >= 0 ? a.splitOfAgentPoolPercent : 0;
+    return {
+      agentUid: a.agentUid,
+      splitPercent: splitPct,
+      allocatedAmountToman: Math.round(multiplyMonetaryExact(totalAgentPoolToman, splitPct / 100, 0)),
+      paymentStatus: 'CALCULATED_UNPAID' as const,
+    };
+  });
   return {
-    valid: true as const,
-    transactionId: input.transactionId,
-    ruleVersion: input.ruleVersion,
-    grossCommissionToman,
-    netDistributableToman,
-    displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
+    valid: true as const, transactionId: input.transactionId, ruleVersion: input.ruleVersion,
+    grossCommissionToman, netDistributableToman, displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
     netDistributableIntlText: formatMillionTomanAsIntlCurrency(netDistributableToman / 1_000_000, intlCurrency),
-    agencyShareToman,
-    totalAgentPoolToman,
-    agentAllocations,
+    agencyShareToman, totalAgentPoolToman, agentAllocations,
     reconciledTotalToman: addMonetaryExact(agencyShareToman, totalAgentPoolToman),
   };
 }
@@ -255,7 +257,7 @@ export function validateMemberOffboardingAndHandover(params: {
   reassignedTargetActive: boolean;
 }) {
   const hasActiveRecords = params.activeOwnedLeadIds.length > 0 || params.activeOwnedCaseIds.length > 0;
-  if (hasActiveRecords && (!params.reassignedToAgentUid || !params.reassignedTargetActive)) {
+  if (hasActiveRecords && (!params.reassignedToAgentUid || !params.reassignedTargetActive || params.reassignedToAgentUid === params.memberUid)) {
     return { canCompleteOffboarding: false, requiresHandoverFirst: true, blockingReasonFa: 'نیازمند تعیین مشاور جایگزین فعال پیش از خروج عضو.' };
   }
   return { canCompleteOffboarding: true, requiresHandoverFirst: false, blockingReasonFa: null };

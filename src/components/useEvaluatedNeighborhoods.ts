@@ -71,7 +71,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
   const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale();
   const buyAgeMultiplier = explicitBuyAgeMult ?? (buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.88 : 0.76);
   const activeCityNeighborhoods = useMemo(() => {
-    if (activeCity === 'tehran' && !activeCitySeedList) return neighborhoods.filter((n) => n.id < 100);
+    if (activeCity === 'tehran' && !activeCitySeedList) return neighborhoods.filter((n) => n.id < 100 || (n.id >= 500 && n.id <= 599));
     const seedList = activeCitySeedList || MULTI_CITY_CONFIGS[activeCity].neighborhoods;
     return seedList.map((seed) => {
       const base = neighborhoods.find((n) => n.id === seed.id) || seed;
@@ -183,7 +183,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     const q = deferredSearchQuery.trim();
     return evaluatedNeighborhoods.filter((n) => {
       if (statusFilter !== 'all' && n.status !== statusFilter) return false;
-      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q)) return false;
+      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !(n.bargains?.[0]?.street && matchesPersianSearch(n.bargains[0].street, q))) return false;
       if (onlyOutsideTrafficZone && activeCity === 'tehran' && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
       if (onlyHighMetro && n.metro < 8) return false;
       return true;
@@ -193,8 +193,8 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     const q = deferredSearchQuery.trim();
     return nationwideEvaluatedNeighborhoods.filter((n) => {
       if (statusFilter !== 'all' && n.status !== statusFilter) return false;
-      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q)) return false;
-      if (onlyOutsideTrafficZone && n.id < 100 && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
+      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !(n.bargains?.[0]?.street && matchesPersianSearch(n.bargains[0].street, q))) return false;
+      if (onlyOutsideTrafficZone && (n.id < 100 || (n.id >= 500 && n.id <= 599)) && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
       if (onlyHighMetro && n.metro < 8) return false;
       return true;
     });

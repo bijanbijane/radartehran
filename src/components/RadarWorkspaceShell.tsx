@@ -28,7 +28,7 @@ export function RadarWorkspaceShell() {
   useEffect(() => subscribeAreaUnit(() => setIntlTick((t) => t + 1)), []);
   const areaUnit = getStoredAreaUnit(), intlCurrency = getStoredIntlCurrency(), radarLocale = getStoredRadarLocale();
   const initialUrlState = useMemo(() => parseInitialUrlParams(), []);
-  const allExpansionSeeds = useMemo(() => getAllMultiCityNeighborhoods().filter((n) => n.id >= 100), []);
+  const allExpansionSeeds = useMemo(() => getAllMultiCityNeighborhoods().filter((n) => n.id >= 100 && !(n.id >= 500 && n.id <= 599)), []);
   const activeCityRef = useRef<CityId>(initialUrlState.initialCity || 'tehran');
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>(() => hydrateNeighborhoodsFromStorage(allExpansionSeeds));
   const [mode, setMode] = useState<'rent' | 'buy'>(initialUrlState.initialMode || 'rent'), [deposit, setDeposit] = useState<number>(initialUrlState.initialDeposit ?? 700), [monthlyRent, setMonthlyRent] = useState<number>(initialUrlState.initialMonthlyRent ?? 20);

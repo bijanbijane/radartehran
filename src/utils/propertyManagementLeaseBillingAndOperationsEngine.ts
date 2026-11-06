@@ -53,7 +53,7 @@ export function evaluatePropertyOwnershipPortfolioAndHierarchy(params: { actorWo
         effectiveAmendedMonthlyRentToman: null,
         reason: 'REJECTED_TARGET_LEASE_NOT_EXECUTED',
       };
-    } else if (!params.proposedAmendment.approvedByLandlordAndTenant) {
+    } else if (!params.proposedAmendment.approvedByLandlordAndTenant || !Number.isFinite(params.proposedAmendment.newMonthlyRentToman) || params.proposedAmendment.newMonthlyRentToman <= 0) {
       amendmentOutcome = {
         applied: false,
         preservedOriginalMonthlyRentToman: target.monthlyRentToman,
@@ -248,16 +248,18 @@ export function evaluateOperationsVendorsChargesAndAudit(params: {
   auditReadinessStatus: 'AUDIT_PASSED_ZERO_CRITICAL_GAPS' | 'AUDIT_ACTION_REQUIRED';
 } {
   const isDuplicateInvoice = params.operatingExpense.alreadyRecordedInvoices.has(params.operatingExpense.invoiceNumber);
-  const expenseAccepted = !isDuplicateInvoice && params.operatingExpense.amountToman > 0 && params.operatingExpense.hasApprovedAllocationPolicy;
+  const expenseAccepted = !isDuplicateInvoice && Number.isFinite(params.operatingExpense.amountToman) && params.operatingExpense.amountToman > 0 && params.operatingExpense.hasApprovedAllocationPolicy;
   const nowMs = Date.parse(params.vendorAndMaintenance.nowIso);
-  const vendorLicenseValid = Date.parse(params.vendorAndMaintenance.licenseExpiresIso) > nowMs;
+  const vendorLicenseValid = Number.isFinite(nowMs) && Date.parse(params.vendorAndMaintenance.licenseExpiresIso) > nowMs;
   const vendorVerifiedBadgeAllowed = params.vendorAndMaintenance.hasVerifiedQualificationDocs && vendorLicenseValid;
   const workOrderCanCloseAsCompleted = params.vendorAndMaintenance.workOrderHasCompletionEvidence && params.vendorAndMaintenance.workOrderInspectorConfirmed;
-  const rawAllocations = params.commonChargeAllocation.unitSharesPercent.map((pct) =>
-    Math.floor((params.commonChargeAllocation.totalCommonExpenseToman * pct) / 100)
-  );
+  const commonExp = Number.isFinite(params.commonChargeAllocation.totalCommonExpenseToman) && params.commonChargeAllocation.totalCommonExpenseToman >= 0 ? params.commonChargeAllocation.totalCommonExpenseToman : 0;
+  const rawAllocations = params.commonChargeAllocation.unitSharesPercent.map((pct) => {
+    const p = Number.isFinite(pct) && pct >= 0 ? pct : 0;
+    return Math.floor((commonExp * p) / 100);
+  });
   const floorSum = rawAllocations.reduce((a, b) => a + b, 0);
-  const roundingResidualToman = params.commonChargeAllocation.totalCommonExpenseToman - floorSum;
+  const roundingResidualToman = commonExp - floorSum;
   const allocatedPerUnitToman = rawAllocations.map((amt, idx) => (idx === rawAllocations.length - 1 ? amt + roundingResidualToman : amt));
   let utilityConsumptionStatus: 'VERIFIED_NORMAL' | 'ESTIMATED_UNVERIFIED' | 'ROLLOVER_HANDLED' | 'REJECTED_NEGATIVE_SPIKE' = 'VERIFIED_NORMAL';
   if (params.utilityMeterCheck.currentReading < params.utilityMeterCheck.previousReading) {
@@ -266,7 +268,7 @@ export function evaluateOperationsVendorsChargesAndAudit(params: {
     utilityConsumptionStatus = 'ESTIMATED_UNVERIFIED';
   }
   const propertyInsuredBadgeAllowed =
-    params.insuranceAndInspection.hasPolicyDocumentEvidence && Date.parse(params.insuranceAndInspection.policyExpiresIso) > nowMs;
+    params.insuranceAndInspection.hasPolicyDocumentEvidence && Number.isFinite(nowMs) && Date.parse(params.insuranceAndInspection.policyExpiresIso) > nowMs;
   const certifiedEngineeringInspectionBadgeAllowed = params.insuranceAndInspection.inspectionHasCertifiedEngineerSignOff;
   const auditReadinessStatus =
     expenseAccepted &&

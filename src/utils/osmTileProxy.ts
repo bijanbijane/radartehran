@@ -148,88 +148,74 @@ export function registerOsmTileProxyRoute(app: Express, fetchImpl: typeof fetch 
   if (registeredOsmTileApps.has(app)) return;
   registeredOsmTileApps.add(app);
   app.get('/api/osm-tile/:z/:x/:y', async (req: Request, res: Response) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    const rawZ = String(req.params.z || '');
-    const rawX = String(req.params.x || '');
-    const rawY = String(req.params.y || '').replace(/(@2x)?\.(png|webp|jpg)$/i, '');
+    try {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      const rawZ = String(req.params.z || '');
+      const rawX = String(req.params.x || '');
+      const rawY = String(req.params.y || '').replace(/(@2x)?\.(png|webp|jpg)$/i, '');
 
-    if (!/^\d{1,2}$/.test(rawZ) || !/^\d{1,7}$/.test(rawX) || !/^\d{1,7}$/.test(rawY)) {
-      res.status(400).end();
-      return;
-    }
+      if (!/^\d{1,2}$/.test(rawZ) || !/^\d{1,7}$/.test(rawX) || !/^\d{1,7}$/.test(rawY)) { res.status(400).end(); return; }
+      const z = Number.parseInt(rawZ, 10); const x = Number.parseInt(rawX, 10); const y = Number.parseInt(rawY, 10);
+      if (z < 0 || z > 19) { res.status(400).end(); return; }
+      const maxCoord = (1 << z) - 1;
+      if (x < 0 || x > maxCoord || y < 0 || y > maxCoord) { res.status(400).end(); return; }
 
-    const z = Number.parseInt(rawZ, 10);
-    const x = Number.parseInt(rawX, 10);
-    const y = Number.parseInt(rawY, 10);
-
-    if (z < 0 || z > 19) {
-      res.status(400).end();
-      return;
-    }
-
-    const maxCoord = (1 << z) - 1;
-    if (x < 0 || x > maxCoord || y < 0 || y > maxCoord) {
-      res.status(400).end();
-      return;
-    }
-
-    const cacheKey = `${z}/${x}/${y}`;
-    const now = Date.now();
-    const cached = tileMemoryCache.get(cacheKey);
-    if (cached && cached.expiresAt > now) {
-      res.setHeader('Content-Type', cached.contentType);
-      res.setHeader('X-Tile-Cache', 'HIT');
-      res.setHeader('Cache-Control', cached.cacheControl);
-      if (cached.etag) res.setHeader('ETag', cached.etag);
-      if (cached.lastModified) res.setHeader('Last-Modified', cached.lastModified);
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.status(200).send(cached.buffer);
-      return;
-    }
-
-    let pending = tileInflightRequests.get(cacheKey);
-    if (!pending) {
-      if (tileInflightRequests.size >= MAX_INFLIGHT_TILE_REQUESTS) {
-        res.status(429).json({ error: 'Too many concurrent upstream tile requests' });
+      const cacheKey = `${z}/${x}/${y}`;
+      const now = Date.now();
+      const cached = tileMemoryCache.get(cacheKey);
+      if (cached && cached.expiresAt > now) {
+        res.setHeader('Content-Type', cached.contentType); res.setHeader('X-Tile-Cache', 'HIT'); res.setHeader('Cache-Control', cached.cacheControl);
+        if (cached.etag) res.setHeader('ETag', cached.etag);
+        if (cached.lastModified) res.setHeader('Last-Modified', cached.lastModified);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.status(200).send(cached.buffer);
         return;
       }
-      pending = (async () => {
-        for (const buildUrl of FREE_OSM_UPSTREAM_MIRRORS) {
-          const result = await fetchTileFromMirror(buildUrl(z, x, y), 3200, fetchImpl);
-          if (result) return result;
-        }
-        return null;
-      })().finally(() => {
-        tileInflightRequests.delete(cacheKey);
-      });
-      tileInflightRequests.set(cacheKey, pending);
-    }
 
-    const result = await pending;
-    if (result) {
-      if (tileMemoryCache.size >= TILE_CACHE_MAX_ITEMS) {
-        const pruneNow = Date.now();
-        for (const [k, v] of tileMemoryCache) { if (v.expiresAt <= pruneNow) tileMemoryCache.delete(k); }
-        if (tileMemoryCache.size >= TILE_CACHE_MAX_ITEMS) {
-          const oldestKey = tileMemoryCache.keys().next().value;
-          if (oldestKey) tileMemoryCache.delete(oldestKey);
+      let pending = tileInflightRequests.get(cacheKey);
+      if (!pending) {
+        if (tileInflightRequests.size >= MAX_INFLIGHT_TILE_REQUESTS) {
+          res.status(429).json({ error: 'Too many concurrent upstream tile requests' });
+          return;
         }
+        pending = (async () => {
+          for (const buildUrl of FREE_OSM_UPSTREAM_MIRRORS) {
+            const result = await fetchTileFromMirror(buildUrl(z, x, y), 3200, fetchImpl);
+            if (result) return result;
+          }
+          return null;
+        })().finally(() => { tileInflightRequests.delete(cacheKey); });
+        tileInflightRequests.set(cacheKey, pending);
       }
-      tileMemoryCache.set(cacheKey, result);
-      res.setHeader('Content-Type', result.contentType);
-      res.setHeader('X-Tile-Cache', 'MISS');
-      res.setHeader('Cache-Control', result.cacheControl);
-      if (result.etag) res.setHeader('ETag', result.etag);
-      if (result.lastModified) res.setHeader('Last-Modified', result.lastModified);
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.status(200).send(result.buffer);
-      return;
-    }
 
-    // Do NOT mask upstream failures with a HTTP 200 synthetic SVG; return HTTP 502 so Leaflet triggers `tileerror`.
-    res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('X-Tile-Cache', 'UPSTREAM_ERROR');
-    res.status(502).json({ error: 'All upstream OpenStreetMap tile mirrors failed' });
+      const result = await pending;
+      if (result) {
+        if (tileMemoryCache.size >= TILE_CACHE_MAX_ITEMS) {
+          const pruneNow = Date.now();
+          for (const [k, v] of tileMemoryCache) { if (v.expiresAt <= pruneNow) tileMemoryCache.delete(k); }
+          if (tileMemoryCache.size >= TILE_CACHE_MAX_ITEMS) {
+            const oldestKey = tileMemoryCache.keys().next().value;
+            if (oldestKey) tileMemoryCache.delete(oldestKey);
+          }
+        }
+        tileMemoryCache.set(cacheKey, result);
+        res.setHeader('Content-Type', result.contentType); res.setHeader('X-Tile-Cache', 'MISS'); res.setHeader('Cache-Control', result.cacheControl);
+        if (result.etag) res.setHeader('ETag', result.etag);
+        if (result.lastModified) res.setHeader('Last-Modified', result.lastModified);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.status(200).send(result.buffer);
+        return;
+      }
+
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Tile-Cache', 'UPSTREAM_ERROR');
+      res.status(502).json({ error: 'All upstream OpenStreetMap tile mirrors failed' });
+    } catch {
+      if (!res.headersSent) {
+        res.setHeader('Cache-Control', 'no-store');
+        res.status(502).json({ error: 'All upstream OpenStreetMap tile mirrors failed' });
+      }
+    }
   });
 }

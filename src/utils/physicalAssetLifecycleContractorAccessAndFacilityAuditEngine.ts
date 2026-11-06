@@ -53,8 +53,11 @@ export function evaluatePhysicalAssetRegistrySymptomAndWorkOrderGate(params: {
 
   const eq = params.equipmentLifecycle;
   const serialNumberConflictDetected = eq.existingActiveSerialNumbers.has(eq.serialNumber);
-  const elapsedYears = Math.max(0, eq.currentYear - eq.commissionedYear);
-  const estimatedRemainingPhysicalLifeYears = Math.max(0, eq.expectedServiceLifeYears - elapsedYears);
+  const currentYr = Number.isFinite(eq.currentYear) ? eq.currentYear : 0;
+  const commYr = Number.isFinite(eq.commissionedYear) ? eq.commissionedYear : currentYr;
+  const expLife = Number.isFinite(eq.expectedServiceLifeYears) && eq.expectedServiceLifeYears >= 0 ? eq.expectedServiceLifeYears : 0;
+  const elapsedYears = Math.max(0, currentYr - commYr);
+  const estimatedRemainingPhysicalLifeYears = Math.max(0, expLife - elapsedYears);
 
   const wo = params.workOrderAttempt;
   let workOrderLifecycleState:
@@ -158,14 +161,11 @@ export function evaluatePmScheduleEmergencyRepairReliabilityAndContractor(params
   }
 
   const rel = params.reliabilityAnalysis;
-  const mtbfHours =
-    rel.verifiedOperatingHours !== null && rel.verifiedOperatingHours > 0 && rel.failureEventsCount > 0
-      ? Number((rel.verifiedOperatingHours / rel.failureEventsCount).toFixed(2))
-      : null;
-  const mttrHours =
-    rel.totalRepairDowntimeHours !== null && rel.totalRepairDowntimeHours >= 0 && rel.failureEventsCount > 0
-      ? Number((rel.totalRepairDowntimeHours / rel.failureEventsCount).toFixed(2))
-      : null;
+  const opHours = Number.isFinite(rel.verifiedOperatingHours) && rel.verifiedOperatingHours !== null && rel.verifiedOperatingHours > 0 ? rel.verifiedOperatingHours : null;
+  const dtHours = Number.isFinite(rel.totalRepairDowntimeHours) && rel.totalRepairDowntimeHours !== null && rel.totalRepairDowntimeHours >= 0 ? rel.totalRepairDowntimeHours : null;
+  const failures = Number.isFinite(rel.failureEventsCount) && rel.failureEventsCount > 0 ? rel.failureEventsCount : null;
+  const mtbfHours = opHours !== null && failures !== null ? Number((opHours / failures).toFixed(2)) : null;
+  const mttrHours = dtHours !== null && failures !== null ? Number((dtHours / failures).toFixed(2)) : null;
 
   return {
     pmWorkOrderGenerated: !pmDup,
@@ -238,19 +238,23 @@ export function evaluateMaintenanceBudgetContractorAccessAndSevenAudits(params: 
   sevenFacilityAuditsVerdict: 'ALL_7_AUDITS_VERIFIED_1819_TO_1825';
 } {
   const b = params.maintenanceBudgetLedger;
-  const remainingUncommittedBudgetToman =
-    b.allocatedAnnualBudgetToman - Math.max(b.committedPurchaseOrdersToman, b.verifiedInvoicedActualExpenseToman);
-  const unpaidInvoicedPayableToman = Math.max(0, b.verifiedInvoicedActualExpenseToman - b.settledPaidCashToman);
+  const allocBudget = Number.isFinite(b.allocatedAnnualBudgetToman) ? b.allocatedAnnualBudgetToman : 0;
+  const committedPo = Number.isFinite(b.committedPurchaseOrdersToman) ? b.committedPurchaseOrdersToman : 0;
+  const actualInv = Number.isFinite(b.verifiedInvoicedActualExpenseToman) ? b.verifiedInvoicedActualExpenseToman : 0;
+  const settledCash = Number.isFinite(b.settledPaidCashToman) ? b.settledPaidCashToman : 0;
+  const remainingUncommittedBudgetToman = allocBudget - Math.max(committedPo, actualInv);
+  const unpaidInvoicedPayableToman = Math.max(0, actualInv - settledCash);
 
   const v = params.contractorVisitRequest;
   let entryPermittedNow = false;
   let reason = 'AUTHORIZED_TIME_BOUNDED_CONTRACTOR_VISIT';
+  const timesValid = Number.isFinite(v.nowMs) && Number.isFinite(v.scheduledStartMs) && Number.isFinite(v.scheduledEndMs) && v.scheduledStartMs <= v.scheduledEndMs;
 
   if (v.emergencyRevoked) {
     reason = 'BLOCKED_EMERGENCY_REVOKED_ACCESS';
   } else if (!v.linkedApprovedWorkOrderId || !v.hostApproved) {
     reason = 'BLOCKED_MISSING_WORK_ORDER_OR_HOST_APPROVAL';
-  } else if (v.nowMs < v.scheduledStartMs || v.nowMs > v.scheduledEndMs) {
+  } else if (!timesValid || v.nowMs < v.scheduledStartMs || v.nowMs > v.scheduledEndMs) {
     reason = 'BLOCKED_OUTSIDE_AUTHORIZED_TIME_WINDOW';
   } else {
     entryPermittedNow = true;

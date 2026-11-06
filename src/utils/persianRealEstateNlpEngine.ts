@@ -93,9 +93,18 @@ export function decomposeCapitalStack(input: {
   currency?: IntlCurrencyCode;
   locale?: RadarLocale;
 }): CapitalStackDecomposition {
-  const cash = new Decimal(input.cashRequiredToman);
-  const loan = input.assumedMortgageLoanToman != null ? new Decimal(input.assumedMortgageLoanToman) : new Decimal(0);
-  const rahn = input.tenantRahnDepositToman != null ? new Decimal(input.tenantRahnDepositToman) : new Decimal(0);
+  const toSafeDecimal = (v: Decimal | number | string | null | undefined): Decimal => {
+    try {
+      if (v == null) return new Decimal(0);
+      const d = new Decimal(v);
+      return d.isFinite() ? d : new Decimal(0);
+    } catch {
+      return new Decimal(0);
+    }
+  };
+  const cash = toSafeDecimal(input.cashRequiredToman);
+  const loan = toSafeDecimal(input.assumedMortgageLoanToman);
+  const rahn = toSafeDecimal(input.tenantRahnDepositToman);
   const total = cash.plus(loan).plus(rahn);
   const isComplete = !input.mentionsOnlyCashWithoutLoanOrRahn && (loan.gt(0) || rahn.gt(0) || input.assumedMortgageLoanToman === 0);
   const totalMillion = total.div(1_000_000).toNumber();
@@ -105,7 +114,7 @@ export function decomposeCapitalStack(input: {
     assumedMortgageLoanToman: loan,
     tenantRahnDepositToman: rahn,
     isComplete,
-    intlTotalEquivalent: formatMillionTomanAsIntlCurrency(totalMillion, input.currency ?? 'USD', input.locale ?? 'fa'),
+    intlTotalEquivalent: formatMillionTomanAsIntlCurrency(Number.isFinite(totalMillion) ? totalMillion : 0, input.currency ?? 'USD', input.locale ?? 'fa'),
   };
 }
 

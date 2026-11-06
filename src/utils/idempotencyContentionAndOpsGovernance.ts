@@ -24,7 +24,7 @@ export class CentralizedMutationIdempotencyStore {
     if (existing && existing.expiresAtMs > now) {
       if (existing.actorScope !== input.actorScope) return { status: 'cross_account_forbidden', httpStatus: 403 };
       if (existing.payloadFingerprint !== fingerprint) return { status: 'payload_mismatch_conflict', httpStatus: 409 };
-      if (existing.state === 'in_progress') return { status: 'in_progress', httpStatus: 202 };
+      if (existing.state === 'in_progress' && now - existing.createdAtMs < 5 * 60 * 1000) return { status: 'in_progress', httpStatus: 202 };
       if (existing.state === 'completed') return { status: 'replayed_completed', httpStatus: 200, existingResult: existing.resultSnapshot };
     }
     this.records.set(compositeKey, { idempotencyKey: input.idempotencyKey, actorScope: input.actorScope, operationType: input.operationType, payloadFingerprint: fingerprint, state: 'in_progress', createdAtMs: now, expiresAtMs: now + this.defaultTtlMs });
@@ -58,7 +58,7 @@ export function decodeAndValidatePaginationCursor(
   try {
     const raw = Buffer.from(encodedCursor, 'base64url').toString('utf-8');
     const parsed = JSON.parse(raw, (k, v) => (k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v)) as CursorPaginationToken;
-    if (!parsed || typeof parsed.tieBreakerId !== 'string' || !parsed.filterContextHash) {
+    if (!parsed || typeof parsed.tieBreakerId !== 'string' || !parsed.filterContextHash || (typeof parsed.sortValue !== 'string' && (typeof parsed.sortValue !== 'number' || !Number.isFinite(parsed.sortValue)))) {
       return { valid: false, token: null, resetReason: 'MALFORMED_CURSOR_TOKEN' };
     }
     if (parsed.filterContextHash !== expectedFilterContextHash) {

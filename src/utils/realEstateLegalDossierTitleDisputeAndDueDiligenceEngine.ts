@@ -33,9 +33,13 @@ export function evaluatePropertyLegalDossierAndChainOfTitle(params: { propertyId
     }
   }
 
-  const targetMs = Date.parse(params.asOfHistoricalDateIso);
+  const rawTargetMs = Date.parse(params.asOfHistoricalDateIso);
+  const targetMs = Number.isFinite(rawTargetMs) ? rawTargetMs : Date.now();
   const eligibleEvents = [...params.chainOfTitleEvents]
-    .filter((e) => Date.parse(e.effectiveDateIso) <= targetMs)
+    .filter((e) => {
+      const ms = Date.parse(e.effectiveDateIso);
+      return Number.isFinite(ms) && ms <= targetMs;
+    })
     .sort((a, b) => Date.parse(a.effectiveDateIso) - Date.parse(b.effectiveDateIso));
 
   const shareLedgerBp = new Map<string, number>(); // basis points (100% = 10000)
@@ -46,7 +50,7 @@ export function evaluatePropertyLegalDossierAndChainOfTitle(params: { propertyId
       unverifiedOrNonOwnershipClaimsExcludedCount += 1;
       continue;
     }
-    const deltaBp = Math.round(ev.transferredSharePercent * 100);
+    const deltaBp = Number.isFinite(ev.transferredSharePercent) ? Math.max(0, Math.round(ev.transferredSharePercent * 100)) : 0;
     if (ev.transferorId !== 'INITIAL_CADASTRE') {
       const prevFrom = shareLedgerBp.get(ev.transferorId) ?? 0;
       shareLedgerBp.set(ev.transferorId, Math.max(0, prevFrom - deltaBp));
@@ -58,10 +62,7 @@ export function evaluatePropertyLegalDossierAndChainOfTitle(params: { propertyId
   const reconstructedRegisteredOwnersAsOfDate: Record<string, number> = {};
   let totalBp = 0;
   for (const [partyId, bp] of shareLedgerBp.entries()) {
-    if (bp > 0) {
-      reconstructedRegisteredOwnersAsOfDate[partyId] = Number((bp / 100).toFixed(2));
-      totalBp += bp;
-    }
+    if (bp > 0) { reconstructedRegisteredOwnersAsOfDate[partyId] = Number((bp / 100).toFixed(2)); totalBp += bp; }
   }
 
   return {
@@ -159,7 +160,7 @@ export function evaluatePoaEncumbrancesRegistryDiscrepanciesAndSuccession(params
 
   const inq = params.registryInquiry;
   const registryInquiryStatus =
-    inq.expiresAtMs <= inq.nowMs
+    !Number.isFinite(inq.expiresAtMs) || !Number.isFinite(inq.nowMs) || inq.expiresAtMs <= inq.nowMs
       ? 'EXPIRED_INQUIRY'
       : inq.sourceType === 'AUTHORIZED_NOTARY_REGISTRY_RESPONSE'
       ? 'VALID_OFFICIAL_INQUIRY'

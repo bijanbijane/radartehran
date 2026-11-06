@@ -31,20 +31,28 @@ export function calculateFundNavAndUnitValuation(params: {
 }) {
   const areaUnit = params.areaUnit ?? getStoredAreaUnit();
   const intlCurrency = params.intlCurrency ?? getStoredIntlCurrency();
-  const effMs = Date.parse(params.valuationEffectiveDateIso);
+  const rawEffMs = Date.parse(params.valuationEffectiveDateIso);
+  const effMs = Number.isFinite(rawEffMs) ? rawEffMs : Date.now();
   let grossPropertyHoldingsValueToman = 0;
   let staleHoldingsCount = 0;
   let unverifiedHoldingsCount = 0;
   for (const h of params.holdings) {
-    const share = Math.max(0, Math.min(100, h.ownershipSharePercent)) / 100;
-    grossPropertyHoldingsValueToman += Math.round(h.valuationAmountToman * share);
-    const ageDays = (effMs - Date.parse(h.valuationDateIso)) / (1000 * 3600 * 24);
+    const rawShare = Number(h.ownershipSharePercent);
+    const share = (Number.isFinite(rawShare) ? Math.max(0, Math.min(100, rawShare)) : 0) / 100;
+    const rawVal = Number(h.valuationAmountToman);
+    const valAmt = Number.isFinite(rawVal) ? Math.max(0, rawVal) : 0;
+    grossPropertyHoldingsValueToman += Math.round(valAmt * share);
+    const hDateMs = Date.parse(h.valuationDateIso);
+    const ageDays = Number.isFinite(hDateMs) ? (effMs - hDateMs) / (1000 * 3600 * 24) : 9999;
     if (ageDays > params.maxValuationAgeDays) staleHoldingsCount += 1;
     if (h.evidenceSource !== 'INDEPENDENT_CERTIFIED_APPRAISAL') unverifiedHoldingsCount += 1;
   }
-  const grossAssetValueGavToman = grossPropertyHoldingsValueToman + params.cashAndEligibleReceivablesToman;
-  const netAssetValueNavToman = grossAssetValueGavToman - params.accruedLiabilitiesAndDebtToman;
-  const navPerUnitToman = params.outstandingUnitsCount > 0 ? Number((netAssetValueNavToman / params.outstandingUnitsCount).toFixed(2)) : null;
+  const cash = Number.isFinite(params.cashAndEligibleReceivablesToman) ? Math.max(0, params.cashAndEligibleReceivablesToman) : 0;
+  const debt = Number.isFinite(params.accruedLiabilitiesAndDebtToman) ? Math.max(0, params.accruedLiabilitiesAndDebtToman) : 0;
+  const grossAssetValueGavToman = grossPropertyHoldingsValueToman + cash;
+  const netAssetValueNavToman = grossAssetValueGavToman - debt;
+  const units = Number.isFinite(params.outstandingUnitsCount) ? Math.max(0, params.outstandingUnitsCount) : 0;
+  const navPerUnitToman = units > 0 ? Number((netAssetValueNavToman / units).toFixed(2)) : null;
   return {
     vehicleId: params.vehicleId,
     valuationEffectiveDateIso: params.valuationEffectiveDateIso,
@@ -116,7 +124,10 @@ export function calculateSafePeriodicIrrAndPerformance(params: {
   cashFlowsToman: number[]; // e.g. [-10000, 1200, 1500, 11800]
   isProjectedScenario: boolean;
 }) {
-  const flows = params.cashFlowsToman.filter((v) => Number.isFinite(v) && Math.abs(v) > 1e-6);
+  if (params.cashFlowsToman.some((v) => !Number.isFinite(v))) {
+    return { status: 'NO_VALID_IRR_SIGN_CHANGE' as const, periodicIrrPercent: null, signChangesCount: 0, performanceNature: params.isProjectedScenario ? ('PROJECTED_SCENARIO' as const) : ('REALIZED_ACTUAL' as const) };
+  }
+  const flows = params.cashFlowsToman.filter((v) => Math.abs(v) > 1e-6);
   let signChanges = 0;
   for (let i = 1; i < flows.length; i++) {
     if ((flows[i - 1] < 0 && flows[i] > 0) || (flows[i - 1] > 0 && flows[i] < 0)) {
@@ -254,29 +265,16 @@ export function evaluatePortfolioLiquidityDebtGovernanceAndVdr(params: {
     eligiblePoolWeight > 0 &&
     effectiveApprovalSharePercent >= params.governanceVote.requiredThresholdPercent;
   const vdr = params.vdrAccessAttempt;
-  const isExpiredGrant = Date.parse(vdr.grantExpiresIso) < Date.parse(vdr.nowIso);
+  const expMs = Date.parse(vdr.grantExpiresIso), nowMs = Date.parse(vdr.nowIso);
+  const isExpiredGrant = !Number.isFinite(expMs) || !Number.isFinite(nowMs) || expMs < nowMs;
   const vdrAccessAllowed =
     !vdr.isGrantRevoked &&
     !isExpiredGrant &&
     vdr.documentPortfolioId === vdr.viewerPortfolioId;
   return {
-    liquidityReport: {
-      immediatelyAvailableLiquidCashToman,
-      illiquidPropertyExcludedFromCashToman: params.illiquidPropertyMarketValueToman,
-      liquidityCoverageShortfallToman,
-    },
-    debtReport: {
-      drawnPrincipalBalanceToman: params.debtFacility.drawnPrincipalBalanceToman,
-      undrawnCreditFacilityToman,
-      currentLtvPercent,
-      ltvCovenantBreached,
-    },
-    governanceAndConflictReport: {
-      isRelatedPartyTransaction,
-      recusedConflictedVotersCount, effectiveApprovalSharePercent, resolutionPassed, }, vdrAccessReport: { documentId: vdr.documentId, accessAllowed: vdrAccessAllowed, denialReason: vdrAccessAllowed
-        ? null
-        : vdr.isGrantRevoked
-        ? ('GRANT_REVOKED' as const)
-        : isExpiredGrant
-        ? ('GRANT_EXPIRED' as const)
-        : ('CROSS_PORTFOLIO_ISOLATION_BLOCKED' as const), }, }; }
+    liquidityReport: { immediatelyAvailableLiquidCashToman, illiquidPropertyExcludedFromCashToman: params.illiquidPropertyMarketValueToman, liquidityCoverageShortfallToman },
+    debtReport: { drawnPrincipalBalanceToman: params.debtFacility.drawnPrincipalBalanceToman, undrawnCreditFacilityToman, currentLtvPercent, ltvCovenantBreached },
+    governanceAndConflictReport: { isRelatedPartyTransaction, recusedConflictedVotersCount, effectiveApprovalSharePercent, resolutionPassed },
+    vdrAccessReport: { documentId: vdr.documentId, accessAllowed: vdrAccessAllowed, denialReason: vdrAccessAllowed ? null : vdr.isGrantRevoked ? ('GRANT_REVOKED' as const) : isExpiredGrant ? ('GRANT_EXPIRED' as const) : ('CROSS_PORTFOLIO_ISOLATION_BLOCKED' as const) },
+  };
+}
