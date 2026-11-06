@@ -60,7 +60,18 @@ import {
   parsePersistedDeepOverrides,
   setDeepSyncedOverride,
   getDeepSyncedOverride,
+  cacheBuyerAlertAfterDurableCommit,
+  serverSideBuyerLeads,
 } from '../src/utils/serverMarketPulseEngine';
+import {
+  activateCloudListener,
+  cloudSyncConnectionStatus,
+  createCloudSyncListenerHealth,
+  isCloudSyncLive,
+  noteCloudListenerError,
+  noteCloudListenerSnapshot,
+  noteExplicitCloudReconnect,
+} from '../src/utils/firestoreConnectionState';
 import {
   classifyPropertyDuplicateCandidate,
   deduplicateHistoricalObservations,
@@ -871,8 +882,29 @@ function runDomainRegressionTests(): void {
     `normPhone=${normPersianPhone}, mismatch=${String(mismatchedOverride)}, issues=${relationalIssues.map((i) => i.category).join(',')}`
   );
 
+  let health = createCloudSyncListenerHealth();
+  health = activateCloudListener(health, 'featureFlags');
+  health = activateCloudListener(health, 'bargains');
+  health = noteCloudListenerError(health, 'bargains');
+  health = noteCloudListenerSnapshot(health, 'featureFlags');
+  assert('32. Cloud listener recovery: a sibling snapshot does not mark a dead listener live', isCloudSyncLive(health) === false && cloudSyncConnectionStatus({ authReady: true, navigatorOnLine: true, health }) === 'RECONNECTING', `failed=${health.failed.join(',')}`);
+  health = noteCloudListenerSnapshot(health, 'bargains');
+  assert('33. Cloud listener recovery: the same listener snapshot clears its own failure', isCloudSyncLive(health) === true && cloudSyncConnectionStatus({ authReady: true, navigatorOnLine: true, health }) === 'LIVE_SYNC', `succeeded=${health.succeeded.join(',')}`);
+  health = noteCloudListenerError(health, 'bargains');
+  health = noteExplicitCloudReconnect(health);
+  assert('34. Cloud listener recovery: explicit reconnect clears the failure without calling a dead listener live', health.failed.length === 0 && isCloudSyncLive(health) === false, `active=${health.active.join(',')}`);
+  health = noteCloudListenerSnapshot(health, 'bargains');
+  assert('35. Cloud listener recovery: resubscribed snapshot restores live status', isCloudSyncLive(health) === true, `failed=${health.failed.join(',')}`);
+  const leadId = 'durable-cache-probe';
+  const before = serverSideBuyerLeads.length;
+  const rejected = cacheBuyerAlertAfterDurableCommit(false, { id: leadId, hoodId: 1, hoodName: 'probe', fullName: 'probe', phone: '09120000000', dealType: 'خرید', maxBudgetText: 'probe', createdAtFa: 'probe' });
+  const accepted = cacheBuyerAlertAfterDurableCommit(true, { id: leadId, hoodId: 1, hoodName: 'probe', fullName: 'probe', phone: '09120000000', dealType: 'خرید', maxBudgetText: 'probe', createdAtFa: 'probe' });
+  assert('36. Buyer alert cache: a failed durable write is not stored in the memory cache', rejected === false && accepted === true && serverSideBuyerLeads.length === before + 1 && serverSideBuyerLeads.some((lead) => lead.id === leadId), `before=${before} after=${serverSideBuyerLeads.length}`);
+  const cachedIndex = serverSideBuyerLeads.findIndex((lead) => lead.id === leadId);
+  if (cachedIndex >= 0) serverSideBuyerLeads.splice(cachedIndex, 1);
+
   console.log('\n=======================================================');
-  console.log('[DOMAIN REGRESSION SUITE PASS] All 31 assertions passed!');
+  console.log('[DOMAIN REGRESSION SUITE PASS] All assertions passed!');
   console.log('=======================================================\n');
 }
 

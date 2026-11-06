@@ -1,4 +1,4 @@
-import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './areaUnit'; import { normalizePersianDisplayText } from './persianSearchAndPersonalWorkspace'; export type AuthSessionState = 'initializing' | 'unauthenticated' | 'authenticated' | 'refreshing_credentials' | 'session_expired' | 'auth_error'; export type ContactVerificationState = 'not_provided' | 'pending_verification' | 'verified' | 'verification_expired' | 'verification_error'; export interface AuthSessionSnapshot { state: AuthSessionState; uid: string | null; email: string | null; emailVerificationState: ContactVerificationState; isAdmin: boolean; sessionGeneration: number; lastVerifiedAtMs: number | null; }
+import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './areaUnit'; import { normalizePersianDisplayText } from './persianSearchAndPersonalWorkspace'; import type { BuyerAlertLeadItem } from '../types/models'; import { isValidFirestoreDocId } from './security'; import { executeAuthorizedAdminFirestoreOperation, getFirebaseAdminFirestoreForServer } from './serverAdminAndTelegramSecurity'; export type AuthSessionState = 'initializing' | 'unauthenticated' | 'authenticated' | 'refreshing_credentials' | 'session_expired' | 'auth_error'; export type ContactVerificationState = 'not_provided' | 'pending_verification' | 'verified' | 'verification_expired' | 'verification_error'; export interface AuthSessionSnapshot { state: AuthSessionState; uid: string | null; email: string | null; emailVerificationState: ContactVerificationState; isAdmin: boolean; sessionGeneration: number; lastVerifiedAtMs: number | null; }
 export function isOperationValidForSession( operationStartedByUid: string | null, operationSessionGen: number, currentSession: AuthSessionSnapshot, ): boolean { if (currentSession.state !== 'authenticated' || !currentSession.uid) return false; return operationStartedByUid === currentSession.uid && operationSessionGen === currentSession.sessionGeneration; }
 export const GENERIC_ACCOUNT_RECOVERY_MESSAGE_FA = 'در صورت وجود حساب کاربری مرتبط با این نشانی ایمیل، پیوند بازیابی رمز عبور ارسال شده است.'; export function validateAccountRecoveryEmailInput(rawEmail: string): { valid: boolean; normalizedEmail: string; errorFa: string | null; publicConfirmationFa: string; } { const email = String(rawEmail || '').trim().toLowerCase(); const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) && email.length <= 254; if (!isValidFormat) { return { valid: false, normalizedEmail: '', errorFa: 'لطفاً یک نشانی ایمیل معتبر وارد کنید.', publicConfirmationFa: '' }; } return { valid: true, normalizedEmail: email, errorFa: null, publicConfirmationFa: GENERIC_ACCOUNT_RECOVERY_MESSAGE_FA }; }
 const SERVER_MANAGED_PROFILE_FIELDS = new Set(['uid', 'role', 'isAdmin', 'admin', 'permissions', 'emailVerified', 'createdAt', 'quotaOverride', '__proto__', 'constructor', 'prototype']);
@@ -229,3 +229,49 @@ export class BackendLifecycleCoordinator {
   }
 }
 export const globalBackendLifecycle = new BackendLifecycleCoordinator();
+export async function listDurableBuyerAlerts(callerUid: string, callerEmail?: string): Promise<BuyerAlertLeadItem[]> {
+  const snap = await executeAuthorizedAdminFirestoreOperation({
+    policy: 'ADMIN', callerUid, callerEmail, isAdmin: true,
+    operation: () => getFirebaseAdminFirestoreForServer().collection('buyerAlerts').limit(200).get(),
+  });
+  const nowMs = Date.now();
+  const leads: BuyerAlertLeadItem[] = [];
+  snap.forEach((docSnap) => {
+    const data = docSnap.data() as Record<string, unknown>;
+    const expiresAtIso = typeof data.expiresAtIso === 'string' ? data.expiresAtIso : '';
+    const expiresMs = Date.parse(expiresAtIso);
+    if (Number.isFinite(expiresMs) && expiresMs <= nowMs) return;
+    const hoodId = Number(data.hoodId);
+    if (!Number.isInteger(hoodId) || typeof data.fullName !== 'string' || typeof data.phone !== 'string') return;
+    leads.push({
+      id: docSnap.id, hoodId, hoodName: typeof data.hoodName === 'string' ? data.hoodName : '',
+      fullName: data.fullName, phone: data.phone, dealType: data.dealType === 'اجاره' ? 'اجاره' : 'خرید',
+      maxBudgetText: typeof data.maxBudgetText === 'string' ? data.maxBudgetText : '',
+      createdAtFa: typeof data.createdAtFa === 'string' ? data.createdAtFa : '',
+      createdAtIso: typeof data.createdAtIso === 'string' ? data.createdAtIso : undefined,
+      expiresAtIso: expiresAtIso || undefined,
+      consentAtIso: typeof data.consentAtIso === 'string' ? data.consentAtIso : undefined,
+      consentVersion: typeof data.consentVersion === 'string' ? data.consentVersion : undefined,
+      submittedByUid: typeof data.userId === 'string' ? data.userId : undefined,
+    });
+  });
+  return leads;
+}
+export async function persistBuyerAlertDocument(params: { uid: string; email?: string; hoodId: number; hoodName: string; fullName: string; phone: string; dealType: 'خرید' | 'اجاره'; maxBudgetText: string; }): Promise<{ duplicate: boolean; expiresAtIso: string; id: string }> {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  const alertDocId = `${params.uid}_hood_${params.hoodId}`;
+  if (!isValidFirestoreDocId(alertDocId)) throw new Error('INVALID_ALERT_DOC');
+  const duplicate = await executeAuthorizedAdminFirestoreOperation({
+    policy: 'RESOURCE_OWNER', callerUid: params.uid, callerEmail: params.email, resourceOwnerUid: params.uid,
+    operation: async () => {
+      const ref = getFirebaseAdminFirestoreForServer().collection('buyerAlerts').doc(alertDocId);
+      const existing = await ref.get();
+      const fields = { userId: params.uid, hoodId: params.hoodId, hoodName: params.hoodName.slice(0, 80), fullName: params.fullName, phone: params.phone, dealType: params.dealType, maxBudgetText: params.maxBudgetText, consentVersion: 'buyer-alert-2026-10-v1', expiresAtIso: expiresAt.toISOString(), updatedAtIso: now.toISOString() };
+      if (existing.exists) { await ref.set(fields, { merge: true }); return true; }
+      await ref.set({ ...fields, createdAtIso: now.toISOString(), consentAtIso: now.toISOString() });
+      return false;
+    },
+  });
+  return { duplicate, expiresAtIso: expiresAt.toISOString(), id: alertDocId };
+}

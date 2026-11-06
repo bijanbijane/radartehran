@@ -62,9 +62,9 @@
         "buyerProfitText": { "type": "string", "description": "Formatted buyer profit summary" },
         "street": { "type": "string", "description": "Approximate street or alley" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Moderation lifecycle status" },
-        "imageUrl": { "type": "string", "description": "Optional primary property photo URL" },
-        "imageUrls": { "type": "array", "items": { "type": "string" }, "description": "Optional list of uploaded image URLs" },
-        "videoUrl": { "type": "string", "description": "Optional short property video URL" },
+        "imageUrl": { "type": "string", "description": "Optional primary property photo URL (max 600 characters)" },
+        "imageUrls": { "type": "array", "items": { "type": "string" }, "description": "Optional list of uploaded image URLs (each max 600 characters)" },
+        "videoUrl": { "type": "string", "description": "Optional short property video URL (max 600 characters)" },
         "objectStorageBucket": { "type": "string", "description": "Optional S3/Object Storage bucket name" },
         "objectStorageKeys": { "type": "array", "items": { "type": "string" }, "description": "Optional S3 object keys" },
         "objectStorageObjectIds": { "type": "array", "items": { "type": "string" }, "description": "Optional Object Storage object IDs" },
@@ -103,6 +103,8 @@
         "buyPerSqm": { "type": "number", "description": "Updated average buy price per sqm (Million Tomans, 10..5000)" },
         "rahn80m": { "type": "number", "description": "Updated average 80m full deposit (Million Tomans, 50..100000)" },
         "sponsor": { "type": "object", "description": "Public sponsor card: name, phone, specialty, experienceYears, optional expiresAtIso and planType" },
+        "pros": { "type": "string", "description": "Optional neighborhood advantages (max 400 characters)" },
+        "cons": { "type": "string", "description": "Optional neighborhood drawbacks (max 400 characters)" },
         "updatedAt": { "type": "string", "format": "date-time", "description": "Last admin update timestamp" }
       },
       "required": ["hoodId", "buyPerSqm", "rahn80m", "updatedAt"]
@@ -201,7 +203,7 @@
         "favoriteHoodIds": {
           "type": "array",
           "items": { "type": "number" },
-          "description": "List of bookmarked neighborhood IDs (max 25)"
+          "description": "List of bookmarked neighborhood IDs (max 25 integers, each from 1 to 999)"
         },
         "updatedAt": { "type": "string", "format": "date-time", "description": "Last saved timestamp" }
       },

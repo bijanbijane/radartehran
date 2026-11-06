@@ -31,12 +31,16 @@ function loadPlaywrightCore(): any {
   throw new Error('playwright-core module not found');
 }
 
-function resolveChromiumExecutable(): string {
+function resolveChromiumExecutable(pw: { chromium: { executablePath: () => string } }): string {
   for (const binPath of CHROMIUM_EXECUTABLE_PATHS) {
     if (fs.existsSync(binPath)) {
       return binPath;
     }
   }
+  try {
+    const installed = pw.chromium.executablePath();
+    if (installed && fs.existsSync(installed)) return installed;
+  } catch { /* Playwright has not recorded a browser path yet. */ }
   throw new Error('Chromium executable not found on filesystem');
 }
 
@@ -49,7 +53,7 @@ export interface SmokeTestResult {
 
 async function runBrowserSmokeSuite(): Promise<void> {
   const pw = loadPlaywrightCore();
-  const executablePath = resolveChromiumExecutable();
+  const executablePath = resolveChromiumExecutable(pw);
   const baseUrl = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000';
 
   const results: SmokeTestResult[] = [];

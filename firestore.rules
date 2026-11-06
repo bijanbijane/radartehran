@@ -90,6 +90,39 @@ service cloud.firestore {
       data.lastUpdatedAt is timestamp;
     }
 
+    function isFavoriteHoodId(value) {
+      return value is int && value >= 1 && value <= 999;
+    }
+
+    function everyFavoriteHoodIdIsValid(ids) {
+      return ids is list && ids.size() <= 25 &&
+        (ids.size() < 1 || isFavoriteHoodId(ids[0])) &&
+        (ids.size() < 2 || isFavoriteHoodId(ids[1])) &&
+        (ids.size() < 3 || isFavoriteHoodId(ids[2])) &&
+        (ids.size() < 4 || isFavoriteHoodId(ids[3])) &&
+        (ids.size() < 5 || isFavoriteHoodId(ids[4])) &&
+        (ids.size() < 6 || isFavoriteHoodId(ids[5])) &&
+        (ids.size() < 7 || isFavoriteHoodId(ids[6])) &&
+        (ids.size() < 8 || isFavoriteHoodId(ids[7])) &&
+        (ids.size() < 9 || isFavoriteHoodId(ids[8])) &&
+        (ids.size() < 10 || isFavoriteHoodId(ids[9])) &&
+        (ids.size() < 11 || isFavoriteHoodId(ids[10])) &&
+        (ids.size() < 12 || isFavoriteHoodId(ids[11])) &&
+        (ids.size() < 13 || isFavoriteHoodId(ids[12])) &&
+        (ids.size() < 14 || isFavoriteHoodId(ids[13])) &&
+        (ids.size() < 15 || isFavoriteHoodId(ids[14])) &&
+        (ids.size() < 16 || isFavoriteHoodId(ids[15])) &&
+        (ids.size() < 17 || isFavoriteHoodId(ids[16])) &&
+        (ids.size() < 18 || isFavoriteHoodId(ids[17])) &&
+        (ids.size() < 19 || isFavoriteHoodId(ids[18])) &&
+        (ids.size() < 20 || isFavoriteHoodId(ids[19])) &&
+        (ids.size() < 21 || isFavoriteHoodId(ids[20])) &&
+        (ids.size() < 22 || isFavoriteHoodId(ids[21])) &&
+        (ids.size() < 23 || isFavoriteHoodId(ids[22])) &&
+        (ids.size() < 24 || isFavoriteHoodId(ids[23])) &&
+        (ids.size() < 25 || isFavoriteHoodId(ids[24]));
+    }
+
     // Blueprint Validation: UserPreference
     function isValidUserPreference(data) {
       return data.keys().hasAll([
@@ -110,12 +143,7 @@ service cloud.firestore {
       data.targetSqm is number && data.targetSqm >= 20 && data.targetSqm <= 1000 &&
       data.workHubId is string && data.workHubId.size() >= 1 && data.workHubId.size() <= 40 &&
       data.favoriteHoodIds is list && data.favoriteHoodIds.size() <= 25 &&
-      (data.favoriteHoodIds.size() == 0 || (
-        data.favoriteHoodIds[0] is number && data.favoriteHoodIds[0] >= 1 && data.favoriteHoodIds[0] <= 999 &&
-        data.favoriteHoodIds[data.favoriteHoodIds.size() - 1] is number &&
-        data.favoriteHoodIds[data.favoriteHoodIds.size() - 1] >= 1 &&
-        data.favoriteHoodIds[data.favoriteHoodIds.size() - 1] <= 999
-      )) &&
+      everyFavoriteHoodIdIsValid(data.favoriteHoodIds) &&
       data.updatedAt is timestamp;
     }
 
@@ -144,16 +172,16 @@ service cloud.firestore {
       (!('approvedAt' in data) || (data.approvedAt is timestamp || (data.approvedAt is string && data.approvedAt.size() <= 60))) &&
       (!('approvedBy' in data) || (data.approvedBy is string && data.approvedBy.size() <= 128)) &&
       (!('updatedAt' in data) || data.updatedAt is timestamp) &&
-      (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 500)) &&
+      (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 600)) &&
       (!('imageUrls' in data) || (
         data.imageUrls is list && data.imageUrls.size() <= 5 &&
-        (data.imageUrls.size() < 1 || (data.imageUrls[0] is string && data.imageUrls[0].size() <= 500)) &&
-        (data.imageUrls.size() < 2 || (data.imageUrls[1] is string && data.imageUrls[1].size() <= 500)) &&
-        (data.imageUrls.size() < 3 || (data.imageUrls[2] is string && data.imageUrls[2].size() <= 500)) &&
-        (data.imageUrls.size() < 4 || (data.imageUrls[3] is string && data.imageUrls[3].size() <= 500)) &&
-        (data.imageUrls.size() < 5 || (data.imageUrls[4] is string && data.imageUrls[4].size() <= 500))
+        (data.imageUrls.size() < 1 || (data.imageUrls[0] is string && data.imageUrls[0].size() <= 600)) &&
+        (data.imageUrls.size() < 2 || (data.imageUrls[1] is string && data.imageUrls[1].size() <= 600)) &&
+        (data.imageUrls.size() < 3 || (data.imageUrls[2] is string && data.imageUrls[2].size() <= 600)) &&
+        (data.imageUrls.size() < 4 || (data.imageUrls[3] is string && data.imageUrls[3].size() <= 600)) &&
+        (data.imageUrls.size() < 5 || (data.imageUrls[4] is string && data.imageUrls[4].size() <= 600))
       )) &&
-      (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 500)) &&
+      (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 600)) &&
       (!('objectStorageBucket' in data) || (data.objectStorageBucket is string && data.objectStorageBucket.size() <= 120)) &&
       (!('objectStorageKeys' in data) || (
         data.objectStorageKeys is list && data.objectStorageKeys.size() <= 6 &&
@@ -560,6 +588,8 @@ service cloud.firestore {
           'buyPerSqm',
           'rahn80m',
           'sponsor',
+          'pros',
+          'cons',
           'updatedAt'
         ]) &&
         incoming().hoodId is int &&
@@ -576,6 +606,8 @@ service cloud.firestore {
         incoming().rahn80m >= 50 &&
         incoming().rahn80m <= 100000 &&
         (!('sponsor' in incoming()) || isValidOverrideSponsor(incoming().sponsor)) &&
+        (!('pros' in incoming()) || (incoming().pros is string && incoming().pros.size() <= 400)) &&
+        (!('cons' in incoming()) || (incoming().cons is string && incoming().cons.size() <= 400)) &&
         incoming().updatedAt is timestamp &&
         incoming().updatedAt == request.time;
     }

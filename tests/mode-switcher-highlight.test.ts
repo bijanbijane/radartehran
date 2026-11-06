@@ -53,8 +53,9 @@ function evaluateModeSuggestion(
 {
   const onboardingSrc = fs.readFileSync('src/components/OnboardingWizardModal.tsx', 'utf8');
   assert.ok(
-    onboardingSrc.includes('effectiveBuyPowerMillion') && onboardingSrc.includes('قدرت خرید نهایی شما (با اهرم‌ها):'),
-    'OnboardingWizardModal must calculate and display live effective purchasing power in Step 2 buy mode'
+    onboardingSrc.includes('const effectiveBuyPowerMillion = Math.round((buyTotalBudget + (useLoanBooster ? 1200 : 0)) / (deductTenantRahnInBuy ? 0.72 : 1.0));') &&
+      onboardingSrc.includes('متری ${toPersianNum(uBuy)} م (معامله v6.4: ${toPersianNum(uDeal)} م)'),
+    'OnboardingWizardModal must calculate effective purchasing power and show the live buy price on recommended neighborhoods'
   );
   assert.ok(
     onboardingSrc.includes('const buyAgeMultiplier = buildingAgeSegment === \'new\' ? 1.0 : buildingAgeSegment === \'mid\' ? 0.88 : 0.76;'),

@@ -270,7 +270,7 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
     app.get("*all", (req, res) => serveProdIndex(req, res, "Not Found"));
   }
   app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    recordAbuseSignal(getClientIp(req), "auth_failure"); pushAuditLog("WARN", `خطای مهارشده سرور در مسیر ${req.path}`);
+    recordAbuseSignal(getClientIp(req), "server_error"); pushAuditLog("WARN", `خطای مهارشده سرور در مسیر ${req.path}`);
     if (!res.headersSent) { res.setHeader("Cache-Control", "no-store"); res.setHeader("Pragma", "no-cache"); res.status(500).json({ status: "error", code: "INTERNAL_SERVER_ERROR", message: "خطای داخلی در سرور رخ داد." }); }
   });
   server.listen(PORT, "0.0.0.0", () => {
