@@ -67,7 +67,7 @@ export function RadarWorkspaceShell() {
   const buyAgeMultiplier = buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.88 : 0.76;
   const rentAgeMultiplier = buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.90 : 0.80;
   const { currentUser, cloudBargainsByHood, cloudSponsorsByHood, connectionStatus } = useRadarCloudSync({
-    hasUrlBudgetParams: initialUrlState.hasUrlBudgetParams, setMode, setDeposit, setMonthlyRent, setBuyTotalBudget, setTargetSqm, setWorkHubId,
+    activeCity: ui.activeCity, hasUrlBudgetParams: initialUrlState.hasUrlBudgetParams, setMode, setDeposit, setMonthlyRent, setBuyTotalBudget, setTargetSqm, setWorkHubId,
     setFavoriteHoodIds, setFeatureFlags, setNeighborhoods, setCloudVotes: ui.setCloudVotes, setSponsorRequests: ui.setSponsorRequests,
     setBuyerLeads: ui.setBuyerLeads, setHasDelegatedAdminDoc: ui.setHasDelegatedAdminDoc,
   });
@@ -146,7 +146,7 @@ export function RadarWorkspaceShell() {
     setSelectedHoodId: ui.setSelectedHoodId, showCompareModal: ui.showCompareModal, setShowCompareModal: ui.setShowCompareModal,
     compareId1: ui.compareId1, setCompareId1: ui.setCompareId1, compareId2: ui.compareId2, setCompareId2: ui.setCompareId2,
     compHood1, compHood2, mode, setMode, deposit, setDeposit, monthlyRent, setMonthlyRent,
-    buyTotalBudget, setBuyTotalBudget, targetSqm, setTargetSqm, primaryView: ui.primaryView, setPrimaryView: ui.setPrimaryView, mapInstanceRef,
+    buyTotalBudget, setBuyTotalBudget, targetSqm, setTargetSqm, workHubId, setWorkHubId, primaryView: ui.primaryView, setPrimaryView: ui.setPrimaryView, mapInstanceRef,
     hasUrlBudgetParams: Boolean(initialUrlState.hasUrlBudgetParams),
   });
 
@@ -178,9 +178,9 @@ export function RadarWorkspaceShell() {
   return (
     <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-screen overflow-hidden bg-[#F8F9FA] dark:bg-slate-950 text-slate-900 dark:text-slate-100 select-none flex flex-col">
       <ProductGlobalHeader
-        primaryView={ui.primaryView} onSelectPrimaryView={ui.setPrimaryView} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
-        appleTheme={appleTheme} onToggleAppleTheme={toggleAppleTheme} onOpenBudgetFilter={() => ui.setMobileFilterOpen(true)}
-        onOpenReverseBudget={() => setShowReverseBudgetModal(true)} onOpenSearch={() => ui.setShowSearchDropdown(true)} searchQuery={ui.searchQuery}
+        primaryView={ui.primaryView} onSelectPrimaryView={(v) => { ui.setMobileSheetOpen(false); ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setPrimaryView(v); }} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
+        appleTheme={appleTheme} onToggleAppleTheme={toggleAppleTheme} onOpenBudgetFilter={() => ui.setMobileFilterOpen((p) => !p)}
+        onOpenReverseBudget={() => setShowReverseBudgetModal(true)} onOpenSearch={() => ui.setShowSearchDropdown((p) => !p)} searchQuery={ui.searchQuery}
       />
       <div role="region" aria-label="نقشه تعاملی محله‌ها" className="fixed inset-0 top-16 z-0">
         <div ref={mapContainerRef} className="w-full h-full bg-[#E5E5EA]" />
@@ -260,11 +260,11 @@ export function RadarWorkspaceShell() {
       />
       <ReverseBudgetDiscoveryModal
         isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)}
-        neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, avgPricePerSqmMillion: h.buyPerSqm }))}
-        onSelectNeighborhood={(id, budgetMillion, areaSqm) => {
+        neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm }))}
+        onSelectNeighborhood={(id, budgetMillion, areaSqm, ageYears) => {
           const found = evaluatedNeighborhoods.find((h) => String(h.id) === id);
           if (typeof budgetMillion === 'number' && budgetMillion > 0) setBuyTotalBudget(budgetMillion);
-          if (typeof areaSqm === 'number' && areaSqm >= 35) setTargetSqm(areaSqm);
+          if (typeof areaSqm === 'number' && areaSqm >= 35) setTargetSqm(areaSqm); if (typeof ageYears === 'number') setBuildingAgeSegment(ageYears <= 5 ? 'new' : ageYears <= 15 ? 'mid' : 'older');
           if (found) { setMode('buy'); handleSelectNeighborhood(found); ui.setMobileSheetOpen(true); }
         }} />
       <FeatureErrorBoundary sectionName="پنجره‌ها و ابزارهای تخصصی" resetKey={ui.activeCity}>

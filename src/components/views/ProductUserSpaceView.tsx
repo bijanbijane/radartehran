@@ -110,7 +110,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
               {toPersianNum(p.visitedHomesCount)} {isEn ? 'recorded visits' : 'آپارتمان ثبت‌شده'}
             </strong>
           </div>
-          <button type="button" onClick={p.onOpenVisitedModal} className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer">
+          <button type="button" onClick={p.onOpenVisitedModal} aria-label={isEn ? 'Open property visit log' : 'مشاهده دفترچه بازدیدها'} className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer">
             {isEn ? 'Open Log' : 'مشاهده'}
           </button>
         </div>
@@ -120,7 +120,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Under-Market Alerts:' : 'پایش فایل‌های زیر قیمت:'}</span>
             <strong className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">{isEn ? 'Smart Deal Alert' : 'پیامک هوشمند شکار'}</strong>
           </div>
-          <button type="button" onClick={p.onOpenBuyerAlertModal} className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer hover:opacity-90">
+          <button type="button" onClick={p.onOpenBuyerAlertModal} aria-label={isEn ? 'Configure under-market deal alert' : 'ثبت و تنظیم هشدار خرید'} className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer hover:opacity-90">
             {isEn ? 'Configure' : 'ثبت هشدار'}
           </button>
         </div>
@@ -217,11 +217,11 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} className="flex-1 py-2 rounded-xl bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">
+                    <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="flex-1 py-2 rounded-xl bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">
                       مشاهده کارنامه محله
                     </button>
                     {!isSelected && p.selectedHood && (
-                      <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood!, hoodB: hood } }); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} className={`p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood!, hoodB: hood } }); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}>
                         <Scale className="w-3.5 h-3.5" />
                       </button>
                     )}

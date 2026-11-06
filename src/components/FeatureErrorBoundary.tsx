@@ -116,20 +116,20 @@ export class FeatureErrorBoundary extends Component<
         role="alert"
         aria-live="assertive"
         dir="rtl"
-        className={`rounded-2xl border border-amber-300/80 bg-amber-50/95 text-slate-900 shadow-sm ${
+        className={`rounded-2xl border border-amber-300/80 dark:border-amber-700/70 bg-amber-50/95 dark:bg-amber-950/60 text-slate-900 dark:text-slate-100 shadow-sm ${
           this.props.compact ? 'p-3 text-xs' : 'p-5 text-sm'
         }`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-2.5">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <h3 className="font-bold text-slate-900">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100">
                 اختلال موقت در بخش «{fName}»
               </h3>
-              <p className="mt-1 text-xs text-slate-700 leading-relaxed">
+              <p className="mt-1 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                 سایر بخش‌های رادار تهران بدون مشکل فعال هستند. کد پیگیری فنی:{' '}
-                <code className="font-mono text-[11px] bg-white/80 px-1.5 py-0.5 rounded border border-amber-200">
+                <code className="font-mono text-[11px] bg-white/80 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
                   {this.state.correlationId}
                 </code>
                 <FeatureErrorUnitContextBadge />
@@ -141,7 +141,7 @@ export class FeatureErrorBoundary extends Component<
               type="button"
               onClick={this.props.onDismissModal}
               aria-label="بستن این پنجره"
-              className="p-1.5 rounded-lg text-slate-600 hover:bg-amber-100 transition-colors"
+              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -159,7 +159,7 @@ export class FeatureErrorBoundary extends Component<
               تلاش مجدد امن ({MAX_SAFE_RETRIES - this.state.retryCount} فرصت باقی‌مانده)
             </button>
           ) : (
-            <span className="text-[11px] font-semibold text-rose-700">
+            <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-400">
               سقف تلاش مجدد خودکار برای جلوگیری از حلقه خطا تکمیل شد.
             </span>
           )}

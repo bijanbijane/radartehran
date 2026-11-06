@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
       ],
     },
     build: {
+      emptyOutDir: true,
+      minify: 'esbuild',
       // Task 494: Do not publish public source maps in production build artifacts.
       sourcemap: false,
       chunkSizeWarningLimit: 650,
@@ -73,6 +75,13 @@ export default defineConfig(({ mode }) => {
               id.includes('src/data/tehranCountiesHoods')
             ) {
               return 'data-neighborhoods';
+            }
+            if (
+              id.includes('src/components/views/') ||
+              id.includes('src/components/modals/') ||
+              id.includes('src/components/layout/')
+            ) {
+              return 'ui-product-views';
             }
             return undefined;
           },

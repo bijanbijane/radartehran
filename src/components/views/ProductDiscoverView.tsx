@@ -54,7 +54,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
       if (sortBy === 'score') return b.overallScore - a.overallScore;
       if (sortBy === 'air') return b.air - a.air;
       if (sortBy === 'rahn_asc') return a.rahn80m - b.rahn80m;
-      if (sortBy === 'price_asc') return a.buyPerSqm - b.buyPerSqm;
+      if (sortBy === 'price_asc') return aggregateNeighborhoodMarketMetrics(a.id, a.name, a.buyPerSqm, []).estimatedDealPricePerSqm - aggregateNeighborhoodMarketMetrics(b.id, b.name, b.buyPerSqm, []).estimatedDealPricePerSqm;
       return b.buyPerSqm - a.buyPerSqm;
     });
   }, [p.evaluatedNeighborhoods, inViewportHoods, filterRankingByViewport, statusFilter, zoneFilter, onlyFavorites, onlyWithBargains, p.favoriteHoodIds, query, sortBy]);
@@ -94,8 +94,8 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
             📍 {isEn ? `Map Viewport (${inViewportHoods.length})` : `فقط کادر نقشه (${toPersianNum(inViewportHoods.length)})`}
           </button>
           <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 bg-slate-50/80 dark:bg-slate-900/80">
-            <button type="button" onClick={() => setLayoutMode('grid')} title="نمای شبکه‌ای" className={`p-1.5 rounded-md transition cursor-pointer ${layoutMode === 'grid' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}><LayoutGrid className="w-3.5 h-3.5" /></button>
-            <button type="button" onClick={() => setLayoutMode('list')} title="نمای فهرستی" className={`p-1.5 rounded-md transition cursor-pointer ${layoutMode === 'list' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}><List className="w-3.5 h-3.5" /></button>
+            <button type="button" onClick={() => setLayoutMode('grid')} title="نمای شبکه‌ای" aria-label="نمای شبکه‌ای" className={`p-1.5 rounded-md transition cursor-pointer ${layoutMode === 'grid' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}><LayoutGrid className="w-3.5 h-3.5" /></button>
+            <button type="button" onClick={() => setLayoutMode('list')} title="نمای فهرستی" aria-label="نمای فهرستی" className={`p-1.5 rounded-md transition cursor-pointer ${layoutMode === 'list' ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}><List className="w-3.5 h-3.5" /></button>
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-400 text-[11px]">{isEn ? 'District:' : 'منطقه شهرداری:'}</span>
-            <select value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)} className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+            <select aria-label={isEn ? 'Filter by district' : 'فیلتر بر اساس منطقه شهرداری'} value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)} className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
               <option value="all">{isEn ? 'All Districts' : 'تمام مناطق'}</option>
               {zones.map((z) => (<option key={z} value={z}>{z}</option>))}
             </select>
@@ -138,7 +138,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           </div>
           <div className="flex items-center gap-2">
             <span className="text-slate-400 text-[11px]">{isEn ? 'Sort by:' : 'ترتیب نمایش:'}</span>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
+            <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
               <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option>
               <option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت معامله v6.4'}</option>
               <option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option>
@@ -252,9 +252,9 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                     <span className="font-black text-emerald-600 dark:text-emerald-400">{toPersianNum(hood.rahn80m)} م</span>
                   </div>
                   <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={isFav ? `حذف ${hood.name} از منتخب‌ها` : `افزودن ${hood.name} به منتخب‌ها`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 border-rose-200 text-rose-600' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-700'}`}><Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} /></button>
-                  {!isSelected && <button type="button" onClick={(e) => { e.stopPropagation(); toggleComparisonArc(hood); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}><Scale className="w-3.5 h-3.5" /></button>}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenCompare(p.selectedHood.id, hood.id); }} title="مقایسه دو محله" className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"><ArrowLeftRight className="w-3.5 h-3.5" /></button>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition font-bold cursor-pointer">کارنامه</button>
+                  {!isSelected && <button type="button" onClick={(e) => { e.stopPropagation(); toggleComparisonArc(hood); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}><Scale className="w-3.5 h-3.5" /></button>}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenCompare(p.selectedHood.id, hood.id); }} title="مقایسه دو محله" aria-label={`مقایسه ${hood.name} با ${p.selectedHood.name}`} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"><ArrowLeftRight className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition font-bold cursor-pointer">کارنامه</button>
                 </div>
               </div>
             );

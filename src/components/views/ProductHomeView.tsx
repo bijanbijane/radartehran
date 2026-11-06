@@ -222,6 +222,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                             });
                           }}
                           title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`}
+                          aria-label={`کمان مقایسه ${hood.name} روی نقشه`}
                           className={`p-1.5 rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}
                         >
                           <Scale className="w-3.5 h-3.5" />

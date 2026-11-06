@@ -165,20 +165,20 @@ export function PWAOfflineStatusBanner({
 
   if (deferredPwaPrompt && !isStandalone && !dismissedInstallPill) {
     return (
-      <div className="fixed bottom-20 lg:bottom-5 left-4 z-30 apple-vibrancy-bar rounded-xl px-3 py-2 shadow-md border border-emerald-500/30 flex items-center gap-2 text-xs pointer-events-auto">
+      <div className="fixed bottom-20 lg:bottom-5 left-4 z-30 apple-vibrancy-bar dark:bg-slate-900/90 rounded-xl px-3 py-2 shadow-md border border-emerald-500/30 dark:border-emerald-700/50 flex items-center gap-2 text-xs pointer-events-auto">
         <button
           type="button"
           onClick={onTriggerPwaInstall}
-          className="flex items-center gap-1.5 font-extrabold text-emerald-800 hover:text-emerald-600 cursor-pointer"
+          className="flex items-center gap-1.5 font-extrabold text-emerald-800 dark:text-emerald-300 hover:text-emerald-600 dark:hover:text-emerald-200 cursor-pointer"
         >
-          <Download className="w-3.5 h-3.5 stroke-[2] text-emerald-600" />
+          <Download className="w-3.5 h-3.5 stroke-[2] text-emerald-600 dark:text-emerald-400" />
           <span>نصب وب‌اپ رادار (کاوش آفلاین)</span>
         </button>
         <button
           type="button"
           aria-label="بستن پیشنهاد نصب"
           onClick={() => setDismissedInstallPill(true)}
-          className="p-0.5 rounded-md text-slate-400 hover:text-slate-600 cursor-pointer"
+          className="p-0.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
         >
           <X className="w-3.5 h-3.5" />
         </button>

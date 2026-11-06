@@ -98,8 +98,8 @@ export function AdminMonetizationCard({
       <div
         className={`rounded-2xl border p-4 space-y-3 transition ${
           enableSponsorBilling
-            ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
-            : 'bg-sky-50/80 border-sky-200 text-sky-950'
+            ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-100'
+            : 'bg-sky-50/80 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/60 text-sky-950 dark:text-sky-100'
         }`}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -107,12 +107,12 @@ export function AdminMonetizationCard({
             <div className="font-extrabold text-sm flex items-center gap-1.5">
               {enableSponsorBilling ? (
                 <>
-                  <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>💳 حالت فعلی: اشتراک ماهانه فعال (دریافت هزینه طبق تعرفه تعیین‌شده)</span>
                 </>
               ) : (
                 <>
-                  <Gift className="w-4 h-4 text-sky-600 shrink-0" />
+                  <Gift className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
                   <span>🟢 حالت فعلی: کاملاً رایگان (جذب حداکثری املاک و کاربران بدون دریافت هزینه)</span>
                 </>
               )}
@@ -129,7 +129,7 @@ export function AdminMonetizationCard({
             onClick={onToggleSponsorBilling}
             className={`px-3.5 py-2 rounded-xl font-extrabold text-xs transition cursor-pointer shadow-xs shrink-0 flex items-center gap-1.5 ${
               enableSponsorBilling
-                ? 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-300'
+                ? 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white'
             }`}
           >
@@ -143,17 +143,17 @@ export function AdminMonetizationCard({
         </div>
 
         {/* Campaign Discount Slider (0% to 100%) */}
-        <div className="bg-white/90 border border-slate-200/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-700 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Percent className="w-4 h-4 text-emerald-600 shrink-0" />
+            <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <div>
-              <div className="font-bold text-slate-900 text-xs">
+              <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                 تخفیف کمپین سراسری تعرفه تابلو محلات:{' '}
-                <strong className="text-emerald-700 tabular-nums">
+                <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">
                   {toPersianNum(campaignDiscountPercent)}٪ تخفیف
                 </strong>
               </div>
-              <div className="text-[10.5px] text-slate-500">
+              <div className="text-[10.5px] text-slate-500 dark:text-slate-400">
                 اعمال تخفیف مناسبتی روی تعرفه ماهانه تمام محلات (۱۰۰٪ = کمپین رایگان ویژه)
               </div>
             </div>
@@ -169,7 +169,7 @@ export function AdminMonetizationCard({
               onChange={(e) => handleDiscountChange(Number(e.target.value))}
               className="flex-1 accent-emerald-600 cursor-pointer"
             />
-            <span className="text-xs font-black text-slate-800 w-10 text-left tabular-nums">
+            <span className="text-xs font-black text-slate-800 dark:text-slate-200 w-10 text-left tabular-nums">
               {toPersianNum(campaignDiscountPercent)}٪
             </span>
           </div>
@@ -178,14 +178,14 @@ export function AdminMonetizationCard({
 
       {/* Active Neighborhood Sponsors Lifecycle Management (Extend 30d / Release) */}
       {(onExtendSponsor30Days || onReleaseHoodSponsor) && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-3 space-y-2">
-          <div className="font-extrabold text-slate-800 text-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2">
+          <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center justify-between">
             <span>مدیریت تابلوهای فعال محلات (تمدید ۳۰ روزه / آزادسازی تابلو)</span>
-            <span className="text-[10.5px] text-slate-500 font-normal">
+            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-normal">
               {toPersianNum(neighborhoods.length)} محله در شهر فعال
             </span>
           </div>
-          <div className="max-h-36 overflow-y-auto divide-y divide-slate-100 pr-1">
+          <div className="max-h-36 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 pr-1">
             {neighborhoods.map((n) => {
               const active = isSponsorActive(n.sponsor, enableSponsorBilling);
               const discountedTariff = getHoodMonthlySponsorTariff(n);
@@ -195,11 +195,11 @@ export function AdminMonetizationCard({
                   className="py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-bold text-slate-900">{n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد): · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م</span>
-                    <span className="text-slate-600 truncate">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد): · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م</span>
+                    <span className="text-slate-600 dark:text-slate-300 truncate">
                       {active ? n.sponsor?.name : 'تابلو آزاد / منقضی'}
                     </span>
-                    <span className="text-emerald-700 font-bold tabular-nums">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
                       ({toPersianNum(discountedTariff)} م/ماه{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(discountedTariff, intlCurrency, radarLocale)}` : ''})
                     </span>
                   </div>
@@ -208,7 +208,7 @@ export function AdminMonetizationCard({
                       <button
                         type="button"
                         onClick={() => onExtendSponsor30Days(n.id)}
-                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold flex items-center gap-1 cursor-pointer"
+                        className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer"
                       >
                         <RefreshCw className="w-3 h-3" />
                         <span>تمدید ۳۰ روزه</span>
@@ -218,7 +218,7 @@ export function AdminMonetizationCard({
                       <button
                         type="button"
                         onClick={() => onReleaseHoodSponsor(n.id)}
-                        className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold flex items-center gap-1 cursor-pointer"
+                        className="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold flex items-center gap-1 cursor-pointer"
                       >
                         <Unlock className="w-3 h-3" />
                         <span>آزادسازی تابلو</span>

@@ -112,32 +112,32 @@ export function BuyerPriceThresholdManagerSection({
   const uDefault = dealType === 'خرید' ? convertPricePerSqmToUnit(defaultThreshold, areaUnit) : defaultThreshold;
   const uInput = dealType === 'خرید' ? convertPricePerSqmToUnit(thresholdInput, areaUnit) : thresholdInput; const uDealDefault = currentHood && dealType === 'خرید' ? convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(currentHood.id, currentHood.name, currentHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit) : 0;
   return (
-    <div className="apple-grouped-card p-3.5 space-y-3 text-xs border border-emerald-200/80">
-      <div className="flex items-center justify-between border-b border-slate-200/70 pb-2">
-        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-          <BellRing className="w-4 h-4 text-emerald-600 shrink-0" />
+    <div className="apple-grouped-card dark:bg-slate-800/60 p-3.5 space-y-3 text-xs border border-emerald-200/80 dark:border-emerald-800/70">
+      <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-700 pb-2">
+        <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <BellRing className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>اشتراک هوشمند سقف قیمت محله (پایش زنده و اعلان پایدار)</span>
         </div>
-        <span className="text-[10.5px] font-bold text-emerald-700 tabular-nums">
+        <span className="text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
           {toPersianNum(subscriptions.length)} پایش فعال
         </span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
         <div className="sm:col-span-8">
-          <label className="block text-[11px] text-slate-600 mb-1 flex items-center justify-between">
+          <label className="block text-[11px] text-slate-600 dark:text-slate-300 mb-1 flex items-center justify-between">
             <span>
               {dealType === 'خرید'
                 ? `سقف قیمت ${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'} در ${currentHood?.name || 'محله'} (میلیون تومان):`
                 : `سقف رهن کامل ${formatAreaShort(80, areaUnit)} در ${currentHood?.name || 'محله'} (میلیون تومان):`}
             </span>
-            <strong className="text-emerald-700 tabular-nums">
+            <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">
               فعلی محله: {toPersianNum(uDefault)} م{uDealDefault > 0 ? ` (معامله: ${toPersianNum(uDealDefault)} م)` : ''}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDefault, intlCurrency, locale)})` : ''} · سقف انتخابی: {toPersianNum(uInput)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uInput, intlCurrency, locale)})` : ''}
             </strong>
           </label>
           <input
             type="number" min={10} max={50000} step={dealType === 'خرید' ? 2 : 25} value={thresholdInput}
             onChange={(e) => setThresholdInput(clampNumber(Number(e.target.value), 10, 50000, defaultThreshold))}
-            className="w-full bg-slate-100/80 border border-slate-200/80 rounded-lg px-3 py-2 text-slate-900 font-black tabular-nums focus:outline-none focus:bg-white focus:border-emerald-600"
+            className="w-full bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-black tabular-nums focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-600"
           />
         </div>
         <div className="sm:col-span-4">
@@ -154,13 +154,13 @@ export function BuyerPriceThresholdManagerSection({
         <BuyerAlertPriceSparkline neighborhood={currentHood} dealType={dealType} maxThresholdMillion={thresholdInput} />
       )}
       {justSavedNotice && (
-        <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center gap-1.5">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+        <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{justSavedNotice}</span>
         </div>
       )}
       {subscriptions.length > 0 && (
-        <div className="space-y-1.5 pt-1 border-t border-slate-200/60 max-h-40 overflow-y-auto">
+        <div className="space-y-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-700 max-h-40 overflow-y-auto">
           {subscriptions.map((sub) => {
             const match = allMatches.find((m) => m.subscription.id === sub.id);
             const subHood = neighborhoods.find((n) => n.id === sub.hoodId);
@@ -170,19 +170,19 @@ export function BuyerPriceThresholdManagerSection({
             return (
               <div
                 key={sub.id}
-                className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200/80 rounded-lg px-2.5 py-1.5 text-[11px]"
+                className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px]"
               >
                 <div className="min-w-0 truncate">
-                  <strong className="text-slate-900">{sub.hoodName}</strong>
+                  <strong className="text-slate-900 dark:text-white">{sub.hoodName}</strong>
                   <span className="text-slate-400 mx-1">·</span>
-                  <span className="text-slate-600">
+                  <span className="text-slate-600 dark:text-slate-300">
                     {sub.dealType === 'خرید' ? `سقف ${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(uSubMax)} م (کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((sub.maxThresholdMillion * 80) / 1000).toFixed(1))} میلیارد)` : `سقف رهن ${toPersianNum(uSubMax)} م (اجاره معادل: ${toPersianNum(Math.round(uSubMax * 0.03))} م)`}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uSubMax, intlCurrency, locale)})` : ''}
                   </span>
                   <span className="text-slate-400 mx-1">·</span>
                   {match ? (
-                    <span className="text-emerald-700 font-extrabold">تطابق فعال ({toPersianNum(uObs)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uObs, intlCurrency, locale)}` : ''})</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">تطابق فعال ({toPersianNum(uObs)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uObs, intlCurrency, locale)}` : ''})</span>
                   ) : (
-                    <span className="text-amber-700 font-semibold">در انتظار کاهش قیمت{subHood ? ` (فعلی: ${toPersianNum(uCur)} م)` : ''}</span>
+                    <span className="text-amber-700 dark:text-amber-400 font-semibold">در انتظار کاهش قیمت{subHood ? ` (فعلی: ${toPersianNum(uCur)} م)` : ''}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -193,7 +193,7 @@ export function BuyerPriceThresholdManagerSection({
                   )}
                   <button
                     type="button" onClick={() => onRemoveSubscription(sub.id)} title="حذف اشتراک سقف قیمت"
-                    className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer shrink-0"
+                    className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 cursor-pointer shrink-0"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -223,7 +223,7 @@ export function PersistentPriceThresholdMatchBanner({
     <div
       role="status"
       aria-live="polite"
-      className="fixed z-40 bottom-20 lg:bottom-6 left-3 right-3 lg:right-auto lg:w-[420px] apple-window-sheet border-2 border-emerald-500/80 rounded-2xl p-3.5 shadow-2xl space-y-2 text-xs"
+      className="fixed z-40 bottom-20 lg:bottom-6 left-3 right-3 lg:right-auto lg:w-[420px] apple-window-sheet bg-white dark:bg-slate-900 border-2 border-emerald-500/80 rounded-2xl p-3.5 shadow-2xl space-y-2 text-xs text-slate-900 dark:text-slate-100"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -231,11 +231,11 @@ export function PersistentPriceThresholdMatchBanner({
             <BellRing className="w-4 h-4 stroke-[2]" />
           </span>
           <div className="min-w-0">
-            <div className="font-black text-slate-900 truncate">
+            <div className="font-black text-slate-900 dark:text-white truncate">
               تطابق سقف قیمت در محله {topMatch.subscription.hoodName}
               {extraCount > 0 ? ` (+${toPersianNum(extraCount)} مورد دیگر)` : ''}
             </div>
-            <div className="text-[10.5px] text-emerald-700 font-bold tabular-nums">
+            <div className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">
               {topMatch.subscription.dealType === 'خرید'
                 ? `نرخ کشف‌شده: ${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(uTopObs)} م · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((topMatch.observedMillion * 80) / 1000).toFixed(1))} میلیارد (سقف شما: ${toPersianNum(convertPricePerSqmToUnit(topMatch.subscription.maxThresholdMillion, areaUnit))} م)${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uTopObs, intlCurrency, locale)}` : ''}`
                 : `رهن کشف‌شده (${formatAreaShort(80, areaUnit)}): ${toPersianNum(uTopObs)} م · اجاره معادل: ${toPersianNum(Math.round(uTopObs * 0.03))} م (سقف شما: ${toPersianNum(topMatch.subscription.maxThresholdMillion)} م)${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uTopObs, intlCurrency, locale)}` : ''}`}
@@ -245,12 +245,12 @@ export function PersistentPriceThresholdMatchBanner({
         <button
           type="button"
           aria-label="بستن اعلان تطابق قیمت"
-          onClick={() => onDismissMatch(topMatch.matchKey)} className="p-1 rounded-full bg-slate-200/80 hover:bg-slate-300/80 text-slate-600 cursor-pointer shrink-0"
+          onClick={() => onDismissMatch(topMatch.matchKey)} className="p-1 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer shrink-0"
         >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
-      <p className="text-[11px] text-slate-600 leading-relaxed">
+      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
         {topMatch.matchedSource === 'bargain_listing' && topMatch.bargainTitle
           ? `فایل زیر قیمت «${topMatch.bargainTitle}» (${toPersianNum(topMatch.discountPercent)}٪ زیر میانگین) در آستانه قیمت انتخابی شما قرار دارد.`
           : `میانگین فعلی محله ${topMatch.subscription.hoodName} در محدوده سقف قیمت ثبت‌شده شما قرار دارد.`}
@@ -268,7 +268,7 @@ export function PersistentPriceThresholdMatchBanner({
         </button>
         <button
           type="button"
-          onClick={onOpenAlertModal} className="py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition cursor-pointer shrink-0"
+          onClick={onOpenAlertModal} className="py-1.5 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] transition cursor-pointer shrink-0"
         >
           مدیریت هشدارها
         </button>

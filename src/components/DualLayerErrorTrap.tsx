@@ -148,26 +148,26 @@ class RenderPhaseErrorBoundary extends React.Component<
           dir="rtl"
           role="alert"
           aria-live="assertive"
-          className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6"
+          className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center p-6"
         >
-          <div className="bg-white border border-rose-200 rounded-3xl max-w-lg w-full p-6 text-center space-y-4 shadow-xl">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center mx-auto font-black text-lg">
+          <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-3xl max-w-lg w-full p-6 text-center space-y-4 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 flex items-center justify-center mx-auto font-black text-lg">
               !
             </div>
-            <h2 className="text-lg font-extrabold text-rose-700">
+            <h2 className="text-lg font-extrabold text-rose-700 dark:text-rose-400">
               محافظ خطای رندر (رادار مسکن تهران)
             </h2>
-            <p className="text-[11px] text-slate-500 tabular-nums">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
               واحد فعال: {formatAreaUnitLabel(activeUnit)} ({toPersianNum(refUnitBuy)} م) · ارز: {activeCurrency}
               {activeCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(refUnitBuy, activeCurrency, activeLocale)})` : ''} · معیار {formatAreaShort(80, activeUnit)}: {toPersianNum(sample80mTotalMillions)} م{activeCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sample80mTotalMillions, activeCurrency, activeLocale)})` : ''} · اجاره ماهانه: {toPersianNum(sampleMonthlyRentMillions)} م
             </p>
             {!import.meta.env.PROD && this.state.errorSource && (
-              <div dir="ltr" className="text-xs font-mono text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+              <div dir="ltr" className="text-xs font-mono text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-1.5">
                 Source: {this.state.errorSource}
               </div>
             )}
             {this.state.errorMsg && (
-              <div className="bg-rose-50/70 border border-rose-200 rounded-xl px-3 py-2 text-xs text-rose-900 font-bold text-right break-words">
+              <div className="bg-rose-50/70 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl px-3 py-2 text-xs text-rose-900 dark:text-rose-200 font-bold text-right break-words">
                 {this.state.errorMsg}
               </div>
             )}
@@ -190,7 +190,7 @@ class RenderPhaseErrorBoundary extends React.Component<
               <button
                 type="button"
                 onClick={this.handleFullCacheReset}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer transition"
               >
                 بازنشانی حافظه موقت و بارگذاری مجدد
               </button>

@@ -7,18 +7,19 @@ import {
   calculateTehranAgeFactor,
 } from '../../utils/persianFinancials';
 import { useDialogFocus } from '../useDialogFocus';
+import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 import {
+  convertPricePerSqmToUnit,
   formatAreaShort,
   formatMillionTomanAsIntlCurrency,
-  getStoredAreaUnit,
-  getStoredIntlCurrency,
-  getStoredRadarLocale,
 } from '../../utils/areaUnit';
 
 export interface HoodDiscoverySummary {
   id: string;
   nameFa: string;
   districtNumber: number;
+  zoneLabel?: string;
   avgPricePerSqmMillion: number;
 }
 
@@ -26,7 +27,7 @@ interface ReverseBudgetDiscoveryModalProps {
   isOpen: boolean;
   onClose: () => void;
   neighborhoods: ReadonlyArray<HoodDiscoverySummary>;
-  onSelectNeighborhood: (hoodId: string, budgetMillion?: number, areaSqm?: number) => void;
+  onSelectNeighborhood: (hoodId: string, budgetMillion?: number, areaSqm?: number, maxBuildingAgeYears?: number) => void;
 }
 
 const BUDGET_PRESETS_MILLION = [
@@ -43,9 +44,9 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
   onSelectNeighborhood,
 }) => {
   const dialogRef = useDialogFocus(isOpen, onClose);
-  const areaUnit = getStoredAreaUnit();
-  const intlCurrency = getStoredIntlCurrency();
-  const radarLocale = getStoredRadarLocale();
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const { totalBudgetMillion, desiredAreaSqm, maxBuildingAgeYears, setBudgetFilter } = useComparisonFilter();
 
@@ -59,7 +60,12 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
     return neighborhoods
       .map((hood) => {
         const effectiveSqmPrice = Math.round(hood.avgPricePerSqmMillion * ageFactor.multiplier);
-        const estimatedDealSqmPrice = Math.round(effectiveSqmPrice * 0.94);
+        const estimatedDealSqmPrice = aggregateNeighborhoodMarketMetrics(
+          Number(hood.id) || 1,
+          hood.nameFa,
+          effectiveSqmPrice,
+          []
+        ).estimatedDealPricePerSqm;
         const estimatedTotal = Math.round(effectiveSqmPrice * desiredAreaSqm);
         const ratio = estimatedTotal / totalBudgetMillion;
         const status: 'AFFORDABLE' | 'STRETCH' | 'OUT_OF_REACH' =
@@ -98,7 +104,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-slate-900 dark:text-white shadow-2xl outline-none"
       >
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <span className="text-[11px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase block mb-0.5">
               {isEn ? 'Budget-to-Map Geospatial Match' : 'تطبیق توان مالی با نقشه شهر'}
@@ -107,14 +113,17 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               {isEn ? 'Where can I buy a home with my budget?' : 'با بودجه من کجای شهر می‌توانم خانه بخرم؟'}
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={isEn ? 'Close' : 'بستن'}
-            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-1.5">
+            <AreaUnitToggle compact showIntlControls />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={isEn ? 'Close' : 'بستن'}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -197,39 +206,44 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               {isEn ? 'No neighborhoods found within average price range for this budget. Try adjusting area or building age.' : 'با این بودجه و متراژ، محله‌ای در محدوده قیمت میانگین یافت نشد. متراژ را کاهش دهید یا سن بنا را افزایش دهید.'}
             </div>
           ) : (
-            rankedMatches.map((hood) => (
-              <div
-                key={hood.id}
-                className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3.5 hover:border-slate-900 dark:hover:border-white transition"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">{hood.nameFa}</span>
-                    <span className="text-[11px] text-slate-400">{isEn ? `Dist. ${fmt.format(hood.districtNumber)}` : `منطقه ${fmt.format(hood.districtNumber)}`}</span>
-                    <span className="text-[11px] font-semibold">
-                      {hood.status === 'AFFORDABLE' ? (
-                        <span className="text-emerald-600 dark:text-emerald-400">{isEn ? '● Within Budget' : '● همخوان با بودجه'}</span>
-                      ) : (
-                        <span className="text-amber-600 dark:text-amber-400">{isEn ? '● Negotiable (up to 12%)' : '● نیازمند چانه‌زنی (تا ۱۲٪)'}</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                    {isEn ? `Asking: ${fmt.format(hood.effectiveSqmPrice)}M` : `متری ${fmt.format(hood.effectiveSqmPrice)} م`} · <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{isEn ? `Deal v6.4: ${fmt.format(hood.estimatedDealSqmPrice)}M` : `معامله v6.4: ${fmt.format(hood.estimatedDealSqmPrice)} م`}</span> · {isEn ? `Unit Total: ${fmt.format(hood.estimatedTotalMillion)}M` : `کل واحد: ${formatMillionToVerbalPersian(hood.estimatedTotalMillion)}`}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectNeighborhood(hood.id, totalBudgetMillion, desiredAreaSqm);
-                    onClose();
-                  }}
-                  className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1.5 text-xs font-bold text-white dark:text-slate-900 hover:opacity-90 cursor-pointer transition shrink-0"
+            rankedMatches.map((hood) => {
+              const uAsk = convertPricePerSqmToUnit(hood.effectiveSqmPrice, areaUnit);
+              const uDeal = convertPricePerSqmToUnit(hood.estimatedDealSqmPrice, areaUnit);
+              const uLabel = areaUnit === 'sqft' ? (isEn ? '/ft²' : 'هر ft² ') : (isEn ? '/m²' : 'متری ');
+              return (
+                <div
+                  key={hood.id}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3.5 hover:border-slate-900 dark:hover:border-white transition"
                 >
-                  {isEn ? 'Inspect' : 'بررسی'}
-                </button>
-              </div>
-            ))
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">{hood.nameFa}</span>
+                      <span className="text-[11px] text-slate-400">{hood.zoneLabel || (isEn ? `Dist. ${fmt.format(hood.districtNumber)}` : `منطقه ${fmt.format(hood.districtNumber)}`)}</span>
+                      <span className="text-[11px] font-semibold">
+                        {hood.status === 'AFFORDABLE' ? (
+                          <span className="text-emerald-600 dark:text-emerald-400">{isEn ? '● Within Budget' : '● همخوان با بودجه'}</span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400">{isEn ? '● Negotiable (up to 12%)' : '● نیازمند چانه‌زنی (تا ۱۲٪)'}</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                      {isEn ? `Asking: ${fmt.format(uAsk)}M${uLabel}` : `${uLabel}${fmt.format(uAsk)} م`} · <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{isEn ? `Deal v6.4: ${fmt.format(uDeal)}M` : `معامله v6.4: ${fmt.format(uDeal)} م`}</span> · {isEn ? `Unit Total: ${fmt.format(hood.estimatedTotalMillion)}M` : `کل واحد: ${formatMillionToVerbalPersian(hood.estimatedTotalMillion)}`}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectNeighborhood(hood.id, totalBudgetMillion, desiredAreaSqm, maxBuildingAgeYears);
+                      onClose();
+                    }}
+                    className="rounded-lg bg-slate-900 dark:bg-white px-3 py-1.5 text-xs font-bold text-white dark:text-slate-900 hover:opacity-90 cursor-pointer transition shrink-0"
+                  >
+                    {isEn ? 'Inspect' : 'بررسی'}
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
       </div>

@@ -194,7 +194,7 @@ export function BuyerAlertPriceSparkline({
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <span className="text-[10px] text-slate-500 tabular-nums hidden sm:inline">
+        <span className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums hidden sm:inline">
           ۶ماهه: +{toPersianNum(series.growth6mPercent)}٪
         </span>
       </div>
@@ -202,18 +202,18 @@ export function BuyerAlertPriceSparkline({
   }
 
   return (
-    <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl p-2.5 space-y-1.5">
-      <div className="flex items-center justify-between text-[10.5px] text-slate-600 tabular-nums">
-        <span className="font-bold text-slate-800">
+    <div className="bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-xl p-2.5 space-y-1.5">
+      <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-slate-300 tabular-nums">
+        <span className="font-bold text-slate-800 dark:text-slate-100">
           روند ۶ ماهه {neighborhood.name} ({dealType === 'خرید' ? (areaUnit === 'sqft' ? 'هر ft²' : 'هر متر') : `رهن ${formatAreaShort(80, areaUnit)}`}):
         </span>
         <div className="flex items-center gap-2">
           <span>
             {fmtVal(series.startMillion)} {unitSuffix}{fmtFx(series.startMillion)} ←{' '}
-            <strong className="text-slate-900">{fmtVal(series.endMillion)} {unitSuffix}</strong>
+            <strong className="text-slate-900 dark:text-slate-100">{fmtVal(series.endMillion)} {unitSuffix}</strong>
             {fmtFx(series.endMillion)}{dealType === 'خرید' ? ` (معامله v6.4: ${toPersianNum(uDealEnd)} ${unitSuffix})` : ''}
           </span>
-          <span className="text-emerald-700 font-extrabold">
+          <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">
             ({series.growth6mPercent >= 0 ? `+${toPersianNum(series.growth6mPercent)}` : toPersianNum(series.growth6mPercent)}٪ · {series.endMillion >= series.startMillion ? '+' : '-'}{fmtVal(Math.abs(series.endMillion - series.startMillion))} {unitSuffix}{fmtFx(Math.abs(series.endMillion - series.startMillion))})
           </span>
         </div>
@@ -238,14 +238,14 @@ export function BuyerAlertPriceSparkline({
                 return (
                   <div
                     dir="rtl"
-                    className="apple-grouped-card bg-white/95 border border-slate-200/90 rounded-lg px-2 py-1 text-[10px] shadow-md tabular-nums"
+                    className="apple-grouped-card bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 rounded-lg px-2 py-1 text-[10px] shadow-md tabular-nums"
                   >
-                    <span className="font-bold text-slate-900">{pt.month}: </span>
-                    <strong className="text-emerald-700">{fmtVal(pt.priceMillion)} {unitSuffix}</strong>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{pt.month}: </span>
+                    <strong className="text-emerald-700 dark:text-emerald-400">{fmtVal(pt.priceMillion)} {unitSuffix}</strong>
                     {fmtFx(pt.priceMillion)}
-                    <span className="text-slate-500"> ({dealType === 'خرید' ? `کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((pt.priceMillion * 80) / 1000).toFixed(1))} میلیارد` : `اجاره: ${toPersianNum(Math.round(pt.priceMillion * 0.03))} م`})</span>
+                    <span className="text-slate-500 dark:text-slate-400"> ({dealType === 'خرید' ? `کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((pt.priceMillion * 80) / 1000).toFixed(1))} میلیارد` : `اجاره: ${toPersianNum(Math.round(pt.priceMillion * 0.03))} م`})</span>
                     <span className="text-slate-400 mx-1">|</span>
-                    <span className="text-slate-600">سقف شما: {fmtVal(pt.thresholdMillion)} {unitSuffix}{fmtFx(pt.thresholdMillion)}</span>
+                    <span className="text-slate-600 dark:text-slate-300">سقف شما: {fmtVal(pt.thresholdMillion)} {unitSuffix}{fmtFx(pt.thresholdMillion)}</span>
                   </div>
                 );
               }}
@@ -265,12 +265,12 @@ export function BuyerAlertPriceSparkline({
         </ResponsiveContainer>
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-slate-500 tabular-nums">
+      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-0.5 bg-emerald-600 inline-block rounded" />
           <span>منحنی قیمت ۶ ماه اخیر</span>
         </span>
-        <span className="flex items-center gap-1 text-sky-700 font-semibold">
+        <span className="flex items-center gap-1 text-sky-700 dark:text-sky-400 font-semibold">
           <span className="w-2.5 h-0 border-b border-dashed border-sky-600 inline-block" />
           <span>خط سقف انتخابی شما ({fmtVal(maxThresholdMillion)} {unitSuffix}{showIntl ? ` • ${formatMillionTomanAsIntlCurrency(dealType === 'خرید' ? convertPricePerSqmToUnit(maxThresholdMillion, areaUnit) : maxThresholdMillion, currency, locale)}` : ''})</span>
         </span>

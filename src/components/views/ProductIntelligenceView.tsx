@@ -211,7 +211,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           <div className="relative w-full sm:w-64">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input type="text" value={segQuery} onChange={(e) => setSegQuery(e.target.value)} placeholder={isEn ? 'Filter segment...' : 'فیلتر سریع در این دسته...'} className="w-full pr-8 pl-6 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
-            {segQuery && <button type="button" onClick={() => setSegQuery('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
+            {segQuery && <button type="button" aria-label="پاک کردن فیلتر دسته" onClick={() => setSegQuery('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
           </div>
         </div>
 
@@ -237,11 +237,11 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">معامله v6.4 · امتیاز {toPersianNum(hood.overallScore)}/۱۰</div>
                   </div>
                   {!isSelected && (
-                    <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} className={`p-1.5 rounded-lg border text-[10px] font-bold cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border text-[10px] font-bold cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}>
                       <Scale className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
                     کارنامه ↗
                   </button>
                 </div>

@@ -252,12 +252,12 @@ export function ViewportLazyRender({
       ) : (
         <div
           aria-hidden="true"
-          className="w-full rounded-[12px] bg-slate-100/80 border border-slate-200/60 p-3.5 animate-pulse space-y-2"
+          className="w-full rounded-[12px] bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 p-3.5 animate-pulse space-y-2"
           style={{ minHeight: `${minHeightPx}px` }}
         >
-          <div className="h-3 w-2/5 bg-slate-200/90 rounded-md" />
-          <div className="h-4 w-4/5 bg-slate-200/90 rounded-md" />
-          <div className="h-8 w-full bg-slate-200/70 rounded-lg mt-2" />
+          <div className="h-3 w-2/5 bg-slate-200/90 dark:bg-slate-700/90 rounded-md" />
+          <div className="h-4 w-4/5 bg-slate-200/90 dark:bg-slate-700/90 rounded-md" />
+          <div className="h-8 w-full bg-slate-200/70 dark:bg-slate-700/70 rounded-lg mt-2" />
         </div>
       )}
     </div>

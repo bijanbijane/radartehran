@@ -136,18 +136,18 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
   };
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-4 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-4 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-emerald-600" />
+          <Bot className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           <div>
-            <div className="font-extrabold text-slate-900 text-sm">
+            <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
               مرکز هوش مصنوعی (AI Gateway) و تجارت داده و درآمدزایی (Data Commerce & x402)
             </div>
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
               معماری Cloudflare-First · Portable-by-Design · نسخه مسیریابی فعال سرور: v{toPersianNum(routingVersion)}
               {rmepSummary?.programId && (
-                <span className="mr-2 text-emerald-700 font-bold">
+                <span className="mr-2 text-emerald-700 dark:text-emerald-400 font-bold">
                   · {rmepSummary.programId} ({rmepSummary.programStatus} · SHA256:{' '}
                   {rmepSummary.masterPromptVerified ? 'VERIFIED' : 'PENDING'})
                 </span>
@@ -159,7 +159,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
           <button
             type="button"
             onClick={handleRollbackRouting}
-            className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-bold flex items-center gap-1 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>بازگشت به نسخه قبل (Rollback)</span>
@@ -175,24 +175,24 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
       </div>
 
       {statusMsg && (
-        <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold">
+        <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 font-bold">
           {statusMsg}
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* AI Model Routing */}
-        <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5">
-          <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-emerald-600" />
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
+          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>مسیریابی مدل‌های هوش مصنوعی به تفکیک جریان کاری</span>
           </div>
           {(Object.keys(WORKFLOW_LABELS_FA) as RadarAiWorkflowId[]).map((wf) => (
-            <div key={wf} className="flex flex-wrap items-center justify-between gap-2 py-1 border-b border-slate-100 last:border-0">
-              <span className="font-bold text-slate-700">{WORKFLOW_LABELS_FA[wf]}</span>
+            <div key={wf} className="flex flex-wrap items-center justify-between gap-2 py-1 border-b border-slate-100 dark:border-slate-800 last:border-0">
+              <span className="font-bold text-slate-700 dark:text-slate-200">{WORKFLOW_LABELS_FA[wf]}</span>
               <select
                 value={routes[wf]}
                 onChange={(e) => setRoutes((prev) => ({ ...prev, [wf]: e.target.value }))}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-mono text-slate-800"
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] font-mono text-slate-800 dark:text-slate-100"
               >
                 {OFFICIAL_AI_MODEL_REGISTRY.map((m) => (
                   <option key={m.modelId} value={m.modelId}>
@@ -203,9 +203,9 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
             </div>
           ))}
           {/* Controlled AI Search Test */}
-          <div className="pt-2 border-t border-slate-200 space-y-2">
-            <div className="font-bold text-slate-800 flex items-center gap-1">
-              <Search className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+            <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+              <Search className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>تست کنترل‌شده تبدیل جست‌وجوی فارسی به کوئری ساختاریافته:</span>
             </div>
             <div className="flex gap-1.5">
@@ -213,7 +213,7 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
                 type="text"
                 value={searchSample}
                 onChange={(e) => setSearchSample(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900"
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-900 dark:text-slate-100"
               />
               <button
                 type="button"
@@ -224,12 +224,12 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
               </button>
             </div>
             {searchTestResult?.structuredQuery && (
-              <div className="p-2.5 rounded-lg bg-amber-50/90 border border-amber-300 space-y-1">
-                <div className="font-mono font-extrabold text-[10px] text-amber-900 flex items-center gap-1">
+              <div className="p-2.5 rounded-lg bg-amber-50/90 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 space-y-1">
+                <div className="font-mono font-extrabold text-[10px] text-amber-900 dark:text-amber-300 flex items-center gap-1">
                   <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                   <span>{searchTestResult.structuredQuery.simulationBanner || MANDATORY_AI_SIMULATION_BANNER}</span>
                 </div>
-                <div className="text-[11px] text-slate-800">
+                <div className="text-[11px] text-slate-800 dark:text-slate-200">
                   شهر: <strong>{searchTestResult.structuredQuery.cityId}</strong> · منطقه:{' '}
                   <strong>{searchTestResult.structuredQuery.targetZone ?? 'همه'}</strong> · سقف {areaUnit === 'sqft' ? 'ft²' : 'متری'}:{' '}
                   <strong>{searchTestResult.structuredQuery.maxBuyPerSqmMillions ? `${toPersianNum(convertPricePerSqmToUnit(searchTestResult.structuredQuery.maxBuyPerSqmMillions, areaUnit))} ${areaUnit === 'sqft' ? 'م/ft²' : 'م'} (کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((searchTestResult.structuredQuery.maxBuyPerSqmMillions * 80) / 1000).toFixed(1))} میلیارد)${fxTag(convertPricePerSqmToUnit(searchTestResult.structuredQuery.maxBuyPerSqmMillions, areaUnit))}` : 'نامحدود'}</strong> · محلات منطبق:{' '}
@@ -240,17 +240,17 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
           </div>
         </div>
         {/* Commercial Data & x402 Simulator */}
-        <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5">
-          <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-            <Coins className="w-4 h-4 text-emerald-600" />
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
+          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <Coins className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>کاتالوگ محصولات داده تجاری، MCP و شبیه‌ساز x402</span>
           </div>
           <div className="space-y-2">
             {RADAR_COMMERCIAL_PRODUCTS.map((prod) => (
-              <div key={prod.productId} className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+              <div key={prod.productId} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
                 <div>
-                  <div className="font-bold text-slate-900">{prod.titleFa}</div>
-                  <div className="text-[10.5px] text-slate-500">
+                  <div className="font-bold text-slate-900 dark:text-slate-100">{prod.titleFa}</div>
+                  <div className="text-[10.5px] text-slate-500 dark:text-slate-400">
                     کد محصول: <code className="font-mono">{prod.productId}</code> · تعرفه هر درخواست:{' '}
                     <strong>{toPersianNum(prod.pricePerRequestToman)} تومان{fxTag(prod.pricePerRequestToman / 1_000_000)}</strong>
                   </div>
@@ -266,12 +266,12 @@ export function AdminCloudAiCommerceCenter(): React.ReactElement { const [areaUn
             ))}
           </div>
           {paymentSimResult?.simulation && (
-            <div className="p-2.5 rounded-lg bg-amber-50/90 border border-amber-300 space-y-1">
-              <div className="font-mono font-extrabold text-[10px] text-amber-900 flex items-center gap-1">
+            <div className="p-2.5 rounded-lg bg-amber-50/90 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 space-y-1">
+              <div className="font-mono font-extrabold text-[10px] text-amber-900 dark:text-amber-300 flex items-center gap-1">
                 <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                 <span>{paymentSimResult.simulation.simulationBanner || MANDATORY_PAYMENT_SIMULATION_BANNER}</span>
               </div>
-              <div className="text-[11px] text-slate-800">
+              <div className="text-[11px] text-slate-800 dark:text-slate-200">
                 محصول: <code className="font-mono">{paymentSimResult.simulation.productId}</code> · مبلغ شبیه‌سازی:{' '}
                 <strong>{toPersianNum(paymentSimResult.simulation.simulatedAmountToman)} تومان{fxTag(Number(paymentSimResult.simulation.simulatedAmountToman || 0) / 1_000_000)}</strong> · درآمد واقعی ثبت‌شده:{' '}
                 <strong>۰ تومان (تفکیک کامل از حسابداری واقعی)</strong>

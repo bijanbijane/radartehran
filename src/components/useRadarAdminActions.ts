@@ -153,7 +153,8 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) { const hand
       return;
     }
     try {
-      await persistHoodOverrideToCloud(hoodId, nextBuy, nextRahn);
+      const currentHood = p.neighborhoods.find((hood) => hood.id === hoodId) || targetSeed;
+      await persistHoodOverrideToCloud(hoodId, nextBuy, nextRahn, currentHood.sponsor);
       p.setNeighborhoods((prev) => {
         const exists = prev.some((n) => n.id === hoodId);
         if (!exists) return [...prev, { ...targetSeed, buyPerSqm: nextBuy, rahn80m: nextRahn }];

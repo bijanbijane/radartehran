@@ -143,6 +143,7 @@ service cloud.firestore {
       data.targetSqm is number && data.targetSqm >= 20 && data.targetSqm <= 1000 &&
       data.workHubId is string && data.workHubId.size() >= 1 && data.workHubId.size() <= 40 &&
       data.favoriteHoodIds is list && data.favoriteHoodIds.size() <= 25 &&
+      (data.favoriteHoodIds.size() == 0 || data.favoriteHoodIds[data.favoriteHoodIds.size() - 1] is number) &&
       everyFavoriteHoodIdIsValid(data.favoriteHoodIds) &&
       data.updatedAt is timestamp;
     }

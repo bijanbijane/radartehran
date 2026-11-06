@@ -1,4 +1,4 @@
-import { formatMillionTomanAsIntlCurrency } from './areaUnit';
+import { formatMillionTomanAsIntlCurrency } from './areaUnit.ts';
 
 export type ApiAccessPolicy = 'PUBLIC' | 'VERIFIED_USER' | 'RESOURCE_OWNER_OR_ADMIN' | 'ADMIN' | 'PRIMARY_ADMIN';
 export type ApiRouteMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -92,7 +92,7 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('POST', '/api/track-call', UT, 'PUBLIC', 20, 'call_track', true, 'Anonymized sponsor call click'),
 ];
 export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES;
-export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES;
+export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/'));
 export function registeredRouteCatalogLabel(): string {
   return formatMillionTomanAsIntlCurrency(REGISTERED_API_ROUTES.length, 'USD', 'en');
 }

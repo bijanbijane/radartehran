@@ -168,6 +168,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
               type="button"
               onClick={handleSwap}
               title="جابجایی دو محله"
+              aria-label="جابجایی دو محله"
               className="p-1.5 rounded-full bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 transition shrink-0 cursor-pointer shadow-2xs"
             >
               <ArrowLeftRight className="w-3.5 h-3.5 stroke-[2]" />

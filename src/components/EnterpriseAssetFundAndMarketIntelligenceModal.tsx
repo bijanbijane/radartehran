@@ -76,8 +76,8 @@ import { evaluateOwnershipSeparationRegistryAndTitleConflicts, evaluateSettlemen
   if (!open) return null;
   return (
     <div dir="rtl" role="dialog" aria-modal="true" aria-label="میز کار جامع بسته‌های ۱۱۸ تا ۱۳۱ (پرامپت‌های ۱۴۳۲ تا ۱۹۲۴)" onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-3 sm:p-5 overflow-y-auto">
-      <div ref={dialogRef} onClick={(e) => e.stopPropagation()} className="apple-window-sheet w-full max-w-6xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3">
+      <div ref={dialogRef} onClick={(e) => e.stopPropagation()} className="apple-window-sheet w-full max-w-6xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="px-5 py-3.5 bg-slate-900 dark:bg-slate-950 text-white flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <Building2 className="w-5 h-5 text-emerald-400 shrink-0" />
             <div>
@@ -85,9 +85,9 @@ import { evaluateOwnershipSeparationRegistryAndTitleConflicts, evaluateSettlemen
               <p className="text-[11px] text-slate-300">پرامپت‌های ۱۴۳۲ تا ۱۹۲۴ + موتور بارگذاری تنبل (Lazy Loading) لایه‌های GeoJSON بر اساس زوم و کادر دید</p>
             </div>
           </div>
-          <div className="flex items-center gap-2"><AreaUnitToggle compact showIntlControls /><button type="button" onClick={onClose} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"><X className="w-4 h-4" /></button></div>
+          <div className="flex items-center gap-2"><AreaUnitToggle compact showIntlControls /><button type="button" onClick={onClose} aria-label="بستن پنجره" className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"><X className="w-4 h-4" /></button></div>
         </div>
-        <div className="px-5 pt-2.5 pb-2 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-1 text-[10.5px] font-extrabold">
+        <div className="px-5 pt-2.5 pb-2 bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-1 text-[10.5px] font-extrabold">
           {[
             { id: 'b118_ops' as const, label: '🏢 ۱۱۸الف: CMMS', icon: Wrench }, { id: 'b118_noi' as const, label: '📊 ۱۱۸ب: NOI/TCO', icon: Coins },
             { id: 'b119_fund' as const, label: '💼 ۱۱۹: صندوق/IRR', icon: Briefcase }, { id: 'b120_market' as const, label: '🗺️ ۱۲۰+GeoJSON', icon: LineChart },
@@ -102,26 +102,26 @@ import { evaluateOwnershipSeparationRegistryAndTitleConflicts, evaluateSettlemen
             { id: 'b131_construction_delivery' as const, label: '🚧 ۱۳۱: پیمانکاران و تحویل', icon: HardHat }, ].map((t) => {
             const Icon = t.icon;
             return (
-              <button key={t.id} type="button" onClick={() => setActiveTab(t.id)} className={`px-2 py-1 rounded-xl flex items-center gap-1 border transition cursor-pointer ${activeTab === t.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}`}>
+              <button key={t.id} type="button" onClick={() => setActiveTab(t.id)} className={`px-2 py-1 rounded-xl flex items-center gap-1 border transition cursor-pointer ${activeTab === t.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                 <Icon className="w-3.5 h-3.5" />
                 <span>{t.label}</span>
               </button>
             );
           })}
         </div>
-        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-800">
+        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-800 dark:text-slate-200">
           {activeTab === 'b118_ops' && ( <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. دارایی، شناسنامه فنی و استهلاک حسابداری (۱۴۳۲–۱۴۳۵)</div>
-                <p className="text-[11px] text-slate-600">{b118OpsResult.techProfile.safetyDisclaimerFa}</p>
-                <div className="text-[11px]">ارزش دفتری: <strong>{toPersianNum(Math.round(b118OpsResult.depreciation.accountingCarryingValueToman / 1_000_000_000))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118OpsResult.depreciation.accountingCarryingValueToman / 1_000_000, currency, locale)})` : ''}</strong> | ارزش بازار: <strong className="text-emerald-700">{toPersianNum(Math.round(b118OpsResult.depreciation.currentMarketValuationToman / 1_000_000_000))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118OpsResult.depreciation.currentMarketValuationToman / 1_000_000, currency, locale)})` : ''}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. دارایی، شناسنامه فنی و استهلاک حسابداری (۱۴۳۲–۱۴۳۵)</div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">{b118OpsResult.techProfile.safetyDisclaimerFa}</p>
+                <div className="text-[11px]">ارزش دفتری: <strong>{toPersianNum(Math.round(b118OpsResult.depreciation.accountingCarryingValueToman / 1_000_000_000))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118OpsResult.depreciation.accountingCarryingValueToman / 1_000_000, currency, locale)})` : ''}</strong> | ارزش بازار: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(Math.round(b118OpsResult.depreciation.currentMarketValuationToman / 1_000_000_000))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118OpsResult.depreciation.currentMarketValuationToman / 1_000_000, currency, locale)})` : ''}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900">۲. تسهیم شارژ، کنتورها و کنترل شواهد (۱۴۳۷–۱۴۴۴)</span>
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">۲. تسهیم شارژ، کنتورها و کنترل شواهد (۱۴۳۷–۱۴۴۴)</span>
                   <div className="flex gap-1">
                     <button type="button" onClick={() => setViewerRole((r) => (r === 'TENANT' ? 'BUILDING_STAFF' : 'TENANT'))} className="px-2 py-0.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold cursor-pointer">{viewerRole === 'TENANT' ? 'مستأجر' : 'کارشناس'}</button>
-                    <button type="button" onClick={() => setHasCompletionEvidence((v) => !v)} className="px-2 py-0.5 rounded-lg bg-slate-800 text-white text-[10px] font-bold cursor-pointer">شواهد: {hasCompletionEvidence ? 'کامل' : 'ناقص'}</button>
+                    <button type="button" onClick={() => setHasCompletionEvidence((v) => !v)} className="px-2 py-0.5 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-[10px] font-bold cursor-pointer">شواهد: {hasCompletionEvidence ? 'کامل' : 'ناقص'}</button>
                   </div>
                 </div>
                 <div className="text-[11px]">تخصیص شارژ: <strong>{toPersianNum((b118OpsResult.charges.totalAllocatedToman ?? 0).toLocaleString())} ت{fxM((b118OpsResult.charges.totalAllocatedToman ?? 0) / 1_000_000)}</strong> | یادداشت داخلی: <strong>{b118OpsResult.cmmsAndTenant.sanitizedTicketView?.internalStaffNotes[0] || '🔒 مخفی'}</strong></div>
@@ -129,160 +129,160 @@ import { evaluateOwnershipSeparationRegistryAndTitleConflicts, evaluateSettlemen
             </div>
           )}
           {activeTab === 'b118_noi' && ( <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. درآمد عملیاتی خالص (NOI) و بازده دارایی (۱۴۵۰–۱۴۵۱)</div>
-                <div className="text-[11px]">NOI نقدی محقق‌شده: <strong className="text-emerald-700">{toPersianNum((b118NoiResult.noiAndYields.realizedCashNoiToman / 1_000_000_000).toFixed(1))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118NoiResult.noiAndYields.realizedCashNoiToman / 1_000_000, currency, locale)})` : ''}</strong> | Cap Rate بر ارزش بازار: <strong>{toPersianNum(b118NoiResult.noiAndYields.yields.netYieldCapRateOnMarketValuePercent ?? 0)}٪</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. درآمد عملیاتی خالص (NOI) و بازده دارایی (۱۴۵۰–۱۴۵۱)</div>
+                <div className="text-[11px]">NOI نقدی محقق‌شده: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum((b118NoiResult.noiAndYields.realizedCashNoiToman / 1_000_000_000).toFixed(1))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118NoiResult.noiAndYields.realizedCashNoiToman / 1_000_000, currency, locale)})` : ''}</strong> | Cap Rate بر ارزش بازار: <strong>{toPersianNum(b118NoiResult.noiAndYields.yields.netYieldCapRateOnMarketValuePercent ?? 0)}٪</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۲. TCO، بازرسی، بیمه و تصمیم تعمیر/تعویض (۱۴۴۵–۱۴۵۳)</div>
-                <div className="text-[11px]">TCO تنزیل‌شده (NPV): <strong>{toPersianNum(Math.round(b118NoiResult.tcoAndDecision.tcoSummary.discountedNpvTcoToman / 1_000_000_000))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118NoiResult.tcoAndDecision.tcoSummary.discountedNpvTcoToman / 1_000_000, currency, locale)})` : ''}</strong> | تصمیم چیلر: <strong className="text-emerald-700">{b118NoiResult.tcoAndDecision.equipmentDecision.recommendedAction}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۲. TCO، بازرسی، بیمه و تصمیم تعمیر/تعویض (۱۴۴۵–۱۴۵۳)</div>
+                <div className="text-[11px]">TCO تنزیل‌شده (NPV): <strong>{toPersianNum(Math.round(b118NoiResult.tcoAndDecision.tcoSummary.discountedNpvTcoToman / 1_000_000_000))} میلیارد ت{showIntl ? ` (${formatMillionTomanAsIntlCurrency(b118NoiResult.tcoAndDecision.tcoSummary.discountedNpvTcoToman / 1_000_000, currency, locale)})` : ''}</strong> | تصمیم چیلر: <strong className="text-emerald-700 dark:text-emerald-400">{b118NoiResult.tcoAndDecision.equipmentDecision.recommendedAction}</strong></div>
               </div>
             </div>
           )}
           {activeTab === 'b119_fund' && ( <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. مالکیت غیرمستقیم، فراخوان سرمایه و NAV صندوق (۱۴۷۱–۱۴۷۹)</div>
-                <div className="text-[11px]">سهم اقتصادی موثر (Look-Through): <strong className="text-emerald-700">{toPersianNum(b119FundResult.ownership.effectiveEconomicSharePercent)}٪</strong> | NAV هر واحد: <strong>{toPersianNum((b119FundResult.nav.navPerUnitToman ?? 0).toLocaleString())} ت{fxM((b119FundResult.nav.navPerUnitToman ?? 0) / 1_000_000)}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. مالکیت غیرمستقیم، فراخوان سرمایه و NAV صندوق (۱۴۷۱–۱۴۷۹)</div>
+                <div className="text-[11px]">سهم اقتصادی موثر (Look-Through): <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b119FundResult.ownership.effectiveEconomicSharePercent)}٪</strong> | NAV هر واحد: <strong>{toPersianNum((b119FundResult.nav.navPerUnitToman ?? 0).toLocaleString())} ت{fxM((b119FundResult.nav.navPerUnitToman ?? 0) / 1_000_000)}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900">۲. آبشار سود، تفکیک وظایف (SoD) و IRR (۱۴۸۰–۱۴۹۲)</span>
-                  <button type="button" onClick={() => setSelfApproveAttempt((v) => !v)} className="px-2 py-1 rounded-lg bg-slate-800 text-white text-[10.5px] font-bold cursor-pointer">SoD: {selfApproveAttempt ? 'تایید توسط ایجادکننده' : 'تایید بازرس مستقل'}</button>
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">۲. آبشار سود، تفکیک وظایف (SoD) و IRR (۱۴۸۰–۱۴۹۲)</span>
+                  <button type="button" onClick={() => setSelfApproveAttempt((v) => !v)} className="px-2 py-1 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-[10.5px] font-bold cursor-pointer">SoD: {selfApproveAttempt ? 'تایید توسط ایجادکننده' : 'تایید بازرس مستقل'}</button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="text" dir="ltr" value={irrCashFlowsText} onChange={(e) => setIrrCashFlowsText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-slate-300 bg-white text-[11px] font-mono" />
-                  <span className="font-bold text-indigo-700">{b119FundResult.irr.status}</span>
+                  <input type="text" dir="ltr" value={irrCashFlowsText} onChange={(e) => setIrrCashFlowsText(e.target.value)} className="flex-1 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-[11px] font-mono" />
+                  <span className="font-bold text-indigo-700 dark:text-indigo-400">{b119FundResult.irr.status}</span>
                 </div>
               </div>
             </div>
           )}
           {activeTab === 'b120_market' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. تفکیک آگهی از معامله قطعی، نرمال‌سازی و املاک تخصصی (۱۵۰۵–۱۵۶۱)</div>
-                <div className="text-[11px]">میانه آگهی: <strong>{toPersianNum(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))} {uLbl}{fxM(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))}</strong> | میانه معامله قطعی: <strong className="text-emerald-700">{toPersianNum(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))} {uLbl}{fxM(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))}</strong> | معامله v6.4: <strong className="text-emerald-700">{toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, 'سعادت‌آباد', (b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 165_000_000) / 1_000_000, []).estimatedDealPricePerSqm, areaUnit))} {uLbl}</strong> | کل واحد {formatAreaShort(80, areaUnit)}: <strong>{toPersianNum((((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت{fxM(((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) * 80) / 1_000_000)}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. تفکیک آگهی از معامله قطعی، نرمال‌سازی و املاک تخصصی (۱۵۰۵–۱۵۶۱)</div>
+                <div className="text-[11px]">میانه آگهی: <strong>{toPersianNum(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))} {uLbl}{fxM(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))}</strong> | میانه معامله قطعی: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))} {uLbl}{fxM(convertPricePerSqmToUnit((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) / 1_000_000, areaUnit))}</strong> | معامله v6.4: <strong className="text-emerald-700">{toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, 'سعادت‌آباد', (b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 165_000_000) / 1_000_000, []).estimatedDealPricePerSqm, areaUnit))} {uLbl}</strong> | کل واحد {formatAreaShort(80, areaUnit)}: <strong>{toPersianNum((((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت{fxM(((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) * 80) / 1_000_000)}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/50 space-y-2">
+              <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-emerald-950 flex items-center gap-1.5"><Layers className="w-4 h-4 text-emerald-600" /><span>۲. پایشگر Lazy Loading لایه‌های GeoJSON نقشه</span></span>
+                  <span className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>۲. پایشگر Lazy Loading لایه‌های GeoJSON نقشه</span></span>
                   <button type="button" onClick={() => updateMapAdvancedOverlayState({ lowBandwidthGeoLazyMode: !overlayState.lowBandwidthGeoLazyMode })} className="px-2.5 py-1 rounded-lg text-[10.5px] font-bold bg-emerald-700 text-white cursor-pointer">حالت کم‌مصرف موبایل: {overlayState.lowBandwidthGeoLazyMode ? 'فعال' : 'استاندارد'}</button>
                 </div>
-                <div className="text-[11px] text-emerald-900 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" /><span>حداکثر رئوس پولیگون (LOD): <strong>{toPersianNum(b120MarketResult.lazyPolicy.maxVerticesPerPolygon)} رأس</strong> | کش LRU: <strong>{toPersianNum(b120MarketResult.lruStats.size)}/{toPersianNum(b120MarketResult.lazyPolicy.maxLruCacheSize)}</strong></span></div>
+                <div className="text-[11px] text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>حداکثر رئوس پولیگون (LOD): <strong>{toPersianNum(b120MarketResult.lazyPolicy.maxVerticesPerPolygon)} رأس</strong> | کش LRU: <strong>{toPersianNum(b120MarketResult.lruStats.size)}/{toPersianNum(b120MarketResult.lazyPolicy.maxLruCacheSize)}</strong></span></div>
               </div>
             </div>
           )}
           {activeTab === 'b121_crm' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. امتیازدهی شفاف سرنخ، تطبیق ملک و تداخل بازدید (۱۵۶۳–۱۵۷۴)</div>
-                <div className="text-[11px]">امتیاز سرنخ: <strong className="text-emerald-700">{toPersianNum(b121CrmResult.contactAndScore.allowed ? b121CrmResult.contactAndScore.leadScoreExplanation.finalScore0To100 : 0)}/۱۰۰</strong> | املاک منطبق: <strong>{toPersianNum(b121CrmResult.matching.rankedMatches.length)} مورد</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. امتیازدهی شفاف سرنخ، تطبیق ملک و تداخل بازدید (۱۵۶۳–۱۵۷۴)</div>
+                <div className="text-[11px]">امتیاز سرنخ: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b121CrmResult.contactAndScore.allowed ? b121CrmResult.contactAndScore.leadScoreExplanation.finalScore0To100 : 0)}/۱۰۰</strong> | املاک منطبق: <strong>{toPersianNum(b121CrmResult.matching.rankedMatches.length)} مورد</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۲. انتساب کمپین، تسهیم عملکرد، قیف کوهورت و حلقه اتوماسیون (۱۵۷۵–۱۶۰۳)</div>
-                <div className="text-[11px]">نرخ تبدیل کوهورت: <strong>{toPersianNum(b121CrmResult.funnelAndAuto.cohortFunnelReport.finalDealConversionRatePercent)}٪</strong> | گارد حلقه بازگشتی: <strong className="text-amber-700">{b121CrmResult.funnelAndAuto.automationExecution.status}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۲. انتساب کمپین، تسهیم عملکرد، قیف کوهورت و حلقه اتوماسیون (۱۵۷۵–۱۶۰۳)</div>
+                <div className="text-[11px]">نرخ تبدیل کوهورت: <strong>{toPersianNum(b121CrmResult.funnelAndAuto.cohortFunnelReport.finalDealConversionRatePercent)}٪</strong> | گارد حلقه بازگشتی: <strong className="text-amber-700 dark:text-amber-400">{b121CrmResult.funnelAndAuto.automationExecution.status}</strong></div>
               </div>
             </div>
           )}
           {activeTab === 'b122_pm' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. مالکیت، ساختار مجتمع، سکونت و الحاقیه اجاره (۱۶۰۴–۱۶۱۰)</div>
-                <div className="text-[11px]">تکمیل سهام مالکیت: <strong className="text-emerald-700">{toPersianNum(b122PmResult.core.activeOwnershipShareSumPercent)}٪</strong> | نام ساکن: <strong>{b122PmResult.lease.visibleOccupantName ?? '🔒 محفوظ'}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. مالکیت، ساختار مجتمع، سکونت و الحاقیه اجاره (۱۶۰۴–۱۶۱۰)</div>
+                <div className="text-[11px]">تکمیل سهام مالکیت: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b122PmResult.core.activeOwnershipShareSumPercent)}٪</strong> | نام ساکن: <strong>{b122PmResult.lease.visibleOccupantName ?? '🔒 محفوظ'}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900">۲. ودیعه، زمان‌بندی اجاره شمسی، وصول و ممیزی (۱۶۱۱–۱۶۲۸)</span>
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">۲. ودیعه، زمان‌بندی اجاره شمسی، وصول و ممیزی (۱۶۱۱–۱۶۲۸)</span>
                   <button type="button" onClick={() => setIsJalaliLeapYear((v) => !v)} className="px-2 py-1 rounded-lg bg-indigo-600 text-white text-[10.5px] font-bold cursor-pointer">اسفند: {isJalaliLeapYear ? 'کبیسه (۳۰)' : 'عادی (۲۹)'}</button>
                 </div>
-                <div className="text-[11px]">سررسید اسفندماه: <strong>روز {toPersianNum(b122PmResult.billing.generatedReceivables[1]?.effectiveDueDayOfMonth ?? 29)}</strong> | ممیزی (۱۶۲۸): <strong className="text-emerald-700">{b122PmResult.opsAndAudit.auditReadinessStatus}</strong></div>
+                <div className="text-[11px]">سررسید اسفندماه: <strong>روز {toPersianNum(b122PmResult.billing.generatedReceivables[1]?.effectiveDueDayOfMonth ?? 29)}</strong> | ممیزی (۱۶۲۸): <strong className="text-emerald-700 dark:text-emerald-400">{b122PmResult.opsAndAudit.auditReadinessStatus}</strong></div>
               </div>
             </div>
           )} {activeTab === 'b123_dev' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. WBS، مسیر بحرانی، صورت‌وضعیت پیمانکار و مشارکت در ساخت (۱۶۲۹–۱۶۴۷)</div>
-                <div className="text-[11px]">مدت مسیر بحرانی (CPM): <strong>{toPersianNum(b123DevResult.wbs.projectDurationDays ?? 0)} روز</strong> | خالص صورت‌وضعیت: <strong className="text-emerald-700">{toPersianNum(b123DevResult.budgetAndBoq.paymentCertificate.netPayableToContractorToman / 1_000_000_000)} میلیارد ت{fxM(b123DevResult.budgetAndBoq.paymentCertificate.netPayableToContractorToman / 1_000_000)}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. WBS، مسیر بحرانی، صورت‌وضعیت پیمانکار و مشارکت در ساخت (۱۶۲۹–۱۶۴۷)</div>
+                <div className="text-[11px]">مدت مسیر بحرانی (CPM): <strong>{toPersianNum(b123DevResult.wbs.projectDurationDays ?? 0)} روز</strong> | خالص صورت‌وضعیت: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b123DevResult.budgetAndBoq.paymentCertificate.netPayableToContractorToman / 1_000_000_000)} میلیارد ت{fxM(b123DevResult.budgetAndBoq.paymentCertificate.netPayableToContractorToman / 1_000_000)}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900">۲. ارزش کسب‌شده (EVM)، تحویل و ممیزی ۶گانه (۱۶۴۸–۱۶۶۸)</span>
-                  <button type="button" onClick={() => setUnresolvedPunchListCount((c) => (c === 0 ? 3 : 0))} className="px-2 py-1 rounded-lg bg-slate-800 text-white text-[10.5px] font-bold cursor-pointer">نواقص تحویل: {toPersianNum(unresolvedPunchListCount)}</button>
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">۲. ارزش کسب‌شده (EVM)، تحویل و ممیزی ۶گانه (۱۶۴۸–۱۶۶۸)</span>
+                  <button type="button" onClick={() => setUnresolvedPunchListCount((c) => (c === 0 ? 3 : 0))} className="px-2 py-1 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-[10.5px] font-bold cursor-pointer">نواقص تحویل: {toPersianNum(unresolvedPunchListCount)}</button>
                 </div>
-                <div className="text-[11px]">CPI: <strong className="text-emerald-700">{toPersianNum(b123DevResult.evmAndAudit.evmMetrics.costPerformanceIndexCpi ?? 0)}</strong> | ممیزی: <strong className="text-emerald-700">{b123DevResult.evmAndAudit.comprehensiveAuditVerdict}</strong></div>
+                <div className="text-[11px]">CPI: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b123DevResult.evmAndAudit.evmMetrics.costPerformanceIndexCpi ?? 0)}</strong> | ممیزی: <strong className="text-emerald-700 dark:text-emerald-400">{b123DevResult.evmAndAudit.comprehensiveAuditVerdict}</strong></div>
               </div>
             </div>
           )} {activeTab === 'b124_fm' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. شناسنامه دارایی ثابت، راه‌اندازی (Commissioning)، PdM و LCC (۱۶۶۹–۱۶۸۴)</div>
-                <div className="text-[11px]">وضعیت تجهیز: <strong className="text-emerald-700">{b124FmResult.assetAndComm.commissioningTransition.effectiveLifecycleState}</strong> | آمادگی PdM: <strong>{b124FmResult.pdmAndLcc.pdmReadiness.readinessTier}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. شناسنامه دارایی ثابت، راه‌اندازی (Commissioning)، PdM و LCC (۱۶۶۹–۱۶۸۴)</div>
+                <div className="text-[11px]">وضعیت تجهیز: <strong className="text-emerald-700 dark:text-emerald-400">{b124FmResult.assetAndComm.commissioningTransition.effectiveLifecycleState}</strong> | آمادگی PdM: <strong>{b124FmResult.pdmAndLcc.pdmReadiness.readinessTier}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۲. شدت مصرف انرژی (EUI)، شاخص سلامت دارایی و ممیزی ۱۰گانه (۱۶۸۵–۱۷۲۰)</div>
-                <div className="text-[11px]">EUI: <strong>{toPersianNum(convertPricePerSqmToUnit(b124FmResult.energyAndHealth.energyPerformance.euiKwhPerSqm ?? 0, areaUnit))} {areaUnit === 'sqft' ? 'kWh/ft²' : 'kWh/m²'}</strong> | دروازه انتشار (۱۷۱۹): <strong className="text-emerald-700">{b124FmResult.energyAndHealth.facilityReleaseReadinessGate}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۲. شدت مصرف انرژی (EUI)، شاخص سلامت دارایی و ممیزی ۱۰گانه (۱۶۸۵–۱۷۲۰)</div>
+                <div className="text-[11px]">EUI: <strong>{toPersianNum(convertPricePerSqmToUnit(b124FmResult.energyAndHealth.energyPerformance.euiKwhPerSqm ?? 0, areaUnit))} {areaUnit === 'sqft' ? 'kWh/ft²' : 'kWh/m²'}</strong> | دروازه انتشار (۱۷۱۹): <strong className="text-emerald-700 dark:text-emerald-400">{b124FmResult.energyAndHealth.facilityReleaseReadinessGate}</strong></div>
               </div>
             </div>
           )} {activeTab === 'b125_legal' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900">۱. پرونده حقوقی، سلسله ایادی، وکالت‌نامه و مغایرت متراژ (۱۷۲۱–۱۷۳۳)</span>
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">۱. پرونده حقوقی، سلسله ایادی، وکالت‌نامه و مغایرت متراژ (۱۷۲۱–۱۷۳۳)</span>
                   <button type="button" onClick={() => setPoaIsGeneralOnly((v) => !v)} className="px-2 py-1 rounded-lg bg-indigo-600 text-white text-[10.5px] font-bold cursor-pointer">وکالت‌نامه: {poaIsGeneralOnly ? 'اداری عام' : 'فروش مصرح'}</button>
                 </div>
-                <div className="text-[11px]">سهام ثبتی: <strong className="text-emerald-700">{toPersianNum(b125LegalResult.dossier.totalRegisteredSharePercentAsOfDate)}٪ ({formatAreaShort(142.5, areaUnit)})</strong> | وکالت: <strong>{b125LegalResult.poaAndDiscrepancies.poaAuthorization.reason}</strong></div>
+                <div className="text-[11px]">سهام ثبتی: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b125LegalResult.dossier.totalRegisteredSharePercentAsOfDate)}٪ ({formatAreaShort(142.5, areaUnit)})</strong> | وکالت: <strong>{b125LegalResult.poaAndDiscrepancies.poaAuthorization.reason}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۲. اعتبار فایل (Hash ≠ اصالت سند)، محرمانگی دعاوی و دروازه پیش از امضا (۱۷۳۴–۱۷۴۲)</div>
-                <div className="text-[11px]">دروازه پیش از امضا (۱۷۴۰): <strong className="text-emerald-700">{b125LegalResult.gateAndAudit.preSignatureGate.signingReadinessApproved ? 'تایید امضا' : 'مسدود'}</strong> | ممیزی (۱۷۴۲): <strong className="text-emerald-700">{b125LegalResult.gateAndAudit.legalDomainAuditVerdict}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۲. اعتبار فایل (Hash ≠ اصالت سند)، محرمانگی دعاوی و دروازه پیش از امضا (۱۷۳۴–۱۷۴۲)</div>
+                <div className="text-[11px]">دروازه پیش از امضا (۱۷۴۰): <strong className="text-emerald-700 dark:text-emerald-400">{b125LegalResult.gateAndAudit.preSignatureGate.signingReadinessApproved ? 'تایید امضا' : 'مسدود'}</strong> | ممیزی (۱۷۴۲): <strong className="text-emerald-700 dark:text-emerald-400">{b125LegalResult.gateAndAudit.legalDomainAuditVerdict}</strong></div>
               </div>
             </div>
           )} {activeTab === 'b126_analytics' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. منشأ داده، تطبیق هویت، شکاف قیمت پیشنهادی/معامله و پرت (۱۷۴۳–۱۷۵۸)</div>
-                <div className="text-[11px]">تخفیف مذاکره زوجی: <strong className="text-emerald-700">{toPersianNum(b126AnalyticsResult.indicators.pairedSpreadAnalysis.meanNegotiationDiscountPercent ?? 0)}٪</strong> | تشخیص واحدهای مجزا: <strong>{b126AnalyticsResult.entityAndPrivacy.entityResolution.matchClassification}</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. منشأ داده، تطبیق هویت، شکاف قیمت پیشنهادی/معامله و پرت (۱۷۴۳–۱۷۵۸)</div>
+                <div className="text-[11px]">تخفیف مذاکره زوجی: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b126AnalyticsResult.indicators.pairedSpreadAnalysis.meanNegotiationDiscountPercent ?? 0)}٪</strong> | تشخیص واحدهای مجزا: <strong>{b126AnalyticsResult.entityAndPrivacy.entityResolution.matchClassification}</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900">۲. چرخه واقعی تعدیل‌شده با تورم و ممیزی اعتبار پیش‌بینی (۱۷۵۹–۱۷۷۰)</span>
-                  <button type="button" onClick={() => setHasTemporalLeakage((v) => !v)} className="px-2 py-1 rounded-lg bg-slate-800 text-white text-[10.5px] font-bold cursor-pointer">نشت زمانی: {hasTemporalLeakage ? 'دارای نشت' : 'معتبر'}</button>
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">۲. چرخه واقعی تعدیل‌شده با تورم و ممیزی اعتبار پیش‌بینی (۱۷۵۹–۱۷۷۰)</span>
+                  <button type="button" onClick={() => setHasTemporalLeakage((v) => !v)} className="px-2 py-1 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-[10.5px] font-bold cursor-pointer">نشت زمانی: {hasTemporalLeakage ? 'دارای نشت' : 'معتبر'}</button>
                 </div>
-                <div className="text-[11px]">شاخص حقیقی مسکن: <strong className="text-emerald-700">{toPersianNum(b126AnalyticsResult.forecastAudit.realInflationAdjustedIndex ?? 0)}</strong> | اعتبار پیش‌بینی (۱۷۷۰): <strong>{b126AnalyticsResult.forecastAudit.forecastingValidityClassification}</strong></div>
+                <div className="text-[11px]">شاخص حقیقی مسکن: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b126AnalyticsResult.forecastAudit.realInflationAdjustedIndex ?? 0)}</strong> | اعتبار پیش‌بینی (۱۷۷۰): <strong>{b126AnalyticsResult.forecastAudit.forecastingValidityClassification}</strong></div>
               </div>
             </div>
           )} {activeTab === 'b127_invest' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <div className="font-extrabold text-slate-900">۱. حذف دوباره‌شماری پرتفوی، بهای تمام‌شده، XIRR و NPV (۱۷۷۱–۱۷۸۱)</div>
-                <div className="text-[11px]">معرض بدون دوباره‌شماری: <strong className="text-emerald-700">{toPersianNum(b127InvestResult.portfolioAndBasis.deduplicatedPortfolioExposureToman / 1_000_000_000)} میلیارد ت{fxM(b127InvestResult.portfolioAndBasis.deduplicatedPortfolioExposureToman / 1_000_000)}</strong> | XIRR روزشمار: <strong className="text-indigo-700">{toPersianNum(b127InvestResult.xirrAndNpv.xirrResult.annualizedXirrPercent ?? 0)}٪</strong></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
+                <div className="font-extrabold text-slate-900 dark:text-slate-100">۱. حذف دوباره‌شماری پرتفوی، بهای تمام‌شده، XIRR و NPV (۱۷۷۱–۱۷۸۱)</div>
+                <div className="text-[11px]">معرض بدون دوباره‌شماری: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b127InvestResult.portfolioAndBasis.deduplicatedPortfolioExposureToman / 1_000_000_000)} میلیارد ت{fxM(b127InvestResult.portfolioAndBasis.deduplicatedPortfolioExposureToman / 1_000_000)}</strong> | XIRR روزشمار: <strong className="text-indigo-700 dark:text-indigo-400">{toPersianNum(b127InvestResult.xirrAndNpv.xirrResult.annualizedXirrPercent ?? 0)}٪</strong></div>
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900">۲. اهرم (DSCR/LTV)، سربه‌سر، خروج جزئی و HHI (۱۷۸۲–۱۷۹۵)</span>
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">۲. اهرم (DSCR/LTV)، سربه‌سر، خروج جزئی و HHI (۱۷۸۲–۱۷۹۵)</span>
                   <button type="button" onClick={() => setDisposedSharePercent((p) => (p === 40 ? 100 : 40))} className="px-2 py-1 rounded-lg bg-emerald-700 text-white text-[10.5px] font-bold cursor-pointer">خروج: {toPersianNum(disposedSharePercent)}٪</button>
                 </div>
-                <div className="text-[11px]">DSCR: <strong className="text-emerald-700">{toPersianNum(b127InvestResult.levAndExit.leverageMetrics.dscr ?? 0)}x</strong> | سود محقق‌شده خروج: <strong className="text-emerald-700">{toPersianNum(Math.round((b127InvestResult.levAndExit.partialDisposalOutcome.realizedDisposalGainToman ?? 0) / 1_000_000_000))} میلیارد ت{fxM((b127InvestResult.levAndExit.partialDisposalOutcome.realizedDisposalGainToman ?? 0) / 1_000_000)}</strong> | HHI: <strong>{toPersianNum(b127InvestResult.levAndExit.diversificationMetrics.economicExposureHhi0To10000)}</strong></div>
+                <div className="text-[11px]">DSCR: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b127InvestResult.levAndExit.leverageMetrics.dscr ?? 0)}x</strong> | سود محقق‌شده خروج: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(Math.round((b127InvestResult.levAndExit.partialDisposalOutcome.realizedDisposalGainToman ?? 0) / 1_000_000_000))} میلیارد ت{fxM((b127InvestResult.levAndExit.partialDisposalOutcome.realizedDisposalGainToman ?? 0) / 1_000_000)}</strong> | HHI: <strong>{toPersianNum(b127InvestResult.levAndExit.diversificationMetrics.economicExposureHhi0To10000)}</strong></div>
               </div>
             </div>
           )} {activeTab === 'b128_ops_audit' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۱. تفکیک علامت از تشخیص مهندسی، دستورکار و تعمیرات اضطراری (۱۷۹۶–۱۸۰۷)</div><div className="text-[11px]">وضعیت دستورکار: <strong className="text-emerald-700">{b128OpsAuditResult.regAndWo.workOrderLifecycleState}</strong> | حادثه اضطراری: <strong>{b128OpsAuditResult.pmAndEmergency.emergencyIncidentStatus}</strong> | MTTR: <strong>{toPersianNum(b128OpsAuditResult.pmAndEmergency.reliabilityMetrics.mttrHours ?? 0)} ساعت</strong></div></div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۲. بودجه تعمیرات، مجوز ورود پیمانکار و ۷ ممیزی جامع (۱۸۰۸–۱۸۲۵)</div><div className="text-[11px]">بودجه تعهدنشده: <strong className="text-emerald-700">{toPersianNum(b128OpsAuditResult.budgetAndAccess.budgetSummary.remainingUncommittedBudgetToman / 1_000_000_000)} میلیارد ت{fxM(b128OpsAuditResult.budgetAndAccess.budgetSummary.remainingUncommittedBudgetToman / 1_000_000)}</strong> | مجوز ورود پیمانکار: <strong>{b128OpsAuditResult.budgetAndAccess.contractorVisitAuthorization.reason}</strong> | نتیجه ۷ ممیزی: <strong className="text-emerald-700">{b128OpsAuditResult.budgetAndAccess.sevenFacilityAuditsVerdict}</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۱. تفکیک علامت از تشخیص مهندسی، دستورکار و تعمیرات اضطراری (۱۷۹۶–۱۸۰۷)</div><div className="text-[11px]">وضعیت دستورکار: <strong className="text-emerald-700 dark:text-emerald-400">{b128OpsAuditResult.regAndWo.workOrderLifecycleState}</strong> | حادثه اضطراری: <strong>{b128OpsAuditResult.pmAndEmergency.emergencyIncidentStatus}</strong> | MTTR: <strong>{toPersianNum(b128OpsAuditResult.pmAndEmergency.reliabilityMetrics.mttrHours ?? 0)} ساعت</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۲. بودجه تعمیرات، مجوز ورود پیمانکار و ۷ ممیزی جامع (۱۸۰۸–۱۸۲۵)</div><div className="text-[11px]">بودجه تعهدنشده: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b128OpsAuditResult.budgetAndAccess.budgetSummary.remainingUncommittedBudgetToman / 1_000_000_000)} میلیارد ت{fxM(b128OpsAuditResult.budgetAndAccess.budgetSummary.remainingUncommittedBudgetToman / 1_000_000)}</strong> | مجوز ورود پیمانکار: <strong>{b128OpsAuditResult.budgetAndAccess.contractorVisitAuthorization.reason}</strong> | نتیجه ۷ ممیزی: <strong className="text-emerald-700 dark:text-emerald-400">{b128OpsAuditResult.budgetAndAccess.sevenFacilityAuditsVerdict}</strong></div></div>
             </div>
           )} {activeTab === 'b129_leasing' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۱. احراز هویت مستأجر، درخواست اجاره، ودیعه و چک‌های صیادی (۱۸۲۶–۱۸۳۷)</div><div className="text-[11px]">تبدیل درخواست به پیش‌نویس: <strong className="text-emerald-700">{b129LeasingResult.appAndEsc.applicationConversion.resultingLeaseStage}</strong> | چک پاس‌شده نقدی: <strong>{toPersianNum(b129LeasingResult.depositAndCheques.chequeReconciliation.clearedSettledCashFromChequesToman / 1_000_000)} م{fxM(b129LeasingResult.depositAndCheques.chequeReconciliation.clearedSettledCashFromChequesToman / 1_000_000)}</strong> | چک در جریان/برگشتی: <strong>{toPersianNum(b129LeasingResult.depositAndCheques.chequeReconciliation.bouncedReturnedChequesCount)} فقره</strong></div></div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۲. تحویل، استهلاک متعارف، اجاره تجاری چندواحدی و ۶ ممیزی (۱۸۳۸–۱۸۵۲)</div><div className="text-[11px]">کسر ودیعه با تایید طرفین: <strong>{b129LeasingResult.handoverAndComm.handoverOutcome.depositDeductionPermitted ? 'مجاز با صورت‌جلسه' : 'مسدود'}</strong> | اجاره پایه تجاری (پس از تنفس): <strong className="text-emerald-700">{toPersianNum(b129LeasingResult.handoverAndComm.commercialMultiUnitSummary.totalContractBillableBaseRentToman / 1_000_000_000)} میلیارد ت{fxM(b129LeasingResult.handoverAndComm.commercialMultiUnitSummary.totalContractBillableBaseRentToman / 1_000_000)}</strong> | ممیزی: <strong className="text-emerald-700">{b129LeasingResult.handoverAndComm.sixLeasingAuditsVerdict}</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۱. احراز هویت مستأجر، درخواست اجاره، ودیعه و چک‌های صیادی (۱۸۲۶–۱۸۳۷)</div><div className="text-[11px]">تبدیل درخواست به پیش‌نویس: <strong className="text-emerald-700 dark:text-emerald-400">{b129LeasingResult.appAndEsc.applicationConversion.resultingLeaseStage}</strong> | چک پاس‌شده نقدی: <strong>{toPersianNum(b129LeasingResult.depositAndCheques.chequeReconciliation.clearedSettledCashFromChequesToman / 1_000_000)} م{fxM(b129LeasingResult.depositAndCheques.chequeReconciliation.clearedSettledCashFromChequesToman / 1_000_000)}</strong> | چک در جریان/برگشتی: <strong>{toPersianNum(b129LeasingResult.depositAndCheques.chequeReconciliation.bouncedReturnedChequesCount)} فقره</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۲. تحویل، استهلاک متعارف، اجاره تجاری چندواحدی و ۶ ممیزی (۱۸۳۸–۱۸۵۲)</div><div className="text-[11px]">کسر ودیعه با تایید طرفین: <strong>{b129LeasingResult.handoverAndComm.handoverOutcome.depositDeductionPermitted ? 'مجاز با صورت‌جلسه' : 'مسدود'}</strong> | اجاره پایه تجاری (پس از تنفس): <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b129LeasingResult.handoverAndComm.commercialMultiUnitSummary.totalContractBillableBaseRentToman / 1_000_000_000)} میلیارد ت{fxM(b129LeasingResult.handoverAndComm.commercialMultiUnitSummary.totalContractBillableBaseRentToman / 1_000_000)}</strong> | ممیزی: <strong className="text-emerald-700 dark:text-emerald-400">{b129LeasingResult.handoverAndComm.sixLeasingAuditsVerdict}</strong></div></div>
             </div>
           )} {activeTab === 'b130_title_tx' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۱. تفکیک مالکیت رسمی از تصرف، پلاک ثبتی، تعارض اسناد و مبایعه‌نامه (۱۸۵۳–۱۸۶۸)</div><div className="text-[11px]">شناسه ثبتی یکتا: <strong className="text-indigo-700">{b130TitleTxResult.titleAndReg.registryIdentifierStatus.canonicalCompositeKey}</strong> | مرحله معامله: <strong className="text-emerald-700">{b130TitleTxResult.sigAndSale.transactionLifecycle.stage}</strong></div></div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۲. تسویه ثمن، تفکیک انتقال دفترخانه از تحویل تصرف و ۹ ممیزی (۱۸۶۹–۱۸۸۹)</div><div className="text-[11px]">مانده ثمن تاییدشده: <strong>{toPersianNum(b130TitleTxResult.settlementAndAudits.settlementStatement.remainingPrincipalPayableByBuyerToman / 1_000_000_000)} میلیارد ت{fxM(b130TitleTxResult.settlementAndAudits.settlementStatement.remainingPrincipalPayableByBuyerToman / 1_000_000)}</strong> | انتقال رسمی سند: <strong className="text-emerald-700">{b130TitleTxResult.settlementAndAudits.independentStateMachines.formalOwnershipTransferState}</strong> | ۹ ممیزی: <strong className="text-emerald-700">{b130TitleTxResult.settlementAndAudits.nineBundle130AuditsVerdict}</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۱. تفکیک مالکیت رسمی از تصرف، پلاک ثبتی، تعارض اسناد و مبایعه‌نامه (۱۸۵۳–۱۸۶۸)</div><div className="text-[11px]">شناسه ثبتی یکتا: <strong className="text-indigo-700 dark:text-indigo-400">{b130TitleTxResult.titleAndReg.registryIdentifierStatus.canonicalCompositeKey}</strong> | مرحله معامله: <strong className="text-emerald-700 dark:text-emerald-400">{b130TitleTxResult.sigAndSale.transactionLifecycle.stage}</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۲. تسویه ثمن، تفکیک انتقال دفترخانه از تحویل تصرف و ۹ ممیزی (۱۸۶۹–۱۸۸۹)</div><div className="text-[11px]">مانده ثمن تاییدشده: <strong>{toPersianNum(b130TitleTxResult.settlementAndAudits.settlementStatement.remainingPrincipalPayableByBuyerToman / 1_000_000_000)} میلیارد ت{fxM(b130TitleTxResult.settlementAndAudits.settlementStatement.remainingPrincipalPayableByBuyerToman / 1_000_000)}</strong> | انتقال رسمی سند: <strong className="text-emerald-700 dark:text-emerald-400">{b130TitleTxResult.settlementAndAudits.independentStateMachines.formalOwnershipTransferState}</strong> | ۹ ممیزی: <strong className="text-emerald-700 dark:text-emerald-400">{b130TitleTxResult.settlementAndAudits.nineBundle130AuditsVerdict}</strong></div></div>
             </div>
           )} {activeTab === 'b131_construction_delivery' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۱. پیشرفت فیزیکی وزنی، منحنی S-Curve، مناقصه و موجودی مصالح (۱۸۹۰–۱۹۰۸)</div><div className="text-[11px]">پیشرفت وزنی تاییدشده: <strong className="text-emerald-700">{toPersianNum(b131DeliveryResult.phaseAndProgress.physicalProgressSummary.weightedApprovedProjectProgressPercent)}٪</strong> | برنده مناقصه چندمعیاره: <strong className="text-indigo-700">{b131DeliveryResult.sCurveAndMat.tenderOutcome.recommendedBidderId}</strong> | موجودی مصرف‌نشده کارگاه: <strong>{toPersianNum(b131DeliveryResult.sCurveAndMat.materialControl.unconsumedSiteStockQty)} تن</strong></div></div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2"><div className="font-extrabold text-slate-900">۲. بهای تمام‌شده هر متر مفید، پیش‌بینی EAC، تحویل واحد و ۴ ممیزی (۱۹۰۹–۱۹۲۴)</div><div className="text-[11px]">هزینه ساخت هر {areaUnit === 'sqft' ? 'فوت مربع' : 'متر'} مفید: <strong>{toPersianNum(convertPricePerSqmToUnit((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) / 1_000_000, areaUnit))} {uLbl}{fxM(convertPricePerSqmToUnit((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) / 1_000_000, areaUnit))} (کل {formatAreaShort(80, areaUnit)}: {toPersianNum((((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت)</strong> | پیش‌بینی EAC: <strong>{toPersianNum(b131DeliveryResult.costAndAudits.eacForecast.estimateAtCompletionEacToman / 1_000_000_000)} میلیارد ت{fxM(b131DeliveryResult.costAndAudits.eacForecast.estimateAtCompletionEacToman / 1_000_000)}</strong> | ۴ ممیزی: <strong className="text-emerald-700">{b131DeliveryResult.costAndAudits.bundle131ReleaseReadinessVerdict}</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۱. پیشرفت فیزیکی وزنی، منحنی S-Curve، مناقصه و موجودی مصالح (۱۸۹۰–۱۹۰۸)</div><div className="text-[11px]">پیشرفت وزنی تاییدشده: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(b131DeliveryResult.phaseAndProgress.physicalProgressSummary.weightedApprovedProjectProgressPercent)}٪</strong> | برنده مناقصه چندمعیاره: <strong className="text-indigo-700 dark:text-indigo-400">{b131DeliveryResult.sCurveAndMat.tenderOutcome.recommendedBidderId}</strong> | موجودی مصرف‌نشده کارگاه: <strong>{toPersianNum(b131DeliveryResult.sCurveAndMat.materialControl.unconsumedSiteStockQty)} تن</strong></div></div>
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 space-y-2"><div className="font-extrabold text-slate-900 dark:text-slate-100">۲. بهای تمام‌شده هر متر مفید، پیش‌بینی EAC، تحویل واحد و ۴ ممیزی (۱۹۰۹–۱۹۲۴)</div><div className="text-[11px]">هزینه ساخت هر {areaUnit === 'sqft' ? 'فوت مربع' : 'متر'} مفید: <strong>{toPersianNum(convertPricePerSqmToUnit((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) / 1_000_000, areaUnit))} {uLbl}{fxM(convertPricePerSqmToUnit((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) / 1_000_000, areaUnit))} (کل {formatAreaShort(80, areaUnit)}: {toPersianNum((((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت)</strong> | پیش‌بینی EAC: <strong>{toPersianNum(b131DeliveryResult.costAndAudits.eacForecast.estimateAtCompletionEacToman / 1_000_000_000)} میلیارد ت{fxM(b131DeliveryResult.costAndAudits.eacForecast.estimateAtCompletionEacToman / 1_000_000)}</strong> | ۴ ممیزی: <strong className="text-emerald-700 dark:text-emerald-400">{b131DeliveryResult.costAndAudits.bundle131ReleaseReadinessVerdict}</strong></div></div>
             </div>
           )} </div>
       </div>

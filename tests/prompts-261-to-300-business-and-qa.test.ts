@@ -200,7 +200,7 @@ assert.ok(sampleHood, 'INITIAL_NEIGHBORHOODS must contain at least one neighborh
       assert.ok(h.rahn80m >= 50 && h.rahn80m <= 50000, `Invalid rahn80m for ${h.name}`);
     }
   }
-  assert.equal(totalHoodsCount, 190, `Expected 190 neighborhoods across 5 cities, found ${totalHoodsCount}`);
+  assert.equal(totalHoodsCount, 265, `Expected 265 neighborhoods across 5 cities, found ${totalHoodsCount}`);
 
   // Cross-city isolation check
   const isolation = auditMultiCityMarketIsolationAndResolveHood({

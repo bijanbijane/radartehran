@@ -136,7 +136,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input type="text" value={toolQuery} onChange={(e) => setToolQuery(e.target.value)} placeholder={isEn ? 'Search calculators (e.g. mortgage, tax, commission, R122)...' : 'جستجوی سریع ابزار (مثلاً: وام، مالیات، کمیسیون، قولنامه، R122)...'} className="w-full pr-9 pl-7 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
-          {toolQuery && <button type="button" onClick={() => setToolQuery('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
+          {toolQuery && <button type="button" aria-label="پاک کردن جستجوی ابزار" onClick={() => setToolQuery('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
         </div>
         <div className="flex items-center gap-1 overflow-x-auto text-xs">
           {[

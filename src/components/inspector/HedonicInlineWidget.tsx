@@ -7,9 +7,8 @@ import {
 import {
   formatAreaShort,
   formatMillionTomanAsIntlCurrency,
-  getStoredAreaUnit,
-  getStoredIntlCurrency,
 } from '../../utils/areaUnit';
+import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import {
   evaluateHedonicModelSync,
   type HedonicEstimationRequest,
@@ -27,8 +26,9 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
   hoodBasePricePerSqmMillion,
   districtTier = 'CENTRAL_BALANCED',
 }) => {
-  const areaUnit = getStoredAreaUnit();
-  const intlCurrency = getStoredIntlCurrency();
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
   // Immediate 60fps UI State [RULE-04]
   const [areaSqm, setAreaSqm] = useState<number>(100);
   const [buildingAgeYears, setBuildingAgeYears] = useState<number>(7);
@@ -95,31 +95,31 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
   }, [deferredRequest]);
 
   const offeredValidation = validateAndScaleTomanInput(offeredTotalInput, 'TOTAL_BUY_PRICE');
-  const fmt = new Intl.NumberFormat('fa-IR');
+  const fmt = new Intl.NumberFormat(radarLocale === 'en' ? 'en-US' : 'fa-IR');
 
   return (
     <section
-      dir="rtl"
+      dir={radarLocale === 'en' ? 'ltr' : 'rtl'}
       data-area-unit={areaUnit}
       data-intl-currency={intlCurrency}
       aria-label={`ماشین‌حساب هدونیک ارزش‌گذاری ملک در ${hoodNameFa}`}
-      className="rounded-2xl border border-slate-800 bg-slate-900/95 p-4 text-slate-100 shadow-lg"
+      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/95 p-4 text-slate-900 dark:text-slate-100 shadow-lg"
     >
       {/* Layer 1: Zero-State Instant Benchmark Summary [RULE-12] */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
         <div>
-          <span className="inline-block rounded-md bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+          <span className="inline-block rounded-md bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
             تخمین هوشمند رادار بر اساس معاملات مشابه اخیر
           </span>
-          <h3 className="mt-1 text-base font-bold text-white">
+          <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-white">
             ارزش‌گذاری واحد {fmt.format(areaSqm)} متری ({formatAreaShort(areaSqm, areaUnit)}) در {hoodNameFa}
           </h3>
         </div>
         <div className="text-left">
-          <div className="radar-tabular-num text-lg font-extrabold text-emerald-400">
-            {formatMillionToVerbalPersian(estimation.estimatedTotalMillion)} ({formatMillionTomanAsIntlCurrency(estimation.estimatedTotalMillion, intlCurrency)})
+          <div className="radar-tabular-num text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
+            {formatMillionToVerbalPersian(estimation.estimatedTotalMillion)} ({formatMillionTomanAsIntlCurrency(estimation.estimatedTotalMillion, intlCurrency, radarLocale)})
           </div>
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
             بازه اطمینان: {fmt.format(estimation.lowBandTotalMillion)} تا {fmt.format(estimation.highBandTotalMillion)} میلیون تومان
           </div>
         </div>
@@ -128,9 +128,9 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
       {/* Primary Quick Sliders */}
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <div className="flex justify-between text-xs font-medium text-slate-300">
-            <label htmlFor="hedonic-area-slider">متراژ بنا (متر مربع)</label>
-            <span className="radar-tabular-num font-bold text-white">{fmt.format(areaSqm)} m²</span>
+          <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
+            <label htmlFor="hedonic-area-slider">متراژ بنا ({areaUnit === 'sqft' ? 'فوت مربع' : 'متر مربع'})</label>
+            <span className="radar-tabular-num font-bold text-slate-900 dark:text-white">{formatAreaShort(areaSqm, areaUnit)}</span>
           </div>
           <input
             id="hedonic-area-slider"
@@ -140,13 +140,13 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
             step={5}
             value={areaSqm}
             onChange={(e) => setAreaSqm(normalizeFinancialInput(e.target.value))}
-            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-700 accent-emerald-500"
+            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 dark:bg-slate-700 accent-emerald-500"
           />
         </div>
         <div>
-          <div className="flex justify-between text-xs font-medium text-slate-300">
+          <div className="flex justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
             <label htmlFor="hedonic-age-slider">سن بنا ({estimation.ageRegimeLabel})</label>
-            <span className="radar-tabular-num font-bold text-white">
+            <span className="radar-tabular-num font-bold text-slate-900 dark:text-white">
               {buildingAgeYears === 0 ? 'نوساز' : `${fmt.format(buildingAgeYears)} سال`}
             </span>
           </div>
@@ -158,7 +158,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
             step={1}
             value={buildingAgeYears}
             onChange={(e) => setBuildingAgeYears(normalizeFinancialInput(e.target.value))}
-            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-700 accent-emerald-500"
+            className="mt-1.5 h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 dark:bg-slate-700 accent-emerald-500"
           />
         </div>
       </div>
@@ -168,7 +168,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
         <button
           type="button"
           onClick={() => setIsAdvancedOpen((prev) => !prev)}
-          className="radar-interactive-chip flex w-full items-center justify-between rounded-xl bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800"
+          className="radar-interactive-chip flex w-full items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800"
         >
           <span>تنظیمات دقیق واحد، تبدیل رهن و اجاره و مقایسه قیمت پیشنهادی</span>
           <span>{isAdvancedOpen ? 'بستن ▲' : 'باز کردن ▼'}</span>
@@ -176,7 +176,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
       </div>
 
       {isAdvancedOpen && (
-        <div className="mt-4 space-y-4 border-t border-slate-800 pt-4">
+        <div className="mt-4 space-y-4 border-t border-slate-200 dark:border-slate-800 pt-4">
           <div className="flex flex-wrap gap-2">
             {[
               { label: 'پارکینگ سندی', active: hasParking, toggle: () => setHasParking(!hasParking) },
@@ -188,7 +188,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
                 key={item.label}
                 type="button"
                 onClick={item.toggle}
-                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition ${item.active ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition ${item.active ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
               >
                 {item.label}
               </button>
@@ -197,32 +197,32 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-400">طبقه واحد</label>
-              <input type="text" inputMode="numeric" value={floorNumber} onChange={(e) => setFloorNumber(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white" />
+              <label className="block text-xs text-slate-500 dark:text-slate-400">طبقه واحد</label>
+              <input type="text" inputMode="numeric" value={floorNumber} onChange={(e) => setFloorNumber(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400">تعداد اتاق خواب</label>
-              <input type="text" inputMode="numeric" value={bedrooms} onChange={(e) => setBedrooms(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white" />
+              <label className="block text-xs text-slate-500 dark:text-slate-400">تعداد اتاق خواب</label>
+              <input type="text" inputMode="numeric" value={bedrooms} onChange={(e) => setBedrooms(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
           </div>
 
           {/* Rahn-to-Ejareh Dynamic Slider [RULE-13] */}
-          <div className="rounded-xl bg-slate-950/80 p-3">
-            <div className="flex flex-wrap items-center justify-between text-xs text-slate-300">
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-950/80 p-3">
+            <div className="flex flex-wrap items-center justify-between text-xs text-slate-700 dark:text-slate-300">
               <span>تبدیل رهن و اجاره (نرخ عرف: {fmt.format(monthlyConversionRate)}٪ ماهانه)</span>
-              <span className="text-emerald-400">بازده اجاره سالانه (Cap Rate): {fmt.format(estimation.annualCapRatePercent)}٪</span>
+              <span className="text-emerald-600 dark:text-emerald-400">بازده اجاره سالانه (Cap Rate): {fmt.format(estimation.annualCapRatePercent)}٪</span>
             </div>
             <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs text-slate-400">نسبت ودیعه (رهن) به اجاره</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400">نسبت ودیعه (رهن) به اجاره</label>
                 <input type="range" min={0} max={1} step={0.1} value={depositShareRatio} onChange={(e) => setDepositShareRatio(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
               </div>
               <div>
-                <label className="text-xs text-slate-400">نرخ تبدیل ماهانه (۱.۵٪ تا ۴٪)</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400">نرخ تبدیل ماهانه (۱.۵٪ تا ۴٪)</label>
                 <input type="range" min={1.5} max={4.0} step={0.25} value={monthlyConversionRate} onChange={(e) => setMonthlyConversionRate(Number.parseFloat(e.target.value))} className="mt-1 h-2 w-full accent-indigo-500" />
               </div>
             </div>
-            <div className="mt-2 flex flex-wrap justify-between text-xs font-semibold text-slate-200">
+            <div className="mt-2 flex flex-wrap justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
               <span>ودیعه: {formatMillionToVerbalPersian(estimation.suggestedDepositMillion)}</span>
               <span>اجاره ماهانه: {formatMillionToVerbalPersian(estimation.suggestedMonthlyRentMillion)}</span>
             </div>
@@ -230,7 +230,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
 
           {/* Seller Ask Price Disambiguation [RULE-08] & [RULE-09] */}
           <div>
-            <label className="block text-xs font-medium text-slate-300">بررسی قیمت پیشنهادی فروشنده (به میلیون تومان)</label>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">بررسی قیمت پیشنهادی فروشنده (به میلیون تومان)</label>
             <input
               type="text"
               inputMode="decimal"
@@ -238,11 +238,11 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
               value={offeredTotalInput}
               onChange={(e) => setOfferedTotalInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
-              className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
             />
-            <div className="mt-1 text-xs text-emerald-400">{offeredValidation.verbalPersianText}</div>
+            <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">{offeredValidation.verbalPersianText}</div>
             {offeredValidation.warningMessage && (
-              <div className="mt-1 flex items-center justify-between rounded-lg bg-amber-500/15 px-2.5 py-1.5 text-xs text-amber-300">
+              <div className="mt-1 flex items-center justify-between rounded-lg bg-amber-500/15 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
                 <span>{offeredValidation.warningMessage}</span>
                 <button type="button" onClick={() => setOfferedTotalInput(String(offeredValidation.normalizedMillionValue * 1000))} className="rounded bg-amber-500 px-2 py-0.5 font-bold text-slate-950">
                   اصلاح به میلیارد

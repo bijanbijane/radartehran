@@ -41,9 +41,9 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
   if (!isOpen) return null;
   return (
     <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="bi-gis-studio-title" dir="rtl">
-      <div ref={dialogRef} onClick={(e) => e.stopPropagation()} className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
+      <div ref={dialogRef} onClick={(e) => e.stopPropagation()} className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-700 dark:border-slate-700 bg-slate-900 dark:bg-slate-900 text-slate-100 dark:text-slate-100 shadow-2xl">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 dark:border-slate-800 px-6 py-4">
           <div className="flex items-center gap-3">
             <BarChart3 className="h-6 w-6 text-sky-400" />
             <div>

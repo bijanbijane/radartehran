@@ -260,6 +260,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
       </React.Suspense>
     );
   }
+  const bargainsList = selectedHood.bargains || []; void (bargainsList.length === 0);
   return (
     <React.Suspense fallback={<div className="apple-grouped-card p-4 text-center text-xs text-slate-400">در حال بارگذاری تب...</div>}>
       <NeighborhoodBargainsAndVotesTabs

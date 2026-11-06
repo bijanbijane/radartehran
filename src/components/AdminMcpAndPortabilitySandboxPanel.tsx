@@ -21,25 +21,25 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
     } finally { setIsRunningDossier(false); } }; return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
       {/* Interactive MCP Read-Only Tool Sandbox */}
-      <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-indigo-600" />
+          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <Cpu className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>سندباکس تست ابزارهای مجاز MCP (`/api/v1/mcp/execute`)</span>
           </div>
-          <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-bold">
+          <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold">
             Read-Only · Zero PII
           </span>
         </div>
         <div className="space-y-2">
           <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
               انتخاب ابزار مجاز پروتکل MCP:
             </label>
             <select
               value={selectedTool}
               onChange={(e) => setSelectedTool(e.target.value as AuthorizedMcpToolName)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-800"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-100"
             >
               {MCP_TOOLS_SPEC.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -47,17 +47,17 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                 </option>
               ))}
             </select>
-            <div className="text-[10.5px] text-slate-500 mt-1">
+            <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1">
               {MCP_TOOLS_SPEC.find((t) => t.id === selectedTool)?.descFa}
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
-              <label className="block text-[10px] font-bold text-slate-600 mb-0.5">کلان‌شهر</label>
+              <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">کلان‌شهر</label>
               <select
                 value={city}
                 onChange={(e) => setCity(e.target.value as CityId)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px]"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
               >
                 <option value="tehran">تهران</option>
                 <option value="karaj">کرج</option>
@@ -67,45 +67,45 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-600 mb-0.5">شناسه محله اول</label>
+              <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله اول</label>
               <input
                 type="number"
                 min={1}
                 max={80}
                 value={hoodId}
                 onChange={(e) => setHoodId(Number(e.target.value) || 1)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px]"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
               />
             </div>
             {selectedTool === 'compute_hedonic_valuation' && (
               <>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">متراژ ({formatAreaUnitLabel(areaUnit)}: {formatAreaShort(sqm, areaUnit)})</label>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">متراژ ({formatAreaUnitLabel(areaUnit)}: {formatAreaShort(sqm, areaUnit)})</label>
                   <input
                     type="number"
                     min={25}
                     max={1000}
                     value={sqm}
                     onChange={(e) => setSqm(Number(e.target.value) || 85)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px]"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">سن بنا (سال)</label>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">سن بنا (سال)</label>
                   <input
                     type="number"
                     min={0}
                     max={50}
                     value={buildingAge}
                     onChange={(e) => setBuildingAge(Number(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px]"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
                   />
                 </div>
               </>
             )}
             {selectedTool === 'search_approved_market_data' && (
               <div className="col-span-2">
-                <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">
                   سقف قیمت هر متر (میلیون تومان · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((maxBuyPerSqm * 80) / 1000).toFixed(1))} میلیارد{areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(maxBuyPerSqm, 'sqft'))} م/ft²` : ''}{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(maxBuyPerSqm, areaUnit), intlCurrency, locale)}` : ''})
                 </label>
                 <input
@@ -114,20 +114,20 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                   max={900}
                   value={maxBuyPerSqm}
                   onChange={(e) => setMaxBuyPerSqm(Number(e.target.value) || 160)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px]"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
                 />
               </div>
             )}
             {selectedTool === 'compare_market_indicators' && (
               <div className="col-span-2">
-                <label className="block text-[10px] font-bold text-slate-600 mb-0.5">شناسه محله دوم</label>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله دوم</label>
                 <input
                   type="number"
                   min={1}
                   max={80}
                   value={secondHoodId}
                   onChange={(e) => setSecondHoodId(Number(e.target.value) || 2)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px]"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
                 />
               </div>
             )}
@@ -158,39 +158,39 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
         </div>
       </div>
       {/* Cloudflare Runtime Portability & Production vs Simulation Ledger + AI Gateway & Dossier Sandbox */}
-      <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5">
-        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-          <Server className="w-4 h-4 text-emerald-600" />
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
+        <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>دفتر کل تفکیک حسابداری (Production vs Simulation) و پرتابلیتی Cloudflare</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200">
-            <div className="text-[10.5px] font-bold text-emerald-900">دفتر کل درآمد واقعی (Production)</div>
-            <div className="text-xs font-extrabold text-emerald-800 mt-0.5">
+          <div className="p-2 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
+            <div className="text-[10.5px] font-bold text-emerald-900 dark:text-emerald-200">دفتر کل درآمد واقعی (Production)</div>
+            <div className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 mt-0.5">
               {toPersianNum(monetizationSummary?.productionLedger?.actualSettledRevenueToman ?? 0)} تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency((monetizationSummary?.productionLedger?.actualSettledRevenueToman ?? 0) / 1_000_000, intlCurrency, locale)})` : ''}
             </div>
-            <div className="text-[10px] text-emerald-700">
+            <div className="text-[10px] text-emerald-700 dark:text-emerald-400">
               تراکنش‌های تسویه‌شده واقعی:{' '}
               {toPersianNum(monetizationSummary?.productionLedger?.confirmedSettlementsCount ?? 0)} مورد
             </div>
           </div>
-          <div className="p-2 rounded-lg bg-amber-50/80 border border-amber-200">
-            <div className="text-[10.5px] font-bold text-amber-900">دفتر کل شبیه‌سازی (Simulation)</div>
-            <div className="text-xs font-extrabold text-amber-800 mt-0.5">
+          <div className="p-2 rounded-lg bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
+            <div className="text-[10.5px] font-bold text-amber-900 dark:text-amber-200">دفتر کل شبیه‌سازی (Simulation)</div>
+            <div className="text-xs font-extrabold text-amber-800 dark:text-amber-300 mt-0.5">
               {toPersianNum(monetizationSummary?.simulationLedger?.simulatedTransactionsCount ?? 0)} تست شبیه‌سازی (۰ تومان{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(0, intlCurrency, locale)}` : ''})
             </div>
-            <div className="text-[9.5px] font-mono text-amber-800 truncate">
+            <div className="text-[9.5px] font-mono text-amber-800 dark:text-amber-400 truncate">
               {MANDATORY_PAYMENT_SIMULATION_BANNER}
             </div>
           </div>
         </div>
-        <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 text-[11px]">
-          <div className="font-bold text-slate-800 flex items-center justify-between gap-1">
+        <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-[11px]">
+          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-1">
             <span>تست مسیریاب چندمدلی AI Gateway (`/api/ai/gateway/infer`)</span>
             <select
               value={aiWorkflow}
               onChange={(e) => setAiWorkflow(e.target.value)}
-              className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[10px] font-bold"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-900 dark:text-slate-100"
             >
               <option value="valuation_explanation">تبیین ارزش‌گذاری هدانیک</option>
               <option value="intelligent_search">جست‌وجوی هوشمند</option>
@@ -221,24 +221,24 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
               {dossierResult.payload?.simulationBanner && <div className="text-amber-300">{dossierResult.payload.simulationBanner}</div>}
             </div>
           )} </div>
-        <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 space-y-1 text-[11px]">
-          <div className="font-bold text-slate-800 flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-[11px]">
+          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>وضعیت پرتابلیتی چندابر (Portable-by-Design):</span>
           </div>
-          <div className="text-slate-600">
-            حالت اجرای فعلی:{' '} <code className="font-mono font-bold text-slate-800">
+          <div className="text-slate-600 dark:text-slate-300">
+            حالت اجرای فعلی:{' '} <code className="font-mono font-bold text-slate-800 dark:text-slate-100">
               {cloudflareAndPortability?.runtimeMode || 'PORTABLE_NODE_AND_EDGE_HYBRID'} </code>{' '} · وابستگی قفل‌شده به ارائه‌دهنده واحد: <strong>صفر (Zero Vendor Lock-in)</strong>
           </div>
         </div>
         {aiRoutingAuditTrail.length > 0 && (
-          <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
-            <div className="font-bold text-slate-800 flex items-center gap-1 text-[11px]">
-              <Database className="w-3.5 h-3.5 text-slate-600" />
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+            <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-[11px]">
+              <Database className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
               <span>آخرین رخدادهای ممیزی تغییر مسیریابی AI Gateway:</span>
             </div>
-            <div className="max-h-20 overflow-y-auto space-y-1 text-[10px] text-slate-600">
-              {aiRoutingAuditTrail.slice(0, 3).map((item, idx) => ( <div key={idx} className="flex items-center justify-between border-b border-slate-200/60 pb-0.5">
+            <div className="max-h-20 overflow-y-auto space-y-1 text-[10px] text-slate-600 dark:text-slate-300">
+              {aiRoutingAuditTrail.slice(0, 3).map((item, idx) => ( <div key={idx} className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700 pb-0.5">
                   <span>
                     نسخه v{toPersianNum(item.version || 1)} توسط <code className="font-mono">{item.actorEmail}</code>
                   </span>

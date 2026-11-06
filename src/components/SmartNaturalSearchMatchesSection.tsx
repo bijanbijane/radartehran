@@ -87,20 +87,20 @@ export function SmartNaturalSearchMatchesSection({
   const { parsed, matched } = result;
 
   return (
-    <div className="border-b border-emerald-200/80 bg-emerald-50/40">
-      <div className="px-3 py-1.5 flex flex-wrap items-center justify-between gap-1 text-[11px] font-extrabold text-emerald-900 bg-emerald-100/60 border-b border-emerald-200/70">
+    <div className="border-b border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20">
+      <div className="px-3 py-1.5 flex flex-wrap items-center justify-between gap-1 text-[11px] font-extrabold text-emerald-900 dark:text-emerald-200 bg-emerald-100/60 dark:bg-emerald-950/50 border-b border-emerald-200/70 dark:border-emerald-900/50">
         <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600 stroke-[2]" />
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2]" />
           <span>پیشنهاد هوشمند بر اساس فیلتر کوئری فارسی</span>
         </span>
-        <span className="text-[10px] text-emerald-800 font-bold tabular-nums">
+        <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold tabular-nums">
           {parsed.targetZone !== null && `منطقه ${toPersianNum(parsed.targetZone)} · `}
           {parsed.maxBuyPerSqmMillions !== null && `تا ${areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(parsed.maxBuyPerSqmMillions, areaUnit))} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(parsed.maxBuyPerSqmMillions, areaUnit), intlCurrency, locale)})` : ''} · `}
           {parsed.maxRahnMillions !== null && `رهن تا ${toPersianNum(parsed.maxRahnMillions)} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(parsed.maxRahnMillions, intlCurrency, locale)})` : ''} · `}
           {toPersianNum(matched.length)} محله منطبق
         </span>
       </div>
-      <div className="divide-y divide-emerald-100/70">
+      <div className="divide-y divide-emerald-100/70 dark:divide-emerald-900/40">
         {matched.map((n) => {
           const monthlyRent80mMillions = Math.round(n.rahn80m * 0.03);
           return (
@@ -109,20 +109,20 @@ export function SmartNaturalSearchMatchesSection({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onSelectNeighborhood(n)}
-              className="w-full text-right px-3.5 py-2 hover:bg-emerald-100/50 transition flex items-center justify-between text-xs cursor-pointer group"
+              className="w-full text-right px-3.5 py-2 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/40 transition flex items-center justify-between text-xs cursor-pointer group"
             >
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                <span className="font-bold text-slate-900 group-hover:text-emerald-800">{n.name}</span>
-                <span className="text-[10px] text-slate-500 tabular-nums">
+                <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-800 dark:group-hover:text-emerald-300">{n.name}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
                   ({n.zone}{typeof n.distKm === 'number' ? ` · ${toPersianNum(areaUnit === 'sqft' ? (n.distKm * 0.621371).toFixed(1) : n.distKm.toFixed(1))} ${areaUnit === 'sqft' ? 'mi' : 'km'}` : ''})
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-1.5 py-0.5 rounded bg-white/80 text-emerald-800 text-[10px] font-bold tabular-nums border border-emerald-200">
+                <span className="px-1.5 py-0.5 rounded bg-white/80 dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold tabular-nums border border-emerald-200 dark:border-emerald-800">
                   امتیاز {toPersianNum(n.overallScore)}/۱۰
                 </span>
-                <span className="text-emerald-700 font-bold tabular-nums text-[11px]">
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
                   {mode === 'rent'
                     ? `رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م (اجاره: ${toPersianNum(monthlyRent80mMillions)} م)${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(n.rahn80m, intlCurrency, locale)})` : ''}`
                     : `${areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م (معامله v6.4: ${toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit), intlCurrency, locale)})` : ''}`}

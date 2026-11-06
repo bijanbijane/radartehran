@@ -64,23 +64,23 @@ export function BuyingPowerSummaryCard({
   const dealUnitRate = convertPricePerSqmToUnit(dealPerSqm, areaUnit);
 
   return (
-    <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-800">
-      <div className="font-extrabold text-emerald-950 flex items-center gap-1.5">
-        <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+    <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/70 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-800 dark:text-slate-200">
+      <div className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+        <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
         <span>فرمول قدرت خرید واقعی شما ({formatAreaValue(safeSqm, areaUnit)}):</span>
       </div>
 
-      <div className="space-y-1 text-[10.5px] text-slate-600 tabular-nums">
+      <div className="space-y-1 text-[10.5px] text-slate-600 dark:text-slate-300 tabular-nums">
         <div className="flex items-center justify-between">
           <span>نقدینگی پایه شما:</span>
-          <strong className="text-slate-900">
+          <strong className="text-slate-900 dark:text-white">
             {toPersianNum((buyTotalBudget / 1000).toFixed(2))} میلیارد تومان
             {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, radarLocale)})` : ''}
           </strong>
         </div>
 
         {useLoanBooster && (
-          <div className="flex items-center justify-between text-emerald-700">
+          <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
             <span>+ وام مسکن زوجین/جعاله:</span>
             <strong>
               +۱.۲۰ میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(loanHelpMillion, intlCurrency, radarLocale)})` : ''}
@@ -90,13 +90,13 @@ export function BuyingPowerSummaryCard({
 
         {deductTenantRahnInBuy && (
           <>
-            <div className="flex items-center justify-between text-emerald-700">
+            <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
               <span>+ کمک رهن مستأجر در {selectedHood?.name || 'محله'} ({formatAreaShort(safeSqm, areaUnit)}):</span>
               <strong>
                 +{toPersianNum((tenantRahnHelpMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(tenantRahnHelpMillion, intlCurrency, radarLocale)})` : ''}
               </strong>
             </div>
-            <div className="flex items-center justify-between text-teal-700">
+            <div className="flex items-center justify-between text-teal-700 dark:text-teal-400">
               <span>+ تنفس ۱۰٪ تحویل سند رسمی:</span>
               <strong>
                 +{toPersianNum((deedHoldbackMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(deedHoldbackMillion, intlCurrency, radarLocale)})` : ''}
@@ -106,11 +106,11 @@ export function BuyingPowerSummaryCard({
         )}
       </div>
 
-      <div className="pt-1.5 border-t border-emerald-200/80 flex items-center justify-between text-[11px] tabular-nums">
-        <span className="font-extrabold text-emerald-950">
+      <div className="pt-1.5 border-t border-emerald-200/80 dark:border-emerald-800/70 flex items-center justify-between text-[11px] tabular-nums">
+        <span className="font-extrabold text-emerald-950 dark:text-emerald-200">
           = کل قدرت خرید واقعی ({formatAreaShort(safeSqm, areaUnit)}):
         </span>
-        <strong className="font-black text-emerald-800">
+        <strong className="font-black text-emerald-800 dark:text-emerald-300">
           {toPersianNum((effectivePurchasingPowerMillion / 1000).toFixed(2))} میلیارد
           {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(effectivePurchasingPowerMillion, intlCurrency, radarLocale)})` : ''}{' '}
           ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
@@ -118,20 +118,20 @@ export function BuyingPowerSummaryCard({
         </strong>
       </div>
 
-      <div className="pt-1 border-t border-emerald-200/60 flex items-center justify-between text-[10.5px] text-emerald-900 tabular-nums">
+      <div className="pt-1 border-t border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between text-[10.5px] text-emerald-900 dark:text-emerald-200 tabular-nums">
         <span>
           متراژ قابل خرید در {selectedHood?.name || 'این محله'} ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
           {toPersianNum(hoodUnitRate)} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(hoodTotal80mMillions)} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(hoodUnitRate, intlCurrency, radarLocale)}` : ''}):
         </span>
-        <strong className="font-black text-emerald-700">{formatAreaValue(affordableSqmInHood, areaUnit)}</strong>
+        <strong className="font-black text-emerald-700 dark:text-emerald-400">{formatAreaValue(affordableSqmInHood, areaUnit)}</strong>
       </div>
 
-      <div className="pt-1 border-t border-emerald-200/60 flex items-center justify-between text-[10.5px] text-teal-900 tabular-nums">
+      <div className="pt-1 border-t border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between text-[10.5px] text-teal-900 dark:text-teal-200 tabular-nums">
         <span>
           با تخمین قیمت قطعی معامله ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
           {toPersianNum(dealUnitRate)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(dealUnitRate, intlCurrency, radarLocale)}` : ''}):
         </span>
-        <strong className="font-black text-teal-700">{formatAreaValue(affordableDealSqmInHood, areaUnit)}</strong>
+        <strong className="font-black text-teal-700 dark:text-teal-400">{formatAreaValue(affordableDealSqmInHood, areaUnit)}</strong>
       </div>
     </div>
   );

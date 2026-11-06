@@ -19,8 +19,8 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               <div className="flex items-center gap-2"> <h2 className="text-sm font-black text-slate-900 dark:text-white truncate">محله {selectedHood.name}</h2>
                 <span className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-extrabold text-[11px] tabular-nums">{toPersianNum(selectedHood.overallScore)} / ۱۰</span> </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 tabular-nums truncate">
-                خرید: {areaUnit === 'sqft' ? 'هر ft²' : 'متری'} <strong className="text-slate-800">{toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}</strong> (معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(hoodAggMetrics.estimatedDealPricePerSqm, areaUnit))} م) · رهن ({formatAreaShort(80, areaUnit)}):{' '}
-                <strong className="text-emerald-700">{toPersianNum(selectedHood.rahn80m)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : ''}</strong>
+                خرید: {areaUnit === 'sqft' ? 'هر ft²' : 'متری'} <strong className="text-slate-800 dark:text-slate-100">{toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}</strong> (معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(hoodAggMetrics.estimatedDealPricePerSqm, areaUnit))} م) · رهن ({formatAreaShort(80, areaUnit)}):{' '}
+                <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(selectedHood.rahn80m)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : ''}</strong>
               </div>
             </div>
             <button type="button" onClick={(e) => { e.stopPropagation(); setMobileSheetOpen(true); setDesktopCollapsed(false); }} className="px-3 py-2 rounded-[10px] bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 shrink-0 shadow-xs cursor-pointer hover:bg-emerald-700 active:scale-95 transition-all">
@@ -92,10 +92,10 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <button type="button" onClick={() => onToggleFavoriteHood(selectedHood.id)} title="افزودن به منتخب‌ها" className={`p-2 rounded-[10px] border transition cursor-pointer ${favoriteHoodIds.includes(selectedHood.id) ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950 dark:border-rose-800' : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
+              <button type="button" onClick={() => onToggleFavoriteHood(selectedHood.id)} title="افزودن به منتخب‌ها" aria-label="افزودن به منتخب‌ها" className={`p-2 rounded-[10px] border transition cursor-pointer ${favoriteHoodIds.includes(selectedHood.id) ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950 dark:border-rose-800' : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
                 <Heart className={`w-4 h-4 stroke-[1.75] ${favoriteHoodIds.includes(selectedHood.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
               </button>
-              <button type="button" onClick={onOpenShareModal} title="اشتراک‌گذاری کارنامه محله" className="p-2 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 transition cursor-pointer">
+              <button type="button" onClick={onOpenShareModal} title="اشتراک‌گذاری کارنامه محله" aria-label="اشتراک‌گذاری کارنامه محله" className="p-2 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 transition cursor-pointer">
                 <Share2 className="w-4 h-4 stroke-[1.75]" />
               </button>
               <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-2.5 py-1.5 text-center">
@@ -123,8 +123,8 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               { id: 'scorecard' as const, label: inspectorCopy.scorecardTab }, { id: 'market' as const, label: inspectorCopy.marketTab },
               { id: 'bargains' as const, label: `${inspectorCopy.bargainsTabPrefix} (${toPersianNum((selectedHood?.bargains || []).length)})` },
               { id: 'reviews' as const, label: inspectorCopy.reviewsTab },
-              { id: 'vote' as const, label: inspectorCopy.voteTab }, ].map((t) => { const isActive = t.id === 'vote' ? activeTab === 'vote' || activeTab === 'osm_places' : activeTab === t.id; return ( <button
-                  key={t.id} type="button" role="tab" aria-selected={isActive} data-testid={`inspector-tab-${t.id}`} onClick={() => setActiveTab(t.id)}
+              { id: 'vote' as const, label: inspectorCopy.voteTab }, ].map((t, idx, arr) => { const isActive = t.id === 'vote' ? activeTab === 'vote' || activeTab === 'osm_places' : activeTab === t.id; return ( <button
+                  key={t.id} type="button" role="tab" aria-selected={isActive} data-testid={`inspector-tab-${t.id}`} onClick={() => setActiveTab(t.id)} onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); setActiveTab(arr[(idx + (e.key === 'ArrowLeft' ? 1 : arr.length - 1)) % arr.length].id); } }}
                   className={`py-1.5 px-1 rounded-[8px] text-center truncate transition cursor-pointer ${isActive ? 'apple-segmented-pill-active dark:bg-slate-900 dark:text-white font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   {t.label}
@@ -213,7 +213,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               </div>
             )}
           </div>
-          {activeTab === 'market' && ( <div className="space-y-3.5 my-3.5 pt-1 border-t border-slate-200/70">
+          {activeTab === 'market' && ( <div className="space-y-3.5 my-3.5 pt-1 border-t border-slate-200/70 dark:border-slate-800">
               <SmartPriceForecastCard selectedHood={selectedHood} hoodName={selectedHood.name} currentBuyPerSqm={selectedHood.buyPerSqm} marketReport={marketReport} compact />
               <NeighborhoodMonthlyBarChart selectedHood={selectedHood} marketReport={marketReport} activeCity={activeCity} compact />
             </div>

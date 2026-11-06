@@ -59,7 +59,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
       }
     );
     return () => unsubVotes();
-  }, [authReady, currentUser, reconnectGeneration, setCloudVotes]);
+  }, [authReady, currentUser, isDelegatedAdmin, reconnectGeneration, setCloudVotes]);
   useEffect(() => {
     if (!authReady) { markCloudListenerInactive('bargains'); return; }
     markCloudListenerActive('bargains');
@@ -103,23 +103,19 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
       },
       (err) => {
         markCloudListenerError('bargains');
-        if (currentUser) {
-          try { handleFirestoreError(err, OperationType.LIST, 'bargains'); } catch { /* Graceful fallback */ }
-        }
+        if (currentUser) { try { handleFirestoreError(err, OperationType.LIST, 'bargains'); } catch { /* Graceful fallback */ } }
       }
     );
     return () => unsubBargains();
   }, [authReady, currentUser, reconnectGeneration]);
   useEffect(() => {
     if (!authReady) { markCloudListenerInactive('sponsors'); markCloudListenerInactive('buyerAlerts'); return; }
-    let isCancelled = false;
-    let unsubSponsors: (() => void) | null = null;
-    let unsubAlerts: (() => void) | null = null;
+    let isCancelled = false, unsubSponsors: (() => void) | null = null, unsubAlerts: (() => void) | null = null;
     const verifyAndSubscribeAdminCollections = async () => {
       if (!currentUser || !currentUser.emailVerified) {
         setBuyerLeads([]); setSponsorRequests([]); markCloudListenerInactive('sponsors'); markCloudListenerInactive('buyerAlerts'); return;
       }
-      let isVerifiedAdmin = isAuthorizedAdminUser(currentUser, false);
+      let isVerifiedAdmin = isAuthorizedAdminUser(currentUser, isDelegatedAdmin);
       if (!isVerifiedAdmin) {
         try {
           const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
@@ -147,30 +143,23 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
             const status = d.status === 'approved' ? 'approved' : 'pending';
             const planMonths = d.planMonths === 3 ? 3 : 1;
             const item: SponsorCrmRequestItem = {
-              id: `cloud-${docSnap.id}`,
-              hoodId,
+              id: `cloud-${docSnap.id}`, hoodId,
               hoodName: typeof d.hoodName === 'string' ? d.hoodName.slice(0, 80) : '',
-              agencyName: d.agencyName.slice(0, 120),
-              phone: d.phone.slice(0, 30),
+              agencyName: d.agencyName.slice(0, 120), phone: d.phone.slice(0, 30),
               specialty: typeof d.specialty === 'string' ? d.specialty.slice(0, 140) : '',
               experienceYears: Math.min(60, Math.max(1, Number(d.experienceYears) || 10)),
               monthlyTariffMillion: Math.min(200, Math.max(1, Number(d.monthlyTariffMillion) || 5)),
-              planMonths,
-              totalPayableMillion: Number(d.totalPayableMillion) || Number(d.monthlyTariffMillion) || 5,
+              planMonths, totalPayableMillion: Number(d.totalPayableMillion) || Number(d.monthlyTariffMillion) || 5,
               trackingCode: typeof d.trackingCode === 'string' ? d.trackingCode.slice(0, 80) : '',
-              expiresAtIso: typeof d.expiresAtIso === 'string' ? d.expiresAtIso : '',
-              status,
+              expiresAtIso: typeof d.expiresAtIso === 'string' ? d.expiresAtIso : '', status,
               createdAtFa: typeof d.createdAtFa === 'string' ? d.createdAtFa : 'ثبت ابری',
             };
             reqs.push(item);
             const notExpired = !item.expiresAtIso || Date.parse(item.expiresAtIso) > Date.now();
             if (status === 'approved' && notExpired) {
               activeSponsors[hoodId] = {
-                name: item.agencyName,
-                phone: item.phone,
-                specialty: item.specialty,
-                experienceYears: item.experienceYears,
-                expiresAtIso: item.expiresAtIso,
+                name: item.agencyName, phone: item.phone, specialty: item.specialty,
+                experienceYears: item.experienceYears, expiresAtIso: item.expiresAtIso,
                 planType: planMonths === 3 ? 'paid_3m' : 'paid_1m',
               };
             }
@@ -179,18 +168,12 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
           setCloudSponsorsByHood(activeSponsors);
         },
         (err) => {
-          setSponsorRequests([]); markCloudListenerError('sponsors');
-          setCloudSponsorsByHood({});
+          setSponsorRequests([]); markCloudListenerError('sponsors'); setCloudSponsorsByHood({});
           if (unsubSponsors) { unsubSponsors(); unsubSponsors = null; }
           try { handleFirestoreError(err, OperationType.LIST, 'sponsorRequests'); } catch { /* Non-fatal */ }
         }
       );
-      const alertsQuery = query(
-        collection(db, 'buyerAlerts'),
-        where('hoodId', '>=', 1),
-        where('hoodId', '<=', 999),
-        limit(150)
-      );
+      const alertsQuery = query(collection(db, 'buyerAlerts'), where('hoodId', '>=', 1), where('hoodId', '<=', 999), limit(150));
       unsubAlerts = onSnapshot(
         alertsQuery,
         (snapshot) => {
@@ -201,11 +184,9 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
             const hoodId = Number(d.hoodId);
             if (Number.isNaN(hoodId) || typeof d.fullName !== 'string' || typeof d.phone !== 'string') return;
             leads.push({
-              id: `cloud-${docSnap.id}`,
-              hoodId,
+              id: `cloud-${docSnap.id}`, hoodId,
               hoodName: typeof d.hoodName === 'string' ? d.hoodName.slice(0, 80) : '',
-              fullName: d.fullName.slice(0, 100),
-              phone: d.phone.slice(0, 30),
+              fullName: d.fullName.slice(0, 100), phone: d.phone.slice(0, 30),
               dealType: d.dealType === 'اجاره' ? 'اجاره' : 'خرید',
               maxBudgetText: typeof d.maxBudgetText === 'string' ? d.maxBudgetText.slice(0, 120) : '',
               createdAtFa: typeof d.createdAtFa === 'string' ? d.createdAtFa : 'ثبت ابری',
@@ -221,12 +202,8 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
       );
     };
     void verifyAndSubscribeAdminCollections();
-    return () => {
-      isCancelled = true;
-      if (unsubSponsors) unsubSponsors();
-      if (unsubAlerts) unsubAlerts();
-    };
-  }, [authReady, currentUser, reconnectGeneration]);
+    return () => { isCancelled = true; if (unsubSponsors) unsubSponsors(); if (unsubAlerts) unsubAlerts(); };
+  }, [authReady, currentUser, isDelegatedAdmin, reconnectGeneration]);
   useEffect(() => {
     if (!authReady) { markCloudListenerInactive('overrides'); return; }
     markCloudListenerActive('overrides');

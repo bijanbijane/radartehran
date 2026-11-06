@@ -33,44 +33,44 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
   }, [searchQuery, searchMatches, trendingHoods, highlightedIndex]);
   const handleClearHistory = (e: React.MouseEvent) => { e.stopPropagation(); clearAllRecentSearches(); setRecentSearches([]); };
   const isQueryEmpty = !searchQuery.trim(); return (
-    <div className="absolute right-0 left-0 mt-2 apple-grouped-card shadow-xl max-h-96 overflow-y-auto z-50 divide-y divide-slate-200/60 animate-in fade-in-0 duration-200">
+    <div className="absolute right-0 left-0 mt-2 apple-grouped-card dark:bg-slate-900 dark:border-slate-700/80 shadow-xl max-h-96 overflow-y-auto z-50 divide-y divide-slate-200/60 dark:divide-slate-800 animate-in fade-in-0 duration-200">
       {isQueryEmpty ? (
         <div className="py-1">
           {recentSearches.length > 0 ? (
             <div>
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-slate-500 bg-slate-50/70 border-b border-slate-100">
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
                 <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-slate-400 stroke-[2]" /><span>جست‌وجوهای اخیر</span></span>
-                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={handleClearHistory} className="flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-rose-600 transition cursor-pointer"><Trash2 className="w-3 h-3 stroke-[1.75]" /><span>پاک کردن</span></button>
+                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={handleClearHistory} className="flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"><Trash2 className="w-3 h-3 stroke-[1.75]" /><span>پاک کردن</span></button>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {recentSearches.map((name, idx) => { const matchedHood = evaluatedNeighborhoods.find((h) => h.name.trim().toLowerCase() === name.trim().toLowerCase()); return (
-                    <button key={name} type="button" style={{ animationDelay: `${idx * 40}ms` }} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectRecentSearchName(name)} className="w-full text-right px-3.5 py-2 hover:bg-slate-50/90 transition flex items-center justify-between text-xs cursor-pointer group ios-stagger-item">
+                    <button key={name} type="button" style={{ animationDelay: `${idx * 40}ms` }} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectRecentSearchName(name)} className="w-full text-right px-3.5 py-2 hover:bg-slate-50/90 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group ios-stagger-item">
                       <div className="flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#007AFF] transition stroke-[1.75]" />
-                        <span className="font-bold text-slate-800 group-hover:text-[#007AFF] transition">{name}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#007AFF] transition">{name}</span>
                         {matchedHood && <span className="text-[10px] text-slate-400">({matchedHood.zone})</span>}
                       </div>
-                      {matchedHood && <span className="text-emerald-700 font-bold tabular-nums text-[11px]">{formatHoodPriceMetric(matchedHood)}</span>}
+                      {matchedHood && <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">{formatHoodPriceMetric(matchedHood)}</span>}
                     </button>
                   ); })}
               </div>
             </div>
           ) : (
             <div className="px-3.5 py-2.5 text-center text-xs text-slate-400 flex flex-col items-center gap-1">
-              <MapPin className="w-4 h-4 text-slate-300 stroke-[1.75]" />
+              <MapPin className="w-4 h-4 text-slate-300 dark:text-slate-600 stroke-[1.75]" />
               <span>نام محله مورد نظر خود را برای جست‌وجو وارد کنید.</span>
             </div>
           )}
           {trendingHoods.length > 0 && (
-            <div className="border-t border-slate-200/80">
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 bg-amber-50/60 border-b border-amber-100/70">
+            <div className="border-t border-slate-200/80 dark:border-slate-800">
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
                 <span className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-600 stroke-[2]" />
+                  <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 stroke-[2]" />
                   <span>محله‌های پرطرفدار و ترند</span>
                 </span>
-                <span className="text-[10px] text-amber-700 font-bold">انتخاب سریع</span>
+                <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">انتخاب سریع</span>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {trendingHoods.map((n, idx) => (
                   <button
                     key={`empty-trending-${n.id}`}
@@ -78,15 +78,15 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSelectNeighborhood(n)}
                     className={`w-full text-right px-3.5 py-2 transition flex items-center justify-between text-xs cursor-pointer group ${
-                      idx === highlightedIndex ? 'bg-amber-50/80' : 'hover:bg-amber-50/50'
+                      idx === highlightedIndex ? 'bg-amber-50/80 dark:bg-amber-950/40' : 'hover:bg-amber-50/50 dark:hover:bg-slate-800/70'
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-3 h-3 text-amber-500 group-hover:text-amber-600 transition" />
-                      <span className="font-bold text-slate-800 group-hover:text-amber-800 transition">{n.name}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
                     </div>
-                    <span className="text-emerald-700 font-bold tabular-nums text-[11px]">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
                       {formatHoodPriceMetric(n)}
                     </span>
                   </button>
@@ -94,19 +94,19 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
               </div>
             </div>
           )}
-          <div className="border-t border-slate-200/80">
-            <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-slate-600 bg-slate-50/90 border-b border-slate-100">
+          <div className="border-t border-slate-200/80 dark:border-slate-800">
+            <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-slate-600 dark:text-slate-300 bg-slate-50/90 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
               <span>فهرست کامل محلات این منطقه</span>
-              <span className="text-[10px] text-emerald-700 font-bold tabular-nums">{toPersianNum(evaluatedNeighborhoods.length)} محله</span>
+              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">{toPersianNum(evaluatedNeighborhoods.length)} محله</span>
             </div>
-            <div className="divide-y divide-slate-100 max-h-56 overflow-y-auto">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-56 overflow-y-auto">
               {evaluatedNeighborhoods.map((n) => (
                 <button
                   key={`dir-${n.id}`}
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelectNeighborhood(n)}
-                  className="w-full text-right px-3.5 py-2 hover:bg-slate-50 transition flex items-center justify-between text-xs cursor-pointer group"
+                  className="w-full text-right px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group"
                 >
                   <div className="flex items-center gap-1.5 truncate">
                     <span
@@ -114,10 +114,10 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
                         n.status === 'green' ? 'bg-emerald-500' : n.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'
                       }`}
                     />
-                    <span className="font-bold text-slate-800 group-hover:text-[#007AFF] truncate">{n.name}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#007AFF] truncate">{n.name}</span>
                     <span className="text-[10px] text-slate-400 truncate">({n.zone})</span>
                   </div>
-                  <span className="text-emerald-700 font-bold tabular-nums text-[11px] shrink-0">
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px] shrink-0">
                     {formatHoodPriceMetric(n)}
                   </span>
                 </button>
@@ -135,13 +135,13 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
           />
           {searchMatches.length > 0 && (
             <div>
-              <div className="px-3 py-1 flex items-center justify-between text-[11px] font-extrabold text-slate-500 bg-slate-50/70 border-b border-slate-100">
+              <div className="px-3 py-1 flex items-center justify-between text-[11px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
                 <span>نتایج جست‌وجو (↑↓ و Enter)</span>
                 <span className="text-[10px] text-slate-400 tabular-nums">
                   {toPersianNum(searchMatches.length)} محله
                 </span>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {searchMatches.slice(0, 50).map((n, idx) => (
                   <button
                     key={n.id}
@@ -151,7 +151,7 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
                     onMouseEnter={() => setHighlightedIndex(idx)}
                     onClick={() => handleSelectNeighborhood(n)}
                     className={`w-full text-right px-3.5 py-2.5 transition flex items-center justify-between text-xs cursor-pointer ios-stagger-item group ${
-                      idx === highlightedIndex ? 'bg-emerald-50/90 text-emerald-950' : 'hover:bg-slate-50'
+                      idx === highlightedIndex ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100' : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -160,14 +160,14 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
                           n.status === 'green' ? 'bg-emerald-500' : n.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'
                         }`}
                       />
-                      <span className="font-bold text-slate-900 group-hover:text-[#007AFF] transition">{n.name}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#007AFF] transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold tabular-nums">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold tabular-nums">
                         {toPersianNum(n.overallScore)}/۱۰
                       </span>
-                      <span className="text-emerald-700 font-bold tabular-nums text-[11px]">
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
                         {formatHoodPriceMetric(n)}
                       </span>
                     </div>
@@ -182,58 +182,58 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
             </div>
           )}
           {crossCityMatches.length > 0 && (
-            <div className="mt-1 border-t border-slate-200/80">
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-indigo-900 bg-indigo-50/70 border-b border-indigo-100">
+            <div className="mt-1 border-t border-slate-200/80 dark:border-slate-800">
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-indigo-900 dark:text-indigo-200 bg-indigo-50/70 dark:bg-indigo-950/40 border-b border-indigo-100 dark:border-indigo-900/50">
                 <span>نتایج در سایر استان‌ها و شهرهای ایران</span>
-                <span className="text-[10px] text-indigo-700 font-bold tabular-nums">{toPersianNum(crossCityMatches.length)} محله</span>
+                <span className="text-[10px] text-indigo-700 dark:text-indigo-400 font-bold tabular-nums">{toPersianNum(crossCityMatches.length)} محله</span>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {crossCityMatches.slice(0, 30).map((n) => { const targetCityId = resolveCityIdForNeighborhood(n.id); const cityName = MULTI_CITY_CONFIGS[targetCityId]?.nameFa || targetCityId; return ( <button
                       key={`cross-${n.id}`}
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectCrossCityNeighborhood(n)}
-                      className="w-full text-right px-3.5 py-2 hover:bg-indigo-50/60 transition flex items-center justify-between text-xs cursor-pointer group"
+                      className="w-full text-right px-3.5 py-2 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 transition flex items-center justify-between text-xs cursor-pointer group"
                     >
                       <div className="flex items-center gap-1.5 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                        <span className="font-bold text-slate-900 group-hover:text-indigo-700 truncate">{n.name}</span>
-                        <span className="text-[10px] text-slate-500 truncate">({n.zone})</span>
+                        <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 truncate">{n.name}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">({n.zone})</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[9.5px] font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 text-[9.5px] font-bold">
                           پرواز به {cityName} </span>
-                        <span className="text-emerald-700 font-bold tabular-nums text-[11px]">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
                           {formatHoodPriceMetric(n)} </span>
                       </div>
                     </button>
                   ); })} </div>
             </div>
-          )} {trendingHoods.length > 0 && ( <div className="mt-1 border-t border-slate-200/80">
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 bg-amber-50/60 border-b border-amber-100/70">
+          )} {trendingHoods.length > 0 && ( <div className="mt-1 border-t border-slate-200/80 dark:border-slate-800">
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
                 <span className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-600 stroke-[2]" />
+                  <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 stroke-[2]" />
                   <span>محله‌های پرطرفدار و ترند</span>
                 </span>
-                <span className="text-[10px] text-amber-700 font-bold">پیشنهاد سریع</span>
+                <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">پیشنهاد سریع</span>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {trendingHoods.map((n, idx) => ( <button
                     key={`trending-${n.id}`}
                     type="button"
                     style={{ animationDelay: `${(idx + 1) * 45}ms` }}
-                    onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectNeighborhood(n)} className="w-full text-right px-3.5 py-2 hover:bg-amber-50/50 transition flex items-center justify-between text-xs cursor-pointer group ios-stagger-item"
+                    onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectNeighborhood(n)} className="w-full text-right px-3.5 py-2 hover:bg-amber-50/50 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group ios-stagger-item"
                   >
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-3 h-3 text-amber-500 group-hover:text-amber-600 transition" />
-                      <span className="font-bold text-slate-800 group-hover:text-amber-800 transition">{n.name}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 text-emerald-700 font-extrabold text-[10px] tabular-nums">
+                      <span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-extrabold text-[10px] tabular-nums">
                         {toPersianNum(n.overallScore)} / ۱۰
                       </span>
-                      <span className="text-slate-600 font-bold tabular-nums text-[11px]">
+                      <span className="text-slate-600 dark:text-slate-400 font-bold tabular-nums text-[11px]">
                         {formatHoodPriceMetric(n)} </span>
                     </div>
                   </button>

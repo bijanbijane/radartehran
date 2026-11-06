@@ -55,21 +55,21 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
         </button>
       </div>
       {statusMsg && (
-        <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{statusMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">
+        <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 font-bold">
           {errorMsg}
         </div>
       )}
       {/* بخش ۱: ریشه‌های امنیتی و هویتی فقط‌خواندنی (Deployment-Managed Trust Roots) */}
-      <div className="bg-slate-100 border border-slate-300 rounded-2xl p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-          <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-            <Lock className="w-4 h-4 text-slate-700" />
+      <div className="bg-slate-100 dark:bg-slate-800/70 border border-slate-300 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2.5">
+          <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <Lock className="w-4 h-4 text-slate-700 dark:text-slate-300" />
             <span>ریشه‌های امنیتی و اعتبارنامه‌های مستقر (فقط‌خواندنی · غیرقابل ویرایش در زمان اجرا)</span>
           </div>
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-white">
@@ -77,39 +77,39 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
-          <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 font-semibold">FIREBASE_PROJECT_ID (فقط‌خواندنی):</div>
-            <div dir="ltr" className="font-mono font-bold text-slate-900 select-all">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
+            <div className="text-slate-500 dark:text-slate-400 font-semibold">FIREBASE_PROJECT_ID (فقط‌خواندنی):</div>
+            <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 select-all">
               {report?.firebase.projectId || 'gen-lang-client-0713157837'}
             </div>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 font-semibold">FIRESTORE_DATABASE_ID (فقط‌خواندنی):</div>
-            <div dir="ltr" className="font-mono font-bold text-slate-900 truncate select-all">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
+            <div className="text-slate-500 dark:text-slate-400 font-semibold">FIRESTORE_DATABASE_ID (فقط‌خواندنی):</div>
+            <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate select-all">
               {report?.firebase.firestoreDatabaseId || 'ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a'}
             </div>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 font-semibold">ADMIN_EMAIL (ریشه مدیر اصلی):</div>
-            <div dir="ltr" className="font-mono font-bold text-slate-900 select-all">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
+            <div className="text-slate-500 dark:text-slate-400 font-semibold">ADMIN_EMAIL (ریشه مدیر اصلی):</div>
+            <div dir="ltr" className="font-mono font-bold text-slate-900 dark:text-slate-100 select-all">
               {report?.firebase.adminEmail || 'radio837isf@gmail.com'}
             </div>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 font-semibold">OBJECT_STORAGE_ENDPOINT & BUCKET:</div>
-            <div dir="ltr" className="font-mono font-bold text-slate-800 truncate">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
+            <div className="text-slate-500 dark:text-slate-400 font-semibold">OBJECT_STORAGE_ENDPOINT & BUCKET:</div>
+            <div dir="ltr" className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
               {report?.objectStorage.endpoint || '(local_bucket)'} / {report?.objectStorage.bucket || 'tehran-housing-radar-media'}
             </div>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 font-semibold">وضعیت کلیدهای استوریج و تلگرام:</div>
-            <div className="font-bold text-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
+            <div className="text-slate-500 dark:text-slate-400 font-semibold">وضعیت کلیدهای استوریج و تلگرام:</div>
+            <div className="font-bold text-slate-800 dark:text-slate-200">
               S3 Keys: {report?.objectStorage.accessKeyConfigured && report?.objectStorage.secretKeyConfigured ? 'تنظیم‌شده' : 'خالی'} · Bot Token: {report?.telegram.botTokenConfigured ? 'تنظیم‌شده' : 'خالی'}
             </div>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-1">
-            <div className="text-slate-500 font-semibold">وضعیت کلیدهای Gemini و Admin Secret:</div>
-            <div className="font-bold text-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1">
+            <div className="text-slate-500 dark:text-slate-400 font-semibold">وضعیت کلیدهای Gemini و Admin Secret:</div>
+            <div className="font-bold text-slate-800 dark:text-slate-200">
               Gemini Key: {report?.gemini.configured ? 'تنظیم‌شده' : 'خالی'} · Admin Secret: {report?.firebase.adminSecretConfigured ? 'تنظیم‌شده' : 'خالی'}
             </div>
           </div>
@@ -118,68 +118,68 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
       {/* بخش ۲: فرم تنظیمات عملیاتی ایمن (Allowlisted Operational Settings) */}
       <form onSubmit={handleSaveEnv} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
-              <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
+              <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>۱. تنظیمات مدل هوش مصنوعی (GEMINI_MODEL)</span>
               </div>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
                 عملیاتی مجاز
               </span>
             </div>
             <div>
-              <label className="block text-slate-600 mb-1">مدل پیش‌فرض پردازش (GEMINI_MODEL):</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1">مدل پیش‌فرض پردازش (GEMINI_MODEL):</label>
               <select
                 value={geminiModel}
                 onChange={(e) => setGeminiModel(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
               >
                 <option value="gemini-2.5-flash">gemini-2.5-flash (پیشنهادی - سریع و دقیق)</option>
                 <option value="gemini-2.5-pro">gemini-2.5-pro (تحلیل پیشرفته حقوقی و بازار)</option>
               </select>
             </div>
           </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
-              <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                <Send className="w-4 h-4 text-sky-600" />
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
+              <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <Send className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                 <span>۲. شناسه کانال عمومی تلگرام (TELEGRAM_CHANNEL_ID)</span>
               </div>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300">
                 عملیاتی مجاز
               </span>
             </div>
             <div>
-              <label className="block text-slate-600 mb-1">شناسه کانال یا گروه مقصد (TELEGRAM_CHANNEL_ID):</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1">شناسه کانال یا گروه مقصد (TELEGRAM_CHANNEL_ID):</label>
               <input
                 type="text"
                 dir="ltr"
                 value={telegramChannelId}
                 onChange={(e) => setTelegramChannelId(e.target.value)}
                 placeholder="@TehranHousingRadar یا -100123456789"
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-mono"
               />
             </div>
           </div>
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
-            <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-              <Cloud className="w-4 h-4 text-emerald-600" />
+        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
+            <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <Cloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>۳. پارامترهای غیرمحرمانه آبجکت استوریج (سقف حجم و CDN)</span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
               اعتبارنامه‌های S3 در محیط استقرار قفل شده‌اند
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-slate-600 mb-1">سرویس‌دهنده استوریج (PROVIDER):</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1">سرویس‌دهنده استوریج (PROVIDER):</label>
               <select
                 value={storageProvider}
                 onChange={(e) => setStorageProvider(e.target.value as ObjectStorageProviderId)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
               >
                 <option value="arvancloud">ArvanCloud S3 (ابر آروان)</option>
                 <option value="liara">Liara Object Storage (لیارا)</option>
@@ -190,48 +190,48 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
               </select>
             </div>
             <div>
-              <label className="block text-slate-600 mb-1">منطقه دیتاسنتر (REGION):</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1">منطقه دیتاسنتر (REGION):</label>
               <input
                 type="text"
                 dir="ltr"
                 value={storageRegion}
                 onChange={(e) => setStorageRegion(e.target.value)}
                 placeholder="ir-thr-at1"
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-mono"
               />
             </div>
             <div>
-              <label className="block text-slate-600 mb-1">دامنه عمومی CDN (PUBLIC_BASE_URL):</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1">دامنه عمومی CDN (PUBLIC_BASE_URL):</label>
               <input
                 type="text"
                 dir="ltr"
                 value={storagePublicUrl}
                 onChange={(e) => setStoragePublicUrl(e.target.value)}
                 placeholder="https://cdn.example.ir"
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-mono"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 max-w-md">
             <div>
-              <label className="block text-slate-600 mb-1">سقف عکس (MB):</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1">سقف عکس (MB):</label>
               <input
                 type="number"
-                min={1} max={25} value={maxImageMb} onChange={(e) => setMaxImageMb(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold tabular-nums"
+                min={1} max={25} value={maxImageMb} onChange={(e) => setMaxImageMb(Number(e.target.value))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
               />
             </div>
             <div>
-              <label className="block text-slate-600 mb-1">سقف ویدیو (MB):</label>
+              <label className="block text-slate-600 dark:text-slate-300 mb-1">سقف ویدیو (MB):</label>
               <input
                 type="number"
-                min={5} max={200} value={maxVideoMb} onChange={(e) => setMaxVideoMb(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold tabular-nums"
+                min={5} max={200} value={maxVideoMb} onChange={(e) => setMaxVideoMb(Number(e.target.value))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
               />
             </div>
           </div>
         </div>
         <div className="flex items-center justify-between gap-3 pt-1">
-          <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>ذخیره این فرم نیازمند احراز هویت مدیر اصلی (Primary Bootstrap Admin) از طریق توکن Firebase است.</span>
           </div>
           <button

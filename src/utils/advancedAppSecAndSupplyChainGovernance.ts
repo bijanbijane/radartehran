@@ -75,7 +75,7 @@ export function filterAllowedMutationFields<T extends Record<string, unknown>>(
   allowedWritableFields: readonly string[]
 ): { sanitizedPatch: Record<string, unknown>; rejectedProtectedFields: string[]; rejectedUnknownFields: string[] } {
   const allowedSet = new Set(allowedWritableFields);
-  const sanitizedPatch: Record<string, unknown> = Object.create(null);
+  const sanitizedPatch: Record<string, unknown> = {};
   const rejectedProtectedFields: string[] = [];
   const rejectedUnknownFields: string[] = [];
   for (const [key, val] of Object.entries(rawInput || {})) {

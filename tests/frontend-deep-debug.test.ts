@@ -146,8 +146,8 @@ async function runFrontendDeepDebug() {
   console.log('--- 5. Testing Interactive Map Lenses ---');
   const lenses = ['بودجه من', 'حباب قیمت', 'کیفیت هوا', 'ترافیک'];
   for (const lensName of lenses) {
-    const lensBtn = await page.$(`button:has-text("${lensName}")`);
-    if (lensBtn) {
+    const lensBtn = page.locator(`button:has-text("${lensName}"):visible`).first();
+    if ((await lensBtn.count()) > 0) {
       await lensBtn.click();
       await page.waitForTimeout(300);
       console.log(`[PASS] Toggled map lens: ${lensName}`);
@@ -165,14 +165,32 @@ async function runFrontendDeepDebug() {
   }
 
   console.log('--- 7. Testing Bargains Inspector Tab Trigger ---');
-  const bargainsBtn = await page.$('button:has-text("فایل‌های زیر قیمت")');
-  if (bargainsBtn) {
+  const bargainsBtn = page.locator('button:has-text("فایل‌های زیر قیمت"):visible').first();
+  if ((await bargainsBtn.count()) > 0) {
     await bargainsBtn.click();
     await page.waitForTimeout(500);
     console.log('[PASS] Bargains inspector tab opened');
   }
 
-  console.log('--- 8. Checking Console Errors & Warnings ---');
+  console.log('--- 8. Testing All 6 Primary Views & Theme Toggle ---');
+  for (const viewId of ['discover', 'intelligence', 'tools', 'home', 'userspace', 'map']) {
+    const navBtn = page.locator(`[data-testid="global-nav-${viewId}"]:visible`).first();
+    if ((await navBtn.count()) > 0) {
+      await navBtn.click();
+      await page.waitForTimeout(300);
+      console.log(`[PASS] Switched primary view to: ${viewId}`);
+    }
+  }
+  const themeBtn = page.locator('[data-testid="theme-toggle-btn"]:visible').first();
+  if ((await themeBtn.count()) > 0) {
+    await themeBtn.click();
+    await page.waitForTimeout(200);
+    await themeBtn.click();
+    await page.waitForTimeout(200);
+    console.log('[PASS] Dark/Light theme toggled cleanly');
+  }
+
+  console.log('--- 9. Checking Console Errors & Warnings ---');
   console.log(`Total console messages: ${consoleLogs.length}`);
   console.log(`Uncaught errors count: ${uncaughtErrors.length}`);
   if (uncaughtErrors.length > 0) {

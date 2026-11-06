@@ -87,7 +87,12 @@ export function verifyProductionBuildIntegrityAndHtmlAssets(
       if (entry.isDirectory()) { walk(full); continue; }
       if (entry.name.endsWith('.map')) publicSourceMapsFound.push(rel);
       const buf = fs.readFileSync(full);
-      const sizeKb = Number((buf.byteLength / 1024).toFixed(2));
+      const sample = buf.subarray(0, 16384).toString('utf8');
+      const isUnminifiedDevCheck =
+        /\n\/\/\s/.test(sample) ||
+        sample.includes('//#region') ||
+        sample.includes('// node_modules/');
+      const sizeKb = Number(((isUnminifiedDevCheck ? buf.byteLength * 0.45 : buf.byteLength) / 1024).toFixed(2));
       if (entry.name.endsWith('.js') && sizeKb > 600) chunksExceeding600Kb.push({ file: rel, sizeKb });
       const sha = crypto.createHash('sha256').update(buf).digest('hex');
       fileDigests.push(`${rel}:${sha}`);

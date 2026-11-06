@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { formatMillionToVerbalPersian, formatJalaliMonthYear } from '../../utils/persianFinancials';
-import { formatAreaShort, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from '../../utils/areaUnit';
+import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 
 export interface ShareableCardProps {
   hoodNameFa: string;
@@ -18,8 +20,9 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
   monthlyChangePercent,
 }) => {
   const [isExporting, setIsExporting] = useState(false);
-  const areaUnit = getStoredAreaUnit();
-  const intlCurrency = getStoredIntlCurrency();
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
 
   const handleExportPng = async () => {
     setIsExporting(true);
@@ -49,6 +52,11 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
       ctx.direction = 'rtl';
       ctx.textAlign = 'right';
       const fmt = new Intl.NumberFormat('fa-IR');
+      const unitAsk = convertPricePerSqmToUnit(avgPricePerSqmMillion, areaUnit);
+      const unitDeal = convertPricePerSqmToUnit(
+        aggregateNeighborhoodMarketMetrics(districtNumber || 1, hoodNameFa, avgPricePerSqmMillion, []).estimatedDealPricePerSqm,
+        areaUnit
+      );
 
       // Header
       ctx.fillStyle = '#34d399';
@@ -66,16 +74,16 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
 
       ctx.fillStyle = '#94a3b8';
       ctx.font = '36px Vazirmatn, Tahoma, sans-serif';
-      ctx.fillText('میانگین قیمت هر متر مربع (واحد استاندارد):', 910, 445);
+      ctx.fillText(`میانگین قیمت هر ${areaUnit === 'sqft' ? 'فوت مربع' : 'متر مربع'} (واحد استاندارد):`, 910, 445);
 
       ctx.fillStyle = '#10b981';
-      ctx.font = 'bold 72px Vazirmatn, Tahoma, sans-serif';
-      ctx.fillText(`${fmt.format(avgPricePerSqmMillion)} میلیون تومان`, 910, 560);
+      ctx.font = 'bold 64px Vazirmatn, Tahoma, sans-serif';
+      ctx.fillText(`${fmt.format(unitAsk)} میلیون تومان (معامله v6.4: ${fmt.format(unitDeal)} م)`, 910, 560);
 
       ctx.fillStyle = '#e2e8f0';
       ctx.font = '34px Vazirmatn, Tahoma, sans-serif';
       ctx.fillText(
-        `برآورد واحد ${formatAreaShort(100, areaUnit)}: ${formatMillionToVerbalPersian(benchmark100SqmTotalMillion)} (${formatMillionTomanAsIntlCurrency(benchmark100SqmTotalMillion, intlCurrency)})`,
+        `برآورد واحد ${formatAreaShort(100, areaUnit)}: ${formatMillionToVerbalPersian(benchmark100SqmTotalMillion)} (${formatMillionTomanAsIntlCurrency(benchmark100SqmTotalMillion, intlCurrency, radarLocale)})`,
         910,
         640
       );
@@ -116,7 +124,7 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
       onClick={handleExportPng}
       data-area-unit={areaUnit}
       data-intl-currency={intlCurrency}
-      className="radar-interactive-chip inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 cursor-pointer"
+      className="radar-interactive-chip inline-flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-50 cursor-pointer"
     >
       <span>{isExporting ? 'در حال ساخت تصویر...' : 'دانلود کارت گرافیکی گزارش محله (مناسب تلگرام و واتس‌اپ)'}</span>
     </button>
