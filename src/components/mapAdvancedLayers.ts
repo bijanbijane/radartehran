@@ -11,12 +11,12 @@ export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighbo
     ? isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a'
     : hasSponsor ? '1.5px solid #fbbf24'
     : isDarkMap ? '1px solid rgba(255,255,255,0.65)' : '1px solid rgba(255,255,255,0.35)'; const shadowRule = isSelected
-    ? '0 0 18px rgba(16,185,129,0.9)'
-    : '0 3px 10px rgba(0,0,0,0.45)'; if (zoom <= 11 && !isSelected) {
+    ? '0 0 0 3px rgba(56,189,248,0.45), 0 8px 20px rgba(0,0,0,0.45)'
+    : '0 2px 8px rgba(0,0,0,0.35)'; if (zoom <= 11 && !isSelected) {
     const compactText = escapeHtmlAttr(`${toPersianNum(convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit))}م`);
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${compactText}</span>
+        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${safeHoodName}</span><span style="opacity:0.92;font-weight:700;border-right:1px solid rgba(255,255,255,0.28);padding-right:3px;">${safePriceLabel || compactText}</span>
         </span>
       </div>`,
       iconSize: [54, 22], iconAnchor: [27, 11], }; }

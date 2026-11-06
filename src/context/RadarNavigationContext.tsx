@@ -48,7 +48,7 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
 
   const [marketMode, setMarketModeState] = useState<MarketMode>(() => {
     if (typeof window === 'undefined') return 'BUY';
-    return new URLSearchParams(window.location.search).get('mode') === 'RENT' ? 'RENT' : 'BUY';
+    return new URLSearchParams(window.location.search).get('mode')?.toUpperCase() === 'RENT' ? 'RENT' : 'BUY';
   });
 
   const [activeTab, setActiveTabState] = useState<InspectorTabId>('OVERVIEW');
@@ -77,7 +77,7 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
     if (selectedHoodId) params.set('hood', selectedHoodId);
     else params.delete('hood');
 
-    params.set('mode', marketMode);
+    params.set('mode', marketMode.toLowerCase());
     if (activeTab !== 'OVERVIEW') params.set('tab', activeTab);
     else params.delete('tab');
 

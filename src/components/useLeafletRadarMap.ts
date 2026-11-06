@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'; import { EvaluatedNeighborhood, getNeighborhoodLandmarks, isSponsorActive, LocalLandmark, MapTileServerId, toPersianNum, WorkHub, } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { AuthoritativeBoundaryRecord, clientGeoJsonLruCache, fetchAuthoritativeCityBoundaries, getZoomAdaptivePolygonStyle, renderNeighborhoodGeoJSONOnLeaflet, } from '../utils/neighborhoodBoundaries'; import { planViewportBoundaryFetchBatch, resolveGeoLazyLoadingPolicy } from '../utils/geojsonViewportLazyEngine'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr, FeatureFlags } from '../utils/security'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { buildD3PriceDensityScale, D3PriceDensityScaleResult, isNeighborhoodInLeafletViewport, renderPriceDensityHeatmapOnLeaflet, } from './priceHeatmapAndViewportLazy'; import { buildZoomAdaptivePillIconConfig, renderAdvancedSpatialOverlaysOnLeaflet, updateMapAdvancedOverlayState, useMapAdvancedOverlayState, } from './mapAdvancedLayers';
+import React, { useEffect, useRef, useState } from 'react'; import { EvaluatedNeighborhood, getNeighborhoodLandmarks, isSponsorActive, LocalLandmark, MapTileServerId, toPersianNum, WorkHub, } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { AuthoritativeBoundaryRecord, clientGeoJsonLruCache, fetchAuthoritativeCityBoundaries, getZoomAdaptivePolygonStyle, renderNeighborhoodGeoJSONOnLeaflet, } from '../utils/neighborhoodBoundaries'; import { planViewportBoundaryFetchBatch, resolveGeoLazyLoadingPolicy } from '../utils/geojsonViewportLazyEngine'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr, FeatureFlags } from '../utils/security'; import { ensureLeafletLoaded } from '../utils/leafletLoader'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { buildD3PriceDensityScale, D3PriceDensityScaleResult, isNeighborhoodInLeafletViewport, renderPriceDensityHeatmapOnLeaflet, } from './priceHeatmapAndViewportLazy'; import { buildZoomAdaptivePillIconConfig, renderAdvancedSpatialOverlaysOnLeaflet, updateMapAdvancedOverlayState, useMapAdvancedOverlayState, } from './mapAdvancedLayers';
 import { createLeafletBaseTileController, type BaseTileControllerInstance } from './mapBaseTileController'; import { buildNeighborhoodRichTooltipHtml, renderGoldBargainPinOnLeaflet } from './mapZoomLodAndDeclutter'; declare global { interface Window { L: any; } }
 export interface UseLeafletRadarMapParams { activeCity: CityId; mapTileStyle: MapTileServerId; setMapTileStyle: React.Dispatch<React.SetStateAction<MapTileServerId>>; deferredMapNeighborhoods: EvaluatedNeighborhood[]; selectedHoodId: number; selectedHood: EvaluatedNeighborhood; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; selectedWorkHub: WorkHub; statusFilter: 'all' | 'green' | 'yellow' | 'red'; mapLens: 'budget' | 'bubble' | 'air' | 'traffic' | 'heatmap'; showGoldPins: boolean; showLandmarkPins: boolean; hoodLandmarks: LocalLandmark[]; featureFlags: FeatureFlags; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; onOpenModalQuick: (hoodId: number, action: 'anatomy' | 'hedonic' | 'bargains' | 'compare' | 'share') => void; }
 function getLensPalette( hood: EvaluatedNeighborhood, mapLens: 'budget' | 'bubble' | 'air' | 'traffic' | 'heatmap', d3PriceScale?: D3PriceDensityScaleResult
@@ -9,7 +9,7 @@ function getLensPalette( hood: EvaluatedNeighborhood, mapLens: 'budget' | 'bubbl
 export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { activeCity, mapTileStyle, setMapTileStyle, deferredMapNeighborhoods, selectedHoodId, selectedHood, mode, targetSqm, rentAgeMultiplier,
     selectedWorkHub, statusFilter, mapLens, showGoldPins, showLandmarkPins, hoodLandmarks, featureFlags, onSelectNeighborhood, onOpenModalQuick, } = params; const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null); const tileLayerRef = useRef<BaseTileControllerInstance | null>(null); const heatmapLayerRef = useRef<any>(null); const markersMapRef = useRef<Record<number, { circle: any; marker: any; stroke: string; fill: string; pillBg: string; hasSponsor: boolean }>>({});
-  const workLineRef = useRef<any>(null); const workMarkerRef = useRef<any>(null); const goldPinsRef = useRef<any[]>([]); const landmarkPinsRef = useRef<any[]>([]); const [mapZoomLevel, setMapZoomLevel] = useState<number>(12); const [viewportEpoch, setViewportEpoch] = useState<number>(0);
+  const workLineRef = useRef<any>(null); const workMarkerRef = useRef<any>(null); const goldPinsRef = useRef<any[]>([]); const landmarkPinsRef = useRef<any[]>([]); const [mapZoomLevel, setMapZoomLevel] = useState<number>(12); const [viewportEpoch, setViewportEpoch] = useState<number>(0); const [markerRenderEpoch, setMarkerRenderEpoch] = useState<number>(0); const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
   const [isMapIntersectingViewport, setIsMapIntersectingViewport] = useState<boolean>(true); const [osmBoundariesByHood, setOsmBoundariesByHood] = useState<Record<number, AuthoritativeBoundaryRecord>>({}); const onSelectNeighborhoodRef = useRef(onSelectNeighborhood); onSelectNeighborhoodRef.current = onSelectNeighborhood;
   const onOpenModalQuickRef = useRef(onOpenModalQuick); onOpenModalQuickRef.current = onOpenModalQuick;
   const neighborhoodsRef = useRef(deferredMapNeighborhoods); neighborhoodsRef.current = deferredMapNeighborhoods;
@@ -34,15 +34,14 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     window.addEventListener('pageshow', handlePageShow);
     const initMap = () => {
       if (!window.L || !mapContainerRef.current || mapInstanceRef.current) return;
-      const L = window.L;
-      const map = L.map(mapContainerRef.current, { center: [35.735, 51.395], zoom: 12, zoomControl: false, preferCanvas: true, maxBoundsViscosity: 0.8 });
+      const L = window.L; const hasUrlHood = typeof window !== 'undefined' && (window.location.search.includes('hood=') || window.location.search.includes('compare=')); const initCenter: [number, number] = selectedHood && (hasUrlHood || selectedHood.id >= 100) ? [selectedHood.lat, selectedHood.lng] : (MULTI_CITY_CONFIGS[activeCity]?.center || [35.735, 51.395]); const initZoom = selectedHood && hasUrlHood ? 13 : (MULTI_CITY_CONFIGS[activeCity]?.defaultZoom || 12);
+      const map = L.map(mapContainerRef.current, { center: initCenter, zoom: initZoom, zoomControl: false, preferCanvas: true, maxBoundsViscosity: 0.8, inertia: true, inertiaDeceleration: 3000, wheelDebounceTime: 40, wheelPxPerZoomLevel: 120 });
       tileLayerRef.current = createLeafletBaseTileController({
         map, L, initialPreferredStyle: mapTileStyle,
         onSelectPreferredStyle: (next: MapTileServerId) => setMapTileStyle(next),
       });
       L.control.zoom({ position: 'bottomleft' }).addTo(map);
-      if (typeof L.control.scale === 'function') L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
-      mapInstanceRef.current = map;
+      mapInstanceRef.current = map; setIsMapLoaded(true);
       const syncViewportBoundsToStore = () => {
         try {
           const b = map.getBounds?.();
@@ -57,12 +56,12 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
           }
         } catch { /* ignore */ }
       };
-      setMapZoomLevel(map.getZoom() || 12);
-      syncViewportBoundsToStore();
+      setMapZoomLevel(map.getZoom() || 12); syncViewportBoundsToStore(); setViewportEpoch((c) => c + 1);
+      setTimeout(() => { map.invalidateSize?.(); syncViewportBoundsToStore(); setViewportEpoch((c) => c + 1); }, 100);
       let moveDebounce: ReturnType<typeof setTimeout> | null = null;
       const onDebouncedMoveOrResize = () => {
         if (moveDebounce) clearTimeout(moveDebounce);
-        moveDebounce = setTimeout(() => { setViewportEpoch((c) => c + 1); syncViewportBoundsToStore(); tileLayerRef.current?.updateAttributionForViewport(); }, 80);
+        moveDebounce = setTimeout(() => { setViewportEpoch((c) => c + 1); syncViewportBoundsToStore(); tileLayerRef.current?.updateAttributionForViewport(); }, 120);
       };
       map.on('zoomend', () => {
         const nextZoom = map.getZoom() || 12;
@@ -84,9 +83,9 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     };
     if (window.L) initMap();
     else {
-      retryTimer = setInterval(() => {
-        if (window.L) { initMap(); if (retryTimer) clearInterval(retryTimer); }
-      }, 150);
+      ensureLeafletLoaded().then(() => initMap()).catch(() => {
+        retryTimer = setInterval(() => { if (window.L) { initMap(); if (retryTimer) clearInterval(retryTimer); } }, 150);
+      });
     }
     return () => {
       window.removeEventListener('pageshow', handlePageShow);
@@ -110,11 +109,13 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
   useEffect(() => {
     let cancelled = false;
     const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
-    const sourceList = activeCity === 'tehran' ? neighborhoodsRef.current : (cityCfg.neighborhoods || neighborhoodsRef.current);
+    const sourceList = activeCity === 'tehran' ? neighborhoodsRef.current.filter((n) => n.id < 100) : (cityCfg.neighborhoods || neighborhoodsRef.current);
     if (!sourceList.length) return;
+    const vb = advancedOverlayState.viewportBounds;
+    const isVbInCity = vb ? (cityCfg.center[0] <= vb.north + 0.5 && cityCfg.center[0] >= vb.south - 0.5 && cityCfg.center[1] <= vb.east + 0.5 && cityCfg.center[1] >= vb.west - 0.5) : false;
     const { batch } = planViewportBoundaryFetchBatch({
       allNeighborhoods: sourceList.map((n) => ({ id: n.id, name: n.name, lat: n.lat, lng: n.lng, radius: n.radius })),
-      viewportBounds: advancedOverlayState.viewportBounds,
+      viewportBounds: isVbInCity ? vb : null,
       loadedHoodIds: osmBoundariesByHood,
       lowBandwidthOrMobileMode: advancedOverlayState.lowBandwidthGeoLazyMode,
     });
@@ -137,32 +138,28 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     markersMapRef.current = {};
     goldPinsRef.current.forEach((pin) => map.removeLayer(pin));
     goldPinsRef.current = [];
-    if (heatmapLayerRef.current) {
-      map.removeLayer(heatmapLayerRef.current);
-      heatmapLayerRef.current = null;
-    }
+    if (heatmapLayerRef.current) { map.removeLayer(heatmapLayerRef.current); heatmapLayerRef.current = null; }
     if (!isMapIntersectingViewport) return;
-    const d3PriceScale = buildD3PriceDensityScale(deferredMapNeighborhoods, mode, rentAgeMultiplier);
+    const cityScopedHoods = deferredMapNeighborhoods.filter((h) => (activeCity === 'tehran' ? h.id < 100 : activeCity === 'karaj' ? h.id >= 100 && h.id < 200 : activeCity === 'mashhad' ? h.id >= 200 && h.id < 300 : activeCity === 'isfahan' ? h.id >= 300 && h.id < 400 : h.id >= 400));
+    const d3PriceScale = buildD3PriceDensityScale(cityScopedHoods.length > 0 ? cityScopedHoods : deferredMapNeighborhoods, mode, rentAgeMultiplier);
+    const currentZoom = mapZoomLevelRef.current; const currentSelectedId = selectedHoodIdRef.current;
+    const renderHoods = activeCity === 'tehran' && currentSelectedId < 100 && currentZoom >= 10 ? cityScopedHoods : deferredMapNeighborhoods;
     if (mapLens === 'heatmap') {
       heatmapLayerRef.current = renderPriceDensityHeatmapOnLeaflet(
-        L, map,
-        deferredMapNeighborhoods.filter((h) => statusFilter === 'all' || h.status === statusFilter),
-        d3PriceScale, mode,
-        (hood) => onSelectNeighborhoodRef.current(hood)
+        L, map, renderHoods.filter((h) => statusFilter === 'all' || h.status === statusFilter),
+        d3PriceScale, mode, (hood) => onSelectNeighborhoodRef.current(hood)
       );
     }
-    const isDarkMap =
-      mapTileStyle === 'carto_dark' ||
-      mapTileStyle === 'satellite' ||
-      (typeof document !== 'undefined' && document.documentElement.classList.contains('apple-dark'));
-    const currentZoom = mapZoomLevelRef.current;
-    const currentSelectedId = selectedHoodIdRef.current;
+    const isDarkMap = mapTileStyle === 'carto_dark' || mapTileStyle === 'satellite' || (typeof document !== 'undefined' && document.documentElement.classList.contains('apple-dark'));
     const lazyPolicy = resolveGeoLazyLoadingPolicy(currentZoom, advancedOverlayState.lowBandwidthGeoLazyMode);
     clientGeoJsonLruCache.setMaxEntries(lazyPolicy.maxLruCacheSize);
-    deferredMapNeighborhoods.forEach((hood) => {
+    const refLat = selectedHood?.lat ?? (MULTI_CITY_CONFIGS[activeCity]?.center[0] || 35.735); const refLng = selectedHood?.lng ?? (MULTI_CITY_CONFIGS[activeCity]?.center[1] || 51.395);
+    const isCameraAtTarget = isNeighborhoodInLeafletViewport(map, refLat, refLng, 0.5);
+    renderHoods.forEach((hood) => {
       if (statusFilter !== 'all' && hood.status !== statusFilter) return;
       const isSelected = hood.id === currentSelectedId;
-      if (!isSelected && !isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, lazyPolicy.viewportPadRatio)) return;
+      const inTargetArea = activeCity === 'tehran' || (isCameraAtTarget ? isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, Math.max(0.6, lazyPolicy.viewportPadRatio)) : (Math.abs(hood.lat - refLat) <= 0.55 && Math.abs(hood.lng - refLng) <= 0.65));
+      if (!isSelected && !inTargetArea) return;
       const { stroke, fill, pillBg } = getLensPalette(hood, mapLens, d3PriceScale);
       const safeSqmPill = Math.max(25, targetSqm || 75);
       const scaledRahnPill = Math.round(hood.rahn80m * (safeSqmPill / 80) * rentAgeMultiplier);
@@ -182,7 +179,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
       const osmRecord = osmBoundariesByHood[hood.id];
       const handleHoodClick = () => onSelectNeighborhoodRef.current(hood);
       const circle = renderNeighborhoodGeoJSONOnLeaflet(
-        L, map, hood, deferredMapNeighborhoods, polygonStyle, osmRecord?.coordinates, handleHoodClick,
+        L, map, hood, renderHoods, polygonStyle, osmRecord?.coordinates, handleHoodClick,
         { zoom: currentZoom, isSelected, lowBandwidthMode: advancedOverlayState.lowBandwidthGeoLazyMode }
       );
       const hasSponsor = isSponsorActive(hood.sponsor, featureFlags.enableSponsorBilling);
@@ -213,10 +210,10 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
         if (gPin) goldPinsRef.current.push(gPin);
       }
     });
-  }, [deferredMapNeighborhoods, mode, targetSqm, rentAgeMultiplier, statusFilter, mapLens, mapTileStyle, showGoldPins, osmBoundariesByHood, activeCity, featureFlags.enableSponsorBilling, viewportEpoch, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, areaUnit, intlCurrency, locale]);
+  }, [deferredMapNeighborhoods, mapZoomLevel, mode, targetSqm, rentAgeMultiplier, statusFilter, mapLens, mapTileStyle, showGoldPins, osmBoundariesByHood, activeCity, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, areaUnit, intlCurrency, locale, markerRenderEpoch]);
   useEffect(() => {
     if (selectedHoodId && !markersMapRef.current[selectedHoodId]) {
-      setViewportEpoch((c) => c + 1);
+      setMarkerRenderEpoch((c) => c + 1);
       return;
     }
     const isDarkMap =
@@ -239,7 +236,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
           ? isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a'
           : entry.hasSponsor ? '1.5px solid #fbbf24'
           : isDarkMap ? '1px solid rgba(255,255,255,0.65)' : '1px solid rgba(255,255,255,0.35)';
-        pillSpan.style.boxShadow = isSelected ? '0 0 18px rgba(16,185,129,0.9)' : '0 3px 10px rgba(0,0,0,0.45)';
+        pillSpan.style.boxShadow = isSelected ? '0 0 0 3px rgba(56,189,248,0.45), 0 8px 20px rgba(0,0,0,0.45)' : '0 2px 8px rgba(0,0,0,0.35)';
       }
     });
   }, [selectedHoodId, mapZoomLevel, mapTileStyle]);
@@ -285,4 +282,4 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
             `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;max-width:220px;"><strong>${emoji} ${safeLmName}</strong> (${safeLmCategory})<br/><span style="font-size:11px;opacity:0.85;">${safeLmDesc}</span></div>`,
             { direction: 'top' }
           );
-        landmarkPinsRef.current.push(lPin); }); } }, [selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks]); const handleFocusLandmarkOnMap = (lm: LocalLandmark) => { if (mapInstanceRef.current && selectedHood) { mapInstanceRef.current.flyTo([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], 15, { duration: 0.7 }); } }; return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap }; }
+        landmarkPinsRef.current.push(lPin); }); } }, [selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks]); const handleFocusLandmarkOnMap = (lm: LocalLandmark) => { if (mapInstanceRef.current && selectedHood) { mapInstanceRef.current.flyTo([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], 15, { duration: 0.7 }); } }; return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded }; }

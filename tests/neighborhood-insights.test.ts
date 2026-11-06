@@ -258,6 +258,38 @@ describe('neighborhoodInsights - getTrafficZoneStatus', () => {
     expect(getTrafficZoneStatus(1).zoneType).toBe('free');
     expect(getTrafficZoneStatus(5).zoneType).toBe('free');
     expect(getTrafficZoneStatus(14).zoneType).toBe('free');
+    expect(getTrafficZoneStatus(30).zoneType).toBe('free');
     expect(getTrafficZoneStatus(1).label).toContain('خارج از طرح ترافیک');
   });
+
+  it('guarantees 100% neighborhood-to-insight alignment, valid Persian digits, and unique city names', async () => {
+    const { MULTI_CITY_CONFIGS } = await import('../src/data/multiCityData');
+    for (const hood of INITIAL_NEIGHBORHOODS) {
+      const insight = getNeighborhoodDeepInsight(hood);
+      expect(insight.hoodId).toBe(hood.id);
+      expect(insight.microHoods.length).toBe(3);
+      expect(/[\u0980-\u09FF\uFFFD]/.test(JSON.stringify(hood) + JSON.stringify(insight))).toBe(false);
+    }
+    const expectedLabels: Array<[number, number, string]> = [
+      [6, 0, 'جنت‌آباد'], [7, 1, 'صادقیه'], [11, 1, 'پاسداران'], [12, 1, 'هروی'],
+      [13, 1, 'نارمک'], [15, 1, 'پیروزی'], [16, 0, 'نیروهوایی'], [17, 1, 'هفت‌حوض'],
+      [18, 1, 'انقلاب'], [19, 1, 'نواب'], [20, 1, 'جمهوری'], [21, 1, 'یافت‌آباد'],
+      [22, 1, 'نازی‌آباد'], [23, 1, 'شهرری'], [24, 1, 'افسریه'], [25, 0, 'دریاچه'],
+      [26, 1, 'گیشا'], [27, 1, 'مرزداران'], [28, 1, 'ستارخان'], [29, 1, 'میرداماد'],
+      [30, 0, 'قیطریه'], [31, 0, 'فرمانیه'], [32, 1, 'ولنجک'], [34, 1, 'مجیدیه'],
+      [35, 1, 'دهکده المپیک'],
+    ];
+    for (const [id, tierIdx, label] of expectedLabels) {
+      expect(COMPLETE_INSIGHTS_BY_ID[id].microHoods[tierIdx].label).toContain(label);
+    }
+    for (const cfg of Object.values(MULTI_CITY_CONFIGS)) {
+      const names = new Set<string>();
+      for (const h of cfg.neighborhoods) {
+        expect(names.has(h.name)).toBe(false);
+        names.add(h.name);
+        expect(/[\u0980-\u09FF\uFFFD]/.test(JSON.stringify(h))).toBe(false);
+      }
+    }
+  });
 });
+

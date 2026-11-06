@@ -99,9 +99,9 @@ function toMockEvaluated(hoodId: number, status: 'undervalued' | 'balanced' | 'b
 // 2. Mortgage Loan Booster (+1,200M) & Tenant Rahn Bridge Deduction
 // ============================================================================
 {
-  const sattarkhan = toMockEvaluated(21); // Sattarkhan
+  const sattarkhan = toMockEvaluated(28); // Sattarkhan
   const punak = toMockEvaluated(5); // Punak
-  const gisha = toMockEvaluated(6); // Gisha
+  const gisha = toMockEvaluated(26); // Gisha
   const candidates = [sattarkhan, punak, gisha];
 
   const baseNoBoosters = evaluateTradeUpOptions({
@@ -201,7 +201,7 @@ function toMockEvaluated(hoodId: number, status: 'undervalued' | 'balanced' | 'b
 // 4. Rent-vs-Buy P/R Arbitrage & Direct Metro Commute Verification
 // ============================================================================
 {
-  const undervaluedHood = toMockEvaluated(16, 'undervalued'); // Piroozi
+  const undervaluedHood = toMockEvaluated(15, 'undervalued'); // Piroozi (id: 15)
   const bubbleHood: EvaluatedNeighborhood = {
     ...toMockEvaluated(1, 'bubble'),
     buyPerSqm: 350, // 80m = 28,000M
@@ -214,8 +214,8 @@ function toMockEvaluated(hoodId: number, status: 'undervalued' | 'balanced' | 'b
   assert.equal(verdictBuy.recommendation, 'BUY_NOW', 'Undervalued neighborhood must trigger BUY_NOW');
   assert.equal(verdictRent.recommendation, 'RENT_AND_INVEST', 'Bubble neighborhood with P/R > 6.8 must trigger RENT_AND_INVEST');
 
-  // Direct Metro Line check: Mirdamad (hood 11, Line 1) -> Vanak / Tajrish (Line 1)
-  const mirdamad = toMockEvaluated(11);
+  // Direct Metro Line check: Mirdamad (hood 29, Line 1) -> Vanak / Tajrish (Line 1)
+  const mirdamad = toMockEvaluated(29);
   const directToTajrish = checkDirectMetroCommute(mirdamad, 'tajrish');
   assert.equal(directToTajrish.hasDirectLine, true);
   assert.equal(directToTajrish.sharedLineNumber, 1);

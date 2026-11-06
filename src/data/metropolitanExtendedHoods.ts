@@ -27,14 +27,18 @@ type HoodSeed = [
   street: string,
 ];
 
+function toFaDigits(val: number | string): string {
+  return String(val).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+}
+
 function buildHood([
   id, name, zone, lat, lng, buyPerSqm, rahn80m,
   air, powerWater, internet, metro, security, flatTerrain,
   pros, cons, phonePrefix, street,
 ]: HoodSeed): Neighborhood {
   const discSqm = Math.max(12, Math.round(buyPerSqm * 0.85));
-  const totalBillion = ((discSqm * 95) / 1000).toFixed(2);
-  const profitMill = Math.max(150, Math.round((buyPerSqm - discSqm) * 95));
+  const totalBillion = toFaDigits(((discSqm * 95) / 1000).toFixed(2));
+  const profitMill = toFaDigits(Math.max(150, Math.round((buyPerSqm - discSqm) * 95)));
   return {
     id,
     name,
@@ -72,7 +76,7 @@ function buildHood([
         title: `۹۵ متری ۲ خواب نوساز در ${name} (${street})، سند تک‌برگ`,
         type: 'خرید',
         sqm: 95,
-        priceText: `متری ${discSqm} میلیون تومان (کل: ${totalBillion} میلیارد)`,
+        priceText: `متری ${toFaDigits(discSqm)} میلیون تومان (کل: ${totalBillion} میلیارد)`,
         discountPercent: 15,
         buyerProfitText: `${profitMill} میلیون تومان زیر میانگین محله`,
         street,
@@ -83,7 +87,7 @@ function buildHood([
 
 const KARAJ_SEEDS: HoodSeed[] = [
   [107, 'باغستان', 'شمال غرب کرج (منطقه ۶)', 35.8765, 50.9425, 78, 880, 9.0, 8.6, 8.5, 6.2, 8.6, 7.2, 'هوای پاک کوهپایه‌ای، آپارتمان‌های نوساز غربی', 'فاصله تا مترو کرج', '026', 'بلوار امام خمینی باغستان'],
-  [108, 'گلشهر', 'غرب کرج (منطقه ۵)', 35.8215, 50.9310, 82, 940, 8.4, 8.7, 8.9, 9.5, 8.6, 8.9, 'ایستگاه مترو گلشهر، دسترسی سریع به اتوبان تهران-کرج، درختکاری', 'پرتردد بودن چهارراه گلزار', '026', 'خیابان درختی و گلزار'],
+  [108, 'گلشهر ویلا و درختی', 'غرب کرج (منطقه ۵)', 35.8165, 50.9465, 82, 940, 8.4, 8.7, 8.9, 9.5, 8.6, 8.9, 'بلوار حدادی، خیابان درختی و گلشهر ویلا، دسترسی سریع به مترو و اتوبان', 'پرتردد بودن چهارراه گلزار و میدان مادر', '026', 'خیابان درختی و گلشهر ویلا'],
   [109, 'شاهین‌ویلا', 'شمال غرب کرج (منطقه ۶)', 35.8590, 50.9495, 74, 840, 8.5, 8.5, 8.6, 6.8, 8.4, 8.6, 'بافت شهری فعال، قیمت مناسب و نقدشوندگی سریع', 'تراکم بالای خیابان اصلی', '026', 'خیابان اصلی شاهین‌ویلا'],
   [110, 'مهرویلا', 'مرکز کرج (منطقه ۸)', 35.8240, 50.9620, 94, 1080, 8.5, 8.9, 9.0, 8.4, 9.0, 9.0, 'خیابان درختی و انوشیروان، دسترسی عالی به بزرگراه و مراکز خرید', 'ترافیک عصرگاهی میدان مادر', '026', 'بلوار معلم و انوشیروان'],
   [111, 'کیانمهر', 'جنوب غرب کرج (منطقه ۱۲)', 35.7640, 50.8920, 58, 660, 8.7, 8.2, 8.3, 6.0, 8.1, 9.2, 'نوساز و رو به رشد در مجاورت مهرشهر، قیمت اقتصادی', 'فاصله تا هسته مرکزی کرج', '026', 'بلوار امیرکبیر کیانمهر'],

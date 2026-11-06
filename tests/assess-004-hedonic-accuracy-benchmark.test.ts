@@ -29,12 +29,12 @@ const mockTehranPunak = INITIAL_NEIGHBORHOODS.find((h) => h.id === 5) || {
   id: 5, name: 'پونک', zone: 'غرب (منطقه ۵)', buyPerSqm: 142, rahn80m: 1750,
 } as EvaluatedNeighborhood;
 
-const mockTehranNiavaran = INITIAL_NEIGHBORHOODS.find((h) => h.id === 1) || {
-  id: 1, name: 'نیاوران', zone: 'شمال (منطقه ۱)', buyPerSqm: 265, rahn80m: 3350,
+const mockTehranNiavaran = INITIAL_NEIGHBORHOODS.find((h) => h.id === 2) || {
+  id: 2, name: 'نیاوران', zone: 'شمال (منطقه ۱)', buyPerSqm: 265, rahn80m: 3350,
 } as EvaluatedNeighborhood;
 
-const mockTehranNaziAbad = INITIAL_NEIGHBORHOODS.find((h) => h.id === 28) || {
-  id: 28, name: 'نازی‌آباد', zone: 'جنوب (منطقه ۱۶)', buyPerSqm: 76, rahn80m: 920,
+const mockTehranNaziAbad = INITIAL_NEIGHBORHOODS.find((h) => h.id === 22) || {
+  id: 22, name: 'نازی‌آباد', zone: 'جنوب (منطقه ۱۶)', buyPerSqm: 84, rahn80m: 980,
 } as EvaluatedNeighborhood;
 
 const karajHoods = MULTI_CITY_CONFIGS.karaj.neighborhoods;

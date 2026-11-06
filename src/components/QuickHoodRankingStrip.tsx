@@ -18,8 +18,9 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
     const inView = evaluatedNeighborhoods.filter((h) => isCoordInsideStoredViewport(h.lat, h.lng, viewportBounds));
     return inView.length > 0 ? inView : evaluatedNeighborhoods;
   }, [evaluatedNeighborhoods, filterRankingByViewport, viewportBounds]);
+  const isCountyOrProvincialHood = (id: number) => (id >= 61 && id <= 99) || (id >= 115 && id <= 199) || (id >= 217 && id <= 299) || (id >= 312 && id <= 399) || id === 406 || id >= 418;
   const hasCountiesOrProvinces = useMemo(
-    () => evaluatedNeighborhoods.some((h) => (h.id >= 61 && h.id <= 90) || h.id >= 107),
+    () => evaluatedNeighborhoods.some((h) => isCountyOrProvincialHood(h.id)),
     [evaluatedNeighborhoods]
   );
   const hasActiveWorkHub = useMemo(
@@ -49,7 +50,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
     if (criterion === 'all_hoods') return list;
     if (criterion === 'nearest_work_hub') return list.sort((a, b) => (a.distKm ?? 999) - (b.distKm ?? 999)).slice(0, 20);
     if (criterion === 'tehran_counties') {
-      const counties = list.filter((h) => (h.id >= 61 && h.id <= 90) || h.id >= 107);
+      const counties = list.filter((h) => isCountyOrProvincialHood(h.id));
       return (counties.length > 0 ? counties : list).sort((a, b) => b.overallScore - a.overallScore);
     }
     if (criterion === 'budget_match') {

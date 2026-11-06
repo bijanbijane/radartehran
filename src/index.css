@@ -727,6 +727,14 @@ textarea:focus-visible,
   }
 }
 
+/* Desktop Viewport: position Leaflet zoom buttons neatly above the bottom-4 MapLegend bar */
+@media (min-width: 1024px) {
+  .leaflet-bottom.leaflet-left {
+    bottom: 60px !important;
+    left: 16px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

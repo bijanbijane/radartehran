@@ -43,7 +43,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
           </button>
         </div>}
         {primaryView === 'map' && !mobileFilterOpen && !showSearchDropdown && (
-          <div className="lg:hidden flex items-center gap-1 overflow-x-auto no-scrollbar apple-vibrancy-bar p-1 rounded-[11px] text-[11px] font-bold pointer-events-auto">
+          <div className="xl:hidden flex items-center gap-1 overflow-x-auto no-scrollbar apple-vibrancy-bar p-1 rounded-[11px] text-[11px] font-bold pointer-events-auto">
             {LENS_OPTIONS.map((lens) => (
               <button key={lens.id} type="button" onClick={() => { setMapLens(lens.id); if (lens.id === 'traffic') updateMapAdvancedOverlayState({ showTrafficZones: true }); }} className={`px-2.5 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${mapLens === lens.id ? 'apple-primary-btn shadow-2xs' : 'text-slate-600 dark:text-slate-300'}`}>{lens.label}</button>
             ))}
@@ -162,7 +162,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
       </div>
       {/* 3. TOP-LEFT FLOATING PILL BAR */}
       {(primaryView === 'map' || showToolsPopover) && <div className="fixed top-20 left-4 z-30 flex items-center gap-2 pointer-events-none">
-        {primaryView === 'map' && <div className="hidden lg:flex items-center gap-0.5 apple-vibrancy-bar p-1 rounded-[12px] text-xs font-medium text-slate-700 dark:text-slate-200 pointer-events-auto">
+        {primaryView === 'map' && <div className="hidden xl:flex items-center gap-0.5 apple-vibrancy-bar p-1 rounded-[12px] text-xs font-medium text-slate-700 dark:text-slate-200 pointer-events-auto">
           {LENS_OPTIONS.map((lens) => (
             <button key={lens.id} type="button" onClick={() => { setMapLens(lens.id); if (lens.id === 'traffic') updateMapAdvancedOverlayState({ showTrafficZones: true }); }} className={`px-3 py-1.5 rounded-[9px] font-bold transition cursor-pointer whitespace-nowrap ${mapLens === lens.id ? 'apple-primary-btn shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-slate-200/50'}`}>{lens.label}</button>
           ))}

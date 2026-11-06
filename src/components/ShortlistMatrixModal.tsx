@@ -180,13 +180,13 @@ export function ShortlistMatrixModal({
                 </tr>
                 <tr>
                   <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
-                    {isEn ? `Full Deposit (${formatAreaShort(80, areaUnit)})` : `رهن کامل (${formatAreaShort(80, areaUnit)} — میلیون تومان)`}
+                    {isEn ? <span>Full Deposit ({formatAreaShort(80, areaUnit)})</span> : <span>رهن کامل ({formatAreaShort(80, areaUnit)} — میلیون تومان)</span>}
                   </td>
                   {shortlistedHoods.map((hood) => {
                     const isBest = hood.rahn80m === minRahn80m;
                     return (
                       <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black' : 'text-slate-800 dark:text-slate-200'}`}>
-                        {toPersianNum(hood.rahn80m)} {isEn ? 'M' : 'میلیون'} (rent: {toPersianNum(Math.round(hood.rahn80m * 0.03))}M)
+                        {toPersianNum(hood.rahn80m)} {isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(hood.rahn80m, intlCurrency, radarLocale)})` : ''} (rent: {toPersianNum(Math.round(hood.rahn80m * 0.03))}M)
                         {isBest && <span className="inline-flex items-center text-[10px] text-emerald-700 dark:text-emerald-400 font-bold ml-1"><Award className="w-3 h-3 mx-0.5" />{isEn ? 'Lowest' : 'ارزان‌ترین'}</span>}
                       </td>
                     );
@@ -194,7 +194,7 @@ export function ShortlistMatrixModal({
                 </tr>
                 <tr>
                   <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
-                    {isEn ? 'Affordable Area with Budget' : `متراژ قابل ${mode === 'buy' ? 'خرید' : 'اجاره'} با بودجه شما`}
+                    {isEn ? 'Affordable Area with Budget' : `متراژ قابل ${mode === 'buy' ? 'خرید' : 'اجاره'} با بودجه شما`}{intlCurrency !== 'IRT' && mode === 'buy' ? ` (${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, radarLocale)})` : ''}
                   </td>
                   {shortlistedHoods.map((hood) => {
                     const sqm = getAffordableSqm(hood);

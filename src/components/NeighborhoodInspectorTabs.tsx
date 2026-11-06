@@ -37,16 +37,17 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
         />
         <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 divide-y divide-slate-200/70 dark:divide-slate-800 overflow-hidden">
           {[
-            { label: isEn ? 'Air Quality & Green Space' : 'کیفیت هوا و فضای سبز', val: selectedHood?.air ?? 7, icon: Wind, badgeBg: '#0f172a' },
-            { label: isEn ? 'Power & Water Stability' : 'پایداری برق و فشار آب', val: selectedHood?.powerWater ?? 8, icon: Zap, badgeBg: '#0f172a' },
-            { label: isEn ? 'Fiber & Internet Speed' : 'سرعت اینترنت و فیبر نوری', val: selectedHood?.internet ?? 8, icon: Wifi, badgeBg: '#0f172a' },
-            { label: isEn ? 'Metro & Transit Access' : 'دسترسی به مترو و حمل‌ونقل', val: selectedHood?.metro ?? 8, icon: TrainFront, badgeBg: '#059669' },
-            { label: isEn ? 'Night Security & Quietness' : 'امنیت و آرامش شبانه', val: selectedHood?.security ?? 8, icon: ShieldCheck, badgeBg: '#0f172a' },
-            { label: isEn ? 'Flat Terrain (Walkability)' : 'همواری گذرها (بدون شیب)', val: selectedHood?.flatTerrain ?? 8, icon: Mountain, badgeBg: '#0f172a' },
+            { label: isEn ? 'Air Quality & Green Space' : 'کیفیت هوا و فضای سبز', val: selectedHood?.air ?? 7, icon: Wind, badgeBg: '#059669' },
+            { label: isEn ? 'Power & Water Stability' : 'پایداری برق و فشار آب', val: selectedHood?.powerWater ?? 8, icon: Zap, badgeBg: '#d97706' },
+            { label: isEn ? 'Fiber & Internet Speed' : 'سرعت اینترنت و فیبر نوری', val: selectedHood?.internet ?? 8, icon: Wifi, badgeBg: '#0284c7' },
+            { label: isEn ? 'Metro & Transit Access' : 'دسترسی به مترو و حمل‌ونقل', val: selectedHood?.metro ?? 8, icon: TrainFront, badgeBg: '#6366f1' },
+            { label: isEn ? 'Night Security & Quietness' : 'امنیت و آرامش شبانه', val: selectedHood?.security ?? 8, icon: ShieldCheck, badgeBg: '#8b5cf6' },
+            { label: isEn ? 'Flat Terrain (Walkability)' : 'همواری گذرها (بدون شیب)', val: selectedHood?.flatTerrain ?? 8, icon: Mountain, badgeBg: '#0d9488' },
           ].map((item, idx) => {
             const IconComponent = item.icon;
+            const barColor = item.val >= 7.8 ? 'bg-emerald-500' : item.val >= 6.2 ? 'bg-amber-500' : 'bg-rose-500';
             return (
-              <div key={idx} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
+              <div key={idx} className="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
                 <span className="text-slate-800 dark:text-slate-200 flex items-center gap-2.5 font-semibold min-w-0">
                   <span className="ios-squircle-icon" style={{ backgroundColor: item.badgeBg }}>
                     <IconComponent className="w-3.5 h-3.5 stroke-[2]" />
@@ -55,7 +56,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="w-16 h-1.5 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-300 bg-emerald-600 dark:bg-emerald-500" style={{ width: `${Math.min(100, (item.val || 0) * 10)}%` }} />
+                    <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.min(100, (item.val || 0) * 10)}%` }} />
                   </div>
                   <span className="font-extrabold text-slate-900 dark:text-white tabular-nums w-9 text-left">{toPersianNum(item.val)}/۱۰</span>
                 </div>

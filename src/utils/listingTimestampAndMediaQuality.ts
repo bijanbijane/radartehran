@@ -9,25 +9,11 @@ export function normalizeListingTimestampIso( raw: unknown, nowMs: number = Date
     }; if (typeof candidate.toDate === 'function') { try { const converted = candidate.toDate();
         if (converted instanceof Date) { dateObj = converted; }
       } catch { dateObj = null; }
-    } else if (typeof candidate.toMillis === 'function') { try { const ms = candidate.toMillis(); if (typeof ms === 'number' && Number.isFinite(ms)) {
-          dateObj = new Date(ms);
-        }
-      } catch {
-        dateObj = null;
-      }
+    } else if (typeof candidate.toMillis === 'function') {
+      try { const ms = candidate.toMillis(); if (typeof ms === 'number' && Number.isFinite(ms)) dateObj = new Date(ms); } catch { dateObj = null; }
     } else {
-      const secs =
-        typeof candidate.seconds === 'number'
-          ? candidate.seconds
-          : typeof candidate._seconds === 'number'
-            ? candidate._seconds
-            : null;
-      const nanos =
-        typeof candidate.nanoseconds === 'number'
-          ? candidate.nanoseconds
-          : typeof candidate._nanoseconds === 'number'
-            ? candidate._nanoseconds
-            : 0;
+      const secs = typeof candidate.seconds === 'number' ? candidate.seconds : typeof candidate._seconds === 'number' ? candidate._seconds : null;
+      const nanos = typeof candidate.nanoseconds === 'number' ? candidate.nanoseconds : typeof candidate._nanoseconds === 'number' ? candidate._nanoseconds : 0;
       if (secs !== null && Number.isFinite(secs)) {
         dateObj = new Date(secs * 1000 + Math.floor((Number.isFinite(nanos) ? nanos : 0) / 1_000_000));
       }
@@ -35,10 +21,7 @@ export function normalizeListingTimestampIso( raw: unknown, nowMs: number = Date
   }
   if (!dateObj) return undefined;
   const ms = dateObj.getTime();
-  if (!Number.isFinite(ms)) return undefined;
-  if (ms < MIN_PLAUSIBLE_TIMESTAMP_MS || ms > nowMs + MAX_FUTURE_DRIFT_MS) {
-    return undefined;
-  }
+  if (!Number.isFinite(ms) || ms < MIN_PLAUSIBLE_TIMESTAMP_MS || ms > nowMs + MAX_FUTURE_DRIFT_MS) return undefined;
   return new Date(ms).toISOString();
 }
 function getTehranCalendarDayKey(ms: number): number {

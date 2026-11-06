@@ -2,11 +2,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import {
-  WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser,
-  MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage,
-  DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId,
-} from '../data/neighborhoods';
+import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { FloatingTopBar } from './FloatingTopBar';
 import { NeighborhoodInspectorDrawer } from './NeighborhoodInspectorDrawer';
@@ -35,15 +31,9 @@ export function RadarWorkspaceShell() {
   const allExpansionSeeds = useMemo(() => getAllMultiCityNeighborhoods().filter((n) => n.id >= 100), []);
   const activeCityRef = useRef<CityId>(initialUrlState.initialCity || 'tehran');
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>(() => hydrateNeighborhoodsFromStorage(allExpansionSeeds));
-  const [mode, setMode] = useState<'rent' | 'buy'>(initialUrlState.initialMode || 'rent');
-  const [deposit, setDeposit] = useState<number>(initialUrlState.initialDeposit ?? 700);
-  const [monthlyRent, setMonthlyRent] = useState<number>(initialUrlState.initialMonthlyRent ?? 20);
-  const [buyTotalBudget, setBuyTotalBudget] = useState<number>(initialUrlState.initialBuyBudget ?? 9500);
-  const [targetSqm, setTargetSqm] = useState<number>(initialUrlState.initialTargetSqm ?? 80);
-  const [buildingAgeSegment, setBuildingAgeSegment] = useState<'new' | 'mid' | 'older'>('new');
-  const [deductTenantRahnInBuy, setDeductTenantRahnInBuy] = useState<boolean>(false);
-  const [workHubId, setWorkHubId] = useState<string>(initialUrlState.initialWorkHubId || 'none');
-  const [showReverseBudgetModal, setShowReverseBudgetModal] = useState<boolean>(false);
+  const [mode, setMode] = useState<'rent' | 'buy'>(initialUrlState.initialMode || 'rent'), [deposit, setDeposit] = useState<number>(initialUrlState.initialDeposit ?? 700), [monthlyRent, setMonthlyRent] = useState<number>(initialUrlState.initialMonthlyRent ?? 20);
+  const [buyTotalBudget, setBuyTotalBudget] = useState<number>(initialUrlState.initialBuyBudget ?? 9500), [targetSqm, setTargetSqm] = useState<number>(initialUrlState.initialTargetSqm ?? 80);
+  const [buildingAgeSegment, setBuildingAgeSegment] = useState<'new' | 'mid' | 'older'>('new'), [deductTenantRahnInBuy, setDeductTenantRahnInBuy] = useState<boolean>(false), [workHubId, setWorkHubId] = useState<string>(initialUrlState.initialWorkHubId || 'none'), [showReverseBudgetModal, setShowReverseBudgetModal] = useState<boolean>(false);
   const [favoriteHoodIds, setFavoriteHoodIds] = useState<number[]>(() => {
     try { const s = localStorage.getItem('tehran_radar_favorites_v1'); if (s) { const p = JSON.parse(s); if (Array.isArray(p)) return p.filter((id) => typeof id === 'number' && !Number.isNaN(id)).slice(0, 25); } } catch { /* ignore */ }
     return [5, 13];
@@ -77,24 +67,21 @@ export function RadarWorkspaceShell() {
   const selectedWorkHub = useMemo(() => activeCityWorkHubs.find((w) => w.id === workHubId) || activeCityWorkHubs[0] || WORK_HUBS[0], [activeCityWorkHubs, workHubId]);
 
   const {
-    totalRahnEquivalent, maxAffordablePerSqm, extraGreenWithLoan,
-    evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, nationwideFilteredNeighborhoods, counts, smartSuggestedNeighborhoods,
+    totalRahnEquivalent, maxAffordablePerSqm, extraGreenWithLoan, evaluatedNeighborhoods,
+    nationwideEvaluatedNeighborhoods, nationwideFilteredNeighborhoods, counts, smartSuggestedNeighborhoods,
   } = useEvaluatedNeighborhoods({
-    activeCity: ui.activeCity, neighborhoods, cloudBargainsByHood, cloudSponsorsByHood,
-    cloudVotes: ui.cloudVotes, mode, deposit, monthlyRent, buyTotalBudget, targetSqm,
-    useLoanBooster: ui.useLoanBooster, deductTenantRahnInBuy, buyAgeMultiplier, rentAgeMultiplier,
-    selectedWorkHub, statusFilter: ui.statusFilter, deferredSearchQuery: ui.searchQuery,
+    activeCity: ui.activeCity, neighborhoods, cloudBargainsByHood, cloudSponsorsByHood, cloudVotes: ui.cloudVotes,
+    mode, deposit, monthlyRent, buyTotalBudget, targetSqm, useLoanBooster: ui.useLoanBooster, deductTenantRahnInBuy,
+    buyAgeMultiplier, rentAgeMultiplier, selectedWorkHub, statusFilter: ui.statusFilter, deferredSearchQuery: ui.searchQuery,
     onlyOutsideTrafficZone: ui.onlyOutsideTrafficZone, onlyHighMetro: ui.onlyHighMetro, suggestSortBy: ui.suggestSortBy,
   });
 
   const {
-    selectedHood, compHood1, compHood2, hoodLandmarks, targetBargainHood, liveBargainCheck,
-    totalLiveBargainsCount, calculatedHoodMonthlyRent, localAnalysis, marketReport,
-    bestIndicator, deepInsight, directMetroCommuteInfo, rentVsBuyVerdict, tradeUpResults,
+    selectedHood, compHood1, compHood2, hoodLandmarks, targetBargainHood, liveBargainCheck, totalLiveBargainsCount,
+    calculatedHoodMonthlyRent, localAnalysis, marketReport, bestIndicator, deepInsight, directMetroCommuteInfo, rentVsBuyVerdict, tradeUpResults,
   } = useAppPersistenceAndDerivedState({
-    ui, neighborhoods, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods,
-    favoriteHoodIds, featureFlags, isVerifiedAdmin, mode, targetSqm, rentAgeMultiplier,
-    totalRahnEquivalent, maxAffordablePerSqm, selectedWorkHub, workHubId,
+    ui, neighborhoods, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, favoriteHoodIds, featureFlags,
+    isVerifiedAdmin, mode, targetSqm, rentAgeMultiplier, totalRahnEquivalent, maxAffordablePerSqm, selectedWorkHub, workHubId,
   });
 
   const handleSwitchCity = (cityId: CityId, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => {
@@ -120,7 +107,7 @@ export function RadarWorkspaceShell() {
 
   const toggleFavoriteHood = (id: number) => setFavoriteHoodIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
 
-  const { mapContainerRef, mapInstanceRef, handleFocusLandmarkOnMap } = useLeafletRadarMap({
+  const { mapContainerRef, mapInstanceRef, handleFocusLandmarkOnMap, isMapLoaded } = useLeafletRadarMap({
     activeCity: ui.activeCity, mapTileStyle, setMapTileStyle,
     deferredMapNeighborhoods: nationwideFilteredNeighborhoods, selectedHoodId: ui.selectedHoodId, selectedHood,
     mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter: ui.statusFilter, mapLens: ui.mapLens,
@@ -184,6 +171,14 @@ export function RadarWorkspaceShell() {
       />
       <div role="region" aria-label="نقشه تعاملی محله‌ها" className="fixed inset-0 top-16 z-0">
         <div ref={mapContainerRef} className="w-full h-full bg-[#E5E5EA]" />
+        {!isMapLoaded && (
+          <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-slate-100/60 dark:bg-slate-900/60 backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-800/95 shadow-md border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200">
+              <span className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <span>در حال بارگذاری نقشه محله‌ها...</span>
+            </div>
+          </div>
+        )}
       </div>
       <FloatingTopBar
         primaryView={ui.primaryView} activeCity={ui.activeCity} featureFlags={featureFlags} onSwitchCity={handleSwitchCity}
