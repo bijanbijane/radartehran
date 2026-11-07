@@ -219,7 +219,7 @@ export function parseNaturalPersianHousingQuery(
   options?: { isLiveModelVerified?: boolean; modelId?: string; areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode }
 ): StructuredPersianHousingQuery {
   const clean = sanitizeInput(rawQuery || '', 400);
-  const normalizedDigits = clean.replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+  const normalizedDigits = clean.replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/(\d)[٬،,](?=\d)/g, '$1').replace(/٫/g, '.');
   const injection = detectPromptInjection(normalizedDigits);
   const cityId: StructuredPersianHousingQuery['cityId'] = normalizedDigits.includes('کرج') ? 'karaj' : normalizedDigits.includes('مشهد') ? 'mashhad' : normalizedDigits.includes('اصفهان') ? 'isfahan' : normalizedDigits.includes('شیراز') ? 'shiraz' : 'tehran';
   const dealMode: 'buy' | 'rent' = /(رهن|اجاره|ودیعه)/.test(normalizedDigits) ? 'rent' : 'buy';

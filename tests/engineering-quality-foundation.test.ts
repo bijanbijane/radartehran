@@ -1998,6 +1998,39 @@ async function runSuite(): Promise<void> {
     assert.equal(urbanMorphRes.buildingCoverageRatioPercent, null, 'buildingCoverageRatioPercent must be null for NaN parcel area');
     assert.equal(urbanMorphRes.agedBuildingsOver25PctOfKnown, null, 'agedBuildingsOver25PctOfKnown must be null for NaN building counts');
     assert.equal(urbanMorphRes.landUseDiversityIndex0To1, 0, 'landUseDiversityIndex0To1 must fallback to 0 for NaN land use shares');
+
+    const mktProvEng = await import('../src/utils/marketIntelligenceProvenanceIndicatorsAndForecastAuditEngine');
+    const mktIndRes = mktProvEng.evaluateMarketIndicatorsSpreadLiquidityAndOutliers({
+      askingSqmPricesToman: [180_000_000, 190_000_000, 200_000_000],
+      verifiedTransactionSqmPricesToman: [175_000_000],
+      minRequiredSampleSize: Number.NaN,
+      pairedObservations: [],
+      rentalObservation: { depositToman: 500_000_000, monthlyRentToman: 15_000_000, explicitConversionRateAnnualPercent: Number.NaN, explicitMethodologyId: 'm1' },
+      liquidityInput: { activeInventoryCount: 50, verifiedCompletedSalesInPeriodCount: Number.NaN, withdrawnListingsInPeriodCount: 5 },
+    });
+    assert.equal(mktIndRes.askingIndicator.meetsMinimumSampleThreshold, true, 'minRequiredSampleSize must fallback NaN to 1');
+    assert.equal(mktIndRes.liquidityMetrics.monthlyAbsorptionRatePercent, 0, 'monthlyAbsorptionRatePercent must fallback NaN sales count to 0');
+
+    const telemEng = await import('../src/utils/telemetryEdgeAggregationEngine');
+    assert.equal(telemEng.bucketDifferentialBudget('invalid_budget', Number.NaN, Number.NaN), '-0.5B_TO_0.0B', 'bucketDifferentialBudget must handle invalid string and NaN seed');
+    const calcGuardRes = telemEng.evaluateCalculatorTelemetryGuard({ monthlyInstallmentToman: 'NaN', monthlyHouseholdIncomeToman: 0, sliderOscillationCount: Number.NaN });
+    assert.equal(calcGuardRes.ratioDecimal.isFinite(), true, 'evaluateCalculatorTelemetryGuard must return finite ratioDecimal');
+    const bioRes = telemEng.verifyBiometricHumanAndScrollGate({ keydownLatenciesMs: [40, Number.NaN, 85, 62], backspaceCount: 2, totalKeystrokes: 50, zeroLatencyPasteDetected: false, hasHeroImage: true, technicalDescriptionScrollRatio: Number.NaN });
+    assert.equal(bioRes.isHumanVerified, true, 'verifyBiometricHumanAndScrollGate must filter NaN keydown latencies');
+    assert.equal(bioRes.votingUnlocked, false, 'votingUnlocked must be false when scroll ratio is NaN');
+
+    const prodAnalEng = await import('../src/utils/productAnalyticsEngine');
+    const ttvRes = prodAnalEng.evaluateTimeToValueMetrics({ sessionId: 's1', milestone: 'HEDONIC_VALUATION_COMPLETED', viewportBucket: 'desktop', sessionStartMs: 1000, milestoneCompletedMs: 5000, activeInteractionMs: Number.NaN, networkWaitMs: Number.NaN, navigationMs: Number.NaN, failedRequestWaitMs: Number.NaN });
+    assert.equal(ttvRes.productiveRatio, 0, 'evaluateTimeToValueMetrics must fallback NaN activeInteractionMs to 0');
+    const abRes = prodAnalEng.evaluateControlledAbExperiment({ experimentId: 'exp1', enabled: true, sessionSeed: 'seed1', controlConversions: Number.NaN, controlExposures: 150, treatmentConversions: 20, treatmentExposures: 150, minSampleSizePerVariant: Number.NaN });
+    assert.equal(abRes.hasMinimumSampleSize, true, 'evaluateControlledAbExperiment must fallback NaN minSampleSizePerVariant to 100');
+    assert.equal(abRes.decision, 'TREATMENT_LEADING', 'evaluateControlledAbExperiment must fallback NaN controlConversions to 0');
+
+    const searchEng = await import('../src/utils/searchEngineeringEngine');
+    const rankedHits = searchEng.executeUnifiedNeighborhoodSearch([{ id: 1, name: 'ونک', overallScore: Number.NaN }, { id: 2, name: 'ونک', overallScore: 8.5 }], 'ونک');
+    assert.equal(rankedHits.length, 2, 'executeUnifiedNeighborhoodSearch must deduplicate by id and handle NaN overallScore');
+    const secQuery = searchEng.validateSearchQuerySecurity({ rawQuery: 'ونک', requestedPageSize: Number.NaN });
+    assert.equal(secQuery.safePageSize, 20, 'validateSearchQuerySecurity must fallback NaN requestedPageSize to 20');
   });
 
   await verify('Frontend Debugging & Accessibility Invariants (Batch 4.11, 4.12, 4.13, 4.14, 4.15 & 4.16)', () => {

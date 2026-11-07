@@ -6,9 +6,10 @@ export function executeUnifiedNeighborhoodSearch<
     if (seenIds.has(item.id)) continue; seenIds.add(item.id); const normName = normalizePersianSearchText(item.name); const compactName = normName.replace(/\s+/g, ''); const normZone = normalizePersianSearchText(item.zone ?? ''); const normPros = normalizePersianSearchText(item.pros ?? ''); const normStreet = normalizePersianSearchText(item.bargains?.[0]?.street ?? ''); if (normName === mappedQuery) { hits.push({ item, relevanceScore: 100, matchTier: 'EXACT_NAME' });
     } else if (compactName === compactQ) { hits.push({ item, relevanceScore: 95, matchTier: 'COMPACT_OR_ALIAS' }); } else if (normName.startsWith(mappedQuery) || compactName.startsWith(compactQ)) { hits.push({ item, relevanceScore: 85, matchTier: 'PREFIX_NAME' }); } else if (tokens.length > 1 && tokens.every((tk) => normName.includes(tk) || normZone.includes(tk) || normPros.includes(tk))) { hits.push({ item, relevanceScore: 75, matchTier: 'MULTI_TOKEN' }); } else if (normName.includes(mappedQuery) || compactName.includes(compactQ)) { hits.push({ item, relevanceScore: 65, matchTier: 'SUBSTRING_NAME' }); } else if (allowTypo && computeBoundedLevenshteinDistance(compactName, compactQ, 1) <= 1) {
       hits.push({ item, relevanceScore: 55, matchTier: 'TYPO_TOLERANT_DISTANCE_1' }); } else if ((normZone && normZone.includes(mappedQuery)) || (!isPurelyNumeric && mappedQuery.length >= 2 && (normPros.includes(mappedQuery) || normStreet.includes(mappedQuery)))) { hits.push({ item, relevanceScore: 50, matchTier: 'ZONE_MATCH' }); } }
-  return hits.sort( (a, b) =>
-      b.relevanceScore - a.relevanceScore || (b.item.overallScore ?? 0) - (a.item.overallScore ?? 0) ||
-      a.item.id - b.item.id, ); }
+  return hits.sort((a, b) =>
+      b.relevanceScore - a.relevanceScore ||
+      (Number.isFinite(b.item.overallScore) ? b.item.overallScore! : 0) - (Number.isFinite(a.item.overallScore) ? a.item.overallScore! : 0) ||
+      a.item.id - b.item.id); }
 export interface SearchableFeatureCatalogEntry { featureId: string; displayNameFa: string; keywordsFa: readonly string[]; aliasesEn: readonly string[]; shortDescriptionFa: string; category: 'VALUATION' | 'DISCOVERY' | 'LEGAL_FINANCE' | 'B2B_CRM' | 'ADMIN'; actionTarget: string;
   requiresAdmin: boolean; featureFlagKey?: keyof FeatureFlags; }
 export const SEARCHABLE_RADAR_FEATURE_CATALOG: readonly SearchableFeatureCatalogEntry[] = [
@@ -162,7 +163,8 @@ export function paginateSearchResultsWithCursor<T extends { id: number | string 
   hasMore: boolean;
   cursorValid: boolean;
 } {
-  const safePageSize = Math.max(1, Math.min(50, Math.floor(params.pageSize || 10)));
+  const rawPage = Number.isFinite(params.pageSize) && params.pageSize > 0 ? params.pageSize : 10;
+  const safePageSize = Math.max(1, Math.min(50, Math.floor(rawPage)));
   let startIndex = 0;
   let cursorValid = true;
   if (params.afterCursor) {
@@ -229,10 +231,11 @@ export function validateSearchQuerySecurity(input: {
   if (/<script|javascript:|__proto__|constructor|prototype|\$where|\$regex|\$ne|\$gt/i.test(deobfuscated)) {
     return { allowed: false, sanitizedQuery: '', safePageSize: 0, rejectionReason: 'MALICIOUS_QUERY_PATTERN' };
   }
+  const reqPage = typeof input.requestedPageSize === 'number' && Number.isFinite(input.requestedPageSize) ? input.requestedPageSize : 20;
   return {
     allowed: true,
     sanitizedQuery: sanitizeInput(deobfuscated, 120),
-    safePageSize: Math.max(1, Math.min(50, Math.floor(input.requestedPageSize ?? 20))),
+    safePageSize: Math.max(1, Math.min(50, Math.floor(reqPage))),
     rejectionReason: null,
   };
 }
@@ -263,15 +266,17 @@ export class DeterministicSearchCache<V> {
     return `${safeRole}:${safeCity}:${safeMode}:${safeDigest}:${normQ}`;
   }
   get(key: string, nowMs = Date.now()): V | undefined {
+    const safeNow = Number.isFinite(nowMs) ? nowMs : Date.now();
     const entry = this.store.get(key);
     if (!entry) { this.misses += 1; return undefined; }
-    if (nowMs > entry.expiresAtMs) { this.store.delete(key); this.misses += 1; return undefined; }
+    if (safeNow > entry.expiresAtMs) { this.store.delete(key); this.misses += 1; return undefined; }
     this.hits += 1;
     return entry.value;
   }
   set(key: string, value: V, nowMs = Date.now()): void {
+    const safeNow = Number.isFinite(nowMs) ? nowMs : Date.now();
     if (this.store.size >= this.maxEntries && !this.store.has(key)) {
       const oldestKey = this.store.keys().next().value;
       if (oldestKey !== undefined) this.store.delete(oldestKey);
     }
-    this.store.set(key, { value, expiresAtMs: nowMs + this.ttlMs }); } invalidateAll(): void { this.store.clear(); } getStats(): { hits: number; misses: number; size: number; hitRatePercent: number } { const total = this.hits + this.misses; return { hits: this.hits, misses: this.misses, size: this.store.size, hitRatePercent: total > 0 ? Number(((this.hits / total) * 100).toFixed(2)) : 0, }; } }
+    this.store.set(key, { value, expiresAtMs: safeNow + this.ttlMs }); } invalidateAll(): void { this.store.clear(); } getStats(): { hits: number; misses: number; size: number; hitRatePercent: number } { const total = this.hits + this.misses; return { hits: this.hits, misses: this.misses, size: this.store.size, hitRatePercent: total > 0 ? Number(((this.hits / total) * 100).toFixed(2)) : 0, }; } }

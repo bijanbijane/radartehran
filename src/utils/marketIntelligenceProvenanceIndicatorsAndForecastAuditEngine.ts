@@ -146,7 +146,7 @@ export function evaluateMarketIndicatorsSpreadLiquidityAndOutliers(
   };
   const askStats = computeStats(params.askingSqmPricesToman);
   const txStats = computeStats(params.verifiedTransactionSqmPricesToman);
-  const minSample = Math.max(1, params.minRequiredSampleSize);
+  const minSample = Math.max(1, Number.isFinite(params.minRequiredSampleSize) ? params.minRequiredSampleSize : 1);
   const validPairs = params.pairedObservations.filter(
     (p) => Number.isFinite(p.initialAskingToman) && p.initialAskingToman > 0 && Number.isFinite(p.verifiedTransactionToman) && p.verifiedTransactionToman >= 0
   );
@@ -175,10 +175,9 @@ export function evaluateMarketIndicatorsSpreadLiquidityAndOutliers(
       ? Math.round(rent + (dep * (convRate / 100)) / 12)
       : null;
   const liq = params.liquidityInput;
-  const monthlyAbsorptionRatePercent =
-    liq.activeInventoryCount > 0
-      ? Number(((liq.verifiedCompletedSalesInPeriodCount / liq.activeInventoryCount) * 100).toFixed(2))
-      : null;
+  const activeInv = Number.isFinite(liq.activeInventoryCount) && liq.activeInventoryCount > 0 ? liq.activeInventoryCount : 0;
+  const completedSales = Number.isFinite(liq.verifiedCompletedSalesInPeriodCount) && liq.verifiedCompletedSalesInPeriodCount >= 0 ? liq.verifiedCompletedSalesInPeriodCount : 0;
+  const monthlyAbsorptionRatePercent = activeInv > 0 ? Number(((completedSales / activeInv) * 100).toFixed(2)) : null;
   const flaggedOutlierPricesToman: number[] = [];
   if (askStats.q1 !== null && askStats.q3 !== null && askStats.iqr !== null && askStats.count >= 4) {
     const lowerFence = askStats.q1 - 1.5 * askStats.iqr;

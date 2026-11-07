@@ -60,8 +60,8 @@ export const COMPLETE_INSIGHTS_BY_ID: Record<number, NeighborhoodDeepInsight> = 
     ],
   },
 };
-const MAIN_TRAFFIC_HOOD_IDS = new Set<number>([18, 19, 20, 86, 87, 88, 98]);
-const AIR_CONTROL_HOOD_IDS = new Set<number>([8, 9, 28, 29, 41, 42, 43, 44, 94, 95, 96, 97]);
+const MAIN_TRAFFIC_HOOD_IDS = new Set<number>([18, 19, 20, 86, 87]);
+const AIR_CONTROL_HOOD_IDS = new Set<number>([8, 9, 28, 29, 41, 42, 43, 44, 88, 94, 95, 96, 97, 98]);
 export function getTrafficZoneStatus(hoodId: number): {
   zoneType: 'main_traffic' | 'air_control' | 'free';
   label: string;

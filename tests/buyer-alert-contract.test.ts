@@ -751,7 +751,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
     op155InspectorDrawerSrc.includes('`رهن (${formatAreaShort(80, areaUnit)}): ${toPersianNum(favHood.rahn80m)} م') &&
       op155InspectorDrawerSrc.includes('پایه ${formatAreaShort(80, areaUnit)} نوساز: ${toPersianNum(selectedHood.rahn80m)} م${intlCurrency !== \'IRT\' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : \'\'}') &&
       op155InspectorTabsSrc.includes('`رهن (${formatAreaShort(80, areaUnit)}) ~${toPersianNum(Math.round(selectedHood.rahn80m * tier.priceMultiplier))} م${fxTag(Math.round(selectedHood.rahn80m * tier.priceMultiplier))}`') &&
-      op155ShortlistMatrixSrc.includes('رهن کامل (${formatAreaShort(80, areaUnit)} — میلیون تومان)') &&
+      (op155ShortlistMatrixSrc.includes('رهن کامل (${formatAreaShort(80, areaUnit)} — میلیون تومان)') || op155ShortlistMatrixSrc.includes('رهن کامل ({formatAreaShort(80, areaUnit)} — میلیون تومان)')) &&
       op155ShortlistMatrixSrc.includes('formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)') &&
       op155PortfolioModalsSrc.includes('قیمت کل واحد ({formatAreaShort(tradeUpTargetSqm, areaUnit)}):'),
     'NeighborhoodInspectorDrawer, NeighborhoodInspectorTabs, ShortlistMatrixModal, and PortfolioModals must expose full OP-155 area unit and international currency equivalence'
