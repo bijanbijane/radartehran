@@ -81,3 +81,28 @@ export {
   defaultGeographicService,
   GeographicReferenceService,
 } from './service';
+
+// Location Intelligence & Spatial Services
+export {
+  GeographyService,
+} from './geographyService';
+export {
+  GeographyCatalog,
+} from './geographyCatalog';
+export {
+  normalizeGeographicNameFa,
+  validateCoordinates,
+} from './geographyNormalizer';
+export {
+  calculateGeodesicDistanceMeters,
+  isPointInsideGeometry,
+} from './geographySpatialEngine';
+export {
+  MockGeocodingProvider,
+} from './geographyProviders';
+export {
+  GeographyAddressResolver,
+} from './geographyAddressResolver';
+export {
+  GeographyImportPipeline,
+} from './geographyImportPipeline';

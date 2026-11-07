@@ -19,6 +19,17 @@ export * from './providerAdapters.ts';
 export * from './durableNotificationStore.ts';
 export * from './notificationEngine.ts';
 
+// Employee 8 backwards-compatible exports
+export {
+  NotificationDeliveryEngine,
+  MockDeliveryProvider,
+} from './notificationDeliveryEngine.ts';
+export { NotificationEventConsumer } from './notificationEventConsumer.ts';
+export { NotificationStore } from './notificationStore.ts';
+export { renderNotificationTemplate } from './notificationTemplates.ts';
+export { sanitizeDeepLink } from './notificationValidator.ts';
+export { registerNotificationRoutes } from './notificationRoutes.ts';
+
 import { FirestoreAndJournalNotificationStore } from './durableNotificationStore.ts';
 import { NotificationLifecycleEngine } from './notificationEngine.ts';
 import { NotificationTemplateRegistry } from './privacyAndTemplates.ts';
