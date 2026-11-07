@@ -1,8 +1,8 @@
 import "dotenv/config"; import express from "express"; import fs from "fs"; import http from "http"; import os from "os"; import path from "path"; import { createServer as createViteServer } from "vite"; import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS, type CityId } from "./src/data/multiCityData"; import type { SystemHealthData } from "./src/types/models"; import { validateCityParam } from "./src/utils/security"; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from "./src/utils/areaUnit"; import { registerOsmTileProxyRoute } from "./src/utils/osmTileProxy"; import { registerObjectStorageRoutes } from "./src/utils/serverObjectStorage"; import { registerBoundaryProtocolRoutes } from "./src/utils/serverBoundaryProtocol"; import { registerSeoAndSitemapRoutes, injectDynamicSeoMeta } from "./src/utils/serverSeoAndSitemap"; import { getRuntimeEnvConfig, getAdminSafeRuntimeConfigView, updateRuntimeEnvConfig } from "./src/utils/serverRuntimeEnvStore"; import { getValidatedServerConfig, verifyAdminApiAuthorization } from "./src/utils/serverAdminAndTelegramSecurity";
 import { cachedMarketPulseByCity, deepSyncedOverrides, serverAuditLogs, openMeteoLastOk, CITY_AIR_STATIONS, lastAirQualityFetchMs, lastAirQualityFetchSucceeded, airQualityStationSuccessCount, airQualityLastOkByCity, airQualityLastSuccessMsByCity, loadDiskPersistedCache, saveDiskPersistedCache, pushAuditLog, executeDeepMonitoringCycle, getOrUpdateMarketPulse } from "./src/utils/serverMarketPulseEngine"; import { registerUtilityRoutes } from "./src/utils/serverUtilityRoutes"; import { registerSponsorAndBargainRoutes } from "./src/utils/serverSponsorAndBargainRoutes"; import { registerBackupAndChunkUploadRoutes } from "./src/utils/serverBackupAndChunkUploadRoutes"; import { registerPublisherAndPlatformRoutes } from "./src/utils/serverPublisherBargains"; import { registerAiAndCommerceRoutes } from "./src/utils/serverAiAndCommerceRoutes"; import { buildOpenApiSpecification, resolveServerHttpTimeouts } from "./src/utils/serverConfigValidator"; import { flushServerTelemetryToS3Now } from "./src/utils/productAnalyticsEngine";
-import { checkRateLimit, classifyStaticAssetCachePolicy, compressPayloadIfAccepted, createDeliveryAndAbuseMiddleware, getClientIp, getRateLimitTelemetry, isStaticAssetPath, recordAbuseSignal, resolveApiCacheControlHeader } from "./src/utils/serverDeliveryAndAbuseGuard"; let activeHttpServer: http.Server | null = null; let backgroundMonitoringTimer: ReturnType<typeof setInterval> | null = null; let fatalExitScheduled = false; function shutdownAfterFatalError(label: string, reason: unknown): void { console.error(label, reason); if (fatalExitScheduled) return; fatalExitScheduled = true; if (backgroundMonitoringTimer) clearInterval(backgroundMonitoringTimer); saveDiskPersistedCache(); void flushServerTelemetryToS3Now().catch(() => undefined); if (activeHttpServer) { activeHttpServer.close(() => process.exit(1)); setTimeout(() => process.exit(1), 3000).unref(); } else { process.exit(1); } } function handleGracefulShutdownSignal(signal: "SIGTERM" | "SIGINT"): void { if (fatalExitScheduled) return; fatalExitScheduled = true;
+import { checkRateLimit, classifyStaticAssetCachePolicy, compressPayloadIfAccepted, createDeliveryAndAbuseMiddleware, getClientIp, getRateLimitTelemetry, isStaticAssetPath, recordAbuseSignal, resolveApiCacheControlHeader } from "./src/utils/serverDeliveryAndAbuseGuard"; import { globalBackendLifecycle } from "./src/utils/identityLifecycleAndBackendGovernance"; let activeHttpServer: http.Server | null = null; let backgroundMonitoringTimer: ReturnType<typeof setInterval> | null = null; let fatalExitScheduled = false; function shutdownAfterFatalError(label: string, reason: unknown): void { console.error(label, reason); if (fatalExitScheduled) return; fatalExitScheduled = true; if (backgroundMonitoringTimer) clearInterval(backgroundMonitoringTimer); void globalBackendLifecycle.initiateGracefulShutdown(() => { saveDiskPersistedCache(); void flushServerTelemetryToS3Now().catch(() => undefined); }); if (activeHttpServer) { activeHttpServer.close(() => process.exit(1)); setTimeout(() => process.exit(1), 3000).unref(); } else { process.exit(1); } } function handleGracefulShutdownSignal(signal: "SIGTERM" | "SIGINT"): void { if (fatalExitScheduled) return; fatalExitScheduled = true;
   pushAuditLog("INFO", `دریافت سیگنال خاموش‌سازی امن سرور (${signal})؛ تخلیهٔ کش و بستن اتصالات...`);
-  if (backgroundMonitoringTimer) clearInterval(backgroundMonitoringTimer); saveDiskPersistedCache(); void flushServerTelemetryToS3Now().catch(() => undefined); if (activeHttpServer) { activeHttpServer.close(() => process.exit(0)); setTimeout(() => process.exit(0), 4000).unref(); } else { process.exit(0); } }
+  if (backgroundMonitoringTimer) clearInterval(backgroundMonitoringTimer); void globalBackendLifecycle.initiateGracefulShutdown(() => { saveDiskPersistedCache(); void flushServerTelemetryToS3Now().catch(() => undefined); }); if (activeHttpServer) { activeHttpServer.close(() => process.exit(0)); setTimeout(() => process.exit(0), 4000).unref(); } else { process.exit(0); } }
 process.on("SIGTERM", () => handleGracefulShutdownSignal("SIGTERM")); process.on("SIGINT", () => handleGracefulShutdownSignal("SIGINT")); process.on("uncaughtException", (error: Error) => { shutdownAfterFatalError("[CRITICAL BOOT EXCEPTION] Uncaught exception:", error); }); process.on("unhandledRejection", (reason: unknown) => { shutdownAfterFatalError("[CRITICAL BOOT REJECTION] Unhandled rejection:", reason); }); const MONITORING_INTERVAL_MS = 2 * 60 * 60 * 1000; const ALL_SYSTEM_NEIGHBORHOODS = getAllMultiCityNeighborhoods();
 async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing Tehran Housing Radar backend server..."); getRuntimeEnvConfig(process.env); loadDiskPersistedCache(); pushAuditLog("INFO", "راه‌اندازی سرور رادار هوشمند مسکن و رهن ایران"); const app = express(); const rawTrustProxyHops = process.env.TRUST_PROXY_HOPS; const trustProxyHops =
     typeof rawTrustProxyHops === "string" && /^\d+$/.test(rawTrustProxyHops) && Number(rawTrustProxyHops) >= 1 && Number(rawTrustProxyHops) <= 5
@@ -194,19 +194,19 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
     }
   });
   app.get("/api/air-quality", async (req, res) => {
-    if (!checkRateLimit(getClientIp(req), "general", 60, 60 * 1000)) { res.status(429).json({ status: "error", code: "RATE_LIMIT_EXCEEDED", message: "تعداد درخواست‌ها بیش از حد مجاز است." }); return; }
-    const city = validateCityParam(req.query.city, "tehran");
-    const pulse = await getOrUpdateMarketPulse(city, false);
-    const cityZones = CITY_AIR_STATIONS[city] || CITY_AIR_STATIONS.tehran;
-    const totalStations = Object.keys(cityZones).length;
-    const successfulStations = airQualityStationSuccessCount[city] ?? 0;
-    const sourceStatus = lastAirQualityFetchSucceeded[city] === true ? "LIVE_OR_PARTIAL" : lastAirQualityFetchMs[city] ? "STALE" : "SEED";
-    res.setHeader("Cache-Control", resolveApiCacheControlHeader(req));
-    res.status(200).json({
-      status: "ok", city, sourceStatus, lastUpdatedIso: pulse.lastUpdatedIso,
-      lastAttemptMs: lastAirQualityFetchMs[city] ?? null, successfulStations, totalStations,
-      airQuality: pulse.airQuality, zones: cityZones,
-    });
+    try {
+      if (!checkRateLimit(getClientIp(req), "general", 60, 60 * 1000)) { res.status(429).json({ status: "error", code: "RATE_LIMIT_EXCEEDED", message: "تعداد درخواست‌ها بیش از حد مجاز است." }); return; }
+      const city = validateCityParam(req.query.city, "tehran"); const pulse = await getOrUpdateMarketPulse(city, false);
+      const cityZones = CITY_AIR_STATIONS[city] || CITY_AIR_STATIONS.tehran; const totalStations = Object.keys(cityZones).length;
+      const successfulStations = airQualityStationSuccessCount[city] ?? 0;
+      const sourceStatus = lastAirQualityFetchSucceeded[city] === true ? "LIVE_OR_PARTIAL" : lastAirQualityFetchMs[city] ? "STALE" : "SEED";
+      res.setHeader("Cache-Control", resolveApiCacheControlHeader(req));
+      res.status(200).json({
+        status: "ok", city, sourceStatus, lastUpdatedIso: pulse.lastUpdatedIso,
+        lastAttemptMs: lastAirQualityFetchMs[city] ?? null, successfulStations, totalStations,
+        airQuality: pulse.airQuality, zones: cityZones,
+      });
+    } catch { res.status(500).json({ status: "error", code: "AIR_QUALITY_FAILED", message: "خطا در دریافت وضعیت کیفیت هوا." }); }
   });
   registerUtilityRoutes(app, { checkRateLimit, getClientIp });
   registerSponsorAndBargainRoutes(app, { checkRateLimit, getClientIp });

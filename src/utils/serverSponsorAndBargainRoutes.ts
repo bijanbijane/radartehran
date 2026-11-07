@@ -250,7 +250,9 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         return;
       }
       const bargainId = typeof req.body?.bargainId === 'string' ? req.body.bargainId.trim() : '';
-      const targetStatus = req.body?.status === 'rejected' ? 'rejected' : 'approved';
+      const rawTargetStatus = req.body?.status === undefined ? 'approved' : req.body?.status;
+      if (rawTargetStatus !== 'approved' && rawTargetStatus !== 'rejected') { res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_STATUS' }); return; }
+      const targetStatus: 'approved' | 'rejected' = rawTargetStatus;
       if (!isValidFirestoreDocId(bargainId) || !isValidBargainStateTransition(req.body?.fromStatus, targetStatus, true)) {
         res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_TRANSITION' });
         return;
