@@ -82,27 +82,47 @@ export {
   GeographicReferenceService,
 } from './service';
 
-// Location Intelligence & Spatial Services
+// Employee 11 — Extended Geography & Location Intelligence Exports
 export {
   GeographyService,
+  defaultGeographyService,
 } from './geographyService';
-export {
-  GeographyCatalog,
-} from './geographyCatalog';
+export { GeographyCatalog } from './geographyCatalog';
 export {
   normalizeGeographicNameFa,
   validateCoordinates,
+  computeLevenshteinDistance,
 } from './geographyNormalizer';
 export {
+  GeographySpatialEngine,
   calculateGeodesicDistanceMeters,
+  isPointInsideGeoJsonPolygonRing,
   isPointInsideGeometry,
 } from './geographySpatialEngine';
 export {
+  UnavailableGeocodingProvider,
   MockGeocodingProvider,
+  UnconfiguredH3Provider,
 } from './geographyProviders';
-export {
-  GeographyAddressResolver,
-} from './geographyAddressResolver';
+export { GeographyAddressResolver } from './geographyAddressResolver';
 export {
   GeographyImportPipeline,
+  type ImportCandidateRecord,
 } from './geographyImportPipeline';
+export type {
+  GeographicLevel,
+  BoundaryProvenance,
+  CoordinateSystem,
+  GeoPolygonGeometry,
+  GeographicBoundary,
+  GeographicEntity,
+  NormalizedAddress,
+  AddressResolutionOutcome,
+  SpatialLookupResult,
+  GeocodingProviderResult,
+  GeocodingProvider,
+  H3SpatialIndexingResult,
+  H3SpatialIndexingProvider,
+  DatasetChangeSummary,
+} from './geographyTypes';
+

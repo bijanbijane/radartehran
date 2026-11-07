@@ -13,6 +13,14 @@
  *  7. Four-stage delivery lifecycle:
  *     (Event Creation -> Notification Generation -> Delivery Attempt -> Delivery Confirmation).
  */
+import type {
+  AuditEventSink,
+  DelegatedAdminStoreAdapter,
+  FirebaseTokenVerifierAdapter,
+  IdempotencyStoreAdapter,
+  NormalizedTimestamp,
+  TransactionRunnerAdapter,
+} from '../core';
 
 export type NotificationEventSource =
   | 'BARGAINS'
@@ -55,7 +63,16 @@ export type NotificationCategoryClass =
   | 'MARKET_ALERT'
   | 'PROMOTIONAL_SPONSORSHIP';
 
-export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS' | 'PUSH';
+export type NotificationChannel =
+  | 'IN_APP'
+  | 'EMAIL'
+  | 'SMS'
+  | 'PUSH'
+  | 'in_app'
+  | 'email'
+  | 'sms'
+  | 'push';
+export type StrictUpperNotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS' | 'PUSH';
 export type ExternalDeliveryChannel = 'EMAIL' | 'SMS' | 'PUSH';
 
 export const ALL_EXTERNAL_DELIVERY_CHANNELS: readonly ExternalDeliveryChannel[] = [
@@ -108,7 +125,8 @@ export interface NotificationOutboxEntry {
 
 export interface UserNotificationPreferences {
   userUid: string;
-  channelEnabled: Record<NotificationChannel, boolean>;
+  channelEnabled: Record<StrictUpperNotificationChannel, boolean> &
+    Partial<Record<NotificationChannel, boolean>>;
   categoryEnabled: Record<NotificationCategoryClass, boolean>;
   sourceMuted: Partial<Record<NotificationEventSource, boolean>>;
   quietHoursUtc?: {
@@ -323,3 +341,133 @@ export class NotificationDomainError extends Error {
     this.httpStatus = httpStatus;
   }
 }
+
+// Core Transactional Notifications Service & Router Contracts (`service.ts`, `routes.ts`, `templatesAndValidation.ts`)
+export type DeliveryJobLifecycleState =
+  | 'queued'
+  | 'attempted'
+  | 'delivered'
+  | 'failed'
+  | 'cancelled';
+
+export interface NotificationEventPayload {
+  eventId: string;
+  eventType: string;
+  recipientUid: string;
+  variables: Record<string, unknown>;
+  idempotencyKey?: string;
+  correlationId?: string;
+  deepLinkParams?: Record<string, string>;
+}
+
+export interface StoredNotification {
+  id: string;
+  recipientUid: string;
+  templateId: string;
+  category: string;
+  eventType: string;
+  titleFa: string;
+  bodyFa: string;
+  variables: Record<string, string>;
+  deepLink?: string;
+  read: boolean;
+  readAt?: NormalizedTimestamp;
+  archived: boolean;
+  archivedAt?: NormalizedTimestamp;
+  lifecycleState: 'pending' | 'delivered' | 'failed';
+  requestedChannels: NotificationChannel[];
+  eventId: string;
+  correlationId: string;
+  createdAt: NormalizedTimestamp;
+  updatedAt: NormalizedTimestamp;
+}
+
+export interface StoredNotificationDeliveryJob {
+  id: string;
+  notificationId: string;
+  recipientUid: string;
+  channel: NotificationChannel;
+  lifecycleState: DeliveryJobLifecycleState;
+  attemptCount: number;
+  maxRetries: number;
+  lastAttemptAt?: NormalizedTimestamp;
+  deliveredAt?: NormalizedTimestamp;
+  providerReferenceId?: string;
+  failureReason?: string;
+  createdAt: NormalizedTimestamp;
+  updatedAt: NormalizedTimestamp;
+}
+
+export interface StoredNotificationPreferences {
+  recipientUid: string;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  securityAlertsEnabled: boolean;
+  promotionalEnabled: boolean;
+  updatedAt: NormalizedTimestamp;
+}
+
+export interface StoredNotificationTemplate {
+  id: string;
+  templateVersion: string;
+  category: string;
+  eventType: string;
+  titlePatternFa: string;
+  bodyPatternFa: string;
+  allowedVariables: string[];
+  defaultChannels: NotificationChannel[];
+  deepLinkPattern?: string;
+  createdAt: NormalizedTimestamp;
+  updatedAt: NormalizedTimestamp;
+}
+
+export interface SendDirectNotificationInput {
+  recipientUid: string;
+  templateId: string;
+  variables: Record<string, string | number>;
+  channels?: NotificationChannel[];
+}
+
+export interface SendAdminAnnouncementInput {
+  titleFa: string;
+  bodyFa: string;
+  broadcastToAll: boolean;
+  targetRecipientUids?: string[];
+  deepLink?: string;
+}
+
+export interface UpdateNotificationPreferencesInput {
+  inAppEnabled?: boolean;
+  emailEnabled?: boolean;
+  smsEnabled?: boolean;
+  promotionalEnabled?: boolean;
+}
+
+export interface ExternalChannelDeliveryProviderAdapter {
+  sendChannelMessage: (params: {
+    jobId: string;
+    notificationId: string;
+    recipientUid: string;
+    channel: NotificationChannel;
+    titleFa: string;
+    bodyFa: string;
+    deepLink?: string;
+  }) => Promise<{
+    delivered: boolean;
+    providerReferenceId?: string;
+    failureReason?: string;
+  }>;
+}
+
+export interface NotificationsModuleDependencies {
+  tokenVerifier: FirebaseTokenVerifierAdapter;
+  adminStore?: DelegatedAdminStoreAdapter;
+  primaryAdminEmails?: string[];
+  txRunner: TransactionRunnerAdapter;
+  idempotencyStore?: IdempotencyStoreAdapter;
+  deliveryAdapter?: ExternalChannelDeliveryProviderAdapter;
+  auditSink?: AuditEventSink;
+  nowFn?: () => number;
+}
+

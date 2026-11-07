@@ -2,13 +2,8 @@ export * from './searchTypes';
 export * from './searchValidator';
 export * from './searchEngine';
 export * from './searchRoutes';
+export * from './types';
+export * from './validation';
+export * from './service';
+export * from './routes';
 
-// Search Service Facade & DataSource Adapters
-export { createSearchService } from './service';
-export type {
-  DiscoverablePublicListing,
-  ListingReadDataSourceAdapter,
-  StoredSavedSearch,
-  SearchModuleDependencies,
-  SearchFilterQuery,
-} from './types';
