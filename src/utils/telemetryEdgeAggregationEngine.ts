@@ -216,9 +216,12 @@ export function bucketDifferentialBudget(
   laplaceNoiseScale: number = 25,
   deterministicSeed: number = 0.42
 ): string {
-  const dec = new Decimal(exactBudgetMillion);
-  const u = Math.max(-0.4999, Math.min(0.4999, deterministicSeed - 0.5));
-  const noise = -laplaceNoiseScale * (u < 0 ? -1 : 1) * Math.log(1 - 2 * Math.abs(u));
+  let dec: Decimal;
+  try { const parsed = new Decimal(exactBudgetMillion); dec = parsed.isFinite() ? parsed : new Decimal(0); } catch { dec = new Decimal(0); }
+  const safeScale = Number.isFinite(laplaceNoiseScale) && laplaceNoiseScale >= 0 ? laplaceNoiseScale : 25;
+  const safeSeed = Number.isFinite(deterministicSeed) ? deterministicSeed : 0.42;
+  const u = Math.max(-0.4999, Math.min(0.4999, safeSeed - 0.5));
+  const noise = -safeScale * (u < 0 ? -1 : 1) * Math.log(1 - 2 * Math.abs(u));
   const noisyBillion = dec.plus(noise).div(1000);
   const lowerHalf = Math.floor(noisyBillion.mul(2).toNumber()) / 2;
   return `${lowerHalf.toFixed(1)}B_TO_${(lowerHalf + 0.5).toFixed(1)}B`;
@@ -229,10 +232,12 @@ export function evaluateCalculatorTelemetryGuard(input: {
   monthlyHouseholdIncomeToman: Decimal | number | string;
   sliderOscillationCount: number;
 }): { ratioDecimal: Decimal; flags: TelemetryFrictionFlag[]; simplifiedPersianSummary: string | null } {
-  const ratio = new Decimal(input.monthlyInstallmentToman).div(Decimal.max(new Decimal(1), new Decimal(input.monthlyHouseholdIncomeToman)));
+  let instDec: Decimal; try { const p = new Decimal(input.monthlyInstallmentToman); instDec = p.isFinite() ? p : new Decimal(0); } catch { instDec = new Decimal(0); }
+  let incDec: Decimal; try { const p = new Decimal(input.monthlyHouseholdIncomeToman); incDec = p.isFinite() ? p : new Decimal(0); } catch { incDec = new Decimal(0); }
+  const ratio = instDec.div(Decimal.max(new Decimal(1), incDec));
   const flags: TelemetryFrictionFlag[] = [];
   if (ratio.gt(new Decimal('0.70'))) flags.push('FINANCIAL_CAPACITY_CEILING');
-  if (input.sliderOscillationCount > 10) flags.push('USER_CONFUSION_OSCILLATION');
+  if (Number.isFinite(input.sliderOscillationCount) && input.sliderOscillationCount > 10) flags.push('USER_CONFUSION_OSCILLATION');
   return {
     ratioDecimal: ratio,
     flags,
@@ -243,10 +248,11 @@ export function evaluateCalculatorTelemetryGuard(input: {
 
 export function verifyBiometricHumanAndScrollGate(input: { keydownLatenciesMs: readonly number[]; backspaceCount: number; totalKeystrokes: number; zeroLatencyPasteDetected: boolean; hasHeroImage: boolean; technicalDescriptionScrollRatio: number; }): { isHumanVerified: boolean; quarantinedPaste: boolean; votingUnlocked: boolean } {
   if (input.zeroLatencyPasteDetected) return { isHumanVerified: false, quarantinedPaste: true, votingUnlocked: false };
-  const n = input.keydownLatenciesMs.length; const mean = n > 0 ? input.keydownLatenciesMs.reduce((a, b) => a + b, 0) / n : 0;
-  const variance = n > 1 ? input.keydownLatenciesMs.reduce((acc, v) => acc + (v - mean) ** 2, 0) / (n - 1) : 0;
+  const validLatencies = (input.keydownLatenciesMs || []).filter((v) => typeof v === 'number' && Number.isFinite(v));
+  const n = validLatencies.length; const mean = n > 0 ? validLatencies.reduce((a, b) => a + b, 0) / n : 0;
+  const variance = n > 1 ? validLatencies.reduce((acc, v) => acc + (v - mean) ** 2, 0) / (n - 1) : 0;
   const backspaceRatio = input.totalKeystrokes > 0 ? input.backspaceCount / input.totalKeystrokes : 0;
-  return { isHumanVerified: variance >= 12 && backspaceRatio >= 0.01, quarantinedPaste: false, votingUnlocked: !input.hasHeroImage || input.technicalDescriptionScrollRatio >= 0.7 };
+  return { isHumanVerified: variance >= 12 && backspaceRatio >= 0.01, quarantinedPaste: false, votingUnlocked: !input.hasHeroImage || (Number.isFinite(input.technicalDescriptionScrollRatio) && input.technicalDescriptionScrollRatio >= 0.7) };
 }
 export function packZeroCopyClusterTransferable(points: ReadonlyArray<{ lng: number; lat: number; pricePerSqm: number; hoodId: number }>): { buffer: ArrayBuffer; float64View: Float64Array; stride: 4 } {
   const float64View = new Float64Array(points.length * 4);

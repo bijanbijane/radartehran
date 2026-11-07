@@ -52,14 +52,15 @@ export class CentralizedRadarAnalyticsCollector {
 }
 export interface TimeToValueSample { sessionId: string; milestone: 'NEIGHBORHOOD_INSIGHT_VIEWED' | 'HEDONIC_VALUATION_COMPLETED' | 'SHORTLIST_COMPARISON_SAVED' | 'BUYER_ALERT_REGISTERED'; viewportBucket: 'mobile' | 'tablet' | 'desktop'; sessionStartMs: number; milestoneCompletedMs: number; activeInteractionMs: number; networkWaitMs: number; navigationMs: number; failedRequestWaitMs: number; }
 export function evaluateTimeToValueMetrics(sample: TimeToValueSample): { valid: boolean; elapsedTotalMs: number; productiveRatio: number; bottleneckCategory: 'NONE' | 'NETWORK_LATENCY' | 'NAVIGATION_FRICTION' | 'FAILED_REQUEST_DELAY'; } {
-  const elapsedTotalMs = Math.max(0, sample.milestoneCompletedMs - sample.sessionStartMs);
+  const elapsedTotalMs = Math.max(0, (Number.isFinite(sample.milestoneCompletedMs) ? sample.milestoneCompletedMs : 0) - (Number.isFinite(sample.sessionStartMs) ? sample.sessionStartMs : 0));
   if (elapsedTotalMs === 0) return { valid: false, elapsedTotalMs: 0, productiveRatio: 0, bottleneckCategory: 'NONE' };
-  const activeMs = Math.max(0, Math.min(elapsedTotalMs, sample.activeInteractionMs));
+  const safeActive = Number.isFinite(sample.activeInteractionMs) ? sample.activeInteractionMs : 0;
+  const activeMs = Math.max(0, Math.min(elapsedTotalMs, safeActive));
   const productiveRatio = Number((activeMs / elapsedTotalMs).toFixed(3));
   let bottleneckCategory: 'NONE' | 'NETWORK_LATENCY' | 'NAVIGATION_FRICTION' | 'FAILED_REQUEST_DELAY' = 'NONE';
-  if (sample.failedRequestWaitMs > 1000) bottleneckCategory = 'FAILED_REQUEST_DELAY';
-  else if (sample.networkWaitMs > elapsedTotalMs * 0.45 && sample.networkWaitMs > 1200) bottleneckCategory = 'NETWORK_LATENCY';
-  else if (sample.navigationMs > elapsedTotalMs * 0.5 && elapsedTotalMs > 15_000) bottleneckCategory = 'NAVIGATION_FRICTION';
+  if (Number.isFinite(sample.failedRequestWaitMs) && sample.failedRequestWaitMs > 1000) bottleneckCategory = 'FAILED_REQUEST_DELAY';
+  else if (Number.isFinite(sample.networkWaitMs) && sample.networkWaitMs > elapsedTotalMs * 0.45 && sample.networkWaitMs > 1200) bottleneckCategory = 'NETWORK_LATENCY';
+  else if (Number.isFinite(sample.navigationMs) && sample.navigationMs > elapsedTotalMs * 0.5 && elapsedTotalMs > 15_000) bottleneckCategory = 'NAVIGATION_FRICTION';
   return { valid: true, elapsedTotalMs, productiveRatio, bottleneckCategory };
 }
 export type RadarFeatureId = 'hedonic_valuator' | 'neighborhood_inspector' | 'shortlist_matrix' | 'buyer_price_alerts' | 'super_modules_suite' | 'commute_hubs_matrix';
@@ -145,10 +146,12 @@ export function evaluateControlledAbExperiment(params: { experimentId: string; e
   if (!params.enabled) return { assignedVariant: 'CONTROL', hasMinimumSampleSize: false, decision: 'EXPERIMENT_DISABLED_CONTROL_ONLY' };
   const digest = crypto.createHash('sha256').update(`${params.experimentId}:${params.sessionSeed}`).digest();
   const assignedVariant = digest[0] < 128 ? 'CONTROL' : 'TREATMENT';
-  const minSample = params.minSampleSizePerVariant ?? 100;
+  const minSample = typeof params.minSampleSizePerVariant === 'number' && Number.isFinite(params.minSampleSizePerVariant) ? params.minSampleSizePerVariant : 100;
   const hasMinimumSampleSize = params.controlExposures >= minSample && params.treatmentExposures >= minSample;
   if (!hasMinimumSampleSize) return { assignedVariant, hasMinimumSampleSize: false, decision: 'INSUFFICIENT_SAMPLE_SIZE' };
-  const cRate = params.controlConversions / params.controlExposures, tRate = params.treatmentConversions / params.treatmentExposures;
+  const cConv = Number.isFinite(params.controlConversions) ? params.controlConversions : 0;
+  const tConv = Number.isFinite(params.treatmentConversions) ? params.treatmentConversions : 0;
+  const cRate = cConv / params.controlExposures, tRate = tConv / params.treatmentExposures;
   return { assignedVariant, hasMinimumSampleSize: true, decision: tRate - cRate >= 0.03 ? 'TREATMENT_LEADING' : 'NO_MEANINGFUL_LIFT' };
 }
 export function classifyPrivacyPreservingSearchQuery(rawQuery: string): { queryCategory: 'EMPTY_QUERY' | 'REDACTED_POTENTIAL_PII' | 'ZONE_LOOKUP' | 'METRO_OR_LANDMARK_LOOKUP' | 'NEIGHBORHOOD_NAME_LOOKUP'; normalizedLength: number; } { const trimmed = (rawQuery || '').trim(); if (!trimmed) return { queryCategory: 'EMPTY_QUERY', normalizedLength: 0 }; if (/09\d{9}|\d{10}|@/.test(trimmed)) return { queryCategory: 'REDACTED_POTENTIAL_PII', normalizedLength: trimmed.length }; if (/منطقه|شمال|جنوب|شرق|غرب|مرکز/.test(trimmed)) return { queryCategory: 'ZONE_LOOKUP', normalizedLength: trimmed.length }; if (/مترو|میدان|بلوار|خیابان|ایستگاه/.test(trimmed)) return { queryCategory: 'METRO_OR_LANDMARK_LOOKUP', normalizedLength: trimmed.length }; return { queryCategory: 'NEIGHBORHOOD_NAME_LOOKUP', normalizedLength: trimmed.length }; }
@@ -179,7 +182,7 @@ export function getServerTelemetryPolicy(nowMs = Date.now()): TelemetryPolicyMan
   if (evaluated.leaseExpiredReverted) storedServerTelemetryPolicy = { ...storedServerTelemetryPolicy, activeLevel: 4, leaseExpiresAtEpochMs: null };
   return evaluated.effective;
 }
-export function updateServerTelemetryPolicy(input: Record<string, unknown>, nowMs = Date.now()): { valid: true; manifest: TelemetryPolicyManifest } | { valid: false; code: string; messageFa: string } {
+export function updateServerTelemetryPolicy(input: Record<string, unknown>, nowMs = Date.now()): { valid: true; manifest: TelemetryPolicyManifest; code?: string; messageFa?: string } | { valid: false; manifest?: TelemetryPolicyManifest; code: string; messageFa: string } {
   const res = validateAndNormalizeTelemetryPolicy({ ...storedServerTelemetryPolicy, ...input, policyVersion: (storedServerTelemetryPolicy.policyVersion || 1) + 1 }, nowMs);
   if (res.valid) storedServerTelemetryPolicy = res.manifest;
   return res;

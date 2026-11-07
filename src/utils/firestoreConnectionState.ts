@@ -107,7 +107,7 @@ export function beginConnectionProbeGeneration(): number {
 export function completeConnectionProbeGeneration(
   generation: number,
   outcome:
-    | { ok: true; dataOrigin?: DataOriginState }
+    | { ok: true; dataOrigin?: DataOriginState; error?: unknown }
     | { ok: false; error: unknown },
 ): boolean {
   if (generation < currentStatus.probeGeneration) {

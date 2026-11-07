@@ -184,7 +184,7 @@ const SINGLE_VALUE_QUERY_KEYS: ReadonlySet<string> = new Set([
 ]);
 export function validateQueryParametersAndRejectCreds(
   queryObj: Record<string, unknown> | undefined,
-): { ok: true } | { ok: false; code: 'CREDENTIALS_IN_QUERY_FORBIDDEN' | 'DUPLICATE_QUERY_PARAMETER'; key: string } {
+): { ok: true; code?: 'CREDENTIALS_IN_QUERY_FORBIDDEN' | 'DUPLICATE_QUERY_PARAMETER'; key?: string } | { ok: false; code: 'CREDENTIALS_IN_QUERY_FORBIDDEN' | 'DUPLICATE_QUERY_PARAMETER'; key: string } {
   if (!queryObj || typeof queryObj !== 'object') return { ok: true };
   for (const [rawKey, val] of Object.entries(queryObj)) {
     const lowerKey = rawKey.toLowerCase();

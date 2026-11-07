@@ -10,7 +10,12 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  const allowedHosts = resolveAllowedViteDevHosts({ ...process.env, ...env });
+  let allowedHosts: string[] = ['localhost', '127.0.0.1'];
+  try {
+    allowedHosts = resolveAllowedViteDevHosts({ ...(typeof process !== 'undefined' && process.env ? process.env : {}), ...env });
+  } catch {
+    allowedHosts = ['localhost', '127.0.0.1'];
+  }
 
   return {
     plugins: [react(), tailwindcss()],

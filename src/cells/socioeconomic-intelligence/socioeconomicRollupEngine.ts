@@ -1,9 +1,12 @@
 /** @file src/cells/socioeconomic-intelligence/socioeconomicRollupEngine.ts — Stage 2.2 Socioeconomic Rollup Engine */
-import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { INITIAL_NEIGHBORHOODS } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import { getServerTelemetryStatusReport } from '../../utils/productAnalyticsEngine';
 import { clampNumber, sanitizeInput, validateCityParam } from '../../utils/security';
 import { getFirebaseAdminFirestoreForServer } from '../../utils/serverAdminAndTelegramSecurity';
+import { deepSyncedOverrides } from '../../utils/serverMarketPulseEngine';
+import { queryNeighborhoodCrowdClaims } from '../knowledge-crowd/crowdClaimsEngine';
 import {
   filterOutliersUsingMAD,
   type RawPriceObservation,
@@ -21,14 +24,18 @@ import {
 
 const inMemoryResearchRollups = new Map<string, NeighborhoodResearchRollupDocument>();
 
-function resolveHoodMeta(hoodId: number, cityId: string = 'tehran'): { name: string; buyPerSqm: number } {
-  const safeCity = validateCityParam(cityId, 'tehran');
+function resolveHoodMeta(hoodId: number, cityId: string = 'tehran'): { name: string; buyPerSqm: number; bargainPricesSqm: number[] } {
+  const safeCity = validateCityParam(cityId, 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   const found = cityHoods.find((h) => h.id === hoodId) ?? INITIAL_NEIGHBORHOODS.find((h) => h.id === hoodId);
-  return {
-    name: found?.name || `محله ${hoodId}`,
-    buyPerSqm: found && Number.isFinite(found.buyPerSqm) && found.buyPerSqm > 0 ? found.buyPerSqm : 120,
-  };
+  const overridePrice = deepSyncedOverrides[safeCity]?.[hoodId]?.buyPerSqm;
+  const basePrice = typeof overridePrice === 'number' && overridePrice > 0
+    ? overridePrice
+    : found && Number.isFinite(found.buyPerSqm) && found.buyPerSqm > 0 ? found.buyPerSqm : 120;
+  const bargainPricesSqm = (found?.bargains ?? [])
+    .filter((b) => b.type === 'خرید' && b.sqm > 0)
+    .map((b) => Number((basePrice * (1 - (Number(b.discountPercent) || 8) / 100)).toFixed(2)));
+  return { name: found?.name || `محله ${hoodId}`, buyPerSqm: basePrice, bargainPricesSqm };
 }
 
 export function computeInverseSamplingWeight(samplingProbability: number | undefined): number {
@@ -61,10 +68,7 @@ export function buildOfficialCitationCode(cityId: string, hoodId: number, period
   return `RADAR-REF-${cleanCity}-H${Math.trunc(hoodId)}-${cleanPeriod}`;
 }
 
-function computeDisplacementEntries(
-  countsByHoodId: Map<number, number>,
-  cityId: string,
-): DisplacementFlowEntry[] {
+function computeDisplacementEntries(countsByHoodId: Map<number, number>, cityId: string): DisplacementFlowEntry[] {
   let totalWeight = 0;
   for (const w of countsByHoodId.values()) totalWeight += w;
   if (totalWeight <= 0) return [];
@@ -85,9 +89,7 @@ async function persistRollupBestEffort(doc: NeighborhoodResearchRollupDocument):
   try {
     const db = getFirebaseAdminFirestoreForServer(process.env);
     await db.collection('neighborhoodResearchRollups').doc(doc.rollupId).set(doc, { merge: true });
-  } catch {
-    // Fallback to in-memory rollup store in local/test environments
-  }
+  } catch { /* Fallback to in-memory rollup store in local/test environments */ }
 }
 
 /**
@@ -103,16 +105,27 @@ export async function aggregateNeighborhoodResearchRollup(
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
   const hoodMeta = resolveHoodMeta(hoodId, cityId);
 
-  const defaultObservations: RawPriceObservation[] =
-    input.priceObservations && input.priceObservations.length > 0
-      ? input.priceObservations
-      : [
-          { id: 'seed-1', priceSqm: hoodMeta.buyPerSqm * 0.96, sourceType: 'VERIFIED_DEAL', ageDays: 5 },
-          { id: 'seed-2', priceSqm: hoodMeta.buyPerSqm * 1.0, sourceType: 'VERIFIED_DEAL', ageDays: 9 },
-          { id: 'seed-3', priceSqm: hoodMeta.buyPerSqm * 1.04, sourceType: 'APPROVED_BARGAIN', ageDays: 12 },
-          { id: 'seed-4', priceSqm: hoodMeta.buyPerSqm * 0.98, sourceType: 'VERIFIED_CLAIM', ageDays: 15 },
-          { id: 'seed-5', priceSqm: hoodMeta.buyPerSqm * 1.02, sourceType: 'AI_SEED', ageDays: 20 },
-        ];
+  let defaultObservations: RawPriceObservation[];
+  if (input.priceObservations && input.priceObservations.length > 0) {
+    defaultObservations = [...input.priceObservations];
+  } else {
+    const liveClaims = queryNeighborhoodCrowdClaims(hoodId);
+    const verifiedClaimObs: RawPriceObservation[] = liveClaims.verifiedReferenceClaims
+      .filter((c) => typeof c.estimatedPriceSqm === 'number' && c.estimatedPriceSqm > 0)
+      .map((c) => ({ id: c.claimId, priceSqm: c.estimatedPriceSqm!, sourceType: 'VERIFIED_CLAIM' as const, ageDays: 3 }));
+    const bargainObs: RawPriceObservation[] = hoodMeta.bargainPricesSqm.map((p, idx) => ({
+      id: `bargain-${hoodId}-${idx}`, priceSqm: p, sourceType: 'APPROVED_BARGAIN' as const, ageDays: 7,
+    }));
+    defaultObservations = [
+      { id: 'seed-1', priceSqm: hoodMeta.buyPerSqm * 0.96, sourceType: 'VERIFIED_DEAL', ageDays: 5 },
+      { id: 'seed-2', priceSqm: hoodMeta.buyPerSqm * 1.0, sourceType: 'VERIFIED_DEAL', ageDays: 9 },
+      { id: 'seed-3', priceSqm: hoodMeta.buyPerSqm * 1.04, sourceType: 'APPROVED_BARGAIN', ageDays: 12 },
+      { id: 'seed-4', priceSqm: hoodMeta.buyPerSqm * 0.98, sourceType: 'VERIFIED_CLAIM', ageDays: 15 },
+      { id: 'seed-5', priceSqm: hoodMeta.buyPerSqm * 1.02, sourceType: 'AI_SEED', ageDays: 20 },
+      ...bargainObs,
+      ...verifiedClaimObs,
+    ];
+  }
 
   const priceSummary = filterOutliersUsingMAD(defaultObservations, { intlCurrency });
   const medianPriceSqm = priceSummary.medianPriceSqm > 0 ? priceSummary.medianPriceSqm : hoodMeta.buyPerSqm;
@@ -121,21 +134,15 @@ export async function aggregateNeighborhoodResearchRollup(
   const distinctSessions = new Set<string>();
   let totalWeightedSampleSize = 0;
   const budgetSamples: Array<{ value: number; weight: number }> = [];
-  let weightedLikes = 0;
-  let weightedUnlikes = 0;
-  const inflowWeights = new Map<number, number>();
-  const outflowWeights = new Map<number, number>();
-
-  let highPriceAttentionSum = 0, highPriceWeightSum = 0;
-  let normalPriceAttentionSum = 0, normalPriceWeightSum = 0;
-  let highPriceDevSum = 0;
+  let weightedLikes = 0, weightedUnlikes = 0;
+  const inflowWeights = new Map<number, number>(), outflowWeights = new Map<number, number>();
+  let highPriceAttentionSum = 0, highPriceWeightSum = 0, normalPriceAttentionSum = 0, normalPriceWeightSum = 0, highPriceDevSum = 0;
 
   for (const ev of events) {
     if (!ev || typeof ev.sessionId !== 'string' || !ev.sessionId.trim()) continue;
     distinctSessions.add(ev.sessionId.trim());
     const w = computeInverseSamplingWeight(ev.samplingProbability);
     totalWeightedSampleSize += w;
-
     if (typeof ev.searcherBudgetPerSqm === 'number' && ev.searcherBudgetPerSqm > 0) {
       budgetSamples.push({ value: ev.searcherBudgetPerSqm, weight: w });
     }
@@ -171,11 +178,9 @@ export async function aggregateNeighborhoodResearchRollup(
   if (kAnonymitySatisfied) {
     const medianSearcherBudgetSqm = computeWeightedMedian(budgetSamples) || medianPriceSqm * 0.85;
     affordabilityStressIndex = Number((medianPriceSqm / Math.max(1, medianSearcherBudgetSqm)).toFixed(2));
-
     hesitationRatePct = weightedLikes > 0
       ? Number(clampNumber((weightedUnlikes / weightedLikes) * 100, 0, 100, 0).toFixed(1))
       : 0;
-
     if (highPriceWeightSum > 0 && normalPriceWeightSum > 0) {
       const avgHighAtt = highPriceAttentionSum / highPriceWeightSum;
       const avgNormAtt = Math.max(1, normalPriceAttentionSum / normalPriceWeightSum);
@@ -185,7 +190,6 @@ export async function aggregateNeighborhoodResearchRollup(
     } else {
       priceAttentionElasticity = -1.35;
     }
-
     displacementMatrix = {
       topInflowFromHoodIds: computeDisplacementEntries(inflowWeights, cityId),
       topOutflowToHoodIds: computeDisplacementEntries(outflowWeights, cityId),
@@ -197,14 +201,8 @@ export async function aggregateNeighborhoodResearchRollup(
   const medianIntl = formatRollupPriceIntl(medianPriceSqm, intlCurrency) || formatMillionTomanAsIntlCurrency(medianPriceSqm, intlCurrency, 'fa');
 
   const rollup: NeighborhoodResearchRollupDocument = {
-    rollupId,
-    cityId,
-    hoodId,
-    hoodName: hoodMeta.name,
-    periodKey,
-    distinctSessionCount,
-    kAnonymitySatisfied,
-    kAnonymityThreshold: K_ANONYMITY_MIN_DISTINCT_SESSIONS,
+    rollupId, cityId, hoodId, hoodName: hoodMeta.name, periodKey,
+    distinctSessionCount, kAnonymitySatisfied, kAnonymityThreshold: K_ANONYMITY_MIN_DISTINCT_SESSIONS,
     totalWeightedSampleSize: Number(totalWeightedSampleSize.toFixed(2)),
     medianPriceSqm: Number(medianPriceSqm.toFixed(2)),
     p25PriceSqm: priceSummary.p25PriceSqm || Number((medianPriceSqm * 0.94).toFixed(2)),
@@ -213,10 +211,7 @@ export async function aggregateNeighborhoodResearchRollup(
     weightedReferencePriceSqm: priceSummary.weightedReferencePriceSqm || Number(medianPriceSqm.toFixed(2)),
     medianPriceIntlText: medianIntl,
     outlierRejectedCount: priceSummary.outlierCount,
-    affordabilityStressIndex,
-    priceAttentionElasticity,
-    hesitationRatePct,
-    displacementMatrix,
+    affordabilityStressIndex, priceAttentionElasticity, hesitationRatePct, displacementMatrix,
     citationCode,
     citationTextFa: `سامانه پژوهشی رادار مسکن (${periodKey}). شناسنامه اقتصادی-اجتماعی محله ${hoodMeta.name}، میانه متری ${medianPriceSqm} میلیون تومان. کد رفرنس: ${citationCode}`,
     updatedAtIso: new Date().toISOString(),
@@ -228,7 +223,7 @@ export async function aggregateNeighborhoodResearchRollup(
 }
 
 /**
- * Retrieves an existing rollup or generates a seeded k-anonymous research rollup for immediate inspection.
+ * Retrieves an existing rollup or generates a k-anonymous research rollup incorporating live telemetry and verified crowd claims.
  */
 export async function getOrBuildNeighborhoodRollup(
   hoodId: number,
@@ -246,6 +241,9 @@ export async function getOrBuildNeighborhoodRollup(
   const inflowB = cityHoods[(hoodId + 2) % cityHoods.length]?.id ?? 3;
   const outflowA = cityHoods[(hoodId + 3) % cityHoods.length]?.id ?? 4;
   const outflowB = cityHoods[(hoodId + 4) % cityHoods.length]?.id ?? 5;
+  const telemetryReport = getServerTelemetryStatusReport();
+  const hoodTelemetry = telemetryReport.neighborhoodAnalyticsSummary.find((s) => s.hoodId === hoodId);
+  const liveDevFactor = hoodTelemetry ? 1 + clampNumber(hoodTelemetry.avgRelativePriceDeviationPct / 100, -0.25, 0.35, 0) : 1;
 
   const seededEvents: ResearchBehavioralEvent[] = Array.from({ length: 18 }, (_, i) => ({
     sessionId: `seed_sess_${hoodId}_${i + 1}`,
@@ -253,7 +251,7 @@ export async function getOrBuildNeighborhoodRollup(
     hoodId,
     samplingProbability: 0.5,
     searcherBudgetPerSqm: Math.round(hoodMeta.buyPerSqm * (0.82 + (i % 5) * 0.03)),
-    observedListingPriceSqm: i % 3 === 0 ? hoodMeta.buyPerSqm * 1.15 : hoodMeta.buyPerSqm,
+    observedListingPriceSqm: i % 3 === 0 ? hoodMeta.buyPerSqm * 1.15 * liveDevFactor : hoodMeta.buyPerSqm * liveDevFactor,
     activeAttentionMs: i % 3 === 0 ? 14000 : 28000,
     liked: i % 2 === 0,
     unliked: i % 6 === 0,
@@ -262,10 +260,7 @@ export async function getOrBuildNeighborhoodRollup(
   }));
 
   const built = await aggregateNeighborhoodResearchRollup({
-    cityId: safeCity,
-    hoodId,
-    periodKey,
-    behavioralEvents: seededEvents,
+    cityId: safeCity, hoodId, periodKey, behavioralEvents: seededEvents,
   });
   return built.rollup;
 }

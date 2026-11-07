@@ -22,7 +22,7 @@ export async function executeAuthorizedAdminFirestoreOperation<T>(params: { poli
 export function extractSingleSecurityHeader(
   headers: Record<string, string | string[] | undefined>,
   targetNameLower: string,
-): { ok: true; value: string | undefined } | { ok: false; reason: 'AMBIGUOUS_AUTH_HEADER' } {
+): { ok: true; value: string | undefined; reason?: 'AMBIGUOUS_AUTH_HEADER' } | { ok: false; value?: undefined; reason: 'AMBIGUOUS_AUTH_HEADER' } {
   let matchedRaw: string | string[] | undefined;
   let matchCount = 0;
   for (const [key, val] of Object.entries(headers)) {
@@ -195,13 +195,14 @@ export async function verifyFirebaseAppCheckHeader(
     return mode === 'monitor' ? { allowed: true, mode, statusCode: 200, reason: 'APP_CHECK_MONITOR_INVALID_TOKEN' } : { allowed: false, mode, statusCode: 401, reason: 'INVALID_APP_CHECK_TOKEN' };
   }
 }
+export type TelegramPayloadValidationErrorCode = 'UNSUPPORTED_CONTENT_TYPE' | 'INVALID_JSON_OBJECT' | 'FORBIDDEN_CLIENT_CREDENTIALS' | 'UNEXPECTED_PAYLOAD_FIELD' | 'INVALID_CITY' | 'MESSAGE_TOO_LONG';
 export type TelegramPayloadValidationResult =
-  | { valid: true; city: CityId; customText: string }
-  | { valid: false; statusCode: 400 | 415; code: 'UNSUPPORTED_CONTENT_TYPE' | 'INVALID_JSON_OBJECT' | 'FORBIDDEN_CLIENT_CREDENTIALS' | 'UNEXPECTED_PAYLOAD_FIELD' | 'INVALID_CITY' | 'MESSAGE_TOO_LONG'; messageFa: string; errorMessage: string; };
+  | { valid: true; city: CityId; customText: string; statusCode?: 400 | 415; code?: TelegramPayloadValidationErrorCode; messageFa?: string; errorMessage?: string }
+  | { valid: false; city?: CityId; customText?: string; statusCode: 400 | 415; code: TelegramPayloadValidationErrorCode; messageFa: string; errorMessage: string; };
 const ALLOWED_TELEGRAM_BODY_KEYS: ReadonlySet<string> = new Set(['city', 'text']);
 const FORBIDDEN_CREDENTIAL_KEYS: ReadonlySet<string> = new Set(['botToken', 'bot_token', 'token', 'channelId', 'channel_id', 'chatId', 'chat_id', 'apiKey', 'api_key']);
 export function validateTelegramSendRequest(body: unknown, contentTypeHeader: string | undefined, queryCity?: unknown): TelegramPayloadValidationResult {
-  const fail = (statusCode: 400 | 415, code: Exclude<TelegramPayloadValidationResult, { valid: true }>['code'], msg: string): TelegramPayloadValidationResult => ({
+  const fail = (statusCode: 400 | 415, code: TelegramPayloadValidationErrorCode, msg: string): TelegramPayloadValidationResult => ({
     valid: false, statusCode, code, messageFa: msg, errorMessage: msg,
   });
   if (!(contentTypeHeader || '').toLowerCase().includes('application/json')) return fail(415, 'UNSUPPORTED_CONTENT_TYPE', 'هدر Content-Type باید application/json باشد.');

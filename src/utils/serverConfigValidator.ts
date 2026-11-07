@@ -52,9 +52,10 @@ export async function validateOutboundUrlAndResolveDns(
   return { allowed: res.valid, valid: res.valid, resolvedAddresses: res.resolvedAddresses, reason: res.reason };
 }
 export function resolveAllowedViteDevHosts(env: Record<string, string | undefined> = process.env): string[] {
+  const safeEnv = env && typeof env === 'object' ? env : (typeof process !== 'undefined' && process.env ? process.env : {});
   const allowed = new Set<string>(['localhost', '127.0.0.1']);
   const addHost = (candidate: string, sourceName: string) => {
-    const trimmed = candidate.trim().toLowerCase();
+    const trimmed = String(candidate ?? '').trim().toLowerCase();
     if (!trimmed) return;
     if (
       trimmed === 'true' || trimmed === '*' || trimmed.includes('*') ||
@@ -65,11 +66,11 @@ export function resolveAllowedViteDevHosts(env: Record<string, string | undefine
     }
     allowed.add(trimmed);
   };
-  if (env.APP_URL && !isPlaceholderValue(env.APP_URL)) {
-    try { addHost(new URL(env.APP_URL.trim()).hostname, 'APP_URL'); } catch { /* handled */ }
+  if (typeof safeEnv.APP_URL === 'string' && !isPlaceholderValue(safeEnv.APP_URL)) {
+    try { addHost(new URL(safeEnv.APP_URL.trim()).hostname, 'APP_URL'); } catch { /* handled */ }
   }
-  const extraHosts = env.VITE_ALLOWED_HOSTS || env.VITE_DEV_ALLOWED_HOSTS;
-  if (extraHosts && !isPlaceholderValue(extraHosts)) {
+  const extraHosts = safeEnv.VITE_ALLOWED_HOSTS || safeEnv.VITE_DEV_ALLOWED_HOSTS;
+  if (typeof extraHosts === 'string' && !isPlaceholderValue(extraHosts)) {
     for (const part of extraHosts.split(',')) addHost(part, 'VITE_ALLOWED_HOSTS');
   }
   return Array.from(allowed);

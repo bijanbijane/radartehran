@@ -3,8 +3,10 @@
  * @description Stage 2.3 — Self-Contained Master Tabbed Widget combining
  * NeighborhoodCrowdClaimsPanel and SocioeconomicReferenceCard for zero-conflict integration.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { BookOpenCheck, Users } from 'lucide-react';
+import { auth } from '../../firebase';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import {
   NeighborhoodCrowdClaimsPanel,
@@ -32,13 +34,28 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
   intlCurrency = 'USD',
 }) => {
   const [activeTab, setActiveTab] = useState<Stage2ActiveTab>('CROWD_CLAIMS');
+  const [autoUser, setAutoUser] = useState<Stage2CurrentUser | null>(null);
+  useEffect(() => {
+    if (currentUser) return;
+    try {
+      return onAuthStateChanged(auth, (fbUser) => {
+        if (!fbUser) { setAutoUser(null); return; }
+        setAutoUser({
+          uid: fbUser.uid,
+          displayName: fbUser.displayName,
+          getIdToken: () => fbUser.getIdToken(),
+        });
+      });
+    } catch { return undefined; }
+  }, [currentUser]);
+  const effectiveUser = currentUser ?? autoUser;
   const intlPreview = formatMillionTomanAsIntlCurrency(basePriceSqm, intlCurrency, 'fa');
 
   return (
     <section
       dir="rtl"
       aria-label={`گراف دانش مردمی و شناسنامه پژوهشی محله ${hoodName}`}
-      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 shadow-sm space-y-3 text-right"
+      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 p-3.5 shadow-sm space-y-3 text-right"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 rounded-xl bg-white p-1 border border-slate-200">
@@ -83,7 +100,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
           hoodId={hoodId}
           hoodName={hoodName}
           cityId={cityId}
-          currentUser={currentUser}
+          currentUser={effectiveUser}
           intlCurrency={intlCurrency}
         />
       ) : (

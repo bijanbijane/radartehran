@@ -5,7 +5,7 @@ import type { ContributorRoleBadge, CrowdClaimCategory, CrowdClaimDocument, Spat
 import { toPersianNum } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
-export interface Stage2CurrentUser { uid: string; displayName?: string | null; roleBadge?: ContributorRoleBadge; }
+export interface Stage2CurrentUser { uid: string; displayName?: string | null; roleBadge?: ContributorRoleBadge; getIdToken?: () => Promise<string>; }
 export interface TopContributorSummary { uid: string; displayName: string; roleBadge: ContributorRoleBadge; reputationPoints: number; trustWeight: number; verifiedClaimsCount: number; }
 export interface NeighborhoodCrowdClaimsPanelProps { hoodId: number; hoodName: string; cityId?: string; currentUser?: Stage2CurrentUser | null; intlCurrency?: IntlCurrencyCode; }
 

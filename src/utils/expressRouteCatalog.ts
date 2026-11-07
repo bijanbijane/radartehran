@@ -16,6 +16,8 @@ const OB = 'src/utils/serverObjectStorage.ts';
 const PB = 'src/utils/serverPublisherBargains.ts';
 const SP = 'src/utils/serverSponsorAndBargainRoutes.ts';
 const UT = 'src/utils/serverUtilityRoutes.ts';
+const CC = 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts';
+const SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts';
 export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/healthz', S, 'PUBLIC', 180, 'general', false, 'Public liveness probe'),
   route('GET', '/api/openapi.json', S, 'PUBLIC', 60, 'general', false, 'OpenAPI 3.1 specification'),
@@ -94,6 +96,13 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('POST', '/api/admin/telemetry-policy', UT, 'ADMIN', 20, 'general', true, 'Admin behavioral telemetry policy update'),
   route('POST', '/api/v1/telemetry/ingest', UT, 'PUBLIC', 120, 'general', true, 'Non-blocking anonymized telemetry ingestion'),
   route('GET', '/api/admin/telemetry-status', UT, 'ADMIN', 30, 'general', true, 'Admin behavioral telemetry status and neighborhood summary'),
+  route('POST', '/api/v1/claims', CC, 'VERIFIED_USER', 20, 'general', true, 'Submit hyper-local neighborhood or alley claim'),
+  route('GET', '/api/v1/claims/hood/:hoodId', CC, 'PUBLIC', 120, 'general', true, 'Read neighborhood crowd claims and top contributors'),
+  route('POST', '/api/v1/claims/:claimId/vote', CC, 'VERIFIED_USER', 30, 'general', true, 'Vote on a neighborhood crowd claim with trust weighting'),
+  route('GET', '/api/v1/contributors/:uid', CC, 'PUBLIC', 60, 'general', true, 'Read contributor reputation and badge profile'),
+  route('GET', '/api/v1/reference/hood/:hoodId/rollup', SE, 'PUBLIC', 120, 'general', true, 'Read k-anonymous socioeconomic research rollup and citation code'),
+  route('POST', '/api/v1/valuation/verify-seal', SE, 'PUBLIC', 60, 'general', true, 'Verify HMAC-SHA256 valuation certificate seal'),
+  route('POST', '/api/admin/rollups/trigger', SE, 'ADMIN', 10, 'sync', true, 'Admin trigger for socioeconomic neighborhood research rollup'),
 ];
 export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES;
 export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/'));
