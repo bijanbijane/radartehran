@@ -241,36 +241,34 @@ export function evaluateCalculatorTelemetryGuard(input: {
   };
 }
 
-export function verifyBiometricHumanAndScrollGate(input: {
-  keydownLatenciesMs: readonly number[];
-  backspaceCount: number;
-  totalKeystrokes: number;
-  zeroLatencyPasteDetected: boolean;
-  hasHeroImage: boolean;
-  technicalDescriptionScrollRatio: number;
-}): { isHumanVerified: boolean; quarantinedPaste: boolean; votingUnlocked: boolean } {
+export function verifyBiometricHumanAndScrollGate(input: { keydownLatenciesMs: readonly number[]; backspaceCount: number; totalKeystrokes: number; zeroLatencyPasteDetected: boolean; hasHeroImage: boolean; technicalDescriptionScrollRatio: number; }): { isHumanVerified: boolean; quarantinedPaste: boolean; votingUnlocked: boolean } {
   if (input.zeroLatencyPasteDetected) return { isHumanVerified: false, quarantinedPaste: true, votingUnlocked: false };
-  const n = input.keydownLatenciesMs.length;
-  const mean = n > 0 ? input.keydownLatenciesMs.reduce((a, b) => a + b, 0) / n : 0;
+  const n = input.keydownLatenciesMs.length; const mean = n > 0 ? input.keydownLatenciesMs.reduce((a, b) => a + b, 0) / n : 0;
   const variance = n > 1 ? input.keydownLatenciesMs.reduce((acc, v) => acc + (v - mean) ** 2, 0) / (n - 1) : 0;
   const backspaceRatio = input.totalKeystrokes > 0 ? input.backspaceCount / input.totalKeystrokes : 0;
-  return {
-    isHumanVerified: variance >= 12 && backspaceRatio >= 0.01,
-    quarantinedPaste: false,
-    votingUnlocked: !input.hasHeroImage || input.technicalDescriptionScrollRatio >= 0.7,
-  };
+  return { isHumanVerified: variance >= 12 && backspaceRatio >= 0.01, quarantinedPaste: false, votingUnlocked: !input.hasHeroImage || input.technicalDescriptionScrollRatio >= 0.7 };
 }
-
-export function packZeroCopyClusterTransferable(
-  points: ReadonlyArray<{ lng: number; lat: number; pricePerSqm: number; hoodId: number }>
-): { buffer: ArrayBuffer; float64View: Float64Array; stride: 4 } {
+export function packZeroCopyClusterTransferable(points: ReadonlyArray<{ lng: number; lat: number; pricePerSqm: number; hoodId: number }>): { buffer: ArrayBuffer; float64View: Float64Array; stride: 4 } {
   const float64View = new Float64Array(points.length * 4);
-  for (let i = 0; i < points.length; i++) {
-    const offset = i * 4;
-    float64View[offset] = points[i].lng;
-    float64View[offset + 1] = points[i].lat;
-    float64View[offset + 2] = points[i].pricePerSqm;
-    float64View[offset + 3] = points[i].hoodId;
-  }
+  for (let i = 0; i < points.length; i++) { const o = i * 4; float64View[o] = points[i].lng; float64View[o + 1] = points[i].lat; float64View[o + 2] = points[i].pricePerSqm; float64View[o + 3] = points[i].hoodId; }
   return { buffer: float64View.buffer, float64View, stride: 4 };
+}
+export interface TelemetryPolicyManifest { policyVersion: number; activeLevel: number; samplingRate: number; dailyIngestionCap: number; leaseExpiresAtEpochMs: number | null; updatedAtEpochMs?: number; updatedAtIso?: string; leaseExpiredReverted?: boolean; capDowngraded?: boolean; }
+export const DEFAULT_TELEMETRY_POLICY: TelemetryPolicyManifest = { policyVersion: 1, activeLevel: 4, samplingRate: 1.0, dailyIngestionCap: 250_000, leaseExpiresAtEpochMs: null, updatedAtEpochMs: 0, updatedAtIso: "2026-01-01T00:00:00.000Z" };
+export function validateAndNormalizeTelemetryPolicy(input: Partial<TelemetryPolicyManifest> & Record<string, unknown>, nowMs: number = Date.now()): { valid: true; manifest: TelemetryPolicyManifest } | { valid: false; code: "HIGH_LEVEL_LEASE_REQUIRED" | "INVALID_TELEMETRY_LEVEL"; messageFa: string; message: string } {
+  const rawLevel = typeof input.activeLevel === "number" ? Math.round(input.activeLevel) : DEFAULT_TELEMETRY_POLICY.activeLevel;
+  if (!Number.isFinite(rawLevel) || rawLevel < 0 || rawLevel > 10) return { valid: false, code: "INVALID_TELEMETRY_LEVEL", messageFa: "سطح تله‌متری باید بین ۰ تا ۱۰ باشد.", message: "Level must be 0..10" };
+  const leaseMs = typeof input.leaseExpiresAtEpochMs === "number" && Number.isFinite(input.leaseExpiresAtEpochMs) ? input.leaseExpiresAtEpochMs : null;
+  if (rawLevel >= 9 && (leaseMs === null || leaseMs <= nowMs || leaseMs - nowMs > 7 * 24 * 60 * 60 * 1000)) return { valid: false, code: "HIGH_LEVEL_LEASE_REQUIRED", messageFa: "سطوح ۹ و ۱۰ نیازمند مهلت انقضای حداکثر ۷ روزه هستند.", message: "Levels 9-10 require lease <= 7d" };
+  const cap = typeof input.dailyIngestionCap === "number" && input.dailyIngestionCap > 0 ? Math.floor(input.dailyIngestionCap) : DEFAULT_TELEMETRY_POLICY.dailyIngestionCap;
+  const rate = rawLevel === 0 ? 0 : typeof input.samplingRate === "number" ? Math.max(0, Math.min(1, input.samplingRate)) : 1.0;
+  const ver = typeof input.policyVersion === "number" && input.policyVersion >= 1 ? Math.floor(input.policyVersion) : DEFAULT_TELEMETRY_POLICY.policyVersion + 1;
+  return { valid: true, manifest: { policyVersion: ver, activeLevel: rawLevel, samplingRate: rate, dailyIngestionCap: cap, leaseExpiresAtEpochMs: rawLevel >= 9 ? leaseMs : null, updatedAtEpochMs: nowMs, updatedAtIso: new Date(nowMs).toISOString() } };
+}
+export function evaluateEffectiveTelemetryPolicy(manifest: TelemetryPolicyManifest, currentDailyIngestedCount: number, nowMs: number = Date.now()): { effective: TelemetryPolicyManifest; leaseExpiredReverted: boolean; capDowngraded: boolean } {
+  let activeLevel = manifest.activeLevel; let samplingRate = manifest.samplingRate; let leaseExpiresAtEpochMs = manifest.leaseExpiresAtEpochMs;
+  let leaseExpiredReverted = false; let capDowngraded = false;
+  if (activeLevel >= 9 && (leaseExpiresAtEpochMs === null || nowMs > leaseExpiresAtEpochMs)) { activeLevel = 4; leaseExpiresAtEpochMs = null; leaseExpiredReverted = true; }
+  if (currentDailyIngestedCount >= manifest.dailyIngestionCap) { activeLevel = 0; samplingRate = 0; capDowngraded = true; }
+  return { effective: { ...manifest, activeLevel, samplingRate, leaseExpiresAtEpochMs, leaseExpiredReverted, capDowngraded }, leaseExpiredReverted, capDowngraded };
 }
