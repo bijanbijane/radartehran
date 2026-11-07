@@ -143,7 +143,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           });
         },
       });
-      if (!committed.ok) { res.status(503).json({ status: 'error', code: committed.code, message: committed.messageFa }); return; }
+      if (committed.ok === false) { res.status(503).json({ status: 'error', code: committed.code, message: committed.messageFa }); return; }
       res.status(200).json({ status: 'ok', hoodId, expiresAtIso, sponsor: sponsorRecord });
     })();
   });
