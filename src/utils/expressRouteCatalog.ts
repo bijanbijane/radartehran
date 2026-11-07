@@ -18,6 +18,7 @@ const SP = 'src/utils/serverSponsorAndBargainRoutes.ts';
 const UT = 'src/utils/serverUtilityRoutes.ts';
 const CC = 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts';
 const SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts';
+const TM = 'server/modules/telemetry/telemetryRoutes.ts';
 export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/healthz', S, 'PUBLIC', 180, 'general', false, 'Public liveness probe'),
   route('GET', '/api/openapi.json', S, 'PUBLIC', 60, 'general', false, 'OpenAPI 3.1 specification'),
@@ -103,6 +104,10 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/v1/reference/hood/:hoodId/rollup', SE, 'PUBLIC', 120, 'general', true, 'Read k-anonymous socioeconomic research rollup and citation code'),
   route('POST', '/api/v1/valuation/verify-seal', SE, 'PUBLIC', 60, 'general', true, 'Verify HMAC-SHA256 valuation certificate seal'),
   route('POST', '/api/admin/rollups/trigger', SE, 'ADMIN', 10, 'sync', true, 'Admin trigger for socioeconomic neighborhood research rollup'),
+  route('POST', '/api/v2/telemetry/events', TM, 'PUBLIC', 120, 'general', true, 'Durable write-ahead batch telemetry event ingestion'),
+  route('GET', '/api/v2/telemetry/aggregates', TM, 'PUBLIC', 120, 'general', true, 'Read k-anonymized aggregated telemetry metrics'),
+  route('GET', '/api/v2/telemetry/diagnostics', TM, 'ADMIN', 30, 'general', true, 'Operational telemetry queue health and error diagnostics'),
+  route('POST', '/api/v2/telemetry/retention/purge', TM, 'ADMIN', 10, 'general', true, 'Admin purge of expired telemetry journal partitions'),
 ];
 export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES;
 export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/'));
