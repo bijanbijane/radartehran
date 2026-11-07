@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Download, Edit3, KeyRound, Sparkles, Trash2 } from 'lucide-react';
+import { CheckCircle2, Download, Edit3, KeyRound, Sparkles, Trash2 } from 'lucide-react';
 import {
   BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem, toPersianNum,
 } from '../data/neighborhoods';
@@ -32,6 +32,7 @@ export interface AdminOverviewAndModerationTabsProps {
   onAdminDeleteSponsorRequest: (reqId: string) => void;
   onDownloadBuyerLeadsCsv: () => void;
   onAdminDeleteBargain: (hoodId: number, bargainId: string) => void;
+  onAdminApproveBargain?: (hoodId: number, bargainId: string) => void;
   adminEditHoodId: number;
   setAdminEditHoodId: React.Dispatch<React.SetStateAction<number>>;
   adminEditBuySqm: number;
@@ -56,7 +57,7 @@ export function AdminOverviewAndModerationTabs(
   const {
     adminTab, featureFlags, onToggleFeatureFlag, neighborhoods, sponsorRequests,
     buyerLeads, totalLiveBargainsCount, onAdminApproveSponsor,
-    onAdminDeleteSponsorRequest, onDownloadBuyerLeadsCsv, onAdminDeleteBargain,
+    onAdminDeleteSponsorRequest, onDownloadBuyerLeadsCsv, onAdminDeleteBargain, onAdminApproveBargain,
     adminEditHoodId, setAdminEditHoodId, adminEditBuySqm, setAdminEditBuySqm,
     adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg,
     onAdminQuickPriceSave, deepSyncing, onDeepWebSync, newAdminPassword,
@@ -198,13 +199,22 @@ export function AdminOverviewAndModerationTabs(
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">محله {n.name}</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">{b.title}</span>
+                    {b.status === 'pending' && <span className="px-2 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold">در انتظار تأیید</span>}
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 mt-1">{b.type} · {formatAreaShort(b.sqm, areaUnit)} · {b.priceText}</div>
                 </div>
-                <button type="button" onClick={() => onAdminDeleteBargain(n.id, b.id)} className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold flex items-center gap-1 transition cursor-pointer">
-                  <Trash2 className="w-3.5 h-3.5 stroke-[1.75]" />
-                  <span>حذف آگهی</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {b.status === 'pending' && onAdminApproveBargain && (
+                    <button type="button" onClick={() => onAdminApproveBargain(n.id, b.id)} className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1 transition cursor-pointer">
+                      <CheckCircle2 className="w-3.5 h-3.5 stroke-[1.75]" />
+                      <span>تأیید آگهی</span>
+                    </button>
+                  )}
+                  <button type="button" onClick={() => onAdminDeleteBargain(n.id, b.id)} className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold flex items-center gap-1 transition cursor-pointer">
+                    <Trash2 className="w-3.5 h-3.5 stroke-[1.75]" />
+                    <span>حذف آگهی</span>
+                  </button>
+                </div>
               </div>
             ))
           )

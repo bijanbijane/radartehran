@@ -117,17 +117,34 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
         }),
         cache: 'no-store',
       });
-      const result = (await response.json().catch(() => null)) as { status?: string; message?: string; durable?: boolean } | null;
-      if (!response.ok || result?.status !== 'ok' || result?.durable !== true) {
-        p.setAlertSubmitMsg(result?.message || 'درخواست در پایگاه داده پایدار ذخیره نشد. لطفاً دوباره تلاش کنید.'); return;
-      }
-      if (p.isVerifiedAdmin) {
-        p.setBuyerLeads((prev) => [{
-          id: `lead-${Date.now()}`, hoodId: targetHood.id, hoodName: targetHood.name,
-          fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType,
-          maxBudgetText: cleanBudget, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
-        }, ...(prev || [])]);
-      }
+      let serverErrorMessage = '';
+      try {
+        const response = await fetch('/api/buyer-alerts', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+          body: JSON.stringify({
+            city: p.activeCity, hoodId: targetHood.id, hoodName: targetHood.name,
+            fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType, maxBudgetText: cleanBudget,
+            privacyConsent: true, consentVersion: 'buyer-alert-2026-10-v1',
+          }),
+          cache: 'no-store',
+        });
+        const result = (await response.json().catch(() => null)) as { status?: string; message?: string; durable?: boolean } | null;
+        if (response.ok && result?.status === 'ok' && result?.durable === true) {
+          if (p.isVerifiedAdmin) {
+            p.setBuyerLeads((prev) => [{
+              id: `lead-${Date.now()}`, hoodId: targetHood.id, hoodName: targetHood.name,
+              fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType,
+              maxBudgetText: cleanBudget, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
+            }, ...(prev || [])]);
+          }
+          p.setAlertSubmitMsg(result.message || `درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
+          p.setAlertFullName(''); p.setAlertPhone('');
+          return;
+        }
+        if (!response.ok || result?.status !== 'ok' || result?.durable !== true) {
+          serverErrorMessage = result?.message || '';
+        }
+      } catch { /* Network failure: proceed to client-side fallback below */ }
       const alertDocId = `${p.currentUser.uid}_hood_${targetHood.id}`;
       try {
         const alertRef = doc(db, 'buyerAlerts', alertDocId);
@@ -135,11 +152,12 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
         const mutableAlertFields = { hoodName: targetHood.name.slice(0, 80), fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType, maxBudgetText: cleanBudget };
         if (existingAlert.exists()) await updateDoc(alertRef, { ...mutableAlertFields, updatedAt: serverTimestamp() });
         else await setDoc(alertRef, { ...mutableAlertFields, userId: p.currentUser.uid, hoodId: targetHood.id, consentVersion: 'buyer-alert-2026-10-v1', consentAt: serverTimestamp(), expiresAt: Timestamp.fromDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)), createdAt: serverTimestamp() });
+        p.setAlertSubmitMsg(`درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
+        p.setAlertFullName(''); p.setAlertPhone('');
       } catch (err) {
         try { handleFirestoreError(err, OperationType.WRITE, `buyerAlerts/${alertDocId}`); } catch { /* ignore */ }
+        p.setAlertSubmitMsg(serverErrorMessage || 'درخواست در پایگاه داده پایدار ذخیره نشد. لطفاً دوباره تلاش کنید.');
       }
-      p.setAlertSubmitMsg(result.message || `درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
-      p.setAlertFullName(''); p.setAlertPhone('');
     } catch {
       p.setAlertSubmitMsg('ارتباط با سرور برقرار نشد؛ درخواست شما ثبت نشد.');
     } finally { setIsSavingBuyerAlert(false); }

@@ -61,50 +61,20 @@ export async function createJournalOperation(store: JournalStore, entry: Deletio
   await store.create(entry);
 }
 export async function transitionJournalOperation(
-  store: JournalStore,
-  operationId: string,
-  expectedRevision: number,
-  nextStatus: JournalStatus,
-  options: {
-    now?: Date;
-    errorCode?: string | null;
-    nextAttemptAt?: string | null;
-    leaseOwner?: string | null;
-    leaseExpiresAt?: string | null;
-    incrementAttempt?: boolean;
-  } = {}
+  store: JournalStore, operationId: string, expectedRevision: number, nextStatus: JournalStatus,
+  options: { now?: Date; errorCode?: string | null; nextAttemptAt?: string | null; leaseOwner?: string | null; leaseExpiresAt?: string | null; incrementAttempt?: boolean } = {}
 ): Promise<DeletionJournalEntry> {
-  if (!isValidOperationId(operationId)) {
-    throw new Error("INVALID_OPERATION_ID");
-  }
-  if (
-    !Number.isSafeInteger(expectedRevision) ||
-    expectedRevision < 0
-  ) {
-    throw new Error("INVALID_EXPECTED_REVISION");
-  }
+  if (!isValidOperationId(operationId)) throw new Error("INVALID_OPERATION_ID");
+  if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) throw new Error("INVALID_EXPECTED_REVISION");
   const current = await store.get(operationId);
-  if (!current) {
-    throw new JournalNotFoundError();
-  }
+  if (!current) throw new JournalNotFoundError();
   validateEntry(current);
-  if (current.revision !== expectedRevision) {
-    throw new JournalConflictError();
-  }
-  if (
-    (TERMINAL_STATUSES.has(current.status) ||
-      (current.status === "permanent_failure" && nextStatus !== "manual_review")) &&
-    current.status !== nextStatus
-  ) {
+  if (current.revision !== expectedRevision) throw new JournalConflictError();
+  if ((TERMINAL_STATUSES.has(current.status) || (current.status === "permanent_failure" && nextStatus !== "manual_review")) && current.status !== nextStatus) {
     throw new Error("TERMINAL_STATE_TRANSITION");
   }
-  if (
-    !ALLOWED_TRANSITIONS[current.status].has(nextStatus) &&
-    current.status !== nextStatus
-  ) {
-    throw new Error(
-      `INVALID_TRANSITION:${current.status}->${nextStatus}`
-    );
+  if (!ALLOWED_TRANSITIONS[current.status].has(nextStatus) && current.status !== nextStatus) {
+    throw new Error(`INVALID_TRANSITION:${current.status}->${nextStatus}`);
   }
   const now = options.now ?? new Date();
   const clearLease = nextStatus === "completed" || nextStatus === "permanent_failure" || nextStatus === "manual_review";
@@ -113,35 +83,15 @@ export async function transitionJournalOperation(
     status: nextStatus,
     updatedAt: now.toISOString(),
     revision: current.revision + 1,
-    attemptCount:
-      current.attemptCount +
-      (options.incrementAttempt ? 1 : 0),
-    lastErrorCode:
-      options.errorCode === undefined
-        ? (nextStatus === "completed" ? null : current.lastErrorCode)
-        : options.errorCode,
-    nextAttemptAt:
-      options.nextAttemptAt === undefined
-        ? (clearLease ? null : current.nextAttemptAt)
-        : options.nextAttemptAt,
-    leaseOwner:
-      options.leaseOwner === undefined
-        ? (clearLease ? null : current.leaseOwner)
-        : options.leaseOwner,
-    leaseExpiresAt:
-      options.leaseExpiresAt === undefined
-        ? (clearLease ? null : current.leaseExpiresAt)
-        : options.leaseExpiresAt,
+    attemptCount: current.attemptCount + (options.incrementAttempt ? 1 : 0),
+    lastErrorCode: options.errorCode === undefined ? (nextStatus === "completed" ? null : current.lastErrorCode) : options.errorCode,
+    nextAttemptAt: options.nextAttemptAt === undefined ? (clearLease ? null : current.nextAttemptAt) : options.nextAttemptAt,
+    leaseOwner: options.leaseOwner === undefined ? (clearLease ? null : current.leaseOwner) : options.leaseOwner,
+    leaseExpiresAt: options.leaseExpiresAt === undefined ? (clearLease ? null : current.leaseExpiresAt) : options.leaseExpiresAt,
   };
   validateEntry(next);
-  const saved = await store.compareAndSwap(
-    operationId,
-    current.revision,
-    next
-  );
-  if (!saved) {
-    throw new JournalConflictError();
-  }
+  const saved = await store.compareAndSwap(operationId, current.revision, next);
+  if (!saved) throw new JournalConflictError();
   return next;
 }
 export interface RetryPolicy {
@@ -247,9 +197,17 @@ export {
   claimRecoverableJournalOperation,
 } from "./serverJournalAdapters";
 import path from "node:path";
-import { FileJournalStore as DurableFileJournalStore } from "./serverJournalAdapters";
+import { FileJournalStore as DurableFileJournalStore, FirestoreJournalStore as DurableFirestoreJournalStore } from "./serverJournalAdapters";
+import { getFirebaseAdminFirestoreForServer } from "./serverAdminAndTelegramSecurity";
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from "./areaUnit";
-const defaultReconciliationJournalStore = new DurableFileJournalStore(path.join(process.cwd(), ".object-storage-bucket", "deletion-journal"));
+const fallbackFileJournalStore = new DurableFileJournalStore(path.join(process.cwd(), ".object-storage-bucket", "deletion-journal"));
+const primaryFirestoreJournalStore = new DurableFirestoreJournalStore(() => getFirebaseAdminFirestoreForServer(), "deletionJournal");
+const defaultReconciliationJournalStore: JournalStore = {
+  async get(opId) { try { return await primaryFirestoreJournalStore.get(opId); } catch { return fallbackFileJournalStore.get(opId); } },
+  async create(entry) { try { await primaryFirestoreJournalStore.create(entry); } catch { await fallbackFileJournalStore.create(entry); } },
+  async compareAndSwap(opId, rev, next) { try { return await primaryFirestoreJournalStore.compareAndSwap(opId, rev, next); } catch { return fallbackFileJournalStore.compareAndSwap(opId, rev, next); } },
+  async listRecoverable(limit) { try { return await primaryFirestoreJournalStore.listRecoverable(limit); } catch { return fallbackFileJournalStore.listRecoverable(limit); } },
+};
 const fallbackMemoryJournalStore = new InMemoryJournalStore();
 export async function syncDeletionJournalReconciliationMetrics(input: {
   deletedIds: readonly string[];
@@ -276,9 +234,7 @@ export async function syncDeletionJournalReconciliationMetrics(input: {
     journalSyncedCount += 1;
   };
   const syncItem = async (objectId: string, finalStatus: JournalStatus, errorCode: string | null = null) => {
-    try {
-      await syncWithStore(store, objectId, finalStatus, errorCode);
-    } catch (err) {
+    try { await syncWithStore(store, objectId, finalStatus, errorCode); } catch (err) {
       if (input.store) throw err;
       await syncWithStore(fallbackMemoryJournalStore, objectId, finalStatus, errorCode);
     }

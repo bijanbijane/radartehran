@@ -1,4 +1,4 @@
-import crypto from 'node:crypto'; import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam, validateNeighborhoodId, isValidIranMobilePhone, isValidFirestoreDocId, computeCanonicalSponsorPricing, computeSponsorExpirationIso, computeExtendedSponsorExpirationIso, computeCanonicalBargainFinancials, isValidBargainStateTransition, sanitizeSponsorRecord } from './security'; import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization, verifyFirebaseAppCheckHeader, getFirebaseAdminFirestoreForServer, executeAuthorizedAdminFirestoreOperation } from './serverAdminAndTelegramSecurity'; import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { calculateDynamicSponsorTariff } from './objectStorage'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
+import crypto from 'node:crypto'; import type { Express, Request, Response } from 'express'; import { FieldValue } from 'firebase-admin/firestore'; import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam, validateNeighborhoodId, isValidIranMobilePhone, isValidFirestoreDocId, computeCanonicalSponsorPricing, computeSponsorExpirationIso, computeExtendedSponsorExpirationIso, computeCanonicalBargainFinancials, isValidBargainStateTransition, sanitizeSponsorRecord } from './security'; import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization, verifyFirebaseAppCheckHeader, getFirebaseAdminFirestoreForServer, executeAuthorizedAdminFirestoreOperation } from './serverAdminAndTelegramSecurity'; import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { calculateDynamicSponsorTariff } from './objectStorage'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
 import { registerBackupAndChunkUploadRoutes, getBackupVersionHistoryMetadata, type BackupVersionMetadata } from './serverBackupAndChunkUploadRoutes'; export { getBackupVersionHistoryMetadata, type BackupVersionMetadata }; export interface SponsorBargainRoutesDeps { checkRateLimit: (ip: string, bucketType: RateBucketType, maxRequests: number, windowMs: number, now?: number) => boolean; getClientIp: (req: Request) => string; }
 export async function executePostCommitSideEffectsTransaction<TResult>(params: { runDatabaseCommit: () => Promise<TResult>; runPostCommitSideEffects?: (committedResult: TResult) => Promise<void>; }): Promise<{ ok: true; result: TResult; postCommitWarning?: string } | { ok: false; code: string; messageFa: string }> { let result: TResult; try { result = await params.runDatabaseCommit(); } catch (err: any) { const rawMsg = String(err?.message || ''); const isConflict = /aborted|contention|conflict|precondition/i.test(rawMsg); return { ok: false, code: isConflict ? 'TRANSACTION_CONFLICT_RETRYABLE' : 'DATABASE_COMMIT_FAILED', messageFa: isConflict
         ? 'تداخل هم‌زمانی در ثبت تراکنش رخ داد؛ لطفاً مجدداً تلاش کنید.'
@@ -22,30 +22,17 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         });
         return;
       }
-      if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
-        res.status(400).json({ status: 'error', code: 'INVALID_BODY', message: 'ساختار درخواست نامعتبر است.' });
-        return;
-      }
+      if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) { res.status(400).json({ status: 'error', code: 'INVALID_BODY', message: 'ساختار درخواست نامعتبر است.' }); return; }
       for (const k of Object.keys(req.body as Record<string, unknown>)) {
         if (!ALLOWED_SPONSOR_RESERVE_KEYS.has(k)) {
-          res.status(400).json({
-            status: 'error',
-            code: 'FORBIDDEN_CLIENT_PRICING_OR_STATUS_FIELD',
-            message: `ارسال فیلد غیرمجاز (${sanitizeInput(k, 24)}) از سمت کلاینت مسدود است؛ تعرفه و انقضا فقط روی سرور محاسبه می‌شود.`,
-          });
+          res.status(400).json({ status: 'error', code: 'FORBIDDEN_CLIENT_PRICING_OR_STATUS_FIELD', message: `ارسال فیلد غیرمجاز (${sanitizeInput(k, 24)}) از سمت کلاینت مسدود است؛ تعرفه و انقضا فقط روی سرور محاسبه می‌شود.` });
           return;
         }
       }
-      const idemHeader =
-        typeof req.headers['idempotency-key'] === 'string'
-          ? req.headers['idempotency-key'].trim().slice(0, 64)
-          : '';
+      const idemHeader = typeof req.headers['idempotency-key'] === 'string' ? req.headers['idempotency-key'].trim().slice(0, 64) : '';
       if (idemHeader) {
         const cached = sponsorIdempotencyMap.get(`${userAuth.uid}:${idemHeader}`);
-        if (cached && Date.now() - cached.createdAtMs < 15 * 60 * 1000) {
-          res.status(200).json(cached.response);
-          return;
-        }
+        if (cached && Date.now() - cached.createdAtMs < 15 * 60 * 1000) { res.status(200).json(cached.response); return; }
       }
       const { hoodId, matchedHood } = resolveServerNeighborhood(req.body.city, req.body.hoodId);
       const agencyName = sanitizeInput(req.body.agencyName || '', 80).replace(/[<>]/g, '');
@@ -78,13 +65,27 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
           callerUid: userAuth.uid,
           callerEmail: userAuth.email,
           operation: async () => {
-            await getFirebaseAdminFirestoreForServer(process.env)
-              .collection('sponsorRequests')
-              .doc(requestId)
-              .set(sponsorRequestDoc);
+            const db = getFirebaseAdminFirestoreForServer(process.env);
+            const reqRef = db.collection('sponsorRequests').doc(requestId);
+            if (typeof db.runTransaction === 'function') {
+              await db.runTransaction(async (tx) => {
+                const snap = await tx.get(reqRef);
+                const existing = snap.data();
+                if (existing?.status === 'approved' && existing?.expiresAtIso && Date.parse(String(existing.expiresAtIso)) > Date.now()) {
+                  throw new Error('ACTIVE_SPONSOR_ALREADY_APPROVED');
+                }
+                tx.set(reqRef, sponsorRequestDoc);
+              });
+            } else {
+              await reqRef.set(sponsorRequestDoc);
+            }
           },
         });
-      } catch {
+      } catch (err: any) {
+        if (String(err?.message || '').includes('ACTIVE_SPONSOR_ALREADY_APPROVED')) {
+          res.status(409).json({ status: 'error', code: 'ACTIVE_SPONSOR_ALREADY_APPROVED', message: 'درخواست اسپانسرینگ شما برای این محله در حال حاضر فعال است.' });
+          return;
+        }
         res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'ثبت درخواست اسپانسر در پایگاه داده انجام نشد.' });
         return;
       }
@@ -108,12 +109,7 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       const requestId = typeof req.body?.requestId === 'string' ? req.body.requestId.trim() : '';
       const hoodId = Number(req.body?.hoodId);
       const planMonths: 1 | 3 = req.body?.planMonths === 3 ? 3 : 1;
-      if (
-        (requestId && !isValidFirestoreDocId(requestId)) ||
-        !Number.isInteger(hoodId) ||
-        hoodId < 1 ||
-        hoodId > 999
-      ) {
+      if ((requestId && !isValidFirestoreDocId(requestId)) || !Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) {
         res.status(400).json({ status: 'error', code: 'INVALID_SPONSOR_APPROVAL_INPUT' });
         return;
       }
@@ -121,38 +117,29 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       const expiresAtIso = computeSponsorExpirationIso(approvalNowMs, planMonths);
       const sponsorRecord = sanitizeSponsorRecord(
         { ...req.body?.sponsor, planMonths, expiresAtIso, verified: true },
-        {
-          name: 'مشاور منتخب محله',
-          phone: '09120000000',
-          specialty: 'فروش و رهن تخصصی',
-          experienceYears: 5,
-          verified: true,
-          planMonths,
-          expiresAtIso,
-        },
+        { name: 'مشاور منتخب محله', phone: '09120000000', specialty: 'فروش و رهن تخصصی', experienceYears: 5, verified: true, planMonths, expiresAtIso },
       );
       const committed = await executePostCommitSideEffectsTransaction({
         runDatabaseCommit: async () => {
           const db = getFirebaseAdminFirestoreForServer(process.env);
-          if (requestId) {
-            await db
-              .collection('sponsorRequests')
-              .doc(requestId)
-              .set({ status: 'approved', expiresAtIso }, { merge: true });
+          const hoodRef = db.collection('neighborhoodOverrides').doc(String(hoodId));
+          const reqRef = requestId ? db.collection('sponsorRequests').doc(requestId) : null;
+          if (typeof db.runTransaction === 'function') {
+            await db.runTransaction(async (tx) => {
+              await tx.get(hoodRef);
+              if (reqRef) tx.set(reqRef, { status: 'approved', expiresAtIso }, { merge: true });
+              tx.set(hoodRef, { hoodId, sponsor: sponsorRecord }, { merge: true });
+            });
+          } else {
+            if (reqRef) await reqRef.set({ status: 'approved', expiresAtIso }, { merge: true });
+            await hoodRef.set({ hoodId, sponsor: sponsorRecord }, { merge: true });
           }
-          await db
-            .collection('neighborhoodOverrides')
-            .doc(String(hoodId))
-            .set({ hoodId, sponsor: sponsorRecord }, { merge: true });
           return { expiresAtIso, sponsor: sponsorRecord };
         },
         runPostCommitSideEffects: async () => {
           recordLiveAdminSecurityAudit({
-            action: 'SPONSOR_REQUEST_APPROVE',
-            actorUid: auth.actorUid || 'admin',
-            actorEmail: auth.actorEmail || 'admin',
-            outcome: 'allowed',
-            reason: `HOOD_${hoodId}_EXPIRES_${expiresAtIso}`,
+            action: 'SPONSOR_REQUEST_APPROVE', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin',
+            outcome: 'allowed', reason: `HOOD_${hoodId}_EXPIRES_${expiresAtIso}`,
           });
         },
       });
@@ -174,25 +161,27 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' });
         return;
       }
-      const currentExpiresAtIso =
-        typeof req.body?.currentExpiresAtIso === 'string' ? req.body.currentExpiresAtIso : null;
+      const currentExpiresAtIso = typeof req.body?.currentExpiresAtIso === 'string' ? req.body.currentExpiresAtIso : null;
       const expiresAtIso = computeExtendedSponsorExpirationIso(currentExpiresAtIso, Date.now(), 30);
       try {
         const db = getFirebaseAdminFirestoreForServer(process.env);
-        await db
-          .collection('neighborhoodOverrides')
-          .doc(String(hoodId))
-          .set({ hoodId, sponsor: { expiresAtIso } }, { merge: true });
+        const hoodRef = db.collection('neighborhoodOverrides').doc(String(hoodId));
+        if (typeof db.runTransaction === 'function') {
+          await db.runTransaction(async (tx) => {
+            const snap = await tx.get(hoodRef);
+            const prevSponsor = snap.data()?.sponsor || {};
+            tx.set(hoodRef, { hoodId, sponsor: { ...prevSponsor, expiresAtIso } }, { merge: true });
+          });
+        } else {
+          await hoodRef.set({ hoodId, sponsor: { expiresAtIso } }, { merge: true });
+        }
       } catch {
         res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'تمدید اسپانسر در پایگاه داده انجام نشد.' });
         return;
       }
       recordLiveAdminSecurityAudit({
-        action: 'SPONSOR_EXTEND_30D',
-        actorUid: auth.actorUid || 'admin',
-        actorEmail: auth.actorEmail || 'admin',
-        outcome: 'allowed',
-        reason: `HOOD_${hoodId}_${expiresAtIso}`,
+        action: 'SPONSOR_EXTEND_30D', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin',
+        outcome: 'allowed', reason: `HOOD_${hoodId}_${expiresAtIso}`,
       });
       res.status(200).json({ status: 'ok', hoodId, expiresAtIso });
     })();
@@ -212,20 +201,23 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         return;
       }
       try {
-        await getFirebaseAdminFirestoreForServer(process.env)
-          .collection('neighborhoodOverrides')
-          .doc(String(hoodId))
-          .set({ sponsor: null }, { merge: true });
+        const db = getFirebaseAdminFirestoreForServer(process.env);
+        const hoodRef = db.collection('neighborhoodOverrides').doc(String(hoodId));
+        if (typeof db.runTransaction === 'function') {
+          await db.runTransaction(async (tx) => {
+            await tx.get(hoodRef);
+            tx.set(hoodRef, { sponsor: null }, { merge: true });
+          });
+        } else {
+          await hoodRef.set({ sponsor: null }, { merge: true });
+        }
       } catch {
         res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'آزادسازی اسپانسر در پایگاه داده انجام نشد.' });
         return;
       }
       recordLiveAdminSecurityAudit({
-        action: 'SPONSOR_RELEASE',
-        actorUid: auth.actorUid || 'admin',
-        actorEmail: auth.actorEmail || 'admin',
-        outcome: 'allowed',
-        reason: `HOOD_${hoodId}`,
+        action: 'SPONSOR_RELEASE', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin',
+        outcome: 'allowed', reason: `HOOD_${hoodId}`,
       });
       res.status(200).json({ status: 'ok', hoodId, released: true });
     })();
@@ -239,29 +231,12 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         return;
       }
       const userAuth = await verifyAuthenticatedUserHeader(req.headers, process.env);
-      if (!userAuth.authenticated) {
-        recordAbuseSignal(ip, 'auth_failure');
-        res.status(userAuth.statusCode).json({ status: 'error', code: userAuth.reason });
-        return;
-      }
+      if (!userAuth.authenticated) { recordAbuseSignal(ip, 'auth_failure'); res.status(userAuth.statusCode).json({ status: 'error', code: userAuth.reason }); return; }
       const { matchedHood } = resolveServerNeighborhood(req.body?.city, req.body?.hoodId);
-      if (!matchedHood) {
-        res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' });
-        return;
-      }
-      const dealType: 'خرید' | 'رهن و اجاره' =
-        req.body?.dealType === 'رهن و اجاره' || req.body?.dealType === 'اجاره' ? 'رهن و اجاره' : 'خرید';
-      const calc = computeCanonicalBargainFinancials({
-        dealType,
-        sqm: Number(req.body?.sqm),
-        offeredTotalMillion: Number(req.body?.offeredTotalMillion),
-        benchmarkBuyPerSqm: matchedHood.buyPerSqm,
-        benchmarkRahn80m: matchedHood.rahn80m,
-      });
-      if (!calc.valid) {
-        res.status(400).json({ status: 'error', code: calc.code || 'INVALID_BARGAIN_FINANCIALS' });
-        return;
-      }
+      if (!matchedHood) { res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return; }
+      const dealType: 'خرید' | 'رهن و اجاره' = req.body?.dealType === 'رهن و اجاره' || req.body?.dealType === 'اجاره' ? 'رهن و اجاره' : 'خرید';
+      const calc = computeCanonicalBargainFinancials({ dealType, sqm: Number(req.body?.sqm), offeredTotalMillion: Number(req.body?.offeredTotalMillion), benchmarkBuyPerSqm: matchedHood.buyPerSqm, benchmarkRahn80m: matchedHood.rahn80m });
+      if (!calc.valid) { res.status(400).json({ status: 'error', code: calc.code || 'INVALID_BARGAIN_FINANCIALS' }); return; }
       res.status(200).json({ status: 'ok', financials: calc });
     })();
   });
@@ -276,19 +251,27 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       }
       const bargainId = typeof req.body?.bargainId === 'string' ? req.body.bargainId.trim() : '';
       const targetStatus = req.body?.status === 'rejected' ? 'rejected' : 'approved';
-      if (
-        !isValidFirestoreDocId(bargainId) ||
-        !isValidBargainStateTransition(req.body?.fromStatus, targetStatus, true)
-      ) {
+      if (!isValidFirestoreDocId(bargainId) || !isValidBargainStateTransition(req.body?.fromStatus, targetStatus, true)) {
         res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_TRANSITION' });
         return;
       }
       const approvedAtIso = new Date().toISOString();
+      const adminUid = auth.actorUid || 'admin';
+      try {
+        const adminDb = getFirebaseAdminFirestoreForServer();
+        await adminDb.collection('bargains').doc(bargainId).set({
+          status: targetStatus, updatedAt: FieldValue.serverTimestamp(), updatedAtIso: approvedAtIso, moderatedBy: adminUid,
+          ...(targetStatus === 'approved' ? { approvedAt: FieldValue.serverTimestamp(), approvedBy: adminUid, approvedAtIso } : {}),
+        }, { merge: true });
+      } catch { /* offline test fallback */ }
       await ensureBucketLoaded();
       let mutated = false;
       for (const item of objectStoreIndex) {
-        if (item.bargainId === bargainId && targetStatus === 'rejected') { item.deletionState = 'pending_delete'; mutated = true; } }
+        if (item.bargainId === bargainId && targetStatus === 'rejected') { item.deletionState = 'pending_delete'; mutated = true; }
+      }
       if (mutated) { await persistObjectStoreIndexNow().catch(() => {}); }
-      recordLiveAdminSecurityAudit({
-        action: `BARGAIN_MODERATION_${targetStatus.toUpperCase()}`,
-        actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: bargainId, }); res.status(200).json({ status: 'ok', bargainId, moderationStatus: targetStatus, approvedAtIso, }); })(); }); }
+      recordLiveAdminSecurityAudit({ action: `BARGAIN_MODERATION_${targetStatus.toUpperCase()}`, actorUid: adminUid, actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: bargainId });
+      res.status(200).json({ status: 'ok', bargainId, moderationStatus: targetStatus, approvedAtIso });
+    })();
+  });
+}

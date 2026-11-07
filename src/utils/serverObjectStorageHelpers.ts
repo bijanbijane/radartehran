@@ -25,6 +25,7 @@ export function reserveUploadCapacityForIndex( objectStoreIndex: StoredObjectRec
 }
 export const objectStoreIndex: StoredObjectRecord[] = [];
 let indexLoaded = false;
+let testIsolatedResetActive = false;
 let pendingIndexWriteTimer: ReturnType<typeof setTimeout> | null = null;
 let bucketLoadPromise: Promise<void> | null = null;
 let indexWriteChain: Promise<void> = Promise.resolve();
@@ -36,7 +37,35 @@ export function resetObjectStorageIndexForTests(): void {
   pendingUploadReservations.clear();
   objectStoreIndex.splice(0, objectStoreIndex.length);
   indexLoaded = false;
+  testIsolatedResetActive = true;
   bucketLoadPromise = null;
+}
+export async function syncMediaObjectToFirestore(record: StoredObjectRecord, remove = false): Promise<void> {
+  if (testIsolatedResetActive || process.env.PREVENT_PROD_FIREBASE_IN_TEST === 'true') return;
+  try {
+    const { getFirebaseAdminFirestoreForServer } = await import('./serverAdminAndTelegramSecurity');
+    const db = getFirebaseAdminFirestoreForServer();
+    const ref = db.collection('mediaObjects').doc(record.id);
+    if (remove) await ref.delete();
+    else await ref.set({ ...record, updatedAtIso: new Date().toISOString() }, { merge: true });
+  } catch { /* Offline fallback */ }
+}
+export async function recoverObjectStoreIndexFromFirestore(): Promise<StoredObjectRecord[]> {
+  try {
+    const { getFirebaseAdminFirestoreForServer } = await import('./serverAdminAndTelegramSecurity');
+    const db = getFirebaseAdminFirestoreForServer();
+    const snap = await db.collection('mediaObjects').limit(MAX_STORED_OBJECTS).get();
+    const recovered: StoredObjectRecord[] = [];
+    const seenIds = new Set<string>();
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      if (isSafeStoredObjectRecord(data) && !seenIds.has(data.id.toLowerCase())) {
+        seenIds.add(data.id.toLowerCase());
+        recovered.push(data);
+      }
+    }
+    return recovered;
+  } catch { return []; }
 }
 export async function ensureBucketLoaded(): Promise<void> {
   if (indexLoaded) return;
@@ -45,6 +74,7 @@ export async function ensureBucketLoaded(): Promise<void> {
       await fs.promises.mkdir(BUCKET_DIR, { recursive: true, mode: 0o700 });
       await cleanupStaleTemporaryFiles();
       let raw = '[]';
+      let indexMissing = false;
       try {
         const idxStat = await fs.promises.lstat(INDEX_FILE);
         if (!idxStat.isFile() || idxStat.isSymbolicLink() || idxStat.size > 10 * 1024 * 1024) {
@@ -53,15 +83,14 @@ export async function ensureBucketLoaded(): Promise<void> {
         raw = await fs.promises.readFile(INDEX_FILE, 'utf-8');
       } catch (error) {
         const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
-        if (code !== 'ENOENT') console.error('[OBJECT_STORAGE_INDEX_READ_ERROR]', code || 'UNKNOWN_ERROR');
+        if (code === 'ENOENT') indexMissing = true;
+        else console.error('[OBJECT_STORAGE_INDEX_READ_ERROR]', code || 'UNKNOWN_ERROR');
       }
       let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
+      try { parsed = JSON.parse(raw); } catch {
         console.error('[OBJECT_STORAGE_INDEX_INVALID_JSON]');
         await fs.promises.rename(INDEX_FILE, `${INDEX_FILE}.corrupt-${Date.now()}`).catch(() => {});
-        parsed = [];
+        parsed = []; indexMissing = true;
       }
       const validRecords: StoredObjectRecord[] = [];
       const seenIds = new Set<string>();
@@ -69,12 +98,17 @@ export async function ensureBucketLoaded(): Promise<void> {
       if (Array.isArray(parsed)) {
         for (const candidate of parsed.slice(0, MAX_STORED_OBJECTS * 2)) {
           if (!isSafeStoredObjectRecord(candidate)) continue;
-          const id = candidate.id.toLowerCase();
-          const filename = candidate.localFileName.toLowerCase();
+          const id = candidate.id.toLowerCase(); const filename = candidate.localFileName.toLowerCase();
           if (seenIds.has(id) || seenFilenames.has(filename)) continue;
-          seenIds.add(id);
-          seenFilenames.add(filename);
-          validRecords.push(candidate);
+          seenIds.add(id); seenFilenames.add(filename); validRecords.push(candidate);
+        }
+      }
+      if (validRecords.length === 0 && indexMissing && !testIsolatedResetActive && process.env.PREVENT_PROD_FIREBASE_IN_TEST !== 'true') {
+        const recovered = await recoverObjectStoreIndexFromFirestore();
+        for (const rec of recovered) {
+          if (!seenIds.has(rec.id.toLowerCase()) && !seenFilenames.has(rec.localFileName.toLowerCase())) {
+            seenIds.add(rec.id.toLowerCase()); seenFilenames.add(rec.localFileName.toLowerCase()); validRecords.push(rec);
+          }
         }
       }
       objectStoreIndex.splice(0, objectStoreIndex.length, ...validRecords.slice(0, MAX_STORED_OBJECTS));
@@ -82,40 +116,35 @@ export async function ensureBucketLoaded(): Promise<void> {
     })();
   }
   const activeLoad = bucketLoadPromise;
-  try {
-    await activeLoad;
-  } catch (error) {
+  try { await activeLoad; } catch (error) {
     console.error('[OBJECT_STORAGE_INDEX_LOAD_ERROR]', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
-    objectStoreIndex.splice(0, objectStoreIndex.length);
-    indexLoaded = true;
+    objectStoreIndex.splice(0, objectStoreIndex.length); indexLoaded = true;
   } finally {
     if (bucketLoadPromise === activeLoad) bucketLoadPromise = null;
   }
 }
 export async function persistObjectStoreIndexNow(): Promise<void> {
   const { withFileLock } = await import('./serverJournalAdapters');
-  const writeTask = indexWriteChain
-    .catch(() => {})
-    .then(async () => {
-      await fs.promises.mkdir(BUCKET_DIR, { recursive: true, mode: 0o700 });
-      await withFileLock(`${INDEX_FILE}.lock`, async () => {
-        const snapshot = JSON.stringify(objectStoreIndex, null, 2);
-        const tmpPath = `${INDEX_FILE}.tmp.${process.pid}.${crypto.randomBytes(8).toString('hex')}`;
-        let fileHandle: import('node:fs/promises').FileHandle | undefined;
-        try {
-          fileHandle = await fs.promises.open(tmpPath, 'wx', 0o600);
-          await fileHandle.writeFile(snapshot, 'utf-8');
-          await fileHandle.sync();
-          await fileHandle.close();
-          fileHandle = undefined;
-          await fs.promises.rename(tmpPath, INDEX_FILE);
-          await fs.promises.chmod(INDEX_FILE, 0o600);
-        } finally {
-          if (fileHandle) await fileHandle.close().catch(() => {});
-          await fs.promises.unlink(tmpPath).catch(() => {});
-        }
-      });
+  const writeTask = indexWriteChain.catch(() => {}).then(async () => {
+    await fs.promises.mkdir(BUCKET_DIR, { recursive: true, mode: 0o700 });
+    await withFileLock(`${INDEX_FILE}.lock`, async () => {
+      const snapshot = JSON.stringify(objectStoreIndex, null, 2);
+      const tmpPath = `${INDEX_FILE}.tmp.${process.pid}.${crypto.randomBytes(8).toString('hex')}`;
+      let fileHandle: import('node:fs/promises').FileHandle | undefined;
+      try {
+        fileHandle = await fs.promises.open(tmpPath, 'wx', 0o600);
+        await fileHandle.writeFile(snapshot, 'utf-8');
+        await fileHandle.sync(); await fileHandle.close(); fileHandle = undefined;
+        await fs.promises.rename(tmpPath, INDEX_FILE); await fs.promises.chmod(INDEX_FILE, 0o600);
+      } finally {
+        if (fileHandle) await fileHandle.close().catch(() => {});
+        await fs.promises.unlink(tmpPath).catch(() => {});
+      }
     });
+    if (!testIsolatedResetActive && process.env.PREVENT_PROD_FIREBASE_IN_TEST !== 'true') {
+      for (const rec of objectStoreIndex.slice(0, 25)) { void syncMediaObjectToFirestore(rec); }
+    }
+  });
   indexWriteChain = writeTask;
   await writeTask;
 }

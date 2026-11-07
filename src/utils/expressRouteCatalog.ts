@@ -90,6 +90,10 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/admin/crm/leads', UT, 'ADMIN', 30, 'general', true, 'Admin CRM lead list'),
   route('POST', '/api/buyer-alerts', UT, 'VERIFIED_USER', 5, 'lead', true, 'Authenticated buyer-alert submission'),
   route('POST', '/api/track-call', UT, 'PUBLIC', 20, 'call_track', true, 'Anonymized sponsor call click'),
+  route('GET', '/api/v1/telemetry/policy', UT, 'PUBLIC', 120, 'general', true, 'Public behavioral telemetry policy manifest'),
+  route('POST', '/api/admin/telemetry-policy', UT, 'ADMIN', 20, 'general', true, 'Admin behavioral telemetry policy update'),
+  route('POST', '/api/v1/telemetry/ingest', UT, 'PUBLIC', 120, 'general', true, 'Non-blocking anonymized telemetry ingestion'),
+  route('GET', '/api/admin/telemetry-status', UT, 'ADMIN', 30, 'general', true, 'Admin behavioral telemetry status and neighborhood summary'),
 ];
 export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES;
 export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/'));

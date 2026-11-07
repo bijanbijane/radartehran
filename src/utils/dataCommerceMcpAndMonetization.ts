@@ -72,7 +72,8 @@ export function verifyX402PaymentHeaders(params: {
   if (!params.paymentContextHeader || !params.paymentSignatureHeader) {
     return { verified: false, httpStatus: 402, failureCode: 'PAYMENT_REQUIRED' };
   }
-  const secret = (params.verificationSecret || process.env.X402_SIGNING_SECRET || '').trim();
+  const rawSecret = (params.verificationSecret || process.env.X402_HMAC_SECRET || process.env.X402_SIGNING_SECRET || '').trim();
+  const secret = (rawSecret.length >= 16 || process.env.NODE_ENV === 'test') ? rawSecret : '';
   if (!secret) return { verified: false, httpStatus: 503, failureCode: 'VERIFIER_UNCONFIGURED' };
   try {
     const decoded = Buffer.from(params.paymentContextHeader, 'base64').toString('utf-8');

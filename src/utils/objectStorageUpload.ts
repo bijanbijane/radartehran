@@ -83,72 +83,40 @@ export async function processImageToWebpMax800(inputBuffer: Buffer, maxWidth: nu
 const DEFAULT_ALLOWED_OBJECT_STORAGE_HOSTS = [
   's3.ir-thr-at1.arvanstorage.ir',
 ];
+const R2_HOST_PATTERN = /^[a-z0-9-]+\.r2\.cloudflarestorage\.com$/i;
 export function buildValidatedS3TargetUrl(
   objectKey: string,
   cfg: ResolvedObjectStorageConfig,
   env: Record<string, string | undefined> = process.env
 ): URL | null {
-  const supportedProviders = new Set([
-    'arvancloud',
-    'liara',
-    'minio',
-    's3_compatible',
-  ]);
-  if (!supportedProviders.has(cfg.provider)) {
-    return null;
-  }
-  if (
-    !cfg.bucket ||
-    !/^[A-Za-z0-9][A-Za-z0-9.-]{1,61}[A-Za-z0-9]$/.test(cfg.bucket)
-  ) {
-    return null;
-  }
-  const validObjectKey =
+  const supportedProviders = new Set(['arvancloud', 'liara', 'minio', 's3_compatible']);
+  if (!supportedProviders.has(cfg.provider)) return null;
+  if (!cfg.bucket || !/^[A-Za-z0-9][A-Za-z0-9.-]{1,61}[A-Za-z0-9]$/.test(cfg.bucket)) return null;
+  const validListingObjectKey =
     /^listings\/(tehran|karaj|mashhad|isfahan|shiraz)\/hood-[1-9]\d{0,2}\/(image|video)\/\d{4}-(0[1-9]|1[0-2])\/obj-\d{10,16}-[a-f0-9]{8}\.(jpg|jpeg|png|webp|mp4|webm|mov)$/i;
-  if (!validObjectKey.test(objectKey)) {
-    return null;
-  }
+  const validTelemetryBatchKey =
+    /^telemetry\/v1\/year=\d{4}\/month=(0[1-9]|1[0-2])\/day=(0[1-9]|[12]\d|3[01])\/batch-[A-Za-z0-9_-]{4,64}\.ndjson$/i;
+  if (!validListingObjectKey.test(objectKey) && !validTelemetryBatchKey.test(objectKey)) return null;
   let endpoint: URL;
-  try {
-    endpoint = new URL(cfg.endpoint);
-  } catch {
-    return null;
-  }
+  try { endpoint = new URL(cfg.endpoint); } catch { return null; }
   if (
-    endpoint.protocol !== 'https:' ||
-    !endpoint.hostname ||
-    endpoint.username ||
-    endpoint.password ||
-    endpoint.search ||
-    endpoint.hash ||
+    endpoint.protocol !== 'https:' || !endpoint.hostname || endpoint.username ||
+    endpoint.password || endpoint.search || endpoint.hash ||
     (endpoint.pathname !== '/' && endpoint.pathname !== '')
-  ) {
-    return null;
-  }
-  if (env.NODE_ENV === 'production' && endpoint.port !== '') {
-    return null;
-  }
-  const configuredHosts = (
-    env.OBJECT_STORAGE_ALLOWED_HOSTS ||
-    DEFAULT_ALLOWED_OBJECT_STORAGE_HOSTS.join(',')
-  )
-    .split(',')
-    .map((host) => host.trim().toLowerCase())
-    .filter(Boolean);
-  if (!configuredHosts.includes(endpoint.hostname.toLowerCase())) {
-    return null;
-  }
-  const encodedObjectKey = objectKey
-    .split('/')
-    .map((segment) => encodeURIComponent(segment))
-    .join('/');
-  const target = new URL(
-    `/${encodeURIComponent(cfg.bucket)}/${encodedObjectKey}`,
-    endpoint.origin
-  );
-  if (target.protocol !== 'https:' || target.hostname !== endpoint.hostname) {
-    return null;
-  }
+  ) { return null; }
+  if (env.NODE_ENV === 'production' && endpoint.port !== '') return null;
+  const hostLower = endpoint.hostname.toLowerCase();
+  const configuredHosts = (env.OBJECT_STORAGE_ALLOWED_HOSTS || DEFAULT_ALLOWED_OBJECT_STORAGE_HOSTS.join(','))
+    .split(',').map((host) => host.trim().toLowerCase()).filter(Boolean);
+  const isR2Enabled =
+    cfg.rawProviderName.trim().toLowerCase() === 'r2' ||
+    (env.OBJECT_STORAGE_PROVIDER || '').trim().toLowerCase() === 'r2' ||
+    Boolean((env.R2_ACCOUNT_ID || '').trim());
+  const isAllowedR2Host = isR2Enabled && R2_HOST_PATTERN.test(hostLower);
+  if (!configuredHosts.includes(hostLower) && !isAllowedR2Host) return null;
+  const encodedObjectKey = objectKey.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+  const target = new URL(`/${encodeURIComponent(cfg.bucket)}/${encodedObjectKey}`, endpoint.origin);
+  if (target.protocol !== 'https:' || target.hostname !== endpoint.hostname) return null;
   return target;
 }
 export async function uploadToRemoteS3Compatible(
@@ -157,30 +125,16 @@ export async function uploadToRemoteS3Compatible(
   mimeType: string,
   cfg: ResolvedObjectStorageConfig
 ): Promise<boolean> {
-  if (!cfg.s3CredentialsConfigured) {
-    return false;
-  }
-  if (
-    !Buffer.isBuffer(buffer) ||
-    buffer.length === 0 ||
-    typeof mimeType !== 'string' ||
-    mimeType.length === 0
-  ) {
-    return false;
-  }
+  if (!cfg.s3CredentialsConfigured) return false;
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0 || typeof mimeType !== 'string' || mimeType.length === 0) return false;
   const targetUrl = buildValidatedS3TargetUrl(objectKey, cfg);
   if (!targetUrl) {
-    console.error(
-      '[OBJECT_STORAGE_UPLOAD_BLOCKED] Invalid or non-allowlisted S3 endpoint.'
-    );
+    console.error('[OBJECT_STORAGE_UPLOAD_BLOCKED] Invalid or non-allowlisted S3 endpoint.');
     return false;
   }
   try {
     const dnsCheck = await validateStorageEndpointDnsResolution(targetUrl.hostname);
-    if (!dnsCheck.safe) {
-      console.error('[OBJECT_STORAGE_SSRF_BLOCKED]', dnsCheck.reason);
-      return false;
-    }
+    if (!dnsCheck.safe) { console.error('[OBJECT_STORAGE_SSRF_BLOCKED]', dnsCheck.reason); return false; }
     const payloadHash = crypto.createHash('sha256').update(buffer).digest('hex');
     const { authorization, amzDate } = computeSigV4('PUT', targetUrl, cfg, payloadHash, { 'content-type': mimeType });
     const response = await fetch(targetUrl.toString(), {
@@ -196,12 +150,34 @@ export async function uploadToRemoteS3Compatible(
       redirect: 'error',
     });
     return response.ok;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
+}
+export const uploadBufferToObjectStorage = uploadToRemoteS3Compatible;
+export async function downloadFromRemoteS3Compatible(
+  objectKey: string,
+  cfg: ResolvedObjectStorageConfig = resolveObjectStorageRuntimeConfig()
+): Promise<Buffer | null> {
+  if (!cfg.s3CredentialsConfigured) return null;
+  const targetUrl = buildValidatedS3TargetUrl(objectKey, cfg);
+  if (!targetUrl) return null;
+  try {
+    const dnsCheck = await validateStorageEndpointDnsResolution(targetUrl.hostname);
+    if (!dnsCheck.safe) return null;
+    const payloadHash = crypto.createHash('sha256').update(Buffer.alloc(0)).digest('hex');
+    const { authorization, amzDate } = computeSigV4('GET', targetUrl, cfg, payloadHash);
+    const response = await fetch(targetUrl.toString(), {
+      method: 'GET',
+      headers: { 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate, Authorization: authorization },
+      signal: AbortSignal.timeout(20_000),
+      redirect: 'error',
+    });
+    if (!response.ok) return null;
+    const arr = await response.arrayBuffer();
+    return arr.byteLength > 0 ? Buffer.from(arr) : null;
+  } catch { return null; }
 }
 function computeSigV4(
-  method: 'PUT' | 'DELETE',
+  method: 'GET' | 'PUT' | 'DELETE',
   targetUrl: URL,
   cfg: ResolvedObjectStorageConfig,
   payloadHash: string,
@@ -234,22 +210,19 @@ export async function deleteFromRemoteS3Compatible(
   objectKey: string,
   cfg: ResolvedObjectStorageConfig
 ): Promise<boolean> {
-  if (!cfg.s3CredentialsConfigured) {
-    return false;
-  }
+  if (!cfg.s3CredentialsConfigured) return false;
   const targetUrl = buildValidatedS3TargetUrl(objectKey, cfg);
-  if (!targetUrl) {
-    return false;
-  }
+  if (!targetUrl) return false;
   try {
     const dnsCheck = await validateStorageEndpointDnsResolution(targetUrl.hostname);
-    if (!dnsCheck.safe) {
-      return false;
-    }
+    if (!dnsCheck.safe) return false;
     const payloadHash = crypto.createHash('sha256').update(Buffer.alloc(0)).digest('hex');
     const { authorization, amzDate } = computeSigV4('DELETE', targetUrl, cfg, payloadHash);
     const response = await fetch(targetUrl.toString(), {
       method: 'DELETE',
-      headers: {
-        'x-amz-content-sha256': payloadHash,
-        'x-amz-date': amzDate, Authorization: authorization, }, signal: AbortSignal.timeout(8000), redirect: 'error', }); return response.ok || response.status === 404; } catch { return false; } }
+      headers: { 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate, Authorization: authorization },
+      signal: AbortSignal.timeout(8000), redirect: 'error',
+    });
+    return response.ok || response.status === 404;
+  } catch { return false; }
+}

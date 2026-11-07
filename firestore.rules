@@ -591,6 +591,8 @@ service cloud.firestore {
           'sponsor',
           'pros',
           'cons',
+          'overrideSource',
+          'manualLockUntilMs',
           'updatedAt'
         ]) &&
         incoming().hoodId is int &&
@@ -609,6 +611,8 @@ service cloud.firestore {
         (!('sponsor' in incoming()) || isValidOverrideSponsor(incoming().sponsor)) &&
         (!('pros' in incoming()) || (incoming().pros is string && incoming().pros.size() <= 400)) &&
         (!('cons' in incoming()) || (incoming().cons is string && incoming().cons.size() <= 400)) &&
+        (!('overrideSource' in incoming()) || incoming().overrideSource in ['ADMIN_MANUAL', 'SERVER_DEEP_SYNC']) &&
+        (!('manualLockUntilMs' in incoming()) || incoming().manualLockUntilMs is number) &&
         incoming().updatedAt is timestamp &&
         incoming().updatedAt == request.time;
     }

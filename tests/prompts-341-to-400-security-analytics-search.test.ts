@@ -763,6 +763,104 @@ import {
   assert.equal(audit2.sequenceNumber, 2);
 }
 
+// ============================================================================
+// 9. STEP 5 TELEMETRY 10-LEVEL POLICY CONTROLLER, LEASE EXPIRY & PII GUARD
+// ============================================================================
+import {
+  evaluateEffectiveTelemetryPolicy,
+  validateAndNormalizeTelemetryPolicy,
+} from '../src/utils/telemetryEdgeAggregationEngine';
+import {
+  computeDailyRotatingSessionHash,
+  getServerTelemetryPolicy,
+  ingestServerTelemetryBatch,
+  updateServerTelemetryPolicy,
+} from '../src/utils/productAnalyticsEngine';
+
+await (async () => {
+  const nowMs = 1_775_000_000_000;
+
+  // 1. Level 9/10 requires leaseExpiresAtEpochMs <= 7 days
+  const noLeaseRes = validateAndNormalizeTelemetryPolicy({ activeLevel: 9 }, nowMs);
+  assert.equal(noLeaseRes.valid, false);
+  if (!noLeaseRes.valid) assert.equal(noLeaseRes.code, 'HIGH_LEVEL_LEASE_REQUIRED');
+
+  const excessiveLeaseRes = validateAndNormalizeTelemetryPolicy(
+    { activeLevel: 10, leaseExpiresAtEpochMs: nowMs + 9 * 24 * 60 * 60 * 1000 },
+    nowMs,
+  );
+  assert.equal(excessiveLeaseRes.valid, false);
+  if (!excessiveLeaseRes.valid) assert.equal(excessiveLeaseRes.code, 'HIGH_LEVEL_LEASE_REQUIRED');
+
+  const validLevel9Res = validateAndNormalizeTelemetryPolicy(
+    { activeLevel: 9, leaseExpiresAtEpochMs: nowMs + 3600_000, dailyIngestionCap: 500 },
+    nowMs,
+  );
+  assert.equal(validLevel9Res.valid, true);
+  if (!validLevel9Res.valid) throw new Error('Expected valid policy');
+  assert.equal(validLevel9Res.manifest.activeLevel, 9);
+
+  // 2. Automatic revert to Level 4 after lease expiry
+  const expiredEval = evaluateEffectiveTelemetryPolicy(
+    validLevel9Res.manifest,
+    10,
+    nowMs + 3600_001,
+  );
+  assert.equal(expiredEval.effective.activeLevel, 4);
+  assert.equal(expiredEval.leaseExpiredReverted, true);
+
+  // 3. Automatic downgrade to Level 0 when dailyIngestionCap is reached
+  const capExceededEval = evaluateEffectiveTelemetryPolicy(
+    validLevel9Res.manifest,
+    500,
+    nowMs + 1000,
+  );
+  assert.equal(capExceededEval.effective.activeLevel, 0);
+  assert.equal(capExceededEval.capDowngraded, true);
+
+  // Verify server controller lease expiry revert
+  updateServerTelemetryPolicy(
+    { activeLevel: 10, leaseExpiresAtEpochMs: nowMs + 1000, dailyIngestionCap: 10_000 },
+    nowMs,
+  );
+  const afterExpiryPolicy = getServerTelemetryPolicy(nowMs + 5000);
+  assert.equal(afterExpiryPolicy.activeLevel, 4);
+  updateServerTelemetryPolicy({ activeLevel: 4, dailyIngestionCap: 250_000 }, nowMs + 5000);
+
+  // 4. Reject PII fields (uid, phone, email, raw_query, exact_lat) & enrich relative price deviation
+  const sessionHash = computeDailyRotatingSessionHash('seed-127', 'Mozilla/5.0', nowMs);
+  assert.equal(sessionHash.length, 24);
+
+  const ingestRes = ingestServerTelemetryBatch(
+    {
+      sessionSeed: 'seed-127',
+      events: [
+        {
+          eventType: 'search.query_submitted',
+          uid: 'leaked-uid-123',
+          phone: '09123456789',
+          email: 'user@example.com',
+          raw_query: 'تلفن مالک 0912',
+          exact_lat: 35.7575123,
+        },
+        {
+          eventType: 'valuation.completed',
+          cityId: 'tehran',
+          hoodId: 5,
+          observedPriceBucket: '180M-200M',
+          neighborhoodBasePriceAtEvent: 195,
+          relativePriceDeviationPct: -4.2,
+        },
+      ],
+    },
+    'Mozilla/5.0',
+    nowMs,
+  );
+  assert.equal(ingestRes.rejectedPii, 1);
+  assert.equal(ingestRes.acceptedCount, 1);
+})();
+
 console.log('✅ Prompts 341 to 520 — All Security, Analytics, Search, API, Architecture, UX, Build, PWA & Privacy Checks Passed!');
+
 
 

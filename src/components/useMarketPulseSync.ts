@@ -23,6 +23,8 @@ import {
 } from '../utils/areaUnit';
 import type { AppUiState } from './useAppUiState';
 
+export const activeCloudOverrideHoodIds = new Set<number>();
+
 export interface UseMarketPulseSyncParams {
   ui: AppUiState;
   activeCityRef: React.MutableRefObject<CityId>;
@@ -46,11 +48,7 @@ export function useMarketPulseSync({
       try {
         const headers: Record<string, string> = {};
         if (forceRefresh && currentUser) {
-          try {
-            headers.Authorization = `Bearer ${await currentUser.getIdToken()}`;
-          } catch {
-            /* ignore */
-          }
+          try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ }
         }
         const res = await fetch(
           `/api/market-pulse?city=${encodeURIComponent(targetCity)}${forceRefresh ? '&refresh=1' : ''}`,
@@ -61,53 +59,39 @@ export function useMarketPulseSync({
           ui.setMarketPulse(data);
           if (Array.isArray(data.hoodLiveSnapshots) && data.hoodLiveSnapshots.length > 0) {
             const snapshotMap = new Map(data.hoodLiveSnapshots.map((s) => [Number(s.id), s]));
-            const customIds = new Set<number>();
+            const customIds = new Set<number>(activeCloudOverrideHoodIds);
             try {
               const rawSaved = localStorage.getItem(LOCAL_STORAGE_KEY);
               if (rawSaved) {
                 const parsed = JSON.parse(rawSaved);
                 if (Array.isArray(parsed)) {
                   parsed.forEach((item: any) => {
-                    const seed = [...INITIAL_NEIGHBORHOODS, ...allExpansionSeeds].find(
-                      (s) => s.id === Number(item?.id)
-                    );
+                    const seed = [...INITIAL_NEIGHBORHOODS, ...allExpansionSeeds].find((s) => s.id === Number(item?.id));
                     if (seed && (item.buyPerSqm !== seed.buyPerSqm || item.rahn80m !== seed.rahn80m)) {
                       customIds.add(seed.id);
                     }
                   });
                 }
               }
-            } catch {
-              /* ignore */
-            }
+            } catch { /* ignore */ }
             setNeighborhoods((prev) => {
               let changed = false;
               const next = prev.map((base) => {
                 const snapshot = snapshotMap.get(base.id);
                 if (!snapshot) return base;
                 const nextAir =
-                  Number.isFinite(snapshot.liveAirScore) &&
-                  snapshot.liveAirScore >= 0 &&
-                  snapshot.liveAirScore <= 10
+                  Number.isFinite(snapshot.liveAirScore) && snapshot.liveAirScore >= 0 && snapshot.liveAirScore <= 10
                     ? snapshot.liveAirScore
                     : base.air;
-                if (customIds.has(base.id) && !forceRefresh) {
+                if (activeCloudOverrideHoodIds.has(base.id) || (customIds.has(base.id) && !forceRefresh)) {
                   if (nextAir === base.air) return base;
                   changed = true;
                   return { ...base, air: nextAir };
                 }
                 const hasLivePriceDelta = (Number.isFinite(snapshot.liveBuyPerSqm) && Math.abs(snapshot.liveBuyPerSqm - base.buyPerSqm) > 0.01) || (Number.isFinite(snapshot.liveRahn80m) && Math.abs(snapshot.liveRahn80m - base.rahn80m) > 0.01);
-                const nextBuy =
-                  hasLivePriceDelta && Number.isFinite(snapshot.liveBuyPerSqm) && snapshot.liveBuyPerSqm > 0
-                    ? snapshot.liveBuyPerSqm
-                    : base.buyPerSqm;
-                const nextRahn =
-                  hasLivePriceDelta && Number.isFinite(snapshot.liveRahn80m) && snapshot.liveRahn80m > 0
-                    ? snapshot.liveRahn80m
-                    : base.rahn80m;
-                if (nextBuy === base.buyPerSqm && nextRahn === base.rahn80m && nextAir === base.air) {
-                  return base;
-                }
+                const nextBuy = hasLivePriceDelta && Number.isFinite(snapshot.liveBuyPerSqm) && snapshot.liveBuyPerSqm > 0 ? snapshot.liveBuyPerSqm : base.buyPerSqm;
+                const nextRahn = hasLivePriceDelta && Number.isFinite(snapshot.liveRahn80m) && snapshot.liveRahn80m > 0 ? snapshot.liveRahn80m : base.rahn80m;
+                if (nextBuy === base.buyPerSqm && nextRahn === base.rahn80m && nextAir === base.air) return base;
                 changed = true;
                 return { ...base, buyPerSqm: nextBuy, rahn80m: nextRahn, air: nextAir };
               });
@@ -115,23 +99,13 @@ export function useMarketPulseSync({
             });
           }
           if (forceRefresh) {
-            const areaUnit = getStoredAreaUnit();
-            const intlCurrency = getStoredIntlCurrency();
-            const unitLabel = formatAreaUnitLabel(areaUnit);
-            const avgSqm = Number(data.hoodLiveSnapshots?.[0]?.liveBuyPerSqm) || 115;
-            const unitPrice = convertPricePerSqmToUnit(avgSqm, areaUnit);
-            const intlBadge =
-              intlCurrency !== 'IRT'
-                ? ` · ${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, getStoredRadarLocale())}/${unitLabel}`
-                : '';
+            const areaUnit = getStoredAreaUnit(); const intlCurrency = getStoredIntlCurrency(); const unitLabel = formatAreaUnitLabel(areaUnit);
+            const avgSqm = Number(data.hoodLiveSnapshots?.[0]?.liveBuyPerSqm) || 115; const unitPrice = convertPricePerSqmToUnit(avgSqm, areaUnit);
+            const intlBadge = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, getStoredRadarLocale())}/${unitLabel}` : '';
             ui.setLastSyncNotice(`بروزرسانی زنده از سرور انجام شد (${data.lastUpdatedTimeFa} · واحد ${unitLabel}${intlBadge})`);
           }
         }
-      } catch {
-        /* fallback to cache */
-      } finally {
-        ui.setSyncingPulse(false);
-      }
+      } catch { /* fallback to cache */ } finally { ui.setSyncingPulse(false); }
     },
     [ui.activeCity, currentUser, allExpansionSeeds, activeCityRef, setNeighborhoods]
   );
@@ -141,18 +115,8 @@ export function useMarketPulseSync({
     ui.setLastSyncNotice('در حال استعلام زنده از منابع رایگان وب (AQICN، دیوار و شیپور)...');
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (currentUser) {
-        try {
-          headers.Authorization = `Bearer ${await currentUser.getIdToken()}`;
-        } catch {
-          /* ignore */
-        }
-      }
-      const res = await fetch('/api/market-pulse/deep-sync', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ city: ui.activeCity }),
-      });
+      if (currentUser) { try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ } }
+      const res = await fetch('/api/market-pulse/deep-sync', { method: 'POST', headers, body: JSON.stringify({ city: ui.activeCity }) });
       if (res.ok) {
         const result = await res.json();
         const pulseData = result.pulse || result;
@@ -161,14 +125,9 @@ export function useMarketPulseSync({
           setNeighborhoods((prev) =>
             prev.map((hood) => {
               const live = result.hoodPriceUpdates.find((u: any) => u.id === hood.id);
-              return live
-                ? {
-                    ...hood,
-                    buyPerSqm: live.buyPerSqm || hood.buyPerSqm,
-                    rahn80m: live.rahn80m || hood.rahn80m,
-                    air: live.airScore || hood.air,
-                  }
-                : hood;
+              if (!live) return hood;
+              if (activeCloudOverrideHoodIds.has(hood.id)) return { ...hood, air: live.airScore || hood.air };
+              return { ...hood, buyPerSqm: live.buyPerSqm || hood.buyPerSqm, rahn80m: live.rahn80m || hood.rahn80m, air: live.airScore || hood.air };
             })
           );
         }

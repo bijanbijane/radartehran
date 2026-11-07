@@ -1,48 +1,43 @@
-import React from 'react'; import { deleteDoc, doc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'; import { auth, db, OperationType, handleFirestoreError } from '../firebase'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; export const persistHoodOverrideToCloud = async ( overrideHoodId: number, buyVal: number, rahnVal: number, sponsorVal?: any
-): Promise<void> => { await setDoc(doc(db, 'neighborhoodOverrides', String(overrideHoodId)), { hoodId: overrideHoodId, buyPerSqm: buyVal, rahn80m: rahnVal, ...(sponsorVal ? { sponsor: sponsorVal } : {}), updatedAt: serverTimestamp(), }); }; export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
+import React from 'react'; import { deleteDoc, doc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'; import { auth, db, OperationType, handleFirestoreError } from '../firebase'; import { BuyerAlertLeadItem, EvaluatedNeighborhood, INITIAL_NEIGHBORHOODS, Neighborhood, SponsorCrmRequestItem, toPersianNum, validateAndBuildRestoredState, } from '../data/neighborhoods'; import { computeExtendedSponsorExpirationIso, computeSponsorExpirationIso, escapeCsvCell, FeatureFlags, } from '../utils/security'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit';
+export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal: number, rahnVal: number, sponsorVal?: any): Promise<void> => {
+  await setDoc(doc(db, 'neighborhoodOverrides', String(overrideHoodId)), {
+    hoodId: overrideHoodId, buyPerSqm: buyVal, rahn80m: rahnVal,
+    overrideSource: 'ADMIN_MANUAL', manualLockUntilMs: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ...(sponsorVal ? { sponsor: sponsorVal } : {}), updatedAt: serverTimestamp(),
+  });
+};
+export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
   adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>; adminEditHoodId: number; adminEditBuySqm: number; adminEditRahn80m: number;
   setAdminPriceSavedMsg: React.Dispatch<React.SetStateAction<string>>; setBackupStatusMsg: React.Dispatch<React.SetStateAction<{ type: 'success' | 'error'; text: string } | null>>; }
-export function useRadarAdminActions(p: UseRadarAdminActionsParams) { const handleAdminApproveSponsor = async (reqItem: SponsorCrmRequestItem) => { if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.');
-      return; } const planMonths: 1 | 3 = reqItem.planMonths === 3 ? 3 : 1; const resolvedExpiry = reqItem.expiresAtIso || computeSponsorExpirationIso(planMonths); const planType = p.featureFlags.enableSponsorBilling ? (planMonths === 3 ? 'paid_3m' : 'paid_1m') : 'free'; const approvedSponsor = { name: reqItem.agencyName, phone: reqItem.phone, specialty: reqItem.specialty, experienceYears: reqItem.experienceYears, expiresAtIso: resolvedExpiry, planType: planType as 'free' | 'paid_1m' | 'paid_3m', }; const seedHood = p.evaluatedNeighborhoods.find((n) => n.id === reqItem.hoodId)
-      || p.neighborhoods.find((n) => n.id === reqItem.hoodId)
-      || p.allExpansionSeeds.find((n) => n.id === reqItem.hoodId); const baseBuy = seedHood ? ((seedHood as EvaluatedNeighborhood).baseBuyPerSqm ?? seedHood.buyPerSqm) : 100; const baseRahn = seedHood ? Math.max(50, seedHood.rahn80m) : 1000; if (String(reqItem.id).startsWith('cloud-')) {
-      const docId = String(reqItem.id).replace(/^cloud-/, ''); try { const batch = writeBatch(db); batch.update(doc(db, 'sponsorRequests', docId), { status: 'approved', expiresAtIso: resolvedExpiry }); batch.set(doc(db, 'neighborhoodOverrides', String(reqItem.hoodId)), { hoodId: reqItem.hoodId, buyPerSqm: baseBuy, rahn80m: baseRahn,
-          sponsor: approvedSponsor, updatedAt: serverTimestamp(), }); await batch.commit(); } catch (err) { p.setAdminPriceSavedMsg('خطای دسترسی در تایید اسپانسر ابری (نیاز به سطح دسترسی ادمین).');
-        try { handleFirestoreError(err, OperationType.UPDATE, `sponsorRequests/${docId}`); } catch { return; }
-      } }
-    p.setSponsorRequests((prev) => (prev || []).map((r) => (r.id === reqItem.id ? { ...r, status: 'approved', expiresAtIso: resolvedExpiry } : r))); p.setNeighborhoods((prev) => { const exists = prev.some((n) => n.id === reqItem.hoodId); if (!exists && seedHood) {
-        return [...prev, { ...seedHood, buyPerSqm: baseBuy, sponsor: approvedSponsor }]; }
-      return prev.map((n) => (n.id !== reqItem.hoodId ? n : { ...n, sponsor: approvedSponsor })); });
+export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
+  const handleAdminApproveSponsor = async (reqItem: SponsorCrmRequestItem) => {
+    if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.'); return; }
+    const planMonths: 1 | 3 = reqItem.planMonths === 3 ? 3 : 1; const resolvedExpiry = reqItem.expiresAtIso || computeSponsorExpirationIso(planMonths); const planType = p.featureFlags.enableSponsorBilling ? (planMonths === 3 ? 'paid_3m' : 'paid_1m') : 'free'; const approvedSponsor = { name: reqItem.agencyName, phone: reqItem.phone, specialty: reqItem.specialty, experienceYears: reqItem.experienceYears, expiresAtIso: resolvedExpiry, planType: planType as 'free' | 'paid_1m' | 'paid_3m' };
+    const seedHood = p.evaluatedNeighborhoods.find((n) => n.id === reqItem.hoodId) || p.neighborhoods.find((n) => n.id === reqItem.hoodId) || p.allExpansionSeeds.find((n) => n.id === reqItem.hoodId);
+    const baseBuy = seedHood ? ((seedHood as EvaluatedNeighborhood).baseBuyPerSqm ?? seedHood.buyPerSqm) : 100; const baseRahn = seedHood ? Math.max(50, seedHood.rahn80m) : 1000;
+    if (String(reqItem.id).startsWith('cloud-')) {
+      const docId = String(reqItem.id).replace(/^cloud-/, '');
+      try { const batch = writeBatch(db); batch.update(doc(db, 'sponsorRequests', docId), { status: 'approved', expiresAtIso: resolvedExpiry }); batch.set(doc(db, 'neighborhoodOverrides', String(reqItem.hoodId)), { hoodId: reqItem.hoodId, buyPerSqm: baseBuy, rahn80m: baseRahn, sponsor: approvedSponsor, updatedAt: serverTimestamp() }); await batch.commit(); } catch (err) {
+        p.setAdminPriceSavedMsg('خطای دسترسی در تایید اسپانسر ابری (نیاز به سطح دسترسی ادمین).'); try { handleFirestoreError(err, OperationType.UPDATE, `sponsorRequests/${docId}`); } catch { return; }
+      }
+    }
+    p.setSponsorRequests((prev) => (prev || []).map((r) => (r.id === reqItem.id ? { ...r, status: 'approved', expiresAtIso: resolvedExpiry } : r)));
+    p.setNeighborhoods((prev) => { const exists = prev.some((n) => n.id === reqItem.hoodId); if (!exists && seedHood) return [...prev, { ...seedHood, buyPerSqm: baseBuy, sponsor: approvedSponsor }]; return prev.map((n) => (n.id !== reqItem.hoodId ? n : { ...n, sponsor: approvedSponsor })); });
   };
   const handleExtendSponsor30Days = (hoodId: number) => {
     if (!p.isVerifiedAdmin) return;
-    p.setNeighborhoods((prev) =>
-      prev.map((n) => {
-        if (n.id !== hoodId || !n.sponsor) return n;
-        const nextExpiry = computeExtendedSponsorExpirationIso(n.sponsor.expiresAtIso, 30);
-        const baseBuy = (n as EvaluatedNeighborhood).baseBuyPerSqm ?? n.buyPerSqm;
-        void setDoc(doc(db, 'neighborhoodOverrides', String(hoodId)), {
-          hoodId, buyPerSqm: baseBuy, rahn80m: Math.max(50, n.rahn80m),
-          sponsor: { ...n.sponsor, expiresAtIso: nextExpiry }, updatedAt: serverTimestamp(),
-        }).catch(() => {});
-        return { ...n, sponsor: { ...n.sponsor, expiresAtIso: nextExpiry } };
-      })
-    );
+    p.setNeighborhoods((prev) => prev.map((n) => {
+      if (n.id !== hoodId || !n.sponsor) return n;
+      const nextExpiry = computeExtendedSponsorExpirationIso(n.sponsor.expiresAtIso, 30); const baseBuy = (n as EvaluatedNeighborhood).baseBuyPerSqm ?? n.buyPerSqm;
+      void setDoc(doc(db, 'neighborhoodOverrides', String(hoodId)), { hoodId, buyPerSqm: baseBuy, rahn80m: Math.max(50, n.rahn80m), sponsor: { ...n.sponsor, expiresAtIso: nextExpiry }, updatedAt: serverTimestamp() }).catch(() => {});
+      return { ...n, sponsor: { ...n.sponsor, expiresAtIso: nextExpiry } };
+    }));
   };
   const handleReleaseHoodSponsor = (hoodId: number) => {
     if (!p.isVerifiedAdmin) return;
-    const pastIso = new Date(Date.now() - 86400000).toISOString();
-    const target = p.neighborhoods.find((n) => n.id === hoodId) || p.evaluatedNeighborhoods.find((n) => n.id === hoodId);
-    if (target) {
-      const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm;
-      void setDoc(doc(db, 'neighborhoodOverrides', String(hoodId)), {
-        hoodId, buyPerSqm: baseBuy, rahn80m: Math.max(50, target.rahn80m),
-        sponsor: null, updatedAt: serverTimestamp(),
-      }).catch(() => {});
-    }
-    p.setNeighborhoods((prev) =>
-      prev.map((n) => (n.id !== hoodId || !n.sponsor ? n : { ...n, sponsor: { ...n.sponsor, expiresAtIso: pastIso } }))
-    );
+    const pastIso = new Date(Date.now() - 86400000).toISOString(); const target = p.neighborhoods.find((n) => n.id === hoodId) || p.evaluatedNeighborhoods.find((n) => n.id === hoodId);
+    if (target) { const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; void setDoc(doc(db, 'neighborhoodOverrides', String(hoodId)), { hoodId, buyPerSqm: baseBuy, rahn80m: Math.max(50, target.rahn80m), sponsor: null, updatedAt: serverTimestamp() }).catch(() => {}); }
+    p.setNeighborhoods((prev) => prev.map((n) => (n.id !== hoodId || !n.sponsor ? n : { ...n, sponsor: { ...n.sponsor, expiresAtIso: pastIso } })));
   };
   const handleAdminDeleteSponsorRequest = async (reqId: string) => {
     if (!p.isVerifiedAdmin) {
@@ -105,31 +100,47 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) { const hand
       return prev.map((n) => (n.id !== hoodId ? n : { ...n, bargains: (n.bargains || []).filter((b) => b.id !== bargainId) }));
     });
   };
+  const handleAdminApproveBargain = async (hoodId: number, bargainId: string) => {
+    if (!p.isVerifiedAdmin) {
+      p.setAdminPriceSavedMsg('خطا: این عملیات نیازمند احراز هویت با حساب رسمی ادمین است.');
+      return;
+    }
+    const cleanDocId = String(bargainId).replace(/^cloud-/, '');
+    try {
+      if (String(bargainId).startsWith('cloud-')) {
+        await updateDoc(doc(db, 'bargains', cleanDocId), { status: 'approved', updatedAt: serverTimestamp() });
+      }
+      const signedInUser = auth.currentUser;
+      const idToken = signedInUser ? await signedInUser.getIdToken() : '';
+      await fetch('/api/admin/bargains/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}) },
+        body: JSON.stringify({ bargainId: cleanDocId, fromStatus: 'pending', status: 'approved' }),
+      });
+      p.setAdminPriceSavedMsg('آگهی شکار با موفقیت تأیید شد و در سامانه منتشر گردید.');
+    } catch (err) {
+      p.setAdminPriceSavedMsg('خطا در تأیید آگهی شکار؛ لطفاً مجدداً تلاش کنید.');
+      try { handleFirestoreError(err, OperationType.UPDATE, `bargains/${cleanDocId}`); } catch { return; }
+    }
+    p.setNeighborhoods((prev) =>
+      prev.map((n) =>
+        n.id !== hoodId
+          ? n
+          : { ...n, bargains: (n.bargains || []).map((b) => (b.id === bargainId ? { ...b, status: 'approved' as const } : b)) }
+      )
+    );
+  };
   const handleDownloadBuyerLeadsCsv = () => {
     if (!p.isVerifiedAdmin) {
       p.setAdminPriceSavedMsg('خطا: دانلود لیست خریداران فقط برای حساب رسمی ادمین مجاز است.');
       return;
     }
     const headers = ['ردیف', 'نام و نام خانوادگی', 'شماره موبایل', 'محله هدف', 'نوع معامله', 'حداکثر بودجه', 'زمان ثبت'];
-    const rows = (p.buyerLeads || []).map((lead, idx) => [
-      escapeCsvCell(idx + 1),
-      escapeCsvCell(lead.fullName || ''),
-      escapeCsvCell(lead.phone || ''),
-      escapeCsvCell(lead.hoodName || ''),
-      escapeCsvCell(lead.dealType || 'خرید'),
-      escapeCsvCell(lead.maxBudgetText || ''),
-      escapeCsvCell(lead.createdAtFa || ''),
-    ]);
+    const rows = (p.buyerLeads || []).map((lead, idx) => [escapeCsvCell(idx + 1), escapeCsvCell(lead.fullName || ''), escapeCsvCell(lead.phone || ''), escapeCsvCell(lead.hoodName || ''), escapeCsvCell(lead.dealType || 'خرید'), escapeCsvCell(lead.maxBudgetText || ''), escapeCsvCell(lead.createdAtFa || '')]);
     const csvContent = '\uFEFF' + [headers.map((h) => escapeCsvCell(h)).join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `tehran-radar-buyer-leads-${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })); const link = document.createElement('a');
+    link.href = url; link.setAttribute('download', `tehran-radar-buyer-leads-${Date.now()}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
   };
   const handleAdminQuickPriceSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,4 +273,4 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) { const hand
     handleAdminApproveSponsor,
     handleExtendSponsor30Days,
     handleReleaseHoodSponsor,
-    handleAdminDeleteSponsorRequest, handleAdminDeleteBargain, handleDownloadBuyerLeadsCsv, handleAdminQuickPriceSave, handleAdminLogin, handleAdminChangePassword, handleToggleFeatureFlag, handleDownloadFullBackupJson, handleRestoreFullBackupJson, }; }
+    handleAdminDeleteSponsorRequest, handleAdminDeleteBargain, handleAdminApproveBargain, handleDownloadBuyerLeadsCsv, handleAdminQuickPriceSave, handleAdminLogin, handleAdminChangePassword, handleToggleFeatureFlag, handleDownloadFullBackupJson, handleRestoreFullBackupJson, }; }

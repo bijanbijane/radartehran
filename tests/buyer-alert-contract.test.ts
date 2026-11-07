@@ -107,8 +107,8 @@ assert.ok(
   'serverUtilityRoutes /api/buyer-alerts must accept and normalize رهن و اجاره to اجاره'
 );
 assert.ok(
-  utilityRoutesSrc.includes('BUYER_ALERT_PERSIST_FAILED') && utilityRoutesSrc.includes('cacheBuyerAlertAfterDurableCommit') && utilityRoutesSrc.includes('durable: true') && !utilityRoutesSrc.includes('leads: serverSideBuyerLeads'),
-  'POST /api/buyer-alerts reports success only after the Firestore write and does not treat the memory list as the customer record'
+  utilityRoutesSrc.includes('BUYER_ALERT_PERSIST_FAILED') && utilityRoutesSrc.includes('cacheBuyerAlertAfterDurableCommit') && utilityRoutesSrc.includes('durable: true') && utilityRoutesSrc.includes('listDurableBuyerAlerts'),
+  'POST /api/buyer-alerts reports success only after the Firestore write and GET reads durable alerts with memory fallback'
 );
 
 const sponsorRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverSponsorAndBargainRoutes.ts'), 'utf8');

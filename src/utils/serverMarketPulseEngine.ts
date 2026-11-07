@@ -160,23 +160,24 @@ export async function performGeminiDeepMarketSearch(cityId: CityId = "tehran"): 
     });
     const parsed = JSON.parse(response.text || "{}");
     const nowIso = new Date().toISOString();
-    if (typeof parsed.gold18kToman === "number" && parsed.gold18kToman >= 2_000_000) {
-      liveMacroRates.gold18kToman = Math.round(clampNumber(parsed.gold18kToman, 2_000_000, 35_000_000, liveMacroRates.gold18kToman));
-      liveMacroRates.updatedAtIso = nowIso;
-    }
-    if (typeof parsed.usdToman === "number" && parsed.usdToman >= 40_000) {
-      liveMacroRates.usdToman = Math.round(clampNumber(parsed.usdToman, 40_000, 350_000, liveMacroRates.usdToman));
-      liveMacroRates.updatedAtIso = nowIso;
-    }
+    if (typeof parsed.gold18kToman === "number" && parsed.gold18kToman >= 2_000_000) { liveMacroRates.gold18kToman = Math.round(clampNumber(parsed.gold18kToman, 2_000_000, 35_000_000, liveMacroRates.gold18kToman)); liveMacroRates.updatedAtIso = nowIso; }
+    if (typeof parsed.usdToman === "number" && parsed.usdToman >= 40_000) { liveMacroRates.usdToman = Math.round(clampNumber(parsed.usdToman, 40_000, 350_000, liveMacroRates.usdToman)); liveMacroRates.updatedAtIso = nowIso; }
     if (Array.isArray(parsed.neighborhoodPrices)) {
+      const { FieldValue } = await import("firebase-admin/firestore"); const { getFirebaseAdminFirestoreForServer } = await import("./serverAdminAndTelegramSecurity");
+      let adminDb: ReturnType<typeof getFirebaseAdminFirestoreForServer> | null = null; try { adminDb = getFirebaseAdminFirestoreForServer(); } catch { adminDb = null; }
       for (const item of parsed.neighborhoodPrices) {
-        const seed = hoods.find((h) => h.id === Number(item?.id));
-        if (!seed) continue;
-        setDeepSyncedOverride(cityId, seed.id, {
-          buyPerSqm: Math.round(clampNumber(item.buyPerSqm, Math.max(20, Math.round(seed.buyPerSqm * 0.6)), Math.round(seed.buyPerSqm * 1.85), seed.buyPerSqm)),
-          rahn80m: Math.round(clampNumber(item.rahn80m, Math.max(120, Math.round(seed.rahn80m * 0.6)), Math.round(seed.rahn80m * 1.85), seed.rahn80m)),
-          updatedAtIso: nowIso,
-        });
+        const seed = hoods.find((h) => h.id === Number(item?.id)); if (!seed) continue;
+        const buyPerSqm = Math.round(clampNumber(item.buyPerSqm, Math.max(20, Math.round(seed.buyPerSqm * 0.6)), Math.round(seed.buyPerSqm * 1.85), seed.buyPerSqm));
+        const rahn80m = Math.round(clampNumber(item.rahn80m, Math.max(120, Math.round(seed.rahn80m * 0.6)), Math.round(seed.rahn80m * 1.85), seed.rahn80m));
+        setDeepSyncedOverride(cityId, seed.id, { buyPerSqm, rahn80m, updatedAtIso: nowIso });
+        if (adminDb) {
+          try {
+            const ref = adminDb.collection("neighborhoodOverrides").doc(String(seed.id)); const existing = (await ref.get()).data();
+            if (!(existing?.overrideSource === "ADMIN_MANUAL" && Number(existing?.manualLockUntilMs) > Date.now())) {
+              await ref.set({ hoodId: seed.id, buyPerSqm, rahn80m, overrideSource: "SERVER_DEEP_SYNC", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+            }
+          } catch { /* Offline fallback */ }
+        }
       }
     }
     for (const chunk of response.candidates?.[0]?.groundingMetadata?.groundingChunks || []) {
@@ -187,21 +188,14 @@ export async function performGeminiDeepMarketSearch(cityId: CityId = "tehran"): 
   } catch { return { usedGemini: false, sources }; }
 }
 export function describeLiveTrafficWithWeather(baseStatus: string, weather: { snowfallCm: number; isRainingOrSnowing: boolean; provenance?: { qualityStatus?: string } }): { status: string; weatherLive: boolean } {
-  const weatherLive = weather.provenance?.qualityStatus === 'verified_live';
-  if (!weatherLive) return { status: baseStatus, weatherLive: false };
+  const weatherLive = weather.provenance?.qualityStatus === 'verified_live'; if (!weatherLive) return { status: baseStatus, weatherLive: false };
   if (weather.snowfallCm > 0) return { status: `❄️ بارش برف و کندی تردد (${baseStatus})`, weatherLive: true };
-  if (weather.isRainingOrSnowing) return { status: `🌧️ بارندگی و ترافیک سنگینتر (${baseStatus})`, weatherLive: true };
-  return { status: baseStatus, weatherLive: true };
+  return { status: weather.isRainingOrSnowing ? `🌧️ بارندگی و ترافیک سنگینتر (${baseStatus})` : baseStatus, weatherLive: true };
 }
-export async function buildMarketPulseSnapshot(
-  cityId: CityId = "tehran", cacheState: MarketPulseData["cacheStatus"] = "REFRESHED", sources: GroundingSourceLink[] = []
-): Promise<MarketPulseData> {
-  await refreshCityAirQuality(cityId);
-  try { liveMacroRates = await fetchFreeLiveGoldAndUsdRates(liveMacroRates); } catch { /* retain current */ }
-  const cityCenter = MULTI_CITY_CONFIGS[cityId]?.center || [35.7219, 51.3347];
-  const weather = await fetchFreeCityWeather(cityCenter[0], cityCenter[1]);
-  const hoods = getCityNeighborhoods(cityId);
-  if (hoods.length === 0) throw new Error(`NO_NEIGHBORHOODS_CONFIGURED_FOR_CITY:${cityId}`);
+export async function buildMarketPulseSnapshot(cityId: CityId = "tehran", cacheState: MarketPulseData["cacheStatus"] = "REFRESHED", sources: GroundingSourceLink[] = []): Promise<MarketPulseData> {
+  await refreshCityAirQuality(cityId); try { liveMacroRates = await fetchFreeLiveGoldAndUsdRates(liveMacroRates); } catch { /* retain current */ }
+  const cityCenter = MULTI_CITY_CONFIGS[cityId]?.center || [35.7219, 51.3347]; const weather = await fetchFreeCityWeather(cityCenter[0], cityCenter[1]);
+  const hoods = getCityNeighborhoods(cityId); if (hoods.length === 0) throw new Error(`NO_NEIGHBORHOODS_CONFIGURED_FOR_CITY:${cityId}`);
   const stationReadings = Object.values(CITY_AIR_STATIONS[cityId]);
   const stations = stationReadings.map((s) => ({
     region: s.region, stationName: s.stationName, aqi: s.aqi, pm25: s.pm25, status: s.status,
