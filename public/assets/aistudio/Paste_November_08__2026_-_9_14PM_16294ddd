@@ -1,0 +1,1149 @@
+# EMPLOYEE 73 — PLATFORM API GOVERNANCE, INTEGRATION GATEWAY & DEVELOPER ECOSYSTEM BACKEND
+
+Implement a production-grade API Governance, Integration Gateway, and Developer Ecosystem backend directly in the existing Radar Tehran repository.
+
+This is an implementation task, not an audit, review, proposal, or architecture report.
+
+Modify the existing codebase. Build functional persistence models, services, APIs, authorization policies, administrative interfaces, integration workflows, automated tests, and operational controls.
+
+The platform must support secure first-party and approved third-party integrations while preserving tenant isolation, backward compatibility, data governance, legal compliance, and operational reliability.
+
+Reuse all existing infrastructure and capabilities from Employees 53–72, including authentication, RBAC, organizations, listings, transactions, financial ledger, billing, documents, audit, event processing, notifications, scheduling, search, ingestion, risk detection, compliance, legal holds, and retention precedence.
+
+Do not introduce duplicate authentication, authorization, billing, payment, event bus, webhook engine, scheduler, rate limiter, telemetry, audit, document storage, or case-management systems.
+
+# 1. PLATFORM API GOVERNANCE DOMAIN
+
+Create a centralized API governance domain responsible for:
+
+- API catalog and service registration.
+- API lifecycle and version management.
+- API contract registration and validation.
+- Endpoint ownership and classification.
+- API access policies.
+- API consumer registration.
+- Developer and partner onboarding.
+- Integration credentials and access grants.
+- API key lifecycle.
+- OAuth client registration where compatible with existing authentication.
+- Scoped authorization and tenant isolation.
+- Rate-limit policy integration.
+- Usage quota and entitlement integration.
+- Webhook subscription governance.
+- Webhook delivery integration with existing event infrastructure.
+- Integration health and failure management.
+- API deprecation and migration workflows.
+- Developer documentation and sandbox support.
+- Partner integration monitoring.
+- Security incident integration.
+- Audit and compliance evidence.
+- Administrative control and operational reporting.
+
+This module must govern APIs, not replace their underlying business services.
+
+# 2. API SERVICE REGISTRY
+
+Implement a persistent registry of backend services and their exposed API capabilities.
+
+Each service record must include:
+
+- `id`
+- `serviceCode`
+- `serviceName`
+- `description`
+- `ownerModule`
+- `ownerTeam`
+- `basePath`
+- `apiVersions`
+- `serviceClassification`
+- `dataSensitivity`
+- `tenantScope`
+- `authenticationRequirement`
+- `authorizationPolicyReference`
+- `rateLimitPolicyReference`
+- `availabilityClassification`
+- `lifecycleStatus`
+- `documentationReference`
+- `openApiDocumentReference`
+- `createdAt`
+- `updatedAt`
+- `version`
+
+Service classifications:
+
+- `PUBLIC`
+- `PARTNER`
+- `INTERNAL`
+- `ADMINISTRATIVE`
+- `SYSTEM`
+- `RESTRICTED`
+
+Lifecycle states:
+
+- `DRAFT`
+- `ACTIVE`
+- `DEPRECATED`
+- `SUNSET`
+- `DISABLED`
+
+Every API service must have an accountable owning module.
+
+Prevent registration of duplicate service codes and conflicting route ownership.
+
+Implement service discovery through the registry, but do not dynamically expose arbitrary internal routes.
+
+# 3. API ENDPOINT REGISTRY
+
+Create a persistent endpoint catalog.
+
+Each endpoint record must include:
+
+- `id`
+- `serviceId`
+- `endpointCode`
+- `method`
+- `pathTemplate`
+- `version`
+- `summary`
+- `description`
+- `operationId`
+- `authenticationRequired`
+- `permissionRequirements`
+- `dataClassification`
+- `tenantIsolationRequired`
+- `requestSchemaReference`
+- `responseSchemaReference`
+- `rateLimitPolicyId`
+- `idempotencyRequired`
+- `deprecationStatus`
+- `sunsetAt`
+- `ownerModule`
+- `lifecycleStatus`
+- `createdAt`
+- `updatedAt`
+
+Support:
+
+- Endpoint registration.
+- Endpoint ownership validation.
+- Schema version references.
+- Deprecation metadata.
+- Compatibility declarations.
+- Searchable API catalog.
+- Administrative endpoint activation and retirement.
+
+Do not create a second router that bypasses the existing Express routing structure.
+
+The registry must describe and govern existing routes through controlled registration and integration.
+
+# 4. API VERSIONING AND CONTRACT GOVERNANCE
+
+Implement centralized API version governance.
+
+Support:
+
+- Major versions.
+- Minor contract revisions.
+- Patch revisions.
+- Version compatibility declarations.
+- Explicit breaking-change classification.
+- Version lifecycle states.
+- Deprecation dates.
+- Sunset dates.
+- Migration guidance.
+- Consumer migration tracking.
+- Contract change history.
+
+Use semantic versioning for published API contracts.
+
+Rules:
+
+1. Breaking changes require a major version increment.
+2. Backward-compatible additions may use minor versions.
+3. Non-functional corrections may use patch versions.
+4. Never silently change the meaning of an existing response field.
+5. Never remove a published field without an approved breaking-change process.
+6. Preserve historical contract snapshots.
+7. Existing first-party clients must not be broken by partner API changes.
+8. Deprecated versions must remain functional during their approved migration window unless an emergency security action requires disabling them.
+9. Emergency disabling requires explicit authorization, audit evidence, and incident linkage.
+
+Implement a contract compatibility service that compares OpenAPI specifications and identifies:
+
+- Removed paths.
+- Changed HTTP methods.
+- Removed request fields.
+- Newly required request fields.
+- Changed field types.
+- Changed enum values.
+- Changed response structures.
+- Changed authentication requirements.
+- Changed permission requirements.
+- Changed pagination semantics.
+- Changed error contracts.
+
+Classify changes as:
+
+- `NON_BREAKING`
+- `POTENTIALLY_BREAKING`
+- `BREAKING`
+- `SECURITY_CRITICAL`
+
+Do not rely exclusively on textual OpenAPI comparison. Compare normalized schemas and operation semantics.
+
+# 5. API CONSUMER AND DEVELOPER ORGANIZATION MODEL
+
+Implement API consumer registration.
+
+An API consumer may be:
+
+- First-party application.
+- Approved partner organization.
+- Approved vendor.
+- Internal service.
+- Administrative application.
+- Approved research integration.
+
+Each consumer record must include:
+
+- `id`
+- `consumerCode`
+- `displayName`
+- `consumerType`
+- `organizationId`
+- `ownerUserId`
+- `technicalContact`
+- `businessContact`
+- `description`
+- `requestedServices`
+- `approvedServices`
+- `allowedEnvironments`
+- `dataAccessClassification`
+- `status`
+- `onboardingStatus`
+- `riskClassification`
+- `createdAt`
+- `updatedAt`
+- `version`
+
+Consumer lifecycle:
+
+- `PENDING`
+- `UNDER_REVIEW`
+- `APPROVED`
+- `SUSPENDED`
+- `REJECTED`
+- `REVOKED`
+- `CLOSED`
+
+Enforce organization isolation.
+
+A consumer must never obtain access merely by registering.
+
+Approval must be explicit and permission-controlled.
+
+# 6. PARTNER ONBOARDING WORKFLOW
+
+Implement a structured onboarding workflow.
+
+Stages:
+
+1. Application submitted.
+2. Organization identity validated through existing identity and verification services.
+3. Business purpose documented.
+4. Requested API services selected.
+5. Data classification evaluated.
+6. Requested permissions evaluated.
+7. Risk review completed where required.
+8. Compliance requirements evaluated.
+9. Commercial entitlement checked through Employee 67.
+10. Access approved or rejected.
+11. Credentials provisioned.
+12. Integration tested in sandbox.
+13. Production access separately approved.
+14. Ongoing access reviewed.
+15. Access renewed, suspended, or revoked.
+
+Persist each stage and its decisions.
+
+Use Employee 66 for support or review cases where appropriate.
+
+Use Employee 71 for risk assessments.
+
+Use Employee 72 for regulatory and compliance assessments.
+
+Never automatically approve a partner solely because a payment or subscription exists.
+
+# 7. API ACCESS GRANTS
+
+Implement explicit access grants.
+
+Each grant must include:
+
+- `id`
+- `consumerId`
+- `serviceId`
+- `environment`
+- `permissions`
+- `allowedScopes`
+- `tenantRestrictions`
+- `dataClassificationCeiling`
+- `rateLimitPolicyId`
+- `quotaPolicyId`
+- `validFrom`
+- `validUntil`
+- `approvedBy`
+- `approvalReference`
+- `status`
+- `createdAt`
+- `updatedAt`
+- `version`
+
+Grant states:
+
+- `PENDING`
+- `ACTIVE`
+- `SUSPENDED`
+- `EXPIRED`
+- `REVOKED`
+
+Enforce:
+
+- Least privilege.
+- Explicit service-level access.
+- Explicit permission scopes.
+- Tenant restrictions.
+- Expiration.
+- Revocation.
+- Data classification limits.
+- Environment isolation.
+
+A consumer must not be able to access another tenant's records by manipulating identifiers.
+
+# 8. API CREDENTIAL AND SECRET LIFECYCLE
+
+Implement secure API credential management using the existing secret-management and authentication infrastructure wherever available.
+
+Support:
+
+- API key issuance.
+- Key rotation.
+- Key revocation.
+- Expiration.
+- Last-used tracking.
+- Credential labels.
+- Environment binding.
+- Consumer binding.
+- Access-grant binding.
+- Credential usage restrictions.
+
+Credential record:
+
+- `id`
+- `consumerId`
+- `accessGrantId`
+- `credentialType`
+- `keyPrefix`
+- `secretHash`
+- `secretReference`
+- `environment`
+- `createdAt`
+- `expiresAt`
+- `lastUsedAt`
+- `rotatedAt`
+- `revokedAt`
+- `status`
+- `version`
+
+Security requirements:
+
+- Never store plaintext API secrets.
+- Never return a secret after its initial issuance response.
+- Never log secret values.
+- Use cryptographically secure random generation.
+- Use a suitable one-way hash or keyed verification mechanism.
+- Compare secrets safely.
+- Enforce key scope and environment.
+- Support overlapping old/new credentials during controlled rotation.
+- Provide immediate revocation.
+- Detect repeated failed authentication attempts.
+- Integrate suspicious activity with Employee 71.
+- Audit all credential lifecycle operations.
+
+Do not create a duplicate user authentication system.
+
+# 9. OAUTH CLIENT GOVERNANCE
+
+Where the existing authentication architecture supports OAuth 2.0 or OpenID Connect, implement controlled client registration using the existing identity provider.
+
+Support appropriate grant types for the platform's actual use cases.
+
+Do not implement insecure implicit flows.
+
+Use authorization code with PKCE for user-delegated applications where supported.
+
+Use client credentials for approved machine-to-machine integrations where supported.
+
+Each OAuth client must include:
+
+- `clientId`
+- `consumerId`
+- `clientName`
+- `allowedGrantTypes`
+- `redirectUris`
+- `allowedScopes`
+- `environment`
+- `tokenLifetimePolicy`
+- `status`
+- `createdAt`
+- `updatedAt`
+
+Enforce exact redirect URI matching.
+
+Do not invent or implement a second token issuer if the existing identity provider already provides this capability.
+
+If the current identity infrastructure cannot support a requested flow safely, expose a controlled integration boundary and do not simulate successful OAuth authentication.
+
+# 10. RATE LIMIT AND QUOTA GOVERNANCE
+
+Integrate with the existing rate-limiting infrastructure.
+
+Do not introduce a duplicate rate limiter.
+
+Implement configurable policies by:
+
+- Consumer.
+- Organization.
+- API service.
+- Endpoint.
+- Environment.
+- Permission scope.
+- Request priority.
+
+Policy fields:
+
+- `id`
+- `name`
+- `requestsPerWindow`
+- `windowSeconds`
+- `burstLimit`
+- `concurrencyLimit`
+- `dailyQuota`
+- `monthlyQuota`
+- `priorityClass`
+- `behaviorOnLimit`
+- `status`
+- `version`
+
+Limit behavior:
+
+- `REJECT`
+- `QUEUE_IF_SUPPORTED`
+- `DEGRADE_NONCRITICAL`
+
+Return standard HTTP 429 responses with appropriate `Retry-After` information.
+
+Do not allow partner consumers to override their own limits.
+
+Quota consumption must integrate with Employee 67 usage and entitlement services.
+
+Prevent duplicate quota consumption on idempotent retries.
+
+Apply stricter limits to expensive operations such as geospatial searches, large exports, bulk retrieval, and valuation calculations.
+
+Do not allow an API gateway policy to bypass underlying service-level authorization.
+
+# 11. WEBHOOK SUBSCRIPTION GOVERNANCE
+
+Integrate with the existing event infrastructure and Employee 68 notification/event orchestration capabilities.
+
+Do not create a second event bus or duplicate webhook delivery engine.
+
+Support governed outbound webhook subscriptions for approved consumers.
+
+Each subscription must include:
+
+- `id`
+- `consumerId`
+- `endpointUrl`
+- `description`
+- `subscribedEventTypes`
+- `environment`
+- `signingSecretReference`
+- `deliveryPolicyReference`
+- `status`
+- `createdAt`
+- `updatedAt`
+- `version`
+
+Validate destination URLs.
+
+Prevent:
+
+- Private IP destinations.
+- Loopback destinations.
+- Link-local addresses.
+- Cloud metadata endpoints.
+- Internal network access.
+- DNS rebinding.
+- Redirect-based SSRF bypass.
+- Unapproved protocols.
+- Invalid TLS configurations.
+
+Reuse existing SSRF protection and outbound request controls.
+
+Webhook events must contain only the minimum authorized information.
+
+Use signed payloads and timestamped signatures.
+
+Support:
+
+- Event identifier.
+- Event type.
+- Event timestamp.
+- Schema version.
+- Consumer identifier.
+- Delivery identifier.
+- Correlation identifier.
+- Payload signature.
+
+Consumers must be able to verify signatures without receiving internal secrets.
+
+Implement:
+
+- Subscription validation.
+- Delivery status tracking.
+- Retry policy integration.
+- Idempotent delivery identifiers.
+- Dead-letter handling through existing infrastructure.
+- Manual replay authorization.
+- Delivery suspension.
+- Endpoint health status.
+- Secret rotation.
+- Event schema version compatibility.
+
+Never expose internal event payloads or restricted fields to unauthorized consumers.
+
+# 12. WEBHOOK DELIVERY CONTRACT
+
+Use the existing delivery infrastructure.
+
+Define a canonical delivery envelope:
+
+{
+  "id": "evt_123",
+  "type": "listing.published",
+  "version": "1.0",
+  "occurredAt": "2026-11-08T12:00:00.000Z",
+  "consumerId": "consumer_123",
+  "deliveryId": "delivery_123",
+  "correlationId": "correlation_123",
+  "data": {}
+}
+
+Sign the canonical payload using a per-subscription secret.
+
+Include headers equivalent to:
+
+- `X-Radar-Event-Id`
+- `X-Radar-Event-Type`
+- `X-Radar-Event-Version`
+- `X-Radar-Timestamp`
+- `X-Radar-Signature`
+- `X-Radar-Delivery-Id`
+
+Define a stable signing format and document exact canonicalization rules.
+
+Implement signature verification test utilities for approved developers.
+
+Do not place signing secrets in webhook payloads or response bodies.
+
+# 13. DEVELOPER PORTAL BACKEND
+
+Implement the backend capabilities needed by a developer portal.
+
+The portal must provide:
+
+- API catalog.
+- Service descriptions.
+- Endpoint documentation.
+- OpenAPI specifications.
+- Authentication instructions.
+- Permission and scope descriptions.
+- Version compatibility information.
+- Error code catalog.
+- Rate-limit information.
+- Webhook event catalog.
+- Sandbox instructions.
+- Consumer application management.
+- Credential rotation workflows.
+- Integration health.
+- Usage summaries.
+- Deprecation notices.
+- Support links.
+
+Use existing user accounts and RBAC.
+
+Do not create a second identity or customer profile system.
+
+Public documentation must not expose internal endpoints, private schemas, sensitive operational details, or restricted business logic.
+
+# 14. SANDBOX AND TEST ENVIRONMENT
+
+Implement a controlled sandbox environment.
+
+Sandbox requirements:
+
+- Separate credentials.
+- Separate environment grants.
+- Isolated test data.
+- No production customer records.
+- No real financial transactions.
+- No real payment processing.
+- No actual external customer notifications.
+- No production document deletion.
+- No production legal-hold modification.
+- No access to production secrets.
+
+Use deterministic test fixtures.
+
+Clearly distinguish sandbox and production in every credential, grant, request context, and audit record.
+
+Never treat sandbox approval as production approval.
+
+# 15. API USAGE AND INTEGRATION ANALYTICS
+
+Integrate with the existing telemetry and analytics infrastructure.
+
+Do not create duplicate telemetry storage.
+
+Collect operationally necessary aggregate data:
+
+- Request counts.
+- Success/failure rates.
+- Latency distributions.
+- Error classes.
+- Rate-limit events.
+- Consumer usage.
+- Endpoint usage.
+- Version adoption.
+- Webhook delivery success.
+- Retry counts.
+- Authentication failure counts.
+- Quota utilization.
+- Integration health.
+
+Exclude:
+
+- API secrets.
+- Passwords.
+- Access tokens.
+- Full sensitive request bodies.
+- Unnecessary personal information.
+- Private document content.
+- Confidential investigation data.
+
+Support aggregate reporting by service, consumer, environment, endpoint, and time window, subject to access policy.
+
+# 16. INTEGRATION HEALTH MANAGEMENT
+
+Implement an integration health model.
+
+Track:
+
+- Credential validity.
+- Access grant status.
+- Service availability.
+- Contract compatibility.
+- Webhook endpoint health.
+- Delivery success rate.
+- Repeated authentication failures.
+- Rate-limit pressure.
+- Quota exhaustion.
+- Deprecated API usage.
+- Outstanding security issues.
+
+Health states:
+
+- `HEALTHY`
+- `DEGRADED`
+- `UNSTABLE`
+- `UNAVAILABLE`
+- `SUSPENDED`
+- `UNKNOWN`
+
+Health status must be derived from observable evidence.
+
+Do not label an integration healthy merely because its registration record exists.
+
+Integrate operational alerts with Employee 68.
+
+Use Employee 71 for suspicious integration behavior and risk escalation.
+
+Use Employee 66 for support cases.
+
+# 17. SECURITY AND THREAT CONTROLS
+
+Implement centralized API security controls without replacing existing security infrastructure.
+
+Enforce:
+
+- Authentication.
+- Authorization.
+- Tenant isolation.
+- Permission scope enforcement.
+- Input validation.
+- Output filtering.
+- Request size limits.
+- Content-type restrictions.
+- Safe pagination.
+- Idempotency.
+- Rate limiting.
+- Credential revocation.
+- Replay protection where appropriate.
+- Webhook signature verification.
+- SSRF protection.
+- Security event recording.
+- Administrative access logging.
+
+Protect against:
+
+- Broken object-level authorization.
+- Broken function-level authorization.
+- Mass assignment.
+- Excessive data exposure.
+- Credential stuffing.
+- API key leakage.
+- Replay attacks.
+- Parameter pollution.
+- Enumeration.
+- Resource exhaustion.
+- Insecure direct object references.
+- Cross-tenant access.
+- Improper webhook destination validation.
+
+Apply security controls at the shared middleware/service boundaries and at sensitive business operations.
+
+Do not rely solely on frontend restrictions.
+
+# 18. COMPLIANCE, PRIVACY, AND RETENTION INTEGRATION
+
+Integrate with Employee 72.
+
+Every API consumer, credential, access grant, webhook subscription, usage record, and integration agreement must follow applicable retention and legal-hold rules.
+
+Do not independently delete governed integration records.
+
+Before deleting, anonymizing, or archiving integration records:
+
+1. Request a fresh retention evaluation.
+2. Check active legal holds.
+3. Check mandatory retention obligations.
+4. Check contractual preservation obligations.
+5. Check unresolved compliance conflicts.
+6. Execute only through the authorized disposition workflow.
+
+Support privacy requests through Employee 64.
+
+Ensure API usage analytics remain appropriately aggregated and do not expose unnecessary personal information.
+
+# 19. ADMINISTRATIVE API CONTRACTS
+
+Use the established API prefix. If none exists, use:
+
+`/api/admin/platform/api-governance`
+
+Implement functional endpoints:
+
+## Service registry
+
+- `POST /services`
+- `GET /services`
+- `GET /services/:serviceId`
+- `PATCH /services/:serviceId`
+- `POST /services/:serviceId/deprecate`
+- `POST /services/:serviceId/disable`
+
+## Endpoint catalog
+
+- `POST /services/:serviceId/endpoints`
+- `GET /services/:serviceId/endpoints`
+- `GET /endpoints/:endpointId`
+- `PATCH /endpoints/:endpointId`
+
+## API contracts
+
+- `POST /contracts`
+- `GET /contracts`
+- `GET /contracts/:contractId`
+- `POST /contracts/:contractId/compare`
+- `POST /contracts/:contractId/publish`
+- `POST /contracts/:contractId/deprecate`
+
+## Consumers
+
+- `POST /consumers`
+- `GET /consumers`
+- `GET /consumers/:consumerId`
+- `PATCH /consumers/:consumerId`
+- `POST /consumers/:consumerId/approve`
+- `POST /consumers/:consumerId/suspend`
+- `POST /consumers/:consumerId/revoke`
+
+## Access grants
+
+- `POST /consumers/:consumerId/grants`
+- `GET /consumers/:consumerId/grants`
+- `GET /grants/:grantId`
+- `PATCH /grants/:grantId`
+- `POST /grants/:grantId/approve`
+- `POST /grants/:grantId/revoke`
+
+## Credentials
+
+- `POST /consumers/:consumerId/credentials`
+- `GET /consumers/:consumerId/credentials`
+- `POST /credentials/:credentialId/rotate`
+- `POST /credentials/:credentialId/revoke`
+
+Credential retrieval endpoints must never return plaintext secrets.
+
+## Webhooks
+
+- `POST /consumers/:consumerId/webhooks`
+- `GET /consumers/:consumerId/webhooks`
+- `GET /webhooks/:subscriptionId`
+- `PATCH /webhooks/:subscriptionId`
+- `POST /webhooks/:subscriptionId/verify`
+- `POST /webhooks/:subscriptionId/suspend`
+- `POST /webhooks/:subscriptionId/replay`
+- `POST /webhooks/:subscriptionId/rotate-secret`
+
+## Integration health
+
+- `GET /consumers/:consumerId/health`
+- `GET /integrations/health`
+- `GET /integrations/incidents`
+- `GET /integrations/usage`
+
+## Governance
+
+- `GET /versions`
+- `GET /deprecations`
+- `GET /security-events`
+- `GET /audit-history`
+
+All endpoints must enforce authentication, permissions, organization isolation, validation, pagination, and audit requirements.
+
+# 20. DEVELOPER PORTAL API CONTRACTS
+
+Provide consumer-facing routes under the established public API prefix or, if none exists:
+
+`/api/developer`
+
+Implement:
+
+- `GET /catalog`
+- `GET /catalog/services/:serviceCode`
+- `GET /catalog/endpoints`
+- `GET /contracts/:serviceCode/:version`
+- `GET /versions`
+- `GET /deprecations`
+- `GET /webhook-events`
+- `GET /rate-limits`
+- `GET /error-codes`
+- `GET /me/consumer`
+- `GET /me/grants`
+- `GET /me/credentials`
+- `POST /me/credentials`
+- `POST /me/credentials/:credentialId/rotate`
+- `GET /me/webhooks`
+- `POST /me/webhooks`
+- `PATCH /me/webhooks/:subscriptionId`
+- `GET /me/usage`
+- `GET /me/integration-health`
+
+Apply consumer ownership and grant restrictions to every request.
+
+Do not expose administrative data through developer-facing endpoints.
+
+# 21. CONCRETE DATA MODEL AND API CONTRACT REQUIREMENTS
+
+Implement persistent entities for:
+
+- `ApiService`
+- `ApiEndpoint`
+- `ApiContract`
+- `ApiContractVersion`
+- `ApiConsumer`
+- `ApiAccessGrant`
+- `ApiCredential`
+- `OAuthClientRegistration`
+- `ApiRateLimitPolicy`
+- `ApiQuotaReference`
+- `WebhookSubscription`
+- `WebhookEventSchema`
+- `IntegrationHealthSnapshot`
+- `ApiDeprecationRecord`
+- `ApiSecurityEvent`
+- `ApiGovernanceAuditReference`
+
+Use existing quota, telemetry, event, audit, identity, and secret services instead of duplicating their storage.
+
+For every entity define:
+
+- Field types.
+- Required/optional status.
+- Validation constraints.
+- Unique constraints.
+- Relationships.
+- Lifecycle states.
+- Versioning.
+- Tenant scope.
+- Access policy.
+- Retention classification.
+- Index requirements.
+
+Use schema validation consistent with the existing TypeScript codebase.
+
+All public API contracts must have:
+
+- Exact HTTP method and route.
+- Authentication requirements.
+- Required permissions and scopes.
+- Request schema.
+- Response schema.
+- Validation rules.
+- Error codes.
+- Idempotency behavior.
+- Pagination behavior.
+- Rate-limit behavior.
+- Tenant-isolation rules.
+
+Generate or update OpenAPI specifications from the actual implemented routes and schemas.
+
+Do not maintain contradictory handwritten documentation.
+
+# 22. REQUIRED ADMINISTRATIVE INTERFACE
+
+Implement a functional administrative interface integrated with the existing admin panel.
+
+Required sections:
+
+1. API service registry.
+2. Endpoint catalog.
+3. API contract and version management.
+4. Consumer onboarding.
+5. Access-grant approvals.
+6. Credential lifecycle management.
+7. OAuth client registry.
+8. Rate-limit policy references and controls.
+9. Webhook subscription management.
+10. Integration health.
+11. API usage analytics.
+12. Deprecation management.
+13. Security events.
+14. Compliance and retention references.
+15. Governance audit history.
+
+Interface requirements:
+
+- Persian RTL support.
+- Responsive layout.
+- Clear status indicators.
+- Search and filtering.
+- Bounded pagination.
+- Detail views.
+- Approval workflows.
+- Confirmation for destructive or security-sensitive actions.
+- Role-aware action visibility.
+- Loading, empty, and error states.
+- No fake metrics or fabricated records.
+
+Use existing UI design patterns and shared components.
+
+Do not create a separate admin application.
+
+# 23. EVENT INTEGRATION
+
+Use the existing event bus or event infrastructure.
+
+Publish appropriately scoped events:
+
+- `api.service.registered`
+- `api.service.updated`
+- `api.service.deprecated`
+- `api.service.disabled`
+- `api.contract.published`
+- `api.contract.breaking_change_detected`
+- `api.consumer.created`
+- `api.consumer.approved`
+- `api.consumer.suspended`
+- `api.access_grant.created`
+- `api.access_grant.approved`
+- `api.access_grant.revoked`
+- `api.credential.issued`
+- `api.credential.rotated`
+- `api.credential.revoked`
+- `api.webhook.created`
+- `api.webhook.suspended`
+- `api.integration.degraded`
+- `api.integration.unavailable`
+- `api.security_event.detected`
+
+Every event must include:
+
+- Event ID.
+- Event type.
+- Schema version.
+- Occurrence timestamp.
+- Correlation ID.
+- Source module.
+- Tenant scope where applicable.
+- Minimal authorized payload.
+
+Do not publish secrets, tokens, private request bodies, or sensitive personal information.
+
+Ensure consumers process events idempotently.
+
+# 24. OPERATIONAL OBSERVABILITY
+
+Integrate with existing telemetry and monitoring.
+
+Provide operational metrics for:
+
+- Total API requests.
+- Requests per service.
+- Requests per consumer.
+- Requests per endpoint.
+- Error rates.
+- Latency percentiles.
+- 429 responses.
+- Authentication failures.
+- Authorization failures.
+- Credential rotations.
+- Revocations.
+- Webhook delivery outcomes.
+- Retry activity.
+- Contract version adoption.
+- Deprecated endpoint traffic.
+- Quota utilization.
+- Integration health.
+
+Provide structured logs with:
+
+- Request ID.
+- Correlation ID.
+- Service ID.
+- Endpoint ID.
+- Consumer ID where authorized.
+- Environment.
+- Response status.
+- Duration.
+- Error category.
+
+Never log credentials, access tokens, signing secrets, or sensitive payloads.
+
+# 25. PERFORMANCE AND RESILIENCE
+
+Implement:
+
+- Efficient indexed lookups.
+- Cursor-based pagination.
+- Bounded request processing.
+- Safe caching for public catalog metadata.
+- Cache invalidation on governance changes.
+- Idempotent state transitions.
+- Retry-safe event processing.
+- Graceful dependency failure.
+- Circuit-breaker integration where supported.
+- Protection against expensive bulk operations.
+- Explicit request timeouts.
+- Safe degradation when noncritical analytics services are unavailable.
+
+API governance infrastructure must not become a single point of failure for unrelated internal business operations.
+
+A failure in the developer portal must not prevent normal property listing, valuation, rental, or transaction operations.
+
+Security-critical authorization checks must fail closed.
+
+# 26. TESTING REQUIREMENTS
+
+Implement comprehensive automated tests covering:
+
+- API service registration.
+- Duplicate service prevention.
+- Endpoint ownership validation.
+- Contract versioning.
+- Breaking-change detection.
+- Consumer onboarding.
+- Approval and rejection workflows.
+- Tenant isolation.
+- Access-grant restrictions.
+- Credential issuance.
+- Credential rotation.
+- Credential revocation.
+- Secret non-disclosure.
+- OAuth client validation where supported.
+- Rate-limit integration.
+- Quota integration.
+- Idempotent quota consumption.
+- Webhook subscription validation.
+- SSRF protection.
+- DNS rebinding defenses.
+- Webhook signature generation and verification.
+- Delivery retry integration.
+- Duplicate delivery protection.
+- Deprecation workflows.
+- Integration health calculation.
+- Unauthorized administrative access.
+- Cross-tenant access attempts.
+- Retention precedence integration.
+- Legal-hold preservation.
+- Privacy request integration.
+- Event schema validation.
+- API documentation consistency.
+- Regression tests for existing modules.
+
+Use isolated test fixtures and test providers.
+
+Do not send real partner webhooks, issue real production credentials, charge payment methods, or modify production data during tests.
+
+# 27. IMPLEMENTATION AND INTEGRATION RULES
+
+Before implementing each capability, locate and reuse the existing service responsible for that function.
+
+If an existing service is incomplete, extend it through a backward-compatible interface.
+
+Do not introduce parallel implementations.
+
+Keep the module boundaries clear:
+
+- API governance controls API exposure and consumer access.
+- Existing authentication controls identity.
+- Existing RBAC controls permissions.
+- Existing business modules own business data.
+- Employee 67 owns commercial entitlements and billing.
+- Employee 68 owns notification and event-to-notification orchestration.
+- Employee 71 owns platform risk assessment.
+- Employee 72 owns compliance, legal holds, and retention precedence.
+- Existing telemetry owns usage analytics.
+- Existing audit infrastructure owns audit persistence.
+
+Implement actual functional code, not placeholders.
+
+Preserve existing working functionality.
+
+Do not perform destructive migrations.
+
+Do not deploy.
+
+Do not write to production.
+
+Do not generate a review report, audit report, architecture proposal, or implementation summary.
+
+Run relevant tests, type checks, and production build. Fix all regressions introduced by this implementation.
+
+When the implementation is complete and validation succeeds, output exactly:
+
+DONE
