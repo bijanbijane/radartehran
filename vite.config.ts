@@ -1,8 +1,9 @@
+import { cloudflare } from '@cloudflare/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import { resolveAllowedViteDevHosts } from './src/utils/serverConfigValidator';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,8 +18,19 @@ export default defineConfig(({ mode }) => {
     allowedHosts = ['localhost', '127.0.0.1'];
   }
 
+  const enableCloudflareVitePlugin =
+    mode === 'cloudflare' ||
+    env.CLOUDFLARE_VITE === '1' ||
+    (typeof process !== 'undefined' && process.env?.CLOUDFLARE_VITE === '1');
+
+  const plugins: PluginOption[] = [
+    react(),
+    tailwindcss(),
+    ...(enableCloudflareVitePlugin ? [cloudflare({ configPath: './wrangler.jsonc' })] : []),
+  ];
+
   return {
-    plugins: [react(), tailwindcss()],
+    plugins,
     // Task 458: Never inject server-side GEMINI_API_KEY or other private credentials into frontend bundles.
     define: {},
     resolve: {

@@ -1,0 +1,1177 @@
+# PHASE 9 — FINAL SECURITY, PERFORMANCE, RESILIENCE, CAPACITY, AND PRE-STAGING READINESS VALIDATION
+
+## PROJECT
+Tehran Radar (رادار تهران)
+
+Repository: `bijanbijane/radartehran`
+
+Primary development environment: Google AI Studio
+
+Supplementary environment: GitHub and GitHub Codespaces, only when required and authorized.
+
+Target infrastructure: Cloudflare Workers, Workers Static Assets, Cloudflare Vite Plugin, and selectively approved Cloudflare services.
+
+Existing architecture may include React 19, Vite, TypeScript, Express, Firebase Authentication, Firestore, object storage, and legacy Node.js components.
+
+---
+
+## 1. EXECUTION GATE — MANDATORY
+
+This phase is an evidence-based final validation phase.
+
+Before performing any modification or test that changes project state:
+
+1. Verify the actual repository and current branch.
+2. Verify the current Git working tree.
+3. Verify the actual implementation status of Phases 0–8.
+4. Inspect the relevant files, configuration, adapters, migrations, tests, and previous execution results.
+5. Distinguish implemented, tested, verified, partially implemented, blocked, and unverified work.
+6. Confirm that required prerequisites are actually satisfied.
+7. Obtain explicit user authorization before performing state-changing operations.
+
+Do not assume that a previous AI-generated report proves that a phase was executed successfully.
+
+Do not infer implementation completion from:
+- Prompt delivery.
+- AI-generated summaries.
+- Claimed test results without reproducible evidence.
+- Files existing without functional verification.
+- Mock implementations.
+- Placeholder adapters.
+- Tests that merely assert that a function exists.
+- Successful compilation alone.
+
+If any required prerequisite is missing, stop the dependent operation and identify the precise blocker.
+
+Do not silently skip a prerequisite.
+
+---
+
+## 2. PHASE OBJECTIVE
+
+Evaluate whether the actual Tehran Radar implementation is sufficiently secure, stable, observable, recoverable, and technically compatible with its intended Cloudflare architecture to proceed to a controlled staging deployment.
+
+This phase must evaluate the entire system, including:
+
+- Frontend.
+- Worker entrypoints.
+- Legacy Express compatibility components.
+- Authentication and authorization.
+- Firestore and any approved database adapters.
+- R2 and object-storage abstractions.
+- Queues and scheduled processing.
+- Cache and coordination mechanisms.
+- Telemetry and analytics.
+- Real-estate valuation and reporting modules.
+- Administrative interfaces.
+- API contracts.
+- External dependencies.
+- Deployment configuration.
+- Operational procedures.
+
+The objective is not to produce an impressive checklist.
+
+The objective is to discover actual failure conditions before they reach users.
+
+---
+
+## 3. EVIDENCE-BASED VALIDATION POLICY
+
+Every finding must have a traceable evidence record.
+
+For each validation item, record:
+
+- Validation ID.
+- Component or subsystem.
+- Relevant source files.
+- Test or inspection method.
+- Preconditions.
+- Expected result.
+- Actual result.
+- Evidence location.
+- Severity.
+- Status.
+- Remaining uncertainty.
+- Required remediation.
+- Verification procedure.
+
+Use these statuses:
+
+- VERIFIED_PASS
+- VERIFIED_FAIL
+- PARTIAL
+- BLOCKED
+- NOT_TESTED
+- NOT_APPLICABLE
+- REQUIRES_EXTERNAL_VALIDATION
+
+Do not label a test VERIFIED_PASS unless the test actually executed and its result was observed.
+
+Do not fabricate:
+- Test output.
+- Cloudflare resource metrics.
+- CPU measurements.
+- Memory measurements.
+- Production traffic.
+- User counts.
+- Availability percentages.
+- Performance results.
+- Pricing estimates without assumptions.
+- Successful recovery events.
+- Security certification.
+- Compliance status.
+
+Separate static inspection from executable tests and actual staging observations.
+
+---
+
+## 4. SYSTEM INVENTORY AND VALIDATION BOUNDARIES
+
+Create a complete validation inventory covering:
+
+### 4.1 Frontend
+- React components.
+- Routes.
+- API clients.
+- Authentication state.
+- Error boundaries.
+- Map and listing interfaces.
+- Search and filters.
+- Administrative screens.
+- Upload workflows.
+- Analytics integrations.
+- Static assets.
+- PWA and service-worker behavior, if present.
+
+### 4.2 Backend
+- Worker entrypoints.
+- Express server.
+- API routes.
+- Middleware.
+- Authentication adapters.
+- Authorization policies.
+- Persistence adapters.
+- Storage providers.
+- Queue consumers.
+- Scheduled jobs.
+- External API clients.
+- Error-handling paths.
+
+### 4.3 Infrastructure
+- `wrangler.jsonc` or equivalent verified configuration.
+- Vite configuration.
+- Cloudflare bindings.
+- Environment-specific configuration.
+- Build scripts.
+- Test scripts.
+- CI workflows.
+- Migration scripts.
+- Secrets references.
+- Deployment scripts.
+- Rollback procedures.
+
+### 4.4 Data and persistence
+- Firestore collections.
+- D1 schemas, if implemented.
+- R2 object metadata.
+- R2 object contents.
+- KV namespaces.
+- Durable Objects.
+- Queue payloads.
+- Analytics stores.
+- Temporary data.
+- Local development persistence.
+- Migration and reconciliation state.
+
+Identify every remaining dependency on:
+- Node.js filesystem APIs.
+- In-memory state.
+- Process-level timers.
+- Node HTTP server assumptions.
+- `firebase-admin`.
+- `sharp`.
+- Unverified runtime compatibility.
+- Local-only persistence.
+- Unavailable environment variables.
+- Legacy Express middleware.
+
+Do not declare these compatible merely because the project builds.
+
+---
+
+## 5. SECURITY VALIDATION
+
+Perform a structured security review and execute safe tests where the existing environment permits.
+
+### 5.1 Authentication
+
+Verify:
+- Token signature validation.
+- Issuer validation.
+- Audience validation.
+- Expiration validation.
+- Not-before validation.
+- JWKS handling.
+- Key rotation behavior.
+- Revocation semantics.
+- User status checks.
+- Authentication failure behavior.
+- Missing-token behavior.
+- Invalid-token behavior.
+- Expired-token behavior.
+- Authentication consistency between legacy and migrated routes.
+
+Never replace cryptographic token verification with JWT decoding.
+
+Authentication must fail closed when verification cannot be completed.
+
+### 5.2 Authorization
+
+Test:
+- Role enforcement.
+- Ownership checks.
+- Admin-only operations.
+- Moderator permissions.
+- Private user resources.
+- Listing ownership.
+- Bargain and offer ownership.
+- Administrative exports.
+- Deletion and approval operations.
+- Cross-user access attempts.
+- Direct object references.
+- API endpoints that bypass frontend permissions.
+
+Check for:
+- IDOR.
+- Privilege escalation.
+- Missing server-side authorization.
+- Inconsistent authorization between frontend and backend.
+- Authorization bypass through legacy routes.
+
+Do not invent role names or permissions. Use the actual implemented authorization model.
+
+### 5.3 API security
+
+Review and test where safe:
+
+- SQL injection.
+- NoSQL injection.
+- XSS.
+- CSRF.
+- SSRF.
+- Open redirects.
+- CORS misconfiguration.
+- Cache poisoning.
+- Request smuggling where relevant to the deployment topology.
+- Path traversal.
+- Unsafe deserialization.
+- Mass assignment.
+- Excessive request sizes.
+- Malformed JSON.
+- Unexpected content types.
+- Missing input validation.
+- Rate-limit bypass.
+- Sensitive information in error messages.
+
+For SSRF, verify URL parsing, protocol restrictions, hostname validation, DNS resolution behavior, redirect handling, private-address restrictions, and protection against DNS rebinding where relevant.
+
+Do not perform attacks against third-party systems.
+
+### 5.4 Upload security
+
+Validate:
+- File-size restrictions.
+- MIME validation.
+- Magic-byte validation.
+- Filename normalization.
+- Path traversal resistance.
+- Unauthorized upload attempts.
+- Unauthorized download attempts.
+- Signed URL expiration.
+- Signed URL scope.
+- Object ownership.
+- Quarantine behavior.
+- Malware scanning integration, if implemented.
+- Partial upload cleanup.
+- Chunk upload integrity.
+- Upload completion semantics.
+- Remote storage failure behavior.
+- Metadata consistency.
+- Public/private object separation.
+
+Verify that failed remote uploads cannot silently appear successful while files remain only on ephemeral local storage.
+
+### 5.5 Secrets and configuration
+
+Inspect for:
+- Exposed API keys.
+- Firebase service-account credentials.
+- Private keys.
+- Tokens.
+- Secrets in source code.
+- Secrets in Git history.
+- Secrets in logs.
+- Secrets in browser bundles.
+- Secrets in client-side environment variables.
+- Secrets in error responses.
+- Secrets in telemetry.
+- Secrets in queue messages.
+- Unsafe debug endpoints.
+
+Do not print secret values.
+
+Do not ask the user to paste credentials.
+
+If a credential is exposed, report the exposure category and remediation procedure without reproducing the credential.
+
+Do not rotate production secrets without explicit authorization.
+
+### 5.6 Security logging
+
+Verify:
+- Authentication failures are logged appropriately.
+- Administrative actions are auditable.
+- Sensitive payloads are excluded.
+- Log retention is bounded.
+- Logs cannot be forged through untrusted input.
+- Access to security logs is restricted.
+- Critical events are distinguishable from routine events.
+
+---
+
+## 6. CLOUDFLARE RUNTIME COMPATIBILITY
+
+Validate actual Worker compatibility.
+
+Do not treat Node.js compatibility mode as proof of complete compatibility.
+
+For each runtime-dependent component, record:
+
+- Dependency.
+- Import path.
+- Runtime assumptions.
+- Compatibility status.
+- Required adapter.
+- Test evidence.
+- Remaining limitations.
+
+Explicitly examine:
+
+- `node:fs`.
+- `node:http`.
+- `node:path`.
+- `process`.
+- Process-level event handlers.
+- Timers.
+- Persistent in-memory Maps.
+- `firebase-admin`.
+- `sharp`.
+- Native binaries.
+- Node server lifecycle.
+- Long-running tasks.
+- Local filesystem persistence.
+- Streaming behavior.
+- Request and response body handling.
+- Worker CPU-time constraints.
+- Worker memory constraints, where measurable.
+- Subrequest limits.
+- Environment bindings.
+- Compatibility flags.
+
+Distinguish:
+- CPU time.
+- Wall-clock duration.
+- External service latency.
+- Queue waiting time.
+- Request duration.
+
+Do not invent OS-level CPU utilization or RAM metrics when the runtime does not expose them.
+
+For every unverified runtime dependency, classify the component as NOT_VERIFIED or BLOCKED.
+
+---
+
+## 7. PERFORMANCE VALIDATION
+
+Evaluate the actual system rather than optimizing imaginary bottlenecks.
+
+### 7.1 Frontend performance
+
+Measure or inspect:
+
+- Initial JavaScript bundle size.
+- Route-level bundle sizes.
+- Lazy-loading behavior.
+- CSS size.
+- Static asset size.
+- Largest Contentful Paint.
+- Interaction to Next Paint, where measurable.
+- Cumulative Layout Shift.
+- First Contentful Paint.
+- Time to Interactive, where appropriate.
+- API request waterfalls.
+- Duplicate requests.
+- Unnecessary rerenders.
+- Memory leaks.
+- Map rendering performance.
+- Listing search and filtering performance.
+- Large tables.
+- Admin dashboard responsiveness.
+- Mobile performance.
+
+Use real browser measurements when available.
+
+Do not invent Lighthouse scores.
+
+### 7.2 API performance
+
+For representative endpoints, measure:
+
+- p50 latency.
+- p95 latency.
+- p99 latency.
+- Throughput.
+- Error rate.
+- Timeout rate.
+- Payload size.
+- Database latency.
+- External API latency.
+- Cache hit rate.
+- Cache miss rate.
+- Retry count.
+
+Clearly state the test environment, sample size, concurrency, duration, and data conditions.
+
+Do not present small local tests as production capacity estimates.
+
+### 7.3 Cloudflare Worker performance
+
+Evaluate:
+- Worker CPU time.
+- Wall-clock request duration.
+- Request size.
+- Response size.
+- Subrequest count.
+- External dependency latency.
+- Cold-start effects where applicable and measurable.
+- Compatibility overhead.
+- Error and timeout behavior.
+
+Use only metrics actually exposed by the runtime, dashboard, or test environment.
+
+### 7.4 Database performance
+
+Evaluate:
+- Firestore query patterns.
+- D1 query plans where applicable.
+- Index coverage.
+- Query count per request.
+- N+1 patterns.
+- Pagination.
+- Large result sets.
+- Concurrent writes.
+- Transaction contention.
+- Database latency.
+- Connection or request limits.
+- Read/write amplification.
+- Query cost assumptions.
+
+Do not migrate Firestore to D1 during this phase.
+
+### 7.5 Map and real-estate performance
+
+Pay particular attention to:
+- Map rendering.
+- Geographic data volume.
+- Neighborhood boundaries.
+- Marker clustering.
+- Listing density.
+- Search filters.
+- Valuation calculations.
+- Neighborhood analytics.
+- Large datasets.
+- Repeated geospatial queries.
+- Mobile devices with limited resources.
+
+Avoid unnecessary requests and excessive rendering.
+
+Do not remove important map functionality merely to improve a benchmark.
+
+---
+
+## 8. LOAD, STRESS, AND SOAK TESTING
+
+Design and execute safe tests only within the authorized environment.
+
+### 8.1 Test categories
+
+Prepare:
+- Baseline tests.
+- Expected-load tests.
+- Stress tests.
+- Burst tests.
+- Soak tests.
+- Concurrency tests.
+- Recovery tests.
+
+### 8.2 Test environment
+
+Use:
+- Local environment.
+- Cloudflare preview.
+- Dedicated staging environment.
+
+Do not run uncontrolled load tests against production.
+
+Do not generate substantial Cloudflare traffic or paid resource consumption without explicit authorization.
+
+### 8.3 Test scenarios
+
+Include:
+- Anonymous browsing.
+- Authenticated browsing.
+- Listing search.
+- Neighborhood search.
+- Map loading.
+- Listing creation.
+- Listing updates.
+- Uploads.
+- Admin dashboard.
+- Analytics aggregation.
+- Queue processing.
+- Database reads.
+- Database writes.
+- Concurrent user activity.
+- External provider latency.
+
+Use synthetic or approved test data.
+
+Do not use private production user data without authorization.
+
+### 8.4 Test limits
+
+Define:
+- Maximum request rate.
+- Maximum concurrency.
+- Maximum test duration.
+- Maximum data volume.
+- Maximum acceptable cost.
+- Stop conditions.
+- Emergency termination criteria.
+
+If a test risks production instability, runaway costs, or external service abuse, stop immediately.
+
+### 8.5 Capacity interpretation
+
+Estimate capacity only from measured results and explicit assumptions.
+
+Do not extrapolate linearly without accounting for:
+- Database limits.
+- Queue throughput.
+- Storage bottlenecks.
+- External API quotas.
+- CPU-time constraints.
+- Rate limits.
+- Cache behavior.
+- Traffic distribution.
+- Geography.
+- Request complexity.
+
+Clearly distinguish measured capacity from projected capacity.
+
+---
+
+## 9. RESILIENCE AND FAILURE TESTING
+
+Test the behavior of the system when dependencies fail.
+
+### 9.1 Failure scenarios
+
+Evaluate:
+- Firebase Authentication unavailable.
+- Firestore unavailable.
+- R2 unavailable.
+- External search provider unavailable.
+- AI provider unavailable.
+- Queue consumer failure.
+- Queue backlog growth.
+- KV unavailable.
+- Durable Object unavailable, if used.
+- Network timeout.
+- DNS failure.
+- Rate limiting.
+- Partial upload failure.
+- Database timeout.
+- Invalid configuration.
+- Missing binding.
+- Expired credentials.
+- Unexpected API response.
+- Worker exception.
+- Frontend API failure.
+
+Do not disable real production services to simulate failures.
+
+Use mocks, local test doubles, or authorized staging fault injection.
+
+### 9.2 Failure behavior
+
+Verify:
+- Appropriate error responses.
+- No sensitive data leakage.
+- No silent data loss.
+- No false success responses.
+- No duplicate irreversible operations.
+- No authorization bypass during fallback.
+- No unbounded retries.
+- No retry storms.
+- No uncontrolled queue growth.
+- No inconsistent cache state.
+- No accidental publication of incomplete data.
+
+### 9.3 Retry and circuit-breaker behavior
+
+Inspect:
+- Retry policies.
+- Backoff.
+- Jitter.
+- Retry limits.
+- Idempotency.
+- Circuit breakers.
+- Timeout propagation.
+- Dead-letter behavior.
+- Manual recovery.
+
+Do not introduce circuit breakers or retry mechanisms blindly.
+
+Preserve the existing business semantics.
+
+---
+
+## 10. DATA INTEGRITY AND RECOVERY
+
+Validate the actual persistence and migration design.
+
+### 10.1 Data consistency
+
+Check:
+- Source-of-truth ownership.
+- Firestore versus local state.
+- Firestore versus any D1 implementation.
+- Object metadata versus R2 contents.
+- Queue state versus business records.
+- Cache versus authoritative records.
+- Public versus private records.
+- Admin operations versus normal user operations.
+
+Investigate known split-brain risks involving:
+- Firestore-backed bargains.
+- RAM-backed user bargains.
+- Local-only storage metadata.
+- Remote R2 objects.
+- In-memory upload sessions.
+- Legacy administrative routes.
+
+Do not assume these problems are resolved without code and test evidence.
+
+### 10.2 Backup and restore
+
+Verify:
+- Backup scope.
+- Backup frequency.
+- Backup ownership.
+- Retention.
+- Encryption.
+- Restore procedure.
+- Restore permissions.
+- Restore validation.
+- Recovery point objective.
+- Recovery time objective.
+
+Where possible, perform a restore test using isolated test data.
+
+Do not create or modify production backups without authorization.
+
+### 10.3 Migration integrity
+
+For any migration implementation, verify:
+- Idempotency.
+- Checksum validation.
+- Precondition checks.
+- Postcondition checks.
+- Duplicate detection.
+- Missing-record detection.
+- Relationship integrity.
+- Timestamp preservation.
+- Null versus missing field semantics.
+- Rollback feasibility.
+- Reconciliation reporting.
+
+A migration that can only be run once and cannot be reconciled is not production-ready.
+
+---
+
+## 11. ROLLBACK AND RECOVERY READINESS
+
+Create a rollback plan for every major subsystem.
+
+Include:
+- Frontend rollback.
+- Worker version rollback.
+- API route rollback.
+- Authentication adapter rollback.
+- Storage adapter rollback.
+- Queue processing rollback.
+- Database migration rollback.
+- Cache invalidation.
+- Configuration rollback.
+- External provider fallback.
+
+For every rollback:
+- Identify the trigger.
+- Identify the responsible subsystem.
+- Identify the exact recovery procedure.
+- Identify data-loss risks.
+- Identify dependencies.
+- Identify verification steps.
+- Identify the rollback owner.
+
+Do not claim rollback is safe if the operation is irreversible.
+
+If rollback cannot restore data or state, identify a forward-recovery strategy.
+
+Do not perform rollback against production.
+
+---
+
+## 12. OBSERVABILITY AND OPERATIONS
+
+Verify that the system can be operated and diagnosed without guessing.
+
+### 12.1 Technical monitoring
+
+Evaluate:
+- Request volume.
+- Error rates.
+- Latency.
+- Worker exceptions.
+- CPU time.
+- Database failures.
+- Queue depth.
+- Queue age.
+- Retry rates.
+- Dead-letter counts.
+- Storage errors.
+- External provider failures.
+- Cache behavior.
+
+Distinguish available metrics from metrics that require additional instrumentation.
+
+### 12.2 Resource monitoring
+
+Evaluate the user's requirement for understandable resource monitoring.
+
+Provide:
+- CPU-time analysis.
+- Request duration.
+- Memory measurements only where supported.
+- Queue backlog.
+- Database workload.
+- Storage growth.
+- Cache usage.
+- Bundle size.
+- API volume.
+- Estimated service costs.
+
+For each metric:
+- Explain what it measures.
+- Explain what it does not measure.
+- Explain whether it is directly measured, inferred, or estimated.
+- Identify the source.
+- Identify limitations.
+
+Never label CPU time as CPU utilization.
+
+Never invent memory usage measurements for Workers.
+
+### 12.3 Alerts
+
+Review alert conditions for:
+- Elevated errors.
+- Authentication failures.
+- Unusual administrative activity.
+- Queue backlog.
+- Failed jobs.
+- Storage failures.
+- Provider outages.
+- Migration inconsistencies.
+- Unexpected cost increases.
+- Data integrity failures.
+
+Avoid alert fatigue and duplicate alerts.
+
+### 12.4 Operational runbooks
+
+Prepare concise runbooks for:
+- Deployment failure.
+- Authentication outage.
+- Database outage.
+- Storage outage.
+- Queue failure.
+- Unexpected cost increase.
+- Data corruption.
+- Security incident.
+- Secret exposure.
+- Rollback.
+- Recovery.
+
+Runbooks must be understandable by a project owner with limited programming experience.
+
+---
+
+## 13. PRIVACY, RETENTION, AND LEGAL-HOLD VALIDATION
+
+Verify that previously implemented privacy and data-governance policies remain enforceable.
+
+Check:
+- Data minimization.
+- Purpose limitation.
+- Data classification.
+- Access restrictions.
+- Retention enforcement.
+- Deletion workflows.
+- Legal holds.
+- Retention precedence.
+- Auditability.
+- Aggregation thresholds.
+- Telemetry privacy.
+- Sensitive data exclusion.
+- Public report approval.
+- Data export restrictions.
+
+Legal holds must override ordinary deletion and retention expiration where applicable, while preserving a documented release process.
+
+Do not invent legal requirements or claim legal compliance without qualified review.
+
+Do not delete data, release legal holds, or alter retention policies during this phase.
+
+---
+
+## 14. REAL-ESTATE ANALYTICS VALIDATION
+
+Validate the reliability of the actual real-estate intelligence system.
+
+### 14.1 Data provenance
+
+For each important data source, record:
+- Source type.
+- Collection method.
+- Collection date.
+- Update frequency.
+- Geographic coverage.
+- Data quality.
+- Reliability.
+- Licensing or access restrictions.
+- Missing data.
+- Known biases.
+
+### 14.2 Price semantics
+
+Ensure that the system distinguishes:
+- Asking prices.
+- Verified transaction prices.
+- Estimated market values.
+- Historical values.
+- Price per square meter.
+- Rental values.
+- Commercial property values.
+- Residential property values.
+
+Never present asking prices as confirmed transaction prices.
+
+### 14.3 Hedonic valuation
+
+Review:
+- Input features.
+- Feature normalization.
+- Geographic boundaries.
+- Neighborhood multipliers.
+- Model version.
+- Confidence intervals or uncertainty estimates.
+- Sample sizes.
+- Data freshness.
+- Outlier handling.
+- Missing-feature behavior.
+- Explainability.
+- Regression tests.
+
+Do not silently modify valuation formulas.
+
+Do not retrain models or change valuation parameters during this phase unless explicitly authorized.
+
+### 14.4 Public reports
+
+Verify:
+- Source attribution.
+- Data freshness.
+- Sample size disclosure.
+- Uncertainty.
+- Privacy protections.
+- Aggregation thresholds.
+- Approval workflows.
+- Historical comparability.
+
+Prevent misleading claims based on small or biased samples.
+
+---
+
+## 15. COST AND RESOURCE VALIDATION
+
+Prepare an evidence-based cost model.
+
+Use current official Cloudflare documentation and pricing where external research is necessary.
+
+Evaluate:
+- Workers requests.
+- CPU-time usage.
+- Workers Paid plan requirements.
+- D1 reads and writes.
+- D1 storage.
+- R2 storage.
+- R2 operations.
+- Queue operations.
+- KV operations.
+- Durable Objects usage.
+- Analytics storage.
+- External APIs.
+- AI provider costs.
+- Logging and monitoring.
+- Data transfer.
+- Build and deployment operations.
+
+For each estimate, disclose:
+- Pricing source.
+- Pricing date.
+- Usage assumptions.
+- Traffic assumptions.
+- Storage assumptions.
+- Request complexity.
+- Free-tier assumptions.
+- Paid-tier assumptions.
+- Uncertainty.
+- Potential overage risk.
+
+Produce at least:
+- Low-traffic scenario.
+- Moderate-traffic scenario.
+- High-traffic scenario.
+
+Do not assume free-tier limits will remain unchanged.
+
+Do not create paid resources.
+
+Do not initiate billing.
+
+Do not require a payment card.
+
+If pricing cannot be verified, mark it UNVERIFIED rather than inventing a figure.
+
+---
+
+## 16. TEST SUITE AND AUTOMATION QUALITY
+
+Inspect existing tests and improve validation coverage where explicitly authorized.
+
+Verify:
+- Unit tests.
+- Integration tests.
+- API contract tests.
+- Authentication tests.
+- Authorization tests.
+- Storage tests.
+- Migration tests.
+- Queue tests.
+- Worker runtime tests.
+- Frontend tests.
+- End-to-end tests.
+- Security regression tests.
+- Performance tests.
+
+Check whether tests:
+- Exercise real logic.
+- Assert meaningful outcomes.
+- Cover negative cases.
+- Detect regressions.
+- Use reliable fixtures.
+- Avoid production data.
+- Clean up test resources.
+- Avoid nondeterministic behavior.
+
+Do not inflate coverage with meaningless tests.
+
+Do not claim comprehensive coverage merely because a coverage percentage is high.
+
+---
+
+## 17. RELEASE READINESS CRITERIA
+
+Define explicit readiness criteria.
+
+A subsystem may be marked READY_FOR_STAGING only if:
+
+1. Its prerequisites are verified.
+2. Its security controls are tested.
+3. Its data ownership is clear.
+4. Its persistence behavior is verified.
+5. Its runtime compatibility is verified.
+6. Its failure behavior is understood.
+7. Its rollback or recovery strategy is documented.
+8. Its observability is sufficient.
+9. Its cost risks are understood.
+10. Its critical tests pass.
+11. Its remaining limitations are documented.
+12. Its staging configuration is isolated from production.
+
+Use the following final subsystem statuses:
+
+- READY_FOR_STAGING
+- READY_WITH_DOCUMENTED_LIMITATIONS
+- BLOCKED
+- NOT_VERIFIED
+- REQUIRES_REMEDIATION
+
+A passing frontend build cannot make the backend READY_FOR_STAGING.
+
+A passing API test cannot make an unverified migration READY_FOR_STAGING.
+
+A passing local test cannot establish production capacity.
+
+---
+
+## 18. REQUIRED DELIVERABLES
+
+Create or update the following documentation only if the repository's actual structure and user authorization permit it:
+
+1. `docs/cloudflare/phase-09-final-validation.md`
+2. `docs/cloudflare/security-validation-matrix.md`
+3. `docs/cloudflare/performance-validation.md`
+4. `docs/cloudflare/resilience-and-recovery.md`
+5. `docs/cloudflare/staging-readiness-matrix.md`
+6. `docs/cloudflare/cost-and-capacity-estimates.md`
+7. `docs/cloudflare/rollback-and-operational-runbooks.md`
+
+If an equivalent document already exists, update it rather than creating unnecessary duplicates.
+
+Do not create documentation files blindly.
+
+Every document must distinguish:
+- Verified facts.
+- Test observations.
+- Estimates.
+- Assumptions.
+- Recommendations.
+- Unresolved questions.
+
+Include links or references to actual source files and test outputs where available.
+
+---
+
+## 19. REQUIRED FINAL REPORT
+
+Provide a concise Persian summary for the project owner, with technical details available in the documentation.
+
+The report must include:
+
+### A. Overall readiness
+- READY_FOR_STAGING
+- READY_WITH_DOCUMENTED_LIMITATIONS
+- BLOCKED
+- NOT_VERIFIED
+
+### B. Critical blockers
+List only actual blockers supported by evidence.
+
+### C. Security
+Summarize verified findings and unresolved risks.
+
+### D. Performance
+Summarize actual measurements and distinguish them from estimates.
+
+### E. Resilience
+Summarize tested failure scenarios and recovery limitations.
+
+### F. Data integrity
+Summarize source-of-truth issues, migration risks, and recovery readiness.
+
+### G. Cost
+Provide transparent estimates and assumptions.
+
+### H. Required remediation
+List prioritized actions:
+- P0: Critical security, data-loss, or operational blockers.
+- P1: High-impact staging blockers.
+- P2: Important improvements.
+- P3: Non-blocking optimization.
+
+### I. Remaining uncertainty
+Explicitly list anything that could not be verified.
+
+### J. Next phase recommendation
+Explain whether the project is ready for a controlled staging deployment.
+
+Do not recommend production deployment merely because staging readiness has been achieved.
+
+---
+
+## 20. STRICT PROHIBITIONS
+
+This phase must NOT:
+
+- Deploy to production.
+- Change DNS.
+- Perform production cutover.
+- Migrate production data.
+- Delete production data.
+- Create paid Cloudflare resources.
+- Change billing settings.
+- Create production databases.
+- Create production buckets.
+- Create production queues.
+- Create production Durable Objects.
+- Modify production authentication configuration.
+- Rotate production credentials.
+- Modify production retention policies.
+- Release legal holds.
+- Execute destructive tests.
+- Run uncontrolled production load tests.
+- Publish private analytics.
+- Change real-estate valuation formulas.
+- Change business rules.
+- Commit or push to Git.
+- Merge branches.
+- Modify the production environment.
+- Claim that any external operation succeeded without actual confirmation.
+
+Do not bypass these restrictions through an alternate script, API, CLI, or deployment mechanism.
+
+---
+
+## 21. STOP CONDITION
+
+After completing the authorized validation work:
+
+1. Save the evidence-based report.
+2. Identify actual blockers.
+3. Identify unresolved risks.
+4. State whether staging readiness criteria were met.
+5. Provide a prioritized remediation plan.
+6. STOP.
+
+Do not begin Phase 10 automatically.
+
+Phase 10 must be a separate, explicitly authorized controlled staging deployment phase.
+
+Do not proceed to production deployment.
+
+Do not perform additional state-changing operations after the report is completed.
+
+**The final output must be the Persian execution summary and evidence-based readiness report. Do not produce a generic audit template or claim completion without actual verification.**

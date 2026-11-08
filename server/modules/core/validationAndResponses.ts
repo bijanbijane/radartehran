@@ -291,18 +291,38 @@ export function buildPaginatedEnvelope<T>(
 }
 
 export function buildErrorEnvelope(
-  code: CanonicalApiErrorCode,
-  message: string,
-  correlationId: string,
+  codeOrParams:
+    | CanonicalApiErrorCode
+    | {
+        code: CanonicalApiErrorCode;
+        message: string;
+        correlationId: string;
+        details?: ValidationIssue[] | Record<string, unknown>;
+        nowIso?: string;
+      },
+  message?: string,
+  correlationId?: string,
   details?: ValidationIssue[] | Record<string, unknown>,
   nowIso?: string,
 ): ApiErrorEnvelope {
+  if (typeof codeOrParams !== 'string') {
+    return {
+      ok: false,
+      error: {
+        code: codeOrParams.code,
+        message: redactSensitiveErrorText(codeOrParams.message),
+        correlationId: codeOrParams.correlationId,
+        timestampIso: codeOrParams.nowIso ?? new Date().toISOString(),
+        ...(codeOrParams.details ? { details: codeOrParams.details } : {}),
+      },
+    };
+  }
   return {
     ok: false,
     error: {
-      code,
-      message: redactSensitiveErrorText(message),
-      correlationId,
+      code: codeOrParams,
+      message: redactSensitiveErrorText(message ?? ''),
+      correlationId: correlationId ?? '',
       timestampIso: nowIso ?? new Date().toISOString(),
       ...(details ? { details } : {}),
     },

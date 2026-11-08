@@ -79,7 +79,7 @@ export interface AdminAuthorizationPolicy {
   requirePrimaryBootstrapAdmin?: boolean;
   disallowStaticToken?: boolean;
   maxAuthAgeSeconds?: number;
-  primaryAdminEmails?: string[];
+  primaryAdminEmails?: readonly string[];
   allowStaticAdminSecretHash?: string;
   nowSeconds?: number;
 }
@@ -118,7 +118,11 @@ export interface ValidationIssue {
     | 'STRING_TOO_LONG'
     | 'INVALID_FORMAT'
     | 'NUMBER_OUT_OF_RANGE'
-    | 'INVALID_ENUM_VALUE';
+    | 'INVALID_ENUM_VALUE'
+    | 'PROHIBITED_PERSONAL_ATTRIBUTE'
+    | 'CONTRADICTORY_INPUT'
+    | ' CONTRADICTORY_INPUT'
+    | 'INVALID_COORDINATES';
   message: string;
 }
 
@@ -132,6 +136,7 @@ export type FieldValidator<T> = (rawValue: unknown, fieldName: string) => Valida
 
 export type CanonicalApiErrorCode =
   | 'UNAUTHENTICATED'
+  | 'UNAUTHORIZED'
   | 'FORBIDDEN'
   | 'VALIDATION_FAILED'
   | 'NOT_FOUND'
@@ -271,6 +276,25 @@ export interface StructuredAuditEvent {
 
 export interface AuditEventSink {
   writeAuditEvent: (event: StructuredAuditEvent) => Promise<void>;
+}
+
+export type FirebaseIdTokenVerifier = FirebaseTokenVerifierAdapter;
+
+export interface AdminAuthorizationStoreAdapter extends DelegatedAdminStoreAdapter {
+  isUserAdmin?: (uid: string, email?: string) => Promise<boolean>;
+}
+
+export interface AuditLoggerAdapter {
+  writeAuditEvent?: (event: StructuredAuditEvent) => Promise<void>;
+  logEvent?: (event: Record<string, unknown>) => Promise<void> | void;
+}
+
+export interface RateLimiterAdapter {
+  checkLimit: (key: string) => Promise<{ allowed: boolean; retryAfterSeconds?: number }> | { allowed: boolean; retryAfterSeconds?: number };
+}
+
+export interface TelemetryAdapter {
+  recordMetric?: (name: string, value: number, tags?: Record<string, string>) => void;
 }
 
 export type ExpressHandlerLike = (req: Request, res: Response) => Promise<void>;

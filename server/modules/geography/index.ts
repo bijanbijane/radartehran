@@ -84,8 +84,8 @@ export {
 
 // Employee 11 — Extended Geography & Location Intelligence Exports
 export {
-  GeographyService,
   defaultGeographyService,
+  GeographyService,
 } from './geographyService';
 export { GeographyCatalog } from './geographyCatalog';
 export {

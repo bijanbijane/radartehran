@@ -1,0 +1,47 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "radartehran",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api/*",
+      "/manifest.json",
+      "/sitemap.xml",
+      "/robots.txt"
+    ]
+  },
+  "vars": {
+    "APP_ENV": "development",
+    "APP_URL": "http://localhost:3000"
+  },
+  "env": {
+    "preview": {
+      "name": "radartehran-preview",
+      "vars": {
+        "APP_ENV": "preview",
+        "APP_URL": "https://preview.radartehran.example.com"
+      }
+    },
+    "staging": {
+      "name": "radartehran-staging",
+      "vars": {
+        "APP_ENV": "staging",
+        "APP_URL": "https://staging.radartehran.example.com"
+      }
+    },
+    "production": {
+      "name": "radartehran",
+      "vars": {
+        "APP_ENV": "production",
+        "APP_URL": "https://radartehran.example.com"
+      }
+    }
+  }
+}

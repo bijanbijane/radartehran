@@ -66,6 +66,30 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "hoodId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "activeParticipantUids", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "updatedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "transactionOffers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "transactionId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
