@@ -72,6 +72,11 @@ jobs:
       - name: Gate F — Production Bundle Build
         run: npm run build
 
+      - name: Gate G — Cloudflare Worker Platform & Staging Bundle Dry-Run
+        run: |
+          npm run test:cloudflare
+          npx wrangler deploy --env staging --dry-run --outdir /tmp/radartehran-staging-dryrun
+
       - name: Retain production build summary on failure
         if: failure()
         uses: actions/upload-artifact@v4

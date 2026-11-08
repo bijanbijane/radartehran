@@ -63,44 +63,17 @@ export function requiresRenewedPolicyConsent(acceptedVersions: Partial<Record<ke
   return { requiresConsent: outdated.length > 0, outdatedPolicies: outdated };
 }
 export type TriStateAttributeStatus = 'present' | 'absent' | 'unknown' | 'not_applicable';
-export function formatTriStateBooleanAttributeFa(
-  value: boolean | null | undefined,
-  attributeLabelFa: string,
-  notApplicable = false,
-): { status: TriStateAttributeStatus; displayFa: string } {
-  if (notApplicable) {
-    return { status: 'not_applicable', displayFa: `${attributeLabelFa}: غیرمرتبط` };
-  }
-  if (value === true) {
-    return { status: 'present', displayFa: `${attributeLabelFa}: دارد` };
-  }
-  if (value === false) {
-    return { status: 'absent', displayFa: `${attributeLabelFa}: ندارد` };
-  }
+export function formatTriStateBooleanAttributeFa(value: boolean | null | undefined, attributeLabelFa: string, notApplicable = false): { status: TriStateAttributeStatus; displayFa: string } {
+  if (notApplicable) return { status: 'not_applicable', displayFa: `${attributeLabelFa}: غیرمرتبط` };
+  if (value === true) return { status: 'present', displayFa: `${attributeLabelFa}: دارد` };
+  if (value === false) return { status: 'absent', displayFa: `${attributeLabelFa}: ندارد` };
   return { status: 'unknown', displayFa: `${attributeLabelFa}: نامشخص` };
 }
-export type ContactVisibilityPolicy =
-  | 'publicly_visible'
-  | 'reveal_on_action'
-  | 'authorized_only'
-  | 'not_available';
-export function resolveListingContactDisclosure(input: {
-  rawPhone?: string | null;
-  policy: ContactVisibilityPolicy;
-  explicitRevealRequested: boolean;
-  isAuthenticated: boolean;
-}): {
-  canDisplayFullPhone: boolean;
-  displayedPhoneFa: string;
-  cacheControlHeader: string;
-} {
+export type ContactVisibilityPolicy = 'publicly_visible' | 'reveal_on_action' | 'authorized_only' | 'not_available';
+export function resolveListingContactDisclosure(input: { rawPhone?: string | null; policy: ContactVisibilityPolicy; explicitRevealRequested: boolean; isAuthenticated: boolean; }): { canDisplayFullPhone: boolean; displayedPhoneFa: string; cacheControlHeader: string; } {
   const cleanPhone = String(input.rawPhone || '').trim();
   if (!cleanPhone || input.policy === 'not_available') {
-    return {
-      canDisplayFullPhone: false,
-      displayedPhoneFa: 'تماس تلفنی ثبت نشده (ثبت درخواست مشاوره)',
-      cacheControlHeader: 'private, no-store',
-    };
+    return { canDisplayFullPhone: false, displayedPhoneFa: 'تماس تلفنی ثبت نشده (ثبت درخواست مشاوره)', cacheControlHeader: 'private, no-store' };
   }
   if (input.policy === 'authorized_only' && !input.isAuthenticated) {
     return {
@@ -276,4 +249,17 @@ export async function persistBuyerAlertDocument(params: { uid: string; email?: s
     },
   });
   return { duplicate, expiresAtIso: expiresAt.toISOString(), id: alertDocId };
+}
+export async function reconcileUserBuyerAlertsInFirestore(uid: string, mode: 'export' | 'delete'): Promise<BuyerAlertLeadItem[]> {
+  if (!uid || process.env.PREVENT_PROD_FIREBASE_IN_TEST === 'true') return [];
+  try {
+    const snap = await getFirebaseAdminFirestoreForServer().collection('buyerAlerts').where('userId', '==', uid).limit(100).get();
+    const items: BuyerAlertLeadItem[] = [];
+    for (const d of snap.docs) {
+      const r = d.data() as Record<string, unknown>;
+      items.push({ id: d.id, hoodId: Number(r.hoodId) || 1, hoodName: String(r.hoodName || ''), fullName: String(r.fullName || ''), phone: String(r.phone || ''), dealType: r.dealType === 'اجاره' ? 'اجاره' : 'خرید', maxBudgetText: String(r.maxBudgetText || ''), createdAtFa: String(r.createdAtFa || ''), createdAtIso: typeof r.createdAtIso === 'string' ? r.createdAtIso : undefined, expiresAtIso: typeof r.expiresAtIso === 'string' ? r.expiresAtIso : undefined, submittedByUid: uid });
+      if (mode === 'delete') await d.ref.delete();
+    }
+    return items;
+  } catch { return []; }
 }

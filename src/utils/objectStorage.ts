@@ -1,5 +1,5 @@
 import type { CityId } from '../types/models'; import { clampNumber, sanitizeInput } from './security'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
-export type ObjectStorageProviderId = 'arvancloud' | 'liara' | 'minio' | 's3_compatible' | 'firebase_storage' | 'local_bucket';
+export type ObjectStorageProviderId = 'arvancloud' | 'liara' | 'minio' | 's3_compatible' | 'r2' | 'firebase_storage' | 'local_bucket';
 export interface ListingMediaObject { id: string; objectKey: string; bucket: string; provider: ObjectStorageProviderId; mediaType: 'image' | 'video'; mimeType: string; sizeBytes: number; url: string; remoteS3Synced?: boolean; createdAtIso: string; contentHashSha256?: string; width?: number; height?: number; qualityWarningFa?: string; }
 export interface ObjectStorageStatusPayload { status: 'ok'; providerLabelFa: string; maxImageMb: number; maxVideoMb: number; }
 export const ALLOWED_IMAGE_MIMES: readonly string[] = [
@@ -23,6 +23,7 @@ export function fileNameForUploadMime( fileName: string, mimeType: string, ): st
  */
 export function getStorageProviderLabelFa(provider: string): string { switch (provider) { case 'arvancloud': return 'آبجکت استوریج ابری آروان (ArvanCloud S3)';
     case 'liara': return 'آبجکت استوریج لیارا (Liara S3 Bucket)'; case 'minio': return 'سرور اختصاصی MinIO S3';
+    case 'r2': return 'آبجکت استوریج کلودفلر (Cloudflare R2)';
     case 'firebase_storage':
       return 'فضای ابری Firebase Cloud Storage';
     case 's3_compatible':

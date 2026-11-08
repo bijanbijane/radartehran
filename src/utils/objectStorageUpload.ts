@@ -1,14 +1,16 @@
 import crypto from 'crypto'; import { isIP } from 'node:net'; import sharp from 'sharp'; import { ALLOWED_IMAGE_MIMES, ALLOWED_VIDEO_MIMES, ObjectStorageProviderId, } from './objectStorage'; import { detectMediaFormatByMagicBytes, hasPolyglotScriptBytes, isSvgOrXmlPayload, validateVideoContainerSafety } from './fileSignature'; import { validateStorageEndpointDnsResolution } from './serverConfigValidator'; import { getRuntimeEnvConfig } from './serverRuntimeEnvStore'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export const MAX_IMAGE_TARGET_WIDTH_PX = 800; export function validateObjectStorageEndpoint(rawEndpoint: string): URL { let parsed: URL; try { parsed = new URL(rawEndpoint); } catch { throw new Error('OBJECT_STORAGE_ENDPOINT must be a valid URL'); }
   if (parsed.protocol !== 'https:') throw new Error('OBJECT_STORAGE_ENDPOINT must use https:'); if (parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('OBJECT_STORAGE_ENDPOINT must not include URL credentials or query'); const host = parsed.hostname.toLowerCase(); const bareHost = host.replace(/^\[|\]$/g, ''); if (!bareHost.includes('.') || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal') || bareHost.includes(':') || isIP(bareHost) !== 0) { throw new Error('OBJECT_STORAGE_ENDPOINT must be a public DNS hostname'); } return parsed; }
 export interface ResolvedObjectStorageConfig { provider: ObjectStorageProviderId; rawProviderName: string; bucket: string; region: string; endpoint: string; endpointHost: string; accessKey: string; secretKey: string; publicBaseUrl: string; maxImageMb: number; maxVideoMb: number; s3CredentialsConfigured: boolean; }
-export function normalizeStorageProvider(raw: string): ObjectStorageProviderId { const clean = (raw || '').trim().toLowerCase(); if (clean === 'arvan' || clean === 'arvancloud') return 'arvancloud'; if (clean === 'liara') return 'liara'; if (clean === 'minio') return 'minio'; if (clean === 'firebase' || clean === 'firebase_storage') return 'firebase_storage'; if (clean === 'local' || clean === 'local_bucket') return 'local_bucket'; if (clean === 's3' || clean === 'r2' || clean === 's3_compatible') return 's3_compatible'; return 'arvancloud';
+export function normalizeStorageProvider(raw: string): ObjectStorageProviderId { const clean = (raw || '').trim().toLowerCase(); if (clean === 'arvan' || clean === 'arvancloud') return 'arvancloud'; if (clean === 'liara') return 'liara'; if (clean === 'minio') return 'minio'; if (clean === 'firebase' || clean === 'firebase_storage') return 'firebase_storage'; if (clean === 'local' || clean === 'local_bucket') return 'local_bucket'; if (clean === 'r2' || clean === 'cloudflare_r2') return 'r2'; if (clean === 's3' || clean === 's3_compatible') return 's3_compatible'; return 'arvancloud';
 } export function resolveObjectStorageRuntimeConfig( env: Record<string, string | undefined> = process.env
-): ResolvedObjectStorageConfig { const rt = getRuntimeEnvConfig(env); const provider = normalizeStorageProvider(rt.OBJECT_STORAGE_PROVIDER); const bucket = rt.OBJECT_STORAGE_BUCKET || 'tehran-housing-radar-media'; const region = rt.OBJECT_STORAGE_REGION || 'ir-thr-at1';
-  const rawEndpoint = rt.OBJECT_STORAGE_ENDPOINT || 'https://s3.ir-thr-at1.arvanstorage.ir';
-  let endpointUrl = new URL('https://s3.ir-thr-at1.arvanstorage.ir');
-  try { endpointUrl = validateObjectStorageEndpoint(rawEndpoint); } catch { endpointUrl = new URL('https://s3.ir-thr-at1.arvanstorage.ir'); }
-  const endpoint = endpointUrl.toString().replace(/\/+$/, ''); const endpointHost = endpointUrl.host; const accessKey = rt.OBJECT_STORAGE_ACCESS_KEY; const secretKey = rt.OBJECT_STORAGE_SECRET_KEY;
-  let publicBaseUrl = `https://${bucket}.s3.${region}.arvanstorage.ir`;
+): ResolvedObjectStorageConfig { const rt = getRuntimeEnvConfig(env); const provider = normalizeStorageProvider(rt.OBJECT_STORAGE_PROVIDER); const bucket = rt.OBJECT_STORAGE_BUCKET || 'tehran-housing-radar-media'; const region = provider === 'r2' && !env.OBJECT_STORAGE_REGION ? 'auto' : (rt.OBJECT_STORAGE_REGION || 'ir-thr-at1');
+  const r2AccountId = (env.R2_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID || '').trim().toLowerCase();
+  const defaultR2Endpoint = provider === 'r2' && /^[a-z0-9-]{8,64}$/.test(r2AccountId) ? `https://${r2AccountId}.r2.cloudflarestorage.com` : 'https://s3.ir-thr-at1.arvanstorage.ir';
+  const rawEndpoint = (env.OBJECT_STORAGE_ENDPOINT ? rt.OBJECT_STORAGE_ENDPOINT : '') || defaultR2Endpoint;
+  let endpointUrl = new URL(defaultR2Endpoint);
+  try { endpointUrl = validateObjectStorageEndpoint(rawEndpoint); } catch { endpointUrl = new URL(defaultR2Endpoint); }
+  const endpoint = endpointUrl.toString().replace(/\/+$/, ''); const endpointHost = endpointUrl.host; const accessKey = rt.OBJECT_STORAGE_ACCESS_KEY || (env.R2_ACCESS_KEY_ID || '').trim(); const secretKey = rt.OBJECT_STORAGE_SECRET_KEY || (env.R2_SECRET_ACCESS_KEY || '').trim();
+  let publicBaseUrl = provider === 'r2' ? `/api/object-storage/file` : `https://${bucket}.s3.${region}.arvanstorage.ir`;
   if (rt.OBJECT_STORAGE_PUBLIC_BASE_URL) { try { publicBaseUrl = validateObjectStorageEndpoint(rt.OBJECT_STORAGE_PUBLIC_BASE_URL).toString().replace(/\/+$/, ''); } catch { /* retain default */ } }
   return { provider, rawProviderName: rt.OBJECT_STORAGE_PROVIDER || 'arvan', bucket, region, endpoint, endpointHost, accessKey, secretKey, publicBaseUrl, maxImageMb: rt.OBJECT_STORAGE_MAX_IMAGE_MB, maxVideoMb: rt.OBJECT_STORAGE_MAX_VIDEO_MB, s3CredentialsConfigured: Boolean(accessKey.length >= 4 && secretKey.length >= 8), }; }
 export function validateObjectStoragePayload(params: { buffer: Buffer; mediaType: 'image' | 'video'; mimeType: string; cfg: ResolvedObjectStorageConfig; areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; referenceValuationMillionToman?: number; }): { ok: boolean; statusCode: 200 | 400 | 413; errorMessage?: string; displayAreaUnitLabel: string; referenceValuationIntlText: string } {
@@ -89,7 +91,7 @@ export function buildValidatedS3TargetUrl(
   cfg: ResolvedObjectStorageConfig,
   env: Record<string, string | undefined> = process.env
 ): URL | null {
-  const supportedProviders = new Set(['arvancloud', 'liara', 'minio', 's3_compatible']);
+  const supportedProviders = new Set(['arvancloud', 'liara', 'minio', 's3_compatible', 'r2']);
   if (!supportedProviders.has(cfg.provider)) return null;
   if (!cfg.bucket || !/^[A-Za-z0-9][A-Za-z0-9.-]{1,61}[A-Za-z0-9]$/.test(cfg.bucket)) return null;
   const validListingObjectKey =
@@ -109,9 +111,10 @@ export function buildValidatedS3TargetUrl(
   const configuredHosts = (env.OBJECT_STORAGE_ALLOWED_HOSTS || DEFAULT_ALLOWED_OBJECT_STORAGE_HOSTS.join(','))
     .split(',').map((host) => host.trim().toLowerCase()).filter(Boolean);
   const isR2Enabled =
+    cfg.provider === 'r2' ||
     cfg.rawProviderName.trim().toLowerCase() === 'r2' ||
     (env.OBJECT_STORAGE_PROVIDER || '').trim().toLowerCase() === 'r2' ||
-    Boolean((env.R2_ACCOUNT_ID || '').trim());
+    Boolean((env.R2_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID || '').trim());
   const isAllowedR2Host = isR2Enabled && R2_HOST_PATTERN.test(hostLower);
   if (!configuredHosts.includes(hostLower) && !isAllowedR2Host) return null;
   const encodedObjectKey = objectKey.split('/').map((segment) => encodeURIComponent(segment)).join('/');

@@ -157,10 +157,16 @@ export function getRuntimeEnvConfig(
     return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : fallback;
   };
 
+  const rawProvider = pick('OBJECT_STORAGE_PROVIDER', 'arvan').toLowerCase();
+  const isR2 = rawProvider === 'r2' || rawProvider === 'cloudflare_r2' || rawProvider === 'cloudflare-r2';
+  const r2Acct = (env.R2_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID || '').trim();
   const bucket =
-    pick('OBJECT_STORAGE_BUCKET', 'tehran-housing-radar-media').replace(/[^a-zA-Z0-9._-]/g, '') ||
+    pick('OBJECT_STORAGE_BUCKET', isR2 ? 'radartehran-staging-media' : 'tehran-housing-radar-media').replace(/[^a-zA-Z0-9._-]/g, '') ||
     'tehran-housing-radar-media';
-  const region = pick('OBJECT_STORAGE_REGION', 'ir-thr-at1');
+  const region = pick('OBJECT_STORAGE_REGION', isR2 ? 'auto' : 'ir-thr-at1');
+  const defaultEndpoint = isR2
+    ? (r2Acct ? `https://${r2Acct}.r2.cloudflarestorage.com` : 'https://r2.cloudflarestorage.com')
+    : 'https://s3.ir-thr-at1.arvanstorage.ir';
 
   return {
     GEMINI_MODEL: pick('GEMINI_MODEL', 'gemini-2.5-flash'),
@@ -169,15 +175,15 @@ export function getRuntimeEnvConfig(
     FIREBASE_PROJECT_ID: pick('FIREBASE_PROJECT_ID', 'gen-lang-client-0713157837'),
     ADMIN_EMAIL: pick('ADMIN_EMAIL', 'radio837isf@gmail.com').toLowerCase(),
     ADMIN_API_SECRET: pick('ADMIN_API_SECRET', ''),
-    OBJECT_STORAGE_PROVIDER: pick('OBJECT_STORAGE_PROVIDER', 'arvan').toLowerCase(),
-    OBJECT_STORAGE_ENDPOINT: pick('OBJECT_STORAGE_ENDPOINT', 'https://s3.ir-thr-at1.arvanstorage.ir'),
+    OBJECT_STORAGE_PROVIDER: isR2 ? 'r2' : rawProvider,
+    OBJECT_STORAGE_ENDPOINT: pick('OBJECT_STORAGE_ENDPOINT', defaultEndpoint),
     OBJECT_STORAGE_BUCKET: bucket,
     OBJECT_STORAGE_REGION: region,
-    OBJECT_STORAGE_ACCESS_KEY: pick('OBJECT_STORAGE_ACCESS_KEY', ''),
-    OBJECT_STORAGE_SECRET_KEY: pick('OBJECT_STORAGE_SECRET_KEY', ''),
+    OBJECT_STORAGE_ACCESS_KEY: pick('OBJECT_STORAGE_ACCESS_KEY', (env.R2_ACCESS_KEY_ID || '').trim()),
+    OBJECT_STORAGE_SECRET_KEY: pick('OBJECT_STORAGE_SECRET_KEY', (env.R2_SECRET_ACCESS_KEY || '').trim()),
     OBJECT_STORAGE_PUBLIC_BASE_URL: pick(
       'OBJECT_STORAGE_PUBLIC_BASE_URL',
-      `https://${bucket}.s3.${region}.arvanstorage.ir`
+      isR2 ? `/api/object-storage/file` : `https://${bucket}.s3.${region}.arvanstorage.ir`
     ),
     OBJECT_STORAGE_MAX_IMAGE_MB: clampNumber(pick('OBJECT_STORAGE_MAX_IMAGE_MB', '5'), 1, 50, 5),
     OBJECT_STORAGE_MAX_VIDEO_MB: clampNumber(pick('OBJECT_STORAGE_MAX_VIDEO_MB', '50'), 5, 50, 50),

@@ -1,0 +1,144 @@
+name: Bootstrap Cloudflare Staging Resources (One-Time Elevated Setup)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_staging_bootstrap:
+        description: "Type 'radartehran-staging' to confirm one-time Staging resource bootstrap"
+        required: true
+        default: "radartehran-staging"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-staging-release-radartehran-staging
+  cancel-in-progress: false
+
+env:
+  CI: "true"
+  NODE_ENV: production
+
+jobs:
+  bootstrap-staging:
+    name: One-Time Staging Resource Creation & Initial Worker Bootstrap
+    runs-on: ubuntu-latest
+    environment: staging-bootstrap
+    timeout-minutes: 20
+
+    steps:
+      - name: 1. Validate explicit Staging target confirmation
+        run: |
+          if [ "${{ inputs.confirm_staging_bootstrap }}" != "radartehran-staging" ]; then
+            echo "Confirmation input must be exactly 'radartehran-staging'. Aborting."
+            exit 1
+          fi
+
+      - name: 2. Clean repository checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 3. Set up Node.js 22 with npm lockfile cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: 4. Install dependencies deterministically
+        run: npm ci
+
+      - name: 5. Verify elevated bootstrap credentials presence (without printing values)
+        env:
+          CF_BOOTSTRAP_API_TOKEN: ${{ secrets.CF_BOOTSTRAP_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node -e '
+            const hasToken = Boolean(process.env.CF_BOOTSTRAP_API_TOKEN && process.env.CF_BOOTSTRAP_API_TOKEN.trim().length > 10);
+            const hasAccount = Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID.trim().length > 10);
+            console.log("CF_BOOTSTRAP_API_TOKEN secret configured:", hasToken);
+            console.log("CLOUDFLARE_ACCOUNT_ID (var or secret) configured:", hasAccount);
+            if (!hasToken || !hasAccount) {
+              console.error("Missing required credentials in environment staging-bootstrap: secret CF_BOOTSTRAP_API_TOKEN and/or variable/secret CLOUDFLARE_ACCOUNT_ID");
+              process.exit(1);
+            }
+          '
+
+      - name: 6. Run TypeScript, Architecture & Local D1 Migration Ledger Checks
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run arch:check
+          npm run test:cloudflare
+          CI=true npm run cf:staging:migrate:local
+          rm -rf .wrangler
+
+      - name: 7. Build Production Client & Worker Bundle
+        run: npm run build
+
+      - name: 8. Provision or Reuse Staging Resources & Configure Initial Secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_BOOTSTRAP_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_API_SECRET: ${{ secrets.ADMIN_API_SECRET }}
+          VALUATION_SEAL_SECRET: ${{ secrets.VALUATION_SEAL_SECRET }}
+          R2_SIGNING_SECRET: ${{ secrets.R2_SIGNING_SECRET }}
+        run: |
+          node scripts/cloudflare/provision-staging.mjs --mode=bootstrap --require-remote --provision-internal-secrets
+
+      - name: 9. Apply Canonical D1 Migrations to Remote Staging Database (d1_migrations ledger)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_BOOTSTRAP_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler d1 migrations apply radartehran-staging-db --env staging --remote
+
+      - name: 10. Create / Deploy Initial Staging Worker (radartehran-staging)
+        id: cf_bootstrap_deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_BOOTSTRAP_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          DEPLOY_OUT=$(npx wrangler deploy --env staging 2>&1)
+          echo "$DEPLOY_OUT"
+          DEPLOYED_URL=$(echo "$DEPLOY_OUT" | grep -Eo 'https://radartehran-staging\.[a-zA-Z0-9_-]+\.workers\.dev' | head -n 1 || true)
+          VERSION_ID=$(echo "$DEPLOY_OUT" | grep -Eo 'Version ID: [0-9a-f-]+' | awk '{print $3}' | head -n 1 || true)
+          if [ -z "$DEPLOYED_URL" ]; then
+            echo "Failed to extract deployed radartehran-staging workers.dev URL"
+            exit 1
+          fi
+          echo "deployed_url=$DEPLOYED_URL" >> "$GITHUB_OUTPUT"
+          echo "version_id=${VERSION_ID:-unknown}" >> "$GITHUB_OUTPUT"
+
+      - name: 11. Run Initial Post-Bootstrap Live HTTP Smoke Verification
+        run: |
+          node scripts/cloudflare/smoke-test-staging.mjs --url "${{ steps.cf_bootstrap_deploy.outputs.deployed_url }}"
+
+      - name: 12. Publish Bootstrap Summary & Token Revocation Instructions
+        if: always()
+        run: |
+          {
+            echo "## One-Time Cloudflare Staging Bootstrap Summary (\`radartehran-staging\`)"
+            echo "- **GitHub Environment**: \`staging-bootstrap\`"
+            echo "- **Target Worker**: \`radartehran-staging\` (Production \`radartehran\` untouched)"
+            echo "- **Initial Deployed URL**: \`${{ steps.cf_bootstrap_deploy.outputs.deployed_url || 'N/A' }}\`"
+            echo "- **Initial Version ID**: \`${{ steps.cf_bootstrap_deploy.outputs.version_id || 'N/A' }}\`"
+            echo "- **Authoritative D1 Ledger**: \`d1_migrations\` (\`0001_core_projections_and_watermarks.sql\`, \`0002_upload_sessions_legal_holds_and_rate_limits.sql\`)"
+            echo ""
+            echo "### Mandatory Post-Bootstrap Actions Before Routine Deployments"
+            echo "1. Download the \`radartehran-staging-resource-manifest\` artifact (which contains \`docs/cloudflare/staging-resource-manifest.json\` and the updated \`wrangler.jsonc\`) and commit the real non-secret \`env.staging.d1_databases[0].database_id\` and \`env.staging.kv_namespaces[0].id\` into \`wrangler.jsonc\`."
+            echo "2. **Revoke or delete \`CF_BOOTSTRAP_API_TOKEN\`** in the Cloudflare Dashboard (My Profile -> API Tokens -> Roll/Delete) and remove \`CF_BOOTSTRAP_API_TOKEN\` from GitHub Environment \`staging-bootstrap\` so all subsequent deployments use only the least-privileged \`CF_DEPLOY_API_TOKEN\` in \`.github/workflows/deploy-staging.yml\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 13. Upload Staging Resource Manifest & Patched wrangler.jsonc Artifact (Zero Secrets)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radartehran-staging-resource-manifest
+          path: |
+            docs/cloudflare/staging-resource-manifest.json
+            wrangler.jsonc
+          if-no-files-found: ignore
+          retention-days: 30

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Lock, Scale, FileCheck, AlertTriangle, Archive, CheckCircle2, XCircle } from 'lucide-react';
+import { formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 
 export interface ComplianceAdminHoldSummary {
   id: string;
@@ -105,7 +106,7 @@ export const RegulatoryComplianceAdminPanel: React.FC<RegulatoryComplianceAdminP
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'الزامات قانونی فعال', value: '19 / 19', sub: 'منابع رسمی تاییدشده', color: 'text-emerald-400' },
-          { label: 'دستورات نگهداری قانونی فعال', value: String(holds.length), sub: 'انتشار محدود و شناسه‌مند', color: 'text-amber-400' },
+          { label: 'دستورات نگهداری قانونی فعال', value: String(holds.length), sub: `سقف ارزش پرونده: ${formatMillionTomanAsIntlCurrency(25_000, 'USD')}`, color: 'text-amber-400' },
           { label: 'تعارضات حقوقی در صف بررسی', value: '1', sub: 'مسدودسازی خودکار حذف تا تعیین تکلیف', color: 'text-rose-400' },
           { label: 'درخواست‌های حذف جزئی (Employee 64)', value: 'تفکیک‌شده', sub: 'حفظ فقط رکوردهای مشمول الزام قانونی', color: 'text-sky-400' },
         ].map((kpi) => (

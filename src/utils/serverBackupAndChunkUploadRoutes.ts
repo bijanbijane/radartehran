@@ -19,14 +19,66 @@ interface ChunkedUploadSession { sessionId: string; ownerUid: string; city: 'teh
   hoodId: number; mediaType: 'image' | 'video'; mimeType: string; fileName: string; totalChunks: number; maxBytes: number; chunks: Map<number, Buffer>;
   receivedBytes: number; createdAtMs: number; completed: boolean; }
 const activeChunkSessions = new Map<string, ChunkedUploadSession>();
+const CHUNK_SESSIONS_DIR = path.join(BUCKET_DIR, 'upload-sessions');
+const SAFE_CHUNK_SESSION_ID = /^upl_\d{10,16}_[a-f0-9]{16}$/i;
 const MAX_CHUNK_SIZE_BYTES = 2 * 1024 * 1024;
 const MAX_ACTIVE_CHUNK_SESSIONS_TOTAL = 25;
 const MAX_ACTIVE_CHUNK_SESSIONS_PER_USER = 2;
 const SESSION_TTL_MS = 15 * 60 * 1000;
-export function resetChunkUploadSessionsForTests(): void { activeChunkSessions.clear(); }
+function getChunkSessionFilePath(sessionId: string): string | null {
+  if (!SAFE_CHUNK_SESSION_ID.test(sessionId)) return null;
+  return path.join(CHUNK_SESSIONS_DIR, `${sessionId}.json`);
+}
+async function persistChunkSessionToDisk(sess: ChunkedUploadSession): Promise<void> {
+  const filePath = getChunkSessionFilePath(sess.sessionId);
+  if (!filePath) return;
+  const serialized = JSON.stringify({
+    ...sess,
+    chunks: Array.from(sess.chunks.entries()).map(([idx, buf]) => [idx, buf.toString('base64')]),
+  });
+  await writeFileAtomically(filePath, Buffer.from(serialized, 'utf-8'), 0o600);
+}
+async function removeChunkSessionFromDisk(sessionId: string): Promise<void> {
+  const filePath = getChunkSessionFilePath(sessionId);
+  if (filePath) await fs.promises.unlink(filePath).catch(() => {});
+}
+async function resolveDurableChunkSession(sessionId: string, now = Date.now()): Promise<ChunkedUploadSession | undefined> {
+  const cached = activeChunkSessions.get(sessionId);
+  if (cached) {
+    if (now - cached.createdAtMs > SESSION_TTL_MS) {
+      activeChunkSessions.delete(sessionId);
+      await removeChunkSessionFromDisk(sessionId);
+      return undefined;
+    }
+    return cached;
+  }
+  const filePath = getChunkSessionFilePath(sessionId);
+  if (!filePath) return undefined;
+  try {
+    const raw = await fs.promises.readFile(filePath, 'utf-8');
+    const parsed = JSON.parse(raw) as Omit<ChunkedUploadSession, 'chunks'> & { chunks: Array<[number, string]> };
+    if (!parsed || typeof parsed !== 'object' || now - Number(parsed.createdAtMs) > SESSION_TTL_MS || parsed.completed) {
+      await removeChunkSessionFromDisk(sessionId);
+      return undefined;
+    }
+    const hydrated: ChunkedUploadSession = {
+      ...parsed,
+      chunks: new Map((parsed.chunks || []).map(([idx, b64]) => [Number(idx), Buffer.from(String(b64), 'base64')])),
+    };
+    activeChunkSessions.set(sessionId, hydrated);
+    return hydrated;
+  } catch { return undefined; }
+}
+export function resetChunkUploadSessionsForTests(): void {
+  activeChunkSessions.clear();
+  try { fs.rmSync(CHUNK_SESSIONS_DIR, { recursive: true, force: true }); } catch { /* ignore */ }
+}
 function cleanupExpiredChunkSessions(now = Date.now()): void {
   for (const [id, sess] of activeChunkSessions.entries()) {
-    if (now - sess.createdAtMs > SESSION_TTL_MS) activeChunkSessions.delete(id);
+    if (now - sess.createdAtMs > SESSION_TTL_MS) {
+      activeChunkSessions.delete(id);
+      void removeChunkSessionFromDisk(id);
+    }
   }
 }
 const registeredBackupApps = new WeakSet<Express>();
@@ -120,11 +172,13 @@ export function registerBackupAndChunkUploadRoutes(
       }
       const cfg = resolveObjectStorageRuntimeConfig();
       const sessionId = `upl_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-      activeChunkSessions.set(sessionId, {
+      const newSession: ChunkedUploadSession = {
         sessionId, ownerUid: userAuth.uid, city, hoodId, mediaType, mimeType, fileName, totalChunks,
         maxBytes: (mediaType === 'video' ? cfg.maxVideoMb : Math.max(10, cfg.maxImageMb)) * 1024 * 1024,
         chunks: new Map(), receivedBytes: 0, createdAtMs: Date.now(), completed: false,
-      });
+      };
+      activeChunkSessions.set(sessionId, newSession);
+      await persistChunkSessionToDisk(newSession);
       res.status(200).json({ status: 'ok', sessionId, totalChunks });
     })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
   });
@@ -138,7 +192,7 @@ export function registerBackupAndChunkUploadRoutes(
       const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
       const chunkIndex = Number(req.body?.chunkIndex);
       const base64Chunk = typeof req.body?.base64Data === 'string' ? req.body.base64Data.trim() : '';
-      const sess = activeChunkSessions.get(sessionId);
+      const sess = await resolveDurableChunkSession(sessionId);
       if (!sess || sess.completed) { res.status(404).json({ status: 'error', code: 'UPLOAD_SESSION_NOT_FOUND_OR_EXPIRED' }); return; }
       if (sess.ownerUid !== userAuth.uid) { res.status(403).json({ status: 'error', code: 'UPLOAD_SESSION_OWNER_MISMATCH' }); return; }
       if (!Number.isInteger(chunkIndex) || chunkIndex < 0 || chunkIndex >= sess.totalChunks) { res.status(400).json({ status: 'error', code: 'CHUNK_INDEX_OUT_OF_RANGE' }); return; }
@@ -149,10 +203,12 @@ export function registerBackupAndChunkUploadRoutes(
       const buf = Buffer.from(base64Chunk, 'base64');
       if (buf.length === 0 || buf.length > MAX_CHUNK_SIZE_BYTES || sess.receivedBytes + buf.length > sess.maxBytes) {
         activeChunkSessions.delete(sessionId);
+        await removeChunkSessionFromDisk(sessionId);
         res.status(413).json({ status: 'error', code: 'CHUNK_OR_TOTAL_SIZE_EXCEEDED' }); return;
       }
       sess.chunks.set(chunkIndex, buf);
       sess.receivedBytes += buf.length;
+      await persistChunkSessionToDisk(sess);
       res.status(200).json({ status: 'ok', chunkIndex, receivedChunks: sess.chunks.size });
     })().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
   });
@@ -164,12 +220,13 @@ export function registerBackupAndChunkUploadRoutes(
       const userAuth = await verifyAuthenticatedUserHeader(req.headers, process.env);
       if (!userAuth.authenticated || !userAuth.uid) { res.status(userAuth.statusCode).json({ status: 'error', code: userAuth.reason }); return; }
       const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
-      const sess = activeChunkSessions.get(sessionId);
+      const sess = await resolveDurableChunkSession(sessionId);
       if (!sess || sess.completed) { res.status(404).json({ status: 'error', code: 'UPLOAD_SESSION_NOT_FOUND_OR_EXPIRED' }); return; }
       if (sess.ownerUid !== userAuth.uid) { res.status(403).json({ status: 'error', code: 'UPLOAD_SESSION_OWNER_MISMATCH' }); return; }
       if (sess.chunks.size !== sess.totalChunks) { res.status(400).json({ status: 'error', code: 'INCOMPLETE_CHUNKS' }); return; }
       sess.completed = true;
       activeChunkSessions.delete(sessionId);
+      await removeChunkSessionFromDisk(sessionId);
       const orderedBuffers: Buffer[] = [];
       for (let i = 0; i < sess.totalChunks; i++) {
         const part = sess.chunks.get(i);
@@ -201,6 +258,11 @@ export function registerBackupAndChunkUploadRoutes(
         await writeFileAtomically(localFilePath, fullBuffer, 0o600);
         if (getIntegrationCircuitBreakerState('remote_s3_storage').state !== 'temporarily_disabled') {
           remoteS3Synced = await uploadToRemoteS3Compatible(objectKey, fullBuffer, canonicalMime, cfg);
+        }
+        if ((cfg.provider === 'r2' || process.env.OBJECT_STORAGE_REQUIRE_REMOTE === 'true') && cfg.s3CredentialsConfigured && !remoteS3Synced) {
+          await fs.promises.unlink(localFilePath).catch(() => {});
+          res.status(502).json({ status: 'error', code: 'REMOTE_STORAGE_UPLOAD_FAILED', message: 'ذخیرهٔ فایل روی مخزن ابری کلودفلر R2 تأیید نشد.' });
+          return;
         }
         const record = {
           id: objectId, objectKey, bucket: cfg.bucket || 'tehran-housing-radar-media', provider: remoteS3Synced ? cfg.provider : ('local_bucket' as const),

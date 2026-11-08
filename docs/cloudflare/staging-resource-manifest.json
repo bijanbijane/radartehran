@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.2",
+  "generatedAtIso": "2026-11-08T19:49:42.701Z",
+  "executionMode": "verify-only",
+  "targetWorker": "radartehran-staging",
+  "protectedProductionWorker": "radartehran",
+  "authoritativeMigrationLedger": "d1_migrations",
+  "wranglerStagingBindingsState": {
+    "d1DatabaseId": "00000000-0000-0000-0000-000000000001",
+    "kvNamespaceId": "00000000000000000000000000000001",
+    "hasPlaceholderD1": true,
+    "hasPlaceholderKv": true,
+    "readyForRoutineDeployWithoutBootstrapPatch": false
+  },
+  "authentication": {
+    "authenticated": false,
+    "hasCloudflareApiTokenEnv": false,
+    "hasCloudflareAccountIdEnv": false,
+    "blockerReason": "Wrangler is not authenticated in this execution container (CF_BOOTSTRAP_API_TOKEN / CF_DEPLOY_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are not set)."
+  },
+  "canonicalD1Migrations": [
+    {
+      "fileName": "0001_core_projections_and_watermarks.sql",
+      "relativePath": "migrations/d1/0001_core_projections_and_watermarks.sql",
+      "expectedSha256": "12abe3e8b02dfd1185aa6930545db52b67bedd1f6521752f5d4d92a128415b61"
+    },
+    {
+      "fileName": "0002_upload_sessions_legal_holds_and_rate_limits.sql",
+      "relativePath": "migrations/d1/0002_upload_sessions_legal_holds_and_rate_limits.sql",
+      "expectedSha256": "19b161ad2212f51d83f2e7e706bb41d6c807da72ae7b538d9f11e7b6b5ae88ab"
+    }
+  ],
+  "resources": [
+    {
+      "resourceType": "d1_database",
+      "resourceName": "radartehran-staging-db",
+      "remoteId": null,
+      "bindingName": "DB",
+      "environment": "staging",
+      "creationOrReuseStatus": "NOT_PROVISIONED",
+      "verificationResult": "BLOCKED_BY_EXTERNAL_REQUIREMENT"
+    },
+    {
+      "resourceType": "r2_bucket",
+      "resourceName": "radartehran-staging-media",
+      "remoteId": null,
+      "bindingName": "MEDIA_BUCKET",
+      "environment": "staging",
+      "creationOrReuseStatus": "NOT_PROVISIONED",
+      "verificationResult": "BLOCKED_BY_EXTERNAL_REQUIREMENT"
+    },
+    {
+      "resourceType": "kv_namespace",
+      "resourceName": "radartehran-staging-kv",
+      "remoteId": null,
+      "bindingName": "RADAR_KV",
+      "environment": "staging",
+      "creationOrReuseStatus": "NOT_PROVISIONED",
+      "verificationResult": "BLOCKED_BY_EXTERNAL_REQUIREMENT"
+    },
+    {
+      "resourceType": "queue",
+      "resourceName": "radartehran-staging-queue",
+      "remoteId": null,
+      "bindingName": "RADAR_QUEUE",
+      "environment": "staging",
+      "creationOrReuseStatus": "NOT_PROVISIONED",
+      "verificationResult": "BLOCKED_BY_EXTERNAL_REQUIREMENT"
+    },
+    {
+      "resourceType": "queue_dlq",
+      "resourceName": "radartehran-staging-dlq",
+      "remoteId": null,
+      "bindingName": "RADAR_DLQ",
+      "environment": "staging",
+      "creationOrReuseStatus": "NOT_PROVISIONED",
+      "verificationResult": "BLOCKED_BY_EXTERNAL_REQUIREMENT"
+    }
+  ]
+}

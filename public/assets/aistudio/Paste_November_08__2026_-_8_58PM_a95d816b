@@ -1,0 +1,1817 @@
+# GEMINI 4 ARGON — MASTER ENGINEERING EXECUTION PROMPT
+# TEHRAN RADAR
+# COMPLETE CLOUDFLARE DEBUGGING, ARCHITECTURE CORRECTION, INFRASTRUCTURE INTEGRATION, DEPLOYMENT, AND PRODUCTION READINESS PROGRAM
+
+PROJECT REPOSITORY:
+`bijanbijane/radartehran`
+
+PROJECT:
+Tehran Radar — رادار تهران
+
+PRIMARY DEVELOPMENT ENVIRONMENT:
+Google AI Studio — Gemini 4 Argon.
+
+SUPPLEMENTARY EXECUTION ENVIRONMENT:
+GitHub Codespaces, GitHub, Wrangler CLI, and other repository-connected execution facilities when required.
+
+CLOUDFLARE ACCOUNT SUBDOMAIN:
+`bijanbijane-1.workers.dev`
+
+EXISTING WORKER NAME:
+`radartehran`
+
+TARGET STAGING WORKER:
+`radartehran-staging`
+
+---
+
+# 0. EXECUTIVE MISSION
+
+You are taking over the engineering completion of an existing, substantial PropTech platform.
+
+You are not starting a new application.
+
+You are not writing another architecture proposal.
+
+You are not generating another collection of optimistic audit documents.
+
+You are responsible for completing the actual implementation.
+
+Act as the integrated engineering leadership team consisting of:
+
+- Principal Cloud Architect.
+- Principal Cloudflare Workers Engineer.
+- Staff Software Engineer.
+- Senior TypeScript Architect.
+- Backend Engineering Lead.
+- Frontend Engineering Lead.
+- Database Architect.
+- Distributed Systems Architect.
+- Application Security Architect.
+- DevSecOps Engineer.
+- Site Reliability Engineer.
+- Performance Engineer.
+- Data Integrity Specialist.
+- Migration Engineering Lead.
+- Cloud Cost Optimization Specialist.
+- Engineering Debugging Lead.
+
+Your mission is to bring Tehran Radar to a working, secure, maintainable Cloudflare deployment, debug existing implementation defects, complete necessary platform integrations, and prepare the architecture for eventual production operation.
+
+The project must retain its business capabilities and remain maintainable through Google AI Studio and future AI coding agents.
+
+## THE REQUIRED FINAL OUTCOME
+
+Deliver one coherent engineering result:
+
+1. The existing codebase has been inspected and debugged.
+2. Broken Cloudflare integrations have been corrected.
+3. Worker runtime compatibility has been established.
+4. The React application builds and runs correctly.
+5. API routing is correct.
+6. Authentication and authorization are secure.
+7. Database ownership is consistent.
+8. Object storage works.
+9. Caching works where appropriate.
+10. Background jobs work where required.
+11. Telemetry and observability are truthful and useful.
+12. Environment isolation is enforced.
+13. Necessary Cloudflare resources are provisioned for staging.
+14. The actual staging Worker is deployed.
+15. The deployed application is tested in a browser.
+16. API endpoints are verified.
+17. Critical runtime failures are fixed.
+18. Rollback and recovery are usable.
+19. Costs and platform limits are documented.
+20. Production deployment requirements are prepared.
+
+Do not declare success merely because TypeScript compiles.
+
+Do not declare success merely because local tests pass.
+
+Do not declare success merely because simulated Cloudflare bindings pass.
+
+The goal is a working application on the real Cloudflare platform.
+
+---
+
+# 1. EXECUTION AUTHORITY AND SAFETY BOUNDARIES
+
+The user authorizes one coordinated engineering execution covering debugging, implementation, staging resource integration, staging deployment, and staging verification.
+
+You do not need to request separate approval for every ordinary code change, local test, configuration correction, or safe staging operation.
+
+You are authorized to:
+
+- Inspect the repository.
+- Modify source code.
+- Correct existing implementation.
+- Refactor defective modules when necessary.
+- Add missing adapters.
+- Add missing tests.
+- Update package dependencies when technically required.
+- Modify Cloudflare staging configuration.
+- Configure staging bindings.
+- Provision necessary staging-only resources when available within existing account permissions and billing allowances.
+- Configure independent staging secrets through secure mechanisms.
+- Run migrations against isolated staging resources.
+- Deploy the separate staging Worker.
+- Run actual staging tests.
+- Fix defects discovered during deployment.
+- Redeploy staging.
+- Update operational documentation.
+
+## Absolute production protection
+
+You are NOT authorized to:
+
+- Replace the production Worker.
+- Deploy to production.
+- Change production DNS.
+- Change production custom domains.
+- Perform production traffic cutover.
+- Migrate authoritative production data.
+- Delete production records or objects.
+- Modify production Firestore security rules.
+- Change production Firebase Authentication settings.
+- Rotate production credentials.
+- Upgrade Cloudflare billing plans.
+- Initiate paid commitments.
+- Disable the existing production application.
+- Perform destructive production operations.
+
+The existing production application must remain operational and untouched.
+
+Staging operations must be isolated from production.
+
+If a staging feature requires a new paid commitment, continue the independent work and record the exact billing blocker. Do not silently authorize new recurring costs.
+
+Never ask the user to paste private credentials into the conversation.
+
+---
+
+# 2. EXECUTION STYLE
+
+## 2.1 One coordinated program
+
+Treat all work in this prompt as one continuous engineering program.
+
+Do not restart the project at each section.
+
+Do not generate a separate audit for every module.
+
+Do not stop after completing a design document.
+
+Do not repeatedly ask the user to authorize ordinary implementation decisions.
+
+Internally organize the work into checkpoints, but continue across them.
+
+## 2.2 Prioritization
+
+Use the following severity system:
+
+P0 — Critical:
+Security vulnerabilities, production data exposure, data corruption, authentication bypass, secret exposure, unsafe deployment, irreversible operations, or serious environment isolation failure.
+
+P1 — High:
+Deployment blockers, incorrect API behavior, unreliable persistence, broken storage, queue failures, runtime incompatibility, serious performance defects, or unsafe recovery.
+
+P2 — Medium:
+Operational gaps, incomplete telemetry, noncritical integrations, maintainability problems, and moderate performance issues.
+
+P3 — Low:
+Cosmetic improvements, noncritical refactoring, minor documentation gaps, and optional enhancements.
+
+Fix P0 and P1.
+
+Resolve P2 when practical.
+
+Record P3 in one consolidated backlog.
+
+Do not hold up a functioning staging deployment for cosmetic or noncritical issues.
+
+For functionality that cannot safely operate, isolate or disable only the affected feature and keep the rest of the application working.
+
+## 2.3 Engineering judgment
+
+When multiple valid solutions exist:
+
+- Prefer the smallest reliable solution.
+- Preserve existing business logic.
+- Prefer official Cloudflare-supported interfaces.
+- Avoid unnecessary infrastructure.
+- Avoid unnecessary dependencies.
+- Avoid multiple sources of truth.
+- Avoid complex distributed systems when a simpler solution is sufficient.
+- Prefer maintainable code over clever abstractions.
+- Keep operational costs predictable.
+
+Use your strongest reasoning and coding capabilities.
+
+Do not optimize for making the report appear successful.
+
+Optimize for making the application work.
+
+---
+
+# 3. ACTUAL REPOSITORY INSPECTION
+
+Before modifications, verify the current repository and workspace.
+
+Inspect:
+
+- Repository root.
+- Git branch.
+- Working-tree status.
+- Uncommitted changes.
+- Untracked files.
+- Package manager.
+- Lockfile.
+- `package.json`.
+- `server.ts`.
+- `vite.config.ts`.
+- TypeScript configuration.
+- Existing tests.
+- Existing scripts.
+- Cloudflare configuration.
+- Worker entrypoint.
+- API route registration.
+- Authentication modules.
+- Persistence modules.
+- Storage modules.
+- Background jobs.
+- Frontend routing.
+- Environment configuration.
+- Existing operational documentation.
+
+Preserve all user work.
+
+Do not reset the working tree.
+
+Do not discard uncommitted changes.
+
+Do not fabricate Git state.
+
+## 3.1 Existing Cloudflare implementation
+
+Inspect the actual files under:
+
+- `worker/`
+- `worker/auth/`
+- `worker/storage/`
+- `worker/db/`
+- `worker/queues/`
+- `worker/cache/`
+- `worker/telemetry/`
+- `tests/`
+- `docs/cloudflare/`
+
+The earlier project reports describe these modules as implemented.
+
+Treat those reports as historical context, not proof.
+
+Verify every relevant implementation against the source.
+
+Identify:
+
+- Missing integrations.
+- Incorrect imports.
+- Unused modules.
+- Duplicate abstractions.
+- Fake adapters.
+- Simulated-only implementations.
+- Broken bindings.
+- Incorrect configuration.
+- Runtime incompatibilities.
+- Incomplete business logic.
+- Incorrect tests.
+- Conflicting documentation.
+- Incorrect platform assumptions.
+
+Correct defects in the actual code.
+
+---
+
+# 4. MASTER CLOUDFLARE TARGET ARCHITECTURE
+
+Use the Cloudflare Developer Platform as the primary deployment platform.
+
+The intended architecture is:
+
+## Frontend
+- React 19.
+- TypeScript.
+- Vite.
+- Cloudflare Vite Plugin.
+- Workers Static Assets.
+- Existing routing.
+- Mobile-first responsive UI.
+- Persian and RTL support.
+
+## Application runtime
+- Cloudflare Workers.
+- ES module entrypoints.
+- Standard Fetch Request/Response interfaces.
+- Modular route handling.
+- Explicit environment bindings.
+- Typed request context.
+- Structured logging.
+
+## Identity
+- Existing Firebase Authentication.
+- Cryptographic ID token verification.
+- Existing authorization policy.
+- App Check where required.
+- Isolated identity adapter.
+
+## Data
+- Firestore retained as the authority for existing authoritative records.
+- D1 for genuinely suitable relational workloads or explicitly derived projections.
+- No undocumented dual-write.
+- No fake replica claims.
+
+## Storage
+- R2 for suitable object-storage workloads.
+- Durable object metadata.
+- Existing provider compatibility during migration.
+- Verified upload and download behavior.
+
+## Cache
+- KV for appropriate eventually consistent public data.
+- Cloudflare Cache API for appropriate HTTP caching.
+- Rate Limiting API for appropriate approximate edge limits.
+- Stronger coordination mechanisms where strict consistency is required.
+
+## Background processing
+- Queues.
+- Cron Triggers.
+- Workflows when durable multi-step execution is actually needed.
+- Durable Objects when strongly consistent coordination is justified.
+
+## Observability
+- Workers Metrics.
+- Invocation logs.
+- Tail Workers.
+- Logpush when justified.
+- Analytics Engine or other appropriate analytical storage.
+- Application telemetry.
+- Security audit records.
+
+## Security
+- WAF where applicable.
+- DDoS protection.
+- Rate limiting.
+- Access controls.
+- Secret management.
+- API security.
+- Upload security.
+- Operational incident response.
+
+Do not adopt every Cloudflare service merely because it exists.
+
+Use services based on real business and technical requirements.
+
+---
+
+# 5. WORKER RUNTIME AND NODE COMPATIBILITY
+
+Inspect the existing Node.js and Express backend.
+
+Verify actual compatibility of:
+
+- `node:fs`
+- `node:http`
+- `node:path`
+- `process`
+- Timers
+- Native binaries
+- `firebase-admin`
+- `sharp`
+- Existing SDKs
+- Existing middleware
+- Local persistence mechanisms
+
+Node.js compatibility mode does not automatically make every dependency fully compatible.
+
+Use current official Cloudflare documentation.
+
+For each important dependency, classify it as:
+
+- WORKS_NATIVELY
+- WORKS_WITH_VERIFIED_COMPATIBILITY
+- REQUIRES_ADAPTER
+- REQUIRES_REPLACEMENT
+- NOT_SUPPORTED
+- NOT_VERIFIED
+
+Do not retain unsupported Node behavior in the Worker entrypoint.
+
+## 5.1 Runtime architecture
+
+Separate:
+
+- Worker entrypoint.
+- HTTP routing.
+- Legacy compatibility handling.
+- Domain services.
+- Persistence adapters.
+- Authentication.
+- Authorization.
+- External services.
+- Background jobs.
+- Observability.
+
+Do not place the entire system inside one enormous Worker entrypoint.
+
+Do not introduce Hono solely for style.
+
+Use the official Express integration only after verifying its current support and actual middleware compatibility.
+
+If some legacy functionality cannot run safely within Workers, isolate that functionality behind a clear boundary and retain the safest available migration path.
+
+Do not fabricate an external legacy server.
+
+Do not silently route requests to a nonexistent backend.
+
+## 5.2 Runtime lifecycle
+
+Workers do not provide the conventional permanent Node.js server lifecycle.
+
+Replace inappropriate:
+
+- Process shutdown handlers.
+- Permanent background loops.
+- Durable local filesystem writes.
+- In-memory job queues.
+- Process-local timers.
+
+Use platform-native execution primitives where justified.
+
+Preserve local development workflows.
+
+---
+
+# 6. VITE, STATIC ASSETS, AND FRONTEND DELIVERY
+
+Complete the existing Cloudflare Vite integration.
+
+Preserve:
+
+- React 19.
+- Tailwind.
+- Existing aliases.
+- Existing frontend structure.
+- Existing routing.
+- Existing Persian UI.
+- Existing application modules.
+
+Verify:
+
+- Client build.
+- Worker build.
+- Static asset binding.
+- SPA fallback.
+- Deep links.
+- Route-level loading.
+- Dynamic metadata.
+- SEO.
+- Sitemap.
+- Robots.
+- Public images.
+- PWA behavior.
+- Font delivery.
+- RTL styling.
+
+API routes must never return the frontend HTML document accidentally.
+
+Ensure correct behavior for:
+
+- 404.
+- 401.
+- 403.
+- 429.
+- 500.
+- 502.
+- 503.
+
+Do not break existing frontend development commands.
+
+Do not replace the frontend framework.
+
+---
+
+# 7. API AND EXPRESS STRANGLER MIGRATION
+
+Inspect every actually registered API route.
+
+The previous report mentioned approximately 88 routes. Verify the real number.
+
+For each route inspect:
+
+- Method.
+- Path.
+- Handler.
+- Validation.
+- Authentication.
+- Authorization.
+- Persistence.
+- External dependencies.
+- Side effects.
+- Response contract.
+- Error contract.
+
+Keep unmigrated routes functional through verified legacy behavior.
+
+Migrate compatible routes incrementally.
+
+Preserve all API contracts.
+
+## 7.1 Fallback safety
+
+Review Worker-to-Express fallback thoroughly.
+
+Do not blindly retry failed writes.
+
+Protect:
+
+- Listing creation.
+- Listing updates.
+- Bargain creation.
+- Bargain approvals.
+- Uploads.
+- Deletions.
+- Sponsor operations.
+- Financial or payment-related operations.
+
+Use idempotency and outcome reconciliation.
+
+Never treat authentication, authorization, or validation failures as normal fallback conditions.
+
+Avoid recursive Worker/Express routing.
+
+Never report a successful operation if it actually failed.
+
+---
+
+# 8. FIREBASE AUTHENTICATION AND AUTHORIZATION
+
+Preserve Firebase identity.
+
+Inspect the actual implementation of:
+
+- RS256 verification.
+- JWKS retrieval.
+- Key rotation.
+- Issuer.
+- Audience.
+- Subject.
+- Expiration.
+- Not-before.
+- Issued-at.
+- Revocation.
+- User status.
+- Deleted users.
+- Disabled users.
+- Restricted users.
+- Custom claims.
+- App Check.
+- Session behavior.
+
+Do not trust JWT decoding as verification.
+
+Do not trust client-supplied identity.
+
+Do not trust browser-supplied administrator flags.
+
+Do not trust stale caches for privileged authorization.
+
+Verify every protected endpoint.
+
+Preserve existing roles and permissions.
+
+Do not invent additional administrative privileges.
+
+If a behavior cannot be preserved, fail closed and isolate the affected operation rather than weakening security.
+
+Keep all secrets outside browser bundles.
+
+---
+
+# 9. FIRESTORE AND D1
+
+## 9.1 Firestore remains authoritative
+
+Preserve Firestore as the authoritative data source for existing domains unless the actual approved implementation establishes a different ownership model.
+
+Do not migrate production records.
+
+Do not silently change business data ownership.
+
+Inspect known risks involving:
+
+- Firestore-backed records.
+- In-memory user records.
+- Legacy administrative operations.
+- Bargains.
+- Listings.
+- Media metadata.
+- Neighborhood benchmarks.
+
+Resolve split-brain behavior.
+
+## 9.2 D1
+
+Inspect:
+
+- D1 type definitions.
+- Database inventory.
+- SQL schema.
+- Migration engine.
+- Checksums.
+- Indexes.
+- Foreign keys.
+- Reconciliation.
+- D1-dependent routes.
+
+Validate the actual SQL against a real local SQLite/D1-compatible environment.
+
+Use a real staging D1 database for authorized staging validation.
+
+Do not assume that an in-memory simulated D1 engine proves compatibility with real D1.
+
+Use parameterized SQL.
+
+Verify transaction semantics.
+
+Use idempotent migrations.
+
+Verify migration results after execution.
+
+## 9.3 Data synchronization
+
+D1 must not be called a Firestore replica merely because it contains similar rows.
+
+Implement an explicit Firestore-to-D1 projection or synchronization workflow only when required.
+
+It must define:
+
+- Source ownership.
+- Change detection.
+- Event delivery.
+- Versioning.
+- Idempotency.
+- Duplicate processing.
+- Ordering.
+- Deletion propagation.
+- Recovery.
+- Reconciliation.
+- Lag measurement.
+
+Do not introduce uncontrolled dual writes.
+
+Do not enable stale D1 data as authoritative user-facing data.
+
+## 9.4 D1 read replicas
+
+Cloudflare D1 read replicas are replicas of the D1 primary database.
+
+They are not replicas of Firestore.
+
+If enabled, use the documented D1 Sessions API and bookmark behavior where required for consistency.
+
+Distinguish D1 internal replica lag from external Firestore synchronization lag.
+
+---
+
+# 10. R2 STORAGE AND MEDIA
+
+Complete and connect the actual R2 adapter.
+
+Inspect:
+
+- Provider selection.
+- R2 binding.
+- Metadata persistence.
+- Upload endpoints.
+- Download endpoints.
+- Multipart upload.
+- Chunked upload.
+- Range requests.
+- Streaming.
+- Signed URLs.
+- Object deletion.
+- Orphan cleanup.
+- Retention.
+- Legal holds.
+
+Correct any provider mismatch that causes R2 configuration to fall back to a local storage provider.
+
+## 10.1 Upload requirements
+
+Implement or repair:
+
+- Authorization.
+- Size validation.
+- MIME validation.
+- Magic-byte validation.
+- Filename sanitization.
+- Path traversal protection.
+- Object ownership.
+- Checksum.
+- Metadata.
+- Streaming.
+- Multipart lifecycle.
+- Failure recovery.
+- Duplicate protection.
+
+Use durable upload-session persistence.
+
+An in-memory Map may only be an optimization, never the authority for resumable upload state.
+
+Do not return HTTP 200 if remote upload failed.
+
+Do not misrepresent temporary storage as durable storage.
+
+## 10.2 Signed URLs
+
+Verify the actual signing implementation.
+
+Distinguish between:
+
+- R2 S3-compatible presigned URLs.
+- Application-generated HMAC-signed routes.
+- Ordinary public object URLs.
+
+Do not claim that the R2 binding automatically provides signed URL generation.
+
+Verify signature, expiration, HTTP method, resource scope, and authorization.
+
+## 10.3 Legal hold and deletion
+
+Preserve existing retention and legal-hold policy.
+
+Legal holds must prevent prohibited deletion.
+
+Deletion workflows must be auditable and idempotent.
+
+Test safe staging cases.
+
+Never delete production objects.
+
+---
+
+# 11. KV, CACHING, AND RATE LIMITING
+
+Use Workers KV only for appropriate eventually consistent data.
+
+Appropriate examples may include:
+
+- Public static geographic data.
+- Public neighborhood reference data.
+- Public benchmark snapshots.
+- Public aggregate market indicators.
+- Non-sensitive configuration snapshots.
+
+Do not use KV as authoritative storage for:
+
+- Payments.
+- Ownership.
+- Listing approval.
+- Transaction state.
+- Legal holds.
+- Critical authorization.
+- Token revocation.
+- Atomic counters requiring strong global consistency.
+
+Verify:
+
+- Key versioning.
+- Environment isolation.
+- TTL.
+- Invalidation.
+- Cache stampede protection.
+- Stale-while-revalidate.
+- Negative caching.
+- Private-data isolation.
+- Failure behavior.
+
+## 11.1 Important correction: rate limiting
+
+Do not treat KV-based process-local or eventually consistent counters as strict global rate limiting.
+
+Evaluate Cloudflare's native Workers Rate Limiting API.
+
+Its limits are approximate and applied separately by Cloudflare location.
+
+For strict cross-location limits or strongly consistent counters, use an appropriately justified coordination mechanism, such as Durable Objects or a suitable authoritative data store.
+
+Separate:
+
+- General abuse protection.
+- Login attempt limits.
+- User-level limits.
+- Upload limits.
+- AI-provider limits.
+- Sensitive write limits.
+- Administrative limits.
+
+Choose the correct consistency model for each.
+
+Do not introduce expensive coordination where approximate rate limiting is sufficient.
+
+---
+
+# 12. QUEUES, CRON, WORKFLOWS, AND DURABLE OBJECTS
+
+Inspect all current background jobs.
+
+Search for:
+
+- `setInterval`.
+- `setTimeout`.
+- Recursive loops.
+- Process-local queues.
+- Startup tasks.
+- Cleanup jobs.
+- Market monitoring.
+- Telemetry aggregation.
+- Storage reconciliation.
+- Notifications.
+- Scheduled synchronization.
+- Long-running calculations.
+
+## 12.1 Cloudflare Queues
+
+Implement reliable message handling:
+
+- Versioned envelopes.
+- Schema validation.
+- Idempotency.
+- Bounded retries.
+- Exponential backoff.
+- Poison message isolation.
+- Dead-letter queue.
+- Per-message acknowledgments.
+- Failure classification.
+- Monitoring.
+- Recovery.
+
+Assume messages can be delivered more than once.
+
+Do not acknowledge messages before required durable processing is complete.
+
+## 12.2 Cron Triggers — IMPORTANT TIMEZONE CORRECTION
+
+Cloudflare Cron Triggers execute on UTC.
+
+Inspect existing schedules that were documented with `Asia/Tehran`.
+
+Convert intended local execution times to correct UTC cron expressions.
+
+Do not place `Asia/Tehran` in a Cron schedule definition and assume Cloudflare uses that timezone.
+
+Where a job must follow a local wall-clock time with daylight-saving changes, implement an appropriate scheduling strategy rather than pretending a static UTC expression automatically follows the local clock.
+
+Preserve intended business timing.
+
+Keep staging schedules separate from production.
+
+Prevent unsafe overlapping execution.
+
+## 12.3 Workflows
+
+Evaluate Cloudflare Workflows for genuinely multi-step durable tasks.
+
+Use them only when they improve reliability or recovery.
+
+## 12.4 Durable Objects
+
+Use Durable Objects only for justified strong coordination.
+
+Do not turn them into an unnecessary universal database.
+
+---
+
+# 13. TELEMETRY AND METRICS
+
+Repair the existing telemetry system.
+
+Separate:
+
+- Technical runtime metrics.
+- Product analytics.
+- Real-estate intelligence.
+- Data quality.
+- Security events.
+- Administrative audit events.
+
+Preserve privacy restrictions.
+
+Never collect unnecessary sensitive information.
+
+## 13.1 Metric accuracy
+
+Correct the previous CPU-time ambiguity.
+
+Do not label `performance.now()` duration as Cloudflare CPU Time.
+
+Use documented Cloudflare Workers metrics and available invocation-level telemetry.
+
+Measure separately:
+
+- CPU Time.
+- Wall Time.
+- Request duration.
+- External service latency.
+- Database latency.
+- Queue waiting time.
+- Memory usage.
+- Subrequest count.
+
+Use actual Cloudflare memory metrics when available.
+
+Cloudflare exposes V8 isolate memory usage metrics with percentile distributions. Identify the actual measurement source and do not substitute payload-size estimates for real isolate memory observations.
+
+Do not reuse the previous unverified claim of 38 MB.
+
+Do not claim zero cold starts.
+
+Do not invent CPU values.
+
+## 13.2 Product analytics
+
+Support aggregate reporting for:
+
+- Feature adoption.
+- Search patterns.
+- Neighborhood demand.
+- Listing interactions.
+- User journey aggregates.
+- Traffic patterns.
+- Module reliability.
+
+Avoid permanent individual behavioral profiles.
+
+## 13.3 Real-estate analytics
+
+Preserve distinctions between:
+
+- Asking price.
+- Verified transaction price.
+- Estimated valuation.
+- Historical price.
+- Rental price.
+- Commercial property price.
+- Residential property price.
+
+Preserve existing approved hedonic model parameters.
+
+Monitor model drift and data quality.
+
+Never silently alter valuation formulas.
+
+Clearly distinguish synthetic staging data from actual market data.
+
+## 13.4 Privacy
+
+Never collect:
+
+- Passwords.
+- Tokens.
+- API keys.
+- Payment credentials.
+- Private messages.
+- Unnecessary personal information.
+- Exact permanent location history.
+- Keystroke recordings.
+- Mouse recordings.
+- Unnecessary raw user search text.
+
+Preserve appropriate retention, deletion, aggregation, and legal-hold precedence.
+
+---
+
+# 14. SECURITY AND EDGE PROTECTION
+
+Review application security comprehensively.
+
+Test:
+
+- Authentication bypass.
+- Authorization bypass.
+- IDOR.
+- Privilege escalation.
+- SQL injection.
+- NoSQL injection.
+- XSS.
+- CSRF where applicable.
+- SSRF.
+- Open redirects.
+- Path traversal.
+- Malformed payloads.
+- Mass assignment.
+- Oversized requests.
+- CORS.
+- Cache poisoning.
+- Signed URL misuse.
+- Upload abuse.
+- Secret leakage.
+- Rate-limit bypass.
+- Admin endpoint exposure.
+
+Review all external fetches.
+
+Apply safe URL and destination validation.
+
+Prevent access to private network addresses.
+
+Prevent redirect-based SSRF bypasses.
+
+## 14.1 Cloudflare security services
+
+Evaluate and configure where eligible:
+
+- WAF.
+- Managed WAF rules.
+- Custom WAF rules.
+- DDoS protection.
+- Rate limiting.
+- Bot mitigation.
+- Cloudflare Access.
+- Security analytics.
+- TLS.
+- Origin protection.
+
+Do not claim WAF protection is active on a workers.dev deployment unless the relevant configuration actually supports it and has been verified.
+
+Do not put the public application behind Cloudflare Access in a way that blocks ordinary users.
+
+Use Cloudflare Access only for appropriately restricted operational interfaces.
+
+Do not assume all features are included in the current account plan.
+
+---
+
+# 15. GOOGLE AI AND EXTERNAL SERVICE INTEGRATION
+
+Inspect the existing `@google/genai` usage and every other AI provider integration.
+
+Preserve existing AI features.
+
+Verify:
+
+- Runtime SDK compatibility.
+- Request and response handling.
+- Authentication.
+- Model selection.
+- Timeouts.
+- Retry behavior.
+- Quotas.
+- Error handling.
+- Response validation.
+- Cost accounting.
+
+Never expose AI API credentials to frontend code.
+
+Evaluate Cloudflare AI Gateway where it offers a genuine benefit for provider observability, reliability, policy controls, or cost management.
+
+Do not replace Gemini with Workers AI simply because it is a Cloudflare service.
+
+Do not add another AI provider unnecessarily.
+
+Protect AI endpoints from abuse and runaway cost.
+
+Use caching only when the response semantics permit it.
+
+---
+
+# 16. CLOUDFLARE IMAGES AND MEDIA OPTIMIZATION
+
+Inspect existing image processing.
+
+Determine whether `sharp` is actually compatible with the selected runtime.
+
+Evaluate:
+
+- Cloudflare Images.
+- Workers-compatible WebAssembly processing.
+- External image transformation.
+- Preprocessed static variants.
+- R2 original storage plus CDN transformation.
+
+Choose a solution that preserves existing upload and display functionality.
+
+Avoid paid image services unless the cost is justified and permitted.
+
+Keep original objects protected.
+
+Do not convert or delete production media in this phase.
+
+---
+
+# 17. ENVIRONMENT CONFIGURATION AND SECRETS
+
+Maintain four distinct environments:
+
+1. Development.
+2. Preview.
+3. Staging.
+4. Production.
+
+Each must have distinct resource bindings and settings.
+
+Separate:
+
+## Deployment credentials
+- `CLOUDFLARE_API_TOKEN`
+- Cloudflare account identification.
+- GitHub deployment credentials where required.
+
+## Worker runtime secrets
+- `ADMIN_API_SECRET`
+- `VALUATION_SEAL_SECRET`
+- Other actual application secrets.
+
+The account identifier is not equivalent to a secret credential.
+
+The Cloudflare deployment token must have minimum necessary permissions.
+
+Do not unnecessarily expose deployment credentials to Worker runtime code.
+
+Use Cloudflare's secure secrets mechanism.
+
+Never use Wrangler `vars` for secret values.
+
+Do not put secrets in source code, frontend variables, logs, documentation, or Git.
+
+Use independent staging credentials.
+
+Do not reuse production secrets.
+
+Never ask the user to paste private credentials into Gemini chat.
+
+If an external authentication requirement cannot be completed in the environment, complete independent tasks and report the exact blocker.
+
+---
+
+# 18. STAGING INFRASTRUCTURE PROVISIONING
+
+The staging deployment must use isolated resources.
+
+Preferred names:
+
+Worker:
+`radartehran-staging`
+
+D1:
+`radartehran-staging-db`
+
+R2:
+`radartehran-staging-media`
+
+KV:
+`radartehran-staging-kv`
+
+Queue:
+`radartehran-staging-queue`
+
+Dead-letter queue:
+`radartehran-staging-dlq`
+
+Adjust names where the actual account or existing resources require it.
+
+For every resource:
+
+1. Check existence.
+2. Check environment.
+3. Check account permissions.
+4. Check plan availability.
+5. Check cost.
+6. Create only when necessary.
+7. Bind it.
+8. Test it.
+9. Record its actual ID.
+
+Do not create unused resources.
+
+Do not create Durable Objects unless an actual feature requires them.
+
+Use synthetic staging data.
+
+Never use production personal data as a test fixture.
+
+If a required service is unavailable due to billing or permissions, continue all work that does not depend on it.
+
+---
+
+# 19. CLOUDFLARE CONFIGURATION AND DEPLOYMENT AUTOMATION
+
+Complete the Wrangler configuration.
+
+Verify:
+
+- Worker name.
+- Main entrypoint.
+- Compatibility date.
+- Compatibility flags.
+- Static assets.
+- SPA routing.
+- Environment blocks.
+- Resource bindings.
+- Secret requirements.
+- Queue consumers.
+- Cron triggers.
+- Observability.
+- Build output.
+
+Keep configuration maintainable.
+
+Avoid duplicate configuration files.
+
+## Deployment workflow
+
+Prepare a repeatable staging deployment pipeline containing:
+
+1. Repository verification.
+2. Environment verification.
+3. Dependency installation.
+4. Type checking.
+5. Test execution.
+6. Security tests.
+7. Architecture checks.
+8. Frontend build.
+9. Worker build.
+10. Wrangler validation.
+11. Binding validation.
+12. Deployment.
+13. Health check.
+14. Browser smoke test.
+15. API smoke test.
+16. Evidence capture.
+17. Rollback readiness.
+
+Do not automatically deploy production.
+
+Do not push directly to main.
+
+Do not expose credentials in CI logs.
+
+---
+
+# 20. ACTUAL STAGING DEPLOYMENT
+
+Perform a real Cloudflare deployment.
+
+Do not stop after local `wrangler dev`.
+
+Do not stop after a simulated Worker test.
+
+Do not stop after a build.
+
+Use the separate staging Worker.
+
+Verify the effective target immediately before deployment.
+
+Use the authenticated Wrangler session already available, if present.
+
+Use GitHub Codespaces for terminal operations if Google AI Studio cannot execute them.
+
+Preserve Google AI Studio as the primary development environment.
+
+Deploy the actual frontend static assets and Worker code.
+
+Capture:
+
+- Worker name.
+- Deployment ID.
+- Actual deployment result.
+- Actual workers.dev URL.
+- Environment.
+- Resource bindings.
+- Runtime logs.
+
+Do not invent deployment identifiers or URLs.
+
+If the staging Worker already exists, inspect its current version and deployment target.
+
+Do not overwrite an unrelated Worker.
+
+---
+
+# 21. LIVE APPLICATION TESTING
+
+Test the actual deployed staging application in a browser.
+
+## Frontend
+
+Verify:
+
+- Homepage.
+- Main navigation.
+- React routes.
+- Deep links.
+- Static assets.
+- Persian text.
+- RTL layout.
+- Fonts.
+- Mobile layout.
+- Desktop layout.
+- Map.
+- Neighborhood selection.
+- Property search.
+- Filters.
+- Listing cards.
+- Listing details.
+- Forms.
+- Loading states.
+- Empty states.
+- Error states.
+
+## APIs
+
+Verify:
+
+- Health endpoint.
+- Public endpoints.
+- Protected endpoints.
+- Unknown route handling.
+- Authentication.
+- Authorization.
+- JSON response contracts.
+- Error responses.
+- CORS.
+- Rate limits.
+- Request validation.
+
+## Real Cloudflare resources
+
+Where provisioned, verify actual:
+
+- D1 read/write.
+- R2 upload/download.
+- KV write/read.
+- Queue dispatch/consumption.
+- Cron execution.
+- Worker logs.
+- Platform metrics.
+
+Use harmless synthetic test operations.
+
+Read back written data.
+
+Verify integrity.
+
+Do not treat an HTTP 200 response as proof of durable persistence.
+
+---
+
+# 22. PERFORMANCE AND CAPACITY
+
+Measure actual staging behavior.
+
+Report:
+
+- P50 latency.
+- P95 latency.
+- P99 latency.
+- Error rate.
+- CPU Time.
+- Wall Time.
+- Memory metrics.
+- Subrequest count.
+- Database latency.
+- R2 latency.
+- KV latency.
+- Queue age.
+- Frontend loading.
+- Map rendering.
+- Search performance.
+- Upload speed.
+
+Record sample size and test conditions.
+
+Do not invent numbers.
+
+Do not perform uncontrolled load tests.
+
+Use controlled tests with bounded duration and traffic.
+
+Investigate:
+
+- Large frontend bundles.
+- Unnecessary API calls.
+- Duplicate database queries.
+- N+1 queries.
+- Slow map rendering.
+- Excessive React rerenders.
+- Cache inefficiencies.
+- Large media transfers.
+- Worker CPU consumption.
+
+Fix critical performance bottlenecks.
+
+Record noncritical optimization work for later.
+
+---
+
+# 23. COST AND RESOURCE GOVERNANCE
+
+Use current official Cloudflare pricing documentation.
+
+Evaluate:
+
+- Workers.
+- Workers Paid.
+- D1.
+- R2.
+- KV.
+- Queues.
+- Workflows.
+- Durable Objects.
+- Images.
+- Analytics.
+- Logs.
+- External APIs.
+- AI provider costs.
+
+Prepare three scenarios:
+
+- Low traffic.
+- Moderate traffic.
+- High traffic.
+
+Use explicit assumptions for:
+
+- Daily requests.
+- Average CPU time.
+- Database reads.
+- Database writes.
+- Stored media.
+- Object operations.
+- Queue messages.
+- Cache operations.
+- External provider calls.
+- Logging volume.
+
+Do not assume all resources are free.
+
+Do not claim total application cost using request volume alone.
+
+Do not upgrade the account.
+
+Do not initiate billing.
+
+Prefer the existing account plan.
+
+---
+
+# 24. DATA INTEGRITY, BACKUP, AND RECOVERY
+
+Preserve source-of-truth ownership.
+
+Investigate:
+
+- Firestore versus local state.
+- Firestore versus D1.
+- R2 metadata versus object contents.
+- Queue state versus business records.
+- Cache versus authoritative records.
+- User ownership.
+- Admin approvals.
+- Retention.
+- Legal holds.
+
+Implement or repair:
+
+- Idempotency.
+- Checksums.
+- Reconciliation.
+- Failure isolation.
+- Retry.
+- Backup procedures.
+- Restore procedures.
+- Recovery records.
+
+Do not claim backups are tested unless an actual restore test has been performed.
+
+Use staging for destructive recovery tests.
+
+Never perform destructive production tests.
+
+---
+
+# 25. ADMINISTRATION AND OPERATIONS
+
+Preserve and improve the operational capabilities of Tehran Radar.
+
+The administrative system should provide clear visibility into:
+
+- Worker health.
+- API status.
+- Error rates.
+- Latency.
+- CPU Time.
+- Memory metrics where available.
+- D1 status.
+- R2 status.
+- KV status.
+- Queues.
+- Cron jobs.
+- Background task failures.
+- Storage growth.
+- Authentication failures.
+- Security events.
+- Cost estimates.
+- Deployment versions.
+- Rollback availability.
+
+Apply RBAC.
+
+Never expose private operational diagnostics to ordinary users.
+
+Do not create an administrative dashboard that merely displays hardcoded or fabricated status.
+
+Bind each metric to a real source.
+
+---
+
+# 26. DEBUGGING AND REDEPLOYMENT LOOP
+
+Use this execution loop throughout the work:
+
+1. Reproduce the defect.
+2. Capture the actual error.
+3. Identify its source.
+4. Determine root cause.
+5. Make the smallest reliable correction.
+6. Add or update regression tests.
+7. Run the relevant tests.
+8. Run the complete affected build.
+9. Deploy a new staging version when required.
+10. Retest the actual deployed feature.
+11. Record the result.
+
+Continue after failures.
+
+Do not stop at the first error.
+
+Do not hide failed tests.
+
+Do not disable security checks to force a green build.
+
+Do not rewrite working systems unnecessarily.
+
+Use one consolidated list for deferred issues.
+
+---
+
+# 27. PRODUCTION READINESS
+
+After staging is working, prepare the complete production launch package.
+
+Include:
+
+- Production Worker configuration.
+- Production resource inventory.
+- Secret inventory.
+- Domain and DNS plan.
+- TLS requirements.
+- Firebase authorized domains.
+- Database ownership.
+- Data synchronization.
+- Data migration requirements.
+- R2 migration.
+- Queue configuration.
+- Cron schedules.
+- Observability.
+- WAF eligibility.
+- Access controls.
+- Traffic cutover.
+- Gradual rollout.
+- Rollback.
+- Backup and restore.
+- Cost forecast.
+- Incident response.
+
+Keep production untouched.
+
+Do not deploy production.
+
+Do not change DNS.
+
+Do not migrate production data.
+
+Do not activate production resources.
+
+The production package must be complete enough that the remaining work is execution and verification, not another architecture redesign.
+
+---
+
+# 28. DOCUMENTATION CONSOLIDATION
+
+Do not generate an uncontrolled number of repetitive documents.
+
+Update the existing Cloudflare documentation.
+
+Consolidate:
+
+- Architecture.
+- Runtime compatibility.
+- Environment configuration.
+- Resource inventory.
+- Identity.
+- Database.
+- Storage.
+- Queues.
+- Caching.
+- Telemetry.
+- Security.
+- Performance.
+- Cost.
+- Deployment.
+- Recovery.
+- Production readiness.
+
+Every important capability must be labeled:
+
+- IMPLEMENTED
+- TESTED_LOCALLY
+- TESTED_IN_SIMULATION
+- VERIFIED_ON_CLOUDFLARE
+- PARTIALLY_IMPLEMENTED
+- BLOCKED
+- DEFERRED
+- NOT_VERIFIED
+
+Keep evidence links to exact files and test outputs.
+
+Do not claim that a feature is deployed when it exists only in source code.
+
+---
+
+# 29. GIT AND CHANGE MANAGEMENT
+
+Preserve the current working tree.
+
+Do not reset or discard changes.
+
+Do not rewrite previous commits.
+
+Do not commit secrets.
+
+Do not commit `.env` files or credentials.
+
+Do not push directly to main.
+
+Prefer direct deployment from the verified workspace.
+
+If a staging branch is required, use a clearly named staging branch and preserve existing user changes.
+
+Do not push code merely to create the appearance of deployment.
+
+A real Cloudflare deployment must be verified independently.
+
+---
+
+# 30. FINAL DELIVERABLE
+
+Return a Persian report with:
+
+## A. Final status
+
+Use one:
+
+- STAGING_DEPLOYED_AND_VERIFIED
+- STAGING_DEPLOYED_WITH_LIMITATIONS
+- PARTIALLY_DEPLOYED
+- BLOCKED_BY_EXTERNAL_REQUIREMENT
+- DEPLOYMENT_FAILED
+
+## B. Live deployment
+
+Report:
+
+- Worker name.
+- Actual staging URL.
+- Deployment ID.
+- Deployment timestamp.
+- Environment.
+
+## C. Debugging
+
+List the important defects discovered and corrected.
+
+For each, explain:
+
+- Root cause.
+- Corrected file.
+- Test used.
+- Final result.
+
+## D. Cloudflare infrastructure
+
+List:
+
+- Workers.
+- D1.
+- R2.
+- KV.
+- Queues.
+- Cron.
+- Workflows.
+- Durable Objects.
+- Other actually used services.
+
+Distinguish provisioned, configured, simulated, and not required.
+
+## E. Application functionality
+
+Identify which actual modules work in staging.
+
+Identify which features remain disabled.
+
+## F. Test results
+
+Report the actual commands and observed output.
+
+Include failures and skipped tests.
+
+Do not report unexecuted tests as successful.
+
+## G. Security
+
+Report remaining critical security concerns.
+
+## H. Performance
+
+Include real measurements and sources.
+
+## I. Cost
+
+Report the actual plan assumptions and likely resource costs.
+
+## J. Recovery
+
+Provide tested rollback and recovery instructions.
+
+## K. Production launch
+
+List the exact operations still required before production deployment.
+
+## L. Deferred debugging backlog
+
+Provide one consolidated prioritized backlog.
+
+---
+
+# 31. FINAL EXECUTION INSTRUCTION
+
+BEGIN NOW.
+
+Use the existing repository.
+
+Use the previous Cloudflare implementation as the starting point.
+
+Inspect the code.
+
+Debug the code.
+
+Correct the architecture where necessary.
+
+Complete missing integrations.
+
+Configure the required Cloudflare resources.
+
+Build the actual application.
+
+Deploy the separate staging Worker.
+
+Test the actual live application.
+
+Fix deployment and runtime failures.
+
+Redeploy when required.
+
+Complete the operational documentation.
+
+Prepare the production launch package.
+
+Do not waste time repeating completed architectural discussions.
+
+Do not produce another theoretical audit instead of implementation.
+
+Do not stop after a local build.
+
+Do not stop after simulated tests.
+
+Do not stop merely because a noncritical P2/P3 issue exists.
+
+Do not fabricate successful operations.
+
+If an external credential, account permission, billing requirement, or unavailable platform capability blocks a specific action, complete all independent tasks and report that exact blocker.
+
+The final measure of success is a genuinely working Tehran Radar staging deployment on Cloudflare.
+
+**ONE EXECUTION. COMPLETE DEBUGGING. COMPLETE CLOUDFLARE INTEGRATION. REAL STAGING DEPLOYMENT. REAL VERIFICATION. CONSOLIDATED PRODUCTION READINESS.**
+
+Production deployment, production data migration, DNS cutover, and paid account upgrades remain prohibited without separate explicit authorization.
