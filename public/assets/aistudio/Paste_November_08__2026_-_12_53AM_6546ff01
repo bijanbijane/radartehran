@@ -1,0 +1,1373 @@
+# TASK: Build the Property Environmental Risk & Resilience Intelligence Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-property-risk`.
+- Never modify `main`.
+- Inspect the current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/property-risk/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- hazard-catalog
+- hazard-events
+- hazard-zones
+- geographic-exposure
+- property-exposure
+- vulnerability-assessments
+- risk-assessments
+- seismic-risk
+- flood-risk
+- subsidence-risk
+- wildfire-risk
+- extreme-heat-risk
+- storm-risk
+- landslide-risk
+- environmental-contamination
+- air-quality
+- water-risk
+- climate-risk
+- resilience-assessments
+- mitigation-scenarios
+- historical-events
+- risk-methodologies
+- source-observations
+- data-quality
+- reports
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- global Firestore rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry
+- Property Search
+- Bargains
+- Property Transactions
+- Property Management
+- Development Projects
+- Valuation
+- Investment Intelligence
+- Market Intelligence
+- Urban Intelligence
+- Geography
+- Property Due Diligence
+- Property Insurance
+- Property Tax
+- Building Sustainability
+- Financing Intelligence
+- Data Ingestion
+- Telemetry
+- Service Providers
+- CRM
+- Appointments
+- Media
+- Notifications
+- Trust & Safety
+- user identity records
+- payment infrastructure
+- frontend files
+- other employees' modules
+
+Global route registration and shared-file modifications belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a property-focused environmental hazard, physical risk, and resilience intelligence backend.
+
+Support:
+
+1. Environmental hazard catalog.
+2. Natural hazard classification.
+3. Hazard-zone references.
+4. Geographic hazard exposure.
+5. Property-specific hazard exposure.
+6. Historical hazard-event records.
+7. Seismic hazard references.
+8. Flood hazard references.
+9. Land-subsidence risk references.
+10. Wildfire exposure.
+11. Extreme heat exposure.
+12. Storm and severe-weather exposure.
+13. Landslide exposure.
+14. Coastal and erosion risk, where applicable.
+15. Environmental contamination references.
+16. Air-quality exposure.
+17. Water scarcity and water-related hazards.
+18. Climate-related physical risk.
+19. Building vulnerability indicators.
+20. Property resilience assessments.
+21. Risk-mitigation scenario analysis.
+22. Historical hazard trend analysis.
+23. Geographic risk comparisons.
+24. Risk methodology and model versioning.
+25. Source provenance and data-quality controls.
+26. Property risk reports.
+
+The module provides evidence-based hazard exposure and vulnerability analysis.
+
+It does not guarantee prediction of future disasters, certify structural safety, replace engineering inspections, determine insurance eligibility, or provide official emergency warnings.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- Hazard category definitions
+- Hazard event reference records
+- Hazard-zone reference records
+- Hazard exposure records
+- Property-specific exposure calculations
+- Vulnerability indicator definitions
+- Vulnerability assessment records
+- Risk calculation records
+- Historical hazard observations
+- Resilience assessment records
+- Mitigation scenario records
+- Risk methodology definitions and versions
+- Risk source observations
+- Risk-data quality records
+- Risk report versions
+
+This module does NOT own:
+
+- Canonical property records
+- Canonical geographic hierarchy
+- Official geological or meteorological datasets
+- Emergency alert infrastructure
+- Emergency response operations
+- Building inspection records
+- Structural engineering certifications
+- Insurance policies or underwriting decisions
+- Property valuation
+- Construction or renovation projects
+- Urban infrastructure inventories
+- Environmental regulatory enforcement records
+- Pollution remediation projects
+- Public safety case management
+- User identity records
+- Payment processing
+- Raw external datasets owned by Data Ingestion
+
+Use explicit references to authoritative modules and external sources instead of duplicating their records.
+
+## 5. Hazard Taxonomy
+
+Create a configurable hazard taxonomy.
+
+### Geological Hazards
+
+- Earthquake
+- Ground shaking
+- Surface fault rupture
+- Soil liquefaction
+- Land subsidence
+- Landslide
+- Rockfall
+- Ground instability
+- Sinkhole, where documented
+
+### Hydrological Hazards
+
+- River flooding
+- Flash flooding
+- Urban flooding
+- Coastal flooding
+- Storm surge
+- Groundwater flooding
+- Long-term water scarcity
+- Drought
+- Erosion
+
+### Meteorological Hazards
+
+- Extreme heat
+- Extreme cold
+- Severe storms
+- High winds
+- Hail
+- Heavy rainfall
+- Snow and ice
+- Lightning
+- Other documented severe-weather hazards
+
+### Wildfire and Environmental Hazards
+
+- Wildfire exposure
+- Smoke exposure
+- Air pollution
+- Industrial contamination
+- Soil contamination
+- Hazardous-material proximity
+- Other documented environmental hazards
+
+### Climate-Related Hazards
+
+- Long-term heat exposure
+- Changing precipitation patterns
+- Drought trends
+- Sea-level rise
+- Coastal erosion
+- Climate-driven flood exposure
+- Other documented climate-related physical hazards
+
+Requirements:
+
+- Assign stable identifiers to hazard categories.
+- Support parent and child categories.
+- Distinguish an observed hazard event from a modeled hazard zone.
+- Distinguish acute hazards from chronic environmental risks.
+- Distinguish natural hazards from human-caused environmental hazards.
+- Do not assume every hazard category applies to every geographic region.
+- Preserve official source terminology.
+- Do not invent hazard classifications.
+- Support jurisdiction-specific hazard definitions.
+
+## 6. Geographic Integration
+
+Use Geography as the canonical geographic reference system.
+
+Support references to:
+
+- Country
+- State or province
+- Region
+- Municipality
+- City
+- District
+- Neighborhood
+- Official hazard-zone geometry
+- Property coordinates or authorized location references
+
+Requirements:
+
+- Do not create a parallel geographic hierarchy.
+- Do not create a competing address-resolution system.
+- Use canonical geographic IDs where available.
+- Preserve the spatial resolution of source datasets.
+- Distinguish a property point from a parcel boundary.
+- Distinguish a neighborhood polygon from a hazard-zone polygon.
+- Preserve coordinate reference systems.
+- Do not assume all source geometries use the same CRS.
+- Validate geometry before spatial operations.
+- Handle missing or imprecise property coordinates explicitly.
+- Do not infer precise property exposure from a city-level average.
+- Do not claim parcel-level accuracy when only regional data exists.
+
+## 7. Hazard-Zone Model
+
+Build a durable hazard-zone reference model.
+
+Each hazard-zone record should support:
+
+- Hazard-zone ID
+- Hazard category
+- Geographic jurisdiction reference
+- Source geometry reference
+- Geometry type
+- Coordinate reference system
+- Hazard intensity classification
+- Hazard probability classification, where documented
+- Applicable time horizon
+- Observation or model date
+- Effective period
+- Source dataset reference
+- Source resolution
+- Methodology version
+- Verification status
+- Last verified timestamp
+
+Requirements:
+
+- Preserve original source geometry references.
+- Do not invent hazard-zone boundaries.
+- Do not convert a coarse geographic estimate into a parcel-level certainty.
+- Distinguish official hazard maps from modeled analytical layers.
+- Preserve historical versions of hazard-zone boundaries.
+- Do not silently replace historical zone records.
+- Support overlapping hazard zones.
+- Represent unknown coverage explicitly.
+- Do not treat the absence of a hazard-zone record as proof of zero risk.
+
+## 8. Property Exposure Assessment
+
+Build a property-specific hazard exposure service.
+
+Each exposure record should support:
+
+- Exposure ID
+- Canonical property reference
+- Hazard category
+- Hazard-zone reference
+- Geographic match method
+- Property-location precision
+- Exposure classification
+- Source dataset reference
+- Spatial resolution
+- Assessment date
+- Applicable time horizon
+- Methodology version
+- Confidence or uncertainty metadata, where justified
+- Data-quality status
+
+Potential exposure classifications:
+
+- No documented exposure in the available dataset
+- Low modeled exposure
+- Moderate modeled exposure
+- High modeled exposure
+- Very high modeled exposure
+- Unknown
+- Insufficient spatial resolution
+- Conflicting evidence
+
+Requirements:
+
+- Distinguish no documented exposure from confirmed absence of risk.
+- Distinguish exposure from vulnerability.
+- Distinguish hazard probability from potential impact.
+- Preserve the spatial matching method.
+- Do not infer exposure from property names or listing descriptions.
+- Do not claim a property is safe because a dataset contains no hazard record.
+- Do not claim a property will be affected by a future event.
+- Support multiple simultaneous hazard exposures.
+- Record the exact source and methodology behind every classification.
+
+## 9. Seismic Risk Intelligence
+
+Support earthquake-related hazard and exposure analysis.
+
+Potential data:
+
+- Seismic hazard-zone references
+- Historical earthquake events
+- Ground-shaking intensity
+- Peak ground acceleration, where sourced
+- Peak ground velocity, where sourced
+- Seismic design-zone references
+- Surface fault references
+- Liquefaction susceptibility
+- Soil amplification references
+- Historical event proximity
+
+Requirements:
+
+- Distinguish earthquake magnitude from local shaking intensity.
+- Distinguish historical events from future hazard models.
+- Do not infer structural safety from regional seismic hazard alone.
+- Do not invent seismic probabilities.
+- Do not calculate building-specific structural failure probability without a validated engineering model and required inputs.
+- Do not claim a building complies with seismic codes.
+- Preserve model version, geographic resolution, and source.
+- Represent missing soil or structural information explicitly.
+
+## 10. Flood Risk Intelligence
+
+Support flood-related hazard analysis.
+
+Potential categories:
+
+- River flooding
+- Flash flooding
+- Urban surface-water flooding
+- Coastal flooding
+- Storm surge
+- Groundwater flooding
+- Drainage-related flood exposure
+
+Potential data:
+
+- Flood-zone references
+- Historical flood events
+- Water-depth estimates, where sourced
+- Flood recurrence intervals, where documented
+- Inundation boundaries
+- Drainage and topographic context
+- Flood-model scenario references
+
+Requirements:
+
+- Distinguish historical flood occurrence from modeled future flood exposure.
+- Distinguish flood depth from flood probability.
+- Preserve return-period definitions and assumptions.
+- Do not assume a stated return period means an event occurs on a predictable schedule.
+- Do not invent flood depths.
+- Do not infer building-floor inundation from ground-level data without an appropriate model.
+- Do not claim a property is flood-proof.
+- Preserve model horizon and climate assumptions.
+- Identify missing elevation or drainage information.
+
+## 11. Land Subsidence and Ground Stability
+
+Support land-subsidence and ground-instability intelligence.
+
+Potential observations:
+
+- Land subsidence
+- Ground deformation
+- Groundwater-related subsidence
+- Soil instability
+- Sinkhole susceptibility
+- Ground movement trends
+- Differential settlement references, where documented
+
+Requirements:
+
+- Distinguish satellite-observed ground movement from building structural settlement.
+- Preserve measurement units and observation periods.
+- Distinguish measured displacement from modeled susceptibility.
+- Do not infer structural damage from regional ground movement alone.
+- Do not invent subsidence rates.
+- Do not claim a building has foundation damage without engineering evidence.
+- Preserve sensor and dataset provenance.
+- Identify spatial resolution and measurement uncertainty.
+
+## 12. Wildfire and Smoke Exposure
+
+Support wildfire-related risk references.
+
+Potential data:
+
+- Historical wildfire events
+- Wildfire hazard zones
+- Vegetation and land-cover context
+- Fire-weather indicators
+- Wildland-urban interface references
+- Smoke exposure
+- Burned-area observations
+- Historical event proximity
+
+Requirements:
+
+- Distinguish historical wildfire occurrence from future modeled exposure.
+- Distinguish fire probability from fire intensity.
+- Do not infer building ignition probability without a validated model.
+- Do not claim a property is fire-safe.
+- Do not invent vegetation or fuel-load observations.
+- Preserve source date and geographic resolution.
+- Distinguish direct wildfire exposure from smoke exposure.
+- Represent unavailable local data explicitly.
+
+## 13. Extreme Heat and Climate Exposure
+
+Support heat and chronic climate-related exposure.
+
+Potential indicators:
+
+- Extreme heat days
+- Heatwave duration
+- Nighttime heat exposure
+- Historical temperature extremes
+- Long-term temperature trends
+- Cooling-demand context
+- Drought indicators
+- Precipitation trends
+- Climate scenario references
+
+Requirements:
+
+- Distinguish observed historical climate data from modeled future projections.
+- Preserve baseline period and scenario assumptions.
+- Do not present a climate projection as a certain future outcome.
+- Do not invent temperature thresholds.
+- Do not claim indoor temperatures from outdoor climate data.
+- Distinguish neighborhood heat exposure from property-specific indoor conditions.
+- Do not duplicate general urban heat-island datasets owned by Urban Intelligence.
+- Consume authorized Urban Intelligence indicators where appropriate.
+- Preserve model uncertainty and projection horizon.
+
+## 14. Storm, Wind, and Severe Weather Exposure
+
+Support documented severe-weather hazard references.
+
+Potential categories:
+
+- High wind
+- Severe storms
+- Hail
+- Heavy precipitation
+- Snow loading
+- Ice accumulation
+- Lightning
+- Extreme cold
+
+Requirements:
+
+- Preserve source definitions and intensity scales.
+- Distinguish historical event records from modeled hazard zones.
+- Do not invent wind speeds or event probabilities.
+- Do not infer roof damage from a regional storm record.
+- Do not claim structural resistance without verified engineering information.
+- Preserve applicable time horizon and source methodology.
+- Represent incomplete geographic coverage explicitly.
+
+## 15. Environmental Contamination and Pollution
+
+Support environmental exposure references.
+
+Potential categories:
+
+- Industrial contamination
+- Soil contamination
+- Groundwater contamination
+- Hazardous waste proximity
+- Air pollution
+- Particulate matter
+- Industrial emissions
+- Other documented environmental hazards
+
+Requirements:
+
+- Distinguish a nearby industrial site from confirmed contamination of a property.
+- Distinguish pollution measurements from modeled pollution estimates.
+- Preserve contaminant type, unit, observation period, and source.
+- Do not infer health outcomes from environmental exposure records.
+- Do not claim soil or groundwater contamination without evidence.
+- Do not duplicate regulatory enforcement case records.
+- Do not invent contamination sites.
+- Do not label a property contaminated solely because it is near an industrial facility.
+- Preserve official investigation and remediation references where available.
+
+## 16. Water Scarcity and Water-Related Environmental Risk
+
+Support documented water-related exposure.
+
+Potential indicators:
+
+- Regional water scarcity
+- Drought exposure
+- Groundwater depletion
+- Water-stress classification
+- Water-source vulnerability
+- Flood-related water hazards
+- Coastal saltwater intrusion, where documented
+
+Requirements:
+
+- Distinguish regional water stress from property-level water-service interruption.
+- Do not infer drinking-water quality from regional water scarcity.
+- Do not claim a property lacks water service without evidence.
+- Preserve source period and geographic resolution.
+- Do not invent groundwater levels.
+- Distinguish chronic water scarcity from acute supply disruptions.
+- Do not duplicate utility-service or infrastructure ownership records.
+
+## 17. Building Vulnerability Indicators
+
+Support property-specific vulnerability indicators using authorized building attributes.
+
+Potential attributes:
+
+- Building age
+- Structural system classification
+- Number of floors
+- Foundation information
+- Construction materials
+- Roof type
+- Basement presence
+- Building elevation
+- Ground-floor elevation
+- Drainage characteristics
+- Envelope characteristics
+- Documented retrofit history
+- Existing protective systems
+
+Requirements:
+
+- Use Property Registry for canonical property references.
+- Use Property Due Diligence for authorized technical inspection references.
+- Use Property Management for documented maintenance or retrofit references.
+- Distinguish measured attributes from user-reported information.
+- Do not invent construction materials.
+- Do not infer foundation type from building age.
+- Do not assign structural vulnerability without a validated methodology.
+- Do not substitute a generic building category for an engineering assessment.
+- Represent unknown attributes explicitly.
+- Preserve the source and observation date of every material attribute.
+
+## 18. Exposure, Vulnerability, and Risk Separation
+
+Implement explicit conceptual separation:
+
+### Hazard
+
+The potentially damaging natural or environmental phenomenon.
+
+### Exposure
+
+The presence of a property or asset in an area potentially affected by that hazard.
+
+### Vulnerability
+
+The characteristics that may influence how severely the property could be affected.
+
+### Consequence
+
+The potential impact, only where a validated methodology and sufficient inputs exist.
+
+### Risk
+
+A documented analytical result derived from an explicit methodology that combines relevant hazard, exposure, vulnerability, and consequence information.
+
+Requirements:
+
+- Do not treat exposure alone as total risk.
+- Do not treat vulnerability alone as hazard probability.
+- Do not combine unrelated indicators into an arbitrary score.
+- Do not create a universal risk formula without documented validation.
+- Preserve component-level results.
+- Explain every combined risk calculation.
+- Identify missing inputs.
+- Distinguish qualitative classifications from quantitative estimates.
+- Do not present a risk classification as a prediction of an individual future event.
+
+## 19. Risk Calculation and Methodology Engine
+
+Build a versioned and explainable risk calculation framework.
+
+Each calculation should support:
+
+- Risk calculation ID
+- Property reference
+- Hazard category
+- Hazard data references
+- Exposure inputs
+- Vulnerability inputs
+- Consequence inputs, if supported
+- Geographic resolution
+- Time horizon
+- Scenario assumptions
+- Methodology identifier
+- Methodology version
+- Calculation timestamp
+- Result
+- Uncertainty metadata
+- Data-quality status
+- Excluded factors
+- Explanation
+
+Requirements:
+
+- Use only documented and validated methodologies.
+- Preserve all inputs and intermediate calculations.
+- Support deterministic replay.
+- Do not fabricate probabilities.
+- Do not invent weights.
+- Do not silently combine incompatible risk scales.
+- Do not calculate numeric risk when critical inputs are missing.
+- Distinguish a qualitative risk classification from a quantitative probability.
+- Make uncertainty and limitations visible.
+- Preserve historical methodology versions.
+- Never silently recalculate a previously published report using a new methodology.
+
+## 20. Historical Hazard Events
+
+Build a historical hazard-event reference model.
+
+Each event should support:
+
+- Event ID
+- Hazard category
+- Event name or official identifier, where available
+- Geographic location
+- Event geometry reference
+- Start timestamp
+- End timestamp, where known
+- Observed intensity
+- Measurement unit
+- Reported impacts, where sourced
+- Source authority
+- Source reference
+- Verification status
+- Observation date
+- Data-quality metadata
+
+Requirements:
+
+- Distinguish official event records from secondary reports.
+- Preserve source terminology and event identifiers.
+- Do not invent casualties, damages, or economic losses.
+- Do not infer that a property was damaged because an event occurred nearby.
+- Do not assume historical event frequency alone predicts future risk.
+- Support duplicate-event reconciliation.
+- Preserve corrections and historical source versions.
+
+## 21. Climate Scenario and Long-Term Risk Analysis
+
+Support documented climate-related scenario analysis.
+
+Potential scenario dimensions:
+
+- Time horizon
+- Climate baseline
+- Emissions scenario
+- Temperature change
+- Precipitation change
+- Sea-level change
+- Extreme-heat frequency
+- Drought conditions
+- Flood-model assumptions
+
+Requirements:
+
+- Use recognized, source-backed climate datasets where available.
+- Preserve scenario definitions.
+- Distinguish scenario pathways from predictions.
+- Do not invent future climate values.
+- Do not present one scenario as inevitable.
+- Preserve model and dataset versions.
+- Distinguish historical observations from future projections.
+- Document geographic resolution.
+- Represent unavailable scenarios explicitly.
+- Do not make unsupported claims about an individual property's future insurability or market value.
+
+## 22. Resilience Assessment
+
+Build a structured property resilience assessment.
+
+Potential dimensions:
+
+- Flood resilience references
+- Seismic resilience references
+- Heat resilience references
+- Fire resilience references
+- Storm resilience references
+- Water resilience references
+- Power continuity references
+- Documented protective systems
+- Documented mitigation measures
+- Maintenance and retrofit references
+
+Each assessment should support:
+
+- Assessment ID
+- Property reference
+- Assessment scope
+- Hazard category
+- Evidence references
+- Protective measure references
+- Methodology version
+- Reviewer reference
+- Data completeness
+- Assessment date
+- Findings
+- Limitations
+- Verification status
+
+Requirements:
+
+- Distinguish a desk-based assessment from a physical inspection.
+- Do not claim a property is resilient without supporting evidence.
+- Do not issue structural safety certification.
+- Do not invent protective equipment.
+- Distinguish installed protective measures from proposed measures.
+- Preserve unresolved risks.
+- Do not turn missing evidence into a positive resilience rating.
+
+## 23. Risk Mitigation Scenarios
+
+Build hypothetical mitigation scenario analysis.
+
+Potential interventions:
+
+- Flood barriers
+- Improved drainage
+- Waterproofing
+- Foundation monitoring
+- Seismic strengthening
+- Roof reinforcement
+- Fire-resistant materials
+- Defensible-space measures
+- Heat-reflective roofing
+- Improved insulation
+- Backup power
+- Water storage
+- Other documented mitigation measures
+
+Each scenario should support:
+
+- Scenario ID
+- Property reference
+- Hazard category
+- Baseline exposure and vulnerability references
+- Proposed mitigation measure
+- Assumptions
+- Estimated effect, where validated
+- Estimated cost, only where source-backed
+- Implementation dependencies
+- Regulatory or permit references
+- Methodology version
+- Uncertainty
+- Creation timestamp
+
+Requirements:
+
+- Clearly label scenarios as hypothetical.
+- Do not guarantee risk reduction.
+- Do not invent mitigation costs.
+- Do not assume structural feasibility.
+- Do not assume regulatory approval.
+- Do not create construction work orders.
+- Do not mark a mitigation measure as completed without authoritative evidence.
+- Preserve baseline and scenario versions.
+- Do not present an illustrative estimate as an engineering recommendation.
+
+## 24. Risk Comparisons Across Properties and Areas
+
+Support authorized comparisons.
+
+Potential comparisons:
+
+- Multiple properties in a portfolio
+- Properties within a city
+- Neighborhood-level hazard exposure
+- Different hazard categories
+- Historical hazard trends
+- Different climate scenarios
+- Different mitigation scenarios
+
+Requirements:
+
+- Use canonical property and geographic references.
+- Verify access to every property record.
+- Preserve geographic resolution.
+- Compare equivalent hazard definitions and time horizons.
+- Do not compare incompatible risk scales.
+- Do not treat missing data as zero risk.
+- Do not rank properties using arbitrary composite scores.
+- Clearly distinguish property-specific findings from regional context.
+- Protect private property-risk information.
+
+## 25. Insurance and Investment Integration
+
+Prepare optional, read-only contracts for downstream use.
+
+### Property Insurance
+
+Provide:
+
+- Hazard exposure references
+- Risk methodology references
+- Vulnerability evidence
+- Resilience assessment references
+- Source freshness metadata
+
+Do not:
+
+- Determine insurance eligibility.
+- Set premiums.
+- Approve or reject claims.
+- Underwrite insurance.
+- Modify insurance policies.
+- Guarantee insurability.
+
+### Investment Intelligence
+
+Provide:
+
+- Documented property hazard exposure
+- Historical hazard references
+- Vulnerability and resilience indicators
+- Risk-report references
+
+Do not:
+
+- Calculate property valuation.
+- Forecast investment returns.
+- Make investment decisions.
+- Claim that a hazard automatically reduces property value.
+
+### Property Due Diligence
+
+Consume authorized inspection and technical evidence.
+
+Do not:
+
+- Duplicate inspection records.
+- Issue engineering certifications.
+- Replace professional structural assessment.
+
+## 26. Urban Intelligence Integration
+
+Use Urban Intelligence for authorized regional context.
+
+Potential inputs:
+
+- Regional environmental indicators
+- Urban heat indicators
+- Infrastructure context
+- Regional environmental quality
+- Historical area-level observations
+
+Requirements:
+
+- Do not duplicate urban indicator ownership.
+- Preserve geographic resolution and reporting date.
+- Distinguish area-level indicators from property-specific observations.
+- Do not infer an individual property's condition from neighborhood averages.
+- Do not invent regional environmental measurements.
+- Record the exact upstream reference used.
+
+## 27. External Data Ingestion and Source Reliability
+
+Prepare module-local adapters for approved hazard datasets.
+
+Potential source categories:
+
+- Geological surveys
+- Seismic monitoring authorities
+- Meteorological authorities
+- Hydrological authorities
+- Flood-risk agencies
+- Environmental monitoring authorities
+- Satellite-derived datasets
+- Official climate datasets
+- Government hazard maps
+- Authorized research datasets
+- Verified public datasets
+
+Each source observation should support:
+
+- Source ID
+- Source category
+- Issuing authority
+- Geographic coverage
+- Dataset identifier
+- Source URL or document reference
+- Publication date
+- Retrieval timestamp
+- Observation period
+- Effective period
+- Spatial resolution
+- Coordinate reference system
+- Measurement units
+- Methodology
+- Licensing metadata
+- Verification status
+- Last verified timestamp
+
+Requirements:
+
+- Prefer authoritative sources.
+- Use Data Ingestion contracts where available.
+- Do not build a parallel generic ingestion platform.
+- Do not invent government APIs.
+- Do not bypass access restrictions.
+- Do not assume a dataset is freely reusable.
+- Preserve licensing and attribution requirements.
+- Distinguish official datasets from research models and estimates.
+- Quarantine contradictory or malformed observations.
+- Do not silently replace historical source data.
+- Do not claim a dataset is current without freshness evidence.
+
+## 28. Data Quality and Uncertainty Management
+
+Implement explicit quality controls.
+
+Support conditions such as:
+
+- Missing property coordinates
+- Inaccurate geocoding
+- Insufficient spatial resolution
+- Outdated hazard dataset
+- Missing source methodology
+- Conflicting hazard boundaries
+- Missing time horizon
+- Unknown building characteristics
+- Incomplete vulnerability evidence
+- Incompatible measurement units
+- Unverified source
+- Incomplete historical coverage
+- Uncertain model assumptions
+
+Requirements:
+
+- Distinguish missing data from low risk.
+- Distinguish insufficient resolution from no exposure.
+- Distinguish uncertainty from measurement error.
+- Preserve conflicting source observations.
+- Do not silently select one conflicting dataset.
+- Support authorized review and resolution.
+- Preserve resolution history.
+- Do not publish definitive risk classifications when critical data conflicts remain unresolved.
+- Explain the effect of missing data on every published result.
+
+## 29. AI-Assisted Risk Analysis Boundary
+
+Prepare optional interfaces for future AI-assisted workflows.
+
+Potential uses:
+
+- Classifying hazard-related documents
+- Extracting candidate measurements
+- Summarizing environmental reports
+- Identifying missing evidence
+- Suggesting hazard categories
+- Preparing reviewer-facing summaries
+
+Requirements:
+
+- Do not assume an AI service is configured.
+- Treat every model output as an untrusted suggestion.
+- Do not use AI output as an authoritative hazard measurement.
+- Do not allow AI to certify structural safety.
+- Do not allow AI to issue official warnings.
+- Require human review for material source extraction and classification.
+- Preserve original source evidence.
+- Record model and prompt version when AI is actually used.
+- Do not invent confidence scores.
+- Do not send private property documents to external AI services without explicit authorization and an approved privacy contract.
+
+## 30. Domain Events
+
+Define versioned module-local events such as:
+
+- `property_risk.hazard_zone.created`
+- `property_risk.hazard_zone.updated`
+- `property_risk.hazard_event.recorded`
+- `property_risk.exposure.assessed`
+- `property_risk.vulnerability.assessed`
+- `property_risk.calculation.completed`
+- `property_risk.resilience.assessed`
+- `property_risk.mitigation_scenario.created`
+- `property_risk.climate_scenario.updated`
+- `property_risk.source.observation_added`
+- `property_risk.source.conflict_detected`
+- `property_risk.methodology.versioned`
+- `property_risk.report.published`
+
+Requirements:
+
+- Every event must have a stable event ID.
+- Include schema version.
+- Include event timestamp.
+- Include relevant entity references.
+- Avoid unnecessary personal information.
+- Define idempotency behavior.
+- Use durable event publication through approved infrastructure where available.
+- Do not create a global event bus.
+- Do not modify shared event catalogs.
+- Document integration requirements for the integration lead.
+
+## 31. Persistence and Reliability
+
+Inspect the actual repository architecture and established persistence conventions.
+
+Implement durable persistence for:
+
+- Hazard categories
+- Hazard-zone references
+- Historical hazard events
+- Geographic exposure records
+- Property exposure assessments
+- Vulnerability assessments
+- Risk calculations
+- Risk methodology versions
+- Climate scenario references
+- Resilience assessments
+- Mitigation scenarios
+- Source observations
+- Data-quality records
+- Historical risk snapshots
+- Risk reports
+- Audit references
+
+Requirements:
+
+- Use the established persistence layer.
+- Do not introduce another database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamp conventions.
+- Use bounded reads and cursor pagination.
+- Implement idempotent mutations.
+- Handle concurrent assessment updates safely.
+- Preserve historical source and methodology versions.
+- Avoid unbounded synchronous processing.
+- Use durable jobs for large imports or spatial processing where available.
+- Do not assume a queue or scheduler is configured.
+- Do not store media binaries.
+- Do not directly write to other modules' collections.
+- Enforce backend authorization when using Admin SDK.
+
+## 32. Security and Authorization
+
+- Obtain identity through the established verified-principal contract.
+- Never trust client-supplied UIDs.
+- Protect private property-risk assessments.
+- Enforce property and organization access boundaries.
+- Restrict administrative hazard-data updates to authorized roles.
+- Separate public regional hazard information from private property assessments.
+- Do not expose private technical inspection documents.
+- Do not reveal sensitive location information unnecessarily.
+- Apply least-privilege access.
+- Preserve audit references for sensitive changes.
+- Respect account export and deletion workflows.
+- Do not create another identity system.
+- Prevent cross-user risk-data leakage.
+
+## 33. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+### Hazard Catalog and Zones
+
+- Create hazard category
+- Retrieve hazard catalog
+- Register hazard-zone reference
+- Retrieve hazard zone
+- Retrieve historical hazard-zone versions
+- Update source verification status
+- Retrieve geographic hazard coverage
+
+### Hazard Events
+
+- Register historical hazard event
+- Retrieve hazard event
+- Retrieve historical events by geographic reference
+- Retrieve events by hazard category
+- Reconcile duplicate event observations
+- Retrieve event provenance
+
+### Property Exposure
+
+- Assess property hazard exposure
+- Retrieve property exposure
+- Retrieve multi-hazard exposure
+- Retrieve geographic matching explanation
+- Retrieve exposure history
+- Identify insufficient spatial resolution
+
+### Vulnerability and Risk
+
+- Create vulnerability assessment
+- Retrieve vulnerability indicators
+- Calculate documented risk assessment
+- Retrieve calculation explanation
+- Retrieve risk methodology version
+- Retrieve uncertainty and data-quality information
+
+### Resilience and Mitigation
+
+- Create resilience assessment
+- Retrieve resilience evidence
+- Create mitigation scenario
+- Compare baseline and hypothetical scenario
+- Retrieve mitigation scenario history
+- Retrieve supporting source references
+
+### Climate and Historical Analysis
+
+- Retrieve historical hazard trends
+- Retrieve climate scenario references
+- Compare documented time horizons
+- Retrieve historical risk snapshots
+- Retrieve regional hazard context
+
+### Reports and Data Quality
+
+- Generate property-risk report
+- Publish report version
+- Retrieve report history
+- Retrieve source provenance
+- Identify stale hazard datasets
+- Identify conflicting source observations
+- Retrieve data-quality warnings
+
+Requirements:
+
+- Validate all inputs.
+- Enforce permissions on every sensitive operation.
+- Use idempotency for retryable mutations.
+- Preserve source and calculation provenance.
+- Return explicit unknown or unavailable states.
+- Do not return unsupported safety or insurance conclusions.
+- Do not register global HTTP routes.
+
+Document route-registration, event-registration, and shared-schema requirements for the integration lead.
+
+## 34. Automated Testing
+
+Create tests covering:
+
+### Hazard Taxonomy
+
+- Stable hazard identifiers
+- Parent and child categories
+- Natural versus environmental hazards
+- Acute versus chronic hazards
+- Unsupported hazard categories
+- Jurisdiction applicability
+
+### Geographic Data
+
+- Canonical geographic references
+- Coordinate reference systems
+- Geometry validation
+- Overlapping hazard zones
+- Property point versus parcel geometry
+- Geographic matching precision
+- Missing coordinates
+- Insufficient spatial resolution
+- Historical hazard-zone versions
+
+### Property Exposure
+
+- Property-to-zone matching
+- Multiple hazard exposure
+- No documented exposure
+- Unknown exposure
+- Coarse geographic datasets
+- Conflicting source observations
+- Source freshness
+- Exposure versus vulnerability distinction
+
+### Seismic and Geological Risk
+
+- Earthquake magnitude versus shaking intensity
+- Historical versus modeled hazards
+- Liquefaction references
+- Subsidence measurement units
+- Missing soil data
+- Unsupported structural failure claims
+
+### Flood and Weather Risk
+
+- Historical versus modeled flooding
+- Flood depth versus probability
+- Return-period interpretation
+- Missing elevation data
+- Extreme heat observations
+- Climate projection assumptions
+- Wildfire versus smoke exposure
+- Storm intensity metadata
+
+### Environmental Risk
+
+- Pollution measurement provenance
+- Industrial proximity versus confirmed contamination
+- Air-quality units
+- Water scarcity versus service interruption
+- Missing environmental data
+- Unsupported health conclusions
+
+### Vulnerability and Risk Calculation
+
+- Exposure versus vulnerability separation
+- Missing structural attributes
+- Methodology versioning
+- Reproducible calculations
+- Missing critical inputs
+- Conflicting hazard scales
+- Uncertainty handling
+- Prevention of arbitrary composite scores
+
+### Resilience and Mitigation
+
+- Desk-based versus physical assessment
+- Installed versus proposed protective measures
+- Hypothetical mitigation scenarios
+- Missing implementation evidence
+- Unsupported cost estimates
+- No guaranteed risk-reduction claims
+
+### Persistence and Security
+
+- Idempotency
+- Retry safety
+- Concurrent updates
+- Persistence failures
+- Pagination
+- Bounded queries
+- Authorization
+- Cross-user data isolation
+- Event deduplication
+- Historical methodology preservation
+- Account deletion integration
+
+Tests must verify actual geographic matching, source provenance, risk methodology, uncertainty handling, authorization, persistence, and failure behavior. File-existence tests alone are insufficient.
+
+## 35. Engineering Restrictions
+
+- No fabricated hazard events.
+- No invented hazard-zone boundaries.
+- No fake seismic probabilities.
+- No fabricated flood depths.
+- No invented subsidence measurements.
+- No unsupported wildfire predictions.
+- No fabricated climate projections.
+- No invented contamination records.
+- No unsupported structural vulnerability ratings.
+- No arbitrary universal risk score.
+- No guaranteed disaster predictions.
+- No structural safety certification.
+- No official emergency-warning claims.
+- No insurance underwriting.
+- No insurance eligibility decisions.
+- No duplicate geographic hierarchy.
+- No duplicate urban intelligence system.
+- No duplicate property inspection system.
+- No duplicate environmental-data ingestion platform.
+- No unauthorized external data extraction.
+- No direct modifications to other modules' records.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When source data, geographic precision, building attributes, validated methodology, or external integrations are unavailable, represent them as unavailable and document the exact dependency.
+
+Never simulate an official hazard warning, engineering certification, verified property damage, insurance decision, or guaranteed future event.
+
+## 36. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain hazard taxonomy and ownership boundaries.
+6. Document geographic matching and spatial-resolution handling.
+7. Document property exposure calculations.
+8. Document seismic, flood, subsidence, wildfire, and climate data handling.
+9. Document exposure, vulnerability, consequence, and risk separation.
+10. Document risk methodology versions and uncertainty handling.
+11. Document historical hazard-event provenance.
+12. Document resilience and mitigation scenario limitations.
+13. Document data-quality and conflict-resolution controls.
+14. Identify dependencies on Core, Property Registry, Geography, Urban Intelligence, Data Ingestion, Property Due Diligence, Property Management, Property Insurance, Investment Intelligence, Media, and Notifications.
+15. Identify unavailable integrations and unresolved contracts.
+16. Confirm that no shared files or other employees' files were modified.
+17. Commit only assigned files if explicitly authorized.
+18. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, explainable property environmental-risk intelligence backend that connects verified hazard information to property locations while preserving geographic uncertainty, source provenance, and the distinction between exposure, vulnerability, and actual risk.

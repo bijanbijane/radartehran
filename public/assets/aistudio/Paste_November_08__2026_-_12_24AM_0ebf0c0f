@@ -1,0 +1,1107 @@
+# TASK: Build the Real Estate CRM & Lead Management Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-crm-lead-management`.
+- Never modify `main`.
+- Inspect the current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/crm/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- contacts
+- leads
+- pipelines
+- assignments
+- interactions
+- follow-ups
+- tasks
+- segments
+- consent
+- attribution
+- analytics
+- imports
+- exports
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- Firestore global rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Bargains
+- Buyer Alerts
+- Notifications
+- Sponsors
+- Service Providers
+- Property Search
+- Property Management
+- Property Transactions
+- Trust & Safety
+- Media
+- Data Ingestion
+- Telemetry
+- user identity records
+- frontend files
+- other employees' modules
+
+Global route registration and shared-file modifications belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a durable customer relationship management backend designed for real-estate workflows.
+
+Support:
+
+1. Customer contact records.
+2. Real-estate lead records.
+3. Buyer leads.
+4. Seller leads.
+5. Tenant leads.
+6. Landlord leads.
+7. Property-owner inquiries.
+8. Investment-related inquiries.
+9. Lead source attribution.
+10. Lead assignment to authorized agents or teams.
+11. Lead ownership transfer.
+12. Lead status and lifecycle management.
+13. Customer interaction history.
+14. Follow-up tasks.
+15. Follow-up deadlines.
+16. Customer segmentation.
+17. Lead qualification.
+18. Sales pipeline management.
+19. Conversion tracking.
+20. Lead response-time metrics.
+21. Duplicate detection and controlled merging.
+22. Consent and contact-preference management.
+23. CRM performance reports.
+24. Audit history.
+
+The module manages customer relationship records and follow-up workflows. It does not own listings, user authentication, messaging delivery, property transactions, or payment processing.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- CRM contact records
+- CRM lead records
+- Lead lifecycle states
+- Lead assignment records
+- Lead ownership history
+- CRM pipeline definitions
+- Pipeline stage history
+- Customer interaction metadata
+- Follow-up tasks
+- Follow-up completion records
+- Contact segmentation rules
+- Lead qualification records
+- Lead-source attribution records
+- Duplicate-detection decisions
+- CRM consent records
+- CRM contact preferences
+- Lead conversion references
+- CRM-specific analytics
+- CRM import and export job metadata
+
+This module does NOT own:
+
+- Authentication identities
+- Authoritative user profiles
+- Property listings
+- Canonical property records
+- Buyer-alert subscriptions
+- Notification delivery records
+- Email or SMS message delivery
+- Service-provider profiles
+- Customer service requests owned by Service Providers
+- Rental agreements
+- Property transactions
+- Financial accounts or payments
+- Advertising campaigns owned by Sponsors
+- Trust & Safety enforcement decisions
+- Raw telemetry events
+- Media binaries
+
+Use references and explicit contracts with authoritative modules. Never duplicate their records or create competing sources of truth.
+
+## 5. CRM Contact Model
+
+Create a CRM contact entity.
+
+Support:
+
+- Stable contact ID
+- Optional authenticated user reference
+- Contact type
+- Display name
+- Authorized contact channels
+- Contact preferences
+- Geographic reference, where relevant
+- Contact classification
+- Record origin
+- Creation timestamp
+- Last update timestamp
+- Record status
+
+Support contact types such as:
+
+- Buyer
+- Seller
+- Tenant
+- Landlord
+- Investor
+- Property owner
+- General inquiry
+- Business contact
+
+Requirements:
+
+- A CRM contact is not an authentication identity.
+- A CRM contact may represent a person who does not have a platform account.
+- Never create Firebase Auth users from CRM contact creation.
+- Never assume that two records represent the same person based only on similar names.
+- Do not store unnecessary personal information.
+- Separate private contact information from analytical metadata.
+- Restrict access by organization, team, and assigned-user permissions.
+- Do not expose a contact's information to unrelated users.
+- Support contact status changes and history.
+- Preserve source references where a contact was created from another module.
+
+## 6. Lead Management
+
+Create a lead entity representing a potential real-estate business opportunity or customer inquiry.
+
+Support:
+
+- Lead ID
+- Contact reference
+- Lead type
+- Lead source
+- Related property reference, if available
+- Geographic reference, if relevant
+- Interested property category
+- Intended transaction type
+- Budget range, if voluntarily supplied
+- Desired timeframe
+- Customer requirements
+- Lead priority
+- Qualification status
+- Assigned user reference
+- Assigned team reference
+- Current pipeline stage
+- Creation timestamp
+- Last activity timestamp
+- Last update timestamp
+- Lead closure reason
+
+Lead types should include:
+
+- Buy property
+- Sell property
+- Rent property
+- Lease property
+- Find an investment property
+- Property valuation inquiry
+- Property-management inquiry
+- General real-estate inquiry
+
+Requirements:
+
+- Distinguish a lead from a confirmed customer.
+- Distinguish an inquiry from a valid transaction.
+- Do not treat browsing activity as explicit purchase intent.
+- Do not infer a customer's budget or financial capacity.
+- Do not invent lead sources.
+- Preserve the original source reference.
+- Support incomplete lead records without fabricating missing fields.
+- Support lead cancellation and closure.
+- Preserve state history.
+
+## 7. Lead Source Attribution
+
+Support lead origin categories such as:
+
+- Direct platform inquiry
+- Property listing inquiry
+- Provider referral
+- Organization referral
+- Campaign attribution
+- Sponsored placement reference
+- External import
+- Staff-created record
+- Customer referral
+- Other documented source
+
+Each source attribution record should support:
+
+- Source type
+- Source module
+- Source entity reference
+- Source event reference
+- Attribution timestamp
+- Attribution method
+- Attribution metadata
+
+Requirements:
+
+- Do not invent traffic sources.
+- Do not claim a campaign generated a lead unless evidence supports that relationship.
+- Distinguish first-touch attribution from last-touch attribution.
+- Support multi-touch attribution only when actual event history is available.
+- Preserve original attribution data.
+- Do not duplicate raw telemetry events.
+- Use Telemetry contracts for supported attribution inputs.
+- Do not modify Sponsors or Telemetry records.
+- Do not treat a sponsored placement view as a customer inquiry.
+
+## 8. Lead Qualification
+
+Build an explainable lead-qualification workflow.
+
+Support qualification dimensions such as:
+
+- Inquiry completeness
+- Customer-stated requirements
+- Intended transaction type
+- Declared timeframe
+- Declared budget range
+- Geographic preferences
+- Customer-confirmed next step
+- Required follow-up
+
+Possible qualification states:
+
+- Unqualified
+- Incomplete
+- Contact attempted
+- Contact established
+- Requirements captured
+- Qualified
+- Disqualified
+- Converted
+
+Requirements:
+
+- Every qualification outcome must be traceable to recorded evidence.
+- Separate staff assessments from customer-provided information.
+- Preserve qualification history.
+- Do not use protected or sensitive personal attributes.
+- Do not infer creditworthiness, wealth, or financial capability.
+- Do not create arbitrary AI-generated lead scores.
+- If a numerical score is introduced, define and version its formula and evidence requirements.
+- A qualified lead is not a completed sale.
+
+## 9. Sales Pipeline Management
+
+Support configurable pipelines for different real-estate workflows.
+
+Examples:
+
+### Buyer Pipeline
+
+- New inquiry
+- Initial review
+- Contact attempted
+- Contact established
+- Requirements captured
+- Property matching
+- Property viewing or evaluation
+- Negotiation
+- Converted
+- Closed or lost
+
+### Seller Pipeline
+
+- New inquiry
+- Initial review
+- Contact established
+- Property information collected
+- Valuation requested
+- Listing preparation
+- Marketing or listing process
+- Negotiation
+- Converted
+- Closed or lost
+
+### Rental Pipeline
+
+- New inquiry
+- Requirements captured
+- Property matching
+- Contact established
+- Viewing process
+- Application or negotiation
+- Agreement process
+- Converted
+- Closed or lost
+
+Requirements:
+
+- Pipelines must be configurable.
+- Stages must have stable IDs.
+- Preserve stage-transition history.
+- Validate allowed transitions.
+- Support pipeline-specific required fields.
+- Support stage entry and exit timestamps.
+- Support closing reasons.
+- Do not hardcode every workflow into one universal status enum.
+- Never represent a negotiation or application as a completed transaction.
+- Do not create legal transaction records.
+
+## 10. Lead Assignment and Ownership
+
+Support assignment of leads to:
+
+- Individual agents
+- Authorized organization members
+- CRM teams
+- Authorized managers
+
+Support:
+
+- Initial assignment
+- Manual reassignment
+- Assignment history
+- Assignment reason
+- Assignment timestamp
+- Assignment status
+- Temporary delegation
+- Assignment revocation
+- Team-level ownership
+
+Requirements:
+
+- Verify the assigning user's permissions.
+- Verify the receiving user's eligibility and organization membership.
+- Prevent unauthorized cross-organization assignment.
+- Preserve previous assignments.
+- Define behavior for deactivated or removed members.
+- Do not assume an agent belongs to an organization merely because a client submits an organization ID.
+- Do not create another organization-membership system.
+- Do not allow one organization to view another organization's private leads.
+
+## 11. Customer Interaction History
+
+Create an interaction-record model.
+
+Support interaction categories:
+
+- Incoming inquiry
+- Outgoing call record
+- In-person meeting record
+- Property viewing record
+- Customer-provided message reference
+- Staff note
+- Follow-up outcome
+- Quotation discussion reference
+- Other documented interaction
+
+Each interaction should support:
+
+- Interaction ID
+- Lead reference
+- Contact reference
+- Interaction type
+- Actor reference
+- Interaction timestamp
+- Summary
+- Outcome
+- Related entity reference
+- Visibility classification
+- Creation timestamp
+
+Requirements:
+
+- Store interaction metadata and authorized summaries.
+- Do not build a messaging or calling system.
+- Do not claim a call occurred without an actual staff record or supported integration event.
+- Do not store call recordings.
+- Do not store message bodies unnecessarily.
+- Distinguish a staff note from a customer-confirmed statement.
+- Preserve edit history for important interaction records.
+- Restrict private internal notes to authorized team members.
+- Do not expose internal notes in public profile or property records.
+
+## 12. Follow-up Tasks and Reminders
+
+Create a follow-up task workflow.
+
+Support:
+
+- Task ID
+- Lead reference
+- Contact reference
+- Assigned user
+- Task title
+- Task description
+- Due date
+- Timezone
+- Priority
+- Task status
+- Completion timestamp
+- Completion outcome
+- Cancellation reason
+- Creation and update timestamps
+
+Task types may include:
+
+- Call customer
+- Request missing information
+- Arrange property viewing
+- Send quotation reference
+- Follow up on negotiation
+- Review customer requirements
+- Update lead status
+- Other authorized follow-up
+
+Possible states:
+
+- Pending
+- In progress
+- Completed
+- Cancelled
+- Overdue
+
+Requirements:
+
+- Overdue status must be derived consistently from due dates and task state.
+- Use the correct timezone.
+- Support task reassignment.
+- Prevent unauthorized completion.
+- Preserve task history.
+- Do not send email, SMS, or push notifications directly.
+- Publish events or use Notifications contracts.
+- Do not assume a scheduler or notification provider is configured.
+- Make reminder event publication idempotent.
+
+## 13. Contact Preferences and Consent
+
+Build a privacy-aware consent and communication-preference model.
+
+Support:
+
+- Contact channel
+- Permission or consent type
+- Consent status
+- Collection source
+- Consent timestamp
+- Withdrawal timestamp
+- Evidence reference
+- Policy version
+- Communication purpose
+- Last updated timestamp
+
+Distinguish:
+
+- Service-related contact
+- Requested follow-up
+- Transaction-related communication
+- Marketing communication
+- Promotional communication
+- Other specifically authorized purposes
+
+Requirements:
+
+- Never assume permission to send marketing messages.
+- Never create consent by default.
+- Do not use hardcoded `consent: true`.
+- Support withdrawal.
+- Preserve consent history.
+- Do not silently restore withdrawn consent.
+- Enforce channel-specific restrictions.
+- Do not infer permission from the existence of a phone number or email address.
+- Do not send communications directly.
+- Respect applicable privacy and data-protection requirements.
+- Do not treat a service inquiry as blanket marketing consent.
+
+## 14. Contact Deduplication and Record Merging
+
+Implement controlled duplicate detection.
+
+Potential matching evidence:
+
+- Authenticated user reference
+- Exact verified contact identifier
+- Explicit source-system identity
+- Authorized staff-reviewed evidence
+
+Requirements:
+
+- Do not automatically merge contacts based only on similar names.
+- Do not merge two authenticated accounts.
+- Support a duplicate-candidate state.
+- Support authorized manual review.
+- Preserve source records and merge history.
+- Define a canonical CRM contact after a confirmed merge.
+- Reassign or reconcile related leads, tasks, and interactions safely.
+- Prevent duplicate relationship records after merging.
+- Make merge operations idempotent.
+- Support recovery or documented correction where possible.
+- Keep source provenance.
+
+## 15. Customer Segmentation
+
+Support configurable CRM segmentation.
+
+Possible segment dimensions:
+
+- Lead type
+- Pipeline stage
+- Geographic preference
+- Property category
+- Declared budget range
+- Declared transaction timeframe
+- Customer-stated requirements
+- Assigned team
+- Lead source
+- Follow-up status
+- Last interaction period
+
+Requirements:
+
+- Segments must use documented conditions.
+- Do not use sensitive personal traits.
+- Do not infer socioeconomic status.
+- Do not create segments from unauthorized data.
+- Support saved segment definitions.
+- Support bounded evaluation.
+- Preserve the segment-definition version.
+- Distinguish dynamic segments from historical snapshots.
+- Do not automatically trigger marketing campaigns.
+- Do not use segmentation to bypass consent rules.
+
+## 16. Lead Conversion
+
+Support recording a lead's progression into an authoritative business outcome.
+
+Potential conversion references:
+
+- Property listing created
+- Completed property transaction
+- Rental agreement
+- Property-management engagement
+- Service-provider engagement
+- Other supported business outcome
+
+Requirements:
+
+- Use the authoritative target module as the source of truth.
+- Store references to converted entities.
+- Do not create duplicate property or transaction records.
+- Do not declare conversion merely because a customer was contacted.
+- Distinguish successful conversion from a lead being closed for another reason.
+- Support conversion reversal or correction through an audited process.
+- Preserve the lead's original history.
+- Record conversion evidence and timestamp.
+
+## 17. CRM Search and Filtering
+
+Provide module-local search and query services.
+
+Support filters such as:
+
+- Lead type
+- Contact type
+- Pipeline
+- Pipeline stage
+- Lead source
+- Assigned user
+- Assigned team
+- Creation period
+- Last activity period
+- Follow-up due date
+- Qualification state
+- Conversion state
+- Geographic preference
+- Property category
+- Consent status, where access is authorized
+
+Requirements:
+
+- Enforce organization and user authorization before returning results.
+- Do not expose another team's private records.
+- Use bounded queries.
+- Support cursor pagination.
+- Avoid unbounded collection scans.
+- Keep private contact fields out of unauthorized search results.
+- Do not use unverified client-side filtering as an authorization mechanism.
+
+## 18. CRM Analytics and Reporting
+
+Build analytics for:
+
+- Total leads
+- New leads by reporting period
+- Leads by type
+- Leads by source
+- Leads by pipeline stage
+- Assigned versus unassigned leads
+- Follow-up completion rate
+- Overdue follow-up count
+- Contact-response time
+- Qualification rate
+- Conversion rate
+- Closed-lost reasons
+- Pipeline aging
+- Agent workload
+- Team workload
+- Source-attributed conversion
+- Customer inquiry trends
+
+Requirements:
+
+- Define every metric formula.
+- Distinguish counts from rates.
+- Define the reporting period and timezone.
+- Do not calculate conversion rates using incompatible denominators.
+- Distinguish missing data from zero activity.
+- Avoid double-counting leads.
+- Do not claim that attribution proves causation.
+- Do not publish private individual-level customer data in organization-wide reports without authorization.
+- Preserve historical reporting definitions.
+- Do not fabricate performance results.
+
+## 19. Import and Export
+
+Support controlled CRM import and export workflows.
+
+Import requirements:
+
+- Validate input structure.
+- Validate field types.
+- Validate organization ownership.
+- Detect possible duplicates.
+- Preserve source-system identifiers.
+- Record import-job status.
+- Support dry-run validation.
+- Report accepted, rejected, and conflicting records.
+- Support retry-safe processing.
+- Never silently overwrite existing contacts.
+- Do not assume an import file is trustworthy.
+
+Export requirements:
+
+- Enforce authorization.
+- Export only records within the permitted organization scope.
+- Support bounded exports.
+- Record export-job status.
+- Protect personal contact information.
+- Preserve relevant provenance.
+- Integrate with established account export and deletion workflows.
+- Do not create a parallel account-deletion system.
+
+## 20. Integration Boundaries
+
+Use explicit contracts with these modules where available:
+
+### Core
+
+- Verified principal
+- Authorization
+- Validation
+- Standard errors
+- Pagination
+- Idempotency
+- Audit interfaces
+
+### Property Search and Bargains
+
+- Source inquiry references
+- Related property or listing references
+- Supported source events
+
+Do not directly modify listing records.
+
+### Buyer Alerts
+
+- Explicit customer-interest references where supported
+
+Do not duplicate alert subscriptions.
+
+### Service Providers
+
+- Service-provider engagement references, when applicable
+
+Do not own service requests or provider profiles.
+
+### Property Transactions
+
+- Completed transaction references
+
+Do not create or modify transaction records.
+
+### Property Management
+
+- Authoritative rental and management outcome references
+
+Do not create rental agreements.
+
+### Sponsors
+
+- Sponsored placement attribution references
+
+Do not manage advertising campaigns or payments.
+
+### Notifications
+
+- Follow-up reminder events
+- Authorized CRM workflow events
+
+Do not deliver messages directly.
+
+### Telemetry
+
+- Supported attribution and activity events
+
+Do not store duplicate raw telemetry streams.
+
+### Trust & Safety
+
+- Relevant reported-risk references and enforcement outcomes
+
+Do not implement independent fraud or enforcement decisions.
+
+### Geography
+
+- Canonical city, district, and neighborhood references
+
+Do not create another geographic hierarchy.
+
+If any integration is unavailable, create a module-local adapter interface and document the missing contract. Do not fabricate integration success.
+
+## 21. Domain Events
+
+Define versioned module-local event contracts such as:
+
+- `crm.contact.created`
+- `crm.contact.updated`
+- `crm.contact.merged`
+- `crm.lead.created`
+- `crm.lead.updated`
+- `crm.lead.qualified`
+- `crm.lead.disqualified`
+- `crm.lead.assigned`
+- `crm.lead.reassigned`
+- `crm.lead.stage_changed`
+- `crm.lead.converted`
+- `crm.lead.closed`
+- `crm.interaction.recorded`
+- `crm.followup.created`
+- `crm.followup.completed`
+- `crm.followup.overdue`
+- `crm.consent.granted`
+- `crm.consent.withdrawn`
+
+Requirements:
+
+- Give every event a stable ID.
+- Include schema version.
+- Include event timestamp.
+- Include relevant entity references.
+- Avoid unnecessary personal information.
+- Define idempotency behavior.
+- Support durable event publication through approved infrastructure where available.
+- Do not create a global event bus.
+- Do not modify shared event catalogs.
+- Document integration requirements for the integration lead.
+
+## 22. Persistence and Reliability
+
+Inspect the existing repository architecture and established persistence conventions.
+
+Implement durable persistence for:
+
+- Contacts
+- Leads
+- Lead assignments
+- Pipeline definitions
+- Stage-transition history
+- Interactions
+- Follow-up tasks
+- Consent records
+- Segments
+- Attribution records
+- Merge history
+- Conversion references
+- Import jobs
+- Export jobs
+- Analytics snapshots, where required
+
+Requirements:
+
+- Use the existing persistence layer.
+- Do not introduce another database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamps.
+- Use bounded reads and cursor pagination.
+- Implement idempotent mutations.
+- Handle concurrent updates safely.
+- Preserve audit history.
+- Avoid unbounded synchronous processing.
+- Use durable jobs where available.
+- Do not assume a queue or scheduler is configured.
+- Do not directly write to other modules' collections.
+- Enforce backend authorization independently of Firestore Rules when using Admin SDK.
+
+## 23. Authorization and Privacy
+
+- Obtain identity through the established verified-principal contract.
+- Never trust client-supplied UIDs.
+- Enforce organization boundaries on every sensitive operation.
+- Verify team and assignment permissions.
+- Restrict private contact details.
+- Restrict internal notes.
+- Protect customer requirements and budget information.
+- Prevent cross-organization data leakage.
+- Apply least-privilege access.
+- Preserve audit references for sensitive actions.
+- Respect consent withdrawal.
+- Respect account export and deletion requirements.
+- Do not collect unnecessary personal data.
+- Do not create sensitive customer profiles.
+- Do not infer protected personal characteristics.
+- Do not expose customer information through analytics or search projections without explicit authorization.
+
+## 24. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+- Create CRM contact
+- Retrieve CRM contact
+- Update CRM contact
+- Retrieve authorized contact history
+- Create lead
+- Retrieve lead
+- Update lead
+- Close lead
+- Assign lead
+- Reassign lead
+- Retrieve lead assignment history
+- Create pipeline
+- Update pipeline configuration
+- Retrieve pipeline stages
+- Change lead stage
+- Retrieve stage history
+- Qualify lead
+- Disqualify lead
+- Record interaction
+- Retrieve interaction history
+- Create follow-up task
+- Update follow-up task
+- Complete follow-up task
+- Cancel follow-up task
+- Retrieve overdue tasks
+- Record contact consent
+- Withdraw contact consent
+- Retrieve contact preferences
+- Create contact segment
+- Update contact segment
+- Evaluate segment
+- Identify duplicate candidates
+- Review duplicate candidate
+- Merge authorized duplicate contacts
+- Record lead conversion
+- Retrieve CRM analytics
+- Search authorized contacts
+- Search authorized leads
+- Create import job
+- Validate import
+- Retrieve import status
+- Create authorized export job
+- Retrieve export status
+
+Do not register global HTTP routes.
+
+Document route-registration, event-registration, and shared-schema requirements for the integration lead.
+
+## 25. Automated Testing
+
+Create automated tests covering:
+
+### Contacts and Identity
+
+- Contact creation
+- Authenticated and non-authenticated contacts
+- Identity-reference validation
+- Private-field access
+- Contact ownership
+- Cross-organization isolation
+- Contact status history
+
+### Leads
+
+- Lead creation
+- Lead-type validation
+- Lead-source attribution
+- Incomplete lead handling
+- Duplicate-source handling
+- Lead qualification
+- Lead disqualification
+- Lead closure
+- Lead-conversion references
+
+### Pipelines
+
+- Pipeline creation
+- Configurable stages
+- Valid stage transitions
+- Invalid stage transitions
+- Stage history
+- Concurrent stage updates
+- Pipeline-specific validation
+
+### Assignment
+
+- Initial assignment
+- Reassignment
+- Assignment authorization
+- Cross-organization rejection
+- Removed-member handling
+- Assignment history
+- Concurrent assignment requests
+
+### Interactions and Follow-ups
+
+- Interaction recording
+- Interaction visibility
+- Internal-note privacy
+- Follow-up creation
+- Due-date handling
+- Timezone handling
+- Completion authorization
+- Overdue-state calculation
+- Reminder-event idempotency
+
+### Consent
+
+- Explicit consent recording
+- Channel-specific consent
+- Consent withdrawal
+- Withdrawal persistence
+- Marketing-consent enforcement
+- Prevention of implicit consent
+- Prevention of default consent grants
+
+### Deduplication
+
+- Duplicate candidate detection
+- Similar-name false positives
+- Exact verified-identifier matching
+- Manual review
+- Unauthorized merge rejection
+- Merge idempotency
+- Relationship reconciliation
+- Merge-history preservation
+
+### Analytics
+
+- Lead counts
+- Conversion-rate calculation
+- Denominator correctness
+- Reporting-period boundaries
+- Timezone handling
+- Duplicate prevention
+- Missing-data treatment
+- Attribution limitations
+
+### Reliability and Security
+
+- Idempotency
+- Persistence failures
+- Retry safety
+- Pagination
+- Bounded queries
+- Concurrent updates
+- Organization isolation
+- Authorization failures
+- Export authorization
+- Import validation
+- Event deduplication
+- Deletion integration
+
+Tests must verify actual business behavior, authorization, persistence, formulas, state transitions, and failure handling. File-existence tests alone are insufficient.
+
+## 26. Engineering Restrictions
+
+- No fake leads.
+- No fabricated customer identities.
+- No invented purchase intent.
+- No inferred budgets.
+- No fake customer interactions.
+- No fabricated calls or meetings.
+- No false conversion claims.
+- No fake contact consent.
+- No automatic marketing permission.
+- No fabricated attribution.
+- No arbitrary lead scores.
+- No duplicate identity system.
+- No duplicate buyer-alert system.
+- No duplicate notification delivery system.
+- No direct messaging or email delivery.
+- No payment processing.
+- No duplicate property transaction records.
+- No duplicate property-management records.
+- No independent fraud-enforcement system.
+- No direct modifications to other modules' records.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When source data or an integration is unavailable, represent it as unavailable and document the exact dependency.
+
+Never simulate a successful customer interaction, marketing consent, transaction, or external integration.
+
+## 27. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain contact and lead ownership boundaries.
+6. Document lead lifecycle and pipeline state transitions.
+7. Document assignment and organization authorization rules.
+8. Document interaction and follow-up workflows.
+9. Document consent and withdrawal behavior.
+10. Document duplicate detection and merge safeguards.
+11. Document conversion evidence requirements.
+12. Document analytics formulas and attribution limitations.
+13. Identify required contracts from Core, Bargains, Buyer Alerts, Property Search, Property Transactions, Property Management, Sponsors, Notifications, Telemetry, Trust & Safety, and Geography.
+14. Identify unavailable integrations and unresolved contracts.
+15. Confirm that no shared files or other employees' files were modified.
+16. Commit only assigned files if explicitly authorized.
+17. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, secure, organization-aware real-estate CRM backend that manages customer relationships and lead lifecycles without duplicating authoritative property, identity, transaction, messaging, or payment systems.

@@ -1,0 +1,959 @@
+# TASK: Build the Real Estate Professionals & Service Providers Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-service-providers`.
+- Never modify `main`.
+- Inspect current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/service-providers/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- organizations
+- professionals
+- provider-profiles
+- service-catalog
+- service-areas
+- credentials
+- verification
+- availability
+- service-requests
+- quotations
+- reviews
+- search
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- Firestore global rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry
+- Property Search
+- Property Management
+- Development Projects
+- Geography
+- Trust & Safety
+- Notifications
+- Media
+- Payments or financial infrastructure
+- user identity records
+- frontend files
+- other employees' modules
+
+Shared-file changes and global route registration belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a backend marketplace and directory for real-estate professionals and service providers.
+
+Support:
+
+1. Individual professional profiles.
+2. Service-provider business profiles.
+3. Multi-person provider organizations.
+4. Professional categories and specialties.
+5. Service catalog and service descriptions.
+6. Service-area coverage.
+7. Professional qualifications and credentials.
+8. Credential submission and verification status.
+9. Provider availability information.
+10. Provider discovery and filtering.
+11. Customer service requests.
+12. Requests for quotations.
+13. Provider quotation responses.
+14. Customer comparison of quotations.
+15. Customer selection and referral records.
+16. Customer feedback and service reviews.
+17. Provider profile performance indicators.
+18. Organization membership and delegated management.
+19. Provider profile lifecycle.
+20. Data-quality and provenance tracking.
+
+This module manages professional discovery and service-request workflows. It does not execute payments, create legally binding contracts, or manage the actual delivery of construction or property-management projects.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- Provider organization records
+- Individual professional provider profiles
+- Provider organization membership references
+- Provider specialties and service categories
+- Provider service offerings
+- Provider service-area declarations
+- Provider credential submissions
+- Provider credential verification records
+- Provider availability declarations
+- Provider service-request records
+- Provider quotation responses
+- Provider referral and selection records
+- Provider review records
+- Provider directory search projections
+- Provider profile status history
+- Provider analytics specific to this marketplace
+- Provider data-quality metadata
+
+This module does NOT own:
+
+- User authentication and identity
+- Canonical property records
+- Geographic hierarchy or boundary records
+- Real-estate listings
+- Rental agreements
+- Property-management operations
+- Construction projects or project execution
+- Trust & Safety enforcement decisions
+- Notifications and message delivery
+- Media storage or file processing
+- Payment processing or settlement
+- Legally binding contracts
+- Official professional licensing registries
+- External government records
+
+Use references to authoritative modules instead of duplicating their records.
+
+## 5. Provider Types and Categories
+
+Support provider types such as:
+
+### Real Estate Professionals
+
+- Real estate agents
+- Real estate brokers
+- Property consultants
+- Property valuation professionals
+- Real estate investment consultants
+- Rental specialists
+- Commercial property specialists
+- Property market analysts
+
+### Engineering and Technical Services
+
+- Civil engineers
+- Structural engineers
+- Architects
+- Surveyors
+- Building inspectors
+- Electrical engineers
+- Mechanical engineers
+- Safety specialists
+
+### Construction and Renovation
+
+- General contractors
+- Renovation companies
+- Interior designers
+- Painters
+- Electricians
+- Plumbers
+- HVAC technicians
+- Building maintenance providers
+- Waterproofing specialists
+
+### Property Operations
+
+- Property management companies
+- Building management services
+- Cleaning services
+- Security services
+- Facility maintenance providers
+- Inspection services
+
+### Legal and Administrative Services
+
+- Real estate legal consultants
+- Documentation support providers
+- Property registration service professionals
+- Administrative property consultants
+
+Requirements:
+
+- Use stable category identifiers.
+- Support parent and child categories.
+- Support multiple specialties per provider.
+- Allow future categories without schema redesign.
+- Do not represent a category as proof of professional qualification.
+- Do not claim a provider has legal authority merely because they selected a category.
+
+## 6. Individual Professional Profiles
+
+Create an individual provider profile supporting:
+
+- Stable provider ID
+- Verified user reference
+- Public display name
+- Professional headline
+- Biography
+- Professional categories
+- Specialties
+- Years of experience, if supplied
+- Languages
+- Service areas
+- Contact preferences
+- Public contact information, where authorized
+- Profile image reference
+- Credential references
+- Verification state
+- Profile publication state
+- Creation timestamp
+- Last update timestamp
+
+Requirements:
+
+- Link to the existing identity system.
+- Never create a duplicate authentication identity.
+- Do not trust a client-supplied UID.
+- Separate private account data from public profile data.
+- Allow a provider to update permitted profile fields.
+- Preserve profile status history.
+- Do not publish personal contact information without authorization.
+- Do not infer professional experience or credentials.
+- Handle account suspension and deletion through established contracts.
+
+## 7. Provider Organizations
+
+Support registered businesses and service organizations.
+
+Organization records should include:
+
+- Organization ID
+- Organization display name
+- Organization type
+- Business description
+- Professional categories
+- Service offerings
+- Service-area references
+- Public contact preferences
+- Authorized manager references
+- Member references
+- Submitted business-document references
+- Verification status
+- Publication status
+- Creation and update timestamps
+
+Support:
+
+- One-person businesses
+- Multi-person service companies
+- Professional offices
+- Construction and renovation companies
+- Property-management firms
+- Engineering and consulting organizations
+
+Requirements:
+
+- One organization may have multiple professional members.
+- A professional may belong to multiple organizations when permitted.
+- Define explicit organization roles.
+- Support owner, administrator, staff, and limited-access member roles.
+- Verify every membership-sensitive operation.
+- Preserve membership history.
+- Prevent unauthorized users from editing organization profiles.
+- Do not treat an organization profile as proof of legal registration.
+
+## 8. Professional Credentials and Verification
+
+Create a credential-submission and verification workflow.
+
+Credential record fields:
+
+- Credential ID
+- Provider ID or organization ID
+- Credential type
+- Issuing authority
+- Credential identifier, if applicable
+- Issue date
+- Expiry date
+- Supporting media references
+- Submission timestamp
+- Verification status
+- Verification source
+- Reviewer reference
+- Review timestamp
+- Rejection reason, where appropriate
+- Verification history
+
+Support states such as:
+
+- Not submitted
+- Submitted
+- Under review
+- Verified
+- Rejected
+- Expired
+- Revoked
+- Verification unavailable
+
+Requirements:
+
+- Do not invent issuing authorities.
+- Do not claim online registry verification unless an actual authorized integration exists.
+- Distinguish document submission from independent verification.
+- Distinguish verified documents from legally recognized professional authority.
+- Preserve verification evidence and history.
+- Handle expiry dates.
+- Prevent expired credentials from being represented as currently valid.
+- Do not allow providers to mark their own credentials as verified.
+- Use Trust & Safety integration contracts for risk-related enforcement.
+- Do not build a parallel fraud or enforcement system.
+- Keep private document references protected.
+
+## 9. Provider Service Catalog
+
+Allow providers to publish specific services.
+
+Each service offering should support:
+
+- Service ID
+- Provider or organization reference
+- Service category
+- Service name
+- Description
+- Service scope
+- Service-area references
+- Pricing model
+- Price range, if declared
+- Currency
+- Minimum engagement details, if applicable
+- Estimated delivery time, if declared
+- Availability state
+- Publication state
+- Creation and update timestamps
+
+Support pricing models such as:
+
+- Fixed price
+- Hourly
+- Daily
+- Per square meter
+- Project-based
+- Negotiable
+- Quote required
+
+Requirements:
+
+- Distinguish declared prices from confirmed quotations.
+- Do not generate market prices.
+- Do not treat a displayed price as a binding offer.
+- Preserve original currency.
+- Allow providers to update offerings without destroying historical quotation records.
+- Do not store payment credentials.
+- Do not perform payment processing.
+
+## 10. Service-Area Management
+
+Allow providers and organizations to declare the areas where they provide services.
+
+Support:
+
+- City references
+- District references
+- Neighborhood references
+- Multiple service areas
+- Nationwide service coverage, when explicitly declared
+- Remote or online services, where applicable
+- Travel limitations
+- Service-area availability
+
+Requirements:
+
+- Consume canonical geographic references from Geography.
+- Do not create a parallel city, district, or neighborhood hierarchy.
+- Do not invent geographic IDs.
+- Distinguish provider-declared service areas from independently verified operational coverage.
+- Avoid exposing a provider's private residential address.
+- Support future city expansion without schema redesign.
+
+## 11. Availability Management
+
+Support provider availability declarations.
+
+Potential fields:
+
+- Provider reference
+- Organization reference
+- Service reference
+- Availability type
+- Available dates
+- Weekly recurring schedule
+- Timezone
+- Temporary unavailability periods
+- Last confirmed timestamp
+
+Requirements:
+
+- Distinguish declared availability from confirmed appointment availability.
+- Do not assume a provider is available merely because a profile is published.
+- Do not promise appointment booking unless a supported booking integration exists.
+- Prevent conflicting provider schedule updates where relevant.
+- Preserve timezone information.
+- Handle schedule changes and expired availability declarations.
+
+## 12. Customer Service Requests
+
+Implement a request workflow connecting customers with providers.
+
+A request may include:
+
+- Request ID
+- Verified requester reference
+- Service category
+- Desired service reference
+- Property reference, if relevant
+- Geographic reference
+- Request description
+- Requested timeframe
+- Preferred contact method
+- Attachment references
+- Request state
+- Selected provider references
+- Creation timestamp
+- Update timestamp
+
+Support states such as:
+
+- Draft
+- Submitted
+- Open
+- Provider responses pending
+- Responses received
+- Customer reviewing
+- Provider selected
+- Closed
+- Cancelled
+- Expired
+
+Requirements:
+
+- Validate requester identity.
+- Preserve requester privacy.
+- Do not expose private request details to unrelated providers.
+- Enforce explicit provider access to a request.
+- Prevent unsolicited access to customer contact details.
+- Support request expiry.
+- Support cancellation.
+- Preserve request state history.
+- Distinguish a service inquiry from a signed agreement.
+- Do not allow the provider to modify the requester's original description without creating a documented revision.
+
+## 13. Quotation Requests and Responses
+
+Support quotation workflows.
+
+Providers may submit quotation responses containing:
+
+- Quotation ID
+- Service-request reference
+- Provider reference
+- Organization reference
+- Description of proposed work
+- Proposed price
+- Currency
+- Pricing model
+- Estimated duration
+- Conditions and exclusions
+- Valid-until date
+- Submission timestamp
+- Quotation status
+
+Support quotation states:
+
+- Draft
+- Submitted
+- Updated
+- Withdrawn
+- Accepted for further discussion
+- Declined
+- Expired
+
+Requirements:
+
+- Preserve quotation versions.
+- Do not overwrite previous submitted quotations.
+- Distinguish quotation acceptance from a legally binding contract.
+- Distinguish a proposal from a confirmed service engagement.
+- Do not create payment records.
+- Validate provider authorization.
+- Prevent providers from responding to requests they cannot access.
+- Enforce quotation expiry.
+- Preserve the customer's decision history.
+
+## 14. Provider Selection and Referral Records
+
+Allow a customer to record which provider they intend to contact or evaluate further.
+
+Support:
+
+- Selected provider reference
+- Service-request reference
+- Selected quotation reference, if applicable
+- Selection timestamp
+- Selection status
+- Customer decision history
+
+Requirements:
+
+- Selection does not mean that work has started.
+- Selection does not create a contract.
+- Selection does not confirm payment.
+- Do not block multiple providers from being selected for comparison.
+- Distinguish shortlisting from final selection.
+- Do not claim that a provider completed a service without evidence from an authoritative source.
+
+## 15. Reviews and Customer Feedback
+
+Build a review system with evidence-aware eligibility.
+
+Review records should support:
+
+- Review ID
+- Reviewer reference
+- Provider or organization reference
+- Service reference
+- Service-request or completed-engagement reference
+- Rating
+- Review text
+- Submission timestamp
+- Moderation status
+- Edit history
+- Provider response reference
+
+Requirements:
+
+- Define review eligibility rules.
+- Prefer reviews tied to verifiable service-request or completed-engagement records.
+- Distinguish verified-engagement reviews from unverified public feedback.
+- Prevent a provider from reviewing their own profile.
+- Prevent unauthorized duplicate reviews.
+- Support moderation states.
+- Preserve review history.
+- Do not silently delete negative reviews.
+- Do not manufacture ratings.
+- Do not create fake customer accounts or activity.
+- Use the Trust & Safety module for reports, appeals, and enforcement workflows.
+- Do not implement a second moderation or fraud-enforcement system.
+- Keep public reviews separate from private customer information.
+
+## 16. Provider Search and Discovery
+
+Create module-local search services and query contracts.
+
+Support filtering by:
+
+- Provider category
+- Specialty
+- City
+- District
+- Neighborhood
+- Service area
+- Organization type
+- Credential state
+- Verification state
+- Service offering
+- Pricing model
+- Declared price range
+- Language
+- Availability
+- Profile publication state
+
+Support sorting by:
+
+- Relevant category match
+- Geographic suitability
+- Verified credential relevance
+- Profile completeness
+- Published experience information
+- Review indicators
+- Declared availability
+
+Requirements:
+
+- Do not invent a provider's rating or ranking.
+- Document ranking factors.
+- Do not rank a provider as verified without actual verification evidence.
+- Do not expose private search fields.
+- Use canonical geography references.
+- Support bounded queries and cursor pagination.
+- Avoid unbounded full-collection scans.
+- Keep search indexes and projections within the module's ownership.
+- Do not modify the Property Search module.
+
+## 17. Profile Quality and Performance Indicators
+
+Support transparent profile metrics such as:
+
+- Profile completeness
+- Number of published services
+- Number of submitted quotations
+- Number of eligible reviews
+- Verified credential count
+- Declared service coverage
+- Response-time measurements, when actual event history supports them
+- Request response rate, when the denominator is reliable
+
+Requirements:
+
+- Document every metric formula.
+- Distinguish measured values from provider-declared values.
+- Do not fabricate performance statistics.
+- Do not penalize providers because of incomplete platform data without explaining the limitation.
+- Do not expose private customer activity.
+- Do not present a profile-completeness score as professional quality.
+- Do not turn unverified feedback into verified performance data.
+
+## 18. Trust & Safety Integration
+
+Use Trust & Safety contracts for:
+
+- Provider risk reports
+- Credential-related concerns
+- Fraud allegations
+- Impersonation reports
+- Suspicious service activity
+- Enforcement requests
+- Appeals
+
+Requirements:
+
+- This module may submit evidence and enforcement requests.
+- This module must not independently suspend accounts or impose platform-wide sanctions.
+- The owning enforcement module must make the authoritative enforcement decision.
+- Consume confirmed enforcement outcomes through explicit contracts or events.
+- Preserve the difference between a complaint and a confirmed violation.
+- Do not disclose reporter identities to providers unless explicitly authorized.
+- Do not expose sensitive evidence in public profiles.
+
+## 19. Media Integration
+
+Use the Media module for:
+
+- Profile images
+- Organization logos
+- Credential documents
+- Portfolio examples
+- Service photographs
+- Supporting documents
+
+Requirements:
+
+- Store media references, not duplicate media binaries.
+- Validate media ownership and access.
+- Keep credential documents private.
+- Separate public portfolio images from private supporting documents.
+- Do not invent a storage provider.
+- Do not use local filesystem files or RAM as permanent media storage.
+- Do not create a parallel media-storage subsystem.
+
+## 20. Notifications Integration
+
+Publish domain events or use explicit Notifications contracts for:
+
+- New service request
+- Provider response submitted
+- Quotation received
+- Quotation updated
+- Quotation withdrawn
+- Customer shortlisted provider
+- Customer selected provider
+- Review submitted
+- Credential review completed
+- Provider profile status changed
+
+Requirements:
+
+- Do not send email or SMS directly from this module.
+- Do not assume an external delivery provider is configured.
+- Do not store notification delivery state as authoritative provider data.
+- Make event publication retry-safe and idempotent.
+- Use stable event identifiers.
+
+## 21. Persistence and Reliability
+
+Inspect the actual repository architecture and existing persistence conventions.
+
+Implement durable persistence for:
+
+- Provider profiles
+- Provider organizations
+- Organization membership
+- Service categories and offerings
+- Service-area declarations
+- Credential submissions
+- Credential verification history
+- Availability declarations
+- Customer service requests
+- Quotation records and versions
+- Provider selections
+- Reviews
+- Profile status history
+- Search projections where appropriate
+
+Requirements:
+
+- Use the established persistence layer.
+- Do not introduce a new database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamp conventions.
+- Use bounded reads and pagination.
+- Implement idempotency for retryable mutations.
+- Handle concurrent updates safely.
+- Preserve immutable history where necessary.
+- Do not write directly to another module's collections.
+- Do not assume Firestore Rules protect Admin SDK operations; enforce authorization in the backend.
+
+## 22. Authorization and Privacy
+
+- Obtain identity through the existing verified-principal contract.
+- Never trust client-supplied user IDs.
+- Enforce provider and organization membership permissions server-side.
+- Enforce customer ownership of service requests.
+- Restrict quotation access to authorized request participants.
+- Protect credential documents and private contact data.
+- Prevent cross-organization data leakage.
+- Use least-privilege access.
+- Support authorized organization management.
+- Preserve audit references for sensitive changes.
+- Respect established account export and deletion contracts.
+- Do not build a second identity system.
+
+## 23. Domain Events and Integration Contracts
+
+Define module-local contracts for events such as:
+
+- `provider.profile.created`
+- `provider.profile.updated`
+- `provider.profile.published`
+- `provider.profile.unpublished`
+- `provider.organization.created`
+- `provider.organization.member.added`
+- `provider.organization.member.removed`
+- `provider.credential.submitted`
+- `provider.credential.verified`
+- `provider.credential.rejected`
+- `provider.service.created`
+- `provider.service.updated`
+- `provider.service_request.created`
+- `provider.quotation.submitted`
+- `provider.quotation.withdrawn`
+- `provider.selection.recorded`
+- `provider.review.submitted`
+
+Requirements:
+
+- Version event schemas.
+- Include stable event IDs.
+- Include event timestamps.
+- Include relevant entity references.
+- Avoid unnecessary personal data in events.
+- Define idempotency behavior.
+- Do not implement global event-bus registration.
+- Document integration requirements for the integration lead.
+
+## 24. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+- Create individual provider profile
+- Retrieve provider profile
+- Update provider profile
+- Publish provider profile
+- Unpublish provider profile
+- Create provider organization
+- Retrieve organization
+- Update organization
+- Add organization member
+- Remove organization member
+- Update organization roles
+- Submit professional credential
+- Retrieve credential status
+- Record credential verification outcome through an authorized reviewer contract
+- Create service offering
+- Update service offering
+- Retrieve service catalog
+- Declare service areas
+- Update availability
+- Search providers
+- Retrieve provider directory details
+- Submit customer service request
+- Retrieve authorized service request
+- Cancel service request
+- Submit quotation
+- Update quotation through a versioned submission
+- Withdraw quotation
+- Retrieve quotation comparison data
+- Record customer provider selection
+- Submit eligible review
+- Retrieve public reviews
+- Submit provider response to review
+- Retrieve provider profile metrics
+- Retrieve provider status history
+
+Do not register global routes.
+
+Document every route-registration and shared-schema requirement for the integration lead.
+
+## 25. Automated Testing
+
+Create tests covering:
+
+### Identity and Authorization
+
+- Profile ownership
+- Organization ownership
+- Organization administrator permissions
+- Organization staff permissions
+- Unauthorized membership changes
+- Unauthorized request access
+- Unauthorized quotation access
+- Cross-provider data isolation
+- Credential-document privacy
+
+### Profiles and Organizations
+
+- Profile creation
+- Profile updates
+- Publication lifecycle
+- Organization creation
+- Multiple organization members
+- Multiple organization memberships
+- Membership revocation
+- Profile status history
+
+### Credentials
+
+- Credential submission
+- Credential review states
+- Verification authorization
+- Expiry handling
+- Rejection handling
+- Verification provenance
+- Prevention of self-verification
+- Distinction between submission and independent verification
+
+### Services and Geography
+
+- Service creation
+- Category validation
+- Multiple specialties
+- Service-area declarations
+- Invalid geography references
+- Provider-declared versus verified coverage
+- Pricing-model validation
+- Multi-currency input preservation
+
+### Requests and Quotations
+
+- Service-request creation
+- Request ownership
+- Provider authorization
+- Request expiry
+- Request cancellation
+- Multiple quotation responses
+- Quotation version history
+- Quotation withdrawal
+- Quotation expiry
+- Unauthorized quotation access
+- Selection versus contractual acceptance distinction
+
+### Reviews
+
+- Review eligibility
+- Duplicate-review prevention
+- Self-review prevention
+- Unverified versus verified-engagement reviews
+- Review moderation status
+- Review history
+- Provider response handling
+
+### Reliability
+
+- Idempotent mutations
+- Concurrent updates
+- Persistence failures
+- Safe retries
+- Pagination
+- Bounded queries
+- Timestamp consistency
+- Event deduplication
+- Failure recovery
+
+Tests must verify actual business behavior, authorization, data persistence, and workflow transitions. File-existence tests alone are insufficient.
+
+## 26. Engineering Restrictions
+
+- No fake provider profiles.
+- No fabricated credentials.
+- No invented verification authorities.
+- No unsupported license-verification claims.
+- No fake reviews.
+- No fake ratings.
+- No fabricated service prices.
+- No fabricated availability.
+- No invented customer requests.
+- No fake quotation history.
+- No unsupported provider-performance metrics.
+- No payment processing.
+- No legal contract execution.
+- No construction-project execution.
+- No duplicate property management.
+- No duplicate identity infrastructure.
+- No direct modifications to Trust & Safety decisions.
+- No duplicate media storage.
+- No direct email or SMS delivery.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When an integration or data source is unavailable, represent it as unavailable and document the exact dependency. Never simulate a successful external verification or transaction.
+
+## 27. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain provider, organization, and membership ownership.
+6. Document credential-submission and verification workflows.
+7. Document service-request and quotation state transitions.
+8. Document review eligibility and verification distinctions.
+9. Document authorization and privacy boundaries.
+10. List dependencies on Core, Geography, Media, Notifications, Trust & Safety, Property Management, and Development Projects.
+11. Identify unavailable integrations and unresolved contracts.
+12. Confirm that no shared files or other employees' files were modified.
+13. Commit only assigned files if explicitly authorized.
+14. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, secure, explainable provider marketplace backend that connects property owners and customers with real-estate professionals and service providers without fabricating qualifications, reviews, prices, or service outcomes.

@@ -1,0 +1,1277 @@
+# TASK: Build the Property Insurance & Coverage Intelligence Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-property-insurance`.
+- Never modify `main`.
+- Inspect the current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/property-insurance/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- insurers
+- insurance-products
+- product-versions
+- coverage-types
+- coverage-terms
+- exclusions
+- deductibles
+- limits
+- eligibility
+- premium-estimates
+- comparisons
+- quote-references
+- policy-references
+- insured-assets
+- claims-references
+- renewals
+- risk-assessments
+- source-observations
+- reports
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- global Firestore rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry
+- Property Search
+- Bargains
+- Property Transactions
+- Property Management
+- Development Projects
+- Valuation
+- Investment Intelligence
+- Market Intelligence
+- Financing Intelligence
+- Property Due Diligence
+- Geography
+- Urban Intelligence
+- Data Ingestion
+- Service Providers
+- CRM
+- Appointments
+- Media
+- Notifications
+- Trust & Safety
+- Telemetry
+- user identity records
+- payment infrastructure
+- frontend files
+- other employees' modules
+
+Global route registration and shared-file modifications belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a structured property insurance information and comparison backend.
+
+Support:
+
+1. Insurance institution references.
+2. Property insurance product catalogs.
+3. Residential property insurance.
+4. Commercial property insurance.
+5. Building insurance.
+6. Contents insurance references.
+7. Fire coverage.
+8. Earthquake coverage.
+9. Flood and water-damage coverage.
+10. Storm and weather-related coverage.
+11. Third-party liability coverage.
+12. Equipment and building-system coverage.
+13. Construction and renovation insurance references.
+14. Property-owner coverage.
+15. Landlord-related insurance references.
+16. Tenant-related property coverage references.
+17. Coverage limits and sublimits.
+18. Deductibles and exclusions.
+19. Insurance eligibility criteria.
+20. Premium estimates where reliable pricing rules exist.
+21. Product comparison.
+22. Insurance quotation references.
+23. Policy reference metadata.
+24. Policy renewal and expiry tracking.
+25. Insurance claim reference tracking.
+26. Property risk-factor summaries.
+27. Insurance source verification and freshness.
+28. Versioned insurance comparison reports.
+
+The module provides structured insurance information and analytical comparisons.
+
+It does not underwrite insurance, issue policies, determine final premiums, guarantee coverage, adjudicate claims, or process insurance payments.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- Insurance institution reference records
+- Insurance product catalog records
+- Insurance product versions
+- Coverage definitions
+- Coverage-term records
+- Exclusion definitions
+- Deductible definitions
+- Coverage-limit definitions
+- Insurance eligibility-rule definitions
+- Premium calculation methodologies
+- Premium estimate records
+- Insurance comparison records
+- Insurance source observations
+- Insurance quotation reference metadata
+- User-authorized policy reference metadata
+- Policy renewal and expiry tracking metadata
+- Claim reference metadata, where authorized
+- Property insurance risk-analysis outputs
+- Insurance report versions
+- Insurance data-quality and provenance metadata
+
+This module does NOT own:
+
+- User identity and authentication
+- Canonical property records
+- Legal ownership records
+- Property valuations
+- Property listings
+- Bank accounts
+- Payment processing
+- Actual insurance contracts as authoritative legal records
+- Insurer underwriting decisions
+- Final premium determinations
+- Claim approval or rejection decisions
+- Claim settlement amounts
+- Medical or personal health records
+- Construction project execution
+- Building inspection authority
+- Geographic hierarchy
+- Raw environmental datasets
+- Insurance company customer databases
+- Original media binaries
+
+Use explicit references to authoritative modules or external sources. Never create a competing source of truth.
+
+## 5. Insurance Institution Directory
+
+Create a structured insurance institution reference model.
+
+Support institution categories such as:
+
+- Property insurance companies
+- General insurance companies
+- Specialized property insurers
+- Cooperative insurance institutions
+- Government-backed insurance programs
+- Other documented insurance providers
+
+Each institution record should support:
+
+- Institution ID
+- Official or reported name
+- Institution category
+- Jurisdiction
+- Public website reference, if verified
+- Public contact reference, if verified
+- Regulatory or licensing reference, where available
+- Public operating status
+- Source references
+- Verification state
+- Last verified timestamp
+- Creation timestamp
+- Last update timestamp
+
+Requirements:
+
+- Do not invent insurance companies.
+- Distinguish verified information from user-reported or imported information.
+- Do not claim regulatory authorization without an authoritative source.
+- Do not claim an institution is currently operating based on stale data.
+- Preserve source and verification history.
+- Support multiple jurisdictions.
+- Do not imply endorsement by an insurance institution.
+- Do not store private insurer customer records.
+- Do not create insurer login or authentication systems.
+
+## 6. Insurance Product Catalog
+
+Create a versioned insurance-product model.
+
+Support product categories such as:
+
+- Residential building insurance
+- Commercial building insurance
+- Contents insurance
+- Fire insurance
+- Earthquake insurance
+- Flood and water-damage coverage
+- Landlord property insurance
+- Liability coverage
+- Construction-related property coverage
+- Renovation-related coverage
+- Building equipment coverage
+- Other documented property-related insurance products
+
+Each product should support:
+
+- Product ID
+- Institution reference
+- Product name
+- Product category
+- Jurisdiction
+- Eligible property categories
+- Coverage definitions
+- Coverage limits
+- Sublimits
+- Deductible rules
+- Exclusion references
+- Eligibility-rule reference
+- Pricing methodology reference, where available
+- Policy duration
+- Renewal conditions
+- Required-document references
+- Effective-from date
+- Effective-until date
+- Availability status
+- Source reference
+- Product version
+- Last verified timestamp
+- Creation timestamp
+- Last update timestamp
+
+Requirements:
+
+- Preserve historical product versions.
+- Distinguish current, expired, discontinued, suspended, and unverified products.
+- Do not silently replace historical insurance terms.
+- Distinguish marketing descriptions from contractual coverage wording.
+- Do not imply that a product covers every type of property damage.
+- Represent missing coverage information as unknown.
+- Do not invent product terms.
+- Show source and last verification date in public product responses.
+- Distinguish indicative product information from an actual insurance offer.
+
+## 7. Coverage Taxonomy
+
+Build a configurable coverage taxonomy.
+
+Potential coverage categories:
+
+### Building and Structural Coverage
+
+- Fire damage
+- Explosion damage
+- Earthquake damage
+- Structural damage
+- Roof damage
+- Wall and facade damage
+- Water leakage damage
+- Flood damage
+- Storm damage
+- Other explicitly documented perils
+
+### Property Contents
+
+- Furniture
+- Household equipment
+- Electronics
+- Business equipment
+- Stored inventory
+- Other insured contents
+
+### Liability
+
+- Third-party bodily injury liability, where applicable
+- Third-party property damage liability
+- Building-related liability
+- Landlord liability
+- Other documented liability coverage
+
+### Additional Coverage
+
+- Debris removal
+- Temporary accommodation, where applicable
+- Emergency repair costs
+- Professional fees
+- Additional documented benefits
+
+Requirements:
+
+- Assign stable IDs to coverage categories.
+- Support hierarchical categories.
+- Distinguish standard coverage from optional extensions.
+- Distinguish covered events from exclusions.
+- Never infer coverage from a product name.
+- Do not claim a peril is covered without an explicit source.
+- Support jurisdiction-specific terminology.
+- Preserve original contractual terminology where available.
+- Do not treat two similarly named coverages as identical without verified equivalence.
+
+## 8. Coverage Terms, Limits, and Sublimits
+
+Create structured coverage-term records.
+
+Support:
+
+- Coverage ID
+- Product reference
+- Covered event
+- Covered asset category
+- Coverage limit
+- Sublimit
+- Maximum payable amount
+- Coverage basis
+- Relevant time period
+- Conditions
+- Required evidence
+- Source wording reference
+- Effective period
+- Verification state
+
+Requirements:
+
+- Preserve original monetary amount and currency.
+- Distinguish per-event limits from annual aggregate limits.
+- Distinguish building limits from contents limits.
+- Distinguish per-asset limits from total policy limits.
+- Distinguish replacement-cost coverage from other documented valuation bases.
+- Do not infer a limit when the source does not state one.
+- Identify missing limit information explicitly.
+- Do not compare limits without checking that the coverage basis is compatible.
+- Preserve product-version references used in comparisons.
+
+## 9. Exclusions and Policy Conditions
+
+Create a structured exclusion and condition model.
+
+Support:
+
+- Exclusion ID
+- Product reference
+- Exclusion category
+- Original wording
+- Normalized description
+- Applicable coverage
+- Conditions or exceptions
+- Effective date
+- Source document reference
+- Review state
+
+Potential categories:
+
+- Existing damage
+- Lack of maintenance
+- Wear and tear
+- Intentional damage
+- Specific natural hazards
+- Unoccupied property conditions
+- Construction or renovation exclusions
+- Improper installation
+- Undisclosed property use
+- Other documented exclusions
+
+Requirements:
+
+- Do not invent exclusions.
+- Do not assume exclusions are universal across insurers.
+- Preserve source wording.
+- Distinguish a general explanation from an authoritative contract clause.
+- Do not use AI-generated summaries as substitutes for contractual terms.
+- Support exceptions and conditional exclusions.
+- Flag ambiguous wording for human review.
+- Do not present a policy as comprehensive when exclusions are unavailable.
+
+## 10. Deductibles and Out-of-Pocket Exposure
+
+Support deductible structures such as:
+
+- Fixed monetary deductible
+- Percentage-based deductible
+- Percentage with a minimum amount
+- Percentage with a maximum amount
+- Per-event deductible
+- Per-claim deductible
+- Other documented structures
+
+Each deductible record should include:
+
+- Deductible ID
+- Product reference
+- Coverage reference
+- Calculation basis
+- Rate or amount
+- Currency
+- Minimum and maximum values, where documented
+- Applicability conditions
+- Source reference
+- Product version
+
+Requirements:
+
+- Document the calculation formula.
+- Do not assume one deductible applies to every coverage.
+- Distinguish deductible from excluded loss.
+- Preserve original units and currencies.
+- Handle missing deductible information explicitly.
+- Do not generate a false net-payout estimate when required terms are unavailable.
+
+## 11. Insurance Eligibility Rules
+
+Support published eligibility criteria such as:
+
+- Property category
+- Construction type
+- Building age, where documented
+- Property location
+- Property use
+- Occupancy status
+- Renovation status
+- Declared security features
+- Declared protective equipment
+- Other explicitly published criteria
+
+Requirements:
+
+- Every eligibility rule must have a source and effective date.
+- Distinguish mandatory criteria from indicative guidance.
+- Preserve product-rule versions.
+- Do not invent underwriting requirements.
+- Do not infer a property's risk from neighborhood stereotypes.
+- Do not use sensitive personal attributes.
+- Do not make a binding underwriting decision.
+- Do not claim that a property is insurable merely because a limited list of published conditions is satisfied.
+- Return insufficient-information states explicitly.
+- Distinguish eligibility-rule matching from insurer acceptance.
+
+## 12. Premium Estimation Engine
+
+Build an optional premium-estimation engine only where documented pricing rules or authorized rate data are available.
+
+Potential inputs:
+
+- Insured building value
+- Insured contents value
+- Property type
+- Construction type
+- Property age
+- Location reference
+- Declared usage
+- Selected coverage extensions
+- Coverage limits
+- Deductible selection
+- Documented risk factors
+- Policy duration
+- Applicable jurisdiction
+
+Possible outputs:
+
+- Indicative base premium
+- Coverage-specific premium components
+- Documented taxes and fees
+- Discounts or surcharges, where officially documented
+- Total indicative premium
+- Excluded cost components
+- Estimation assumptions
+- Pricing-rule version
+
+Requirements:
+
+- Do not invent premium rates.
+- Do not assume a pricing formula exists for every insurer.
+- Use an adapter for authorized insurer pricing APIs where available.
+- Distinguish insurer-provided quote from platform-calculated estimate.
+- Distinguish an estimate from a binding offer.
+- Document every calculation input and formula.
+- Preserve the source and effective date of rate data.
+- Handle incomplete inputs explicitly.
+- Do not return a fabricated numeric estimate when pricing data is missing.
+- Do not guarantee that an insurer will offer the calculated premium.
+- Do not claim that a risk factor changes pricing unless the source documents that relationship.
+
+## 13. Property Insurance Risk Analysis
+
+Build an explainable property-insurance risk-analysis service.
+
+Potential risk categories:
+
+- Fire exposure
+- Earthquake exposure
+- Flood exposure
+- Water leakage exposure
+- Building-system condition
+- Building age
+- Construction type
+- Roof and facade condition
+- Property use
+- Occupancy status
+- Document completeness
+- Maintenance history
+- Other evidence-supported conditions
+
+Requirements:
+
+- Consume relevant geographic and environmental evidence from authoritative modules.
+- Distinguish a location-based hazard indicator from an individual property's actual condition.
+- Distinguish observed damage from hypothetical exposure.
+- Document every risk indicator and its source.
+- Do not invent probability percentages.
+- Do not create unsupported composite risk scores.
+- Do not label a property safe because no risk data exists.
+- Do not make insurance underwriting decisions.
+- Do not assume an insurer uses the same risk methodology as this platform.
+- Represent insufficient evidence explicitly.
+
+## 14. Property Value and Insured Value
+
+Support references to property-value evidence for insurance analysis.
+
+Potential value categories:
+
+- Building replacement value
+- Contents replacement value
+- Declared insured value
+- User-entered estimated value
+- Valuation-module estimate
+- Other documented valuation basis
+
+Requirements:
+
+- Distinguish market value from replacement cost.
+- Distinguish building value from land value.
+- Distinguish declared insured value from independently assessed value.
+- Do not assume a market valuation equals an insurance replacement value.
+- Preserve valuation source and date.
+- Consume authoritative valuation references where appropriate.
+- Do not create another property valuation engine.
+- Do not invent rebuilding costs.
+- Identify underinsurance or overinsurance only when the applicable methodology and reliable inputs support the calculation.
+- Label any indicative discrepancy analysis clearly.
+
+## 15. Insurance Product Comparison
+
+Build comparison services for multiple insurance products.
+
+Compare:
+
+- Institution
+- Product category
+- Covered perils
+- Coverage limits
+- Sublimits
+- Deductibles
+- Exclusions
+- Optional extensions
+- Eligibility requirements
+- Policy duration
+- Renewal conditions
+- Premium or estimated premium
+- Source reliability
+- Product availability
+- Last verified date
+
+Requirements:
+
+- Compare equivalent property categories.
+- Compare coverage terms only when their definitions are compatible.
+- Clearly identify missing information.
+- Do not rank products as cheapest when pricing is missing or incompatible.
+- Do not rank a product as most comprehensive without comparing coverage and exclusions.
+- Distinguish contractual terms from marketing claims.
+- Show the comparison methodology.
+- Preserve versioned comparison snapshots.
+- Do not claim the comparison covers every insurer in a jurisdiction unless coverage is verified.
+- Do not make a universal best-insurance recommendation.
+
+## 16. Insurance Quotation References
+
+Support a quotation workflow where authorized.
+
+Quotation metadata may include:
+
+- Quote reference ID
+- Institution reference
+- Product reference and version
+- Property reference
+- Requesting user reference
+- Coverage selections
+- Declared insured values
+- Proposed limits
+- Proposed deductibles
+- Quoted premium
+- Currency
+- Quote effective date
+- Quote expiry date
+- Source of quote
+- Quote verification state
+- External quote reference
+
+Possible states:
+
+- Draft
+- User preparing request
+- Submitted through an authorized integration
+- User reports submission
+- Institution acknowledges request
+- Quote received
+- Quote expired
+- Quote withdrawn
+- Status unknown
+
+Requirements:
+
+- Distinguish platform estimate from insurer-issued quotation.
+- Distinguish user-reported quotation from independently confirmed quotation.
+- Do not submit quotation requests to insurers without an authorized integration and explicit user permission.
+- Do not fabricate external quotation references.
+- Do not represent a quotation as an issued policy.
+- Preserve quote versions and source evidence.
+- Do not expose quote details to unauthorized users.
+- Apply idempotency where external submissions are supported.
+
+## 17. Policy Reference and Renewal Tracking
+
+Support limited policy reference metadata for policies the user is authorized to register.
+
+Potential fields:
+
+- Policy reference ID
+- Policyholder reference
+- Property reference
+- Insurer reference
+- Product reference and version
+- External policy number, protected
+- Policy start date
+- Policy end date
+- Coverage summary reference
+- Premium amount, if voluntarily recorded
+- Currency
+- Renewal date
+- Policy status as reported
+- Source of status
+- Last verification timestamp
+- Supporting document references
+
+Possible states:
+
+- User reported active
+- Institution confirmed active
+- Pending
+- Expired
+- Cancelled
+- Renewed
+- Status unknown
+
+Requirements:
+
+- The external insurance policy remains the authoritative legal contract.
+- Do not create a replacement insurance contract.
+- Distinguish user-reported policy status from insurer-confirmed status.
+- Protect policy identifiers and documents.
+- Do not expose policy metadata publicly.
+- Do not assume a policy is active because its end date is in the future.
+- Do not assume renewal is automatic.
+- Do not alter insurer policy terms.
+- Support renewal reminders only through Notifications contracts.
+- Preserve policy-history references.
+- Respect authorization and data-retention requirements.
+
+## 18. Claims Reference Tracking
+
+Support limited insurance-claim reference metadata where authorized.
+
+Potential fields:
+
+- Claim reference ID
+- Policy reference
+- Property reference
+- Insurer reference
+- Reported incident date
+- Incident category
+- User-reported description
+- External claim reference
+- Submission status
+- Last observed status
+- Status source
+- Supporting evidence references
+- Last update timestamp
+
+Possible statuses:
+
+- Not submitted
+- User preparing claim
+- User reports submitted
+- Insurer acknowledged receipt
+- Insurer requests additional information
+- Under review
+- Approved, insurer-confirmed
+- Partially approved, insurer-confirmed
+- Declined, insurer-confirmed
+- Settled, insurer-confirmed
+- Withdrawn
+- Status unknown
+
+Requirements:
+
+- Do not adjudicate claims.
+- Do not decide whether damage is covered.
+- Do not determine legal liability.
+- Distinguish a reported incident from an accepted claim.
+- Distinguish insurer-confirmed status from user-reported status.
+- Do not fabricate claim approvals or settlements.
+- Do not calculate a guaranteed claim payout.
+- Protect sensitive claim documents.
+- Use authorized insurer integration contracts when available.
+- If no integration exists, retain only user-authorized reference metadata.
+
+## 19. Insurance Document Requirements
+
+Support product-specific document checklists.
+
+Potential document categories:
+
+- Property identification documents
+- Building information
+- Construction details
+- Property valuation references
+- Replacement-cost evidence
+- Inspection reports
+- Existing insurance policy references
+- Prior claim documentation
+- Photographic evidence
+- Ownership or authorization references
+- Other insurer-published requirements
+
+Requirements:
+
+- Version requirement definitions.
+- Distinguish mandatory from optional documents.
+- Distinguish requested, submitted, reviewed, and independently verified documents.
+- Use Media references where available.
+- Do not duplicate original binaries.
+- Protect confidential insurance documents.
+- Do not claim that a document has been accepted by an insurer without evidence.
+- Do not invent document requirements.
+- Preserve source and review history.
+
+## 20. Geographic and Environmental Integration
+
+Use Geography and Urban Intelligence contracts for:
+
+- Canonical property location references
+- Neighborhood and district references
+- Infrastructure indicators
+- Environmental indicators
+- Hazard datasets, where available
+- Geographic coverage metadata
+
+Use Data Ingestion contracts for approved external hazard datasets.
+
+Requirements:
+
+- Do not create a second geographic hierarchy.
+- Do not invent hazard maps.
+- Preserve dataset source, date, jurisdiction, and spatial coverage.
+- Distinguish property-level evidence from area-level indicators.
+- Do not convert missing geographic data into a zero-risk assessment.
+- Do not infer insurer-specific underwriting decisions from public hazard indicators.
+- Do not claim current hazard conditions from stale datasets.
+- Document geographic resolution and limitations.
+
+## 21. Property Due Diligence Integration
+
+Consume authorized references for:
+
+- Technical inspection reports
+- Structural observations
+- Building-condition findings
+- Electrical and plumbing observations
+- Moisture and water-damage findings
+- Relevant remediation records
+
+Requirements:
+
+- Do not duplicate inspection findings.
+- Do not create an independent technical inspection system.
+- Preserve source assessment references.
+- Distinguish an inspection finding from an insurer's coverage decision.
+- Do not automatically determine insurability from inspection results.
+- Do not alter Due Diligence reports or findings.
+
+## 22. Investment and Financing Integration
+
+Use explicit contracts where applicable.
+
+### Investment Intelligence
+
+Provide insurance expense references for investment analysis where authorized.
+
+Do not modify investment portfolios or calculate investment returns.
+
+### Financing Intelligence
+
+Provide relevant insurance requirement references for financing products where documented.
+
+Do not determine lender eligibility or make financing decisions.
+
+### Property Management
+
+Use authorized property-management references for insured-property relationships or renewal workflows.
+
+Do not manage property-maintenance operations.
+
+### Service Providers
+
+Use authorized insurer or insurance-service provider references if the relevant provider identity is actually represented there.
+
+Do not duplicate professional-provider profiles.
+
+## 23. AI-Assisted Policy and Document Analysis Boundary
+
+Prepare optional interfaces for future AI-assisted analysis.
+
+Potential uses:
+
+- Suggesting insurance document categories
+- Extracting candidate coverage limits
+- Identifying candidate exclusions
+- Summarizing long policy documents
+- Mapping contractual wording to a coverage taxonomy
+- Flagging potentially inconsistent product information
+- Identifying missing comparison fields
+
+Requirements:
+
+- Do not assume an AI service is configured.
+- Treat all AI output as untrusted suggestions.
+- Never treat AI output as a legal interpretation.
+- Never treat AI output as confirmation of coverage.
+- Never approve a policy or claim through AI.
+- Require human review of material extracted terms.
+- Preserve original source wording.
+- Record model and prompt version when AI assistance is actually used.
+- Distinguish model-generated summaries from verified contractual text.
+- Do not invent confidence values.
+- Do not send private policy documents to external AI services without explicit authorization and an approved privacy contract.
+
+## 24. Data Provenance and Freshness
+
+Every important insurance product or term must support:
+
+- Source identifier
+- Source type
+- Source URL or document reference
+- Publication date
+- Retrieval date
+- Observation date
+- Effective date
+- Expiration date, where applicable
+- Extraction method
+- Verification status
+- Reviewer reference
+- Product version
+- Last verified timestamp
+
+Support classifications such as:
+
+- Official source
+- Authorized API
+- Official document
+- Human-reviewed extraction
+- Automated extraction
+- User-reported
+- Imported
+- Conflicting
+- Unverified
+- Stale
+- Unavailable
+
+Requirements:
+
+- Prefer authoritative and current sources.
+- Preserve conflicting observations instead of silently overwriting them.
+- Do not treat an old marketing page as current product evidence.
+- Distinguish source retrieval date from contractual effective date.
+- Define configurable freshness rules.
+- Flag stale data in comparisons.
+- Do not publish unsupported terms as verified.
+- Do not invent verification dates.
+
+## 25. Domain Events
+
+Define versioned module-local events such as:
+
+- `property_insurance.institution.created`
+- `property_insurance.institution.updated`
+- `property_insurance.product.created`
+- `property_insurance.product.updated`
+- `property_insurance.product.versioned`
+- `property_insurance.product.discontinued`
+- `property_insurance.coverage.updated`
+- `property_insurance.source.observed`
+- `property_insurance.product.verification_updated`
+- `property_insurance.premium_estimate.created`
+- `property_insurance.comparison.created`
+- `property_insurance.quote.reference_updated`
+- `property_insurance.policy.reference_created`
+- `property_insurance.policy.renewal_due`
+- `property_insurance.policy.expired`
+- `property_insurance.claim.reference_updated`
+- `property_insurance.report.published`
+
+Requirements:
+
+- Every event must have a stable event ID.
+- Include schema version.
+- Include event timestamp.
+- Include relevant entity references.
+- Avoid unnecessary personal or policy information.
+- Define idempotency behavior.
+- Use durable event publication through approved infrastructure where available.
+- Do not create a global event bus.
+- Do not modify shared event catalogs.
+- Document integration requirements for the integration lead.
+
+## 26. Persistence and Reliability
+
+Inspect the actual repository architecture and established persistence conventions.
+
+Implement durable persistence for:
+
+- Insurance institution references
+- Insurance products
+- Product versions
+- Coverage definitions
+- Coverage limits
+- Deductibles
+- Exclusions
+- Eligibility rules
+- Premium methodologies
+- Premium estimates
+- Product source observations
+- Availability observations
+- Comparison snapshots
+- Quotation references
+- Policy reference metadata
+- Renewal metadata
+- Claim reference metadata
+- Insurance reports
+- Methodology versions
+- Audit references
+
+Requirements:
+
+- Use the established persistence layer.
+- Do not introduce another database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamp conventions.
+- Use bounded reads and cursor pagination.
+- Implement idempotent mutations.
+- Handle concurrent product-version updates safely.
+- Preserve historical versions.
+- Avoid unbounded synchronous processing.
+- Use durable jobs for lengthy imports or document processing where available.
+- Do not assume a queue or scheduler is configured.
+- Do not directly write to other modules' collections.
+- Enforce authorization in backend code when using Admin SDK.
+
+## 27. Security and Authorization
+
+- Obtain identity through the established verified-principal contract.
+- Never trust client-supplied UIDs.
+- Restrict private policy metadata to authorized users.
+- Protect policy numbers and claim references.
+- Protect sensitive claim and insurance documents.
+- Restrict institution and product administration.
+- Separate public insurance product information from private policy records.
+- Prevent cross-user policy-data leakage.
+- Enforce organization access boundaries.
+- Apply least-privilege access.
+- Preserve audit references for sensitive operations.
+- Respect established account export and deletion workflows.
+- Do not collect unnecessary personal data.
+- Do not store bank credentials or payment credentials.
+- Do not create another identity system.
+
+## 28. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+### Institutions and Products
+
+- Create insurance institution reference
+- Retrieve institution
+- Update institution metadata
+- Create insurance product
+- Retrieve insurance product
+- Update product through a new version
+- Discontinue product
+- Retrieve product history
+- Retrieve product freshness information
+- Retrieve insurance product catalog
+
+### Coverage and Policy Terms
+
+- Create coverage definition
+- Update coverage definition through a new version
+- Retrieve coverage terms
+- Retrieve coverage limits
+- Retrieve deductibles
+- Retrieve exclusions
+- Retrieve policy conditions
+- Compare compatible coverage definitions
+
+### Eligibility and Pricing
+
+- Create eligibility-rule definition
+- Publish eligibility-rule version
+- Evaluate published eligibility criteria
+- Retrieve eligibility explanation
+- Create premium estimate where supported
+- Retrieve premium methodology
+- Retrieve estimate assumptions and limitations
+
+### Comparisons and Reports
+
+- Compare insurance products
+- Retrieve insurance comparison
+- Create comparison snapshot
+- Generate insurance report
+- Publish insurance report
+- Retrieve report history
+- Supersede report version
+
+### Quotations and Policies
+
+- Create quotation reference
+- Update quotation status from an authorized source
+- Retrieve authorized quotation history
+- Register policy reference
+- Retrieve policy reference
+- Update policy reference metadata
+- Record renewal information
+- Retrieve expiry and renewal information
+
+### Claims
+
+- Register authorized claim reference
+- Update claim status with source classification
+- Retrieve claim-reference history
+- Attach authorized evidence references
+
+### Sources and Provenance
+
+- Register source observation
+- Validate source observation
+- Record product verification outcome
+- Retrieve source provenance
+- Retrieve stale or conflicting product information
+
+Requirements:
+
+- Validate all inputs.
+- Enforce permissions on every sensitive operation.
+- Use idempotency for retryable mutations.
+- Preserve source provenance and product versions.
+- Return explicit unknown or unavailable states.
+- Do not return unsupported coverage, underwriting, or claims decisions.
+- Do not register global HTTP routes.
+
+Document route-registration, event-registration, and shared-schema requirements for the integration lead.
+
+## 29. Automated Testing
+
+Create tests covering:
+
+### Institution and Product Catalog
+
+- Institution creation
+- Institution verification states
+- Product creation
+- Product versioning
+- Product discontinuation
+- Expired product handling
+- Unverified product handling
+- Conflicting source observations
+- Historical version preservation
+- Product freshness warnings
+
+### Coverage Definitions
+
+- Coverage taxonomy
+- Covered-event validation
+- Optional versus standard coverage
+- Coverage limit handling
+- Sublimit handling
+- Per-event versus aggregate limits
+- Deductible calculations
+- Exclusion handling
+- Ambiguous contractual wording
+- Missing coverage terms
+- Incompatible coverage comparison
+
+### Eligibility and Premiums
+
+- Published eligibility-rule evaluation
+- Missing eligibility information
+- Unsupported criteria
+- Expired eligibility rules
+- Insufficient pricing data
+- Documented premium formulas
+- Fixed fees
+- Percentage-based pricing
+- Multiple coverage components
+- Currency precision
+- Estimate versus insurer quote distinction
+- Prevention of fabricated estimates
+
+### Property Risk
+
+- Geographic risk references
+- Property-condition evidence
+- Area-level versus property-level exposure
+- Stale hazard data
+- Missing hazard data
+- Unsupported risk scores
+- Valuation versus replacement-cost distinction
+- Underinsurance calculations where supported
+
+### Comparison
+
+- Equivalent coverage comparisons
+- Different coverage limits
+- Different deductibles
+- Exclusion comparison
+- Missing information
+- Stale products
+- Incompatible currencies
+- Incomplete premium data
+- Cheapest-product ranking restrictions
+- Historical comparison reproducibility
+
+### Quotations and Policies
+
+- User-reported quotation
+- Institution-confirmed quotation
+- Quote expiry
+- Quote versioning
+- Policy reference creation
+- Policy status provenance
+- Renewal tracking
+- Expiry handling
+- Private policy data protection
+
+### Claims
+
+- Reported incident
+- User-reported claim submission
+- Insurer-acknowledged claim
+- Insurer-confirmed status
+- Unknown claim status
+- Prevention of fabricated approval
+- Prevention of fabricated settlement
+- Claim-document privacy
+
+### Reliability and Security
+
+- Idempotency
+- Retry safety
+- Concurrent product updates
+- Persistence failures
+- Historical version preservation
+- Authorization
+- Cross-user data isolation
+- Organization access
+- Pagination
+- Bounded queries
+- Event deduplication
+- Audit history
+- Account deletion integration
+
+Tests must verify actual coverage semantics, calculation rules, source provenance, authorization, persistence, and failure behavior. File-existence tests alone are insufficient.
+
+## 30. Engineering Restrictions
+
+- No fabricated insurers.
+- No invented insurance products.
+- No fake coverage terms.
+- No invented exclusions.
+- No unsupported premium estimates.
+- No fabricated insurer quotations.
+- No guaranteed insurance eligibility.
+- No underwriting decisions.
+- No policy issuance.
+- No legal interpretation of insurance contracts.
+- No claims adjudication.
+- No fabricated claim approvals.
+- No guaranteed claim payouts.
+- No invented hazard probabilities.
+- No unsupported property safety claims.
+- No duplicate property valuation engine.
+- No duplicate due-diligence engine.
+- No duplicate geographic hierarchy.
+- No payment processing.
+- No bank-account access.
+- No direct insurer integration without authorization.
+- No direct modifications to other modules' records.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When an insurer, policy term, rate, source, verification method, or integration is unavailable, represent it as unavailable and document the exact dependency.
+
+Never simulate a policy issuance, insurance approval, premium quotation, claim approval, or payment settlement.
+
+## 31. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain institution and product ownership boundaries.
+6. Document the coverage taxonomy.
+7. Document limits, sublimits, deductibles, and exclusions.
+8. Document eligibility-rule versioning.
+9. Document premium-estimation formulas and limitations.
+10. Document product comparison methodology.
+11. Document quotation and policy-reference workflows.
+12. Document claim-reference status provenance.
+13. Document geographic and property-risk evidence limitations.
+14. Document source freshness and verification rules.
+15. Identify dependencies on Core, Property Registry, Valuation, Geography, Urban Intelligence, Data Ingestion, Property Due Diligence, Property Management, Investment Intelligence, Financing Intelligence, Media, Notifications, and Trust & Safety.
+16. Identify unavailable integrations and unresolved contracts.
+17. Confirm that no shared files or other employees' files were modified.
+18. Commit only assigned files if explicitly authorized.
+19. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, source-backed property insurance intelligence backend that organizes and compares insurance products, coverage terms, premiums, policy references, and claims metadata without pretending to be an insurer, underwriting authority, claims adjudicator, or payment processor.

@@ -1,0 +1,999 @@
+# TASK: Build the Real Estate Development & Construction Project Management Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-development-projects`.
+- Never modify `main`.
+- Before editing, inspect the current branch, HEAD, working tree, and repository structure.
+- Never overwrite, discard, or reset existing changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Do not assume other employees' branches have already been merged.
+- Never modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration requirement.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/development-projects/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- projects
+- phases
+- tasks
+- schedules
+- budgets
+- resources
+- permits
+- procurement
+- contractors
+- progress
+- change-orders
+- handovers
+- events
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- authentication and authorization infrastructure
+- shared core modules
+- Firestore global rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry module
+- Geography module
+- Property Services module
+- Property Management module
+- Property Transactions module
+- Brokerage module
+- Valuation module
+- Bargains module
+- Media module
+- Notifications module
+- Trust & Safety module
+- other employees' modules
+- frontend files
+
+## 3. Core Responsibilities
+
+Build a backend for organizing and managing real estate development and construction projects.
+
+Support:
+
+1. Residential construction projects.
+2. Commercial construction projects.
+3. Office-building projects.
+4. Mixed-use developments.
+5. Land development projects.
+6. Building renovation and reconstruction projects.
+7. Multi-building developments.
+8. Infrastructure and site-development projects, where supported.
+9. Project phases and milestones.
+10. Task assignments and dependencies.
+11. Project schedules.
+12. Budget planning and cost tracking.
+13. Contractor and consultant references.
+14. Material and equipment procurement references.
+15. Permit and approval workflow metadata.
+16. Progress reporting.
+17. Quality-control records.
+18. Change-order management.
+19. Project risks and issues.
+20. Project handover and closeout.
+
+The module must support projects from small renovations to multi-phase developments without forcing every project into the same workflow.
+
+## 4. Data Ownership
+
+This module owns:
+
+- Development project records
+- Project participants and role assignments
+- Project phases
+- Project task records
+- Task dependencies
+- Project schedules
+- Project milestone records
+- Project budget plans
+- Cost forecast records
+- Project cost entries and classifications
+- Contractor assignment references
+- Procurement request records
+- Material and equipment requirement records
+- Permit workflow metadata
+- Progress reports
+- Quality-control records
+- Change orders
+- Project risk and issue records
+- Project handover records
+- Project closeout records
+- Project activity history
+
+This module does NOT own:
+
+- Canonical property, building, unit, or land records
+- Geographic entities and boundaries
+- Service-provider profiles
+- Service-provider quotations and work-order execution records
+- Property listings
+- Property sale and rental negotiations
+- Payment processing or settlement
+- Official permit registries
+- Legal contracts as authoritative documents
+- Uploaded files and media binaries
+- Global user identity and authentication
+- Notifications and messaging delivery
+- Platform-wide enforcement decisions
+
+Use explicit contracts with the modules responsible for those capabilities.
+
+Do not create competing sources of truth for properties, service providers, payments, media, or legal documents.
+
+## 5. Project Registration
+
+Create a flexible project entity supporting:
+
+- Stable project ID
+- Project name
+- Project type
+- Project description
+- Project owner reference
+- Developer organization reference, where applicable
+- Project manager reference
+- Property, building, land, or parcel references
+- Geographic references
+- Planned start date
+- Planned completion date
+- Actual start date
+- Actual completion date
+- Project status
+- Project priority
+- Project classification
+- Project metadata
+- Creation and update timestamps
+
+Project types may include:
+
+- New construction
+- Residential development
+- Commercial development
+- Office development
+- Mixed-use development
+- Land development
+- Renovation
+- Reconstruction
+- Infrastructure work
+- Multi-phase development
+
+Requirements:
+
+- Support projects with multiple properties or buildings when explicitly authorized.
+- Distinguish a project from the property assets it creates or modifies.
+- Do not automatically create canonical property records for planned buildings.
+- Support project registration before the final property or building records exist.
+- Preserve project identity through all phases.
+
+## 6. Project Participants and Roles
+
+Support project participants such as:
+
+- Developer
+- Project owner
+- Project manager
+- Site manager
+- Architect
+- Structural engineer
+- Civil engineer
+- Consultant
+- General contractor
+- Subcontractor
+- Procurement manager
+- Quality inspector
+- Safety supervisor
+- Financial controller
+- Authorized reviewer
+
+Requirements:
+
+- Store references to verified user or organization identities.
+- Define project-scoped permissions.
+- Support temporary project assignments.
+- Support participant invitations and acceptance.
+- Support role changes and removal.
+- Preserve assignment history.
+- Prevent users from assigning themselves privileged roles.
+- Do not assume membership in a brokerage or service-provider account grants project access.
+- Separate professional qualification verification from project role assignment.
+
+## 7. Project Phases
+
+Implement configurable project phases.
+
+Examples:
+
+### A. Planning and Feasibility
+
+- Initial project definition
+- Site assessment
+- Feasibility review
+- Preliminary budget
+- Risk assessment
+- Scope approval
+
+### B. Design
+
+- Architectural design
+- Structural design
+- Mechanical design
+- Electrical design
+- Interior design
+- Design review
+- Design approval
+
+### C. Permits and Preparation
+
+- Permit application preparation
+- Permit submission
+- Review and correction
+- Approval recording
+- Site preparation
+- Contractor mobilization
+
+### D. Construction
+
+- Excavation
+- Foundation
+- Structural framework
+- Walls and partitions
+- Roofing
+- Mechanical and electrical installations
+- Facade
+- Interior finishing
+- Site works
+
+### E. Completion and Handover
+
+- Final inspections
+- Defect correction
+- Documentation
+- Final acceptance workflow
+- Handover
+- Project closeout
+
+Requirements:
+
+- Allow project-specific phase templates.
+- Support optional and conditional phases.
+- Support phase dependencies.
+- Support phase status transitions.
+- Preserve phase history.
+- Avoid assuming that every project follows the same construction sequence.
+- Do not hardcode one universal construction workflow.
+
+## 8. Task and Dependency Management
+
+Build a task-management system within each project.
+
+Each task should support:
+
+- Stable task ID
+- Project reference
+- Phase reference
+- Task name
+- Description
+- Responsible participant references
+- Planned start date
+- Planned completion date
+- Actual start date
+- Actual completion date
+- Priority
+- Task status
+- Dependency references
+- Estimated effort
+- Progress percentage, where measurable
+- Evidence references
+- Creation and update timestamps
+
+Possible task states:
+
+- Draft
+- Ready
+- Assigned
+- In progress
+- Blocked
+- Under review
+- Completed
+- Cancelled
+
+Requirements:
+
+- Support task dependencies.
+- Prevent invalid circular dependency chains.
+- Distinguish a blocked task from a delayed task.
+- Prevent completion when required dependencies remain incomplete, unless an explicitly authorized exception exists.
+- Preserve task assignment and status history.
+- Support bounded retrieval and pagination.
+- Do not implement a separate general-purpose project-management product.
+
+## 9. Scheduling and Timeline Management
+
+Implement project schedule records.
+
+Support:
+
+- Baseline schedule
+- Revised schedule versions
+- Phase timelines
+- Task timelines
+- Milestone dates
+- Dependencies
+- Planned versus actual dates
+- Delay records
+- Schedule-change explanations
+
+Requirements:
+
+- Preserve the original baseline.
+- Record revised schedules as new versions.
+- Distinguish planned dates from actual dates.
+- Support schedule variance calculations.
+- Identify critical dependencies where the required scheduling data is available.
+- Avoid claiming critical-path calculations unless the algorithm is implemented and tested.
+- Handle time zones consistently.
+- Do not use client-side timers as the authoritative source of project deadlines.
+
+## 10. Budget Planning and Cost Tracking
+
+Create project budget structures.
+
+Support:
+
+- Total planned budget
+- Budget currency
+- Cost category
+- Phase budget
+- Labor budget
+- Material budget
+- Equipment budget
+- Design and consulting budget
+- Permit and administrative cost allocation
+- Contingency allocation
+- Forecast cost
+- Approved budget revisions
+- Budget version
+- Cost-entry references
+
+Requirements:
+
+- Distinguish planned budget, forecast cost, approved cost, reported cost, and confirmed expenditure.
+- Preserve original budget versions.
+- Record the source of each cost entry.
+- Allow authorized budget amendments.
+- Track budget variance.
+- Avoid double-counting costs received from other modules.
+- Do not infer a confirmed expenditure from an estimate or quotation.
+- Do not assume that a payment was made because a cost item was approved.
+- Do not hardcode market prices or construction cost assumptions.
+
+This module manages project budget planning and cost records, not money movement or accounting settlement.
+
+## 11. Contractor and Consultant Integration
+
+Use the Property Services module for contractor, consultant, and service-provider references.
+
+Support project assignments for:
+
+- General contractors
+- Subcontractors
+- Architects
+- Engineers
+- Surveyors
+- Construction supervisors
+- Material suppliers
+- Equipment providers
+- Maintenance specialists
+
+Requirements:
+
+- Reference existing provider IDs.
+- Record the provider's project-specific assignment.
+- Define assignment scope.
+- Record planned start and end dates.
+- Record assignment status.
+- Record responsible project participants.
+- Support replacement and reassignment.
+- Preserve assignment history.
+- Distinguish a provider profile from a project contract or work order.
+- Do not create duplicate provider profiles.
+- Do not directly modify Property Services records.
+
+If the Property Services contract is unavailable, define an adapter and document the dependency.
+
+## 12. Procurement and Material Requirements
+
+Create procurement workflow records for project needs.
+
+Support:
+
+- Procurement request ID
+- Project reference
+- Phase and task references
+- Material or equipment category
+- Item description
+- Quantity
+- Unit of measurement
+- Required-by date
+- Delivery location reference
+- Requesting participant
+- Approval state
+- Supplier reference
+- Quotation references
+- Order reference
+- Delivery status
+
+Possible material and equipment categories include:
+
+- Cement and concrete
+- Steel and reinforcement
+- Bricks and blocks
+- Stone and tile
+- Electrical materials
+- Plumbing materials
+- Insulation
+- Flooring and finishing
+- Doors and windows
+- Construction machinery
+- Scaffolding
+- Safety equipment
+
+Requirements:
+
+- Distinguish a procurement request from an approved order.
+- Distinguish an order from a confirmed delivery.
+- Support partial deliveries.
+- Record shortages and rejected deliveries.
+- Preserve quantity and unit information.
+- Validate unit compatibility where practical.
+- Do not invent inventory or supplier availability.
+- Do not create a competing supplier marketplace.
+- Do not directly manage payment or invoice settlement.
+
+## 13. Permit and Regulatory Workflow Metadata
+
+Build a structured record system for project permits and approvals.
+
+Support references to:
+
+- Building permits
+- Renovation permits
+- Construction approvals
+- Environmental or infrastructure approvals, where relevant
+- Inspection records
+- Utility connection approvals
+- Other explicitly supported authorization types
+
+Each record may contain:
+
+- Permit record ID
+- Project reference
+- Permit type
+- Issuing authority reference
+- Application reference
+- Submission date
+- Review status
+- Approval date
+- Expiration date
+- Conditions
+- Required corrective actions
+- Evidence references
+- Last verification timestamp
+
+Possible states:
+
+- Not started
+- Preparation
+- Submitted
+- Under review
+- Correction required
+- Approved
+- Rejected
+- Expired
+- Withdrawn
+
+Requirements:
+
+- Distinguish internal workflow status from official approval status.
+- Do not claim direct access to government systems.
+- Do not invent official permit identifiers.
+- Do not mark a permit approved without authoritative evidence.
+- Preserve submission and review history.
+- Do not provide legal conclusions.
+- Keep official-source verification behind a separate integration interface.
+
+## 14. Progress Reporting
+
+Implement structured project progress reports.
+
+Support:
+
+- Report ID
+- Project reference
+- Reporting period
+- Reporting participant
+- Completed tasks
+- In-progress tasks
+- Blocked tasks
+- Milestone status
+- Reported physical progress
+- Schedule variance
+- Budget variance
+- Resource constraints
+- Reported issues
+- Evidence references
+- Creation timestamp
+
+Requirements:
+
+- Distinguish manually reported progress from independently verified progress.
+- Define how project progress percentages are calculated.
+- Do not average unrelated task percentages without a documented methodology.
+- Preserve previous reports.
+- Support corrections through versioned amendments.
+- Do not claim that submitted photographs independently prove construction completion.
+- Support progress reporting by phase and overall project.
+
+## 15. Quality Control and Inspection Records
+
+Build a project quality-control workflow.
+
+Support:
+
+- Inspection ID
+- Project and phase references
+- Task reference
+- Inspection type
+- Inspector reference
+- Inspection date
+- Inspection criteria
+- Findings
+- Defect records
+- Corrective action references
+- Reinspection status
+- Evidence references
+- Approval status
+
+Inspection categories may include:
+
+- Foundation inspection
+- Structural inspection
+- Concrete quality inspection
+- Electrical installation inspection
+- Plumbing inspection
+- Waterproofing inspection
+- Facade inspection
+- Finishing inspection
+- Final inspection
+
+Requirements:
+
+- Distinguish internal project review from official regulatory inspection.
+- Record the responsible inspector.
+- Preserve original findings.
+- Support defect assignment and correction.
+- Prevent a defect from being marked corrected without the required evidence or authorized confirmation.
+- Do not claim engineering certification unless an authorized qualified source provides it.
+
+## 16. Change Orders and Scope Management
+
+Implement formal project change requests.
+
+Support:
+
+- Change-order ID
+- Project reference
+- Requesting participant
+- Affected phase and tasks
+- Original scope reference
+- Proposed scope
+- Reason for change
+- Cost impact estimate
+- Schedule impact estimate
+- Required approvals
+- Approval status
+- Revised baseline reference
+- Version history
+
+Possible states:
+
+- Draft
+- Submitted
+- Under review
+- Approved
+- Rejected
+- Withdrawn
+- Implemented
+
+Requirements:
+
+- Preserve the original project scope.
+- Do not silently overwrite approved project plans.
+- Require appropriate authorization.
+- Record cost and schedule impacts separately.
+- Support multiple revisions.
+- Prevent implementation of unapproved changes unless an explicit emergency policy is authorized and recorded.
+- Do not treat a proposed change as an agreed contractual amendment.
+
+## 17. Risk and Issue Management
+
+Support project-level risk and issue records.
+
+Risk records should include:
+
+- Risk ID
+- Project reference
+- Risk category
+- Description
+- Likelihood classification
+- Impact classification
+- Risk owner
+- Mitigation plan
+- Review date
+- Status
+
+Issue records should include:
+
+- Issue ID
+- Project reference
+- Related task or phase
+- Description
+- Severity
+- Responsible participant
+- Resolution plan
+- Due date
+- Status
+- Evidence references
+
+Requirements:
+
+- Distinguish a potential risk from an active issue.
+- Record updates and resolution history.
+- Support escalation.
+- Do not invent risk scores or probabilities.
+- Make any numerical risk-scoring formula explicit and testable.
+
+## 18. Safety and Incident Integration
+
+Support project incident references for:
+
+- Reported workplace accidents
+- Site safety concerns
+- Equipment-related incidents
+- Material failures
+- Environmental incidents
+- Property damage
+- Other project-related incidents
+
+Requirements:
+
+- Distinguish an initial report from a verified finding.
+- Preserve incident references and timestamps.
+- Protect personal and sensitive information.
+- Route investigations and enforcement through Trust & Safety or another authorized safety system.
+- Do not implement a competing investigation platform.
+- Do not independently determine legal liability.
+- Do not hide or delete incident history through ordinary project updates.
+
+## 19. Project Handover and Closeout
+
+Build a project completion workflow.
+
+Support:
+
+- Final milestone checklist
+- Open defect summary
+- Outstanding procurement items
+- Completion evidence references
+- Final inspection references
+- Documentation checklist
+- Handover participants
+- Handover date
+- Acceptance status
+- Open obligations
+- Closeout status
+
+Possible states:
+
+- Preparation
+- Awaiting inspection
+- Defects outstanding
+- Awaiting handover
+- Handover proposed
+- Handover accepted
+- Closed
+- Reopened through authorized process
+
+Requirements:
+
+- Distinguish reported physical completion from accepted handover.
+- Do not close a project while required outstanding items remain unresolved, unless a documented authorized exception applies.
+- Preserve handover objections.
+- Keep the original project history.
+- Do not automatically create property ownership or legal registration records.
+- Where completed buildings or units must be registered, use a Property Registry integration contract.
+
+## 20. Geography and Property Registry Integration
+
+Use:
+
+- Geography contracts for geographic references.
+- Property Registry contracts for existing land, building, unit, and property identity.
+
+Requirements:
+
+- Do not create a competing geographic hierarchy.
+- Do not duplicate existing building or unit records.
+- Allow projects to reference land before buildings are registered.
+- Define the process for linking newly completed assets to canonical property records.
+- Preserve project-to-asset relationships.
+- Do not invent parcel boundaries or official property identifiers.
+
+## 21. Media Integration
+
+Use Media module contracts for:
+
+- Design documents
+- Drawings
+- Construction photographs
+- Inspection evidence
+- Progress reports
+- Procurement documents
+- Permit evidence
+- Handover documents
+
+Requirements:
+
+- Store references and metadata only.
+- Do not store uploaded binary files in this module.
+- Apply authorization before returning media references.
+- Separate confidential design files from public project materials.
+- Preserve evidence ownership and retention requirements.
+- Do not assume a particular object-storage provider is configured.
+
+## 22. Notifications and Event Integration
+
+Define versioned events for:
+
+- Project created
+- Participant invited
+- Participant assigned
+- Phase started
+- Task assigned
+- Task blocked
+- Milestone approaching
+- Schedule revised
+- Budget revision submitted
+- Budget revision approved
+- Procurement request submitted
+- Delivery delayed
+- Permit status changed
+- Inspection completed
+- Defect reported
+- Change order submitted
+- Change order approved
+- Project progress reported
+- Handover scheduled
+- Project closed
+
+Use the Notifications module and the existing durable event/outbox contract where available.
+
+Requirements:
+
+- Do not implement notification delivery.
+- Do not emit fake delivery confirmations.
+- Make event publication retry-safe.
+- Include event ID and schema version.
+- Avoid exposing private project details through notification payloads.
+
+## 23. Reporting and Analytics
+
+Define project reporting interfaces for:
+
+- Active project count
+- Project status distribution
+- Phase progress
+- Planned versus actual completion dates
+- Schedule variance
+- Planned versus forecast budget
+- Cost variance
+- Procurement completion
+- Delayed tasks
+- Open quality defects
+- Permit workflow status
+- Project risk and issue counts
+- Handover completion
+
+Requirements:
+
+- Define each metric precisely.
+- Distinguish reported, approved, and confirmed information.
+- Specify aggregation windows.
+- Avoid double-counting cost records.
+- Do not fabricate historical project performance.
+- Use bounded queries and pagination.
+- Respect project confidentiality and participant permissions.
+
+## 24. Persistence and Reliability
+
+Inspect the current repository and follow its actual persistence conventions.
+
+Implement:
+
+- Durable project records
+- Durable phases and tasks
+- Durable dependencies
+- Durable schedules
+- Durable budget versions
+- Durable cost records
+- Durable procurement requests
+- Durable permit metadata
+- Durable progress reports
+- Durable quality records
+- Durable change orders
+- Durable risks and issues
+- Durable handover records
+- Stable identifiers
+- Idempotent commands
+- Explicit state transitions
+- Transaction-safe updates where supported
+- Optimistic concurrency where appropriate
+- Bounded queries
+- Cursor-based pagination where supported
+- Timestamp consistency
+- Safe retries
+- Durable event/outbox integration where available
+
+Do not use RAM Maps, local JSON files, or process memory as permanent storage.
+
+Do not introduce another database.
+
+Do not duplicate records owned by other modules.
+
+## 25. Security and Privacy
+
+- Obtain identity only through the established verified-principal contract.
+- Never trust client-supplied UIDs or project roles.
+- Enforce project membership and scoped authorization at every sensitive service boundary.
+- Separate public project summaries from confidential project records.
+- Restrict budgets, contracts, designs, and evidence to authorized participants.
+- Protect personal information in incident and safety reports.
+- Validate every state transition.
+- Preserve audit references for sensitive changes.
+- Apply least-privilege access.
+- Respect account-deletion and retention requirements.
+
+Do not create a parallel authentication or authorization system.
+
+## 26. Module-local API Contracts
+
+Define validated service interfaces for:
+
+- Create and retrieve development project
+- Update project metadata
+- Assign and remove participants
+- Create and manage project phases
+- Create and manage tasks
+- Define task dependencies
+- Create baseline schedule
+- Submit schedule revision
+- Create and amend project budget
+- Record project cost
+- Create procurement request
+- Update procurement status
+- Record permit workflow status
+- Submit progress report
+- Create quality inspection
+- Record and resolve defects
+- Submit change order
+- Approve or reject change order
+- Create and update project risks and issues
+- Schedule project handover
+- Confirm handover
+- Close project
+- Retrieve project timeline
+- Retrieve authorized project reporting
+
+Do not register global routes.
+
+Document route-registration requirements for the integration lead.
+
+## 27. Testing
+
+Create automated tests covering:
+
+- Project creation and authorization
+- Different project types
+- Multi-property projects
+- Participant role boundaries
+- Phase transitions
+- Task assignment
+- Circular dependency prevention
+- Blocked-task behavior
+- Schedule versioning
+- Planned versus actual dates
+- Budget versioning
+- Cost classification
+- Estimate versus confirmed expenditure distinction
+- Procurement request lifecycle
+- Partial deliveries
+- Permit status evidence
+- Progress calculation methodology
+- Quality inspection workflow
+- Defect correction
+- Change-order approval
+- Schedule and budget impact
+- Risk and issue lifecycle
+- Handover conditions
+- Property Registry integration
+- Media authorization
+- Event/outbox idempotency
+- Project isolation
+- Concurrent updates
+- Pagination
+- Persistence failures
+- Retry safety
+
+Tests must verify actual business logic, authorization, persistence, and state transitions. Merely checking whether files or classes exist is insufficient.
+
+## 28. Engineering Restrictions
+
+- No fake projects.
+- No fabricated construction progress.
+- No invented permit approvals.
+- No fabricated expenditure records.
+- No invented contractor qualifications.
+- No unsupported quality or engineering certification claims.
+- No direct payment processing.
+- No duplicate service-provider marketplace.
+- No duplicate property registry.
+- No duplicate geographic hierarchy.
+- No direct writes to other modules' collections.
+- No competing notification system.
+- No competing Trust & Safety system.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+If a dependency is unavailable, isolate it behind an interface and document the exact integration requirement.
+
+## 29. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual results and failures.
+4. List every file created or modified.
+5. Explain project, phase, task, schedule, budget, procurement, quality, and handover ownership boundaries.
+6. Document required contracts from Core, Property Registry, Geography, Property Services, Media, Notifications, and Trust & Safety.
+7. Identify unresolved permit, payment, and external-verification dependencies.
+8. Confirm that no shared files or other employees' files were modified.
+9. Commit only assigned files if authorized.
+10. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is an independent, secure, auditable construction project-management backend capable of managing the lifecycle of real estate development projects without duplicating property, provider, payment, or geographic systems.

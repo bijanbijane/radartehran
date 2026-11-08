@@ -1,0 +1,1351 @@
+# TASK: Build the Building Energy Efficiency & Sustainability Intelligence Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-building-sustainability`.
+- Never modify `main`.
+- Inspect the current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/building-sustainability/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- energy-profiles
+- energy-consumption
+- energy-measurements
+- utility-references
+- energy-benchmarks
+- building-performance
+- energy-certificates
+- efficiency-assessments
+- carbon-accounting
+- emissions-factors
+- water-efficiency
+- renewable-energy
+- solar-scenarios
+- retrofit-scenarios
+- sustainability-indicators
+- recommendations
+- methodology-versions
+- source-observations
+- reports
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- global Firestore rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry
+- Property Search
+- Bargains
+- Property Transactions
+- Property Management
+- Development Projects
+- Valuation
+- Investment Intelligence
+- Market Intelligence
+- Urban Intelligence
+- Geography
+- Property Due Diligence
+- Property Tax
+- Property Insurance
+- Financing Intelligence
+- Data Ingestion
+- Telemetry
+- Service Providers
+- CRM
+- Appointments
+- Media
+- Notifications
+- Trust & Safety
+- user identity records
+- payment infrastructure
+- frontend files
+- other employees' modules
+
+Global route registration and shared-file modifications belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a property-focused energy efficiency and sustainability intelligence backend.
+
+Support:
+
+1. Building energy profiles.
+2. Energy-consumption records.
+3. Electricity consumption analysis.
+4. Gas and heating-energy consumption analysis.
+5. Other documented energy-source consumption.
+6. Energy-use intensity calculations.
+7. Building energy-performance indicators.
+8. Historical energy-consumption trends.
+9. Energy-efficiency assessment records.
+10. Energy-certificate reference metadata.
+11. Building envelope efficiency indicators.
+12. Insulation and thermal-performance references.
+13. Heating and cooling efficiency indicators.
+14. Lighting and equipment efficiency indicators.
+15. Water-consumption and water-efficiency indicators.
+16. Renewable-energy system references.
+17. Solar photovoltaic scenario analysis.
+18. Solar thermal scenario analysis.
+19. Carbon-emission estimates.
+20. Energy-cost scenario modeling.
+21. Building retrofit scenario analysis.
+22. Energy-saving potential calculations.
+23. Sustainability benchmarks.
+24. Neighborhood and regional sustainability comparisons.
+25. Source provenance and data-quality tracking.
+26. Historical performance snapshots.
+27. Sustainability reports.
+
+This module provides evidence-based measurements, calculations, and hypothetical efficiency scenarios.
+
+It does not perform energy audits in the physical world, install equipment, certify buildings, operate utility infrastructure, or guarantee energy savings.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- Building energy profile records
+- Energy-consumption observations
+- Energy-source classification records
+- Energy measurement records
+- Energy-efficiency assessment records
+- Energy-performance indicator definitions
+- Energy-use intensity calculations
+- Building energy benchmark definitions and snapshots
+- Energy-certificate reference metadata
+- Thermal-performance indicator records
+- Water-efficiency indicator records
+- Renewable-energy system reference metadata
+- Solar-energy scenario records
+- Carbon-accounting methodology definitions
+- Emissions-factor reference records
+- Estimated emissions calculations
+- Retrofit scenario records
+- Efficiency recommendation records
+- Sustainability indicator calculations
+- Energy-data provenance metadata
+- Sustainability report versions
+- Methodology versions
+
+This module does NOT own:
+
+- Canonical property and building records
+- Property ownership records
+- Utility-company accounts
+- Actual utility billing systems
+- Bank accounts or payment records
+- Physical building inspections as authoritative technical records
+- Construction project execution
+- Renovation work orders
+- Contractor profiles
+- Property valuation
+- Property investment portfolios
+- Geographic hierarchy
+- Raw environmental datasets
+- Government certification registries
+- Carbon-credit issuance or trading
+- Renewable-energy equipment installation or operation
+
+Use references to authoritative modules and sources instead of duplicating their records.
+
+## 5. Building Energy Profile
+
+Create a building energy profile linked to a canonical property or building reference.
+
+Support:
+
+- Energy profile ID
+- Canonical property reference
+- Building reference, where separately available
+- Building category
+- Construction period, if documented
+- Building-use category
+- Occupancy classification
+- Gross floor area
+- Conditioned floor area
+- Number of floors, if supplied
+- Number of units, if supplied
+- Heating-system reference
+- Cooling-system reference
+- Energy-source references
+- Insulation characteristics, if documented
+- Window and glazing characteristics, if documented
+- Renewable-energy system references
+- Energy profile status
+- Data completeness
+- Creation timestamp
+- Last update timestamp
+
+Requirements:
+
+- Do not create a second property registry.
+- Do not invent building dimensions or construction dates.
+- Distinguish measured building attributes from user-reported attributes.
+- Preserve measurement units and source references.
+- Support incomplete profiles.
+- Do not treat missing building characteristics as zero.
+- Do not assume every building has a separate canonical building entity.
+- Preserve the source and observation date of important attributes.
+- Restrict private building information to authorized users.
+
+## 6. Energy-Source Classification
+
+Create a configurable energy-source taxonomy.
+
+Potential energy sources:
+
+- Electricity
+- Natural gas
+- LPG
+- Heating oil
+- District heating
+- District cooling
+- Biomass
+- Solar electricity
+- Solar thermal energy
+- Geothermal energy
+- Other documented energy sources
+
+Each source definition should support:
+
+- Energy-source ID
+- Name
+- Category
+- Energy unit
+- Applicable jurisdictions
+- Conversion methodology reference
+- Emissions-factor reference
+- Source verification state
+- Effective period
+
+Requirements:
+
+- Assign stable identifiers.
+- Preserve original units.
+- Distinguish primary energy from delivered energy when methodology requires it.
+- Distinguish renewable and non-renewable energy according to documented definitions.
+- Do not classify an energy source as renewable without a defined methodology.
+- Do not assume all energy sources have equivalent conversion factors.
+- Support jurisdiction-specific conventions.
+- Preserve historical source definitions.
+
+## 7. Energy-Consumption Records
+
+Build a durable energy-consumption data model.
+
+Each observation should support:
+
+- Consumption record ID
+- Property reference
+- Energy-source reference
+- Observation period start
+- Observation period end
+- Consumption amount
+- Original unit
+- Normalized unit, where calculated
+- Meter reference, if supplied
+- Measurement method
+- Data source
+- Verification status
+- Actual or estimated classification
+- Import reference, where applicable
+- Record creation timestamp
+- Last update timestamp
+
+Support:
+
+- Monthly consumption
+- Quarterly consumption
+- Annual consumption
+- Custom reporting periods
+- Meter readings
+- User-reported consumption
+- Utility-bill-derived consumption
+- Authorized meter-integration observations
+- Estimated consumption records
+
+Requirements:
+
+- Distinguish actual meter readings from estimated consumption.
+- Distinguish user-reported amounts from utility-confirmed records.
+- Preserve the original amount and unit.
+- Detect overlapping reporting periods.
+- Avoid duplicate consumption records.
+- Support corrections through versioned records.
+- Do not infer zero consumption from missing records.
+- Do not invent utility readings.
+- Do not claim access to utility accounts without an authorized integration.
+- Do not store utility-account passwords or payment credentials.
+
+## 8. Energy Measurement and Normalization
+
+Create a reliable measurement and unit-normalization layer.
+
+Support relevant units such as:
+
+- kWh
+- MWh
+- MJ
+- GJ
+- Other documented energy units
+
+Support applicable measurement dimensions:
+
+- Electricity consumed
+- Fuel consumed
+- Thermal energy delivered
+- Energy generated
+- Energy exported
+- Energy imported
+- Energy stored, where documented
+
+Requirements:
+
+- Validate units and measurement dimensions.
+- Preserve original readings.
+- Record conversion factors and methodology versions.
+- Do not convert incompatible physical quantities.
+- Distinguish energy from power.
+- Do not confuse kW with kWh.
+- Distinguish energy generation from energy consumption.
+- Distinguish gross consumption from net grid imports.
+- Handle missing and inconsistent measurements explicitly.
+- Make normalized results reproducible.
+
+## 9. Energy-Use Intensity
+
+Implement documented energy-use intensity calculations.
+
+Potential metrics:
+
+- Annual energy consumption per gross floor area
+- Annual energy consumption per conditioned floor area
+- Electricity consumption intensity
+- Heating-energy intensity
+- Cooling-energy intensity
+- Total delivered-energy intensity
+- Primary-energy intensity, where supported
+
+Example:
+
+`Energy Use Intensity = Annual Energy Consumption / Relevant Floor Area`
+
+Requirements:
+
+- Document the denominator.
+- Identify the relevant reporting period.
+- Distinguish gross floor area from conditioned floor area.
+- Do not calculate a normalized indicator without a reliable area value.
+- Distinguish total site energy from primary energy.
+- Do not mix incompatible energy sources without an explicit conversion methodology.
+- Account for incomplete reporting periods.
+- Clearly label estimated values.
+- Do not claim a building is efficient or inefficient based only on an unsupported threshold.
+
+## 10. Weather and Occupancy Normalization
+
+Prepare optional interfaces for contextual normalization.
+
+Potential variables:
+
+- Heating degree days
+- Cooling degree days
+- Weather observations
+- Occupancy period
+- Building operating hours
+- Seasonal operating characteristics
+- Documented climate zone
+
+Requirements:
+
+- Consume weather and climate information only through approved, source-backed contracts.
+- Do not invent weather measurements.
+- Preserve dataset date, geographic coverage, and methodology.
+- Distinguish raw energy use from weather-adjusted energy use.
+- Do not infer occupancy schedules without evidence.
+- Do not invent climate-zone classifications.
+- Make missing contextual information explicit.
+- Version every normalization formula.
+- Do not claim that normalized values are actual meter readings.
+
+## 11. Building Energy Efficiency Assessments
+
+Create an energy-efficiency assessment workflow.
+
+Assessment categories may include:
+
+### Building Envelope
+
+- Exterior-wall insulation
+- Roof insulation
+- Floor insulation
+- Window performance
+- Glazing characteristics
+- Air leakage observations
+- Thermal bridge observations
+
+### Heating and Cooling
+
+- Heating-system type
+- Cooling-system type
+- Equipment efficiency data
+- Distribution-system condition references
+- Control-system characteristics
+- Thermostat and zoning references
+
+### Lighting and Electrical Equipment
+
+- Lighting technology
+- Lighting efficiency
+- Electrical equipment characteristics
+- Documented appliance efficiency
+- Building control systems
+
+### Renewable Energy
+
+- Existing solar photovoltaic references
+- Solar thermal installations
+- Other documented renewable systems
+- Generation capacity
+- Historical generation observations
+
+### Water Efficiency
+
+- Water-consumption observations
+- Water-saving equipment references
+- Documented leakage observations
+- Hot-water-system efficiency
+
+Each assessment should support:
+
+- Assessment ID
+- Property reference
+- Assessment scope
+- Assessment type
+- Reviewer reference
+- Source assessment references
+- Observation period
+- Data completeness
+- Assessment state
+- Findings
+- Methodology version
+- Creation timestamp
+- Completion timestamp
+
+Requirements:
+
+- Do not duplicate the Property Due Diligence inspection system.
+- Link to existing technical inspection findings where authorized.
+- Distinguish a desk-based analysis from an on-site energy audit.
+- Distinguish measured performance from estimated performance.
+- Do not claim a qualified energy auditor conducted an assessment without evidence.
+- Preserve scope limitations.
+- Support incomplete assessments.
+
+## 12. Thermal Performance and Building Envelope Indicators
+
+Support structured thermal-performance information.
+
+Potential attributes:
+
+- Wall insulation type
+- Roof insulation type
+- Floor insulation type
+- Window glazing type
+- Window-frame type
+- Thermal transmittance references
+- Air-tightness test references
+- Thermal-bridge observations
+- Building envelope assessment references
+
+Requirements:
+
+- Preserve original measurement units.
+- Distinguish measured thermal performance from specification-based estimates.
+- Do not invent U-values or insulation thicknesses.
+- Do not infer compliance with building codes.
+- Consume authorized technical inspection references where available.
+- Do not issue engineering certification.
+- Represent unknown construction layers explicitly.
+- Preserve test method and source references.
+- Do not claim a thermal measurement occurred when only a user description exists.
+
+## 13. Heating, Cooling, and Equipment Efficiency
+
+Support documented heating and cooling system references.
+
+Potential systems:
+
+- Central heating
+- Individual boilers
+- Heat pumps
+- Electric heating
+- District heating
+- Air conditioning
+- Chillers
+- Ventilation systems
+- Heat recovery systems
+- Other documented equipment
+
+Each equipment record should support:
+
+- Equipment reference ID
+- Property reference
+- Equipment category
+- System type
+- Manufacturer and model, if supplied
+- Installation date, if known
+- Capacity
+- Efficiency metric
+- Measurement or specification source
+- Maintenance-status reference
+- Energy-source reference
+- Verification state
+
+Requirements:
+
+- Do not invent equipment specifications.
+- Distinguish manufacturer specifications from measured operating efficiency.
+- Distinguish rated capacity from actual energy consumption.
+- Do not create equipment-maintenance work orders.
+- Use Property Management references for maintenance history where authorized.
+- Use Service Providers references for assigned maintenance professionals where relevant.
+- Do not claim that an installation is operational without evidence.
+- Preserve model and specification provenance.
+
+## 14. Water Efficiency Intelligence
+
+Support water-consumption and water-efficiency analysis.
+
+Potential metrics:
+
+- Total water consumption
+- Water consumption per unit
+- Water consumption per floor area
+- Hot-water consumption
+- Water-loss observations
+- Documented water-saving equipment
+- Water-reuse system references
+
+Requirements:
+
+- Preserve original volume units.
+- Distinguish water consumption from wastewater discharge.
+- Distinguish measured water usage from estimated usage.
+- Do not infer occupancy or household size.
+- Do not claim access to utility meter records without authorization.
+- Do not create a duplicate maintenance or plumbing-inspection module.
+- Do not infer water quality from consumption data.
+- Document reporting-period and measurement limitations.
+
+## 15. Renewable-Energy System References
+
+Support records for installed or proposed renewable-energy systems.
+
+Potential technologies:
+
+- Solar photovoltaic
+- Solar thermal
+- Geothermal heat
+- Small-scale wind
+- Other documented renewable technologies
+
+Each system should support:
+
+- Renewable system ID
+- Property reference
+- Technology type
+- Installed or proposed classification
+- Rated capacity
+- Installation date, if known
+- Generation measurement references
+- Energy-storage reference
+- Grid-connection reference
+- Installation source
+- Verification status
+- Documentation references
+
+Requirements:
+
+- Distinguish installed systems from proposed systems.
+- Distinguish rated capacity from actual generated energy.
+- Distinguish estimated generation from measured generation.
+- Do not claim grid approval without authoritative evidence.
+- Do not claim renewable generation without supporting measurements.
+- Do not manage installation or maintenance projects.
+- Do not create duplicate equipment records owned by another system.
+- Preserve installation and verification provenance.
+
+## 16. Solar Energy Scenario Modeling
+
+Build a hypothetical solar-energy scenario engine.
+
+Support:
+
+- Proposed photovoltaic capacity
+- Proposed solar thermal capacity
+- Estimated solar generation
+- Estimated self-consumption
+- Estimated exported energy
+- Estimated grid imports
+- Storage capacity scenarios
+- Panel orientation and tilt, where documented
+- Geographic solar-resource references
+- System efficiency assumptions
+- Degradation assumptions, where sourced
+- Estimated system availability
+
+Requirements:
+
+- Clearly label all outputs as hypothetical.
+- Use documented solar-resource datasets where available.
+- Do not invent irradiance values.
+- Do not assume every roof is suitable for solar installation.
+- Do not infer roof structural capacity.
+- Do not guarantee generation or financial savings.
+- Make all assumptions visible.
+- Distinguish technical potential from legal and grid-connection permission.
+- Do not create an installation contract or work order.
+- Do not generate fabricated system quotations.
+
+## 17. Carbon Emissions Accounting
+
+Build an explainable energy-related emissions calculation service.
+
+Support:
+
+- Electricity-related emissions
+- Fuel-related emissions
+- Heating-related emissions
+- Cooling-related emissions where a documented method exists
+- Renewable-energy accounting
+- Historical emissions estimates
+- Scenario-based emissions estimates
+
+Each emissions calculation should record:
+
+- Calculation ID
+- Property reference
+- Reporting period
+- Energy-source reference
+- Consumption input
+- Emissions-factor reference
+- Emissions-factor version
+- Geographic applicability
+- Scope classification, where applicable
+- Calculation methodology
+- Result and unit
+- Calculation timestamp
+- Source and provenance metadata
+
+Example:
+
+`Estimated Emissions = Energy Consumption × Applicable Emissions Factor`
+
+Requirements:
+
+- Use source-backed emissions factors.
+- Distinguish location-based and market-based accounting where the selected methodology supports both.
+- Distinguish direct fuel emissions from purchased-electricity emissions.
+- Preserve emissions-factor source and effective period.
+- Do not use a generic factor for every jurisdiction.
+- Do not double-count energy generation and consumption.
+- Do not claim emissions are zero merely because a renewable system exists.
+- Do not issue carbon credits or offsets.
+- Do not claim independent verification of carbon reductions.
+- Clearly label estimates and methodology limitations.
+
+## 18. Carbon and Sustainability Methodologies
+
+Create versioned sustainability methodologies.
+
+Support methodology references for:
+
+- Energy accounting
+- Energy conversion
+- Carbon emissions
+- Renewable-energy treatment
+- Energy-use intensity
+- Building performance indicators
+- Water-efficiency indicators
+- Lifecycle boundary, where supported
+
+Requirements:
+
+- Every methodology must have an identifier and version.
+- Preserve methodology source and effective period.
+- Distinguish operational energy from embodied energy.
+- Do not claim full lifecycle carbon analysis unless all required lifecycle stages are supported.
+- Document exclusions.
+- Do not mix incompatible accounting boundaries.
+- Preserve historical calculations under their original methodology.
+- Do not silently recalculate published reports after a methodology change.
+- Support reproducible calculations.
+
+## 19. Retrofit and Energy-Improvement Scenarios
+
+Build a scenario engine for hypothetical building-efficiency improvements.
+
+Potential interventions:
+
+- Wall insulation
+- Roof insulation
+- Window replacement
+- Air sealing
+- Heating-system upgrade
+- Cooling-system upgrade
+- Efficient lighting
+- Smart controls
+- Heat recovery
+- Solar photovoltaic installation
+- Solar thermal installation
+- Energy storage
+- Water-efficiency improvements
+
+Each scenario should support:
+
+- Scenario ID
+- Property reference
+- Baseline performance reference
+- Proposed intervention
+- Input assumptions
+- Estimated energy reduction
+- Estimated cost, only when source-backed
+- Estimated emissions change
+- Estimated payback period, where sufficient data exists
+- Calculation methodology
+- Uncertainty and limitations
+- Scenario version
+- Creation timestamp
+
+Requirements:
+
+- Clearly distinguish hypothetical improvements from completed work.
+- Do not invent installation costs.
+- Do not guarantee energy savings.
+- Do not assume every retrofit is technically feasible.
+- Do not assume local permits or approvals.
+- Do not infer property structural suitability.
+- Do not treat estimated payback as guaranteed financial return.
+- Keep scenario results separate from historical energy observations.
+- Preserve every scenario version.
+
+## 20. Energy Cost Analysis
+
+Support energy-cost analysis where reliable tariff and consumption information is available.
+
+Potential outputs:
+
+- Historical energy expenditure
+- Energy cost per area
+- Energy cost by source
+- Estimated annual energy cost
+- Scenario-based cost changes
+- Renewable-energy cost comparison
+- Tariff comparison
+
+Requirements:
+
+- Distinguish energy consumption from energy cost.
+- Use actual bill data only when authorized and supported.
+- Distinguish user-reported bills from utility-confirmed records.
+- Preserve tariff period and currency.
+- Do not invent energy prices.
+- Do not assume one tariff applies to all users or properties.
+- Include fixed and variable charges only when documented.
+- Do not claim that a reduction in consumption produces identical monetary savings under every tariff.
+- Clearly identify taxes, fees, and excluded charges.
+- Do not process utility payments.
+
+## 21. Sustainability Benchmarks
+
+Build a benchmark system for comparing building performance.
+
+Potential benchmark dimensions:
+
+- Property category
+- Building-use category
+- Geographic area
+- Climate context
+- Construction period
+- Floor-area category
+- Heating and cooling system
+- Energy-source mix
+- Reporting period
+
+Requirements:
+
+- Use validated and sufficiently documented datasets.
+- Preserve sample size and source coverage where available.
+- Distinguish measured benchmarks from modeled benchmarks.
+- Do not invent peer-building data.
+- Do not compare incompatible property categories.
+- Do not use an area average as proof of individual-property performance.
+- Do not publish unsupported efficiency rankings.
+- Document benchmark methodology and limitations.
+- Support historical benchmark versions.
+- Represent unavailable benchmarks explicitly.
+
+## 22. Sustainability Indicators
+
+Support explainable indicators such as:
+
+- Energy-use intensity
+- Renewable-energy share, where measurable
+- Estimated operational emissions
+- Water-use intensity
+- Energy-consumption trend
+- Estimated retrofit potential
+- Energy-data completeness
+- Building-performance evidence coverage
+
+Requirements:
+
+- Define each indicator formula.
+- Distinguish observed metrics from modeled metrics.
+- Do not invent sustainability scores.
+- Do not create unsupported green-building ratings.
+- Do not claim regulatory or certification compliance.
+- Do not infer environmental performance from a property's listing description.
+- Preserve source references.
+- Document the calculation methodology and data coverage.
+
+## 23. Energy Certificates and External Certifications
+
+Support metadata references to energy certificates and sustainability certifications.
+
+Potential records:
+
+- Certificate reference ID
+- Property reference
+- Certification type
+- Issuing organization
+- Certificate identifier
+- Rating or classification
+- Issue date
+- Expiry date
+- Assessment methodology
+- Supporting document reference
+- Verification source
+- Verification status
+
+Requirements:
+
+- Distinguish a user-uploaded certificate from independently verified certification.
+- Do not invent certification bodies.
+- Do not issue official energy-performance certificates.
+- Do not claim a certificate is valid without sufficient evidence.
+- Preserve the issuing organization's terminology.
+- Distinguish expired, pending, verified, and unknown statuses.
+- Do not treat a platform-generated indicator as an official building rating.
+- Keep private supporting documents protected.
+- Do not claim legal compliance based solely on an uploaded certificate.
+
+## 24. Geographic and Urban Intelligence Integration
+
+Use Geography and Urban Intelligence contracts for:
+
+- Canonical property locations
+- Jurisdiction references
+- Geographic climate context
+- Urban sustainability indicators
+- Infrastructure references
+- Documented environmental context
+
+Requirements:
+
+- Do not create a parallel geographic hierarchy.
+- Preserve geographic resolution and source dates.
+- Distinguish area-level context from property-level measurements.
+- Do not infer a building's actual energy performance from neighborhood averages.
+- Do not invent climate classifications.
+- Do not turn missing environmental information into a zero-risk or zero-emissions result.
+- Do not duplicate Urban Intelligence indicators.
+- Use references to authoritative source records.
+
+## 25. Property Due Diligence and Property Management Integration
+
+Use Property Due Diligence references for:
+
+- Building-envelope observations
+- Insulation observations
+- Heating and cooling equipment observations
+- Water-system observations
+- Technical measurement references
+
+Use Property Management references for:
+
+- Authorized maintenance-history references
+- Equipment-maintenance records
+- Occupancy-period references, where relevant
+- Documented energy-related improvements
+
+Requirements:
+
+- Do not duplicate technical inspection findings.
+- Do not create maintenance work orders.
+- Do not manage contractors.
+- Do not overwrite maintenance history.
+- Distinguish an inspection observation from an energy-performance measurement.
+- Distinguish a planned retrofit from completed work.
+- Preserve original assessment and maintenance references.
+
+## 26. Development Projects and Service Providers Integration
+
+Use Development Projects contracts for authorized references to:
+
+- Energy-efficiency construction projects
+- Renovation projects
+- Renewable-energy installation projects
+- Retrofit project milestones
+- Project completion references
+
+Use Service Providers contracts for references to:
+
+- Energy auditors
+- HVAC specialists
+- Insulation contractors
+- Solar installers
+- Building-efficiency consultants
+
+Requirements:
+
+- Do not create or manage construction projects.
+- Do not manage contractor schedules.
+- Do not duplicate provider credentials.
+- Do not assume a project or installation is completed.
+- Do not independently verify professional qualifications.
+- Do not claim installation success without an authoritative project or verification record.
+
+## 27. External Data Ingestion
+
+Prepare module-local interfaces for approved external datasets.
+
+Potential datasets:
+
+- Energy tariffs
+- Energy conversion factors
+- Electricity emissions factors
+- Fuel emissions factors
+- Climate and solar-resource data
+- Building energy benchmarks
+- Energy-efficiency standards
+- Public certification references
+- Regional water-efficiency indicators
+
+Requirements:
+
+- Use Data Ingestion contracts where available.
+- Do not build a parallel generic ingestion platform.
+- Do not invent public APIs.
+- Do not bypass access restrictions.
+- Preserve source, retrieval date, publication date, effective period, geographic coverage, and licensing metadata.
+- Distinguish official datasets from estimates.
+- Quarantine inconsistent or incomplete observations.
+- Do not silently replace historical datasets.
+- Do not claim a dataset is current without freshness evidence.
+- Make unavailable data explicit.
+
+## 28. AI-Assisted Sustainability Analysis Boundary
+
+Prepare optional interfaces for future AI-assisted analysis.
+
+Potential uses:
+
+- Suggesting categories for energy documents
+- Extracting candidate consumption values from bills
+- Summarizing energy audit documents
+- Suggesting potential retrofit categories
+- Identifying missing measurements
+- Preparing reviewer-facing summaries
+- Mapping source terminology to internal energy categories
+
+Requirements:
+
+- Do not assume an AI service is configured.
+- Treat every model output as an untrusted suggestion.
+- Do not treat AI output as a measured energy reading.
+- Do not certify building performance through AI.
+- Do not automatically approve a retrofit recommendation.
+- Require human review of material extracted values.
+- Preserve the original source evidence.
+- Record model and prompt version when AI is actually used.
+- Distinguish AI-generated summaries from verified measurements.
+- Do not invent confidence scores.
+- Do not send private utility bills or property documents to external AI services without explicit authorization and an approved privacy contract.
+
+## 29. Domain Events
+
+Define versioned module-local events such as:
+
+- `building_sustainability.energy_profile.created`
+- `building_sustainability.energy_profile.updated`
+- `building_sustainability.consumption.recorded`
+- `building_sustainability.consumption.corrected`
+- `building_sustainability.measurement.recorded`
+- `building_sustainability.assessment.created`
+- `building_sustainability.assessment.completed`
+- `building_sustainability.certificate.reference_added`
+- `building_sustainability.renewable_system.recorded`
+- `building_sustainability.emissions.calculated`
+- `building_sustainability.retrofit_scenario.created`
+- `building_sustainability.recommendation.created`
+- `building_sustainability.benchmark.updated`
+- `building_sustainability.report.published`
+- `building_sustainability.source.conflict_detected`
+- `building_sustainability.methodology.versioned`
+
+Requirements:
+
+- Every event must have a stable event ID.
+- Include schema version.
+- Include event timestamp.
+- Include relevant entity references.
+- Avoid unnecessary personal and utility-account information.
+- Define idempotency behavior.
+- Use durable event publication through approved infrastructure where available.
+- Do not create a global event bus.
+- Do not modify shared event catalogs.
+- Document integration requirements for the integration lead.
+
+## 30. Persistence and Reliability
+
+Inspect the actual repository architecture and established persistence conventions.
+
+Implement durable persistence for:
+
+- Building energy profiles
+- Energy-source definitions
+- Consumption observations
+- Measurement records
+- Energy assessments
+- Efficiency indicators
+- Certificate references
+- Equipment references owned by this module
+- Renewable-energy system references
+- Emissions factors and versions
+- Carbon calculation records
+- Retrofit scenarios
+- Energy-cost scenarios
+- Sustainability benchmarks
+- Recommendation records
+- Source observations
+- Methodology versions
+- Historical performance snapshots
+- Sustainability reports
+- Audit references
+
+Requirements:
+
+- Use the established persistence layer.
+- Do not introduce another database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamp conventions.
+- Use bounded reads and cursor pagination.
+- Implement idempotent mutations.
+- Handle concurrent measurement updates safely.
+- Preserve source and methodology versions.
+- Avoid unbounded synchronous processing.
+- Use durable jobs for large imports and report generation where available.
+- Do not assume a queue or scheduler is configured.
+- Do not store media binaries.
+- Do not directly write to other modules' collections.
+- Enforce authorization in backend code when using Admin SDK.
+
+## 31. Security and Authorization
+
+- Obtain identity through the established verified-principal contract.
+- Never trust client-supplied UIDs.
+- Restrict private energy-consumption records to authorized users.
+- Protect utility-bill references and documents.
+- Enforce property and organization access boundaries.
+- Separate public building indicators from private household consumption.
+- Do not expose utility-account identifiers.
+- Do not collect unnecessary occupancy or household information.
+- Apply least-privilege access.
+- Preserve audit references for sensitive actions.
+- Respect account export and deletion requirements.
+- Do not create another identity or utility-account system.
+- Do not expose private consumption patterns through public property responses.
+
+## 32. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+### Energy Profiles and Measurements
+
+- Create building energy profile
+- Retrieve energy profile
+- Update energy profile
+- Register energy source
+- Record energy consumption
+- Correct consumption record through a versioned update
+- Retrieve consumption history
+- Record energy measurement
+- Retrieve normalized energy measurements
+- Calculate energy-use intensity
+- Retrieve energy-data completeness
+
+### Efficiency Assessments
+
+- Create energy-efficiency assessment
+- Assign assessment reviewer
+- Record assessment observations
+- Retrieve building-envelope indicators
+- Retrieve heating and cooling performance references
+- Record energy assessment outcome
+- Retrieve assessment history
+
+### Certificates and Renewable Systems
+
+- Register energy-certificate reference
+- Retrieve certificate metadata
+- Update certificate verification state through an authorized process
+- Register renewable-energy system reference
+- Record measured energy generation
+- Retrieve renewable-energy system history
+
+### Carbon and Sustainability
+
+- Register emissions-factor reference
+- Publish emissions-factor version
+- Calculate energy-related emissions
+- Retrieve emissions calculation explanation
+- Calculate renewable-energy share where supported
+- Calculate water-use intensity
+- Retrieve sustainability indicators
+- Retrieve benchmark comparisons
+
+### Scenario Analysis
+
+- Create solar-energy scenario
+- Calculate solar-generation estimate where supported
+- Create retrofit scenario
+- Calculate estimated energy savings where supported
+- Create energy-cost scenario
+- Calculate emissions-reduction scenario
+- Compare baseline and proposed scenarios
+- Retrieve scenario history
+
+### Reporting and Data Quality
+
+- Generate sustainability report
+- Publish report version
+- Retrieve report history
+- Retrieve source provenance
+- Identify stale emissions factors
+- Identify conflicting energy observations
+- Retrieve data-quality warnings
+- Retrieve historical performance snapshots
+
+Requirements:
+
+- Validate all inputs.
+- Enforce permissions on every sensitive operation.
+- Use idempotency for retryable mutations.
+- Preserve original observations and calculation provenance.
+- Return explicit unknown or unavailable states.
+- Do not return unsupported energy certification or savings claims.
+- Do not register global HTTP routes.
+
+Document route-registration, event-registration, and shared-schema requirements for the integration lead.
+
+## 33. Automated Testing
+
+Create tests covering:
+
+### Energy Profiles
+
+- Profile creation
+- Canonical property reference validation
+- Incomplete building profiles
+- Measured versus user-reported attributes
+- Unauthorized profile access
+- Historical profile changes
+
+### Consumption and Measurements
+
+- Electricity consumption
+- Fuel consumption
+- Different reporting periods
+- Original-unit preservation
+- Unit conversion
+- Energy versus power distinction
+- Duplicate meter observations
+- Overlapping periods
+- Estimated versus measured consumption
+- Missing consumption data
+- Corrected-record versioning
+
+### Energy-Use Intensity
+
+- Annual energy-use intensity
+- Gross versus conditioned floor-area denominator
+- Incomplete reporting periods
+- Missing floor area
+- Mixed energy sources
+- Primary versus delivered energy distinction
+- Unsupported efficiency thresholds
+- Reproducible calculations
+
+### Efficiency Assessments
+
+- Assessment creation
+- Workstream references
+- Technical inspection integration
+- Measured versus estimated thermal indicators
+- Heating and cooling references
+- Unknown insulation data
+- Incomplete assessment handling
+- Reviewer authorization
+
+### Renewable Energy
+
+- Proposed versus installed systems
+- Rated capacity versus actual generation
+- Solar scenario assumptions
+- Missing solar-resource data
+- Unsupported generation estimates
+- Grid-connection status distinction
+- Duplicate generation records
+
+### Carbon Accounting
+
+- Electricity emissions
+- Fuel emissions
+- Emissions-factor versioning
+- Geographic applicability
+- Effective-date validation
+- Scope classification
+- Renewable-energy accounting
+- Missing emissions factors
+- Double-counting prevention
+- Historical calculation reproducibility
+
+### Retrofit Scenarios
+
+- Baseline comparison
+- Insulation improvement assumptions
+- Heating-system upgrade scenarios
+- Solar scenarios
+- Energy-savings calculation
+- Missing cost data
+- Payback calculation limitations
+- Hypothetical versus completed work distinction
+- Scenario version preservation
+
+### Benchmarks and Sustainability
+
+- Compatible property categories
+- Reporting-period alignment
+- Sample and coverage metadata
+- Measured versus modeled benchmarks
+- Water-use indicators
+- Renewable-energy share
+- Missing-data handling
+- Unsupported sustainability-score prevention
+
+### Persistence and Security
+
+- Idempotency
+- Retry safety
+- Concurrent updates
+- Persistence failures
+- Pagination
+- Bounded queries
+- Authorization
+- Private utility-data protection
+- Cross-user data isolation
+- Event deduplication
+- Historical methodology preservation
+- Account deletion integration
+
+Tests must verify actual energy formulas, unit conversions, carbon-accounting rules, provenance, authorization, persistence, and failure behavior. File-existence tests alone are insufficient.
+
+## 34. Engineering Restrictions
+
+- No fabricated energy readings.
+- No invented utility bills.
+- No fake meter data.
+- No unsupported energy-efficiency ratings.
+- No invented emissions factors.
+- No unsupported carbon-reduction claims.
+- No fabricated renewable-energy generation.
+- No guaranteed solar output.
+- No guaranteed energy savings.
+- No invented retrofit prices.
+- No false building certification.
+- No unsupported claims of regulatory compliance.
+- No duplicate property inspection system.
+- No duplicate construction-project management.
+- No duplicate utility-account system.
+- No energy-payment processing.
+- No carbon-credit issuance or trading.
+- No unauthorized external data extraction.
+- No direct modifications to other modules' records.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When measurements, emissions factors, energy tariffs, building characteristics, certification evidence, or external integrations are unavailable, represent them as unavailable and document the exact dependency.
+
+Never simulate an energy audit, official certification, utility reading, renewable-energy installation, or verified carbon reduction.
+
+## 35. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain building energy-profile ownership boundaries.
+6. Document energy-source and unit-normalization rules.
+7. Document energy-use intensity formulas.
+8. Document measured versus estimated consumption handling.
+9. Document efficiency-assessment limitations.
+10. Document emissions-factor sources and calculation formulas.
+11. Document renewable-energy and solar-scenario assumptions.
+12. Document retrofit and energy-cost scenario limitations.
+13. Document benchmark compatibility rules.
+14. Document source provenance and freshness controls.
+15. Identify dependencies on Core, Property Registry, Geography, Urban Intelligence, Data Ingestion, Property Due Diligence, Property Management, Development Projects, Service Providers, Valuation, Media, and Notifications.
+16. Identify unavailable integrations and unresolved contracts.
+17. Confirm that no shared files or other employees' files were modified.
+18. Commit only assigned files if explicitly authorized.
+19. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, evidence-based building energy and sustainability intelligence backend that analyzes energy consumption, efficiency, emissions, and improvement scenarios without inventing measurements, claiming official certification, or duplicating property, inspection, utility, or construction systems.

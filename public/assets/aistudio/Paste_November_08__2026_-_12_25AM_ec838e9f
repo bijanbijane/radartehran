@@ -1,0 +1,346 @@
+Gemini 4 Argon
+Ran for 4m 55s
+
+Action history
+FINAL CORRECTIVE REVIEW — TEHRAN RADAR IMPLEMENTATION PLAN
+Mode: STRICT READ-ONLY (Zero files modified, created, deleted, renamed, or moved; zero packages installed; zero configuration, schema, or infrastructure changes).
+1. Resolution of Media Metadata Ownership Conflict (Single Canonical Repository & Schema)
+1.1 Identified Defect in Previous Plan
+The previous plan created a split-brain persistence hazard:
+src/utils/serverObjectStorageHelpers.ts:43-68 currently writes legacy StoredObjectRecord documents to Firestore collection mediaObjects using best-effort void syncMediaObjectToFirestore(rec) (line 145) and only recovers up to MAX_STORED_OBJECTS when .object-storage-bucket/index.json is missing (line 106).
+Meanwhile, server/modules/media/metadataStore.ts:21, 182-202 writes MediaMetadataRecord documents to media_object_metadata_v2, gated behind process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_SERVICE_ACCOUNT_JSON (line 194), and swallows Firestore write errors (lines 199-201).
+Allowing WP-3 (server/modules/media/metadataStore.ts) and WP-4 (src/utils/serverObjectStorageHelpers.ts) to both write to media_object_metadata_v2 independently would introduce two incompatible schemas, competing revision counters, and non-transactional overwrites.
+1.2 Single Canonical Schema (MediaMetadataRecord)
+server/modules/media/types.ts:108-132 (MediaMetadataRecord) in Firestore collection media_object_metadata_v2/{objectId} is the sole authoritative schema. To support legacy StoredObjectRecord fields (src/utils/serverObjectStorageHelpers.ts:1-2, src/utils/objectStorage.ts:3) without data loss, MediaMetadataRecord is extended with backward-compatible optional fields and a deterministic bidirectional mapper:
+Ts
+export interface MediaMetadataRecord {
+  readonly schemaVersion: 2;
+  readonly objectId: string;                     // Matches StoredObjectRecord.id (/^obj-\d{10,16}-[a-f0-9]{8}$/i)
+  readonly ownerUid: string;                     // Required verified Firebase UID (or 'LEGACY_UNATTRIBUTED' for pre-migration records)
+  readonly cityId: CityId;                       // Extracted from internalObjectKey or request
+  readonly hoodId: number;                       // 1..999
+  readonly mediaType: 'image' | 'video';
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+  readonly sha256: string;                       // 64-char hex SHA-256 of stored bytes
+  readonly width?: number;                       // Image dimension metadata
+  readonly height?: number;
+  readonly state: MediaObjectLifecycleState;     // 'UPLOAD_AUTHORIZED' | 'ACTIVE' | 'PENDING_DELETE' | 'DELETED' | 'QUARANTINED_CORRUPT'
+  readonly visibilityPolicy: MediaVisibilityPolicy; // 'OWNER_OR_ADMIN' | 'PUBLIC_WHEN_ATTACHED'
+  readonly providerId: ObjectStorageProviderId;  // 'r2' | 's3_compatible' | 'arvancloud' | 'liara' | 'minio' | 'firebase_storage' | 'local_bucket'
+  readonly bucket: string;                       // Bucket name where bytes reside
+  readonly durabilityTier: StorageDurabilityTier;// 'PRODUCTION_OBJECT_STORAGE' | 'EPHEMERAL_DEV_FILESYSTEM' | 'UNCONFIGURED_DISABLED'
+  readonly internalObjectKey: string;            // listings/{city}/hood-{hoodId}/{mediaType}/{yyyy-mm}/{objectId}.{ext}
+  readonly localCacheFileName: string;           // `${objectId}.${ext}` (for optional local disk read-cache only)
+  readonly byteStorageVerified: boolean;         // True ONLY after remote PUT (or local_bucket write in dev/test) succeeds
+  readonly association: MediaEntityAssociation;  // { targetType: 'UNATTACHED' | 'BARGAIN' | 'SPONSOR', targetId, attachedByUid, attachedAtIso }
+  readonly uploadGrantId: string;
+  readonly idempotencyKey: string;
+  readonly deletionAttemptCount: number;
+  readonly lastDeleteError?: string;
+  readonly createdAtIso: string;
+  readonly updatedAtIso: string;
+  readonly deletedAtIso?: string;
+  readonly revision: number;                     // Monotonically increasing optimistic concurrency version
+}
+1.3 Single Authoritative Repository Interface & Write/Read Paths
+Sole Authoritative Module: server/modules/media/metadataStore.ts (MediaMetadataPersistenceStore).
+Prohibition on Best-Effort Writes:
+In server/modules/media/metadataStore.ts:182-202, remove the try { ... } catch { // Snapshot durability preserved } silent swallow and the FIREBASE_SERVICE_ACCOUNT_JSON env gate.
+When running in production or when Firestore is enabled (process.env.PREVENT_PROD_FIREBASE_IN_TEST !== 'true'), every mutation (saveMetadataRecord, updateMetadataAtomically, saveUploadGrant, markUploadGrantConsumed, saveCleanupJob) MUST execute an awaited Firestore transaction (db.runTransaction) enforcing revision compare-and-swap (CAS). If the Firestore write fails, the repository method must throw MediaDomainError (503 STORAGE_METADATA_PERSIST_FAILED) and abort the operation.
+Single Authoritative Write Path:
+Verify byte storage write succeeded (putObjectBytes).
+Call mediaMetadataStore.saveMetadataRecord(record) or mediaMetadataStore.updateMetadataAtomically(...) in server/modules/media/metadataStore.ts, which commits to Firestore media_object_metadata_v2/{objectId} via runTransaction.
+If the Firestore commit fails, immediately compensate by deleting the newly uploaded remote/local bytes (deleteObjectBytes(internalObjectKey)) and return an error.
+Update the in-process memory cache (metadataMap) and optional local .object-storage-bucket/index.json mirror only after the authoritative Firestore transaction succeeds.
+Single Authoritative Read Path:
+getMetadataRecord(objectId) checks Firestore media_object_metadata_v2/{objectId} on cache miss (or always in multi-instance mode when revision validation is required) and populates the in-memory read cache.
+listOwnerMetadataRecords(ownerUid) queries db.collection('media_object_metadata_v2').where('ownerUid', '==', ownerUid).
+1.4 How Legacy serverObjectStorage.ts and serverObjectStorageHelpers.ts Delegate
+src/utils/serverObjectStorageHelpers.ts must not call db.collection('mediaObjects') or db.collection('media_object_metadata_v2') directly. syncMediaObjectToFirestore and recoverObjectStoreIndexFromFirestore (lines 43-69) are replaced by delegation adapters calling getSharedMediaMetadataStore() from server/modules/media/metadataStore.ts:
+toStoredObjectRecord(meta: MediaMetadataRecord): StoredObjectRecord projects canonical MediaMetadataRecord into the legacy StoredObjectRecord shape (id: meta.objectId, objectKey: meta.internalObjectKey, bargainId: meta.association.targetType === 'BARGAIN' ? meta.association.targetId ?? undefined : undefined, deletionState: meta.state === 'PENDING_DELETE' ? 'pending_delete' : 'active', remoteS3Synced: meta.durabilityTier === 'PRODUCTION_OBJECT_STORAGE' && meta.byteStorageVerified).
+fromStoredObjectRecord(record: StoredObjectRecord): MediaMetadataRecord converts legacy records into canonical MediaMetadataRecord before delegating to mediaMetadataStore.saveMetadataRecord().
+Preserving Test Governance Compatibility:
+tests/object-storage-security.test.ts:446-540 inspects src/utils/serverObjectStorage.ts for exact strings (await writeFileAtomically(localFilePath, finalBuffer, 0o600), await persistObjectStoreIndexNow(), OBJECT_INDEX_PERSIST_FAILED).
+Therefore, persistObjectStoreIndexNow() in src/utils/serverObjectStorageHelpers.ts:126-150 remains the function called by src/utils/serverObjectStorage.ts, and internally persistObjectStoreIndexNow() delegates the authoritative metadata commit to mediaMetadataStore.saveMetadataRecord() (failing closed with OBJECT_INDEX_PERSIST_FAILED if Firestore persistence fails in non-test mode) while writing .object-storage-bucket/index.json strictly as a local cache index.
+Local Disk Is Strictly an Optional Read Cache:
+.object-storage-bucket/index.json and .object-storage-bucket/obj-* files are treated strictly as an ephemeral, instance-local LRU read cache.
+A local file or index.json entry without an ACTIVE record in media_object_metadata_v2 (when in production mode) is never served as authoritative.
+1.5 Schema Compatibility & Migration Testing
+Unit and contract tests must verify:
+Round-trip lossless conversion: toStoredObjectRecord(fromStoredObjectRecord(legacyRecord)) equals legacyRecord for all valid StoredObjectRecord fixtures.
+assertMetadataContainsNoRawBytes() (server/modules/media/metadataStore.ts:39-72) rejects any record containing Buffer, Uint8Array, dataBase64, or secrets.
+Concurrent updateMetadataAtomically calls with stale expectedRevision deterministically fail with 409 CONCURRENT_MODIFICATION_CONFLICT.
+2. Corrected Chunked Upload Architecture (Zero Reliance on Session Affinity)
+2.1 Why the Current Chunked Upload Implementation Is Unsafe on Cloud Run
+In src/utils/serverBackupAndChunkUploadRoutes.ts:18-31:
+activeChunkSessions = new Map<string, ChunkedUploadSession>() stores session metadata and all uploaded chunks: Map<number, Buffer> in process RAM (up to 25 sessions × 50 MB = 1.25 GB RAM risk).
+On Cloud Run with multiple instances or instance restarts:
+POST /api/object-storage/upload-init on Instance A followed by POST /api/object-storage/upload-chunk on Instance B returns 404 UPLOAD_SESSION_NOT_FOUND_OR_EXPIRED (line 142).
+Duplicate chunk retries due to network timeouts return 409 DUPLICATE_CHUNK_OVERWRITE_FORBIDDEN (line 145), breaking idempotent client retries.
+POST /api/object-storage/upload-complete (line 171-172) deletes the session from activeChunkSessions before persisting the final object (line 201-211); if persistence fails, all uploaded chunks are permanently lost and completion cannot be retried.
+2.2 Corrected Multi-Instance Durable Chunked Upload Architecture
+Cloud Run session affinity is treated only as a latency optimization, never as a correctness mechanism.
+Authoritative Multipart Session State in Firestore (media_multipart_sessions_v2/{sessionId}):
+Ts
+export interface DurableMultipartUploadSession {
+  readonly sessionId: string;                  // /^upl_\d{13}_[a-f0-9]{16}$/
+  readonly idempotencyKey: string;
+  readonly ownerUid: string;
+  readonly cityId: CityId;
+  readonly hoodId: number;
+  readonly mediaType: 'image' | 'video';
+  readonly mimeType: string;
+  readonly fileName: string;
+  readonly totalChunks: number;                // 1..30
+  readonly declaredTotalBytes?: number;
+  readonly maxAllowedBytes: number;
+  readonly status: 'INITIATED' | 'UPLOADING' | 'COMPLETING' | 'COMPLETED' | 'ABORTED' | 'EXPIRED';
+  readonly storageBackend: 'R2_S3_MULTIPART_OR_STAGED' | 'LOCAL_DEV_STAGED';
+  readonly uploadedParts: Record<number, {
+    readonly chunkIndex: number;
+    readonly sizeBytes: number;
+    readonly sha256: string;
+    readonly stagedObjectKey: string;          // e.g. staging/upl_.../{chunkIndex}.part
+    readonly uploadedAtIso: string;
+  }>;
+  readonly receivedBytes: number;
+  readonly resultObjectId: string | null;
+  readonly createdAtIso: string;
+  readonly expiresAtIso: string;               // createdAt + 15 minutes
+  readonly updatedAtIso: string;
+  readonly revision: number;
+}
+Durable Chunk Byte Staging (Cross-Instance Accessible):
+Because arbitrary chunk sizes in /api/object-storage/upload-chunk are up to 2 MB (MAX_CHUNK_SIZE_BYTES = 2 * 1024 * 1024, whereas S3/R2 native UploadPart requires a 5 MB minimum part size for all non-final parts), each validated chunk i is durably written to a scoped staging key in the configured storage backend:
+When r2 or s3_compatible is active: PUT to staging/${sessionId}/part-${String(chunkIndex).padStart(4, '0')}.bin in R2/S3 (with an R2 bucket lifecycle rule auto-expiring staging/ objects after 24 hours).
+When local_bucket is active (development/test): written atomically to .object-storage-bucket/staging/${sessionId}/part-${chunkIndex}.bin (0o600).
+This guarantees any Cloud Run instance can handle upload-init, upload-chunk, and upload-complete in any order and survive instance restarts.
+Handling Every Failure & Edge Case:
+Requests Reaching Different Cloud Run Instances / Instance Restart: Every handler loads and updates media_multipart_sessions_v2/{sessionId} via Firestore transaction and reads/writes chunk bytes from the shared staging/${sessionId}/ prefix.
+Duplicate Chunk Requests (Idempotent Retry):
+Compute sha256 = computeSha256Hex(buf).
+If session.uploadedParts[chunkIndex] already exists:
+If existingPart.sha256 === sha256 && existingPart.sizeBytes === buf.length: return 200 OK ({ status: 'ok', chunkIndex, receivedChunks: Object.keys(session.uploadedParts).length, idempotentReplay: true }).
+If existingPart.sha256 !== sha256: return 409 DUPLICATE_CHUNK_CHECKSUM_MISMATCH (DUPLICATE_CHUNK_OVERWRITE_FORBIDDEN preserved for conflicting payload bytes).
+Missing or Out-of-Order Chunks:
+Chunks 0 .. totalChunks - 1 may arrive in any order or concurrently across instances; Firestore transaction updates uploadedParts.${chunkIndex} atomically and recalculates receivedBytes.
+If upload-complete is called when Object.keys(session.uploadedParts).length < session.totalChunks or any index 0 .. totalChunks - 1 is missing, return 400 INCOMPLETE_CHUNKS with missingChunkIndices: number[], leaving the session in UPLOADING state so the client can upload only the missing chunks.
+Upload Completion Retries & Concurrency:
+If session.status === 'COMPLETED' and session.resultObjectId is set, POST /api/object-storage/upload-complete returns 200 OK with the already-registered mediaObject (idempotentReplay: true).
+If session.status === 'COMPLETING' (another request is currently assembling), return 409 UPLOAD_COMPLETION_IN_PROGRESS (retryable).
+Do not delete staging parts or mark the session ABORTED on transient remote write failure during upload-complete; revert status from COMPLETING to UPLOADING so the client can retry upload-complete without re-uploading chunks.
+Abandoned Multipart Sessions:
+Sessions past expiresAtIso (15 minutes) are transitioned to EXPIRED, and their staging/${sessionId}/part-*.bin objects are deleted by the durable cleanup job (MediaOrphanAndCleanupEngine).
+Owner Authorization & Quota Enforcement:
+upload-init, upload-chunk, and upload-complete require verified Firebase user authentication (verifyAuthenticatedUserHeader) and enforce session.ownerUid === userAuth.uid (403 UPLOAD_SESSION_OWNER_MISMATCH).
+Active sessions per owner (status IN ['INITIATED', 'UPLOADING', 'COMPLETING'] and expiresAtIso > now) are capped at MAX_ACTIVE_CHUNK_SESSIONS_PER_USER = 2, global active sessions at MAX_ACTIVE_CHUNK_SESSIONS_TOTAL = 25, and cumulative receivedBytes + buf.length <= session.maxAllowedBytes and owner storage quota (MAX_OBJECTS_PER_OWNER = 30, MAX_BYTES_PER_OWNER = 500 MB).
+3. Corrected Fail-Closed Storage Semantics (local_bucket, r2, s3_compatible)
+3.1 Root Bugs in Current Code
+src/utils/objectStorageUpload.ts:4 normalizes 'r2' to 's3_compatible', and src/utils/objectStorageUpload.ts:8-9 silently falls back to https://s3.ir-thr-at1.arvanstorage.ir when OBJECT_STORAGE_ENDPOINT is invalid or missing.
+src/utils/serverObjectStorage.ts:29 and src/utils/serverBackupAndChunkUploadRoutes.ts:203-206 treat a failed uploadToRemoteS3Compatible() call as a non-error (remoteS3Synced: false, provider: 'local_bucket') and return 200 OK to the user!
+3.2 Explicit Provider Behavior Matrix
+Provider (OBJECT_STORAGE_PROVIDER)	Allowed Environments	Required Configuration	Write (POST /upload, /upload-complete)	Read (GET /file/:objectId)	Health / Status Reporting
+local_bucket	Development & automated tests only (NODE_ENV !== 'production', or explicit ALLOW_EPHEMERAL_LOCAL_STORAGE_IN_PROD=true break-glass flag)	Local directory .object-storage-bucket writable (0o700)	Writes atomically to local disk (0o600) and commits metadata to Firestore (durabilityTier: 'EPHEMERAL_DEV_FILESYSTEM'). In production without break-glass flag: fails closed with 503 PRODUCTION_DURABLE_STORAGE_NOT_CONFIGURED.	Reads from .object-storage-bucket	durabilityTier: 'EPHEMERAL_DEV_FILESYSTEM', isProductionSafe: false
+r2	Production, Staging, Dev	OBJECT_STORAGE_BUCKET, OBJECT_STORAGE_ACCESS_KEY, OBJECT_STORAGE_SECRET_KEY, and either R2_ACCOUNT_ID (deriving https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com) or OBJECT_STORAGE_ENDPOINT matching *.r2.cloudflarestorage.com (region defaults to 'auto')	Fail-Closed: Missing/invalid config returns 503 STORAGE_CONFIG_INVALID. Remote R2 PUT executes before committing active metadata. If R2 PUT fails or times out, abort, delete any local temp cache file, do not write active metadata, and return 502 REMOTE_STORAGE_WRITE_FAILED (retryable: true). Never falls back to local_bucket and never returns 200 OK when remoteS3Synced === false.	Reads local cache first (verifying SHA-256/size against MediaMetadataRecord); on cache miss, fetches from R2 via downloadFromRemoteS3Compatible, populates local cache atomically, and serves.	Distinguishes configured, reachable, and operational (Section 3.3)
+s3_compatible (plus 'arvancloud', 'liara', 'minio')	Production, Staging, Dev	OBJECT_STORAGE_BUCKET, OBJECT_STORAGE_REGION, OBJECT_STORAGE_ENDPOINT (valid HTTPS host in OBJECT_STORAGE_ALLOWED_HOSTS), OBJECT_STORAGE_ACCESS_KEY, OBJECT_STORAGE_SECRET_KEY	Fail-Closed: Do not default an invalid endpoint to s3.ir-thr-at1.arvanstorage.ir when OBJECT_STORAGE_PROVIDER is explicitly set to s3_compatible or r2. If remote PUT fails, abort, clean up local temp file, and return 502 REMOTE_STORAGE_WRITE_FAILED.	Local read-through cache backed by remote S3 GET.	Distinguishes configured, reachable, and operational (Section 3.3)
+3.3 Three-Tier Health Check Contract (configured vs. reachable vs. operational)
+StorageProviderHealthStatus (server/modules/media/types.ts:194-200) and /api/object-storage/admin/status (src/utils/serverObjectStorage.ts:7-8) must report three distinct boolean states:
+isConfigured: Credentials (accessKey, secretKey), valid bucket name, and allowlisted HTTPS endpoint URL pass syntactic and SSRF/DNS validation (buildValidatedS3TargetUrl + validateStorageEndpointDnsResolution).
+isReachable: Verified via a signed HEAD/GET probe against the bucket endpoint (cached for 60s) confirming TLS handshake, DNS resolution to a non-private IP, and valid SigV4 authentication (HTTP 200/404 vs 403 SignatureDoesNotMatch/5xx/timeout).
+isOperational: isConfigured && isReachable && circuitBreakerState !== 'temporarily_disabled'.
+4. Corrected Storage Migration and Rollback Procedure
+4.1 Why Switching OBJECT_STORAGE_PROVIDER from r2 to local_bucket Is Unsafe
+Once R2 is active on Cloud Run:
+Cloud Run instances scale up/down or restart on deployments, wiping .object-storage-bucket/.
+Even on a long-lived instance, uploads handled by Instance A are not present in Instance B's .object-storage-bucket/.
+Therefore, switching OBJECT_STORAGE_PROVIDER=local_bucket in production would cause immediate 404 OBJECT_NOT_FOUND errors for every object whose bytes are only in R2 (and would also violate the production fail-closed guard on ephemeral local storage).
+4.2 Production-Safe Migration & Rollback Architecture
+Phase A — Forward Migration (local_bucket / arvancloud → r2)
+Run WP-0 (Existing Data Migration Assessment, Section 8) to inventory all active metadata records and byte locations.
+Backfill Existing Bytes to R2:
+For every active object in media_object_metadata_v2 / index.json not yet in R2, copy bytes to R2 under its canonical internalObjectKey, verify SHA-256 and sizeBytes, and update MediaMetadataRecord (providerId: 'r2', bucket: <r2-bucket>, byteStorageVerified: true).
+Dual-Read Capability by Object Record (providerId + bucket per record):
+Retrieval (GET /api/object-storage/file/:objectId) resolves the storage target from the object's own MediaMetadataRecord.providerId and MediaMetadataRecord.internalObjectKey, with fallback read-through from R2 whenever local cache is cold.
+Phase B — What Happens When R2 Becomes Unavailable
+Uploads (POST /api/object-storage/upload, /upload-complete): Fail closed with 502 REMOTE_STORAGE_WRITE_FAILED (retryable: true). Never silently write to ephemeral local disk in production.
+Downloads (GET /api/object-storage/file/:objectId):
+If the requested object happens to be warm in the serving Cloud Run instance's local .object-storage-bucket/ cache and its size/hash matches MediaMetadataRecord, it is served from the local read cache (200 / 206).
+If the local cache is cold and R2 GET fails/times out, return 503 STORAGE_PROVIDER_UNAVAILABLE (Cache-Control: no-store, Retry-After: 30) — never 404 OBJECT_NOT_FOUND (which would falsely tell clients/browsers/CDNs that the media was deleted).
+Phase C — Which Rollback Procedures Are Actually Safe in Production
+SAFE Rollback Option 1: Code/Revision Rollback while Retaining R2 Bucket
+Rolling back a Cloud Run revision while keeping OBJECT_STORAGE_PROVIDER=r2 (and R2 credentials) intact is safe because both revisions read/write the same durable R2 bucket and Firestore media_object_metadata_v2 collection.
+SAFE Rollback Option 2: Provider Rollback (r2 → s3_compatible e.g. ArvanCloud/Liara)
+Precondition: Must first run a bounded hydration/backfill sync job copying all objects created during the R2 window (providerId === 'r2') to the target S3-compatible bucket and verifying SHA-256 digests + byte sizes against media_object_metadata_v2.
+Dual-Read Window: Enable dual-read (check primary provider; on 404, read from secondary R2 provider) before switching the write provider.
+Completion: Only switch OBJECT_STORAGE_PROVIDER after missingInTargetCount === 0 is verified.
+Realistic Timeframe: Proportional to data volume (e.g., 5–30 minutes for up to MAX_TOTAL_STORAGE_BYTES = 2 GB), never promised as sub-60-second or zero-downtime without pre-replicated bytes.
+UNSAFE / FORBIDDEN Rollback:
+Switching production OBJECT_STORAGE_PROVIDER from r2 back to local_bucket without a shared persistent volume is forbidden in production because container restarts lose all local bytes.
+Phase D — Reconciling Object Metadata & Bytes (MediaOrphanAndCleanupEngine)
+detectOrphanMediaObjects() (server/modules/media/orphanAndCleanupEngine.ts:47-175) must list keys from the actual remote bucket (ListObjectsV2 on R2/S3, replacing the in-memory this.trackedKeys stub in ConfiguredS3ByteStorageProvider.listStoredObjectKeys at server/modules/media/storageProvider.ts:177-180) and compare against all non-deleted media_object_metadata_v2 records to classify:
+MISSING_STORAGE_BYTES_FOR_ACTIVE_METADATA: Metadata is ACTIVE in Firestore, but remote R2/S3 object key does not exist (eligibleForCleanup: false — flagged for operator recovery/quarantine, never silently deleted).
+DANGLING_STORAGE_BYTES_WITHOUT_METADATA: Object exists in R2/S3 outside staging/ and beyond the grace window (2 hours), with no matching Firestore metadata record.
+5. Corrected Telemetry Durability Classification & Queue Semantics
+5.1 Explicit Architectural Classification
+Telemetry in Tehran Radar is explicitly classified as Class A — Best-Effort Operational & Product Analytics Data with Bounded Loss under Instance Termination:
+Why: Neither serverTelemetryQueue (src/utils/productAnalyticsEngine.ts:164, in-memory array) nor DurableTelemetryBufferQueue (server/modules/telemetry/telemetryBufferQueue.ts:22-35, writing to local container filesystem .telemetry-buffer/telemetry-journal-YYYY-MM-DD.ndjson) is backed by shared cross-instance storage until flushed to R2/S3 (telemetry/v1/year=.../batch-...ndjson). If a Cloud Run container crashes or is forcefully killed (SIGKILL) before a flush completes, uncommitted events on that instance are lost.
+Truthfulness Rule: Do not label in-memory fallback or local container disk WAL as cross-instance durable. Rename/document DurableTelemetryBufferQueue behavior accurately as Instance-Local Disk-Buffered Telemetry Queue (Best-Effort Across Instance Replacement).
+5.2 Exact Flush, Retry, Concurrency, Shutdown, Backpressure, and Data-Loss Contract
+Dimension	Specification
+1. Ingestion & Backpressure	- src/utils/productAnalyticsEngine.ts: MAX_SERVER_TELEMETRY_QUEUE = 5000 events in memory; daily cap policy.dailyIngestionCap. When full, drop incoming events (droppedOverflowCount += 1) and return { acceptedCount, droppedCount } without blocking request threads.
+- server/modules/telemetry/telemetryBufferQueue.ts: maxFileSizeBytes = 16 MB per daily partition file and maxInMemoryDedupeSize = 10,000 event IDs. When partition size reaches 16 MB or local disk is read-only/full, do not throw an unhandled exception; increment droppedOverflowCount or persistenceFailedCount and return { accepted: false, reason: 'BUFFER_OVERFLOW' | 'PERSISTENCE_FAILED' }.
+2. Top-Level Timer Removal & Lazy Scheduling	- Remove the top-level setInterval at src/utils/productAnalyticsEngine.ts:253-254 and lazy-initialize activeDateKey and dailyRandomSalt (lines 160-161) on first function call so importing the module in tests or Workers has zero side effects.
+- Trigger flushes via: (a) batch threshold (serverTelemetryQueue.length >= 500), (b) an explicit server lifecycle timer started inside startServer() (server.ts) and cleared on shutdown, or (c) admin flush endpoint.
+3. Concurrency & Single-Flight Flush	- Guard flushServerTelemetryToS3Now() (src/utils/productAnalyticsEngine.ts:230-244) with an in-process single-flight mutex (activeFlushPromise).
+- Critical Fix: Currently line 232 runs const batch = serverTelemetryQueue.splice(0, 1000) and discards batch even when uploadToRemoteS3Compatible returns false (line 239-243), while still incrementing totalFlushedEvents += batch.length!
+4. Retry & Re-Queue on Failure	- If uploadToRemoteS3Compatible() returns false or throws, flushServerTelemetryToS3Now() must re-prepend batch back to the front of serverTelemetryQueue (up to MAX_SERVER_TELEMETRY_QUEUE, dropping oldest if overflowed, and incrementing droppedOverflowCount for any excess), record lastFlushSyncedS3: false, and only increment totalFlushedEvents when syncedS3 === true.
+5. Graceful Shutdown (SIGTERM/SIGINT)	- In server.ts:3-5, handleGracefulShutdownSignal must await Promise.race([flushServerTelemetryToS3Now(), sleep(2500)]) before process.exit(0) so queued telemetry is flushed to R2/S3 within Cloud Run's SIGTERM grace window (10 seconds).
+6. Bounded Data-Loss Envelope	- Maximum data loss on sudden instance SIGKILL is bounded to at most 1 flush interval (30 seconds) or < 500 events per instance (<= 16 MB local partition file).
+6. Corrected Notifications Consent, Classification, Suppression, Quiet-Hour, Retry & Audit Rules
+6.1 Defects Identified in Current Notifications Implementation
+Inspecting server/modules/notifications/:
+Over-broad CRITICAL_TRANSACTIONAL Classification (server/modules/notifications/privacyAndTemplates.ts:328-338):
+Line 332 classifies all ACCOUNT_LIFECYCLE events (ACCOUNT_EXPORT_READY and ACCOUNT_DELETION_INITIATED) as CRITICAL_TRANSACTIONAL.
+In server/modules/notifications/preferenceAndConsentService.ts:62-90, isCritical (categoryClass === 'CRITICAL_TRANSACTIONAL') bypasses globalOptOutAllNonCritical, preferences.sourceMuted, preferences.categoryEnabled, preferences.channelEnabled, and consent.emailConsentGranted (line 88)!
+Quiet Hours Never Evaluated (server/modules/notifications/preferenceAndConsentService.ts:54-108):
+UserNotificationPreferences defines quietHoursUtc: { enabled: boolean; startHourUtc: number; endHourUtc: number } (server/modules/notifications/types.ts:114-118), but evaluateChannelEligibility() and generateNotificationsFromOutbox() never inspect quietHoursUtc at all!
+6.2 Three-Tier Notification Taxonomy & Consent Rules
+We separate all notifications into three strict legal/operational tiers:
+Tier	Category Class(es)	Event Types	User Preference / Mute Allowed?	Channel Consent Required?	Quiet Hours Behavior
+Tier 1: Essential Security & Account-Operation Messages	CRITICAL_TRANSACTIONAL	ACCOUNT_DELETION_INITIATED (and ACCOUNT_EXPORT_READY only when directly initiated by the authenticated user's own export request)	IN_APP: Always delivered.
+External channels (EMAIL, SMS, PUSH): Only sent on channels with a verified destination AND active channel-level consent (or the primary verified account email for mandatory security notices like ACCOUNT_DELETION_INITIATED). Never sent to unconsented SMS/Push channels.	Yes: SMS requires smsConsentGranted && hasConfiguredSmsDestination; PUSH requires pushConsentGranted && hasConfiguredPushToken; EMAIL requires hasConfiguredEmailDestination (and for ACCOUNT_EXPORT_READY, emailConsentGranted). No general bypass of channel consent.	Immediate delivery (bypasses quiet-hours delay).
+Tier 2: Service & Market Operational Notifications	SERVICE_TRANSACTIONAL, MARKET_ALERT	BARGAIN_PUBLISHED, BARGAIN_PRICE_DROP, BUYER_ALERT_MATCH_FOUND, SPONSOR_CAMPAIGN_APPROVED, SERVICE_QUOTE_RECEIVED, PRO_VERIFICATION_APPROVED, PRO_VERIFICATION_REJECTED, CROWD_CLAIM_MODERATED, MARKET_PULSE_ANOMALY_DETECTED	Yes: Suppressed if consent.globalOptOutAllNonCritical === true, preferences.categoryEnabled[categoryClass] === false, preferences.sourceMuted[source] === true, or preferences.channelEnabled[channel] === false.	Yes (Strict): Requires explicit channel consent (emailConsentGranted, smsConsentGranted, pushConsentGranted) AND configured destination (hasConfiguredEmailDestination, hasConfiguredSmsDestination, hasConfiguredPushToken).	Enforced for external channels (EMAIL, SMS, PUSH): If generated or retried during quietHoursUtc, nextAttemptAtIso is deferred to quietHoursUtc.endHourUtc:00:00Z (while IN_APP is created immediately without push/sound).
+Tier 3: Marketing & Promotional Messages	PROMOTIONAL_SPONSORSHIP	SPONSOR_CAMPAIGN_EXPIRING (and any future promotional/upsell events)	Yes (Default Opt-Out): preferences.categoryEnabled.PROMOTIONAL_SPONSORSHIP defaults to false (durableNotificationStore.ts:67), and consent.marketingSponsorshipConsentGranted defaults to false (line 90).	Yes (Double Opt-In Gate): Requires consent.marketingSponsorshipConsentGranted === true AND !consent.globalOptOutAllNonCritical AND preferences.categoryEnabled.PROMOTIONAL_SPONSORSHIP === true AND !preferences.sourceMuted[source] AND preferences.channelEnabled[channel] === true AND channel-specific consent + configured destination.	Enforced: Deferred until quietHoursUtc.endHourUtc.
+6.3 Channel-Specific Suppression, Quiet-Hour Calculation, Retry & Audit Behavior
+Quiet-Hour Calculation (computeQuietHoursDeferredIso(nowIso, quietHoursUtc)):
+Supports both same-day windows (startHourUtc < endHourUtc, e.g. 01:00..06:00 UTC) and overnight wrap-around windows (startHourUtc > endHourUtc, e.g. default 20:00..04:00 UTC = 23:30..07:30 Asia/Tehran).
+When quietHoursUtc.enabled === true and categoryClass !== 'CRITICAL_TRANSACTIONAL', external delivery jobs (EMAIL, SMS, PUSH) remain QUEUED_OUTBOX / RETRY_SCHEDULED with nextAttemptAtIso set to the next occurrence of endHourUtc:00:00.000Z.
+Pre-Dispatch Consent Re-Verification:
+Because a user may revoke consent or enable globalOptOutAllNonCritical between Stage 2 (generateNotificationsFromOutbox) and Stage 3 (dispatchSingleDeliveryJob, especially after a retry backoff or quiet-hours deferral), dispatchSingleDeliveryJob (server/modules/notifications/notificationEngine.ts:367) must re-evaluate evaluateChannelEligibility() immediately before invoking dispatchThroughChannelAdapter(). If consent was revoked in the meantime, transition the job to SUPPRESSED_PREFERENCE_OR_CONSENT without calling the external provider.
+Retry & Audit Trail:
+Max attempts: DEFAULT_MAX_DELIVERY_ATTEMPTS = 3 with exponential backoff 30s * 2^(attempt - 1) (preferenceAndConsentService.ts:48-52), adjusted for quietHoursUtc.
+Every suppression, deferral, preference/consent update, dispatch attempt, and receipt confirmation appends a RedactedOperationalLogEntry (hashRecipientUidForLog(uid) + redactPrivateContactDetails()) persisted to Firestore (notification_operational_logs_v2 / durable store).
+7. Verification of Cloudflare Proxy, Client IP Spoofing, and Rollback Assumptions
+7.1 Proxy Chain Verification (Do Not Blindly Assume TRUST_PROXY_HOPS=2)
+Inspecting server.ts:7-9 and src/utils/serverDeliveryAndAbuseGuard.ts:3-5:
+Ts
+// server.ts:7-9
+const trustProxyHops =
+  typeof rawTrustProxyHops === "string" && /^\d+$/.test(rawTrustProxyHops) && Number(rawTrustProxyHops) >= 1 && Number(rawTrustProxyHops) <= 5
+    ? Number(rawTrustProxyHops) : process.env.K_SERVICE || process.env.NODE_ENV === "production" ? 1 : false;
+app.set("trust proxy", trustProxyHops);
+
+// src/utils/serverDeliveryAndAbuseGuard.ts:4-5
+function normalizeIpString(rawIp: string): string { const trimmed = rawIp.trim(); if (!trimmed || trimmed.length > 128) return 'unknown'; const first = trimmed.split(',')[0].trim(); ... }
+export function getClientIp(req: Request): string { const trustProxySetting = req.app?.get?.('trust proxy'); const trustProxyEnabled = typeof trustProxySetting === 'number' && trustProxySetting >= 1 && trustProxySetting <= 5; const candidate = trustProxyEnabled ? req.ip || req.socket?.remoteAddress || 'unknown' : req.socket?.remoteAddress || req.ip || 'unknown'; return normalizeIpString(String(candidate || 'unknown')); }
+How Express trust proxy = N interacts with X-Forwarded-For on Cloud Run + Cloudflare:
+Express's proxy-addr counts N socket/proxy hops from the right end of X-Forwarded-For.
+Direct to Cloud Run (DNS-Only / Grey Cloud):
+Client sends spoofed X-Forwarded-For: 1.2.3.4.
+Google Front End (GFE / Cloud Run ingress) appends the real client IP 203.0.113.50 → X-Forwarded-For: 1.2.3.4, 203.0.113.50, and connects to the container via an internal socket IP (169.254.x.x).
+With trustProxyHops = 1, Express trusts 1 hop (the internal socket) and selects the rightmost entry in X-Forwarded-For (203.0.113.50).
+CRITICAL DANGER: If TRUST_PROXY_HOPS=2 is set while traffic bypasses Cloudflare (or if a client connects directly to the *.run.app URL!), Express steps back 2 hops and selects the attacker-supplied 1.2.3.4, allowing trivial rate-limit and abuse-cooldown bypass!
+Cloudflare (Orange Cloud) → Cloud Run:
+Client sends spoofed X-Forwarded-For: 1.2.3.4.
+Cloudflare appends the real client IP 203.0.113.50 (X-Forwarded-For: 1.2.3.4, 203.0.113.50) and sets CF-Connecting-IP: 203.0.113.50.
+GFE appends the Cloudflare edge egress IP 172.68.x.x (X-Forwarded-For: 1.2.3.4, 203.0.113.50, 172.68.x.x).
+Here, only if the penultimate hop (172.68.x.x) is a verified Cloudflare IP range is 203.0.113.50 trustworthy.
+7.2 Mandatory Proxy Verification & Anti-Spoofing Protocol
+Empirical Hop Verification Before Changing TRUST_PROXY_HOPS:
+Keep TRUST_PROXY_HOPS=1 as the safe default on Cloud Run until Cloudflare Orange-Cloud proxy is active AND direct *.run.app bypass is blocked or verified.
+Verify the exact X-Forwarded-For hop structure in staging by sending a request with a synthetic header curl -H "X-Forwarded-For: 198.51.100.99" https://<domain>/api/healthz and confirming getClientIp(req) resolves to the real client IP and never 198.51.100.99.
+Automated IP Spoofing Regression Tests (tests/delivery-and-abuse-guard.test.ts):
+Test Case 1 (TRUST_PROXY_HOPS=1, direct Cloud Run): Request with socket.remoteAddress = '169.254.1.1' and X-Forwarded-For: '1.1.1.1, 203.0.113.7' MUST resolve getClientIp(req) === '203.0.113.7' (ignoring spoofed 1.1.1.1).
+Test Case 2 (Direct *.run.app access when TRUST_PROXY_HOPS=2 without Cloudflare IP validation): Demonstrate why TRUST_PROXY_HOPS=2 is unsafe unless the hop added by GFE is verified to belong to Cloudflare IPv4/IPv6 CIDR ranges (or Authenticated Origin Pulls / Cloud Run ingress restriction is active).
+7.3 Exact Origin TLS, Hostname, DNS, and Cloud Run Domain-Mapping Prerequisites & Realistic Rollback Timing
+Before any Cloudflare cutover occurs, the following 5 infrastructure prerequisites must be established:
+Cloud Run Custom Domain Mapping or HTTPS Load Balancer:
+Cloud Run rejects requests whose Host header does not match a mapped custom domain or the service's *.run.app hostname unless Rewrite Host Header (Cloudflare Enterprise/Origin Rules) or Cloud Run Custom Domain Mapping (radartehran.ir) is configured and its Google-managed certificate is active.
+Origin TLS Certificate & SSL/TLS Mode:
+Cloudflare SSL/TLS encryption mode MUST be Full (Strict) so Cloudflare validates the Cloud Run certificate on 443. Never use Flexible (which sends HTTP to Cloud Run and causes an infinite redirect loop with resolveCanonicalRedirectUrl in src/utils/serverDeliveryAndAbuseGuard.ts:81-108 and Cloud Run's own HTTP→HTTPS redirect).
+APP_URL Alignment:
+APP_URL in Cloud Run environment variables must match the canonical public https://<domain> hostname because resolveCanonicalRedirectUrl() (src/utils/serverDeliveryAndAbuseGuard.ts:103-107) issues a 308 Permanent Redirect if www.<canonicalHost> or http:// is used.
+CSP Nonce Preservation:
+Cloudflare Rocket Loader, Auto Minify (HTML), and Email Address Obfuscation must be Disabled so HTML responses with dynamic SEO tags (injectDynamicSeoMeta in server.ts:252) and CSP headers are not mutated at the edge.
+Realistic DNS / Proxy Rollback Timing:
+Do not promise sub-60-second rollback for DNS changes.
+Switching a Cloudflare DNS record from Proxied (Orange Cloud) to DNS-Only (Grey Cloud) propagates at Cloudflare authoritative nameservers within ~1–5 minutes, plus downstream recursive resolver TTL (set DNS TTL to 60s or Auto prior to cutover; some ISP resolvers cache for 5–15 minutes).
+If a nameserver (NS) rollback at the .ir registry (IRNIC) is required, propagation takes 4 to 24 hours.
+8. Addition of WP-0: Existing Data Migration Assessment (Read-Only Pre-Work Package)
+Before any code or configuration changes execute (WP-1..WP-6), WP-0 runs as a strictly read-only inventory and reconciliation package against the target environment.
+WP-0 Scope & Deliverables
+Inventory Existing Local Object Files (.object-storage-bucket/):
+Enumerate all files in .object-storage-bucket/, recording fileName, sizeBytes, sha256, mtimeIso, whether it is a .tmp-* artifact, and whether its filename matches SAFE_LOCAL_FILENAME (/^obj-\d{10,16}-[a-f0-9]{8}\.(?:webp|jpg|jpeg|png|mp4|mov|webm)$/i).
+Inventory Local Object Index (.object-storage-bucket/index.json):
+Parse .object-storage-bucket/index.json, validate each entry with isSafeStoredObjectRecord() (src/utils/serverObjectStorageHelpers.ts:215-248), and record id, objectKey, provider, bucket, sizeBytes, remoteS3Synced, ownerUid, bargainId, and deletionState.
+Inventory Firestore Media Metadata (mediaObjects and media_object_metadata_v2):
+Query legacy Firestore collection mediaObjects (src/utils/serverObjectStorageHelpers.ts:48,57) and canonical collection media_object_metadata_v2 (server/modules/media/metadataStore.ts:21).
+Query active entity references across bargains (objectStorageObjectIds, objectStorageKeys, imageUrl, imageUrls, videoUrl), bargainOwners, and sponsorRequests.
+Four-Way Reconciliation Matrix:
+Produce a deterministic JSON/Markdown report classifying every discovered objectId / objectKey into:
+RECONCILED_COMPLETE: Present in Firestore metadata + byte storage verified + checksum/size match.
+LEGACY_INDEX_ONLY_NEEDS_FIRESTORE_BACKFILL: Present in .object-storage-bucket/index.json or legacy mediaObjects, missing in media_object_metadata_v2.
+LOCAL_BYTES_ONLY_NEEDS_REMOTE_UPLOAD: remoteS3Synced === false or missing in remote bucket; bytes exist on local disk and must be uploaded to R2/S3 before switching provider.
+METADATA_WITHOUT_BYTES_CORRUPT: Referenced in index.json, mediaObjects, media_object_metadata_v2, or bargains, but bytes do not exist on local disk or remote storage.
+DANGLING_UNREFERENCED_BYTES: Bytes exist on disk or remote bucket with no metadata and no Bargain/Sponsor reference.
+Go / No-Go Gate (Gate 0):
+Storage provider cutover to r2 is blocked until LOCAL_BYTES_ONLY_NEEDS_REMOTE_UPLOAD === 0 and LEGACY_INDEX_ONLY_NEEDS_FIRESTORE_BACKFILL === 0.
+9. Corrected End-to-End Work Package Plan (WP-0 through WP-6)
+All file ownership boundaries are strictly non-overlapping and obey the AGENTS.md invariants (< 500 lines per file, 244 non-dataset / 253 total file ratchet in src/ + server.ts, formatMillionTomanAsIntlCurrency present in all 253 files).
+Work Package	Mode	Exclusive File Ownership	Exact Corrective Responsibilities	Verification Gate
+WP-0: Existing Data Migration Assessment	READ-ONLY	Read-only inspection of .object-storage-bucket/, index.json, Firestore mediaObjects, media_object_metadata_v2, bargains, sponsorRequests	Run deterministic reconciliation inventory across local object files, local index.json, legacy mediaObjects, canonical media_object_metadata_v2, and active bargains references. Output 4-way reconciliation report.	Gate 0: Zero unmigrated local-only bytes or un-backfilled legacy metadata records before enabling R2.
+WP-1: Fail-Closed Storage Provider & R2 Config	Code Edit	src/utils/objectStorage.ts
+src/utils/objectStorageUpload.ts
+server/modules/media/storageProvider.ts	1. Add 'r2' to ObjectStorageProviderId (objectStorage.ts:2), getStorageProviderLabelFa (objectStorage.ts:24), normalizeStorageProvider (objectStorageUpload.ts:4), and buildValidatedS3TargetUrl (objectStorageUpload.ts:92).
+2. Support R2_ACCOUNT_ID endpoint derivation (https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com) and default region 'auto' for 'r2'.
+3. Remove silent fallback to s3.ir-thr-at1.arvanstorage.ir when r2 or s3_compatible is configured with invalid endpoint/credentials.
+4. Implement 3-tier health status (isConfigured, isReachable, isOperational) and real ListObjectsV2 in ConfiguredS3ByteStorageProvider.	npm test
+npx tsx tests/object-storage-upload-auth.test.ts
+WP-2: Telemetry Classification, Single-Flight Flush & Timer Cleanup	Code Edit	src/utils/productAnalyticsEngine.ts
+server/modules/telemetry/telemetryBufferQueue.ts
+tests/telemetry-processing-module.test.ts	1. Remove top-level setInterval (productAnalyticsEngine.ts:253-254) and lazy-initialize activeDateKey / dailyRandomSalt (lines 160-161).
+2. Add single-flight guard and re-queue-on-failure in flushServerTelemetryToS3Now() (lines 230-244) so failed S3/R2 uploads never drop the spliced batch or falsely increment totalFlushedEvents.
+3. Document Class A best-effort instance-local semantics and add defensive overflow/read-only disk handling in telemetryBufferQueue.ts.	npx tsx tests/telemetry-processing-module.test.ts
+npm test
+WP-3: Canonical Firestore Persistence & Notifications Consent Fix	Code Edit	server/modules/media/types.ts
+server/modules/media/metadataStore.ts
+server/modules/media/mediaModule.test.ts
+server/modules/crowd-data/persistenceAdapter.ts
+server/modules/crowd-data/crowdData.test.ts
+server/modules/account-lifecycle/durableJobStore.ts
+server/modules/account-lifecycle/accountLifecycle.test.ts
+server/modules/notifications/preferenceAndConsentService.ts
+server/modules/notifications/notificationEngine.ts
+server/modules/notifications/privacyAndTemplates.ts
+server/modules/notifications/durableNotificationStore.ts
+server/modules/notifications/notifications.test.ts	1. Make server/modules/media/metadataStore.ts the sole authoritative repository for media_object_metadata_v2, using transactional Firestore writes (runTransaction) with Cloud Run ADC support (removing the FIREBASE_SERVICE_ACCOUNT_JSON gate and removing best-effort error swallowing).
+2. Enable Cloud Run ADC Firestore persistence + read-through on cache miss in crowd-data, account-lifecycle, and notifications stores.
+3. Fix Notifications Consent (Section 6): separate Essential Security (ACCOUNT_DELETION_INITIATED), Service (ACCOUNT_EXPORT_READY, SERVICE_TRANSACTIONAL, MARKET_ALERT), and Promotional (PROMOTIONAL_SPONSORSHIP); never bypass channel consent on EMAIL/SMS/PUSH; implement quietHoursUtc deferral; re-verify consent in dispatchSingleDeliveryJob before calling provider adapters.	npx tsx server/modules/media/mediaModule.test.ts
+npx tsx server/modules/notifications/notifications.test.ts
+npx tsx server/modules/crowd-data/crowdData.test.ts
+npx tsx server/modules/account-lifecycle/accountLifecycle.test.ts
+WP-4: Legacy Storage Delegation, Fail-Closed Uploads, R2 Read-Through & Durable Multipart Uploads	Code Edit	src/utils/serverObjectStorage.ts
+src/utils/serverObjectStorageHelpers.ts
+src/utils/serverBackupAndChunkUploadRoutes.ts
+tests/object-storage-security.test.ts
+tests/object-storage-range.test.ts	1. Delegate metadata persistence in serverObjectStorageHelpers.ts (persistObjectStoreIndexNow, ensureBucketLoaded) to server/modules/media/metadataStore.ts (media_object_metadata_v2), retiring direct writes to mediaObjects and treating .object-storage-bucket/ strictly as an optional local read cache.
+2. Enforce fail-closed remote writes in POST /api/object-storage/upload (serverObjectStorage.ts:29) and POST /api/object-storage/upload-complete (serverBackupAndChunkUploadRoutes.ts:203): when cfg.provider !== 'local_bucket', a failed remote PUT rolls back local cache/index and returns 502 REMOTE_STORAGE_WRITE_FAILED.
+3. Add R2/S3 read-through on local cache miss in GET /api/object-storage/file/:objectId (serverObjectStorage.ts:102-120), returning 503 (never 404) if remote storage is unreachable.
+4. Replace in-memory activeChunkSessions (serverBackupAndChunkUploadRoutes.ts:21) with durable Firestore multipart session state (media_multipart_sessions_v2) + staged chunk bytes, idempotent duplicate-chunk handling, and retryable completion.
+5. Preserve all static regex patterns asserted by tests/object-storage-security.test.ts.	npx tsx tests/object-storage-security.test.ts
+npx tsx tests/object-storage-range.test.ts
+npx tsx tests/object-storage-upload-auth.test.ts
+WP-5: Wire Property Search Module Routes	Code Edit	src/utils/serverUtilityRoutes.ts
+tests/property-search-module.test.ts	Wire registerPropertySearchRoutes(app, { checkRateLimit, getClientIp }) inside registerUtilityAndIntelligenceRoutes (src/utils/serverUtilityRoutes.ts).	npx tsx tests/property-search-module.test.ts
+WP-6: Architecture Check, Route Catalog, Proxy Verification Tests & Documentation Sync	Code Edit	src/utils/expressRouteCatalog.ts
+scripts/check-architecture.ts
+tests/delivery-and-abuse-guard.test.ts
+docs/deployment.md
+docs/system-architecture.md
+docs/security.md	1. Register /api/v2/search/* routes in src/utils/expressRouteCatalog.ts.
+2. Extend scripts/check-architecture.ts to enforce < 500 lines across server/modules/**/*.ts (excluding *.test.ts).
+3. Add proxy-hop and X-Forwarded-For spoofing regression tests in tests/delivery-and-abuse-guard.test.ts.
+4. Update docs/deployment.md, docs/system-architecture.md, and docs/security.md with the corrected Cloudflare origin TLS/domain-mapping requirements, fail-closed storage rules, and dual-read rollback runbook.
+5. Run all 12 mandatory verification suites from AGENTS.md.	All 12 mandatory commands in AGENTS.md (npm run lint, npm run arch:check, npm test, npm run test:contracts, npm run test:mutation, npm run test:e2e, npm run test:smoke, stress & object-storage suites, npm run build).
+Suggestions

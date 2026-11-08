@@ -1,0 +1,1041 @@
+# TASK: Build the Property Viewings & Appointment Scheduling Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-appointments`.
+- Never modify `main`.
+- Inspect the current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/appointments/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- appointments
+- viewings
+- participants
+- availability
+- scheduling
+- conflicts
+- locations
+- invitations
+- confirmations
+- attendance
+- cancellations
+- rescheduling
+- recurring-rules
+- calendar-views
+- audit
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- global Firestore rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry
+- Property Search
+- Bargains
+- CRM
+- Buyer Alerts
+- Service Providers
+- Property Management
+- Development Projects
+- Property Transactions
+- Geography
+- Notifications
+- Media
+- Trust & Safety
+- Telemetry
+- user identity records
+- frontend files
+- other employees' modules
+
+Global route registration and shared-file modifications belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a durable appointment scheduling backend for real-estate activities.
+
+Support:
+
+1. Property viewing appointments.
+2. Buyer-agent meetings.
+3. Seller-agent meetings.
+4. Property valuation appointments.
+5. Technical property inspections.
+6. Property-management meetings.
+7. Service-provider appointments.
+8. Multi-participant appointments.
+9. Appointment proposals and confirmations.
+10. Participant acceptance and rejection.
+11. Rescheduling requests.
+12. Appointment cancellation.
+13. Participant availability checks.
+14. Scheduling conflict detection.
+15. Appointment reminders through approved integrations.
+16. Appointment attendance records.
+17. No-show recording.
+18. Appointment history.
+19. Recurring appointments where appropriate.
+20. Authorized calendar views.
+21. Appointment search and filtering.
+22. Appointment performance analytics.
+
+The module owns appointment scheduling and lifecycle records. It does not own property records, user identities, provider profiles, CRM lead records, notification delivery, or external calendar accounts.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- Appointment records
+- Appointment type definitions
+- Appointment participant references
+- Appointment invitation records
+- Appointment confirmation states
+- Appointment scheduling constraints
+- Appointment conflict records
+- Appointment rescheduling history
+- Appointment cancellation history
+- Attendance records
+- No-show records
+- Appointment location references
+- Appointment reminder scheduling metadata
+- Recurring appointment definitions
+- Appointment lifecycle history
+- Appointment-specific calendar projections
+- Appointment analytics
+
+This module does NOT own:
+
+- User authentication identities
+- Canonical property records
+- Property listing records
+- Customer contact records
+- CRM leads and follow-up tasks
+- Professional provider profiles
+- Provider organization membership
+- Property-management agreements
+- Construction projects
+- Valuation results
+- Geographic hierarchy
+- Media binaries
+- Notification delivery records
+- Email or SMS infrastructure
+- Payment records
+- Legal agreements
+- External calendar accounts
+
+Use references and explicit contracts with authoritative modules instead of duplicating their records.
+
+## 5. Appointment Types
+
+Support configurable appointment categories.
+
+Examples:
+
+### Property Activities
+
+- Property viewing
+- Second property viewing
+- Property inspection
+- Technical assessment
+- Valuation visit
+- Property handover meeting
+- Property-management inspection
+
+### Customer and Business Meetings
+
+- Buyer-agent consultation
+- Seller-agent consultation
+- Landlord-agent meeting
+- Tenant-agent meeting
+- Investment consultation
+- Negotiation meeting
+- Document review meeting
+
+### Service Activities
+
+- Contractor visit
+- Engineering consultation
+- Renovation assessment
+- Building maintenance visit
+- Service-provider consultation
+
+Requirements:
+
+- Assign stable IDs to appointment types.
+- Allow future types without redesigning the data model.
+- Support type-specific validation rules.
+- Distinguish a physical property visit from an online meeting.
+- Do not assume every appointment requires a property reference.
+- Do not interpret an appointment type as proof that a service or transaction occurred.
+
+## 6. Appointment Data Model
+
+Create an appointment entity with:
+
+- Appointment ID
+- Appointment type
+- Appointment title
+- Description
+- Organizer reference
+- Related property reference, if applicable
+- Related listing reference, if applicable
+- Related CRM lead reference, if authorized
+- Related service-request reference, if applicable
+- Related provider reference, if applicable
+- Start timestamp
+- End timestamp
+- Timezone
+- Duration
+- Location reference
+- Meeting mode
+- Participant references
+- Current appointment status
+- Confirmation requirements
+- Creation timestamp
+- Last update timestamp
+- Appointment version
+
+Requirements:
+
+- Use stable identifiers.
+- Store timestamps consistently.
+- Preserve the intended local timezone.
+- Validate that the end time is later than the start time.
+- Prevent invalid durations.
+- Distinguish appointment creation from appointment confirmation.
+- Distinguish an appointment record from an actual completed visit.
+- Preserve lifecycle history.
+- Support appointments without a property reference.
+- Do not duplicate referenced entities.
+
+## 7. Participants and Roles
+
+Support different participant roles:
+
+- Organizer
+- Buyer
+- Seller
+- Property owner
+- Real-estate agent
+- Tenant
+- Landlord
+- Property manager
+- Service provider
+- Technical inspector
+- Valuation professional
+- Other authorized participant
+
+Each participant record should support:
+
+- Participant ID
+- Appointment reference
+- Participant type
+- Authenticated user reference, if available
+- External contact reference, if authorized
+- Participant role
+- Invitation state
+- Response timestamp
+- Attendance state
+- Participation permissions
+
+Requirements:
+
+- Support multiple participants.
+- Distinguish authenticated platform users from external invitees.
+- Do not create authentication accounts for external participants.
+- Do not expose participants' private contact information to unrelated attendees.
+- Enforce appointment access permissions.
+- Prevent unauthorized participant additions.
+- Preserve participant changes and history.
+- Do not assume that a person has accepted merely because they were added to an appointment.
+
+## 8. Appointment Lifecycle
+
+Implement explicit state transitions.
+
+Suggested states:
+
+- Draft
+- Proposed
+- Awaiting participant responses
+- Confirmed
+- Reschedule requested
+- Cancellation requested
+- Cancelled
+- In progress
+- Completed
+- No-show
+- Expired
+
+Requirements:
+
+- Define allowed transitions.
+- Reject invalid state changes.
+- Preserve every meaningful transition.
+- Record the actor and timestamp for each transition.
+- Define who can confirm, reschedule, or cancel an appointment.
+- Support appointments requiring confirmation from multiple participants.
+- Define when an appointment is considered confirmed.
+- Prevent cancelled appointments from becoming active without an explicit restoration workflow.
+- Distinguish cancellation from expiry.
+- Distinguish no-show from cancellation.
+- Do not mark an appointment completed solely because its scheduled end time has passed.
+- Do not treat a proposed appointment as a confirmed booking.
+
+## 9. Scheduling and Time Validation
+
+Build robust date and time validation.
+
+Support:
+
+- Timezone-aware scheduling
+- Duration validation
+- Minimum advance-notice rules where configured
+- Maximum scheduling horizon where configured
+- Business-hour constraints where configured
+- Appointment buffers
+- Setup and travel buffers where explicitly supplied
+- Daylight-saving-time handling
+- Cross-timezone participants
+- Past-date rejection where appropriate
+
+Requirements:
+
+- Store unambiguous timestamps.
+- Preserve the intended timezone.
+- Handle daylight-saving transitions correctly.
+- Never silently reinterpret a local time in another timezone.
+- Distinguish UTC storage from local display time.
+- Do not invent business hours.
+- Do not assume that all providers share the same schedule.
+- Make configurable scheduling rules explicit.
+- Reject invalid date ranges with structured errors.
+
+## 10. Availability and Conflict Detection
+
+Build an appointment conflict-detection service.
+
+Check conflicts for:
+
+- Organizers
+- Confirmed participants
+- Assigned agents
+- Assigned providers, where appropriate
+- Bookable resources, if explicitly supported
+- Related property access windows, where an authoritative contract exists
+
+Support:
+
+- Full time overlap detection
+- Partial overlap detection
+- Configurable buffers
+- Concurrent booking protection
+- Existing confirmed appointment checks
+- Proposed appointment conflict warnings
+- Conflict-resolution metadata
+
+Requirements:
+
+- Distinguish a hard scheduling conflict from a warning.
+- Do not assume declared provider availability is guaranteed availability.
+- Consume provider availability only through an authorized Service Providers contract.
+- Do not modify provider profiles or provider availability records.
+- Do not silently overwrite an existing confirmed appointment.
+- Recheck conflicts before confirmation.
+- Handle concurrent confirmation requests safely.
+- Use transactions or equivalent atomic persistence mechanisms where available.
+- Do not claim a conflict check is complete if required participant schedules are unavailable.
+- Return explicit unavailable or incomplete-coverage information where necessary.
+
+## 11. Property Viewing Workflow
+
+Implement a dedicated property-viewing workflow.
+
+Support:
+
+- Related property reference
+- Related listing reference
+- Requesting customer
+- Assigned agent or authorized host
+- Proposed viewing time
+- Confirmed viewing time
+- Viewing location
+- Access instructions reference, if authorized
+- Participant responses
+- Attendance records
+- Viewing outcome
+- Rescheduling history
+- Cancellation reason
+
+Requirements:
+
+- Validate that the requesting user is authorized to request the viewing.
+- Validate that the assigned host is authorized to represent or access the property.
+- Use Property Registry and Property Search references for property information.
+- Do not assume that public listing visibility grants access to a property.
+- Do not expose private access instructions to unauthorized participants.
+- Do not store access codes or sensitive security credentials in ordinary appointment fields.
+- Do not change listing availability or listing publication status.
+- Do not claim that a viewing occurred without an attendance or completion record.
+- Do not automatically create an offer or transaction after a viewing.
+
+## 12. Invitations and Participant Responses
+
+Support participant invitation workflows.
+
+Possible invitation states:
+
+- Pending
+- Accepted
+- Declined
+- Tentative
+- Expired
+- Revoked
+
+Requirements:
+
+- Allow authorized organizers to invite participants.
+- Support invitation expiry.
+- Support participant response updates.
+- Preserve invitation history.
+- Prevent unauthorized responses.
+- Do not expose private appointment details through guessable identifiers.
+- Do not assume an external invitation has been delivered.
+- Do not implement direct email or SMS delivery.
+- Use Notifications contracts or authorized invitation infrastructure where available.
+- If secure external invitation links are supported, require cryptographically secure tokens through an approved Core capability.
+- Store token hashes rather than raw tokens where appropriate.
+- Define token expiry and revocation.
+- Do not invent an external invitation provider.
+
+## 13. Rescheduling
+
+Implement an explicit rescheduling workflow.
+
+Support:
+
+- Reschedule request
+- Proposed alternative start and end times
+- Requesting participant
+- Rescheduling reason
+- Participant responses
+- Conflict revalidation
+- Final rescheduled appointment
+- Rescheduling history
+
+Requirements:
+
+- Preserve the original appointment time.
+- Do not overwrite historical scheduling information.
+- Require appropriate authorization.
+- Recheck participant conflicts before confirmation.
+- Support rejection of a proposed new time.
+- Prevent two concurrent rescheduling operations from silently overwriting each other.
+- Preserve all meaningful revisions.
+- Define whether the original appointment remains active while rescheduling is pending.
+- Do not assume all participants accepted a new time.
+
+## 14. Cancellation and Expiration
+
+Support cancellation by authorized participants.
+
+Record:
+
+- Cancellation actor
+- Cancellation timestamp
+- Cancellation reason
+- Affected participants
+- Previous appointment state
+- Cancellation source
+
+Requirements:
+
+- Define role-specific cancellation permissions.
+- Support cancellation requests where immediate cancellation is not permitted.
+- Distinguish requested cancellation from completed cancellation.
+- Preserve cancellation history.
+- Support expiry for abandoned proposals and invitations.
+- Do not delete historical appointment records.
+- Do not automatically cancel unrelated appointments.
+- Publish cancellation events through approved integration contracts.
+- Make cancellation operations idempotent.
+
+## 15. Attendance and Appointment Outcomes
+
+Support attendance records for relevant participants.
+
+Possible attendance states:
+
+- Not recorded
+- Attended
+- Did not attend
+- Arrived late
+- Excused
+- Unknown
+
+Support appointment outcomes such as:
+
+- Completed
+- Customer requested follow-up
+- Another visit required
+- Inspection completed
+- Service discussion completed
+- Appointment inconclusive
+- Other documented outcome
+
+Requirements:
+
+- Do not use location tracking to infer attendance.
+- Do not claim a participant attended without an authorized attendance record.
+- Allow the organizer or authorized participant to record attendance.
+- Preserve attendance corrections and their reasons.
+- Distinguish attendance from appointment success.
+- Do not create CRM interaction records directly.
+- Publish appropriate outcome events for CRM to consume.
+
+## 16. Recurring Appointments
+
+Support recurring appointments only where the use case requires them.
+
+Examples:
+
+- Repeated property-management inspections
+- Scheduled maintenance visits
+- Recurring business consultations
+
+Requirements:
+
+- Define recurrence rules explicitly.
+- Support recurrence end dates or maximum occurrence counts.
+- Generate occurrences through bounded processing.
+- Preserve the relationship between a recurring series and individual appointments.
+- Allow changes to one occurrence without silently modifying every occurrence.
+- Support cancellation of one occurrence or an entire series.
+- Detect conflicts for each generated occurrence.
+- Do not allow unbounded recurrence generation.
+- Do not assume every appointment type is suitable for recurrence.
+
+## 17. Appointment Reminders
+
+Create reminder scheduling metadata.
+
+Support reminder policies such as:
+
+- Reminder before appointment
+- Confirmation reminder
+- Pending-response reminder
+- Rescheduling notification
+- Cancellation notification
+
+Requirements:
+
+- Store reminder intent and scheduling state.
+- Use Notifications contracts for delivery.
+- Do not send email, SMS, or push notifications directly.
+- Do not assume a delivery provider is configured.
+- Distinguish reminder scheduled from reminder delivered.
+- Handle retries idempotently.
+- Cancel obsolete reminders when appointments are cancelled or rescheduled.
+- Prevent duplicate reminder events.
+- Respect user communication preferences where applicable.
+- Do not invent delivery confirmation.
+
+## 18. Calendar Queries and Views
+
+Provide module-local calendar query services.
+
+Support:
+
+- Daily appointments
+- Weekly appointments
+- Monthly appointments
+- Participant calendar
+- Organizer calendar
+- Agent calendar
+- Provider calendar references
+- Organization appointment calendar
+- Property-specific appointment history
+- Appointment status filters
+
+Requirements:
+
+- Enforce authorization before returning calendar results.
+- Prevent cross-organization information leakage.
+- Support bounded date ranges.
+- Use pagination where needed.
+- Handle timezone conversion consistently.
+- Avoid unbounded collection scans.
+- Do not expose private appointment details to unauthorized calendar viewers.
+- Distinguish busy-time availability from access to appointment details.
+- Do not assume a third-party calendar integration exists.
+
+## 19. External Calendar Integration Boundary
+
+Prepare adapter interfaces for optional external calendar providers.
+
+Potential capabilities:
+
+- Calendar event creation
+- Calendar event update
+- Calendar event cancellation
+- External event reference
+- Synchronization status
+- Conflict information
+- Provider-specific error metadata
+
+Requirements:
+
+- Do not assume Google Calendar, Outlook, or another provider is configured.
+- Do not store external credentials in this module.
+- Do not implement OAuth independently.
+- Use an approved integration and secure credential-management capability if later authorized.
+- Preserve local appointment data as the platform's authoritative appointment record.
+- Distinguish local appointment state from external calendar synchronization state.
+- Prevent duplicate external event creation through idempotency.
+- Define retry and reconciliation behavior.
+- Do not claim successful synchronization without provider confirmation.
+
+## 20. Location and Meeting Modes
+
+Support meeting modes such as:
+
+- At the property
+- At an office
+- At a service-provider location
+- Online meeting
+- Telephone appointment
+- Other explicitly defined modes
+
+Requirements:
+
+- Use canonical geographic references from Geography.
+- Do not create a new geographic hierarchy.
+- Keep sensitive property-access information private.
+- Distinguish a public location from a private meeting address.
+- Do not invent online meeting URLs.
+- Store online meeting references only when supplied through an authorized integration.
+- Avoid exposing private participant locations.
+
+## 21. CRM and Service Provider Integration
+
+Use explicit contracts where available.
+
+### CRM
+
+Consume authorized references to:
+
+- Lead
+- Contact
+- Assigned agent
+- CRM organization
+
+Publish events for:
+
+- Appointment proposed for a lead
+- Appointment confirmed
+- Appointment rescheduled
+- Appointment cancelled
+- Appointment completed
+- Attendance outcome recorded
+
+Requirements:
+
+- Do not own CRM contacts or leads.
+- Do not create CRM follow-up tasks directly.
+- Do not modify CRM pipeline stages.
+- Allow CRM to consume appointment events and update its own records.
+
+### Service Providers
+
+Consume authorized references to:
+
+- Provider
+- Organization
+- Service offering
+- Declared provider availability
+
+Publish relevant appointment outcome events.
+
+Requirements:
+
+- Do not own provider profiles.
+- Do not modify declared provider availability.
+- Do not treat a provider's declared availability as an already reserved time.
+- Do not create provider service requests directly.
+
+## 22. Other Integration Boundaries
+
+### Core
+
+Use existing capabilities for:
+
+- Verified principals
+- Authorization
+- Validation
+- Structured errors
+- Timestamps
+- Pagination
+- Idempotency
+- Audit interfaces
+- Secure token generation, if available
+
+### Property Registry and Property Search
+
+Use canonical property and listing references.
+
+Do not create or modify property or listing records.
+
+### Property Management
+
+Use authorized references for:
+
+- Inspections
+- Maintenance visits
+- Handover appointments
+
+Do not modify management agreements or maintenance records.
+
+### Development Projects
+
+Use authorized project and site references where a project meeting or inspection is scheduled.
+
+Do not modify project execution records.
+
+### Notifications
+
+Publish reminder and invitation events.
+
+Do not deliver messages directly.
+
+### Media
+
+Use authorized media references only when an appointment requires supporting documents.
+
+Do not store media binaries.
+
+### Trust & Safety
+
+Use authorized risk and enforcement outcomes.
+
+Do not independently suspend users or implement a parallel enforcement system.
+
+### Geography
+
+Use canonical city, district, neighborhood, and location references.
+
+Do not create a duplicate geographic hierarchy.
+
+If an integration is unavailable, define a module-local adapter and document the missing dependency. Do not fabricate success.
+
+## 23. Domain Events
+
+Define versioned module-local events such as:
+
+- `appointments.created`
+- `appointments.proposed`
+- `appointments.participant_invited`
+- `appointments.participant_accepted`
+- `appointments.participant_declined`
+- `appointments.confirmed`
+- `appointments.conflict_detected`
+- `appointments.reschedule_requested`
+- `appointments.rescheduled`
+- `appointments.cancellation_requested`
+- `appointments.cancelled`
+- `appointments.expired`
+- `appointments.started`
+- `appointments.completed`
+- `appointments.no_show_recorded`
+- `appointments.attendance_updated`
+- `appointments.reminder_due`
+- `appointments.external_sync_requested`
+- `appointments.external_sync_completed`
+- `appointments.external_sync_failed`
+
+Requirements:
+
+- Every event must have a stable event ID.
+- Include schema version.
+- Include event timestamp.
+- Include relevant entity references.
+- Exclude unnecessary personal information.
+- Define idempotency behavior.
+- Use durable event publication through approved infrastructure where available.
+- Do not create a global event bus.
+- Do not modify shared event catalogs.
+- Document integration requirements for the integration lead.
+
+## 24. Persistence and Reliability
+
+Inspect the actual repository architecture and established persistence conventions.
+
+Implement durable persistence for:
+
+- Appointment records
+- Participant records
+- Invitation records
+- Appointment state history
+- Scheduling proposals
+- Conflict records
+- Rescheduling history
+- Cancellation history
+- Attendance records
+- Recurring appointment definitions
+- Reminder scheduling metadata
+- External calendar synchronization metadata
+- Appointment audit references
+
+Requirements:
+
+- Use the established persistence layer.
+- Do not introduce a new database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamp conventions.
+- Use bounded reads and pagination.
+- Implement idempotent mutations.
+- Handle concurrent scheduling and confirmation safely.
+- Prevent double booking through atomic checks or equivalent mechanisms.
+- Preserve important lifecycle history.
+- Avoid unbounded synchronous operations.
+- Use durable jobs where available.
+- Do not assume a queue or scheduler is configured.
+- Do not write directly to another module's collections.
+- Enforce authorization in backend code when using Admin SDK.
+
+## 25. Security and Authorization
+
+- Obtain identity through the established verified-principal contract.
+- Never trust client-supplied UIDs.
+- Verify organizer permissions.
+- Verify participant access.
+- Verify authority to schedule property visits.
+- Verify organization and provider boundaries.
+- Restrict access to private property locations and access instructions.
+- Protect external invitation tokens.
+- Prevent unauthorized invitation responses.
+- Prevent cross-organization calendar leakage.
+- Apply least-privilege access.
+- Preserve audit references for sensitive changes.
+- Support authorized account export and deletion contracts.
+- Do not create another identity system.
+- Do not expose participant private contact details in public appointment responses.
+
+## 26. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+- Create appointment
+- Retrieve appointment
+- Update appointment metadata
+- Propose appointment time
+- Invite participants
+- Retrieve authorized invitations
+- Accept invitation
+- Decline invitation
+- Record tentative response
+- Confirm appointment
+- Check participant availability
+- Detect scheduling conflicts
+- Request rescheduling
+- Accept rescheduling proposal
+- Reject rescheduling proposal
+- Cancel appointment
+- Request cancellation
+- Retrieve appointment history
+- Record attendance
+- Update attendance with audit reason
+- Record appointment outcome
+- Retrieve property viewing history
+- Retrieve authorized daily calendar
+- Retrieve authorized weekly calendar
+- Retrieve authorized monthly calendar
+- Create recurring appointment series
+- Cancel recurring appointment series
+- Retrieve reminder status
+- Retrieve external calendar synchronization status
+
+Requirements:
+
+- Validate every input.
+- Enforce permissions on every sensitive operation.
+- Use idempotency for retryable operations.
+- Avoid exposing private data.
+- Return explicit conflict and availability information.
+- Do not return false confirmation or delivery claims.
+- Do not register global HTTP routes.
+
+Document global route registration, event registration, and shared-schema requirements for the integration lead.
+
+## 27. Automated Testing
+
+Create tests covering:
+
+### Appointment Lifecycle
+
+- Appointment creation
+- Appointment proposal
+- Participant invitation
+- Participant acceptance
+- Participant rejection
+- Multi-participant confirmation
+- Invalid state transitions
+- Appointment expiry
+- Appointment cancellation
+- Rescheduling
+- Appointment completion
+- No-show recording
+- Historical state preservation
+
+### Scheduling and Time
+
+- Invalid date range rejection
+- Timezone correctness
+- Daylight-saving transitions
+- Cross-timezone participants
+- Duration validation
+- Buffer validation
+- Past-date handling
+- Conflicting appointments
+- Partial overlaps
+- Concurrent confirmation attempts
+- Double-booking prevention
+
+### Participants and Permissions
+
+- Organizer permissions
+- Participant access
+- Unauthorized invitations
+- External participant handling
+- Invitation expiry
+- Invitation token validation
+- Token revocation
+- Cross-organization isolation
+- Private location protection
+
+### Property Viewing
+
+- Authorized viewing request
+- Unauthorized property visit request
+- Host authorization
+- Private access-instruction protection
+- Property-reference validation
+- Viewing rescheduling
+- Viewing cancellation
+- Attendance recording
+- Outcome recording
+
+### Recurrence and Reminders
+
+- Recurrence validation
+- Bounded occurrence generation
+- Individual occurrence cancellation
+- Series cancellation
+- Duplicate reminder prevention
+- Reminder rescheduling
+- Reminder cancellation
+- Reminder retry behavior
+- Distinction between scheduled and delivered reminders
+
+### External Calendar
+
+- Missing provider integration
+- External event creation idempotency
+- Retry-safe synchronization
+- External synchronization failure
+- Local versus external state separation
+
+### Reliability and Security
+
+- Persistence failures
+- Retry safety
+- Idempotency
+- Concurrent updates
+- Pagination
+- Bounded queries
+- Authorization failures
+- Event deduplication
+- Audit history
+- Account deletion integration
+
+Tests must verify actual scheduling behavior, time calculations, authorization, persistence, concurrency, and failure recovery. File-existence tests alone are insufficient.
+
+## 28. Engineering Restrictions
+
+- No fake appointments.
+- No fabricated participant confirmations.
+- No invented availability.
+- No false attendance records.
+- No inferred appointment completion.
+- No fake invitation-delivery claims.
+- No fabricated calendar synchronization.
+- No automatic property-access authorization.
+- No direct notification delivery.
+- No duplicate CRM contact or lead records.
+- No duplicate provider availability system.
+- No property or listing mutation.
+- No legal agreement creation.
+- No payment processing.
+- No location tracking.
+- No independent authentication system.
+- No direct modifications to other modules' records.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When an external integration or required data source is unavailable, represent it as unavailable and document the dependency.
+
+Never simulate successful scheduling, participant acceptance, attendance, notification delivery, or external calendar synchronization.
+
+## 29. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain appointment ownership and participant access boundaries.
+6. Document the appointment lifecycle and allowed transitions.
+7. Document timezone and conflict-detection rules.
+8. Document double-booking prevention.
+9. Document invitation, confirmation, cancellation, and rescheduling workflows.
+10. Document attendance and completion evidence requirements.
+11. Document reminder and external-calendar limitations.
+12. Identify dependencies on Core, CRM, Service Providers, Property Registry, Property Search, Geography, Property Management, Development Projects, Notifications, Media, and Trust & Safety.
+13. Identify unavailable integrations and unresolved contracts.
+14. Confirm that no shared files or other employees' files were modified.
+15. Commit only assigned files if explicitly authorized.
+16. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, secure, timezone-correct appointment scheduling backend that prevents double booking, preserves appointment history, and supports real-estate viewings and meetings without duplicating identity, CRM, provider availability, property, or notification systems.

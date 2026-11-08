@@ -1,0 +1,1278 @@
+# TASK: Build the Mortgage & Real Estate Financing Intelligence Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-financing-intelligence`.
+- Never modify `main`.
+- Inspect the current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/financing-intelligence/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- lenders
+- financing-products
+- product-versions
+- eligibility-rules
+- loan-scenarios
+- repayment-schedules
+- affordability
+- interest-models
+- fees
+- rate-history
+- comparison
+- applications-references
+- document-requirements
+- calculators
+- benchmarks
+- jurisdictions
+- currencies
+- reporting
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- global Firestore rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry
+- Property Search
+- Bargains
+- Property Transactions
+- Property Management
+- Development Projects
+- Valuation
+- Investment Intelligence
+- Market Intelligence
+- CRM
+- Buyer Alerts
+- Sponsors
+- Finances or payment-processing infrastructure
+- user identity records
+- Media
+- Notifications
+- Trust & Safety
+- Data Ingestion
+- Telemetry
+- frontend files
+- other employees' modules
+
+Global route registration and shared-file modifications belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a financing-information, comparison, and scenario-analysis backend for real estate.
+
+Support:
+
+1. Mortgage and property-financing product catalogs.
+2. Financing institutions and lender references.
+3. Home-purchase financing products.
+4. Construction-financing products.
+5. Renovation and improvement financing.
+6. Rental-property financing products, where available.
+7. Commercial-property financing products.
+8. Down-payment and borrower-contribution requirements.
+9. Loan amount and loan-to-value calculations.
+10. Interest-rate and pricing models.
+11. Fixed-rate and variable-rate products.
+12. Repayment-period definitions.
+13. Installment and amortization calculations.
+14. Financing-related fees and charges.
+15. Insurance and ancillary-cost references.
+16. Eligibility criteria and rule versioning.
+17. Financing-product comparison.
+18. Affordability scenario modeling.
+19. Early-repayment scenario modeling.
+20. Refinancing and loan-replacement scenarios.
+21. Financing-cost calculations.
+22. Historical financing-rate records where reliable sources exist.
+23. Financing-product availability information.
+24. Financing application requirement checklists.
+25. Financing application reference tracking.
+26. Data provenance and source reliability metadata.
+27. Financing reports and comparison snapshots.
+
+The module provides analytical information and hypothetical calculations. It does not approve loans, issue credit, make binding offers, process payments, or provide guaranteed financing eligibility.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- Financing institution reference records maintained within the module
+- Financing product catalog records
+- Financing product versions
+- Financing-product source references
+- Financing eligibility-rule definitions
+- Financing fee and charge definitions
+- Interest-rate model definitions
+- Financing calculation methodologies
+- Repayment calculation results
+- Amortization schedules
+- Affordability scenario records
+- Loan-to-value calculation results
+- Financing comparison records
+- Refinancing scenario records
+- Early-repayment scenario records
+- Financing availability observations
+- Financing requirement checklists
+- Financing application reference metadata, where explicitly authorized
+- Financing calculation history
+- Financing reports
+- Data-quality and provenance metadata
+
+This module does NOT own:
+
+- User identity and authentication
+- Bank accounts or balances
+- Personal credit reports
+- Credit bureau records
+- Bank transaction history
+- Actual loan agreements
+- Loan origination
+- Credit approval decisions
+- Authoritative lender underwriting
+- Payment collection or settlement
+- Mortgage registration or legal title
+- Property valuation records
+- Property transaction records
+- User financial accounts
+- Insurance policies
+- Official government subsidies or grants
+- Lender customer records
+
+Never create a competing source of truth for another module's data.
+
+## 5. Financing Institution Directory
+
+Create a financing-institution reference model.
+
+Support institution types such as:
+
+- Commercial banks
+- Mortgage lenders
+- Housing-finance institutions
+- Credit institutions
+- Government-backed financing programs
+- Cooperative financing organizations
+- Other legally recognized financing providers
+
+Institution records may include:
+
+- Institution ID
+- Official or reported name
+- Institution type
+- Jurisdiction
+- Public website reference, if verified
+- Official contact references, if verified
+- Licensing or regulatory reference, if available
+- Public status
+- Source records
+- Last verified timestamp
+- Creation and update timestamps
+
+Requirements:
+
+- Do not invent financial institutions.
+- Distinguish a verified institution from an imported or user-reported institution.
+- Do not claim regulatory authorization without an authoritative source.
+- Do not represent an institution as currently operating without current evidence.
+- Preserve the source and verification date.
+- Support multiple jurisdictions.
+- Do not assume one country's lending rules apply globally.
+- Do not store private bank-customer information.
+- Institution profile records must not imply that the institution endorses this platform.
+
+## 6. Financing Product Catalog
+
+Create a versioned financing-product model.
+
+Support product categories such as:
+
+- Residential home-purchase financing
+- First-home financing
+- Construction financing
+- Renovation financing
+- Commercial-property financing
+- Rental-property financing
+- Land-purchase financing
+- Property-improvement financing
+- Refinancing
+- Other documented property-financing products
+
+Each product should support:
+
+- Product ID
+- Institution reference
+- Product name
+- Product category
+- Jurisdiction
+- Currency
+- Minimum financing amount
+- Maximum financing amount
+- Minimum repayment period
+- Maximum repayment period
+- Interest-rate model
+- Advertised rate or rate range
+- Rate-effective date
+- Required borrower contribution
+- Maximum loan-to-value ratio, where documented
+- Eligibility-rule reference
+- Fee schedule reference
+- Required-document checklist
+- Availability status
+- Source reference
+- Product version
+- Effective-from date
+- Effective-until date, where known
+- Last verification timestamp
+- Creation and update timestamps
+
+Requirements:
+
+- Support product version history.
+- Preserve expired or discontinued product versions.
+- Distinguish current, expired, suspended, unavailable, and unverified products.
+- Do not silently update historical product terms.
+- Distinguish advertised interest rates from contractually offered rates.
+- Do not imply that a product is available to every applicant.
+- Do not create fictitious lenders or products.
+- Do not invent missing loan limits, rates, or terms.
+- Represent unknown values as unknown rather than zero.
+- Make the data source and last verification date visible in product responses.
+
+## 7. Product Eligibility Criteria
+
+Support structured product eligibility rules.
+
+Potential criteria include:
+
+- Minimum and maximum age, only where documented
+- Employment category
+- Income-document requirements
+- Residency requirements
+- Property category
+- Property location
+- Minimum borrower contribution
+- Maximum loan-to-value ratio
+- Minimum or maximum financing amount
+- Repayment-period restrictions
+- Existing-loan restrictions
+- Required guarantees or collateral references
+- Other lender-published requirements
+
+Requirements:
+
+- Every rule must have a source.
+- Every rule must have an effective date or version.
+- Distinguish mandatory requirements from indicative criteria.
+- Distinguish lender-published rules from platform-generated assumptions.
+- Support jurisdiction-specific criteria.
+- Do not invent eligibility rules.
+- Do not infer missing rules from another lender's products.
+- Do not make binding credit-eligibility decisions.
+- Do not claim that a person qualifies solely because supplied values satisfy published rules.
+- Report insufficient data explicitly.
+- Keep actual creditworthiness assessment outside this module.
+
+## 8. Eligibility Evaluation Engine
+
+Build an explainable rules-evaluation service.
+
+Input fields may include:
+
+- Requested financing amount
+- Proposed borrower contribution
+- Property category
+- Property value reference
+- Property jurisdiction
+- Requested repayment period
+- User-supplied non-sensitive eligibility attributes
+- Product reference and version
+
+Support evaluation outcomes such as:
+
+- Published requirements appear satisfied
+- One or more published requirements appear unmet
+- Insufficient information
+- Product unavailable
+- Eligibility rules expired
+- Eligibility cannot be evaluated
+
+Requirements:
+
+- Evaluate only documented product criteria.
+- Return the exact rules evaluated.
+- Return the source and version of each rule.
+- Explain unmet criteria.
+- Distinguish rule matching from actual lender approval.
+- Do not label an applicant creditworthy.
+- Do not estimate a credit score.
+- Do not access credit bureau records.
+- Do not infer income, employment, assets, or debts.
+- Do not use sensitive personal attributes.
+- Do not make final lending decisions.
+- Never present a preliminary rules match as guaranteed eligibility.
+
+## 9. Interest-Rate Models
+
+Support documented financing-rate structures.
+
+Examples:
+
+- Fixed nominal interest rate
+- Variable interest rate
+- Periodically adjustable rate
+- Step-rate structure
+- Rate tied to an explicitly documented reference index
+- Promotional introductory rate
+- Other documented pricing structures
+
+Each rate model should support:
+
+- Rate model ID
+- Product reference
+- Rate type
+- Rate value or range
+- Rate unit
+- Effective date
+- Adjustment frequency
+- Adjustment formula or source reference
+- Reference index, where applicable
+- Margin or spread, where documented
+- Rate floor and ceiling, where documented
+- Promotional period
+- Post-promotion pricing rules
+- Source
+- Verification status
+
+Requirements:
+
+- Distinguish nominal interest rate from annual percentage rate or equivalent total-cost measure.
+- Do not assume that different jurisdictions define annual percentage rates identically.
+- Distinguish fixed-rate periods from variable-rate periods.
+- Document adjustment assumptions.
+- Do not invent future reference-index values.
+- Do not assume that a promotional rate remains valid after its stated period.
+- Do not hardcode an interest rate as a permanent product property.
+- Preserve historical rate versions.
+- Identify unavailable rate information explicitly.
+
+## 10. Financing Fees and Additional Costs
+
+Support structured financing-related cost records.
+
+Potential categories:
+
+- Origination or arrangement fee
+- Application fee
+- Administrative fee
+- Valuation fee
+- Legal or documentation fee
+- Registration fee
+- Insurance cost
+- Guarantee fee
+- Early-repayment charge
+- Late-payment fee
+- Other disclosed lender charges
+
+Each cost record should support:
+
+- Fee ID
+- Product reference
+- Fee category
+- Fixed amount or percentage
+- Calculation basis
+- Currency
+- Applicability conditions
+- Effective date
+- Source reference
+- Verification state
+
+Requirements:
+
+- Distinguish mandatory fees from optional charges.
+- Distinguish lender fees from external professional fees.
+- Avoid double-counting fees.
+- Do not include costs without an identified basis.
+- Preserve original currency.
+- Do not assume all fees apply to every borrower.
+- Document excluded costs.
+- Do not present an incomplete fee list as the total cost of financing.
+- Do not invent taxes, insurance premiums, or registration charges.
+
+## 11. Loan-to-Value and Borrower Contribution
+
+Implement explainable calculations for:
+
+- Loan-to-value ratio (LTV)
+- Borrower contribution percentage
+- Financing amount
+- Required contribution
+- Financing gap
+- Maximum indicative financing amount under published product limits
+
+For example:
+
+`LTV = Financing amount / Property value × 100`
+
+`Borrower contribution = Property value - Financing amount`
+
+Requirements:
+
+- Identify the property-value basis.
+- Distinguish user-entered value from a Valuation-module estimate.
+- Preserve valuation date and methodology reference where applicable.
+- Do not use asking price as a substitute for an authoritative property valuation without explicitly labelling it.
+- Handle missing, zero, and negative values safely.
+- Distinguish a mathematical LTV result from lender acceptance.
+- Account for additional costs separately.
+- Do not imply that the borrower contribution covers all transaction costs.
+
+## 12. Repayment and Amortization Engine
+
+Build a versioned repayment calculation engine.
+
+Support:
+
+- Equal-payment amortization
+- Equal-principal repayment
+- Interest-only periods, where the product permits them
+- Deferred repayment periods, where documented
+- Fixed-rate repayment schedules
+- Variable-rate scenario schedules
+- Step-rate schedules
+- Irregular payment structures, where explicitly supported
+
+Calculation outputs may include:
+
+- Principal amount
+- Interest rate
+- Repayment term
+- Number of installments
+- Installment amount
+- Principal component
+- Interest component
+- Remaining principal
+- Total scheduled interest
+- Total scheduled repayments
+- Payment schedule
+- Calculation methodology version
+
+Requirements:
+
+- Document each formula.
+- Distinguish actual lender repayment rules from generic mathematical models.
+- Define compounding frequency.
+- Define installment frequency.
+- Define rounding rules.
+- Handle leap years and date calculations consistently.
+- Handle rate changes explicitly.
+- Handle zero-interest cases.
+- Handle early repayment.
+- Handle payment deferral.
+- Handle balloon payments only when explicitly supported by product terms.
+- Do not silently assume monthly compounding.
+- Do not claim that a generic schedule is the lender's binding repayment schedule.
+- Preserve all assumptions used in the calculation.
+- Make calculations deterministic and reproducible.
+
+## 13. Affordability Scenario Analysis
+
+Build a hypothetical financing-affordability calculator.
+
+Support scenarios based on user-supplied information such as:
+
+- Proposed financing amount
+- Borrower contribution
+- Interest rate
+- Repayment period
+- Installment frequency
+- User-entered monthly income
+- User-entered existing monthly obligations
+- User-entered estimated household expenses
+- User-defined affordability limit
+
+Requirements:
+
+- Use only information explicitly provided or supplied through an authorized contract.
+- Do not access bank accounts or personal credit reports.
+- Do not infer income from profession, location, or property choice.
+- Distinguish a hypothetical affordability scenario from a formal affordability assessment.
+- Show all inputs and assumptions.
+- Support incomplete inputs.
+- Do not invent income or expense figures.
+- Avoid presenting a universal debt-to-income threshold.
+- Do not claim that a borrower can afford a loan based on the calculator alone.
+- Clearly identify excluded costs.
+- Avoid exposing sensitive inputs in public reports or logs.
+
+## 14. Financing Comparison Engine
+
+Build comparison services for multiple financing products.
+
+Compare:
+
+- Financing amount limits
+- Advertised interest rates
+- Rate structure
+- Repayment duration
+- Borrower contribution requirements
+- Published fees
+- Total modeled repayment
+- Total modeled interest
+- Monthly installment
+- Early-repayment conditions
+- Required documents
+- Eligibility-rule completeness
+- Product availability status
+- Source verification date
+
+Requirements:
+
+- Compare equivalent assumptions.
+- Keep currencies separate unless a documented conversion is supplied.
+- Compare like-for-like repayment terms.
+- Distinguish verified product terms from unverified information.
+- Identify missing fees and unknown terms.
+- Do not rank a product as cheapest when required cost information is missing.
+- Distinguish nominal-rate ranking from total-cost ranking.
+- Do not claim a product is universally best.
+- Show comparison methodology.
+- Preserve a versioned comparison snapshot.
+- Do not use fabricated market averages.
+
+## 15. Early Repayment and Refinancing Scenarios
+
+Support hypothetical calculations for:
+
+- Partial early repayment
+- Full early repayment
+- Reduced installment after prepayment
+- Reduced repayment period after prepayment
+- Refinancing with a new rate
+- Refinancing with a different repayment term
+- Switching financing products
+- Transaction costs associated with refinancing
+- Potential savings or additional costs
+
+Requirements:
+
+- Use documented product conditions.
+- Distinguish a hypothetical calculation from lender-confirmed settlement figures.
+- Include any known early-repayment charges.
+- Identify missing charges.
+- Include timing assumptions.
+- Do not assume the lender allows early repayment.
+- Do not invent refinancing rates.
+- Do not claim a refinancing scenario guarantees savings.
+- Distinguish gross modeled savings from net savings after documented fees.
+- Preserve the original and replacement product versions.
+
+## 16. Construction and Renovation Financing
+
+Support specialized financing-product references for:
+
+- New construction
+- Building completion
+- Renovation
+- Structural improvement
+- Energy-efficiency improvements
+- Major property repairs
+- Multi-stage construction financing
+
+Where documented, support:
+
+- Maximum financing amount
+- Drawdown conditions
+- Project milestones
+- Required permits
+- Progress-evidence requirements
+- Contractor-document requirements
+- Repayment commencement rules
+- Interest during construction
+- Stage-based disbursement references
+
+Requirements:
+
+- Do not manage construction projects.
+- Do not authorize contractor payments.
+- Do not verify construction completion.
+- Use Development Projects and Property Due Diligence references where relevant.
+- Do not invent disbursement schedules.
+- Distinguish lender requirements from platform checklist suggestions.
+- Preserve the source of each condition.
+- Represent unavailable lender criteria explicitly.
+
+## 17. Financing Application Requirements
+
+Provide product-specific document and requirement checklists.
+
+Potential categories:
+
+- Identity-document references
+- Income-document references
+- Employment-document references
+- Property-document references
+- Valuation-document references
+- Purchase-agreement references
+- Construction-permit references
+- Insurance-document references
+- Guarantee-document references
+- Other explicitly published requirements
+
+Requirements:
+
+- Store requirement definitions and their versions.
+- Distinguish mandatory documents from optional supporting documents.
+- Distinguish document requested, submitted, and independently verified.
+- Use Media references for uploaded documents if an authorized workflow exists.
+- Do not duplicate sensitive documents.
+- Do not expose documents to lenders without explicit user authorization and a valid integration.
+- Do not claim that a document was accepted by a lender without confirmation.
+- Do not make legal judgments about document validity.
+- Do not infer missing application requirements.
+
+## 18. Financing Application Reference Tracking
+
+If authorized application-tracking workflows are supported, maintain only limited application reference metadata.
+
+Potential fields:
+
+- Application reference ID
+- Applicant reference
+- Product reference and version
+- Institution reference
+- User-authorized external application reference
+- Submission status
+- Submission timestamp
+- Last status observation
+- Status source
+- User-visible status
+- Relevant consent reference
+
+Possible statuses:
+
+- Not started
+- Requirements reviewed
+- User preparing documents
+- User reports submitted
+- Submitted through an authorized integration
+- Institution acknowledged submission
+- Institution requested more information
+- Institution reports under review
+- Institution reports approved
+- Institution reports declined
+- Withdrawn
+- Status unknown
+
+Requirements:
+
+- Do not assume application tracking is available.
+- Do not create applications inside an institution's system unless an authorized API exists.
+- Distinguish user-reported status from institution-confirmed status.
+- Do not fabricate lender acknowledgments.
+- Do not make credit approval decisions.
+- Do not store full banking credentials.
+- Do not store unnecessary personal financial documents.
+- Do not expose application references to unauthorized users.
+- Use idempotency for supported submission workflows.
+- Represent missing external status as unknown.
+
+## 19. Financing Data Ingestion and Source Reliability
+
+Prepare ingestion interfaces for financing-product data.
+
+Potential source categories:
+
+- Official lender websites
+- Official lender publications
+- Official regulatory publications
+- Authorized lender APIs
+- Explicitly authorized data-provider feeds
+- User-submitted product information
+- Staff-entered research records
+
+Each source observation should include:
+
+- Source ID
+- Source category
+- Institution reference
+- Product reference
+- Source URL or document reference
+- Retrieval timestamp
+- Publication date, if known
+- Observation date
+- Effective date
+- Data fields obtained
+- Extraction method
+- Verification status
+- Reviewer reference
+- Source reliability classification
+
+Requirements:
+
+- Prefer official and authoritative sources.
+- Preserve source evidence.
+- Distinguish current information from historical publications.
+- Distinguish automated extraction from human-reviewed data.
+- Do not bypass access restrictions.
+- Do not scrape restricted systems.
+- Do not invent APIs.
+- Do not treat search-engine snippets as definitive product terms.
+- Do not silently overwrite conflicting source observations.
+- Quarantine inconsistent records for review.
+- Do not publish unverified data as verified.
+
+## 20. Multi-Jurisdiction and Currency Support
+
+Design the module for multiple countries and financing systems.
+
+Support:
+
+- Jurisdiction identifiers
+- Currency codes
+- Currency-specific decimal precision
+- Local date conventions
+- Interest-rate conventions
+- Repayment frequency
+- Jurisdiction-specific product types
+- Regulatory-source references
+- Localized document requirements
+
+Requirements:
+
+- Do not hardcode one country's mortgage rules into the core calculation engine.
+- Do not assume all markets use the same interest terminology.
+- Do not assume all financing products use monthly repayments.
+- Do not assume all products use conventional amortization.
+- Do not silently convert currencies.
+- Preserve original values and units.
+- Record exchange-rate source and date when conversion is used.
+- Keep jurisdiction-specific eligibility rules versioned.
+- Do not claim compliance with local lending regulations without authoritative validation.
+
+## 21. Market and Property Integration
+
+Use explicit contracts where available.
+
+### Valuation
+
+Consume:
+
+- Authoritative property valuation references
+- Valuation date
+- Valuation methodology
+- Confidence and limitations
+
+Requirements:
+
+- Do not create another valuation engine.
+- Do not treat an asking price as a confirmed market value.
+- Preserve the valuation reference used in calculations.
+
+### Property Registry and Property Search
+
+Consume canonical property references and public property attributes where authorized.
+
+Do not duplicate property records or search indexes.
+
+### Geography
+
+Use canonical jurisdiction and geographic references.
+
+Do not create another geographic hierarchy.
+
+### Investment Intelligence
+
+Provide documented financing-cost and repayment scenarios where authorized.
+
+Do not modify investment portfolio records.
+
+### Property Transactions
+
+Use transaction references only where relevant and authorized.
+
+Do not create or modify transaction records.
+
+### Development Projects
+
+Use construction-project references for applicable construction-financing scenarios.
+
+Do not manage project budgets or execute project payments.
+
+### Property Due Diligence
+
+Use approved document and assessment references where relevant.
+
+Do not approve property legal or technical status.
+
+### Data Ingestion
+
+Use approved data-ingestion contracts for lender and financial-product data.
+
+Do not create a parallel external-data ingestion platform.
+
+### Core
+
+Use established contracts for:
+
+- Verified principal
+- Authorization
+- Validation
+- Structured errors
+- Timestamps
+- Pagination
+- Idempotency
+- Audit interfaces
+
+If an integration is unavailable, define a module-local adapter and document the missing dependency. Do not simulate successful integration.
+
+## 22. Data Freshness and Product Lifecycle
+
+Implement explicit freshness and lifecycle controls.
+
+Support:
+
+- Last verified timestamp
+- Effective date
+- Expiry date
+- Last source observation
+- Source change detection
+- Product version history
+- Product suspension
+- Product discontinuation
+- Conflicting source observations
+- Stale-product warnings
+
+Requirements:
+
+- Define configurable freshness rules.
+- Do not claim a financing product is currently available based on an old source.
+- Distinguish a product's publication date from its verification date.
+- Preserve historical product information.
+- Avoid silently treating expired rates as current.
+- Flag stale data in comparison outputs.
+- Do not delete discontinued products when historical calculations reference them.
+- Make unavailable current information explicit.
+
+## 23. Calculation Methodology and Reproducibility
+
+Create versioned calculation methodologies.
+
+Each calculation record should include:
+
+- Calculation ID
+- Calculation type
+- Input values
+- Input provenance
+- Product version
+- Rate-model version
+- Fee-schedule version
+- Calculation methodology version
+- Calculation timestamp
+- Reporting currency
+- Assumptions
+- Exclusions
+- Result
+- Data-quality state
+
+Requirements:
+
+- Calculations must be deterministic for the same inputs and versions.
+- Preserve the inputs used for every published result.
+- Do not silently change historical outputs when formulas change.
+- Create a new methodology version for material formula changes.
+- Document rounding and precision.
+- Identify estimates and hypothetical assumptions.
+- Support replaying historical calculations.
+- Prevent duplicate calculation records on retry.
+- Do not claim a hypothetical output is an actual lender quote.
+
+## 24. Financing Reports
+
+Support versioned reports containing:
+
+- Selected financing products
+- Institution references
+- Product versions
+- Source verification dates
+- Financing assumptions
+- Interest-rate assumptions
+- Borrower contribution
+- Modeled installment
+- Total modeled repayment
+- Modeled interest cost
+- Known fees
+- Missing cost information
+- Eligibility-rule evaluation
+- Affordability scenario
+- Comparison methodology
+- Currency and jurisdiction
+- Data-quality warnings
+- Calculation methodology versions
+- Important limitations
+
+Requirements:
+
+- Preserve published report versions.
+- Distinguish draft from published reports.
+- Show unavailable inputs and excluded costs.
+- Distinguish indicative calculations from lender-confirmed terms.
+- Do not present the result as personalized financial advice.
+- Do not guarantee loan approval, repayment affordability, or savings.
+- Do not describe a comparison as exhaustive unless its coverage has been verified.
+
+## 25. Domain Events
+
+Define versioned module-local events such as:
+
+- `financing.institution.created`
+- `financing.institution.updated`
+- `financing.product.created`
+- `financing.product.updated`
+- `financing.product.versioned`
+- `financing.product.suspended`
+- `financing.product.discontinued`
+- `financing.product.source_observed`
+- `financing.product.verification_updated`
+- `financing.eligibility.evaluated`
+- `financing.calculation.completed`
+- `financing.scenario.created`
+- `financing.comparison.created`
+- `financing.application_reference.updated`
+- `financing.report.published`
+- `financing.report.superseded`
+
+Requirements:
+
+- Every event must have a stable event ID.
+- Include schema version.
+- Include event timestamp.
+- Include relevant entity references.
+- Avoid unnecessary personal or financial information.
+- Define idempotency behavior.
+- Use durable event publication through approved infrastructure where available.
+- Do not create a global event bus.
+- Do not modify shared event catalogs.
+- Document integration requirements for the integration lead.
+
+## 26. Persistence and Reliability
+
+Inspect the existing repository architecture and established persistence conventions.
+
+Implement durable persistence for:
+
+- Financing institutions
+- Financing products
+- Financing product versions
+- Eligibility rules
+- Rate models
+- Fee schedules
+- Source observations
+- Availability observations
+- Calculation records
+- Repayment schedules
+- Affordability scenarios
+- Financing comparisons
+- Early-repayment scenarios
+- Refinancing scenarios
+- Application reference metadata, if supported
+- Report versions
+- Methodology versions
+- Audit references
+
+Requirements:
+
+- Use the established persistence layer.
+- Do not introduce another database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamp conventions.
+- Use bounded reads and cursor pagination.
+- Implement idempotent mutations.
+- Handle concurrent product-version updates safely.
+- Preserve historical versions.
+- Avoid unbounded synchronous processing.
+- Use durable jobs for lengthy imports or report generation where available.
+- Do not assume a queue or scheduler is configured.
+- Do not directly write to other modules' collections.
+- Enforce authorization in backend code when using Admin SDK.
+
+## 27. Security and Authorization
+
+- Obtain identity through the established verified-principal contract.
+- Never trust client-supplied UIDs.
+- Restrict private financing scenarios to authorized users.
+- Protect user-entered income and obligation information.
+- Avoid storing unnecessary personal financial data.
+- Do not access bank accounts or credit reports without an explicitly authorized integration.
+- Do not expose one user's financial scenarios to another.
+- Verify access to organization-level reports.
+- Restrict financing-product administration.
+- Separate public product data from private applicant data.
+- Apply least-privilege access.
+- Preserve audit references for sensitive changes.
+- Respect established account export and deletion workflows.
+- Do not create another identity or financial-account system.
+
+## 28. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+### Institutions and Products
+
+- Create financing institution reference
+- Retrieve institution
+- Update institution metadata
+- Create financing product
+- Retrieve financing product
+- Update financing product through a new version
+- Discontinue financing product
+- Retrieve product history
+- Retrieve product freshness information
+- Retrieve financing product catalog
+
+### Eligibility and Requirements
+
+- Create eligibility-rule definition
+- Publish eligibility-rule version
+- Retrieve product eligibility rules
+- Evaluate published eligibility criteria
+- Retrieve evaluation explanation
+- Retrieve product document requirements
+- Retrieve requirement checklist status
+
+### Calculations
+
+- Calculate loan-to-value ratio
+- Calculate borrower contribution
+- Calculate indicative financing gap
+- Calculate repayment schedule
+- Calculate installment amount
+- Calculate total modeled repayment
+- Calculate total modeled interest
+- Calculate affordability scenario
+- Calculate early-repayment scenario
+- Calculate refinancing scenario
+
+### Comparison and Reports
+
+- Compare financing products
+- Retrieve financing comparison
+- Create versioned comparison snapshot
+- Generate financing report
+- Publish financing report
+- Retrieve report history
+- Supersede report version
+
+### Source and Application References
+
+- Register authorized source observation
+- Validate source observation
+- Record product availability observation
+- Retrieve source provenance
+- Create application reference metadata, where authorized
+- Update application reference status
+- Retrieve application reference history
+
+Requirements:
+
+- Validate all inputs.
+- Enforce permissions on every sensitive operation.
+- Use idempotency for retryable mutations.
+- Preserve source provenance and calculation methodology.
+- Return explicit unknown or unavailable states.
+- Do not return unsupported approval or eligibility claims.
+- Do not register global HTTP routes.
+
+Document route-registration, event-registration, and shared-schema requirements for the integration lead.
+
+## 29. Automated Testing
+
+Create tests covering:
+
+### Institution and Product Catalog
+
+- Institution creation
+- Product creation
+- Product versioning
+- Product discontinuation
+- Expired product handling
+- Unverified product handling
+- Duplicate source observations
+- Conflicting source records
+- Historical version preservation
+- Product freshness warnings
+
+### Eligibility
+
+- Published-rule evaluation
+- Missing eligibility information
+- Unmet documented requirements
+- Expired rules
+- Unsupported rule handling
+- Jurisdiction-specific rules
+- Distinction between rule match and lender approval
+- Prevention of invented criteria
+
+### Interest and Fees
+
+- Fixed-rate models
+- Variable-rate models
+- Promotional rate periods
+- Rate changes
+- Rate floors and ceilings
+- Fee applicability
+- Mandatory versus optional fees
+- Missing cost information
+- Annual percentage-rate terminology boundaries
+
+### Loan Calculations
+
+- Equal-payment amortization
+- Equal-principal amortization
+- Interest-only period
+- Zero-interest case
+- Rate change during repayment
+- Different payment frequencies
+- Leap-year dates
+- Currency precision
+- Rounding rules
+- Partial early repayment
+- Full early repayment
+- Refinancing calculation
+- Invalid and negative input handling
+
+### Affordability and Comparison
+
+- User-entered financial inputs
+- Missing income values
+- Excluded costs
+- Comparison using equivalent assumptions
+- Different currencies
+- Different repayment terms
+- Missing fee schedules
+- Stale product information
+- Comparison ranking with incomplete data
+- Hypothetical versus lender-confirmed distinction
+
+### Construction Financing
+
+- Product-specific conditions
+- Multi-stage financing references
+- Missing permit requirements
+- Development-project integration boundaries
+- Prevention of fabricated disbursement conditions
+
+### Source Reliability
+
+- Source provenance
+- Publication and effective dates
+- Verification state
+- Conflicting sources
+- Stale data
+- Historical rates
+- Unavailable external source handling
+
+### Persistence and Security
+
+- Idempotency
+- Retry safety
+- Concurrent product updates
+- Historical calculation reproducibility
+- Authorization
+- Financial-input privacy
+- Cross-user data isolation
+- Organization access
+- Pagination
+- Bounded queries
+- Persistence failures
+- Event deduplication
+- Report versioning
+- Account deletion integration
+
+Tests must verify actual formulas, versioning, financial classifications, provenance, authorization, persistence, and failure behavior. File-existence tests alone are insufficient.
+
+## 30. Engineering Restrictions
+
+- No fabricated banks or lenders.
+- No invented financing products.
+- No invented interest rates.
+- No fake product availability.
+- No fabricated eligibility criteria.
+- No unsupported creditworthiness assessments.
+- No loan approval decisions.
+- No guaranteed financing eligibility.
+- No guaranteed affordability claims.
+- No fabricated fees or insurance costs.
+- No invented government subsidies.
+- No fake lender application acknowledgments.
+- No bank-account access without explicit authorized integration.
+- No credit-bureau access without explicit authorization.
+- No loan origination.
+- No payment processing.
+- No financial-account management.
+- No legal or tax advice.
+- No duplicate property valuation system.
+- No duplicate property transaction system.
+- No direct modifications to other modules' records.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When an institution, product, rate, rule, source, or integration is unavailable, represent it as unavailable and document the exact dependency.
+
+Never simulate a lender quotation, application acknowledgment, financing approval, payment, or regulatory verification.
+
+## 31. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain financing institution and product ownership boundaries.
+6. Document product and interest-rate versioning.
+7. Document eligibility-rule evaluation and its limitations.
+8. Document all repayment formulas and rounding conventions.
+9. Document fee classifications and excluded costs.
+10. Document affordability and comparison assumptions.
+11. Document refinancing and early-repayment limitations.
+12. Document data-source provenance and freshness rules.
+13. Identify dependencies on Core, Valuation, Property Registry, Property Search, Property Transactions, Investment Intelligence, Market Intelligence, Development Projects, Property Due Diligence, Geography, and Data Ingestion.
+14. Identify unavailable integrations and unresolved contracts.
+15. Confirm that no shared files or other employees' files were modified.
+16. Commit only assigned files if explicitly authorized.
+17. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, explainable, multi-jurisdiction real-estate financing intelligence backend that compares documented financing products and calculates transparent hypothetical scenarios without pretending to be a lender, credit bureau, bank, or loan-approval authority.
