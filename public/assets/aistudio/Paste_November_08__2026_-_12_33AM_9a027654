@@ -1,0 +1,1264 @@
+# TASK: Build the Property Due Diligence & Inspection Intelligence Backend Module
+
+## 1. Git and Workspace Isolation
+
+- Work only on branch: `feature/backend-property-due-diligence`.
+- Never modify `main`.
+- Inspect the current branch, HEAD, working tree, and repository structure before editing.
+- Preserve all existing uncommitted changes.
+- Do not use `git add -A`.
+- Stage only files inside your assigned directory.
+- Do not push, merge, rebase, cherry-pick, or reset without explicit integration-lead authorization.
+- Never assume other employees' branches have already been merged.
+- Do not modify files owned by other employees.
+- If a shared contract is unavailable, define a module-local adapter interface and document the exact integration dependency.
+
+## 2. Exclusive Ownership
+
+Your exclusive directory:
+
+`server/modules/property-due-diligence/`
+
+You may create subdirectories for:
+
+- domain
+- application
+- infrastructure
+- contracts
+- schemas
+- repositories
+- services
+- assessments
+- inspection-projects
+- inspection-types
+- checklist-templates
+- checklist-items
+- findings
+- evidence
+- documents
+- document-reviews
+- technical-assessments
+- legal-document-checklists
+- financial-review
+- location-review
+- environmental-review
+- risk-register
+- remediation
+- reports
+- report-versions
+- approvals
+- read-models
+- tests
+
+Do not modify:
+
+- `server.ts`
+- global route catalogs
+- shared Core modules
+- authentication and authorization infrastructure
+- Firestore global rules or indexes
+- database blueprints
+- package manifests or lockfiles
+- Property Registry
+- Property Search
+- Bargains
+- Property Transactions
+- Property Management
+- Development Projects
+- Valuation
+- Geography
+- Service Providers
+- Appointments
+- Media
+- Trust & Safety
+- Notifications
+- Data Ingestion
+- Telemetry
+- user identity records
+- frontend files
+- other employees' modules
+
+Global route registration and shared-file modifications belong exclusively to the integration lead.
+
+## 3. Core Responsibilities
+
+Build a structured property due-diligence and assessment backend.
+
+Support:
+
+1. Pre-purchase property assessments.
+2. Pre-sale property assessments.
+3. Pre-rental property assessments.
+4. Pre-investment property assessments.
+5. Technical building inspections.
+6. Structural-condition observations.
+7. Electrical-system assessment records.
+8. Plumbing-system assessment records.
+9. Heating and cooling system assessment records.
+10. Roofing and waterproofing observations.
+11. Interior and exterior condition assessments.
+12. Building-maintenance observations.
+13. Legal-document checklist management.
+14. Ownership-document review references.
+15. Permit and regulatory-document checklist records.
+16. Property-document completeness assessment.
+17. Financial-document review references.
+18. Location and neighborhood due-diligence references.
+19. Environmental and access-related observations.
+20. Inspection findings and evidence.
+21. Defect severity classification.
+22. Remediation recommendations and follow-up status.
+23. Multi-specialist assessment workflows.
+24. Versioned due-diligence reports.
+25. Assessment history and audit records.
+
+The module manages structured assessments, findings, evidence references, review workflows, and reports.
+
+It does not issue legal opinions, certify ownership, replace licensed inspectors, approve building permits, or guarantee that a property is safe or legally transferable.
+
+## 4. Ownership Boundaries
+
+This module owns:
+
+- Due-diligence assessment records
+- Assessment scopes
+- Assessment workflows
+- Inspection checklist templates
+- Checklist responses
+- Technical observation records
+- Property condition findings
+- Document review records
+- Evidence references specific to assessments
+- Finding classifications
+- Finding severity labels
+- Reviewer notes
+- Remediation recommendation records
+- Assessment review history
+- Assessment approval workflow metadata
+- Due-diligence report versions
+- Assessment completeness indicators
+- Assessment-specific risk registers
+- Assessment audit records
+
+This module does NOT own:
+
+- Canonical property records
+- Legal ownership registries
+- Official title deeds
+- Property listings
+- Transaction records
+- Property valuations
+- Rental agreements
+- Property-management inspections and maintenance operations
+- Construction project execution records
+- Geographic hierarchy
+- Original media binaries
+- User authentication
+- Professional provider profiles
+- Appointment scheduling
+- Trust & Safety enforcement decisions
+- Government permit databases
+- Official regulatory decisions
+
+Use references to authoritative modules and external evidence sources. Never create competing records for entities owned elsewhere.
+
+## 5. Assessment Types
+
+Support configurable assessment categories.
+
+### Purchase Due Diligence
+
+- Property-condition review
+- Structural inspection
+- Building-system inspection
+- Legal-document checklist
+- Ownership-document review reference
+- Financial-document review
+- Location and neighborhood review
+- Outstanding-issues summary
+
+### Rental Due Diligence
+
+- Property condition
+- Existing damage documentation
+- Utility and building-system condition
+- Document completeness
+- Access and handover condition
+- Relevant rental-related document references
+
+### Sale Preparation
+
+- Property-condition assessment
+- Required-document checklist
+- Known defects
+- Maintenance history references
+- Outstanding remediation items
+- Report completeness
+
+### Investment Due Diligence
+
+- Physical condition
+- Operating-expense evidence
+- Rental-income evidence references
+- Vacancy and maintenance observations
+- Regulatory-document checklist
+- Geographic and environmental considerations
+
+### Technical Inspection
+
+- Structural observations
+- Electrical observations
+- Plumbing observations
+- HVAC observations
+- Roof and waterproofing observations
+- Interior and exterior condition
+- Safety-related observations
+
+Requirements:
+
+- Use stable assessment-type identifiers.
+- Support configurable assessment types.
+- Allow multiple assessment types for one property.
+- Distinguish assessment scope from the final report.
+- Do not imply that one assessment covers every possible legal, technical, or financial risk.
+- Preserve the exact scope agreed at assessment creation.
+
+## 6. Assessment Entity
+
+Create a due-diligence assessment entity supporting:
+
+- Assessment ID
+- Assessment type
+- Canonical property reference
+- Optional listing reference
+- Optional transaction reference
+- Requesting user reference
+- Requesting organization reference, where authorized
+- Assigned reviewer references
+- Assigned professional references
+- Assessment scope
+- Assessment objectives
+- Assessment status
+- Priority
+- Planned start date
+- Planned completion date
+- Actual completion date
+- Reporting currency, if financial review is included
+- Creation timestamp
+- Last update timestamp
+- Assessment version
+
+Possible states:
+
+- Draft
+- Requested
+- Awaiting assignment
+- Assigned
+- In progress
+- Awaiting evidence
+- Under review
+- Findings recorded
+- Awaiting corrections
+- Completed
+- Cancelled
+- Archived
+
+Requirements:
+
+- Validate every state transition.
+- Preserve lifecycle history.
+- Record the actor and timestamp for material state changes.
+- Distinguish an assessment request from an inspection performed.
+- Distinguish an assessment in progress from a completed report.
+- Prevent unauthorized completion.
+- Support incomplete assessments without inventing missing results.
+- Preserve historical versions.
+- Do not duplicate canonical property data.
+
+## 7. Assessment Scope and Workstreams
+
+Support multiple workstreams within one assessment.
+
+Examples:
+
+- Technical inspection
+- Structural review
+- Electrical review
+- Plumbing review
+- Mechanical-system review
+- Interior-condition review
+- Exterior-condition review
+- Legal-document checklist
+- Financial-document review
+- Geographic review
+- Environmental review
+- Regulatory-document checklist
+
+Each workstream should support:
+
+- Workstream ID
+- Assessment reference
+- Workstream type
+- Description
+- Assigned reviewer
+- Required checklist template
+- Workstream status
+- Start timestamp
+- Completion timestamp
+- Findings count
+- Evidence completeness state
+- Review outcome
+
+Requirements:
+
+- Allow different specialists to own different workstreams.
+- Do not allow one workstream to silently overwrite another.
+- Define completion requirements for each workstream.
+- Support partial completion.
+- Record unavailable review areas.
+- Distinguish not assessed from passed.
+- Avoid marking an assessment complete while mandatory workstreams remain incomplete.
+
+## 8. Checklist Template Engine
+
+Create configurable and versioned inspection checklist templates.
+
+Support:
+
+- Template ID
+- Template name
+- Assessment category
+- Version
+- Applicable property types
+- Applicable building categories
+- Checklist sections
+- Checklist items
+- Required versus optional items
+- Evidence requirements
+- Response types
+- Review instructions
+- Active status
+- Publication timestamp
+
+Example checklist sections:
+
+### Structural Condition
+
+- Visible cracks
+- Signs of settlement
+- Structural deformation
+- Column and beam observations
+- Visible moisture-related deterioration
+
+### Electrical Systems
+
+- Visible electrical-panel condition
+- Wiring observations
+- Grounding evidence
+- Protective-device observations
+- Known electrical deficiencies
+
+### Plumbing Systems
+
+- Visible leakage
+- Pipe condition
+- Water-pressure observations, if measured
+- Drainage condition
+- Moisture indicators
+
+### Building Envelope
+
+- Roof condition
+- Waterproofing observations
+- Exterior-wall condition
+- Window and door condition
+- Visible insulation defects
+
+### Interior Condition
+
+- Wall and ceiling condition
+- Flooring condition
+- Interior moisture
+- Visible defects
+- Finish quality observations
+
+### Documents
+
+- Ownership-document copy supplied
+- Identification of relevant registered records
+- Building permit document supplied
+- Completion certificate supplied, where applicable
+- Technical drawings supplied
+- Relevant financial or maintenance records supplied
+
+Requirements:
+
+- Templates must be versioned.
+- Existing assessments must retain the template version with which they were created.
+- New template versions must not silently alter historical assessments.
+- Support conditional checklist items.
+- Support not-applicable responses with a reason.
+- Support not-inspected responses with a reason.
+- Distinguish missing evidence from a negative finding.
+- Do not hardcode jurisdiction-specific legal requirements without verified authoritative sources.
+- Never describe a checklist as an official legal compliance certificate.
+
+## 9. Checklist Responses
+
+Each checklist response should support:
+
+- Response ID
+- Assessment reference
+- Workstream reference
+- Checklist template reference
+- Checklist item reference
+- Response value
+- Reviewer reference
+- Observation timestamp
+- Evidence references
+- Reviewer notes
+- Response classification
+- Review status
+
+Support response types such as:
+
+- Yes / No
+- Pass / Fail
+- Observed / Not observed
+- Numeric measurement
+- Text observation
+- Selected option
+- Not applicable
+- Not inspected
+- Evidence unavailable
+
+Requirements:
+
+- Store the original response.
+- Preserve response history.
+- Require reasons for significant negative or incomplete results where configured.
+- Do not interpret a missing response as a passed inspection.
+- Validate numeric units and ranges.
+- Distinguish measured values from subjective observations.
+- Support corrections with reviewer identity and timestamp.
+- Prevent unauthorized changes to reviewed responses.
+
+## 10. Property Condition Findings
+
+Build a structured findings system.
+
+Each finding should support:
+
+- Finding ID
+- Assessment reference
+- Workstream reference
+- Related checklist item, if applicable
+- Finding category
+- Finding title
+- Detailed description
+- Location within the property
+- Observed condition
+- Observation date
+- Reporting reviewer
+- Evidence references
+- Severity classification
+- Review state
+- Recommended next step
+- Remediation status
+- Creation timestamp
+- Update timestamp
+
+Suggested severity levels:
+
+- Informational
+- Minor
+- Moderate
+- Major
+- Critical
+- Undetermined
+
+Requirements:
+
+- Define severity criteria in versioned configuration.
+- Do not assign unsupported numerical risk scores.
+- Distinguish observed damage from suspected damage.
+- Distinguish a reviewer opinion from a verified technical defect.
+- Allow severity to remain undetermined.
+- Require evidence or an explicit evidence-unavailable explanation for significant findings.
+- Preserve finding history.
+- Support reassessment after remediation.
+- Never remove a historical finding merely because it was resolved.
+
+## 11. Evidence and Supporting Documents
+
+Create assessment-specific evidence records referencing the Media module.
+
+Evidence types may include:
+
+- Inspection photographs
+- Videos
+- Technical drawings
+- Building plans
+- Document scans
+- Maintenance records
+- Measurement reports
+- Specialist reports
+- Official document copies
+- Other supporting records
+
+Each evidence record should support:
+
+- Evidence ID
+- Assessment reference
+- Related workstream
+- Related finding, if applicable
+- Media reference
+- Evidence type
+- Source classification
+- Submitted-by reference
+- Capture or document date, when known
+- Submission timestamp
+- Description
+- Verification status
+- Privacy classification
+- Evidence review history
+
+Requirements:
+
+- Store media references, not duplicate binaries.
+- Distinguish evidence upload from evidence verification.
+- Distinguish a user-provided document from an independently verified document.
+- Preserve source and provenance.
+- Protect confidential legal and financial documents.
+- Prevent unauthorized evidence access.
+- Support evidence rejection with an explanation.
+- Do not silently replace evidence used in a published report.
+- Preserve the evidence version associated with every historical report.
+- Never claim a photograph proves something that cannot be established from the image alone.
+
+## 12. Legal and Ownership Document Review
+
+Create a document-checklist and review workflow.
+
+Support document categories such as:
+
+- Ownership-document copies
+- Title or registration references
+- Power-of-attorney copies
+- Building permit copies
+- Completion-certificate copies
+- Relevant court or administrative document references
+- Lease-document references
+- Co-ownership documentation
+- Other transaction-related documents
+
+Document review records should support:
+
+- Review ID
+- Assessment reference
+- Document category
+- Media reference
+- Submitted-by reference
+- Document date, if available
+- Issuing authority as stated on the document
+- Document identifier, if visible
+- Reviewer reference
+- Review status
+- Verification method
+- External verification reference, when available
+- Reviewer notes
+- Review timestamp
+
+Possible review states:
+
+- Not requested
+- Requested
+- Not supplied
+- Supplied
+- Under review
+- Information incomplete
+- Inconsistency identified
+- Independently verified
+- Verification unavailable
+- Rejected
+- Expired, where applicable
+
+Requirements:
+
+- Distinguish document submission from legal verification.
+- Distinguish a document copy from an authoritative registry record.
+- Never claim title or ownership verification without an actual authorized source.
+- Do not generate legal opinions.
+- Do not determine legal ownership.
+- Do not invent legal requirements or official document formats.
+- Do not impersonate a government registry.
+- Preserve the exact reviewer method and evidence.
+- Allow legal review to be marked unavailable when no qualified reviewer or authoritative source exists.
+- Keep private legal documents inaccessible to public users.
+
+## 13. Financial Due-Diligence Evidence
+
+Support structured review of financial records relevant to a property assessment.
+
+Potential records:
+
+- Reported rental income
+- Rental agreement references
+- Operating-expense records
+- Maintenance-cost records
+- Building charges
+- Utility-cost records
+- Insurance document references
+- Tax or fee document references
+- Transaction-cost evidence
+- Existing financing document references, where authorized
+
+Requirements:
+
+- Consume authoritative records through the relevant modules.
+- Distinguish reported figures from independently verified records.
+- Preserve original currency and reporting period.
+- Distinguish recurring expenses from one-time costs.
+- Distinguish contractual obligations from actual payments.
+- Do not fabricate income, expenses, or payment history.
+- Do not create a duplicate investment valuation engine.
+- Do not make lending or creditworthiness decisions.
+- Do not provide unsupported tax or legal conclusions.
+- Restrict access to sensitive financial documents.
+
+## 14. Geographic and Environmental Due Diligence
+
+Support structured observations and references relating to:
+
+- Property location
+- Accessibility
+- Road access
+- Nearby infrastructure
+- Neighborhood context
+- Public transport references
+- Environmental observations
+- Known exposure references, where authoritative data exists
+- Site access conditions
+- Relevant geographic limitations
+
+Requirements:
+
+- Use canonical geographic references from Geography.
+- Use Urban Intelligence and Data Ingestion contracts where available.
+- Distinguish official data from user observations.
+- Distinguish reported environmental issues from independently verified findings.
+- Preserve dataset source and publication date.
+- Do not create a duplicate geographic hierarchy.
+- Do not invent flood, earthquake, pollution, or other hazard classifications.
+- Do not claim a property is environmentally safe based solely on missing risk data.
+- Represent unavailable geographic or environmental evidence explicitly.
+
+## 15. Technical Measurements
+
+Support structured measurements where an authorized reviewer records them.
+
+Examples:
+
+- Room dimensions
+- Ceiling height
+- Moisture readings
+- Temperature observations
+- Visible crack measurements
+- Electrical measurements
+- Water-pressure readings
+- Other inspection-specific measurements
+
+Each measurement should support:
+
+- Measurement ID
+- Assessment reference
+- Finding or checklist reference
+- Measurement type
+- Value
+- Unit
+- Measurement date
+- Instrument reference, if supplied
+- Reviewer reference
+- Measurement method
+- Measurement conditions
+- Evidence reference
+- Notes
+
+Requirements:
+
+- Store original values and units.
+- Do not convert units without preserving the original.
+- Validate measurement data types.
+- Do not invent readings.
+- Do not infer instrument calibration.
+- Distinguish an instrument reading from a visual estimate.
+- Do not claim a measurement is certified unless its certification evidence exists.
+- Preserve corrections and measurement history.
+
+## 16. Risk Register and Finding Prioritization
+
+Build an assessment-specific risk register.
+
+Support:
+
+- Risk ID
+- Assessment reference
+- Related finding
+- Risk category
+- Risk description
+- Evidence references
+- Severity
+- Likelihood classification, when supported
+- Impact classification
+- Required follow-up
+- Risk owner
+- Review status
+- Resolution status
+- Last reviewed timestamp
+
+Potential risk categories:
+
+- Structural
+- Electrical
+- Plumbing
+- Fire and life safety
+- Moisture and water damage
+- Legal-document completeness
+- Financial-document uncertainty
+- Environmental
+- Access and location
+- Maintenance
+- Other documented risk
+
+Requirements:
+
+- Separate observed defects from possible future risks.
+- Define classification methodology.
+- Do not invent likelihood percentages.
+- Do not create arbitrary composite risk scores.
+- Distinguish missing information from a confirmed defect.
+- Preserve evidence references.
+- Allow risks to remain unresolved.
+- Do not automatically conclude that a property is safe because no findings were recorded.
+- Do not issue legal, engineering, or safety certification.
+
+## 17. Remediation and Follow-up Tracking
+
+Support tracking of actions recommended after an assessment.
+
+Each remediation item should support:
+
+- Remediation ID
+- Assessment reference
+- Related finding
+- Action description
+- Recommended responsible party reference
+- Priority
+- Due date, if agreed
+- Status
+- Completion evidence
+- Reviewer confirmation
+- Completion timestamp
+- Follow-up assessment reference
+
+Possible states:
+
+- Recommended
+- Accepted
+- Assigned
+- In progress
+- Awaiting evidence
+- Completed, awaiting review
+- Verified resolved
+- Rejected
+- Deferred
+- Cancelled
+
+Requirements:
+
+- Distinguish a recommended action from a legally mandated action.
+- Distinguish reported completion from reviewer-confirmed resolution.
+- Preserve original findings.
+- Support follow-up inspections.
+- Do not execute maintenance or construction work.
+- Do not create work orders in Property Management or Development Projects.
+- Use references to those modules where an action is assigned to them.
+- Do not claim that remediation succeeded without appropriate evidence.
+
+## 18. Multi-Reviewer Workflow
+
+Support multiple authorized reviewers.
+
+Potential roles:
+
+- Assessment coordinator
+- Technical inspector
+- Structural specialist
+- Electrical specialist
+- Mechanical specialist
+- Document reviewer
+- Financial reviewer
+- Environmental reviewer
+- Final report reviewer
+
+Requirements:
+
+- Define role-specific permissions.
+- Allow reviewers to own individual workstreams.
+- Preserve independent observations.
+- Support reviewer comments and corrections.
+- Prevent unauthorized approval of another reviewer's work.
+- Support conflicting professional opinions without silently overwriting either.
+- Record review disagreements.
+- Require an authorized resolution process for material conflicts.
+- Do not treat every reviewer as a licensed professional.
+- Do not claim professional qualifications without evidence from the Service Providers integration.
+
+## 19. Appointment Integration
+
+Use the Appointments module for authorized references to:
+
+- Inspection appointments
+- Property visits
+- Reviewer meetings
+- Follow-up inspections
+
+Requirements:
+
+- Do not create a parallel appointment scheduler.
+- Do not manage participant schedules.
+- Do not assume a planned inspection took place.
+- Distinguish an appointment record from a completed inspection.
+- Link actual findings to the relevant completed inspection or recorded observation.
+- Preserve appointment references.
+- Do not modify appointment lifecycle records.
+
+## 20. Service Provider Integration
+
+Use Service Providers contracts for:
+
+- Assigned technical inspectors
+- Specialist qualifications
+- Provider organizations
+- Service categories
+- Relevant service-area references
+
+Requirements:
+
+- Do not duplicate provider profiles.
+- Do not self-verify professional credentials.
+- Distinguish provider profile verification from the quality of an individual report.
+- Preserve the identity of the reviewer who submitted each finding.
+- Do not claim a reviewer has a professional license unless the authoritative contract confirms it.
+- Document missing credential data.
+
+## 21. Report Generation and Versioning
+
+Build versioned due-diligence reports.
+
+A report should include:
+
+- Report ID
+- Assessment reference
+- Report version
+- Property reference
+- Assessment scope
+- Workstreams included
+- Workstreams not completed
+- Checklist completion summary
+- Findings
+- Severity classifications
+- Supporting evidence references
+- Document review summary
+- Financial review summary, if applicable
+- Geographic review summary, if applicable
+- Outstanding uncertainties
+- Unresolved risks
+- Remediation recommendations
+- Reviewer identities and roles
+- Report generation timestamp
+- Data cutoff timestamp
+- Methodology and template versions
+- Report status
+
+Requirements:
+
+- Preserve every published report version.
+- Do not silently overwrite published reports.
+- Distinguish draft from reviewed and published reports.
+- Revisions must create a new report version.
+- Include unresolved and unavailable evidence explicitly.
+- Show the report's scope and limitations prominently.
+- Do not describe a report as a legal certificate, engineering certificate, title guarantee, or official inspection approval.
+- Do not imply that the report guarantees future property condition.
+- Preserve exact evidence references used in each report.
+- Support controlled report withdrawal or supersession with an audit record.
+
+## 22. Assessment Completeness and Quality Controls
+
+Create transparent quality checks.
+
+Possible indicators:
+
+- Required checklist completion
+- Missing evidence
+- Incomplete workstreams
+- Unreviewed documents
+- Unresolved findings
+- Unverified claims
+- Missing reviewer sign-off
+- Conflicting observations
+- Stale evidence
+- Incomplete property references
+
+Requirements:
+
+- Every quality indicator must have a documented rule.
+- Distinguish completeness from correctness.
+- Do not convert completeness into a safety score.
+- Do not treat an assessment as complete merely because all fields have values.
+- Distinguish a fully completed checklist from a fully verified assessment.
+- Preserve the quality-check version.
+- Make blockers and warnings explicit.
+- Allow assessment reports to indicate incomplete scope.
+
+## 23. AI-Assisted Review Boundary
+
+Prepare optional module-local interfaces for future AI-assisted document or finding classification.
+
+Possible uses:
+
+- Suggesting document categories
+- Extracting candidate document metadata
+- Suggesting checklist mappings
+- Identifying inconsistent text fields
+- Summarizing reviewer-authored findings
+- Detecting potentially missing evidence
+- Drafting a report summary for human review
+
+Requirements:
+
+- Do not assume an AI service is configured.
+- Do not introduce a mandatory AI dependency.
+- Treat all model output as untrusted suggestions.
+- Never treat AI output as legal verification.
+- Never treat AI output as an engineering certification.
+- Never automatically approve documents based on AI classification.
+- Require human confirmation for material findings.
+- Preserve model and prompt version metadata when AI assistance is actually used.
+- Record whether a report statement was authored by a human or suggested by a model.
+- Do not invent AI confidence values.
+- Do not expose private documents to external AI providers without explicit authorization and an approved privacy contract.
+- Do not allow AI-generated statements to overwrite verified facts.
+
+## 24. Domain Events
+
+Define versioned module-local events such as:
+
+- `due_diligence.assessment.created`
+- `due_diligence.assessment.assigned`
+- `due_diligence.assessment.started`
+- `due_diligence.workstream.completed`
+- `due_diligence.checklist.response.recorded`
+- `due_diligence.finding.created`
+- `due_diligence.finding.updated`
+- `due_diligence.evidence.submitted`
+- `due_diligence.document.reviewed`
+- `due_diligence.risk.recorded`
+- `due_diligence.remediation.recommended`
+- `due_diligence.remediation.completed`
+- `due_diligence.assessment.review_requested`
+- `due_diligence.report.published`
+- `due_diligence.report.superseded`
+- `due_diligence.assessment.completed`
+- `due_diligence.assessment.cancelled`
+
+Requirements:
+
+- Every event must have a stable event ID.
+- Include schema version.
+- Include event timestamp.
+- Include relevant entity references.
+- Avoid unnecessary personal information.
+- Define idempotency behavior.
+- Use durable event publication through approved infrastructure where available.
+- Do not create a global event bus.
+- Do not modify shared event catalogs.
+- Document integration requirements for the integration lead.
+
+## 25. Persistence and Reliability
+
+Inspect the existing repository architecture and established persistence conventions.
+
+Implement durable persistence for:
+
+- Assessments
+- Assessment scopes
+- Workstreams
+- Checklist templates and versions
+- Checklist responses
+- Findings
+- Evidence references
+- Document review records
+- Measurement records
+- Risk-register entries
+- Remediation records
+- Reviewer assignments
+- Review history
+- Report versions
+- Assessment quality checks
+- Audit references
+
+Requirements:
+
+- Use the established persistence layer.
+- Do not introduce another database.
+- Do not use RAM Maps as permanent storage.
+- Do not use local JSON files as permanent storage.
+- Use stable identifiers.
+- Use consistent timestamp conventions.
+- Use bounded reads and cursor pagination.
+- Implement idempotent mutations.
+- Handle concurrent reviewer updates safely.
+- Preserve material history.
+- Avoid unbounded synchronous processing.
+- Use durable jobs for lengthy report generation where available.
+- Do not assume a queue or scheduler is configured.
+- Do not store media binaries in this module.
+- Do not directly write to another module's collections.
+- Enforce authorization in backend code when using Admin SDK.
+
+## 26. Security and Authorization
+
+- Obtain identity through the established verified-principal contract.
+- Never trust client-supplied UIDs.
+- Verify authority to request an assessment.
+- Verify property access permissions.
+- Verify reviewer assignment and workstream permissions.
+- Restrict access to legal and financial evidence.
+- Protect private inspection photographs and property details.
+- Restrict report publication and withdrawal.
+- Prevent cross-organization data leakage.
+- Apply least-privilege access.
+- Preserve audit references for sensitive actions.
+- Support authorized account export and deletion contracts.
+- Do not create another identity system.
+- Do not expose confidential findings to public listing users without explicit authorization.
+- Do not allow a provider to approve their own independent verification status where separation of duties is required.
+
+## 27. Module-Local API Contracts
+
+Define validated service interfaces for:
+
+- Create due-diligence assessment
+- Retrieve assessment
+- Update assessment scope
+- Assign reviewer
+- Reassign reviewer
+- Create workstream
+- Update workstream status
+- Retrieve assessment workstreams
+- Create checklist template
+- Publish checklist template version
+- Retrieve applicable checklist templates
+- Record checklist response
+- Correct checklist response
+- Retrieve checklist completion summary
+- Create property finding
+- Update finding
+- Retrieve findings
+- Classify finding severity
+- Add evidence reference
+- Review submitted evidence
+- Submit document for review
+- Record document-review result
+- Retrieve document-review history
+- Record technical measurement
+- Create risk-register entry
+- Update risk status
+- Create remediation recommendation
+- Record remediation progress
+- Record remediation completion
+- Verify remediation outcome
+- Request assessment review
+- Record reviewer comments
+- Resolve review disagreement
+- Generate assessment report
+- Publish report version
+- Retrieve published report
+- Supersede report version
+- Retrieve assessment completeness indicators
+- Retrieve assessment audit history
+
+Requirements:
+
+- Validate all inputs.
+- Enforce permissions on every sensitive operation.
+- Use idempotency for retryable operations.
+- Preserve reviewer and evidence provenance.
+- Do not expose private documents through public responses.
+- Do not return unsupported legal or technical conclusions.
+- Do not register global HTTP routes.
+
+Document route-registration, event-registration, and shared-schema requirements for the integration lead.
+
+## 28. Automated Testing
+
+Create tests covering:
+
+### Assessment Lifecycle
+
+- Assessment creation
+- Assessment scope updates
+- Workstream assignment
+- Workstream completion
+- Partial assessment
+- Assessment cancellation
+- Invalid state transitions
+- Assessment completion requirements
+- Historical version preservation
+
+### Checklist System
+
+- Template creation
+- Template versioning
+- Historical template preservation
+- Required and optional items
+- Conditional checklist items
+- Not-applicable responses
+- Not-inspected responses
+- Missing evidence
+- Response correction
+- Concurrent response updates
+
+### Findings and Risk
+
+- Finding creation
+- Severity classification
+- Undetermined severity
+- Evidence requirements
+- Suspected versus observed defect
+- Finding history
+- Risk-register creation
+- Missing-data handling
+- Unsupported score prevention
+
+### Evidence and Documents
+
+- Evidence submission
+- Media-reference validation
+- Evidence privacy
+- Evidence rejection
+- Document-review status transitions
+- Submitted versus verified distinction
+- Verification-unavailable handling
+- Document history preservation
+- Unauthorized document access
+
+### Financial and Geographic Reviews
+
+- Original currency preservation
+- Reporting-period validation
+- Actual versus estimated values
+- Missing financial data
+- Geographic reference validation
+- Stale dataset indicators
+- User-reported versus authoritative source distinction
+
+### Measurements and Remediation
+
+- Measurement validation
+- Unit preservation
+- Instrument metadata
+- Remediation creation
+- Remediation completion
+- Reported versus verified resolution
+- Follow-up inspection references
+
+### Review and Reporting
+
+- Reviewer permissions
+- Multiple independent workstreams
+- Conflicting reviewer observations
+- Unauthorized approval prevention
+- Draft report generation
+- Published report versioning
+- Report supersession
+- Incomplete assessment disclosure
+- Evidence-reference reproducibility
+- Quality-control calculations
+
+### Reliability and Security
+
+- Persistence failures
+- Idempotency
+- Retry safety
+- Concurrent reviewer updates
+- Pagination
+- Bounded queries
+- Cross-organization isolation
+- Private evidence protection
+- Event deduplication
+- Audit history
+- Account deletion integration
+
+Tests must validate actual assessment workflows, evidence provenance, authorization, persistence, report versioning, and failure behavior. File-existence tests alone are insufficient.
+
+## 29. Engineering Restrictions
+
+- No fabricated inspections.
+- No invented property defects.
+- No fabricated technical measurements.
+- No fake evidence.
+- No unsupported ownership verification.
+- No invented official document requirements.
+- No legal opinions.
+- No engineering certifications.
+- No false safety guarantees.
+- No fabricated environmental classifications.
+- No unsupported financial findings.
+- No automatic AI-based verification.
+- No fake reviewer qualifications.
+- No duplicate property registry.
+- No duplicate appointment system.
+- No duplicate property-management inspection workflow.
+- No duplicate construction-project management.
+- No direct media storage.
+- No direct notification delivery.
+- No payment processing.
+- No direct modifications to other modules' records.
+- No frontend changes.
+- No global route registration.
+- No shared-file modifications.
+- No package changes.
+- No unrelated refactoring.
+
+When evidence, official verification, a professional reviewer, or an integration is unavailable, represent it as unavailable and document the exact dependency.
+
+Never simulate a successful inspection, legal verification, technical certification, remediation, or regulatory approval.
+
+## 30. Completion and Handoff
+
+When finished:
+
+1. Run module-specific automated tests.
+2. Run applicable type checks.
+3. Report actual test results, including failures.
+4. List every created and modified file.
+5. Explain assessment, workstream, and reviewer ownership boundaries.
+6. Document checklist template versioning.
+7. Document finding and severity classifications.
+8. Document evidence provenance and privacy rules.
+9. Document legal-document review limitations.
+10. Document measurement and remediation workflows.
+11. Document report versioning and publication rules.
+12. Document incomplete-evidence and assessment-quality behavior.
+13. Identify dependencies on Core, Property Registry, Property Search, Property Transactions, Media, Geography, Urban Intelligence, Data Ingestion, Appointments, Service Providers, Property Management, Valuation, and Trust & Safety.
+14. Identify unavailable integrations and unresolved contracts.
+15. Confirm that no shared files or other employees' files were modified.
+16. Commit only assigned files if explicitly authorized.
+17. Do not merge into main.
+
+Deliver a concise technical handoff report to the integration lead.
+
+The objective is a durable, evidence-based property due-diligence backend that records inspections, documents, findings, uncertainties, and remediation history without pretending to be a legal authority, government registry, certification body, or replacement for qualified professionals.

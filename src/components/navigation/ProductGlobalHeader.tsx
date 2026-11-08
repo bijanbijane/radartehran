@@ -19,7 +19,6 @@ export interface ProductGlobalHeaderProps {
   onOpenReverseBudget?: () => void;
   onOpenSearch?: () => void;
   onOpenSecurityAdmin?: () => void;
-  onOpenAdminModal?: () => void;
   searchQuery?: string;
 }
 
@@ -42,7 +41,6 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   onOpenReverseBudget,
   onOpenSearch,
   onOpenSecurityAdmin,
-  onOpenAdminModal,
   searchQuery,
 }) => {
   const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
@@ -140,23 +138,6 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               </button>
             );
           })}
-          {onOpenAdminModal && (
-            <button
-              type="button"
-              data-testid="global-nav-admin-monitoring"
-              aria-current={primaryView === 'admin' ? 'page' : undefined}
-              onClick={onOpenAdminModal}
-              title={isEn ? 'Admin & Monitoring Panel (Temporary review mode)' : 'پنل مدیریت و مانیتورینگ (بررسی موقت بدون رمز)'}
-              className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer shadow-2xs focus-visible:outline-2 focus-visible:outline-amber-600 ${
-                primaryView === 'admin'
-                  ? 'text-white bg-amber-600 dark:bg-amber-500 border border-amber-600 dark:border-amber-400'
-                  : 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-300/80 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/60'
-              }`}
-            >
-              <Shield className={`w-3.5 h-3.5 stroke-[2.2] ${primaryView === 'admin' ? 'text-white' : 'text-amber-600 dark:text-amber-400'}`} />
-              <span>{isEn ? 'Admin & Monitoring' : 'مدیریت و مانیتورینگ'}</span>
-            </button>
-          )}
         </nav>
 
         {/* Global Actions */}
@@ -211,20 +192,6 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             >
               <Shield className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span className="hidden xl:inline">{isEn ? 'Security' : 'امنیت'}</span>
-            </button>
-          )}
-
-          {onOpenAdminModal && (
-            <button
-              type="button"
-              onClick={onOpenAdminModal}
-              aria-label={isEn ? 'Admin & Monitoring' : 'مدیریت و مانیتورینگ'}
-              title={isEn ? 'Admin & Monitoring Panel (Temporary review mode)' : 'پنل مدیریت و مانیتورینگ (بررسی موقت بدون رمز)'}
-              data-testid="global-header-admin-monitoring-mobile-btn"
-              className="lg:hidden flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-300/80 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition cursor-pointer whitespace-nowrap"
-            >
-              <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="hidden sm:inline">{isEn ? 'Admin' : 'مدیریت'}</span>
             </button>
           )}
 

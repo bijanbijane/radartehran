@@ -102,7 +102,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             ) : (
               <button type="button" onClick={p.onGoogleSignIn} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span></button>
             )}
-            <button type="button" onClick={p.onOpenAdminModal} className="px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer hover:bg-amber-100"><Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /><span>{isEn ? 'Admin & Monitoring (No Password)' : 'پنل مدیریت و مانیتورینگ (بررسی بدون رمز)'}</span></button>
+            <button type="button" onClick={p.onOpenAdminModal} className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><Shield className="w-3.5 h-3.5 text-indigo-600" /><span>{isEn ? 'Admin Console' : 'پنل مدیریت رادار'}</span></button>
           </div>
         </div>
         {confirmDeleteOpen && p.currentUser && (

@@ -193,7 +193,7 @@ export function getRadarTopBarCopy(locale: RadarLocale): RadarTopBarCopy {
   return TOP_BAR_COPY[locale] || TOP_BAR_COPY.fa;
 }
 
-export type PrimaryViewId = 'home' | 'discover' | 'intelligence' | 'tools' | 'userspace' | 'map' | 'admin';
+export type PrimaryViewId = 'home' | 'discover' | 'intelligence' | 'tools' | 'userspace' | 'map';
 
 export interface RadarGlobalNavCopy {
   home: string; discover: string; intelligence: string; tools: string; userspace: string; map: string; searchPlaceholder: string;

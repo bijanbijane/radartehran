@@ -1,0 +1,8 @@
+# Robots.txt for Tehran Housing & Neighborhood Radar
+# Canonical: https://radartehran.ir
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://radartehran.ir/sitemap.xml

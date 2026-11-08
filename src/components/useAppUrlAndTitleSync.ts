@@ -82,7 +82,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       const params = new URLSearchParams(search);
       const viewParam = params.get('view')?.trim();
       if (setPrimaryView) {
-        if (viewParam && ['map', 'discover', 'intelligence', 'tools', 'home', 'userspace', 'admin'].includes(viewParam)) {
+        if (viewParam && ['map', 'discover', 'intelligence', 'tools', 'home', 'userspace'].includes(viewParam)) {
           setPrimaryView(viewParam);
         } else if (flyMap) {
           setPrimaryView('map');
