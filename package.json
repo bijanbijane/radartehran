@@ -44,6 +44,7 @@
     "cf:build": "CLOUDFLARE_VITE=1 vite build --mode cloudflare",
     "cf:preview": "CLOUDFLARE_VITE=1 vite preview --mode cloudflare",
     "cf:config:check": "wrangler deploy --dry-run",
+    "cf:staging:preflight": "wrangler deploy --env staging --dry-run",
     "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:assess && npm run test:storage && npm run test:rules:static && npm run test:insights",
     "verify": "npm run typecheck && npm run test:security && npm run build && npm run arch:check"
   },

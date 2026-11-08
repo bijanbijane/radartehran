@@ -17,6 +17,9 @@
       "/robots.txt"
     ]
   },
+  "observability": {
+    "enabled": true
+  },
   "vars": {
     "APP_ENV": "development",
     "APP_URL": "http://localhost:3000"
@@ -35,6 +38,12 @@
         "APP_ENV": "staging",
         "APP_URL": "https://staging.radartehran.example.com"
       }
+      // PENDING_PROVISIONING in Phase 10-B (Upon explicit user authorization):
+      // - d1_databases: [{ binding: "DB", database_name: "radartehran-staging-db", database_id: "<TO_BE_PROVISIONED>" }]
+      // - r2_buckets: [{ binding: "MEDIA_BUCKET", bucket_name: "radartehran-staging-media" }]
+      // - kv_namespaces: [{ binding: "CACHE_KV", id: "<TO_BE_PROVISIONED>" }]
+      // - queues.producers: [{ queue: "radar-background-jobs-staging", binding: "JOBS_QUEUE" }]
+      // - queues.consumers: [{ queue: "radar-background-jobs-staging", max_batch_size: 10, max_batch_timeout: 30 }]
     },
     "production": {
       "name": "radartehran",
