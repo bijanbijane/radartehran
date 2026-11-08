@@ -1,7 +1,7 @@
 /** @file src/components/RadarBottomNav.tsx — Mobile Navigation Bar (< 120 lines) [RULE-01] */
 import React from 'react';
 import {
-  Compass, Home, TrendingUp, Wrench, User, Map as MapIcon,
+  Compass, Home, TrendingUp, Wrench, User, Map as MapIcon, Shield,
 } from 'lucide-react';
 import { useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { PrimaryViewId, getRadarGlobalNavCopy, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
@@ -19,6 +19,7 @@ export interface RadarBottomNavProps {
   onOpenSmartSuggest: () => void;
   onOpenCompare: () => void;
   onOpenSubmitProperty: () => void;
+  onOpenAdminModal?: () => void;
 }
 
 export function RadarBottomNav(p: RadarBottomNavProps) {
@@ -51,7 +52,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
     <nav
       aria-label={isEn ? 'Mobile Primary Navigation' : 'نوار پیمایش موبایل'}
       data-currency-sample={currencyBadge}
-      className="lg:hidden fixed bottom-0 inset-x-0 h-14 pb-[env(safe-area-inset-bottom,0px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 grid grid-cols-6 z-40 text-[10px] text-slate-600 dark:text-slate-400 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]"
+      className={`lg:hidden fixed bottom-0 inset-x-0 h-14 pb-[env(safe-area-inset-bottom,0px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 ${p.onOpenAdminModal ? 'grid-cols-7' : 'grid-cols-6'} grid z-40 text-[10px] text-slate-600 dark:text-slate-400 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]`}
     >
       {navItems.map((item) => {
         const isActive = activeView === item.id;
@@ -76,6 +77,31 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
           </button>
         );
       })}
+      {p.onOpenAdminModal && (
+        <button
+          type="button"
+          aria-pressed={activeView === 'admin'}
+          aria-current={activeView === 'admin' ? 'page' : undefined}
+          onClick={() => {
+            p.setMobileSheetOpen(false);
+            p.setMobileFilterOpen(false);
+            p.setShowToolsPopover(false);
+            p.onOpenAdminModal?.();
+          }}
+          className={`relative flex flex-col items-center justify-center gap-1 font-bold transition active:scale-95 cursor-pointer ${
+            activeView === 'admin'
+              ? 'text-amber-700 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/40'
+              : 'text-amber-600 dark:text-amber-400 hover:text-amber-700'
+          }`}
+          title={isEn ? 'Admin & Monitoring' : 'مدیریت و مانیتورینگ'}
+        >
+          {activeView === 'admin' && (
+            <span className="absolute top-0 inset-x-2 h-0.5 rounded-b-full bg-amber-600 dark:bg-amber-400" aria-hidden="true" />
+          )}
+          <Shield className="w-4 h-4 stroke-[2]" />
+          <span className="truncate max-w-[52px]">{isEn ? 'Admin' : 'مدیریت'}</span>
+        </button>
+      )}
     </nav>
   );
 }

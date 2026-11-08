@@ -1,0 +1,3392 @@
+TEHRAN RADAR
+
+MASTER ADMINISTRATION, COMMAND, OBSERVABILITY AND MONITORING CONTROL CENTER
+
+PART 3 OF 4
+
+COMMAND DOMAINS, ADMINISTRATIVE GOVERNANCE, SECURITY CONTROL, DATA GOVERNANCE, AI GOVERNANCE, FINANCIAL CONTROL, ENGINEERING OPERATIONS AND ORGANIZATIONAL ACCOUNTABILITY
+
+⸻
+
+1. MISSION OF PART 3
+
+Design the complete administrative command structure and operational governance model for Tehran Radar.
+
+The objective is to create a unified administrative control center through which authorized personnel can understand, supervise, coordinate, investigate, and govern the platform.
+
+The administration system must provide:
+
+* Clear organizational responsibility.
+* Reliable operational visibility.
+* Role-based information access.
+* Controlled administrative actions.
+* Separation of duties.
+* Auditable decision-making.
+* Data governance.
+* Security governance.
+* AI governance.
+* Engineering and release governance.
+* Financial oversight.
+* Risk management.
+* Incident coordination.
+* Strategic decision support.
+
+The system must not become a collection of unrelated dashboards.
+
+All command domains must operate using shared definitions, common identity and access controls, consistent audit records, unified incident references, and compatible data contracts.
+
+The design must distinguish three different things:
+
+1. SOFTWARE CAPABILITIES: functions that the platform actually implements.
+2. ORGANIZATIONAL CONTROLS: responsibilities, policies, approvals, and procedures.
+3. FUTURE PROPOSALS: capabilities that do not yet exist and require implementation.
+
+Do not present an organizational policy as an implemented software control.
+
+Do not present a dashboard as proof that the underlying process is effective.
+
+Do not assume that assigning a person a role means the organization has sufficient capacity to perform that role.
+
+⸻
+
+2. THE TEN COMMAND DOMAINS
+
+Design ten logical command domains.
+
+These domains define responsibility, navigation, and decision authority.
+
+They do not automatically require ten separate backend services, databases, deployment units, or independent applications.
+
+The actual architecture must remain consistent with the verified repository and infrastructure.
+
+COMMAND 1 — EXECUTIVE COMMAND
+
+2.1 Mission
+
+Provide an accurate, concise, evidence-based overview of the entire organization and platform.
+
+The executive command must answer:
+
+* Is Tehran Radar operating normally?
+* Which major services are degraded?
+* Which incidents require executive attention?
+* Which risks threaten the platform?
+* Is data quality improving or deteriorating?
+* Are users successfully completing important workflows?
+* Is the platform financially sustainable?
+* Are engineering and operational resources sufficient?
+* Which decisions are overdue?
+* Which assumptions are no longer supported by evidence?
+
+This command is not intended to replace technical dashboards.
+
+It must summarize the situation while preserving direct access to supporting evidence.
+
+2.2 Executive Overview
+
+Design an executive homepage with the following sections.
+
+A. Platform Status
+
+Display:
+
+* Overall operational condition.
+* Critical service availability.
+* Active critical incidents.
+* Major degraded services.
+* Recent security incidents.
+* Database and data-integrity warnings.
+* Major external provider failures.
+* Monitoring coverage.
+* Last successful system-wide verification.
+
+Never calculate a single overall health score without exposing its definition and component values.
+
+A critical unresolved data-integrity incident must not disappear because all other services are healthy.
+
+B. Product and User Condition
+
+Display:
+
+* Active users.
+* New registrations.
+* Returning users.
+* Successful user workflows.
+* Failed workflows.
+* Search activity.
+* Listing creation.
+* Valuation completion.
+* Report usage.
+* User complaints.
+* Unresolved support cases.
+* Product adoption trends.
+
+Separate raw activity from meaningful outcomes.
+
+Do not treat page views or registrations as proof of product-market fit.
+
+C. Data Trust Condition
+
+Display:
+
+* Data coverage.
+* Data freshness.
+* Verification rate.
+* Conflict rate.
+* Duplicate rate.
+* Missing-data rate.
+* Source concentration.
+* Publication restrictions.
+* Data correction backlog.
+* Critical data-quality incidents.
+
+D. Financial Condition
+
+Display:
+
+* Actual revenue.
+* Recognized revenue, where applicable.
+* Collected payments.
+* Refunds.
+* Operating costs.
+* Infrastructure costs.
+* AI costs.
+* Vendor costs.
+* Cost per active user.
+* Cost per successful workflow.
+* Revenue concentration.
+* Budget deviations.
+* Financial risks.
+
+Clearly distinguish actual values, estimates, forecasts, and unavailable information.
+
+E. Organizational Condition
+
+Display:
+
+* Critical responsibilities without an owner.
+* Single-person operational dependencies.
+* Overdue decisions.
+* Unresolved cross-command conflicts.
+* Critical vacancies.
+* Overdue reviews.
+* Unverified recovery procedures.
+* Governance exceptions.
+
+2.3 Executive Decision Register
+
+Create a structured register for significant decisions.
+
+Each decision must contain:
+
+* Decision ID.
+* Title.
+* Description.
+* Decision category.
+* Date created.
+* Responsible owner.
+* Decision authority.
+* Supporting evidence.
+* Alternatives considered.
+* Rejected alternatives.
+* Expected benefits.
+* Known risks.
+* Financial implications.
+* Reversibility.
+* Approval status.
+* Implementation status.
+* Review date.
+* Actual outcome.
+
+Distinguish:
+
+* Proposed.
+* Under review.
+* Approved.
+* Rejected.
+* Deferred.
+* Implemented.
+* Superseded.
+* Reversed.
+
+A decision must not be treated as completed merely because it was approved.
+
+2.4 Executive Risk View
+
+Display risks by:
+
+* Severity.
+* Probability.
+* Exposure.
+* Time sensitivity.
+* Financial impact.
+* User impact.
+* Data impact.
+* Security impact.
+* Reversibility.
+* Mitigation status.
+* Responsible owner.
+
+Allow executives to inspect why a risk received its classification.
+
+Do not use unexplained red, yellow, and green labels as substitutes for risk analysis.
+
+2.5 Executive Command Restrictions
+
+Executives must not automatically receive unrestricted access to every raw database record, credential, private user document, or security secret.
+
+Executive visibility and unrestricted technical access are different permissions.
+
+High-level authority does not eliminate security boundaries.
+
+⸻
+
+COMMAND 2 — OPERATIONS COMMAND
+
+2.6 Mission
+
+Manage the operational condition of the platform.
+
+This command coordinates service health, incidents, dependencies, infrastructure, scheduled tasks, queues, provider outages, and operational recovery.
+
+2.7 Service Registry
+
+Create a central service registry based on verified infrastructure.
+
+Each service record must contain:
+
+* Service ID.
+* Service name.
+* Description.
+* Business purpose.
+* Technical purpose.
+* Environment.
+* Deployment location.
+* Owner.
+* Backup owner.
+* Dependencies.
+* Criticality.
+* Data classification.
+* Health status.
+* Monitoring coverage.
+* Recovery procedure.
+* RTO.
+* RPO.
+* Current version.
+* Last deployment.
+* Last successful health verification.
+
+Services without a verified owner must be visibly marked.
+
+2.8 Service Dependency Management
+
+Provide an interactive dependency graph.
+
+For each service, show:
+
+* Upstream dependencies.
+* Downstream consumers.
+* Critical data dependencies.
+* External providers.
+* Shared infrastructure.
+* Failure propagation paths.
+* Available fallback mechanisms.
+* Single points of failure.
+
+Support impact analysis:
+
+“If this service fails, which modules, workflows, users, and cities may be affected?”
+
+The graph must distinguish verified dependencies from inferred dependencies.
+
+2.9 Operations Dashboard
+
+Display:
+
+* Service status.
+* Active incidents.
+* Recent deployments.
+* Resource pressure.
+* Database condition.
+* Queue backlog.
+* Provider status.
+* Scheduled job status.
+* Backup status.
+* Recovery-test status.
+* Current maintenance windows.
+* Operational warnings.
+
+2.10 Incident Management
+
+Implement or propose a unified incident lifecycle.
+
+Suggested states:
+
+* DETECTED.
+* TRIAGED.
+* ACKNOWLEDGED.
+* INVESTIGATING.
+* CONTAINING.
+* MITIGATING.
+* RECOVERING.
+* MONITORING.
+* RESOLVED.
+* CLOSED.
+* REOPENED.
+
+Each incident must have:
+
+* Incident ID.
+* Severity.
+* Detection time.
+* Start time.
+* Affected services.
+* Affected modules.
+* Affected geographic areas.
+* User impact.
+* Business impact.
+* Security classification.
+* Incident commander.
+* Technical owner.
+* Communication owner.
+* Evidence references.
+* Timeline.
+* Actions.
+* Approvals.
+* Recovery status.
+* Post-incident review.
+
+Do not allow incident closure without documented resolution evidence.
+
+2.11 Incident Command
+
+Define roles:
+
+* Incident Commander.
+* Technical Lead.
+* Operations Lead.
+* Security Lead.
+* Data Integrity Lead.
+* Communications Lead.
+* Business Impact Owner.
+* Recovery Owner.
+
+One person may hold multiple roles in a small organization, but conflicting responsibilities must be identified.
+
+For critical incidents, define who has authority to:
+
+* Declare an incident.
+* Escalate severity.
+* Disable a feature.
+* Stop a deployment.
+* Suspend a data publication.
+* Revoke a credential.
+* Initiate a recovery procedure.
+* Communicate externally.
+
+2.12 Scheduled Operations
+
+Monitor:
+
+* Scheduled jobs.
+* Data ingestion.
+* Reconciliation jobs.
+* Backups.
+* Exports.
+* Report generation.
+* Index rebuilding.
+* Data cleanup.
+* Retention processes.
+* Notification dispatch.
+* Recovery verification.
+
+For each job, display:
+
+* Owner.
+* Schedule.
+* Last execution.
+* Last successful execution.
+* Duration.
+* Result.
+* Retry count.
+* Failure history.
+* Dependencies.
+* Next scheduled execution.
+
+Do not allow an administrator to trigger a production job without checking its impact, authorization, and duplicate-execution behavior.
+
+2.13 Operational Runbooks
+
+Create a runbook registry.
+
+Every critical runbook must include:
+
+* Purpose.
+* Trigger condition.
+* Preconditions.
+* Required permissions.
+* Required approvals.
+* Exact procedure.
+* Expected outcome.
+* Verification steps.
+* Rollback or recovery procedure.
+* Known hazards.
+* Responsible owner.
+* Last test date.
+
+A runbook that has never been tested must be labeled UNVERIFIED.
+
+⸻
+
+COMMAND 3 — DATA INTELLIGENCE COMMAND
+
+2.14 Mission
+
+Govern the quality, provenance, integrity, lifecycle, analytical reliability, and publication of Tehran Radar’s data.
+
+Data Intelligence must be treated as a central organizational function, not merely a collection of database statistics.
+
+2.15 Data Asset Registry
+
+Create a registry of major data assets.
+
+Examples include:
+
+* Properties.
+* Buildings.
+* Units.
+* Land parcels.
+* Neighborhoods.
+* Listings.
+* Transactions.
+* Users.
+* Organizations.
+* Professional credentials.
+* Documents.
+* Sources.
+* Market indicators.
+* Valuation results.
+* Research datasets.
+* Geographic boundaries.
+* Historical records.
+
+For each data asset, record:
+
+* Asset ID.
+* Name.
+* Definition.
+* Owner.
+* Source systems.
+* Storage location.
+* Data classification.
+* Retention policy.
+* Access policy.
+* Quality requirements.
+* Dependencies.
+* Published representations.
+* Derived datasets.
+
+2.16 Data Provenance
+
+For every important data field, preserve:
+
+* Original source.
+* Source identity.
+* Acquisition method.
+* Observation time.
+* Event time.
+* Registration time.
+* Verification time.
+* Transformation history.
+* Confidence.
+* Evidence references.
+* Rights and usage restrictions.
+
+Distinguish original observations from transformed and inferred values.
+
+A value without sufficient provenance must not be presented as verified.
+
+2.17 Data Quality Command Center
+
+Display:
+
+* Completeness.
+* Validity.
+* Consistency.
+* Freshness.
+* Uniqueness.
+* Accuracy evidence.
+* Cross-source agreement.
+* Geographic coverage.
+* Temporal coverage.
+* Verification backlog.
+* Conflicting records.
+* Rejected records.
+* Unresolved records.
+
+Provide filters by:
+
+* Data entity.
+* Field.
+* Source.
+* City.
+* Neighborhood.
+* Time range.
+* Verification state.
+* Data owner.
+* Severity.
+
+2.18 Data Conflict Resolution
+
+Create a formal conflict-resolution workflow.
+
+When two or more sources disagree:
+
+1. Preserve each source claim.
+2. Record observation and registration times.
+3. Evaluate source reliability.
+4. Check source independence.
+5. Check the rights to use each source.
+6. Compare evidence.
+7. Determine whether human review is required.
+8. Record the selected interpretation.
+9. Preserve rejected alternatives.
+10. Record the reason for the decision.
+11. Propagate corrections to dependent outputs.
+12. Verify that outdated representations are no longer published.
+
+Do not silently overwrite conflicting data.
+
+Do not assume that several websites repeating the same information constitute several independent sources.
+
+2.19 Bitemporal Data Governance
+
+Support the distinction between:
+
+* Valid Time: when the information was true in the real world.
+* Transaction Time: when the platform recorded the information.
+
+For important historical data, support questions such as:
+
+“What did Tehran Radar know about this property on a particular date?”
+
+And:
+
+“What do we currently believe was true about this property at that earlier date?”
+
+Do not claim historical reconstruction is possible unless the data model actually preserves the required history.
+
+2.20 Data Lineage
+
+Build a lineage graph connecting:
+
+* Raw source.
+* Ingestion event.
+* Standardized record.
+* Entity resolution.
+* Verified entity.
+* Analytical dataset.
+* Model input.
+* Published indicator.
+* Valuation result.
+* Report.
+* API response.
+
+When an upstream record changes, identify all affected downstream artifacts.
+
+2.21 Data Correction and Retraction
+
+Implement a controlled workflow for:
+
+* Incorrect property information.
+* Incorrect listing status.
+* Incorrect geographic assignment.
+* Invalid source attribution.
+* Incorrect market indicator.
+* Incorrect valuation input.
+* Incorrect report.
+* Unauthorized data exposure.
+
+Each correction must record:
+
+* Original value.
+* Corrected value.
+* Reason.
+* Evidence.
+* Requester.
+* Reviewer.
+* Approval.
+* Timestamp.
+* Affected outputs.
+* Propagation status.
+* Verification result.
+
+Support retraction and publication suspension.
+
+Do not assume that deleting the source record automatically corrects every analytical output.
+
+2.22 Publication Governance
+
+Create publication states:
+
+* DRAFT.
+* UNDER_REVIEW.
+* APPROVED.
+* PUBLISHED.
+* CORRECTED.
+* SUPERSEDED.
+* SUSPENDED.
+* RETRACTED.
+* EXPIRED.
+
+For every published analytical result, preserve:
+
+* Data version.
+* Model version.
+* Methodology.
+* Time period.
+* Geographic scope.
+* Sample size.
+* Source composition.
+* Limitations.
+* Uncertainty.
+* Publication date.
+* Responsible reviewer.
+
+2.23 Data Freshness and Expiration
+
+Define different expiration rules for different information types.
+
+Examples:
+
+* Listing availability.
+* Asking price.
+* Contact details.
+* Professional credentials.
+* Property characteristics.
+* Neighborhood statistics.
+* Market indicators.
+* External provider information.
+
+Do not apply one universal freshness threshold to all data.
+
+A listing that was accurate six months ago may now be misleading.
+
+A historical building attribute may remain useful for years.
+
+2.24 Data Rights and Usage Control
+
+Record separate permissions for:
+
+* Acquisition.
+* Storage.
+* Processing.
+* Internal analysis.
+* Public display.
+* Commercial use.
+* Redistribution.
+* Export.
+* Retention.
+* Derived-data creation.
+
+A source being technically accessible does not automatically authorize its commercial reuse.
+
+Flag data assets whose legal or contractual rights are unknown.
+
+2.25 Data Intelligence Restrictions
+
+Data Intelligence personnel must not have unrestricted access to every user’s private documents merely because they manage data quality.
+
+Apply field-level and purpose-based access where appropriate.
+
+Sensitive data must remain separated from analytical datasets unless a documented, authorized use requires otherwise.
+
+⸻
+
+COMMAND 4 — SECURITY COMMAND
+
+2.26 Mission
+
+Provide unified security governance across identity, authorization, infrastructure, application behavior, data, AI, administrative activity, and incident response.
+
+Security must be enforced across all command domains.
+
+It must not be a separate dashboard that can be bypassed by other modules.
+
+2.27 Five Security Domains
+
+Organize Security Command into five operational areas.
+
+A. Identity and Access
+
+Manage:
+
+* User identities.
+* Administrative identities.
+* Employee accounts.
+* Organizational accounts.
+* Service accounts.
+* API identities.
+* Roles.
+* Permissions.
+* Sessions.
+* Authentication policies.
+* Multi-factor authentication.
+* Credential rotation.
+* Access reviews.
+* Account suspension.
+* Account revocation.
+
+B. Threat and Attack Intelligence
+
+Monitor:
+
+* Suspicious login activity.
+* Credential abuse.
+* Automated attacks.
+* Rate-limit violations.
+* Enumeration attempts.
+* Unauthorized API access.
+* Privilege escalation.
+* Suspicious administrative actions.
+* Malicious file submissions.
+* SSRF indicators.
+* Injection attempts.
+* Prompt injection indicators.
+* Abnormal data extraction.
+
+Do not label every unusual event as a confirmed attack.
+
+C. Data and Secret Protection
+
+Manage:
+
+* Secret inventory.
+* Encryption requirements.
+* Key rotation.
+* Token handling.
+* Data classification.
+* Data exposure risks.
+* Sensitive log detection.
+* File access policies.
+* Retention and deletion controls.
+* Backup protection.
+* Redaction.
+
+Never display complete secrets in administrative screens.
+
+D. Secure Engineering and AI Governance
+
+Monitor:
+
+* Dependency vulnerabilities.
+* Security test results.
+* Code review status.
+* Build integrity.
+* Deployment permissions.
+* API security.
+* AI-generated code review requirements.
+* Prompt injection protections.
+* Model output restrictions.
+* Tool execution policies.
+* Secure configuration.
+
+E. Security Operations and Incident Response
+
+Manage:
+
+* Security alerts.
+* Investigation cases.
+* Incident classification.
+* Evidence preservation.
+* Containment.
+* Credential revocation.
+* Recovery.
+* Post-incident review.
+* Notification requirements.
+* Security exceptions.
+
+2.28 Mandatory Security Policy Enforcement Layer
+
+Design a shared Security Policy Enforcement Layer used by every administrative action and protected business operation.
+
+It must evaluate:
+
+* Authenticated identity.
+* Role.
+* Permission.
+* Resource ownership.
+* Tenant boundary.
+* Data classification.
+* Requested action.
+* Resource state.
+* Contextual restrictions.
+* Required approvals.
+* Time limitations.
+* Emergency exceptions.
+* Audit requirements.
+
+The enforcement mechanism must exist in trusted backend boundaries.
+
+A hidden or disabled frontend button is not authorization.
+
+A client-side role check is not sufficient security.
+
+Every sensitive operation must be authorized server-side.
+
+2.29 RBAC and ABAC
+
+Support Role-Based Access Control and, where justified, Attribute-Based Access Control.
+
+Potential authorization attributes include:
+
+* User role.
+* Organization.
+* Resource owner.
+* Resource tenant.
+* Data sensitivity.
+* Geographic scope.
+* Operation type.
+* Incident state.
+* Approval state.
+* Time restrictions.
+
+Do not create thousands of unnecessary permissions.
+
+Use a manageable permission model with clear inheritance and explicit deny behavior.
+
+2.30 Administrative Identity Separation
+
+Distinguish:
+
+* Personal user identity.
+* Employee identity.
+* Administrator identity.
+* Organization identity.
+* Service identity.
+* Emergency access identity.
+
+Do not use shared administrator accounts.
+
+Every human administrative action must be attributable to an individual identity.
+
+Service accounts must have explicit owners and limited scopes.
+
+2.31 Privileged Access Management
+
+Implement or propose:
+
+* Just-in-time access.
+* Time-limited privileges.
+* Approval-based privilege elevation.
+* Session expiration.
+* Emergency access.
+* Access review.
+* Automatic privilege revocation.
+* Privileged action logging.
+
+High-risk operations should require additional approval.
+
+Examples:
+
+* Changing access-control policies.
+* Deleting important records.
+* Changing secret configurations.
+* Modifying security controls.
+* Exporting sensitive datasets.
+* Changing data publication rules.
+* Altering valuation methodology.
+* Modifying audit retention.
+* Disabling monitoring.
+
+2.32 Separation of Duties
+
+For critical operations, distinguish:
+
+* Requester.
+* Reviewer.
+* Approver.
+* Executor.
+* Independent verifier.
+
+One person must not automatically perform every stage of a high-impact operation.
+
+Where staffing is insufficient, document the compensating control.
+
+Do not pretend that two-person approval exists if the system permits the same person to approve their own request.
+
+2.33 Audit Integrity
+
+The audit system must record:
+
+* Actor.
+* Action.
+* Resource.
+* Previous state.
+* New state.
+* Timestamp.
+* Request ID.
+* Reason.
+* Approval.
+* Execution result.
+* Source interface.
+* Relevant policy decision.
+
+Audit records must be protected against unauthorized modification and deletion.
+
+Administrators must not be able to erase evidence of their own actions without a separate, independently controlled process.
+
+2.34 Security Incident Response
+
+Support:
+
+* Detection.
+* Triage.
+* Investigation.
+* Evidence preservation.
+* Containment.
+* Eradication.
+* Recovery.
+* Notification.
+* Post-incident review.
+
+Every security incident must have an accountable owner.
+
+Security incident closure requires evidence and verification.
+
+⸻
+
+COMMAND 5 — PRODUCT AND USER COMMAND
+
+2.35 Mission
+
+Govern the quality of the product experience, user workflows, accessibility, feedback, support, and professional ecosystem.
+
+This command must understand what users can actually accomplish.
+
+2.36 User Overview
+
+Display privacy-safe aggregated information about:
+
+* Registration.
+* Activation.
+* Returning usage.
+* Search activity.
+* Listing creation.
+* Valuation usage.
+* Report access.
+* Professional tools.
+* Support requests.
+* Complaints.
+* User satisfaction.
+* Feature adoption.
+
+Do not expose private user content to ordinary product managers.
+
+2.37 User Lifecycle
+
+Define stages such as:
+
+* Visitor.
+* Registered.
+* Verified.
+* Activated.
+* Active.
+* Dormant.
+* Restricted.
+* Suspended.
+* Deleted or anonymized, where applicable.
+
+Each state must have a precise definition.
+
+Do not invent user status based on vague activity assumptions.
+
+2.38 Feature Management
+
+Create a feature registry containing:
+
+* Feature ID.
+* Feature name.
+* Business purpose.
+* Owner.
+* Status.
+* Release date.
+* User groups.
+* Dependencies.
+* Operational cost.
+* Adoption.
+* Reliability.
+* Known issues.
+* Privacy implications.
+* Current experiment.
+* Retirement plan.
+
+Support:
+
+* Feature flags.
+* Limited rollout.
+* Feature suspension.
+* Deprecation.
+* Retirement.
+
+A feature flag must not become an ungoverned permanent configuration system.
+
+2.39 Product Quality
+
+Monitor:
+
+* Workflow completion.
+* User-reported failures.
+* Search relevance.
+* Listing submission failures.
+* Valuation abandonment.
+* Report generation failures.
+* Mobile usability.
+* Accessibility issues.
+* Performance.
+* Support resolution time.
+
+Separate measured behavior from subjective user feedback.
+
+2.40 Support and Complaint Management
+
+Provide:
+
+* Support case registry.
+* Complaint classification.
+* Priority.
+* Assigned owner.
+* Response deadline.
+* Evidence.
+* Communication history.
+* Resolution.
+* Appeal.
+* Escalation.
+* Recurrence analysis.
+
+Restrict access to sensitive complaint details.
+
+Do not expose a user’s private communications to unrelated employees.
+
+2.41 Professional Verification
+
+Support a transparent professional verification lifecycle.
+
+Possible states:
+
+* NOT_SUBMITTED.
+* SUBMITTED.
+* UNDER_REVIEW.
+* NEEDS_MORE_INFORMATION.
+* VERIFIED.
+* REJECTED.
+* SUSPENDED.
+* EXPIRED.
+* REVOKED.
+
+Distinguish:
+
+* Identity verification.
+* License verification.
+* Organization verification.
+* Experience claims.
+* Platform performance history.
+
+Payment must never automatically create a professional trust mark.
+
+A paid subscription is not evidence of competence or legal authorization.
+
+2.42 User Rights and Appeals
+
+Provide workflows for:
+
+* Data access requests.
+* Correction requests.
+* Deletion requests.
+* Privacy complaints.
+* Professional verification appeals.
+* Listing disputes.
+* Data accuracy disputes.
+* Account restrictions.
+* Content moderation appeals.
+
+Every request must have a clear status, responsible owner, and resolution record.
+
+⸻
+
+COMMAND 6 — ARTIFICIAL INTELLIGENCE COMMAND
+
+2.43 Mission
+
+Govern all AI models, agents, prompts, evaluations, automated workflows, costs, safety restrictions, and human review processes.
+
+AI must remain an accountable component of the platform.
+
+It must not become an invisible authority that can silently change data, permissions, or business rules.
+
+2.44 AI Asset Registry
+
+Register:
+
+* AI provider.
+* Model.
+* Version.
+* Purpose.
+* Owning module.
+* Prompt version.
+* Tool permissions.
+* Input data classes.
+* Output data classes.
+* Cost model.
+* Evaluation method.
+* Safety requirements.
+* Human review requirement.
+* Fallback behavior.
+* Responsible owner.
+
+2.45 Prompt Registry
+
+For each production prompt, record:
+
+* Prompt ID.
+* Version.
+* Purpose.
+* Owner.
+* Creation date.
+* Approval status.
+* Input schema.
+* Output schema.
+* Model compatibility.
+* Safety rules.
+* Evaluation results.
+* Known limitations.
+* Rollback version.
+
+Do not silently replace a production prompt.
+
+Prompt changes must be versioned and evaluated.
+
+2.46 Model Evaluation
+
+Define evaluation datasets and criteria for:
+
+* Persian text extraction.
+* Property classification.
+* Address normalization.
+* Duplicate detection.
+* Property matching.
+* Data conflict identification.
+* Market report generation.
+* Valuation assistance.
+* Customer support.
+* Incident summarization.
+
+For each evaluation, record:
+
+* Dataset version.
+* Test date.
+* Model version.
+* Prompt version.
+* Evaluation criteria.
+* Sample size.
+* Results.
+* Failure categories.
+* Human review.
+* Known limitations.
+
+Do not evaluate a model only on examples used during prompt development.
+
+2.47 AI Output Governance
+
+Classify outputs as:
+
+* Informational.
+* Suggested.
+* Derived.
+* Decision-supporting.
+* High-impact.
+* Action-triggering.
+
+Require stronger controls as impact increases.
+
+AI must not independently:
+
+* Confirm legal ownership.
+* Declare a person guilty of misconduct.
+* Issue definitive legal judgments.
+* Publish high-impact market claims without validation.
+* Delete important historical evidence.
+* Change security permissions.
+* Execute irreversible financial operations.
+* Alter audit records.
+* Approve its own outputs.
+
+2.48 Human Review
+
+Define when human review is mandatory.
+
+Examples:
+
+* Conflicting property ownership claims.
+* High-impact valuation outputs.
+* Significant market reports.
+* Professional credential decisions.
+* Suspicious activity decisions.
+* Sensitive data publication.
+* Legal or financial consequences.
+
+Record:
+
+* AI recommendation.
+* Reviewer.
+* Review time.
+* Accepted or rejected result.
+* Reason.
+* Final decision.
+
+Do not treat human review as meaningful if reviewers cannot inspect the evidence.
+
+2.49 AI Safety
+
+Monitor:
+
+* Prompt injection.
+* Tool misuse.
+* Data leakage.
+* Unauthorized action proposals.
+* Invalid output structures.
+* Unsupported factual claims.
+* Unsafe recommendations.
+* Excessive retries.
+* Provider fallback failures.
+* Model behavior drift.
+
+Treat external content, uploaded files, listing descriptions, and third-party documents as untrusted inputs.
+
+They must never override system-level policies or grant additional tool permissions.
+
+2.50 AI Circuit Breakers
+
+Provide controlled mechanisms to:
+
+* Disable a model.
+* Disable a prompt version.
+* Suspend a tool.
+* Disable one AI-powered feature.
+* Switch to a verified fallback.
+* Require manual processing.
+* Restrict usage by budget or quota.
+
+Every circuit-breaker action must be authorized and audited.
+
+A global AI shutdown must not unnecessarily disable unrelated non-AI platform functions.
+
+2.51 AI Cost Control
+
+Display:
+
+* Daily spending.
+* Monthly spending.
+* Spending by provider.
+* Spending by model.
+* Spending by module.
+* Spending by workflow.
+* Cost per successful operation.
+* Retry-related cost.
+* Budget consumption.
+* Forecast.
+* Cost anomalies.
+
+Support limits by:
+
+* Provider.
+* Model.
+* User class.
+* Organization.
+* Feature.
+* Time period.
+
+A budget limit must have a defined response when reached.
+
+⸻
+
+COMMAND 7 — ENGINEERING AND RELEASE COMMAND
+
+2.52 Mission
+
+Govern software changes, source-code quality, repository structure, testing, deployment, migrations, dependencies, and technical debt.
+
+The purpose is to make the platform safely changeable by multiple developers and AI coding agents.
+
+2.53 Repository Registry
+
+Inventory:
+
+* Repositories.
+* Branches.
+* Protected branches.
+* Main branches.
+* Release branches.
+* Active pull requests.
+* Build workflows.
+* Test workflows.
+* Deployment workflows.
+* Package manifests.
+* Dependency lockfiles.
+* Infrastructure configuration.
+* Environment configuration references.
+
+Do not assume the repository has a particular structure until verified.
+
+2.54 Developer and Agent Registry
+
+If multiple employees or AI agents contribute, register:
+
+* Contributor ID.
+* Human or AI classification.
+* Repository access.
+* Assigned scope.
+* Branch.
+* Active task.
+* Permissions.
+* Last activity.
+* Review responsibility.
+* Credential status.
+
+AI agents must not receive unrestricted repository or production access by default.
+
+2.55 Mandatory Git Workflow
+
+The control center must reflect this working model:
+
+1. No direct work on the protected main branch.
+2. Contributor obtains the latest approved main branch.
+3. Contributor creates a dedicated feature branch.
+4. Contributor works only within the assigned scope.
+5. Contributor runs relevant tests.
+6. Contributor records changed, added, moved, and deleted files.
+7. Contributor commits changes.
+8. Contributor pushes to the dedicated branch.
+9. Contributor opens a pull request.
+10. Independent review takes place.
+11. Required checks pass.
+12. Conflicts and integration risks are resolved.
+13. Authorized merge occurs.
+14. Post-merge verification takes place.
+
+Pushing a branch is not approval.
+
+Opening a pull request is not approval.
+
+Passing tests does not automatically establish that a change is safe.
+
+2.56 Pull Request Governance
+
+For every PR, display:
+
+* PR ID.
+* Repository.
+* Author.
+* Reviewer.
+* Branch.
+* Target branch.
+* Changed files.
+* Scope.
+* Test status.
+* Security checks.
+* Dependency changes.
+* Migration changes.
+* API contract changes.
+* Risk classification.
+* Review comments.
+* Approval status.
+* Merge status.
+
+Identify PRs that:
+
+* Change unrelated modules.
+* Modify shared contracts.
+* Include unreviewed migrations.
+* Change security policies.
+* Introduce new dependencies.
+* Modify critical data flows.
+* Bypass required tests.
+
+2.57 Architecture Governance
+
+Maintain an Architecture Decision Record registry.
+
+Each ADR must contain:
+
+* Decision ID.
+* Context.
+* Problem.
+* Options.
+* Selected approach.
+* Rejected alternatives.
+* Consequences.
+* Dependencies.
+* Risks.
+* Reversibility.
+* Approval.
+* Review date.
+
+Identify architectural decisions that are outdated or contradicted by the current implementation.
+
+2.58 API Contract Registry
+
+Track:
+
+* API endpoint.
+* Version.
+* Request schema.
+* Response schema.
+* Authentication requirements.
+* Authorization requirements.
+* Consumers.
+* Deprecation status.
+* Compatibility policy.
+* Change history.
+
+Require compatibility checks where appropriate.
+
+Do not allow a frontend or backend module to silently change a shared contract.
+
+2.59 Database Migration Governance
+
+For each migration, record:
+
+* Migration ID.
+* Target database.
+* Purpose.
+* Schema changes.
+* Data transformation.
+* Compatibility.
+* Expected duration.
+* Locking risk.
+* Backup requirement.
+* Rollback strategy.
+* Verification query.
+* Approval.
+* Execution record.
+
+For active systems, consider expand-and-contract migration patterns.
+
+Do not assume that every migration can be safely rolled back.
+
+2.60 Testing Governance
+
+Track:
+
+* Unit tests.
+* Integration tests.
+* API tests.
+* Security tests.
+* Contract tests.
+* Browser tests.
+* End-to-end tests.
+* Performance tests.
+* Migration tests.
+* Recovery tests.
+* Accessibility tests.
+
+Display:
+
+* Test count.
+* Pass count.
+* Fail count.
+* Skipped tests.
+* Flaky tests.
+* Coverage limitations.
+* Last successful run.
+* Associated commit.
+* Environment.
+
+Do not use code coverage percentage as the only measure of software quality.
+
+2.61 Release Management
+
+Define release stages:
+
+* DEVELOPMENT.
+* INTERNAL_TESTING.
+* STAGING.
+* LIMITED_ROLLOUT.
+* CANARY.
+* PRODUCTION.
+* ROLLBACK.
+* RETIRED.
+
+For every release, record:
+
+* Release ID.
+* Version.
+* Commit.
+* Included PRs.
+* Migrations.
+* Feature flags.
+* Dependencies.
+* Test evidence.
+* Security status.
+* Deployment owner.
+* Approval.
+* Deployment time.
+* Verification result.
+* Rollback reference.
+
+2.62 Progressive Delivery
+
+Support, where justified:
+
+* Internal testing.
+* Limited user rollout.
+* Canary deployment.
+* Geographic rollout.
+* Feature flags.
+* Automatic stop conditions.
+* Controlled rollback.
+
+A rollout must have predefined success and failure criteria.
+
+Do not expose new features to all users merely because deployment completed.
+
+2.63 Software Supply Chain
+
+Monitor:
+
+* Dependency vulnerabilities.
+* Package integrity.
+* Lockfile changes.
+* Unmaintained packages.
+* License restrictions.
+* Build provenance.
+* Secret exposure.
+* Unexpected dependency additions.
+* Compromised package indicators.
+
+Do not automatically upgrade dependencies in production without compatibility and regression testing.
+
+2.64 Technical Debt Registry
+
+Track:
+
+* Known defects.
+* Duplicate implementations.
+* Oversized modules.
+* Circular dependencies.
+* Unclear ownership.
+* Inconsistent data models.
+* Unused code.
+* Legacy integrations.
+* Security exceptions.
+* Missing tests.
+* Temporary workarounds.
+
+Every significant technical-debt item must have:
+
+* Owner.
+* Risk.
+* Impact.
+* Priority.
+* Proposed resolution.
+* Cost.
+* Review date.
+
+Do not treat every refactoring opportunity as equally important.
+
+⸻
+
+COMMAND 8 — FINANCIAL COMMAND
+
+2.65 Mission
+
+Provide reliable financial visibility into the cost, revenue, profitability, vendor dependency, and economic sustainability of Tehran Radar.
+
+2.66 Financial Data Separation
+
+Clearly distinguish:
+
+* Actual financial records.
+* Estimated costs.
+* Forecasts.
+* Budget allocations.
+* Pending transactions.
+* Confirmed payments.
+* Refunds.
+* Accounting adjustments.
+
+Do not present a forecast as actual cash flow.
+
+Do not treat an initiated payment as collected revenue.
+
+2.67 Cost Registry
+
+Track cost categories:
+
+* Compute.
+* Database.
+* Storage.
+* Network.
+* CDN.
+* AI.
+* Search providers.
+* Maps.
+* Geocoding.
+* Authentication.
+* Email.
+* SMS.
+* Payment processing.
+* Monitoring.
+* Logging.
+* Backups.
+* Security.
+* Development tools.
+* Human operations.
+* Support.
+* Data acquisition.
+* Legal and compliance.
+
+For each cost, record:
+
+* Provider.
+* Service.
+* Billing period.
+* Currency.
+* Actual amount.
+* Estimated amount.
+* Usage quantity.
+* Pricing basis.
+* Owner.
+* Cost center.
+* Source of evidence.
+* Confidence.
+
+2.68 Cost Attribution
+
+Where technically possible, attribute costs to:
+
+* Module.
+* Feature.
+* Workflow.
+* Environment.
+* Organization.
+* User class.
+* Provider.
+* Geographic scope.
+
+Shared infrastructure costs must be allocated using documented methods.
+
+Do not present arbitrary cost allocation as measured usage.
+
+2.69 Unit Economics
+
+Calculate, where data permits:
+
+* Cost per active user.
+* Cost per successful search.
+* Cost per valuation.
+* Cost per published listing.
+* Cost per generated report.
+* Cost per verified professional.
+* Cost per successful transaction workflow.
+* Cost per AI-assisted operation.
+
+Distinguish direct cost from allocated overhead.
+
+2.70 Revenue Management
+
+Monitor:
+
+* Gross revenue.
+* Net revenue.
+* Collected payments.
+* Pending payments.
+* Refunds.
+* Subscription revenue.
+* Enterprise revenue.
+* Report revenue.
+* Service revenue.
+* Advertising revenue, if implemented.
+* Outstanding receivables, where applicable.
+
+Only show revenue streams that actually exist.
+
+Mark proposed business models as future opportunities.
+
+2.71 Financial Concentration Risk
+
+Measure:
+
+* Revenue by customer.
+* Revenue by customer segment.
+* Revenue by product.
+* Revenue by provider dependency.
+* Largest-customer concentration.
+* Largest-provider concentration.
+* Recurring revenue share.
+* Customer churn.
+* Revenue volatility.
+
+Identify excessive dependence on one customer, provider, or revenue stream.
+
+2.72 Budget Controls
+
+Support:
+
+* Budget creation.
+* Budget approval.
+* Spending limits.
+* Forecast comparison.
+* Budget alerts.
+* Exception requests.
+* Cost anomaly investigation.
+* Cost reduction proposals.
+
+Budget changes must be audited.
+
+Do not allow a service owner to silently increase their own approved budget.
+
+2.73 Vendor Governance
+
+Create a vendor registry with:
+
+* Vendor.
+* Service.
+* Contract.
+* Pricing model.
+* Renewal date.
+* Data access.
+* Data location.
+* Criticality.
+* SLA.
+* Outage history.
+* Exit strategy.
+* Replacement options.
+* Cost trend.
+* Responsible owner.
+
+Identify vendors whose failure could interrupt critical workflows.
+
+2.74 Financial Restrictions
+
+Financial Command must not have unrestricted access to user credentials or private documents.
+
+Financial records and operational telemetry must be joined only through authorized, purpose-specific identifiers.
+
+⸻
+
+COMMAND 9 — RISK AND CONTINUITY COMMAND
+
+2.75 Mission
+
+Manage operational, technical, financial, security, data, organizational, legal, and strategic risks.
+
+This command must help the organization understand what can fail, how severe the consequences would be, and whether recovery is realistic.
+
+2.76 Risk Register
+
+Each risk must contain:
+
+* Risk ID.
+* Title.
+* Description.
+* Category.
+* Cause.
+* Potential event.
+* Consequence.
+* Probability.
+* Severity.
+* Exposure.
+* Detectability.
+* Time sensitivity.
+* Affected services.
+* Affected data.
+* Affected users.
+* Owner.
+* Mitigation.
+* Residual risk.
+* Review date.
+* Evidence.
+* Status.
+
+Separate inherent risk from residual risk after mitigation.
+
+2.77 Risk Categories
+
+Include:
+
+* Security.
+* Privacy.
+* Data integrity.
+* Data rights.
+* Infrastructure.
+* Availability.
+* Performance.
+* Financial.
+* Vendor.
+* Legal.
+* Product.
+* Market.
+* Reputation.
+* Organizational.
+* Human dependency.
+* AI.
+* Strategic.
+
+2.78 Business Impact Analysis
+
+For every critical service, identify:
+
+* Business purpose.
+* Criticality.
+* Maximum tolerable disruption.
+* RTO.
+* RPO.
+* Dependencies.
+* Required staff.
+* Required providers.
+* Recovery procedure.
+* Data recovery requirements.
+* User communication requirements.
+
+Do not invent RTO and RPO values.
+
+Propose initial values for review and validate them against business requirements and actual recovery capability.
+
+2.79 Backup and Recovery Governance
+
+Monitor:
+
+* Backup configuration.
+* Backup execution.
+* Backup age.
+* Backup integrity.
+* Backup access control.
+* Encryption.
+* Geographic separation, where applicable.
+* Retention.
+* Restore tests.
+* Recovery duration.
+* Recovery gaps.
+
+Distinguish backup completion from successful restoration.
+
+2.80 Disaster Recovery
+
+Maintain recovery plans for:
+
+* Database failure.
+* Object storage failure.
+* Application deployment failure.
+* Credential compromise.
+* Provider outage.
+* Data corruption.
+* Regional outage.
+* Ransomware or destructive attack.
+* Critical employee departure.
+* Loss of administrative access.
+
+Every recovery plan must be tested.
+
+A written recovery plan without a successful test must be labeled UNVERIFIED.
+
+2.81 Organizational Continuity
+
+Track:
+
+* Critical roles.
+* Role owners.
+* Backup owners.
+* Single-person dependencies.
+* Required knowledge.
+* Runbook availability.
+* Access succession.
+* Training.
+* Last handover test.
+
+Do not store passwords or private credentials in continuity documentation.
+
+2.82 Scenario Management
+
+Support structured scenario exercises.
+
+Each scenario must contain:
+
+* Scenario ID.
+* Trigger.
+* Assumptions.
+* Affected assets.
+* Failure chain.
+* Detection mechanism.
+* Containment.
+* Recovery.
+* Communications.
+* Responsible roles.
+* Success criteria.
+* Lessons learned.
+
+Scenarios must include technical and organizational failures.
+
+⸻
+
+COMMAND 10 — STRATEGY AND DECISION COMMAND
+
+2.83 Mission
+
+Provide a disciplined system for managing long-term product direction, market assumptions, strategic priorities, experiments, competitive positioning, and organizational decisions.
+
+2.84 Strategy Registry
+
+Maintain:
+
+* Strategic objectives.
+* Product priorities.
+* Market assumptions.
+* Customer segments.
+* Competitive assumptions.
+* Technology assumptions.
+* Financial assumptions.
+* Data acquisition strategy.
+* Geographic expansion strategy.
+* Risk tolerance.
+* Success criteria.
+
+Each objective must have:
+
+* Owner.
+* Rationale.
+* Evidence.
+* Dependencies.
+* Expected outcome.
+* Measurement.
+* Review date.
+
+2.85 Assumption Registry
+
+For each major assumption, record:
+
+* Assumption ID.
+* Statement.
+* Reason.
+* Supporting evidence.
+* Contradictory evidence.
+* Confidence.
+* Financial exposure.
+* Strategic consequence.
+* Validation method.
+* Owner.
+* Deadline.
+* Result.
+
+Examples:
+
+* Users will pay for reliable neighborhood reports.
+* Professional users need advanced search tools.
+* Available data can support meaningful valuation.
+* Geographic expansion will improve revenue.
+* AI processing will reduce operational costs.
+
+Do not treat an untested assumption as a strategic fact.
+
+2.86 Experiment Registry
+
+Every significant experiment must define:
+
+* Hypothesis.
+* Target segment.
+* Sample.
+* Method.
+* Duration.
+* Success metric.
+* Failure metric.
+* Cost.
+* Ethical constraints.
+* Privacy constraints.
+* Result.
+* Decision.
+
+Do not declare an experiment successful merely because the observed result was positive.
+
+Evaluate sample quality, selection bias, and alternative explanations.
+
+2.87 Competitive Intelligence
+
+Monitor public and legally accessible information about competitors.
+
+Track:
+
+* Product changes.
+* Pricing.
+* Market positioning.
+* Geographic coverage.
+* Public partnerships.
+* New services.
+* Publicly documented technology changes.
+* Market shifts.
+
+Do not use unauthorized access, credential abuse, confidential data acquisition, or deceptive collection methods.
+
+2.88 Strategic Reversibility
+
+For major decisions, record:
+
+* Cost to reverse.
+* Migration difficulty.
+* Vendor lock-in.
+* Data portability.
+* Contractual restrictions.
+* Organizational dependency.
+* Opportunity cost.
+
+Prefer reversible experiments when uncertainty is high.
+
+2.89 Strategy Review
+
+Provide periodic review of:
+
+* Objectives achieved.
+* Objectives missed.
+* Assumptions invalidated.
+* Experiments completed.
+* Financial results.
+* User evidence.
+* Competitive changes.
+* Technology constraints.
+* New risks.
+* Strategic decisions requiring revision.
+
+Do not allow the original roadmap to become immune to contradictory evidence.
+
+⸻
+
+3. THREE CROSS-FUNCTIONAL COMMAND CENTERS
+
+These centers operate across all ten command domains.
+
+They are not separate organizational empires.
+
+Their purpose is to coordinate information and decisions across domain boundaries.
+
+3.1 FAILURE AND RESILIENCE LABORATORY
+
+Mission
+
+Evaluate how Tehran Radar behaves when components fail, data becomes inconsistent, dependencies disappear, and normal operating assumptions break.
+
+Required Capabilities
+
+* Scenario registry.
+* Failure injection planning.
+* Dependency failure simulation.
+* Data corruption scenario design.
+* Recovery verification.
+* Service isolation analysis.
+* Blast-radius analysis.
+* RTO/RPO validation.
+* Operational readiness testing.
+* Post-exercise reports.
+
+Required Test Categories
+
+* Infrastructure failure.
+* Database failure.
+* API failure.
+* Queue failure.
+* External provider outage.
+* Data corruption.
+* Security compromise.
+* Deployment failure.
+* Geographic isolation failure.
+* Organizational failure.
+
+Safety Restrictions
+
+Destructive tests must run in isolated environments.
+
+Production chaos experiments require explicit authorization, documented scope, monitoring, rollback, and an approved maintenance or safety window.
+
+Do not execute destructive operations during a read-only planning phase.
+
+Required Output
+
+Each exercise must produce:
+
+* Scenario.
+* Preconditions.
+* Expected behavior.
+* Actual behavior.
+* Evidence.
+* Unexpected effects.
+* Recovery result.
+* Failed assumptions.
+* Corrective actions.
+* Owner.
+* Retest date.
+
+⸻
+
+3.2 EARLY WARNING AND ANOMALY DETECTION CENTER
+
+Mission
+
+Detect emerging problems before they become serious incidents.
+
+Detection Domains
+
+* Infrastructure.
+* API performance.
+* Database behavior.
+* Memory growth.
+* Storage growth.
+* Queue delays.
+* AI costs.
+* Security events.
+* Data quality.
+* Geographic coverage.
+* User workflows.
+* Financial anomalies.
+* Vendor dependencies.
+
+Detection Methods
+
+Use methods appropriate to the data:
+
+* Static thresholds.
+* Historical baselines.
+* Moving averages.
+* Rate-of-change analysis.
+* Seasonal comparisons.
+* Distribution analysis.
+* Outlier detection.
+* Dependency correlation.
+* Rule-based detection.
+* Statistical models.
+
+Do not use machine learning when simple, explainable rules are sufficient.
+
+Anomaly Record
+
+Each anomaly must contain:
+
+* Anomaly ID.
+* Detection time.
+* Metric or event.
+* Baseline.
+* Observed deviation.
+* Time window.
+* Affected component.
+* Severity.
+* Confidence.
+* Evidence.
+* Possible causes.
+* Investigation status.
+* Resolution.
+
+False Positive and False Negative Management
+
+Track:
+
+* False positives.
+* False negatives.
+* Detection delay.
+* Missed incidents.
+* Alert precision.
+* Alert recall, where measurable.
+* Suppression mistakes.
+* Repeated noise.
+
+Tune detection rules using incident evidence.
+
+Do not optimize for fewer alerts at the expense of missing important failures.
+
+⸻
+
+3.3 CHANGE AND RELEASE CONTROL CENTER
+
+Mission
+
+Provide a unified view of all changes that could affect platform behavior.
+
+Change Categories
+
+* Application code.
+* Database schema.
+* Data migrations.
+* API contracts.
+* Security policies.
+* Access permissions.
+* Secrets.
+* Provider configuration.
+* AI prompts.
+* Model versions.
+* Valuation algorithms.
+* Search ranking.
+* Data transformation rules.
+* Geographic boundaries.
+* Infrastructure.
+* Feature flags.
+* Financial settings.
+
+Change Record
+
+Each change must contain:
+
+* Change ID.
+* Category.
+* Description.
+* Requester.
+* Owner.
+* Risk.
+* Affected modules.
+* Affected data.
+* Dependencies.
+* Approval.
+* Test evidence.
+* Planned release.
+* Rollback plan.
+* Execution result.
+* Post-change verification.
+
+Change Impact Analysis
+
+Before approval, identify:
+
+* Downstream consumers.
+* API compatibility.
+* Data compatibility.
+* User impact.
+* Security implications.
+* Financial implications.
+* Geographic implications.
+* Monitoring requirements.
+* Recovery implications.
+
+Emergency Changes
+
+Emergency changes may use an expedited approval path only when justified.
+
+They must still have:
+
+* Identifiable requester.
+* Explicit reason.
+* Defined scope.
+* Audit record.
+* Risk assessment.
+* Post-change verification.
+* Retrospective review.
+
+Emergency procedures must not become a routine bypass for ordinary governance.
+
+⸻
+
+4. SHARED ADMINISTRATIVE IDENTITY AND ACCESS MODEL
+
+Design one shared authorization model for all command domains.
+
+Do not implement ten incompatible permission systems.
+
+4.1 Identity Classes
+
+Support the following identity categories:
+
+* Platform Owner.
+* Executive.
+* Operations Administrator.
+* Security Administrator.
+* Data Steward.
+* Engineering Administrator.
+* Finance Administrator.
+* AI Governance Administrator.
+* Product Administrator.
+* Support Agent.
+* Auditor.
+* Read-Only Analyst.
+* Service Account.
+* Emergency Access Identity.
+
+These are proposed role categories.
+
+Verify actual organizational requirements before assigning them.
+
+4.2 Role Design
+
+Each role must have:
+
+* Role ID.
+* Role name.
+* Description.
+* Scope.
+* Permissions.
+* Restrictions.
+* Approval requirements.
+* Data visibility.
+* Administrative action limits.
+* Review frequency.
+* Owner.
+
+Avoid broad roles such as “Super Admin” unless there is a carefully controlled, justified need.
+
+4.3 Permission Categories
+
+Separate permissions into:
+
+* VIEW.
+* INVESTIGATE.
+* EXPORT.
+* CREATE.
+* UPDATE.
+* APPROVE.
+* EXECUTE.
+* DELETE.
+* CONFIGURE.
+* DELEGATE.
+* AUDIT.
+
+A person who can view an incident must not automatically be able to modify its evidence.
+
+A person who can propose a configuration change must not automatically be allowed to approve and execute it.
+
+4.4 Scope Boundaries
+
+Permissions may be restricted by:
+
+* Command domain.
+* Module.
+* Service.
+* Environment.
+* Organization.
+* Tenant.
+* Geographic region.
+* Data classification.
+* Resource ownership.
+* Action type.
+
+4.5 Role Matrix
+
+Produce a complete matrix containing:
+
+* Role.
+* Command visibility.
+* Data visibility.
+* Investigation permissions.
+* Export permissions.
+* Configuration permissions.
+* Approval permissions.
+* Execution permissions.
+* Emergency permissions.
+* Audit permissions.
+
+Use explicit DENY for prohibited operations where appropriate.
+
+4.6 Access Review
+
+Implement periodic reviews of:
+
+* Active administrators.
+* Employee accounts.
+* Service accounts.
+* Temporary permissions.
+* Emergency access.
+* Unused privileges.
+* Privileges inherited from old roles.
+* Former employee access.
+
+Access must be revoked promptly when no longer required.
+
+⸻
+
+5. HIGH-RISK ADMINISTRATIVE ACTION GOVERNANCE
+
+Create a central registry of sensitive operations.
+
+Examples:
+
+* Deleting important records.
+* Modifying historical data.
+* Exporting sensitive datasets.
+* Changing authorization policies.
+* Rotating production secrets.
+* Disabling security controls.
+* Changing data publication rules.
+* Publishing or retracting major market reports.
+* Changing valuation algorithms.
+* Changing ranking algorithms.
+* Modifying transaction states.
+* Initiating refunds.
+* Changing financial limits.
+* Executing large-scale data corrections.
+* Disabling monitoring.
+* Changing audit retention.
+* Initiating disaster recovery.
+
+For each action, define:
+
+* Action ID.
+* Risk classification.
+* Authorized roles.
+* Required approvals.
+* Separation-of-duties rules.
+* Preconditions.
+* Preview requirements.
+* Dry-run availability.
+* Execution limits.
+* Idempotency.
+* Audit requirements.
+* Post-action verification.
+* Rollback or compensation strategy.
+
+5.1 Mandatory Action Workflow
+
+For high-risk operations, use the following conceptual sequence:
+
+REQUEST
+→ AUTHORIZATION CHECK
+→ IMPACT ANALYSIS
+→ PREVIEW
+→ APPROVAL
+→ EXECUTION
+→ RESULT VERIFICATION
+→ AUDIT RECORD
+→ POST-ACTION REVIEW
+
+Not every action requires every stage.
+
+The exact workflow must be proportional to its risk.
+
+5.2 Destructive Operations
+
+Destructive operations must require:
+
+* Explicit target selection.
+* Impact preview.
+* Scope confirmation.
+* Dependency analysis.
+* Authorization.
+* Additional approval where required.
+* Execution logging.
+* Post-execution verification.
+
+A generic confirmation dialog is not sufficient for a high-impact operation.
+
+5.3 Irreversible Operations
+
+If an operation cannot be rolled back, the interface must say so clearly.
+
+Where rollback is impossible, design compensating procedures and evidence preservation.
+
+Do not claim that a backup makes every action reversible.
+
+⸻
+
+6. TENANT, ORGANIZATION AND EMPLOYEE ISOLATION
+
+If Tehran Radar supports organizations, enterprise customers, or multiple administrative teams, design explicit tenant boundaries.
+
+6.1 Tenant Model
+
+Identify:
+
+* Tenant ID.
+* Organization.
+* Users.
+* Roles.
+* Data ownership.
+* Shared resources.
+* Tenant-specific configuration.
+* Billing scope.
+* Audit scope.
+* Retention scope.
+
+6.2 Isolation Requirements
+
+Verify that one organization cannot access:
+
+* Another organization’s private data.
+* Another tenant’s administrative settings.
+* Another tenant’s restricted reports.
+* Another tenant’s uploaded files.
+* Another tenant’s private transaction information.
+* Another tenant’s internal audit records.
+
+Do not rely solely on frontend filtering.
+
+Enforce tenant isolation at trusted backend and data-access boundaries.
+
+6.3 Employee Lifecycle
+
+Support:
+
+* Invitation.
+* Activation.
+* Role assignment.
+* Temporary access.
+* Role change.
+* Suspension.
+* Departure.
+* Access revocation.
+* Ownership transfer.
+* Audit continuity.
+
+When an employee leaves, preserve required business and audit records while revoking personal access.
+
+Do not transfer personal credentials to another employee.
+
+⸻
+
+7. DATA PRIVACY AND ADMINISTRATIVE VISIBILITY
+
+The administrative system must support legitimate operational needs without becoming an unrestricted surveillance platform.
+
+7.1 Data Classification
+
+Define at least:
+
+* PUBLIC.
+* INTERNAL.
+* CONFIDENTIAL.
+* RESTRICTED.
+* HIGHLY_RESTRICTED.
+
+Assign classification based on actual information sensitivity.
+
+7.2 Administrative Data Minimization
+
+Administrative dashboards should display the minimum data required for their function.
+
+Prefer:
+
+* Aggregated metrics.
+* Pseudonymous identifiers.
+* Masked values.
+* Purpose-specific access.
+* Limited retention.
+* Restricted exports.
+
+Do not expose raw personal records merely because they are technically available.
+
+7.3 Behavioral Analytics Boundaries
+
+The platform may analyze aggregated operational and product usage, subject to lawful purpose and privacy controls.
+
+Potential examples:
+
+* Time spent in product sections.
+* Feature usage.
+* Search activity at an aggregated level.
+* Usage peaks.
+* Workflow completion.
+* Error patterns.
+* General geographic demand patterns.
+
+Do not create invasive individual behavioral dossiers.
+
+Do not infer definitive psychological, political, religious, or personality profiles.
+
+Do not collect passwords, private communications, keystrokes, or unnecessary precise location data for operational analytics.
+
+7.4 Data Access Logging
+
+Record:
+
+* Who accessed sensitive data.
+* What category was accessed.
+* Why access was required.
+* When access occurred.
+* Whether data was exported.
+* Whether access was approved.
+* Whether access was exceptional.
+
+Restrict access to the access logs themselves.
+
+⸻
+
+8. ADMINISTRATIVE API AND VENDOR CONTROL CENTER
+
+Create a unified registry for external services and administrative integrations.
+
+8.1 API Registry
+
+For every verified integration, record:
+
+* Integration ID.
+* Provider.
+* Purpose.
+* Owning module.
+* Environment.
+* Authentication method.
+* Required scopes.
+* Rate limits.
+* Quotas.
+* Cost model.
+* Last successful call.
+* Failure history.
+* Dependency criticality.
+* Fallback.
+* Owner.
+* Renewal or review date.
+
+8.2 Secret Management
+
+Support:
+
+* Secret inventory.
+* Secret ownership.
+* Rotation date.
+* Expiration.
+* Environment separation.
+* Scope limitation.
+* Access history.
+* Validation status.
+* Revocation.
+
+Never reveal full secret values in the dashboard.
+
+Never store secrets in ordinary logs.
+
+8.3 API Health and Cost
+
+Display:
+
+* Usage.
+* Success rate.
+* Error rate.
+* Latency.
+* Quota consumption.
+* Cost.
+* Forecast.
+* Provider status.
+* Version changes.
+* Deprecation warnings.
+
+Clearly separate provider-reported quota from locally estimated usage.
+
+8.4 Integration Failure
+
+When an integration fails, identify:
+
+* Affected modules.
+* Affected workflows.
+* Available fallback.
+* Data consistency risk.
+* Cost exposure.
+* Recovery steps.
+* Vendor escalation path.
+
+⸻
+
+9. ADMINISTRATIVE NOTIFICATIONS AND COMMUNICATION
+
+Design a unified notification system for administrators.
+
+9.1 Notification Categories
+
+* Critical incident.
+* Security alert.
+* Data integrity alert.
+* Infrastructure degradation.
+* Financial anomaly.
+* Cost threshold.
+* Deployment event.
+* Failed migration.
+* Recovery failure.
+* Approval request.
+* Overdue decision.
+* Expiring credential.
+* Governance review.
+* Vendor outage.
+
+9.2 Notification Routing
+
+Route alerts according to:
+
+* Severity.
+* Domain.
+* Service ownership.
+* Incident responsibility.
+* On-call schedule.
+* Escalation policy.
+
+Do not notify every administrator about every event.
+
+9.3 Notification Delivery
+
+Track:
+
+* Created.
+* Sent.
+* Delivered, if confirmed.
+* Acknowledged.
+* Escalated.
+* Resolved.
+
+A sent notification is not necessarily a delivered notification.
+
+A delivered notification is not necessarily an acknowledged notification.
+
+9.4 Communication Records
+
+For significant incidents and decisions, preserve communication records and distinguish:
+
+* Internal technical communication.
+* Executive communication.
+* User communication.
+* Vendor communication.
+* Public statements.
+
+Public statements must be based on verified evidence and approved by authorized personnel.
+
+⸻
+
+10. ADMINISTRATIVE SEARCH AND GLOBAL CONTEXT
+
+Provide a unified administrative search interface.
+
+Authorized users should be able to search for:
+
+* Services.
+* Incidents.
+* Alerts.
+* Deployments.
+* Pull requests.
+* Data assets.
+* Sources.
+* Reports.
+* Users, within authorized scope.
+* Organizations.
+* Transactions.
+* Decisions.
+* Risks.
+* Vendors.
+* API integrations.
+* AI models.
+* Prompts.
+* Audit events.
+
+Search results must respect authorization boundaries.
+
+Do not reveal the existence or content of restricted resources to unauthorized users through autocomplete, result counts, or error messages.
+
+10.1 Global Context Preservation
+
+When navigating between command domains, preserve relevant context:
+
+* Incident ID.
+* Service ID.
+* Time range.
+* Geographic scope.
+* Environment.
+* Severity.
+* Tenant scope.
+
+Avoid forcing administrators to repeatedly reconstruct the same investigation filters.
+
+⸻
+
+11. ADMINISTRATIVE USER EXPERIENCE
+
+11.1 Design Principles
+
+The interface must be:
+
+* Persian-first.
+* Right-to-left.
+* Mobile-responsive.
+* Accessible.
+* Fast.
+* Consistent.
+* Evidence-oriented.
+* Role-aware.
+* Understandable.
+* Operationally safe.
+
+Do not use decorative complexity that makes critical information harder to locate.
+
+11.2 Information Hierarchy
+
+Each command page must provide:
+
+1. Executive summary.
+2. Current condition.
+3. Important changes.
+4. Risks and exceptions.
+5. Evidence.
+6. Detailed analysis.
+7. Authorized actions.
+8. History.
+
+11.3 Progressive Disclosure
+
+Show simple explanations first.
+
+Allow specialists to expand:
+
+* Technical identifiers.
+* Detailed metrics.
+* Raw evidence.
+* Dependency graphs.
+* Audit records.
+* Configuration details.
+
+Do not remove technical depth.
+
+Organize it.
+
+11.4 Accessibility
+
+Support:
+
+* Keyboard navigation.
+* Screen readers.
+* Visible focus.
+* Sufficient contrast.
+* Meaningful labels.
+* Non-color status indicators.
+* Responsive layouts.
+* Readable charts.
+* Accessible tables.
+
+Color must never be the only way to communicate severity.
+
+11.5 Time and Number Formatting
+
+Use consistent rules for:
+
+* UTC timestamps.
+* Local display time.
+* Persian calendar display, if implemented.
+* Gregorian date display.
+* Currency.
+* Decimal precision.
+* Large numbers.
+* Bytes and storage units.
+* Percentages.
+* Duration.
+
+Store timestamps in a consistent machine-readable format.
+
+Display the relevant time zone explicitly.
+
+Do not silently mix local time and UTC.
+
+⸻
+
+12. GOVERNANCE POLICY ENGINE
+
+Design a shared policy registry.
+
+Policies must be versioned and attributable.
+
+Each policy must include:
+
+* Policy ID.
+* Title.
+* Purpose.
+* Scope.
+* Rule.
+* Owner.
+* Approval authority.
+* Effective date.
+* Review date.
+* Exceptions.
+* Enforcement mechanism.
+* Evidence of enforcement.
+* Related controls.
+* Status.
+
+12.1 Policy Categories
+
+Include:
+
+* Security.
+* Access control.
+* Data quality.
+* Data rights.
+* Retention.
+* Publication.
+* AI safety.
+* Financial approval.
+* Change management.
+* Incident response.
+* Vendor management.
+* Privacy.
+* User appeals.
+* Business continuity.
+
+12.2 Policy Enforcement
+
+Classify every policy as:
+
+* Automatically enforced.
+* Partially automated.
+* Human-controlled.
+* Document-only.
+* Not yet implemented.
+
+A policy that exists only in a document must not be displayed as an automated security control.
+
+12.3 Policy Exceptions
+
+Every exception must include:
+
+* Exception ID.
+* Requester.
+* Reason.
+* Scope.
+* Risk.
+* Compensating control.
+* Approver.
+* Expiration.
+* Review date.
+* Revocation condition.
+
+Permanent exceptions must receive explicit justification and periodic review.
+
+⸻
+
+13. ORGANIZATIONAL DECISION AND CONFLICT GOVERNANCE
+
+Ten command domains create the possibility of conflicting priorities.
+
+Examples:
+
+* Security may block a release that Engineering wants to deploy.
+* Data Intelligence may suspend a report that Product wants to publish.
+* Finance may reject an expensive infrastructure proposal that Operations considers necessary.
+* Strategy may request geographic expansion while Engineering is still stabilizing the core platform.
+
+Design a formal conflict-resolution process.
+
+13.1 Conflict Record
+
+Each conflict must contain:
+
+* Conflict ID.
+* Parties.
+* Conflicting objectives.
+* Evidence.
+* Risks.
+* User impact.
+* Financial impact.
+* Security implications.
+* Available options.
+* Temporary safeguards.
+* Decision authority.
+* Final decision.
+* Dissenting opinions.
+* Review date.
+
+13.2 Decision Authority
+
+Define decision authority by subject.
+
+Do not allow a single executive role to silently override every technical, security, legal, or data-integrity control.
+
+For critical risks, define a limited stop-authority mechanism.
+
+The stop authority must include:
+
+* Trigger.
+* Scope.
+* Duration.
+* Evidence.
+* Notification.
+* Review.
+* Resumption authority.
+
+13.3 Dissent Preservation
+
+Significant technical or security objections must be preserved.
+
+A rejected recommendation must not disappear from the record merely because leadership selected another option.
+
+Document why the final decision was made.
+
+⸻
+
+14. ORGANIZATIONAL CAPACITY AND CONTROL EFFECTIVENESS
+
+The governance system must account for actual human capacity.
+
+For each recurring responsibility, record:
+
+* Required skill.
+* Responsible person or team.
+* Backup.
+* Frequency.
+* Expected workload.
+* Required tools.
+* Estimated time.
+* Training requirements.
+* Current capacity.
+* Overdue work.
+* Risk if not performed.
+
+Identify:
+
+* Roles with excessive workload.
+* Critical tasks without backup.
+* Controls that are not regularly performed.
+* Reviews that exist only on paper.
+* Processes that depend on one individual.
+* Responsibilities with unclear ownership.
+
+Do not create an organizational structure that requires more people than the company can realistically support.
+
+Prioritize critical controls according to actual risk and available capacity.
+
+⸻
+
+15. ROLE-SPECIFIC DASHBOARD VIEWS
+
+Create tailored views for:
+
+15.1 Founder or Executive
+
+Focus:
+
+* Overall condition.
+* Major incidents.
+* Financial health.
+* Data trust.
+* Strategic decisions.
+* Major risks.
+* Organizational capacity.
+
+15.2 Operations Lead
+
+Focus:
+
+* Service health.
+* Dependencies.
+* Incidents.
+* Resource usage.
+* Queues.
+* Provider status.
+* Recovery.
+* Operational backlog.
+
+15.3 Engineering Lead
+
+Focus:
+
+* Repositories.
+* PRs.
+* Builds.
+* Tests.
+* Deployments.
+* API contracts.
+* Migrations.
+* Technical debt.
+* Architecture decisions.
+
+15.4 Security Lead
+
+Focus:
+
+* Threats.
+* Privileged access.
+* Security incidents.
+* Audit integrity.
+* Secrets.
+* Vulnerabilities.
+* Access reviews.
+* Policy exceptions.
+
+15.5 Data Steward
+
+Focus:
+
+* Data quality.
+* Provenance.
+* Conflicts.
+* Lineage.
+* Freshness.
+* Corrections.
+* Publication gates.
+* Data rights.
+
+15.6 Finance Lead
+
+Focus:
+
+* Costs.
+* Revenue.
+* Budgets.
+* Vendor spending.
+* Unit economics.
+* Financial risks.
+* Payment reconciliation.
+
+15.7 AI Governance Lead
+
+Focus:
+
+* Models.
+* Prompts.
+* Evaluations.
+* Safety.
+* Human review.
+* Cost.
+* Drift.
+* Provider reliability.
+
+15.8 Product Lead
+
+Focus:
+
+* User workflows.
+* Feature adoption.
+* Search quality.
+* Feedback.
+* Support.
+* Accessibility.
+* Product reliability.
+
+15.9 Support Agent
+
+Focus:
+
+* Assigned cases.
+* User requests.
+* Escalations.
+* Permitted account information.
+* Resolution status.
+
+Support agents must not receive unrestricted security, financial, or database access.
+
+15.10 Auditor
+
+Focus:
+
+* Read-only evidence.
+* Decisions.
+* Approvals.
+* Administrative actions.
+* Policy enforcement.
+* Exceptions.
+* Incident records.
+* Change history.
+
+Auditors must not be able to modify the evidence they are reviewing.
+
+⸻
+
+16. COMMAND DOMAIN INTEGRATION
+
+The ten domains must share common references.
+
+Examples:
+
+A database incident should be visible in:
+
+* Executive Command as a major operational risk.
+* Operations Command as a service incident.
+* Data Intelligence as a potential integrity issue.
+* Security Command if unauthorized access is suspected.
+* Engineering Command if a recent migration is implicated.
+* Risk and Continuity Command as a recovery scenario.
+* Strategy Command if the event invalidates an architectural assumption.
+
+This must be accomplished through shared incident, service, asset, decision, and evidence identifiers.
+
+Do not create ten separate copies of the same incident.
+
+Maintain one authoritative incident record with domain-specific views.
+
+16.1 Shared Data Contracts
+
+Define common identifiers for:
+
+* User.
+* Organization.
+* Tenant.
+* Service.
+* Module.
+* Incident.
+* Alert.
+* Data asset.
+* Source.
+* Deployment.
+* Release.
+* Decision.
+* Risk.
+* Vendor.
+* AI model.
+* Policy.
+* Administrative action.
+
+Use stable identifiers rather than display names as references.
+
+16.2 Cross-Domain Event Flow
+
+For important events, define:
+
+* Event ID.
+* Event type.
+* Source domain.
+* Target domains.
+* Timestamp.
+* Correlation ID.
+* Related entity.
+* Severity.
+* Evidence.
+* Processing state.
+
+Prevent duplicated, lost, or contradictory administrative events.
+
+⸻
+
+17. REQUIRED DELIVERABLES FOR PART 3
+
+Produce the following.
+
+Deliverable 3.1 — Command Domain Blueprint
+
+Describe all ten command domains, their purposes, responsibilities, interfaces, and dependencies.
+
+Deliverable 3.2 — Page and Navigation Inventory
+
+List every proposed administrative page.
+
+For each page, provide:
+
+* Page ID.
+* Domain.
+* Purpose.
+* Primary user.
+* Required permissions.
+* Data sources.
+* Main visualizations.
+* Available actions.
+* Related pages.
+
+Deliverable 3.3 — Role and Permission Matrix
+
+Provide a detailed role-to-permission matrix.
+
+Identify:
+
+* Allowed actions.
+* Prohibited actions.
+* Approval requirements.
+* Scope limitations.
+* Emergency access.
+
+Deliverable 3.4 — Administrative Action Registry
+
+List high-risk actions and their control requirements.
+
+Deliverable 3.5 — Policy Registry Blueprint
+
+Define policy categories, ownership, enforcement, exceptions, and review.
+
+Deliverable 3.6 — Incident and Decision Governance
+
+Provide lifecycle definitions, responsible roles, evidence requirements, and escalation.
+
+Deliverable 3.7 — Data Governance Blueprint
+
+Define provenance, quality, lineage, correction, publication, rights, retention, and historical reconstruction.
+
+Deliverable 3.8 — Security Architecture Blueprint
+
+Define identity, authorization, privileged access, audit integrity, security monitoring, and incident response.
+
+Deliverable 3.9 — AI Governance Blueprint
+
+Define model registry, prompt registry, evaluation, human review, safety, cost, and circuit breakers.
+
+Deliverable 3.10 — Engineering and Release Governance Blueprint
+
+Define repository controls, Git workflow, PRs, tests, migrations, deployment, rollback, and technical debt.
+
+Deliverable 3.11 — Financial Governance Blueprint
+
+Define cost registry, revenue, unit economics, vendor exposure, budget controls, and financial permissions.
+
+Deliverable 3.12 — Organizational Capacity Assessment
+
+Identify responsibilities that cannot realistically be fulfilled with current staffing and tooling.
+
+Deliverable 3.13 — Cross-Domain Integration Model
+
+Define shared identifiers, common records, event flows, and consistency requirements.
+
+Deliverable 3.14 — Governance Implementation Backlog
+
+Classify proposed tasks as:
+
+* P0: Essential protection or accountability.
+* P1: Critical operational governance.
+* P2: Important organizational maturity.
+* P3: Advanced capabilities.
+
+Each task must include:
+
+* Stable ID.
+* Problem.
+* Risk.
+* Proposed solution.
+* Owner.
+* Dependencies.
+* Acceptance criteria.
+* Verification method.
+* Required evidence.
+* Estimated complexity.
+* Operational burden.
+
+⸻
+
+18. FINAL QUALITY GATES FOR PART 3
+
+Before completing this part, verify that:
+
+1. All ten command domains have clear boundaries.
+2. The domains share common identity and authorization.
+3. No command has unrestricted access merely because of its title.
+4. Executive access is separated from raw technical privilege.
+5. Data provenance and correction are governed.
+6. Data rights are distinguished from technical accessibility.
+7. Publication can be suspended or retracted.
+8. Security enforcement exists at trusted backend boundaries.
+9. High-risk operations have appropriate separation of duties.
+10. Audit evidence cannot be casually erased by the administrator being audited.
+11. AI outputs remain accountable and reviewable.
+12. AI cannot silently modify security policy or execute unrestricted actions.
+13. Engineering changes follow protected-branch and independent-review procedures.
+14. Database migrations have explicit compatibility and recovery plans.
+15. Financial reporting distinguishes actual values from estimates.
+16. Vendor dependencies and concentration risks are visible.
+17. Recovery plans are tested rather than merely documented.
+18. Organizational responsibilities have real owners and backups.
+19. Cross-domain conflicts have a formal resolution mechanism.
+20. The platform does not create unnecessary microservices or organizational bureaucracy.
+21. Administrative search respects authorization boundaries.
+22. Sensitive user data is minimized and protected.
+23. The system can explain which controls are automated, manual, or not implemented.
+24. Role-specific interfaces provide useful information without exposing unnecessary data.
+25. Every significant administrative action is attributable and auditable.
+
+The final architecture must be implementable by a small but growing engineering organization.
+
+Do not design an imaginary organization with unlimited staff, budget, or operational capacity.
+
+Prefer strong shared controls over duplicated domain-specific implementations.
+
+Do not confuse organizational sophistication with operational effectiveness.
+
+Do not implement anything.
+
+⸻
+
+END OF PART 3 OF 4
+
+Part 3 defines the administrative command structure and governance architecture.
+
+Continue with Part 4 of the same master specification.
+
+Part 4 must define end-to-end failure scenarios, adversarial tests, security validation, data-integrity tests, operational acceptance criteria, monitoring acceptance criteria, recovery validation, phased implementation, prioritization, implementation dependencies, and the final approval package.
+
+All restrictions from Parts 1, 2, and 3 remain in force.
+
+The entire four-part specification must be reviewed and explicitly approved before implementation.

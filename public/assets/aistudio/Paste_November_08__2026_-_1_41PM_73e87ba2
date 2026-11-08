@@ -1,0 +1,2296 @@
+TEHRAN RADAR
+
+MASTER ADMINISTRATION, COMMAND, OBSERVABILITY AND MONITORING CONTROL CENTER
+
+PART 2 OF 4
+
+TECHNICAL OBSERVABILITY, INFRASTRUCTURE MONITORING, RESOURCE ANALYTICS, PERFORMANCE ENGINEERING, SERVICE HEALTH AND DIAGNOSTIC INTELLIGENCE
+
+⸻
+
+1. MISSION OF PART 2
+
+Design the complete technical observability and monitoring architecture for Tehran Radar.
+
+The monitoring system must provide a trustworthy, evidence-based understanding of the technical condition of the platform.
+
+It must not merely display isolated infrastructure numbers. It must explain:
+
+* What is happening?
+* Where is it happening?
+* When did it start?
+* Is the condition normal, degraded, critical, unknown, or unobservable?
+* Is the problem getting worse?
+* Which services, modules, cities, workflows, and users are affected?
+* What evidence supports the assessment?
+* What is the likely cause?
+* Has the root cause actually been confirmed?
+* What action is recommended?
+* What is the operational and financial consequence of taking no action?
+* Can the platform continue operating safely in a degraded mode?
+* Is the monitoring system itself functioning correctly?
+
+The final design must support both executive interpretation and deep technical investigation.
+
+The interface must translate complex technical conditions into understandable operational explanations without hiding the underlying evidence.
+
+A non-technical executive must be able to understand that memory consumption is increasing, why that matters, how quickly the situation is deteriorating, and which service may be affected.
+
+An engineer must be able to investigate the same condition through detailed time-series data, logs, traces, deployments, resource limits, dependencies, and relevant code-level evidence.
+
+Do not assume that all monitoring capabilities already exist.
+
+For every proposed metric and monitoring feature, explicitly classify its implementation status:
+
+1. CURRENTLY AVAILABLE AND VERIFIED
+2. AVAILABLE THROUGH AN EXISTING PROVIDER BUT NOT YET INTEGRATED
+3. REQUIRES NEW INSTRUMENTATION
+4. REQUIRES A NEW DATA PIPELINE OR STORAGE COMPONENT
+5. NOT EXPOSED BY THE CURRENT PROVIDER
+6. NOT APPLICABLE TO THE CURRENT ARCHITECTURE
+7. UNKNOWN AND REQUIRES INVESTIGATION
+
+Never represent a proposed future metric as an existing operational capability.
+
+⸻
+
+2. GLOBAL MONITORING ARCHITECTURE
+
+Design a monitoring architecture with the following conceptual layers.
+
+2.1 Instrumentation Layer
+
+Collect operational signals from:
+
+* Frontend applications.
+* Backend application processes.
+* API endpoints.
+* Authentication and authorization components.
+* Databases.
+* Search infrastructure.
+* Geospatial services.
+* Object storage.
+* Background workers.
+* Queues.
+* Scheduled jobs.
+* External APIs.
+* AI providers.
+* Payment providers, if applicable.
+* Notification providers, if applicable.
+* Cloud infrastructure.
+* Deployment pipelines.
+* Administrative operations.
+* Critical user workflows.
+
+Identify which components already expose metrics and which require instrumentation.
+
+Do not introduce an additional monitoring SDK or vendor without explaining:
+
+* Why it is needed.
+* What data it collects.
+* Where the data is stored.
+* What it costs.
+* Whether it introduces privacy or security risks.
+* Whether the existing infrastructure can perform the same function.
+* How it can be removed or replaced.
+
+2.2 Collection Layer
+
+Design collection mechanisms appropriate to the actual architecture.
+
+Potential mechanisms include:
+
+* Application instrumentation.
+* Provider-native metrics.
+* Structured logs.
+* Distributed traces.
+* Scheduled health checks.
+* Synthetic user journeys.
+* Event-based telemetry.
+* Database statistics.
+* Infrastructure metrics.
+* Security audit events.
+
+Do not assume that polling is always appropriate.
+
+Prefer event-driven collection when it is reliable and economically justified.
+
+Define collection frequency separately for:
+
+* Critical infrastructure metrics.
+* Application performance.
+* Business workflow metrics.
+* Security events.
+* Cost and usage metrics.
+* Long-term analytical metrics.
+
+High-frequency collection must have a documented purpose and cost justification.
+
+2.3 Normalization Layer
+
+Normalize collected information into consistent internal representations.
+
+Every metric must have:
+
+* Stable metric identifier.
+* Human-readable name.
+* Technical description.
+* Unit.
+* Source.
+* Collection method.
+* Timestamp.
+* Time zone.
+* Sampling interval.
+* Aggregation method.
+* Service identifier.
+* Environment.
+* Geographic scope, where relevant.
+* Confidence or measurement quality.
+* Freshness status.
+* Retention policy.
+* Owner.
+* Alert thresholds.
+* Known limitations.
+
+Never aggregate incompatible measurements.
+
+For example, do not combine bytes, megabytes, and gibibytes without explicit conversion.
+
+Do not compare average latency from one endpoint with percentile latency from another endpoint as though they were equivalent.
+
+Do not aggregate metrics from different time windows without documenting the aggregation.
+
+2.4 Storage and Historical Analysis Layer
+
+Determine which metrics require:
+
+* Short-term high-resolution retention.
+* Medium-term operational retention.
+* Long-term trend retention.
+* Aggregated historical retention.
+* Security-grade immutable retention.
+
+Evaluate whether existing infrastructure can store the required telemetry.
+
+Do not automatically introduce a dedicated time-series database.
+
+Compare:
+
+* Existing database capabilities.
+* Cloud provider monitoring services.
+* Existing logging infrastructure.
+* Object storage for historical archives.
+* Dedicated time-series systems, only when justified.
+
+The architecture must address:
+
+* Retention costs.
+* Query costs.
+* Data volume.
+* Sampling.
+* Downsampling.
+* Aggregation.
+* Deletion.
+* Access control.
+* Backup.
+* Recovery.
+* Data integrity.
+
+2.5 Analysis and Alerting Layer
+
+The analysis layer must distinguish:
+
+* Raw observation.
+* Derived metric.
+* Statistical anomaly.
+* Correlation.
+* Diagnostic hypothesis.
+* Confirmed root cause.
+* Operational recommendation.
+
+A statistical anomaly is not automatically an incident.
+
+A correlation is not automatically causation.
+
+An AI-generated explanation is not proof.
+
+2.6 Presentation Layer
+
+Present monitoring information through:
+
+1. Executive overview.
+2. Technical service overview.
+3. Resource-specific dashboards.
+4. Detailed investigation views.
+5. Historical trend analysis.
+6. Alert and incident timelines.
+7. Capacity and cost forecasting.
+8. Data quality and monitoring coverage reports.
+
+Every screen must allow the user to move from a summarized condition to the underlying evidence.
+
+⸻
+
+3. CPU MONITORING AND ANALYSIS
+
+Design a comprehensive CPU monitoring subsystem.
+
+3.1 Required CPU Metrics
+
+Investigate the availability of:
+
+* CPU utilization percentage.
+* Allocated CPU capacity.
+* Number of CPU cores.
+* Number of virtual CPUs.
+* CPU usage per process.
+* CPU usage per service.
+* CPU usage per container, where applicable.
+* CPU throttling.
+* CPU quota.
+* CPU saturation.
+* Load average, if available.
+* CPU time spent in user mode.
+* CPU time spent in system mode.
+* Idle CPU time.
+* I/O wait, if available.
+* Context switches, if available.
+* Runtime-specific CPU consumption.
+* Scheduled job CPU consumption.
+* AI-related local processing, if any.
+
+Do not assume that all these metrics are exposed by serverless platforms.
+
+3.2 CPU Interpretation
+
+The dashboard must explain the difference between:
+
+* High CPU utilization.
+* CPU saturation.
+* CPU throttling.
+* Insufficient allocated CPU.
+* A short-lived CPU spike.
+* Sustained CPU pressure.
+* CPU consumption caused by one specific endpoint.
+* CPU consumption caused by background processing.
+* CPU consumption caused by inefficient code.
+* CPU consumption caused by unexpected traffic.
+
+The system must not classify a temporary 90% CPU spike as a critical incident without considering its duration, capacity, workload, and user impact.
+
+3.3 CPU Trend Analysis
+
+Show:
+
+* Current utilization.
+* Average utilization.
+* Maximum utilization.
+* P50, P90, P95, and P99 where statistically meaningful.
+* Historical trend.
+* Peak periods.
+* Sustained high-utilization periods.
+* Growth rate.
+* Available headroom.
+* Estimated time to capacity exhaustion, only when a defensible model exists.
+
+Allow comparison across:
+
+* Last hour.
+* Last 24 hours.
+* Last 7 days.
+* Last 30 days.
+* Custom date range.
+
+Compare equivalent periods and account for daily and weekly usage patterns.
+
+3.4 CPU Diagnostic Intelligence
+
+When CPU usage increases, investigate potential causes:
+
+* Increased request volume.
+* Expensive database operations.
+* Inefficient search queries.
+* Large geospatial calculations.
+* Repeated serialization or deserialization.
+* Infinite loops.
+* Excessive retries.
+* Background job congestion.
+* Memory pressure and garbage collection.
+* Unexpected bot traffic.
+* AI processing overhead.
+* Recent deployment.
+* Third-party SDK behavior.
+
+For each suspected cause, show supporting evidence and confidence.
+
+Do not declare a cause confirmed unless the evidence establishes it.
+
+3.5 CPU Alerts
+
+Design alert categories:
+
+* Sustained high utilization.
+* CPU throttling.
+* Sudden unexplained increase.
+* Abnormal consumption by one service.
+* CPU capacity approaching a documented limit.
+* Repeated CPU-related timeouts.
+* CPU saturation associated with user-facing failures.
+
+Alert thresholds must be configurable and based on actual infrastructure limits.
+
+Use duration-based thresholds, hysteresis, deduplication, and severity levels.
+
+⸻
+
+4. RAM AND MEMORY MONITORING
+
+Memory monitoring is a critical requirement.
+
+The system must detect not only high memory consumption but also gradual memory deterioration.
+
+4.1 Required Memory Metrics
+
+Investigate the availability of:
+
+* Total available memory.
+* Used memory.
+* Available memory.
+* Committed memory.
+* Memory utilization percentage.
+* Resident Set Size (RSS).
+* Virtual memory size.
+* Process memory.
+* Container memory.
+* Runtime heap usage.
+* Heap capacity.
+* Heap utilization.
+* External memory.
+* Array buffer memory.
+* Garbage collection frequency.
+* Garbage collection duration.
+* Allocation rate.
+* Memory growth rate.
+* Out-of-memory events.
+* Process restarts associated with memory.
+* Swap usage, if available.
+* Cache memory consumption.
+* Database memory consumption, if exposed.
+
+Clearly distinguish operating-system memory from application runtime memory.
+
+Do not add overlapping memory categories together.
+
+4.2 Node.js Memory Monitoring
+
+If Node.js is present in the verified runtime, investigate:
+
+* process.memoryUsage().
+* Heap used.
+* Heap total.
+* External memory.
+* RSS.
+* Array buffers.
+* Event loop delay.
+* Garbage collection behavior.
+* Process uptime.
+* Process restarts.
+* Unhandled exceptions.
+* Fatal process errors.
+
+Do not add application-level instrumentation until the existing architecture and deployment constraints are understood.
+
+4.3 Memory Leak Detection
+
+Design a mechanism for detecting probable memory leaks.
+
+The system should examine:
+
+* Memory growth over time.
+* Memory after garbage collection.
+* Repeated growth under comparable workload.
+* Memory growth per request or job.
+* Memory growth after repeated execution of the same workflow.
+* Memory that does not return toward a stable baseline.
+* Increasing memory usage after deployments.
+* Memory differences between application versions.
+
+Distinguish:
+
+1. Normal workload-related memory growth.
+2. Temporary allocation pressure.
+3. Cache growth.
+4. Garbage collection inefficiency.
+5. Probable memory leak.
+6. Confirmed memory leak.
+
+Do not label a memory leak as confirmed based on one rising graph.
+
+4.4 Memory Diagnostic View
+
+For every memory warning, display:
+
+* Current memory consumption.
+* Maximum known limit.
+* Percentage of limit used.
+* Growth over time.
+* Rate of increase.
+* Related process or service.
+* Related deployment.
+* Related request volume.
+* Garbage collection behavior.
+* Restart history.
+* Potentially affected user workflows.
+* Estimated time until the documented limit may be reached, if supportable.
+
+The interface must explain the condition in plain language.
+
+Example:
+
+“Memory consumption has increased continuously over the last 45 minutes. The application is currently using 78% of its documented memory limit. The growth rate is higher than the previous seven-day baseline. No confirmed root cause is available yet. Search API requests and the latest deployment are two investigation candidates.”
+
+This is an example of explanatory presentation, not a claim about current system conditions.
+
+4.5 Memory Alerts
+
+Design alerts for:
+
+* Memory approaching a hard limit.
+* Sustained memory growth.
+* Abnormal RSS increase.
+* Heap exhaustion risk.
+* Repeated out-of-memory events.
+* Unexpected process restarts.
+* Garbage collection pressure.
+* Memory growth isolated to one service.
+* Memory growth correlated with a specific deployment.
+
+Alert policies must consider both absolute limits and historical behavior.
+
+4.6 Serverless Memory Limitations
+
+If the provider does not expose host-level RAM:
+
+* Do not fabricate total system memory.
+* Do not display a false 0%.
+* Do not infer system memory from application heap alone.
+* Display the available runtime-level measurements.
+* Explicitly label unavailable infrastructure-level measurements.
+* Explain what the provider exposes and what remains invisible.
+* Recommend instrumentation only when it provides meaningful additional evidence.
+
+The dashboard must clearly distinguish “memory unavailable” from “memory healthy.”
+
+⸻
+
+5. STORAGE AND DISK MONITORING
+
+Design storage monitoring across all storage categories.
+
+5.1 Storage Categories
+
+Identify and monitor, where applicable:
+
+* Database storage.
+* Object storage.
+* Application file storage.
+* Temporary files.
+* Logs.
+* Backups.
+* Quarantine storage.
+* Uploaded property images.
+* Documents.
+* Generated reports.
+* Export files.
+* Search indexes.
+* Cached objects.
+* Historical telemetry.
+
+Do not treat all storage as one interchangeable resource.
+
+5.2 Storage Metrics
+
+Investigate:
+
+* Total capacity.
+* Used capacity.
+* Available capacity.
+* Growth rate.
+* Number of objects.
+* Number of files.
+* Average object size.
+* Largest objects.
+* Storage by category.
+* Storage by tenant, where authorized.
+* Storage by module.
+* Storage by retention class.
+* Read operations.
+* Write operations.
+* Delete operations.
+* Storage request errors.
+* I/O throughput.
+* IOPS.
+* Storage latency.
+* Quota utilization.
+* Lifecycle expiration.
+* Backup size.
+* Orphaned objects.
+* Incomplete multipart uploads.
+
+Only expose IOPS, filesystem capacity, inode count, and disk-level measurements when the actual platform provides them.
+
+5.3 Storage Growth Analysis
+
+The dashboard must show:
+
+* Current storage consumption.
+* Daily growth.
+* Weekly growth.
+* Monthly growth.
+* Growth by storage category.
+* Growth by module.
+* Growth by data type.
+* Abnormal growth.
+* Estimated capacity exhaustion date, where valid.
+* Cost implications.
+
+Explain whether growth is caused by:
+
+* Increased user uploads.
+* Duplicate files.
+* Retained logs.
+* Unbounded historical data.
+* Backups.
+* Temporary files.
+* Quarantine files.
+* Incomplete uploads.
+* Telemetry expansion.
+* Generated reports.
+* Unexpected automated activity.
+
+5.4 Object Storage Governance
+
+If S3-compatible or Cloudflare R2 storage is present, verify its actual configuration and capabilities.
+
+Monitor:
+
+* Upload success rate.
+* Download success rate.
+* Request volume.
+* Object count.
+* Total stored bytes.
+* Multipart upload sessions.
+* Incomplete multipart uploads.
+* Quarantine status.
+* File scanning status.
+* Orphaned objects.
+* Failed deletion attempts.
+* Lifecycle rules.
+* Signed URL expiration behavior.
+* Access failures.
+* Unauthorized access attempts.
+* Storage cost and request cost, where available.
+
+Do not assume that a successfully uploaded object is safe, valid, or correctly associated with a database record.
+
+5.5 Storage Integrity
+
+Design reconciliation mechanisms to identify:
+
+* Database records referencing missing objects.
+* Objects without valid database references.
+* Duplicate objects.
+* Incorrect metadata.
+* Files in an invalid lifecycle state.
+* Quarantine objects that never received a final decision.
+* Deletion requests that were not completed.
+* Objects whose ownership or tenant association is inconsistent.
+
+Destructive cleanup must never be automatically executed based only on an unverified orphan report.
+
+Use a preview, evidence record, approval, execution, and post-execution verification process.
+
+⸻
+
+6. NETWORK AND CONNECTIVITY MONITORING
+
+Design network observability based on the actual infrastructure.
+
+6.1 Required Metrics
+
+Investigate:
+
+* Incoming traffic.
+* Outgoing traffic.
+* Bandwidth utilization.
+* Request volume.
+* Network latency.
+* DNS resolution latency.
+* TLS handshake latency.
+* Connection errors.
+* Connection timeouts.
+* Connection resets.
+* Packet loss, if exposed.
+* External API latency.
+* Data transfer volume.
+* Egress costs.
+* Regional availability.
+* Provider-level network errors.
+
+Do not present packet loss or interface-level throughput when the provider does not expose them.
+
+6.2 Network Analysis
+
+Identify whether a problem is:
+
+* Internal application latency.
+* Database latency.
+* DNS failure.
+* TLS failure.
+* External provider degradation.
+* Network congestion.
+* Regional connectivity failure.
+* Excessive payload size.
+* Excessive repeated requests.
+* Connection pool exhaustion.
+* Client-side connectivity failure.
+
+Distinguish server-side failures from client network problems.
+
+6.3 Regional and Geographic Monitoring
+
+Where the platform serves Tehran and other cities, monitor service behavior by geographic scope when technically meaningful.
+
+Do not confuse:
+
+* User-selected city.
+* Property location.
+* Server region.
+* Network observation point.
+* Actual user location.
+
+Do not collect precise permanent user location merely to improve monitoring.
+
+Use privacy-preserving regional aggregation wherever possible.
+
+⸻
+
+7. APPLICATION RUNTIME AND PROCESS HEALTH
+
+If Node.js is verified in the current backend, investigate the following.
+
+7.1 Runtime Metrics
+
+* Process uptime.
+* Process restart count.
+* Event loop lag.
+* Event loop utilization, if available.
+* Heap usage.
+* RSS.
+* Garbage collection.
+* Active handles.
+* Active requests.
+* Unhandled promise rejections.
+* Uncaught exceptions.
+* Fatal errors.
+* Worker concurrency.
+* Worker failures.
+* Request processing duration.
+* Runtime version.
+* Dependency version.
+* Deployment version.
+
+7.2 Runtime Failure Analysis
+
+Identify:
+
+* Process crashes.
+* Repeated restarts.
+* Event loop blocking.
+* Excessive synchronous processing.
+* Unhandled errors.
+* Resource exhaustion.
+* Worker starvation.
+* Incorrect concurrency.
+* Long-running tasks.
+* Deadlocks or equivalent blocking conditions.
+
+Correlate runtime incidents with deployments, workload, database latency, and external dependencies.
+
+7.3 Serverless Runtime
+
+For serverless components, investigate provider-specific measurements:
+
+* Invocation count.
+* Execution duration.
+* Cold starts, if exposed.
+* Execution failures.
+* CPU time, if exposed.
+* Memory usage, if exposed.
+* Concurrency.
+* Execution limits.
+* Request limits.
+* Subrequest limits.
+* Timeout behavior.
+* Billing units.
+* Platform-specific throttling.
+
+Do not assume traditional server metrics exist in serverless environments.
+
+Explain the operational consequences of unavailable host-level telemetry.
+
+⸻
+
+8. DATABASE MONITORING AND DATA-PLATFORM HEALTH
+
+Database monitoring must reflect the actual database technology.
+
+First verify every database, database instance, collection, table, index, and storage service currently used.
+
+Do not assume that Firestore, D1, PostgreSQL, Redis, or any other technology is present unless verified.
+
+8.1 General Database Metrics
+
+Where exposed, monitor:
+
+* Read operations.
+* Write operations.
+* Delete operations.
+* Query volume.
+* Query latency.
+* Slow queries.
+* Failed queries.
+* Connection count.
+* Connection saturation.
+* Transaction failures.
+* Transaction conflicts.
+* Lock contention.
+* Index utilization.
+* Storage consumption.
+* Growth rate.
+* Quota utilization.
+* Replication lag.
+* Backup status.
+* Restore capability.
+* Consistency errors.
+* Database availability.
+
+8.2 Query Performance
+
+Identify:
+
+* Expensive queries.
+* Repeated queries.
+* Unbounded queries.
+* Missing or ineffective indexes.
+* Large result sets.
+* Excessive pagination.
+* N+1 query patterns.
+* Full scans.
+* Hot partitions.
+* Unbalanced access patterns.
+* Excessive read amplification.
+
+Provide a query-performance view with:
+
+* Query or operation identifier.
+* Calling service.
+* Endpoint or workflow.
+* Execution count.
+* Average duration.
+* P95 and P99 duration where meaningful.
+* Error count.
+* Read/write cost where available.
+* Associated deployment.
+* Possible optimization candidates.
+
+Do not expose sensitive query parameters or personal information in ordinary monitoring screens.
+
+8.3 Firestore-Specific Investigation
+
+If Firestore is confirmed, investigate:
+
+* Document read volume.
+* Document write volume.
+* Delete volume.
+* Storage consumption.
+* Index storage.
+* Composite indexes.
+* Query performance.
+* Listener activity, where observable.
+* Transaction failures.
+* Contention.
+* Hot document patterns.
+* Hot collection patterns.
+* Security Rules evaluation failures, where available.
+* Quota and billing behavior.
+* Backup and restore configuration.
+* Export reliability.
+* Regional configuration.
+
+Do not assume that Firestore exposes traditional SQL query plans, database process memory, CPU utilization, or GROUP BY operations.
+
+Explicitly document Firestore’s analytical limitations.
+
+Do not design dashboards that imply the existence of native database capabilities that do not exist.
+
+8.4 Cloudflare D1-Specific Investigation
+
+If Cloudflare D1 is confirmed, investigate:
+
+* Database size.
+* Query volume.
+* Query duration, where exposed.
+* Rows read and written, where exposed.
+* Database limits.
+* Worker-to-D1 latency.
+* Query failures.
+* Transaction behavior.
+* Migration history.
+* Backup and restore capabilities.
+* Region and replication characteristics.
+* Platform-specific quotas.
+
+Identify which values come from Cloudflare and which require application instrumentation.
+
+8.5 Database Consistency and Split-Brain Detection
+
+A critical requirement is detecting multiple competing sources of truth.
+
+Investigate whether:
+
+* The same entity is stored in more than one database.
+* Some endpoints use persistent storage while others use in-memory state.
+* Administrative operations update only part of the system.
+* Frontend state is treated as authoritative.
+* Cache values disagree with the primary database.
+* Background jobs update data without recording provenance.
+* Different modules maintain independent copies of the same business entity.
+
+Design consistency checks for critical entities.
+
+For every important entity, identify:
+
+* Authoritative storage.
+* Secondary representations.
+* Cache representations.
+* Derived analytical representations.
+* Synchronization mechanism.
+* Reconciliation mechanism.
+* Conflict-resolution policy.
+* Failure behavior.
+
+A dashboard must make a split-brain condition visible rather than hiding it behind an overall healthy status.
+
+8.6 Database Recovery
+
+Monitor:
+
+* Backup completion.
+* Backup age.
+* Backup integrity.
+* Restore-test results.
+* Recovery duration.
+* Recovery point.
+* Replication health, if applicable.
+* Unverified backup status.
+
+A successful backup job does not prove that the database can be restored.
+
+Show the most recent successful restore test separately from the most recent successful backup.
+
+⸻
+
+9. API AND BACKEND SERVICE MONITORING
+
+Design API observability at global, service, endpoint, tenant, and geographic levels where appropriate.
+
+9.1 API Metrics
+
+Monitor:
+
+* Total requests.
+* Requests per second.
+* Requests per minute.
+* Successful requests.
+* Client errors.
+* Server errors.
+* Timeouts.
+* Request duration.
+* P50 latency.
+* P90 latency.
+* P95 latency.
+* P99 latency.
+* Request payload size.
+* Response payload size.
+* Rate-limit events.
+* Authentication failures.
+* Authorization failures.
+* Retry volume.
+* Duplicate requests.
+* Idempotency conflicts.
+* Endpoint availability.
+
+Do not rely exclusively on average latency.
+
+Averages can conceal severe tail latency.
+
+9.2 Endpoint-Level Monitoring
+
+Build an endpoint inventory from the actual backend.
+
+For each endpoint, identify:
+
+* Method.
+* Route.
+* Purpose.
+* Owning module.
+* Authentication requirement.
+* Authorization requirement.
+* Rate limit.
+* Request volume.
+* Latency distribution.
+* Error distribution.
+* Dependencies.
+* Criticality.
+* Data sensitivity.
+* Owner.
+* Current monitoring status.
+
+Do not invent endpoints.
+
+Trace frontend API calls to their actual backend handlers.
+
+Identify:
+
+* Dead endpoints.
+* Unused endpoints.
+* Duplicate endpoints.
+* Endpoints with inconsistent behavior.
+* Endpoints that bypass shared authorization logic.
+* Endpoints without adequate error handling.
+* Endpoints without meaningful telemetry.
+
+9.3 API Failure Analysis
+
+For each error, provide:
+
+* Timestamp.
+* Endpoint.
+* Error category.
+* Correlation ID.
+* Service version.
+* Environment.
+* Dependency status.
+* User impact estimate.
+* Repetition count.
+* Relevant deployment.
+* Related incident.
+
+Sensitive tokens, credentials, personal data, and full authorization headers must never appear in logs or dashboard output.
+
+9.4 Authentication and Authorization Monitoring
+
+Monitor:
+
+* Authentication success rate.
+* Authentication failure rate.
+* Expired token events.
+* Invalid token events.
+* Revoked token events.
+* Authorization denials.
+* Privilege escalation attempts.
+* Suspicious administrative access.
+* Rate-limit violations.
+* Repeated access to restricted resources.
+
+Do not interpret every authorization denial as an attack.
+
+Correlate patterns, context, account risk, and access policy.
+
+9.5 Service Dependency Mapping
+
+Build a dependency graph showing:
+
+* Frontend.
+* API gateway or proxy.
+* Backend modules.
+* Authentication provider.
+* Database.
+* Cache.
+* Queue.
+* Object storage.
+* AI providers.
+* External APIs.
+* Search and geospatial services.
+* Notification systems.
+
+For every dependency, show:
+
+* Dependency type.
+* Criticality.
+* Health.
+* Last successful interaction.
+* Error rate.
+* Latency.
+* Fallback behavior.
+* Affected services.
+* Responsible owner.
+
+A service must not be marked healthy merely because its process is running while its critical dependencies are unavailable.
+
+⸻
+
+10. CACHE MONITORING
+
+If a cache exists, identify its technology, configuration, and actual use.
+
+Monitor:
+
+* Cache hit rate.
+* Cache miss rate.
+* Eviction rate.
+* Memory consumption.
+* Entry count.
+* TTL distribution.
+* Expired entries.
+* Cache latency.
+* Cache errors.
+* Cache availability.
+* Invalidation events.
+* Stale-data incidents.
+* Cache stampedes.
+* Duplicate computation.
+* Cache poisoning indicators.
+
+For every cached data category, document:
+
+* Source of truth.
+* Cache key strategy.
+* TTL.
+* Invalidation trigger.
+* Staleness tolerance.
+* Security boundary.
+* Tenant isolation.
+* Recovery behavior.
+
+Pay special attention to:
+
+* Property details.
+* Listing status.
+* Valuation results.
+* Neighborhood statistics.
+* Search results.
+* User permissions.
+* Administrative configuration.
+
+Never allow cached authorization decisions to remain valid after a relevant permission revocation unless the documented security model explicitly guarantees safe invalidation.
+
+10.1 Cache Consistency Monitoring
+
+Detect:
+
+* Cache values older than the source record.
+* Cache invalidation failures.
+* Stale valuation outputs.
+* Cache keys that cross tenant boundaries.
+* Inconsistent geographic filters.
+* Data that remains visible after correction or deletion.
+* Excessive cache misses after deployment.
+
+Distinguish a cache performance problem from a data correctness problem.
+
+⸻
+
+11. QUEUES, WORKERS AND BACKGROUND JOBS
+
+If queues or background jobs exist, monitor them as first-class infrastructure components.
+
+11.1 Required Metrics
+
+* Queue depth.
+* Oldest message age.
+* Message arrival rate.
+* Message processing rate.
+* Successful job count.
+* Failed job count.
+* Retry count.
+* Dead-letter queue size.
+* Average execution duration.
+* P95 execution duration.
+* Worker concurrency.
+* Worker availability.
+* Stuck jobs.
+* Expired jobs.
+* Duplicate execution.
+* Idempotency failures.
+* Queue processing lag.
+* Scheduled job delay.
+
+11.2 Queue Failure Conditions
+
+Detect:
+
+* Growing backlog.
+* Processing rate below arrival rate.
+* Repeated retries.
+* Poison messages.
+* Dead-letter accumulation.
+* Worker crashes.
+* Stuck jobs.
+* Starvation.
+* Incorrect concurrency.
+* Duplicate side effects.
+* Expired processing leases.
+* Failed scheduled jobs.
+
+11.3 Business Impact
+
+Explain which workflows are delayed.
+
+Examples include:
+
+* Image processing.
+* Listing moderation.
+* Search indexing.
+* Data ingestion.
+* Valuation generation.
+* Report creation.
+* Notifications.
+* Transaction state updates.
+* Data correction propagation.
+
+A queue with 1,000 messages is not automatically critical.
+
+The oldest message age, processing rate, business deadline, and workload importance must be considered.
+
+11.4 Safe Retry Design
+
+Identify whether each job is:
+
+* Idempotent.
+* Safe to retry.
+* Retryable only after inspection.
+* Not safe to retry automatically.
+
+Never automatically replay a financial, transactional, deletion, or externally visible operation without verified idempotency and recovery rules.
+
+⸻
+
+12. SEARCH, MAP AND GEOSPATIAL MONITORING
+
+Search and geographic capabilities are central to Tehran Radar.
+
+Monitor the actual search and map architecture.
+
+12.1 Search Monitoring
+
+Measure:
+
+* Search request volume.
+* Search latency.
+* P50/P95/P99 latency.
+* Failed searches.
+* Empty-result rate.
+* Search index freshness.
+* Indexing delay.
+* Indexing failures.
+* Filter performance.
+* Pagination behavior.
+* Ranking response time.
+* Search provider errors.
+* Cache hit rate.
+* Search cost, where measurable.
+
+Separate technical search health from search relevance.
+
+A technically successful search can still return poor results.
+
+12.2 Search Quality
+
+Where sufficient privacy-safe evaluation data exists, measure:
+
+* Relevant result rate.
+* Empty-result frequency.
+* Repeated query behavior.
+* Search abandonment.
+* Filter usage.
+* Search-to-property-view conversion.
+* Search-to-contact conversion.
+* Geographic mismatch.
+* Duplicate result rate.
+
+Do not infer the user’s personal intent or sensitive characteristics.
+
+Do not use raw search text for unrestricted behavioral profiling.
+
+12.3 Map and Geospatial Monitoring
+
+Monitor:
+
+* Map load success.
+* Tile request success.
+* Tile latency.
+* Geocoding success.
+* Reverse-geocoding success.
+* Spatial query latency.
+* Map proxy errors.
+* Invalid coordinates.
+* Geometry validation failures.
+* Polygon rendering failures.
+* Region-boundary mismatches.
+* Excessive geographic query costs.
+* Map provider outages.
+
+Test geographic boundaries for Tehran and all supported cities.
+
+Identify whether one city’s geographic configuration can accidentally affect another city’s results.
+
+12.4 Geographic Failure Isolation
+
+The monitoring system must distinguish:
+
+* City-specific failure.
+* Neighborhood-specific data problem.
+* Geographic provider outage.
+* Map rendering failure.
+* Invalid source geometry.
+* Incorrect city configuration.
+* Global map service outage.
+
+A failure in one city should not automatically be represented as a platform-wide failure.
+
+⸻
+
+13. EXTERNAL API AND THIRD-PARTY PROVIDER MONITORING
+
+Build a provider registry from the actual codebase and configuration.
+
+Potential categories include:
+
+* AI providers.
+* Mapping providers.
+* Geocoding providers.
+* Search providers.
+* Authentication providers.
+* Object storage.
+* Email.
+* SMS.
+* Payment.
+* Analytics.
+* Data providers.
+
+For every verified provider, monitor:
+
+* Service status.
+* Request volume.
+* Success rate.
+* Error rate.
+* Latency.
+* Timeout rate.
+* Retry rate.
+* Quota consumption.
+* Remaining quota, if exposed.
+* Billing usage.
+* Cost trend.
+* Rate-limit events.
+* Authentication failures.
+* API version.
+* Deprecation notices, where available.
+* Last successful request.
+* Last verified status.
+
+Do not assume that every provider offers a status API or quota endpoint.
+
+Label provider-reported status separately from Tehran Radar’s own observed status.
+
+13.1 Provider Degradation
+
+Detect:
+
+* Gradual latency increase.
+* Error-rate increase.
+* Intermittent failure.
+* Quota exhaustion.
+* Pricing changes.
+* API contract changes.
+* Authentication failure.
+* Provider-side data-quality deterioration.
+* Regional degradation.
+
+For each provider, document:
+
+* Criticality.
+* Replacement options.
+* Fallback strategy.
+* Degraded operating mode.
+* Data consistency implications.
+* Migration difficulty.
+* Financial exposure.
+
+⸻
+
+14. ARTIFICIAL INTELLIGENCE MONITORING
+
+AI usage must be observable technically, economically, and operationally.
+
+14.1 Model and Provider Registry
+
+Identify all actual AI providers, models, versions, endpoints, and application workflows.
+
+For each model or provider, record:
+
+* Provider.
+* Model name.
+* Model version.
+* Application purpose.
+* Calling module.
+* Input type.
+* Output type.
+* Data classification.
+* Request count.
+* Token consumption, if exposed.
+* Latency.
+* Error rate.
+* Timeout rate.
+* Retry count.
+* Cost.
+* Quota.
+* Fallback model.
+* Evaluation status.
+* Owner.
+
+Never expose API keys, credentials, or unrestricted raw prompts in ordinary dashboards.
+
+14.2 AI Performance
+
+Monitor:
+
+* Request latency.
+* Time to first token, if available.
+* Total generation duration.
+* Input tokens.
+* Output tokens.
+* Requests per workflow.
+* Failed generations.
+* Truncated outputs.
+* Invalid structured outputs.
+* Schema validation failures.
+* Retry frequency.
+* Provider throttling.
+* Fallback frequency.
+
+14.3 AI Quality
+
+Technical success is not equivalent to useful output.
+
+Where a reliable evaluation framework exists, monitor:
+
+* Structured output validity.
+* Factual error rate.
+* Citation or source-grounding validity.
+* Hallucination indicators.
+* Human review rejection rate.
+* Correction rate.
+* Model drift.
+* Evaluation-set performance.
+* Output consistency.
+* Safety-policy violations.
+
+Do not claim that an AI output is accurate simply because the API returned HTTP 200.
+
+14.4 AI Cost Governance
+
+Show:
+
+* Cost per model.
+* Cost per module.
+* Cost per workflow.
+* Cost per successful operation.
+* Cost per user, where privacy and authorization permit.
+* Daily cost.
+* Weekly cost.
+* Monthly cost.
+* Cost growth.
+* Cost forecast.
+* Budget consumption.
+* Cost anomalies.
+* Cost caused by retries.
+* Cost caused by failed operations.
+
+Where provider pricing or usage data is unavailable, explicitly label estimates and document the estimation method.
+
+14.5 AI Safety and Failure Controls
+
+Monitor:
+
+* Prompt injection indicators.
+* Untrusted input handling.
+* Sensitive-data leakage indicators.
+* Unauthorized tool invocation attempts.
+* Invalid model-generated actions.
+* Human-review bypass attempts.
+* Model fallback failures.
+* Circuit-breaker activations.
+* Policy enforcement failures.
+
+AI must never be allowed to silently change its own authorization policy.
+
+AI-generated recommendations must not automatically become executed administrative actions.
+
+⸻
+
+15. FRONTEND AND USER-EXPERIENCE MONITORING
+
+Technical health must include the actual experience of users.
+
+A backend can be healthy while the application is unusable.
+
+15.1 Frontend Performance
+
+Where technically available, monitor:
+
+* Largest Contentful Paint (LCP).
+* Interaction to Next Paint (INP).
+* Cumulative Layout Shift (CLS).
+* Time to First Byte (TTFB).
+* First Contentful Paint (FCP).
+* JavaScript execution errors.
+* Failed network requests.
+* Application startup time.
+* Route transition time.
+* Asset loading failures.
+* Image loading failures.
+* Map initialization failures.
+* Frontend crash frequency.
+
+Use current, correctly defined Web Vitals.
+
+Do not mix outdated metrics with current definitions without documenting the difference.
+
+15.2 Device and Network Segmentation
+
+Where privacy-safe and justified, analyze performance by:
+
+* Mobile versus desktop.
+* Browser family.
+* Operating-system category.
+* Connection quality category.
+* Application version.
+* Geographic service region.
+
+Do not collect unnecessary device fingerprints.
+
+Do not attempt to uniquely identify users through invasive combinations of browser and hardware attributes.
+
+15.3 Critical User Journeys
+
+Define synthetic or privacy-safe monitoring for important workflows:
+
+1. Open the homepage.
+2. Load property search.
+3. Apply filters.
+4. Open a property.
+5. Load a map.
+6. Open a neighborhood page.
+7. Complete a valuation request.
+8. Create a listing.
+9. Submit a permitted user action.
+10. Access an authorized administrative workflow.
+
+Each journey must have:
+
+* Expected result.
+* Maximum acceptable duration.
+* Failure conditions.
+* Monitoring frequency.
+* Environment.
+* Data safety requirements.
+* Responsible owner.
+
+Synthetic checks must not create real listings, transactions, payments, or externally visible notifications unless specifically isolated and authorized.
+
+15.4 Real User Monitoring Privacy
+
+If real-user monitoring is proposed:
+
+* Minimize collected information.
+* Avoid raw form content.
+* Avoid password fields.
+* Avoid payment data.
+* Avoid sensitive personal information.
+* Avoid precise location collection.
+* Use aggregation and sampling.
+* Define retention.
+* Restrict access.
+* Document legal and privacy implications.
+
+Monitoring must not become a mechanism for invasive user surveillance.
+
+⸻
+
+16. BUSINESS WORKFLOW HEALTH
+
+The control center must connect technical performance with actual product outcomes.
+
+Monitor critical workflows such as:
+
+* Listing creation.
+* Listing publication.
+* Property search.
+* Property detail access.
+* Valuation completion.
+* Report generation.
+* User verification.
+* Professional verification.
+* Transaction progression.
+* Data correction.
+* Data ingestion.
+* Neighborhood data publication.
+
+For each workflow, define:
+
+* Started count.
+* Successful completion count.
+* Failure count.
+* Abandonment count, where measurable and privacy-safe.
+* Completion duration.
+* Error category.
+* Dependency failures.
+* Current backlog.
+* User-visible impact.
+
+Do not treat website traffic, page views, or API request volume as proof of business success.
+
+Separate:
+
+* Technical success.
+* Workflow success.
+* User outcome.
+* Business outcome.
+
+For example, a valuation API returning a successful response does not prove that the user received a sufficiently reliable valuation.
+
+⸻
+
+17. SERVICE-LEVEL INDICATORS AND OBJECTIVES
+
+Design a formal SLI/SLO framework.
+
+17.1 Service-Level Indicators
+
+Potential indicators include:
+
+* Request availability.
+* Successful request ratio.
+* Latency distribution.
+* Critical workflow completion.
+* Data publication freshness.
+* Search availability.
+* Valuation completion.
+* Queue processing delay.
+* Authentication availability.
+* Report generation reliability.
+
+Each SLI must have:
+
+* Exact definition.
+* Numerator.
+* Denominator.
+* Measurement window.
+* Exclusion rules.
+* Data source.
+* Owner.
+* Known limitations.
+
+17.2 Service-Level Objectives
+
+Do not invent arbitrary SLO targets.
+
+Propose initial candidate objectives only after inspecting:
+
+* Actual architecture.
+* Current reliability.
+* User expectations.
+* Business criticality.
+* Provider guarantees.
+* Operating costs.
+* Engineering capacity.
+
+Mark unapproved targets as proposals.
+
+17.3 Error Budgets
+
+Where appropriate, calculate:
+
+* Allowed failure budget.
+* Consumed error budget.
+* Remaining budget.
+* Burn rate.
+* Fast-burn incidents.
+* Slow-burn incidents.
+
+Define what happens when an error budget is exhausted.
+
+Possible actions:
+
+* Pause risky releases.
+* Prioritize reliability work.
+* Reduce nonessential changes.
+* Investigate recurring failures.
+* Reassess unrealistic objectives.
+
+Do not turn SLOs into meaningless decorative percentages.
+
+⸻
+
+18. ALERT MANAGEMENT AND EARLY WARNING
+
+Design a unified alert system.
+
+18.1 Severity Levels
+
+Use a documented severity model.
+
+Suggested categories:
+
+* SEV-0: catastrophic security, data-integrity, or platform-wide failure.
+* SEV-1: critical user-facing or business-critical disruption.
+* SEV-2: major degradation with a significant but limited blast radius.
+* SEV-3: moderate issue with a workaround.
+* SEV-4: informational or low-priority condition.
+
+The final mapping must be approved against the actual operational structure.
+
+18.2 Alert Components
+
+Every alert must include:
+
+* Unique identifier.
+* Severity.
+* Detection time.
+* Affected service.
+* Affected module.
+* Affected city or region, where relevant.
+* Detection rule.
+* Observed value.
+* Expected range.
+* Duration.
+* Evidence.
+* User impact.
+* Confidence.
+* Owner.
+* Escalation path.
+* Recommended investigation.
+* Current status.
+* Acknowledgment history.
+* Resolution evidence.
+
+18.3 Alert Quality
+
+Prevent alert fatigue through:
+
+* Deduplication.
+* Grouping related alerts.
+* Hysteresis.
+* Duration-based conditions.
+* Dynamic baselines where justified.
+* Maintenance windows.
+* Suppression rules.
+* Escalation.
+* Ownership.
+* Auto-resolution only when evidence supports it.
+
+Do not suppress an alert merely because it is inconvenient.
+
+Every suppression rule must have an owner, reason, scope, and expiration or review date.
+
+18.4 Early Warning
+
+Detect conditions that may become incidents:
+
+* Sustained memory growth.
+* Increasing queue age.
+* Database storage approaching a limit.
+* Abnormal AI cost growth.
+* Increasing API tail latency.
+* Declining search index freshness.
+* Repeated provider timeouts.
+* Increasing failed uploads.
+* Abnormal database read volume.
+* Unusual error concentration.
+* Deteriorating geographic data coverage.
+
+A prediction must include:
+
+* Evidence.
+* Time window.
+* Model or calculation.
+* Confidence.
+* Assumptions.
+* Limitations.
+
+Never present a speculative prediction as a confirmed future event.
+
+⸻
+
+19. CAPACITY ENGINEERING AND FORECASTING
+
+Build capacity analysis for:
+
+* CPU.
+* Memory.
+* Database.
+* Object storage.
+* Network.
+* API quotas.
+* AI usage.
+* Queue throughput.
+* Search capacity.
+* Concurrent users.
+* Background workers.
+
+19.1 Capacity Metrics
+
+For each resource, calculate where possible:
+
+* Current utilization.
+* Configured limit.
+* Available headroom.
+* Peak usage.
+* Growth rate.
+* Historical peak.
+* Forecasted demand.
+* Expected exhaustion point.
+* Cost of additional capacity.
+* Performance degradation risk.
+
+19.2 Load Scenarios
+
+Model:
+
+* Normal load.
+* Daily peak.
+* Weekly peak.
+* Campaign-related traffic increase.
+* Sudden traffic spike.
+* Large data import.
+* High-volume image upload.
+* Intensive search activity.
+* AI request surge.
+* Background job backlog.
+
+Separate measured capacity from theoretical capacity.
+
+Do not claim the platform supports a specific number of concurrent users without a documented load test and defined workload.
+
+19.3 Capacity Decision Support
+
+For every recommendation to increase capacity, explain:
+
+* Which resource is constrained.
+* What evidence demonstrates the constraint.
+* Which workloads are responsible.
+* Whether code optimization could solve the problem.
+* Whether query optimization could solve the problem.
+* Whether caching is appropriate.
+* Expected cost increase.
+* Expected benefit.
+* Potential side effects.
+
+Do not recommend scaling as the default solution to every performance problem.
+
+⸻
+
+20. MONITORING DATA QUALITY
+
+The monitoring system must monitor its own data quality.
+
+20.1 Telemetry Integrity
+
+Detect:
+
+* Missing samples.
+* Delayed samples.
+* Duplicate samples.
+* Incorrect timestamps.
+* Clock skew.
+* Inconsistent units.
+* Unexpected metric resets.
+* Collection failures.
+* Export failures.
+* Incorrect aggregation.
+* Sampling bias.
+* Data corruption.
+* Unauthorized metric modification.
+
+20.2 Freshness Status
+
+Every metric must show one of the following states:
+
+* FRESH.
+* DELAYED.
+* STALE.
+* MISSING.
+* INVALID.
+* NOT COLLECTED.
+* NOT SUPPORTED.
+* UNKNOWN.
+
+A missing metric must never be represented as zero.
+
+A stale metric must not appear as current.
+
+20.3 Monitoring Coverage
+
+Create a coverage dashboard showing:
+
+* Total known services.
+* Services with active monitoring.
+* Services with partial monitoring.
+* Services without monitoring.
+* Metrics with verified sources.
+* Metrics with unknown sources.
+* Critical workflows without synthetic checks.
+* Critical dependencies without health monitoring.
+* Monitoring collection failures.
+
+The dashboard must identify blind spots rather than hide them.
+
+20.4 Monitoring Pipeline Health
+
+Monitor the monitoring system itself:
+
+* Collector availability.
+* Collector failures.
+* Collection delay.
+* Ingestion throughput.
+* Ingestion errors.
+* Storage failures.
+* Alert delivery failures.
+* Dashboard query latency.
+* Missing telemetry.
+* Retention processing failures.
+* Monitoring cost.
+
+If the monitoring pipeline fails, the control center must clearly indicate that its visibility is degraded.
+
+It must not show a healthy platform status merely because no new alerts arrived.
+
+⸻
+
+21. INCIDENT TIMELINE AND ROOT-CAUSE INVESTIGATION
+
+Create a unified incident investigation interface.
+
+21.1 Incident Timeline
+
+Correlate:
+
+* First abnormal metric.
+* First failed request.
+* First user-facing failure.
+* Deployment.
+* Configuration change.
+* Database migration.
+* Provider outage.
+* Queue backlog.
+* Security event.
+* Administrative action.
+* Recovery action.
+* Service restoration.
+
+Display events in chronological order with exact timestamps and time-zone information.
+
+21.2 Root-Cause Classification
+
+Every investigation must distinguish:
+
+1. OBSERVED FACT.
+2. CORRELATED EVENT.
+3. POSSIBLE CAUSE.
+4. STRONGLY SUPPORTED HYPOTHESIS.
+5. CONFIRMED ROOT CAUSE.
+6. UNRESOLVED.
+
+Do not allow AI-generated diagnostic text to change an unresolved hypothesis into a confirmed cause.
+
+21.3 Diagnostic Report
+
+For every significant incident, generate a structured report containing:
+
+* Incident summary.
+* Start and end time.
+* Detection method.
+* Affected services.
+* Affected workflows.
+* User impact.
+* Technical evidence.
+* Timeline.
+* Deployment context.
+* Dependency context.
+* Root cause status.
+* Contributing factors.
+* Recovery actions.
+* Remaining risks.
+* Corrective actions.
+* Preventive actions.
+* Responsible owners.
+* Verification tests.
+
+Preserve the evidence required to reconstruct the investigation.
+
+⸻
+
+22. MONITORING USER INTERFACE AND VISUALIZATION REQUIREMENTS
+
+The monitoring interface must be understandable without sacrificing technical depth.
+
+22.1 Global Technical Overview
+
+Create a global technical overview containing:
+
+* Platform availability.
+* Critical service health.
+* API performance.
+* Database condition.
+* CPU availability, if exposed.
+* Memory condition, if exposed.
+* Storage condition.
+* Network condition, if exposed.
+* Queue condition.
+* Search condition.
+* Map condition.
+* AI provider condition.
+* Active incidents.
+* Critical alerts.
+* Monitoring coverage.
+* Last successful telemetry collection.
+
+Do not compress everything into one unexplained health score.
+
+22.2 Resource Cards
+
+Each resource card must show:
+
+* Current value.
+* Unit.
+* Limit or reference range.
+* Trend.
+* Status.
+* Last update.
+* Data source.
+* Short interpretation.
+* Affected service.
+* Drill-down action.
+
+Example:
+
+“Application memory: 78% of documented runtime limit. Increasing over the last 45 minutes. No confirmed root cause. Investigate recent deployment and search workload.”
+
+22.3 Graph Requirements
+
+Every chart must include:
+
+* Clear title.
+* Metric definition.
+* Unit.
+* Time range.
+* Source.
+* Sampling interval.
+* Freshness.
+* Aggregation method.
+* Thresholds.
+* Annotations.
+* Interpretation.
+
+Support:
+
+* Time-series charts.
+* Comparison charts.
+* Histograms.
+* Latency distributions.
+* Heatmaps.
+* Capacity projections.
+* Error-rate charts.
+* Queue-depth charts.
+* Geographic service-health views.
+* Dependency graphs.
+
+Do not use visually impressive graphs that conceal missing data or misleading aggregation.
+
+22.4 Drill-Down Navigation
+
+A user must be able to move from:
+
+Global platform condition
+→ Service
+→ Module
+→ Endpoint or job
+→ Metric
+→ Time interval
+→ Related logs and traces
+→ Deployment or configuration change
+→ Incident evidence.
+
+Maintain contextual filters during navigation.
+
+Do not force users to reconstruct the investigation manually across unrelated screens.
+
+22.5 Persian and RTL Requirements
+
+The actual product interface must support:
+
+* Persian language.
+* Right-to-left layout.
+* Correct Persian typography.
+* Readable technical labels.
+* Clear unit formatting.
+* Consistent date and time presentation.
+* Searchable metric names.
+* Technical identifiers displayed without corrupting direction.
+* Proper mixed Persian-English rendering.
+
+Use understandable Persian descriptions alongside technical terms.
+
+Do not translate established technical identifiers in ways that make them unrecognizable to engineers.
+
+⸻
+
+23. MONITORING SECURITY AND ACCESS CONTROL
+
+Monitoring data can reveal sensitive infrastructure details.
+
+Protect it accordingly.
+
+Define access control for:
+
+* Executive summaries.
+* Resource metrics.
+* Application logs.
+* Distributed traces.
+* Security events.
+* Database diagnostics.
+* Financial metrics.
+* User analytics.
+* Administrative activity.
+* Incident evidence.
+
+Apply least privilege.
+
+Mask sensitive values.
+
+Restrict raw log access.
+
+Record access to sensitive monitoring data.
+
+Separate the ability to view a security incident from the ability to modify or close it.
+
+Prevent administrators from silently altering monitoring evidence.
+
+Do not expose:
+
+* API keys.
+* Access tokens.
+* Passwords.
+* Session secrets.
+* Full authorization headers.
+* Sensitive personal records.
+* Unnecessary raw user content.
+
+Monitoring access must itself be audited.
+
+⸻
+
+24. REQUIRED TECHNICAL DELIVERABLES FOR PART 2
+
+Produce the following deliverables.
+
+Deliverable 2.1 — Infrastructure Inventory
+
+A verified inventory of all actual infrastructure components.
+
+For each component, provide:
+
+* Name.
+* Type.
+* Provider.
+* Environment.
+* Purpose.
+* Dependencies.
+* Criticality.
+* Monitoring availability.
+* Data source.
+* Owner.
+* Known limitations.
+
+Deliverable 2.2 — Monitoring Coverage Matrix
+
+Create a table with:
+
+* Component.
+* Required metrics.
+* Currently available metrics.
+* Missing metrics.
+* Instrumentation requirements.
+* Provider limitations.
+* Collection frequency.
+* Retention requirement.
+* Priority.
+* Risk of remaining unmonitored.
+
+Deliverable 2.3 — Metric Catalog
+
+Create a complete metric registry.
+
+Every metric must include:
+
+* Metric ID.
+* Name.
+* Definition.
+* Unit.
+* Source.
+* Collection method.
+* Aggregation.
+* Freshness.
+* Retention.
+* Owner.
+* Alert policy.
+* Current availability.
+* Limitations.
+
+Deliverable 2.4 — Service Dependency Graph
+
+Produce a dependency map based on verified code and infrastructure.
+
+Clearly distinguish verified dependencies from inferred dependencies.
+
+Deliverable 2.5 — Alert Catalog
+
+Define:
+
+* Alert ID.
+* Condition.
+* Severity.
+* Threshold.
+* Duration.
+* Deduplication.
+* Owner.
+* Escalation.
+* User impact.
+* Recovery condition.
+
+Mark all proposed thresholds as provisional until validated.
+
+Deliverable 2.6 — Dashboard and Page Inventory
+
+Describe every monitoring page, its purpose, users, data sources, visualizations, filters, and drill-down behavior.
+
+Deliverable 2.7 — Capacity and Cost Analysis
+
+Identify:
+
+* Resource limits.
+* Current utilization.
+* Available headroom.
+* Growth trends.
+* Capacity risks.
+* Cost exposure.
+* Missing usage data.
+* Forecast limitations.
+
+Do not fabricate costs or usage.
+
+Deliverable 2.8 — Monitoring Architecture Blueprint
+
+Provide a proposed architecture showing:
+
+* Instrumentation.
+* Collection.
+* Normalization.
+* Storage.
+* Analysis.
+* Alerting.
+* Visualization.
+* Security.
+* Retention.
+* Monitoring of the monitoring pipeline.
+
+Deliverable 2.9 — Diagnostic Framework
+
+Define the method for distinguishing observations, correlations, hypotheses, and confirmed root causes.
+
+Deliverable 2.10 — Monitoring Implementation Backlog
+
+Classify proposed work:
+
+* P0: Critical visibility or reliability gap.
+* P1: Important operational monitoring.
+* P2: Valuable optimization and advanced analysis.
+* P3: Optional future enhancement.
+
+For each task, include:
+
+* Stable ID.
+* Problem.
+* Proposed solution.
+* Dependencies.
+* Risk.
+* Acceptance criteria.
+* Test method.
+* Required evidence.
+* Estimated complexity.
+* Cost implications, where supportable.
+
+⸻
+
+25. FINAL QUALITY GATES FOR PART 2
+
+Before completing this part, verify that:
+
+1. CPU monitoring does not invent unavailable host metrics.
+2. Memory monitoring distinguishes application memory from infrastructure memory.
+3. Storage monitoring separates databases, objects, files, backups, and logs.
+4. Network monitoring distinguishes provider visibility from application instrumentation.
+5. Database monitoring reflects the actual database technology.
+6. API monitoring includes tail latency, not just averages.
+7. Cache monitoring includes correctness and invalidation, not just performance.
+8. Queue monitoring includes age, backlog, retries, and idempotency.
+9. Search and map monitoring includes both technical health and geographic isolation.
+10. AI monitoring includes quality, cost, latency, and safety.
+11. Frontend monitoring includes real user experience.
+12. Business workflow monitoring does not confuse traffic with success.
+13. Alerts are actionable and have owners.
+14. SLOs are evidence-based and not invented.
+15. Capacity forecasts expose their assumptions.
+16. Monitoring gaps are visible.
+17. The monitoring pipeline is itself monitored.
+18. Every significant diagnostic statement has evidence.
+19. No sensitive information is unnecessarily exposed.
+20. Every proposed feature is distinguished from an existing capability.
+
+The output must be detailed enough for a senior platform architect, site reliability engineer, infrastructure engineer, database engineer, security engineer, and technical product owner to review.
+
+However, the resulting system must remain understandable to a non-technical executive.
+
+Do not sacrifice correctness for dashboard aesthetics.
+
+Do not recommend additional infrastructure merely because it is fashionable.
+
+Do not assume that a complex monitoring platform is automatically better than a smaller, reliable, maintainable one.
+
+Do not implement anything.
+
+⸻
+
+END OF PART 2 OF 4
+
+This part defines the technical observability and monitoring requirements.
+
+Continue with Part 3 of the same master specification.
+
+Part 3 must define the ten command domains, their detailed administrative interfaces, governance responsibilities, role-based access, privileged workflows, data and AI governance, financial controls, engineering and release management, risk management, and the three cross-functional command centers.
+
+Maintain all restrictions established in Part 1.
+
+Do not implement anything until the complete four-part specification has been reviewed and explicitly approved.

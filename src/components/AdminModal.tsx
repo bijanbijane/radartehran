@@ -1,22 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react'; import { KeyRound, Lock, X } from 'lucide-react'; import { BuyerAlertLeadItem, MapTileServerId, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { FeatureFlags, ServerAuditLogEntry, SystemHealthData } from '../types/models'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, getDiagnosticSnapshots, recordDiagnosticEvent, } from '../utils/security'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; import { AdminOverviewAndModerationTabs } from './AdminOverviewAndModerationTabs'; import { AdminSecurityAndBackupTabs } from './AdminSecurityAndBackupTabs'; import { AdminMapProviderConfigPanel } from './AdminMapProviderConfigPanel'; export type AdminTabId = 'crm' | 'leads' | 'bargains' | 'prices' | 'security' | 'backup'; export type { ServerAuditLogEntry, SystemHealthData };
+import React, { useState, useEffect, useMemo } from 'react'; import { KeyRound, Lock, X, Shield } from 'lucide-react'; import { BuyerAlertLeadItem, MapTileServerId, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { FeatureFlags, ServerAuditLogEntry, SystemHealthData } from '../types/models'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, getDiagnosticSnapshots, recordDiagnosticEvent, } from '../utils/security'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; import { AdminOverviewAndModerationTabs } from './AdminOverviewAndModerationTabs'; import { AdminSecurityAndBackupTabs } from './AdminSecurityAndBackupTabs'; import { AdminMapProviderConfigPanel } from './AdminMapProviderConfigPanel'; export type AdminTabId = 'crm' | 'leads' | 'bargains' | 'prices' | 'security' | 'backup'; export type { ServerAuditLogEntry, SystemHealthData };
 export interface AdminModalProps { open: boolean; onClose: () => void; adminUnlocked: boolean; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; adminPassError: string; onAdminLogin: (e: React.FormEvent) => void; adminTab: AdminTabId; setAdminTab: React.Dispatch<React.SetStateAction<AdminTabId>>; sponsorRequests: SponsorCrmRequestItem[]; buyerLeads: BuyerAlertLeadItem[]; totalLiveBargainsCount: number; neighborhoods: Neighborhood[]; activeCity?: CityId; onAdminApproveSponsor: (req: SponsorCrmRequestItem) => void; onAdminDeleteSponsorRequest: (reqId: string) => void; onDownloadBuyerLeadsCsv: () => void; onAdminDeleteBargain: (hoodId: number, bargainId: string) => void; onAdminApproveBargain?: (hoodId: number, bargainId: string) => void; adminEditHoodId: number; setAdminEditHoodId: React.Dispatch<React.SetStateAction<number>>; adminEditBuySqm: number;
   setAdminEditBuySqm: React.Dispatch<React.SetStateAction<number>>; adminEditRahn80m: number; setAdminEditRahn80m: React.Dispatch<React.SetStateAction<number>>; adminPriceSavedMsg: string; onAdminQuickPriceSave: (e: React.FormEvent) => void; deepSyncing: boolean; onDeepWebSync: () => void; newAdminPassword: string;
   setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; adminPassChangeMsg: string;
   onAdminChangePassword: (e: React.FormEvent) => void; systemHealth: SystemHealthData | null; loadingSystemHealth: boolean; onRefreshSystemHealth: () => void; featureFlags: FeatureFlags; onToggleFeatureFlag: (key: keyof FeatureFlags) => void; onDownloadFullBackupJson: () => void;
   onRestoreFullBackupJson: (e: React.ChangeEvent<HTMLInputElement>) => void; backupStatusMsg: { type: 'success' | 'error'; text: string } | null; isVerifiedAdmin?: boolean; currentUserEmail?: string | null;
-  onGoogleSignIn?: () => void; onExtendSponsor30Days?: (hoodId: number) => void; onReleaseHoodSponsor?: (hoodId: number) => void; mapTileStyle?: MapTileServerId; onSelectMapTileStyle?: (style: MapTileServerId) => void; onRetryNeshan?: () => void; isFallbackActive?: boolean; }
+  onGoogleSignIn?: () => void; onExtendSponsor30Days?: (hoodId: number) => void; onReleaseHoodSponsor?: (hoodId: number) => void; mapTileStyle?: MapTileServerId; onSelectMapTileStyle?: (style: MapTileServerId) => void; onRetryNeshan?: () => void; isFallbackActive?: boolean; temporaryInspectionMode?: boolean; asPageView?: boolean; }
 export function AdminModal(props: AdminModalProps) { const { open, onClose, adminUnlocked, setAdminUnlocked, adminPassInput,
     setAdminPassInput, adminPassError, onAdminLogin, adminTab, setAdminTab, sponsorRequests, buyerLeads, totalLiveBargainsCount, neighborhoods, activeCity = 'tehran', onAdminApproveSponsor, onAdminDeleteSponsorRequest, onDownloadBuyerLeadsCsv, onAdminDeleteBargain, onAdminApproveBargain, adminEditHoodId,
     setAdminEditHoodId, adminEditBuySqm, setAdminEditBuySqm, adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg, onAdminQuickPriceSave, deepSyncing, onDeepWebSync, newAdminPassword, setNewAdminPassword, adminPassChangeMsg, onAdminChangePassword, systemHealth, loadingSystemHealth,
     onRefreshSystemHealth, featureFlags, onToggleFeatureFlag, onDownloadFullBackupJson, onRestoreFullBackupJson, backupStatusMsg, isVerifiedAdmin = false, currentUserEmail = null, onGoogleSignIn,
-    onExtendSponsor30Days, onReleaseHoodSponsor, mapTileStyle, onSelectMapTileStyle, onRetryNeshan, isFallbackActive,
-  } = props; const dialogRef = useDialogFocus(open, onClose); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const unitEditBuy = convertPricePerSqmToUnit(adminEditBuySqm || 120, areaUnit);
+    onExtendSponsor30Days, onReleaseHoodSponsor, mapTileStyle, onSelectMapTileStyle, onRetryNeshan, isFallbackActive, temporaryInspectionMode = true, asPageView = false,
+  } = props; const dialogRef = useDialogFocus(open && !asPageView, onClose); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const unitEditBuy = convertPricePerSqmToUnit(adminEditBuySqm || 120, areaUnit);
   const [adminTelegramText, setAdminTelegramText] = useState<string>('');
   const [adminTgSending, setAdminTgSending] = useState<boolean>(false);
   const [adminTgStatus, setAdminTgStatus] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const [inspectionLocked, setInspectionLocked] = useState<boolean>(false);
+  useEffect(() => {
+    if (open) setInspectionLocked(false);
+  }, [open]);
+  const isAccessGranted = (isVerifiedAdmin && adminUnlocked) || (temporaryInspectionMode && !inspectionLocked);
   const clientDiagnosticsCount = useMemo(() => {
     return getDiagnosticSnapshots().length;
   }, [open, adminTab]);
@@ -40,10 +45,10 @@ export function AdminModal(props: AdminModalProps) { const { open, onClose, admi
     }
   };
   useEffect(() => {
-    if (open && isVerifiedAdmin && adminUnlocked && featureFlags.enableTelegramFeed) {
+    if (open && (isVerifiedAdmin || temporaryInspectionMode) && (adminUnlocked || temporaryInspectionMode) && featureFlags.enableTelegramFeed) {
       loadAdminTelegramDigest(activeCity);
     }
-  }, [open, isVerifiedAdmin, adminUnlocked, featureFlags.enableTelegramFeed, activeCity]);
+  }, [open, isVerifiedAdmin, adminUnlocked, temporaryInspectionMode, featureFlags.enableTelegramFeed, activeCity]);
   const handleAdminSendTelegram = async (e: React.FormEvent) => {
     e.preventDefault();
     if (adminTgSending || !isVerifiedAdmin) return;
@@ -89,17 +94,17 @@ export function AdminModal(props: AdminModalProps) { const { open, onClose, admi
   if (!open) return null;
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      role={asPageView ? 'region' : 'dialog'}
+      aria-modal={asPageView ? undefined : 'true'}
       aria-label="پنل مدیریت سایت"
-      onClick={onClose}
-      className="fixed inset-0 bg-black/30 backdrop-blur-[3px] flex items-center justify-center p-4 z-50"
+      onClick={asPageView ? undefined : onClose}
+      className={asPageView ? 'w-full max-w-6xl mx-auto p-3 sm:p-6' : 'fixed inset-0 bg-black/30 backdrop-blur-[3px] flex items-center justify-center p-4 z-50'}
     >
       <div
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="apple-window-sheet max-w-4xl w-full p-5 max-h-[90vh] overflow-y-auto focus:outline-none"
+        className={asPageView ? 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm w-full p-5 sm:p-6 focus:outline-none' : 'apple-window-sheet max-w-4xl w-full p-5 max-h-[90vh] overflow-y-auto focus:outline-none'}
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700/70 pb-3.5 mb-4">
           <div className="flex items-center gap-2.5">
@@ -118,10 +123,13 @@ export function AdminModal(props: AdminModalProps) { const { open, onClose, admi
           </div>
           <div className="flex items-center gap-2">
             <AreaUnitToggle compact showIntlControls />
-            {isVerifiedAdmin && adminUnlocked && (
+            {isAccessGranted && (
               <button
                 type="button"
-                onClick={() => setAdminUnlocked(false)}
+                onClick={() => {
+                  setAdminUnlocked(false);
+                  setInspectionLocked(true);
+                }}
                 className="px-2.5 py-1.5 rounded-[10px] bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 text-xs font-bold cursor-pointer"
               >
                 قفل پنل
@@ -131,13 +139,13 @@ export function AdminModal(props: AdminModalProps) { const { open, onClose, admi
               type="button"
               aria-label="بستن پنل مدیریت"
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors"
+              className={asPageView ? 'px-3 py-1.5 rounded-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors' : 'w-8 h-8 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer transition-colors'}
             >
-              <X className="w-4 h-4 stroke-[2]" />
+              {asPageView ? <span>بازگشت به نقشه</span> : <X className="w-4 h-4 stroke-[2]" />}
             </button>
           </div>
         </div>
-        {!isVerifiedAdmin || !adminUnlocked ? (
+        {!isAccessGranted ? (
           <form onSubmit={onAdminLogin} className="max-w-md mx-auto py-6 space-y-4 text-xs">
             <div className="apple-grouped-card p-4 space-y-3">
               <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -209,6 +217,22 @@ export function AdminModal(props: AdminModalProps) { const { open, onClose, admi
           </form>
         ) : (
           <div className="space-y-4 text-xs">
+            {temporaryInspectionMode && !isVerifiedAdmin && (
+              <div className="p-3 rounded-[12px] bg-amber-50 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 stroke-[2.2]" />
+                  <div>
+                    <span className="font-extrabold block">حالت بررسی موقت (بدون نیاز به رمز عبور)</span>
+                    <span className="text-[11px] text-amber-800 dark:text-amber-300">
+                      دسترسی مستقیم جهت بررسی و ارزیابی بخش‌های مدیریت و مانیتورینگ؛ پس از اتمام بررسی به محل امن بازگردانده می‌شود.
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200/90 dark:bg-amber-900/80 text-amber-900 dark:text-amber-100 font-bold shrink-0">
+                  بررسی موقت
+                </span>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 apple-segmented p-1 rounded-[12px] font-bold">
               {[
                 { id: 'crm' as const, label: `۱. حامیان (${toPersianNum((sponsorRequests || []).length)})`, isEm: false },

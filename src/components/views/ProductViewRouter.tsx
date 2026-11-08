@@ -11,12 +11,15 @@ import { ProductDiscoverView } from './ProductDiscoverView';
 import { ProductIntelligenceView } from './ProductIntelligenceView';
 import { ProductToolsView } from './ProductToolsView';
 import { ProductUserSpaceView } from './ProductUserSpaceView';
+import { ProductAdminMonitoringView } from './ProductAdminMonitoringView';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
+import type { Neighborhood, MapTileServerId } from '../../data/neighborhoods';
 
 export interface ProductViewRouterProps {
   primaryView: PrimaryViewId;
   ui: any;
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
+  allNeighborhoods?: Neighborhood[];
   selectedHood: EvaluatedNeighborhood;
   handleSelectNeighborhood: (h: EvaluatedNeighborhood) => void;
   favoriteHoodIds: number[];
@@ -34,6 +37,10 @@ export interface ProductViewRouterProps {
   isVerifiedAdmin: boolean;
   activeCity: CityId;
   crudActions: any;
+  totalLiveBargainsCount?: number;
+  handleDeepWebSync?: () => void;
+  mapTileStyle?: MapTileServerId;
+  setMapTileStyle?: (style: MapTileServerId) => void;
   setShowReverseBudgetModal: (b: boolean) => void;
   onSignOut: () => void;
 }
@@ -238,7 +245,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
     content = (
       <ProductUserSpaceView
         currentUser={p.currentUser} onGoogleSignIn={p.crudActions.handleSaveUserPreferences} onSignOut={p.onSignOut}
-        isVerifiedAdmin={p.isVerifiedAdmin} onOpenAdminModal={() => ui.setShowAdminModal(true)}
+        isVerifiedAdmin={p.isVerifiedAdmin} onOpenAdminModal={() => { ui.setAdminUnlocked(true); ui.setPrimaryView('admin'); }}
         favoriteHoodIds={p.favoriteHoodIds} onToggleFavorite={p.toggleFavoriteHood}
         evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood}
         onSelectNeighborhood={(h) => handleSelectNeighborhood(h)}
@@ -250,6 +257,19 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         mode={p.mode} deposit={p.deposit} monthlyRent={p.monthlyRent} buyTotalBudget={p.buyTotalBudget}
         targetSqm={p.targetSqm} onOpenBudgetFilter={() => ui.setMobileFilterOpen(true)}
       />
+    );
+  } else if (primaryView === 'admin') {
+    return (
+      <div className="overflow-y-auto h-full w-full pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 bg-[#F8F9FA] dark:bg-slate-950">
+        <ProductAdminMonitoringView
+          ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} allNeighborhoods={p.allNeighborhoods}
+          activeCity={p.activeCity} totalLiveBargainsCount={p.totalLiveBargainsCount ?? 0}
+          featureFlags={p.featureFlags} currentUser={p.currentUser} isVerifiedAdmin={p.isVerifiedAdmin}
+          crudActions={p.crudActions} handleDeepWebSync={p.handleDeepWebSync || (() => {})}
+          mapTileStyle={p.mapTileStyle} setMapTileStyle={p.setMapTileStyle}
+          onBackToMap={() => ui.setPrimaryView('map')}
+        />
+      </div>
     );
   }
 

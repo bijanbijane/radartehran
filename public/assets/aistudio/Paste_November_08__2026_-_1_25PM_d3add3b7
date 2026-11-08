@@ -1,0 +1,1116 @@
+TEHRAN RADAR
+
+MASTER ADMINISTRATION, COMMAND, OBSERVABILITY AND MONITORING CONTROL CENTER
+
+PART 1 OF 4 — MISSION, SYSTEM DISCOVERY, ARCHITECTURAL PRINCIPLES, CONTROL MODEL AND INFORMATION ARCHITECTURE
+
+Target Environment: Google AI Studio — Agent / Build Environment
+Project: Tehran Radar
+Primary Objective: Design a comprehensive, evidence-based, production-oriented Administration, Command, Observability and Monitoring Platform for the existing Tehran Radar system.
+
+Execution Mode: STRICT READ-ONLY DISCOVERY AND ARCHITECTURAL DESIGN
+Implementation Permission: NOT GRANTED
+Repository Mutation Permission: NOT GRANTED
+Infrastructure Mutation Permission: NOT GRANTED
+
+⸻
+
+1. MASTER MISSION
+
+You are acting as a multidisciplinary senior engineering, infrastructure, cybersecurity, data governance, reliability engineering, product operations, financial operations, and enterprise architecture team.
+
+Your task is to investigate the actual Tehran Radar project and produce a complete, technically rigorous, implementation-ready architecture and product specification for its Administration, Command, Observability and Monitoring Control Center.
+
+Do not approach this as a conventional dashboard-design task.
+
+The objective is not to create a visually attractive collection of charts, counters, cards, tables, and status indicators.
+
+The objective is to design an operational control system capable of helping authorized personnel understand, supervise, investigate, diagnose, govern, and safely operate the entire Tehran Radar platform.
+
+The administration and monitoring environment must provide an accurate and explainable understanding of:
+
+* What is happening inside the platform.
+* Whether the platform is functioning correctly.
+* Whether users can successfully complete important tasks.
+* Whether infrastructure resources are healthy.
+* Whether the database is operating correctly.
+* Whether data is accurate, complete, current, and trustworthy.
+* Whether APIs and external services are functioning.
+* Whether background jobs and queues are healthy.
+* Whether the platform is experiencing security threats.
+* Whether administrative actions are properly authorized.
+* Whether AI services are producing reliable outputs.
+* Whether valuation models remain valid.
+* Whether operational costs are sustainable.
+* Whether individual product modules are healthy.
+* Whether one failure is propagating into other modules.
+* Whether the organization can recover from major incidents.
+* Whether the platform is gradually diverging from real-world market conditions.
+
+The system must provide both high-level executive visibility and deep technical investigation capabilities.
+
+It must serve non-technical executives without hiding technical information from authorized engineers.
+
+It must make complex technical conditions understandable without reducing them to misleading oversimplifications.
+
+Every important metric, alert, status, score, and recommendation must have a traceable definition, source, timestamp, calculation method, confidence level, and operational meaning.
+
+The system must distinguish between verified facts, observed measurements, estimates, correlations, suspected causes, and confirmed root causes.
+
+Never present an inference as a verified fact.
+
+⸻
+
+2. NON-NEGOTIABLE EXECUTION CONSTRAINTS
+
+2.1 Strict read-only operation
+
+During this assignment, you are authorized to inspect and analyze the existing project.
+
+You are not authorized to modify it.
+
+The following actions are prohibited:
+
+* Creating files.
+* Editing files.
+* Deleting files.
+* Renaming files.
+* Moving files.
+* Reorganizing directories.
+* Installing packages.
+* Updating dependencies.
+* Modifying package manifests.
+* Changing environment variables.
+* Modifying secrets.
+* Changing database schemas.
+* Creating database tables.
+* Executing migrations.
+* Changing database records.
+* Creating administrative users.
+* Modifying permissions.
+* Changing authentication configuration.
+* Changing security rules.
+* Modifying deployment configuration.
+* Creating Cloudflare resources.
+* Creating Firebase resources.
+* Creating storage buckets.
+* Creating queues.
+* Changing DNS records.
+* Modifying production settings.
+* Executing destructive commands.
+* Triggering production jobs.
+* Sending external requests that mutate data.
+* Publishing deployments.
+* Changing billing settings.
+* Enabling paid services.
+* Generating real user-facing notifications.
+* Changing live feature flags.
+* Running load tests against production.
+* Executing penetration tests against production.
+
+Do not interpret the existence of a configuration file as permission to modify the corresponding service.
+
+Do not interpret an architectural recommendation as permission to implement it.
+
+2.2 Explicit evidence of non-mutation
+
+At the beginning and end of the investigation, report the status of repository and infrastructure mutation.
+
+The final report must explicitly state:
+
+* Number of files created.
+* Number of files modified.
+* Number of files deleted.
+* Number of files renamed.
+* Number of files moved.
+* Number of packages installed.
+* Number of migrations executed.
+* Number of database records changed.
+* Number of production configuration changes.
+* Number of deployments.
+* Number of external mutating operations.
+
+The expected value for all these operations is zero.
+
+If you cannot verify an item, mark it as NOT VERIFIED instead of claiming that it did not occur.
+
+2.3 Evidence before assumptions
+
+Never assume that a feature exists because:
+
+* Its name appears in a document.
+* A developer mentioned it.
+* A frontend page references it.
+* A TypeScript interface describes it.
+* A configuration template exists.
+* A database collection is defined.
+* A service is mentioned in a planning document.
+* An endpoint name appears in a comment.
+
+A capability is considered verified only when sufficient evidence demonstrates its actual implementation and operational status.
+
+For every important finding, record:
+
+1. Finding ID.
+2. Description.
+3. Evidence source.
+4. File path or resource identifier.
+5. Relevant code location, when available.
+6. Verification method.
+7. Confidence level.
+8. Operational consequence.
+9. Recommended action.
+10. Whether the recommendation requires a new capability or modification of an existing one.
+
+Use these evidence classifications:
+
+* VERIFIED: directly confirmed through reliable evidence.
+* PARTIALLY VERIFIED: some evidence exists, but important aspects remain unconfirmed.
+* INFERRED: a reasonable conclusion based on indirect evidence.
+* NOT VERIFIED: insufficient evidence.
+* CONTRADICTED: available evidence conflicts.
+* NOT APPLICABLE: the capability does not apply to the current architecture.
+
+Do not invent missing information.
+
+Do not claim that a service is healthy merely because its configuration exists.
+
+Do not claim that a metric is available merely because a monitoring interface could display it.
+
+⸻
+
+3. PROJECT DISCOVERY AND CURRENT-STATE RECONNAISSANCE
+
+Before designing the control center, inspect the actual Tehran Radar repository and available infrastructure descriptions.
+
+The existing architecture may have changed since previous reviews. Treat all previously reported architectural facts as historical leads, not current truth.
+
+3.1 Repository inventory
+
+Inspect and document:
+
+* Repository structure.
+* Application entry points.
+* Frontend framework and version.
+* Backend framework and version.
+* Programming languages.
+* Package managers.
+* Build tools.
+* Routing architecture.
+* State management.
+* Authentication architecture.
+* Authorization architecture.
+* Database integrations.
+* Storage integrations.
+* API clients.
+* External service integrations.
+* Background processing.
+* Queue implementations.
+* Logging infrastructure.
+* Monitoring infrastructure.
+* Error handling.
+* Testing infrastructure.
+* Deployment configuration.
+* Environment configuration.
+* Feature flags.
+* Administrative interfaces.
+* Existing monitoring pages.
+* Existing analytics components.
+
+Identify the actual boundaries between frontend, backend, infrastructure, and external services.
+
+3.2 Existing administrative capabilities
+
+Search for all existing implementations related to:
+
+* Admin dashboards.
+* System status.
+* User management.
+* Role management.
+* Permissions.
+* Audit logs.
+* Security events.
+* Database monitoring.
+* API monitoring.
+* Error reporting.
+* Job monitoring.
+* Queue monitoring.
+* Storage monitoring.
+* Cost monitoring.
+* AI usage monitoring.
+* Data quality.
+* Data ingestion.
+* Valuation monitoring.
+* Search analytics.
+* Geographic analytics.
+* Report management.
+* Feature flags.
+* Configuration management.
+* Incident management.
+
+For each capability, determine:
+
+* Does it exist?
+* Is it implemented?
+* Is it connected to real data?
+* Does it have backend support?
+* Does it have authorization?
+* Does it have audit logging?
+* Does it have error handling?
+* Is it tested?
+* Is it operationally usable?
+* Does it duplicate another implementation?
+
+3.3 Backend reality verification
+
+Do not rely on frontend representations.
+
+Trace important administrative operations from the user interface to their actual backend implementation.
+
+For each operation, identify:
+
+* Frontend entry point.
+* API endpoint.
+* Authentication requirement.
+* Authorization requirement.
+* Backend handler.
+* Business logic.
+* Database operation.
+* External dependencies.
+* Audit event.
+* Error handling.
+* Test coverage.
+
+A button that appears in an admin panel does not prove that the corresponding operation is safely implemented.
+
+A frontend-only status indicator does not prove that the backend is healthy.
+
+A locally calculated metric does not prove that it reflects production reality.
+
+3.4 Data source verification
+
+For every proposed monitoring metric, identify its actual source.
+
+Possible sources include:
+
+* Operating system metrics.
+* Runtime metrics.
+* Application instrumentation.
+* Database telemetry.
+* Cloud provider metrics.
+* API gateway telemetry.
+* Queue metrics.
+* Storage metrics.
+* Browser performance data.
+* Synthetic tests.
+* Business events.
+* Billing records.
+* Security logs.
+* Model evaluation records.
+
+For each source, document:
+
+* Whether it exists.
+* Whether it is currently connected.
+* Whether the data is real or simulated.
+* Collection frequency.
+* Retention period.
+* Data quality.
+* Access restrictions.
+* Collection cost.
+* Known blind spots.
+
+If a metric cannot currently be collected, mark it as a proposed future capability.
+
+Do not fabricate CPU, RAM, database, network, or infrastructure measurements.
+
+If the runtime does not expose a metric, display its status as UNAVAILABLE or NOT COLLECTED, never as zero.
+
+3.5 Architecture discrepancy analysis
+
+Identify discrepancies between:
+
+* Frontend and backend.
+* API contracts and actual implementations.
+* Database schemas and application assumptions.
+* Authentication and authorization.
+* Documentation and code.
+* Monitoring dashboards and real telemetry.
+* Business logic and reporting logic.
+* Historical data and current data.
+* Local development and production environments.
+
+Create a discrepancy register.
+
+Each discrepancy must include severity, evidence, operational risk, affected modules, and recommended resolution.
+
+⸻
+
+4. CONTROL CENTER DESIGN PHILOSOPHY
+
+4.1 One platform, multiple operational perspectives
+
+The control center must provide a unified operational picture without pretending that all operational domains are identical.
+
+Infrastructure health, product health, data quality, security posture, financial health, and organizational readiness are separate dimensions.
+
+They may be correlated, but they must not be collapsed into one unexplained score.
+
+The control center must allow users to move from an executive summary to the underlying evidence.
+
+Example:
+
+Executive statement:
+
+“Property search is experiencing degraded performance.”
+
+The user must be able to investigate:
+
+* Which search operations are affected?
+* Which regions are affected?
+* When did degradation begin?
+* Which API endpoints are involved?
+* What are P50, P90, P95, and P99 latency?
+* Is database latency increasing?
+* Is cache hit ratio declining?
+* Is queue processing delayed?
+* Is the issue limited to a specific deployment?
+* Are errors increasing?
+* Is user task completion declining?
+* What evidence supports the suspected cause?
+* What is confirmed and what remains uncertain?
+
+4.2 Three information levels
+
+The system must support three progressive information levels.
+
+Level A: Executive overview
+
+Designed for founders, executives, and decision-makers.
+
+Show:
+
+* Current platform condition.
+* Major incidents.
+* Critical risks.
+* Business impact.
+* Major cost changes.
+* Data reliability.
+* Security posture.
+* User experience.
+* Operational capacity.
+* Decisions requiring attention.
+
+Use plain language.
+
+Do not expose unnecessary implementation details at this level.
+
+Level B: Specialist analysis
+
+Designed for operations managers, data specialists, security specialists, product managers, and technical leads.
+
+Show:
+
+* Detailed trends.
+* Comparisons.
+* Dependencies.
+* Performance indicators.
+* Quality indicators.
+* Error distributions.
+* Service-level objectives.
+* Anomaly analysis.
+* Historical patterns.
+* Evidence supporting hypotheses.
+
+Level C: Technical investigation
+
+Designed for authorized engineers and specialists.
+
+Show:
+
+* Logs.
+* Traces.
+* Correlation IDs.
+* Request IDs.
+* Error stacks.
+* Endpoint details.
+* Database diagnostics.
+* Queue execution history.
+* Deployment versions.
+* Configuration versions.
+* Resource telemetry.
+* Technical dependencies.
+
+Sensitive information must remain subject to strict authorization.
+
+4.3 No unexplained health scores
+
+Do not create arbitrary scores such as:
+
+* System Health: 97%.
+* Security Health: 92%.
+* Data Health: 88%.
+* AI Health: 95%.
+
+Unless the formula, inputs, weighting, missing-data behavior, confidence, and limitations are documented.
+
+If composite scores are used:
+
+* Show their component metrics.
+* Explain the calculation.
+* Display the freshness of inputs.
+* Identify missing components.
+* Avoid presenting a composite score when critical inputs are unavailable.
+* Preserve access to the underlying measurements.
+
+A score must never hide a critical failure.
+
+⸻
+
+5. GLOBAL INFORMATION ARCHITECTURE
+
+Design the administration environment around ten logical command domains.
+
+These are organizational and navigation domains. They do not automatically require ten independent backend services or ten separate teams.
+
+COMMAND 1 — EXECUTIVE COMMAND
+
+Purpose:
+
+Provide a reliable, high-level operational picture of the entire Tehran Radar platform.
+
+Core areas:
+
+* Platform overview.
+* Current operational status.
+* Critical incidents.
+* Major risks.
+* Business performance.
+* User activity.
+* Data reliability.
+* Security posture.
+* Infrastructure condition.
+* Financial overview.
+* Pending decisions.
+* Organizational readiness.
+
+The executive command must answer:
+
+1. Is the platform operating?
+2. Are users able to complete important tasks?
+3. Is the information trustworthy?
+4. Are there security incidents?
+5. Are costs under control?
+6. Are there critical unresolved risks?
+7. What requires an executive decision?
+
+COMMAND 2 — OPERATIONS COMMAND
+
+Purpose:
+
+Monitor and supervise operational services and technical infrastructure.
+
+Core areas:
+
+* Application services.
+* API services.
+* Database.
+* Storage.
+* Cache.
+* Queues.
+* Background jobs.
+* External dependencies.
+* Runtime health.
+* Resource utilization.
+* Performance.
+* Incidents.
+* Capacity.
+* Recovery readiness.
+
+COMMAND 3 — DATA INTELLIGENCE COMMAND
+
+Purpose:
+
+Supervise the complete information lifecycle.
+
+Core areas:
+
+* Data ingestion.
+* Data source registry.
+* Data quality.
+* Data freshness.
+* Data lineage.
+* Duplicate detection.
+* Entity resolution.
+* Conflicting records.
+* Geographic coverage.
+* Data correction.
+* Data retention.
+* Publication eligibility.
+* Analytical reliability.
+
+COMMAND 4 — SECURITY COMMAND
+
+Purpose:
+
+Supervise identity, access, threats, sensitive data, security events, and privileged operations.
+
+Core areas:
+
+* Authentication.
+* Authorization.
+* Roles.
+* Permissions.
+* Administrative accounts.
+* Privileged access.
+* Sessions.
+* Security alerts.
+* Audit integrity.
+* Secrets.
+* Data protection.
+* Suspicious activity.
+* Incident response.
+* Vulnerability status.
+
+COMMAND 5 — PRODUCT AND USER COMMAND
+
+Purpose:
+
+Understand product quality and user experience.
+
+Core areas:
+
+* User activity.
+* User journeys.
+* Search quality.
+* Listing quality.
+* Feature adoption.
+* Task completion.
+* User complaints.
+* Failed workflows.
+* Performance by device.
+* Mobile experience.
+* Accessibility.
+* Product experiments.
+
+COMMAND 6 — ARTIFICIAL INTELLIGENCE COMMAND
+
+Purpose:
+
+Govern AI models, services, costs, outputs, and reliability.
+
+Core areas:
+
+* Model registry.
+* Provider status.
+* Model versions.
+* Prompt versions.
+* Usage.
+* Costs.
+* Latency.
+* Failure rates.
+* Evaluation results.
+* Drift.
+* Output quality.
+* Human review.
+* Safety restrictions.
+* Prompt injection protection.
+* Circuit breakers.
+
+COMMAND 7 — ENGINEERING AND RELEASE COMMAND
+
+Purpose:
+
+Supervise code changes, deployment quality, compatibility, and software delivery.
+
+Core areas:
+
+* Repository status.
+* Branches.
+* Pull requests.
+* Commits.
+* Build status.
+* Test status.
+* Deployment history.
+* Release approvals.
+* API compatibility.
+* Database migrations.
+* Dependency vulnerabilities.
+* Feature flags.
+* Rollback readiness.
+* Technical debt.
+
+COMMAND 8 — FINANCIAL COMMAND
+
+Purpose:
+
+Provide an accurate understanding of operational costs, revenue, financial exposure, and unit economics.
+
+Core areas:
+
+* Infrastructure costs.
+* Database costs.
+* Storage costs.
+* Network costs.
+* API costs.
+* AI costs.
+* Vendor billing.
+* Revenue.
+* Subscriptions.
+* Refunds.
+* Operating expenses.
+* Feature-level economics.
+* Cost allocation.
+* Revenue concentration.
+* Budget alerts.
+
+COMMAND 9 — RISK AND CONTINUITY COMMAND
+
+Purpose:
+
+Supervise operational resilience and the organization’s ability to withstand failures.
+
+Core areas:
+
+* Risk register.
+* Critical dependencies.
+* Disaster recovery.
+* Backup status.
+* Recovery tests.
+* RTO.
+* RPO.
+* Capacity risk.
+* Vendor dependency.
+* Key-person dependency.
+* Incident history.
+* Business continuity.
+* Failure simulations.
+* Recovery readiness.
+
+COMMAND 10 — STRATEGY AND DECISION COMMAND
+
+Purpose:
+
+Support long-term product and organizational decisions.
+
+Core areas:
+
+* Strategic objectives.
+* Product priorities.
+* Evidence-based decisions.
+* Assumptions.
+* Experiments.
+* Decision history.
+* Open risks.
+* Competitive intelligence.
+* Customer validation.
+* Market validation.
+* Capability economics.
+* Organizational capacity.
+* Strategic dependencies.
+
+⸻
+
+6. THREE CROSS-CUTTING CONTROL CENTERS
+
+The following centers must operate across all ten command domains.
+
+6.1 FAILURE AND RESILIENCE LABORATORY
+
+Purpose:
+
+Identify how the platform behaves when individual components, dependencies, data sources, and entire workflows fail.
+
+Required capabilities:
+
+* Failure scenario registry.
+* Controlled test definitions.
+* Expected behavior.
+* Actual behavior.
+* Failure containment assessment.
+* Recovery assessment.
+* Evidence collection.
+* Test history.
+* Unresolved weaknesses.
+* Remediation tracking.
+
+The laboratory must distinguish between:
+
+* Planned simulations.
+* Staging tests.
+* Production observations.
+* Real incidents.
+
+Do not run destructive tests against production without explicit authorization.
+
+6.2 EARLY WARNING AND ANOMALY DETECTION CENTER
+
+Purpose:
+
+Detect emerging failures before they become major incidents.
+
+Monitor:
+
+* Sudden changes.
+* Gradual degradation.
+* Unusual patterns.
+* Missing telemetry.
+* Data quality deterioration.
+* Cost anomalies.
+* Performance drift.
+* Model drift.
+* Security anomalies.
+* Queue accumulation.
+* Vendor degradation.
+* User experience deterioration.
+
+Every anomaly must include:
+
+* Detection time.
+* Affected domain.
+* Severity.
+* Evidence.
+* Confidence.
+* Possible explanations.
+* Confirmed cause, if established.
+* Recommended investigation.
+* Owner.
+* Current status.
+
+Do not automatically label every anomaly as an incident.
+
+6.3 CHANGE AND RELEASE CONTROL CENTER
+
+Purpose:
+
+Understand and govern changes across the platform.
+
+Monitor:
+
+* Code changes.
+* Configuration changes.
+* Schema changes.
+* Model changes.
+* Prompt changes.
+* Data definition changes.
+* Permission changes.
+* Security policy changes.
+* Feature flag changes.
+* Infrastructure changes.
+* Vendor changes.
+
+For each significant change, record:
+
+* Change ID.
+* Requester.
+* Owner.
+* Approver.
+* Scope.
+* Reason.
+* Dependencies.
+* Risk.
+* Test evidence.
+* Planned release.
+* Actual release.
+* Rollback plan.
+* Outcome.
+* Post-release observations.
+
+A change must never be treated as successful merely because deployment completed.
+
+⸻
+
+7. ADMINISTRATION CONTROL PRINCIPLES
+
+7.1 Least privilege
+
+Every administrative function must be protected by explicit permissions.
+
+Do not use a single unrestricted administrator role for all functions.
+
+Permissions must distinguish:
+
+* View.
+* Investigate.
+* Export.
+* Propose.
+* Approve.
+* Execute.
+* Configure.
+* Disable.
+* Delete.
+* Recover.
+
+High-risk actions must require additional controls.
+
+7.2 Separation of duties
+
+For sensitive operations, separate:
+
+* Requester.
+* Reviewer.
+* Approver.
+* Executor.
+* Auditor.
+
+A single person should not be able to silently request, approve, execute, and erase evidence of a high-risk operation.
+
+7.3 Time-limited privileged access
+
+Privileged access should be granted for a defined purpose and duration where technically feasible.
+
+The system must record:
+
+* Who received access.
+* Why access was granted.
+* Who approved it.
+* Which permissions were granted.
+* When access started.
+* When access expired.
+* Whether access was revoked.
+* Which actions occurred during the session.
+
+7.4 Immutable or independently protected audit evidence
+
+Administrative audit records must be protected from ordinary administrative modification or deletion.
+
+The control center must identify whether audit integrity is independently protected or merely stored alongside the application data.
+
+Do not claim audit immutability unless the actual storage and access architecture supports that claim.
+
+7.5 No hidden administrative backdoors
+
+Do not design undocumented administrative accounts, bypass endpoints, secret master passwords, or unlogged emergency controls.
+
+Emergency access must be explicit, restricted, time-limited, logged, and independently reviewable.
+
+⸻
+
+8. GLOBAL DASHBOARD INFORMATION DESIGN
+
+The global overview must be useful without becoming a wall of numbers.
+
+It should contain logically grouped information.
+
+Recommended primary groups:
+
+1. Platform status.
+2. User-facing service health.
+3. Infrastructure resources.
+4. Database health.
+5. Data quality and freshness.
+6. Security and incidents.
+7. AI and external services.
+8. Financial consumption.
+9. Release and change status.
+10. Recovery readiness.
+
+Each group should display:
+
+* Current status.
+* Trend.
+* Last update.
+* Data source.
+* Confidence or completeness.
+* Active alerts.
+* Link to investigation.
+
+A dashboard must clearly distinguish:
+
+* Healthy.
+* Degraded.
+* Critical.
+* Unknown.
+* Unavailable.
+* Not monitored.
+* Stale data.
+
+Unknown is not healthy.
+
+Unavailable is not zero.
+
+No recent data is not proof of normal operation.
+
+⸻
+
+9. METRIC AND STATUS CONTRACT
+
+Every metric displayed in the control center must have a formal definition.
+
+Required fields:
+
+* Metric ID.
+* Metric name.
+* Description.
+* Domain.
+* Unit.
+* Measurement type.
+* Source.
+* Collection method.
+* Calculation method.
+* Collection frequency.
+* Aggregation interval.
+* Timestamp.
+* Freshness threshold.
+* Retention policy.
+* Valid range.
+* Alert thresholds.
+* Missing-data behavior.
+* Confidence.
+* Known limitations.
+* Owner.
+* Access classification.
+
+Metric categories:
+
+* Infrastructure metrics.
+* Application metrics.
+* Business metrics.
+* Data quality metrics.
+* Security metrics.
+* Financial metrics.
+* AI metrics.
+* User experience metrics.
+* Organizational metrics.
+
+Do not combine different metric categories without documenting their meaning.
+
+⸻
+
+10. MANDATORY DESIGN OUTPUTS FOR PART 1
+
+After completing the investigation and architectural analysis, produce:
+
+Deliverable 1: Current-State Architecture Report
+
+Include:
+
+* Verified architecture.
+* Existing modules.
+* Existing admin capabilities.
+* Existing telemetry.
+* Existing data sources.
+* Existing security controls.
+* Existing operational controls.
+* Confirmed gaps.
+* Unverified capabilities.
+* Contradictions.
+
+Deliverable 2: System Capability Inventory
+
+For each capability:
+
+* Capability name.
+* Current status.
+* Evidence.
+* Backend support.
+* Frontend support.
+* Authorization.
+* Auditability.
+* Testing.
+* Dependencies.
+* Gap.
+* Recommendation.
+
+Deliverable 3: Control Center Information Architecture
+
+Provide:
+
+* Ten command domains.
+* Three cross-cutting control centers.
+* Navigation hierarchy.
+* Page hierarchy.
+* Role-specific visibility.
+* Main workflows.
+* Cross-domain navigation.
+
+Deliverable 4: Architecture Blueprint
+
+Describe:
+
+* Frontend architecture.
+* Backend architecture.
+* Data architecture.
+* Telemetry architecture.
+* Security architecture.
+* Permission architecture.
+* Audit architecture.
+* Alert architecture.
+* Integration architecture.
+* Storage and retention architecture.
+
+Separate existing verified architecture from proposed future architecture.
+
+Deliverable 5: Evidence and Uncertainty Register
+
+For every major design decision, state:
+
+* What is known.
+* What is unknown.
+* What is inferred.
+* What must be verified.
+* What evidence is required.
+* What decision is blocked.
+
+Deliverable 6: Initial Risk Register
+
+Classify findings by:
+
+* P0 — Critical.
+* P1 — High.
+* P2 — Medium.
+* P3 — Low.
+
+For each risk, include:
+
+* Probability.
+* Impact.
+* Scope.
+* Detection difficulty.
+* Recovery difficulty.
+* Business consequence.
+* Security consequence.
+* Data consequence.
+* Recommended mitigation.
+
+Do not assign severity based only on technical complexity. Assess real operational consequences.
+
+⸻
+
+11. FINAL QUALITY REQUIREMENTS
+
+The proposed control center must be:
+
+* Evidence-based.
+* Modular.
+* Secure.
+* Auditable.
+* Explainable.
+* Scalable.
+* Cost-aware.
+* Maintainable.
+* Understandable to non-technical decision-makers.
+* Deep enough for technical specialists.
+* Honest about unavailable telemetry.
+* Resistant to misleading metrics.
+* Capable of identifying silent failures.
+* Capable of tracing problems across modules.
+* Designed for gradual implementation.
+
+Do not recommend a complex infrastructure platform merely because it is fashionable.
+
+Do not introduce unnecessary microservices, event buses, data warehouses, orchestration systems, or commercial monitoring platforms without a demonstrated requirement.
+
+Prefer the simplest architecture that can satisfy the verified operational needs while preserving a credible path to expansion.
+
+The final design must distinguish:
+
+1. What already exists.
+2. What must be repaired.
+3. What must be extended.
+4. What must be newly built.
+5. What should not be built yet.
+
+END OF PART 1 OF 4.
+
+Do not implement anything. Continue to the next part of the same master specification only after the full current-state discovery and Part 1 deliverables have been completed.

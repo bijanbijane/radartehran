@@ -1,0 +1,2856 @@
+TEHRAN RADAR
+
+MASTER ADMINISTRATION, COMMAND, OBSERVABILITY AND MONITORING CONTROL CENTER
+
+PART 4 OF 4
+
+END-TO-END FAILURE SCENARIOS, ADVERSARIAL VALIDATION, ACCEPTANCE CRITERIA, IMPLEMENTATION ROADMAP AND FINAL ARCHITECTURE APPROVAL
+
+⸻
+
+1. MISSION OF PART 4
+
+This part defines how the complete administrative and monitoring architecture must be tested, validated, prioritized, and approved before implementation.
+
+The objective is not to produce an attractive collection of dashboards.
+
+The objective is to demonstrate that the proposed control center can help Tehran Radar:
+
+* Detect failures.
+* Understand their scope.
+* Identify affected users and business functions.
+* Preserve evidence.
+* Contain damage.
+* Coordinate recovery.
+* Verify restored functionality.
+* Prevent recurrence.
+* Communicate accurately.
+* Maintain accountability.
+* Control operational and financial exposure.
+
+Every critical capability must have measurable acceptance criteria.
+
+Every major claim must be supported by evidence.
+
+Every unverified capability must remain explicitly unverified.
+
+The final design must distinguish:
+
+1. What currently exists and has been verified.
+2. What exists but is incomplete.
+3. What exists but is unreliable.
+4. What requires additional instrumentation.
+5. What requires architectural modification.
+6. What requires a new implementation.
+7. What should not be implemented yet.
+
+Do not treat architectural recommendations as proof of implementation.
+
+Do not treat successful compilation as proof of operational correctness.
+
+Do not treat a successful health endpoint as proof that the entire business workflow is functioning.
+
+⸻
+
+2. UNIVERSAL FAILURE SCENARIO FRAMEWORK
+
+Every failure scenario must use a common evaluation structure.
+
+For each scenario, document:
+
+* Scenario ID.
+* Scenario title.
+* Scenario category.
+* Severity.
+* Preconditions.
+* Initial system state.
+* Trigger.
+* Event sequence.
+* Detection mechanism.
+* Expected alert.
+* Actual alert.
+* Detection delay.
+* Affected components.
+* Affected geographic areas.
+* Affected users.
+* Business impact.
+* Data integrity impact.
+* Security impact.
+* Financial impact.
+* Evidence preservation.
+* Containment procedure.
+* Recovery procedure.
+* Recovery verification.
+* Communication requirements.
+* Residual risk.
+* Root cause.
+* Corrective actions.
+* Responsible owner.
+* Retest date.
+* Acceptance criteria.
+
+For each scenario, distinguish:
+
+* DETECTED: the system recognized an event.
+* IDENTIFIED: the affected component or record was identified.
+* CONTAINED: the spread or impact was limited.
+* RECOVERED: service or data was restored.
+* VERIFIED: restoration was independently checked.
+* RESOLVED: the underlying problem was addressed.
+* CLOSED: required documentation and reviews were completed.
+
+These states must not be treated as interchangeable.
+
+A service returning HTTP 200 does not prove that its data is correct.
+
+A restored database does not prove that downstream reports are correct.
+
+A closed incident does not prove that the underlying risk has disappeared.
+
+⸻
+
+3. CRITICAL END-TO-END FAILURE SCENARIOS
+
+SCENARIO 01 — PROPERTY DATA CORRUPTION PROPAGATES INTO MARKET INDICATORS AND VALUATION
+
+Mission
+
+Test whether the platform can detect and contain incorrect property information before it contaminates market analytics and valuation outputs.
+
+Preconditions
+
+A property record exists.
+
+The record is referenced by:
+
+* Property detail pages.
+* Search indexes.
+* Neighborhood statistics.
+* Comparable-property datasets.
+* Valuation calculations.
+* Analytical reports.
+* API consumers.
+* Cached representations.
+
+Failure Injection
+
+Introduce a controlled, isolated test error into a property attribute.
+
+Examples:
+
+* Incorrect area.
+* Incorrect neighborhood.
+* Incorrect building age.
+* Incorrect property type.
+* Incorrect price.
+* Incorrect geographic coordinates.
+
+Use a test environment and synthetic data.
+
+Do not modify real production records.
+
+Required Detection
+
+The system should identify:
+
+* An unusual attribute change.
+* A conflict with previous verified information.
+* An inconsistency with related records.
+* A suspicious change in derived metrics.
+* Affected downstream calculations.
+
+Required Impact Analysis
+
+Determine:
+
+* Which property records are affected.
+* Which search indexes contain the incorrect value.
+* Which neighborhood indicators use the record.
+* Which valuation results depend on it.
+* Which reports include the record.
+* Which APIs expose the incorrect result.
+* Which cached values may remain stale.
+
+Required Containment
+
+The system must support:
+
+* Suspending affected analytical outputs.
+* Marking the source record as disputed.
+* Preventing further propagation.
+* Preserving the previous state.
+* Creating a correction case.
+* Identifying affected users or published reports where possible.
+
+Required Recovery
+
+Correct the source record.
+
+Rebuild or invalidate affected derived artifacts.
+
+Recalculate affected indicators.
+
+Regenerate dependent valuation results where necessary.
+
+Verify that stale cache entries and indexes are no longer presented as current.
+
+Acceptance Criteria
+
+* The original and corrected values are traceable.
+* The correction has a responsible owner.
+* Every affected downstream artifact can be identified or explicitly marked as unknown.
+* Invalid analytical outputs can be suspended.
+* Recalculated results reference the correct data version.
+* Historical output versions remain distinguishable.
+* No stale result is presented as newly verified.
+* The entire correction process is auditable.
+
+⸻
+
+SCENARIO 02 — ADMINISTRATOR ACCOUNT COMPROMISE AND ATTEMPTED AUDIT DESTRUCTION
+
+Mission
+
+Test whether a compromised administrator account can destroy evidence, escalate privileges, or silently alter critical platform state.
+
+Preconditions
+
+An administrator has access to a test administrative environment.
+
+The account is assigned realistic but limited privileges.
+
+Failure Injection
+
+Simulate:
+
+* Stolen session credentials.
+* Unauthorized privilege escalation.
+* Attempted policy modification.
+* Attempted audit deletion.
+* Unauthorized data export.
+* Attempted creation of another privileged account.
+* Attempted disabling of monitoring.
+* Attempted modification of security logs.
+
+Use synthetic identities and test credentials only.
+
+Required Detection
+
+Detect:
+
+* Unusual login behavior.
+* Privilege elevation.
+* Sensitive policy changes.
+* Unexpected administrative exports.
+* Attempts to alter protected audit records.
+* Unusual administrative action volume.
+* Attempts to disable security controls.
+
+Required Containment
+
+Support:
+
+* Session revocation.
+* Account suspension.
+* Credential rotation.
+* Privilege removal.
+* Investigation preservation.
+* Incident escalation.
+* Verification of affected resources.
+
+Required Evidence
+
+Preserve:
+
+* Authentication events.
+* Authorization decisions.
+* Privilege changes.
+* Administrative actions.
+* Relevant request identifiers.
+* Timestamps.
+* Failed authorization attempts.
+* Approval records.
+
+Acceptance Criteria
+
+* An administrator cannot silently erase their own audit history.
+* High-risk operations require appropriate authorization.
+* Privilege escalation is detectable.
+* Session revocation takes effect within the defined security objective.
+* Audit records remain available to authorized independent investigators.
+* The system distinguishes confirmed compromise from suspicious behavior.
+* Recovery procedures do not depend entirely on the compromised administrator account.
+
+⸻
+
+SCENARIO 03 — GRADUAL DATA SOURCE POISONING
+
+Mission
+
+Determine whether a source can slowly introduce misleading information without triggering simple anomaly thresholds.
+
+Preconditions
+
+The test environment contains several synthetic information sources.
+
+Some sources are independent.
+
+Others reproduce information originating from the same upstream source.
+
+Failure Injection
+
+Introduce gradual changes:
+
+* Repeated incorrect property prices.
+* False neighborhood classifications.
+* Artificially inflated listing counts.
+* Repeated copied claims.
+* Coordinated submissions.
+* Slowly changing geographic information.
+* Delayed updates that preserve outdated values.
+
+Avoid relying only on sudden or extreme changes.
+
+Required Detection
+
+Evaluate:
+
+* Source reliability changes.
+* Source concentration.
+* Repeated information patterns.
+* Dependency between sources.
+* Sudden changes in data distributions.
+* Unusual agreement between otherwise unrelated records.
+* Changes in source acquisition behavior.
+
+Required Source Independence Analysis
+
+The system must distinguish:
+
+* Independent original observations.
+* Direct copies.
+* Reposts.
+* Aggregators.
+* Sources sharing the same upstream data.
+* Sources whose independence is unknown.
+
+Ten websites repeating one false claim must not be counted as ten independent confirmations.
+
+Required Containment
+
+Support:
+
+* Reducing or suspending source influence.
+* Flagging affected data.
+* Suspending high-impact publications.
+* Requiring additional verification.
+* Preserving original source evidence.
+
+Acceptance Criteria
+
+* Gradual poisoning is not evaluated only through fixed thresholds.
+* Source dependency is represented where evidence permits.
+* Source influence on important indicators is measurable.
+* High-impact outputs can be suspended.
+* The system does not automatically accuse a source of malicious conduct without sufficient evidence.
+* The investigation preserves competing explanations.
+
+⸻
+
+SCENARIO 04 — SIMULTANEOUS DATABASE AND AI PROVIDER OUTAGE
+
+Mission
+
+Test whether the platform can preserve essential functions when its primary database and an external AI provider are unavailable.
+
+Preconditions
+
+An isolated staging environment contains representative services.
+
+Failure Injection
+
+Simulate:
+
+* Database connection failure.
+* Database query timeouts.
+* AI provider timeout.
+* AI quota exhaustion.
+* AI authentication failure.
+* Delayed recovery.
+* Repeated request failures.
+
+Required Behavior
+
+Determine which functions:
+
+* Must stop.
+* Can continue in read-only mode.
+* Can use cached information.
+* Can use deterministic non-AI logic.
+* Can be queued safely.
+* Must require manual processing.
+
+Required Safeguards
+
+* Circuit breakers.
+* Bounded retries.
+* Backoff.
+* Idempotency.
+* Queue limits.
+* Timeout enforcement.
+* Fallback rules.
+* Clear user-facing failure messages.
+
+Do not repeatedly retry an unavailable provider without limits.
+
+Do not allow failed AI calls to create uncontrolled spending.
+
+Acceptance Criteria
+
+* Critical functions degrade in a controlled manner.
+* Unrelated functions remain available where technically possible.
+* No duplicate financial or transactional operation is created.
+* Failed AI calls do not silently produce fabricated success results.
+* Cached data is clearly identified by freshness.
+* Recovery does not create a request storm.
+* The platform verifies consistency after reconnection.
+
+⸻
+
+SCENARIO 05 — PARTIAL DATABASE MIGRATION DURING ACTIVE USER TRAFFIC
+
+Mission
+
+Test migration safety when old and new application versions may operate simultaneously.
+
+Failure Injection
+
+In an isolated environment:
+
+1. Start with the current schema.
+2. Introduce a compatible schema expansion.
+3. Run old and new application versions.
+4. Simulate partial migration.
+5. Interrupt the migration.
+6. Resume the migration.
+7. Simulate application rollback.
+8. Verify data consistency.
+
+Required Monitoring
+
+Display:
+
+* Migration state.
+* Processed records.
+* Remaining records.
+* Failure count.
+* Processing speed.
+* Locking behavior.
+* Database load.
+* Schema compatibility.
+* Application version compatibility.
+
+Required Safeguards
+
+* Migration checkpoints.
+* Idempotent transformations.
+* Expand-and-contract patterns where appropriate.
+* Explicit compatibility rules.
+* Backup verification.
+* Rollback or compensation plans.
+* Migration ownership.
+* Post-migration verification.
+
+Acceptance Criteria
+
+* The migration does not silently corrupt existing records.
+* The old application version does not fail unexpectedly during the supported transition period.
+* Interrupted migration state is recoverable.
+* Partial completion is detectable.
+* Data consistency is verified independently.
+* Rollback limitations are documented.
+* No migration is labeled safe solely because it completed without an error message.
+
+⸻
+
+SCENARIO 06 — INCORRECT MARKET REPORT PUBLICATION
+
+Mission
+
+Test whether the platform can detect, suspend, correct, and communicate an incorrect published analytical result.
+
+Failure Injection
+
+Publish a synthetic report containing a controlled analytical error.
+
+Examples:
+
+* Wrong geographic scope.
+* Incorrect sample count.
+* Incorrect time period.
+* Incorrect source attribution.
+* Invalid calculation.
+* Outdated data.
+* Incorrect uncertainty statement.
+
+Required Detection
+
+The system must support:
+
+* Report validation.
+* Source verification.
+* Calculation reproduction.
+* Publication review.
+* Error reporting.
+* Impact analysis.
+
+Required Containment
+
+Support:
+
+* Suspending the report.
+* Preventing new distribution.
+* Marking the report as under correction.
+* Identifying known recipients where legally and technically possible.
+* Preserving the original version.
+
+Required Correction
+
+Produce:
+
+* Corrected report.
+* Change explanation.
+* Affected figures.
+* Methodology changes.
+* Updated limitations.
+* Publication timestamp.
+* Responsible reviewer.
+
+Acceptance Criteria
+
+* The original report remains identifiable as superseded or retracted.
+* The corrected version is traceable.
+* The platform does not silently replace the original artifact.
+* Downstream APIs and downloads can identify the correction.
+* Communication is based on verified facts.
+* Marketing cannot suppress a material correction merely because it is commercially inconvenient.
+
+⸻
+
+SCENARIO 07 — LOSS OF THE LARGEST ENTERPRISE CUSTOMER
+
+Mission
+
+Test whether revenue concentration creates an existential operational dependency.
+
+Failure Injection
+
+Use a financial simulation.
+
+Assume the largest customer terminates its agreement.
+
+Required Analysis
+
+Calculate:
+
+* Revenue loss.
+* Cash-flow impact.
+* Operating margin impact.
+* Contractual obligations.
+* Staffing impact.
+* Vendor commitments.
+* Data access changes.
+* Customer-specific infrastructure costs.
+* Potential service shutdown requirements.
+
+Required Decision Support
+
+Present:
+
+* Immediate exposure.
+* Short-term exposure.
+* Long-term exposure.
+* Available cost reductions.
+* Alternative revenue sources.
+* Required operating changes.
+* Risks of reducing service quality.
+
+Acceptance Criteria
+
+* The system identifies concentration risk.
+* Forecasts distinguish assumptions from actual figures.
+* Customer-specific data is handled according to contractual obligations.
+* Operational decisions are recorded.
+* The organization can estimate its financial runway using actual available financial data.
+* The platform does not confuse customer concentration with infrastructure concentration.
+
+⸻
+
+SCENARIO 08 — SIMULTANEOUS DEPARTURE OF TWO KEY OPERATORS
+
+Mission
+
+Test whether critical operations depend on knowledge held by a very small number of people.
+
+Failure Injection
+
+Simulate the sudden unavailability of two key employees.
+
+Do not revoke real credentials or disrupt production.
+
+Required Analysis
+
+Identify:
+
+* Critical responsibilities.
+* Unowned tasks.
+* Missing backups.
+* Undocumented procedures.
+* Personal access dependencies.
+* Unavailable recovery knowledge.
+* Vendor relationships without backup contacts.
+* Unreviewed changes.
+
+Required Recovery
+
+Use documented succession and handover procedures.
+
+Transfer ownership through authorized identity management.
+
+Do not transfer personal credentials.
+
+Acceptance Criteria
+
+* Critical services have identified owners and backups.
+* Recovery procedures are accessible to authorized successors.
+* Critical credentials are managed through approved systems.
+* Business continuity does not rely on one employee’s private account.
+* The system identifies responsibilities that cannot currently be transferred safely.
+
+⸻
+
+SCENARIO 09 — SUDDEN INFRASTRUCTURE AND AI COST SURGE
+
+Mission
+
+Test whether the financial command center can identify and contain unexpected cost escalation.
+
+Failure Injection
+
+Simulate:
+
+* Unexpected traffic growth.
+* AI retry loops.
+* Excessive model usage.
+* Storage growth.
+* Egress increase.
+* Database query inefficiency.
+* Queue backlog.
+* Abusive API traffic.
+* Unexpected provider pricing changes.
+
+Required Detection
+
+Identify:
+
+* Cost increase rate.
+* Unusual usage.
+* Cost per successful workflow.
+* Cost by module.
+* Cost by provider.
+* Cost by model.
+* Estimated monthly impact.
+* Budget deviation.
+
+Required Containment
+
+Support:
+
+* Per-feature usage limits.
+* Per-provider budgets.
+* AI circuit breakers.
+* Rate limiting.
+* Controlled degradation.
+* Noncritical feature suspension.
+* Provider fallback where justified.
+
+Acceptance Criteria
+
+* Cost anomalies are visible.
+* The source of the increase can be investigated.
+* Limits have predictable behavior.
+* Essential services are not indiscriminately disabled.
+* The financial dashboard distinguishes estimates from provider-confirmed charges.
+* Cost control actions are audited.
+
+⸻
+
+SCENARIO 10 — FAILURE OF ONE GEOGRAPHIC REGION
+
+Mission
+
+Test whether a problem in one city or neighborhood can be isolated without unnecessarily affecting the rest of the platform.
+
+Failure Injection
+
+Simulate a failure affecting one geographic scope.
+
+Examples:
+
+* Corrupted neighborhood boundaries.
+* Incorrect regional mapping.
+* Search-index failure.
+* Regional data source outage.
+* Invalid local market statistics.
+* Geographic query performance degradation.
+
+Required Detection
+
+Identify:
+
+* Affected city.
+* Affected neighborhoods.
+* Affected data assets.
+* Affected searches.
+* Affected valuations.
+* Affected reports.
+* Cross-region dependencies.
+
+Required Containment
+
+Support:
+
+* Suspending affected regional outputs.
+* Maintaining unrelated geographic functionality.
+* Restricting invalid data propagation.
+* Displaying geographic limitations.
+* Rebuilding regional indexes.
+
+Acceptance Criteria
+
+* The affected region is identified accurately.
+* Unaffected regions remain operational where possible.
+* Regional data integrity can be verified independently.
+* Geographic boundary versions are traceable.
+* Cross-region aggregation does not silently include invalid data.
+
+⸻
+
+SCENARIO 11 — TELEMETRY PIPELINE FAILURE WHILE THE PLATFORM APPEARS HEALTHY
+
+Mission
+
+Test whether the monitoring system can detect that it has stopped observing the platform.
+
+Failure Injection
+
+Simulate:
+
+* Telemetry collector failure.
+* Metrics ingestion failure.
+* Logging pipeline interruption.
+* Trace export failure.
+* Monitoring storage outage.
+* Delayed data processing.
+
+Required Detection
+
+The monitoring platform must monitor its own collection pipeline.
+
+Display:
+
+* Last received sample.
+* Last successful ingestion.
+* Collection delay.
+* Missing intervals.
+* Dropped events.
+* Collector health.
+* Storage health.
+* Alert delivery status.
+
+Acceptance Criteria
+
+* Missing telemetry is not represented as zero activity.
+* Stale metrics are clearly marked.
+* Monitoring degradation generates an independent warning where possible.
+* Administrators can distinguish a healthy service from an unobserved service.
+* Monitoring failure does not silently create false confidence.
+
+⸻
+
+SCENARIO 12 — TIME-SERIES CORRUPTION CAUSED BY CLOCK SKEW
+
+Mission
+
+Test whether inconsistent system clocks can distort event ordering, latency calculations, financial records, and analytical results.
+
+Failure Injection
+
+Simulate clock differences between:
+
+* Application servers.
+* Database services.
+* Background workers.
+* External providers.
+* Browser clients.
+* Event collectors.
+
+Required Validation
+
+Check:
+
+* Timestamp normalization.
+* UTC storage.
+* Time-zone conversion.
+* Event ordering.
+* Delayed event ingestion.
+* Duplicate event handling.
+* Duration calculations.
+* Historical reconstruction.
+
+Acceptance Criteria
+
+* Event time and ingestion time are distinguishable.
+* Clock uncertainty is visible where relevant.
+* Time-series calculations do not silently treat late events as current events.
+* Time-zone changes do not corrupt stored timestamps.
+* Historical reports can identify the applicable time basis.
+
+⸻
+
+SCENARIO 13 — CACHE POISONING OR STALE VALUATION RESULT
+
+Mission
+
+Test whether incorrect or outdated cached values can override corrected source data.
+
+Failure Injection
+
+Simulate:
+
+* Incorrect cache entry.
+* Cache invalidation failure.
+* Expired data remaining accessible.
+* Cache key collision.
+* Cross-tenant cache leakage.
+* Stale valuation result.
+* Cache stampede after invalidation.
+
+Required Detection
+
+Monitor:
+
+* Cache hit and miss.
+* Expiration.
+* Invalidation.
+* Eviction.
+* Staleness.
+* Key scope.
+* Recalculation.
+* Cache regeneration.
+
+Acceptance Criteria
+
+* Cache entries respect data ownership and tenant boundaries.
+* Critical corrections invalidate affected derived values.
+* Stale results are identified.
+* Cache failure does not silently corrupt the source of truth.
+* Regeneration does not overload the database.
+* A valuation result identifies its source data and model version.
+
+⸻
+
+SCENARIO 14 — QUEUE BACKLOG AND DUPLICATE TRANSACTION EXECUTION
+
+Mission
+
+Test whether background jobs can fail, repeat, or become stuck without creating inconsistent business state.
+
+Failure Injection
+
+Simulate:
+
+* Queue backlog.
+* Worker crash.
+* Delayed acknowledgement.
+* Duplicate message.
+* Repeated retry.
+* Dead-letter accumulation.
+* Partial transaction execution.
+* Worker concurrency spike.
+
+Required Monitoring
+
+Display:
+
+* Queue depth.
+* Oldest message age.
+* Processing rate.
+* Failure rate.
+* Retry count.
+* Dead-letter count.
+* Worker availability.
+* Execution duration.
+* Idempotency result.
+
+Acceptance Criteria
+
+* Duplicate delivery does not create duplicate business transactions.
+* Failed messages are traceable.
+* Dead-letter messages have an owner and recovery procedure.
+* Stuck jobs are detectable.
+* Retry policies are bounded.
+* Financial and transactional state is reconciled after recovery.
+
+⸻
+
+SCENARIO 15 — PRODUCTION API KEY EXPOSURE
+
+Mission
+
+Test whether exposed credentials can be detected, revoked, rotated, and traced without disclosing additional secrets.
+
+Failure Injection
+
+Use synthetic credentials in an isolated environment.
+
+Simulate accidental exposure through:
+
+* Logs.
+* Repository content.
+* Error messages.
+* Client-side bundles.
+* Configuration files.
+* Monitoring output.
+
+Required Detection
+
+Identify:
+
+* Secret exposure location.
+* Secret owner.
+* Affected provider.
+* Environment.
+* Exposure time.
+* Possible usage.
+* Affected modules.
+
+Required Containment
+
+* Revoke or rotate the affected credential.
+* Verify that the replacement is active.
+* Remove unsafe references.
+* Review access logs.
+* Check for unauthorized usage.
+* Update dependent services.
+
+Acceptance Criteria
+
+* Full secret values are never exposed in administrative interfaces.
+* The credential can be revoked independently of unrelated credentials.
+* Rotation is traceable.
+* Dependent integrations are identified.
+* The incident has an evidence-based closure report.
+
+⸻
+
+SCENARIO 16 — ADMINISTRATIVE CONTROL CENTER COMPROMISE OR OUTAGE
+
+Mission
+
+Test whether the platform can remain operationally safe when its own control center is unavailable or compromised.
+
+Failure Injection
+
+Simulate:
+
+* Administrative frontend outage.
+* Administrative API outage.
+* Administrative identity provider outage.
+* Control-center database failure.
+* Unauthorized administrative deployment.
+* Compromised monitoring credentials.
+
+Required Design
+
+The operational system must not depend entirely on the availability of the same administrative interface used to manage it.
+
+Provide secure alternative procedures for:
+
+* Emergency credential revocation.
+* Critical incident declaration.
+* Deployment suspension.
+* Recovery initiation.
+* Audit preservation.
+
+Acceptance Criteria
+
+* Critical security controls remain enforced.
+* Production authorization does not depend solely on frontend visibility.
+* An independent recovery path exists.
+* The administrative panel cannot disable its own authorization controls without separate safeguards.
+* Recovery procedures are documented and tested.
+* Administrative outage does not automatically mean business-service outage.
+
+⸻
+
+4. ADDITIONAL CROSS-SYSTEM VALIDATION SCENARIOS
+
+The sixteen scenarios above are mandatory starting points.
+
+Also evaluate:
+
+* Incorrect property entity matching.
+* Duplicate property merging.
+* Incorrect ownership claim.
+* Professional verification fraud.
+* Unauthorized report export.
+* Data retention failure.
+* Failed deletion propagation.
+* Tenant isolation violation.
+* API contract incompatibility.
+* Feature-flag misconfiguration.
+* Failed deployment rollback.
+* Search index inconsistency.
+* Geographic boundary migration.
+* Incorrect source attribution.
+* Broken backup restoration.
+* Lost notification.
+* Alert fatigue.
+* False security incident classification.
+* Incorrect AI-generated summary.
+* Prompt injection through a property listing.
+* AI tool execution beyond authorized scope.
+* Model quality deterioration.
+* Inaccurate financial allocation.
+* Vendor contract expiration.
+* Unauthorized policy exception.
+* Failure to revoke former employee access.
+
+For each additional scenario, use the universal failure scenario framework.
+
+⸻
+
+5. SECURITY ACCEPTANCE TEST PROGRAM
+
+Design a formal security acceptance suite.
+
+The suite must test actual enforcement boundaries, not merely the appearance of administrative controls.
+
+5.1 Authentication
+
+Test:
+
+* Valid login.
+* Invalid credentials.
+* Expired session.
+* Revoked session.
+* Multi-factor authentication.
+* Session renewal.
+* Session fixation protection.
+* Concurrent sessions.
+* Account suspension.
+* Password reset.
+* Service-account authentication.
+
+5.2 Authorization
+
+Test:
+
+* Unauthorized endpoint access.
+* Unauthorized resource access.
+* Cross-tenant access.
+* Role escalation.
+* Permission inheritance.
+* Explicit denial.
+* Resource ownership.
+* Geographic restrictions.
+* Restricted exports.
+* Approval bypass.
+
+5.3 Privileged Access
+
+Test:
+
+* Time-limited privilege elevation.
+* Expired privilege.
+* Emergency access.
+* Approval separation.
+* Self-approval attempts.
+* Unauthorized privilege delegation.
+* Revocation.
+* Privileged session logging.
+
+5.4 Audit Integrity
+
+Test:
+
+* Audit creation.
+* Audit ordering.
+* Audit retention.
+* Audit access restrictions.
+* Unauthorized modification.
+* Unauthorized deletion.
+* Missing events.
+* Duplicate events.
+* Clock inconsistency.
+* Correlation across services.
+
+5.5 Application Security
+
+Test, where relevant:
+
+* Injection.
+* Cross-site scripting.
+* Cross-site request forgery.
+* Server-side request forgery.
+* Path traversal.
+* Unsafe file uploads.
+* Deserialization risks.
+* Rate-limit bypass.
+* Authentication bypass.
+* Insecure direct object references.
+* Excessive data exposure.
+* Security misconfiguration.
+
+5.6 AI Security
+
+Test:
+
+* Prompt injection.
+* Tool permission escalation.
+* Unauthorized data retrieval.
+* Sensitive information disclosure.
+* Malicious document content.
+* Unsafe generated actions.
+* Model fallback bypass.
+* Unapproved prompt changes.
+* Output validation failure.
+
+5.7 Security Acceptance Rule
+
+A security control is accepted only when:
+
+* The requirement is defined.
+* The enforcement location is known.
+* The test is reproducible.
+* Expected and actual results are recorded.
+* Evidence is preserved.
+* Failure conditions are understood.
+* An accountable owner exists.
+
+A security checklist without test evidence is not sufficient.
+
+⸻
+
+6. DATA INTEGRITY AND ANALYTICAL ACCEPTANCE PROGRAM
+
+The control center must be tested against the real characteristics of real-estate data.
+
+6.1 Entity Resolution
+
+Test:
+
+* Same property with different addresses.
+* Different properties with similar addresses.
+* Same building with multiple units.
+* Duplicate listings for one property.
+* Reposted listings.
+* Changed ownership claims.
+* Missing geographic coordinates.
+* Inconsistent area measurements.
+* Ambiguous property types.
+
+Measure:
+
+* False merges.
+* Missed duplicates.
+* Precision.
+* Recall.
+* Manual review rate.
+* Unresolved ambiguity.
+
+Do not optimize duplicate detection solely for higher automation.
+
+A false merge may be more damaging than leaving two records temporarily separate.
+
+6.2 Data Quality
+
+Test:
+
+* Missing values.
+* Invalid values.
+* Contradictory values.
+* Stale values.
+* Out-of-range values.
+* Source changes.
+* Schema changes.
+* Unexpected distribution changes.
+
+Every missing value must have a defined semantic state.
+
+Do not confuse:
+
+* Zero.
+* Unknown.
+* Not collected.
+* Not applicable.
+* Not available.
+* Expired.
+* Invalid.
+* Withheld.
+* Suppressed.
+
+6.3 Historical Reconstruction
+
+Select representative records and reconstruct:
+
+* What was known at a past time.
+* Which source supplied each value.
+* Which transformations occurred.
+* Which value was considered valid.
+* Which analytical outputs depended on it.
+
+The system must not claim historical reconstruction if required history was overwritten.
+
+6.4 Analytical Reproducibility
+
+For selected reports and valuations, reproduce the original result using:
+
+* Original data version.
+* Original model version.
+* Original parameters.
+* Original geographic definitions.
+* Original time window.
+* Original source set.
+
+Record any differences.
+
+Distinguish exact reproducibility from approximate reproducibility.
+
+6.5 Valuation Validation
+
+Test valuation behavior across:
+
+* Neighborhoods.
+* Property types.
+* Building ages.
+* Areas.
+* Price ranges.
+* New and old listings.
+* High-density and low-density regions.
+* Different market conditions.
+
+Evaluate:
+
+* Prediction error.
+* Error distribution.
+* Confidence intervals.
+* Sample quality.
+* Sensitivity to outliers.
+* Sensitivity to source composition.
+* Model drift.
+* Geographic bias.
+
+A single average error metric is not sufficient.
+
+A model can have a good overall average and still perform very poorly in a particular neighborhood or property category.
+
+6.6 Publication Reliability
+
+Before publishing a market indicator, verify:
+
+* Data coverage.
+* Source independence.
+* Sample adequacy.
+* Geographic consistency.
+* Temporal consistency.
+* Methodological stability.
+* Known limitations.
+* Uncertainty.
+* Reproducibility.
+
+Support publication suppression when evidence is insufficient.
+
+⸻
+
+7. MONITORING AND OBSERVABILITY ACCEPTANCE PROGRAM
+
+The monitoring system must prove that its measurements are reliable enough to support decisions.
+
+7.1 Metric Accuracy
+
+For every critical metric, verify:
+
+* Definition.
+* Unit.
+* Source.
+* Collection method.
+* Sampling interval.
+* Aggregation method.
+* Timestamp basis.
+* Freshness.
+* Missing-data behavior.
+* Known limitations.
+
+Compare selected metrics against independent measurements where possible.
+
+7.2 CPU and Memory
+
+Verify that available CPU and memory measurements are accurate.
+
+Test:
+
+* Sustained CPU load.
+* Sudden CPU spikes.
+* Memory growth.
+* Memory leaks.
+* Garbage collection pressure.
+* Process restarts.
+* Memory limits.
+* Out-of-memory behavior.
+
+For serverless services, display provider-supported measurements only.
+
+If CPU or RAM usage cannot be measured, display NOT AVAILABLE or NOT EXPOSED.
+
+Never display an invented zero.
+
+7.3 Storage
+
+Test:
+
+* Capacity growth.
+* Storage exhaustion.
+* Object count growth.
+* Failed uploads.
+* Incomplete multipart uploads.
+* Orphan files.
+* Retention execution.
+* Backup growth.
+* Database storage growth.
+
+Verify that capacity forecasts use actual historical measurements.
+
+7.4 Network and API
+
+Test:
+
+* Increased latency.
+* Timeout.
+* DNS failure.
+* TLS failure.
+* Rate limiting.
+* Provider outage.
+* Regional degradation.
+* High request volume.
+
+Validate:
+
+* P50.
+* P90.
+* P95.
+* P99.
+* Error rates.
+* Throughput.
+* Timeout rates.
+* Dependency latency.
+
+Do not combine unrelated endpoint populations into misleading averages.
+
+7.5 Database
+
+Test:
+
+* Slow queries.
+* Connection exhaustion.
+* Query failures.
+* Write conflicts.
+* Storage limits.
+* Index issues.
+* Transaction contention.
+* Backup and restoration.
+* Data consistency.
+
+Use provider-specific telemetry.
+
+Do not invent unavailable database internals.
+
+7.6 Queue and Background Jobs
+
+Test:
+
+* Backlog growth.
+* Stuck jobs.
+* Retry storms.
+* Dead-letter queues.
+* Duplicate messages.
+* Worker failure.
+* Delayed processing.
+* Idempotency.
+
+Verify that queue depth and oldest-message age are both available where supported.
+
+7.7 User Experience
+
+Measure:
+
+* LCP.
+* INP.
+* CLS.
+* TTFB.
+* JavaScript errors.
+* Failed requests.
+* Workflow completion.
+* Search success.
+* Mobile performance.
+
+Separate synthetic measurements from real-user measurements.
+
+Apply privacy safeguards to real-user telemetry.
+
+7.8 Monitoring Pipeline Health
+
+Verify:
+
+* Metric collection.
+* Log ingestion.
+* Trace ingestion.
+* Alert processing.
+* Notification delivery.
+* Storage retention.
+* Dashboard availability.
+
+The monitoring system must be able to identify its own blind spots.
+
+⸻
+
+8. SLI, SLO AND ERROR BUDGET FRAMEWORK
+
+Define Service Level Indicators for important platform functions.
+
+Potential SLIs include:
+
+* Successful authentication.
+* Successful search.
+* Successful listing creation.
+* Successful valuation completion.
+* Successful report generation.
+* Successful file upload.
+* Successful transaction workflow.
+* API availability.
+* Data publication integrity.
+
+Define Service Level Objectives only after understanding actual user expectations and operational capability.
+
+Do not copy arbitrary industry targets.
+
+For each SLO, specify:
+
+* Service.
+* User journey.
+* SLI definition.
+* Measurement source.
+* Measurement window.
+* Target.
+* Exclusions.
+* Error budget.
+* Alert threshold.
+* Owner.
+* Review frequency.
+
+8.1 Error Budget Governance
+
+When a service exceeds its error budget:
+
+* Notify its owner.
+* Identify contributing incidents.
+* Evaluate whether new releases should be restricted.
+* Prioritize reliability work.
+* Document exceptions.
+
+Do not automatically freeze all development because one metric deteriorates.
+
+Use the service’s actual criticality and business impact.
+
+8.2 Availability Versus Correctness
+
+Measure both.
+
+A service may be available while returning incorrect information.
+
+For data-sensitive functions, correctness and freshness must be explicit operational objectives.
+
+⸻
+
+9. ALERT QUALITY AND ESCALATION ACCEPTANCE
+
+Alerts must help people take action.
+
+They must not merely generate noise.
+
+9.1 Alert Record
+
+Every alert must contain:
+
+* Alert ID.
+* Trigger.
+* Metric or event.
+* Threshold or detection method.
+* Severity.
+* Time detected.
+* Affected service.
+* User impact.
+* Evidence.
+* Owner.
+* Recommended investigation.
+* Escalation policy.
+* Acknowledgement status.
+* Resolution.
+
+9.2 Alert Quality Metrics
+
+Track:
+
+* Detection delay.
+* Acknowledgement delay.
+* Resolution time.
+* False-positive rate.
+* False-negative rate where measurable.
+* Duplicate alert rate.
+* Unacknowledged alert count.
+* Repeated alert count.
+* Alert-to-incident conversion.
+* Escalation effectiveness.
+
+9.3 Alert Severity
+
+Use clearly defined severity levels.
+
+Example:
+
+* SEV-0: Catastrophic platform-wide or critical integrity/security event.
+* SEV-1: Critical service failure or severe business impact.
+* SEV-2: Significant degradation or restricted functionality.
+* SEV-3: Limited issue with manageable impact.
+* SEV-4: Informational or low-priority observation.
+
+These levels are proposed definitions.
+
+Validate them against the organization’s actual incident response capability.
+
+9.4 Alert Suppression
+
+Suppression must be:
+
+* Explicit.
+* Time-limited.
+* Audited.
+* Owned.
+* Reviewable.
+
+A suppressed alert must not disappear from the evidence record.
+
+⸻
+
+10. PERFORMANCE AND CAPACITY ACCEPTANCE
+
+The control center must support realistic capacity planning.
+
+10.1 Workload Categories
+
+Test:
+
+* Normal usage.
+* Peak usage.
+* Sudden traffic increase.
+* Large search requests.
+* Map-heavy usage.
+* High report generation.
+* AI-intensive workflows.
+* Bulk data ingestion.
+* Background processing.
+* Concurrent administrative activity.
+
+10.2 Capacity Measurements
+
+Measure:
+
+* Concurrent users.
+* Requests per second.
+* Database operations.
+* Queue throughput.
+* Storage growth.
+* AI requests.
+* Network transfer.
+* CPU and memory where available.
+* Response time.
+* Failure rate.
+* Cost per workload.
+
+10.3 Capacity Forecast
+
+Forecast:
+
+* Expected demand.
+* Peak demand.
+* Resource headroom.
+* Growth rate.
+* Bottlenecks.
+* Cost implications.
+* Scaling limits.
+
+State assumptions and confidence.
+
+Do not extrapolate a short period of traffic into a precise long-term capacity forecast.
+
+10.4 Performance Acceptance
+
+Every critical workflow must have a defined performance target.
+
+The target must be:
+
+* Based on user experience.
+* Measurable.
+* Tested under a defined workload.
+* Associated with an environment.
+* Associated with a data volume.
+* Reproducible.
+
+⸻
+
+11. USER EXPERIENCE AND ACCESSIBILITY ACCEPTANCE
+
+The administrative panel must be usable by people who are not infrastructure specialists.
+
+11.1 Executive Comprehension Test
+
+Give an executive a realistic incident summary.
+
+Evaluate whether the interface helps them identify:
+
+* What happened.
+* What is affected.
+* How serious it is.
+* Whether users are affected.
+* What decision is required.
+* Who owns the problem.
+* Whether the issue is resolved.
+
+Do not require executives to interpret raw infrastructure metrics.
+
+11.2 Technical Investigation Test
+
+Give an engineer a realistic failure.
+
+Evaluate whether the interface enables them to:
+
+* Identify the affected service.
+* Trace dependencies.
+* Locate relevant metrics.
+* Find related logs.
+* Follow request correlation.
+* Identify recent changes.
+* Inspect evidence.
+* Verify recovery.
+
+11.3 Data Steward Test
+
+Give a data steward a conflicting property record.
+
+Evaluate whether the interface enables them to:
+
+* Identify competing claims.
+* Inspect sources.
+* Compare timestamps.
+* Review source independence.
+* Preserve evidence.
+* Record a correction.
+* Trace affected outputs.
+* Verify publication status.
+
+11.4 Security Test
+
+Give a security administrator a simulated privileged-access incident.
+
+Evaluate whether they can:
+
+* Identify the actor.
+* Inspect authorization events.
+* Preserve evidence.
+* Revoke access.
+* Escalate.
+* Verify containment.
+
+11.5 Mobile and Accessibility Test
+
+Test:
+
+* Small screens.
+* Low-resolution devices.
+* Keyboard navigation.
+* Screen readers.
+* High zoom.
+* Slow connections.
+* Low-end hardware.
+* RTL layouts.
+* Long Persian labels.
+* Large data tables.
+
+Critical administrative actions must remain safe and understandable on supported devices.
+
+Do not force every complex technical operation onto mobile if a desktop environment is necessary.
+
+⸻
+
+12. ADMINISTRATIVE CONTROL CENTER SELF-MONITORING
+
+The administrative system must monitor itself.
+
+Track:
+
+* Frontend errors.
+* Backend errors.
+* Authentication failures.
+* Authorization failures.
+* Slow administrative queries.
+* Failed exports.
+* Failed approvals.
+* Audit ingestion delays.
+* Notification failures.
+* Configuration errors.
+* Dashboard data freshness.
+* Administrative API availability.
+* Administrative database availability.
+
+12.1 Self-Monitoring Independence
+
+Where feasible, use an independent monitoring path for critical control-center failures.
+
+The control center must not be the sole source of evidence that it is functioning correctly.
+
+12.2 Administrative Integrity
+
+Monitor:
+
+* Changes to role definitions.
+* Changes to policy rules.
+* Changes to alert thresholds.
+* Changes to audit configuration.
+* Changes to monitoring configuration.
+* Changes to administrative integrations.
+
+All sensitive modifications must be attributable.
+
+⸻
+
+13. TEST ENVIRONMENTS AND SAFETY GOVERNANCE
+
+Define the required environments based on verified project needs.
+
+Potential environments:
+
+* LOCAL.
+* DEVELOPMENT.
+* TEST.
+* STAGING.
+* PRODUCTION.
+* ISOLATED RECOVERY.
+
+Do not assume all environments currently exist.
+
+13.1 Environment Isolation
+
+Verify:
+
+* Separate credentials.
+* Separate databases.
+* Separate storage.
+* Separate API keys.
+* Separate deployment permissions.
+* Separate test data.
+* Appropriate network boundaries.
+
+Production secrets must not be copied into ordinary development environments.
+
+13.2 Synthetic Test Data
+
+Use synthetic or properly anonymized data for destructive and adversarial testing.
+
+Do not use private production data merely because it is convenient.
+
+13.3 Production Safety
+
+The following actions are prohibited during architecture discovery and read-only planning:
+
+* Destructive testing.
+* Load testing.
+* Data modification.
+* Migration execution.
+* Credential rotation.
+* Production deployment.
+* Real customer notification.
+* Real financial transactions.
+* Infrastructure changes.
+* Secret modification.
+* Production job execution.
+
+Any later production test requires separate authorization, scope, timing, safeguards, and rollback planning.
+
+13.4 Test Evidence
+
+Every test must preserve:
+
+* Test ID.
+* Environment.
+* Test version.
+* Commit or configuration version.
+* Input.
+* Expected result.
+* Actual result.
+* Logs.
+* Screenshots where useful.
+* Metrics.
+* Failures.
+* Reviewer.
+* Date.
+* Conclusion.
+
+Do not label an unexecuted test as passed.
+
+⸻
+
+14. IMPLEMENTATION READINESS AND DEPENDENCY ANALYSIS
+
+Before implementation, identify the prerequisites for each proposed capability.
+
+14.1 Foundational Dependencies
+
+Potential foundational requirements include:
+
+* Reliable identity management.
+* Backend authorization enforcement.
+* Stable service identifiers.
+* Common audit event schema.
+* Structured logging.
+* Request correlation.
+* Metric collection.
+* Incident data model.
+* Data provenance.
+* Central configuration governance.
+* Secure secret management.
+* Versioned API contracts.
+* Reliable deployment workflow.
+
+These are proposed dependencies, not claims about the current implementation.
+
+14.2 Dependency Graph
+
+For each feature, identify:
+
+* Required backend service.
+* Required database capability.
+* Required API.
+* Required telemetry.
+* Required permissions.
+* Required external provider.
+* Required frontend component.
+* Required tests.
+* Required organizational owner.
+
+Identify dependency cycles.
+
+Identify features that cannot function independently.
+
+Identify features whose implementation would require redesign of existing systems.
+
+14.3 Build Order
+
+Do not build the most visually impressive screens first.
+
+Build the underlying evidence and authorization mechanisms before relying on their dashboards.
+
+A dashboard that displays unreliable or fabricated metrics is worse than a clearly labeled missing metric.
+
+⸻
+
+15. PHASED IMPLEMENTATION ROADMAP
+
+Create a realistic implementation roadmap.
+
+The phases below are logical stages, not mandatory calendar commitments.
+
+Estimate effort only after repository discovery and dependency analysis.
+
+PHASE 0 — VERIFIED CURRENT-STATE BASELINE
+
+Objectives
+
+Establish what actually exists.
+
+Tasks
+
+* Repository inventory.
+* Backend inventory.
+* Frontend inventory.
+* Database inventory.
+* Infrastructure inventory.
+* Authentication review.
+* Authorization review.
+* Logging review.
+* Monitoring review.
+* Audit review.
+* API registry.
+* Provider registry.
+* Deployment workflow review.
+* Existing dashboard inventory.
+* Existing administrative action inventory.
+
+Acceptance
+
+A verified current-state architecture exists.
+
+Unknowns are explicitly listed.
+
+No implementation is performed during this phase.
+
+⸻
+
+PHASE 1 — FOUNDATIONAL CONTROL AND SAFETY
+
+Objectives
+
+Create the minimum foundation for trustworthy administration.
+
+Priority Capabilities
+
+* Shared administrative identity.
+* Backend permission enforcement.
+* Administrative action audit.
+* Service registry.
+* Common incident identifiers.
+* Basic operational status.
+* Basic error and latency monitoring.
+* Critical alerting.
+* Secret masking.
+* Secure configuration handling.
+* Role and permission registry.
+
+Acceptance
+
+* Critical administrative actions are authorized server-side.
+* Audit records are attributable.
+* Service ownership is visible.
+* Critical errors can be detected.
+* Unknown monitoring coverage is visible.
+* No critical administrative action relies solely on frontend restrictions.
+
+⸻
+
+PHASE 2 — CORE OBSERVABILITY
+
+Objectives
+
+Build reliable technical monitoring.
+
+Priority Capabilities
+
+* CPU and memory where available.
+* Storage.
+* Network.
+* Runtime.
+* Database.
+* API.
+* Cache.
+* Queues.
+* Background jobs.
+* Object storage.
+* Provider integrations.
+* Error tracking.
+* Latency.
+* Telemetry health.
+* Resource trends.
+
+Acceptance
+
+* Critical metrics have definitions and sources.
+* Missing metrics are explicitly identified.
+* Stale data is distinguishable from current data.
+* Resource trends can be inspected.
+* Major failures generate actionable alerts.
+* The monitoring pipeline monitors itself.
+
+⸻
+
+PHASE 3 — INCIDENT AND RECOVERY MANAGEMENT
+
+Objectives
+
+Move from passive monitoring to controlled operations.
+
+Priority Capabilities
+
+* Incident lifecycle.
+* Incident ownership.
+* Escalation.
+* Evidence preservation.
+* Runbooks.
+* Backup monitoring.
+* Recovery verification.
+* Dependency mapping.
+* Change correlation.
+* Incident postmortems.
+
+Acceptance
+
+* Critical incidents have owners.
+* Recovery steps are documented.
+* Restoration is independently verified.
+* Incident history is searchable.
+* Unverified recovery procedures are visible.
+
+⸻
+
+PHASE 4 — DATA INTELLIGENCE AND ANALYTICAL GOVERNANCE
+
+Objectives
+
+Protect the reliability of the platform’s most important asset: its information.
+
+Priority Capabilities
+
+* Data asset registry.
+* Data quality monitoring.
+* Provenance.
+* Data lineage.
+* Conflict management.
+* Freshness.
+* Historical versioning.
+* Correction propagation.
+* Publication governance.
+* Source reliability.
+* Analytical reproducibility.
+
+Acceptance
+
+* Important data has traceable provenance.
+* Corrections can be tracked.
+* Affected outputs can be identified.
+* Publication can be suspended.
+* Historical reconstruction limitations are explicit.
+
+⸻
+
+PHASE 5 — SECURITY AND PRIVILEGED OPERATIONS
+
+Objectives
+
+Strengthen administrative and operational security.
+
+Priority Capabilities
+
+* Privileged access management.
+* Access review.
+* Separation of duties.
+* Security event monitoring.
+* Security incident workflows.
+* Secret lifecycle management.
+* Audit integrity.
+* Administrative action approvals.
+* Tenant isolation tests.
+* Policy exception management.
+
+Acceptance
+
+* Critical permissions are reviewed.
+* High-risk actions have appropriate controls.
+* Privileged actions are auditable.
+* Sensitive credentials are masked.
+* Unauthorized access tests pass.
+
+⸻
+
+PHASE 6 — PRODUCT, AI AND ENGINEERING GOVERNANCE
+
+Objectives
+
+Manage product quality, software change, and AI behavior.
+
+Priority Capabilities
+
+* User workflow analytics.
+* Feature registry.
+* Support and complaints.
+* Professional verification.
+* AI model registry.
+* Prompt registry.
+* AI evaluation.
+* Human review.
+* AI cost controls.
+* Git workflow monitoring.
+* PR governance.
+* Test reporting.
+* Migration governance.
+* Release control.
+
+Acceptance
+
+* AI versions are traceable.
+* Production prompts are versioned.
+* High-impact AI outputs have appropriate review.
+* Changes have traceable approval.
+* Releases have verification evidence.
+* Product workflows have meaningful success metrics.
+
+⸻
+
+PHASE 7 — FINANCIAL AND STRATEGIC CONTROL
+
+Objectives
+
+Establish economic and strategic visibility.
+
+Priority Capabilities
+
+* Cost registry.
+* Cost attribution.
+* Unit economics.
+* Revenue monitoring.
+* Vendor concentration.
+* Budget governance.
+* Risk register.
+* Assumption registry.
+* Decision register.
+* Experiment registry.
+* Strategic reversibility.
+
+Acceptance
+
+* Actual and estimated costs are distinguished.
+* Cost concentration is visible.
+* Important strategic assumptions have owners.
+* Decisions have evidence and review dates.
+* Financial forecasts disclose assumptions.
+
+⸻
+
+PHASE 8 — ADVANCED EARLY WARNING AND RESILIENCE
+
+Objectives
+
+Improve proactive detection and organizational resilience.
+
+Priority Capabilities
+
+* Anomaly detection.
+* Dynamic baselines.
+* Capacity forecasting.
+* Failure laboratory.
+* Dependency-aware alerting.
+* Cross-domain incident correlation.
+* Advanced recovery exercises.
+* Automated containment where safe.
+* Geographic isolation tests.
+
+Acceptance
+
+* Detection methods are evaluated.
+* False alerts are measured.
+* Recovery tests are repeatable.
+* Automated actions have strict limits.
+* Critical scenarios have tested response procedures.
+
+⸻
+
+16. PRIORITY CLASSIFICATION
+
+Classify every implementation item.
+
+P0 — CRITICAL
+
+Examples:
+
+* Authentication and authorization gaps.
+* Unprotected privileged operations.
+* Audit destruction risk.
+* Critical data-integrity failures.
+* Secret exposure.
+* Uncontrolled production changes.
+* Missing recovery capability for critical data.
+* Major tenant isolation vulnerabilities.
+
+P0 items must be addressed before dependent high-risk functionality is enabled.
+
+P1 — HIGH
+
+Examples:
+
+* Missing critical monitoring.
+* Unreliable incident workflows.
+* Unverified backup restoration.
+* Uncontrolled data correction propagation.
+* Inadequate API contract governance.
+* Missing high-impact publication controls.
+* Major cost exposure.
+
+P2 — IMPORTANT
+
+Examples:
+
+* Advanced dependency visualization.
+* Detailed financial attribution.
+* Expanded AI evaluation.
+* Strategic assumption tracking.
+* Advanced anomaly detection.
+* Improved capacity forecasting.
+
+P3 — ADVANCED
+
+Examples:
+
+* Predictive operational analytics.
+* Advanced scenario simulation.
+* Sophisticated cross-domain correlation.
+* Advanced executive forecasting.
+* Additional automation that has not yet demonstrated economic value.
+
+Do not assign P0 merely because a feature sounds important.
+
+Prioritization must be based on verified risk and actual dependencies.
+
+⸻
+
+17. REQUIRED IMPLEMENTATION BACKLOG FORMAT
+
+Every proposed task must use a structured requirement record.
+
+Required fields:
+
+* Requirement ID.
+* Requirement title.
+* Command domain.
+* Description.
+* Current-state evidence.
+* Problem.
+* Business impact.
+* Technical impact.
+* Security impact.
+* Data impact.
+* Financial impact.
+* Priority.
+* Owner.
+* Backup owner.
+* Dependencies.
+* Affected modules.
+* Affected services.
+* Required APIs.
+* Required database changes.
+* Required telemetry.
+* Permission requirements.
+* Migration requirements.
+* Test requirements.
+* Acceptance criteria.
+* Verification method.
+* Rollback or compensation.
+* Operational burden.
+* Estimated complexity.
+* Status.
+* Target phase.
+* Review date.
+
+Use stable identifiers.
+
+Examples:
+
+* OPS-MON-001
+* OPS-INC-001
+* SEC-IAM-001
+* SEC-AUD-001
+* DATA-QUAL-001
+* DATA-LINEAGE-001
+* AI-GOV-001
+* ENG-REL-001
+* FIN-COST-001
+* RISK-BCP-001
+
+Do not reuse temporary discussion numbers as permanent implementation identifiers.
+
+⸻
+
+18. RESOURCE AND COST ESTIMATION
+
+Prepare an implementation estimate.
+
+Do not invent exact costs.
+
+Use evidence from:
+
+* Existing infrastructure.
+* Actual provider pricing.
+* Verified usage.
+* Current contracts.
+* Required data volume.
+* Retention requirements.
+* Expected telemetry volume.
+* Required engineering effort.
+* Operational staffing.
+
+18.1 Infrastructure Estimate
+
+Estimate:
+
+* Metrics storage.
+* Log storage.
+* Trace storage.
+* Monitoring queries.
+* Alert processing.
+* Dashboard requests.
+* Database usage.
+* Network transfer.
+* Object storage.
+* Backup storage.
+* AI usage.
+* External monitoring providers.
+
+18.2 Operational Estimate
+
+Estimate:
+
+* Engineering time.
+* Security review.
+* Data governance effort.
+* Incident response capacity.
+* On-call requirements.
+* Monitoring maintenance.
+* Access reviews.
+* Recovery exercises.
+* Documentation.
+* Training.
+
+18.3 Cost Scenarios
+
+Provide at least three scenarios:
+
+* Minimum viable control center.
+* Expected operating scale.
+* High-growth operating scale.
+
+For each scenario, state:
+
+* Assumptions.
+* Included capabilities.
+* Excluded capabilities.
+* Monthly infrastructure estimate.
+* One-time implementation effort.
+* Ongoing maintenance effort.
+* Major cost risks.
+* Confidence.
+
+If pricing or usage data is unavailable, mark the estimate NOT VERIFIED.
+
+⸻
+
+19. FINAL ARCHITECTURE PACKAGE
+
+After completing all four parts, produce one consolidated architecture document.
+
+The document must include:
+
+19.1 Executive Architecture Summary
+
+Explain:
+
+* What the control center is.
+* What it controls.
+* What it observes.
+* What it cannot observe.
+* What it cannot safely control.
+* What its major risks are.
+* What must be built first.
+
+19.2 Current-State Architecture
+
+Include verified:
+
+* Frontend.
+* Backend.
+* Database.
+* Storage.
+* Infrastructure.
+* Authentication.
+* Authorization.
+* APIs.
+* External providers.
+* Monitoring.
+* Logging.
+* Deployment.
+* Existing administration capabilities.
+
+19.3 Target Architecture
+
+Include:
+
+* Command domains.
+* Shared services.
+* Identity model.
+* Authorization model.
+* Audit model.
+* Telemetry pipeline.
+* Incident system.
+* Data governance.
+* AI governance.
+* Financial governance.
+* Change management.
+* Recovery architecture.
+
+19.4 Page Inventory
+
+List every proposed page with:
+
+* Purpose.
+* Owner.
+* Required data.
+* Metrics.
+* Visualizations.
+* Permissions.
+* Actions.
+* Dependencies.
+
+19.5 Metric Catalog
+
+List every proposed metric with:
+
+* Metric ID.
+* Definition.
+* Unit.
+* Source.
+* Collection method.
+* Aggregation.
+* Freshness.
+* Retention.
+* Limitations.
+* Alert thresholds.
+* Owner.
+* Availability classification.
+
+19.6 Alert Catalog
+
+List:
+
+* Alert ID.
+* Trigger.
+* Severity.
+* Threshold.
+* Detection method.
+* Notification route.
+* Escalation.
+* Suppression policy.
+* Owner.
+* Resolution criteria.
+
+19.7 Role and Permission Matrix
+
+Include:
+
+* Identity categories.
+* Roles.
+* Permissions.
+* Scope.
+* Prohibited operations.
+* Approval requirements.
+* Emergency access.
+* Review frequency.
+
+19.8 Administrative Action Registry
+
+List sensitive operations and their required controls.
+
+19.9 Incident and Recovery Architecture
+
+Include:
+
+* Incident lifecycle.
+* Ownership.
+* Escalation.
+* Runbooks.
+* Backup.
+* Restore.
+* Recovery verification.
+* Post-incident review.
+
+19.10 Data Governance Architecture
+
+Include:
+
+* Data assets.
+* Provenance.
+* Quality.
+* Lineage.
+* Conflict management.
+* Retention.
+* Correction.
+* Publication.
+* Historical reconstruction.
+
+19.11 AI Governance Architecture
+
+Include:
+
+* Models.
+* Prompts.
+* Evaluation.
+* Human review.
+* Safety.
+* Permissions.
+* Cost.
+* Fallback.
+* Monitoring.
+
+19.12 Financial Architecture
+
+Include:
+
+* Cost sources.
+* Attribution.
+* Budgets.
+* Revenue.
+* Unit economics.
+* Vendor exposure.
+* Forecasts.
+
+19.13 Test and Acceptance Plan
+
+Include all mandatory failure scenarios and validation suites.
+
+19.14 Implementation Roadmap
+
+Include:
+
+* Phases.
+* Dependencies.
+* Priorities.
+* Owners.
+* Acceptance gates.
+* Estimated effort.
+* Operational burden.
+
+19.15 Risk and Uncertainty Register
+
+Include all unresolved assumptions and implementation risks.
+
+19.16 Explicit Non-Goals
+
+List capabilities that should not be implemented yet.
+
+Examples may include:
+
+* Unnecessary microservices.
+* Unjustified machine-learning anomaly detection.
+* Excessive administrative automation.
+* Unrestricted employee surveillance.
+* Unverified financial forecasting.
+* High-cost monitoring without demonstrated value.
+* Redundant data storage.
+* Decorative dashboards without operational evidence.
+
+⸻
+
+20. FINAL APPROVAL GATES
+
+The architecture must not be approved simply because all sections have been written.
+
+It must pass the following gates.
+
+GATE 1 — CURRENT-STATE ACCURACY
+
+Verify:
+
+* Every claimed existing capability.
+* Every identified service.
+* Every database.
+* Every provider.
+* Every integration.
+* Every monitoring source.
+* Every security control.
+
+Unverified claims must be removed or labeled.
+
+GATE 2 — ARCHITECTURAL COHERENCE
+
+Verify:
+
+* No contradictory sources of truth.
+* No unnecessary duplication.
+* No hidden dependency.
+* No uncontrolled cross-module coupling.
+* No unjustified distributed architecture.
+* No missing shared security enforcement.
+
+GATE 3 — SECURITY AND PRIVACY
+
+Verify:
+
+* Authorization boundaries.
+* Privileged access.
+* Audit integrity.
+* Secret handling.
+* Tenant isolation.
+* Data minimization.
+* Administrative action protection.
+* AI restrictions.
+
+GATE 4 — OBSERVABILITY RELIABILITY
+
+Verify:
+
+* Metric definitions.
+* Collection sources.
+* Data freshness.
+* Missing-data behavior.
+* Alert quality.
+* Monitoring self-health.
+* Resource visibility.
+* Provider limitations.
+
+GATE 5 — OPERATIONAL REALISM
+
+Verify:
+
+* Named owners.
+* Backup owners.
+* Tested runbooks.
+* Recovery procedures.
+* Incident responsibilities.
+* Organizational capacity.
+* On-call feasibility.
+
+GATE 6 — ECONOMIC FEASIBILITY
+
+Verify:
+
+* Infrastructure cost.
+* Telemetry cost.
+* AI cost.
+* Maintenance burden.
+* Staffing requirements.
+* Vendor dependency.
+* Expected business value.
+
+GATE 7 — IMPLEMENTATION READINESS
+
+Verify:
+
+* Clear requirements.
+* Stable IDs.
+* Dependencies.
+* Acceptance criteria.
+* Test strategy.
+* Rollback strategy.
+* Phased delivery.
+* Explicit approval.
+
+Do not proceed to implementation if a critical gate fails.
+
+⸻
+
+21. FINAL EXECUTIVE CHALLENGE
+
+Before approving the architecture, answer these questions with evidence.
+
+1. Can an executive identify the most serious current operational problem in less than two minutes?
+2. Can an engineer trace a failed user workflow to its relevant technical evidence?
+3. Can a data steward trace a published market indicator back to its source records?
+4. Can the platform identify which reports and valuations are affected by a corrected property record?
+5. Can an administrator perform a sensitive action without bypassing backend authorization?
+6. Can a compromised administrator erase the evidence of their own activity?
+7. Can the platform detect that its monitoring pipeline has stopped working?
+8. Can it distinguish unavailable telemetry from zero resource usage?
+9. Can it identify whether a database is healthy while the underlying business data is corrupted?
+10. Can it detect stale cached valuations?
+11. Can it prevent duplicate transaction execution after queue retries?
+12. Can it identify the financial effect of an unexpected AI usage increase?
+13. Can it suspend a misleading market report and preserve its previous version?
+14. Can it isolate a regional data failure?
+15. Can it recover critical data using a tested procedure?
+16. Can it operate safely if the administrative panel itself becomes unavailable?
+17. Can it function if a key employee leaves?
+18. Can it identify which controls are automated and which are manual?
+19. Can it prove that a security or governance control was actually enforced?
+20. Can it explain the limitations of its own information?
+
+If the answer is unknown, record the gap.
+
+Do not replace an unknown answer with an optimistic assumption.
+
+⸻
+
+22. FINAL DESIGN PRINCIPLES
+
+The final control center must follow these principles:
+
+Principle 1 — Evidence Before Confidence
+
+A dashboard must show where its information came from.
+
+Principle 2 — Unknown Is a Valid State
+
+Unknown, unavailable, stale, incomplete, and unmonitored must never be disguised as healthy.
+
+Principle 3 — One Source of Truth Per Critical Entity
+
+A single authoritative record must exist for each critical operational entity, while derived views remain traceable.
+
+Principle 4 — Security Is Enforced at the Backend
+
+Frontend visibility is not authorization.
+
+Principle 5 — Every Important Action Is Accountable
+
+Sensitive operations must have identifiable actors, reasons, approvals, and results.
+
+Principle 6 — Recovery Must Be Tested
+
+A backup or recovery document is not proof of recoverability.
+
+Principle 7 — Data Corrections Must Propagate
+
+Correcting a source record is not enough if invalid derived outputs remain available.
+
+Principle 8 — AI Must Remain Governed
+
+AI may assist analysis but must not become an uncontrolled authority.
+
+Principle 9 — Cost Is an Operational Metric
+
+Every important feature must have a measurable economic footprint.
+
+Principle 10 — Organizational Capacity Is a Design Constraint
+
+Do not design controls that the organization cannot realistically maintain.
+
+Principle 11 — Simplicity at the Surface, Depth Underneath
+
+Executives need clear answers.
+
+Specialists need detailed evidence.
+
+The architecture must support both without confusing them.
+
+Principle 12 — Build for Failure, Not Just Normal Operation
+
+The system must be designed around the possibility that components, people, providers, and assumptions will fail.
+
+⸻
+
+23. FINAL REQUIRED RESPONSE FORMAT
+
+After completing all four parts, provide the consolidated findings in the following structure:
+
+1. Verified Current-State Summary.
+2. Current Architecture Diagram.
+3. Existing Administrative Capability Inventory.
+4. Existing Monitoring Capability Inventory.
+5. Missing and Unreliable Capability Inventory.
+6. Proposed Target Architecture.
+7. Ten Command Domain Blueprint.
+8. Three Cross-Functional Command Center Blueprint.
+9. Complete Administrative Page Inventory.
+10. Technical Monitoring Metric Catalog.
+11. Alert and Escalation Catalog.
+12. Identity and Permission Matrix.
+13. High-Risk Administrative Action Registry.
+14. Data Governance Blueprint.
+15. Security Architecture.
+16. AI Governance Architecture.
+17. Engineering and Release Governance.
+18. Financial Governance.
+19. Risk and Business Continuity Architecture.
+20. Incident and Recovery Workflows.
+21. Failure Scenario Test Matrix.
+22. Security Acceptance Test Matrix.
+23. Data Integrity Acceptance Test Matrix.
+24. Observability Acceptance Test Matrix.
+25. Implementation Dependency Graph.
+26. Prioritized Implementation Backlog.
+27. Phased Implementation Roadmap.
+28. Cost and Resource Estimates.
+29. Unresolved Questions and Assumptions.
+30. Final Approval Recommendation.
+
+For each major component, classify it as:
+
+* VERIFIED EXISTING.
+* EXISTING BUT INCOMPLETE.
+* EXISTING BUT UNRELIABLE.
+* REQUIRES INSTRUMENTATION.
+* REQUIRES MODIFICATION.
+* REQUIRES NEW IMPLEMENTATION.
+* NOT RECOMMENDED YET.
+* NOT VERIFIABLE.
+
+Include evidence references whenever possible.
+
+If evidence is unavailable, state exactly what is missing.
+
+Do not fabricate implementation details, repository paths, configuration values, test results, costs, service capabilities, or operational metrics.
+
+⸻
+
+24. FINAL EXECUTION RESTRICTIONS
+
+The entire four-part assignment remains in STRICT READ-ONLY ARCHITECTURE AND DESIGN MODE.
+
+Unless the user separately authorizes implementation, do not:
+
+* Modify source files.
+* Create new files.
+* Delete files.
+* Rename files.
+* Move files.
+* Install packages.
+* Upgrade dependencies.
+* Modify environment variables.
+* Modify secrets.
+* Modify databases.
+* Run migrations.
+* Create cloud resources.
+* Change infrastructure.
+* Modify security rules.
+* Change production configuration.
+* Deploy code.
+* Trigger production jobs.
+* Send real notifications.
+* Execute real financial operations.
+* Run destructive tests.
+* Run production load tests.
+* Change provider settings.
+
+Read-only inspection, source analysis, architecture documentation, static reasoning, and safe non-mutating checks are permitted.
+
+If a requested verification cannot be performed without changing state, identify the required verification and request separate authorization.
+
+Do not claim that a test passed if it was only proposed.
+
+Do not claim that a service is healthy if it was not measured.
+
+Do not claim that a control exists because the architecture recommends it.
+
+⸻
+
+END OF PART 4 OF 4
+
+END OF THE FOUR-PART MASTER SPECIFICATION
+
+The four parts together define one unified administrative, command, observability, monitoring, governance, and operational-control architecture for Tehran Radar.
+
+Do not treat the four parts as four independent projects.
+
+Consolidate their requirements, eliminate duplication, resolve contradictions, establish dependencies, and produce one coherent target architecture.
+
+The final result must be evidence-based, technically realistic, economically defensible, operationally maintainable, secure, auditable, and understandable to its intended administrators.
+
+The objective is not to build the largest possible administration panel.
+
+The objective is to build the smallest coherent control system that can reliably govern the actual complexity of Tehran Radar, with a clear path for expansion as the platform grows.
+
+No implementation is authorized by this specification alone.
