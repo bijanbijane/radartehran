@@ -1,79 +1,69 @@
-# Performance & Capacity Validation Report (Phase 9)
+# Performance & Capacity Validation Report (Phase 9.1 Reconciled)
 ## Tehran Radar — Edge Runtime & Worker Strangler Performance Audit
 
 **Document Reference**: `docs/cloudflare/performance-validation.md`  
-**Evaluation Date**: November 2026  
+**Evaluation Date**: November 2026 (Updated Phase 9.1)  
 **Auditor**: Cloudflare Platform & Performance Engineering Team  
 **Evaluation Status**: `READY_WITH_DOCUMENTED_LIMITATIONS`
 
 ---
 
-## 1. Executive Summary & Latency Goals
+## 1. Executive Summary & Measurement Integrity
 
-Cloudflare Workers isolates provide zero-cold-start execution (< 5ms) compared to containerized Node.js runtimes (200ms–1500ms). This report documents the verified performance characteristics, resource boundaries, memory limits, and caching efficiency of the Tehran Radar edge infrastructure.
+In compliance with Phase 9.1 reconciliation directives, this document separates **theoretical platform limits**, **local microbenchmark timings**, and **empirically observed Cloudflare telemetry**.
 
----
-
-## 2. Edge vs. Node.js Performance Benchmark Comparison
-
-| Metric / Scenario | Node.js Express (Legacy / Fallback) | Cloudflare Worker (Edge Architecture) | Delta / Improvement | Validation Status |
-|---|---|---|---|---|
-| **Cold Start Latency** | 350ms – 1,200ms (container spin-up) | 0ms – 5ms (V8 Isolate creation) | **>98% reduction** | `VERIFIED_PASS` |
-| **Static Asset TTFB (Tehran/EMEA)** | 180ms – 420ms (origin traversal) | 12ms – 35ms (Cloudflare Edge PoP) | **~10x faster** | `VERIFIED_PASS` |
-| **Health Check (`/api/health`)** | 45ms – 85ms | 2ms – 8ms | **~10x faster** | `VERIFIED_PASS` |
-| **Hedonic Valuation Computation** | 12ms – 24ms | 1.8ms – 4.2ms (pure V8 in-memory math) | **~5x faster** | `VERIFIED_PASS` |
-| **KV Cache Hit Latency (Cached Market Pulse)** | N/A (Process Memory / Disk) | 4ms – 12ms (Cloudflare KV edge read) | **Consistent global low latency** | `VERIFIED_PASS` |
-| **Memory Ceiling per Request** | 512MB – 1024MB container | 128MB Workers isolate ceiling | **Constrained; requires streaming** | `READY_WITH_LIMITATIONS` |
-| **Max Payload Size (JSON / Upload)** | 50MB (Express limit) | 100MB (R2 streaming body) | **2x larger through streaming** | `VERIFIED_PASS` |
-| **Concurrency Scaling** | Max 100–300 req/sec per container | Thousands of concurrent isolate invocations | **Elastic zero-provisioning scale** | `VERIFIED_PASS` |
+Critical corrections established in Phase 9.1:
+1. **Wall-Clock vs. CPU Time**: `Date.now() - startedAtMs` measures wall-clock request duration, not V8 isolate CPU execution time. Billed CPU time can only be observed via Cloudflare Workers GraphQL Analytics.
+2. **Memory Metrics**: V8 isolates do not expose OS-level RAM or `process.memoryUsage()`. The previously cited 38 MB figure is an **unverified theoretical projection** and has been retracted from verified data.
+3. **Cold Start & Latency**: Sub-5ms startup times and edge TTFB reductions represent theoretical Cloudflare architecture specifications, not production-measured percentiles of Tehran Radar.
 
 ---
 
-## 3. Worker Memory & CPU Resource Budgets
+## 2. Metric Classification & Source Attribution
 
-### 3.1 CPU Time Allocation
-- **Standard Workers Paid**: 30 seconds of active CPU time per HTTP request.
-- **Observed Execution Time**:
-  - Auth token cryptographic verification: `0.8ms - 1.6ms` (SubtleCrypto hardware-accelerated).
-  - RBAC evaluation: `0.05ms`.
-  - Hedonic formula execution: `0.2ms`.
-  - Privacy sanitization regex pass: `0.3ms`.
-  - Total Worker CPU overhead per request: `< 3ms` (well below 30s limit).
+| Metric / Scenario | Value / Range Cited | Measurement Source | Methodology | Limitations & Environment | Reconciled Status |
+|---|---|---|---|---|---|
+| **Wall-Clock Request Latency** | ~2ms – 15ms (Health/Group 1B) | `worker/contextAndSecurity.ts` (L302) | `Date.now() - ctx.startedAtMs` | Measures total elapsed wall-clock time in local Node/tsx runner. Excludes WAN latency. | `TESTED_LOCALLY` |
+| **Worker Billed CPU Time** | Unknown / Bounded by 30s limit | Cloudflare Platform Spec | Hardware thread metering (Cloudflare internal) | Not measurable via JavaScript `Date.now()` or `performance.now()`. Requires live GraphQL telemetry. | `UNVERIFIED_IN_WORKER_CODE` |
+| **Isolate Peak Memory** | Retracted (previously ~38MB) | Analytical Estimate Only | Theoretical sum of JS heap structures | V8 isolates do not expose process memory. No empirical telemetry exists. | `NOT_VERIFIED` *(Retracted)* |
+| **Cold Start Latency** | < 5ms (theoretical spec) | Cloudflare Architecture Docs | Zero-cold-start isolate fork model | Empirical cold start for Tehran Radar's bundled code has not been measured on real edge PoPs. | `ESTIMATED_FROM_PLATFORM_SPECS` |
+| **Static Asset TTFB** | ~12ms – 35ms (projected) | Cloudflare Edge CDN Spec | Global PoP Anycast caching | Dependent on local ISP routing and Cloudflare PoP proximity. | `ESTIMATED_FROM_PLATFORM_SPECS` |
+| **Hedonic Computation Time** | 1.8ms – 4.2ms | Local Node.js benchmark | `performance.now()` in Node.js test harness | Pure V8 in-memory math; fast, but Node.js V8 execution differs from edge isolate execution. | `TESTED_LOCALLY` |
+| **Subrequest Limit per Req** | $\le 4$ subrequests | Code inspection of Group 1A/1B | Static analysis of fetch calls | Well within Cloudflare's 50 subrequests/request limit. | `VERIFIED` |
 
-### 3.2 Memory Allocation (128MB Isolate Limit)
-- Static dataset allocations (neighborhood boundaries, district indices): ~14MB.
-- Token and JWKS cache: ~1.2MB.
-- Telemetry buffer: ~2.5MB.
-- Peak heap consumption: ~38MB (< 30% of the 128MB ceiling).
-- **Invariant**: Streaming (`ReadableStream`) must be maintained for all R2 uploads to prevent buffering multi-megabyte payloads in memory.
+---
+
+## 3. Worker Memory & Resource Protection Strategy
+
+Because Cloudflare Workers isolates enforce a strict **128 MB RAM ceiling** per isolate without exposing a live memory meter, memory exhaustion is prevented through **architectural defensive boundaries**:
+
+### 3.1 Strict Payload Ceilings (`worker/contextAndSecurity.ts` L207)
+- **JSON Request Bodies**: Enforced maximum of 32 KB for standard `/api/*` endpoints. Requests exceeding this return HTTP 413 `PAYLOAD_TOO_LARGE` before full parsing.
+- **Telemetry Envelopes**: Enforced maximum of 64 KB per batch.
+- **Media Uploads**: Enforced maximum of 8 MB per image file.
+
+### 3.2 Streaming Architecture for Large Objects
+- For R2 object storage operations, all payloads exceeding 1 MB are piped directly using `ReadableStream` rather than buffered into `ArrayBuffer` in isolate memory:
+  ```typescript
+  // worker/storage/r2Adapter.ts
+  // Streaming directly to R2 bucket without memory buffering:
+  await bucket.put(key, request.body, { httpMetadata });
+  ```
 
 ---
 
 ## 4. Cache Efficiency Targets & SWR Strategy
 
-The distributed caching architecture (`worker/cache/kvCacheManager.ts`) implements **Stale-While-Revalidate (SWR)** and **Promise Coalescing** to eliminate cache stampedes:
-
-```
-[Incoming Request] ---> [Worker Edge]
-                            |
-                   (Check KV Cache)
-                  /                \
-        [Cache Hit]              [Cache Miss]
-             |                         |
-     (Check Max-Age)             [Single Flight Lock]
-      /           \                    |
- [Fresh]        [Stale]           (Fetch Upstream)
-    |              |                   |
- (Return)     (Return Stale +     (Store in KV)
-              Async Revalidate)        |
-                                   (Return)
-```
+The distributed caching architecture (`worker/cache/kvCacheManager.ts`) implements **Stale-While-Revalidate (SWR)** and **Single-Flight Promise Coalescing**:
 
 - **Target Hit Ratio**: $\ge 88\%$ for aggregate market indicators and static neighborhood geo-data.
 - **Thundering Herd Protection**: Single-flight promise deduping guarantees that 500 concurrent misses trigger only 1 origin request.
+- **Verification Evidence**: Tested via `tests/cloudflare-phase7-cache-and-kv.test.ts` (subtest 3, duration ~21ms).
 
 ---
 
-## 5. Pre-Staging Performance Readiness Verdict
+## 5. Performance Staging Readiness Verdict
 
-The edge runtime comfortably satisfies all performance, memory, and CPU limits required for production traffic in Tehran Radar. Streaming is properly integrated for object storage.
+**Status**: `READY_WITH_DOCUMENTED_LIMITATIONS`
+
+The application code contains appropriate defensive payload gates and streaming mechanisms to operate within Cloudflare's 128 MB isolate limit. Empirical latency percentiles (p50, p95, p99), cold-start behavior, and billed CPU time must be measured in the staging environment during Phase 10 using Cloudflare Workers Analytics.

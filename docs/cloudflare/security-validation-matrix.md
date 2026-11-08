@@ -1,44 +1,75 @@
-# Security Validation Matrix & Threat Model (Phase 9)
+# Security Validation Matrix & Threat Model (Phase 9.1 Reconciled)
 ## Tehran Radar — Cloudflare Workers Migration Security Audit
 
 **Document Reference**: `docs/cloudflare/security-validation-matrix.md`  
-**Evaluation Date**: November 2026  
+**Evaluation Date**: November 2026 (Updated Phase 9.1)  
 **Auditor**: Principal Cloudflare Platform & Security Architecture Team  
 **Evaluation Status**: `READY_WITH_DOCUMENTED_LIMITATIONS`
 
 ---
 
-## 1. Executive Summary & Security Objectives
+## 1. Executive Summary & Security Verification Taxonomy
 
-This matrix provides the exhaustive security validation of Tehran Radar's edge runtime running on Cloudflare Workers alongside the hybrid Node.js Express strangler backend. All controls have been tested via automated test suites (`test:security`, `test:auth`, `test:r2`, `test:d1`, `test:contracts`) and audited against OWASP Top 10 API Security Risks and Cloudflare Workers isolate security paradigms.
+This security matrix provides an evidence-based audit of Tehran Radar's edge runtime running on Cloudflare Workers. Every mitigation is referenced to exact source files, line ranges, and reproducible local test suites.
 
----
-
-## 2. Threat Vector & Control Verification Matrix
-
-| # | Threat Vector | System Component | Control / Mitigation Architecture | Automated Test / Verification Evidence | Status |
-|---|---|---|---|---|---|
-| **SEC-01** | Token Forgery & Alg Confusion | Edge Auth (`worker/auth/tokenVerifier.ts`) | Strict Web Crypto RS256 validation; enforces algorithm pinning (`alg: RS256`); verifies signature against Google Identity JWKS; validates `aud`, `iss`, `exp`. | `tests/worker-auth.test.ts` (suite passed 9/9) | `VERIFIED_PASS` |
-| **SEC-02** | Stale / Revoked JWKS Keys | JWKS Cache (`worker/auth/jwksClient.ts`) | In-memory edge cache with 6-hour TTL, background refresh, and immediate forced key rotation on unknown `kid`. | `tests/worker-auth.test.ts` (`fetches and caches JWKS`) | `VERIFIED_PASS` |
-| **SEC-03** | Privilege Escalation / IDOR | RBAC Engine (`worker/auth/rbacEngine.ts`) | Strict role hierarchy (`SUPER_ADMIN > ADMIN > AGENT > USER > GUEST`). Route permissions matched against cryptographic claims before proxying. | `tests/worker-auth.test.ts` (`enforces RBAC permissions`) | `VERIFIED_PASS` |
-| **SEC-04** | API Scraping & Bot Floods | App Check Verifier (`worker/auth/appCheckVerifier.ts`) | Firebase App Check token verification via JWKS with mandatory enforcement on mutation/valuation endpoints. | `tests/worker-auth.test.ts` (`verifies App Check`) | `VERIFIED_PASS` |
-| **SEC-05** | Malicious File Upload (Polyglot/XSS) | R2 Ingestion (`worker/storage/fileValidator.ts`) | Real magic-bytes header inspection (PNG, JPEG, WEBP, PDF). Rejects disguised HTML/SVG/executables. Strict MIME vs header validation. | `tests/worker-r2.test.ts` (`validates file magic bytes`) | `VERIFIED_PASS` |
-| **SEC-06** | Storage Path Traversal | Key Sanitizer (`worker/storage/keyStrategy.ts`) | Strict sanitization of client filenames; strips directory traversal segments (`../`, `..\`), replaces control/angle brackets, enforces UUID prefixes. | `tests/worker-r2.test.ts` (`generates sanitized storage keys`) | `VERIFIED_PASS` |
-| **SEC-07** | Unauthorized Storage Mutation | HMAC Signer (`worker/storage/signedUrlService.ts`) | HMAC-SHA256 signed URL generator with strict expiration timestamp (default 15m), signature verification, and action-scoped authorization. | `tests/worker-r2.test.ts` (`signs and validates signed URLs`) | `VERIFIED_PASS` |
-| **SEC-08** | SQL Injection (D1) | D1 Database Client (`worker/db/d1Client.ts`) | Exclusively uses parameterized statements via `db.prepare().bind(...)`. Zero string concatenation of SQL queries. | `tests/worker-d1.test.ts` (`executes parameterized queries`) | `VERIFIED_PASS` |
-| **SEC-09** | Migration Tampering / Poisoning | D1 Migration Engine (`worker/db/migrationEngine.ts`) | Cryptographic SHA-256 checksum verification of all migration files prior to execution; rejects altered schema definitions. | `tests/worker-d1.test.ts` (`detects checksum mismatch tampering`) | `VERIFIED_PASS` |
-| **SEC-10** | Queue Poison Message Bomb | Queue Ingestion (`worker/queues/queueProcessor.ts`) | Batch processing with per-message try/catch, max retries limit (3 attempts), and automated dead-letter routing (`DLQ_QUEUE`). | `tests/worker-queues.test.ts` (`dead-letters poison messages`) | `VERIFIED_PASS` |
-| **SEC-11** | Edge Cache Stampede / PII Leak | KV Cache Manager (`worker/cache/kvCacheManager.ts`) | Promise-coalescing single-flight fetcher; explicit cache classification matrix preventing storage of private/sensitive user data in KV. | `tests/worker-cache.test.ts` (`coalesces concurrent requests`) | `VERIFIED_PASS` |
-| **SEC-12** | Telemetry PII Ingestion | Privacy Engine (`worker/telemetry/privacyEngine.ts`) | Zero-PII sanitization engine; redacts phone numbers (Iran formats), emails, IP addresses, National IDs, and auth tokens. | `tests/worker-telemetry.test.ts` (`strips PII from payloads`) | `VERIFIED_PASS` |
-| **SEC-13** | Behavioral Surveillance / Fingerprint | Session Hasher (`worker/telemetry/privacyEngine.ts`) | HMAC-SHA256 rotating daily salt prevents cross-day user journey tracking or long-term behavioral profiling. | `tests/worker-telemetry.test.ts` (`generates rotating daily salts`) | `VERIFIED_PASS` |
-| **SEC-14** | Valuation Manipulation / Model Drift | Model Drift Monitor (`worker/telemetry/driftMonitor.ts`) | Enforces mathematical invariant `FAST_SALE_FACTOR = 0.88`. Emits critical alert on divergence $\ge 1\%$. | `tests/worker-telemetry.test.ts` (`detects model drift`) | `VERIFIED_PASS` |
-| **SEC-15** | Rate Limit Bypass | Edge Limiter (`worker/cache/edgeRateLimiter.ts`) | Distributed sliding-window rate limiting backed by Workers KV with deterministic key namespacing by client IP / token hash. | `tests/worker-cache.test.ts` (`enforces sliding-window limits`) | `VERIFIED_PASS` |
-| **SEC-16** | Cross-Origin Request Forgery | Edge Router (`worker/index.ts`) | Whitelisted CORS origins (`ORIGIN_WHITELIST`), strict preflight handling, credentials gating, security response headers (CSP, HSTS). | Code inspection & `test:security` | `VERIFIED_PASS` |
+Statuses strictly follow the Phase 9.1 evidence taxonomy:
+- `VERIFIED`: Proven by local tests with real cryptographic math.
+- `PARTIALLY_VERIFIED`: Core validation verified; external revocation/status checks require Google Identity Toolkit API.
+- `TESTED_LOCALLY`: Verified against in-memory local adapters; remote Cloudflare bindings pending staging provisioning.
+- `NOT_TESTED_IN_REMOTE_ENVIRONMENT`: Awaits live Cloudflare staging network deployment.
 
 ---
 
-## 3. Residual Security Limitations & Staging Action Plan
+## 2. Threat Vector & Evidence Reconciliation Matrix
 
-1. **Express Fallback Secret Zero**: The strangler fallback relies on environment variables (`DIVAR_API_KEY`, `SESSION_SECRET`). When migrating to Cloudflare Workers, secrets must be loaded via encrypted Wrangler secrets (`wrangler secret put`).
-2. **WebAssembly Heavy Media Processing**: Image thumbnail generation using Sharp remains on Express backend; native Workers pipeline should incorporate WebAssembly libvips or Cloudflare Images in Phase 10.
-3. **App Check Device Attestation**: Play Integrity / Apple DeviceCheck keys are verified via Firebase JWKS. Staging must validate real-device hardware tokens.
+| # | Threat Vector | Target Component | Exact Source Code & Line Reference | Supporting Test File | Local Test Evidence | Reconciled Status |
+|---|---|---|---|---|---|---|
+| **SEC-01** | Token Forgery & Alg Confusion | Edge Auth Verifier | `worker/auth/firebaseTokenVerifier.ts` (L45-124, L188-208) | `tests/cloudflare-phase3-identity-and-auth.test.ts` | Tested with Web Crypto RSA-2048 keys; rejected alg `none`, `HS256`, and forged payloads | `VERIFIED` |
+| **SEC-02** | Stale / Revoked JWKS Keys | JWKS Client Cache | `worker/auth/jwksClient.ts` (L12-98) | `tests/cloudflare-phase3-identity-and-auth.test.ts` | Edge cache TTL, forced rotation on unknown `kid` | `VERIFIED` |
+| **SEC-03** | Token Revocation & User Deletion | Token Revocation Engine | `worker/auth/firebaseTokenVerifier.ts` (L132) | None | **Revocation (`checkRevoked`) is NOT evaluated** in Worker runtime. Only verifies signature, `exp`, `iat`, `aud`, `iss`. Real-time revocation requires Firebase Admin / Identity Toolkit call. | `PARTIALLY_VERIFIED` *(Limitation Documented)* |
+| **SEC-04** | Privilege Escalation / IDOR | RBAC Policy Engine | `worker/auth/authorizationPolicy.ts` (L1-120) | `tests/cloudflare-phase3-identity-and-auth.test.ts` | Role hierarchy evaluated: `SUPER_ADMIN > ADMIN > AGENT > USER > GUEST`. Unverified emails blocked. | `VERIFIED` |
+| **SEC-05** | Bot Inundation & Scraping | App Check Verifier | `worker/auth/appCheckVerifier.ts` (L1-110) | `tests/cloudflare-phase3-identity-and-auth.test.ts` | Verifies Firebase App Check JWT envelope and Google JWKS keys. Hardware Play Integrity attestation requires device. | `PARTIALLY_VERIFIED` |
+| **SEC-06** | Malicious File Upload (Polyglot / XSS) | Media Header Validator | `worker/storage/mediaValidation.ts` (L15-105) | `tests/cloudflare-phase4-r2-and-storage.test.ts` | Binary magic bytes verified (JPEG, PNG, WebP, PDF). Rejects SVG, XML, and embedded `<?php` or `<script>` polyglots. | `VERIFIED` |
+| **SEC-07** | Storage Path Traversal | Storage Key Strategy | `worker/storage/keyStrategy.ts` (L1-85) | `tests/cloudflare-phase4-r2-and-storage.test.ts` | Strips `../` and control chars; forces deterministic UUID namespaces (`listings/{env}/{city}/hood-{id}/...`). | `VERIFIED` |
+| **SEC-08** | Unauthorized Storage Mutation | HMAC Signed URL Service | `worker/storage/signedUrlSecurity.ts` (L1-110) | `tests/cloudflare-phase4-r2-and-storage.test.ts` | Web Crypto HMAC-SHA256 signature generated and verified; rejects expired or method-tampered requests. | `VERIFIED` |
+| **SEC-09** | Remote R2 Storage Write Tampering | R2 Adapter Binding | `worker/storage/r2Adapter.ts` (L1-120) | `tests/cloudflare-phase4-r2-and-storage.test.ts` | Verified against `SimulatedR2StorageAdapter` in memory. Remote R2 bucket not yet provisioned. | `TESTED_LOCALLY` |
+| **SEC-10** | SQL Injection (D1) | D1 SQL Interface | `worker/db/types.ts`, `worker/db/simulatedD1.ts` | `tests/cloudflare-phase5-d1-and-database.test.ts` | Exclusively uses parameterized `db.prepare().bind(...)`. Zero string interpolation. | `TESTED_LOCALLY` |
+| **SEC-11** | Migration Script Tampering | D1 Migration Engine | `worker/db/migrationEngine.ts` (L1-115) | `tests/cloudflare-phase5-d1-and-database.test.ts` | Cryptographic SHA-256 checksum calculated before execution; detects altered SQL statements. | `VERIFIED` |
+| **SEC-12** | Queue Poison Message Bomb | Queue Batch Ingestion | `worker/queues/queueProcessor.ts` (L1-135) | `tests/cloudflare-phase6-queues-and-cron.test.ts` | Exponential backoff for retries; isolates unparseable or failing messages to DLQ after 3 attempts. | `TESTED_LOCALLY` |
+| **SEC-13** | Edge Cache Stampede & Leak | KV Cache Manager | `worker/cache/kvCacheManager.ts` (L1-160) | `tests/cloudflare-phase7-cache-and-kv.test.ts` | Promise coalescing deduplicates simultaneous misses; cache classification prevents storing PII. | `TESTED_LOCALLY` |
+| **SEC-14** | Telemetry PII Ingestion | Privacy Validator | `worker/telemetry/privacyValidator.ts` (L18-125) | `tests/cloudflare-phase8-telemetry-and-privacy.test.ts` | Strips Iranian mobile numbers, national IDs, IBANs, emails, and sensitive keys. | `VERIFIED` |
+| **SEC-15** | Cross-Day User Tracking | Session Hasher | `worker/telemetry/privacyValidator.ts` (L51-61) | `tests/cloudflare-phase8-telemetry-and-privacy.test.ts` | Rotating daily salt prevents cross-day user journey profiling. | `VERIFIED` |
+| **SEC-16** | Valuation Invariant Drift | Market Intelligence Engine | `worker/telemetry/marketIntelligenceEngine.ts`, `src/data/hedonicPricingEngine.ts` | `tests/cloudflare-phase8-telemetry-and-privacy.test.ts` | Strictly monitors `FAST_SALE_FACTOR = 0.88` mathematical constant. Divergence $\ge 1\%$ triggers alert. | `VERIFIED` |
+| **SEC-17** | Rate Limit Bypass | Edge Rate Limiter | `worker/cache/rateLimiter.ts` (L1-95) | `tests/cloudflare-phase7-cache-and-kv.test.ts` | Sliding-window algorithm enforced by IP and route namespace. | `TESTED_LOCALLY` |
+
+---
+
+## 3. Secret Management & Deployment Credentials Architecture
+
+A strict separation must be maintained between **deployment credentials** and **Worker runtime secrets**:
+
+### Category A: Deployment Credentials (CI/CD & CLI Only)
+*Never exposed to browser code, never bundled in Worker source, never stored in repository files.*
+- `CLOUDFLARE_ACCOUNT_ID`: Account identifier for Cloudflare API.
+- `CLOUDFLARE_API_TOKEN`: Provisioned via Cloudflare Dashboard with scoped permissions:
+  - `Workers Scripts: Edit`
+  - `Workers KV Storage: Edit`
+  - `D1: Edit`
+  - `R2 Storage: Edit`
+  - `Workers Queues: Edit`
+
+### Category B: Worker Runtime Secrets (Encrypted via Wrangler)
+*Injected into Worker environment bindings via `wrangler secret put <NAME>` in staging.*
+- `ADMIN_API_SECRET`: Required for administrative endpoint authorization.
+- `VALUATION_SEAL_SECRET`: Required for cryptographic HMAC signing of valuation certificates.
+- `FIREBASE_PROJECT_ID`: Target Firebase project for token audience and issuer validation.
+
+---
+
+## 4. Residual Security Limitations & Staging Controls
+
+1. **Token Revocation Window**:
+   Because Firebase ID tokens have a 1-hour lifespan and real-time revocation checks are not evaluated on the edge isolate, a revoked user could technically use an existing valid token until expiration (up to 60 minutes).  
+   *Staging Control*: For high-privilege administrative actions, the Worker checks `auth_time` (ensuring recent login within 15 minutes) and validates `ADMIN_API_SECRET`.
+2. **Device Hardware Attestation**:
+   App Check verification currently validates JWT signatures against Google's public JWKS. Hardware attestation (Play Integrity / DeviceCheck) requires real-device testing in Phase 10.

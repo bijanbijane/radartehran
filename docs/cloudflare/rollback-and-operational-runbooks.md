@@ -1,80 +1,77 @@
-# Rollback Procedures & Operational Runbooks (Phase 9)
+# Rollback Procedures & Operational Runbooks (Phase 9.1 Reconciled)
 ## Tehran Radar — Incident Response & Staging Deployment Runbooks
 
 **Document Reference**: `docs/cloudflare/rollback-and-operational-runbooks.md`  
-**Evaluation Date**: November 2026  
+**Evaluation Date**: November 2026 (Updated Phase 9.1)  
 **Auditor**: Site Reliability Engineering & Operations Architecture Team  
 **Evaluation Status**: `READY_WITH_DOCUMENTED_LIMITATIONS`
 
 ---
 
-## 1. Fast Rollback Runbooks (Recovery Time < 5 Minutes)
+## 1. Operational Recovery Architecture & Invariant Rules
 
-In the event of an outage, catastrophic edge bug, or unhandled exception spike after deploying to Staging or Production, follow these deterministic runbooks.
-
-### Runbook 1: Instant Route Disablement (DNS / Edge Bypass)
-**Trigger**: Error rate $\ge 2\%$ on Cloudflare Worker or severe routing loop.  
-**Execution Time**: `< 60 seconds`.  
-**Steps**:
-1. Run CLI command:
-   ```bash
-   npx wrangler rollback --message "Emergency rollback to previous stable deployment"
-   ```
-2. Or via Cloudflare Dashboard:
-   - Navigate to **Workers & Pages** -> `tehran-radar-edge-worker` -> **Deployments**.
-   - Click **Rollback** on the preceding successful deployment.
-3. If Worker isolate runtime itself is failing:
-   - Navigate to **Websites** -> `radartehran.ir` -> **DNS** or **Workers Routes**.
-   - Disable route: `radartehran.ir/*`.
-   - Traffic routes directly to origin Node.js Express server.
+In Phase 9.1, operational runbooks have been updated to reflect the verified behavior of the edge router:
+- **No Indiscriminate Write Retries**: Never automatically retry failed POST, PATCH, or DELETE requests across runtimes without explicit idempotency tokens. Doing so risks duplicate financial or lead creation.
+- **Failover Mechanism**: Failover from Cloudflare Workers to Express occurs at the **Cloudflare Edge Route / DNS layer**, not via in-worker dynamic HTTP reverse-proxying.
 
 ---
 
-### Runbook 2: Strangler Fallback Force Route
-**Trigger**: A specific migrated route group (e.g., Group 1B Hedonic engine or Group 1A Health/Config) behaves unexpectedly.  
-**Execution Time**: `< 2 minutes`.  
-**Steps**:
-1. In `worker/router.ts`, set the emergency override flag or remove route regex from `MIGRATED_ROUTES` map.
-2. The Worker will automatically proxy the request to the upstream Node.js origin:
-   ```typescript
-   // worker/router.ts
-   // To force fallback, return null from matchMigratedRoute()
-   return null; // All requests immediately fall through to Express origin
-   ```
-3. Deploy Worker update:
-   ```bash
-   npm run deploy:worker
-   ```
+## 2. Emergency Runbooks
+
+### Runbook 1: Edge Route Disablement (Complete Origin Bypass)
+- **Trigger**: Error rate $\ge 2\%$ on Worker isolate, script compilation errors, or unhandled 500 loops.
+- **Implementation Status**: `PROCEDURAL_DESIGN` (Cloudflare platform feature).
+- **Procedure**:
+  1. Open Cloudflare Dashboard -> **Websites** -> `radartehran.ir` -> **Workers Routes**.
+  2. Disable the wildcard route binding: `radartehran.ir/* -> radartehran`.
+  3. Traffic immediately routes directly to the containerized origin server without hitting Worker code.
+  4. Estimated operational turnaround: `< 60 seconds`.
 
 ---
 
-### Runbook 3: D1 Database Failover to Firestore
-**Trigger**: D1 read-replica divergence or sqlite table lock.  
-**Execution Time**: Instantaneous (Automatic).  
-**Steps**:
-1. Firestore is the primary authoritative master. D1 is read-only for reporting and caching.
-2. In `worker/db/d1Client.ts`, toggle `FEATURE_D1_READS_ENABLED=false` in Wrangler environment variables.
-3. The system defaults immediately to direct Firestore queries.
+### Runbook 2: Instant Worker Version Rollback
+- **Trigger**: A new staging deployment introduces a regression in Group 1A/1B handlers.
+- **Implementation Status**: `PROCEDURAL_DESIGN` (Built-in Wrangler feature).
+- **Procedure**:
+  1. Execute via CLI:
+     ```bash
+     npx wrangler rollback --message "Emergency rollback to previous stable staging release"
+     ```
+  2. Or navigate in Dashboard to **Workers & Pages** -> `radartehran-staging` -> **Deployments**, locate the preceding green deployment, and click **Rollback**.
 
 ---
 
-### Runbook 4: R2 Storage Fallback
-**Trigger**: Cloudflare R2 bucket inaccessible or credential failure.  
-**Execution Time**: `< 3 minutes`.  
-**Steps**:
-1. In `worker/storage/index.ts`, switch adapter mode from `r2` to `simulated` (local storage / Express proxy).
-2. Existing uploaded files on R2 remain untouched.
+### Runbook 3: D1 Safety & Schema Isolation
+- **Trigger**: D1 read query failure or schema divergence.
+- **Implementation Status**: `VERIFIED_INVARIANT`
+- **Procedure**:
+  1. Firestore is the **authoritative master**.
+  2. D1 reads are **not active** in production or staging.
+  3. Any issue with D1 does not impact user traffic or application mutations because all authoritative business operations query Firestore directly.
 
 ---
 
-## 2. Operational Health Check & Incident Response Checklist
+### Runbook 4: Queue Poison Message Isolation
+- **Trigger**: Spike in `radar-dead-letter` queue depth.
+- **Implementation Status**: `TESTED_LOCALLY` (Tested via `tests/cloudflare-phase6-queues-and-cron.test.ts`).
+- **Procedure**:
+  1. Messages that fail 3 consecutive processing attempts are automatically isolated to `radar-dead-letter`.
+  2. Inspect message payload and stack trace:
+     ```bash
+     npx wrangler queues consumer info radar-dead-letter
+     ```
+  3. Poison messages never head-of-line block the primary queue.
 
-During any operational anomaly, verify the following telemetry indicators:
+---
 
-1. **Edge Error Rates**: Inspect Cloudflare Workers Analytics for HTTP 1101 (Worker threw exception), 520 (Origin error), or 524 (Origin timeout).
-2. **Queue Health**: Check `tehran-radar-jobs-dlq` (Dead-letter queue) message count. If DLQ count $> 0$, inspect poison payloads:
-   ```bash
-   npx wrangler queues consumer info tehran-radar-jobs-dlq
-   ```
-3. **KV Quotas**: Verify read/write rate limits in Cloudflare Dashboard under **Workers KV**.
-4. **Hedonic Valuation Invariant**: Verify that all valuation calls emit $\text{FAST\_SALE\_FACTOR} = 0.88$.
+## 3. Telemetry Indicators & Health Thresholds
+
+During staging verification in Phase 10, monitor the following signals:
+
+1. **Edge Status Codes**:
+   - `500 Internal Worker Error`: Must be $< 0.1\%$ of total requests.
+   - `1101 / 1102 Worker Exception`: Indicates script crash; trigger Runbook 1 immediately if $> 0.5\%$.
+2. **Hedonic Pricing Invariant**:
+   - Verify all valuation certificate signatures emit `FAST_SALE_FACTOR = 0.88`. Any drift $\ge 1\%$ triggers an immediate P0 rollback.
+3. **Queue DLQ Counter**:
+   - Normal threshold: 0 messages.

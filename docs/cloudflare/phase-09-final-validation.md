@@ -1,101 +1,102 @@
-# PHASE 9: FINAL SECURITY, PERFORMANCE, RESILIENCE, CAPACITY, AND PRE-STAGING READINESS REPORT
+# PHASE 9.1: EVIDENCE RECONCILIATION, TECHNICAL CORRECTIONS, AND PRE-STAGING VALIDATION
 
-## 1. Overall Readiness Verdict
-- **Status:** `READY_WITH_DOCUMENTED_LIMITATIONS`
-- **Assessment Summary:**
-  The Cloudflare Workers architecture for Tehran Radar has passed all local runtime simulation checks, architectural boundary audits (`arch:check`), cryptographic token verification suites (`test:auth`), R2 object storage contracts (`test:r2`), D1 migration integrity suites (`test:d1`), Queues and Cron orchestration tests (`test:queues`), distributed KV caching and rate limiting (`test:cache`), and privacy governance models (`test:telemetry`).
-  
-  The system is ready for **controlled staging deployment (Phase 10)** provided that the documented limitations (retaining Express as the authoritative backend for unmigrated routes via strangler routing, maintaining Firestore as the primary database, and running D1 as a read-replica) are respected.
-
----
-
-## 2. Evidence-Based Phase Verification (Phases 0–8)
-
-| Phase | Subsystem / Area | Implemented Artifacts | Test Command & Evidence | Audit Verdict |
-| :---: | :--- | :--- | :--- | :---: |
-| **Phase 0** | Architecture Discovery | Baseline contracts, boundary ceilings | `npm run arch:check` (283 files, 0 errors) | **VERIFIED_PASS** |
-| **Phase 1** | Worker Runtime Foundation | `wrangler.jsonc`, `worker/index.ts`, Vite plugin | `npm run test:worker` (10/10 tests passed) | **VERIFIED_PASS** |
-| **Phase 2** | Strangler Migration & Router | `worker/router.ts`, Group 1A & 1B routes | `npm run test:worker` (88 routes registered) | **VERIFIED_PASS** |
-| **Phase 3** | Identity, Auth & RBAC | `worker/auth/*`, Web Crypto RS256, JWKS cache | `npm run test:auth` (9/9 suites passed) | **VERIFIED_PASS** |
-| **Phase 4** | R2 Storage & Media Security | `worker/storage/*`, R2 adapter, magic-bytes | `npm run test:r2` (8/8 suites passed) | **VERIFIED_PASS** |
-| **Phase 5** | Database & D1 Readiness | `worker/db/*`, D1 schema, migration engine | `npm run test:d1` (5/5 suites passed) | **VERIFIED_PASS** |
-| **Phase 6** | Queues, Cron & Orchestration | `worker/queues/*`, batch processor, DLQ | `npm run test:queues` (5/5 suites passed) | **VERIFIED_PASS** |
-| **Phase 7** | Distributed Caching & KV | `worker/cache/*`, stampede protection, rate-limit | `npm run test:cache` (4/4 suites passed) | **VERIFIED_PASS** |
-| **Phase 8** | Telemetry & Privacy Governance | `worker/telemetry/*`, zero-PII, k-anonymity | `npm run test:telemetry` (4/4 suites passed) | **VERIFIED_PASS** |
+**Repository**: `bijanbijane/radartehran`  
+**Evaluation Date**: November 2026 (Updated Phase 9.1)  
+**Auditor**: Principal Platform Infrastructure & Systems Verification Architecture  
+**Overall Readiness Verdict**: `READY_WITH_DOCUMENTED_LIMITATIONS`  
+**Phase 10 Staging Gate Status**: `GATE_READY_FOR_EXPLICIT_USER_AUTHORIZATION`
 
 ---
 
-## 3. Security Validation & Findings
+## 1. Executive Summary & Objective
 
-1. **Cryptographic Authentication:**
-   - Evaluated via `tests/cloudflare-phase3-identity-and-auth.test.ts`. Real RSA-2048 keys generated with `crypto.subtle`.
-   - Strict verification of `iss`, `aud`, `sub`, `exp`, `iat`, and `auth_time`.
-   - Forged signatures, tampered envelopes, and expired tokens are rejected fail-closed.
-2. **Access Control & RBAC:**
-   - Enforced by `worker/auth/authorizationPolicy.ts`.
-   - Rejects unverified emails, mismatched delegated admin accounts, and unauthorized access to private resources.
-   - Timing-safe comparison `constantTimeSecretMatch` neutralizes timing side channels.
-3. **API & Media Upload Protection:**
-   - Rejects SVG and XML payloads (anti-XSS).
-   - Detects and rejects polyglot script injections (`<?php`, `<script>`).
-   - Verifies authentic binary magic bytes for JPEG, PNG, WebP, MP4, and WebM.
-   - Object keys are strictly scoped (`listings/{env}/{city}/hood-{id}/{category}/{yyyy-mm}/{objectId}.{ext}`). Path traversal is blocked.
-4. **Zero-PII & Privacy Governance:**
-   - Ingestion automatically strips and rejects Iranian mobile numbers, national IDs, IBANs, debit card numbers, and auth tokens.
-   - Employs daily rotating salt hashing for anonymous sessions, preventing cross-day behavioral tracking.
+This report reconciles the claims made in Phase 9 with the **actual source code**, **simulated vs remote execution environments**, **test fixtures**, and **Wrangler configurations** in the Tehran Radar repository.
+
+Optimistic assumptions, conflations between local micro-benchmarks and edge telemetry, and premature claims regarding active database replication or automatic proxy failover have been audited and corrected.
 
 ---
 
-## 4. Performance & Resource Analysis
+## 2. Master Claim-to-Evidence Reconciliation Register
 
-1. **Bundle & Compilation:**
-   - Production Vite client assets built in ~10.15s.
-   - Worker SSR bundle built in ~729ms.
-   - Total scanned implementation files: 283; blocking architecture errors: 0.
-2. **Runtime Metric Capabilities in Cloudflare Workers:**
-   - Wall-clock request latency: Directly measurable (`startedAtMs`).
-   - CPU time: Measurable via `performance.now()` instrumentation (distinct from wall-clock I/O wait).
-   - Memory usage: Worker V8 isolate memory is **not directly exposed** as an OS-level RAM value. Large payloads are bounded by payload size gates (64KB telemetry, 8MB media, 128KB general).
-   - Subrequest limit: Bounded by Cloudflare's 50 subrequests per invocation limit.
-
----
-
-## 5. Resilience, Failure Scenarios & Recovery
-
-1. **Storage Outage:** If R2 or external S3 fails, uploads fail closed with HTTP 502/503; ephemeral local storage is **never** silently presented as durable production persistence.
-2. **Queue Poison Messages:** Malformed or unrecognized job envelopes are caught and routed to `radar-dead-letter` without stalling batch progress.
-3. **Cache Failure:** Cloudflare Workers KV failures fail open safely to the authoritative database. Stampede protection suppresses thundering herds during cache misses.
-4. **Hedonic Valuation Drift:** Monitors $MAPE \le 12\%$ and strictly enforces the mathematical invariant $\text{FAST\_SALE\_FACTOR} = 0.88$.
+| Claim ID | Original Phase 9 Claim | Source Document | Supporting Source Code | Supporting Test File | Actual Execution Evidence | Verification Result | Required Correction / Reconciled Reality | Final Status |
+|---|---|---|---|---|---|---|---|---|
+| **CLM-01** | Full Web Crypto RS256 token verification without Node.js dependencies | `security-validation-matrix.md` | `worker/auth/firebaseTokenVerifier.ts` (L135-274) | `tests/cloudflare-phase3-identity-and-auth.test.ts` | Local Node.js / `crypto.subtle` execution passed (9/9) | Validated signature & claims; **Revocation check NOT implemented** | Verified for cryptographic validation (`iss`, `aud`, `sub`, `exp`). Does NOT check real-time Firebase token revocation or disabled users. | `PARTIALLY_VERIFIED` |
+| **CLM-02** | D1 acts as an active read replica of Firestore | `phase-09-final-validation.md`, `resilience-and-recovery.md` | `worker/db/reconciliation.ts`, `worker/db/migrations/0001_initial_schema.sql` | `tests/cloudflare-phase5-d1-and-database.test.ts` | In-memory comparison between 2 mock arrays passed (5/5) | **No live synchronization pipeline exists** | D1 is an implemented schema and proposed projection only. Firestore is the sole authoritative master. No CDC, queue trigger, or dual-write exists. | `CONTRADICTED` |
+| **CLM-03** | Automatic dynamic proxy failover from Worker to Express on failure | `resilience-and-recovery.md` | `worker/router.ts` (L39-63, L89-103) | `tests/cloudflare-phase1-and-phase2-worker.test.ts` | Router returns HTTP 501 for unmigrated routes | **No runtime reverse-proxy (`fetch(origin)`) is implemented in Worker** | Unmigrated routes return HTTP 501. Failover is only possible at Cloudflare DNS/Page Rule routing level. No dynamic retry of non-idempotent writes. | `CONTRADICTED` |
+| **CLM-04** | Sub-3ms CPU time overhead per request | `performance-validation.md` | `worker/contextAndSecurity.ts` (L91, L302) | None (Local microbenchmark estimate) | Local wall-clock `Date.now()` | Conflates wall-clock time with billed CPU time | `Date.now() - startedAtMs` measures wall-clock duration, not V8 isolate CPU time. Billed CPU time is only available via Cloudflare GraphQL analytics. | `UNVERIFIED` |
+| **CLM-05** | 38 MB peak memory consumption | `performance-validation.md` | None | None | None | **No platform telemetry exists** | V8 isolates do not expose OS-level RAM metrics. 38 MB was a theoretical analytical projection. Removed from verified metrics. | `NOT_VERIFIED` |
+| **CLM-06** | Zero cold starts (< 5ms) | `performance-validation.md` | None | None | None | Cloudflare marketing spec, not measured app data | Platform capability under optimal conditions; empirical cold start on Tehran Radar has NOT been measured in production edge PoPs. | `ESTIMATED` |
+| **CLM-07** | R2 Object Storage with magic-bytes & HMAC signed URLs | `security-validation-matrix.md` | `worker/storage/mediaValidation.ts`, `worker/storage/signedUrlSecurity.ts` | `tests/cloudflare-phase4-r2-and-storage.test.ts` | Executed against `SimulatedR2StorageAdapter` (9/9 pass) | Validated in local memory simulation; **No remote R2 bucket connected** | Adapter logic, magic bytes, and HMAC signatures verified. Remote R2 binding in Cloudflare is not yet provisioned. | `TESTED_LOCALLY` |
+| **CLM-08** | Poison messages isolated to Dead-Letter Queue | `resilience-and-recovery.md` | `worker/queues/queueProcessor.ts`, `worker/queues/inventory.ts` | `tests/cloudflare-phase6-queues-and-cron.test.ts` | Executed against `SimulatedWorkerQueue` (5/5 pass) | Validated in local queue simulator | Queue batch processor and 3-attempt backoff logic verified. Remote Cloudflare Queues not yet created. | `TESTED_LOCALLY` |
+| **CLM-09** | Sliding-window edge rate limiter and cache coalescing | `security-validation-matrix.md` | `worker/cache/rateLimiter.ts`, `worker/cache/kvCacheManager.ts` | `tests/cloudflare-phase7-cache-and-kv.test.ts` | Executed against `SimulatedKvStore` (4/4 pass) | Validated in local memory simulation | SWR, single-flight deduping, and sliding window algorithms verified. Remote KV namespace not yet provisioned. | `TESTED_LOCALLY` |
+| **CLM-10** | Hedonic mathematical invariant `FAST_SALE_FACTOR = 0.88` preserved | `phase-09-final-validation.md` | `src/data/hedonicPricingEngine.ts`, `worker/telemetry/marketIntelligenceEngine.ts` | `tests/cloudflare-phase8-telemetry-and-privacy.test.ts` | Real mathematical calculation tested (4/4 pass) | **100% verified math invariant** | Exact formula and drift monitor strictly verified. Zero deviation permitted. | `VERIFIED` |
 
 ---
 
-## 6. Staging Readiness Matrix
+## 3. Evidence Status Taxonomy Definition
 
-| Component | Target Runtime | Authoritative Data Store | Staging Readiness Status | Notes / Limitations |
-| :--- | :--- | :--- | :---: | :--- |
-| **Static Web Client** | Cloudflare Workers Assets | Built SPA Bundle (`./dist`) | **READY_FOR_STAGING** | Fully compatible with Workers Assets. |
-| **Group 1A & 1B API** | Cloudflare Worker Router | Stateless / Worker KV | **READY_FOR_STAGING** | Health, SEO, AI search, and commerce. |
-| **Auth & App Check** | Cloudflare Worker Web Crypto | Firebase Auth JWKS / Google | **READY_FOR_STAGING** | 100% Web Crypto, zero Node dependency. |
-| **Media Uploads** | Worker R2 Adapter | Cloudflare R2 (`MEDIA_BUCKET`) | **READY_WITH_LIMITATIONS** | Sharp processing stays in Express fallback. |
-| **Relational Data** | Cloudflare D1 | Read Replica (Firestore master) | **READY_WITH_LIMITATIONS** | Firestore remains write-authoritative. |
-| **Background Cron** | Cloudflare Cron Triggers | Worker Queues (`radar-*`) | **READY_FOR_STAGING** | Replaces Express process-local timers. |
-| **Legacy Express Routes** | Node.js Express Server | Firestore / Cloud Storage | **OPERATIONAL (STRANGLER)** | Unmigrated routes proxy to Express. |
+Throughout all Phase 9 and 9.1 documentation, every subsystem status is classified under this unambiguous taxonomy:
 
----
-
-## 7. Cost & Capacity Estimates
-
-| Tier / Scenario | Daily Requests | Monthly Cost Estimate (Cloudflare) | Included vs Paid Limits |
-| :--- | :--- | :--- | :--- |
-| **Low-Traffic (Evaluation / Staging)** | 10,000 req/day | **$0.00 / month** | 100% within Cloudflare Free Tier allowances. |
-| **Moderate-Traffic (Production Baseline)**| 200,000 req/day | **$5.00 / month** | Workers Paid plan ($5/mo includes 10M requests, 10GB R2, 25B D1 reads). |
-| **High-Traffic (Peak Expansion)** | 2,000,000 req/day | **$15.00 – $25.00 / month** | Request overage ($0.30/M), Class A R2 writes, D1 writes ($0.75/M). Zero egress fees. |
+1. **`VERIFIED`**: Implemented in source code and proven by reproducible, deterministic automated test passes.
+2. **`PARTIALLY_VERIFIED`**: Core functionality implemented and tested, but specific edge cases (such as token revocation or hardware attestation) are constrained or unverified.
+3. **`TESTED_LOCALLY`**: Implemented against standard Web APIs and verified using in-memory simulators (`SimulatedR2StorageAdapter`, `SimulatedD1Database`, `SimulatedKvStore`, `SimulatedWorkerQueue`).
+4. **`ESTIMATED`**: Derived from Cloudflare platform specifications or theoretical calculations; not empirically measured in production.
+5. **`PROPOSED`**: Architectural design or schema defined in repository, but not active in runtime.
+6. **`CONTRADICTED`**: Previous claim disproven by source code inspection.
+7. **`NOT_TESTED_IN_REMOTE_ENVIRONMENT`**: Requires remote Cloudflare provisioning (Cloudflare API token, remote KV/R2/D1/Queue bindings).
 
 ---
 
-## 8. Prioritized Remediation Plan
+## 4. Subsystem Audits & Reconciled Realities
 
-- **P0 (Critical Pre-Staging):** Ensure environment variables (`FIREBASE_PROJECT_ID`, `ADMIN_EMAIL`, `ADMIN_API_SECRET`, `VALUATION_SEAL_SECRET`) are provisioned in staging `wrangler.jsonc`.
-- **P1 (High Impact):** Deploy read-only D1 schema (`0001_initial_schema.sql`) to staging database binding before activating D1 read routes.
-- **P2 (Important):** Bind staging R2 bucket (`radartehran-staging-media`) and verify public custom domain mapping for media retrieval.
-- **P3 (Optimization):** Migrate image resizing from Node.js `sharp` to a WebAssembly/Cloudflare Images pipeline.
+### 4.1 Worker Runtime & Route Architecture
+- **Source**: `worker/index.ts`, `worker/router.ts`, `worker/migrationRegister.ts`.
+- **Reality**: 88 API routes cataloged. Group 1A (Health, SEO, PWA) and Group 1B (Stateless Intelligence, Commerce, MCP) run on edge. Unmigrated routes return HTTP 501 `ROUTE_NOT_YET_MIGRATED_TO_WORKER`.
+- **Status**: `VERIFIED` for Group 1A/1B; `PROPOSED` for full edge migration.
+
+### 4.2 Authentication & Token Revocation
+- **Source**: `worker/auth/firebaseTokenVerifier.ts` (L135-274).
+- **Reality**: Web Crypto RS256 signature verification works without Node.js dependencies. However, `checkRevoked` is **not executed** because checking revocation or user deletion requires calling Google Identity Toolkit with Firebase Admin credentials.
+- **Status**: `PARTIALLY_VERIFIED` (Signatures & Claims: `VERIFIED`; Real-time Revocation: `UNVERIFIED_IN_WORKER`).
+
+### 4.3 Database Architecture (Firestore vs D1)
+- **Source**: `worker/db/types.ts`, `worker/db/migrationEngine.ts`, `worker/db/reconciliation.ts`.
+- **Reality**: D1 is an implemented schema (`0001_initial_schema.sql`) and migration tool. There is **no live replication daemon** syncing Firestore mutations to D1. Firestore remains the sole authoritative datastore.
+- **Status**: `PROPOSED_PROJECTION_ADAPTER` (No active read replica).
+
+### 4.4 Fallback & Resilience
+- **Source**: `worker/router.ts`.
+- **Reality**: The Worker does **not** dynamically proxy failed or unmigrated requests to Express. Any route failover must occur at Cloudflare's edge DNS / Page Rules layer. Retrying non-idempotent writes across runtimes is prohibited to prevent duplicate transactions.
+- **Status**: Edge DNS Bypass `DESIGNED`; Worker dynamic proxy fallback `CONTRADICTED`.
+
+---
+
+## 5. Verified Test Count & Denominator
+
+Exact counts from the 7 Cloudflare migration test suites executed via Node.js test runner (`tsx --test`):
+
+| Test Script | Test File | Subtests | TAP Test Units | Execution Time | Status |
+|---|---|:---:|:---:|:---:|:---:|
+| `npm run test:worker` | `tests/cloudflare-phase1-and-phase2-worker.test.ts` | 10 | 10 | ~260ms | `VERIFIED_PASS` |
+| `npm run test:auth` | `tests/cloudflare-phase3-identity-and-auth.test.ts` | 8 | 9 | ~310ms | `VERIFIED_PASS` |
+| `npm run test:r2` | `tests/cloudflare-phase4-r2-and-storage.test.ts` | 8 | 9 | ~270ms | `VERIFIED_PASS` |
+| `npm run test:d1` | `tests/cloudflare-phase5-d1-and-database.test.ts` | 5 | 6 | ~235ms | `VERIFIED_PASS` |
+| `npm run test:queues` | `tests/cloudflare-phase6-queues-and-cron.test.ts` | 5 | 6 | ~250ms | `VERIFIED_PASS` |
+| `npm run test:cache` | `tests/cloudflare-phase7-cache-and-kv.test.ts` | 4 | 5 | ~250ms | `VERIFIED_PASS` |
+| `npm run test:telemetry` | `tests/cloudflare-phase8-telemetry-and-privacy.test.ts` | 4 | 5 | ~255ms | `VERIFIED_PASS` |
+| **Total Migration Tests** | **7 Files** | **44** | **50** | **~1.84s** | **100% PASS** |
+
+*Note: All 50 units pass in local execution against simulators and mock cryptographic keys. Zero tests have been executed against live remote Cloudflare network services.*
+
+---
+
+## 6. Pre-Staging Readiness Conclusion & Recommendation
+
+**Verdict**: `READY_WITH_DOCUMENTED_LIMITATIONS`
+
+Tehran Radar is technically ready for Phase 10 (Staging Deployment) under the following explicit operational boundaries:
+1. Cloudflare Workers will serve static assets (`./dist`) and handle Group 1A/1B endpoints natively.
+2. Unmigrated endpoints remain on the Express backend (handled via separate staging subdomain or Cloudflare Route rules).
+3. Firestore remains the authoritative database. D1 will not be used as an authoritative database or active read-replica in this phase.
+4. R2 will be bound for new media uploads in staging once the bucket is provisioned.
+5. All deployment credentials (`CLOUDFLARE_API_TOKEN`) and Worker runtime secrets (`ADMIN_API_SECRET`, `VALUATION_SEAL_SECRET`) must be kept strictly separated.

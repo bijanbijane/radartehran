@@ -1,65 +1,74 @@
-# Resilience, Fault Tolerance and Disaster Recovery (Phase 9)
+# Resilience, Fault Tolerance and Disaster Recovery (Phase 9.1 Reconciled)
 ## Tehran Radar — Edge Runtime Resilience & Fallback Architecture
 
 **Document Reference**: `docs/cloudflare/resilience-and-recovery.md`  
-**Evaluation Date**: November 2026  
+**Evaluation Date**: November 2026 (Updated Phase 9.1)  
 **Auditor**: Distributed Systems & Site Reliability Engineering Team  
 **Evaluation Status**: `READY_WITH_DOCUMENTED_LIMITATIONS`
 
 ---
 
-## 1. High Availability & Failure Mode Analysis (FMEA)
+## 1. Executive Summary & Critical Architecture Corrections
 
-The Tehran Radar hybrid migration relies on an incremental strangler architecture. Resilience requires graceful degradation across all Cloudflare bindings (KV, D1, R2, Queues) and upstream origin services (Firebase Firestore, Express Node.js backend).
+Phase 9.1 audits identified a discrepancy between previous documentation and actual code regarding fallback routing:
+1. **No In-Worker Proxy Fallback**: `worker/router.ts` does **not** dynamically proxy failed or unmigrated requests to Express. Unmigrated routes return HTTP 501 `ROUTE_NOT_YET_MIGRATED_TO_WORKER`, unmatched `/api/*` returns HTTP 404, and exceptions return HTTP 500.
+2. **Non-Idempotent Write Safety**: Blindly retrying non-idempotent mutations (such as buyer lead submissions or payments) across runtimes after a timeout causes **duplicate write corruption**. Retries are strictly prohibited without cryptographic idempotency tokens.
+3. **D1 Read Replica Reality**: D1 is an implemented schema and proposed derived projection, not an active live-synchronized replica. Firestore is the sole authoritative data store.
 
-| Subsystem | Potential Failure Scenario | Detection Mechanism | Automated Fallback / Mitigation | Recovery Objective (RTO / RPO) |
+---
+
+## 2. Failure Modes & Effects Analysis (FMEA)
+
+| Subsystem | Potential Failure Scenario | Detection Mechanism | Mitigation Architecture & Behavior | Design vs Measurement Status |
 |---|---|---|---|---|
-| **Worker Isolate Execution** | Edge worker unhandled exception or script crash | Cloudflare Edge 1101/1102 detection | Automatic DNS / Route fallback to Origin Node.js Express server. | RTO: < 100ms  <br>RPO: 0 |
-| **KV Cache Outage** | Cloudflare Workers KV degraded or rate limited | Try/catch with error classification in `kvCacheManager.ts` | Bypass cache directly to origin/database without request termination. | RTO: Instant  <br>RPO: 0 |
-| **D1 Read Replica Outage** | D1 query timeout or schema lock | Query error interception in `d1Client.ts` | Fallback read to Firestore primary collection. System logs error with circuit-breaker. | RTO: Instant  <br>RPO: 0 |
-| **R2 Storage Write Failure** | R2 API throttling or transient network partition | HTTP 503 / timeout caught by `r2Adapter.ts` | Re-queue upload request via Cloudflare Queue; return signed retry payload. | RTO: < 5s  <br>RPO: 0 |
-| **Queue Processor Poison Message** | Malformed job payload causing infinite Worker crash | Message retry count inspection (`message.attempts >= 3`) | Automated poison isolation: send to `DLQ_QUEUE` (Dead-Letter Queue), ack original message to prevent queue head-of-line blocking. | RTO: Instant  <br>RPO: 0 |
-| **JWKS Key Server Outage** | Google Accounts JWKS endpoint unavailable | HTTP 5xx or fetch timeout in `jwksClient.ts` | Serve cached JWKS public keys past TTL in emergency grace period (up to 48 hours). | RTO: Instant  <br>RPO: 0 |
-| **External Divar Sync Outage** | Divar upstream API rate limit or anti-scraping block | Circuit breaker in `serverMarketPulseEngine.ts` | Serve historical snapshot cached in D1/KV; mark indicators as stale (`isStale: true`). | RTO: Instant  <br>RPO: Max 24 hours |
+| **Worker Isolate Crash** | Unhandled runtime exception or memory ceiling exceeded | Cloudflare Edge 1101/1102 or Worker 500 | Worker catches exception, logs `UNHANDLED_WORKER_EXCEPTION`, and returns JSON 500. Cloudflare Page Rule can route traffic to Express origin if Worker fails globally. | `DESIGNED` (Tested locally with injected exceptions) |
+| **Unmigrated Route Request** | Request hits route assigned to Express (Group 2–5) | Route registry check in `worker/router.ts` (L38-63) | Returns HTTP 501 with structured JSON payload identifying the authoritative Express module. Client routes directly to origin. | `VERIFIED` |
+| **Non-Idempotent Mutation Timeout** | Upstream write succeeds but response network drops | Request timeout / client disconnect | System does **NOT** blindly retry POST/PATCH requests. Client must provide `idempotencyKey` to safely query operation outcome. | `DESIGNED` |
+| **KV Cache Degradation** | Cloudflare KV API throttling or outage | Try/catch in `worker/cache/kvCacheManager.ts` | Gracefully falls back to direct execution / source fetch without failing the HTTP request. | `TESTED_LOCALLY` |
+| **R2 Storage Write Failure** | Transient network error or R2 service limit | HTTP 503 from R2 API adapter | Upload fails closed with structured error; client retries using a new signed URL. Ephemeral storage is never used as a fake substitute. | `TESTED_LOCALLY` |
+| **Queue Poison Message** | Malformed job envelope crashing worker repeatedly | Message attempts check (`attempts >= 3`) | Message is acked and forwarded to `radar-dead-letter` queue, preventing head-of-line blocking. | `TESTED_LOCALLY` |
+| **Google JWKS Outage** | Google Accounts public key endpoint unreachable | Network timeout in `jwksClient.ts` | Serves stale cached public keys during grace period (up to 48 hours). | `TESTED_LOCALLY` |
+| **Hedonic Model Drift** | External data corruption altering valuation weights | Formula assertion in `marketIntelligenceEngine.ts` | Strict invariant validation ensures $\text{FAST\_SALE\_FACTOR} = 0.88$. Alerts if $MAPE \ge 12\%$. | `VERIFIED` |
 
 ---
 
-## 2. Strangler Fallback & Origin Circuit Breaker
+## 3. Strangler Routing Reality vs Previous Documentation
 
-The Worker router (`worker/index.ts`) enforces strict fall-through routing for unmigrated or failing routes:
+The actual routing flow implemented in `worker/router.ts` and `worker/index.ts`:
 
 ```
-[Client Request]
-       |
-  [Edge Worker] ---> (Route Migrated & Healthy?)
-                          |               \
-                        [Yes]             [No / Exception]
-                          |                       \
-                  [Execute Edge Handler]       [Proxy to Express Origin]
-                          |                               |
-                 (Handler Succeeded?)             (Origin Returns 2xx/4xx)
-                     /          \                         |
-                  [Yes]         [No]                      |
-                   /              \                       |
-              [Return]         [Proxy to Express] --------+
-                                  (Fallback)
+[Incoming Request]
+        |
+  [Cloudflare Worker]
+        |
+  (Is Path Migrated to Edge? Group 1A / 1B)
+       /                                  \
+    [Yes]                                 [No]
+      |                                     |
+(Execute Handler)               (Is Path in Migration Register?)
+    /          \                          /                   \
+[Success]    [Exception]                [Yes]                 [No]
+    |             |                       |                     |
+ (Return)    (Return 500 JSON)      (Return 501 JSON)     (Is /api/* ?)
+                                    [Identifies Express]     /       \
+                                                           [Yes]     [No]
+                                                             |         |
+                                                        (Return 404) (Serve Static SPA)
 ```
 
-- **Health Ping**: Express health is polled via background Cron Trigger. If the origin is degraded, Edge returns cached read-only data instead of proxy errors.
-- **Header Propagation**: Fallback requests append `X-Strangler-Fallback: true` and `X-Request-Trace-Id` to trace origin load.
+**Key Distinction**: There is no live reverse-proxying (`fetch(expressOrigin)`) within the Worker code itself. In a multi-origin setup, Cloudflare Workers Routes or Cloudflare Load Balancing handles origin splitting.
 
 ---
 
-## 3. Disaster Recovery & Emergency Procedures
+## 4. Disaster Recovery & Rollback Procedures
 
-### 3.1 Instant Edge Route Bypass (Emergency DNS Cutover)
-If an unrecoverable bug or memory corruption is discovered in the Worker bundle:
-1. Access Cloudflare Dashboard -> **Rules** -> **Page Rules** / **Workers Routes**.
-2. Disable the wildcard route: `radartehran.ir/* -> tehran-radar-edge-worker`.
-3. Origin traffic flows directly from Cloudflare CDN to the containerized Express/Nginx origin without touching the Worker code.
-4. Estimated operational turnaround: **< 30 seconds**.
+### 4.1 Edge Route Bypass (Recovery Time: < 60 seconds)
+If an unrecoverable edge defect is introduced:
+1. In Cloudflare Dashboard -> **Workers & Pages** -> **Routes**, disable the route pattern:
+   `radartehran.ir/*`
+2. Traffic immediately falls back directly to the existing containerized Express backend.
+3. *Status*: `PROCEDURALLY_DOCUMENTED` (Awaiting live staging network validation).
 
-### 3.2 Data Corruption & Schema Rollback
-1. D1 schema changes are versioned sequentially (`0001_initial_schema.sql`, etc.).
-2. Firestore remains authoritative for all mutations.
-3. If D1 replica state is corrupted, trigger D1 wipe and re-sync via `npm run test:d1` reconciliation script without data loss.
+### 4.2 Worker Version Rollback
+1. Execute `npx wrangler rollback` to revert immediately to the previous deployment artifact.
+2. *Status*: Built-in Cloudflare feature; depends on live staging deployment in Phase 10.
