@@ -22,9 +22,91 @@ export interface DiagnosticEventEntry {
   referenceValuationIntlText?: string;
 }
 
-const MAX_DIAGNOSTIC_EVENTS = 50;
+const MAX_DIAGNOSTIC_EVENTS = 100;
 const diagnosticEventRingBuffer: DiagnosticEventEntry[] = [];
 const SENSITIVE_DIAG_KEY_RE = /password|secret|token|apikey|api_key|authorization|cookie|privatekey|phone|mobile|nationalid/i;
+type DiagnosticSubscriber = (entry: DiagnosticEventEntry, snapshots: readonly DiagnosticEventEntry[]) => void;
+const diagnosticSubscribers = new Set<DiagnosticSubscriber>();
+
+export function subscribeDiagnostics(subscriber: DiagnosticSubscriber): () => void {
+  diagnosticSubscribers.add(subscriber);
+  return () => {
+    diagnosticSubscribers.delete(subscriber);
+  };
+}
+
+export function clearDiagnosticEvents(): void {
+  diagnosticEventRingBuffer.length = 0;
+  try {
+    for (const sub of diagnosticSubscribers) {
+      sub({ id: 'cleared', timestampMs: Date.now(), scope: 'Diagnostics', action: 'bufferCleared', outcome: 'success' }, []);
+    }
+  } catch {
+    /* never throw */
+  }
+}
+
+export interface PerformanceMetricSummary {
+  count: number;
+  latestDurationMs: number | null;
+  avgDurationMs: number;
+  minDurationMs: number;
+  maxDurationMs: number;
+  p95DurationMs: number;
+  actions: Record<string, { count: number; avgMs: number; latestMs: number }>;
+}
+
+export function getDiagnosticPerformanceMetrics(targetScope?: string): PerformanceMetricSummary {
+  const all = getDiagnosticSnapshots();
+  const filtered = targetScope
+    ? all.filter((e) => e.scope.toLowerCase() === targetScope.toLowerCase() && typeof e.durationMs === 'number')
+    : all.filter((e) => typeof e.durationMs === 'number');
+
+  if (filtered.length === 0) {
+    return {
+      count: 0,
+      latestDurationMs: null,
+      avgDurationMs: 0,
+      minDurationMs: 0,
+      maxDurationMs: 0,
+      p95DurationMs: 0,
+      actions: {},
+    };
+  }
+
+  const durations = filtered.map((e) => e.durationMs as number);
+  const sorted = [...durations].sort((a, b) => a - b);
+  const sum = durations.reduce((acc, d) => acc + d, 0);
+  const p95Index = Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95));
+
+  const actions: Record<string, { count: number; avgMs: number; latestMs: number; sumMs: number }> = {};
+  for (const item of filtered) {
+    const act = item.action;
+    const dur = item.durationMs as number;
+    if (!actions[act]) {
+      actions[act] = { count: 1, sumMs: dur, latestMs: dur, avgMs: dur };
+    } else {
+      actions[act].count += 1;
+      actions[act].sumMs += dur;
+      actions[act].avgMs = Math.round((actions[act].sumMs / actions[act].count) * 100) / 100;
+    }
+  }
+
+  const cleanActions: Record<string, { count: number; avgMs: number; latestMs: number }> = {};
+  for (const [k, v] of Object.entries(actions)) {
+    cleanActions[k] = { count: v.count, avgMs: v.avgMs, latestMs: v.latestMs };
+  }
+
+  return {
+    count: filtered.length,
+    latestDurationMs: filtered[0].durationMs ?? null,
+    avgDurationMs: Math.round((sum / durations.length) * 100) / 100,
+    minDurationMs: Math.round(sorted[0] * 100) / 100,
+    maxDurationMs: Math.round(sorted[sorted.length - 1] * 100) / 100,
+    p95DurationMs: Math.round(sorted[p95Index] * 100) / 100,
+    actions: cleanActions,
+  };
+}
 
 export function redactDiagnosticText(raw: string): string {
   return String(raw || '')
@@ -61,7 +143,7 @@ export function recordDiagnosticEvent(
   durationMs?: number
 ): void {
   try {
-    diagnosticEventRingBuffer.unshift({
+    const entry: DiagnosticEventEntry = {
       id: `diag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       timestampMs: Date.now(),
       scope: redactDiagnosticText(scope || 'Core').slice(0, 40),
@@ -70,13 +152,20 @@ export function recordDiagnosticEvent(
       outcome,
       displayAreaUnitLabel: formatAreaUnitLabel(getStoredAreaUnit()),
       referenceValuationIntlText: formatMillionTomanAsIntlCurrency(10000, getStoredIntlCurrency()),
-    });
-  } catch {
-    // Never throw from diagnostic ring buffer
-  } finally {
+    };
+    diagnosticEventRingBuffer.unshift(entry);
     if (diagnosticEventRingBuffer.length > MAX_DIAGNOSTIC_EVENTS) {
       diagnosticEventRingBuffer.length = MAX_DIAGNOSTIC_EVENTS;
     }
+    for (const sub of diagnosticSubscribers) {
+      try {
+        sub(entry, diagnosticEventRingBuffer);
+      } catch {
+        /* ignore subscriber failure */
+      }
+    }
+  } catch {
+    // Never throw from diagnostic ring buffer
   }
 }
 

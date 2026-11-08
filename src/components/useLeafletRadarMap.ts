@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'; import { EvaluatedNeighborhood, getNeighborhoodLandmarks, isSponsorActive, LocalLandmark, MapTileServerId, toPersianNum, WorkHub, } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { AuthoritativeBoundaryRecord, clientGeoJsonLruCache, fetchAuthoritativeCityBoundaries, getZoomAdaptivePolygonStyle, renderNeighborhoodGeoJSONOnLeaflet, } from '../utils/neighborhoodBoundaries'; import { planViewportBoundaryFetchBatch, resolveGeoLazyLoadingPolicy } from '../utils/geojsonViewportLazyEngine'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr, FeatureFlags } from '../utils/security'; import { ensureLeafletLoaded } from '../utils/leafletLoader'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { buildD3PriceDensityScale, D3PriceDensityScaleResult, isNeighborhoodInLeafletViewport, renderPriceDensityHeatmapOnLeaflet, } from './priceHeatmapAndViewportLazy'; import { buildZoomAdaptivePillIconConfig, renderAdvancedSpatialOverlaysOnLeaflet, updateMapAdvancedOverlayState, useMapAdvancedOverlayState, } from './mapAdvancedLayers';
-import { createLeafletBaseTileController, type BaseTileControllerInstance } from './mapBaseTileController'; import { buildNeighborhoodRichTooltipHtml, renderGoldBargainPinOnLeaflet } from './mapZoomLodAndDeclutter'; declare global { interface Window { L: any; } }
+import { createLeafletBaseTileController, type BaseTileControllerInstance } from './mapBaseTileController'; import { buildNeighborhoodRichTooltipHtml, renderGoldBargainPinOnLeaflet } from './mapZoomLodAndDeclutter'; import { createExecutionTimer } from '../utils/diagnostics'; declare global { interface Window { L: any; } }
 export interface UseLeafletRadarMapParams { activeCity: CityId; mapTileStyle: MapTileServerId; setMapTileStyle: React.Dispatch<React.SetStateAction<MapTileServerId>>; deferredMapNeighborhoods: EvaluatedNeighborhood[]; selectedHoodId: number; selectedHood: EvaluatedNeighborhood; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; selectedWorkHub: WorkHub; statusFilter: 'all' | 'green' | 'yellow' | 'red'; mapLens: 'budget' | 'bubble' | 'air' | 'traffic' | 'heatmap'; showGoldPins: boolean; showLandmarkPins: boolean; hoodLandmarks: LocalLandmark[]; featureFlags: FeatureFlags; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; onOpenModalQuick: (hoodId: number, action: 'anatomy' | 'hedonic' | 'bargains' | 'compare' | 'share') => void; }
 function getLensPalette( hood: EvaluatedNeighborhood, mapLens: 'budget' | 'bubble' | 'air' | 'traffic' | 'heatmap', d3PriceScale?: D3PriceDensityScaleResult
 ) { if (mapLens === 'heatmap' && d3PriceScale) { const s = d3PriceScale.getStyleForNeighborhood(hood); return { stroke: s.strokeColor, fill: s.fillColor, pillBg: s.pillBgColor }; } if (mapLens === 'bubble') { if (hood.marketReport.status === 'undervalued') return { stroke: '#10b981', fill: '#34d399', pillBg: '#059669' }; if (hood.marketReport.status === 'balanced') return { stroke: '#f59e0b', fill: '#fbbf24', pillBg: '#d97706' }; return { stroke: '#f43f5e', fill: '#fb7185', pillBg: '#e11d48' }; }
@@ -34,6 +34,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     window.addEventListener('pageshow', handlePageShow);
     const initMap = () => {
       if (!window.L || !mapContainerRef.current || mapInstanceRef.current) return;
+      const mapTimer = createExecutionTimer('Map', 'initMapInstance');
       const L = window.L; const hasUrlHood = typeof window !== 'undefined' && (window.location.search.includes('hood=') || window.location.search.includes('compare=')); const initCenter: [number, number] = selectedHood && (hasUrlHood || selectedHood.id >= 100) ? [selectedHood.lat, selectedHood.lng] : (MULTI_CITY_CONFIGS[activeCity]?.center || [35.735, 51.395]); const initZoom = selectedHood && hasUrlHood ? 13 : (MULTI_CITY_CONFIGS[activeCity]?.defaultZoom || 12);
       const map = L.map(mapContainerRef.current, { center: initCenter, zoom: initZoom, zoomControl: false, preferCanvas: true, maxBoundsViscosity: 0.8, inertia: true, inertiaDeceleration: 3000, wheelDebounceTime: 40, wheelPxPerZoomLevel: 120 });
       tileLayerRef.current = createLeafletBaseTileController({
@@ -41,7 +42,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
         onSelectPreferredStyle: (next: MapTileServerId) => setMapTileStyle(next),
       });
       L.control.zoom({ position: 'bottomleft' }).addTo(map);
-      mapInstanceRef.current = map; setIsMapLoaded(true);
+      mapInstanceRef.current = map; setIsMapLoaded(true); mapTimer('success');
       const syncViewportBoundsToStore = () => {
         try {
           const b = map.getBounds?.();
@@ -96,12 +97,14 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     };
   }, []);
   useEffect(() => {
+    const timer = createExecutionTimer('Map', 'renderAdvancedSpatialOverlays');
     const map = mapInstanceRef.current;
-    if (!map || !window.L) return;
+    if (!map || !window.L) { timer('fallback'); return; }
     if (advancedOverlaysGroupRef.current) { map.removeLayer(advancedOverlaysGroupRef.current); advancedOverlaysGroupRef.current = null; }
     advancedOverlaysGroupRef.current = renderAdvancedSpatialOverlaysOnLeaflet({
       L: window.L, map, activeCity, mode, targetSqm, rentAgeMultiplier, selectedWorkHub, overlayState: advancedOverlayState,
     });
+    timer('success');
   }, [advancedOverlayState, activeCity, mode, targetSqm, rentAgeMultiplier, selectedWorkHub, areaUnit, intlCurrency, locale]);
   useEffect(() => {
     tileLayerRef.current?.syncPreferredStyle(mapTileStyle);
@@ -128,9 +131,10 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     return () => { cancelled = true; };
   }, [activeCity, viewportEpoch, advancedOverlayState.lowBandwidthGeoLazyMode]);
   useEffect(() => {
+    const timer = createExecutionTimer('Map', 'renderMarkersAndLayers');
     const map = mapInstanceRef.current;
     const L = window.L;
-    if (!map || !L) return;
+    if (!map || !L) { timer('fallback'); return; }
     Object.values(markersMapRef.current).forEach((obj: any) => {
       if (obj.circle) map.removeLayer(obj.circle);
       if (obj.marker) map.removeLayer(obj.marker);
@@ -139,7 +143,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     goldPinsRef.current.forEach((pin) => map.removeLayer(pin));
     goldPinsRef.current = [];
     if (heatmapLayerRef.current) { map.removeLayer(heatmapLayerRef.current); heatmapLayerRef.current = null; }
-    if (!isMapIntersectingViewport) return;
+    if (!isMapIntersectingViewport) { timer('fallback'); return; }
     const cityScopedHoods = deferredMapNeighborhoods.filter((h) => (activeCity === 'tehran' ? h.id < 100 : activeCity === 'karaj' ? h.id >= 100 && h.id < 200 : activeCity === 'mashhad' ? h.id >= 200 && h.id < 300 : activeCity === 'isfahan' ? h.id >= 300 && h.id < 400 : h.id >= 400));
     const d3PriceScale = buildD3PriceDensityScale(cityScopedHoods.length > 0 ? cityScopedHoods : deferredMapNeighborhoods, mode, rentAgeMultiplier);
     const currentZoom = mapZoomLevelRef.current; const currentSelectedId = selectedHoodIdRef.current;
@@ -210,10 +214,13 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
         if (gPin) goldPinsRef.current.push(gPin);
       }
     });
+    timer('success');
   }, [deferredMapNeighborhoods, mapZoomLevel, mode, targetSqm, rentAgeMultiplier, statusFilter, mapLens, mapTileStyle, showGoldPins, osmBoundariesByHood, activeCity, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, areaUnit, intlCurrency, locale, markerRenderEpoch]);
   useEffect(() => {
+    const timer = createExecutionTimer('Map', 'updateSelectionPills');
     if (selectedHoodId && !markersMapRef.current[selectedHoodId]) {
       setMarkerRenderEpoch((c) => c + 1);
+      timer('fallback');
       return;
     }
     const isDarkMap =
@@ -239,6 +246,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
         pillSpan.style.boxShadow = isSelected ? '0 0 0 3px rgba(56,189,248,0.45), 0 8px 20px rgba(0,0,0,0.45)' : '0 2px 8px rgba(0,0,0,0.35)';
       }
     });
+    timer('success');
   }, [selectedHoodId, mapZoomLevel, mapTileStyle]);
   useEffect(() => {
     const map = mapInstanceRef.current;

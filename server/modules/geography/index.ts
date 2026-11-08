@@ -126,3 +126,21 @@ export type {
   DatasetChangeSummary,
 } from './geographyTypes';
 
+// Employee 18 — Geography & Spatial Intelligence Backend Exports
+export { Employee18GeographyEngine } from './qualityIntelligenceAndCrossModuleService';
+export {
+  MAX_BULK_SPATIAL_QUERY_LIMIT,
+  doesPolygonContainPolygon,
+  transformCoordinatesToWgs84,
+  doGeoJsonPolygonsIntersect,
+  isPointWithinGeoJsonGeometry,
+  validateGeoJsonGeometry,
+} from './geometryCrsAndSpatialEngine';
+export { extractAllDistrictNumbersFromZone } from './hierarchyVersioningAndGraphEngine';
+export type {
+  GeoJsonGeometry,
+  GeographyAdminActor,
+  GeographyDomainEvent,
+  StructuredAddressReference,
+} from './employee18Contracts';
+

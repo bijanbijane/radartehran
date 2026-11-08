@@ -38,10 +38,10 @@ export function useAppUiState(initialUrlState: any) {
   const [callingSponsorHoodId, setCallingSponsorHoodId] = useState<number | null>(null);
 
   const [selectedHoodId, setSelectedHoodId] = useState<number>(initialUrlState.initialHoodId);
-  const [primaryView, setPrimaryView] = useState<'home' | 'discover' | 'intelligence' | 'tools' | 'userspace' | 'map'>(() => {
+  const [primaryView, setPrimaryView] = useState<PrimaryViewId>(() => {
     if (typeof window !== 'undefined') {
       const v = new URLSearchParams(window.location.search).get('view');
-      if (v === 'home' || v === 'discover' || v === 'intelligence' || v === 'tools' || v === 'userspace' || v === 'map') return v;
+      if (v === 'home' || v === 'discover' || v === 'intelligence' || v === 'tools' || v === 'userspace' || v === 'map' || v === 'admin') return v as PrimaryViewId;
     }
     return 'map';
   });

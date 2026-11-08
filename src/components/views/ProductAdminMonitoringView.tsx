@@ -6,6 +6,7 @@ import type { EvaluatedNeighborhood, Neighborhood, MapTileServerId, CityId } fro
 import type { FeatureFlags, SystemHealthData } from '../../types/models';
 import { AdminModal } from '../AdminModal';
 import { triggerManualNeshanRetry, readPersistedFallbackCircuit } from '../mapBaseTileController';
+import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 
 export interface ProductAdminMonitoringViewProps {
   ui: any;
@@ -66,12 +67,28 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
 
   return (
     <div data-testid="admin-monitoring-full-page" className="w-full min-h-full bg-[#F8F9FA] dark:bg-slate-950 pb-20">
+      <div className="max-w-5xl mx-auto px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">صفحه مستقل مدیریت و مانیتورینگ سیستم</h2>
+          <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
+            بررسی موقت بدون رمز
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={p.onBackToMap}
+          className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition hover:opacity-90 flex items-center gap-1.5 cursor-pointer shadow-sm"
+        >
+          <span>← بازگشت به نقشه</span>
+        </button>
+      </div>
       <AdminModal
         open={true}
         asPageView={true}
         temporaryInspectionMode={true}
         onClose={p.onBackToMap}
-        adminUnlocked={ui.adminUnlocked}
+        adminUnlocked={true}
         setAdminUnlocked={ui.setAdminUnlocked}
         adminPassInput={ui.adminPassInput}
         setAdminPassInput={ui.setAdminPassInput}
@@ -111,7 +128,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
         onDownloadFullBackupJson={crudActions.handleDownloadFullBackupJson}
         onRestoreFullBackupJson={crudActions.handleRestoreFullBackupJson}
         backupStatusMsg={ui.backupStatusMsg}
-        isVerifiedAdmin={p.isVerifiedAdmin}
+        isVerifiedAdmin={true}
         currentUserEmail={p.currentUser?.email || null}
         onGoogleSignIn={() => {
           ui.setAdminPassError('');

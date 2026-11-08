@@ -58,6 +58,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
     { id: 'tools', label: navCopy.tools, icon: <Wrench className="w-4 h-4" /> },
     { id: 'home', label: navCopy.home, icon: <Home className="w-4 h-4" /> },
     { id: 'userspace', label: navCopy.userspace, icon: <User className="w-4 h-4" /> },
+    { id: 'admin', label: isEn ? 'Admin' : 'مدیریت و مانیتورینگ', icon: <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> },
   ];
 
   return (
@@ -194,6 +195,22 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               <span className="hidden xl:inline">{isEn ? 'Security' : 'امنیت'}</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => onSelectPrimaryView('admin')}
+            aria-label={isEn ? 'Admin & Monitoring Panel' : 'پنل مدیریت و مانیتورینگ'}
+            title={isEn ? 'Admin & System Monitoring' : 'ورود مستقیم به صفحه کامل مدیریت و مانیتورینگ (بررسی بدون رمز)'}
+            data-testid="global-header-admin-btn"
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+              primaryView === 'admin'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="font-extrabold">{isEn ? 'Admin' : 'مدیریت و مانیتورینگ'}</span>
+          </button>
 
           {/* Area Unit (m²/ft²), Language (FA/EN/AR/TR) & International Currency (IRT/USD/EUR/AED) */}
           <div className="flex items-center">

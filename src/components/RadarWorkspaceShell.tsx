@@ -22,6 +22,7 @@ import { formatAreaShort, formatMillionTomanAsIntlCurrency, getRadarLocaleDirect
 import { ReverseBudgetDiscoveryModal } from './modals/ReverseBudgetDiscoveryModal';
 import { ProductGlobalHeader } from './navigation/ProductGlobalHeader';
 import { ProductViewRouter } from './views/ProductViewRouter';
+import { DevPerformancePanel } from './DevPerformancePanel';
 
 export function RadarWorkspaceShell() {
   const [, setIntlTick] = useState(0);
@@ -278,6 +279,7 @@ export function RadarWorkspaceShell() {
           onFlyTo={(lat, lng) => mapInstanceRef.current?.flyTo([lat, lng], 13, { duration: 0.6 })}
           {...crudActions} />
       </FeatureErrorBoundary>
+      <DevPerformancePanel />
     </div>
   );
 }

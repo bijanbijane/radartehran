@@ -11,6 +11,7 @@ import { ProductDiscoverView } from './ProductDiscoverView';
 import { ProductIntelligenceView } from './ProductIntelligenceView';
 import { ProductToolsView } from './ProductToolsView';
 import { ProductUserSpaceView } from './ProductUserSpaceView';
+import { ProductAdminMonitoringView } from './ProductAdminMonitoringView';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 
 export interface ProductViewRouterProps {
@@ -249,6 +250,15 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         visitedHomesCount={ui.visitedHomes.length} onOpenVisitedModal={() => ui.setShowVisitedModal(true)}
         mode={p.mode} deposit={p.deposit} monthlyRent={p.monthlyRent} buyTotalBudget={p.buyTotalBudget}
         targetSqm={p.targetSqm} onOpenBudgetFilter={() => ui.setMobileFilterOpen(true)}
+      />
+    );
+  } else if (primaryView === 'admin') {
+    content = (
+      <ProductAdminMonitoringView
+        ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} activeCity={p.activeCity}
+        totalLiveBargainsCount={evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0)}
+        featureFlags={p.featureFlags} currentUser={p.currentUser} isVerifiedAdmin={true}
+        crudActions={p.crudActions} handleDeepWebSync={() => {}} onBackToMap={() => ui.setPrimaryView('map')}
       />
     );
   }

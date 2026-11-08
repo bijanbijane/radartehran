@@ -1,5 +1,5 @@
 import { useMemo } from 'react'; import { BargainListing, calcDistanceKm, EvaluatedNeighborhood, getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, Neighborhood, NeighborhoodSponsor, ResidentVoteDoc, WorkHub, } from '../data/neighborhoods';
-import { getTrafficZoneStatus } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { matchesPersianSearch } from '../utils/security'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export type HousingStatus = 'green' | 'yellow' | 'red';
+import { getTrafficZoneStatus } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { matchesPersianSearch } from '../utils/security'; import { createExecutionTimer } from '../utils/diagnostics'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export type HousingStatus = 'green' | 'yellow' | 'red';
 export type SuggestSortMode = 'cheapest' | 'clean_calm' | 'commute_metro' | 'undervalued' | 'score' | 'cheap' | 'commute' | 'yield'; export type SuggestPriorityMode = 'balanced' | 'metro' | 'air' | 'security';
 export const EVALUATED_RECOMMENDATION_WEIGHTS_VERSION = '2026.10.v2' as const; export const EVALUATED_RECOMMENDATION_WEIGHTS = { version: EVALUATED_RECOMMENDATION_WEIGHTS_VERSION, seedVoteBaseWeight: 8, locationVerifiedVoteWeight: 2,
   unverifiedVoteWeight: 1, loanBoosterRahnMillion: 400, loanBoosterBuyMillion: 1200, deedHoldbackRatio: 0.10, priorityFactorMultiplier: 2.0, balancedOverallMultiplier: 2.0,
@@ -92,6 +92,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
   const maxAffordablePerUnit = convertPricePerSqmToUnit(maxAffordablePerSqm, areaUnit);
   const maxAffordableIntlText = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(maxAffordablePerUnit, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)}` : '';
   const extraGreenWithLoan = useMemo(() => {
+    const timer = createExecutionTimer('Filter', 'extraGreenWithLoanCalculation');
     const safeSqm = Math.max(25, Number(targetSqm) || 75);
     const scaleFactor = safeSqm / 80;
     const baseRahn = deposit + Math.round((monthlyRent * 100) / 3);
@@ -107,6 +108,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
       const isGreenWith = mode === 'rent' ? scaledRahn <= boostedRahn : netRequiredCash <= buyTotalBudget + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterBuyMillion;
       if (!isGreenWithout && isGreenWith) extra++;
     }
+    timer('success');
     return extra;
   }, [activeCityNeighborhoods, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, buyAgeMultiplier, rentAgeMultiplier, deductTenantRahnInBuy]);
   const evaluateList = useMemo(() => {
@@ -171,33 +173,43 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     mode, totalRahnEquivalent, buyTotalBudget, useLoanBooster, selectedWorkHub,
     targetSqm, buyAgeMultiplier, rentAgeMultiplier, deductTenantRahnInBuy,
   ]);
-  const evaluatedNeighborhoods = useMemo<EvaluatedNeighborhood[]>(
-    () => evaluateList(activeCityNeighborhoods),
-    [evaluateList, activeCityNeighborhoods]
-  );
-  const nationwideEvaluatedNeighborhoods = useMemo<EvaluatedNeighborhood[]>(
-    () => evaluateList(neighborhoods),
-    [evaluateList, neighborhoods]
-  );
+  const evaluatedNeighborhoods = useMemo<EvaluatedNeighborhood[]>(() => {
+    const timer = createExecutionTimer('Filter', 'evaluateCityNeighborhoods');
+    const res = evaluateList(activeCityNeighborhoods);
+    timer('success');
+    return res;
+  }, [evaluateList, activeCityNeighborhoods]);
+  const nationwideEvaluatedNeighborhoods = useMemo<EvaluatedNeighborhood[]>(() => {
+    const timer = createExecutionTimer('Filter', 'evaluateNationwideNeighborhoods');
+    const res = evaluateList(neighborhoods);
+    timer('success');
+    return res;
+  }, [evaluateList, neighborhoods]);
   const filteredNeighborhoods = useMemo(() => {
+    const timer = createExecutionTimer('Filter', 'filterCityNeighborhoods');
     const q = deferredSearchQuery.trim();
-    return evaluatedNeighborhoods.filter((n) => {
+    const res = evaluatedNeighborhoods.filter((n) => {
       if (statusFilter !== 'all' && n.status !== statusFilter) return false;
       if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !(n.bargains?.[0]?.street && matchesPersianSearch(n.bargains[0].street, q))) return false;
       if (onlyOutsideTrafficZone && activeCity === 'tehran' && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
       if (onlyHighMetro && n.metro < 8) return false;
       return true;
     });
+    timer('success');
+    return res;
   }, [evaluatedNeighborhoods, statusFilter, deferredSearchQuery, onlyOutsideTrafficZone, onlyHighMetro, activeCity]);
   const nationwideFilteredNeighborhoods = useMemo(() => {
+    const timer = createExecutionTimer('Filter', 'filterNationwideNeighborhoods');
     const q = deferredSearchQuery.trim();
-    return nationwideEvaluatedNeighborhoods.filter((n) => {
+    const res = nationwideEvaluatedNeighborhoods.filter((n) => {
       if (statusFilter !== 'all' && n.status !== statusFilter) return false;
       if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !(n.bargains?.[0]?.street && matchesPersianSearch(n.bargains[0].street, q))) return false;
       if (onlyOutsideTrafficZone && (n.id < 100 || (n.id >= 500 && n.id <= 599)) && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
       if (onlyHighMetro && n.metro < 8) return false;
       return true;
     });
+    timer('success');
+    return res;
   }, [nationwideEvaluatedNeighborhoods, statusFilter, deferredSearchQuery, onlyOutsideTrafficZone, onlyHighMetro]);
   const lifestylePool = useMemo(() => {
     return evaluatedNeighborhoods.filter((n) => {
@@ -212,6 +224,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     red: lifestylePool.filter((n) => n.status === 'red').length,
   }), [lifestylePool]);
   const smartSuggestedNeighborhoods = useMemo(() => {
+    const timer = createExecutionTimer('Filter', 'smartSuggestedNeighborhoods');
     const seenIds = new Set<number>();
     const dedupedPool = lifestylePool.filter((n) => {
       if (seenIds.has(n.id)) return false;
@@ -220,7 +233,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     });
     const affordable = dedupedPool.filter((n) => n.status === 'green' || n.status === 'yellow');
     const pool = affordable.length >= 3 ? affordable : dedupedPool;
-    return [...pool]
+    const res = [...pool]
       .sort((a, b) =>
         compareEvaluatedNeighborhoodsForSuggestion(a, b, {
           mode,
@@ -229,6 +242,8 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
         }),
       )
       .slice(0, 3);
+    timer('success');
+    return res;
   }, [lifestylePool, suggestSortBy, suggestPriority, mode]);
   return {
     rankingWeightsVersion: EVALUATED_RECOMMENDATION_WEIGHTS_VERSION,

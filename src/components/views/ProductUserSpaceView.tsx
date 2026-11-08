@@ -102,7 +102,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             ) : (
               <button type="button" onClick={p.onGoogleSignIn} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span></button>
             )}
-            <button type="button" onClick={p.onOpenAdminModal} className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><Shield className="w-3.5 h-3.5 text-indigo-600" /><span>{isEn ? 'Admin Console' : 'پنل مدیریت رادار'}</span></button>
+            <button type="button" onClick={() => (p.onNavigateView ? p.onNavigateView('admin') : p.onOpenAdminModal())} className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /><span>{isEn ? 'Admin & Monitoring Page' : 'صفحه کامل مدیریت و مانیتورینگ ↗'}</span></button>
           </div>
         </div>
         {confirmDeleteOpen && p.currentUser && (

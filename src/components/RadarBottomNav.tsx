@@ -1,7 +1,7 @@
 /** @file src/components/RadarBottomNav.tsx — Mobile Navigation Bar (< 120 lines) [RULE-01] */
 import React from 'react';
 import {
-  Compass, Home, TrendingUp, Wrench, User, Map as MapIcon,
+  Compass, Home, TrendingUp, Wrench, User, Map as MapIcon, Shield,
 } from 'lucide-react';
 import { useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { PrimaryViewId, getRadarGlobalNavCopy, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
@@ -45,13 +45,14 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
     { id: 'tools', label: navCopy.tools, icon: <Wrench className="w-4 h-4 stroke-[1.9]" /> },
     { id: 'home', label: navCopy.home, icon: <Home className="w-4 h-4 stroke-[1.9]" /> },
     { id: 'userspace', label: navCopy.userspace, icon: <User className="w-4 h-4 stroke-[1.9]" /> },
+    { id: 'admin', label: isEn ? 'Admin' : 'مدیریت', icon: <Shield className="w-4 h-4 stroke-[1.9]" /> },
   ];
 
   return (
     <nav
       aria-label={isEn ? 'Mobile Primary Navigation' : 'نوار پیمایش موبایل'}
       data-currency-sample={currencyBadge}
-      className="lg:hidden fixed bottom-0 inset-x-0 h-14 pb-[env(safe-area-inset-bottom,0px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 grid grid-cols-6 z-40 text-[10px] text-slate-600 dark:text-slate-400 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]"
+      className="lg:hidden fixed bottom-0 inset-x-0 h-14 pb-[env(safe-area-inset-bottom,0px)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 grid grid-cols-7 z-40 text-[10px] text-slate-600 dark:text-slate-400 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]"
     >
       {navItems.map((item) => {
         const isActive = activeView === item.id;
