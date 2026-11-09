@@ -6,7 +6,7 @@
  */
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { INITIAL_NEIGHBORHOODS } from '../../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { clampNumber, validateCityParam } from '../../utils/security';
 
@@ -19,19 +19,10 @@ export type RadarDataProvenanceLayerId =
   | 'MISSING_DATA' | 'CONFLICTING_DATA' | 'OUTDATED_DATA' | 'UNKNOWN_DATA';
 
 export type DataProvenanceLayer = RadarDataProvenanceLayerId;
+export type CognitiveBiasId = 'ANCHORING_BIAS' | 'FOMO_HERD_CONTAGION' | 'LIQUIDITY_LOCK_ILLUSION' | 'NOMINAL_MONEY_ILLUSION';
 
-export type CognitiveBiasId =
-  | 'ANCHORING_BIAS' | 'FOMO_HERD_CONTAGION' | 'LIQUIDITY_LOCK_ILLUSION' | 'NOMINAL_MONEY_ILLUSION';
-
-export const ALL_EPISTEMIC_STATEMENT_CLASSES: readonly EpistemicStatementClass[] = [
-  'FACT', 'EVIDENCE', 'INFERENCE', 'HYPOTHESIS', 'ASSUMPTION', 'UNKNOWN', 'RECOMMENDATION',
-];
-
-export const ALL_DATA_PROVENANCE_LAYERS: readonly RadarDataProvenanceLayerId[] = [
-  'OBSERVED_DATA', 'ADVERTISER_CLAIM', 'VERIFIED_DATA', 'USER_PROVIDED_DATA',
-  'THIRD_PARTY_DATA', 'ESTIMATED_DATA', 'INFERRED_DATA', 'PREDICTED_DATA',
-  'CONFLICTING_DATA', 'OUTDATED_DATA', 'MISSING_DATA', 'UNKNOWN_DATA',
-];
+export const ALL_EPISTEMIC_STATEMENT_CLASSES: readonly EpistemicStatementClass[] = ['FACT', 'EVIDENCE', 'INFERENCE', 'HYPOTHESIS', 'ASSUMPTION', 'UNKNOWN', 'RECOMMENDATION'];
+export const ALL_DATA_PROVENANCE_LAYERS: readonly RadarDataProvenanceLayerId[] = ['OBSERVED_DATA', 'ADVERTISER_CLAIM', 'VERIFIED_DATA', 'USER_PROVIDED_DATA', 'THIRD_PARTY_DATA', 'ESTIMATED_DATA', 'INFERRED_DATA', 'PREDICTED_DATA', 'CONFLICTING_DATA', 'OUTDATED_DATA', 'MISSING_DATA', 'UNKNOWN_DATA'];
 
 export interface EpistemicProvenanceLayerEntry {
   layerId: RadarDataProvenanceLayerId;
@@ -214,13 +205,13 @@ export function buildNeighborhoodEpistemicDossier(input: {
   const hoodName = input.hoodName || found?.name || `محله ${input.hoodId}`;
   const buyPerSqm = input.buyPerSqm && input.buyPerSqm > 0 ? input.buyPerSqm : found?.buyPerSqm || 120;
   const rahn80m = input.rahn80m && input.rahn80m > 0 ? input.rahn80m : found?.rahn80m || 1200;
-  const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
-
-  const agg = aggregateNeighborhoodMarketMetrics(input.hoodId, hoodName, buyPerSqm, []);
+  const samples = buildNeighborhoodListingSamples({ id: input.hoodId, name: hoodName, buyPerSqm, bargains: found?.bargains });
+  const agg = aggregateNeighborhoodMarketMetrics(input.hoodId, hoodName, buyPerSqm, samples);
   const decomp = computeConfidenceScoreDecomposition({
     validSampleCount: agg.validSampleCount, rejectedFraudCount: agg.rejectedFraudCount,
     askingPricePerSqm: agg.askingPricePerSqm, iqrLowPerSqm: agg.iqrLowPerSqm, iqrHighPerSqm: agg.iqrHighPerSqm, recencyDays: 2,
   });
+  const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
   const dealIntl = formatMillionTomanAsIntlCurrency(agg.estimatedDealPricePerSqm, intlCurrency, 'fa');
   const votesCount = input.votesCount ?? 4;
   const regimeFa = agg.marketRegime === 'HOT' ? 'داغ (تخفیف ~۲.۵٪)' : agg.marketRegime === 'FROZEN' ? 'رکودی (شکاف ~۱۰٪)' : 'متعادل (تخفیف ~۷٪)';

@@ -2,12 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { ArrowDownRight, ArrowUpRight, Building2, Calendar, LineChart as LineChartIcon, Maximize2, Table2, TrendingUp, X } from 'lucide-react';
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BubbleReport, EvaluatedNeighborhood, Neighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData';
 import { buildRealistic12MonthBuyAndRentTrend, type TwelveMonthBuyRentPoint } from './NeighborhoodPriceChart';
 import { useDialogFocus } from './useDialogFocus';
 import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
-import { convertAreaFromSqm, convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { convertAreaFromSqm, convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../utils/areaUnit';
 
 export type PriceTrendChartMode = 'dual_buy_rent' | 'buy_vs_city' | 'rent_rahn_detail';
 export interface EnrichedTwelveMonthPoint extends TwelveMonthBuyRentPoint {
@@ -16,7 +16,7 @@ export interface EnrichedTwelveMonthPoint extends TwelveMonthBuyRentPoint {
 export interface NeighborhoodPriceTrendModalProps {
   open: boolean; onClose: () => void; selectedHood: EvaluatedNeighborhood | Neighborhood; marketReport?: BubbleReport;
   activeCity?: CityId; targetSqm?: number; evaluatedNeighborhoods?: EvaluatedNeighborhood[];
-  onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void; areaUnit?: string; intlCurrency?: string;
+  onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void; areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode;
 }
 const SQM_PRESETS: readonly number[] = [60, 80, 100, 120];
 
@@ -26,7 +26,7 @@ export function NeighborhoodPriceTrendModal({
 }: NeighborhoodPriceTrendModalProps): React.ReactElement | null {
   const dialogRef = useDialogFocus(open, onClose);
   const [ctxAreaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [ctxIntlCurrency] = useIntlCurrency();
-  const areaUnit = (propAreaUnit as any) ?? ctxAreaUnit; const intlCurrency = (propIntlCurrency as any) ?? ctxIntlCurrency;
+  const areaUnit: AreaUnit = propAreaUnit ?? ctxAreaUnit; const intlCurrency: IntlCurrencyCode = propIntlCurrency ?? ctxIntlCurrency;
   const isEn = radarLocale === 'en';
   const [chartMode, setChartMode] = useState<PriceTrendChartMode>('dual_buy_rent');
   const [customSqm, setCustomSqm] = useState<number>(targetSqm || 80);
@@ -34,7 +34,7 @@ export function NeighborhoodPriceTrendModal({
   const effectiveSqm = Math.max(35, Math.min(350, customSqm || targetSqm || 80));
   const effectiveAreaLabel = areaUnit === 'sqft' ? `${toPersianNum(Math.round(convertAreaFromSqm(effectiveSqm, 'sqft')))} sqft` : `${toPersianNum(effectiveSqm)} ${isEn ? 'sqm' : 'متری'}`;
   const cityNameFa = (activeCity && MULTI_CITY_CONFIGS[activeCity]?.nameFa) || 'تهران';
-  const liveDealAgg = useMemo(() => aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []), [selectedHood.id, selectedHood.name, selectedHood.buyPerSqm]);
+  const liveDealAgg = useMemo(() => aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)), [selectedHood]);
   const baseSeries12m = useMemo(() => buildRealistic12MonthBuyAndRentTrend(selectedHood, marketReport), [selectedHood, marketReport]);
 
   const enrichedSeries12m = useMemo<EnrichedTwelveMonthPoint[]>(() => {

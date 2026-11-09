@@ -228,7 +228,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     const q = deferredSearchQuery.trim();
     const res = evaluatedNeighborhoods.filter((n) => {
       if (statusFilter !== 'all' && n.status !== statusFilter) return false;
-      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !(n.bargains?.[0]?.street && matchesPersianSearch(n.bargains[0].street, q))) return false;
+      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, q)) || (b.title && matchesPersianSearch(b.title, q))))) return false;
       if (onlyOutsideTrafficZone && activeCity === 'tehran' && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
       if (onlyHighMetro && n.metro < 8) return false;
       return true;
@@ -241,7 +241,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     const q = deferredSearchQuery.trim();
     const res = nationwideEvaluatedNeighborhoods.filter((n) => {
       if (statusFilter !== 'all' && n.status !== statusFilter) return false;
-      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !(n.bargains?.[0]?.street && matchesPersianSearch(n.bargains[0].street, q))) return false;
+      if (q && !matchesPersianSearch(n.name, q) && !matchesPersianSearch(n.zone, q) && !matchesPersianSearch(n.pros, q) && !n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, q)) || (b.title && matchesPersianSearch(b.title, q))))) return false;
       if (onlyOutsideTrafficZone && (n.id < 100 || (n.id >= 500 && n.id <= 599)) && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
       if (onlyHighMetro && n.metro < 8) return false;
       return true;
@@ -249,13 +249,11 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     timer('success');
     return res;
   }, [nationwideEvaluatedNeighborhoods, statusFilter, deferredSearchQuery, onlyOutsideTrafficZone, onlyHighMetro]);
-  const lifestylePool = useMemo(() => {
-    return evaluatedNeighborhoods.filter((n) => {
-      if (onlyOutsideTrafficZone && activeCity === 'tehran' && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
-      if (onlyHighMetro && n.metro < 8) return false;
-      return true;
-    });
-  }, [evaluatedNeighborhoods, onlyOutsideTrafficZone, onlyHighMetro, activeCity]);
+  const lifestylePool = useMemo(() => evaluatedNeighborhoods.filter((n) => {
+    if (onlyOutsideTrafficZone && activeCity === 'tehran' && getTrafficZoneStatus(n.id).zoneType !== 'free') return false;
+    if (onlyHighMetro && n.metro < 8) return false;
+    return true;
+  }), [evaluatedNeighborhoods, onlyOutsideTrafficZone, onlyHighMetro, activeCity]);
   const counts = useMemo(() => ({
     green: lifestylePool.filter((n) => n.status === 'green').length,
     yellow: lifestylePool.filter((n) => n.status === 'yellow').length,
@@ -264,30 +262,16 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
   const smartSuggestedNeighborhoods = useMemo(() => {
     const timer = createExecutionTimer('Filter', 'smartSuggestedNeighborhoods');
     const seenIds = new Set<number>();
-    const dedupedPool = lifestylePool.filter((n) => {
-      if (seenIds.has(n.id)) return false;
-      seenIds.add(n.id);
-      return true;
-    });
+    const dedupedPool = lifestylePool.filter((n) => { if (seenIds.has(n.id)) return false; seenIds.add(n.id); return true; });
     const affordable = dedupedPool.filter((n) => n.status === 'green' || n.status === 'yellow');
     const pool = affordable.length >= 3 ? affordable : dedupedPool;
-    const res = [...pool]
-      .sort((a, b) =>
-        compareEvaluatedNeighborhoodsForSuggestion(a, b, {
-          mode,
-          suggestSortBy,
-          suggestPriority,
-        }),
-      )
-      .slice(0, 3);
+    const res = [...pool].sort((a, b) => compareEvaluatedNeighborhoodsForSuggestion(a, b, { mode, suggestSortBy, suggestPriority })).slice(0, 3);
     timer('success');
     return res;
   }, [lifestylePool, suggestSortBy, suggestPriority, mode]);
   return {
     rankingWeightsVersion: EVALUATED_RECOMMENDATION_WEIGHTS_VERSION,
     totalRahnEquivalent, maxAffordablePerSqm, maxAffordablePerUnit, maxAffordableIntlText, extraGreenWithLoan,
-    evaluatedNeighborhoods, filteredNeighborhoods,
-    nationwideEvaluatedNeighborhoods, nationwideFilteredNeighborhoods,
-    counts, smartSuggestedNeighborhoods,
+    evaluatedNeighborhoods, filteredNeighborhoods, nationwideEvaluatedNeighborhoods, nationwideFilteredNeighborhoods, counts, smartSuggestedNeighborhoods,
   };
 }

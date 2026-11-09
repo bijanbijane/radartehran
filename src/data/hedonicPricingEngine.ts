@@ -23,7 +23,7 @@ export function getCurrentJalaliYear(referenceDate: Date = new Date()): number {
 }
 export function validateHedonicInputs(params: HedonicInputParams, currentYear = 1405): string[] {
   const errors: string[] = [];
-  const rawBase = Number((params?.neighborhood as any)?.baseBuyPerSqm ?? params?.neighborhood?.buyPerSqm);
+  const rawBase = Number(params?.neighborhood?.baseBuyPerSqm ?? params?.neighborhood?.buyPerSqm);
   if (!params?.neighborhood || !Number.isFinite(rawBase) || rawBase <= 0) errors.push('MISSING_OR_INVALID_NEIGHBORHOOD_BASELINE');
   if (typeof params?.sqm !== 'number' || !Number.isFinite(params.sqm) || params.sqm <= 0 || params.sqm > 1000) errors.push('INVALID_OR_NON_POSITIVE_AREA');
   if (typeof params?.buildYear !== 'number' || !Number.isFinite(params.buildYear) || params.buildYear < 1300 || params.buildYear > currentYear + 1) errors.push('INVALID_BUILD_YEAR');
@@ -58,7 +58,7 @@ export function calculateHedonicValuation(params: HedonicInputParams): HedonicVa
   const buildingAge = Math.max(0, currentYear - safeBuildYear); const safeFloor = clampNumber(params.floor, -1, 30, 3);
   const safeTotalFloors = clampNumber(params.totalFloors ?? Math.max(5, safeFloor), 1, 40, Math.max(5, safeFloor)); const hasElevator = params.hasElevator ?? true;
   const hasParking = params.hasParking ?? true; const hasStorage = params.hasStorage ?? true;
-  const hoodBasePerSqm = Math.max(15, Number((params.neighborhood as any)?.baseBuyPerSqm ?? params.neighborhood?.buyPerSqm) || 120); const hoodBaseRahn80m = Math.max(100, Number(params.neighborhood?.rahn80m) || 1200);
+  const hoodBasePerSqm = Math.max(15, Number(params.neighborhood?.baseBuyPerSqm ?? params.neighborhood?.buyPerSqm) || 120); const hoodBaseRahn80m = Math.max(100, Number(params.neighborhood?.rahn80m) || 1200);
   let rawAgeImpactPercent = 0;
   if (buildingAge === 0) rawAgeImpactPercent = 6.5;
   else if (buildingAge === 1) rawAgeImpactPercent = 4.5;

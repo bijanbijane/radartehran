@@ -1,6 +1,6 @@
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import type { EpistemicStatementClass, RadarDataProvenanceLayerId } from './epistemicDecisionEngine';
 
 /**
@@ -11,13 +11,10 @@ import type { EpistemicStatementClass, RadarDataProvenanceLayerId } from './epis
  * 3. Kahneman & Tversky Cumulative Prospect Theory (Loss Aversion λ=2.25 & Disposition Effect)
  */
 
-export type InformationAsymmetryRegime =
-  | 'TRANSPARENT_MARKET'
-  | 'MODERATE_OPACITY'
-  | 'SEVERE_LEMON_TRAP';
+export type InformationAsymmetryRegime = 'TRANSPARENT_MARKET' | 'MODERATE_OPACITY' | 'SEVERE_LEMON_TRAP';
 
 export interface AkerlofLemonAssessment {
-  lemonIndexScore: number; // 0 (fully transparent) to 100 (extreme information asymmetry)
+  lemonIndexScore: number;
   regime: InformationAsymmetryRegime;
   regimeLabelFa: string;
   priceDispersionRatioPct: number;
@@ -39,13 +36,13 @@ export interface SpatialContagionNode {
   distanceKm: number;
   dealPricePerSqm: number;
   priceRatioToTarget: number;
-  spatialCorrelationBeta: number; // 0.1 to 0.98
-  transmissionLagWeeks: number; // 2 to 10 weeks
+  spatialCorrelationBeta: number;
+  transmissionLagWeeks: number;
   mechanismFa: string;
 }
 
 export interface KahnemanProspectAnalysis {
-  lossAversionLambda: number; // 2.25 standard Tversky-Kahneman coefficient
+  lossAversionLambda: number;
   sellerReferencePricePerSqm: number;
   fairDealPricePerSqm: number;
   nominalDiscountMillion80m: number;
@@ -68,13 +65,9 @@ export interface NeighborhoodSpatialContagionReport {
 
 function computeHaversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return Number((6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
 }
 
 export function computeAkerlofLemonIndex(
@@ -83,7 +76,8 @@ export function computeAkerlofLemonIndex(
   basePriceSqm: number,
   hood?: Neighborhood,
 ): AkerlofLemonAssessment {
-  const agg = aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, []);
+  const samples = hood ? buildNeighborhoodListingSamples(hood) : [];
+  const agg = aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, samples);
   const medianDeal = Math.max(10, agg.estimatedDealPricePerSqm);
   const iqrSpreadPct = Number((((agg.iqrHighPerSqm - agg.iqrLowPerSqm) / medianDeal) * 100).toFixed(1));
   const totalRaw = Math.max(1, agg.validSampleCount + agg.rejectedFraudCount);
@@ -171,11 +165,12 @@ export function buildNeighborhoodSpatialContagionReport(
     : 'tehran') as CityId;
   const allHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   const target = allHoods.find((h) => h.id === hoodId || h.name === hoodName) ?? allHoods[0];
+  const targetSamples = target ? buildNeighborhoodListingSamples(target) : [];
   const targetAgg = aggregateNeighborhoodMarketMetrics(
     target?.id ?? hoodId,
     target?.name ?? hoodName,
     target?.buyPerSqm ?? basePriceSqm,
-    [],
+    targetSamples,
   );
 
   const akerlofLemon = computeAkerlofLemonIndex(
@@ -220,7 +215,7 @@ export function buildNeighborhoodSpatialContagionReport(
     .filter((x) => x.priceRatio >= 1.03)
     .slice(0, 2)
     .map((x, idx): SpatialContagionNode => {
-      const nAgg = aggregateNeighborhoodMarketMetrics(x.hood.id, x.hood.name, x.hood.buyPerSqm, []);
+      const nAgg = aggregateNeighborhoodMarketMetrics(x.hood.id, x.hood.name, x.hood.buyPerSqm, buildNeighborhoodListingSamples(x.hood));
       const beta = Number(Math.max(0.45, Math.min(0.92, 0.88 - x.distKm * 0.03 - idx * 0.05)).toFixed(2));
       const lag = Math.max(2, Math.min(8, Math.round(2 + x.distKm * 0.45)));
       return {
@@ -242,7 +237,7 @@ export function buildNeighborhoodSpatialContagionReport(
     .filter((x) => x.priceRatio < 1.03)
     .slice(0, 2)
     .map((x, idx): SpatialContagionNode => {
-      const nAgg = aggregateNeighborhoodMarketMetrics(x.hood.id, x.hood.name, x.hood.buyPerSqm, []);
+      const nAgg = aggregateNeighborhoodMarketMetrics(x.hood.id, x.hood.name, x.hood.buyPerSqm, buildNeighborhoodListingSamples(x.hood));
       const beta = Number(Math.max(0.42, Math.min(0.89, 0.84 - x.distKm * 0.025 - idx * 0.04)).toFixed(2));
       const lag = Math.max(3, Math.min(9, Math.round(3 + x.distKm * 0.5)));
       return {

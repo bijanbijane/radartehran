@@ -9,11 +9,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Target, Sparkles, Award, ArrowUpLeft } from 'lucide-react';
 import {
+  resolveNeighborhood,
   synthesizeExecutiveDecisionReport,
   UnifiedDecisionSynthesisReport,
 } from '../../cells/decision-epistemology/unifiedDecisionSynthesisEngine';
 import { toPersianNum } from '../../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface UnifiedDecisionSynthesisCardProps {
@@ -45,9 +46,10 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
     }
   }, [initialTargetSqm]);
 
+  const resolvedHood = useMemo(() => resolveNeighborhood(cityKey, hoodId, hoodName), [cityKey, hoodId, hoodName]);
   const aggMetrics = useMemo(
-    () => aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, []),
-    [hoodId, hoodName, basePriceSqm],
+    () => aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, buildNeighborhoodListingSamples(resolvedHood)),
+    [hoodId, hoodName, basePriceSqm, resolvedHood],
   );
 
   const fairDealSqm = aggMetrics.estimatedDealPricePerSqm;

@@ -7,7 +7,7 @@
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { INITIAL_NEIGHBORHOODS, toPersianNum } from '../../data/neighborhoods';
 import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { clampNumber, validateCityParam } from '../../utils/security';
 
@@ -112,7 +112,7 @@ export function findParetoDominantNeighborhoods(input: {
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
 
   const targetBuySqm = input.basePriceSqm && input.basePriceSqm > 0 ? input.basePriceSqm : targetHood.buyPerSqm;
-  const targetAgg = aggregateNeighborhoodMarketMetrics(targetHood.id, targetHood.name, targetBuySqm, []);
+  const targetAgg = aggregateNeighborhoodMarketMetrics(targetHood.id, targetHood.name, targetBuySqm, buildNeighborhoodListingSamples(targetHood));
   const targetDealSqm = Math.max(15, targetAgg.estimatedDealPricePerSqm);
   const targetUtilityScore = computeNeighborhoodUtilityScore(targetHood);
 
@@ -125,7 +125,7 @@ export function findParetoDominantNeighborhoods(input: {
 
   const scored: ParetoArbitrageCandidate[] = [];
   for (const { peer, peerUtility } of preFiltered) {
-    const peerAgg = aggregateNeighborhoodMarketMetrics(peer.id, peer.name, peer.buyPerSqm, []);
+    const peerAgg = aggregateNeighborhoodMarketMetrics(peer.id, peer.name, peer.buyPerSqm, buildNeighborhoodListingSamples(peer));
     const peerDealSqm = Math.max(15, peerAgg.estimatedDealPricePerSqm);
     const priceSavingsPct = Number((((targetDealSqm - peerDealSqm) / targetDealSqm) * 100).toFixed(1));
     if (priceSavingsPct < 4) continue;
@@ -164,7 +164,7 @@ export function computeSavageMinimaxRegretMatrix(input: {
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
 
   const buySqm = input.basePriceSqm && input.basePriceSqm > 0 ? input.basePriceSqm : targetHood.buyPerSqm;
-  const agg = aggregateNeighborhoodMarketMetrics(targetHood.id, hoodName, buySqm, []);
+  const agg = aggregateNeighborhoodMarketMetrics(targetHood.id, hoodName, buySqm, buildNeighborhoodListingSamples(targetHood));
   const dealSqm = Math.max(15, agg.estimatedDealPricePerSqm);
   const initialCapitalMillion = Math.round(dealSqm * targetSqm);
   const scaledBaseRahn = Math.round(

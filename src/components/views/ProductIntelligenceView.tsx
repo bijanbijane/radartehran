@@ -4,7 +4,7 @@ import type { EvaluatedNeighborhood, MarketPulseData } from '../../data/neighbor
 import { toPersianNum } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget } from '../stage2/Stage2MasterWidget';
@@ -45,7 +45,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
     return base.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q));
   }, [activeSegment, undervaluedList, balancedList, premiumList, segQuery]);
 
-  const selectedAgg = useMemo(() => aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, []), [p.selectedHood]);
+  const selectedAgg = useMemo(() => aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, buildNeighborhoodListingSamples(p.selectedHood)), [p.selectedHood]);
   const uAsking = convertPricePerSqmToUnit(selectedAgg.askingPricePerSqm, areaUnit);
   const uDeal = convertPricePerSqmToUnit(selectedAgg.estimatedDealPricePerSqm, areaUnit);
   const uIqrLow = convertPricePerSqmToUnit(selectedAgg.iqrLowPerSqm, areaUnit);
@@ -63,7 +63,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             {isEn ? 'Housing Market Pulse & Intelligence' : 'نبض و هوش بازار مسکن'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            پایش آماری حباب، تخمین قیمت قطعی معاملات (مدل v6.4) و تفکیک فرصت‌های زیر ارزش ذاتی
+            پایش آماری حباب، ارزیابی دامنه توافق معامله (مدل v6.4) و تفکیک فرصت‌های زیر ارزش ذاتی
           </p>
         </div>
 
@@ -114,7 +114,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             <span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{toPersianNum(balancedList.length)}</span>
             <span className="text-xs text-slate-400 mx-1.5">{isEn ? 'areas' : 'محله'}</span>
           </div>
-          <div className="text-[11px] text-slate-500 font-medium">{isEn ? 'Aligned with closing benchmarks' : 'همگرایی قیمت اعلامی با نرخ معامله'}</div>
+          <div className="text-[11px] text-slate-500 font-medium">{isEn ? 'Aligned with closing benchmarks' : 'همگرایی قیمت اعلامی با دامنه تعادلی'}</div>
         </button>
 
         <button type="button" onClick={() => handleSelectSegment('bubble')} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border text-start flex flex-col justify-between transition cursor-pointer ${activeSegment === 'bubble' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-400'}`}>
@@ -189,7 +189,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
         <div className="space-y-1.5 pt-1 tabular-nums">
           <div className="flex justify-between items-center text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
             <span>کف آماری محله ({toPersianNum(uIqrLow)} م)</span>
-            <span className="text-emerald-700 dark:text-emerald-300 font-bold">جایگاه معامله قطعی: صدک {toPersianNum(uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50)}٪ دامنه</span>
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold">جایگاه برآورد معامله v6.4: صدک {toPersianNum(uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50)}٪ دامنه</span>
             <span>سقف آماری محله ({toPersianNum(uIqrHigh)} م)</span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden relative">

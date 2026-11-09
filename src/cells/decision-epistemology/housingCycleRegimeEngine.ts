@@ -9,7 +9,7 @@
 import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodDeepInsight } from '../../data/neighborhoodInsights';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 
 export type HousingCycleRegimeId =
   | 'ACCUMULATION_RECOVERY'
@@ -154,7 +154,7 @@ export function generateCasperHousingCycleReport(
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
   const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
   const transitScore = hood.metro ?? 7;
-  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, []);
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, buildNeighborhoodListingSamples(hood));
   const insight = getNeighborhoodDeepInsight(hood);
   const computedSpread = Number((((agg.askingPricePerSqm - agg.estimatedDealPricePerSqm) / Math.max(1, agg.askingPricePerSqm)) * 100).toFixed(1));
   const empiricalSpreadPct = computedSpread > 0 ? computedSpread : undefined;

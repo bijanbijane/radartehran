@@ -8,7 +8,7 @@
 
 import { INITIAL_NEIGHBORHOODS, Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { classifyHousingCycleRegime } from './housingCycleRegimeEngine';
 import { computeAkerlofLemonIndex } from './spatialContagionEngine';
@@ -53,7 +53,7 @@ export interface UnifiedDecisionSynthesisReport {
   generatedAtIso: string;
 }
 
-function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string): Neighborhood {
+export function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string): Neighborhood {
   const safeCity = (cityId in MULTI_CITY_CONFIGS ? cityId : 'tehran') as CityId;
   const hoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   return hoods.find((h) => h.id === hoodId || (fallbackName && h.name === fallbackName)) ?? hoods[0] ?? INITIAL_NEIGHBORHOODS[0];
@@ -73,6 +73,7 @@ export function synthesizeExecutiveDecisionReport(
 ): UnifiedDecisionSynthesisReport {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const fairPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
+  const hoodBaselineAsk = hood.buyPerSqm || fairPrice;
   const askingPrice = customAskingPriceSqm ?? Math.round(fairPrice * 1.085);
   const rahn80m = Math.round((fairPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
@@ -85,7 +86,7 @@ export function synthesizeExecutiveDecisionReport(
   const cycleScore = Math.round(Math.min(100, Math.max(10, 100 - cycleReport.bubbleExhaustionRiskPct * 0.9)));
 
   // 3. Information Asymmetry Pillar: Akerlof index + seller asking distortion
-  const akerlof = computeAkerlofLemonIndex(hood.id, hood.name || hoodName, fairPrice, hood);
+  const akerlof = computeAkerlofLemonIndex(hood.id, hood.name || hoodName, hoodBaselineAsk, hood);
   const effectiveLemonScore = Math.min(98, Math.round(akerlof.lemonIndexScore + Math.max(0, spreadPct - 8) * 0.75));
   const asymmetryScore = Math.round(Math.min(100, Math.max(10, 100 - effectiveLemonScore * 0.9)));
 
@@ -101,7 +102,7 @@ export function synthesizeExecutiveDecisionReport(
   const downsideScore = Math.round(Math.min(100, Math.max(10, 100 - merton.metrics.probRealCapitalLossPct * 1.2 - overpaymentDrawdownPenalty)));
 
   // 6. Data Provenance & Epistemic Confidence Pillar
-  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name || hoodName, fairPrice, []);
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name || hoodName, hoodBaselineAsk, buildNeighborhoodListingSamples(hood));
   const epistemicOutlierPenalty = Math.max(0, spreadPct - 18) * 0.35;
   const confidenceScore = Math.round(Math.min(100, Math.max(35, (agg.confidenceScore ?? 75) + 8 - epistemicOutlierPenalty)));
 

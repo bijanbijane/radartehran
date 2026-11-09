@@ -1098,6 +1098,73 @@ function runDomainRegressionTests(): void {
     'WS-CASPER-06 primary views & ReverseBudgetDiscoveryModal contract check failed',
   );
 
+  // 43. WS-CASPER-07: Decision Epistemology Engines & SearchDropdownMenu Canonical Listing Samples Unification
+  const searchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
+  const unifiedSynthesisSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts'), 'utf-8');
+  const housingCycleSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/housingCycleRegimeEngine.ts'), 'utf-8');
+  const spatialContagionSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/spatialContagionEngine.ts'), 'utf-8');
+  const epistemicDecisionSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/epistemicDecisionEngine.ts'), 'utf-8');
+  const paretoRegretSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/paretoRegretEngine.ts'), 'utf-8');
+  const realOptionsSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/realOptionsLiquidityEngine.ts'), 'utf-8');
+  assert(
+    '43. WS-CASPER-07 unifies buildNeighborhoodListingSamples across SearchDropdownMenu and all 6 decision epistemology engines',
+    searchDropdownSrc.includes('buildNeighborhoodListingSamples({ id: n.id ?? 1') &&
+      unifiedSynthesisSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      housingCycleSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      spatialContagionSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      spatialContagionSrc.includes('buildNeighborhoodListingSamples(x.hood)') &&
+      epistemicDecisionSrc.includes('buildNeighborhoodListingSamples({ id: input.hoodId, name: hoodName, buyPerSqm, bargains: found?.bargains })') &&
+      paretoRegretSrc.includes('buildNeighborhoodListingSamples(targetHood)') &&
+      paretoRegretSrc.includes('buildNeighborhoodListingSamples(peer)') &&
+      realOptionsSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      !searchDropdownSrc.includes('aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, [])') &&
+      !unifiedSynthesisSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, [])') &&
+      !housingCycleSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, [])') &&
+      !realOptionsSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, [])'),
+    'WS-CASPER-07 decision epistemology sample unification check failed',
+  );
+
+  // 44. WS-CASPER-08: Type Safety & Array Resilience in Storage State
+  const nhSource = fs.readFileSync(path.join(process.cwd(), 'src/data/neighborhoods.ts'), 'utf-8');
+  const superModSource = fs.readFileSync(path.join(process.cwd(), 'src/data/superModulesLogic.ts'), 'utf-8');
+  const appUiSource = fs.readFileSync(path.join(process.cwd(), 'src/components/useAppUiState.ts'), 'utf-8');
+  assert(
+    '44. WS-CASPER-08 ensures zero unsafe casts on baseBuyPerSqm and array resilience on visitedHomes storage state',
+    !nhSource.includes('(hood as any).baseBuyPerSqm') &&
+      !superModSource.includes('(hood as any)?.baseBuyPerSqm') &&
+      appUiSource.includes('Array.isArray(parsed) ? parsed : []') &&
+      appUiSource.includes('if (Array.isArray(parsed)) setVisitedHomes(parsed);'),
+    'WS-CASPER-08 type safety and state resilience assertion failed',
+  );
+
+  // 45. WS-CASPER-09: Root-Cause Elimination of Double-Discounting in Unified Decision Synthesis, Multi-Bargain Street Search Blindness, and Unwired Listing Samples / Hardcoded Jalali Years
+  const unifiedCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/UnifiedDecisionSynthesisCard.tsx'), 'utf-8');
+  const evaluatedHoodsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useEvaluatedNeighborhoods.ts'), 'utf-8');
+  const rankingStripSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/QuickHoodRankingStrip.tsx'), 'utf-8');
+  const priceTrendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf-8');
+  const hedonicModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/HedonicValuationModal.tsx'), 'utf-8');
+  assert(
+    '45. WS-CASPER-09 eliminates double-discounting in UnifiedDecisionSynthesis, fixes multi-bargain street search blindness across useEvaluatedNeighborhoods/SearchDropdownMenu/ProductDiscoverView, and wires buildNeighborhoodListingSamples & getCurrentJalaliYear in QuickHoodRankingStrip/NeighborhoodPriceTrendModal/HedonicValuationModal',
+    unifiedSynthesisSrc.includes('const hoodBaselineAsk = hood.buyPerSqm || fairPrice;') &&
+      unifiedSynthesisSrc.includes('computeAkerlofLemonIndex(hood.id, hood.name || hoodName, hoodBaselineAsk, hood)') &&
+      unifiedSynthesisSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name || hoodName, hoodBaselineAsk, buildNeighborhoodListingSamples(hood))') &&
+      unifiedCardSrc.includes('buildNeighborhoodListingSamples(resolvedHood)') &&
+      !unifiedCardSrc.includes('aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, [])') &&
+      evaluatedHoodsSrc.includes('!n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, q)) || (b.title && matchesPersianSearch(b.title, q))))') &&
+      !evaluatedHoodsSrc.includes('n.bargains?.[0]?.street') &&
+      searchDropdownSrc.includes('n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, searchQuery.trim()))') &&
+      !searchDropdownSrc.includes('n.bargains?.[0]?.street') &&
+      discoverViewSrc.includes('Boolean(h.bargains?.some((b) => (b.street && matchesPersianSearch(b.street, q)) || (b.title && matchesPersianSearch(b.title, q))))') &&
+      rankingStripSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      rankingStripSrc.includes('buildNeighborhoodListingSamples(h)') &&
+      priceTrendModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      hedonicModalSrc.includes('buildNeighborhoodListingSamples(activeHood)') &&
+      hedonicModalSrc.includes('buildNeighborhoodListingSamples(n)') &&
+      hedonicModalSrc.includes('getCurrentJalaliYear()') &&
+      !hedonicModalSrc.includes('1405 - specs.buildingAge'),
+    'WS-CASPER-09 root-cause remediation assertion failed',
+  );
+
   console.log('\n=======================================================');
   console.log('[DOMAIN REGRESSION SUITE PASS] All assertions passed!');
   console.log('=======================================================\n');

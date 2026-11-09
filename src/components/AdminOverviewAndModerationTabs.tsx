@@ -65,7 +65,7 @@ export function AdminOverviewAndModerationTabs(
     if (currentMatch.id !== adminEditHoodId) {
       setAdminEditHoodId(currentMatch.id);
     }
-    setAdminEditBuySqm(Number((currentMatch as any).baseBuyPerSqm ?? currentMatch.buyPerSqm));
+    setAdminEditBuySqm(Number(currentMatch.baseBuyPerSqm ?? currentMatch.buyPerSqm));
     setAdminEditRahn80m(Number(currentMatch.rahn80m));
   }, [adminTab, neighborhoods]);
 
@@ -230,7 +230,7 @@ export function AdminOverviewAndModerationTabs(
               setAdminEditHoodId(nextId);
               const found = neighborhoods.find((n) => n.id === nextId);
               if (found) {
-                setAdminEditBuySqm(Number((found as any).baseBuyPerSqm ?? found.buyPerSqm));
+                setAdminEditBuySqm(Number(found.baseBuyPerSqm ?? found.buyPerSqm));
                 setAdminEditRahn80m(Number(found.rahn80m));
               }
             }}

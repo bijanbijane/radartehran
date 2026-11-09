@@ -3,32 +3,15 @@ import { Clock, Trash2, MapPin, TrendingUp, Sparkles } from 'lucide-react';
 import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
 import type { CityId, Neighborhood } from '../types/models';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, getAllMultiCityNeighborhoods } from '../data/multiCityData';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { SmartNaturalSearchMatchesSection } from './SmartNaturalSearchMatchesSection';
 import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
-export {
-  SearchHistory,
-  getRecentSearches,
-  recordRecentSearch,
-  removeRecentSearch,
-  clearAllRecentSearches,
-  useSearchHistory,
-  RECENT_SEARCHES_STORAGE_KEY,
-  MAX_RECENT_SEARCHES,
-} from './SearchHistory';
+import { matchesPersianSearch } from '../utils/security';
+export { SearchHistory, getRecentSearches, recordRecentSearch, removeRecentSearch, clearAllRecentSearches, useSearchHistory, RECENT_SEARCHES_STORAGE_KEY, MAX_RECENT_SEARCHES } from './SearchHistory';
 import { SearchHistory, recordRecentSearch } from './SearchHistory';
 
-export const POPULAR_HOOD_NAMES = [
-  'سعادت‌آباد',
-  'شهرک غرب',
-  'پونک',
-  'نیاوران',
-  'چیتگر',
-  'تهران‌پارس غربی',
-  'ونک',
-  'یوسف‌آباد',
-];
+export const POPULAR_HOOD_NAMES = ['سعادت‌آباد', 'شهرک غرب', 'پونک', 'نیاوران', 'چیتگر', 'تهران‌پارس غربی', 'ونک', 'یوسف‌آباد'];
 
 export function getTrendingNeighborhoods(
   allHoods: EvaluatedNeighborhood[],
@@ -77,7 +60,8 @@ export function SearchDropdownMenu({
     const distTag = typeof n.distKm === 'number' ? ` · ${toPersianNum(areaUnit === 'sqft' ? (n.distKm * 0.621371).toFixed(1) : n.distKm.toFixed(1))} ${areaUnit === 'sqft' ? 'mi' : 'km'}` : '';
     if (mode === 'rent') return `رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م · اجاره: ${toPersianNum(Math.round(n.rahn80m * 0.03))} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(n.rahn80m, intlCurrency, radarLocale)})` : ''}${distTag}`;
     const unitBuy = Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1));
-    const unitDeal = Number(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id ?? 1, n.name ?? '', n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit).toFixed(1));
+    const samples = buildNeighborhoodListingSamples({ id: n.id ?? 1, name: n.name ?? '', buyPerSqm: n.buyPerSqm, bargains: (n as EvaluatedNeighborhood).bargains });
+    const unitDeal = Number(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id ?? 1, n.name ?? '', n.buyPerSqm, samples).estimatedDealPricePerSqm, areaUnit).toFixed(1));
     return `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ${toPersianNum(unitBuy)} م (معامله v6.4: ${toPersianNum(unitDeal)} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)} · کل: ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, radarLocale)})` : ''}${distTag}`;
   };
   useEffect(() => { setHighlightedIndex(0); }, [searchQuery]);
@@ -210,7 +194,7 @@ export function SearchDropdownMenu({
                       />
                       <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
-                      {searchQuery.trim() && !n.name.includes(searchQuery.trim()) && (n.pros.includes(searchQuery.trim()) || (n.bargains?.[0]?.street && n.bargains[0].street.includes(searchQuery.trim()))) && (
+                      {searchQuery.trim() && !matchesPersianSearch(n.name, searchQuery.trim()) && (matchesPersianSearch(n.pros, searchQuery.trim()) || n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, searchQuery.trim())) || (b.title && matchesPersianSearch(b.title, searchQuery.trim()))))) && (
                         <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[9.5px] font-bold">زیرمحله / خیابان</span>
                       )}
                     </div>

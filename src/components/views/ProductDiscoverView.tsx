@@ -59,7 +59,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
     if (onlyWithBargains) list = list.filter((h) => (h.bargains?.length || 0) > 0);
     if (query.trim()) {
       const q = query.trim();
-      list = list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q));
+      list = list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q) || matchesPersianSearch(h.pros, q) || Boolean(h.bargains?.some((b) => (b.street && matchesPersianSearch(b.street, q)) || (b.title && matchesPersianSearch(b.title, q)))));
     }
     return [...list].sort((a, b) => {
       if (sortBy === 'score') return b.overallScore - a.overallScore;
@@ -157,7 +157,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           </div>
           <div className="flex items-center gap-2 min-w-0 max-w-full">
             <span className="text-slate-400 text-[11px] shrink-0">{isEn ? 'Sort by:' : 'ترتیب نمایش:'}</span>
-            <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="max-w-[210px] sm:max-w-none truncate px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
+            <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as 'score' | 'price_asc' | 'price_desc' | 'rahn_asc' | 'air')} className="max-w-[210px] sm:max-w-none truncate px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
               <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option><option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت معامله v6.4'}</option><option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option><option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option><option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
             </select>
           </div>

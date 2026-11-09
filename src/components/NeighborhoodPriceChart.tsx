@@ -3,7 +3,7 @@ import { TrendingUp, ArrowUpRight, BarChart2, Maximize2 } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BubbleReport, EvaluatedNeighborhood, Neighborhood, toPersianNum } from '../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { buildTrailingJalaliMonths, type MarketSeriesProvenanceType } from '../utils/marketHistoryAndPulseIntegrity';
 import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
@@ -60,7 +60,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
   const isEn = radarLocale === 'en';
   const hoodTotal80m = Number(((selectedHood.buyPerSqm * 80) / 1000).toFixed(1));
   const monthlyRent80mMillions = Math.round(selectedHood.rahn80m * 0.03);
-  const dealMetrics = useMemo(() => aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []), [selectedHood.id, selectedHood.name, selectedHood.buyPerSqm]);
+  const dealMetrics = useMemo(() => aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)), [selectedHood]);
   const uDealCur = convertPricePerSqmToUnit(dealMetrics.estimatedDealPricePerSqm, areaUnit);
   const [chartView, setChartView] = useState<'12m_buy_rent' | '6m_city'>('12m_buy_rent');
   const cityNameFa = (activeCity && MULTI_CITY_CONFIGS[activeCity]?.nameFa) || 'تهران';

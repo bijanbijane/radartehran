@@ -9,7 +9,7 @@ export const GOLD_18K_TOMAN_PRICE = 4500000; export const USD_TOMAN_PRICE = 7000
     parkingAdjustmentPercent: Math.round(parkingOpt.multiplier * 1000) / 10, currentJalaliYear: currentYear, }); const deedOption = DEED_TYPE_OPTIONS.find((d) => d.id === deedType) || DEED_TYPE_OPTIONS[0];
   let secondaryModifier = deedOption.multiplier; if (light === 'south') secondaryModifier += 0.03; if (light === 'dim') secondaryModifier -= 0.03; if (safeSqm >= 90 && bedrooms === 1) secondaryModifier -= 0.04;
   else if (safeSqm >= 95 && safeSqm <= 135 && bedrooms >= 3) secondaryModifier += 0.035; else if (safeSqm >= 60 && safeSqm <= 85 && bedrooms === 2) secondaryModifier += 0.02;
-  else if (safeSqm < 65 && bedrooms >= 3) secondaryModifier -= 0.03; const baseBuyPerSqm = Math.max(10, Number((hood as any)?.baseBuyPerSqm ?? hood?.buyPerSqm) || 100);
+  else if (safeSqm < 65 && bedrooms >= 3) secondaryModifier -= 0.03; const baseBuyPerSqm = Math.max(10, Number(hood?.baseBuyPerSqm ?? hood?.buyPerSqm) || 100);
   const fairPerSqm = Math.max(10, Math.round(hedonicBase.hedonicPerSqm * secondaryModifier * 10) / 10); const fairTotalMillion = Math.round(fairPerSqm * safeSqm); const fastSalePerSqm = Math.round(fairPerSqm * FAST_SALE_FACTOR * 10) / 10; const fastSaleTotalMillion = Math.round(fastSalePerSqm * safeSqm);
   const fullRahnMillion = Math.max(50, Math.round(hedonicBase.estimatedRahnMillion * secondaryModifier)); const equivMonthlyRentMillion = Math.round(((fullRahnMillion * 0.30) / 12) * 10) / 10; const multiplierPercent = Math.round(((fairPerSqm - baseBuyPerSqm) / baseBuyPerSqm) * 100);
   const tomanPerSqm = fairPerSqm * 1000000; const tomanTotal = fairTotalMillion * 1000000;

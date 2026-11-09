@@ -28,7 +28,7 @@ export function buildMonthlyPriceBarPoints(
 ): MonthlyPriceBarPoint[] {
   const rawData = Array.isArray(marketReport?.trendData) ? marketReport.trendData : [];
   if (!rawData.length) {
-    const currentPrice = Number((selectedHood as any)?.baseBuyPerSqm ?? selectedHood?.buyPerSqm) || 120;
+    const currentPrice = Number(selectedHood?.baseBuyPerSqm ?? selectedHood?.buyPerSqm) || 120;
     return [
       { month: 'ماه ۱', price: Math.round(currentPrice * 0.9), cityAvg: 90, changeAmount: 0, changePercent: 0, isLatest: false },
       { month: 'ماه ۲', price: Math.round(currentPrice * 0.92), cityAvg: 92, changeAmount: Math.round(currentPrice * 0.02), changePercent: 2.2, isLatest: false },

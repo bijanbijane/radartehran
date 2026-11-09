@@ -8,7 +8,7 @@
 
 import { MULTI_CITY_CONFIGS, CityId } from '../../data/multiCityData';
 import { INITIAL_NEIGHBORHOODS, Neighborhood, toPersianNum } from '../../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 void formatMillionTomanAsIntlCurrency;
 
@@ -22,10 +22,12 @@ export interface RealOptionsValuation {
   hurdlePricePerSqm: number;
 }
 
+export type LiquidityTier = 'INSTANT_LIQUID' | 'HEALTHY_TURNOVER' | 'STICKY_ILLIQUID' | 'FROZEN_LOCK';
+
 export interface LiquiditySurvivalMetrics {
   expectedDaysOnMarket: number;
   absorptionHalfLifeDays: number;
-  liquidityTier: 'INSTANT_LIQUID' | 'HEALTHY_TURNOVER' | 'STICKY_ILLIQUID' | 'FROZEN_LOCK';
+  liquidityTier: LiquidityTier;
   liquidityTierFa: string;
   hazardRateLambda: number;
   probSaleWithin30DaysPct: number;
@@ -67,21 +69,10 @@ function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: stri
  * Standard Normal Cumulative Distribution Function approximation (Abramowitz & Stegun)
  */
 function normalCdf(x: number): number {
-  const b1 = 0.319381530;
-  const b2 = -0.356563782;
-  const b3 = 1.781477937;
-  const b4 = -1.821255978;
-  const b5 = 1.330274429;
-  const p = 0.2316419;
-  const c = 0.39894228;
-
-  if (x >= 0) {
-    const t = 1.0 / (1.0 + p * x);
-    return 1.0 - c * Math.exp((-x * x) / 2.0) * t * (t * (t * (t * b5 + b4) + b3) + b2 + b1);
-  } else {
-    const t = 1.0 / (1.0 - p * x);
-    return c * Math.exp((-x * x) / 2.0) * t * (t * (t * (t * b5 + b4) + b3) + b2 + b1);
-  }
+  const b1 = 0.31938153, b2 = -0.356563782, b3 = 1.781477937, b4 = -1.821255978, b5 = 1.330274429, p = 0.2316419, c = 0.39894228;
+  const t = 1.0 / (1.0 + p * Math.abs(x));
+  const poly = c * Math.exp((-x * x) / 2.0) * t * (t * (t * (t * (t * b5 + b4) + b3) + b2) + b1);
+  return x >= 0 ? 1.0 - poly : poly;
 }
 
 /**
@@ -266,7 +257,7 @@ export function generateCasperLiquidityReport(
   const rahn80m = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
   // True annual rental yield: annual rent (rahn80m * 0.36) divided by 80m² purchase price
   const annualRentalYield = (rahn80m * 0.36) / Math.max(1, resolvedPrice * 80);
-  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, []);
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, buildNeighborhoodListingSamples(hood));
 
   const realOptions = computeDixitPindyckRealOption(
     resolvedPrice,

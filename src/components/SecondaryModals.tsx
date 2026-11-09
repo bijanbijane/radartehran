@@ -48,7 +48,7 @@ export function SecondaryModals({
 
   const sortedSeoNeighborhoods = useMemo(() => {
     const copy = [...safeEvaluated];
-    if (seoSortBy === 'cheapest_buy') return copy.sort((a, b) => ((a as any).baseBuyPerSqm ?? a.buyPerSqm) - ((b as any).baseBuyPerSqm ?? b.buyPerSqm));
+    if (seoSortBy === 'cheapest_buy') return copy.sort((a, b) => (a.baseBuyPerSqm ?? a.buyPerSqm) - (b.baseBuyPerSqm ?? b.buyPerSqm));
     if (seoSortBy === 'cheapest_rent') return copy.sort((a, b) => a.rahn80m - b.rahn80m);
     if (seoSortBy === 'highest_score') return copy.sort((a, b) => b.overallScore - a.overallScore);
     if (seoSortBy === 'nearest_metro') {
@@ -265,7 +265,7 @@ export function SecondaryModals({
                     <a key={n.id} href={`${activeCityNameFa === 'تهران' ? `/?hood=${n.id}` : `/?city=${activeCityNameFa === 'کرج' ? 'karaj' : activeCityNameFa === 'مشهد' ? 'mashhad' : activeCityNameFa === 'اصفهان' ? 'isfahan' : 'shiraz'}&hood=${n.id}`}${intlQuerySuffix}`} onClick={(e) => { e.preventDefault(); onSelectNeighborhood(n); setShowSeoDrawer(false); }} className={`border rounded-xl px-3 py-2 transition flex items-center justify-between gap-1 ${selectedHoodId === n.id ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-600 text-emerald-800 dark:text-emerald-300 font-bold' : 'bg-white dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
                       <span className="truncate font-semibold">{n.name}</span>
                       <span className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 tabular-nums shrink-0">
-                        {metroDist !== null ? <span className="text-indigo-700 dark:text-indigo-400 font-bold">🚇 ~{toPersianNum(metroDist)}کم</span> : <span>{seoSortBy === 'cheapest_rent' ? fmtUnitRent(n.rahn80m) : fmtUnitBuy((n as any).baseBuyPerSqm ?? n.buyPerSqm)}</span>}
+                        {metroDist !== null ? <span className="text-indigo-700 dark:text-indigo-400 font-bold">🚇 ~{toPersianNum(metroDist)}کم</span> : <span>{seoSortBy === 'cheapest_rent' ? fmtUnitRent(n.rahn80m) : fmtUnitBuy(n.baseBuyPerSqm ?? n.buyPerSqm)}</span>}
                         <span className="text-emerald-700 dark:text-emerald-400 font-bold">★ {toPersianNum(n.overallScore)}/۱۰</span>
                       </span>
                     </a>

@@ -15,7 +15,8 @@ export function useAppUiState(initialUrlState: any) {
   const [visitedHomes, setVisitedHomes] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('tehran_radar_visited_homes_v1');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   });
   const [showVisitedModal, setShowVisitedModal] = useState<boolean>(false);
@@ -175,7 +176,10 @@ export function useAppUiState(initialUrlState: any) {
     const onVisitedUpdated = () => {
       try {
         const saved = localStorage.getItem('tehran_radar_visited_homes_v1');
-        if (saved) setVisitedHomes(JSON.parse(saved));
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setVisitedHomes(parsed);
+        }
       } catch { /* ignore */ }
     };
     const onOpenPriceTrend = () => setShowPriceTrendModal(true);

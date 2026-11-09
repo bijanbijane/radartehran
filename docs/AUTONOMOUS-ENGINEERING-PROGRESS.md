@@ -10,16 +10,16 @@
   "campaignStatus": "CAMPAIGN_COMPLETE",
   "appletId": "1b7f1cd5-314b-4917-bfe4-cab0c714119b",
   "firestoreDatabaseId": "ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a",
-  "activeWorkstreamId": "WS-CASPER-06 (Primary Workspace Views & Reverse Budget Finder Charter Alignment, Sample Unification & AFFORDABLE-First Ranking)",
+  "activeWorkstreamId": "WS-CASPER-09 (Root-Cause Elimination of Double-Discounting in Unified Decision Synthesis, Multi-Bargain Street Search Blindness, and Canonical Sample & Dynamic Jalali Year Unification)",
   "activeWorkstreamState": "VERIFIED",
-  "activeWorkstreamRisk": "R2 (Sample-Backed v6.4 Deal Sorting & Explainability in ProductDiscoverView/ProductHomeView/ProductUserSpaceView, Epistemic Hero Calibration, and AFFORDABLE-First Priority Ranking in ReverseBudgetDiscoveryModal)",
+  "activeWorkstreamRisk": "R2 (Foundational Root-Cause Remediation across Decision Synthesis, Street Search, Ranking Strip, Price Trend Modal & Hedonic Valuation Modal)",
   "activeWorkstreamBatchesUsed": 1,
   "activeWorkstreamMaxBatches": 3,
   "activeWorkstreamCorrectiveIterationsUsed": 0,
   "activeWorkstreamMaxCorrectiveIterations": 2,
   "verificationLevelsAchieved": ["SOURCE_REVIEWED", "BUILD_VERIFIED", "TEST_EXECUTED", "PREVIEW_OBSERVED", "INTERACTION_VERIFIED"],
-  "completedWorkstreams": ["WS-001", "WS-002", "WS-003", "WS-004", "WS-005", "WS-DOC-001", "PLAN-001", "TEAM-SETUP-001", "DB-001", "ASSESS-001", "ASSESS-002", "ASSESS-003", "ASSESS-004", "ASSESS-005", "ASSESS-006", "ASSESS-007", "ASSESS-008", "ASSESS-009", "ASSESS-010", "WS-ARGON5-A", "WS-G4A-A1", "WS-ARGON5-B", "WS-ARGON5-C", "WS-ARGON5-D", "WS-CASPER-02", "WS-CASPER-03", "WS-CASPER-04", "WS-CASPER-05", "WS-CASPER-06"],
-  "nextEligibleTask": "NONE (All Argon-5, Root-Cause, Self-Critique, Quality-Over-Vanity & Charter-Mandated Primary View Workstreams Complete)",
+  "completedWorkstreams": ["WS-001", "WS-002", "WS-003", "WS-004", "WS-005", "WS-DOC-001", "PLAN-001", "TEAM-SETUP-001", "DB-001", "ASSESS-001", "ASSESS-002", "ASSESS-003", "ASSESS-004", "ASSESS-005", "ASSESS-006", "ASSESS-007", "ASSESS-008", "ASSESS-009", "ASSESS-010", "WS-ARGON5-A", "WS-G4A-A1", "WS-ARGON5-B", "WS-ARGON5-C", "WS-ARGON5-D", "WS-CASPER-02", "WS-CASPER-03", "WS-CASPER-04", "WS-CASPER-05", "WS-CASPER-06", "WS-CASPER-07", "WS-CASPER-08", "WS-CASPER-09"],
+  "nextEligibleTask": "NONE (All Argon-5, Root-Cause, Self-Critique, Quality-Over-Vanity, Charter-Mandated Primary Views, Decision Epistemology & Multi-Bargain Street Search Unification Complete)",
   "blockedTasks": []
 }
 ```
@@ -517,7 +517,48 @@
         - Fixed the **Reverse-Budget Over-Budget Ranking Inversion Defect**: previously, sorting solely by `targetDiffRatio = Math.abs(1 - effectiveSqmPrice / targetSqmPrice)` ranked an unaffordable `STRETCH` neighborhood (`ratio = 1.08`, 8% over budget) above an `AFFORDABLE` neighborhood (`ratio = 0.88`, within budget). Now `rankedMatches` prioritizes `AFFORDABLE` (`tier = 0`), followed by `STRETCH` neighborhoods reachable via `v6.4` negotiation (`isDealWithinBudget`, `tier = 1`, labeled `● در بودجه با سناریوی مذاکره v6.4`), followed by general `STRETCH` (`tier = 2`).
       - **Unit & Regression Coverage**:
         - Added Assertion 42 in `tests/domain-regressions.test.ts`.
-    - **Transitioned `WS-CASPER-06`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
-
-
-
+38. **`[2026-11-09T10:20:00-08:00] CASPER_DECISION_EPISTEMOLOGY_SAMPLE_UNIFICATION_COMPLETED (WS-CASPER-07)`**:
+    - **Workstream Executed (`WS-CASPER-07`: Decision Epistemology Engines & Search Dropdown Canonical Listing Samples Unification)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **`src/components/SearchDropdownMenu.tsx` (278 lines `<= 290`)**:
+        - Replaced empty array `[]` on line 62 with `buildNeighborhoodListingSamples({ id: n.id ?? 1, name: n.name ?? '', buyPerSqm: n.buyPerSqm, bargains: (n as EvaluatedNeighborhood).bargains })`. Now quick search results calculate real v6.4 closing deal prices instead of fallback ratios.
+      - **`src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts` (179 lines `<= 290`)**:
+        - Replaced empty array `[]` on line 104 with `buildNeighborhoodListingSamples(hood)`.
+      - **`src/cells/decision-epistemology/housingCycleRegimeEngine.ts` (184 lines `<= 290`)**:
+        - Replaced empty array `[]` on line 157 with `buildNeighborhoodListingSamples(hood)`.
+      - **`src/cells/decision-epistemology/spatialContagionEngine.ts` (288 lines `<= 290`)**:
+        - Replaced empty arrays on lines 83, 174, 223, and 245 with `buildNeighborhoodListingSamples(hood)` and `buildNeighborhoodListingSamples(x.hood)`.
+      - **`src/cells/decision-epistemology/epistemicDecisionEngine.ts` (285 lines `<= 290`)**:
+        - Connected `buildNeighborhoodListingSamples({ id: input.hoodId, name: hoodName, buyPerSqm, bargains: found?.bargains })` on line 217.
+      - **`src/cells/decision-epistemology/paretoRegretEngine.ts` (258 lines `<= 290`)**:
+        - Connected `buildNeighborhoodListingSamples(targetHood)` and `buildNeighborhoodListingSamples(peer)` across lines 115, 128, and 167.
+      - **`src/cells/decision-epistemology/realOptionsLiquidityEngine.ts` (286 lines `<= 290`)**:
+        - Connected `buildNeighborhoodListingSamples(hood)` on line 269.
+      - **Unit & Regression Coverage**:
+        - Added Assertion 43 in `tests/domain-regressions.test.ts` (43/43 PASS).
+39. **`[2026-11-09T10:50:00-08:00] CASPER_UNMONITORED_DEFECTS_AND_STATE_RESILIENCE_COMPLETED (WS-CASPER-08)`**:
+    - **Workstream Executed (`WS-CASPER-08`: Deep Unmonitored Defect Elimination, Type Safety Hardening & Array Deserialization Resilience)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Zero Unsafe Casts on `baseBuyPerSqm`**:
+        - Eliminated unsafe `(hood as any).baseBuyPerSqm` in `src/data/neighborhoods.ts` (lines 109 and 120), `src/data/superModulesLogic.ts` (line 12), and `src/components/AdminOverviewAndModerationTabs.tsx` (lines 68 and 233).
+        - Replaced with direct typed access (`hood.baseBuyPerSqm ?? hood.buyPerSqm`) leveraging the optional interface property on `Neighborhood`, restoring compile-time type verification.
+      - **Array Deserialization Resilience in `src/components/useAppUiState.ts` (288 lines `<= 290`)**:
+        - Hardened `visitedHomes` state initialization and `onVisitedUpdated` window listener by validating `Array.isArray(parsed) ? parsed : []`, preventing silent client runtime exceptions if corrupted or non-array JSON is stored in localStorage.
+      - **Unit & Regression Coverage**:
+        - Added Assertion 44 to `tests/domain-regressions.test.ts` (44/44 PASS).
+        - Full regression suites verified: `npm run arch:check` (0 errors), `npm test` (PASS), `npm run test:contracts` (9/9 PASS), `npm run test:mutation` (10/10 killed), `tests/stress-50-cycles.test.ts` (50/50 PASS), `tests/object-storage-*.test.ts` (43/43 PASS), `npm run test:smoke` (9/9 PASS), and `npm run build` (PASS).
+    - **Transitioned `WS-CASPER-08`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+40. **`[2026-11-09T12:25:00-08:00] CASPER_ROOT_CAUSE_DOUBLE_DISCOUNT_AND_STREET_SEARCH_COMPLETED (WS-CASPER-09)`**:
+    - **Workstream Executed (`WS-CASPER-09`: Root-Cause Elimination of Double-Discounting in Unified Decision Synthesis, Multi-Bargain Street Search Blindness, and Canonical Sample & Dynamic Jalali Year Unification)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Root-Cause Fix 1 — Eliminated Double-Discounting & Empty Sample Array in `UnifiedDecisionSynthesisCard.tsx` and `unifiedDecisionSynthesisEngine.ts`**:
+        - Exported `resolveNeighborhood` from `src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts` and wired `buildNeighborhoodListingSamples(resolvedHood)` into `UnifiedDecisionSynthesisCard.tsx` (line 49) instead of an empty sample array `[]`.
+        - Anchored `hoodBaselineAsk = hood.buyPerSqm || fairPrice` inside `synthesizeExecutiveDecisionReport` when invoking `computeAkerlofLemonIndex` and `aggregateNeighborhoodMarketMetrics(..., buildNeighborhoodListingSamples(hood))`, preventing the already-discounted `fairDealSqm` passed by `UnifiedDecisionSynthesisCard.tsx` from distorting Akerlof Lemon Index and IQR spread calculations against raw asking samples.
+      - **Root-Cause Fix 2 — Eliminated Multi-Bargain Street & Sub-Neighborhood Search Blindness (`useEvaluatedNeighborhoods.ts`, `SearchDropdownMenu.tsx`, `ProductDiscoverView.tsx`)**:
+        - Replaced `n.bargains?.[0]?.street` index-0-only check in `src/components/useEvaluatedNeighborhoods.ts` (compacted to `275` lines `<= 290`) and `src/components/SearchDropdownMenu.tsx` with `n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, q)) || (b.title && matchesPersianSearch(b.title, q))))`, and extended `ProductDiscoverView.tsx` search filter to match `h.pros` and all `h.bargains` streets/titles. Searching for secondary/sub-neighborhood streets (e.g., `سردار جنگل`, `بلوار دادمان`, `علامه جنوبی`, `منظریه نیاوران`, `خیابان ثارالله`) now accurately resolves their parent neighborhoods.
+      - **Root-Cause Fix 3 — Canonical Sample & Dynamic Jalali Year Unification (`QuickHoodRankingStrip.tsx`, `NeighborhoodPriceTrendModal.tsx`, `HedonicValuationModal.tsx`)**:
+        - Wired `buildNeighborhoodListingSamples` into `QuickHoodRankingStrip.tsx`, `NeighborhoodPriceTrendModal.tsx`, and `HedonicValuationModal.tsx`.
+        - Replaced hardcoded `1405` in `HedonicValuationModal.tsx` (`handleNlpExtract` and `useEffect`) with `getCurrentJalaliYear()` and replaced `(propAreaUnit as any)` / `(propIntlCurrency as any)` with strict `AreaUnit` and `IntlCurrencyCode` types.
+      - **Unit & Regression Coverage**:
+        - Added Assertion 45 to `tests/domain-regressions.test.ts` (45/45 PASS).
+    - **Transitioned `WS-CASPER-09`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.

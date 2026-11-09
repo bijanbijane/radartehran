@@ -6,7 +6,8 @@ import { toPersianNum } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import type { FeatureFlags } from '../../types/models';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
 
@@ -47,6 +48,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
     if (!q) return list.slice(0, 6);
     return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q)).slice(0, 8);
   }, [p.evaluatedNeighborhoods, homeQuery, priceBracket, p.targetSqm]);
+  const topFeaturedScore = featuredHoods.length > 0 ? Math.max(...featuredHoods.map((h) => h.overallScore)) : undefined;
   const bargainsCount = p.evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0);
   const budgetDisplay = p.mode === 'buy'
     ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} م.ت`)
@@ -77,8 +79,8 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 font-medium max-w-2xl leading-relaxed">
                 {isEn
-                  ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on verified transaction benchmarks, urban livability scores, and your budget.`
-                  : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه داده‌های ثبت‌شده معاملات قطعی، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
+                  ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on hedonic model estimates, urban livability scores, and your budget.`
+                  : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه تخمین‌های مدل هدانیک، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
               </p>
             </div>
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/80 shrink-0 self-start md:self-end">
@@ -201,7 +203,8 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {featuredHoods.map((hood) => {
               const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-              const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+              const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+              const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore });
               const isWithinBudget = hood.status === 'green';
               const isSelected = p.selectedHood.id === hood.id;
               const isArcActive = comparisonArc.active &&
