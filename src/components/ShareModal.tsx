@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, Check, Copy, Download, Image as ImageIcon, Loader2, Share2, X } from 'lucide-react';
 import { BubbleReport, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { type AreaUnit, convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, type IntlCurrencyCode, type RadarLocale } from '../utils/areaUnit';
 import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { clampNumber, recordDiagnosticEvent, sanitizeInput } from '../utils/security';

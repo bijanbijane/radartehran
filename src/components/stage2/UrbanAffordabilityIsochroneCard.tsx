@@ -7,9 +7,9 @@ import {
   Car,
   Wind,
   CheckCircle2,
-  AlertTriangle,
   ArrowRightLeft,
-  ChevronDown
+  ChevronDown,
+  ArrowUpLeft,
 } from 'lucide-react';
 import {
   generateCasperUrbanAffordabilityReport,
@@ -25,6 +25,7 @@ export interface UrbanAffordabilityIsochroneCardProps {
   cityKey?: string;
   basePriceSqm?: number;
   intlCurrency?: IntlCurrencyCode;
+  onSelectCompareHood?: (hoodName: string) => void;
 }
 
 export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochroneCardProps> = ({
@@ -33,6 +34,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
   cityKey = 'tehran',
   basePriceSqm = 120,
   intlCurrency = 'USD',
+  onSelectCompareHood,
 }) => {
   const [monthlyIncomeMillion, setMonthlyIncomeMillion] = useState<number>(45);
   const [selectedHubId, setSelectedHubId] = useState<string>('hub-mirdamad');
@@ -56,6 +58,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
   const tcohFx = intlCurrency !== 'IRT'
     ? ` (${formatMillionTomanAsIntlCurrency(report.arbitrage.totalCostOfHousingMillion, intlCurrency, 'fa')})`
     : '';
+  const sub = report.optimalIsochroneSubstitute;
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -78,7 +81,6 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           </div>
         </div>
 
-        {/* Status Badge */}
         <div className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800 font-bold">
           <CheckCircle2 className="w-3.5 h-3.5" />
           <span>{report.arbitrage.arbitrageVerdictFa}</span>
@@ -87,7 +89,6 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
 
       {/* Interactive Controls Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
-        {/* Income Slider */}
         <div className="space-y-1">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
@@ -110,7 +111,6 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           />
         </div>
 
-        {/* Work Hub Selector */}
         <div className="space-y-1">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
@@ -141,7 +141,6 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
 
       {/* 3 Analytics Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Card 1: Affordability Stress (PIR & RIR) */}
         <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
             <span>شاخص استطاعت مسکن</span>
@@ -170,7 +169,6 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           </div>
         </div>
 
-        {/* Card 2: Commute Friction Breakdown */}
         <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
             <span>اصطکاک تردد تا {report.commute.workHubName}</span>
@@ -209,7 +207,6 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           </div>
         </div>
 
-        {/* Card 3: Total Cost of Housing (TCOH) & Arbitrage */}
         <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
             <span>هزینه کل اقتصادی (TCOH)</span>
@@ -233,6 +230,33 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           </p>
         </div>
       </div>
+
+      {/* Actionable Isochrone Spatial Substitute Recommendation */}
+      {sub && (
+        <div data-testid="stage2-isochrone-substitute-banner" className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/25 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="space-y-0.5">
+            <div className="font-extrabold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+              <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>پیشنهاد آربیتراژ ایزوکرون کسپر برای شاغلان «{report.commute.workHubName}»: محله {sub.hoodName}</span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              صرفه‌جویی خالص <strong>{toPersianNum(sub.monthlyTcohSavingsMillion)} م.ت در ماه</strong> در هزینه کل سکونت و تردد + آزادسازی <strong>{toPersianNum(sub.capitalFreed80mMillion)} م.ت</strong> سرمایه خرید ۸۰ متر (زمان تردد: {toPersianNum(sub.oneWayMinutes)} دقیقه).
+            </p>
+          </div>
+          {onSelectCompareHood && (
+            <button
+              type="button"
+              data-testid="isochrone-substitute-btn"
+              onClick={() => onSelectCompareHood(sub.hoodName)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition cursor-pointer shrink-0"
+            >
+              <span>بررسی محله {sub.hoodName}</span>
+              <ArrowUpLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
+

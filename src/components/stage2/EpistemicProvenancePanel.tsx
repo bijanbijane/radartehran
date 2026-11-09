@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ShieldCheck, Scale, AlertTriangle, Sliders, Eye, FileWarning, Cpu, Brain } from 'lucide-react';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import type { IntlCurrencyCode } from '../../utils/areaUnit';
 import {
   buildNeighborhoodEpistemicDossier,
@@ -14,6 +14,7 @@ export interface EpistemicProvenancePanelProps {
   hoodName: string;
   cityKey: string;
   basePriceSqm: number;
+  hood?: Neighborhood;
   intlCurrency?: IntlCurrencyCode;
 }
 
@@ -43,15 +44,15 @@ const EPISTEMIC_CLASS_LABEL: Record<EpistemicStatementClass, string> = {
 };
 
 export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> = ({
-  hoodId, hoodName, cityKey, basePriceSqm, intlCurrency = 'USD',
+  hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency = 'USD',
 }) => {
   const [filterMode, setFilterMode] = useState<'ALL' | 'EVIDENCE_AND_FACT' | 'INFERENCE_AND_MODEL' | 'UNCERTAINTY_AND_CONFLICT'>('ALL');
   const [buyerDiscountPct, setBuyerDiscountPct] = useState<number>(8);
   const [unitAreaSqm, setUnitAreaSqm] = useState<number>(85);
 
   const dossier = useMemo(
-    () => buildNeighborhoodEpistemicDossier({ cityId: cityKey, hoodId, hoodName, buyPerSqm: basePriceSqm, intlCurrency }),
-    [hoodId, hoodName, cityKey, basePriceSqm, intlCurrency]
+    () => buildNeighborhoodEpistemicDossier({ cityId: cityKey, hoodId, hoodName, buyPerSqm: basePriceSqm, rahn80m: hood?.rahn80m, intlCurrency }),
+    [hoodId, hoodName, cityKey, basePriceSqm, hood?.rahn80m, intlCurrency]
   );
 
   const counterfactual = useMemo(
@@ -143,7 +144,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
             <div key={b.biasId} className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
               <div className="flex items-center justify-between gap-1">
                 <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100">{b.titleFa}</span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${b.severity === 'HIGH' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'}`}>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${b.severity === 'HIGH' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300' : b.severity === 'MODERATE' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'}`}>
                   ریسک {toPersianNum(b.riskScore)}٪
                 </span>
               </div>

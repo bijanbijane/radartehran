@@ -1,14 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Compass,
   PieChart,
-  TrendingUp,
   AlertTriangle,
-  UserCheck,
-  Building,
-  Coins,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  TrendingUp,
 } from 'lucide-react';
 import {
   generateCasperHousingCycleReport,
@@ -41,7 +37,6 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
   const cycle = report.cycle;
   const rahnFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(report.rahn80m, intlCurrency, 'fa')})` : '';
 
-  // Cycle phase badge styling
   const phaseColors: Record<HousingCycleRegimeId, { bg: string; text: string; border: string }> = {
     ACCUMULATION_RECOVERY: {
       bg: 'bg-emerald-50 dark:bg-emerald-950/40',
@@ -77,13 +72,13 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <span>رادار فازهای ادواری مسکن و فرسایش حباب (Housing Cycle Radar)</span>
+              <span>رادار فازهای ادواری مسکن، شتاب حقیقی و فرسایش حباب</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 font-normal">
                 {report.hoodName}
               </span>
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              تشخیص موقعیت زمانی محله در چرخه ۴ فازی اقتصاد مسکن، ریسک اشباع و ماتریس اقدام هوشمند
+              تفکیک رشد اسمی از رشد حقیقی (تعدیل‌شده با تورم CPI) و لنگر پویا نسبت قیمت به اجاره
             </p>
           </div>
         </div>
@@ -92,6 +87,31 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
         <div className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border font-bold ${currentPhaseStyle.bg} ${currentPhaseStyle.text} ${currentPhaseStyle.border}`}>
           <CheckCircle2 className="w-3.5 h-3.5" />
           <span>{cycle.regimeNameFa}</span>
+        </div>
+      </div>
+
+      {/* Stagflationary Money-Illusion Diagnostic Banner */}
+      <div
+        data-testid="stage2-stagflation-illusion-banner"
+        className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs ${
+          cycle.isStagflationaryIllusion
+            ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200'
+            : 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
+        }`}
+      >
+        {cycle.isStagflationaryIllusion ? (
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        ) : (
+          <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        )}
+        <div className="space-y-0.5 leading-relaxed">
+          <div className="font-extrabold">
+            شتاب ۶ماهه اسمی: +{toPersianNum(cycle.historicalMomentum6mPct)}٪ • شتاب ۶ماهه حقیقی (پس از کسر تورم):{' '}
+            <span className={cycle.realMomentum6mPct >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-400'}>
+              {cycle.realMomentum6mPct >= 0 ? '+' : ''}{toPersianNum(cycle.realMomentum6mPct)}٪
+            </span>
+          </div>
+          <p className="text-[11px] opacity-90">{toPersianNum(cycle.stagflationWarningFa)}</p>
         </div>
       </div>
 
@@ -140,7 +160,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">
             {toPersianNum(cycle.priceToRentRatio)} سال
           </div>
-          <div className="text-[9px] text-slate-400">محدوده تعادل: ۱۸ تا ۲۲ سال{rahnFx}</div>
+          <div className="text-[9px] text-slate-400">لنگر تعادلی محله: {toPersianNum(cycle.dynamicEquilibriumPR)} سال{rahnFx}</div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
@@ -157,39 +177,24 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
           <span className="font-bold text-slate-700 dark:text-slate-200">راهبرد اختصاصی بر مبنای نقش شما:</span>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setSelectedPersona('buyer')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-                selectedPersona === 'buyer'
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              خریدار خانه‌اولی
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedPersona('upgrader')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-                selectedPersona === 'upgrader'
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              ارتقادهنده ملک
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedPersona('investor')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-                selectedPersona === 'investor'
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              سرمایه‌گذار
-            </button>
+            {[
+              { id: 'buyer' as const, label: 'خریدار خانه‌اولی' },
+              { id: 'upgrader' as const, label: 'ارتقادهنده ملک' },
+              { id: 'investor' as const, label: 'سرمایه‌گذار' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSelectedPersona(p.id)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                  selectedPersona === p.id
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
         </div>
 

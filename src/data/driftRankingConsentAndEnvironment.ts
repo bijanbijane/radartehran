@@ -102,12 +102,14 @@ export function rankNeighborhoodRecommendationsDeterministically(
   const activeCurrency = options?.intlCurrency ?? getStoredIntlCurrency();
   const displayAreaUnitLabel = formatAreaUnitLabel(activeUnit);
   const seenIds = new Set<number>();
-  const eligible = candidates.filter((c) => {
+  const cityFiltered = candidates.filter((c) => {
     if (seenIds.has(c.id)) return false;
     seenIds.add(c.id);
     if (c.cityKey && c.cityKey !== prefs.cityKey) return false;
-    return c.buyPerSqm <= prefs.maxBudgetPerSqmMillion * 1.15;
+    return true;
   });
+  const strictEligible = cityFiltered.filter((c) => c.buyPerSqm <= prefs.maxBudgetPerSqmMillion * 1.15);
+  const eligible = strictEligible.length > 0 ? strictEligible : [...cityFiltered].sort((a, b) => a.buyPerSqm - b.buyPerSqm).slice(0, 3);
 
   return eligible
     .map((c) => {

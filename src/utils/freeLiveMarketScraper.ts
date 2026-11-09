@@ -50,7 +50,7 @@ export function validateUpstreamDivarWidgetItem(
   const normCombined = toLatinDigits(`${title} ${desc}`);
   const normDesc = toLatinDigits(desc).replace(/[,٬،\u066C\u060C]/g, '');
   const sqmMatch = normCombined.match(/(\d{2,3})\s*متر/);
-  const totalMatch = normDesc.match(/(\d{9,13})\s*تومان/);
+  const totalMatch = normDesc.match(/(\d{9,15})\s*تومان/);
   if (!sqmMatch || !totalMatch) return null;
 
   const sqm = Number(sqmMatch[1]);

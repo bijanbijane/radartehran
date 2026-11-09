@@ -233,6 +233,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}
         onOpenExpansionModal={(t) => ui.setExpansionModalType(t)} onOpenReverseBudget={() => p.setShowReverseBudgetModal(true)}
         onOpenCompare={() => ui.setShowCompareModal(true)} featureFlags={p.featureFlags}
+        activeCity={p.activeCity}
       />
     );
   } else if (primaryView === 'userspace') {

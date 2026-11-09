@@ -11,7 +11,7 @@ import type { ExpansionModalType } from '../ExpansionModulesModal';
 import type { SuperModuleTabId } from '../FutureSuperModulesModal';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
 
@@ -26,6 +26,7 @@ export interface ProductToolsViewProps {
   onOpenReverseBudget: () => void;
   onOpenCompare: () => void;
   featureFlags: FeatureFlags;
+  activeCity?: string;
 }
 
 export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
@@ -35,15 +36,19 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
   const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false);
   const [activeDecisionTab, setActiveDecisionTab] = useState<Stage2ActiveTab>('DECISION_SYNTHESIS');
+  const labContainerRef = React.useRef<HTMLDivElement>(null);
 
   const openDecisionTool = (tabId: Stage2ActiveTab) => {
     setActiveDecisionTab(tabId);
     setShowEmbeddedLab(true);
+    setTimeout(() => {
+      labContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   const unitBuy = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit);
   const unitDeal = convertPricePerSqmToUnit(
-    aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, []).estimatedDealPricePerSqm,
+    aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, buildNeighborhoodListingSamples(p.selectedHood)).estimatedDealPricePerSqm,
     areaUnit
   );
   const dealFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)})` : '';
@@ -178,7 +183,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       </div>
 
       {showEmbeddedLab && (
-        <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3">
+        <div ref={labContainerRef} className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3 scroll-mt-20">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
               <Compass className="w-4 h-4 text-indigo-600" />
@@ -195,6 +200,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           <Stage2MasterWidget
             hoodId={p.selectedHood.id}
             hoodName={p.selectedHood.name}
+            cityId={p.activeCity || 'tehran'}
             basePriceSqm={p.selectedHood.buyPerSqm}
             intlCurrency={intlCurrency}
             hood={p.selectedHood}

@@ -15,10 +15,33 @@ export type PropertyCategory =
   | 'commercial'
   | 'office'
   | 'industrial'
+  | 'land'
   | 'land_development'
   | 'agricultural'
   | 'mixed_use'
   | 'entire_building';
+
+export type LandZoningCategory = 'residential' | 'commercial' | 'mixed' | 'agricultural';
+
+export interface RentalConversionAnalysis {
+  originalDepositMillion: number;
+  originalMonthlyRentMillion: number;
+  currency: CurrencyUnit;
+  conversionConvention: string;
+  monthlyConversionRatePercent: number;
+  equivalentFullRahnMillion: number;
+  equivalentFullMonthlyRentMillion: number;
+  calculationVersion: string;
+  calculatedAtIso: string;
+}
+
+export interface ValuationFactorAdjustment {
+  factorId: string;
+  factorLabelFa: string;
+  impactPercent: number;
+  impactAmountMillion: number;
+  descriptionFa: string;
+}
 
 export type ValuationTransactionType = 'sale' | 'rent';
 
@@ -43,6 +66,7 @@ export type ValuationConfidenceLevel = 'high' | 'medium' | 'low' | 'insufficient
 export type ValuationMethodology =
   | 'hedonic_regression'
   | 'comparable_sales_blend'
+  | 'land_residual'
   | 'neighborhood_baseline_fallback'
   | 'insufficient_evidence';
 
@@ -75,11 +99,16 @@ export interface PropertyValuationInput {
   listingId?: string;
   buildingId?: string;
   propertyCategory: PropertyCategory;
-  transactionType: ValuationTransactionType;
+  transactionType?: ValuationTransactionType;
   purpose?: ValuationPurpose;
   sqm: number;
   usableAreaSqm?: number;
   landAreaSqm?: number;
+  landZoning?: LandZoningCategory;
+  isCornerPlot?: boolean;
+  frontageMeters?: number;
+  densityPermitPercent?: number;
+  rentalDepositMillion?: number;
   buildYear?: number;
   floor?: number;
   totalFloors?: number;
@@ -124,6 +153,7 @@ export interface HedonicFactorAdjustment {
   factorId: string;
   labelFa: string;
   weightPct: number;
+  impactPercent: number;
   impactMillionPerSqm: number;
   direction: 'positive' | 'negative' | 'neutral';
   capped?: boolean;
@@ -132,6 +162,7 @@ export interface HedonicFactorAdjustment {
 export interface ComparablePropertyCandidate {
   listingId: string;
   sourceType?: MarketEvidenceSourceType;
+  evidenceType?: 'confirmed_transaction' | 'asking_listing';
   sqm: number;
   pricePerSqmMillion: number;
   totalPriceMillion: number;
@@ -204,6 +235,11 @@ export interface PropertyValuationResult {
   temporalTrendPct?: number;
   adjustments: HedonicFactorAdjustment[];
   comparables: ComparablePropertyCandidate[];
+  dataQuality: {
+    evidenceCount: number;
+    confirmedTransactionCount: number;
+    askingPriceCount: number;
+  };
   confidenceLevel: ValuationConfidenceLevel;
   confidenceScore: number;
   methodology: ValuationMethodology;
@@ -384,6 +420,7 @@ export interface ValuationDataConsumerAdapter {
   getNeighborhoodBenchmark(params: { cityId: string; hoodId: number }): Promise<{
     basePricePerSqmMillion: number;
     baseRahn80mMillion: number;
+    baseLandPricePerSqmMillion?: number;
     hoodName: string;
     zone: string;
     lastUpdatedIso: string;
@@ -403,6 +440,8 @@ export interface ValuationDataConsumerAdapter {
     hoodId: number;
     distanceMeters?: number;
     sourceType?: MarketEvidenceSourceType;
+    evidenceType?: 'confirmed_transaction' | 'asking_listing';
+    approvedAtIso?: string;
     observedAtIso?: string;
     isVerifiedTransaction?: boolean;
   }>>;

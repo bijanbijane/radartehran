@@ -25,6 +25,7 @@ export function createDefaultModelConfiguration(nowIso = new Date().toISOString(
       commercial: 1.85,
       office: 1.25,
       industrial: 0.65,
+      land: 1.0,
       land_development: 0.92,
       agricultural: 0.25,
       mixed_use: 1.35,
@@ -284,6 +285,8 @@ export function selectAndScoreComparables(params: {
     distanceMeters?: number;
     coordinates?: { lat: number; lng: number };
     sourceType?: MarketEvidenceSourceType;
+    evidenceType?: 'confirmed_transaction' | 'asking_listing';
+    approvedAtIso?: string;
     observedAtIso?: string;
     isVerifiedTransaction?: boolean;
     outlierFlag?: boolean;
@@ -317,8 +320,9 @@ export function selectAndScoreComparables(params: {
       c.distanceMeters ??
       (input.coordinates && c.coordinates ? calculateHaversineMeters(input.coordinates, c.coordinates) : undefined);
 
-    const obsDaysOld = c.observedAtIso
-      ? Math.max(0, (Date.parse(valuationDateIso) - Date.parse(c.observedAtIso)) / (1000 * 60 * 60 * 24))
+    const effectiveObsIso = c.observedAtIso ?? c.approvedAtIso;
+    const obsDaysOld = effectiveObsIso
+      ? Math.max(0, (Date.parse(valuationDateIso) - Date.parse(effectiveObsIso)) / (1000 * 60 * 60 * 24))
       : 15;
 
     let included = true;
@@ -349,6 +353,14 @@ export function selectAndScoreComparables(params: {
       exclusionReason = 'قدمت بیش از حد مشاهده بازار';
     }
 
+    const isVerified = Boolean(
+      c.isVerifiedTransaction ||
+      c.sourceType === 'VERIFIED_COMPLETED_TRANSACTION' ||
+      c.evidenceType === 'confirmed_transaction',
+    );
+    const evidenceType: 'confirmed_transaction' | 'asking_listing' =
+      c.evidenceType ?? (isVerified ? 'confirmed_transaction' : 'asking_listing');
+
     const sizeScore = Math.max(0, 100 - sizeDiffRatio * 110);
     const ageDiff = input.buildYear && c.buildYear ? Math.abs(input.buildYear - c.buildYear) : 3;
     const ageScore = Math.max(0, 100 - ageDiff * 4.5);
@@ -357,7 +369,7 @@ export function selectAndScoreComparables(params: {
         ? Math.max(0, 100 - (distanceMeters / Math.max(1, config.maxComparableDistanceMeters)) * 60)
         : 85;
     const recencyScore = Math.max(40, 100 - (obsDaysOld / Math.max(1, config.maxComparableAgeDays)) * 50);
-    const reliabilityBonus = c.isVerifiedTransaction || c.sourceType === 'VERIFIED_COMPLETED_TRANSACTION' ? 8 : 0;
+    const reliabilityBonus = isVerified ? 8 : 0;
 
     const similarityScore = Math.min(
       100,
@@ -365,7 +377,7 @@ export function selectAndScoreComparables(params: {
     );
 
     const temporalAdjPct = computeTemporalAdjustmentPct(
-      c.observedAtIso,
+      effectiveObsIso,
       valuationDateIso,
       config.monthlyInflationTrendPct,
     );
@@ -373,7 +385,8 @@ export function selectAndScoreComparables(params: {
 
     return {
       listingId: c.id,
-      sourceType: c.sourceType ?? 'ACTIVE_PUBLISHED_LISTING',
+      sourceType: c.sourceType ?? (isVerified ? 'VERIFIED_COMPLETED_TRANSACTION' : 'ACTIVE_PUBLISHED_LISTING'),
+      evidenceType,
       sqm: c.sqm,
       pricePerSqmMillion: Number(psm.toFixed(2)),
       totalPriceMillion: Number(c.priceNumericMillion.toFixed(1)),
@@ -382,10 +395,10 @@ export function selectAndScoreComparables(params: {
       similarityScore,
       included,
       exclusionReason,
-      observedAtIso: c.observedAtIso,
+      observedAtIso: effectiveObsIso,
       temporalAdjustmentPct: temporalAdjPct,
       adjustedPricePerSqmMillion: adjustedPsm,
-      isVerifiedTransaction: Boolean(c.isVerifiedTransaction || c.sourceType === 'VERIFIED_COMPLETED_TRANSACTION'),
+      isVerifiedTransaction: isVerified,
     };
   });
 

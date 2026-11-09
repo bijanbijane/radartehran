@@ -20,6 +20,10 @@ import {
   normalizePriceByCityIndex,
   type RawPriceObservation,
 } from '../src/cells/valuation-authority/robustValuationEngine';
+import {
+  DEFAULT_CASPER_DECISION_WEIGHTS,
+  evaluateCasperNeighborhoodDecision,
+} from '../src/cells/socioeconomic-intelligence/casperDecisionEngine';
 
 console.log('📊 Running Stage 2.2 — MAD Valuation & Socioeconomic Rollup Tests...\n');
 
@@ -202,6 +206,70 @@ async function runTests(): Promise<void> {
     }
     passed++;
     console.log('  ✅ 3. Full k>=15 socioeconomic rollup, displacement matrix, affordability stress, citation code, and Hedonic seal verified');
+  }
+
+  // Test 4: CASPER Epistemic Data Layer Separation, Cognitive Bias Guardrails & MCDA Sensitivity
+  {
+    const undervaluedEval = evaluateCasperNeighborhoodDecision(
+      {
+        hoodId: 8,
+        hoodName: 'پونک',
+        askingPricePerSqm: 146,
+        estimatedDealPricePerSqm: 138,
+        iqrLowPerSqm: 131,
+        iqrHighPerSqm: 147,
+        validSampleCount: 28,
+        rejectedFraudCount: 3,
+        confidenceScore: 91,
+        marketStatus: 'undervalued',
+        marketRegime: 'BALANCED',
+        overallScore: 8.4,
+        transitScore: 8.6,
+        safetyScore: 8.2,
+        rahn80m: 1650,
+        intlCurrency: 'USD',
+      },
+      DEFAULT_CASPER_DECISION_WEIGHTS,
+    );
+
+    assert.equal(undervaluedEval.epistemicLayers.length, 4, 'Must decompose into 4 explicit epistemic layers');
+    assert.equal(undervaluedEval.epistemicLayers[0].status, 'VERIFIED_OBSERVATION');
+    assert.equal(undervaluedEval.epistemicLayers[1].status, 'UNVERIFIED_CLAIM');
+    assert.equal(undervaluedEval.epistemicLayers[2].status, 'MODEL_INFERENCE');
+    assert.equal(undervaluedEval.epistemicLayers[3].status, 'FIELD_VERIFICATION_REQUIRED');
+    assert.equal(undervaluedEval.decisionVerdict, 'OPTIMAL_BUY');
+    assert.ok(undervaluedEval.riskAdjustedUtilityScore >= 76);
+
+    const bubbleEval = evaluateCasperNeighborhoodDecision(
+      {
+        hoodId: 1,
+        hoodName: 'فرمانیه',
+        askingPricePerSqm: 340,
+        estimatedDealPricePerSqm: 295,
+        iqrLowPerSqm: 265,
+        iqrHighPerSqm: 350,
+        validSampleCount: 9,
+        rejectedFraudCount: 5,
+        confidenceScore: 68,
+        marketStatus: 'bubble',
+        marketRegime: 'HOT',
+        overallScore: 7.5,
+        transitScore: 6.2,
+        safetyScore: 8.0,
+        rahn80m: 3200,
+        intlCurrency: 'USD',
+      },
+      { priceWeight: 60, commuteWeight: 10, environmentWeight: 10, liquidityWeight: 10, safetyWeight: 10 },
+    );
+
+    assert.equal(bubbleEval.epistemicLayers[0].status, 'LOW_SAMPLE_CAUTION');
+    assert.ok(bubbleEval.anchoringPremiumPct >= 14);
+    assert.ok(bubbleEval.overpaymentRisk80mMillion >= 3500);
+    assert.equal(bubbleEval.biasAlerts.find((b) => b.id === 'anchoring')?.severity, 'HIGH');
+    assert.equal(bubbleEval.biasAlerts.find((b) => b.id === 'fomo')?.severity, 'HIGH');
+    assert.notEqual(bubbleEval.decisionVerdict, 'OPTIMAL_BUY');
+    passed++;
+    console.log('  ✅ 4. CASPER 4-layer epistemic separation, cognitive bias alerts, and MCDA counterfactual sensitivity verified');
   }
 
   console.log(`\n🎉 ALL ${passed} STAGE 2.2 VALUATION & SOCIOECONOMIC TESTS PASSED!\n`);

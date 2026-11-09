@@ -149,7 +149,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                     const point = payload[0]?.payload as TwelveMonthBuyRentPoint | undefined;
                     const buyVal = Number(point?.buyPerSqm ?? payload.find((p) => p.dataKey === 'buyPerSqm')?.value) || 0;
                     const uBuyVal = convertPricePerSqmToUnit(buyVal, areaUnit);
-                    const uDealPoint = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, buyVal, []).estimatedDealPricePerSqm, areaUnit);
+                    const uDealPoint = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, buyVal, buildNeighborhoodListingSamples({ ...selectedHood, buyPerSqm: buyVal })).estimatedDealPricePerSqm, areaUnit);
                     const total80Buy = Math.round(buyVal * 80);
                     const rahnVal = Number(point?.rahn80m ?? payload.find((p) => p.dataKey === 'rahn80m')?.value) || 0;
                     const rentMonthlyVal = Number(point?.monthlyRentEquiv) || Math.round(rahnVal * 0.03 * 10) / 10;

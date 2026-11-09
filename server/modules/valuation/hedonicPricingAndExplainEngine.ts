@@ -12,6 +12,7 @@ import type {
 } from './types';
 import { computeMissingImportantInputs, computeReproducibleInputHash } from './validation';
 import { computeMedian, computeTemporalAdjustmentPct } from './evidenceAndComparableEngine';
+import { calculateLandValuationAdjustments } from './rentalAndLandEngine';
 
 const CURRENT_JALALI_YEAR = 1405;
 const FAST_SALE_FACTOR = 0.945;
@@ -45,10 +46,22 @@ export function computeHedonicValuationCore(params: {
   } = params;
 
   const valuationDateIso = input.valuationDateIso ?? nowIso;
+  const transactionType = input.transactionType ?? 'sale';
   const purpose =
-    input.purpose ?? (input.transactionType === 'rent' ? 'estimated_rental_value' : 'estimated_market_value');
+    input.purpose ?? (transactionType === 'rent' ? 'estimated_rental_value' : 'estimated_market_value');
 
   const rawAdjustments: Array<{ factorId: string; labelFa: string; weightPct: number }> = [];
+
+  if (input.propertyCategory === 'land') {
+    const landAdj = calculateLandValuationAdjustments(input, basePricePerSqmMillion);
+    for (const item of landAdj.adjustments) {
+      rawAdjustments.push({
+        factorId: item.factorId,
+        labelFa: item.factorLabelFa,
+        weightPct: item.impactPercent,
+      });
+    }
+  }
 
   // 1. Property Category Adjustment
   const catMult = config.categoryMultipliers[input.propertyCategory] ?? 1.0;
@@ -79,6 +92,7 @@ export function computeHedonicValuationCore(params: {
   // 2. Building Age Adjustment (except pure land/agricultural)
   if (
     input.buildYear !== undefined &&
+    input.propertyCategory !== 'land' &&
     input.propertyCategory !== 'land_development' &&
     input.propertyCategory !== 'agricultural'
   ) {
@@ -255,7 +269,7 @@ export function computeHedonicValuationCore(params: {
   }
 
   // Rental-specific adjustments
-  if (input.transactionType === 'rent') {
+  if (transactionType === 'rent') {
     if (input.furnishedStatus === 'furnished') {
       rawAdjustments.push({
         factorId: 'rental_furnished',
@@ -293,15 +307,17 @@ export function computeHedonicValuationCore(params: {
 
   for (const r of rawAdjustments) {
     rawTotalPct += r.weightPct;
-    const isCategoryFactor = r.factorId.startsWith('category_');
-    const maxCap = isCategoryFactor ? 120.0 : config.maxSingleFactorContributionPct;
+    const isCategoryOrLandFactor = r.factorId.startsWith('category_') || input.propertyCategory === 'land';
+    const maxCap = isCategoryOrLandFactor ? 120.0 : config.maxSingleFactorContributionPct;
     const cappedWeightPct = Math.max(-maxCap, Math.min(maxCap, r.weightPct));
     const capped = Math.abs(cappedWeightPct - r.weightPct) > 0.01;
     const impact = Number(((basePricePerSqmMillion * cappedWeightPct) / 100).toFixed(2));
+    const normPct = Number(cappedWeightPct.toFixed(2));
     adjustments.push({
       factorId: r.factorId,
       labelFa: r.labelFa,
-      weightPct: Number(cappedWeightPct.toFixed(2)),
+      weightPct: normPct,
+      impactPercent: normPct,
       impactMillionPerSqm: impact,
       direction: cappedWeightPct > 0 ? 'positive' : cappedWeightPct < 0 ? 'negative' : 'neutral',
       capped: capped || undefined,
@@ -417,9 +433,11 @@ export function computeHedonicValuationCore(params: {
   }
 
   const methodology: ValuationMethodology =
-    geographicFallbackLevel === 'district' || geographicFallbackLevel === 'city'
-      ? 'neighborhood_baseline_fallback'
-      : 'hedonic_regression';
+    input.propertyCategory === 'land'
+      ? 'land_residual'
+      : geographicFallbackLevel === 'district' || geographicFallbackLevel === 'city'
+        ? 'neighborhood_baseline_fallback'
+        : 'hedonic_regression';
 
   const positiveDriversFa = adjustments
     .filter((a) => a.direction === 'positive')
@@ -433,6 +451,11 @@ export function computeHedonicValuationCore(params: {
     `${adjustments.length} ضریب هدونیک ویژگی‌های ملک و ${includedComparables.length} نمونه مشابه تاییدشده انجام شد.`;
 
   const compPsms = includedComparables.map((c) => c.pricePerSqmMillion);
+  const confirmedTransactionCount = comparables.filter(
+    (c) => c.isVerifiedTransaction || c.evidenceType === 'confirmed_transaction',
+  ).length;
+  const askingPriceCount = comparables.length - confirmedTransactionCount;
+
   const explanation: PublicValuationExplanation = {
     summaryExplanationFa,
     neighborhoodBaselinePricePerSqmMillion: basePricePerSqmMillion,
@@ -481,7 +504,7 @@ export function computeHedonicValuationCore(params: {
     hoodId: input.hoodId,
     hoodName,
     propertyCategory: input.propertyCategory,
-    transactionType: input.transactionType,
+    transactionType,
     purpose,
     sqm: input.sqm,
     basePricePerSqmMillion,
@@ -492,7 +515,7 @@ export function computeHedonicValuationCore(params: {
     askingPriceLowMillion,
     askingPriceHighMillion,
     fastSaleTotalMillion:
-      input.transactionType === 'sale'
+      transactionType === 'sale'
         ? Number((estimatedTotalMillion * FAST_SALE_FACTOR).toFixed(1))
         : undefined,
     estimatedDepositMillion,
@@ -504,6 +527,11 @@ export function computeHedonicValuationCore(params: {
     temporalTrendPct,
     adjustments,
     comparables,
+    dataQuality: {
+      evidenceCount: comparables.length,
+      confirmedTransactionCount,
+      askingPriceCount,
+    },
     confidenceLevel,
     confidenceScore,
     methodology,

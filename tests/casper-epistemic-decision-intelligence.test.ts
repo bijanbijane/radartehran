@@ -10,6 +10,7 @@ import {
   evaluateCounterfactualDecisionScenario,
 } from '../src/cells/decision-epistemology/epistemicDecisionEngine';
 import {
+  computeNeighborhoodUtilityScore,
   computeSavageMinimaxRegretMatrix,
   findParetoDominantNeighborhoods,
 } from '../src/cells/decision-epistemology/paretoRegretEngine';
@@ -624,4 +625,206 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       `Price-to-Annual-Rent ratio must be 14x-32x annual rent equivalent, got: ${cycleReport.cycle.priceToRentRatio}`
     );
   });
+
+  it('17. verifies non-zero empirical listing dispersion, 3-stage DealExecutionPlaybook, Isochrone arbitrage substitute, and mathematical edge-case safety', () => {
+    const sampleHood = INITIAL_NEIGHBORHOODS[0];
+
+    // 1. Epistemic dossier must never report 0 IQR low or 0 valid samples
+    const epDossier = buildNeighborhoodEpistemicDossier({
+      cityId: 'tehran',
+      hoodId: sampleHood.id,
+      hoodName: sampleHood.name,
+      buyPerSqm: sampleHood.buyPerSqm,
+      rahn80m: sampleHood.rahn80m,
+    });
+    assert.ok(epDossier.iqrLowPerSqm > 0, 'iqrLowPerSqm must be strictly positive');
+    assert.ok(epDossier.iqrHighPerSqm > epDossier.iqrLowPerSqm, 'iqrHighPerSqm must exceed iqrLowPerSqm');
+    assert.ok(!epDossier.provenanceLayers[0].currentValueSummaryFa.includes('۰ نمونه'), 'Observed layer must not report 0 samples');
+
+    // 2. Spatial contagion Akerlof Lemon index must have non-zero empirical dispersion
+    const contagion = buildNeighborhoodSpatialContagionReport(sampleHood.id, sampleHood.name, 'tehran', sampleHood.buyPerSqm);
+    assert.ok(contagion.akerlofLemon.priceDispersionRatioPct > 0, 'Akerlof price dispersion ratio must be strictly positive');
+
+    // 3. Unified Decision Synthesis must generate a valid 3-stage DealExecutionPlaybook
+    const execReport = synthesizeExecutiveDecisionReport(sampleHood.id, sampleHood.name, 'tehran', 150, 160, 85);
+    assert.equal(
+      execReport.executionPlaybook.signingStagePct +
+        execReport.executionPlaybook.handoverStagePct +
+        execReport.executionPlaybook.deedStagePct,
+      100,
+    );
+    assert.equal(
+      execReport.executionPlaybook.signingStageMillion +
+        execReport.executionPlaybook.handoverStageMillion +
+        execReport.executionPlaybook.deedStageMillion,
+      Math.round(150 * 85),
+    );
+    assert.equal(execReport.executionPlaybook.protectiveClausesFa.length, 3);
+    assert.ok(execReport.executionPlaybook.copyableActionSheetFa.includes(sampleHood.name));
+
+    // 4. Urban Affordability must identify an optimal Isochrone spatial arbitrage substitute for expensive neighborhoods
+    const affordReport = generateCasperUrbanAffordabilityReport(sampleHood.id, sampleHood.name, 'tehran', sampleHood.buyPerSqm, 'hub-mirdamad', 45);
+    assert.ok(affordReport.optimalIsochroneSubstitute !== null, 'Expensive neighborhood must provide an optimal isochrone substitute');
+    assert.ok(affordReport.optimalIsochroneSubstitute!.monthlyTcohSavingsMillion > 0);
+    assert.ok(affordReport.optimalIsochroneSubstitute!.capitalFreed80mMillion > 0);
+
+    // 5. Merton Jump-Diffusion VaR must respond to basePriceSqm when annualVolSigma is not explicitly overridden
+    const lowTierSim = simulateMertonJumpDiffusionVaR(70, { horizonMonths: 12, trialCount: 250 }, 42);
+    const luxuryTierSim = simulateMertonJumpDiffusionVaR(260, { horizonMonths: 12, trialCount: 250 }, 42);
+    assert.notEqual(
+      lowTierSim.metrics.var95RealPct,
+      luxuryTierSim.metrics.var95RealPct,
+      'Merton default volatility sigma must reflect neighborhood price tier (basePriceSqm)',
+    );
+
+    // 6. Portfolio allocation must handle all-zero custom weights safely and sum normalized weights to 100%
+    const macroDossier = generateCasperMacroPortfolioDossier(sampleHood.id, sampleHood.name, 'tehran', sampleHood.buyPerSqm);
+    const zeroWeightEval = evaluatePortfolioAllocation(
+      { housingWeightPct: 0, goldWeightPct: 0, usdWeightPct: 0, fixedIncomeWeightPct: 0 },
+      macroDossier.assets,
+    );
+    assert.equal(
+      zeroWeightEval.weights.housingWeightPct +
+        zeroWeightEval.weights.goldWeightPct +
+        zeroWeightEval.weights.usdWeightPct +
+        zeroWeightEval.weights.fixedIncomeWeightPct,
+      100,
+    );
+    assert.ok(Number.isFinite(zeroWeightEval.sharpeRatio));
+
+    // 7. Rent vs Buy equivalence must scale rahn deposit proportionally with targetSqm (120m² vs 80m² = 1.5x)
+    const sim80 = simulateRentVsBuyEquivalence({ horizonYears: 5, buyerEquityMillion: 15000, pricePerSqm: 120, rahn80m: 1600, targetSqm: 80 });
+    const sim120 = simulateRentVsBuyEquivalence({ horizonYears: 5, buyerEquityMillion: 15000, pricePerSqm: 120, rahn80m: 1600, targetSqm: 120 });
+    assert.equal(
+      sim120.rentScenario.initialInvestedSurplusMillion,
+      Math.round(sim80.rentScenario.initialInvestedSurplusMillion * 1.5),
+      'Both purchase value and rahn deposit must scale proportionally with targetSqm (120/80 = 1.5x)',
+    );
+
+    // 8. Dixit-Pindyck real option hurdleRateMultiplier and hurdlePricePerSqm must scale monotonically with horizonMonths
+    const option3m = computeDixitPindyckRealOption(120, 0.04, 0.25, 0.22, 3);
+    const option24m = computeDixitPindyckRealOption(120, 0.04, 0.25, 0.22, 24);
+    assert.ok(
+      option24m.hurdleRateMultiplier > option3m.hurdleRateMultiplier,
+      `Finite-horizon Dixit-Pindyck hurdle multiplier must increase with horizon (24m=${option24m.hurdleRateMultiplier} vs 3m=${option3m.hurdleRateMultiplier})`,
+    );
+    assert.ok(option24m.hurdlePricePerSqm > option3m.hurdlePricePerSqm);
+    assert.ok(option24m.valueOfWaitingTomanMln > option3m.valueOfWaitingTomanMln);
+  });
+
+  it('18. challenges conventional PropTech assumptions with capital-conserving Rahn dynamics, Fisher real wealth, Non-Compensatory MAUT veto, Hurwicz α, Stagflation Illusion, and Illiquidity-Adjusted Real VaR', () => {
+    // 1. Capital-conserving Rahn lease renewal top-ups & Fisher CPI-deflated Year-0 real purchasing power
+    const sim5y = simulateRentVsBuyEquivalence({
+      horizonYears: 5,
+      buyerEquityMillion: 12000,
+      pricePerSqm: 140,
+      rahn80m: 1800,
+      targetSqm: 80,
+      alternativeReturnNominalPct: 44,
+      housingAppreciationNominalPct: 38,
+    });
+    assert.ok(sim5y.rentScenario.cumulativeRahnTopUpsMillion > 0, 'Must track cumulative annual Rahn lease-renewal top-ups');
+    assert.ok(sim5y.rentScenario.movingAndRenewalFrictionMillion > 0, 'Must deduct renewal & moving friction');
+    assert.ok(
+      sim5y.rentScenario.terminalLockedRahnMillion > sim5y.rentScenario.initialRahnOutlayMillion,
+      'Terminal locked Rahn deposit must reflect initial Rahn + cumulative top-ups',
+    );
+    assert.ok(
+      sim5y.buyScenario.realTerminalNetWealthMillion < sim5y.buyScenario.terminalNetWealthMillion,
+      'Fisher Year-0 real purchasing power must deflate nominal terminal wealth by cumulative CPI',
+    );
+    assert.ok(
+      sim5y.rentScenario.realTerminalNetWealthMillion < sim5y.rentScenario.terminalNetWealthMillion,
+      'Fisher Year-0 real purchasing power must deflate rent scenario nominal wealth by cumulative CPI',
+    );
+
+    // 2. Non-Compensatory Critical Veto in MAUT utility & Hurwicz Optimism-Pessimism (α) criterion
+    const balancedHoodScore = computeNeighborhoodUtilityScore({
+      overallScore: 7.0,
+      transit: 7.0,
+      air: 7.0,
+      traffic: 7.0,
+      walking: 7.0,
+    });
+    const bottleneckHoodScore = computeNeighborhoodUtilityScore({
+      overallScore: 7.0,
+      transit: 9.5,
+      air: 2.5, // Severe toxic air bottleneck (< 5.0)
+      traffic: 8.0,
+      walking: 8.0,
+    });
+    assert.ok(
+      bottleneckHoodScore < balancedHoodScore,
+      `Non-compensatory veto must penalize severe air bottleneck (${bottleneckHoodScore} vs ${balancedHoodScore})`,
+    );
+
+    const regretConservative = computeSavageMinimaxRegretMatrix({
+      cityId: 'tehran',
+      hoodId: 1,
+      basePriceSqm: 240,
+      targetSqm: 85,
+      optimismAlpha: 0.15,
+    });
+    const regretOptimistic = computeSavageMinimaxRegretMatrix({
+      cityId: 'tehran',
+      hoodId: 1,
+      basePriceSqm: 240,
+      targetSqm: 85,
+      optimismAlpha: 0.85,
+    });
+    assert.equal(regretConservative.optimismAlpha, 0.15);
+    assert.equal(regretOptimistic.optimismAlpha, 0.85);
+    assert.ok(
+      regretOptimistic.strategies[0].hurwiczScoreMillion > regretConservative.strategies[0].hurwiczScoreMillion,
+      'Hurwicz weighted wealth must increase with higher optimism alpha',
+    );
+
+    // 3. Stagflationary Money-Illusion detection in Housing Cycle Radar
+    const stagflationCycle = classifyHousingCycleRegime(150, 1800, 7, 11, 12); // +12% nominal 6m growth < +18% 6m CPI
+    assert.equal(stagflationCycle.isStagflationaryIllusion, true, '+12% nominal 6m growth under 18% 6m CPI is a stagflationary illusion');
+    assert.ok(stagflationCycle.realMomentum6mPct < 0, 'Real 6m momentum must be negative when nominal growth lags CPI');
+
+    const genuineBoomCycle = classifyHousingCycleRegime(150, 1800, 8.5, 11, 28); // +28% nominal 6m growth > +18% 6m CPI
+    assert.equal(genuineBoomCycle.isStagflationaryIllusion, false);
+    assert.ok(genuineBoomCycle.realMomentum6mPct > 0);
+    assert.ok(genuineBoomCycle.dynamicEquilibriumPR > stagflationCycle.dynamicEquilibriumPR);
+
+    // 4. Illiquidity-Adjusted Real VaR vs Paper VaR in Merton Jump-Diffusion
+    const mcSim = simulateMertonJumpDiffusionVaR(160, { horizonMonths: 12, trialCount: 500 }, 77);
+    assert.ok(
+      mcSim.metrics.illiquidityAdjustedVaR95RealPct > mcSim.metrics.var95RealPct,
+      `Illiquidity-adjusted Real VaR95 (${mcSim.metrics.illiquidityAdjustedVaR95RealPct}%) must exceed paper VaR95 (${mcSim.metrics.var95RealPct}%) due to emergency fast-sale haircut`,
+    );
+    assert.ok(mcSim.metrics.tailAsymmetryRatio >= 1.0);
+
+    // 5. Synthesis Report integration of Stagflation Illusion & Illiquidity Risk
+    const synthReport = synthesizeExecutiveDecisionReport(1, 'پونک', 'tehran', 120, 135);
+    assert.ok(typeof synthReport.isStagflationaryIllusion === 'boolean');
+    assert.ok(typeof synthReport.illiquidityAdjustedVaR95RealPct === 'number');
+    assert.ok(synthReport.illiquidityAdjustedVaR95RealPct > 0);
+  });
+
+  it('19. asserts multi-city socioeconomic rollup resilience and citation code generation across all 5 metropolitan cities', async () => {
+    const { getOrBuildNeighborhoodRollup: getRollup, buildOfficialCitationCode: getCode } = await import(
+      '../src/cells/socioeconomic-intelligence/socioeconomicRollupEngine'
+    );
+    const cities = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'] as const;
+
+    for (const city of cities) {
+      const rollup = await getRollup(1, city, '1405-08');
+      assert.ok(rollup, `Rollup for city ${city} must be successfully generated`);
+      assert.equal(rollup.cityId, city);
+      assert.ok(rollup.medianPriceSqm > 0, `Median price for ${city} must be positive`);
+      assert.ok(rollup.weightedReferencePriceSqm > 0, `Weighted reference price for ${city} must be positive`);
+      assert.ok(rollup.citationCode.startsWith('RADAR-REF-'), `Citation code for ${city} must start with RADAR-REF-`);
+      assert.ok(rollup.citationCode.includes(city.toUpperCase()), `Citation code must contain city name`);
+      assert.equal(typeof rollup.citationTextFa, 'string');
+      assert.ok(rollup.citationTextFa.length > 20);
+
+      const codeDirect = getCode(city, 1, '1405-08');
+      assert.equal(codeDirect, rollup.citationCode);
+    }
+  });
 });
+
+

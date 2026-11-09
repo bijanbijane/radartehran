@@ -2,11 +2,12 @@
  * @file monteCarloRiskDensityEngine.ts
  * @module cells/decision-epistemology
  * @description CASPER Monte Carlo Value-at-Risk (VaR), Merton Jump-Diffusion,
- * and Downside Tail Risk (Sortino/CVaR) Simulation Engine for Iranian Metropolitan Real Estate.
+ * Liquidity-Haircut Adjusted Real VaR, and Downside Tail Risk (Sortino/CVaR) Engine.
  */
 
 import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
 
 export interface MonteCarloSimulationConfig {
   horizonMonths: number;
@@ -30,9 +31,11 @@ export interface ValueAtRiskMetrics {
   realMedianReturnPct: number;
   var95NominalPct: number;
   var95RealPct: number;
+  illiquidityAdjustedVaR95RealPct: number; // Real VaR95 including emergency fast-sale haircut (12%)
   cvar95RealPct: number;
   probRealCapitalLossPct: number;
   maxSimulatedDrawdownPct: number;
+  tailAsymmetryRatio: number; // Ratio of CVaR95 to VaR95 measuring tail fatness
   sortinoRatio: number;
   sharpeRatio: number;
   riskVerdict: 'DEFENSIVE_HAVEN' | 'MODERATE_VOLATILITY' | 'HIGH_TAIL_RISK';
@@ -58,33 +61,36 @@ function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: stri
   return match ?? hoods[0] ?? INITIAL_NEIGHBORHOODS[0];
 }
 
+function nextUniform(seedRef: { value: number }): number {
+  seedRef.value = (seedRef.value * 1664525 + 1013904223) % 4294967296;
+  return Math.max(1e-7, Math.min(0.9999999, seedRef.value / 4294967296));
+}
+
 /**
  * Deterministic pseudo-random Gaussian generator (Box-Muller transform with seed).
  */
 function pseudoGaussian(seedRef: { value: number }): number {
-  // Linear congruential generator step
-  seedRef.value = (seedRef.value * 1664525 + 1013904223) % 4294967296;
-  const u1 = Math.max(1e-7, Math.min(0.9999999, seedRef.value / 4294967296));
-
-  seedRef.value = (seedRef.value * 1664525 + 1013904223) % 4294967296;
-  const u2 = Math.max(1e-7, Math.min(0.9999999, seedRef.value / 4294967296));
-
+  const u1 = nextUniform(seedRef);
+  const u2 = nextUniform(seedRef);
   return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
 }
 
 /**
- * Runs 1,000 Merton Jump-Diffusion simulation trials for the specified property.
+ * Runs 1,000 Merton Jump-Diffusion simulation trials for the specified property,
+ * challenging frictionless paper VaR by quantifying Illiquidity-Adjusted Real VaR.
  */
 export function simulateMertonJumpDiffusionVaR(
   basePriceSqm: number,
   config: Partial<MonteCarloSimulationConfig> = {},
   initialSeed: number = 42
 ): { metrics: ValueAtRiskMetrics; distributionBuckets: MonteCarloDistributionBucket[] } {
+  const safePrice = Math.max(40, Math.min(400, Number(basePriceSqm) || 120));
+  const defaultSigma = Number((0.18 + ((safePrice - 60) / 300) * 0.14).toFixed(3));
   const resolvedConfig: MonteCarloSimulationConfig = {
     horizonMonths: config.horizonMonths ?? 12,
     trialCount: Math.max(200, Math.min(2000, config.trialCount ?? 1000)),
     annualDriftMu: config.annualDriftMu ?? 0.38,
-    annualVolSigma: config.annualVolSigma ?? 0.24,
+    annualVolSigma: config.annualVolSigma ?? defaultSigma,
     annualInflationRate: config.annualInflationRate ?? 0.42,
     jumpIntensityLambda: config.jumpIntensityLambda ?? 0.45,
     jumpMeanSize: config.jumpMeanSize ?? 0.22,
@@ -92,7 +98,6 @@ export function simulateMertonJumpDiffusionVaR(
 
   const dt = resolvedConfig.horizonMonths / 12.0;
   const seedRef = { value: Math.abs(initialSeed) || 42 };
-
   const nominalReturns: number[] = [];
   const realReturns: number[] = [];
 
@@ -100,19 +105,16 @@ export function simulateMertonJumpDiffusionVaR(
   const sigma = resolvedConfig.annualVolSigma;
   const lambda = resolvedConfig.jumpIntensityLambda;
   const jumpMean = resolvedConfig.jumpMeanSize;
-  const inflation = resolvedConfig.annualInflationRate;
-
-  // Cumulative inflation over the horizon: (1 + inflation)^dt - 1
-  const cumulativeInflation = Math.pow(1 + inflation, dt) - 1;
+  const cumulativeInflation = Math.pow(1 + resolvedConfig.annualInflationRate, dt) - 1;
 
   for (let i = 0; i < resolvedConfig.trialCount; i++) {
     const z = pseudoGaussian(seedRef);
+    // Independent uniform draw for Poisson jump trigger (decoupled from Box-Muller u2)
+    const jumpUniform = nextUniform(seedRef);
+    const jumpOccurred = jumpUniform < Math.min(0.95, lambda * dt);
+    const jumpImpact = jumpOccurred ? Math.max(-0.18, jumpMean + pseudoGaussian(seedRef) * 0.10) : 0;
 
-    // Poisson jump occurrence proxy for currency devaluations
-    const jumpOccurred = (seedRef.value % 1000) / 1000 < (lambda * dt);
-    const jumpImpact = jumpOccurred ? Math.max(-0.1, jumpMean + pseudoGaussian(seedRef) * 0.08) : 0;
-
-    // Merton Jump-Diffusion log-return: (mu - 0.5 * sigma^2) * dt + sigma * sqrt(dt) * z + jumpImpact
+    // Merton Jump-Diffusion log-return
     const logReturn = (mu - 0.5 * sigma * sigma) * dt + sigma * Math.sqrt(dt) * z + jumpImpact;
     const nominalReturnPct = (Math.exp(logReturn) - 1) * 100;
     const realReturnPct = (((1 + nominalReturnPct / 100) / (1 + cumulativeInflation)) - 1) * 100;
@@ -121,7 +123,6 @@ export function simulateMertonJumpDiffusionVaR(
     realReturns.push(realReturnPct);
   }
 
-  // Sort ascending for VaR & percentile metrics
   nominalReturns.sort((a, b) => a - b);
   realReturns.sort((a, b) => a - b);
 
@@ -134,26 +135,26 @@ export function simulateMertonJumpDiffusionVaR(
   const var95NominalPct = Number((-nominalReturns[p05Idx]).toFixed(1));
   const var95RealPct = Number((-realReturns[p05Idx]).toFixed(1));
 
+  // Illiquidity-Adjusted Real VaR: incorporates FAST_SALE_FACTOR (12% emergency exit discount) + 2% closing friction
+  const p05RealFactor = Math.max(0.1, 1 + realReturns[p05Idx] / 100);
+  const illiquidExitRealFactor = p05RealFactor * FAST_SALE_FACTOR * 0.98;
+  const illiquidityAdjustedVaR95RealPct = Number(((1 - illiquidExitRealFactor) * 100).toFixed(1));
+
   // Conditional VaR (Expected Shortfall): average of the worst 5% trials
   const worst5Real = realReturns.slice(0, p05Idx + 1);
   const cvar95RealPct = Number((-(worst5Real.reduce((acc, v) => acc + v, 0) / worst5Real.length)).toFixed(1));
+  const tailAsymmetryRatio = Number((Math.abs(cvar95RealPct) / Math.max(1, Math.abs(var95RealPct))).toFixed(2));
 
-  // Probability of real capital loss (real return < 0)
   const lossTrials = realReturns.filter((r) => r < 0).length;
   const probRealCapitalLossPct = Number(((lossTrials / n) * 100).toFixed(1));
-
   const maxSimulatedDrawdownPct = Number((-nominalReturns[0]).toFixed(1));
 
-  // Risk-adjusted ratios (Risk-free real rate benchmark = 0%)
   const meanReal = realReturns.reduce((acc, v) => acc + v, 0) / n;
   const varianceReal = realReturns.reduce((acc, v) => acc + Math.pow(v - meanReal, 2), 0) / n;
   const stdReal = Math.sqrt(varianceReal);
   const sharpeRatio = Number((meanReal / Math.max(0.01, stdReal)).toFixed(2));
 
-  // Downside deviation (only negative real returns)
-  const downsideDev = Math.sqrt(
-    realReturns.reduce((acc, v) => acc + (v < 0 ? Math.pow(v, 2) : 0), 0) / n
-  );
+  const downsideDev = Math.sqrt(realReturns.reduce((acc, v) => acc + (v < 0 ? Math.pow(v, 2) : 0), 0) / n);
   const sortinoRatio = Number((meanReal / Math.max(0.01, downsideDev)).toFixed(2));
 
   let riskVerdict: ValueAtRiskMetrics['riskVerdict'] = 'MODERATE_VOLATILITY';
@@ -167,14 +168,13 @@ export function simulateMertonJumpDiffusionVaR(
   } else if (probRealCapitalLossPct >= 45 || var95RealPct >= 22) {
     riskVerdict = 'HIGH_TAIL_RISK';
     riskVerdictFa = 'ریسک دم‌بلند و کشش نزولی بالا (High Tail Risk)';
-    strategicAdviceFa = 'در سناریوهای رکود معاملاتی، احتمال افت قدرت خرید واقعی سرمایه تا مرز ۴۵٪ وجود دارد؛ حفظ پوزیشن نیازمند استراتژی خروج منعطف است.';
+    strategicAdviceFa = 'در سناریوهای رکود معاملاتی و خروج اضطراری (نرخ فروش فوری v6.4)، زیان حقیقی نقدشوندگی قابل‌توجه است؛ حفظ پوزیشن نیازمند افق بلندمدت است.';
   } else {
     riskVerdict = 'MODERATE_VOLATILITY';
     riskVerdictFa = 'نوسان‌پذیری متعادل با پوشش تورمی نسبی';
-    strategicAdviceFa = 'بازده انتظاری دارایی در بلندمدت با تورم عمومی همگام است، اما در افق کوتاه‌مدت ۱۲ ماهه نوسانات مقطعی نیازمند صبوری سرمایه‌گذار است.';
+    strategicAdviceFa = 'بازده انتظاری دارایی در بلندمدت با تورم عمومی همگام است، اما در افق کوتاه‌مدت ۱۲ ماهه شکاف بین VaR کاغذی و VaR نقدشوندگی نیازمند صبوری است.';
   }
 
-  // Generate 7 histogram density buckets
   const minNom = nominalReturns[0];
   const maxNom = nominalReturns[n - 1];
   const step = Math.max(0.01, (maxNom - minNom) / 7);
@@ -201,9 +201,11 @@ export function simulateMertonJumpDiffusionVaR(
       realMedianReturnPct: Number(medianReal.toFixed(1)),
       var95NominalPct,
       var95RealPct,
+      illiquidityAdjustedVaR95RealPct,
       cvar95RealPct,
       probRealCapitalLossPct,
       maxSimulatedDrawdownPct,
+      tailAsymmetryRatio,
       sortinoRatio,
       sharpeRatio,
       riskVerdict,
@@ -214,9 +216,6 @@ export function simulateMertonJumpDiffusionVaR(
   };
 }
 
-/**
- * Master generator for CASPER Monte Carlo Value-at-Risk Report.
- */
 export function generateCasperMonteCarloRiskReport(
   hoodId: number,
   hoodName?: string,
@@ -226,8 +225,6 @@ export function generateCasperMonteCarloRiskReport(
 ): CasperMonteCarloRiskReport {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
-
-  // Tailor drift and volatility to neighborhood price segment
   const annualVolSigma = resolvedPrice >= 170 ? 0.31 : resolvedPrice >= 100 ? 0.23 : 0.18;
   const annualDriftMu = resolvedPrice >= 170 ? 0.42 : resolvedPrice >= 100 ? 0.38 : 0.34;
 

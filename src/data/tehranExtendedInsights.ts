@@ -46,7 +46,7 @@ export const EXTENDED_HOOD_6M_GROWTH_MAP: Record<number, number> = {
     microHoods: [{ tier: 'luxury', label: 'فلکه‌های اصلی خزانه بخارایی', streets: 'فلکه اول و دوم خزانه بخارایی، نوسازهای بیست‌متری', priceMultiplier: 1.13 }, { tier: 'balanced', label: 'متعادل محله', streets: 'بیست‌متری جوادیه، دهقان، شوش غربی', priceMultiplier: 1.0 }, { tier: 'economic', label: 'اقتصادی‌تر', streets: 'باغ آذری و فرعی‌های قدیمی راه‌آهن', priceMultiplier: 0.85 }],
   },
   57: {
-    vibeTags: ['🚇 مترو زمزم و شهرک شریعتی', '💎 بورس آپارتمان‌های زیر ۵ میلیارد در تهران', '⚡ نقدشوندگی فوق‌العاده'], nightParkingScore: 4.6, winterSnowRisk: 'LOW',
+    vibeTags: ['🚇 مترو زمزم و شهرک شریعتی', '💎 بورس آپارتمان‌های زیر ۸ میلیارد در تهران', '⚡ نقدشوندگی فوق‌العاده'], nightParkingScore: 4.6, winterSnowRisk: 'LOW',
     hiddenTraps: ['گذرهای کم‌عرض در بافت قدیمی فلاح و ترافیک خیابان قزوین.'],
     futureCatalyst: 'نوسازی بافت فرسوده با بسته‌های تشویقی شهرداری منطقه ۱۷', futureGrowthScore: 8.7, metroLines: [3], nearestMetroStations: ['مترو زمزم (خط ۳)', 'مترو شهرک شریعتی (خط ۳)'],
     topSchools: ['دبیرستان نمونه دولتی منطقه ۱۷', 'دبیرستان ابوذر', 'هنرستان فنی مقدم'], monthlyChargeEstimateThousand: 550, costOfLivingLevel: 'اقتصادی و به‌صرفه',
@@ -165,7 +165,7 @@ export const EXTENDED_HOOD_6M_GROWTH_MAP: Record<number, number> = {
     microHoods: [{ tier: 'luxury', label: 'شهرک ابریشم و بلوار مصلی', streets: 'شهرک ابریشم، بلوار مصلی، خیابان عمارت، کاووسیه', priceMultiplier: 1.15 }, { tier: 'balanced', label: 'متعادل شهر قدس', streets: 'بلوار امام خمینی، میدان قدس، طالقانی، ۴۵ متری انقلاب', priceMultiplier: 1.0 }, { tier: 'economic', label: 'اقتصادی‌تر', streets: 'سرخهحصار و شهرک فرزان', priceMultiplier: 0.85 }],
   },
   74: {
-    vibeTags: ['💎 بورس آپارتمان‌های نقلی زیر ۳ میلیارد', '🌳 باغ‌ویلاهای خوش‌آب‌وهوای ملارد و لم‌آباد', '📈 بازدهی اجاره بالا'], nightParkingScore: 6.2, winterSnowRisk: 'LOW',
+    vibeTags: ['💎 بورس آپارتمان‌های نقلی زیر ۳.۵ میلیارد', '🌳 باغ‌ویلاهای خوش‌آب‌وهوای ملارد و لم‌آباد', '📈 بازدهی اجاره بالا'], nightParkingScore: 6.2, winterSnowRisk: 'LOW',
     hiddenTraps: ['وجود واحدهای قولنامه‌ای در سرآسیاب و مارلیک (حتماً کد رهگیری و تسویه شهرداری بررسی شود).'],
     futureCatalyst: 'توسعه خط مترو کرج-ملارد و ساماندهی اسناد ثبتی مارلیک و خوشنام', futureGrowthScore: 8.7, metroLines: [5], nearestMetroStations: ['مترو فردیس و کرج (خط ۵ - ۱۵ دقیقه)'],
     topSchools: ['دبیرستان نمونه دولتی مارلیک', 'مجتمع آموزشی ملارد', 'دبیرستان دکتر حسابی'], monthlyChargeEstimateThousand: 500, costOfLivingLevel: 'اقتصادی و به‌صرفه',

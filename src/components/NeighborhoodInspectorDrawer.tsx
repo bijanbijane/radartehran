@@ -233,6 +233,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                 basePriceSqm={selectedHood.buyPerSqm}
                 targetSqm={targetSqm}
                 intlCurrency={intlCurrency}
+                hood={selectedHood}
                 initialTab={activeTab === 'market' ? 'HOUSING_CYCLE' : (activeTab === 'vote' || activeTab === 'reviews') ? 'CROWD_CLAIMS' : 'DECISION_SYNTHESIS'}
                 onSelectCompareHood={(name) => {
                   const found = evaluatedNeighborhoods.find((h) => h.name === name) || allMultiCityHoods.find((h) => h.name === name);

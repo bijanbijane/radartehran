@@ -22,6 +22,7 @@ export interface SocioeconomicRollupView {
   epistemicConfidence: number;
   academicCitationTag: string;
   policySummary: string;
+  provenanceSource: 'LOCAL_BASELINE' | 'SERVER_K_ANONYMITY';
 }
 
 interface SocioeconomicReferenceCardProps {
@@ -44,15 +45,30 @@ function buildFallbackRollup(
   hoodId: number,
   hoodName: string,
   basePriceSqm: number,
-  cityKey: string
+  cityKey: string,
+  hood?: Neighborhood,
 ): SocioeconomicRollupView {
   const ask = Math.max(15, basePriceSqm || 100);
+  const cityConfig = MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
+  const allHoods = cityConfig?.neighborhoods || [];
+  const resolvedHood = hood ?? allHoods.find((h) => h.id === hoodId);
   const fair = Math.round(ask * 0.92 * 10) / 10;
   const years = Math.round(((fair * 85) / 264) * 10) / 10;
   const burden = Math.min(95, Math.max(18, Math.round((years / 22) * 100)));
+  const rahn80m = resolvedHood?.rahn80m ?? Math.round(ask * 9.5);
+  const annualRentEquiv = rahn80m * 0.03 * 12;
+  const rentBurden = Math.min(92, Math.max(22, Math.round((annualRentEquiv / 264) * 100)));
+  const overallScore =
+    resolvedHood && 'overallScore' in resolvedHood && typeof (resolvedHood as { overallScore?: number }).overallScore === 'number'
+      ? (resolvedHood as { overallScore: number }).overallScore
+      : resolvedHood
+        ? Math.round(((resolvedHood.metro + resolvedHood.security + resolvedHood.internet) / 3) * 10) / 10
+        : 7.5;
+  const transitScore = resolvedHood?.metro ?? 7.2;
+  const gentrificationScore = Math.min(94, Math.max(35, Math.round(overallScore * 5.8 + transitScore * 2.6)));
+  const liquidityScore = Math.min(95, Math.max(38, Math.round(92 - Math.max(0, ask - 110) * 0.16 + transitScore * 1.4)));
 
-  const cityConfig = MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
-  const peers = (cityConfig?.neighborhoods || []).filter((h) => h.id !== hoodId && h.buyPerSqm > 0);
+  const peers = allHoods.filter((h) => h.id !== hoodId && h.buyPerSqm > 0);
   const pricierPeers = peers.filter((h) => h.buyPerSqm > ask * 1.04).sort((a, b) => a.buyPerSqm - b.buyPerSqm);
   const affordablePeers = peers.filter((h) => h.buyPerSqm < ask * 0.96).sort((a, b) => b.buyPerSqm - a.buyPerSqm);
 
@@ -70,11 +86,11 @@ function buildFallbackRollup(
     estimatedFairDealMillionToman: fair,
     affordabilityPressureIndex: burden,
     yearsOfHouseholdSavingRequired: years,
-    rentToIncomeBurdenPct: Math.min(88, Math.round(burden * 0.78)),
-    gentrificationVelocityScore: 68,
-    liquidityTurnoverScore: 76,
+    rentToIncomeBurdenPct: rentBurden,
+    gentrificationVelocityScore: gentrificationScore,
+    liquidityTurnoverScore: liquidityScore,
     urbanfabricArchetype:
-      ask >= 180 ? 'AFFLUENT_CONSOLIDATED' : ask >= 120 ? 'UPWARD_TRANSITIONAL' : 'MIDDLE_CLASS_CORE',
+      ask >= 180 ? 'AFFLUENT_CONSOLIDATED' : ask >= 120 ? 'UPWARD_TRANSITIONAL' : ask >= 75 ? 'MIDDLE_CLASS_CORE' : 'HIGH_PRESSURE_AFFORDABLE',
     dominantBuyerPersona:
       ask >= 150
         ? 'تبدیل به احسن‌کنندگان دارایی و سرمایه‌گذاران حفظ ارزش'
@@ -103,9 +119,10 @@ function buildFallbackRollup(
         priceRatio: outflowSecond ? Math.round((outflowSecond.buyPerSqm / ask) * 100) / 100 : 0.79,
       },
     ],
-    epistemicConfidence: 88,
+    epistemicConfidence: Math.min(94, Math.round(74 + (resolvedHood?.bargains?.length ?? 0) * 4)),
     academicCitationTag: `RADAR-SE-${cityKey.toUpperCase()}-H${hoodId}`,
     policySummary: `محله ${hoodName} با میانگین قیمت منطقی ${fair} میلیون تومان بر مترمربع، نیازمند حدود ${years} سال پس‌انداز کامل خانوار برای خرید واحد ۸۵ متری است.`,
+    provenanceSource: 'LOCAL_BASELINE',
   };
 }
 
@@ -122,12 +139,12 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
   const resolvedPrice = basePriceSqm ?? hood?.buyPerSqm ?? 120;
 
   const [rollup, setRollup] = useState<SocioeconomicRollupView>(() =>
-    buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey)
+    buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey, hood)
   );
 
   useEffect(() => {
     let active = true;
-    const base = buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey);
+    const base = buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey, hood);
     setRollup(base);
     fetch(`/api/v1/reference/hood/${resolvedId}/rollup?cityId=${encodeURIComponent(cityKey)}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -145,6 +162,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
           estimatedFairDealMillionToman: r.weightedReferencePriceSqm || base.estimatedFairDealMillionToman,
           academicCitationTag: r.citationCode || base.academicCitationTag,
           policySummary: r.citationTextFa || base.policySummary,
+          provenanceSource: 'SERVER_K_ANONYMITY',
           displacementInflowFrom:
             r.displacementMatrix?.topInflowFromHoodIds?.length > 0
               ? r.displacementMatrix.topInflowFromHoodIds.map((item: { hoodId: number; hoodName: string; sharePct: number }) => ({
@@ -165,7 +183,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
       })
       .catch(() => { /* keep synchronous fallback */ });
     return () => { active = false; };
-  }, [resolvedId, resolvedName, resolvedPrice, cityKey]);
+  }, [resolvedId, resolvedName, resolvedPrice, cityKey, hood]);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
@@ -179,7 +197,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
               شناسنامه اقتصادی-اجتماعی و مرجع پژوهشی ({rollup.hoodName})
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono" dir="ltr">
-              Citation ID: {rollup.academicCitationTag}
+              Citation ID: {rollup.academicCitationTag} · {rollup.provenanceSource === 'SERVER_K_ANONYMITY' ? 'k-Anonymity Live Rollup' : 'Spatial Baseline Model'}
             </p>
           </div>
         </div>

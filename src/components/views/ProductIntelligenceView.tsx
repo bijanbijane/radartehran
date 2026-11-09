@@ -248,7 +248,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {activeList.slice(0, 10).map((hood) => {
             const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
             const isSelected = hood.id === p.selectedHood.id;
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 

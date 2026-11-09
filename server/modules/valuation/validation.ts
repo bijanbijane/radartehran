@@ -22,6 +22,7 @@ export const ALLOWED_CATEGORIES: readonly PropertyCategory[] = [
   'commercial',
   'office',
   'industrial',
+  'land',
   'land_development',
   'agricultural',
   'mixed_use',
@@ -363,6 +364,29 @@ export function validateValuationInput(raw: unknown): ValidationResult<PropertyV
     } else {
       input.requestedDepositMillion = rd;
     }
+  }
+
+  if (raw.rentalDepositMillion !== undefined) {
+    const rdm = Number(raw.rentalDepositMillion);
+    if (!Number.isFinite(rdm) || rdm < 0) {
+      issues.push({ field: 'rentalDepositMillion', code: 'NUMBER_OUT_OF_RANGE', message: 'rentalDepositMillion must be >= 0.' });
+    } else {
+      input.rentalDepositMillion = rdm;
+    }
+  }
+
+  if (raw.landZoning !== undefined) {
+    const lz = String(raw.landZoning).trim();
+    if (['residential', 'commercial', 'mixed', 'agricultural'].includes(lz)) {
+      input.landZoning = lz as PropertyValuationInput['landZoning'];
+    }
+  }
+  if (typeof raw.isCornerPlot === 'boolean') input.isCornerPlot = raw.isCornerPlot;
+  if (raw.frontageMeters !== undefined && Number.isFinite(Number(raw.frontageMeters))) {
+    input.frontageMeters = Number(raw.frontageMeters);
+  }
+  if (raw.densityPermitPercent !== undefined && Number.isFinite(Number(raw.densityPermitPercent))) {
+    input.densityPermitPercent = Number(raw.densityPermitPercent);
   }
 
   const currencyUnit = (raw.currencyUnit ?? 'IRT_MILLION') as CurrencyUnit;

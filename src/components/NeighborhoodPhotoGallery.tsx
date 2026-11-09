@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Camera, ChevronLeft, ChevronRight, Compass, Image as ImageIcon, Maximize2, TrainFront, Wind, ShoppingBag, HeartPulse, Building, X } from 'lucide-react';
 import { calcDistanceKm, EvaluatedNeighborhood, LocalLandmark, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState } from './mapAdvancedLayers';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
@@ -165,7 +165,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
               {isEn ? 'Neighborhood Photos & Landmarks' : 'گالری تصاویر و نمادهای محله'}
             </div>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-              {selectedHood.name} · {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م اجاره{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''} · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م
+              {selectedHood.name} · {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م اجاره{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''} · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م
             </div>
           </div>
         </div>

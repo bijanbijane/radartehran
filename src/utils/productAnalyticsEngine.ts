@@ -248,7 +248,23 @@ export function getServerTelemetryStatusReport(nowMs = Date.now()) {
   return { status: 'ok' as const, policy, dateKey: activeDateKey, dailyIngestedCount, droppedOverflowCount, rejectedPiiCount, queuedBufferSize: serverTelemetryQueue.length, totalFlushedEvents, lastFlushStatus, neighborhoodAnalyticsSummary: topNeighborhoods };
 }
 export function resetServerTelemetryForTests(): void {
+  stopTelemetryFlushTimer();
   storedServerTelemetryPolicy = { ...DEFAULT_TELEMETRY_POLICY }; dailyIngestedCount = 0; droppedOverflowCount = 0; rejectedPiiCount = 0; serverTelemetryQueue.length = 0; hoodAnalyticsSummary.clear();
 }
-const telemetryFlushInterval = setInterval(() => { void flushServerTelemetryToS3Now().catch(() => undefined); }, 30_000);
-if (typeof telemetryFlushInterval.unref === 'function') telemetryFlushInterval.unref();
+let telemetryFlushTimer: ReturnType<typeof setInterval> | null = null;
+export function startTelemetryFlushTimer(intervalMs = 30_000): boolean {
+  if (telemetryFlushTimer !== null) return false;
+  const safeInterval = Number.isFinite(intervalMs) && intervalMs >= 10 ? Math.floor(intervalMs) : 30_000;
+  telemetryFlushTimer = setInterval(() => { void flushServerTelemetryToS3Now().catch(() => undefined); }, safeInterval);
+  if (typeof telemetryFlushTimer.unref === 'function') telemetryFlushTimer.unref();
+  return true;
+}
+export function stopTelemetryFlushTimer(): boolean {
+  if (telemetryFlushTimer === null) return false;
+  clearInterval(telemetryFlushTimer);
+  telemetryFlushTimer = null;
+  return true;
+}
+export function isTelemetryFlushTimerRunning(): boolean {
+  return telemetryFlushTimer !== null;
+}

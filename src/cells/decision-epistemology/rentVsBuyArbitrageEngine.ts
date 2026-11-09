@@ -29,17 +29,23 @@ export interface RentVsBuyComparisonResult {
     maintenanceCumulativeMillion: number;
     terminalGrossPropertyValueMillion: number;
     terminalNetWealthMillion: number;
+    realTerminalNetWealthMillion: number;
     irrAnnualPct: number;
   };
   rentScenario: {
     initialRahnOutlayMillion: number;
     initialInvestedSurplusMillion: number;
     cumulativeRentPaidMillion: number;
+    cumulativeRahnTopUpsMillion: number;
+    movingAndRenewalFrictionMillion: number;
+    terminalLockedRahnMillion: number;
     terminalInvestedWealthMillion: number;
     terminalNetWealthMillion: number;
+    realTerminalNetWealthMillion: number;
     irrAnnualPct: number;
   };
-  netWealthDifferenceMillion: number; // buy terminal - rent terminal
+  netWealthDifferenceMillion: number; // buy terminal - rent terminal (nominal)
+  realNetWealthDifferenceMillion: number; // buy terminal - rent terminal (real Year-0 purchasing power)
   winner: 'BUY' | 'RENT_AND_INVEST' | 'INDIFFERENCE';
   indifferenceCapRatePct: number; // annual rental yield where buy == rent
   breakEvenHorizonYears: number;
@@ -58,7 +64,7 @@ export interface CasperRentVsBuyDossier {
   generatedAtIso: string;
 }
 
-const DEFAULT_INFLATION = 0.44;
+const DEFAULT_INFLATION = 0.40;
 
 function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string): Neighborhood {
   const safeCity = (cityId in MULTI_CITY_CONFIGS ? cityId : 'tehran') as CityId;
@@ -68,6 +74,7 @@ function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: stri
 
 /**
  * Evaluates the financial outcome of Buying vs. Renting + Investing residual capital.
+ * Challenges both the "Renting is throwing money away" dogma AND the "Free Rahn Indexing / Money Illusion" fallacy.
  */
 export function simulateRentVsBuyEquivalence(params: RentVsBuySimulationParams): RentVsBuyComparisonResult {
   const sqm = params.targetSqm ?? 80;
@@ -78,46 +85,54 @@ export function simulateRentVsBuyEquivalence(params: RentVsBuySimulationParams):
   const propGrowth = (params.housingAppreciationNominalPct ?? 39) / 100;
   const rentGrowth = (params.rentInflationAnnualPct ?? 40) / 100;
   const maintDrag = (params.annualMaintenanceDepreciationDragPct ?? 2.0) / 100;
+  const cpiDeflator = Math.pow(1 + Math.max(0.15, (rentGrowth + DEFAULT_INFLATION) / 2), horizon);
 
   // 1. BUY SCENARIO:
-  // Initial capital required = Property price + 1.5% purchase friction
   const purchaseFriction = Math.round(initialPropertyValue * 0.015);
   const totalBuyInitialOutlay = initialPropertyValue + purchaseFriction;
-
-  // Property value compounding with depreciation drag
   const effectiveAnnualGrowth = propGrowth - maintDrag;
   const terminalGrossPropertyValue = Math.round(initialPropertyValue * Math.pow(1 + effectiveAnnualGrowth, horizon));
   const saleFriction = Math.round(terminalGrossPropertyValue * 0.01);
   const cumulativeMaintenance = Math.round(initialPropertyValue * maintDrag * horizon * 1.5);
   const terminalBuyWealth = terminalGrossPropertyValue - saleFriction;
+  const realBuyTerminalWealth = Math.round(terminalBuyWealth / cpiDeflator);
   const buyIrr = Number(((Math.pow(terminalBuyWealth / totalBuyInitialOutlay, 1 / horizon) - 1) * 100).toFixed(1));
 
-  // 2. RENT & INVEST SCENARIO:
-  // Household rents the same 80m² unit. Initial rahn outlay:
-  const initialRahn = params.rahn80m > 0 ? params.rahn80m : Math.round(initialPropertyValue * 0.16);
-  // Residual capital from equity is invested in alternative multi-asset portfolio:
+  // 2. RENT & INVEST SCENARIO (Capital-Conserving Hybrid Lease Renewal Model):
+  const baseRahn80m = params.rahn80m > 0 ? params.rahn80m : Math.round(params.pricePerSqm * 80 * 0.16);
+  const initialRahn = Math.round(baseRahn80m * (sqm / 80));
   const investedSurplus = Math.max(0, totalBuyInitialOutlay - initialRahn);
 
-  // Rahn compounds with inflation or is preserved; surplus compounds with altReturn
   let currentPortfolio = investedSurplus;
-  let currentMonthlyRent = (initialRahn * 0.03); // standard 3% conversion
+  let lockedRahnBalance = initialRahn;
+  let currentMonthlyRent = initialRahn * 0.03; // standard 3% monthly conversion
   let cumulativeRent = 0;
+  let cumulativeRahnTopUps = 0;
+  let movingAndRenewalFriction = 0;
 
   for (let y = 1; y <= horizon; y++) {
-    // Portfolio yields return
     currentPortfolio = currentPortfolio * (1 + altReturn);
-    // Annual rent payments deducted if any (assuming pure rahn or partial rent)
-    const annualRentOutflow = currentMonthlyRent * 12 * 0.3; // 30% rent portion
+    const annualRentOutflow = currentMonthlyRent * 12 * 0.30;
+    const renewalFriction = y % 2 === 0 ? currentMonthlyRent * 0.45 : currentMonthlyRent * 0.15;
+    const requiredRahnTopUp = lockedRahnBalance * (rentGrowth * 0.35);
+    const totalOutflow = annualRentOutflow + renewalFriction + requiredRahnTopUp;
+
     cumulativeRent += annualRentOutflow;
-    currentPortfolio = Math.max(0, currentPortfolio - annualRentOutflow);
+    movingAndRenewalFriction += renewalFriction;
+    const fundedTopUp = Math.min(requiredRahnTopUp, Math.max(0, currentPortfolio - annualRentOutflow - renewalFriction));
+    cumulativeRahnTopUps += fundedTopUp;
+    lockedRahnBalance += fundedTopUp;
+    currentPortfolio = Math.max(0, currentPortfolio - totalOutflow);
     currentMonthlyRent = currentMonthlyRent * (1 + rentGrowth);
   }
 
-  const terminalRahnValue = Math.round(initialRahn * Math.pow(1 + DEFAULT_INFLATION, horizon * 0.85));
-  const terminalRentWealth = Math.round(currentPortfolio + terminalRahnValue);
+  const terminalLockedRahn = Math.round(lockedRahnBalance);
+  const terminalRentWealth = Math.round(currentPortfolio + terminalLockedRahn);
+  const realRentTerminalWealth = Math.round(terminalRentWealth / cpiDeflator);
   const rentIrr = Number(((Math.pow(terminalRentWealth / totalBuyInitialOutlay, 1 / horizon) - 1) * 100).toFixed(1));
 
   const diffMillion = terminalBuyWealth - terminalRentWealth;
+  const realDiffMillion = realBuyTerminalWealth - realRentTerminalWealth;
   let winner: 'BUY' | 'RENT_AND_INVEST' | 'INDIFFERENCE';
   let verdictFa: string;
   let explanationFa: string;
@@ -125,18 +140,17 @@ export function simulateRentVsBuyEquivalence(params: RentVsBuySimulationParams):
   if (diffMillion > initialPropertyValue * 0.12) {
     winner = 'BUY';
     verdictFa = 'برتری مالی قطعی خرید ملک نسبت به اجاره';
-    explanationFa = 'به دلیل چسبندگی تورمی مسکن و هزینه تصاعدی اجاره‌بها، مالکیت ملک ثروت نهایی بالاتری ایجاد می‌کند.';
+    explanationFa = 'پس از لحاظ مابه‌التفاوت تمدید سالانه ودیعه و اصطکاک جابه‌جایی، مالکیت ملک ثروت حقیقی بالاتری خلق می‌کند.';
   } else if (diffMillion < -initialPropertyValue * 0.10) {
     winner = 'RENT_AND_INVEST';
     verdictFa = 'برتری استراتژی «اجاره + سرمایه‌گذاری مازاد در دارایی‌های پربازده»';
-    explanationFa = 'نسبت P/R در این محله حباب‌گونه است؛ بازده مرکب طلا و سبد چنددارایی زیان استهلاک و اجاره را پوشش می‌دهد.';
+    explanationFa = 'نسبت P/R در این محله حباب‌گونه است؛ بازده مرکب سبد جایگزین حتی پس از تامین افزایش سالانه ودیعه و اجاره برتری دارد.';
   } else {
     winner = 'INDIFFERENCE';
     verdictFa = 'مرز تعادل و بی‌تفاوتی مالی (Indifference Equilibrium)';
-    explanationFa = 'تفاوت ثروت نهایی دو استراتژی ناچیز است؛ تصمیم باید بر اساس نیاز سکونتی و امنیت روانی اتخاذ شود.';
+    explanationFa = 'تفاوت ثروت نهایی حقیقی دو استراتژی ناچیز است؛ تصمیم باید بر اساس پایداری سکونتی و امنیت روانی اتخاذ شود.';
   }
 
-  // Indifference Cap Rate calculation
   const indifferenceCapRate = Number((((altReturn - propGrowth + maintDrag) * 100) + 2.5).toFixed(1));
   const breakEvenYears = diffMillion >= 0 ? Math.min(horizon, Math.max(2, Math.round(horizon * (initialPropertyValue / Math.max(1, terminalBuyWealth - totalBuyInitialOutlay))))) : 0;
 
@@ -148,17 +162,23 @@ export function simulateRentVsBuyEquivalence(params: RentVsBuySimulationParams):
       maintenanceCumulativeMillion: cumulativeMaintenance,
       terminalGrossPropertyValueMillion: terminalGrossPropertyValue,
       terminalNetWealthMillion: terminalBuyWealth,
+      realTerminalNetWealthMillion: realBuyTerminalWealth,
       irrAnnualPct: buyIrr,
     },
     rentScenario: {
       initialRahnOutlayMillion: initialRahn,
       initialInvestedSurplusMillion: investedSurplus,
       cumulativeRentPaidMillion: Math.round(cumulativeRent),
+      cumulativeRahnTopUpsMillion: Math.round(cumulativeRahnTopUps),
+      movingAndRenewalFrictionMillion: Math.round(movingAndRenewalFriction),
+      terminalLockedRahnMillion: terminalLockedRahn,
       terminalInvestedWealthMillion: Math.round(currentPortfolio),
       terminalNetWealthMillion: terminalRentWealth,
+      realTerminalNetWealthMillion: realRentTerminalWealth,
       irrAnnualPct: rentIrr,
     },
     netWealthDifferenceMillion: diffMillion,
+    realNetWealthDifferenceMillion: realDiffMillion,
     winner,
     indifferenceCapRatePct: Math.max(1.5, Math.min(8.5, indifferenceCapRate)),
     breakEvenHorizonYears: breakEvenYears,
@@ -177,6 +197,7 @@ export function generateCasperRentVsBuyDossier(
   basePriceSqm: number = 120
 ): CasperRentVsBuyDossier {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const resolvedHoodName = hood.name || hoodName;
   const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
@@ -195,8 +216,8 @@ export function generateCasperRentVsBuyDossier(
   });
 
   return {
-    hoodId,
-    hoodName,
+    hoodId: hood.id,
+    hoodName: resolvedHoodName,
     cityId,
     basePriceSqm: resolvedPrice,
     rahn80m: resolvedRahn,

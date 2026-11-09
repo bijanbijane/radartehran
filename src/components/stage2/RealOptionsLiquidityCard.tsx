@@ -121,7 +121,10 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
               {toPersianNum(customRealOptions.valueOfWaitingTomanMln)} میلیون تومان
               <span className="text-[10px] font-normal text-slate-400">{valueWaitingFx}</span>
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">ضریب آستانه خروج از رخوت: {toPersianNum(customRealOptions.hurdleRateMultiplier)} برابر</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
+              <span>ضریب آستانه: {toPersianNum(customRealOptions.hurdleRateMultiplier)} برابر</span>
+              <span>سقف توجیه: متری {toPersianNum(customRealOptions.hurdlePricePerSqm)} م.ت</span>
+            </div>
           </div>
 
           <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed">

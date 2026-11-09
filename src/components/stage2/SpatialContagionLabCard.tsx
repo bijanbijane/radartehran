@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Network,
   ShieldAlert,
@@ -9,14 +9,19 @@ import {
   GitBranch,
 } from 'lucide-react';
 import { toPersianNum } from '../../data/neighborhoods';
+import type { Neighborhood } from '../../data/neighborhoods';
 import type { CityId } from '../../data/multiCityData';
-import { buildNeighborhoodSpatialContagionReport } from '../../cells/decision-epistemology/spatialContagionEngine';
+import {
+  buildNeighborhoodSpatialContagionReport,
+  computeKahnemanProspectAnalysis,
+} from '../../cells/decision-epistemology/spatialContagionEngine';
 
 export interface SpatialContagionLabCardProps {
   hoodId: number;
   hoodName: string;
   cityKey?: CityId | string;
   basePriceSqm?: number;
+  hood?: Neighborhood;
   onSelectCompareHood?: (hoodName: string) => void;
 }
 
@@ -25,14 +30,24 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
   hoodName,
   cityKey = 'tehran',
   basePriceSqm = 120,
+  hood,
   onSelectCompareHood,
 }) => {
+  const [anchorMarkupPct, setAnchorMarkupPct] = useState<number>(0);
+
   const report = useMemo(
-    () => buildNeighborhoodSpatialContagionReport(hoodId, hoodName, cityKey, basePriceSqm),
-    [hoodId, hoodName, cityKey, basePriceSqm],
+    () => buildNeighborhoodSpatialContagionReport(hoodId, hoodName, cityKey, basePriceSqm, hood),
+    [hoodId, hoodName, cityKey, basePriceSqm, hood],
   );
 
-  const { akerlofLemon, contagionNodes, spatialAutocorrelationMoranI, prospectTheory } = report;
+  const { akerlofLemon, contagionNodes, spatialAutocorrelationMoranI } = report;
+
+  const prospectTheory = useMemo(() => {
+    if (anchorMarkupPct === 0) return report.prospectTheory;
+    const baseAsk = Math.round(basePriceSqm * (1 + anchorMarkupPct / 100));
+    const fairDeal = report.prospectTheory.fairDealPricePerSqm || Math.round(basePriceSqm * 0.92);
+    return computeKahnemanProspectAnalysis(baseAsk, fairDeal);
+  }, [anchorMarkupPct, basePriceSqm, report.prospectTheory]);
 
   const lemonBadgeStyle =
     akerlofLemon.regime === 'SEVERE_LEMON_TRAP'
@@ -175,9 +190,32 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
               نظریه چشم‌انداز کانمن-تورسکی (Prospect Theory) و مهندسی مذاکره ضد زیان‌گریزی
             </h4>
           </div>
-          <span className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/70 text-indigo-800 dark:text-indigo-200 text-[10px] font-bold tabular-nums">
-            مقاومت روانی فروشنده: {toPersianNum(prospectTheory.dispositionRigidityPct)}٪ · ضریب زیان‌گریزی λ={toPersianNum(prospectTheory.lossAversionLambda)}
-          </span>
+          <div className="flex items-center gap-1 text-[10px]">
+            {[
+              { pct: 0, label: 'لنگر رایج بازار' },
+              { pct: 8, label: '+۸٪ مقاومت' },
+              { pct: 16, label: '+۱۶٪ قفل روانی' },
+            ].map((opt) => (
+              <button
+                key={opt.pct}
+                type="button"
+                onClick={() => setAnchorMarkupPct(opt.pct)}
+                className={`px-2 py-0.5 rounded font-bold cursor-pointer transition ${
+                  anchorMarkupPct === opt.pct
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-indigo-200 dark:border-slate-700'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-bold text-indigo-900 dark:text-indigo-200 bg-white/60 dark:bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50 tabular-nums">
+          <span>مقاومت روانی فروشنده (Disposition Effect): {toPersianNum(prospectTheory.dispositionRigidityPct)}٪</span>
+          <span>ضریب زیان‌گریزی: λ={toPersianNum(prospectTheory.lossAversionLambda)}</span>
+          <span>شکاف چانه‌زنی ۸۰ متر: {toPersianNum(prospectTheory.nominalDiscountMillion80m)} م.ت</span>
         </div>
 
         <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -192,3 +230,4 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
     </div>
   );
 };
+

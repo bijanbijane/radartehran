@@ -208,7 +208,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
       {/* Active Tab Panel */}
       <div id={`stage2-panel-${activeTab}`} role="tabpanel" aria-labelledby={`stage2-tab-${activeTab}`}>
         {(() => {
-          const common = { hoodId: resolvedHoodId, hoodName: resolvedHoodName, cityKey: resolvedCity, basePriceSqm: resolvedBasePrice };
+          const common = { hoodId: resolvedHoodId, hoodName: resolvedHoodName, cityKey: resolvedCity, basePriceSqm: resolvedBasePrice, hood };
           switch (activeTab) {
             case 'DECISION_SYNTHESIS':
               return <UnifiedDecisionSynthesisCard {...common} initialTargetSqm={targetSqm} intlCurrency={intlCurrency} onSelectTab={(t) => setActiveTab(t as Stage2ActiveTab)} />;
@@ -221,7 +221,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
             case 'REAL_OPTIONS':
               return <RealOptionsLiquidityCard {...common} intlCurrency={intlCurrency} />;
             case 'URBAN_AFFORDABILITY':
-              return <UrbanAffordabilityIsochroneCard {...common} intlCurrency={intlCurrency} />;
+              return <UrbanAffordabilityIsochroneCard {...common} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
             case 'MONTE_CARLO_VAR':
               return <MonteCarloRiskDensityCard {...common} intlCurrency={intlCurrency} />;
             case 'HOUSING_CYCLE':

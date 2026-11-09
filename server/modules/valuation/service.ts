@@ -237,11 +237,12 @@ export function createValuationService(deps: ValuationModuleDependencies) {
       hoodId: input.hoodId,
     });
 
+    const txType = input.transactionType ?? 'sale';
     const ingestedEvidence = Array.from(evidenceStore.values()).filter(
       (e) =>
         e.cityId === input.cityId &&
         e.propertyCategory === input.propertyCategory &&
-        e.transactionType === input.transactionType,
+        e.transactionType === txType,
     );
 
     if (!benchmark && ingestedEvidence.length === 0) {
@@ -253,7 +254,10 @@ export function createValuationService(deps: ValuationModuleDependencies) {
     }
 
     let geographicFallbackLevel: 'sub_neighborhood' | 'neighborhood' | 'district' | 'city' = 'neighborhood';
-    let basePsm = benchmark?.basePricePerSqmMillion ?? 0;
+    let basePsm =
+      input.propertyCategory === 'land'
+        ? (benchmark?.baseLandPricePerSqmMillion ?? benchmark?.basePricePerSqmMillion ?? 0)
+        : (benchmark?.basePricePerSqmMillion ?? 0);
     const baseRahn80m = benchmark?.baseRahn80mMillion ?? (basePsm > 0 ? basePsm * 10 : 1200);
 
     if (ingestedEvidence.length > 0 && !benchmark) {
@@ -264,7 +268,7 @@ export function createValuationService(deps: ValuationModuleDependencies) {
         subNeighborhoodId: input.subNeighborhoodId,
         hoodName: input.hoodName ?? `Hood #${input.hoodId}`,
         propertyCategory: input.propertyCategory,
-        transactionType: input.transactionType,
+        transactionType: txType,
         evidenceRecords: Array.from(evidenceStore.values()),
         config,
         nowIso,
@@ -286,7 +290,7 @@ export function createValuationService(deps: ValuationModuleDependencies) {
       cityId: input.cityId,
       hoodId: input.hoodId,
       propertyCategory: input.propertyCategory,
-      transactionType: input.transactionType,
+      transactionType: txType,
       sqm: input.sqm,
       limit: 25,
     });

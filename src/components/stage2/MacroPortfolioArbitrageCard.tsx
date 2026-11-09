@@ -32,6 +32,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
   intlCurrency = 'USD',
 }) => {
   const [selectedStrategy, setSelectedStrategy] = useState<'optimal' | 'inflation' | 'defensive' | 'custom'>('optimal');
+  const [capitalBillion, setCapitalBillion] = useState<number>(() => Math.max(6, Math.round((basePriceSqm * 80) / 1000)));
   const [customWeights, setCustomWeights] = useState<PortfolioAllocationWeights>({
     housingWeightPct: 50,
     goldWeightPct: 25,
@@ -49,6 +50,9 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
     if (selectedStrategy === 'optimal') return dossier.canonicalPortfolios.optimalSharpe;
     return evaluatePortfolioAllocation(customWeights, dossier.assets);
   }, [selectedStrategy, customWeights, dossier]);
+
+  const capitalMillion = capitalBillion * 1000;
+  const allocMillion = (pct: number) => Math.round((capitalMillion * pct) / 100);
 
   const swapAnalysis = useMemo(() => {
     const totalUnitCost = Math.round(dossier.basePriceSqm * 80);
@@ -119,25 +123,41 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
           <span className="text-[10px] text-slate-400 block mt-0.5">با نرخ بدون ریسک ۲۴٪</span>
         </div>
         <div className="p-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40">
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">رشد ثروت ۳ ساله</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">ثروت ۳ ساله ({toPersianNum(capitalBillion)} میلیارد)</span>
           <span className="text-base font-black text-amber-700 dark:text-amber-300 tabular-nums">{toPersianNum(activeEvaluation.threeYearWealthMultiplier)} برابر</span>
-          <span className="text-[10px] text-slate-400 block mt-0.5">افق مرکب ۳۶ ماهه</span>
+          <span className="text-[10px] text-slate-400 block mt-0.5">معادل {toPersianNum(Math.round(capitalMillion * activeEvaluation.threeYearWealthMultiplier))} م.ت</span>
         </div>
       </div>
 
-      {/* Asset Weights & Custom Sliders */}
+      {/* Asset Weights, Capital Budget Selector & Custom Sliders */}
       <div className="p-3.5 rounded-lg bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-          <span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5 text-indigo-600" /><span>ترکیب تخصیص دارایی در سبد انتخابی</span></span>
-          <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-extrabold">{activeEvaluation.portfolioTierFa}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+          <span className="flex items-center gap-1.5">
+            <Sliders className="w-3.5 h-3.5 text-indigo-600" />
+            <span>تخصیص ریالی و درصدی سرمایه در سبد ({activeEvaluation.portfolioTierFa})</span>
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10.5px] text-slate-500">بودجه کل:</span>
+            {[6, 10, 15, 25].map((b) => (
+              <button
+                key={b}
+                type="button"
+                onClick={() => setCapitalBillion(b)}
+                className={`px-2 py-0.5 rounded-md text-[10.5px] font-black tabular-nums cursor-pointer ${
+                  capitalBillion === b ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                {toPersianNum(b)} میلیارد
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          {/* Housing */}
           <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="font-extrabold text-indigo-700 dark:text-indigo-400">🏠 مسکن ({dossier.hoodName})</span>
-              <span className="font-bold tabular-nums">٪{toPersianNum(activeEvaluation.weights.housingWeightPct)}</span>
+              <span className="font-bold tabular-nums">{toPersianNum(allocMillion(activeEvaluation.weights.housingWeightPct))} م.ت (٪{toPersianNum(activeEvaluation.weights.housingWeightPct)})</span>
             </div>
             {selectedStrategy === 'custom' && (
               <input type="range" aria-label="سهم مسکن" min={0} max={100} value={customWeights.housingWeightPct} onChange={(e) => updateCustomWeight('housingWeightPct', Number(e.target.value))} className="w-full accent-indigo-600 h-1.5 cursor-pointer" />
@@ -148,11 +168,10 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
             </div>
           </div>
 
-          {/* Gold */}
           <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="font-extrabold text-amber-600 dark:text-amber-400">🥇 سکه بهار آزادی و طلا</span>
-              <span className="font-bold tabular-nums">٪{toPersianNum(activeEvaluation.weights.goldWeightPct)}</span>
+              <span className="font-bold tabular-nums">{toPersianNum(allocMillion(activeEvaluation.weights.goldWeightPct))} م.ت (٪{toPersianNum(activeEvaluation.weights.goldWeightPct)})</span>
             </div>
             {selectedStrategy === 'custom' && (
               <input type="range" aria-label="سهم طلا و سکه" min={0} max={100} value={customWeights.goldWeightPct} onChange={(e) => updateCustomWeight('goldWeightPct', Number(e.target.value))} className="w-full accent-amber-500 h-1.5 cursor-pointer" />
@@ -163,11 +182,10 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
             </div>
           </div>
 
-          {/* USD */}
           <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="font-extrabold text-emerald-600 dark:text-emerald-400">💵 اسکناس دلار / تتر</span>
-              <span className="font-bold tabular-nums">٪{toPersianNum(activeEvaluation.weights.usdWeightPct)}</span>
+              <span className="font-bold tabular-nums">{toPersianNum(allocMillion(activeEvaluation.weights.usdWeightPct))} م.ت (٪{toPersianNum(activeEvaluation.weights.usdWeightPct)})</span>
             </div>
             {selectedStrategy === 'custom' && (
               <input type="range" aria-label="سهم دلار و تتر" min={0} max={100} value={customWeights.usdWeightPct} onChange={(e) => updateCustomWeight('usdWeightPct', Number(e.target.value))} className="w-full accent-emerald-500 h-1.5 cursor-pointer" />
@@ -178,11 +196,10 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
             </div>
           </div>
 
-          {/* Fixed Income */}
           <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="font-extrabold text-sky-600 dark:text-sky-400">🏦 درآمد ثابت و سپرده ۳۰٪</span>
-              <span className="font-bold tabular-nums">٪{toPersianNum(activeEvaluation.weights.fixedIncomeWeightPct)}</span>
+              <span className="font-bold tabular-nums">{toPersianNum(allocMillion(activeEvaluation.weights.fixedIncomeWeightPct))} م.ت (٪{toPersianNum(activeEvaluation.weights.fixedIncomeWeightPct)})</span>
             </div>
             {selectedStrategy === 'custom' && (
               <input type="range" aria-label="سهم صندوق با درآمد ثابت" min={0} max={100} value={customWeights.fixedIncomeWeightPct} onChange={(e) => updateCustomWeight('fixedIncomeWeightPct', Number(e.target.value))} className="w-full accent-sky-500 h-1.5 cursor-pointer" />
@@ -220,11 +237,8 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
             <strong className="text-indigo-600 dark:text-indigo-400 tabular-nums">+{toPersianNum(swapAnalysis.twoYearNetArbitrageAdvantageMillion)} م.ت{swapAdvantageFx}</strong>
           </div>
         </div>
-
-        <p className="text-[10px] text-slate-500 dark:text-slate-400">
-          ✓ {swapAnalysis.verdictFa} برخلاف طلا و دلار که فاقد بازده نقدی دوره‌ای هستند، ملک مسکونی به واسطه جریان نقدینگی اجاره، در یک دوره ۲۴ ماهه زیان ناشی از اصطکاک اولیه معامله را جبران نموده و پوشش تورمی پایداری ایجاد می‌کند.
-        </p>
       </div>
     </div>
   );
 };
+

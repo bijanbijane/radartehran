@@ -15,7 +15,7 @@ import {
 } from '../data/iranProvincesDirectory';
 import { CityId, MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData';
 import { Neighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../utils/security';
 import { useDialogFocus } from './useDialogFocus';
 import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
@@ -237,7 +237,7 @@ export function NationwideProvinceModal({
                       <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-100 dark:border-slate-700/70 max-h-24 overflow-y-auto">
                         {provHoods.map((h) => {
                           const uPrice = convertPricePerSqmToUnit(h.buyPerSqm, areaUnit);
-                          const uDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(h.id, h.name, h.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+                          const uDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(h.id, h.name, h.buyPerSqm, buildNeighborhoodListingSamples(h)).estimatedDealPricePerSqm, areaUnit);
                           const fxTip = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uPrice, intlCurrency, radarLocale)})` : '';
                           const rahnFxTip = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(h.rahn80m, intlCurrency, radarLocale)})` : '';
                           const total80m = h.buyPerSqm * 80;

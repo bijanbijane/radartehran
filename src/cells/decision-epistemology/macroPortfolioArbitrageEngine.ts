@@ -102,13 +102,17 @@ export function evaluatePortfolioAllocation(
   weights: PortfolioAllocationWeights,
   assets: Record<MacroAssetClassId, MacroAssetSpec>
 ): PortfolioEvaluationResult {
-  const sumWeights = weights.housingWeightPct + weights.goldWeightPct + weights.usdWeightPct + weights.fixedIncomeWeightPct;
-  const scale = sumWeights > 0 ? 100 / sumWeights : 1;
+  const rawSum = Math.max(0, weights.housingWeightPct) + Math.max(0, weights.goldWeightPct) + Math.max(0, weights.usdWeightPct) + Math.max(0, weights.fixedIncomeWeightPct);
+  const safeWeights = rawSum > 0
+    ? weights
+    : { housingWeightPct: 25, goldWeightPct: 25, usdWeightPct: 25, fixedIncomeWeightPct: 25 };
+  const sumWeights = safeWeights.housingWeightPct + safeWeights.goldWeightPct + safeWeights.usdWeightPct + safeWeights.fixedIncomeWeightPct;
+  const scale = 100 / sumWeights;
 
-  const wH = (weights.housingWeightPct * scale) / 100;
-  const wG = (weights.goldWeightPct * scale) / 100;
-  const wU = (weights.usdWeightPct * scale) / 100;
-  const wF = (weights.fixedIncomeWeightPct * scale) / 100;
+  const wH = (safeWeights.housingWeightPct * scale) / 100;
+  const wG = (safeWeights.goldWeightPct * scale) / 100;
+  const wU = (safeWeights.usdWeightPct * scale) / 100;
+  const wF = (safeWeights.fixedIncomeWeightPct * scale) / 100;
 
   const retH = assets.HOUSING.expectedAnnualReturnNominalPct / 100;
   const retG = assets.GOLD_COIN.expectedAnnualReturnNominalPct / 100;
@@ -145,8 +149,13 @@ export function evaluatePortfolioAllocation(
     strategicGuidanceFa = 'نقدشوندگی لحظه‌ای بالا اما فاقد درآمد نقدی و به شدت آسیب‌پذیر در برابر سرکوب ارزی.';
   }
 
+  const normH = Math.round(wH * 100);
+  const normG = Math.round(wG * 100);
+  const normU = Math.round(wU * 100);
+  const normF = Math.max(0, 100 - normH - normG - normU);
+
   return {
-    weights: { housingWeightPct: Math.round(wH * 100), goldWeightPct: Math.round(wG * 100), usdWeightPct: Math.round(wU * 100), fixedIncomeWeightPct: Math.round(wF * 100) },
+    weights: { housingWeightPct: normH, goldWeightPct: normG, usdWeightPct: normU, fixedIncomeWeightPct: normF },
     expectedAnnualReturnNominalPct: Number((expectedReturnNominal * 100).toFixed(1)),
     expectedAnnualReturnRealPct: Number((expectedReturnReal * 100).toFixed(1)),
     annualVolatilityPct: Number((annualVol * 100).toFixed(1)),
@@ -198,6 +207,7 @@ export function generateCasperMacroPortfolioDossier(
   basePriceSqm: number = 120
 ): CasperMacroPortfolioDossier {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const resolvedHoodName = hood.name || hoodName;
   const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
@@ -205,11 +215,11 @@ export function generateCasperMacroPortfolioDossier(
   const defensive = evaluatePortfolioAllocation({ housingWeightPct: 45, goldWeightPct: 15, usdWeightPct: 10, fixedIncomeWeightPct: 30 }, assets);
   const optimalSharpe = evaluatePortfolioAllocation({ housingWeightPct: 55, goldWeightPct: 25, usdWeightPct: 15, fixedIncomeWeightPct: 5 }, assets);
   const inflationHedge = evaluatePortfolioAllocation({ housingWeightPct: 65, goldWeightPct: 25, usdWeightPct: 10, fixedIncomeWeightPct: 0 }, assets);
-  const swapAnalysis = evaluateAssetSwapToHousing('GOLD_COIN', hoodName, Math.round(resolvedPrice * 80), assets.HOUSING.cashflowYieldPct);
+  const swapAnalysis = evaluateAssetSwapToHousing('GOLD_COIN', resolvedHoodName, Math.round(resolvedPrice * 80), assets.HOUSING.cashflowYieldPct);
 
   return {
-    hoodId,
-    hoodName,
+    hoodId: hood.id,
+    hoodName: resolvedHoodName,
     cityId,
     basePriceSqm: resolvedPrice,
     rahn80m: resolvedRahn,

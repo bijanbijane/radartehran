@@ -41,13 +41,16 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
 }) => {
   const [horizonYears, setHorizonYears] = useState<number>(5);
   const [alternativeReturnPct, setAlternativeReturnPct] = useState<number>(42);
+  const [targetSqm, setTargetSqm] = useState<number>(80);
+  const [showRealPurchasingPower, setShowRealPurchasingPower] = useState<boolean>(true);
 
   const dossier = useMemo(
     () => generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm),
     [hoodId, hoodName, cityKey, basePriceSqm]
   );
-  const totalUnitCostMillion = Math.round(dossier.basePriceSqm * 80);
+  const totalUnitCostMillion = Math.round(dossier.basePriceSqm * targetSqm);
   const rahn80m = dossier.rahn80m;
+  const scaledRahnMillion = Math.round(rahn80m * (targetSqm / 80));
 
   const analysis: RentVsBuyComparisonResult = useMemo(() => {
     return simulateRentVsBuyEquivalence({
@@ -55,14 +58,18 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
       buyerEquityMillion: totalUnitCostMillion,
       pricePerSqm: dossier.basePriceSqm,
       rahn80m,
+      targetSqm,
       alternativeReturnNominalPct: alternativeReturnPct,
     });
-  }, [horizonYears, alternativeReturnPct, totalUnitCostMillion, dossier.basePriceSqm, rahn80m]);
+  }, [horizonYears, alternativeReturnPct, totalUnitCostMillion, dossier.basePriceSqm, rahn80m, targetSqm]);
 
   const isBuyWinner = analysis.winner === 'BUY';
   const isRentWinner = analysis.winner === 'RENT_AND_INVEST';
+  const displayedBuyWealth = showRealPurchasingPower ? analysis.buyScenario.realTerminalNetWealthMillion : analysis.buyScenario.terminalNetWealthMillion;
+  const displayedRentWealth = showRealPurchasingPower ? analysis.rentScenario.realTerminalNetWealthMillion : analysis.rentScenario.terminalNetWealthMillion;
+  const displayedDiff = showRealPurchasingPower ? analysis.realNetWealthDifferenceMillion : analysis.netWealthDifferenceMillion;
   const wealthGapFx = intlCurrency !== 'IRT'
-    ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(analysis.netWealthDifferenceMillion), intlCurrency, 'fa')})`
+    ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(displayedDiff), intlCurrency, 'fa')})`
     : '';
 
   return (
@@ -76,30 +83,58 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           <div>
             <h4 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
               <span>مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد» (کسپر)</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">{hoodName}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">{dossier.hoodName}</span>
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">به چالش کشیدن باور سنتی «اجاره‌نشینی یعنی پول دور ریختن» با فرمول‌های ارزش فعلی خالص (NPV)</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">نقد دوگانه باور سنتی «اجاره‌نشینی هدر دادن پول است» و «توهم پولی فیشر در اعداد اسمی»</p>
           </div>
         </div>
 
-        {/* Horizon Buttons */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs">
-          {[
-            { years: 3, label: 'افق ۳ ساله' },
-            { years: 5, label: 'افق ۵ ساله' },
-            { years: 10, label: 'افق ۱۰ ساله' },
-          ].map((h) => (
-            <button
-              key={h.years}
-              type="button"
-              onClick={() => setHorizonYears(h.years)}
-              className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                horizonYears === h.years ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {h.label}
-            </button>
-          ))}
+        {/* Horizon, Area & Fisher Deflator Buttons */}
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <button
+            type="button"
+            data-testid="toggle-fisher-real-wealth-btn"
+            onClick={() => setShowRealPurchasingPower((p) => !p)}
+            className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${
+              showRealPurchasingPower
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            {showRealPurchasingPower ? '✓ قدرت خرید واقعی (به قیمت امروز)' : 'نمایش اسمی (تورمی)'}
+          </button>
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            {[65, 80, 100, 130].map((sqm) => (
+              <button
+                key={sqm}
+                type="button"
+                onClick={() => setTargetSqm(sqm)}
+                className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-all cursor-pointer ${
+                  targetSqm === sqm ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {toPersianNum(sqm)} متر
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            {[
+              { years: 3, label: 'افق ۳ ساله' },
+              { years: 5, label: 'افق ۵ ساله' },
+              { years: 10, label: 'افق ۱۰ ساله' },
+            ].map((h) => (
+              <button
+                key={h.years}
+                type="button"
+                onClick={() => setHorizonYears(h.years)}
+                className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                  horizonYears === h.years ? 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -109,7 +144,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           <Sliders className="w-4 h-4 text-indigo-600 shrink-0" />
           <div>
             <span className="font-extrabold text-slate-800 dark:text-slate-200 block">نرخ بازده سبد سرمایه‌گذاری جایگزین:</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">میانگین بازده سالانه سبد طلا، دلار یا صندوق‌ها</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">میانگین بازده سالانه سبد طلا، دلار یا صندوق‌ها (تامین‌کننده مابه‌التفاوت تمدید سالانه ودیعه)</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -137,7 +172,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           <div className="flex items-center justify-between mb-2">
             <span className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
               <Home className="w-4 h-4 text-indigo-600" />
-              <span>سناریوی اول: خرید قطعی ملک ({hoodName})</span>
+              <span>سناریوی اول: خرید قطعی {toPersianNum(targetSqm)} متر ({dossier.hoodName})</span>
             </span>
             {isBuyWinner && <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">برنده مالی ✓</span>}
           </div>
@@ -152,11 +187,11 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
               <span className="text-rose-600 dark:text-rose-400 tabular-nums">-{toPersianNum(analysis.buyScenario.transactionCostsMillion + analysis.buyScenario.maintenanceCumulativeMillion)} م.ت</span>
             </div>
             <div className="flex justify-between text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1.5">
-              <span>ثروت نهایی در پایان {toPersianNum(horizonYears)} سال:</span>
-              <strong className="text-base font-black text-indigo-700 dark:text-indigo-400 tabular-nums">{toPersianNum(analysis.buyScenario.terminalNetWealthMillion)} م.ت</strong>
+              <span>{showRealPurchasingPower ? `ثروت حقیقی (به قیمت امروز) در سال ${toPersianNum(horizonYears)}:` : `ثروت اسمی در پایان ${toPersianNum(horizonYears)} سال:`}</span>
+              <strong className="text-base font-black text-indigo-700 dark:text-indigo-400 tabular-nums">{toPersianNum(displayedBuyWealth)} م.ت</strong>
             </div>
             <div className="text-[10px] text-slate-400 flex justify-between">
-              <span>نرخ بازده داخلی سالانه (IRR):</span>
+              <span>نرخ بازده داخلی اسمی سالانه (IRR):</span>
               <span className="font-bold tabular-nums">٪{toPersianNum(analysis.buyScenario.irrAnnualPct)}</span>
             </div>
           </div>
@@ -171,27 +206,27 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           <div className="flex items-center justify-between mb-2">
             <span className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-600" />
-              <span>سناریوی دوم: «اجاره + سرمایه‌گذاری مازاد»</span>
+              <span>سناریوی دوم: «اجاره {toPersianNum(targetSqm)} متر + سرمایه‌گذاری مازاد»</span>
             </span>
             {isRentWinner && <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">برنده مالی ✓</span>}
           </div>
 
           <div className="space-y-1.5 text-[11px]">
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span>ودیعه رهن اولیه ۸۰ متر ({toPersianNum(Math.round((rahn80m / Math.max(1, totalUnitCostMillion)) * 100))}٪ ارزش):</span>
-              <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{toPersianNum(analysis.rentScenario.initialRahnOutlayMillion)} م.ت</strong>
+              <span>ودیعه رهن اولیه ({toPersianNum(Math.round((scaledRahnMillion / Math.max(1, totalUnitCostMillion)) * 100))}٪ ارزش) + مازاد نقد:</span>
+              <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{toPersianNum(analysis.rentScenario.initialRahnOutlayMillion)} + {toPersianNum(analysis.rentScenario.initialInvestedSurplusMillion)} م.ت</strong>
             </div>
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span>مازاد سرمایه‌گذاری‌شده در دارایی‌های نقد:</span>
-              <strong className="text-emerald-600 dark:text-emerald-400 tabular-nums">{toPersianNum(analysis.rentScenario.initialInvestedSurplusMillion)} م.ت</strong>
+              <span>تزریق تمدید سالانه ودیعه + اصطکاک جابه‌جایی:</span>
+              <span className="text-amber-700 dark:text-amber-400 tabular-nums">-{toPersianNum(analysis.rentScenario.cumulativeRahnTopUpsMillion + analysis.rentScenario.movingAndRenewalFrictionMillion)} م.ت</span>
             </div>
             <div className="flex justify-between text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1.5">
-              <span>ثروت نهایی در پایان {toPersianNum(horizonYears)} سال:</span>
-              <strong className="text-base font-black text-amber-700 dark:text-amber-400 tabular-nums">{toPersianNum(analysis.rentScenario.terminalNetWealthMillion)} م.ت</strong>
+              <span>{showRealPurchasingPower ? `ثروت حقیقی (به قیمت امروز) در سال ${toPersianNum(horizonYears)}:` : `ثروت اسمی در پایان ${toPersianNum(horizonYears)} سال:`}</span>
+              <strong className="text-base font-black text-amber-700 dark:text-amber-400 tabular-nums">{toPersianNum(displayedRentWealth)} م.ت</strong>
             </div>
             <div className="text-[10px] text-slate-400 flex justify-between">
-              <span>نرخ بازده داخلی سالانه (IRR):</span>
-              <span className="font-bold tabular-nums">٪{toPersianNum(analysis.buyScenario.irrAnnualPct !== undefined ? analysis.rentScenario.irrAnnualPct : 0)}</span>
+              <span>نرخ بازده داخلی اسمی سالانه (IRR):</span>
+              <span className="font-bold tabular-nums">٪{toPersianNum(analysis.rentScenario.irrAnnualPct)}</span>
             </div>
           </div>
         </div>
@@ -205,7 +240,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             <span>حکم نهایی تصمیم‌یار: {analysis.verdictFa}</span>
           </span>
           <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
-            شکاف ثروت: {toPersianNum(Math.abs(analysis.netWealthDifferenceMillion))} م.ت{wealthGapFx}
+            {showRealPurchasingPower ? 'شکاف ثروت حقیقی:' : 'شکاف ثروت اسمی:'} {toPersianNum(Math.abs(displayedDiff))} م.ت{wealthGapFx}
           </span>
         </div>
         <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
