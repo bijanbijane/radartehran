@@ -2,7 +2,7 @@
 import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { INITIAL_NEIGHBORHOODS } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
-import { clampNumber, isValidFirestoreDocId, sanitizeInput, validateCityParam } from '../../utils/security';
+import { clampNumber, detectPromptInjection, isValidFirestoreDocId, sanitizeInput, validateCityParam } from '../../utils/security';
 import { getFirebaseAdminFirestoreForServer } from '../../utils/serverAdminAndTelegramSecurity';
 import {
   formatClaimPriceSqmIntl, type AlleySlopeType, type ClaimVoteDirection, type ContributorProfileDocument,
@@ -150,11 +150,14 @@ export async function submitCrowdClaim(input: SubmitCrowdClaimInput): Promise<Cr
   if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) throw new Error('INVALID_HOOD_ID');
   const narrativeText = sanitizeInput(input.narrativeText || '', 1200);
   if (narrativeText.length < 5) throw new Error('NARRATIVE_TOO_SHORT');
+  const streetNameRaw = sanitizeInput(input.streetName || 'کوچه اصلی', 120) || 'کوچه اصلی';
+  if (detectPromptInjection(narrativeText).blocked || detectPromptInjection(streetNameRaw).blocked) {
+    throw new Error('PROMPT_INJECTION_DETECTED');
+  }
 
   const category: CrowdClaimCategory = VALID_CATEGORIES.has(input.category) ? input.category : 'ALLEY_LIVABILITY';
   const targetLevel: SpatialTargetLevel = input.targetLevel && VALID_TARGET_LEVELS.has(input.targetLevel) ? input.targetLevel : 'STREET_SEGMENT';
   const cityId = validateCityParam(input.cityId, 'tehran');
-  const streetNameRaw = sanitizeInput(input.streetName || 'کوچه اصلی', 120) || 'کوچه اصلی';
   const authorProfile = getOrCreateContributorProfile(authorUid, { displayName: input.authorDisplayName, roleBadge: input.authorRoleBadge });
   const evidenceMediaObjectIds = Array.isArray(input.evidenceMediaObjectIds)
     ? input.evidenceMediaObjectIds.map((id) => sanitizeInput(String(id), 120)).filter((id) => id.length > 0 && isValidFirestoreDocId(id)).slice(0, 10)
@@ -212,6 +215,7 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
   if (!claim) throw new Error('CLAIM_NOT_FOUND');
   const voterUid = sanitizeInput(input.voterUid, 128);
   if (!voterUid || !isValidFirestoreDocId(voterUid)) throw new Error('INVALID_VOTER_UID');
+  if (voterUid === claim.authorUid) throw new Error('SELF_VOTE_PROHIBITED');
   const direction: ClaimVoteDirection = input.direction === 'DOWN' ? 'DOWN' : 'UP';
   const voterProfile = getOrCreateContributorProfile(voterUid);
   const clampedVoterTrust = clampNumber(voterProfile.trustWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX, DEFAULT_INITIAL_TRUST_WEIGHT);
@@ -241,6 +245,7 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
   let promotedToVerifiedReference = false;
   if (
     claim.epistemicState !== 'VERIFIED_REFERENCE' &&
+    !claim.promotedToReferenceAtIso &&
     claim.weightedConsensusScore >= PROMOTION_CONSENSUS_THRESHOLD &&
     claim.aiPlausibilityScore >= PROMOTION_PLAUSIBILITY_THRESHOLD
   ) {

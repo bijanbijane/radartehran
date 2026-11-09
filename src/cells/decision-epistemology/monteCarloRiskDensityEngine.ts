@@ -64,10 +64,10 @@ function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: stri
 function pseudoGaussian(seedRef: { value: number }): number {
   // Linear congruential generator step
   seedRef.value = (seedRef.value * 1664525 + 1013904223) % 4294967296;
-  const u1 = Math.max(0.00001, seedRef.value / 4294967296);
+  const u1 = Math.max(1e-7, Math.min(0.9999999, seedRef.value / 4294967296));
 
   seedRef.value = (seedRef.value * 1664525 + 1013904223) % 4294967296;
-  const u2 = seedRef.value / 4294967296;
+  const u2 = Math.max(1e-7, Math.min(0.9999999, seedRef.value / 4294967296));
 
   return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
 }
@@ -177,7 +177,7 @@ export function simulateMertonJumpDiffusionVaR(
   // Generate 7 histogram density buckets
   const minNom = nominalReturns[0];
   const maxNom = nominalReturns[n - 1];
-  const step = (maxNom - minNom) / 7;
+  const step = Math.max(0.01, (maxNom - minNom) / 7);
   const distributionBuckets: MonteCarloDistributionBucket[] = [];
 
   for (let b = 0; b < 7; b++) {

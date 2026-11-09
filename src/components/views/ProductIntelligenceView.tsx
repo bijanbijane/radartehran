@@ -217,6 +217,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           basePriceSqm={p.selectedHood.buyPerSqm}
           intlCurrency={intlCurrency}
           hood={p.selectedHood}
+          initialTab="HOUSING_CYCLE"
           onSelectCompareHood={(targetName) => {
             const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName);
             if (match) p.onSelectNeighborhood(match);
@@ -266,7 +267,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">معامله v6.4 · امتیاز {toPersianNum(hood.overallScore)}/۱۰</div>
                   </div>
                   {!isSelected && (
-                    <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border text-[10px] font-bold cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border text-[10px] font-bold cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}>
                       <Scale className="w-3.5 h-3.5" />
                     </button>
                   )}

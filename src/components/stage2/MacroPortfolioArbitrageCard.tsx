@@ -14,7 +14,7 @@ import {
   PortfolioAllocationWeights
 } from '../../cells/decision-epistemology/macroPortfolioArbitrageEngine';
 import { toPersianNum } from '../../data/neighborhoods';
-import type { IntlCurrencyCode } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface MacroPortfolioArbitrageCardProps {
   hoodId?: number;
@@ -29,6 +29,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
   hoodName = 'پونک',
   cityKey = 'tehran',
   basePriceSqm = 120,
+  intlCurrency = 'USD',
 }) => {
   const [selectedStrategy, setSelectedStrategy] = useState<'optimal' | 'inflation' | 'defensive' | 'custom'>('optimal');
   const [customWeights, setCustomWeights] = useState<PortfolioAllocationWeights>({
@@ -53,6 +54,9 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
     const totalUnitCost = Math.round(dossier.basePriceSqm * 80);
     return evaluateAssetSwapToHousing('GOLD_COIN', dossier.hoodName, totalUnitCost, dossier.assets.HOUSING.cashflowYieldPct);
   }, [dossier]);
+  const swapAdvantageFx = intlCurrency !== 'IRT'
+    ? ` (${formatMillionTomanAsIntlCurrency(swapAnalysis.twoYearNetArbitrageAdvantageMillion, intlCurrency, 'fa')})`
+    : '';
 
   const updateCustomWeight = (field: keyof PortfolioAllocationWeights, value: number) => {
     setCustomWeights((prev) => ({ ...prev, [field]: Math.max(0, Math.min(100, value)) }));
@@ -213,7 +217,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
           </div>
           <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <span className="text-slate-400 block text-[10px]">مزیت خالص ریالی دو ساله:</span>
-            <strong className="text-indigo-600 dark:text-indigo-400 tabular-nums">+{toPersianNum(swapAnalysis.twoYearNetArbitrageAdvantageMillion)} م.ت برتری نسبت به طلا</strong>
+            <strong className="text-indigo-600 dark:text-indigo-400 tabular-nums">+{toPersianNum(swapAnalysis.twoYearNetArbitrageAdvantageMillion)} م.ت{swapAdvantageFx}</strong>
           </div>
         </div>
 

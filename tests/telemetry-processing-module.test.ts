@@ -202,7 +202,15 @@ async function runAllTests() {
     const service = new TelemetryDataProcessingService();
     service.resetForTests();
 
-    registerTelemetryModuleRoutes(app, { service });
+    registerTelemetryModuleRoutes(app, {
+      service,
+      verifyAdminAuth: async (req) => {
+        const token = req.headers['x-test-admin'];
+        return token === 'valid'
+          ? { ok: true, status: 200, message: 'ok' }
+          : { ok: false, status: 403, message: 'ADMIN_FORBIDDEN' };
+      },
+    });
 
     const server = http.createServer(app);
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -225,15 +233,27 @@ async function runAllTests() {
       assert.equal(postJson.status, 'accepted');
       assert.equal(postJson.outcome.acceptedCount, 2);
 
-      const diagRes = await fetch(`${baseUrl}/api/v2/telemetry/diagnostics`);
+      const unauthDiagRes = await fetch(`${baseUrl}/api/v2/telemetry/diagnostics`);
+      assert.equal(unauthDiagRes.status, 403, 'Diagnostics endpoint must reject unauthenticated requests');
+
+      const diagRes = await fetch(`${baseUrl}/api/v2/telemetry/diagnostics`, {
+        headers: { 'x-test-admin': 'valid' },
+      });
       assert.equal(diagRes.status, 200);
       const diagJson = (await diagRes.json()) as { status: string; diagnostics: { totalIngestedEvents: number } };
       assert.equal(diagJson.status, 'ok');
       assert.equal(diagJson.diagnostics.totalIngestedEvents, 2);
 
-      const purgeRes = await fetch(`${baseUrl}/api/v2/telemetry/retention/purge`, {
+      const unauthPurgeRes = await fetch(`${baseUrl}/api/v2/telemetry/retention/purge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ retentionDays: 30 }),
+      });
+      assert.equal(unauthPurgeRes.status, 403, 'Retention purge endpoint must reject unauthenticated requests');
+
+      const purgeRes = await fetch(`${baseUrl}/api/v2/telemetry/retention/purge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-test-admin': 'valid' },
         body: JSON.stringify({ retentionDays: 30 }),
       });
       assert.equal(purgeRes.status, 200);

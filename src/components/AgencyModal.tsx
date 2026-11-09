@@ -28,10 +28,10 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
       >
         <div
           onClick={(e) => e.stopPropagation()}
-          className="apple-window-sheet max-w-md w-full p-5 text-center space-y-3"
+          className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-md w-full p-5 text-center space-y-3"
         >
           <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-          <h3 className="text-sm font-extrabold text-slate-900">
+          <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
             اطلاعات محله‌ها جهت ثبت آگهی در دسترس نیست
           </h3>
           <button

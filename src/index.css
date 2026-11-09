@@ -149,9 +149,14 @@
 
 .apple-segmented-pill-active {
   background-color: var(--apple-surface);
-  color: var(--apple-accent-blue) !important;
+  color: var(--apple-accent-blue);
   border-radius: 7px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+
+[data-apple-theme='dark'] .apple-segmented-pill-active {
+  background-color: #3a3a3c;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 0.5px rgba(255, 255, 255, 0.14);
 }
 
 .apple-primary-btn {
@@ -276,7 +281,7 @@
   color: #e5e5ea !important;
 }
 
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-900 {
+[data-apple-theme='dark'] .apple-window-sheet .bg-slate-900:not(.dark\:bg-white) {
   background-color: #3a3a3c !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
@@ -333,7 +338,8 @@
 [data-apple-theme='dark'] .text-emerald-950,
 [data-apple-theme='dark'] .text-emerald-900,
 [data-apple-theme='dark'] .text-emerald-800,
-[data-apple-theme='dark'] .text-emerald-700 {
+[data-apple-theme='dark'] .text-emerald-700,
+[data-apple-theme='dark'] .text-teal-700 {
   color: #6ee7b7 !important;
 }
 
@@ -592,6 +598,14 @@ input[type='range'] {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(60, 60, 67, 0.42);
+}
+
+[data-apple-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: rgba(235, 235, 245, 0.28);
+}
+
+[data-apple-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(235, 235, 245, 0.48);
 }
 
 .no-scrollbar::-webkit-scrollbar {

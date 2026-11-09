@@ -16,7 +16,7 @@ import {
   simulateMertonJumpDiffusionVaR,
 } from '../../cells/decision-epistemology/monteCarloRiskDensityEngine';
 import { toPersianNum } from '../../data/neighborhoods';
-import type { IntlCurrencyCode } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface MonteCarloRiskDensityCardProps {
   hoodId?: number;
@@ -31,6 +31,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
   hoodName = 'پونک',
   cityKey = 'tehran',
   basePriceSqm = 120,
+  intlCurrency = 'USD',
 }) => {
   const [horizonMonths, setHorizonMonths] = useState<number>(12);
   const [jumpIntensity, setJumpIntensity] = useState<number>(0.45);
@@ -38,7 +39,6 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
 
   const report = useMemo(() => {
     const base = generateCasperMonteCarloRiskReport(hoodId, hoodName, cityKey, basePriceSqm, horizonMonths);
-    // Apply user-modified jump intensity and re-simulate
     const customResult = simulateMertonJumpDiffusionVaR(
       base.basePriceSqm,
       {
@@ -57,6 +57,8 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
   }, [hoodId, hoodName, cityKey, basePriceSqm, horizonMonths, jumpIntensity, seedOffset]);
 
   const maxDensity = Math.max(...report.distributionBuckets.map((b) => b.densityPercent), 1);
+  const varCapital80mMln = Math.round(report.basePriceSqm * 80 * (Math.abs(report.metrics.var95RealPct) / 100));
+  const varFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(varCapital80mMln, intlCurrency, 'fa')})` : '';
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -68,13 +70,13 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <span>شبیه‌ساز مونت‌کارلو جهش-نفوذ مرتون (Merton Jump-Diffusion VaR)</span>
+              <span>شبیه‌ساز مونت‌کارلو جهش-نفوذ مرتون (VaR 95%)</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-normal">
                 {report.hoodName}
               </span>
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              ارزیابی ۱٬۰۰۰ سناریوی شبیه‌سازی‌شده ارزش در معرض خطر (VaR 95%)، ریسک دم‌بلند و ضریب سورتینو
+              ارزیابی ۱٬۰۰۰ سناریوی شبیه‌سازی‌شده ارزش در معرض خطر، ریسک دم‌بلند و ضریب سورتینو
             </p>
           </div>
         </div>
@@ -166,7 +168,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           <div className="text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5">
             -{toPersianNum(report.metrics.var95RealPct)}٪
           </div>
-          <div className="text-[9px] text-slate-400">سقف زیان در ۹۵٪ سناریوها</div>
+          <div className="text-[9px] text-slate-400">۸۰ متر: {toPersianNum(varCapital80mMln)} م.ت{varFx}</div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">

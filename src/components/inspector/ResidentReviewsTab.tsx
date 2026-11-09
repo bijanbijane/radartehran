@@ -142,9 +142,9 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
                 <option value="under_1y">کمتر از ۱ سال سکونت</option><option value="1_to_3y">۱ تا ۳ سال سابقه سکونت</option><option value="over_3y">بیش از ۳ سال سکونت</option>
               </select>
             </div>
-            <div className="grid grid-cols-3 gap-1 apple-segmented p-1 rounded-[9px] text-[11px] font-bold">
+            <div className="grid grid-cols-3 gap-1 apple-segmented dark:bg-slate-900/90 p-1 rounded-[9px] text-[11px] font-bold">
               {([{ id: 'owner', label: 'مالک ساکن' }, { id: 'tenant', label: 'مستاجر ساکن' }, { id: 'business', label: 'شاغل در محله' }] as const).map((role) => (
-                <button key={role.id} type="button" onClick={() => setResidencyType(role.id)} className={`py-1 rounded-[7px] transition cursor-pointer ${residencyType === role.id ? 'apple-segmented-pill-active font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{role.label}</button>
+                <button key={role.id} type="button" onClick={() => setResidencyType(role.id)} className={`py-1 rounded-[7px] transition cursor-pointer ${residencyType === role.id ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{role.label}</button>
               ))}
             </div>
             <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70 rounded-[10px] p-2.5 space-y-2">
@@ -189,9 +189,9 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="جست‌وجو در نظرات..." aria-label="جست‌وجو در نظرات ساکنان" className="w-full pr-7 pl-2 py-1 rounded-[8px] bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-[11px] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600" />
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-1 apple-segmented p-1 rounded-[9px] text-[10.5px] font-bold">
+        <div className="grid grid-cols-4 gap-1 apple-segmented dark:bg-slate-900/90 p-1 rounded-[9px] text-[10.5px] font-bold">
           {([{ id: 'all', label: 'همه' }, { id: 'verified', label: 'تایید مکانی 📍' }, { id: 'owners', label: 'مالکان' }, { id: 'tenants', label: 'مستاجران' }] as const).map((tab) => (
-            <button key={tab.id} type="button" onClick={() => setFilterMode(tab.id)} className={`py-1 rounded-[7px] truncate transition cursor-pointer ${filterMode === tab.id ? 'apple-segmented-pill-active font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{tab.label}</button>
+            <button key={tab.id} type="button" onClick={() => setFilterMode(tab.id)} className={`py-1 rounded-[7px] truncate transition cursor-pointer ${filterMode === tab.id ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>{tab.label}</button>
           ))}
         </div>
         <div className="divide-y divide-slate-200/70 dark:divide-slate-700/70">

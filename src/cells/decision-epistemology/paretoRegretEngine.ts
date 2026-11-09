@@ -5,7 +5,7 @@
  * - Pareto Frontier & Multi-Criteria Spatial Arbitrage Solver (MAUT)
  */
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
-import { INITIAL_NEIGHBORHOODS } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, toPersianNum } from '../../data/neighborhoods';
 import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
 import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
@@ -139,8 +139,8 @@ export function findParetoDominantNeighborhoods(input: {
       utilityScore: peerUtility, priceSavingsPct, capitalFreed85mMillion,
       dominanceType: isStrictPareto ? 'STRICT_PARETO' : 'HIGH_EFFICIENCY_SUBSTITUTE',
       rationaleFa: isStrictPareto
-        ? `غلبه قطعی پارتو: امتیاز زیست‌پذیری بالاتر یا مساوی (${peerUtility} در برابر ${targetUtilityScore}) همراه با ${priceSavingsPct}٪ قیمت پایین‌تر و آزادسازی ${capitalFreed85mMillion.toLocaleString('fa-IR')} م.ت سرمایه.`
-        : `جایگزین پربازده: حفظ ${Math.round((peerUtility / Math.max(1, targetUtilityScore)) * 100)}٪ کیفیت سکونتی محله هدف با ${priceSavingsPct}٪ صرفه‌جویی سرمایه‌ای.`,
+        ? `غلبه قطعی پارتو: امتیاز زیست‌پذیری بالاتر یا مساوی (${toPersianNum(peerUtility)} در برابر ${toPersianNum(targetUtilityScore)}) همراه با ${toPersianNum(priceSavingsPct)}٪ قیمت پایین‌تر و آزادسازی ${toPersianNum(capitalFreed85mMillion)} م.ت سرمایه.`
+        : `جایگزین پربازده: حفظ ${toPersianNum(Math.round((peerUtility / Math.max(1, targetUtilityScore)) * 100))}٪ کیفیت سکونتی محله هدف با ${toPersianNum(priceSavingsPct)}٪ صرفه‌جویی سرمایه‌ای.`,
     });
   }
 
@@ -167,7 +167,10 @@ export function computeSavageMinimaxRegretMatrix(input: {
   const agg = aggregateNeighborhoodMarketMetrics(targetHood.id, hoodName, buySqm, []);
   const dealSqm = Math.max(15, agg.estimatedDealPricePerSqm);
   const initialCapitalMillion = Math.round(dealSqm * targetSqm);
-  const rahnEquivalentMillion = Math.round((targetHood.rahn80m || dealSqm * 11) * (targetSqm / 80));
+  const scaledBaseRahn = Math.round(
+    (dealSqm / Math.max(1, targetHood.buyPerSqm)) * (targetHood.rahn80m || Math.round(targetHood.buyPerSqm * 80 * 0.18))
+  );
+  const rahnEquivalentMillion = Math.round(scaledBaseRahn * (targetSqm / 80));
 
   const { targetUtilityScore, candidates } = findParetoDominantNeighborhoods({
     cityId: safeCity, hoodId: targetHood.id, basePriceSqm: buySqm, targetSqm, intlCurrency,
@@ -206,16 +209,16 @@ export function computeSavageMinimaxRegretMatrix(input: {
   const strategyMeta: Array<{ id: DecisionStrategyId; titleFa: string; subtitleFa: string }> = [
     {
       id: 'BUY_TARGET_NEGOTIATED', titleFa: `خرید قطعی در ${hoodName} (با نرخ مدل v6.4)`,
-      subtitleFa: `تخصیص ۱۰۰٪ سرمایه (${initialCapitalMillion.toLocaleString('fa-IR')} م.ت) به خرید ملک در همین محله`,
+      subtitleFa: `تخصیص ۱۰۰٪ سرمایه (${toPersianNum(initialCapitalMillion)} م.ت) به خرید ملک در همین محله`,
     },
     {
       id: 'RENT_AND_CAPITAL_SHIELD', titleFa: `رهن کامل در ${hoodName} + سپر سرمایه‌ای نقدشونده`,
-      subtitleFa: `تخصیص ${rahnEquivalentMillion.toLocaleString('fa-IR')} م.ت به رهن و سرمایه‌گذاری مازاد در سبد ضدتورمی`,
+      subtitleFa: `تخصیص ${toPersianNum(rahnEquivalentMillion)} م.ت به رهن و سرمایه‌گذاری مازاد در سبد ضدتورمی`,
     },
     {
       id: 'PARETO_SPATIAL_ARBITRAGE',
       titleFa: bestArbitrage ? `آربیتراژ مکانی پارتو: خرید در «${bestArbitrage.hoodName}» + سپر نقدینگی` : 'آربیتراژ مکانی پارتو: خرید در محله هم‌تراز زیر ارزش ذاتی + سپر نقدینگی',
-      subtitleFa: `حفظ کیفیت سکونتی همراه با آزادسازی ${Math.round(arbitrageSavingsRatio * 100)}٪ سرمایه برای بازده مرکب و نقدشوندگی`,
+      subtitleFa: `حفظ کیفیت سکونتی همراه با آزادسازی ${toPersianNum(Math.round(arbitrageSavingsRatio * 100))}٪ سرمایه برای بازده مرکب و نقدشوندگی`,
     },
   ];
 
@@ -249,7 +252,7 @@ export function computeSavageMinimaxRegretMatrix(input: {
   return {
     cityId: safeCity, hoodId: targetHood.id, hoodName, targetSqm, horizonYears, targetUtilityScore,
     regimes: [...MACRO_REGIMES_3Y], strategies: rows, minimaxWinnerId: minimaxWinner.strategyId,
-    minimaxSummaryFa: `بر اساس معیار «کمینه‌سازی حداکثر پشیمانی ساواج» (Savage Minimax Regret)، راهبرد «${minimaxWinner.titleFa}» کمترین ریسک پشیمانی (${minimaxWinner.maxRegretMillion.toLocaleString('fa-IR')} م.ت در بدترین سناریوی کلان) و میانگین ثروت ۳ ساله ${minimaxWinner.expectedWealthMillion.toLocaleString('fa-IR')} م.ت را ایجاد می‌کند.`,
+    minimaxSummaryFa: `بر اساس معیار «کمینه‌سازی حداکثر پشیمانی ساواج» (Savage Minimax Regret)، راهبرد «${minimaxWinner.titleFa}» کمترین ریسک پشیمانی (${toPersianNum(minimaxWinner.maxRegretMillion)} م.ت در بدترین سناریوی کلان) و میانگین ثروت ۳ ساله ${toPersianNum(minimaxWinner.expectedWealthMillion)} م.ت را ایجاد می‌کند.`,
     paretoAlternatives: candidates,
   };
 }

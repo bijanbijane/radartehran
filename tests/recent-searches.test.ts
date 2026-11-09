@@ -53,7 +53,18 @@ assert.deepEqual(top5, ['شهرک غرب', 'زعفرانیه', 'تجریش', 'س
 recordRecentSearch('   ');
 assert.equal(getRecentSearches().length, MAX_RECENT_SEARCHES);
 
-// 6. Clear history
+// 6. Removing individual search items
+clearAllRecentSearches();
+recordRecentSearch('ونک');
+recordRecentSearch('یوسف‌آباد');
+recordRecentSearch('گیشا');
+assert.deepEqual(getRecentSearches(), ['گیشا', 'یوسف‌آباد', 'ونک']);
+import { removeRecentSearch } from '../src/components/SearchHistory';
+const afterRemoval = removeRecentSearch('یوسف‌آباد');
+assert.deepEqual(afterRemoval, ['گیشا', 'ونک'], 'Must remove selected item and keep others');
+assert.deepEqual(getRecentSearches(), ['گیشا', 'ونک']);
+
+// 7. Clear history
 clearAllRecentSearches();
 assert.deepEqual(getRecentSearches(), [], 'History must be cleared after clearAllRecentSearches');
 

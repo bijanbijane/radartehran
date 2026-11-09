@@ -270,6 +270,13 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
     app.get("*all", (req, res) => serveProdIndex(req, res, "Not Found"));
   }
   app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (err instanceof SyntaxError && "status" in err && (err as { status: number }).status === 400) {
+      if (!res.headersSent) {
+        res.setHeader("Cache-Control", "no-store");
+        res.status(400).json({ status: "error", code: "INVALID_JSON_BODY", message: "ساختار بدنه درخواست نامعتبر است." });
+      }
+      return;
+    }
     recordAbuseSignal(getClientIp(req), "server_error"); pushAuditLog("WARN", `خطای مهارشده سرور در مسیر ${req.path}`);
     if (!res.headersSent) { res.setHeader("Cache-Control", "no-store"); res.setHeader("Pragma", "no-cache"); res.status(500).json({ status: "error", code: "INTERNAL_SERVER_ERROR", message: "خطای داخلی در سرور رخ داد." }); }
   });

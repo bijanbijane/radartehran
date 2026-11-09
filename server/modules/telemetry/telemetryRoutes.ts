@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from 'express';
+import { verifyAdminApiAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { TelemetryDataProcessingService } from './telemetryService';
 import type { IngestibleTelemetryBatchItem } from './telemetryTypes';
 import { formatTelemetryBenchmarkIntl } from './telemetryTypes';
@@ -11,6 +12,33 @@ export interface TelemetryModuleOptions {
 }
 
 const registeredTelemetryApps = new WeakSet<Express>();
+
+async function ensureTelemetryAdminAuthorized(
+  req: Request,
+  res: Response,
+  options?: TelemetryModuleOptions,
+): Promise<boolean> {
+  if (options?.verifyAdminAuth) {
+    const auth = await options.verifyAdminAuth(req);
+    if (!auth.ok) {
+      res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
+      return false;
+    }
+    return true;
+  }
+  const fallbackAuth = await verifyAdminApiAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+  );
+  if (!fallbackAuth.authorized) {
+    res.status(fallbackAuth.statusCode).json({
+      status: 'error',
+      code: fallbackAuth.reason || 'ADMIN_FORBIDDEN',
+      message: 'دسترسی به عیب‌یابی و پاک‌سازی تله‌متری نیازمند احراز هویت مدیر سیستم است.',
+    });
+    return false;
+  }
+  return true;
+}
 
 /**
  * Express router registration for the Telemetry & Data Processing Module.
@@ -75,13 +103,7 @@ export function registerTelemetryModuleRoutes(app: Express, options?: TelemetryM
 
   app.get('/api/v2/telemetry/diagnostics', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (options?.verifyAdminAuth) {
-      const auth = await options.verifyAdminAuth(req);
-      if (!auth.ok) {
-        res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
-        return;
-      }
-    }
+    if (!(await ensureTelemetryAdminAuthorized(req, res, options))) return;
     const diagnostics = service.getDiagnostics();
     res.status(200).json({
       status: 'ok',
@@ -90,13 +112,8 @@ export function registerTelemetryModuleRoutes(app: Express, options?: TelemetryM
   });
 
   app.post('/api/v2/telemetry/retention/purge', async (req: Request, res: Response) => {
-    if (options?.verifyAdminAuth) {
-      const auth = await options.verifyAdminAuth(req);
-      if (!auth.ok) {
-        res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
-        return;
-      }
-    }
+    res.setHeader('Cache-Control', 'no-store');
+    if (!(await ensureTelemetryAdminAuthorized(req, res, options))) return;
     const retentionDays =
       typeof req.body?.retentionDays === 'number' && req.body.retentionDays >= 1
         ? req.body.retentionDays

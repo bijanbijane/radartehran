@@ -101,7 +101,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
             type="button"
             data-testid="toggle-split-map-btn"
             onClick={() => setSplitMapMode((s) => !s)}
-            className="flex px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold items-center gap-1 transition cursor-pointer whitespace-nowrap"
+            className="hidden lg:flex px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold items-center gap-1 transition cursor-pointer whitespace-nowrap"
           >
             <span>{splitMapMode ? (isEn ? 'Expand Panel' : 'نمای عریض پنل') : (isEn ? 'Split Map' : 'کنار نقشه زنده')}</span>
           </button>

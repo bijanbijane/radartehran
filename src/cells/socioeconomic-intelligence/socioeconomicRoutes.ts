@@ -15,6 +15,8 @@ import {
   type RawPriceObservation,
 } from '../valuation-authority/robustValuationEngine';
 import { buildNeighborhoodEpistemicDossier } from '../decision-epistemology/epistemicDecisionEngine';
+import { synthesizeExecutiveDecisionReport } from '../decision-epistemology/unifiedDecisionSynthesisEngine';
+import { verifyAdminApiAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
 import {
   aggregateNeighborhoodResearchRollup,
   getOrBuildNeighborhoodRollup,
@@ -63,10 +65,17 @@ export function registerSocioeconomicRoutes(
         hoodName: rollup.hoodName,
         buyPerSqm: rollup.medianPriceSqm,
       });
+      const executiveSynthesis = synthesizeExecutiveDecisionReport(
+        hoodId,
+        rollup.hoodName,
+        cityId,
+        rollup.weightedReferencePriceSqm,
+      );
       res.status(200).json({
         status: 'ok',
         rollup,
         epistemicDossier,
+        executiveSynthesis,
         referencePriceIntlText: formatMillionTomanAsIntlCurrency(rollup.weightedReferencePriceSqm, 'USD', 'fa'),
       });
     } catch (err) {
@@ -131,6 +140,18 @@ export function registerSocioeconomicRoutes(
       const auth = await options.verifyAdminAuth(req);
       if (!auth.ok) {
         res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
+        return;
+      }
+    } else {
+      const fallbackAuth = await verifyAdminApiAuthorization(
+        req.headers as Record<string, string | string[] | undefined>,
+      );
+      if (!fallbackAuth.authorized) {
+        res.status(fallbackAuth.statusCode).json({
+          status: 'error',
+          code: fallbackAuth.reason || 'ADMIN_FORBIDDEN',
+          message: 'اجرای دستی تجمیع پژوهشی محلات نیازمند احراز هویت مدیر سیستم است.',
+        });
         return;
       }
     }

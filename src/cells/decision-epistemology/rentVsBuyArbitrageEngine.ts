@@ -178,7 +178,7 @@ export function generateCasperRentVsBuyDossier(
 ): CasperRentVsBuyDossier {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
-  const resolvedRahn = hood.rahn80m ?? Math.round(resolvedPrice * 80 * 0.16);
+  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
   const fiveYearAnalysis = simulateRentVsBuyEquivalence({
     horizonYears: 5,

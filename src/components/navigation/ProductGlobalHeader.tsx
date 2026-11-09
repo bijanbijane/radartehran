@@ -63,14 +63,14 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors overflow-x-clip">
-      <div className="w-full max-w-[1600px] mx-auto px-3 lg:px-4 h-16 flex items-center justify-between gap-2">
+      <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-3 lg:px-4 h-16 flex items-center justify-between gap-1.5">
         {/* Brand & City Picker */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => onSelectPrimaryView('map')}
             title={fxSampleHint ? `100M IRT ≈ ${fxSampleHint}` : isEn ? 'Return to interactive map' : 'بازگشت به نقشه اصلی'}
-            className="flex items-center gap-2 group text-start focus-visible:outline-2 focus-visible:outline-emerald-600 rounded-lg cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 group text-start focus-visible:outline-2 focus-visible:outline-emerald-600 rounded-lg cursor-pointer"
           >
             <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-black transition group-hover:bg-emerald-700 dark:group-hover:bg-emerald-400">
               <MapIcon className="w-4 h-4 stroke-[2.2]" />
@@ -90,7 +90,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             aria-label={isEn ? 'Select City' : 'انتخاب کلان‌شهر'}
             value={activeCity}
             onChange={(e) => onSwitchCity(e.target.value as CityId)}
-            className="md:hidden px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-[11px] font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer"
+            className="md:hidden px-1.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-[11px] font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer"
           >
             {CITIES.map((c) => (
               <option key={c.id} value={c.id}>{isEn ? c.labelEn : c.labelFa}</option>
@@ -105,7 +105,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                 type="button"
                 aria-pressed={activeCity === c.id}
                 onClick={() => onSwitchCity(c.id)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition whitespace-nowrap cursor-pointer ${
+                className={`px-1.5 xl:px-2 py-0.5 rounded-md text-[11px] font-bold transition whitespace-nowrap cursor-pointer ${
                   activeCity === c.id
                     ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -118,7 +118,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
         </div>
 
         {/* Primary View Tabs (Desktop / Tablet) */}
-        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 overflow-x-auto no-scrollbar shrink">
+        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 overflow-x-auto no-scrollbar shrink-0">
           {navItems.map((item) => {
             const isActive = primaryView === item.id;
             return (
@@ -128,7 +128,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                 data-testid={`global-nav-${item.id}`}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => onSelectPrimaryView(item.id)}
-                className={`relative flex items-center gap-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+                className={`relative flex items-center gap-1 xl:gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
                   isActive
                     ? 'text-slate-900 dark:text-white bg-slate-100/90 dark:bg-slate-800 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
@@ -142,14 +142,14 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
         </nav>
 
         {/* Global Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-0.5 sm:gap-1.5 shrink-0">
           {onOpenSearch && (
             <button
               type="button"
               onClick={onOpenSearch}
               aria-label={isEn ? 'Search neighborhood' : 'جستجوی محله'}
               title={isEn ? 'Search neighborhood (/)' : 'جستجوی محله (/)'}
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
             >
               <Search className="w-3.5 h-3.5 text-slate-400" />
               <span className="hidden 2xl:inline max-w-[90px] truncate">{searchQuery?.trim() || (isEn ? 'Search...' : 'جستجو...')}</span>
@@ -175,10 +175,10 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               onClick={onOpenBudgetFilter}
               aria-label={isEn ? 'Budget & Filters' : 'تنظیمات بودجه و فیلترها'}
               title={isEn ? 'Budget & Filters' : 'تنظیمات بودجه و فیلترها'}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1 p-1.5 sm:px-2 sm:py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden xl:inline">{isEn ? 'Budget' : 'بودجه'}</span>
+              <span className="hidden 2xl:inline">{isEn ? 'Budget' : 'بودجه'}</span>
             </button>
           )}
 
@@ -189,10 +189,10 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               aria-label={isEn ? 'Security & Diagnostics' : 'دیباگ و امنیت سیستم'}
               title={isEn ? 'Security & Server Diagnostics' : 'بخش امنیت و دیباگ سلامت سرور'}
               data-testid="global-header-security-btn"
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 hover:bg-indigo-100/80 transition cursor-pointer whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800 hover:bg-indigo-100/80 transition cursor-pointer whitespace-nowrap"
             >
               <Shield className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="hidden xl:inline">{isEn ? 'Security' : 'امنیت'}</span>
+              <span className="hidden 2xl:inline">{isEn ? 'Security' : 'امنیت'}</span>
             </button>
           )}
 
@@ -224,7 +224,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             aria-label={appleTheme === 'dark' ? (isEn ? 'Light Mode' : 'حالت روز') : (isEn ? 'Dark Mode' : 'حالت شب')}
             title={appleTheme === 'dark' ? (isEn ? 'Light Mode' : 'حالت روز') : (isEn ? 'Dark Mode' : 'حالت شب')}
             data-testid="theme-toggle-btn"
-            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             {appleTheme === 'dark' ? (
               <Sun className="w-4 h-4 text-amber-400" />

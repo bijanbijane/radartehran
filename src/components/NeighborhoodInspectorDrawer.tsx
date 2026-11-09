@@ -222,7 +222,19 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             {(activeTab === 'scorecard' || activeTab === 'vote') && ( <NeighborhoodPhotoGallery selectedHood={selectedHood} hoodLandmarks={hoodLandmarks} onFocusLandmarkOnMap={onFocusLandmarkOnMap} />
             )}
             <div className="my-3.5">
-              <Stage2MasterWidget hoodId={selectedHood.id} hoodName={selectedHood.name} cityId={activeCity} basePriceSqm={selectedHood.buyPerSqm} intlCurrency={intlCurrency} onSelectCompareHood={(name) => { const found = evaluatedNeighborhoods.find((h) => h.name === name); if (found) onSelectNeighborhood(found); }} />
+              <Stage2MasterWidget
+                hoodId={selectedHood.id}
+                hoodName={selectedHood.name}
+                cityId={activeCity}
+                basePriceSqm={selectedHood.buyPerSqm}
+                targetSqm={targetSqm}
+                intlCurrency={intlCurrency}
+                initialTab={activeTab === 'market' ? 'HOUSING_CYCLE' : (activeTab === 'vote' || activeTab === 'reviews') ? 'CROWD_CLAIMS' : 'DECISION_SYNTHESIS'}
+                onSelectCompareHood={(name) => {
+                  const found = evaluatedNeighborhoods.find((h) => h.name === name) || allMultiCityHoods.find((h) => h.name === name);
+                  if (found) onSelectNeighborhood(found as EvaluatedNeighborhood);
+                }}
+              />
             </div>
             <ExpandableComparisonTable
               currentHood={selectedHood} allNeighborhoods={evaluatedNeighborhoods}

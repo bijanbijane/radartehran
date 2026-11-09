@@ -27,7 +27,7 @@ function FeatureErrorUnitContextBadge(): React.ReactElement {
   const sample80mTotalMillions = 120 * 80;
   const sampleMonthlyRentMillions = 45;
   return (
-    <span className="inline-block text-[10px] text-slate-500 mr-1.5 tabular-nums">
+    <span className="inline-block text-[10px] text-slate-500 dark:text-slate-400 mr-1.5 tabular-nums">
       · واحد: {formatAreaUnitLabel(areaUnit)} ({toPersianNum(refUnitPrice)} م) · ارز: {intlCurrency}
       {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(refUnitPrice, intlCurrency, locale)})` : ''} · معیار {formatAreaShort(80, areaUnit)}: {toPersianNum(sample80mTotalMillions)} م · اجاره: {toPersianNum(sampleMonthlyRentMillions)} م
     </span>

@@ -164,9 +164,9 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
                   <span
                     className={`px-1.5 py-0.5 rounded font-extrabold text-[10px] ${
                       issue.severity === 'CRITICAL_NEGATIVE'
-                        ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                        ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
                         : issue.severity === 'OUT_OF_RANGE'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
                           : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
                     }`}
                   >
@@ -211,7 +211,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
               <div key={log.id} className="px-3 py-2 space-y-1 hover:bg-rose-50/40 dark:hover:bg-rose-950/30 text-[11px]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-mono font-extrabold text-[10px] uppercase">
+                    <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-mono font-extrabold text-[10px] uppercase">
                       {log.operationType}
                     </span>
                     <code className="font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded" dir="ltr">
@@ -257,11 +257,11 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
                       {item.docId} </code>
                     <span className="font-extrabold text-slate-900 dark:text-slate-100">{item.name}</span>
                     {!item.hasValidCoordinates && (
-                      <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 font-extrabold text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-extrabold text-[10px]">
                         مختصات نامعتبر
                       </span>
                     )} {!item.hasValidCityId && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-extrabold text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-extrabold text-[10px]">
                         فاقد cityId معتبر
                       </span>
                     )} </div>

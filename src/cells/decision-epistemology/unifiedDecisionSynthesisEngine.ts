@@ -6,8 +6,10 @@
  * Walk-Away Price Ceiling, and actionable executive negotiation directive.
  */
 
-import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { classifyHousingCycleRegime } from './housingCycleRegimeEngine';
 import { computeAkerlofLemonIndex } from './spatialContagionEngine';
 import { computeDixitPindyckRealOption } from './realOptionsLiquidityEngine';
@@ -21,6 +23,7 @@ export type DealExecutionVerdictId =
 
 export interface DecisionPillarScore {
   id: string;
+  targetTabId: string;
   nameFa: string;
   score: number; // 0 to 100
   weightPct: number;
@@ -44,6 +47,8 @@ export interface UnifiedDecisionSynthesisReport {
   targetDiscountMillion: number;
   negotiationOpeningOfferMillion: number;
   walkAwayCeilingTotalMillion: number;
+  fairTotalIntlText: string;
+  walkAwayTotalIntlText: string;
   pillars: DecisionPillarScore[];
   generatedAtIso: string;
 }
@@ -63,50 +68,56 @@ export function synthesizeExecutiveDecisionReport(
   cityId: string = 'tehran',
   basePriceSqm: number = 120,
   customAskingPriceSqm?: number,
-  targetSqm: number = 80
+  targetSqm: number = 80,
+  intlCurrency: IntlCurrencyCode = 'USD',
 ): UnifiedDecisionSynthesisReport {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const fairPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const askingPrice = customAskingPriceSqm ?? Math.round(fairPrice * 1.085);
-  const rahn80m = hood.rahn80m ?? Math.round(fairPrice * 80 * 0.16);
+  const rahn80m = Math.round((fairPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
   // 1. Valuation Pillar: spread between asking and fair price
-  const spreadPct = Number((((askingPrice - fairPrice) / fairPrice) * 100).toFixed(1));
-  const valuationScore = Math.round(Math.min(100, Math.max(10, 100 - spreadPct * 6.0)));
+  const spreadPct = Number((((askingPrice - fairPrice) / Math.max(1, fairPrice)) * 100).toFixed(1));
+  const valuationScore = Math.round(Math.min(100, Math.max(5, 100 - spreadPct * 6.0)));
 
-  // 2. Cycle Pillar: bubble exhaustion inverse
-  const cycleReport = classifyHousingCycleRegime(fairPrice, rahn80m);
+  // 2. Cycle Pillar: bubble exhaustion evaluated at the proposed transaction price
+  const cycleReport = classifyHousingCycleRegime(askingPrice, rahn80m, 6, Math.max(5, spreadPct));
   const cycleScore = Math.round(Math.min(100, Math.max(10, 100 - cycleReport.bubbleExhaustionRiskPct * 0.9)));
 
-  // 3. Information Asymmetry Pillar: Akerlof index inverse
-  const akerlof = computeAkerlofLemonIndex(fairPrice, spreadPct);
-  const asymmetryScore = Math.round(Math.min(100, Math.max(10, 100 - akerlof.lemonIndex * 0.9)));
+  // 3. Information Asymmetry Pillar: Akerlof index + seller asking distortion
+  const akerlof = computeAkerlofLemonIndex(hood.id, hood.name || hoodName, fairPrice, hood);
+  const effectiveLemonScore = Math.min(98, Math.round(akerlof.lemonIndexScore + Math.max(0, spreadPct - 8) * 0.75));
+  const asymmetryScore = Math.round(Math.min(100, Math.max(10, 100 - effectiveLemonScore * 0.9)));
 
-  // 4. Liquidity & Real Options Pillar: hurdle rate inverse
-  const option = computeDixitPindyckRealOption(fairPrice, 0.22, 0.24, 0.035);
-  const hurdleExcess = Math.max(0, (option.hurdleRateMultiplier - 1.25) * 100);
-  const liquidityScore = Math.round(Math.min(100, Math.max(15, 95 - hurdleExcess * 0.8)));
+  // 4. Liquidity & Real Options Pillar: hurdle rate inverse + illiquidity of overpriced listing
+  const annualRentalYield = (rahn80m * 0.36) / Math.max(1, askingPrice * 80);
+  const option = computeDixitPindyckRealOption(askingPrice, annualRentalYield, askingPrice > 160 ? 0.30 : 0.24, 0.22, 6);
+  const hurdleExcess = Math.max(0, (option.hurdleRateMultiplier - 1.25) * 100) + Math.max(0, spreadPct - 10) * 1.1;
+  const liquidityScore = Math.round(Math.min(100, Math.max(10, 95 - hurdleExcess * 0.8)));
 
-  // 5. Downside Tail Risk Pillar: Monte Carlo VaR
-  const merton = simulateMertonJumpDiffusionVaR(fairPrice, { horizonMonths: 24, trialCount: 500 }, 777);
-  const downsideScore = Math.round(Math.min(100, Math.max(10, 100 - merton.metrics.probRealCapitalLossPct * 1.2)));
+  // 5. Downside Tail Risk Pillar: Monte Carlo VaR + immediate mark-to-market drawdown risk
+  const merton = simulateMertonJumpDiffusionVaR(askingPrice, { horizonMonths: 24, trialCount: 500 }, 777);
+  const overpaymentDrawdownPenalty = Math.max(0, spreadPct - 8) * 0.9;
+  const downsideScore = Math.round(Math.min(100, Math.max(10, 100 - merton.metrics.probRealCapitalLossPct * 1.2 - overpaymentDrawdownPenalty)));
 
   // 6. Data Provenance & Epistemic Confidence Pillar
-  const confidenceScore = Math.round(Math.min(100, Math.max(40, (hood.confidenceScore ?? 75) + 10)));
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name || hoodName, fairPrice, []);
+  const epistemicOutlierPenalty = Math.max(0, spreadPct - 18) * 0.35;
+  const confidenceScore = Math.round(Math.min(100, Math.max(35, (agg.confidenceScore ?? 75) + 8 - epistemicOutlierPenalty)));
 
   const pillars: DecisionPillarScore[] = [
-    { id: 'VALUATION', nameFa: 'حاشیه امنیت قیمت‌گذاری (Hedonic)', score: valuationScore, weightPct: 25, gradeFa: valuationScore >= 70 ? 'عالی' : valuationScore >= 50 ? 'متوسط' : 'پرریسک', detailFa: `شکاف قیمت پیشنهادی: ٪${spreadPct}` },
-    { id: 'CYCLE', nameFa: 'رژیم چرخه مسکن و حباب‌سنجی', score: cycleScore, weightPct: 20, gradeFa: cycleScore >= 70 ? 'کف‌سازی/رشد' : cycleScore >= 50 ? 'نوسانی' : 'اشباع حباب', detailFa: cycleReport.regimeNameFa.split('(')[0].trim() },
-    { id: 'ASYMMETRY', nameFa: 'تقارن اطلاعاتی و سلامت آگهی‌ها', score: asymmetryScore, weightPct: 15, gradeFa: asymmetryScore >= 70 ? 'شفاف' : 'عدم تقارن', detailFa: `شاخص آکرلوف: ${akerlof.lemonIndex} از ۱۰۰` },
-    { id: 'LIQUIDITY', nameFa: 'نقدشوندگی و ارزش اختیار تعویق', score: liquidityScore, weightPct: 15, gradeFa: liquidityScore >= 70 ? 'روان' : 'انجماد نسبی', detailFa: `ضریب هردل: ${option.hurdleRateMultiplier}x` },
-    { id: 'TAIL_RISK', nameFa: 'پوشش ریسک دم بلند (Merton VaR)', score: downsideScore, weightPct: 15, gradeFa: downsideScore >= 70 ? 'امن' : 'نوسان‌پذیر', detailFa: `احتمال زیان واقعی: ٪${merton.metrics.probRealCapitalLossPct}` },
-    { id: 'EPISTEMIC', nameFa: 'قطعیت معرفتی داده‌های میدانی', score: confidenceScore, weightPct: 10, gradeFa: confidenceScore >= 75 ? 'مستند' : 'نیازمند استعلام', detailFa: `امتیاز اعتبارسنجی: ${confidenceScore}٪` },
+    { id: 'VALUATION', targetTabId: 'PARETO_REGRET', nameFa: 'حاشیه امنیت قیمت‌گذاری (v6.4)', score: valuationScore, weightPct: 25, gradeFa: valuationScore >= 70 ? 'عالی' : valuationScore >= 50 ? 'متوسط' : 'پرریسک', detailFa: `شکاف قیمت پیشنهادی: ${toPersianNum(spreadPct)}٪` },
+    { id: 'CYCLE', targetTabId: 'HOUSING_CYCLE', nameFa: 'رژیم چرخه مسکن و حباب‌سنجی', score: cycleScore, weightPct: 20, gradeFa: cycleScore >= 70 ? 'کف‌سازی/رشد' : cycleScore >= 50 ? 'نوسانی' : 'اشباع حباب', detailFa: cycleReport.regimeNameFa.split('(')[0].trim() },
+    { id: 'ASYMMETRY', targetTabId: 'SPATIAL_CONTAGION', nameFa: 'تقارن اطلاعاتی و سلامت آگهی‌ها', score: asymmetryScore, weightPct: 15, gradeFa: asymmetryScore >= 70 ? 'شفاف' : 'عدم تقارن', detailFa: `شاخص آکرلوف: ${toPersianNum(effectiveLemonScore)} از ۱۰۰` },
+    { id: 'LIQUIDITY', targetTabId: 'REAL_OPTIONS', nameFa: 'نقدشوندگی و ارزش اختیار تعویق', score: liquidityScore, weightPct: 15, gradeFa: liquidityScore >= 70 ? 'روان' : 'انجماد نسبی', detailFa: `ضریب آستانه تعویق: ${toPersianNum(option.hurdleRateMultiplier)} برابر` },
+    { id: 'TAIL_RISK', targetTabId: 'MONTE_CARLO_VAR', nameFa: 'پوشش ریسک دم بلند (مونت‌کارلو)', score: downsideScore, weightPct: 15, gradeFa: downsideScore >= 70 ? 'امن' : 'نوسان‌پذیر', detailFa: `احتمال زیان واقعی: ${toPersianNum(merton.metrics.probRealCapitalLossPct)}٪` },
+    { id: 'EPISTEMIC', targetTabId: 'EPISTEMIC_PROVENANCE', nameFa: 'قطعیت معرفتی داده‌های میدانی', score: confidenceScore, weightPct: 10, gradeFa: confidenceScore >= 75 ? 'مستند' : 'نیازمند استعلام', detailFa: `امتیاز اعتبارسنجی: ${toPersianNum(confidenceScore)}٪` },
   ];
 
   // Weighted Composite Deal Execution Readiness Score
-  const readinessScore = Math.round(
-    pillars.reduce((acc, p) => acc + (p.score * p.weightPct) / 100, 0)
-  );
+  const rawReadiness = pillars.reduce((acc, p) => acc + (p.score * p.weightPct) / 100, 0);
+  const severeOverpricePenalty = spreadPct > 25 ? (spreadPct - 25) * 0.45 : 0;
+  const readinessScore = Math.round(Math.max(5, Math.min(100, rawReadiness - severeOverpricePenalty)));
 
   let verdictId: DealExecutionVerdictId;
   let verdictTitleFa: string;
@@ -115,22 +126,22 @@ export function synthesizeExecutiveDecisionReport(
 
   if (readinessScore >= 74) {
     verdictId = 'IMMEDIATE_EXECUTION';
-    verdictTitleFa = 'سبز · آماده برای ورود و نهایی‌سازی معامله (Execute Now)';
+    verdictTitleFa = 'سبز · آماده ورود و نهایی‌سازی معامله در محدوده ارزش ذاتی';
     verdictBadgeColor = 'emerald';
     executiveDirectiveFa = 'ملک دارای حاشیه امنیت قیمتی مناسب، ریسک حباب پایین و شفافیت اطلاعاتی مطلوب است؛ پیشنهاد قیمت منصفانه را ارائه و به سمت اتاق قرارداد حرکت کنید.';
   } else if (readinessScore >= 58) {
     verdictId = 'AGGRESSIVE_NEGOTIATION';
-    verdictTitleFa = 'آبی · چانه‌زنی تهاجمی الزامی است (Aggressive Bargain)';
+    verdictTitleFa = 'آبی · ورود مشروط به چانه‌زنی تهاجمی و اخذ تخفیف پای نشست';
     verdictBadgeColor = 'indigo';
-    executiveDirectiveFa = 'فاصله قیمت پیشنهادی با ارزش کارشناسی نیازمند تعدیل ۸ تا ۱۲ درصدی است؛ تنها با پذیرش تخفیف پای قرارداد و شرط سقف قیمت وارد معامله شوید.';
+    executiveDirectiveFa = 'فاصله قیمت پیشنهادی با ارزش قطعی مدل v6.4 نیازمند تعدیل در جلسه نشست است؛ تنها با پذیرش تخفیف پای قرارداد و رعایت خط قرمز قیمت وارد معامله شوید.';
   } else if (readinessScore >= 42) {
     verdictId = 'STRATEGIC_PATIENCE';
-    verdictTitleFa = 'زرد · صبر استراتژیک و انباشت نقدینگی (Wait & Accumulate)';
+    verdictTitleFa = 'زرد · صبر راهبردی، حفظ اختیار تعویق و انباشت نقدینگی';
     verdictBadgeColor = 'amber';
     executiveDirectiveFa = 'ارزش اختیار تعویق بالاست و بازار در فاز فرسایش حباب قرار دارد؛ از تعقیب قیمت فروشنده خودداری کرده و سرمایه را در سبد طلا/درآمد ثابت حفظ کنید.';
   } else {
     verdictId = 'ABORT_HIGH_RISK';
-    verdictTitleFa = 'قرمز · انصراف قطعی و خروج از مذاکره (Abort / Walk Away)';
+    verdictTitleFa = 'قرمز · انصراف قطعی و ترک مذاکره به دلیل حباب و عدم تقارن';
     verdictBadgeColor = 'rose';
     executiveDirectiveFa = 'ملک به شدت بیش‌قیمت‌گذاری شده و عدم تقارن اطلاعاتی و ریسک دم بلند در سقف تاریخی است؛ خرید در این شرایط تله ثروت ایجاد می‌کند.';
   }
@@ -138,14 +149,15 @@ export function synthesizeExecutiveDecisionReport(
   // Financial figures for negotiation
   const totalAskingMillion = Math.round(askingPrice * targetSqm);
   const totalFairMillion = Math.round(fairPrice * targetSqm);
-  const walkAwayPriceCeilingPerSqm = Math.round(fairPrice * 1.02);
+  // Rational boundary: Walk-away ceiling is never higher than asking price if seller is already below fair value
+  const walkAwayPriceCeilingPerSqm = askingPrice < fairPrice ? askingPrice : Math.round(fairPrice * 1.02);
   const walkAwayCeilingTotalMillion = Math.round(walkAwayPriceCeilingPerSqm * targetSqm);
   const targetDiscountMillion = Math.max(0, totalAskingMillion - totalFairMillion);
-  const negotiationOpeningOfferMillion = Math.round(totalFairMillion * 0.95);
+  const negotiationOpeningOfferMillion = Math.round(Math.min(askingPrice * 0.95, totalFairMillion * 0.95 / targetSqm) * targetSqm);
 
   return {
     hoodId,
-    hoodName,
+    hoodName: hood.name || hoodName,
     cityId,
     askingPricePerSqm: askingPrice,
     fairPricePerSqm: fairPrice,
@@ -159,6 +171,8 @@ export function synthesizeExecutiveDecisionReport(
     targetDiscountMillion,
     negotiationOpeningOfferMillion,
     walkAwayCeilingTotalMillion,
+    fairTotalIntlText: formatMillionTomanAsIntlCurrency(totalFairMillion, intlCurrency, 'fa'),
+    walkAwayTotalIntlText: formatMillionTomanAsIntlCurrency(walkAwayCeilingTotalMillion, intlCurrency, 'fa'),
     pillars,
     generatedAtIso: new Date().toISOString(),
   };

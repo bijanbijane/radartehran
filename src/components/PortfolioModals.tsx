@@ -26,7 +26,7 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
                 </span>
                 <select
                   aria-label="محله بازدید" value={visitHoodId} onChange={(e) => setVisitHoodId(Number(e.target.value))}
-                  className="bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2 py-1 font-bold text-slate-800 dark:text-slate-100 text-xs"
+                  className="max-w-[190px] sm:max-w-[260px] truncate bg-slate-100/80 dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600 rounded-lg px-2 py-1 font-bold text-slate-800 dark:text-slate-100 text-xs"
                 >
                   {evaluatedNeighborhoods.map((n) => { const uBuy = Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1)); const fx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uBuy, intlCurrency, radarLocale)}` : ''; return ( <option key={n.id} value={n.id}>محله {n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(uBuy)} م{fx} · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد)</option> ); })}
                 </select>
@@ -77,16 +77,16 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
               </div>
             </form>
             {visitedHomes.length > 0 && ( <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-1 apple-segmented p-0.5 rounded-lg font-bold">
+                <div className="flex items-center gap-1 apple-segmented dark:bg-slate-900 p-0.5 rounded-lg font-bold">
                   <button
                     type="button" onClick={() => setVisitSortBy('newest')}
-                    className={`px-2.5 py-1 rounded-md cursor-pointer ${visitSortBy === 'newest' ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}
+                    className={`px-2.5 py-1 rounded-md cursor-pointer ${visitSortBy === 'newest' ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}
                   >
                     جدیدترین بازدیدها
                   </button>
                   <button
                     type="button" onClick={() => setVisitSortBy('rating')}
-                    className={`px-2.5 py-1 rounded-md cursor-pointer ${visitSortBy === 'rating' ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}
+                    className={`px-2.5 py-1 rounded-md cursor-pointer ${visitSortBy === 'rating' ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}
                   >
                     بالاترین امتیاز (⭐)
                   </button>
@@ -227,11 +227,11 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
             <div className="apple-grouped-card dark:bg-slate-800/80 dark:border-slate-700 p-3.5 space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-slate-900 dark:text-slate-100">۳. هدف ملک جدید شما:</span>
-                <div className="flex items-center gap-1 apple-segmented">
+                <div className="flex items-center gap-1 apple-segmented dark:bg-slate-900">
                   {[
                     { id: 'new' as const, label: 'نوساز' }, { id: 'mid' as const, label: '۶ تا ۱۵ سال' }, { id: 'older' as const, label: 'قدیمی‌ساز' }, ].map((s) => ( <button
                       key={s.id} type="button" onClick={() => setTradeUpTargetAgeSegment(s.id)}
-                      className={`px-2 py-0.5 text-[10.5px] font-bold cursor-pointer ${tradeUpTargetAgeSegment === s.id ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}
+                      className={`px-2 py-0.5 text-[10.5px] font-bold cursor-pointer ${tradeUpTargetAgeSegment === s.id ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}
                     >
                       {s.label} </button>
                   ))} </div>
@@ -245,9 +245,9 @@ export interface PortfolioModalsProps { selectedHood: EvaluatedNeighborhood; eva
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="font-extrabold text-xs text-slate-900 dark:text-slate-100">محله‌های قابل ارتقا با سرمایه شما ({toPersianNum(displayedTradeUpHoods.length)} محله):</div>
-                <div className="flex items-center gap-1 apple-segmented">
-                  <button type="button" onClick={() => setTradeUpFilterMode('all')} className={`px-2 py-1 text-[10px] font-bold cursor-pointer ${tradeUpFilterMode === 'all' ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>همه محله‌های قابل خرید</button>
-                  <button type="button" onClick={() => setTradeUpFilterMode('cash_release')} className={`px-2 py-1 text-[10px] font-bold cursor-pointer ${tradeUpFilterMode === 'cash_release' ? 'apple-segmented-pill-active text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>آزادسازی نقدینگی (با پول نقد مازاد)</button>
+                <div className="flex items-center gap-1 apple-segmented dark:bg-slate-900">
+                  <button type="button" onClick={() => setTradeUpFilterMode('all')} className={`px-2 py-1 text-[10px] font-bold cursor-pointer ${tradeUpFilterMode === 'all' ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>همه محله‌های قابل خرید</button>
+                  <button type="button" onClick={() => setTradeUpFilterMode('cash_release')} className={`px-2 py-1 text-[10px] font-bold cursor-pointer ${tradeUpFilterMode === 'cash_release' ? 'apple-segmented-pill-active dark:bg-slate-800 text-emerald-800 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400'}`}>آزادسازی نقدینگی (با پول نقد مازاد)</button>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto">

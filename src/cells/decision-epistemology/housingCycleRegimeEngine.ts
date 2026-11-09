@@ -7,7 +7,9 @@
  */
 
 import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
+import { getNeighborhoodDeepInsight } from '../../data/neighborhoodInsights';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 
 export type HousingCycleRegimeId =
   | 'ACCUMULATION_RECOVERY'
@@ -26,7 +28,7 @@ export interface HousingCycleRegimeReport {
   regimeNameFa: string;
   cycleScore: number; // 0 (deep freeze) to 100 (extreme speculative bubble)
   bubbleExhaustionRiskPct: number; // probability that current growth is near market peak
-  priceToRentRatio: number; // P/R multiple (equilibrium ~ 18-22x)
+  priceToRentRatio: number; // P/R multiple (equilibrium ~ 18-22x annual rent)
   historicalMomentum6mPct: number;
   askingToDealSpreadPct: number;
   regimeDescriptionFa: string;
@@ -51,29 +53,31 @@ function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: stri
 }
 
 /**
- * Classifies neighborhood market dynamics into one of 4 macroeconomic cycle regimes.
- */
+  * Classifies neighborhood market dynamics into one of 4 macroeconomic cycle regimes.
+  */
 export function classifyHousingCycleRegime(
   pricePerSqm: number,
   rahn80m: number,
   trafficScore: number = 7,
-  customSpreadPct?: number
+  customSpreadPct?: number,
+  customMomentum6mPct?: number
 ): HousingCycleRegimeReport {
   const buyCost80m = pricePerSqm * 80;
-  // Annual price-to-rahn ratio
-  const priceToRentRatio = Number((buyCost80m / Math.max(1, rahn80m)).toFixed(1));
+  // True Price-to-Annual-Rent (P/R) ratio: purchase price divided by annual rent equivalent (rahn80m * 0.36)
+  const annualRent80m = Math.max(1, rahn80m * 0.36);
+  const priceToRentRatio = Number((buyCost80m / annualRent80m).toFixed(1));
 
   // Inferred or provided asking-to-deal spread
   const askingToDealSpreadPct = customSpreadPct ?? (pricePerSqm >= 170 ? 14 : pricePerSqm >= 100 ? 10.5 : 7.5);
 
-  // Inferred 6-month growth momentum proxy
-  const historicalMomentum6mPct = pricePerSqm >= 160 ? 28 : pricePerSqm >= 95 ? 22 : 16;
+  // Inferred or empirical 6-month growth momentum
+  const historicalMomentum6mPct = customMomentum6mPct ?? (pricePerSqm >= 160 ? 28 : pricePerSqm >= 95 ? 22 : 16);
 
   // Composite Cycle Score (0 to 100)
-  // Higher P/R ratio, higher spread, higher momentum increase score towards exhaustion
-  const prComponent = Math.min(40, Math.max(0, (priceToRentRatio - 12) * 2.5));
+  // Equilibrium P/R is ~18-22x annual rent; higher P/R, higher spread, and higher momentum push towards exhaustion
+  const prComponent = Math.min(40, Math.max(0, (priceToRentRatio - 18.0) * 1.35));
   const spreadComponent = Math.min(30, Math.max(0, askingToDealSpreadPct * 2.0));
-  const momentumComponent = Math.min(30, Math.max(0, (historicalMomentum6mPct - 10) * 1.5));
+  const momentumComponent = Math.min(30, Math.max(0, (historicalMomentum6mPct - 10) * 1.5 - (trafficScore - 7) * 0.5));
   const cycleScore = Math.round(Math.min(99, Math.max(10, prComponent + spreadComponent + momentumComponent)));
 
   let regimeId: HousingCycleRegimeId;
@@ -84,43 +88,43 @@ export function classifyHousingCycleRegime(
 
   if (cycleScore >= 75) {
     regimeId = 'DISTRIBUTION_EXHAUSTION';
-    regimeNameFa = 'اشباع، قله چرخه و فرسایش حباب (Distribution Exhaustion)';
+    regimeNameFa = 'اشباع، قله چرخه و فرسایش حباب';
     bubbleExhaustionRiskPct = Math.min(92, Math.round(cycleScore * 0.95));
-    regimeDescriptionFa = 'شکاف قیمت پیشنهادی تا معامله عمیق شده و نسبت قیمت به رهن در محدوده اشباع سقف تاریخی قرار دارد؛ تقاضای مصرفی توان همراهی ندارد.';
+    regimeDescriptionFa = 'شکاف قیمت پیشنهادی تا معامله عمیق شده و نسبت قیمت به اجاره سالانه در محدوده اشباع قرار دارد؛ تقاضای مصرفی توان همراهی ندارد.';
     guidance = {
       firstTimeBuyerActionFa: 'از تعقیب قیمت‌های حبابی خودداری کنید؛ صبر در برابر آگهی‌های هیجانی یا تمرکز بر فایل‌های با تخفیف بیش از ۱۲٪ توصیه می‌شود.',
       tradeUpUpgraderActionFa: 'زمان ایده‌آل برای فروش ملک قبلی پیش از فرسایش بیشتر نقدینگی، مشروط به قطعی کردن همزمان خرید واحد مقصد.',
-      investorPreservationActionFa: 'ریسک بازده منفی در افق ۱۲ ماهه بالاست؛ تبدیل به دارایی‌های نقدتر یا املاک با بازده اجاره بالاتر ترجیح دارد.',
+      investorPreservationActionFa: 'ریسک بازده واقعی منفی در افق ۱۲ ماهه بالاست؛ تبدیل به دارایی‌های نقدتر یا املاک با بازده اجاره بالاتر ترجیح دارد.',
     };
   } else if (cycleScore >= 55) {
     regimeId = 'EXPANSION_SURGE';
-    regimeNameFa = 'رونق پرشتاب و سرریز تورمی (Expansion Surge)';
+    regimeNameFa = 'رونق پرشتاب و سرریز تورمی';
     bubbleExhaustionRiskPct = 48;
     regimeDescriptionFa = 'سرعت گردش معاملات بالاست و تمایل به حفظ دارایی ملکی از رشد عمومی تورم پیشی می‌گیرد؛ روند قیمتی صعودی اما نوسان‌پذیر است.';
     guidance = {
-      firstTimeBuyerActionFa: 'خرید سریع‌تر با اولویت متراژ کمتر یا سن بنای بالاتر برای سوار شدن بر موج تورمی پیش از پرش بعدی قیمت.',
+      firstTimeBuyerActionFa: 'خرید سریع‌تر با اولویت متراژ کمتر یا سن بنای میانی برای پوشش ریسک جهش بعدی قیمت.',
       tradeUpUpgraderActionFa: 'تسریع در ارتقای متراژ؛ در فاز رونق، شکاف ریالی میان متراژ کوچک و بزرگ روزبه‌روز افزایش می‌یابد.',
       investorPreservationActionFa: 'حفظ موقعیت و همراهی با روند؛ بیشترین بازدهی ناشی از اهرم زمانی در این فاز محقق می‌شود.',
     };
   } else if (cycleScore >= 35) {
     regimeId = 'CONTRACTION_STAGNATION';
-    regimeNameFa = 'رکود معاملاتی و چسبندگی قیمتی (Contraction Stagnation)';
+    regimeNameFa = 'رکود معاملاتی و چسبندگی قیمتی';
     bubbleExhaustionRiskPct = 25;
-    regimeDescriptionFa = 'حجم معاملات به حداقل رسیده و فروشندگان سرسخت با مقاومت در برابر کاهش اسمی، بازار را به انجماد کشانده‌اند؛ فرصت طلایی شکار تخفیف.';
+    regimeDescriptionFa = 'حجم معاملات کاهش یافته و فروشندگان با مقاومت در برابر کاهش اسمی، بازار را به انجماد کشانده‌اند؛ فرصت مناسب برای چانه‌زنی.',
     guidance = {
       firstTimeBuyerActionFa: 'بهترین فرصت برای چانه‌زنی تهاجمی (۸ تا ۱۵ درصد زیر قیمت پیشنهادی) با فروشندگانی که نیاز مبرم به نقدینگی دارند.',
-      tradeUpUpgraderActionFa: 'جابه‌جایی نیازمند حوصله زیاد برای فروش واحد فعلی است؛ مبایعه‌نامه معلق و مشروط به فروش امضا کنید.',
-      investorPreservationActionFa: 'انباشت تدریجی نقدینگی و شناسایی موقعیت‌های اکازیون زیر قیمت منصفانه کارشناسی (Hedonic).',
+      tradeUpUpgraderActionFa: 'جابه‌جایی نیازمند حوصله برای فروش واحد فعلی است؛ مبایعه‌نامه مشروط به تسویه مرحله‌ای تنظیم کنید.',
+      investorPreservationActionFa: 'انباشت تدریجی نقدینگی و شکار فایل‌های زیر قیمت قطعی کارشناسی (v6.4).',
     };
   } else {
     regimeId = 'ACCUMULATION_RECOVERY';
-    regimeNameFa = 'کف‌سازی تعادلی و پیش‌رونق (Accumulation Recovery)';
+    regimeNameFa = 'کف‌سازی تعادلی و پیش‌رونق';
     bubbleExhaustionRiskPct = 12;
-    regimeDescriptionFa = 'نسبت قیمت به رهن کاملاً منطقی و در کف تاریخی است؛ خریداران هوشمند به دور از هیجان رسانه‌ای در حال خرید آرام هستند.';
+    regimeDescriptionFa = 'نسبت قیمت به اجاره سالانه در محدوده تعادلی و بنیادی قرار دارد؛ خریداران مصرفی به دور از هیجان در حال معامله هستند.';
     guidance = {
-      firstTimeBuyerActionFa: 'امن‌ترین زمان ممکن برای ورود به بازار مسکن با کمترین ریسک سقوط قیمت در افق چندساله.',
-      tradeUpUpgraderActionFa: 'آسان‌ترین شرایط جابه‌جایی ملک به دلیل منطقی بودن قیمت‌های هر دو طرف معامله.',
-      investorPreservationActionFa: 'ورود حداکثری با افق ۳ ساله؛ بالاترین نسبت بازده به ریسک در این مرحله ثبت می‌شود.',
+      firstTimeBuyerActionFa: 'امن‌ترین زمان برای ورود به بازار مسکن با کمترین ریسک افت قدرت خرید در افق چندساله.',
+      tradeUpUpgraderActionFa: 'شرایط متعادل جابه‌جایی ملک به دلیل نزدیک بودن قیمت‌های پیشنهادی به قیمت معامله.',
+      investorPreservationActionFa: 'ورود با افق میان‌مدت؛ بالاترین نسبت بازده به ریسک در این فاز ثبت می‌شود.',
     };
   }
 
@@ -148,10 +152,24 @@ export function generateCasperHousingCycleReport(
 ): CasperHousingCycleDossier {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
-  const resolvedRahn = hood.rahn80m ?? (resolvedPrice * 80 * 0.2);
-  const trafficScore = hood.trafficInfo?.trafficScore ?? hood.air ?? 7;
+  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  const transitScore = hood.metro ?? 7;
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, []);
+  const insight = getNeighborhoodDeepInsight(hood);
+  const computedSpread = Number((((agg.askingPricePerSqm - agg.estimatedDealPricePerSqm) / Math.max(1, agg.askingPricePerSqm)) * 100).toFixed(1));
+  const empiricalSpreadPct = computedSpread > 0 ? computedSpread : undefined;
+  const empiricalMomentum6mPct =
+    insight?.futureGrowthScore && insight.futureGrowthScore > 0
+      ? Math.round((insight.futureGrowthScore - 6.0) * 8.2)
+      : undefined;
 
-  const cycle = classifyHousingCycleRegime(resolvedPrice, resolvedRahn, trafficScore);
+  const cycle = classifyHousingCycleRegime(
+    resolvedPrice,
+    resolvedRahn,
+    transitScore,
+    empiricalSpreadPct,
+    empiricalMomentum6mPct
+  );
 
   return {
     hoodId: hood.id,

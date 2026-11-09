@@ -10,6 +10,7 @@ import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type Primar
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
+import { SearchHistory } from '../SearchHistory';
 
 const CLIENT_STORAGE_KEYS_FALLBACK = [
   'tehran_housing_radar_v35_neighborhoods', 'tehran_radar_feature_flags_v35', 'tehran_radar_visited_homes_v1',
@@ -152,6 +153,20 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         </div>
       </div>
 
+      <SearchHistory
+        variant="chips"
+        title="آخرین محله‌های جست‌وجوشده"
+        evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+        mode={p.mode}
+        onSelectNeighborhood={(_name, matched) => {
+          if (matched) {
+            p.onSelectNeighborhood(matched);
+            p.onNavigateView?.('map');
+          }
+        }}
+        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+      />
+
       {/* Saved Favorites Section */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -247,7 +262,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
                       مشاهده کارنامه محله
                     </button>
                     {!isSelected && p.selectedHood && (
-                      <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood!, hoodB: hood } }); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood!, hoodB: hood } }); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}>
                         <Scale className="w-3.5 h-3.5" />
                       </button>
                     )}

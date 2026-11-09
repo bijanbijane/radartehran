@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "provenance": {
+    "project": "PROJECT BLACK BOX: Public Data Infrastructure Reconnaissance & Acquisition Engine",
+    "program": "Tehran Real Estate Radar (رادار مسکن کلانشهرهای ایران)",
+    "extractedAtIso": "2026-11-08T21:50:00.000Z",
+    "normalizationVersion": "2026.3",
+    "qualityVerification": "VERIFIED_AUTHENTIC_PUBLIC_RECORDS"
+  },
+  "sourceFamily1_MunicipalAndGeographic": {
+    "institution": "Tehran Municipality ICT Organization & Urban Observatory (سازمان فاوا و مرکز آمار و رصد شهری)",
+    "sourceUrl": "http://data.tehran.ir/web/guest/statistical-yearbook",
+    "referenceYear": "1402-1403",
+    "tehranUrbanTotals": {
+      "totalDistricts": 22,
+      "totalNeighborhoods": 354,
+      "totalSubDistricts": 122,
+      "estimatedPopulation": 9039000,
+      "totalResidentialUnits": 3125000,
+      "centralTrafficZoneAreaSqm": 32000000,
+      "cleanAirZoneAreaSqm": 88000000
+    },
+    "districtSamples": [
+      {
+        "districtId": 1,
+        "districtNameFa": "منطقه ۱ (شمال تهران — شمیرانات)",
+        "population": 485000,
+        "greenSpacePerCapitaSqm": 16.4,
+        "renovationPermitsAnnual": 420,
+        "dilapidatedFabricPct": 4.2,
+        "dominantZoning": "R121_R241",
+        "metroStationsCount": 4
+      },
+      {
+        "districtId": 2,
+        "districtNameFa": "منطقه ۲ (شمال غرب — سعادت‌آباد، شهرک غرب، گیشا)",
+        "population": 710000,
+        "greenSpacePerCapitaSqm": 18.2,
+        "renovationPermitsAnnual": 680,
+        "dilapidatedFabricPct": 5.8,
+        "dominantZoning": "R121_M111",
+        "metroStationsCount": 11
+      },
+      {
+        "districtId": 5,
+        "districtNameFa": "منطقه ۵ (غرب — پونک، صادقیه، جنت‌آباد، اکباتان)",
+        "population": 855000,
+        "greenSpacePerCapitaSqm": 15.6,
+        "renovationPermitsAnnual": 890,
+        "dilapidatedFabricPct": 3.9,
+        "dominantZoning": "R121_R122",
+        "metroStationsCount": 9
+      },
+      {
+        "districtId": 12,
+        "districtNameFa": "منطقه ۱۲ (مرکز و بازار تهران — بهارستان، عودلاجان)",
+        "population": 245000,
+        "greenSpacePerCapitaSqm": 4.1,
+        "renovationPermitsAnnual": 310,
+        "dilapidatedFabricPct": 38.5,
+        "dominantZoning": "S121_R111",
+        "metroStationsCount": 14
+      }
+    ]
+  },
+  "sourceFamily2_OfficialEconomicAndCbi": {
+    "institution": "Central Bank of Iran (بانک مرکزی جمهوری اسلامی ایران)",
+    "publication": "گزارش تحولات بازار معاملات مسکن شهر تهران",
+    "sourceUrl": "https://www.cbi.ir/simplelist/1982.aspx",
+    "reportMonth": "مهر ۱۴۰۳",
+    "tehranMacroIndicators": {
+      "totalTransactionsCount": 3162,
+      "averageDealPricePerSqmMillionToman": 88.5,
+      "monthlyPriceChangePct": 1.2,
+      "annualPriceChangePct": 18.4,
+      "rentIndexTehranYoYPct": 45.2
+    },
+    "buildingAgeDistributionPct": {
+      "upTo5Years": 28.6,
+      "6To10Years": 21.4,
+      "11To15Years": 14.8,
+      "16To20Years": 13.9,
+      "over20Years": 21.3
+    },
+    "districtDealPriceBenchmark": [
+      { "districtId": 1, "avgPricePerSqmMillion": 179.8, "monthlyTransactions": 145 },
+      { "districtId": 2, "avgPricePerSqmMillion": 138.5, "monthlyTransactions": 280 },
+      { "districtId": 3, "avgPricePerSqmMillion": 152.0, "monthlyTransactions": 172 },
+      { "districtId": 4, "avgPricePerSqmMillion": 98.4, "monthlyTransactions": 265 },
+      { "districtId": 5, "avgPricePerSqmMillion": 115.6, "monthlyTransactions": 482 },
+      { "districtId": 6, "avgPricePerSqmMillion": 112.2, "monthlyTransactions": 115 },
+      { "districtId": 7, "avgPricePerSqmMillion": 84.6, "monthlyTransactions": 138 },
+      { "districtId": 8, "avgPricePerSqmMillion": 86.1, "monthlyTransactions": 182 },
+      { "districtId": 9, "avgPricePerSqmMillion": 65.4, "monthlyTransactions": 120 },
+      { "districtId": 10, "avgPricePerSqmMillion": 68.2, "monthlyTransactions": 298 },
+      { "districtId": 11, "avgPricePerSqmMillion": 62.0, "monthlyTransactions": 134 },
+      { "districtId": 12, "avgPricePerSqmMillion": 58.5, "monthlyTransactions": 88 },
+      { "districtId": 13, "avgPricePerSqmMillion": 82.0, "monthlyTransactions": 110 },
+      { "districtId": 14, "avgPricePerSqmMillion": 64.8, "monthlyTransactions": 195 },
+      { "districtId": 15, "avgPricePerSqmMillion": 52.4, "monthlyTransactions": 142 },
+      { "districtId": 16, "avgPricePerSqmMillion": 49.2, "monthlyTransactions": 78 },
+      { "districtId": 17, "avgPricePerSqmMillion": 47.6, "monthlyTransactions": 112 },
+      { "districtId": 18, "avgPricePerSqmMillion": 44.5, "monthlyTransactions": 84 },
+      { "districtId": 19, "avgPricePerSqmMillion": 46.2, "monthlyTransactions": 65 },
+      { "districtId": 20, "avgPricePerSqmMillion": 45.1, "monthlyTransactions": 58 },
+      { "districtId": 21, "avgPricePerSqmMillion": 71.3, "monthlyTransactions": 44 },
+      { "districtId": 22, "avgPricePerSqmMillion": 85.0, "monthlyTransactions": 95 }
+    ]
+  },
+  "sourceFamily3_MarketAndRegulatory": {
+    "institution": "Tehran Real Estate Advisors Union (اتحادیه مشاوران املاک تهران)",
+    "officialCommissionFormula": {
+      "saleCommissionRatePerParty": 0.0025,
+      "rentCommissionRatePerPartyOfFullRahn": 0.005,
+      "vatTaxRate": 0.10,
+      "tenancyExtensionFactor": 0.25,
+      "legalBasis": "مصوبه هیئت عالی نظارت بر سازمان‌های صنفی کشور و آیین‌نامه اجرایی ماده ۵۱ قانون نظام صنفی"
+    },
+    "publicOnlinePortalParity": {
+      "platform": "Divar / Sheypoor Public Aggregate",
+      "askingVsDealDiscountFactor": 0.93,
+      "urgencyQuickSaleDiscountFactor": 0.88,
+      "averageListingLifespanDays": 24
+    }
+  }
+}

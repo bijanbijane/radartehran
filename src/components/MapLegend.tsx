@@ -11,7 +11,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           ? 'هوای پاک و مطلوب (امتیاز ۷.۵ تا ۱۰)'
           : mapLens === 'traffic'
           ? 'تردد روان (امتیاز ترافیک ۷.۲ تا ۱۰)'
-          : 'منطبق یا پایین‌تر از سقف بودجه شما', dotClass: 'bg-emerald-500', activeClass: 'bg-emerald-50 border-emerald-600 text-emerald-900', count: counts.green, Icon: CheckCircle2, }, { id: 'yellow', title: legendCopy.yellowTitle, meaning: mapLens === 'heatmap'
+          : 'منطبق یا پایین‌تر از سقف بودجه شما', dotClass: 'bg-emerald-500', activeClass: 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-600 dark:border-emerald-500 text-emerald-900 dark:text-emerald-200', count: counts.green, Icon: CheckCircle2, }, { id: 'yellow', title: legendCopy.yellowTitle, meaning: mapLens === 'heatmap'
           ? 'چگالی قیمت متری نزدیک به میانه شهر'
           : mapLens === 'bubble'
           ? 'تعادل قیمتی متناسب با میانگین شهر'
@@ -19,7 +19,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           ? 'کیفیت هوای متوسط (امتیاز ۵.۵ تا ۷.۴)'
           : mapLens === 'traffic'
           ? 'ترافیک نیمه‌سنگین (امتیاز ۶.۰ تا ۷.۱)'
-          : 'تا ۱۵٪ بالاتر از بودجه (قابل چانه‌زنی یا وام)', dotClass: 'bg-amber-500', activeClass: 'bg-amber-50 border-amber-500 text-amber-900', count: counts.yellow, Icon: AlertTriangle, }, { id: 'red', title: legendCopy.redTitle, meaning: mapLens === 'heatmap'
+          : 'تا ۱۵٪ بالاتر از بودجه (قابل چانه‌زنی یا وام)', dotClass: 'bg-amber-500', activeClass: 'bg-amber-50 dark:bg-amber-950/60 border-amber-500 dark:border-amber-500 text-amber-900 dark:text-amber-200', count: counts.yellow, Icon: AlertTriangle, }, { id: 'red', title: legendCopy.redTitle, meaning: mapLens === 'heatmap'
           ? 'چگالی قیمت متری بالا و لوکس (کانون‌های داغ قیمتی)'
           : mapLens === 'bubble'
           ? 'دارای حباب قیمتی نسبت به بازده اجاره'
@@ -27,7 +27,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           ? 'تراکم آلاینده بالا (امتیاز کمتر از ۵.۵)'
           : mapLens === 'traffic'
           ? 'ترافیک سنگین عصرگاهی (امتیاز کمتر از ۶.۰)'
-          : 'بیش از ۱۵٪ بالاتر از بودجه انتخابی شما', dotClass: 'bg-rose-500', activeClass: 'bg-rose-50 border-rose-500 text-rose-900', count: counts.red, Icon: XCircle, }, ]; return ( <section
+          : 'بیش از ۱۵٪ بالاتر از بودجه انتخابی شما', dotClass: 'bg-rose-500', activeClass: 'bg-rose-50 dark:bg-rose-950/60 border-rose-500 dark:border-rose-500 text-rose-900 dark:text-rose-200', count: counts.red, Icon: XCircle, }, ]; return ( <section
       aria-label="راهنمای علائم و رنگ‌های نقشه (Legend)"
       className={`fixed bottom-[192px] lg:bottom-14 left-3 lg:left-4 z-30 flex-col items-end pointer-events-none ${hideOnMobileSheet ? 'hidden lg:flex' : 'flex'}`}
     > {open && (

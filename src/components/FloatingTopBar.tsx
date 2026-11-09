@@ -15,7 +15,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
             <span className="w-6 h-6 rounded-md bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center"><MapPin className="w-3.5 h-3.5 stroke-[2]" /></span><span>رادار {activeHeaderLabel}</span> </a>
           <NetworkStatusBadge status={connectionStatus} />
           {featureFlags.enableMultiCity && <TopBarProvinceAndCityDirectoryControl activeCity={activeCity} selectedHoodId={selectedHoodId} onSwitchCity={onSwitchCity} onOpenProvinceModal={setShowNationwideProvinceModal ? () => setShowNationwideProvinceModal(true) : undefined} />}
-          <div className="relative flex-1 min-w-0 sm:w-36 xl:w-44"> <Search className="w-4 h-4 stroke-[1.75] text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="relative flex-1 min-w-0 sm:w-48 xl:w-64"> <Search className="w-4 h-4 stroke-[1.75] text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input type="text" aria-label="جست‌وجوی محله" value={searchQuery} onFocus={() => setShowSearchDropdown(true)} onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)} onKeyDown={(e) => { if (e.key === 'Enter' && searchMatches.length > 0) { e.preventDefault(); recordRecentSearch(searchMatches[0].name); onSelectNeighborhood(searchMatches[0]);
                   setMobileSheetOpen(true); setSearchQuery(''); setShowSearchDropdown(false); } }}
               onChange={(e) => { setSearchQuery(e.target.value); setShowSearchDropdown(true); }}
@@ -31,7 +31,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                 onSwitchCity={(cId, hId) => { const found = allNationwideHoods.find((x) => x.id === hId); onSwitchCity(cId, hId, found ? [found.lat, found.lng] : undefined, 13); }}
               /> )}
           </div>
-          <button type="button" aria-label="نزدیک‌ترین محله به موقعیت فعلی من" onClick={onLocateNearestHood} title="نزدیک‌ترین محله به موقعیت فعلی من (GPS)" className="p-1.5 rounded-[9px] bg-slate-100/90 dark:bg-slate-800 hover:bg-emerald-50 text-slate-700 dark:text-slate-200 hover:text-emerald-700 border border-slate-200/80 dark:border-slate-700 transition shrink-0 cursor-pointer">
+          <button type="button" aria-label="نزدیک‌ترین محله به موقعیت فعلی من" onClick={onLocateNearestHood} title="نزدیک‌ترین محله به موقعیت فعلی من (GPS)" className="p-1.5 rounded-[9px] bg-slate-100/90 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200/80 dark:border-slate-700 transition shrink-0 cursor-pointer">
             <Navigation className="w-4 h-4 stroke-[1.75]" />
           </button>
           <div className="hidden"><AreaUnitToggle compact showIntlControls /></div>

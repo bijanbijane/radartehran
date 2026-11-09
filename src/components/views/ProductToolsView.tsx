@@ -13,7 +13,7 @@ import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../.
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../../utils/security';
-import { Stage2MasterWidget } from '../stage2/Stage2MasterWidget';
+import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
 
 export interface ProductToolsViewProps {
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
@@ -34,6 +34,12 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const [toolQuery, setToolQuery] = useState<string>('');
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
   const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false);
+  const [activeDecisionTab, setActiveDecisionTab] = useState<Stage2ActiveTab>('DECISION_SYNTHESIS');
+
+  const openDecisionTool = (tabId: Stage2ActiveTab) => {
+    setActiveDecisionTab(tabId);
+    setShowEmbeddedLab(true);
+  };
 
   const unitBuy = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit);
   const unitDeal = convertPricePerSqmToUnit(
@@ -47,69 +53,15 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       id: 'decision' as const,
       category: isEn ? 'CASPER Decision Science & Game Theory' : 'نظریه بازی‌ها، تصمیم‌گیری و سرایت فضایی (CASPER)',
       items: [
-        {
-          id: 'casper_decision_synthesis',
-          title: 'سنتز جامع کیفیت تصمیم، سقف خروج و آمادگی معامله (Executive Deal Readiness)',
-          desc: 'حکم نهایی ورود به معامله، ارزیابی ماتریس ۶گانه، تعیین سقف ترک جلسه و سناریوی افتتاحیه چانه‌زنی',
-          icon: Award,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_regret',
-          title: 'ماتریس کمینه‌ساز بیشینه پشیمانی ساواج (Savage Minimax Regret)',
-          desc: `شبیه‌سازی بازده ثروت نهایی ۳۶ ماهه در برابر ۳ رژیم جهش ارزی، رکود تورمی و ثبات در محله ${p.selectedHood.name}`,
-          icon: Compass,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_lemon',
-          title: 'شاخص عدم تقارن اطلاعاتی و بازار لیموها (Akerlof Lemon Index)',
-          desc: 'سنجش برتری اطلاعاتی فروشنده، نرخ آگهی‌های طعمه و فرمولاسیون چانه‌زنی ضد زیان‌گریزی کانمن (λ=۲٫۲۵)',
-          icon: Network,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_real_options',
-          title: 'اختیارات واقعی و نیمه‌عمر نقدشوندگی (Dixit-Pindyck Real Options)',
-          desc: 'محاسبه ارزش ریاضی اختیار تعویق در معامله، تابع بقای فروش مسکن و بتای سرریز دلار، طلا و تورم عمومی',
-          icon: Hourglass,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_urban_affordability',
-          title: 'هزینه کل اقتصادی سکونت و مرز تردد آلونسو-میلز (TCOH & Isochrone)',
-          desc: 'تنش استطاعت مسکن (PIR/RIR)، ارزش اتلاف وقت در ترافیک، استهلاک رفت‌وآمد و نقطه سربه‌سر آربیتراژ سکونت',
-          icon: Briefcase,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_monte_carlo',
-          title: 'شبیه‌ساز ۱٬۰۰۰ سناریوی مونت‌کارلو جهش-نفوذ مرتون و ارزش در معرض خطر (Merton VaR)',
-          desc: 'توزیع احتمالاتی بازده واقعی در برابر شوک ارزی، محاسبه سقف زیان در سطح اطمینان ۹۵٪ و ضریب سورتینو',
-          icon: Activity,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_housing_cycle',
-          title: 'رادار چرخه‌های ادواری مسکن و فرسایش حباب (Housing Cycle Radar)',
-          desc: 'تشخیص فازهای ۴گانه رکود، رونق، اشباع و کف‌سازی همراه با راهبرد اختصاصی خانه‌اولی‌ها و ارتقادهندگان',
-          icon: PieChart,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_macro_portfolio',
-          title: 'بهینه‌ساز سبد دارایی مارکوویتز، طلا و دلار (Markowitz Portfolio & Gold Arbitrage)',
-          desc: 'محاسبه وزن بهینه مسکن، سکه، دلار و درآمد ثابت ۳۰٪، مرز کارا و تحلیل سودآوری تبدیل طلا به ملک',
-          icon: Wallet,
-          action: () => setShowEmbeddedLab(true),
-        },
-        {
-          id: 'casper_rent_vs_buy',
-          title: 'مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد» (Rent vs. Buy NPV Arbitrage)',
-          desc: 'به چالش کشیدن باور سنتی «اجاره‌نشینی یعنی هدر دادن پول»، محاسبه ارزش فعلی خالص، استهلاک و نرخ بی‌تفاوتی',
-          icon: Split,
-          action: () => setShowEmbeddedLab(true),
-        },
+        { id: 'casper_decision_synthesis', title: 'سنتز جامع کیفیت تصمیم، سقف خروج و آمادگی معامله (Executive Deal Readiness)', desc: 'حکم نهایی ورود به معامله، ارزیابی ماتریس ۶گانه، تعیین سقف ترک جلسه و سناریوی افتتاحیه چانه‌زنی', icon: Award, action: () => openDecisionTool('DECISION_SYNTHESIS') },
+        { id: 'casper_regret', title: 'ماتریس کمینه‌ساز بیشینه پشیمانی ساواج (Savage Minimax Regret)', desc: `شبیه‌سازی بازده ثروت نهایی ۳۶ ماهه در برابر ۳ رژیم جهش ارزی، رکود تورمی و ثبات در محله ${p.selectedHood.name}`, icon: Compass, action: () => openDecisionTool('PARETO_REGRET') },
+        { id: 'casper_lemon', title: 'شاخص عدم تقارن اطلاعاتی و بازار لیموها (Akerlof Lemon Index)', desc: 'سنجش برتری اطلاعاتی فروشنده، نرخ آگهی‌های طعمه و فرمولاسیون چانه‌زنی ضد زیان‌گریزی کانمن (λ=۲٫۲۵)', icon: Network, action: () => openDecisionTool('SPATIAL_CONTAGION') },
+        { id: 'casper_real_options', title: 'اختیارات واقعی و نیمه‌عمر نقدشوندگی (Dixit-Pindyck Real Options)', desc: 'محاسبه ارزش ریاضی اختیار تعویق در معامله، تابع بقای فروش مسکن و بتای سرریز دلار، طلا و تورم عمومی', icon: Hourglass, action: () => openDecisionTool('REAL_OPTIONS') },
+        { id: 'casper_urban_affordability', title: 'هزینه کل اقتصادی سکونت و مرز تردد آلونسو-میلز (TCOH & Isochrone)', desc: 'تنش استطاعت مسکن (PIR/RIR)، ارزش اتلاف وقت در ترافیک، استهلاک رفت‌وآمد و نقطه سربه‌سر آربیتراژ سکونت', icon: Briefcase, action: () => openDecisionTool('URBAN_AFFORDABILITY') },
+        { id: 'casper_monte_carlo', title: 'شبیه‌ساز ۱٬۰۰۰ سناریوی مونت‌کارلو جهش-نفوذ مرتون و ارزش در معرض خطر (Merton VaR)', desc: 'توزیع احتمالاتی بازده واقعی در برابر شوک ارزی، محاسبه سقف زیان در سطح اطمینان ۹۵٪ و ضریب سورتینو', icon: Activity, action: () => openDecisionTool('MONTE_CARLO_VAR') },
+        { id: 'casper_housing_cycle', title: 'رادار چرخه‌های ادواری مسکن و فرسایش حباب (Housing Cycle Radar)', desc: 'تشخیص فازهای ۴گانه رکود، رونق، اشباع و کف‌سازی همراه با راهبرد اختصاصی خانه‌اولی‌ها و ارتقادهندگان', icon: PieChart, action: () => openDecisionTool('HOUSING_CYCLE') },
+        { id: 'casper_macro_portfolio', title: 'بهینه‌ساز سبد دارایی مارکوویتز، طلا و دلار (Markowitz Portfolio & Gold Arbitrage)', desc: 'محاسبه وزن بهینه مسکن، سکه، دلار و درآمد ثابت ۳۰٪، مرز کارا و تحلیل سودآوری تبدیل طلا به ملک', icon: Wallet, action: () => openDecisionTool('MACRO_PORTFOLIO') },
+        { id: 'casper_rent_vs_buy', title: 'مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد» (Rent vs. Buy NPV Arbitrage)', desc: 'به چالش کشیدن باور سنتی «اجاره‌نشینی یعنی هدر دادن پول»، محاسبه ارزش فعلی خالص، استهلاک و نرخ بی‌تفاوتی', icon: Split, action: () => openDecisionTool('RENT_VS_BUY') },
       ],
     },
     {
@@ -246,6 +198,8 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
             basePriceSqm={p.selectedHood.buyPerSqm}
             intlCurrency={intlCurrency}
             hood={p.selectedHood}
+            initialTab={activeDecisionTab}
+            onTabChange={(tab) => setActiveDecisionTab(tab)}
             onSelectCompareHood={(targetName) => {
               const match = p.evaluatedNeighborhoods?.find((h) => h.name === targetName);
               if (match) p.onSelectNeighborhood?.(match);

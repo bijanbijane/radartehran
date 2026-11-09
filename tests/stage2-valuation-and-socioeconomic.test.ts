@@ -104,7 +104,14 @@ async function runTests(): Promise<void> {
     resetSocioeconomicRollupsForTests();
     const app = express();
     app.use(express.json());
-    registerSocioeconomicRoutes(app);
+    registerSocioeconomicRoutes(app, {
+      verifyAdminAuth: async (req) => {
+        const token = req.headers['x-test-admin'];
+        return token === 'valid'
+          ? { ok: true, status: 200, message: 'ok' }
+          : { ok: false, status: 403, message: 'ADMIN_FORBIDDEN' };
+      },
+    });
 
     const server = http.createServer(app);
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -112,6 +119,14 @@ async function runTests(): Promise<void> {
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
     try {
+      // Unauthenticated call must fail closed (403)
+      const unauthTriggerRes = await fetch(`${baseUrl}/api/admin/rollups/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cityId: 'tehran', hoodId: 4 }),
+      });
+      assert.equal(unauthTriggerRes.status, 403, 'Admin rollup trigger must reject unauthenticated calls');
+
       // 16 distinct human sessions (>= 15 threshold)
       const richEvents: ResearchBehavioralEvent[] = Array.from({ length: 16 }, (_, idx) => ({
         sessionId: `verified_session_${idx + 1}`,
@@ -129,7 +144,7 @@ async function runTests(): Promise<void> {
 
       const triggerRes = await fetch(`${baseUrl}/api/admin/rollups/trigger`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-test-admin': 'valid' },
         body: JSON.stringify({
           cityId: 'tehran',
           hoodId: 4,
@@ -163,8 +178,12 @@ async function runTests(): Promise<void> {
       // Verify GET /api/v1/reference/hood/:hoodId/rollup
       const getRes = await fetch(`${baseUrl}/api/v1/reference/hood/4/rollup?cityId=tehran&periodKey=1405-08`);
       assert.equal(getRes.status, 200);
-      const getJson = (await getRes.json()) as { rollup: NeighborhoodResearchRollupDocument };
+      const getJson = (await getRes.json()) as {
+        rollup: NeighborhoodResearchRollupDocument;
+        executiveSynthesis: { compositeReadinessScore: number; pillars: { targetTabId: string }[] };
+      };
       assert.equal(getJson.rollup.citationCode, 'RADAR-REF-TEHRAN-H4-1405-08');
+      assert.ok(getJson.executiveSynthesis && getJson.executiveSynthesis.pillars.length === 6);
 
       // Verify POST /api/v1/valuation/verify-seal & direct computeServerValuationSeal
       const directSeal = computeServerValuationSeal({ cityId: 'tehran', hoodId: 1, sqm: 100, buildYear: 1403 });

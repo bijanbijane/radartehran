@@ -199,7 +199,7 @@ export function generateCasperMacroPortfolioDossier(
 ): CasperMacroPortfolioDossier {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
-  const resolvedRahn = hood.rahn80m ?? Math.round(resolvedPrice * 80 * 0.16);
+  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
   const assets = buildMacroAssetSpecs(resolvedPrice, resolvedRahn);
   const defensive = evaluatePortfolioAllocation({ housingWeightPct: 45, goldWeightPct: 15, usdWeightPct: 10, fixedIncomeWeightPct: 30 }, assets);

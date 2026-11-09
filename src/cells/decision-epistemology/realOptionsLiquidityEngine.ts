@@ -7,7 +7,10 @@
  */
 
 import { MULTI_CITY_CONFIGS, CityId } from '../../data/multiCityData';
-import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, Neighborhood, toPersianNum } from '../../data/neighborhoods';
+import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+void formatMillionTomanAsIntlCurrency;
 
 export interface RealOptionsValuation {
   hurdleRateMultiplier: number;
@@ -120,10 +123,10 @@ export function computeDixitPindyckRealOption(
     actionReasonFa = 'هزینه فرصت تعویق (از دست رفتن بازده اجاره و شتاب بازار) بیش از ارزش اختیار صبر است؛ ورود فوری توصیه می‌شود.';
   } else if (hurdleRateMultiplier <= 1.25) {
     optimalAction = 'RENEGOTIATE_TO_HURDLE';
-    actionReasonFa = `برای پوشش نااطمینانی نوسانات، خرید نیازمند تخفیف ${toPersianPct((hurdleRateMultiplier - 1) * 100)} درصدی تا مرز آستانه است.`;
+    actionReasonFa = `برای پوشش نااطمینانی نوسانات، خرید نیازمند تخفیف ${toPersianNum(((hurdleRateMultiplier - 1) * 100).toFixed(1))} درصدی تا مرز آستانه است.`;
   } else {
     optimalAction = 'HOLD_OPTION_TO_WAIT';
-    actionReasonFa = `نوسان بازاری بالا و بازده اجاره پایین، ارزش اختیار صبر ۶ ماهه را تا ${valueOfWaitingTomanMln} میلیون تومان افزایش داده است.`;
+    actionReasonFa = `نوسان بازاری بالا و بازده اجاره پایین، ارزش اختیار صبر ${toPersianNum(horizonMonths)} ماهه را تا ${toPersianNum(valueOfWaitingTomanMln)} میلیون تومان افزایش داده است.`;
   }
 
   return {
@@ -145,8 +148,6 @@ export function computeLiquiditySurvival(
   askingToDealSpreadPct: number,
   trafficScore: number = 7
 ): LiquiditySurvivalMetrics {
-  // Base daily hazard rate (probability of transaction per day)
-  // Higher asking-to-deal spread drastically slows down transaction velocity
   const baseVelocity = pricePerSqm > 180 ? 0.015 : pricePerSqm > 100 ? 0.024 : 0.035;
   const spreadPenalty = Math.max(0.001, (askingToDealSpreadPct / 100) * 0.08);
   const locationBonus = (trafficScore / 10) * 0.006;
@@ -177,7 +178,7 @@ export function computeLiquiditySurvival(
     emergencyFastSaleDiscountPct = 18;
   } else {
     liquidityTier = 'FROZEN_LOCK';
-    liquidityTierFa = 'انجماد شدید دارایی و زمان‌بری بالا (> ۳ ماه)';
+    liquidityTierFa = 'انجماد شدید دارایی و زمان‌بری بالا (بیش از ۳ ماه)';
     emergencyFastSaleDiscountPct = 25;
   }
 
@@ -211,17 +212,15 @@ export function computeMacroElasticity(
   let strategicRecommendationFa: string;
 
   if (pricePerSqm >= 170) {
-    // Luxury Capital Preservation / Gold Mirror
     usdExchangeRateBeta = 0.92;
     goldCoinBeta = 0.88;
     cpiInflationBeta = 0.65;
     assetRole = 'CAPITAL_PRESERVATION_GOLD_MIRROR';
-    assetRoleFa = 'آینه حفظ ارزش طلا و ارز (شبه‌دلار نقدینگی لوکس)';
+    assetRoleFa = 'آینه حفظ ارزش طلا و ارز (دارایی سرمایه‌ای ممتاز)';
     lagMonthsToFullPassThrough = 2;
     resilienceRating = 'HIGH';
-    strategicRecommendationFa = 'حفظ سرمایه در برابر جهش‌های ناگهانی ارزی بدون حساسیت به درآمد اجاره‌ای؛ نقدشوندگی مشروط به قیمت‌گذاری منعطف.';
+    strategicRecommendationFa = 'حفظ سرمایه در برابر جهش‌های ناگهانی ارزی؛ نقدشوندگی نیازمند انعطاف قیمتی پای نشست است.';
   } else if (pricePerSqm >= 95) {
-    // Balanced Compounder
     usdExchangeRateBeta = 0.74;
     goldCoinBeta = 0.70;
     cpiInflationBeta = 0.82;
@@ -229,14 +228,13 @@ export function computeMacroElasticity(
     assetRoleFa = 'مرکب‌ساز متوازن ثروت (رشد سرمایه‌ای با پوشش تورم)';
     lagMonthsToFullPassThrough = 4;
     resilienceRating = 'HIGH';
-    strategicRecommendationFa = 'بهترین توازن تاریخی میان رشد سرمایه‌ای پایدار و تقاضای مصرفی فعال؛ جریان نقد اجاره پوشش‌دهنده رکودهای موقت.';
+    strategicRecommendationFa = 'بهترین توازن تاریخی میان رشد سرمایه‌ای پایدار و تقاضای مصرفی فعال؛ جریان نقد اجاره پوشش‌دهنده رکودهای موقت است.';
   } else {
-    // Income Sticky / Consumption Dominant
     usdExchangeRateBeta = 0.52;
     goldCoinBeta = 0.48;
     cpiInflationBeta = 0.94;
     assetRole = 'INCOME_STICKY_CONSUMPTION';
-    assetRoleFa = 'دارایی مصرفی و چسبنده به درآمد اجاره (Yield-Driven)';
+    assetRoleFa = 'دارایی مصرفی و متکی به بازده اجاره';
     lagMonthsToFullPassThrough = 6;
     resilienceRating = rentYield > 0.05 ? 'MODERATE' : 'VULNERABLE';
     strategicRecommendationFa = 'وابستگی بالا به قدرت خرید ریالی مستأجران و شاخص تورم عمومی؛ نوسان ارزی با تأخیر ۵ تا ۷ ماهه سرریز می‌شود.';
@@ -265,20 +263,23 @@ export function generateCasperLiquidityReport(
 ): CasperLiquidityAndRealOptionsReport {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
-  const rahn80m = hood.rahn80m ?? (resolvedPrice * 80 * 0.2);
-  const annualRentalYield = rahn80m / Math.max(1, resolvedPrice * 80);
+  const rahn80m = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  // True annual rental yield: annual rent (rahn80m * 0.36) divided by 80m² purchase price
+  const annualRentalYield = (rahn80m * 0.36) / Math.max(1, resolvedPrice * 80);
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, []);
 
   const realOptions = computeDixitPindyckRealOption(
     resolvedPrice,
     annualRentalYield,
-    resolvedPrice > 160 ? 0.32 : 0.24,
+    resolvedPrice > 160 ? 0.31 : resolvedPrice > 110 ? 0.25 : 0.21,
     0.22,
     6
   );
 
-  const trafficScore = hood.trafficInfo?.trafficScore ?? hood.air ?? 7;
-  const spreadPct = resolvedPrice > 160 ? 14 : 9.5;
-  const liquidity = computeLiquiditySurvival(resolvedPrice, spreadPct, trafficScore);
+  const transitAndQualityScore = Math.round(((hood.metro ?? 7) + (hood.air ?? 7)) / 2);
+  const computedSpread = Number((((agg.askingPricePerSqm - agg.estimatedDealPricePerSqm) / Math.max(1, agg.askingPricePerSqm)) * 100).toFixed(1));
+  const spreadPct = computedSpread > 0 ? computedSpread : resolvedPrice > 160 ? 12.5 : 8.5;
+  const liquidity = computeLiquiditySurvival(resolvedPrice, spreadPct, transitAndQualityScore);
   const elasticity = computeMacroElasticity(resolvedPrice, annualRentalYield);
 
   return {
@@ -291,8 +292,4 @@ export function generateCasperLiquidityReport(
     elasticity,
     generatedAtIso: new Date().toISOString(),
   };
-}
-
-function toPersianPct(val: number): string {
-  return Number(val.toFixed(1)).toLocaleString('fa-IR');
 }

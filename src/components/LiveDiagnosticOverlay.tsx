@@ -143,24 +143,28 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
       const validSchema = isMarketPulseData(data);
       recordTest('api-market-pulse', '7. API Connection: /api/market-pulse', 'server.ts → GET /api/market-pulse?city=tehran', res.ok && validSchema,
         res.ok && validSchema ? `PASS: HTTP ${res.status} · AQI=${(data as any).airQuality?.tehranAverageAqi}, Snapshots=${(data as any).hoodLiveSnapshots?.length || 0}` : `FAIL: HTTP ${res.status}, schemaValid=${validSchema}`, t0);
-    } catch (e: any) {
-      recordTest('api-market-pulse', '7. API Connection: /api/market-pulse', 'server.ts → GET /api/market-pulse', false, `FAIL: ${e?.message}`, t0);
-    }
+    } catch (e: any) { recordTest('api-market-pulse', '7. API Connection: /api/market-pulse', 'server.ts → GET /api/market-pulse', false, `FAIL: ${e?.message}`, t0); }
     t0 = performance.now();
     try {
-      const [airRes, storageRes] = await Promise.all([
-        fetch('/api/air-quality?city=tehran', { cache: 'no-store' }),
-        fetch('/api/object-storage/status', { cache: 'no-store' }),
-      ]);
+      const [airRes, storageRes] = await Promise.all([fetch('/api/air-quality?city=tehran', { cache: 'no-store' }), fetch('/api/object-storage/status', { cache: 'no-store' })]);
       const airJson: any = airRes.ok ? await airRes.json() : null;
       const storageJson: any = storageRes.ok ? await storageRes.json() : null;
       const storageProviderLabel = storageJson?.provider || storageJson?.providerLabelFa;
       const ok = airRes.ok && storageRes.ok && Boolean(airJson?.status === 'ok') && Boolean(storageProviderLabel);
       recordTest('api-health-storage', '8. API Connection: Air Quality & Object Storage', 'server.ts → /api/air-quality & /api/object-storage/status', ok,
         ok ? `PASS: AirAPI=${airJson.status} (${airJson.sourceStatus}), Storage=${storageProviderLabel}` : `FAIL: Air=${airRes.status}, Storage=${storageRes.status}`, t0);
-    } catch (e: any) {
-      recordTest('api-health-storage', '8. API Connection: Air Quality & Object Storage', 'server.ts', false, `FAIL: ${e?.message}`, t0);
-    }
+    } catch (e: any) { recordTest('api-health-storage', '8. API Connection: Air Quality & Object Storage', 'server.ts', false, `FAIL: ${e?.message}`, t0); }
+    t0 = performance.now();
+    try {
+      const [hzRes, rdyRes, clmRes, rolRes, comRes, telRes] = await Promise.all([
+        fetch('/api/healthz', { cache: 'no-store' }), fetch('/api/health/readiness', { cache: 'no-store' }),
+        fetch('/api/v1/claims/hood/5', { cache: 'no-store' }), fetch('/api/v1/reference/hood/5/rollup', { cache: 'no-store' }),
+        fetch('/api/v1/commerce/catalog', { cache: 'no-store' }), fetch('/api/v2/telemetry/aggregates', { cache: 'no-store' }),
+      ]);
+      const ok = hzRes.ok && rdyRes.ok && clmRes.ok && rolRes.ok && comRes.ok && telRes.ok;
+      recordTest('api-v1-v2-backend', '9. Backend V1/V2 & Micro-Cells API Health', 'server.ts → /api/healthz, /api/v1/claims, /api/v1/commerce, /api/v2/telemetry', ok,
+        ok ? `PASS: Healthz=${hzRes.status}, Readiness=${rdyRes.status}, Claims=${clmRes.status}, Rollup=${rolRes.status}, Commerce=${comRes.status}, TelemetryV2=${telRes.status}` : 'FAIL: One or more V1/V2 backend endpoints returned non-200', t0);
+    } catch (e: any) { recordTest('api-v1-v2-backend', '9. Backend V1/V2 & Micro-Cells API Health', 'server.ts → /api/v1/* & /api/v2/*', false, `FAIL: ${e?.message}`, t0); }
     setTestResults(results);
     setLastRunTimeFa(new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     setIsRunningTests(false);
@@ -169,13 +173,7 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
   const failedCount = testResults.filter((r) => r.status === 'FAIL').length;
   if (isDismissed && errors.length === 0) {
     return (
-      <button
-        type="button"
-        onClick={() => { setIsDismissed(false); try { localStorage.setItem('radar_hide_dev_overlay', 'false'); } catch {} }}
-        className="fixed bottom-16 lg:bottom-3 left-3 z-[95] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer"
-        title="دیباگر سیستم"
-        aria-label="دیباگر سیستم"
-      >
+      <button type="button" onClick={() => { setIsDismissed(false); try { localStorage.setItem('radar_hide_dev_overlay', 'false'); } catch {} }} className="fixed bottom-16 lg:bottom-3 left-3 z-[95] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer" title="دیباگر سیستم" aria-label="دیباگر سیستم">
         <Bug className="w-3 h-3" />
       </button>
     );

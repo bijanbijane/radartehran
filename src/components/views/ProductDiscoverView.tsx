@@ -147,9 +147,9 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-slate-400 text-[11px]">{isEn ? 'District:' : 'منطقه شهرداری:'}</span>
-            <select aria-label={isEn ? 'Filter by district' : 'فیلتر بر اساس منطقه شهرداری'} value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)} className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
+          <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+            <span className="text-slate-400 text-[11px] shrink-0">{isEn ? 'District:' : 'منطقه شهرداری:'}</span>
+            <select aria-label={isEn ? 'Filter by district' : 'فیلتر بر اساس منطقه شهرداری'} value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)} className="max-w-[200px] sm:max-w-[260px] truncate px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 focus:outline-none">
               <option value="all">{isEn ? 'All Districts' : 'تمام مناطق'}</option>
               {zones.map((z) => (<option key={z} value={z}>{z}</option>))}
             </select>
@@ -159,9 +159,9 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400 text-[11px]">{isEn ? 'Sort by:' : 'ترتیب نمایش:'}</span>
-            <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
+          <div className="flex items-center gap-2 min-w-0 max-w-full">
+            <span className="text-slate-400 text-[11px] shrink-0">{isEn ? 'Sort by:' : 'ترتیب نمایش:'}</span>
+            <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="max-w-[210px] sm:max-w-none truncate px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
               <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option><option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت معامله v6.4'}</option><option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option><option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option><option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
             </select>
           </div>
@@ -198,7 +198,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                         {hood.status === 'green' ? <span className="text-emerald-600 dark:text-emerald-400">● همخوان با بودجه شما</span> : <span className="text-amber-600 dark:text-amber-400">● {toPersianNum(hood.diffPercent)}٪ بالاتر از بودجه</span>}
                       </div>
                     </div>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={isFav ? `حذف ${hood.name} از منتخب‌ها` : `افزودن ${hood.name} به منتخب‌ها`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 border-rose-200 text-rose-600' : 'border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-700'}`}>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={isFav ? `حذف ${hood.name} از منتخب‌ها` : `افزودن ${hood.name} به منتخب‌ها`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' : 'border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
                       <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
                     </button>
                   </div>
@@ -230,7 +230,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                     <span>بررسی کارنامه تحلیلی</span><ArrowUpRight className="w-3.5 h-3.5" />
                   </button>
                   {!isSelected && (
-                    <button type="button" onClick={(e) => { e.stopPropagation(); toggleComparisonArc(hood); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-800 hover:bg-indigo-50 text-indigo-600 dark:text-indigo-400'}`}>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); toggleComparisonArc(hood); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400'}`}>
                       <Scale className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -271,9 +271,9 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                     <span className="text-[10px] text-slate-400 block">رهن ۸۰متر:</span>
                     <span className="font-black text-emerald-600 dark:text-emerald-400">{toPersianNum(hood.rahn80m)} م</span>
                   </div>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={isFav ? `حذف ${hood.name} از منتخب‌ها` : `افزودن ${hood.name} به منتخب‌ها`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 border-rose-200 text-rose-600' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-700'}`}><Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} /></button>
-                  {!isSelected && <button type="button" onClick={(e) => { e.stopPropagation(); toggleComparisonArc(hood); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50'}`}><Scale className="w-3.5 h-3.5" /></button>}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenCompare(p.selectedHood.id, hood.id); }} title="مقایسه دو محله" aria-label={`مقایسه ${hood.name} با ${p.selectedHood.name}`} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"><ArrowLeftRight className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={isFav ? `حذف ${hood.name} از منتخب‌ها` : `افزودن ${hood.name} به منتخب‌ها`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}><Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} /></button>
+                  {!isSelected && <button type="button" onClick={(e) => { e.stopPropagation(); toggleComparisonArc(hood); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}><Scale className="w-3.5 h-3.5" /></button>}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenCompare(p.selectedHood.id, hood.id); }} title="مقایسه دو محله" aria-label={`مقایسه ${hood.name} با ${p.selectedHood.name}`} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><ArrowLeftRight className="w-3.5 h-3.5" /></button>
                   <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition font-bold cursor-pointer">کارنامه</button>
                 </div>
               </div>

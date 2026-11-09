@@ -1,17 +1,6 @@
-/**
- * @file src/components/AdminOverviewAndModerationTabs.tsx
- * @description تب‌های ۱ تا ۴ پنل مدیریت رادار مسکن:
- * ۱. مدیریت CRM حامیان املاک و اشتراک ۳۰/۹۰ روزه (crm)
- * ۲. بانک شماره خریداران و خروجی CSV (leads)
- * ۳. مدیریت فایل‌های شکار زیر قیمت (bargains)
- * ۴. ویرایش سریع قیمت محلات و رصد عمیق وب (prices)
- */
-
 import React from 'react';
 import { CheckCircle2, Download, Edit3, KeyRound, Sparkles, Trash2 } from 'lucide-react';
-import {
-  BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem, toPersianNum,
-} from '../data/neighborhoods';
+import { BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
 import { FeatureFlags } from '../types/models';
 import { clampNumber } from '../utils/security';
@@ -111,7 +100,7 @@ export function AdminOverviewAndModerationTabs(
                       <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">محله {req.hoodName}</span>
                       {featureFlags.enableSponsorBilling && (
                         <>
-                          <span className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] tabular-nums ${remainingDays > 7 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
+                          <span className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] tabular-nums ${remainingDays > 7 ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'}`}>
                             {toPersianNum(remainingDays)} روز اعتبار باقی‌مانده
                           </span>
                           <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px]">
@@ -160,27 +149,29 @@ export function AdminOverviewAndModerationTabs(
           </button>
         </div>
 
-        <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-5 bg-slate-50 dark:bg-slate-800 py-2.5 px-3 font-extrabold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
-            <div>نام خریدار</div>
-            <div>شماره موبایل</div>
-            <div>محله هدف</div>
-            <div>نوع و بودجه</div>
-            <div className="text-left">زمان ثبت</div>
+        <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-x-auto">
+          <div className="min-w-[540px]">
+            <div className="grid grid-cols-5 bg-slate-50 dark:bg-slate-800 py-2.5 px-3 font-extrabold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+              <div>نام خریدار</div>
+              <div>شماره موبایل</div>
+              <div>محله هدف</div>
+              <div>نوع و بودجه</div>
+              <div className="text-left">زمان ثبت</div>
+            </div>
+            {(buyerLeads || []).length === 0 ? (
+              <div className="py-6 text-center text-slate-400 bg-white dark:bg-slate-900">هنوز شماره‌ای در لیست هشدار خریداران ثبت نشده است.</div>
+            ) : (
+              (buyerLeads || []).map((lead) => (
+                <div key={lead.id} className="grid grid-cols-5 items-center py-2.5 px-3 border-b border-slate-100 dark:border-slate-800 last:border-none bg-white dark:bg-slate-900">
+                  <div className="font-bold text-slate-900 dark:text-slate-100 truncate">{lead.fullName}</div>
+                  <div className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums" dir="ltr">{lead.phone}</div>
+                  <div className="text-slate-800 dark:text-slate-200 font-semibold truncate">{lead.hoodName}</div>
+                  <div className="text-slate-600 dark:text-slate-300 truncate">{lead.dealType} — {lead.maxBudgetText}</div>
+                  <div className="text-left text-slate-400 text-[11px]">{lead.createdAtFa}</div>
+                </div>
+              ))
+            )}
           </div>
-          {(buyerLeads || []).length === 0 ? (
-            <div className="py-6 text-center text-slate-400 bg-white dark:bg-slate-900">هنوز شماره‌ای در لیست هشدار خریداران ثبت نشده است.</div>
-          ) : (
-            (buyerLeads || []).map((lead) => (
-              <div key={lead.id} className="grid grid-cols-5 items-center py-2.5 px-3 border-b border-slate-100 dark:border-slate-800 last:border-none bg-white dark:bg-slate-900">
-                <div className="font-bold text-slate-900 dark:text-slate-100">{lead.fullName}</div>
-                <div className="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums" dir="ltr">{lead.phone}</div>
-                <div className="text-slate-800 dark:text-slate-200 font-semibold">{lead.hoodName}</div>
-                <div className="text-slate-600 dark:text-slate-300">{lead.dealType} — {lead.maxBudgetText}</div>
-                <div className="text-left text-slate-400 text-[11px]">{lead.createdAtFa}</div>
-              </div>
-            ))
-          )}
         </div>
       </div>
     );

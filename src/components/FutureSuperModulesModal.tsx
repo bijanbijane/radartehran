@@ -160,7 +160,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
                   onSelectNeighborhood(found);
                 }
               }}
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-2.5 py-1.5 font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-600 cursor-pointer"
+              className="max-w-[185px] sm:max-w-[280px] truncate bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-2.5 py-1.5 font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-600 cursor-pointer"
             >
               {neighborhoods.map((n) => { const unitPrice = convertPricePerSqmToUnit(n.buyPerSqm, areaUnit); const uDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit); return (
                   <option key={n.id} value={n.id}>{n.name} ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(unitPrice)} م · معامله: {toPersianNum(uDeal)} م · کل {formatAreaValue(80, areaUnit, true)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, locale)}` : ''})</option>
@@ -174,7 +174,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
         <div
           role="tablist"
           aria-label="تب‌های ابرماژول‌های مسکن"
-          className="flex items-center gap-1 overflow-x-auto p-1 mb-3 apple-segmented rounded-[11px] shrink-0 no-scrollbar"
+          className="flex items-center gap-1 overflow-x-auto p-1 mb-3 apple-segmented dark:bg-slate-950/80 rounded-[11px] shrink-0 no-scrollbar"
         >
           {availableTabs.map((tab) => {
             const isSelected = activeTab === tab.id;
@@ -183,7 +183,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
               <button
                 key={tab.id} role="tab" aria-selected={isSelected} type="button" onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                  isSelected ? 'apple-segmented-pill-active text-slate-900 dark:text-slate-100 font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  isSelected ? 'apple-segmented-pill-active dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
                 <TabIcon className="w-3.5 h-3.5 stroke-[1.75]" />

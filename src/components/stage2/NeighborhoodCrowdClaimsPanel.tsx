@@ -3,36 +3,20 @@ import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSq
 import { toPersianNum as toPersianDigits } from '../../data/neighborhoods';
 
 export interface CrowdClaimItem {
-  id: string;
-  hoodId: number;
-  hoodName: string;
-  cityKey: string;
-  authorId: string;
-  authorDisplayName: string;
-  category: string;
+  id: string; hoodId: number; hoodName: string; cityKey: string;
+  authorId: string; authorDisplayName: string; category: string;
   claimType: 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE';
-  title: string;
-  body: string;
-  status: string;
-  trustWeightScore: number;
-  upvotes: number;
-  downvotes: number;
-  promotedToReference: boolean;
-  createdAtIso: string;
+  title: string; body: string; status: string;
+  trustWeightScore: number; upvotes: number; downvotes: number;
+  promotedToReference: boolean; createdAtIso: string;
 }
 
 export interface ContributorSummary {
-  userId: string;
-  displayName: string;
-  points: number;
-  tier: string;
-  verifiedClaimsCount: number;
+  userId: string; displayName: string; points: number; tier: string; verifiedClaimsCount: number;
 }
 
 interface NeighborhoodCrowdClaimsPanelProps {
-  hoodId: number;
-  hoodName: string;
-  cityKey: string;
+  hoodId: number; hoodName: string; cityKey: string;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -263,10 +247,10 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
                 <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 dark:text-slate-400">
                   <span>توسط: {c.authorDisplayName} • وزن اعتبار: {toPersianDigits(c.trustWeightScore)}٪</span>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => handleVote(c.id, 'UP')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400">
+                    <button type="button" onClick={() => handleVote(c.id, 'UP')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 cursor-pointer">
                       <ThumbsUp className="w-3 h-3" /><span>تایید ({toPersianDigits(c.upvotes)})</span>
                     </button>
-                    <button type="button" onClick={() => handleVote(c.id, 'DOWN')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-700 dark:text-rose-400">
+                    <button type="button" onClick={() => handleVote(c.id, 'DOWN')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-700 dark:text-rose-400 cursor-pointer">
                       <ThumbsDown className="w-3 h-3" /><span>رد ({toPersianDigits(c.downvotes)})</span>
                     </button>
                   </div>

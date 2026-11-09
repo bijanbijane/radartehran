@@ -140,7 +140,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
             <ResponsiveContainer width="100%" height="100%" minWidth={240}>
               <LineChart data={trendData12m} margin={{ top: 10, right: 8, left: -6, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} vertical={false} />
-                <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'Vazirmatn' }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
+                <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'Vazirmatn' }} axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.35 }} tickLine={false} />
                 <YAxis yAxisId="buy" orientation="left" stroke="#059669" width={38} tickFormatter={(val) => toPersianNum(convertPricePerSqmToUnit(Number(val) || 0, areaUnit))} tick={{ fill: '#059669', fontSize: 10, fontFamily: 'Vazirmatn' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
                 <YAxis yAxisId="rent" orientation="right" stroke="#0284c7" width={42} tickFormatter={(val) => toPersianNum(val)} tick={{ fill: '#0284c7', fontSize: 10, fontFamily: 'Vazirmatn' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
                 <Tooltip
@@ -238,7 +238,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
               <ResponsiveContainer width="100%" height="100%" minWidth={240}>
                 <LineChart data={trendData6m} margin={{ top: 10, right: 14, left: -4, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} vertical={false} />
-                  <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 10.5, fontFamily: 'Vazirmatn' }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
+                  <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 10.5, fontFamily: 'Vazirmatn' }} axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.35 }} tickLine={false} />
                   <YAxis stroke="#64748b" width={42} tickFormatter={(val) => toPersianNum(convertPricePerSqmToUnit(Number(val) || 0, areaUnit))} tick={{ fill: '#64748b', fontSize: 10.5, fontFamily: 'Vazirmatn' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
                   <Tooltip
                     content={({ active, payload, label }) => {

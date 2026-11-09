@@ -20,16 +20,20 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(open: boo
   onCloseRef.current = onClose;
 
   useEffect(() => {
+    if (!open || !containerRef.current) return;
+    containerRef.current.setAttribute(
+      'data-dialog-unit-context',
+      `${formatAreaUnitLabel(areaUnit)}|${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(100, areaUnit), intlCurrency, locale)}`
+    );
+  }, [open, areaUnit, intlCurrency, locale]);
+
+  useEffect(() => {
     if (!open) return;
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const container = containerRef.current;
     if (container) {
-      container.setAttribute(
-        'data-dialog-unit-context',
-        `${formatAreaUnitLabel(areaUnit)}|${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(100, areaUnit), intlCurrency, locale)}`
-      );
       const focusable = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
       if (focusable.length > 0) {
         focusable[0].focus();
@@ -78,7 +82,7 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(open: boo
         previousFocusRef.current.focus();
       }
     };
-  }, [open, areaUnit, intlCurrency, locale]);
+  }, [open]);
 
   return containerRef;
 }

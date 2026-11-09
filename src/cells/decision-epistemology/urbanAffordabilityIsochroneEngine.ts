@@ -5,7 +5,7 @@
  * and Commute-vs-Rent Arbitrage Indifference Isochrone Engine.
  */
 
-import { calcDistanceKm, INITIAL_NEIGHBORHOODS, Neighborhood, WORK_HUBS, WorkHub } from '../../data/neighborhoods';
+import { calcDistanceKm, INITIAL_NEIGHBORHOODS, Neighborhood, toPersianNum, WORK_HUBS, WorkHub } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 
 export interface UrbanAffordabilityStressMetrics {
@@ -199,7 +199,7 @@ export function computeCommuteRentArbitrage(
   if (netMonthlyArbitrageSurplusMillion >= 1.5) {
     arbitrageVerdict = 'SUBURB_ARBITRAGE_VIABLE';
     arbitrageVerdictFa = 'صرفه‌جویی خالص مثبت سکونت پیرامونی (آربیتراژ برتر)';
-    strategicAdviceFa = `صرفه‌جویی اجاره‌بها نسبت به مرکز قطب کار، هزینه زمان تردد و استهلاک را کاملاً پوشش داده و ماهانه ${netMonthlyArbitrageSurplusMillion.toLocaleString('fa-IR')} میلیون تومان مازاد خالص ایجاد می‌کند.`;
+    strategicAdviceFa = `صرفه‌جویی اجاره‌بها نسبت به مرکز قطب کار، هزینه زمان تردد و استهلاک را کاملاً پوشش داده و ماهانه ${toPersianNum(netMonthlyArbitrageSurplusMillion)} میلیون تومان مازاد خالص ایجاد می‌کند.`;
   } else if (netMonthlyArbitrageSurplusMillion <= -1.0) {
     arbitrageVerdict = 'URBAN_CORE_SUPERIOR';
     arbitrageVerdictFa = 'برتری اقتصادی سکونت در هسته شهری (نزدیک محل کار)';
@@ -235,15 +235,36 @@ export function generateCasperUrbanAffordabilityReport(
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const hub = resolveWorkHub(cityId, workHubId);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
-  const resolvedRahn = hood.rahn80m ?? (resolvedPrice * 80 * 0.2);
+  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
   const effectiveRent = resolvedRahn * 0.03;
 
-  const trafficScore = hood.trafficInfo?.trafficScore ?? 7;
-  const airQuality = hood.air ?? 115;
+  // Use neighborhood metro/transit score (1..10) and convert 1..10 air cleanliness score into WHO AQI (55..150)
+  const transitAccessibilityScore = hood.metro ?? 7;
+  const rawAirScore = hood.air ?? 6;
+  const estimatedAqi = rawAirScore <= 10 ? Math.round(185 - rawAirScore * 13) : rawAirScore;
+
+  // Dynamically resolve the work-hub core rahn80m from the 3 closest neighborhoods to the hub
+  const safeCity = (cityId in MULTI_CITY_CONFIGS ? cityId : 'tehran') as CityId;
+  const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
+  const nearestToHub = [...cityHoods]
+    .filter((h) => h.lat !== null && h.lng !== null && hub.lat !== null && hub.lng !== null)
+    .sort((a, b) => calcDistanceKm(a.lat!, a.lng!, hub.lat!, hub.lng!) - calcDistanceKm(b.lat!, b.lng!, hub.lat!, hub.lng!))
+    .slice(0, 3);
+  const hubCoreRahn80m =
+    nearestToHub.length > 0
+      ? Math.round(nearestToHub.reduce((acc, h) => acc + h.rahn80m, 0) / nearestToHub.length)
+      : 2400;
 
   const affordability = computeAffordabilityStress(resolvedPrice, resolvedRahn, monthlyIncomeMillion);
-  const commute = computeCommuteOpportunityCost(hood.lat, hood.lng, hub, trafficScore, airQuality, monthlyIncomeMillion);
-  const arbitrage = computeCommuteRentArbitrage(resolvedRahn, commute, 2400);
+  const commute = computeCommuteOpportunityCost(
+    hood.lat,
+    hood.lng,
+    hub,
+    transitAccessibilityScore,
+    estimatedAqi,
+    monthlyIncomeMillion
+  );
+  const arbitrage = computeCommuteRentArbitrage(resolvedRahn, commute, hubCoreRahn80m);
 
   return {
     hoodId: hood.id,

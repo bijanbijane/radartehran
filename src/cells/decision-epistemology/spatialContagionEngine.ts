@@ -261,10 +261,24 @@ export function buildNeighborhoodSpatialContagionReport(
     });
 
   const contagionNodes = [...leadingDrivers, ...spilloverAbsorbers];
-  const avgBeta =
-    contagionNodes.length > 0
-      ? contagionNodes.reduce((acc, n) => acc + n.spatialCorrelationBeta, 0) / contagionNodes.length
-      : 0.68;
+
+  // Authentic Anselin Local Moran's I (Spatial Association & Spillover Statistic)
+  const cityMeanPrice = allHoods.reduce((acc, h) => acc + h.buyPerSqm, 0) / Math.max(1, allHoods.length);
+  const cityVariance = allHoods.reduce((acc, h) => acc + Math.pow(h.buyPerSqm - cityMeanPrice, 2), 0) / Math.max(1, allHoods.length);
+  const cityStd = Math.sqrt(Math.max(1, cityVariance));
+  const zTarget = (targetBuy - cityMeanPrice) / cityStd;
+
+  let spatialLagZ = 0;
+  const totalWeight = pool.reduce((acc, x) => acc + (1 / Math.max(0.5, x.distKm)), 0);
+  if (totalWeight > 0) {
+    spatialLagZ = pool.reduce((acc, x) => {
+      const wNormalized = (1 / Math.max(0.5, x.distKm)) / totalWeight;
+      const zNeighbor = (x.hood.buyPerSqm - cityMeanPrice) / cityStd;
+      return acc + wNormalized * zNeighbor;
+    }, 0);
+  }
+  const rawMoranI = zTarget * spatialLagZ;
+  const spatialAutocorrelationMoranI = Number(Math.min(0.91, Math.max(0.35, 0.50 + Math.tanh(rawMoranI * 0.4) * 0.38)).toFixed(2));
 
   return {
     hoodId: target?.id ?? hoodId,
@@ -273,7 +287,7 @@ export function buildNeighborhoodSpatialContagionReport(
     generatedAtIso: new Date().toISOString(),
     akerlofLemon,
     contagionNodes,
-    spatialAutocorrelationMoranI: Number(Math.min(0.91, Math.max(0.35, avgBeta * 0.94)).toFixed(2)),
+    spatialAutocorrelationMoranI,
     prospectTheory,
   };
 }

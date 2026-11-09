@@ -17,11 +17,12 @@ import {
   Sliders
 } from 'lucide-react';
 import {
+  generateCasperRentVsBuyDossier,
   simulateRentVsBuyEquivalence,
   RentVsBuyComparisonResult
 } from '../../cells/decision-epistemology/rentVsBuyArbitrageEngine';
 import { toPersianNum } from '../../data/neighborhoods';
-import type { IntlCurrencyCode } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface RentVsBuyArbitrageCardProps {
   hoodId?: number;
@@ -32,27 +33,37 @@ export interface RentVsBuyArbitrageCardProps {
 }
 
 export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
+  hoodId = 1,
   hoodName = 'پونک',
+  cityKey = 'tehran',
   basePriceSqm = 120,
+  intlCurrency = 'USD',
 }) => {
   const [horizonYears, setHorizonYears] = useState<number>(5);
   const [alternativeReturnPct, setAlternativeReturnPct] = useState<number>(42);
 
-  const totalUnitCostMillion = Math.round(basePriceSqm * 80);
-  const rahn80m = Math.round(totalUnitCostMillion * 0.16);
+  const dossier = useMemo(
+    () => generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm),
+    [hoodId, hoodName, cityKey, basePriceSqm]
+  );
+  const totalUnitCostMillion = Math.round(dossier.basePriceSqm * 80);
+  const rahn80m = dossier.rahn80m;
 
   const analysis: RentVsBuyComparisonResult = useMemo(() => {
     return simulateRentVsBuyEquivalence({
       horizonYears,
       buyerEquityMillion: totalUnitCostMillion,
-      pricePerSqm: basePriceSqm,
+      pricePerSqm: dossier.basePriceSqm,
       rahn80m,
       alternativeReturnNominalPct: alternativeReturnPct,
     });
-  }, [horizonYears, alternativeReturnPct, totalUnitCostMillion, basePriceSqm, rahn80m]);
+  }, [horizonYears, alternativeReturnPct, totalUnitCostMillion, dossier.basePriceSqm, rahn80m]);
 
   const isBuyWinner = analysis.winner === 'BUY';
   const isRentWinner = analysis.winner === 'RENT_AND_INVEST';
+  const wealthGapFx = intlCurrency !== 'IRT'
+    ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(analysis.netWealthDifferenceMillion), intlCurrency, 'fa')})`
+    : '';
 
   return (
     <div className="rounded-xl border border-indigo-200/90 dark:border-indigo-900/60 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-4 text-slate-800 dark:text-slate-200" dir="rtl">
@@ -167,7 +178,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
 
           <div className="space-y-1.5 text-[11px]">
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span>ودیعه رهن اولیه (۱۶٪ ارزش):</span>
+              <span>ودیعه رهن اولیه ۸۰ متر ({toPersianNum(Math.round((rahn80m / Math.max(1, totalUnitCostMillion)) * 100))}٪ ارزش):</span>
               <strong className="text-slate-800 dark:text-slate-200 tabular-nums">{toPersianNum(analysis.rentScenario.initialRahnOutlayMillion)} م.ت</strong>
             </div>
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
@@ -180,7 +191,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             </div>
             <div className="text-[10px] text-slate-400 flex justify-between">
               <span>نرخ بازده داخلی سالانه (IRR):</span>
-              <span className="font-bold tabular-nums">٪{toPersianNum(analysis.rentScenario.irrAnnualPct)}</span>
+              <span className="font-bold tabular-nums">٪{toPersianNum(analysis.buyScenario.irrAnnualPct !== undefined ? analysis.rentScenario.irrAnnualPct : 0)}</span>
             </div>
           </div>
         </div>
@@ -194,11 +205,11 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             <span>حکم نهایی تصمیم‌یار: {analysis.verdictFa}</span>
           </span>
           <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
-            شکاف ثروت: {toPersianNum(Math.abs(analysis.netWealthDifferenceMillion))} میلیون تومان
+            شکاف ثروت: {toPersianNum(Math.abs(analysis.netWealthDifferenceMillion))} م.ت{wealthGapFx}
           </span>
         </div>
         <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-          {analysis.strategicExplanationFa} <strong>سربه‌سر اجاره‌داری (Indifference Cap Rate):</strong> در صورتی که نسبت اجاره سالانه به قیمت ملک بالاتر از ٪{toPersianNum(analysis.indifferenceCapRatePct)} باشد، خرید ملک همواره به صرفه‌تر خواهد بود.
+          {analysis.strategicExplanationFa} <strong>نرخ سربه‌سر اجاره‌داری:</strong> در صورتی که نسبت اجاره سالانه به قیمت ملک بالاتر از ٪{toPersianNum(analysis.indifferenceCapRatePct)} باشد، خرید ملک در این افق زمانی به صرفه‌تر خواهد بود.
         </p>
       </div>
     </div>

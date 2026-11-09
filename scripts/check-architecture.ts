@@ -55,6 +55,7 @@ function collectSourceFiles(rootDir: string): string[] {
   };
 
   walk('src');
+  walk('server/modules/telemetry');
   return results.sort();
 }
 
@@ -130,7 +131,12 @@ export function runArchitectureCheck(options?: {
       }
     }
 
-    if (relPath.startsWith('src/utils/') || relPath.startsWith('src/data/')) {
+    if (
+      relPath.startsWith('src/utils/') ||
+      relPath.startsWith('src/data/') ||
+      relPath.startsWith('src/cells/') ||
+      relPath.startsWith('server/')
+    ) {
       for (const imp of imports) {
         if (
           imp.includes('/components/') ||

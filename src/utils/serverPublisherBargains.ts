@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from 'express'; import { isValidFirestoreDocId, isValidIranMobilePhone, sanitizeInput, validateCityParam } from './security'; import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization, } from './serverAdminAndTelegramSecurity'; import { pushAuditLog, saveDiskPersistedCache, serverSideBuyerLeads } from './serverMarketPulseEngine'; import { checkAccountQuota, checkRateLimit, getClientIp } from './serverDeliveryAndAbuseGuard'; import { validateListingStateTransition, appendListingPriceHistory, type ListingLifecycleState, type ListingPriceHistoryEntry, } from './listingLifecycleAndPlatformSecurity'; import { normalizeOrGenerateCorrelationId, buildCanonicalApiErrorResponse, buildUserDataPortabilityExport, createAccountDeletionPlan, resolveListingContactDisclosure, globalBackendLifecycle, reconcileUserBuyerAlertsInFirestore, } from './identityLifecycleAndBackendGovernance'; import { validateDataCorrectionSubmission } from './buyerAlertsAndCommunityTrust'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { formatAreaShort, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface ServerPublishedBargainRecord { id: string; ownerUid: string; cityId: string; hoodId: number; hoodName: string; title: string; street: string;
+import type { Express, Request, Response, NextFunction } from 'express'; import { isValidFirestoreDocId, isValidIranMobilePhone, sanitizeInput, validateCityParam } from './security'; import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization, } from './serverAdminAndTelegramSecurity'; import { pushAuditLog, saveDiskPersistedCache, serverSideBuyerLeads } from './serverMarketPulseEngine'; import { checkAccountQuota, checkRateLimit, getClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; import { validateListingStateTransition, appendListingPriceHistory, type ListingLifecycleState, type ListingPriceHistoryEntry, } from './listingLifecycleAndPlatformSecurity'; import { normalizeOrGenerateCorrelationId, buildCanonicalApiErrorResponse, buildUserDataPortabilityExport, createAccountDeletionPlan, resolveListingContactDisclosure, globalBackendLifecycle, reconcileUserBuyerAlertsInFirestore, } from './identityLifecycleAndBackendGovernance'; import { validateDataCorrectionSubmission } from './buyerAlertsAndCommunityTrust'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { formatAreaShort, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface ServerPublishedBargainRecord { id: string; ownerUid: string; cityId: string; hoodId: number; hoodName: string; title: string; street: string;
   sqm: number; displayAreaText?: string; dealType: 'خرید' | 'اجاره'; priceMillions: number; priceText: string; priceIntlText?: string; discountPercent: number; buyerProfitText: string; lifecycleState: ListingLifecycleState; contactPhone?: string; contactVisibility: 'publicly_visible' | 'reveal_on_action' | 'authorized_only' | 'not_available'; priceHistory: ListingPriceHistoryEntry[]; createdAtIso: string;
   updatedAtIso: string; expiresAtIso: string; } export interface ServerDataCorrectionRecord { id: string; cityId: string; neighborhoodId: number;
   neighborhoodName: string; category: string; currentDisplayedValue: string; proposedCorrectedValue: string; evidenceNote: string; reporterUid: string | null; status: 'pending_review' | 'approved' | 'rejected'; createdAtIso: string; reviewedAtIso: string | null; }
@@ -27,7 +27,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     res.setHeader('Cache-Control', 'private, no-store');
     const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) {
-      const err = buildCanonicalApiErrorResponse({
+      recordAbuseSignal(getClientIp(req), 'auth_failure'); const err = buildCanonicalApiErrorResponse({
         code: 'AUTH_REQUIRED', category: 'authentication',
         messageFa: 'برای مشاهده آگهی‌های ثبت‌شده خود ابتدا وارد حساب کاربری شوید.',
         correlationId: (req as Request & { correlationId?: string }).correlationId,
@@ -42,7 +42,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   app.post('/api/my-bargains', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
     const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
-    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED', message: 'ورود به حساب الزامی است.' }); return; }
+    if (!auth.authorized || !auth.uid) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED', message: 'ورود به حساب الزامی است.' }); return; }
     const rawId = sanitizeInput(req.body?.id || `brg_${Date.now()}`, 80);
     if (!isValidFirestoreDocId(rawId)) { res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_ID', message: 'شناسه آگهی معتبر نیست.' }); return; }
     const title = sanitizeInput(req.body?.title || '', 120);
@@ -50,20 +50,17 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     const sqm = Math.round(Number(req.body?.sqm) || 0);
     const priceMillions = Number(req.body?.priceMillions) || 0;
     const dealType: 'خرید' | 'اجاره' = req.body?.dealType === 'اجاره' ? 'اجاره' : 'خرید';
-    const hoodId = Math.trunc(Number(req.body?.hoodId) || 1);
+    const hoodId = Math.trunc(Number(req.body?.hoodId ?? 1));
     const cityId = validateCityParam(req.body?.cityId, 'tehran');
     const rawPhone = sanitizeInput(req.body?.contactPhone || '', 20);
-    if (title.length < 3 || sqm < 15 || sqm > 5000 || priceMillions <= 0 || priceMillions > 10_000_000 || (rawPhone && !isValidIranMobilePhone(rawPhone))) {
+    if (title.length < 3 || hoodId < 1 || hoodId > 999 || sqm < 15 || sqm > 5000 || priceMillions <= 0 || priceMillions > 10_000_000 || (rawPhone && !isValidIranMobilePhone(rawPhone))) {
       res.status(400).json({ status: 'error', code: 'INVALID_BARGAIN_PAYLOAD', message: 'مشخصات عنوان، متراژ، قیمت یا شماره تماس آگهی معتبر نیست.' });
       return;
     }
     const nowIso = new Date().toISOString();
     const expiresIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const existing = serverPublishedBargains.get(rawId);
-    if (existing && existing.ownerUid !== auth.uid) {
-      res.status(403).json({ status: 'error', code: 'FORBIDDEN_OWNER_MISMATCH' });
-      return;
-    }
+    if (existing && existing.ownerUid !== auth.uid) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(403).json({ status: 'error', code: 'FORBIDDEN_OWNER_MISMATCH' }); return; }
     if (!existing) {
       const ownerCount = Array.from(serverPublishedBargains.values()).filter((b) => b.ownerUid === auth.uid && b.lifecycleState !== 'archived').length;
       if (ownerCount >= MAX_PUBLISHED_BARGAINS_PER_OWNER || serverPublishedBargains.size >= MAX_PUBLISHED_BARGAINS_TOTAL) {

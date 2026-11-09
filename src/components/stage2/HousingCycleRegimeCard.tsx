@@ -15,7 +15,7 @@ import {
   HousingCycleRegimeId
 } from '../../cells/decision-epistemology/housingCycleRegimeEngine';
 import { toPersianNum } from '../../data/neighborhoods';
-import type { IntlCurrencyCode } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface HousingCycleRegimeCardProps {
   hoodId?: number;
@@ -30,6 +30,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
   hoodName = 'پونک',
   cityKey = 'tehran',
   basePriceSqm = 120,
+  intlCurrency = 'USD',
 }) => {
   const [selectedPersona, setSelectedPersona] = useState<'buyer' | 'upgrader' | 'investor'>('buyer');
 
@@ -38,6 +39,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
   }, [hoodId, hoodName, cityKey, basePriceSqm]);
 
   const cycle = report.cycle;
+  const rahnFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(report.rahn80m, intlCurrency, 'fa')})` : '';
 
   // Cycle phase badge styling
   const phaseColors: Record<HousingCycleRegimeId, { bg: string; text: string; border: string }> = {
@@ -134,11 +136,11 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
-          <div className="text-[10px] text-slate-400">نسبت قیمت به رهن (P/R):</div>
+          <div className="text-[10px] text-slate-400">نسبت قیمت به اجاره سالانه:</div>
           <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">
-            {toPersianNum(cycle.priceToRentRatio)} برابر
+            {toPersianNum(cycle.priceToRentRatio)} سال
           </div>
-          <div className="text-[9px] text-slate-400">محدوده تعادل: ۱۸ تا ۲۲</div>
+          <div className="text-[9px] text-slate-400">محدوده تعادل: ۱۸ تا ۲۲ سال{rahnFx}</div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">

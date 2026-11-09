@@ -150,7 +150,7 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
         <ResponsiveContainer width="100%" height="100%" minWidth={240}>
           <BarChart data={chartData} margin={{ top: 12, right: 10, left: -6, bottom: 2 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.25} vertical={false} />
-            <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 10.5, fontFamily: 'Vazirmatn' }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
+            <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 10.5, fontFamily: 'Vazirmatn' }} axisLine={{ stroke: '#94a3b8', strokeOpacity: 0.35 }} tickLine={false} />
             <YAxis
               stroke="#64748b"
               width={38}

@@ -1,20 +1,103 @@
-import React, { useState, useEffect, useMemo } from 'react'; import { Clock, Trash2, MapPin, TrendingUp, Sparkles } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import type { CityId, Neighborhood } from '../types/models'; import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from '../utils/security'; import { SmartNaturalSearchMatchesSection } from './SmartNaturalSearchMatchesSection'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; export const RECENT_SEARCHES_STORAGE_KEY = 'tehran_radar_recent_searches_v1'; export const MAX_RECENT_SEARCHES = 5; export const POPULAR_HOOD_NAMES = [ 'سعادت‌آباد', 'شهرک غرب', 'پونک', 'نیاوران', 'چیتگر', 'تهران‌پارس غربی', 'ونک', 'یوسف‌آباد', ]; export function getTrendingNeighborhoods( allHoods: EvaluatedNeighborhood[], currentMatches: EvaluatedNeighborhood[] = []
-): EvaluatedNeighborhood[] { const matchIds = new Set(currentMatches.map((m) => m.id)); const trendingByCatalog = allHoods.filter((h) => POPULAR_HOOD_NAMES.includes(h.name) && !matchIds.has(h.id)); if (trendingByCatalog.length >= 3) return trendingByCatalog.slice(0, 3); const topScored = [...allHoods].filter((h) => !matchIds.has(h.id)).sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0)); return [...trendingByCatalog, ...topScored].slice(0, 3); } export function getRecentSearches(): string[] { const loaded = safeLocalStorageGet<string[]>(RECENT_SEARCHES_STORAGE_KEY, []); if (!Array.isArray(loaded)) return []; return loaded.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).slice(0, MAX_RECENT_SEARCHES); }
-export function recordRecentSearch(hoodName: string): string[] { const trimmed = hoodName.trim(); if (!trimmed) return getRecentSearches(); const current = getRecentSearches().filter((name) => name.toLowerCase() !== trimmed.toLowerCase()); const updated = [trimmed, ...current].slice(0, MAX_RECENT_SEARCHES); safeLocalStorageSet(RECENT_SEARCHES_STORAGE_KEY, updated); return updated; } export function clearAllRecentSearches(): void { safeLocalStorageRemove(RECENT_SEARCHES_STORAGE_KEY); }
-export function useGlobalSearchShortcut(onOpenDropdown: () => void): void { useEffect(() => { const handleGlobalKey = (e: KeyboardEvent) => { const target = e.target as HTMLElement | null; const isInputFocused = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable); if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (!isInputFocused && e.key === '/')) { e.preventDefault(); const searchEl = document.querySelector<HTMLInputElement>('input[aria-label="جست‌وجوی محله"]'); if (searchEl) { searchEl.focus(); onOpenDropdown(); } } }; window.addEventListener('keydown', handleGlobalKey); return () => window.removeEventListener('keydown', handleGlobalKey); }, [onOpenDropdown]); }
-export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: EvaluatedNeighborhood[]; crossCityMatches?: Neighborhood[]; evaluatedNeighborhoods: EvaluatedNeighborhood[]; mode?: 'rent' | 'buy'; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; onSwitchCity?: (cityId: CityId, targetHoodId?: number) => void; setMobileSheetOpen: (v: boolean) => void; setSearchQuery: (q: string) => void;
-  setShowSearchDropdown: (v: boolean) => void; } export function SearchDropdownMenu({ searchQuery, searchMatches, crossCityMatches = [], evaluatedNeighborhoods, mode = 'buy', onSelectNeighborhood, onSwitchCity, setMobileSheetOpen, setSearchQuery, setShowSearchDropdown,
-}: SearchDropdownMenuProps): React.ReactElement { const [areaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const [recentSearches, setRecentSearches] = useState<string[]>([]); const [highlightedIndex, setHighlightedIndex] = useState<number>(0); const formatHoodPriceMetric = (n: { id?: number; name?: string; rahn80m: number; buyPerSqm: number; distKm?: number | null }) => { const distTag = typeof n.distKm === 'number' ? ` · ${toPersianNum(areaUnit === 'sqft' ? (n.distKm * 0.621371).toFixed(1) : n.distKm.toFixed(1))} ${areaUnit === 'sqft' ? 'mi' : 'km'}` : '';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Clock, Trash2, MapPin, TrendingUp, Sparkles } from 'lucide-react';
+import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
+import type { CityId, Neighborhood } from '../types/models';
+import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, getAllMultiCityNeighborhoods } from '../data/multiCityData';
+import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { SmartNaturalSearchMatchesSection } from './SmartNaturalSearchMatchesSection';
+import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
+import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+export {
+  SearchHistory,
+  getRecentSearches,
+  recordRecentSearch,
+  removeRecentSearch,
+  clearAllRecentSearches,
+  useSearchHistory,
+  RECENT_SEARCHES_STORAGE_KEY,
+  MAX_RECENT_SEARCHES,
+} from './SearchHistory';
+import { SearchHistory, recordRecentSearch } from './SearchHistory';
+
+export const POPULAR_HOOD_NAMES = [
+  'سعادت‌آباد',
+  'شهرک غرب',
+  'پونک',
+  'نیاوران',
+  'چیتگر',
+  'تهران‌پارس غربی',
+  'ونک',
+  'یوسف‌آباد',
+];
+
+export function getTrendingNeighborhoods(
+  allHoods: EvaluatedNeighborhood[],
+  currentMatches: EvaluatedNeighborhood[] = []
+): EvaluatedNeighborhood[] {
+  const matchIds = new Set(currentMatches.map((m) => m.id));
+  const trendingByCatalog = allHoods.filter((h) => POPULAR_HOOD_NAMES.includes(h.name) && !matchIds.has(h.id));
+  if (trendingByCatalog.length >= 3) return trendingByCatalog.slice(0, 3);
+  const topScored = [...allHoods].filter((h) => !matchIds.has(h.id)).sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
+  return [...trendingByCatalog, ...topScored].slice(0, 3);
+}
+
+export function useGlobalSearchShortcut(onOpenDropdown: () => void): void {
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInputFocused = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
+      if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (!isInputFocused && e.key === '/')) {
+        e.preventDefault();
+        const searchEl = document.querySelector<HTMLInputElement>('input[aria-label="جست‌وجوی محله"]');
+        if (searchEl) { searchEl.focus(); onOpenDropdown(); }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
+  }, [onOpenDropdown]);
+}
+
+export interface SearchDropdownMenuProps {
+  searchQuery: string; searchMatches: EvaluatedNeighborhood[]; crossCityMatches?: Neighborhood[];
+  evaluatedNeighborhoods: EvaluatedNeighborhood[]; mode?: 'rent' | 'buy';
+  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
+  onSwitchCity?: (cityId: CityId, targetHoodId?: number) => void;
+  setMobileSheetOpen: (v: boolean) => void; setSearchQuery: (q: string) => void; setShowSearchDropdown: (v: boolean) => void;
+}
+
+export function SearchDropdownMenu({
+  searchQuery, searchMatches, crossCityMatches = [], evaluatedNeighborhoods, mode = 'buy',
+  onSelectNeighborhood, onSwitchCity, setMobileSheetOpen, setSearchQuery, setShowSearchDropdown,
+}: SearchDropdownMenuProps): React.ReactElement {
+  const [areaUnit] = useAreaUnit();
+  const [radarLocale] = useRadarLocale();
+  const [intlCurrency] = useIntlCurrency();
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(0);
+  const formatHoodPriceMetric = (n: { id?: number; name?: string; rahn80m: number; buyPerSqm: number; distKm?: number | null }) => {
+    const distTag = typeof n.distKm === 'number' ? ` · ${toPersianNum(areaUnit === 'sqft' ? (n.distKm * 0.621371).toFixed(1) : n.distKm.toFixed(1))} ${areaUnit === 'sqft' ? 'mi' : 'km'}` : '';
     if (mode === 'rent') return `رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م · اجاره: ${toPersianNum(Math.round(n.rahn80m * 0.03))} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(n.rahn80m, intlCurrency, radarLocale)})` : ''}${distTag}`;
     const unitBuy = Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1));
     const unitDeal = Number(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id ?? 1, n.name ?? '', n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit).toFixed(1));
     return `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ${toPersianNum(unitBuy)} م (معامله v6.4: ${toPersianNum(unitDeal)} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)} · کل: ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, radarLocale)})` : ''}${distTag}`;
   };
-  useEffect(() => { setRecentSearches(getRecentSearches()); }, []); useEffect(() => { setHighlightedIndex(0); }, [searchQuery]); const allNationwideHoods = useMemo(() => getAllMultiCityNeighborhoods(), []); const trendingHoods = useMemo(() => getTrendingNeighborhoods(evaluatedNeighborhoods, searchMatches), [evaluatedNeighborhoods, searchMatches]); const handleSelectNeighborhood = (n: EvaluatedNeighborhood) => { const updated = recordRecentSearch(n.name); setRecentSearches(updated);
-    onSelectNeighborhood(n); setMobileSheetOpen(true); setSearchQuery(''); setShowSearchDropdown(false); };
-  const handleSelectCrossCityNeighborhood = (n: Neighborhood) => { const targetCity = resolveCityIdForNeighborhood(n.id); const updated = recordRecentSearch(n.name);
-    setRecentSearches(updated); if (onSwitchCity) onSwitchCity(targetCity, n.id);
-    setMobileSheetOpen(true); setSearchQuery(''); setShowSearchDropdown(false); };
+  useEffect(() => { setHighlightedIndex(0); }, [searchQuery]);
+  const allNationwideHoods = useMemo(() => getAllMultiCityNeighborhoods(), []);
+  const trendingHoods = useMemo(() => getTrendingNeighborhoods(evaluatedNeighborhoods, searchMatches), [evaluatedNeighborhoods, searchMatches]);
+  const handleSelectNeighborhood = (n: EvaluatedNeighborhood) => {
+    recordRecentSearch(n.name);
+    onSelectNeighborhood(n);
+    setMobileSheetOpen(true);
+    setSearchQuery('');
+    setShowSearchDropdown(false);
+  };
+  const handleSelectCrossCityNeighborhood = (n: Neighborhood) => {
+    const targetCity = resolveCityIdForNeighborhood(n.id);
+    recordRecentSearch(n.name);
+    if (onSwitchCity) onSwitchCity(targetCity, n.id);
+    setMobileSheetOpen(true);
+    setSearchQuery('');
+    setShowSearchDropdown(false);
+  };
   const handleSelectRecentSearchName = (name: string) => {
     const norm = name.trim().toLowerCase();
     const matched = evaluatedNeighborhoods.find((h) => h.name.trim().toLowerCase() === norm);
@@ -35,36 +118,19 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [searchQuery, searchMatches, trendingHoods, highlightedIndex]);
-  const handleClearHistory = (e: React.MouseEvent) => { e.stopPropagation(); clearAllRecentSearches(); setRecentSearches([]); };
   const isQueryEmpty = !searchQuery.trim(); return (
     <div className="absolute right-0 left-0 mt-2 apple-grouped-card dark:bg-slate-900 dark:border-slate-700/80 shadow-xl max-h-96 overflow-y-auto z-50 divide-y divide-slate-200/60 dark:divide-slate-800 animate-in fade-in-0 duration-200">
       {isQueryEmpty ? (
         <div className="py-1">
-          {recentSearches.length > 0 ? (
-            <div>
-              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
-                <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-slate-400 stroke-[2]" /><span>جست‌وجوهای اخیر</span></span>
-                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={handleClearHistory} className="flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"><Trash2 className="w-3 h-3 stroke-[1.75]" /><span>پاک کردن</span></button>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {recentSearches.map((name, idx) => { const matchedHood = evaluatedNeighborhoods.find((h) => h.name.trim().toLowerCase() === name.trim().toLowerCase()) || allNationwideHoods.find((h) => h.name.trim().toLowerCase() === name.trim().toLowerCase()); return (
-                    <button key={name} type="button" style={{ animationDelay: `${idx * 40}ms` }} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectRecentSearchName(name)} className="w-full text-right px-3.5 py-2 hover:bg-slate-50/90 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group ios-stagger-item">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#007AFF] transition stroke-[1.75]" />
-                        <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#007AFF] transition">{name}</span>
-                        {matchedHood && <span className="text-[10px] text-slate-400">({matchedHood.zone})</span>}
-                      </div>
-                      {matchedHood && <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">{formatHoodPriceMetric(matchedHood)}</span>}
-                    </button>
-                  ); })}
-              </div>
-            </div>
-          ) : (
-            <div className="px-3.5 py-2.5 text-center text-xs text-slate-400 flex flex-col items-center gap-1">
-              <MapPin className="w-4 h-4 text-slate-300 dark:text-slate-600 stroke-[1.75]" />
-              <span>نام محله مورد نظر خود را برای جست‌وجو وارد کنید.</span>
-            </div>
-          )}
+          <SearchHistory
+            onSelectNeighborhood={(name) => handleSelectRecentSearchName(name)}
+            evaluatedNeighborhoods={evaluatedNeighborhoods}
+            mode={mode}
+            showPriceTag={true}
+            showClearAll={true}
+            showIndividualRemove={true}
+            emptyMessage="نام محله مورد نظر خود را برای جست‌وجو وارد کنید."
+          />
           {trendingHoods.length > 0 && (
             <div className="border-t border-slate-200/80 dark:border-slate-800">
               <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
@@ -76,23 +142,13 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {trendingHoods.map((n, idx) => (
-                  <button
-                    key={`empty-trending-${n.id}`}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSelectNeighborhood(n)}
-                    className={`w-full text-right px-3.5 py-2 transition flex items-center justify-between text-xs cursor-pointer group ${
-                      idx === highlightedIndex ? 'bg-amber-50/80 dark:bg-amber-950/40' : 'hover:bg-amber-50/50 dark:hover:bg-slate-800/70'
-                    }`}
-                  >
+                  <button key={`empty-trending-${n.id}`} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectNeighborhood(n)} className={`w-full text-right px-3.5 py-2 transition flex items-center justify-between text-xs cursor-pointer group ${idx === highlightedIndex ? 'bg-amber-50/80 dark:bg-amber-950/40' : 'hover:bg-amber-50/50 dark:hover:bg-slate-800/70'}`}>
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-3 h-3 text-amber-500 group-hover:text-amber-600 transition" />
                       <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
                     </div>
-                    <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
-                      {formatHoodPriceMetric(n)}
-                    </span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">{formatHoodPriceMetric(n)}</span>
                   </button>
                 ))}
               </div>
@@ -105,25 +161,13 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
             </div>
             <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-56 overflow-y-auto">
               {evaluatedNeighborhoods.map((n) => (
-                <button
-                  key={`dir-${n.id}`}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleSelectNeighborhood(n)}
-                  className="w-full text-right px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group"
-                >
+                <button key={`dir-${n.id}`} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectNeighborhood(n)} className="w-full text-right px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group">
                   <div className="flex items-center gap-1.5 truncate">
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 ${
-                        n.status === 'green' ? 'bg-emerald-500' : n.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'
-                      }`}
-                    />
-                    <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#007AFF] truncate">{n.name}</span>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${n.status === 'green' ? 'bg-emerald-500' : n.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                    <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 truncate">{n.name}</span>
                     <span className="text-[10px] text-slate-400 truncate">({n.zone})</span>
                   </div>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px] shrink-0">
-                    {formatHoodPriceMetric(n)}
-                  </span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px] shrink-0">{formatHoodPriceMetric(n)}</span>
                 </button>
               ))}
             </div>
@@ -164,10 +208,10 @@ export interface SearchDropdownMenuProps { searchQuery: string; searchMatches: E
                           n.status === 'green' ? 'bg-emerald-500' : n.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'
                         }`}
                       />
-                      <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#007AFF] transition">{n.name}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
                       {searchQuery.trim() && !n.name.includes(searchQuery.trim()) && (n.pros.includes(searchQuery.trim()) || (n.bargains?.[0]?.street && n.bargains[0].street.includes(searchQuery.trim()))) && (
-                        <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[9.5px] font-bold">زیرمحله / خیابان</span>
+                        <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[9.5px] font-bold">زیرمحله / خیابان</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">

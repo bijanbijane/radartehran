@@ -25,6 +25,12 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return undefined;
+    const themeObs = new MutationObserver(() => setMarkerRenderEpoch((c) => c + 1));
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-apple-theme'] });
+    return () => themeObs.disconnect();
+  }, []);
   const advancedOverlayState = useMapAdvancedOverlayState();
   const advancedOverlaysGroupRef = useRef<any>(null);
   useEffect(() => {
@@ -265,11 +271,9 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
         iconSize: [0, 0],
       });
       workMarkerRef.current = L.marker([selectedWorkHub.lat, selectedWorkHub.lng], { icon: hubIcon, zIndexOffset: 900 }).addTo(map);
-      workLineRef.current = L.polyline(
-        [[selectedHood.lat, selectedHood.lng], [selectedWorkHub.lat, selectedWorkHub.lng]],
-        { color: '#38bdf8', weight: 2.5, dashArray: '6, 6', opacity: 0.85 }
-      ).addTo(map).bindTooltip(
-        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;">🚗 مسیر ${safeHoodLabel} تا ${safeHubName}: <strong>${toPersianNum((selectedHood.distKm || 0).toFixed(1))} کیلومتر</strong></div>`,
+      const distVal = areaUnit === 'sqft' ? ((selectedHood.distKm || 0) * 0.621371).toFixed(1) : (selectedHood.distKm || 0).toFixed(1);
+      workLineRef.current = L.polyline([[selectedHood.lat, selectedHood.lng], [selectedWorkHub.lat, selectedWorkHub.lng]], { color: '#38bdf8', weight: 2.5, dashArray: '6, 6', opacity: 0.85 }).addTo(map).bindTooltip(
+        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;">🚗 مسیر ${safeHoodLabel} تا ${safeHubName}: <strong>${toPersianNum(distVal)} ${areaUnit === 'sqft' ? 'مایل' : 'کیلومتر'}</strong></div>`,
         { sticky: true, direction: 'top' }
       );
     }
@@ -290,4 +294,4 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
             `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;max-width:220px;"><strong>${emoji} ${safeLmName}</strong> (${safeLmCategory})<br/><span style="font-size:11px;opacity:0.85;">${safeLmDesc}</span></div>`,
             { direction: 'top' }
           );
-        landmarkPinsRef.current.push(lPin); }); } }, [selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks]); const handleFocusLandmarkOnMap = (lm: LocalLandmark) => { if (mapInstanceRef.current && selectedHood) { mapInstanceRef.current.flyTo([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], 15, { duration: 0.7 }); } }; return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded }; }
+        landmarkPinsRef.current.push(lPin); }); } }, [selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks, areaUnit]); const handleFocusLandmarkOnMap = (lm: LocalLandmark) => { if (mapInstanceRef.current && selectedHood) { mapInstanceRef.current.flyTo([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], 15, { duration: 0.7 }); } }; return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded }; }

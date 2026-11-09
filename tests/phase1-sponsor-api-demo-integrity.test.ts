@@ -16,7 +16,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8');
 
 function registeredApiRoutes(): Set<string> {
-  const files = ['server.ts', ...fs.readdirSync(path.join(root, 'src/utils')).filter((name) => name.startsWith('server') || name === 'osmTileProxy.ts').map((name) => `src/utils/${name}`)];
+  const files = Array.from(new Set(['server.ts', ...fs.readdirSync(path.join(root, 'src/utils')).filter((name) => name.startsWith('server') || name === 'osmTileProxy.ts').map((name) => `src/utils/${name}`), ...RADAR_API_ROUTE_INVENTORY.map((item) => item.sourceFile)]));
   const keys = new Set<string>();
   for (const rel of files) {
     const text = read(rel);
