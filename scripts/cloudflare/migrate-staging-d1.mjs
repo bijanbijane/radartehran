@@ -22,6 +22,7 @@ import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseJsonc } from './jsoncUtils.mjs';
 
 const ROOT_DIR = process.cwd();
 const WRANGLER_CONFIG_PATH = path.join(ROOT_DIR, 'wrangler.jsonc');
@@ -235,7 +236,7 @@ function main() {
   const applyRemote = rawArgs.includes('--apply-remote');
   const dryCheckOnly = rawArgs.includes('--dry-check-only') || !applyRemote;
 
-  const wranglerConfig = JSON.parse(fs.readFileSync(WRANGLER_CONFIG_PATH, 'utf-8'));
+  const wranglerConfig = parseJsonc(fs.readFileSync(WRANGLER_CONFIG_PATH, 'utf-8'), 'wrangler.jsonc');
   const validated = validateStagingD1TargetAndMigrations({
     wranglerConfig,
     allowPlaceholderForLocalDryCheck: dryCheckOnly,
@@ -248,14 +249,24 @@ function main() {
     return;
   }
 
+  const configuredAccountId = String(process.env.CLOUDFLARE_ACCOUNT_ID || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{32}$/i.test(configuredAccountId)) {
+    throw new Error(
+      'CLOUDFLARE_ACCOUNT_ID_MISSING_OR_INVALID: Valid 32-char hex CLOUDFLARE_ACCOUNT_ID is required before remote D1 migrations.',
+    );
+  }
+
   // Step 1: Verify Cloudflare account identity
   const whoami = runWrangler(['whoami']);
+  const combinedWhoami = `${whoami.stdout}\n${whoami.stderr}`;
   if (
     whoami.status !== 0 ||
-    whoami.stdout.includes('You are not authenticated') ||
-    whoami.stderr.includes('You are not authenticated')
+    combinedWhoami.includes('You are not authenticated') ||
+    !combinedWhoami.toLowerCase().includes(configuredAccountId)
   ) {
-    throw new Error('CLOUDFLARE_AUTH_VERIFICATION_FAILED: wrangler whoami failed for CF_STAGING_MIGRATION_TOKEN');
+    throw new Error(
+      'CLOUDFLARE_AUTH_VERIFICATION_FAILED: wrangler whoami failed or account ID did not match CLOUDFLARE_ACCOUNT_ID',
+    );
   }
 
   // Step 2: Verify exact remote database name exists and UUID matches committed wrangler.jsonc

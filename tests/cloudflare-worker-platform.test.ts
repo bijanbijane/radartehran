@@ -748,7 +748,12 @@ async function runSuite(): Promise<void> {
       /ARBITRARY_MIGRATION_TARGET_FORBIDDEN/,
     );
 
-    const baseWrangler = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wrangler.jsonc'), 'utf-8'));
+    const jsoncMod = await import('../scripts/cloudflare/jsoncUtils.mjs');
+    const provisionMod = await import('../scripts/cloudflare/provision-staging.mjs');
+    const baseWrangler = jsoncMod.parseJsonc(
+      fs.readFileSync(path.join(process.cwd(), 'wrangler.jsonc'), 'utf-8'),
+      'wrangler.jsonc',
+    );
     assert.throws(
       () =>
         migrateScriptMod.validateStagingD1TargetAndMigrations({
@@ -860,6 +865,324 @@ async function runSuite(): Promise<void> {
     assert.equal(domainMetrics.kAnonymitySatisfied, false);
     assert.equal(domainMetrics.inquiryCohortCount, 0);
     console.log('  ✅ 7. Safe Strangler fallback, D1+R2 chunked upload routes, Section 25 diagnostics, and truthful telemetry verified');
+
+    // 8. Staging Bootstrap Compatibility & Security Repair Regression Suite (16 Mandatory Scenarios)
+    {
+      // (8.1) JSONC parsing with comments (// and /* */) and https:// URLs
+      const sampleJsoncWithComments = `{
+        // Top-level comment with https://radartehran.ir//not-a-comment
+        "name": "radartehran",
+        "vars": {
+          "APP_URL": "https://radartehran.ir/*still-inside-string*/path"
+        },
+        /* Multi-line block comment
+           describing staging & production */
+        "env": {
+          "staging": {
+            "name": "radartehran-staging",
+            "vars": {
+              "APP_ENV": "staging",
+              "APP_URL": "https://staging.radartehran.example.com"
+            }
+            // Pre-bootstrap comment: bindings not yet populated
+          },
+          "production": {
+            "name": "radartehran",
+            "vars": {
+              "APP_ENV": "production",
+              "APP_URL": "https://radartehran.ir"
+            },
+          }
+        }
+      }`;
+      const parsedSample = jsoncMod.parseJsonc(sampleJsoncWithComments, 'test.jsonc');
+      assert.equal(parsedSample.vars.APP_URL, 'https://radartehran.ir/*still-inside-string*/path');
+      assert.equal(parsedSample.env.staging.name, 'radartehran-staging');
+
+      // (8.2) Initial bootstrap validation permits missing initial D1/KV bindings before provisioning
+      const initialValidated = provisionMod.validateInitialBootstrapConfig({
+        rawJsoncText: sampleJsoncWithComments,
+      });
+      assert.equal(initialValidated.env.staging.name, 'radartehran-staging');
+      assert.equal(initialValidated.env.staging.d1_databases, undefined);
+
+      // (8.3) Post-provisioning generation of complete Staging bindings & comment preservation
+      const tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.tmp-staging-bootstrap-test-'));
+      try {
+        const tmpWranglerPath = path.join(tmpDir, 'wrangler.jsonc');
+        const tmpManifestPath = path.join(tmpDir, 'staging-resource-manifest.json');
+        fs.writeFileSync(tmpWranglerPath, sampleJsoncWithComments, 'utf-8');
+
+        const realD1Uuid = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
+        const realKvHex = 'abcdef0123456789abcdef0123456789';
+        const updatedParsed = provisionMod.updateStagingWranglerBindings({
+          d1DatabaseId: realD1Uuid,
+          kvNamespaceId: realKvHex,
+          wranglerConfigPath: tmpWranglerPath,
+        });
+
+        const updatedText = fs.readFileSync(tmpWranglerPath, 'utf-8');
+        assert.ok(updatedText.includes('// Top-level comment with https://radartehran.ir//not-a-comment'));
+        assert.ok(updatedText.includes('// Pre-bootstrap comment: bindings not yet populated'));
+        assert.equal(updatedParsed.env.staging.workers_dev, true);
+        assert.equal(
+          updatedParsed.env.staging.vars.APP_URL,
+          'https://radartehran-staging.workers.dev',
+          'Must replace fake staging.radartehran.example.com APP_URL with workers.dev URL',
+        );
+        assert.equal(updatedParsed.env.staging.d1_databases[0].binding, 'DB');
+        assert.equal(updatedParsed.env.staging.d1_databases[0].database_name, 'radartehran-staging-db');
+        assert.equal(updatedParsed.env.staging.d1_databases[0].database_id, realD1Uuid);
+        assert.equal(updatedParsed.env.staging.r2_buckets[0].binding, 'MEDIA_BUCKET');
+        assert.equal(updatedParsed.env.staging.r2_buckets[0].bucket_name, 'radartehran-staging-media');
+        assert.equal(updatedParsed.env.staging.kv_namespaces[0].binding, 'RADAR_KV');
+        assert.equal(updatedParsed.env.staging.kv_namespaces[0].id, realKvHex);
+        assert.equal(updatedParsed.env.staging.queues.producers.length, 2);
+        assert.equal(updatedParsed.env.staging.queues.consumers[0].queue, 'radartehran-staging-queue');
+        assert.equal(updatedParsed.env.staging.queues.consumers[0].dead_letter_queue, 'radartehran-staging-dlq');
+
+        // (8.4 & 8.5 & 8.6) Rejection of Production targets and unexpected resource names
+        assert.throws(
+          () => provisionMod.assertStagingScopedName('radartehran'),
+          /SECURITY_GUARD_ABORT/,
+        );
+        assert.throws(
+          () => provisionMod.assertStagingScopedName('radartehran-prod-db'),
+          /SECURITY_GUARD_ABORT/,
+        );
+        assert.throws(
+          () =>
+            provisionMod.validateInitialBootstrapConfig({
+              rawJsoncText: JSON.stringify({
+                env: {
+                  staging: {
+                    name: 'radartehran-staging',
+                    d1_databases: [{ binding: 'DB', database_name: 'radartehran-staging-wrong-db' }],
+                  },
+                  production: { name: 'radartehran' },
+                },
+              }),
+            }),
+          /UNEXPECTED_STAGING_D1_BINDING/,
+        );
+
+        // (8.7) Rejection of placeholder IDs in routine deployment
+        const placeholderConfig = structuredClone(updatedParsed);
+        placeholderConfig.env.staging.d1_databases[0].database_id = '00000000-0000-0000-0000-000000000001';
+        assert.throws(
+          () =>
+            provisionMod.validateCompleteStagingWranglerConfig(placeholderConfig, {
+              rejectPlaceholders: true,
+            }),
+          /PLACEHOLDER_STAGING_BINDING_ID_REJECTED/,
+        );
+
+        // (8.8) Failed list operations must abort instead of attempting creation blindly
+        let createCalledOnFailedList = false;
+        assert.throws(
+          () =>
+            provisionMod.provisionOrVerifyRemoteStagingResources({
+              isVerifyOnly: false,
+              runCommand: (args: string[]) => {
+                if (args[0] === 'd1' && args[1] === 'list') {
+                  return { status: 1, stdout: '', stderr: 'API error 500' };
+                }
+                if (args[1] === 'create' || args[2] === 'create') {
+                  createCalledOnFailedList = true;
+                }
+                return { status: 0, stdout: '[]', stderr: '' };
+              },
+            }),
+          /REMOTE_LIST_OPERATION_FAILED/,
+        );
+        assert.equal(createCalledOnFailedList, false, 'Must never call create when list fails');
+
+        // (8.9 & 8.12) Partial provisioning failure records diagnostic manifest and succeeds cleanly on retry
+        fs.writeFileSync(tmpWranglerPath, sampleJsoncWithComments, 'utf-8');
+        const validAccountId = '11223344556677889900aabbccddeeff';
+        const mockEnv = {
+          CLOUDFLARE_API_TOKEN: 'cf_test_bootstrap_token_1234567890',
+          CLOUDFLARE_ACCOUNT_ID: validAccountId,
+        };
+        let failKvCreateOnce = true;
+        const createdStore = {
+          d1: false,
+          r2: false,
+          kv: false,
+          qMain: false,
+          qDlq: false,
+        };
+        const mockRunner = (args: string[]) => {
+          const cmd = args.join(' ');
+          if (cmd === 'whoami') {
+            return { status: 0, stdout: `Account ID: ${validAccountId}`, stderr: '' };
+          }
+          if (cmd === 'd1 list --json') {
+            return {
+              status: 0,
+              stdout: createdStore.d1
+                ? JSON.stringify([{ name: 'radartehran-staging-db', uuid: realD1Uuid }])
+                : '[]',
+              stderr: '',
+            };
+          }
+          if (cmd === 'd1 create radartehran-staging-db') {
+            createdStore.d1 = true;
+            return { status: 0, stdout: `Created D1 ${realD1Uuid}`, stderr: '' };
+          }
+          if (cmd === 'r2 bucket list') {
+            return {
+              status: 0,
+              stdout: createdStore.r2 ? 'name: radartehran-staging-media' : '',
+              stderr: '',
+            };
+          }
+          if (cmd === 'r2 bucket create radartehran-staging-media') {
+            createdStore.r2 = true;
+            return { status: 0, stdout: 'Created bucket', stderr: '' };
+          }
+          if (cmd === 'kv namespace list') {
+            return {
+              status: 0,
+              stdout: createdStore.kv
+                ? JSON.stringify([{ title: 'radartehran-staging-kv', id: realKvHex }])
+                : '[]',
+              stderr: '',
+            };
+          }
+          if (cmd === 'kv namespace create radartehran-staging-kv') {
+            if (failKvCreateOnce) {
+              failKvCreateOnce = false;
+              return { status: 1, stdout: '', stderr: 'Transient KV create failure' };
+            }
+            createdStore.kv = true;
+            return { status: 0, stdout: `id = "${realKvHex}"`, stderr: '' };
+          }
+          if (cmd === 'queues list') {
+            const list = [];
+            if (createdStore.qMain) list.push('radartehran-staging-queue');
+            if (createdStore.qDlq) list.push('radartehran-staging-dlq');
+            return { status: 0, stdout: list.join('\n'), stderr: '' };
+          }
+          if (cmd === 'queues create radartehran-staging-queue') {
+            createdStore.qMain = true;
+            return { status: 0, stdout: 'Created queue', stderr: '' };
+          }
+          if (cmd === 'queues create radartehran-staging-dlq') {
+            createdStore.qDlq = true;
+            return { status: 0, stdout: 'Created dlq', stderr: '' };
+          }
+          if (args[0] === 'secret' && args[1] === 'put') {
+            return { status: 0, stdout: 'Success', stderr: '' };
+          }
+          return { status: 1, stdout: '', stderr: `Unexpected command: ${cmd}` };
+        };
+
+        // First run fails on KV creation and writes partial manifest
+        assert.throws(
+          () =>
+            provisionMod.executeStagingProvisioning({
+              rawArgs: ['--mode=bootstrap', '--require-remote'],
+              env: mockEnv,
+              wranglerConfigPath: tmpWranglerPath,
+              manifestOutputPath: tmpManifestPath,
+              runCommand: mockRunner,
+            }),
+          /RESOURCE_CREATION_FAILED/,
+        );
+        const partialManifest = JSON.parse(fs.readFileSync(tmpManifestPath, 'utf-8'));
+        assert.equal(partialManifest.status, 'FAILED_PARTIAL_OR_ABORTED');
+        assert.equal(partialManifest.resources.length, 2);
+
+        // Second run (retry) reuses D1 + R2 and creates KV + Queues cleanly
+        const retryManifest = provisionMod.executeStagingProvisioning({
+          rawArgs: ['--mode=bootstrap', '--require-remote', '--provision-internal-secrets'],
+          env: mockEnv,
+          wranglerConfigPath: tmpWranglerPath,
+          manifestOutputPath: tmpManifestPath,
+          runCommand: mockRunner,
+        });
+        assert.equal(retryManifest.resources.length, 5);
+        assert.equal(retryManifest.resources[0].creationOrReuseStatus, 'REUSED');
+        assert.equal(retryManifest.resources[1].creationOrReuseStatus, 'REUSED');
+        assert.equal(retryManifest.resources[2].creationOrReuseStatus, 'CREATED');
+        assert.equal(retryManifest.secretStatuses.length, 3);
+
+        // (8.10) Failed secret uploads and Production secret reuse must fail closed
+        assert.throws(
+          () =>
+            provisionMod.provisionInternalStagingSecrets({
+              env: { ADMIN_API_SECRET: 'short_secret' },
+              runCommand: () => ({ status: 0, stdout: '', stderr: '' }),
+            }),
+          /INVALID_STAGING_SECRET_LENGTH/,
+        );
+        assert.throws(
+          () =>
+            provisionMod.provisionInternalStagingSecrets({
+              env: {
+                ADMIN_API_SECRET: 'same_secret_value_1234567890123456',
+                PROD_ADMIN_API_SECRET: 'same_secret_value_1234567890123456',
+              },
+              runCommand: () => ({ status: 0, stdout: '', stderr: '' }),
+            }),
+          /PRODUCTION_SECRET_REUSE_FORBIDDEN/,
+        );
+        assert.throws(
+          () =>
+            provisionMod.provisionInternalStagingSecrets({
+              env: {},
+              runCommand: () => ({ status: 1, stdout: '', stderr: 'Secret upload failed' }),
+            }),
+          /STAGING_SECRET_UPLOAD_FAILED/,
+        );
+
+        // (8.11) Wrong Cloudflare account ID fails closed
+        assert.throws(
+          () =>
+            provisionMod.checkWranglerAuth({
+              env: {
+                CLOUDFLARE_API_TOKEN: 'token_123456789012',
+                CLOUDFLARE_ACCOUNT_ID: 'ffffffffffffffffffffffffffffffff',
+              },
+              runCommand: () => ({
+                status: 0,
+                stdout: `Authenticated in account ${validAccountId}`,
+                stderr: '',
+              }),
+            }),
+          /CLOUDFLARE_ACCOUNT_ID_MISMATCH/,
+        );
+
+        // (8.15) Workflow shell interpolation and SHA-pinning security checks
+        for (const wfFile of [
+          '.github/workflows/bootstrap-staging.yml',
+          '.github/workflows/deploy-staging.yml',
+          '.github/workflows/migrate-staging-d1.yml',
+        ]) {
+          const wfText = fs.readFileSync(path.join(process.cwd(), wfFile), 'utf-8');
+          assert.ok(
+            !wfText.includes('if [ "${{ inputs.'),
+            `${wfFile} must not interpolate inputs directly inside shell run script`,
+          );
+          assert.ok(
+            !wfText.includes('--url "${{ steps.'),
+            `${wfFile} must pass step outputs via env: instead of inline shell interpolation`,
+          );
+          assert.ok(
+            wfText.includes('actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683'),
+            `${wfFile} must pin actions/checkout to full commit SHA`,
+          );
+          assert.ok(
+            wfText.includes('JOB_STATUS: ${{ job.status }}'),
+            `${wfFile} summary step must inspect job.status so failed runs never imply success`,
+          );
+        }
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+      console.log('  ✅ 8. All 16 Staging Bootstrap Compatibility & Security Repair regression invariants verified (zero remote Cloudflare calls)');
+    }
   }
 
   console.log('🎉 All Cloudflare Worker Platform & Architecture Verification checks passed!');

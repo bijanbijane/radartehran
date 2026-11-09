@@ -166,21 +166,31 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs tabular-nums">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs tabular-nums">
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-            <span className="text-[11px] text-slate-400 block font-medium">میانه قیمت اعلامی آگهی‌ها:</span>
+            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-0.5">ادعای آگهی‌دهنده (Advertiser Claim)</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">میانه قیمت اعلامی آگهی‌ها:</span>
             <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">
               {toPersianNum(uAsking)} <span className="text-xs font-normal text-slate-400">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}</span>
             </strong>
           </div>
           <div className="p-4 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20">
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">برآورد مدل (Model Estimate v6.4)</span>
             <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-bold">تخمین قطعی پای معامله (v6.4):</span>
             <strong className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-1.5 block">
               {toPersianNum(uDeal)} <span className="text-xs font-normal text-emerald-600/70">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDeal, intlCurrency, radarLocale)})` : ''}</span>
             </strong>
           </div>
+          <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/30 dark:bg-indigo-950/20">
+            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block mb-0.5">نقدشوندگی فوری (Fast-Sale 0.88)</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">کف تسویه نقدی و فروش سریع:</span>
+            <strong className="text-xl font-black text-indigo-700 dark:text-indigo-300 mt-1.5 block">
+              {toPersianNum(Math.round(uAsking * 0.88))} <span className="text-xs font-normal text-slate-400">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}</span>
+            </strong>
+          </div>
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-            <span className="text-[11px] text-slate-400 block font-medium">بازه معتبر آماری محله (IQR):</span>
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">دامنه عدم‌قطعیت (Statistical IQR)</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">بازه معتبر آماری محله (IQR):</span>
             <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">
               {toPersianNum(uIqrLow)} تا {toPersianNum(uIqrHigh)} <span className="text-xs font-normal text-slate-400">م.ت</span>
             </strong>

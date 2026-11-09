@@ -32,12 +32,12 @@ jobs:
 
     steps:
       - name: 1. Clean repository checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
 
       - name: 2. Set up Node.js 22 with npm lockfile cache
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: "22"
           cache: "npm"
@@ -111,24 +111,34 @@ jobs:
 
       - name: 11. Execute Post-Deployment Smoke & Read-Only D1 Migration Readiness Verification
         if: ${{ inputs.run_live_smoke_tests == 'true' }}
+        env:
+          DEPLOYED_URL: ${{ steps.cf_deploy.outputs.deployed_url }}
         run: |
-          node scripts/cloudflare/smoke-test-staging.mjs --url "${{ steps.cf_deploy.outputs.deployed_url }}"
+          node scripts/cloudflare/smoke-test-staging.mjs --url "$DEPLOYED_URL"
 
       - name: 12. Publish Concise Staging Deployment Summary
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          DEPLOYED_URL: ${{ steps.cf_deploy.outputs.deployed_url }}
+          DEPLOYED_VERSION_ID: ${{ steps.cf_deploy.outputs.version_id }}
         run: |
           {
             echo "## Routine Cloudflare Staging Deployment Summary (\`radartehran-staging\`)"
+            echo "- **Workflow Execution Status**: \`${JOB_STATUS}\`"
             echo "- **GitHub Environment**: \`staging-deploy\` (Worker Editor Scope on \`radartehran-staging\` Only — Zero D1 Write / Zero Resource Creation)"
             echo "- **Target Worker**: \`radartehran-staging\` (Production \`radartehran\` untouched)"
-            echo "- **Deployed URL**: \`${{ steps.cf_deploy.outputs.deployed_url || 'N/A' }}\`"
-            echo "- **Version ID**: \`${{ steps.cf_deploy.outputs.version_id || 'N/A' }}\`"
+            echo "- **Deployed URL**: \`${DEPLOYED_URL:-N/A}\`"
+            echo "- **Version ID**: \`${DEPLOYED_VERSION_ID:-N/A}\`"
             echo "- **D1 Migration Policy**: Read-only verification via \`/api/health/readiness\` (\`d1_migrations\`); schema migrations are isolated in \`.github/workflows/migrate-staging-d1.yml\`"
+            if [ "$JOB_STATUS" != "success" ]; then
+              echo "- **Result**: Deployment or verification step failed. Inspect logs above."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 13. Upload Staging Resource Verification Manifest (Zero Secrets)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.0
         with:
           name: radartehran-staging-resource-manifest
           path: docs/cloudflare/staging-resource-manifest.json

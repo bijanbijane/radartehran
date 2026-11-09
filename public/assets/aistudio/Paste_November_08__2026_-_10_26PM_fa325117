@@ -1,0 +1,4438 @@
+# RADAR TEHRAN — CONSOLIDATED BACKEND IMPLEMENTATION PROGRAM
+# PHASES 2–11
+# EMPLOYEES 74–80
+# DIRECT REPOSITORY IMPLEMENTATION — STRICT DOMAIN OWNERSHIP — EXECUTABLE DELIVERY
+
+---
+
+# GLOBAL EXECUTION DIRECTIVE
+
+You are implementing the remaining backend engineering program for the existing Radar Tehran platform.
+
+This is a direct implementation assignment.
+
+You must modify the existing repository, implement functional production-quality code, integrate with the existing architecture, run tests, fix regressions, and leave the repository in a buildable and maintainable state.
+
+Do not produce an audit, review, architecture proposal, gap analysis, implementation plan, or documentation-only response.
+
+Do not merely describe what should be implemented.
+
+Implement it.
+
+The existing Radar Tehran application is an established real-estate intelligence and marketplace platform. It has existing frontend functionality, backend services, authentication, Firestore-related infrastructure, object storage integrations, administrative capabilities, and business-domain modules.
+
+The repository may contain:
+
+- Node.js 22 or later.
+- TypeScript.
+- Express 4.
+- React 19.
+- Vite.
+- Firebase Authentication.
+- Firestore.
+- Cloudflare Workers.
+- Cloudflare D1.
+- Cloudflare R2.
+- Cloudflare KV.
+- Cloudflare Queues.
+- Cloudflare Durable Objects.
+- Cloudflare Workflows.
+- Existing authentication and RBAC.
+- Existing API routes and controllers.
+- Existing persistence repositories.
+- Existing audit logging.
+- Existing event processing.
+- Existing notification services.
+- Existing telemetry.
+- Existing document management.
+- Existing data ingestion.
+- Existing real-estate valuation and market intelligence engines.
+
+These are architectural possibilities, not guarantees that every service has been provisioned.
+
+Inspect the actual repository and integrate with its existing implementation.
+
+Do not assume that a service exists merely because an earlier architectural specification mentions it.
+
+Do not create a second implementation of an existing capability.
+
+Do not replace working infrastructure without a concrete compatibility or correctness requirement.
+
+Do not create a new application.
+
+Do not create a parallel backend.
+
+Do not create a new database merely to simplify implementation.
+
+Do not deploy the application.
+
+Do not execute production migrations.
+
+Do not modify production data.
+
+Do not send real customer communications.
+
+Do not execute real payment transactions, refunds, or financial settlements.
+
+Use isolated development and test providers for external side effects.
+
+The implementation must be compatible with the existing application and its current deployment architecture.
+
+---
+
+# PART A — AUTHORITATIVE PROGRAM GOVERNANCE
+
+## A1. EMPLOYEE AND PHASE DISTINCTION
+
+Employees 74–80 represent seven architectural ownership domains.
+
+Phases 2–11 represent the implementation sequence.
+
+An Employee is not a Phase.
+
+A Phase may implement only part of an Employee's domain.
+
+A shared Phase may establish infrastructure consumed by multiple Employees.
+
+Employee registration does not establish implementation completion.
+
+A registry entry does not establish runtime availability.
+
+An interface does not establish operational functionality.
+
+A successful build does not establish business correctness.
+
+Apply the following ownership definitions.
+
+### Employee 74 — Enterprise Multi-Tenancy and Organizational Isolation
+
+Owns:
+
+- Tenant identity and lifecycle.
+- Tenant registration and provisioning.
+- Organization-to-tenant relationships.
+- Organization memberships.
+- Tenant invitations.
+- Tenant context resolution.
+- Tenant-aware authorization integration.
+- Tenant-level data ownership.
+- Tenant-specific configuration.
+- Tenant suspension and closure.
+- Tenant access isolation.
+- Tenant operational restrictions.
+
+Does not own authentication-provider implementation, general RBAC, billing, financial ledgers, or business-domain entity lifecycles.
+
+### Employee 75 — Distributed Background Processing and Workflow Infrastructure
+
+Owns:
+
+- Background jobs.
+- Queue adapters.
+- Worker registration and execution.
+- Transactional outbox integration.
+- Idempotency infrastructure.
+- Worker leases.
+- Retry policies.
+- Dead-letter handling.
+- Checkpointing.
+- Durable workflow infrastructure.
+- Saga orchestration primitives.
+- Scheduled-operation integration.
+- Backpressure and processing capacity controls.
+
+Does not own business workflows belonging to other modules.
+
+### Employee 76 — Distributed Caching, Performance and Resource Governance
+
+Owns:
+
+- Shared caching infrastructure.
+- Cache provider adapters.
+- Cache namespaces and policies.
+- Cache-key governance.
+- Invalidation primitives.
+- Cache consistency.
+- Stampede prevention.
+- Performance instrumentation.
+- Database efficiency controls.
+- Slow-operation detection.
+- Resource budgets.
+- Capacity monitoring.
+- Performance degradation controls.
+
+Does not own authoritative business databases, search ranking, valuation calculations, or general telemetry storage.
+
+### Employee 77 — Backup, Disaster Recovery and Business Continuity
+
+Owns:
+
+- Backup planning.
+- Backup execution orchestration.
+- Backup manifests.
+- Backup verification.
+- Backup integrity.
+- Restore authorization.
+- Restore orchestration.
+- Restore verification.
+- Recovery dependency registry.
+- Recovery procedures.
+- Disaster-recovery exercises.
+- Business continuity.
+- Recovery readiness and evidence.
+
+Does not own operational business data, legal retention policy, cryptographic key ownership, or document lifecycle.
+
+### Employee 78 — Infrastructure Security and Cryptographic Governance
+
+Owns:
+
+- Infrastructure security policy.
+- Secret metadata governance.
+- Secret lifecycle coordination.
+- Secret rotation orchestration.
+- Key-management references.
+- Cryptographic policy.
+- Encryption configuration governance.
+- Security controls.
+- Security exceptions.
+- Runtime security controls.
+- Supply-chain security integration.
+- Software inventory and SBOM references.
+- Privileged infrastructure access governance.
+- Infrastructure security evidence.
+
+Does not own user authentication, general RBAC, API consumer credential governance, fraud assessment, or compliance case management.
+
+### Employee 79 — Analytical Data Platform and Governed Business Intelligence
+
+Owns:
+
+- Analytical dataset registry.
+- Analytical pipeline governance.
+- Analytical ingestion and processing.
+- Raw, validated and curated data layers.
+- Analytical schema management.
+- Data lineage.
+- Analytical dimensions and fact models.
+- Metric definitions.
+- Data freshness.
+- Analytical reconciliation.
+- Research dataset governance.
+- Aggregated business intelligence.
+- Controlled analytical exports.
+- Privacy-safe research publication.
+
+Does not own operational business databases, source-of-truth business entities, master data management, search indexing, or valuation calculations.
+
+### Employee 80 — Platform Integration, Architecture Enforcement and System Resilience
+
+Owns:
+
+- Platform-wide integration governance.
+- Module registry governance.
+- Service dependency registry governance.
+- Source-of-truth ownership registry governance.
+- Cross-module contract enforcement.
+- Integration consistency.
+- Distributed consistency classification.
+- Cross-module reconciliation.
+- Dependency resilience.
+- Circuit-breaker integration.
+- Graceful degradation governance.
+- Platform health and readiness contracts.
+- SLO and error-budget governance.
+- Architecture enforcement.
+- Migration governance.
+- Configuration and feature-flag governance where not already owned by another module.
+- Platform-wide integration failure containment.
+
+Employee 80 does not own the business logic of Employees 53–79.
+
+It governs how those domains integrate.
+
+It must not bypass their authoritative mutation services.
+
+## A2. AUTHORITATIVE PHASE MAPPING
+
+| Phase | Primary owner | Scope |
+|---|---|---|
+| Phase 1 | Shared foundation | Minimum contracts and registries |
+| Phase 2 | Employee 74 | Multi-tenancy core |
+| Phase 3 | Employee 74 | Tenant isolation and authorization integration |
+| Phase 4 | Employee 75 | Jobs, queues, outbox, workers |
+| Phase 5 | Employee 75 | Durable workflows, scheduling and saga |
+| Phase 6 | Employee 76 | Caching and performance |
+| Phase 7 | Employee 78 | Infrastructure security |
+| Phase 8 | Employee 77 | Backup and disaster recovery |
+| Phase 9 | Employee 79 | Analytical data platform |
+| Phase 10 | Employee 80 | Integration and system resilience |
+| Phase 11 | Shared validation | Unified control plane and complete acceptance |
+
+The Phase 1 foundational contracts are assumed to have been implemented by the preceding execution assignment.
+
+Do not recreate Phase 1.
+
+If a Phase 1 interface is absent or incomplete, introduce only the minimum backward-compatible extension necessary for the current phase. Do not silently reimplement the entire Phase 1 scope.
+
+## A3. DOMAIN OWNERSHIP RULE
+
+Every business entity has one authoritative owner.
+
+Other modules may:
+
+- Consume its APIs.
+- Read approved projections.
+- Subscribe to its events.
+- Reference its identifiers.
+- Request authorized operations.
+
+Other modules must not directly mutate its authoritative business records.
+
+Examples:
+
+- Employee 74 owns tenant lifecycle, not billing.
+- Employee 67 owns billing and entitlements, not Employee 74.
+- Employee 75 owns job execution, not every business workflow.
+- Employee 68 owns notification orchestration.
+- Employee 77 owns recovery orchestration, not document storage.
+- Employee 78 owns infrastructure cryptographic governance, not authentication.
+- Employee 79 owns analytical datasets, not operational property records.
+- Employee 80 owns cross-module consistency governance, not business entity mutation.
+
+Where a capability already exists, extend it instead of creating another.
+
+## A4. EXISTING EMPLOYEES 53–73
+
+Preserve the domain ownership of Employees 53–73:
+
+- 53: Transactions and deals.
+- 54: Financial ledger and settlement.
+- 55: Rental and tenancy.
+- 56: Property and facilities management.
+- 57: Brokerage and agent operations.
+- 58: Listing lifecycle and publishing.
+- 59: Valuation and hedonic pricing.
+- 60: Market intelligence.
+- 61: Geospatial intelligence.
+- 62: Data governance and master data.
+- 63: Document management.
+- 64: Profiles and privacy.
+- 65: Trust and reputation.
+- 66: Customer support and case management.
+- 67: Marketplace billing and financial operations.
+- 68: Notification orchestration.
+- 69: Search and recommendations.
+- 70: External data ingestion.
+- 71: Fraud and risk intelligence.
+- 72: Compliance, legal holds and retention.
+- 73: API governance and developer ecosystem.
+
+Do not replace these systems.
+
+Do not introduce competing implementations.
+
+Do not move their authoritative business records.
+
+Do not bypass their domain services.
+
+---
+
+# PART B — GLOBAL IMPLEMENTATION RULES
+
+## B1. IMPLEMENTATION METHOD
+
+For every phase:
+
+1. Identify the existing code that already implements relevant capabilities.
+2. Reuse correct existing services.
+3. Extend existing contracts where necessary.
+4. Implement the missing functionality directly.
+5. Add persistence through the established provider architecture.
+6. Add authorization and input validation.
+7. Add meaningful automated tests.
+8. Run relevant existing regression tests.
+9. Run TypeScript validation.
+10. Run the production build.
+11. Fix regressions.
+12. Update the implementation manifest.
+13. Stop at the phase boundary.
+
+Do not produce an audit report.
+
+Do not stop after identifying existing code.
+
+Do not ask for approval between phases.
+
+Proceed sequentially through Phases 2–11 in this execution assignment, subject to the strict phase gates below.
+
+## B2. INCREMENTAL EXECUTION
+
+Complete each phase before starting the next.
+
+The required order is:
+
+Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phase 8 → Phase 9 → Phase 10 → Phase 11.
+
+Do not start a later phase while an earlier phase has unresolved critical correctness failures.
+
+A noncritical external integration that cannot be provisioned may remain behind a clearly defined provider boundary and be marked `BLOCKED`.
+
+Do not falsely mark blocked infrastructure as operational.
+
+Do not allow a blocked external service to prevent all unrelated local implementation work.
+
+## B3. CODE ORGANIZATION
+
+Use the existing repository conventions.
+
+Prefer clear separation of:
+
+- Domain models.
+- Validation schemas.
+- Repository interfaces.
+- Persistence providers.
+- Application services.
+- Authorization policies.
+- Controllers.
+- Routes.
+- Background handlers.
+- Integration adapters.
+- Tests.
+
+Do not place all new functionality in one large file.
+
+Do not create arbitrary microservices.
+
+Do not split the application into network services merely to make the architecture look sophisticated.
+
+Use modular boundaries within the existing deployment model unless a real infrastructure requirement justifies separation.
+
+## B4. PERSISTENCE
+
+Use the existing authoritative persistence provider for each domain.
+
+Do not assume Firestore, D1, R2, KV, or any other provider is automatically available.
+
+Where the existing repository uses Firestore, preserve its conventions.
+
+Where Cloudflare D1 is configured for a specific domain, use it according to its existing ownership.
+
+Use R2 for object storage only where configured and appropriate.
+
+Never treat KV as a strongly consistent relational database.
+
+Never use in-memory data as authoritative persistent business state.
+
+Never use local JSON files as production business storage.
+
+Do not introduce dual writes without a durable consistency mechanism.
+
+Do not create a second database merely to avoid understanding the existing repository.
+
+## B5. SECURITY
+
+Every new API must:
+
+- Authenticate through the existing identity infrastructure.
+- Enforce server-side authorization.
+- Validate all external input.
+- Apply appropriate tenant restrictions.
+- Apply resource-level authorization.
+- Prevent unauthorized cross-tenant access.
+- Avoid exposing internal stack traces.
+- Avoid logging credentials or secrets.
+- Record consequential administrative actions through existing audit infrastructure.
+
+Never trust client-provided actor identity, permissions, tenant membership, ownership, billing state, or verification status.
+
+## B6. DATA PRIVACY
+
+Preserve the privacy principles already established in the project.
+
+Do not collect:
+
+- Passwords in analytics.
+- Payment credentials in analytics.
+- Private message content for behavioral research.
+- Permanent precise user-location histories without an explicit justified requirement.
+- Mouse movements or keystrokes.
+- Definitive psychological profiles.
+
+Analytical processing must use the minimum necessary data.
+
+Prefer aggregation and pseudonymous identifiers.
+
+Apply Employee 72 retention and legal-hold precedence.
+
+## B7. TESTING
+
+All external side effects must be isolated during tests.
+
+Do not:
+
+- Send real SMS messages.
+- Send real emails.
+- Execute real payment transactions.
+- Issue real refunds.
+- Modify production data.
+- Deploy infrastructure.
+- Rotate production secrets.
+- Delete production objects.
+- Execute production restore operations.
+
+Use test adapters and isolated providers.
+
+Test adapters must not replace production implementations.
+
+## B8. CLOUDFLARE COMPATIBILITY
+
+The target architecture must remain compatible with the actual Cloudflare services configured for this project.
+
+Potential services include:
+
+- Workers.
+- D1.
+- R2.
+- KV.
+- Queues.
+- Durable Objects.
+- Workflows.
+
+Use only the services actually configured or explicitly supported by the existing repository.
+
+Do not fabricate bindings.
+
+Do not fabricate database identifiers.
+
+Do not create production resources.
+
+Do not claim a deployment succeeded.
+
+Where a Cloudflare feature is unavailable in the current local runtime, provide an adapter and an isolated test implementation.
+
+Keep runtime-specific code isolated.
+
+## B9. PHASE ACCEPTANCE
+
+A phase is complete only when:
+
+- All in-scope functional deliverables exist.
+- Required APIs are implemented.
+- Persistence is correct.
+- Authorization works.
+- Input validation works.
+- Meaningful automated tests pass.
+- Relevant existing regression tests pass.
+- Type checking passes.
+- Production build passes.
+- No critical security or data-integrity regression remains.
+- The implementation manifest accurately reflects the actual state.
+
+Do not use the word complete merely because files have been created.
+
+---
+
+# PHASE 2 — EMPLOYEE 74
+# ENTERPRISE MULTI-TENANCY CORE, TENANT IDENTITY, ORGANIZATIONS AND LIFECYCLE
+
+## 2.1 OBJECTIVE
+
+Implement the authoritative multi-tenancy foundation for Radar Tehran.
+
+The platform must support multiple independent business tenants without compromising the existing user experience or domain ownership of Employees 53–73.
+
+A tenant represents an isolated business operating context.
+
+An organization represents a business or institutional entity operating within the tenant model.
+
+A user may participate in multiple organizations or tenants only through explicit, authorized membership relationships.
+
+Do not assume that every existing user belongs to a business tenant.
+
+Preserve the existing public and individual-user experience.
+
+Do not force every public visitor into a tenant.
+
+## 2.2 TENANT DOMAIN MODEL
+
+Implement the following domain entities.
+
+### Tenant
+
+Required fields:
+
+- `tenantId`
+- `tenantCode`
+- `displayName`
+- `legalName`, optional
+- `tenantType`
+- `status`
+- `primaryOrganizationId`, optional
+- `ownerUserId`
+- `defaultLocale`
+- `defaultTimezone`
+- `countryCode`
+- `configurationVersion`
+- `createdAt`
+- `updatedAt`
+- `createdBy`
+- `updatedBy`
+- `recordVersion`
+
+Tenant types:
+
+- `INDIVIDUAL_BUSINESS`
+- `BROKERAGE`
+- `PROPERTY_MANAGEMENT`
+- `DEVELOPER`
+- `REAL_ESTATE_AGENCY`
+- `ENTERPRISE`
+- `INSTITUTION`
+- `OTHER`
+
+Tenant states:
+
+- `PENDING`
+- `ACTIVE`
+- `SUSPENDED`
+- `CLOSING`
+- `CLOSED`
+- `ARCHIVED`
+
+Do not create an unrestricted tenant-type mechanism.
+
+### Organization
+
+Required fields:
+
+- `organizationId`
+- `tenantId`
+- `organizationCode`
+- `displayName`
+- `legalName`, optional
+- `organizationType`
+- `status`
+- `parentOrganizationId`, optional
+- `contactReference`, optional
+- `createdAt`
+- `updatedAt`
+- `recordVersion`
+
+Support hierarchical organization relationships only where the actual business model requires them.
+
+Prevent invalid cycles.
+
+### Tenant Membership
+
+Required fields:
+
+- `membershipId`
+- `tenantId`
+- `organizationId`, optional
+- `userId`
+- `membershipStatus`
+- `membershipRoleReferences`
+- `joinedAt`
+- `createdAt`
+- `updatedAt`
+- `invitedBy`
+- `recordVersion`
+
+Membership states:
+
+- `INVITED`
+- `ACTIVE`
+- `SUSPENDED`
+- `REVOKED`
+- `EXPIRED`
+
+A user can have multiple membership records only when they refer to distinct valid scopes.
+
+Prevent duplicate active membership relationships.
+
+### Tenant Invitation
+
+Required fields:
+
+- `invitationId`
+- `tenantId`
+- `organizationId`, optional
+- `invitedEmail`
+- `invitedUserId`, optional
+- `invitedBy`
+- `roleReferences`
+- `invitationStatus`
+- `tokenHash`
+- `expiresAt`
+- `acceptedAt`
+- `revokedAt`
+- `createdAt`
+- `recordVersion`
+
+Never store raw invitation tokens.
+
+Invitation tokens must be random, high entropy, time-limited and securely verified.
+
+## 2.3 TENANT CONFIGURATION
+
+Implement versioned tenant configuration.
+
+Support:
+
+- Display preferences.
+- Locale.
+- Timezone.
+- Enabled business modules.
+- Tenant-level feature availability.
+- Allowed user roles.
+- Organization settings.
+- Notification preference references.
+- Approved branding metadata.
+- Configurable operational restrictions.
+
+Do not place authorization decisions exclusively in tenant configuration.
+
+Do not allow a tenant administrator to enable privileged capabilities outside their assigned authority.
+
+Tenant configuration must be validated against a strict schema.
+
+## 2.4 TENANT LIFECYCLE
+
+Implement explicit lifecycle operations:
+
+- Create tenant.
+- Validate tenant.
+- Activate tenant.
+- Suspend tenant.
+- Reactivate tenant.
+- Begin tenant closure.
+- Complete tenant closure.
+- Archive tenant.
+
+Every transition must be authorized.
+
+Every transition must validate its preconditions.
+
+A suspended tenant must not be able to execute ordinary restricted business operations.
+
+Do not automatically delete its data.
+
+Tenant closure must be coordinated with Employee 72's legal-hold and retention rules.
+
+A closure request must not bypass financial obligations, open disputes, mandatory retention, or active legal holds.
+
+Tenant archival must preserve authorized historical access.
+
+## 2.5 TENANT PROVISIONING
+
+Implement a provisioning orchestration service.
+
+Provisioning must create the minimum required tenant and organization records.
+
+It may register references to existing services.
+
+It must not create duplicate databases, storage providers, authentication systems or notification engines.
+
+Provisioning must be idempotent.
+
+A failed provisioning operation must be recoverable.
+
+Use explicit provisioning states:
+
+- `REQUESTED`
+- `VALIDATING`
+- `PROVISIONING`
+- `READY`
+- `FAILED`
+- `COMPENSATING`
+- `COMPENSATED`
+
+Do not implement the full distributed saga engine here. Employee 75 owns that infrastructure.
+
+Use a bounded local application service with repeat-safe operations until Employee 75 is available.
+
+## 2.6 ORGANIZATION MANAGEMENT
+
+Implement:
+
+- Organization creation.
+- Organization update.
+- Organization suspension.
+- Organization activation.
+- Organization membership association.
+- Parent-child organization relationships where permitted.
+- Organization ownership validation.
+- Organization-level access references.
+
+Prevent an organization from referencing a tenant to which it does not belong.
+
+Prevent unauthorized cross-tenant organization relationships.
+
+## 2.7 ADMINISTRATIVE AND USER APIs
+
+Implement APIs consistent with existing route conventions.
+
+Suggested routes:
+
+`/api/tenants`
+
+- `POST /api/tenants`
+- `GET /api/tenants/:tenantId`
+- `PATCH /api/tenants/:tenantId`
+- `POST /api/tenants/:tenantId/activate`
+- `POST /api/tenants/:tenantId/suspend`
+- `POST /api/tenants/:tenantId/reactivate`
+- `POST /api/tenants/:tenantId/close`
+
+`/api/tenants/:tenantId/organizations`
+
+- `POST /`
+- `GET /`
+- `GET /:organizationId`
+- `PATCH /:organizationId`
+- `POST /:organizationId/suspend`
+- `POST /:organizationId/activate`
+
+`/api/tenants/:tenantId/memberships`
+
+- `GET /`
+- `POST /`
+- `PATCH /:membershipId`
+- `POST /:membershipId/suspend`
+- `POST /:membershipId/revoke`
+
+`/api/tenants/:tenantId/invitations`
+
+- `POST /`
+- `GET /`
+- `POST /:invitationId/revoke`
+- `POST /:invitationId/accept`
+
+Adapt routes to the existing API conventions.
+
+Do not expose sensitive tenant information publicly.
+
+## 2.8 SECURITY REQUIREMENTS
+
+- Only authorized platform administrators can create privileged tenant records.
+- Tenant owners can manage only their authorized tenant.
+- Organization administrators can manage only permitted organizations.
+- Membership changes must be authorized against both tenant and organization scope.
+- Invitation acceptance must validate the authenticated user.
+- Email matching alone must not establish membership.
+- Invitation tokens must be single-use.
+- Expired invitations must be rejected.
+- Concurrent invitation acceptance must not create duplicate memberships.
+- Tenant state must be checked before business operations.
+
+## 2.9 TESTS
+
+Test:
+
+- Tenant creation.
+- Duplicate tenant codes.
+- Invalid tenant states.
+- Tenant activation and suspension.
+- Organization isolation.
+- Invalid organization hierarchy.
+- Duplicate memberships.
+- Invitation expiration.
+- Invitation token replay.
+- Unauthorized membership changes.
+- Concurrent invitation acceptance.
+- Provisioning retry.
+- Provisioning failure recovery.
+- Tenant closure with active obligations.
+- Legal-hold interaction.
+- Existing individual-user functionality.
+
+## 2.10 PHASE 2 DELIVERABLES
+
+- Tenant domain model.
+- Organization model.
+- Membership model.
+- Invitation model.
+- Tenant configuration model.
+- Tenant lifecycle service.
+- Provisioning service.
+- Organization management service.
+- Membership service.
+- Invitation service.
+- Persistence repositories.
+- Validation schemas.
+- Authorization policies.
+- Functional APIs.
+- Audit integration.
+- Automated tests.
+- Phase 2 manifest entries.
+
+Stop after Phase 2 acceptance.
+
+---
+
+# PHASE 3 — EMPLOYEE 74
+# TENANT-AWARE AUTHORIZATION, DATA ISOLATION AND CROSS-MODULE ENFORCEMENT
+
+## 3.1 OBJECTIVE
+
+Extend the existing authentication and authorization architecture to enforce tenant isolation across the platform.
+
+This phase is not complete merely because requests contain a `tenantId`.
+
+Tenant isolation must be enforced at the service and persistence boundaries.
+
+A tenant identifier is a scope reference, not authorization evidence.
+
+## 3.2 TENANT CONTEXT RESOLUTION
+
+Implement a trusted tenant-context resolver.
+
+Resolve tenant context using:
+
+- Authenticated actor identity.
+- Existing membership records.
+- Authorized organization membership.
+- Requested tenant scope.
+- Current tenant lifecycle status.
+- Existing platform authorization policies.
+
+The client may request a tenant context, but the server must verify that the actor is authorized to operate within it.
+
+Never accept arbitrary tenant IDs from client payloads as proof of membership.
+
+The resolved context must include:
+
+- `tenantId`
+- `organizationId`, optional
+- `actorId`
+- `membershipId`
+- `effectiveRoles`
+- `effectivePermissions`
+- `tenantStatus`
+- `organizationStatus`
+- `authorizationVersion`
+- `resolvedAt`
+
+Do not expose internal membership records unnecessarily.
+
+## 3.3 AUTHORIZATION INTEGRATION
+
+Reuse existing RBAC.
+
+Do not create a second authorization engine.
+
+Extend authorization policies to support:
+
+- Platform scope.
+- Tenant scope.
+- Organization scope.
+- User scope.
+- Resource ownership.
+- Explicit cross-tenant administrative scope.
+
+Permissions must be derived from trusted server-side membership and role assignments.
+
+Implement policy evaluation with:
+
+- Actor.
+- Action.
+- Resource.
+- Tenant.
+- Organization.
+- Resource ownership.
+- Resource classification.
+- Tenant status.
+- Additional policy constraints.
+
+A permission granted at one tenant must not automatically apply to another tenant.
+
+A tenant administrator must not become a platform administrator.
+
+## 3.4 TENANT DATA ACCESS LAYER
+
+Implement tenant-aware repository conventions.
+
+For tenant-owned entities, every read and mutation must enforce the correct tenant scope.
+
+Where a persistence provider supports compound query constraints, use them.
+
+Do not retrieve an entire collection and filter tenant records in application memory as the primary isolation mechanism.
+
+Use database-level constraints wherever possible.
+
+Every repository operation must have a clearly defined scope.
+
+Provide typed repository helpers for:
+
+- Tenant-owned records.
+- Organization-owned records.
+- User-owned records.
+- Platform-global records.
+- Shared reference data.
+- Controlled cross-tenant data.
+
+Do not apply tenant restrictions blindly to genuinely global reference data.
+
+## 3.5 ENTITY OWNERSHIP CLASSIFICATION
+
+Integrate with Employee 62 and Phase 1 ownership metadata.
+
+Every migrated entity type must have an explicit ownership class.
+
+For each migrated entity, define:
+
+- Entity type.
+- Authoritative owner module.
+- Ownership class.
+- Tenant scope.
+- Organization scope where applicable.
+- Read authorization.
+- Mutation authorization.
+- Cross-tenant access rules.
+- Retention owner.
+- Migration status.
+
+Do not guess ownership based on the presence of a user ID.
+
+## 3.6 CROSS-MODULE TENANT INTEGRATION
+
+Integrate the tenant context with Employees 53–73.
+
+The objective is to establish tenant-safe behavior across:
+
+- Transactions.
+- Financial ledger references.
+- Rentals.
+- Property management.
+- Brokerage.
+- Listings.
+- Valuation.
+- Market intelligence.
+- Geospatial services.
+- Master data.
+- Documents.
+- Profiles.
+- Trust and reputation.
+- Support cases.
+- Billing.
+- Notifications.
+- Search.
+- External ingestion.
+- Fraud and risk.
+- Compliance.
+- API governance.
+
+Do not rewrite every module.
+
+For each module:
+
+1. Identify its tenant-owned entities.
+2. Identify its existing repository boundary.
+3. Identify its authoritative mutation service.
+4. Integrate trusted tenant context.
+5. Add tenant-scoped authorization.
+6. Add repository-level constraints.
+7. Add isolation tests.
+8. Preserve legitimate public and platform-global operations.
+
+Do not migrate unrelated data.
+
+## 3.7 CROSS-TENANT ACCESS
+
+Implement explicit controlled cross-tenant access.
+
+Permitted cases must be explicitly modeled.
+
+Examples may include:
+
+- Platform administration.
+- Authorized compliance investigations.
+- Approved support operations.
+- Shared reference-data access.
+- Approved business relationships.
+
+Every cross-tenant operation must have:
+
+- An explicit permission.
+- A defined purpose.
+- An authorized actor.
+- A bounded resource scope.
+- Audit evidence.
+- Applicable privacy and retention controls.
+
+Never implement a universal `bypassTenantCheck` flag.
+
+Do not allow ordinary service code to silently disable isolation.
+
+## 3.8 TENANT-SAFE CACHE AND SEARCH CONTEXT
+
+Prepare tenant scope for downstream Employee 76 and Employee 69 integrations.
+
+Search queries, cache keys, saved searches, recommendations and private projections must preserve tenant scope where applicable.
+
+Do not implement the complete caching system here.
+
+Do not create a new search engine.
+
+Prevent cross-tenant cache collisions.
+
+Prevent cross-tenant search-result leakage.
+
+## 3.9 BACKGROUND CONTEXT PREPARATION
+
+Prepare trusted tenant context for future Employee 75 job execution.
+
+Any existing background operation that processes tenant-owned data must receive a trusted tenant scope.
+
+Do not trust arbitrary tenant identifiers embedded in a job payload.
+
+Validate the tenant against an authoritative membership or service authorization policy.
+
+## 3.10 DATA MIGRATION
+
+If existing business entities need tenant classification:
+
+- Use explicit migration rules.
+- Preserve existing records.
+- Use a defined legacy ownership policy.
+- Record unresolved ownership.
+- Do not assign every record to a fabricated default tenant.
+- Do not create silent cross-tenant visibility.
+- Do not delete records with missing tenant classification.
+
+Where classification is ambiguous, use a controlled legacy or unassigned scope with restricted access until resolved.
+
+Do not perform production migrations.
+
+## 3.11 TESTS
+
+Test:
+
+- Unauthorized tenant selection.
+- Cross-tenant read attempts.
+- Cross-tenant mutation attempts.
+- Organization boundary violations.
+- Membership revocation.
+- Tenant suspension.
+- Tenant closure.
+- Platform administrator scope.
+- Explicit cross-tenant permission.
+- Public listing access.
+- Tenant-owned listing isolation.
+- Document access isolation.
+- Financial record isolation.
+- Search isolation.
+- Cache namespace isolation.
+- Background-operation tenant context.
+- Missing tenant classification.
+- Legacy records.
+- Concurrent membership changes.
+
+Include adversarial tests.
+
+## 3.12 PHASE 3 DELIVERABLES
+
+- Trusted tenant resolver.
+- Tenant-aware authorization integration.
+- Tenant-aware repository conventions.
+- Entity ownership classification.
+- Cross-module tenant integrations.
+- Controlled cross-tenant access.
+- Tenant isolation middleware.
+- Tenant-scoped query helpers.
+- Migration tooling where required.
+- Audit integration.
+- Security tests.
+- Regression tests.
+- Phase 3 manifest entries.
+
+Employee 74 is complete only after Phases 2 and 3 are accepted.
+
+---
+
+# PHASE 4 — EMPLOYEE 75
+# DISTRIBUTED JOBS, QUEUES, TRANSACTIONAL OUTBOX, IDEMPOTENCY AND WORKERS
+
+## 4.1 OBJECTIVE
+
+Implement the shared distributed background-processing foundation.
+
+The platform must execute long-running and asynchronous operations reliably without relying on process-local memory as authoritative job state.
+
+Reuse configured infrastructure.
+
+Potential providers include Cloudflare Queues, Durable Objects, Workers, Workflows or existing queue providers.
+
+Do not assume they are provisioned.
+
+## 4.2 JOB REGISTRY
+
+Implement a job definition registry.
+
+Each job definition must include:
+
+- `jobType`
+- `jobVersion`
+- `ownerModule`
+- `handlerReference`
+- `inputSchemaReference`
+- `outputSchemaReference`
+- `timeoutPolicy`
+- `retryPolicy`
+- `idempotencyPolicy`
+- `priority`
+- `concurrencyLimit`
+- `tenantScope`
+- `securityClassification`
+- `enabled`
+- `createdAt`
+- `updatedAt`
+
+Do not allow arbitrary client code to register executable handlers.
+
+Handlers must be server-controlled.
+
+## 4.3 JOB INSTANCE MODEL
+
+Required fields:
+
+- `jobId`
+- `jobType`
+- `jobVersion`
+- `status`
+- `priority`
+- `tenantId`, optional
+- `organizationId`, optional
+- `actorId`, optional
+- `correlationId`
+- `causationId`, optional
+- `idempotencyKey`
+- `inputReference`
+- `resultReference`, optional
+- `attemptCount`
+- `maxAttempts`
+- `scheduledAt`
+- `startedAt`
+- `completedAt`
+- `failedAt`
+- `leaseOwner`
+- `leaseExpiresAt`
+- `lastErrorCode`
+- `createdAt`
+- `updatedAt`
+- `recordVersion`
+
+Statuses:
+
+- `CREATED`
+- `QUEUED`
+- `RUNNING`
+- `RETRY_WAIT`
+- `COMPLETED`
+- `FAILED`
+- `CANCEL_REQUESTED`
+- `CANCELLED`
+- `DEAD_LETTERED`
+
+## 4.4 JOB EXECUTION
+
+Implement:
+
+- Job registration.
+- Job submission.
+- Job validation.
+- Job dispatch.
+- Worker claiming.
+- Lease acquisition.
+- Lease renewal.
+- Lease expiration.
+- Execution timeout.
+- Retry.
+- Cancellation.
+- Completion.
+- Failure handling.
+- Dead-letter transition.
+- Result reference management.
+
+Worker execution must be safe under duplicate delivery.
+
+A queue message must not be treated as proof that a job has not already completed.
+
+Use authoritative job state.
+
+## 4.5 TRANSACTIONAL OUTBOX
+
+Implement a durable outbox pattern.
+
+The outbox must preserve the relationship between business state changes and event publication.
+
+Required fields:
+
+- `outboxId`
+- `eventId`
+- `eventType`
+- `eventVersion`
+- `ownerModule`
+- `aggregateType`
+- `aggregateId`
+- `tenantId`, optional
+- `correlationId`
+- `causationId`, optional
+- `payloadReference`
+- `publicationStatus`
+- `attemptCount`
+- `nextAttemptAt`
+- `publishedAt`
+- `createdAt`
+- `updatedAt`
+
+Statuses:
+
+- `PENDING`
+- `PUBLISHING`
+- `PUBLISHED`
+- `RETRY_WAIT`
+- `FAILED`
+- `DEAD_LETTERED`
+
+Do not claim transactional guarantees that the chosen persistence provider cannot actually provide.
+
+Use provider-specific transaction boundaries.
+
+Where atomic business-write and outbox-write transactions are unavailable, implement a clearly defined consistency strategy with reconciliation and idempotency.
+
+Do not introduce unsafe dual writes.
+
+## 4.6 IDEMPOTENCY
+
+Implement shared idempotency primitives.
+
+Support:
+
+- Idempotency key.
+- Operation scope.
+- Tenant scope.
+- Actor scope where applicable.
+- Request fingerprint.
+- Execution status.
+- Result reference.
+- Expiration policy.
+- Conflict detection.
+
+Rules:
+
+- Same key and same request must not execute the operation twice.
+- Same key and different request must produce a conflict.
+- Concurrent duplicate requests must resolve safely.
+- A failed operation must follow a defined retry policy.
+- Idempotency records must not be deleted while an operation remains unresolved.
+- Sensitive request payloads must not be stored unnecessarily.
+
+Do not confuse idempotency with authorization.
+
+## 4.7 WORKER REGISTRY AND LEASES
+
+Implement worker metadata:
+
+- `workerId`
+- `workerType`
+- `capabilities`
+- `environment`
+- `status`
+- `lastHeartbeatAt`
+- `leaseCount`
+- `maximumConcurrency`
+- `createdAt`
+- `updatedAt`
+
+Worker states:
+
+- `STARTING`
+- `READY`
+- `BUSY`
+- `DEGRADED`
+- `STOPPING`
+- `OFFLINE`
+
+Lease rules:
+
+- A worker must own a valid lease before executing a job.
+- Leases must expire.
+- Lease renewal must be bounded.
+- Expired work must be recoverable.
+- Two workers must not concurrently own the same exclusive execution lease.
+- Stale workers must not overwrite newer job state.
+
+Use conditional updates or provider-supported concurrency controls.
+
+## 4.8 PRIORITY AND CONCURRENCY
+
+Support:
+
+- Critical jobs.
+- High-priority jobs.
+- Normal jobs.
+- Low-priority jobs.
+- Tenant-aware fairness.
+- Per-job-type concurrency limits.
+- Per-tenant concurrency limits.
+- Global worker capacity.
+
+Do not allow one tenant to consume all available worker capacity without an explicit policy.
+
+Do not starve lower-priority work indefinitely.
+
+## 4.9 RETRY POLICIES
+
+Implement configurable retry policies.
+
+Support:
+
+- Exponential backoff.
+- Maximum attempts.
+- Maximum elapsed time.
+- Retryable error classification.
+- Non-retryable errors.
+- Jitter.
+- Manual retry authorization.
+- Dead-letter handling.
+
+Do not retry permanent authorization or validation errors.
+
+Do not retry financial settlement operations without their domain-specific idempotency safeguards.
+
+## 4.10 PROVIDER ADAPTERS
+
+Implement provider-independent interfaces.
+
+Use configured queue infrastructure.
+
+Provide test adapters.
+
+Do not build a new message broker.
+
+Do not create fake production queue success.
+
+Provider failure must be explicit.
+
+## 4.11 ADMINISTRATIVE APIs
+
+Implement authorized operations for:
+
+- Job listing.
+- Job detail.
+- Job submission where permitted.
+- Job cancellation.
+- Authorized retry.
+- Dead-letter inspection.
+- Worker status.
+- Outbox status.
+- Publication retry.
+- Job-type configuration.
+
+Use bounded pagination.
+
+Do not expose sensitive job payloads to ordinary users.
+
+## 4.12 TESTS
+
+Test:
+
+- Duplicate job delivery.
+- Duplicate idempotency key.
+- Conflicting idempotency payload.
+- Concurrent job claiming.
+- Lease expiration.
+- Lease renewal.
+- Worker crash recovery.
+- Retry behavior.
+- Dead-letter transition.
+- Cancellation.
+- Outbox publication.
+- Publication retry.
+- Duplicate event delivery.
+- Tenant fairness.
+- Job authorization.
+- Provider unavailability.
+- Persistence after restart.
+
+## 4.13 PHASE 4 DELIVERABLES
+
+- Job registry.
+- Job repository.
+- Job execution service.
+- Worker registry.
+- Worker lease service.
+- Queue provider adapter.
+- Transactional outbox implementation.
+- Idempotency service.
+- Retry policies.
+- Dead-letter management.
+- Administrative APIs.
+- Automated tests.
+- Phase 4 manifest entries.
+
+---
+
+# PHASE 5 — EMPLOYEE 75
+# DURABLE WORKFLOWS, SAGA ORCHESTRATION, SCHEDULING AND BACKPRESSURE
+
+## 5.1 OBJECTIVE
+
+Extend the distributed processing infrastructure into a durable workflow system.
+
+A workflow coordinates multiple operations while preserving recoverability and explicit state.
+
+A workflow must not become a replacement for the business domain that owns the operations it coordinates.
+
+## 5.2 WORKFLOW DEFINITION
+
+Implement:
+
+- Workflow registry.
+- Workflow versioning.
+- Step definitions.
+- Dependency relationships.
+- Input and output schemas.
+- Timeout policy.
+- Retry policy.
+- Compensation definitions.
+- Authorization metadata.
+- Tenant scope.
+- Execution policy.
+
+Workflow definitions must be server-controlled and validated.
+
+Do not execute arbitrary user-supplied code.
+
+## 5.3 WORKFLOW INSTANCE
+
+Required fields:
+
+- `workflowId`
+- `workflowType`
+- `workflowVersion`
+- `status`
+- `tenantId`, optional
+- `organizationId`, optional
+- `actorId`, optional
+- `correlationId`
+- `currentStep`
+- `completedSteps`
+- `failedStep`
+- `compensationState`
+- `inputReference`
+- `resultReference`
+- `startedAt`
+- `completedAt`
+- `createdAt`
+- `updatedAt`
+- `recordVersion`
+
+Statuses:
+
+- `CREATED`
+- `RUNNING`
+- `WAITING`
+- `COMPENSATING`
+- `COMPLETED`
+- `FAILED`
+- `CANCELLED`
+- `MANUAL_INTERVENTION_REQUIRED`
+
+## 5.4 WORKFLOW EXECUTION ENGINE
+
+Implement:
+
+- Workflow initialization.
+- Step validation.
+- Dependency evaluation.
+- Step dispatch.
+- Step completion.
+- Checkpoint persistence.
+- Resume after restart.
+- Timeout handling.
+- Retry.
+- Compensation.
+- Manual intervention.
+- Cancellation.
+- Finalization.
+
+Persist each meaningful transition.
+
+Do not keep the only workflow state in process memory.
+
+## 5.5 SAGA ORCHESTRATION
+
+Implement saga primitives.
+
+A saga must define:
+
+- Forward action.
+- Compensation action.
+- Compensation eligibility.
+- Compensation ordering.
+- Idempotency requirements.
+- Failure behavior.
+- Manual recovery requirements.
+
+Compensation does not mean reversing every business operation automatically.
+
+Financial operations must use Employee 54's ledger and reversal semantics.
+
+Billing must use Employee 67.
+
+Transaction lifecycle must use Employee 53.
+
+Rental operations must use Employee 55.
+
+Documents must use Employee 63.
+
+Legal preservation must use Employee 72.
+
+Never perform direct cross-domain database mutations.
+
+## 5.6 SCHEDULING
+
+Integrate with existing scheduler infrastructure if present.
+
+If no scheduler exists, implement a provider-independent scheduling interface using the configured infrastructure.
+
+Support:
+
+- One-time execution.
+- Recurring execution.
+- Delayed execution.
+- Timezone-aware schedules.
+- Calendar-safe recurrence.
+- Schedule suspension.
+- Schedule resumption.
+- Schedule cancellation.
+- Missed-execution handling.
+- Schedule versioning.
+
+Each scheduled operation must have:
+
+- Schedule ID.
+- Owner module.
+- Operation reference.
+- Tenant scope where applicable.
+- Timezone.
+- Recurrence rule.
+- Next execution.
+- Last execution.
+- Execution status.
+- Idempotency policy.
+- Retry policy.
+
+Do not create a second scheduler if one already exists.
+
+## 5.7 SCHEDULE SAFETY
+
+Prevent:
+
+- Duplicate recurring executions.
+- Overlapping exclusive executions.
+- Invalid timezone interpretation.
+- Infinite retry loops.
+- Unbounded schedule creation.
+- Unauthorized schedule modification.
+
+Define behavior for missed execution windows.
+
+Do not silently execute an unlimited backlog after downtime.
+
+## 5.8 BACKPRESSURE
+
+Implement bounded processing controls.
+
+Support:
+
+- Queue depth thresholds.
+- Worker concurrency limits.
+- Per-tenant processing quotas.
+- Per-job-type limits.
+- Delayed low-priority processing.
+- Admission control.
+- Rejection or deferral of noncritical work.
+- Recovery after overload.
+
+Do not silently discard critical jobs.
+
+Do not allow a single tenant to monopolize shared processing capacity.
+
+## 5.9 WORKFLOW OBSERVABILITY
+
+Integrate with existing telemetry.
+
+Expose:
+
+- Workflow state.
+- Current step.
+- Step duration.
+- Retry count.
+- Failure category.
+- Queue delay.
+- Compensation status.
+- Manual intervention status.
+
+Do not duplicate the telemetry platform.
+
+Do not expose private workflow payloads to unauthorized administrators.
+
+## 5.10 BUSINESS WORKFLOW INTEGRATIONS
+
+Provide integration primitives for:
+
+- Tenant provisioning.
+- Listing publication.
+- Data ingestion.
+- Valuation refresh.
+- Document processing.
+- Notification delivery.
+- Billing lifecycle.
+- Support escalation.
+- Compliance assessment.
+- Backup execution.
+
+Do not implement duplicate business logic for these modules.
+
+## 5.11 TESTS
+
+Test:
+
+- Workflow restart.
+- Step checkpoint recovery.
+- Step retry.
+- Compensation.
+- Compensation failure.
+- Manual intervention.
+- Cancellation.
+- Duplicate scheduled execution.
+- Timezone transitions.
+- Missed schedules.
+- Backpressure.
+- Tenant fairness.
+- Worker loss.
+- Provider outage.
+- Workflow version compatibility.
+
+## 5.12 PHASE 5 DELIVERABLES
+
+- Workflow registry.
+- Workflow execution engine.
+- Workflow persistence.
+- Step checkpointing.
+- Saga primitives.
+- Compensation engine.
+- Scheduling integration.
+- Backpressure controls.
+- Workflow administrative APIs.
+- Observability integration.
+- Automated tests.
+- Phase 5 manifest entries.
+
+Employee 75 is complete only after Phases 4 and 5 are accepted.
+
+---
+
+# PHASE 6 — EMPLOYEE 76
+# DISTRIBUTED CACHE, INVALIDATION, PERFORMANCE ENGINEERING AND RESOURCE GOVERNANCE
+
+## 6.1 OBJECTIVE
+
+Implement a consistent, tenant-safe and provider-independent caching and performance infrastructure.
+
+The objective is to improve response time and reduce unnecessary computation without compromising data correctness.
+
+Caching must never become the authoritative source of business truth.
+
+## 6.2 CACHE ARCHITECTURE
+
+Implement:
+
+- Cache provider interface.
+- Cache namespace registry.
+- Cache policy registry.
+- Cache-key builder.
+- Cache metadata.
+- Cache read/write service.
+- Expiration policy.
+- Invalidation service.
+- Cache health metadata.
+- Cache statistics integration.
+
+Reuse existing providers.
+
+Potential providers include Cloudflare KV, Durable Objects or an existing Redis-compatible provider.
+
+Do not assume strong consistency from an eventually consistent provider.
+
+## 6.3 CACHE CLASSIFICATION
+
+Support:
+
+- Public reference data.
+- Public listing projections.
+- Tenant-private data.
+- User-private data.
+- Search results.
+- Valuation results.
+- Geographic reference data.
+- Analytical summaries.
+- Configuration data.
+
+Each cache policy must specify:
+
+- Namespace.
+- Ownership class.
+- Tenant scope.
+- Sensitivity.
+- TTL.
+- Invalidation trigger.
+- Maximum payload size.
+- Staleness tolerance.
+- Provider compatibility.
+- Cacheability.
+
+Never cache credentials, payment secrets or unrestricted private documents.
+
+## 6.4 CACHE KEY GOVERNANCE
+
+Implement deterministic cache keys.
+
+Keys must include every dimension that materially affects the result.
+
+Examples:
+
+- Tenant ID.
+- Organization ID.
+- User ID when relevant.
+- Permission version when authorization affects output.
+- Query parameters.
+- Locale.
+- Data version.
+- Model version.
+- Geographic context.
+
+Do not concatenate untrusted input without normalization.
+
+Prevent cache-key collisions.
+
+Prevent cross-tenant cache leakage.
+
+## 6.5 INVALIDATION
+
+Implement invalidation through authoritative domain events and controlled service calls.
+
+Support:
+
+- Entity invalidation.
+- Namespace invalidation.
+- Tenant invalidation.
+- Organization invalidation.
+- User-private invalidation.
+- Search-result invalidation.
+- Valuation-result invalidation.
+- Geographic-reference invalidation.
+
+Avoid global cache flushes for ordinary record changes.
+
+Use versioned keys or bounded invalidation where appropriate.
+
+Integrate with Employee 75 event processing.
+
+## 6.6 STAMPede PREVENTION
+
+Implement:
+
+- Single-flight request coordination where supported.
+- Bounded regeneration.
+- Jittered expiration.
+- Stale-while-revalidate where appropriate.
+- Regeneration timeout.
+- Failure fallback.
+- Negative caching only for safe cases.
+
+Do not serve stale sensitive authorization data.
+
+Do not use stale financial balances or settlement states as authoritative information.
+
+## 6.7 DATABASE PERFORMANCE
+
+Implement measurable improvements:
+
+- Query profiling.
+- Slow-operation detection.
+- Pagination standards.
+- Index recommendations grounded in actual query patterns.
+- Bounded query execution.
+- Avoidance of N+1 patterns.
+- Projection reads.
+- Efficient geospatial query integration.
+- Controlled aggregation.
+- Connection and provider resource management where applicable.
+
+Do not blindly add indexes.
+
+Do not rewrite every repository.
+
+Do not introduce a new ORM.
+
+## 6.8 RESOURCE GOVERNANCE
+
+Implement configurable resource budgets for:
+
+- API operations.
+- Expensive queries.
+- Valuation computation.
+- Search.
+- External provider calls.
+- Background processing.
+- Analytical reads.
+
+Budgets must be classified by operation and tenant scope where applicable.
+
+Do not use one arbitrary global limit for every business operation.
+
+Support explicit degraded behavior for noncritical workloads.
+
+## 6.9 CACHE ADMINISTRATION
+
+Expose authorized APIs for:
+
+- Cache namespace listing.
+- Cache policy listing.
+- Cache health.
+- Cache statistics.
+- Controlled invalidation.
+- Cache configuration.
+- Cache diagnostics.
+
+Never expose raw sensitive cache contents.
+
+Cache invalidation must require appropriate permissions and audit evidence.
+
+## 6.10 TESTS
+
+Test:
+
+- Tenant-separated cache keys.
+- Permission-version changes.
+- TTL expiration.
+- Invalidation.
+- Stale data handling.
+- Concurrent regeneration.
+- Provider outage.
+- Oversized payloads.
+- Sensitive-data exclusion.
+- Search cache isolation.
+- Valuation model versioning.
+- Cache fallback.
+- Resource-budget enforcement.
+
+## 6.11 PHASE 6 DELIVERABLES
+
+- Cache provider abstraction.
+- Namespace registry.
+- Cache policy registry.
+- Cache-key governance.
+- Cache service.
+- Invalidation service.
+- Stampede protection.
+- Performance instrumentation.
+- Resource budget controls.
+- Administrative APIs.
+- Automated tests.
+- Phase 6 manifest entries.
+
+---
+
+# PHASE 7 — EMPLOYEE 78
+# INFRASTRUCTURE SECURITY, SECRET GOVERNANCE, CRYPTOGRAPHY AND SUPPLY-CHAIN PROTECTION
+
+## 7.1 OBJECTIVE
+
+Implement infrastructure-level security governance.
+
+Do not replace existing authentication or RBAC.
+
+Do not create a second security platform.
+
+Reuse existing secrets providers and runtime bindings.
+
+The objective is to centralize security policy, secret lifecycle coordination, cryptographic configuration and infrastructure security evidence.
+
+## 7.2 SECURITY POLICY REGISTRY
+
+Implement a versioned security policy registry.
+
+Each policy must include:
+
+- `policyId`
+- `policyCode`
+- `version`
+- `scope`
+- `classification`
+- `controlOwner`
+- `status`
+- `effectiveAt`
+- `reviewAt`
+- `approvalReference`
+- `evidenceReferences`
+- `createdAt`
+- `updatedAt`
+
+Policy categories:
+
+- Infrastructure access.
+- Secret management.
+- Encryption.
+- Key management.
+- Transport security.
+- Runtime configuration.
+- Dependency security.
+- Software supply chain.
+- Administrative privilege.
+- Backup protection.
+- Data protection.
+
+Do not activate a policy that has not passed the required approval process.
+
+## 7.3 SECRET INVENTORY
+
+Implement metadata-only secret inventory.
+
+Fields:
+
+- `secretReferenceId`
+- `provider`
+- `providerReference`
+- `purpose`
+- `ownerModule`
+- `environment`
+- `classification`
+- `rotationPolicy`
+- `lastRotationAt`
+- `nextRotationAt`
+- `status`
+- `lastValidationAt`
+- `createdAt`
+- `updatedAt`
+
+Never store raw secret values in the inventory.
+
+Never return secret values through administrative APIs.
+
+Never log secret values.
+
+Support:
+
+- Secret registration.
+- Ownership assignment.
+- Usage metadata.
+- Rotation scheduling metadata.
+- Validation status.
+- Revocation metadata.
+- Dependency references.
+
+## 7.4 SECRET ROTATION ORCHESTRATION
+
+Implement a controlled rotation workflow.
+
+Steps:
+
+1. Identify the secret reference.
+2. Validate ownership.
+3. Validate provider support.
+4. Validate dependent services.
+5. Obtain required authorization.
+6. Request rotation through the existing secret provider.
+7. Validate the new credential without exposing it.
+8. Update approved runtime references.
+9. Verify dependent service health.
+10. Record rotation evidence.
+11. Retain rollback capability where the provider supports it.
+12. Close the rotation operation.
+
+Do not rotate production secrets during this implementation.
+
+Use test credentials and provider mocks in tests.
+
+Do not claim rotation succeeded if the provider did not confirm it.
+
+## 7.5 CRYPTOGRAPHIC POLICY
+
+Implement cryptographic policy metadata.
+
+Support:
+
+- Approved algorithms.
+- Encryption-at-rest requirements.
+- Encryption-in-transit requirements.
+- Key purpose.
+- Key ownership.
+- Key version.
+- Key status.
+- Key rotation policy.
+- Key retirement.
+- Cryptographic evidence.
+
+Use established cryptographic libraries and managed key providers.
+
+Do not invent cryptographic algorithms.
+
+Do not implement custom encryption primitives.
+
+Do not hardcode encryption keys.
+
+Do not store plaintext keys in Firestore, D1, KV or ordinary configuration files.
+
+## 7.6 KEY MANAGEMENT REFERENCES
+
+Implement metadata and provider adapters for:
+
+- Key registration.
+- Key version reference.
+- Key activation.
+- Key rotation.
+- Key retirement.
+- Key access policy.
+- Key usage evidence.
+
+The actual key material must remain in an appropriate managed provider.
+
+If no managed provider is configured, expose an explicit unavailable state.
+
+Do not fabricate operational key management.
+
+## 7.7 TRANSPORT AND RUNTIME SECURITY
+
+Implement or extend controls for:
+
+- Secure transport configuration.
+- CORS policy validation.
+- Security headers.
+- Request-size limits.
+- Secure cookie configuration where used.
+- Trusted proxy configuration.
+- SSRF protections.
+- URL allowlists where applicable.
+- Runtime environment validation.
+- Privileged operation restrictions.
+
+Preserve existing map proxy SSRF filtering.
+
+Do not weaken current upload validation.
+
+Preserve magic-byte checks, quarantine behavior and signed URL protections.
+
+## 7.8 DEPENDENCY AND SUPPLY-CHAIN SECURITY
+
+Integrate with existing package management.
+
+Implement:
+
+- Dependency inventory.
+- Lockfile integrity checks.
+- Known vulnerability reporting integration.
+- SBOM generation or provider-compatible integration.
+- License metadata where appropriate.
+- Build artifact provenance references.
+- Dependency exception workflow.
+- Security patch tracking.
+
+Do not automatically upgrade every package.
+
+Do not introduce breaking upgrades without tests.
+
+Do not invent vulnerability results.
+
+## 7.9 SECURITY EXCEPTIONS
+
+Implement an exception registry.
+
+Fields:
+
+- `exceptionId`
+- `controlReference`
+- `affectedResource`
+- `businessJustification`
+- `riskOwner`
+- `approvalReference`
+- `compensatingControls`
+- `createdAt`
+- `expiresAt`
+- `status`
+- `reviewHistory`
+
+Exceptions must be time-bounded.
+
+Expired exceptions must not remain silently active.
+
+High-risk exceptions require explicit authorized approval.
+
+## 7.10 SECURITY INCIDENT INTEGRATION
+
+Reuse Employee 66 for case management.
+
+Reuse Employee 71 for risk assessment.
+
+Reuse Employee 72 for compliance and regulatory coordination.
+
+Do not create a second case-management engine.
+
+Provide secure references and controlled integration events.
+
+## 7.11 TESTS
+
+Test:
+
+- Secret values never appear in API responses.
+- Secret values never appear in logs.
+- Unauthorized secret metadata access.
+- Rotation authorization.
+- Rotation failure.
+- Rotation rollback.
+- Missing provider.
+- Key version changes.
+- Retired-key rejection.
+- Encryption policy validation.
+- SSRF protections.
+- Security-header behavior.
+- CORS validation.
+- Dependency inventory.
+- Exception expiration.
+- Privileged operation audit.
+
+## 7.12 PHASE 7 DELIVERABLES
+
+- Security policy registry.
+- Secret metadata inventory.
+- Secret provider adapters.
+- Rotation orchestration.
+- Cryptographic policy registry.
+- Key-management references.
+- Runtime security controls.
+- Supply-chain integration.
+- SBOM integration where supported.
+- Security exception registry.
+- Incident integrations.
+- Administrative APIs.
+- Automated tests.
+- Phase 7 manifest entries.
+
+---
+
+# PHASE 8 — EMPLOYEE 77
+# BACKUP, RESTORE, DISASTER RECOVERY AND BUSINESS CONTINUITY
+
+## 8.1 OBJECTIVE
+
+Implement a verifiable recovery architecture.
+
+The platform must be capable of restoring authoritative data and critical services without corrupting domain ownership or bypassing legal preservation requirements.
+
+Backup success must be verified, not inferred from a scheduled operation.
+
+Restore success must be verified, not inferred from an API response.
+
+## 8.2 RECOVERY INVENTORY
+
+Implement a registry of recoverable resources.
+
+Each record must include:
+
+- `resourceId`
+- `resourceType`
+- `ownerModule`
+- `provider`
+- `providerReference`
+- `criticality`
+- `dataClassification`
+- `tenantScope`
+- `backupPolicyReference`
+- `restorePolicyReference`
+- `retentionPolicyReference`
+- `dependencies`
+- `recoveryStatus`
+- `createdAt`
+- `updatedAt`
+
+Resource types may include:
+
+- Database.
+- Object storage.
+- Configuration.
+- Search index.
+- Analytical dataset.
+- Queue metadata.
+- Workflow metadata.
+- Critical platform registry.
+
+Do not assume every resource is independently recoverable.
+
+## 8.3 BACKUP POLICY
+
+Implement versioned backup policies.
+
+Fields:
+
+- `backupPolicyId`
+- `name`
+- `resourceScope`
+- `frequency`
+- `retentionReference`
+- `consistencyRequirement`
+- `encryptionPolicyReference`
+- `verificationPolicy`
+- `ownerModule`
+- `approvalReference`
+- `status`
+- `createdAt`
+- `updatedAt`
+
+Do not invent statutory retention periods.
+
+Employee 72 remains the authority for legal retention and legal holds.
+
+## 8.4 BACKUP EXECUTION
+
+Implement backup orchestration through Employee 75.
+
+Support:
+
+- Full backup.
+- Incremental backup where supported.
+- Snapshot reference.
+- Object inventory.
+- Metadata backup.
+- Manifest generation.
+- Integrity verification.
+- Backup completion.
+- Failure handling.
+- Retry.
+- Expiration evaluation.
+
+A backup record must include:
+
+- `backupId`
+- `resourceId`
+- `backupType`
+- `status`
+- `startedAt`
+- `completedAt`
+- `providerReference`
+- `manifestReference`
+- `checksum`
+- `encryptionKeyReference`
+- `dataVersion`
+- `sourceSnapshotReference`
+- `verificationStatus`
+- `errorReference`
+
+Do not claim backup completeness when only a subset of a resource was captured.
+
+## 8.5 BACKUP CONSISTENCY
+
+Support provider-specific consistent snapshots.
+
+For multi-resource operations, define a recovery consistency boundary.
+
+Record:
+
+- Source versions.
+- Snapshot times.
+- Transaction or checkpoint references.
+- Relevant outbox positions.
+- Relevant workflow checkpoints.
+- Related resource versions.
+
+Do not pretend that unrelated provider snapshots represent one atomic platform-wide snapshot.
+
+Where consistency cannot be guaranteed, record the limitation explicitly.
+
+## 8.6 BACKUP INTEGRITY
+
+Implement:
+
+- Checksum validation.
+- Manifest validation.
+- Object-count validation where appropriate.
+- Size verification.
+- Metadata consistency checks.
+- Encryption metadata validation.
+- Restore-readiness validation.
+
+Do not treat an uploaded backup object as verified merely because it exists.
+
+## 8.7 RESTORE WORKFLOW
+
+Implement controlled restore orchestration.
+
+Restore states:
+
+- `REQUESTED`
+- `VALIDATING`
+- `APPROVAL_PENDING`
+- `PREPARING`
+- `RESTORING`
+- `VERIFYING`
+- `COMPLETED`
+- `FAILED`
+- `ROLLBACK_REQUIRED`
+- `CANCELLED`
+
+Before restoration:
+
+1. Authenticate the requester.
+2. Verify restore permissions.
+3. Verify resource ownership.
+4. Verify backup integrity.
+5. Verify encryption-key availability.
+6. Check active legal holds.
+7. Check retention requirements.
+8. Check dependent resource compatibility.
+9. Establish a safe restore target.
+10. Obtain required approval.
+11. Execute through provider adapters.
+12. Validate restored data.
+13. Reconcile related references.
+14. Record evidence.
+
+Never overwrite production data during development or tests.
+
+## 8.8 RESTORE ISOLATION
+
+Support isolated restore environments where available.
+
+A restore must not automatically replace current production state.
+
+Provide explicit restore-target classification:
+
+- `ISOLATED_TEST`
+- `STAGING`
+- `RECOVERY_ENVIRONMENT`
+- `PRODUCTION`
+
+Production restoration requires a separate, explicitly authorized operational process.
+
+This implementation must not execute production restoration.
+
+## 8.9 LEGAL-HOLD AND RETENTION INTEGRATION
+
+Integrate with Employee 72.
+
+Mandatory precedence:
+
+1. Active valid authorized legal holds.
+2. Verified mandatory statutory or regulatory retention.
+3. Approved binding contractual preservation obligations.
+4. Approved internal retention policies.
+5. Ordinary lifecycle and deletion policies.
+
+A backup expiration process must not bypass active legal holds.
+
+A restore process must not silently erase newer records that are subject to retention or legal preservation.
+
+If backup expiration and legal preservation conflict, block destructive disposition and require the authorized retention workflow.
+
+Do not invent retention periods.
+
+## 8.10 RECOVERY TARGETS
+
+Implement configurable recovery objectives:
+
+- RPO.
+- RTO.
+- Maximum acceptable data loss.
+- Maximum acceptable downtime.
+- Resource criticality.
+- Recovery dependency order.
+
+These are operational targets, not guarantees.
+
+Do not claim that a target has been achieved without measured recovery evidence.
+
+## 8.11 DISASTER RECOVERY EXERCISES
+
+Implement an exercise registry.
+
+Support:
+
+- Exercise definition.
+- Scope.
+- Scenario.
+- Expected recovery targets.
+- Execution steps.
+- Evidence.
+- Actual recovery time.
+- Actual recovery point.
+- Result.
+- Corrective actions.
+- Approval.
+- Review history.
+
+Exercises must use isolated environments.
+
+Do not simulate successful restoration by changing a status field without executing the recovery validation.
+
+## 8.12 BUSINESS CONTINUITY
+
+Implement continuity plans for critical modules.
+
+Support:
+
+- Dependency outage.
+- Database outage.
+- Storage outage.
+- Queue outage.
+- Authentication outage.
+- External provider outage.
+- Regional infrastructure failure.
+- Data corruption.
+- Security incident.
+
+Continuity plans must identify:
+
+- Critical operations.
+- Alternative operating procedures.
+- Required dependencies.
+- Authorized decision-makers.
+- Recovery sequence.
+- Customer-impact classification.
+- Communication references through Employee 68.
+- Compliance coordination through Employee 72.
+
+Do not duplicate notification delivery or support case management.
+
+## 8.13 TESTS
+
+Test:
+
+- Backup manifest creation.
+- Backup integrity.
+- Missing objects.
+- Checksum mismatch.
+- Encryption-key unavailability.
+- Backup retry.
+- Restore approval.
+- Unauthorized restore.
+- Isolated restore.
+- Restore validation.
+- Legal-hold conflict.
+- Retention conflict.
+- Partial recovery.
+- Dependency recovery order.
+- RPO/RTO measurement.
+- Disaster-recovery exercise evidence.
+
+## 8.14 PHASE 8 DELIVERABLES
+
+- Recovery resource registry.
+- Backup policy registry.
+- Backup orchestration.
+- Backup manifest service.
+- Integrity verification.
+- Restore orchestration.
+- Restore authorization.
+- Legal-hold integration.
+- Recovery objectives.
+- Disaster-recovery exercise registry.
+- Business-continuity plans.
+- Administrative APIs.
+- Automated tests.
+- Phase 8 manifest entries.
+
+---
+
+# PHASE 9 — EMPLOYEE 79
+# ANALYTICAL DATA PLATFORM, DATA WAREHOUSE, LINEAGE AND GOVERNED RESEARCH
+
+## 9.1 OBJECTIVE
+
+Implement a governed analytical data platform for Radar Tehran.
+
+This platform must support reliable aggregated research and business intelligence without becoming a second source of truth for operational business records.
+
+Operational data remains owned by Employees 53–78.
+
+Employee 79 owns analytical representations.
+
+## 9.2 ANALYTICAL ARCHITECTURE
+
+Implement a layered analytical model.
+
+Where the actual provider architecture supports it, separate:
+
+- Raw ingestion layer.
+- Validated staging layer.
+- Curated analytical layer.
+- Published dataset layer.
+
+Use provider-appropriate storage.
+
+Do not assume that a particular data warehouse is provisioned.
+
+Do not create an unnecessary second operational database.
+
+## 9.3 DATASET REGISTRY
+
+Each dataset must include:
+
+- `datasetId`
+- `datasetCode`
+- `displayName`
+- `description`
+- `ownerModule`
+- `sourceReferences`
+- `schemaVersion`
+- `classification`
+- `tenantScope`
+- `privacyPolicyReference`
+- `retentionPolicyReference`
+- `refreshPolicy`
+- `freshnessTarget`
+- `qualityPolicyReference`
+- `lineageReference`
+- `status`
+- `createdAt`
+- `updatedAt`
+
+Dataset states:
+
+- `DRAFT`
+- `VALIDATING`
+- `ACTIVE`
+- `STALE`
+- `SUSPENDED`
+- `DEPRECATED`
+- `RETIRED`
+
+## 9.4 SOURCE REGISTRY
+
+Integrate with Employee 70.
+
+Each analytical source must have:
+
+- Source module.
+- Source entity.
+- Extraction interface.
+- Authorization scope.
+- Update frequency.
+- Data classification.
+- Provenance.
+- Quality requirements.
+- Retention requirements.
+
+Do not scrape unauthorized external sources.
+
+Do not invent market data.
+
+Do not fabricate source freshness.
+
+## 9.5 DATA INGESTION
+
+Use Employee 75 for durable pipeline execution.
+
+Support:
+
+- Full ingestion.
+- Incremental ingestion.
+- Change-data processing where supported.
+- Snapshot ingestion.
+- Reprocessing.
+- Late-arriving records.
+- Duplicate detection.
+- Schema validation.
+- Quarantine.
+- Failed-record handling.
+
+Every ingestion run must record:
+
+- Run ID.
+- Dataset ID.
+- Source reference.
+- Start time.
+- End time.
+- Input count.
+- Accepted count.
+- Rejected count.
+- Duplicate count.
+- Processing version.
+- Quality result.
+- Error references.
+
+## 9.6 DATA LINEAGE
+
+Implement lineage tracking.
+
+Record:
+
+- Source dataset.
+- Source entity or partition.
+- Transformation.
+- Transformation version.
+- Execution run.
+- Output dataset.
+- Output partition.
+- Timestamp.
+- Quality evidence.
+- Responsible module.
+- Correlation ID.
+
+Lineage must support tracing an analytical value back to its source and transformation path.
+
+Do not expose sensitive source records through lineage APIs.
+
+## 9.7 ANALYTICAL SCHEMA GOVERNANCE
+
+Implement versioned schemas.
+
+Support:
+
+- Schema registration.
+- Compatibility validation.
+- Additive evolution.
+- Breaking-change detection.
+- Deprecation.
+- Migration metadata.
+- Dataset compatibility checks.
+
+Do not silently reinterpret historical analytical values after a schema change.
+
+## 9.8 DATA QUALITY
+
+Integrate with Employee 62.
+
+Support:
+
+- Completeness.
+- Validity.
+- Consistency.
+- Uniqueness.
+- Timeliness.
+- Accuracy evidence.
+- Provenance confidence.
+- Outlier indicators.
+
+Quality scores must be explainable.
+
+Do not convert missing data into fabricated values.
+
+Do not confuse statistical imputation with verified facts.
+
+## 9.9 ANALYTICAL DATA MODEL
+
+Create reusable dimensions and fact models where justified.
+
+Potential dimensions:
+
+- Time.
+- Geography.
+- Neighborhood.
+- Property type.
+- Building characteristics.
+- Listing category.
+- Transaction category.
+- Rental category.
+- Organization.
+- Market segment.
+
+Potential fact families:
+
+- Listing observations.
+- Market-price observations.
+- Transaction aggregates.
+- Rental-market aggregates.
+- Supply and demand indicators.
+- Property inventory aggregates.
+- Search engagement aggregates.
+- Geographic market indicators.
+- Service-operation aggregates.
+
+Do not duplicate detailed financial ledger entries into an unrestricted analytical dataset.
+
+Use approved aggregation and classification.
+
+## 9.10 REAL-ESTATE INTELLIGENCE
+
+Integrate with Employees 59–61.
+
+Support analytical datasets for:
+
+- Neighborhood price trends.
+- Asking-price trends.
+- Rental-price trends.
+- Supply volume.
+- Listing turnover.
+- Market liquidity.
+- Property-type segmentation.
+- Geographic comparisons.
+- Commercial-property trends.
+- Residential-property trends.
+- Construction and building-quality aggregates.
+- Historical market changes.
+- Valuation-model performance.
+
+The existing hedonic valuation engine remains authoritative for valuation calculations.
+
+Employee 79 must not implement a competing valuation engine.
+
+Use versioned references to the existing valuation model.
+
+## 9.11 RESEARCH AND AGGREGATION
+
+Support privacy-safe research.
+
+The platform may aggregate:
+
+- Search volume.
+- Module usage.
+- Listing engagement.
+- Neighborhood-level demand.
+- Market activity.
+- Price changes.
+- Broad geographic trends.
+- Aggregated operational performance.
+
+Do not collect passwords, payment credentials, private message contents, keystrokes or unnecessary exact-location histories.
+
+Use aggregation thresholds to reduce re-identification risk.
+
+Small cohorts must be suppressed or generalized where appropriate.
+
+## 9.12 METRIC REGISTRY
+
+Implement governed metric definitions.
+
+Each metric must specify:
+
+- Metric ID.
+- Name.
+- Description.
+- Owner.
+- Formula reference.
+- Dataset dependencies.
+- Unit.
+- Aggregation method.
+- Time window.
+- Geographic scope.
+- Freshness.
+- Quality requirements.
+- Version.
+- Status.
+
+Avoid contradictory definitions of the same metric.
+
+If two modules use different definitions, represent them as distinct versioned metrics.
+
+## 9.13 ANALYTICAL ACCESS CONTROL
+
+Implement:
+
+- Dataset-level access.
+- Column-level restrictions where supported.
+- Tenant-scoped analytical views.
+- Aggregated public datasets.
+- Restricted research datasets.
+- Export authorization.
+- Privacy review references.
+- Audit logging.
+
+Do not expose private tenant analytics to another tenant.
+
+Do not expose detailed financial records through ordinary analytical APIs.
+
+## 9.14 ANALYTICAL EXPORTS
+
+Implement controlled exports.
+
+Support:
+
+- CSV where appropriate.
+- JSON.
+- Parquet where provider support exists.
+- Bounded result sizes.
+- Export expiration.
+- Secure download references.
+- Audit evidence.
+- Privacy checks.
+- Retention enforcement.
+
+Reuse Employee 63 document storage.
+
+Do not create a second document-management platform.
+
+## 9.15 ANALYTICAL API
+
+Implement APIs for:
+
+- Dataset registry.
+- Dataset detail.
+- Dataset freshness.
+- Dataset quality.
+- Lineage.
+- Metric registry.
+- Aggregated analytical queries.
+- Research dataset access.
+- Export requests.
+- Pipeline execution status.
+
+All analytical queries must be bounded.
+
+Prevent unrestricted arbitrary SQL execution by ordinary users.
+
+## 9.16 TESTS
+
+Test:
+
+- Dataset registration.
+- Schema compatibility.
+- Pipeline retries.
+- Duplicate ingestion.
+- Late-arriving data.
+- Lineage completeness.
+- Quality scoring.
+- Missing data.
+- Tenant isolation.
+- Privacy thresholds.
+- Small-cohort suppression.
+- Export authorization.
+- Retention integration.
+- Historical reproducibility.
+- Model-version references.
+- Analytical data freshness.
+
+## 9.17 PHASE 9 DELIVERABLES
+
+- Dataset registry.
+- Source integration.
+- Analytical storage adapters.
+- Pipeline execution.
+- Schema governance.
+- Data lineage.
+- Quality integration.
+- Analytical dimensions and facts.
+- Metric registry.
+- Research aggregation.
+- Access control.
+- Export workflow.
+- Analytical APIs.
+- Automated tests.
+- Phase 9 manifest entries.
+
+---
+
+# PHASE 10 — EMPLOYEE 80
+# PLATFORM INTEGRATION, CROSS-MODULE RECONCILIATION, RESILIENCE AND ARCHITECTURE ENFORCEMENT
+
+## 10.1 OBJECTIVE
+
+Implement the complete platform-wide integration and resilience layer.
+
+This phase extends the foundational contracts introduced in Phase 1.
+
+Employee 80 is the authority for platform-wide integration governance.
+
+It does not replace domain-owned business services.
+
+The goal is to ensure that the platform remains consistent and recoverable when individual modules, providers, queues, APIs or databases fail.
+
+## 10.2 PLATFORM INTEGRATION REGISTRY
+
+Extend the Phase 1 module and dependency registries.
+
+Support:
+
+- Runtime module state.
+- Module version compatibility.
+- Dependency health.
+- Integration contract status.
+- Required versus optional dependencies.
+- Degraded operation capability.
+- Failure containment boundaries.
+- Integration owner.
+- Recovery reference.
+- Last successful validation.
+- Last failed validation.
+
+Do not treat registry metadata as proof of runtime health.
+
+Use actual health providers.
+
+## 10.3 CROSS-MODULE CONTRACT ENFORCEMENT
+
+Implement contract validation for:
+
+- API contracts.
+- Event contracts.
+- Data ownership.
+- Tenant scope.
+- Version compatibility.
+- Error contracts.
+- Idempotency expectations.
+- Authorization requirements.
+- Retention requirements.
+- Correlation propagation.
+
+Every cross-module integration must declare:
+
+- Source module.
+- Target module.
+- Contract version.
+- Operation.
+- Required permissions.
+- Data classification.
+- Tenant scope.
+- Timeout policy.
+- Retry policy.
+- Failure behavior.
+
+Prevent unregistered new cross-module dependencies.
+
+Do not break existing integrations without a compatibility migration.
+
+## 10.4 CONSISTENCY CLASSIFICATION
+
+Implement a consistency registry.
+
+Supported consistency classes:
+
+- `STRONG_TRANSACTIONAL`
+- `EVENTUAL`
+- `BOUNDED_STALENESS`
+- `SNAPSHOT_CONSISTENT`
+- `BEST_EFFORT`
+- `MANUAL_RECONCILIATION`
+
+Each cross-module data flow must declare its consistency expectations.
+
+Examples:
+
+- Financial ledger operations must use Employee 54's consistency guarantees.
+- Search projections may use bounded staleness.
+- Analytical datasets may use eventual consistency.
+- Legal-hold activation must propagate through controlled preservation workflows.
+- Listing publication must preserve Employee 58's authoritative lifecycle.
+- Document access must preserve Employee 63's authorization and storage guarantees.
+
+Do not claim strong consistency across independent providers without an actual transaction mechanism.
+
+## 10.5 CROSS-MODULE RECONCILIATION FRAMEWORK
+
+Implement a reusable reconciliation framework.
+
+It must not replace the business-specific reconciliation logic owned by individual modules.
+
+The framework provides:
+
+- Reconciliation job definitions.
+- Source and target references.
+- Comparison strategies.
+- Checkpointing.
+- Discrepancy classification.
+- Evidence capture.
+- Resolution workflow references.
+- Retry.
+- Completion tracking.
+- Audit evidence.
+
+Each reconciliation definition must include:
+
+- `reconciliationType`
+- `ownerModule`
+- `sourceReference`
+- `targetReference`
+- `comparisonStrategy`
+- `consistencyClass`
+- `tenantScope`
+- `scheduleReference`
+- `discrepancyPolicy`
+- `resolutionServiceReference`
+- `approvalRequirements`
+
+## 10.6 RECONCILIATION CATEGORIES
+
+Support reusable framework capabilities for:
+
+- Domain record versus read-model consistency.
+- Listing versus search projection.
+- Transaction versus financial ledger references.
+- Billing versus ledger references.
+- Rental schedules versus financial obligations.
+- Document metadata versus object storage.
+- Tenant membership versus authorization projections.
+- Notification event versus delivery state.
+- Ingestion source versus normalized records.
+- Valuation evidence versus valuation result references.
+- Analytical dataset versus source versions.
+- Backup manifest versus source inventory.
+- Legal-hold registry versus affected preservation references.
+
+The actual business comparison and correction must remain in the owning domain.
+
+Do not directly mutate another module's authoritative records.
+
+## 10.7 DISCREPANCY MODEL
+
+Each discrepancy must contain:
+
+- `discrepancyId`
+- `reconciliationRunId`
+- `ownerModule`
+- `entityType`
+- `entityId`
+- `tenantId`, optional
+- `discrepancyCategory`
+- `severity`
+- `sourceValueReference`
+- `targetValueReference`
+- `detectedAt`
+- `status`
+- `resolutionReference`
+- `resolvedAt`
+- `recordVersion`
+
+Statuses:
+
+- `OPEN`
+- `INVESTIGATING`
+- `RESOLUTION_PENDING`
+- `RESOLVED`
+- `ACCEPTED_EXCEPTION`
+- `ESCALATED`
+- `CLOSED`
+
+Never expose sensitive comparison values to unauthorized users.
+
+## 10.8 AUTOMATIC CORRECTION BOUNDARIES
+
+Automatic correction is permitted only when:
+
+- The domain owner explicitly authorizes it.
+- The correction is deterministic.
+- The operation is idempotent.
+- The source of truth is unambiguous.
+- The operation is reversible where feasible.
+- Required audit evidence is recorded.
+
+Never automatically resolve:
+
+- Ambiguous financial discrepancies.
+- Ownership conflicts.
+- Legal-hold conflicts.
+- Conflicting tenant ownership.
+- Suspected fraud.
+- Unauthorized document access discrepancies.
+- Unverified business facts.
+
+These require authorized review.
+
+## 10.9 CIRCUIT BREAKERS
+
+Implement reusable circuit-breaker integration.
+
+Support states:
+
+- `CLOSED`
+- `OPEN`
+- `HALF_OPEN`
+- `DISABLED`
+
+Each circuit definition must include:
+
+- Dependency.
+- Operation scope.
+- Failure threshold.
+- Observation window.
+- Open duration.
+- Half-open test limit.
+- Recovery behavior.
+- Fallback reference.
+- Owner module.
+
+Circuit breakers must be scoped narrowly enough to avoid disabling unrelated operations.
+
+Do not create one global circuit breaker for the entire application.
+
+## 10.10 GRACEFUL DEGRADATION
+
+Implement explicit degraded behavior.
+
+Examples:
+
+- Search may return cached or reduced results when noncritical enrichment is unavailable.
+- Analytical dashboards may show last verified refresh time.
+- Valuation may return a clearly labeled unavailable or reduced-confidence result when required evidence is unavailable.
+- Optional recommendation services may be disabled without breaking core listing access.
+- Notification delivery may be delayed while business state remains authoritative.
+- Noncritical external data ingestion may be paused.
+- Administrative health pages may show unknown status when health providers are unavailable.
+
+Do not silently return fabricated data.
+
+Do not present stale data as current.
+
+Do not degrade financial authorization, tenant isolation, legal preservation or security enforcement.
+
+Security-critical dependencies must fail closed.
+
+## 10.11 TIMEOUT AND RETRY GOVERNANCE
+
+Implement consistent dependency policies.
+
+Each dependency must declare:
+
+- Connection timeout.
+- Request timeout.
+- Overall operation deadline.
+- Retryable errors.
+- Retry limit.
+- Backoff.
+- Jitter.
+- Idempotency requirements.
+- Circuit-breaker integration.
+- Fallback behavior.
+
+Do not retry non-idempotent operations blindly.
+
+Do not retry indefinitely.
+
+## 10.12 PLATFORM HEALTH AND READINESS
+
+Implement standardized health contracts.
+
+Support:
+
+- Liveness.
+- Readiness.
+- Dependency health.
+- Module health.
+- Degraded status.
+- Configuration status.
+- Recovery status.
+
+Health states:
+
+- `HEALTHY`
+- `DEGRADED`
+- `UNHEALTHY`
+- `UNKNOWN`
+- `NOT_CONFIGURED`
+
+Liveness must not depend on every optional external provider.
+
+Readiness must reflect actual required dependencies.
+
+Do not expose sensitive internal dependency details publicly.
+
+Provide restricted administrative diagnostics.
+
+## 10.13 SLO GOVERNANCE
+
+Implement versioned service-level objective definitions.
+
+Support:
+
+- Availability targets.
+- Latency targets.
+- Error-rate targets.
+- Queue-delay targets.
+- Data-freshness targets.
+- Recovery targets.
+- Reconciliation completion targets.
+
+Each SLO must define:
+
+- Service.
+- Operation.
+- Measurement source.
+- Time window.
+- Target.
+- Exclusion policy.
+- Owner.
+- Version.
+- Effective date.
+
+Do not invent historical performance measurements.
+
+## 10.14 ERROR BUDGET
+
+Implement error-budget calculation based on actual measured data.
+
+Support:
+
+- SLO target.
+- Observed performance.
+- Remaining budget.
+- Time window.
+- Burn rate.
+- Alert threshold.
+- Evidence reference.
+
+Do not claim a healthy error budget if the underlying measurement data is missing.
+
+## 10.15 MIGRATION GOVERNANCE
+
+Implement platform migration metadata.
+
+Support:
+
+- Migration ID.
+- Owner module.
+- Source version.
+- Target version.
+- Preconditions.
+- Execution state.
+- Checkpoint.
+- Rollback strategy.
+- Validation.
+- Approval.
+- Evidence.
+
+Prevent conflicting migrations from executing concurrently against the same resource scope.
+
+Do not execute production migrations.
+
+## 10.16 FEATURE-FLAG GOVERNANCE
+
+If the existing platform already has feature flags, extend them.
+
+Otherwise, implement a minimal governed configuration mechanism only if required.
+
+Support:
+
+- Flag ID.
+- Owner.
+- Scope.
+- Environment.
+- Enabled state.
+- Rollout percentage where appropriate.
+- Effective period.
+- Approval.
+- Audit history.
+
+Do not use feature flags as a substitute for authorization.
+
+Do not expose privileged flags to clients for arbitrary modification.
+
+## 10.17 TESTS
+
+Test:
+
+- Contract mismatch.
+- Version incompatibility.
+- Missing dependency.
+- Dependency outage.
+- Circuit opening.
+- Half-open recovery.
+- Fallback execution.
+- Security-critical fail-closed behavior.
+- Cross-module reconciliation.
+- Discrepancy classification.
+- Automatic correction boundaries.
+- Manual resolution.
+- Health status.
+- SLO calculations.
+- Missing measurement data.
+- Error-budget calculations.
+- Migration conflicts.
+- Tenant isolation under degradation.
+- Financial consistency under dependency failure.
+- Legal-hold preservation under provider failure.
+
+## 10.18 PHASE 10 DELIVERABLES
+
+- Extended module registry.
+- Dependency health integration.
+- Cross-module contract enforcement.
+- Consistency registry.
+- Reconciliation framework.
+- Discrepancy management.
+- Circuit-breaker integration.
+- Graceful degradation policies.
+- Timeout and retry governance.
+- Platform health contracts.
+- SLO registry.
+- Error-budget calculation.
+- Migration governance.
+- Feature-flag governance where required.
+- Administrative APIs.
+- Automated tests.
+- Phase 10 manifest entries.
+
+Employee 80 is not complete until Phase 10 is accepted.
+
+---
+
+# PHASE 11 — SHARED PLATFORM COMPLETION
+# UNIFIED ADMINISTRATIVE CONTROL PLANE, END-TO-END INTEGRATION AND FINAL SYSTEM ACCEPTANCE
+
+## 11.1 OBJECTIVE
+
+Complete the backend program by integrating the implemented domains into the existing administrative experience and validating the complete platform.
+
+This phase is not permission to create a new administrative application.
+
+Extend the existing Radar Tehran admin panel.
+
+Preserve its established navigation and visual conventions.
+
+The objective is a unified operational control plane with accurate, permission-aware visibility and safe administrative actions.
+
+## 11.2 ADMINISTRATIVE CONTROL PLANE
+
+Implement a coherent administrative interface using the existing React 19 and Vite application architecture.
+
+Reuse existing components, design tokens, routing, authentication and RBAC.
+
+Do not introduce a second frontend application.
+
+The control plane must provide authorized visibility into:
+
+- Platform modules.
+- Module implementation status.
+- Module health.
+- Dependency graph metadata.
+- Dependency availability.
+- Tenant registry.
+- Tenant lifecycle.
+- Organization registry.
+- Membership management.
+- Background jobs.
+- Worker status.
+- Outbox status.
+- Workflow execution.
+- Scheduled operations.
+- Cache health.
+- Resource budgets.
+- Security policy status.
+- Secret metadata.
+- Rotation status.
+- Backup status.
+- Restore requests.
+- Recovery readiness.
+- Analytical datasets.
+- Data freshness.
+- Data quality.
+- Pipeline execution.
+- Reconciliation runs.
+- Discrepancies.
+- Circuit-breaker states.
+- Platform health.
+- SLO status.
+- Error budgets.
+- Migration status.
+- API integration health.
+- Audit history.
+
+Do not expose every internal record to every administrator.
+
+## 11.3 ADMINISTRATIVE NAVIGATION
+
+Integrate the new capabilities into the existing navigation.
+
+Use logical sections such as:
+
+### Platform
+
+- Module registry.
+- Dependency registry.
+- Ownership registry.
+- Architecture contracts.
+- Platform health.
+
+### Organizations
+
+- Tenants.
+- Organizations.
+- Memberships.
+- Invitations.
+- Tenant lifecycle.
+
+### Processing
+
+- Jobs.
+- Workers.
+- Outbox.
+- Workflows.
+- Schedules.
+- Dead-letter queue.
+
+### Performance
+
+- Cache health.
+- Cache policies.
+- Resource budgets.
+- Performance diagnostics.
+
+### Security
+
+- Security policies.
+- Secret metadata.
+- Rotation status.
+- Cryptographic policy.
+- Security exceptions.
+- Supply-chain evidence.
+
+### Recovery
+
+- Backup registry.
+- Backup verification.
+- Restore operations.
+- Recovery exercises.
+- Continuity plans.
+
+### Data Intelligence
+
+- Dataset registry.
+- Pipeline status.
+- Data lineage.
+- Data quality.
+- Metric registry.
+- Research exports.
+
+### Reliability
+
+- Reconciliation.
+- Discrepancies.
+- Circuit breakers.
+- Dependency health.
+- SLOs.
+- Error budgets.
+
+Do not create duplicate navigation entries.
+
+Adapt to the actual existing admin structure.
+
+## 11.4 ADMINISTRATIVE PERMISSIONS
+
+Use the existing authorization infrastructure.
+
+Define granular permissions.
+
+Examples:
+
+- `platform.registry.read`
+- `platform.registry.manage`
+- `platform.health.read`
+- `platform.dependency.manage`
+- `tenant.read`
+- `tenant.manage`
+- `tenant.suspend`
+- `tenant.close`
+- `jobs.read`
+- `jobs.retry`
+- `jobs.cancel`
+- `workflow.read`
+- `workflow.manage`
+- `cache.read`
+- `cache.invalidate`
+- `security.read`
+- `security.manage`
+- `secrets.metadata.read`
+- `secrets.rotation.manage`
+- `backup.read`
+- `backup.manage`
+- `restore.request`
+- `restore.approve`
+- `analytics.read`
+- `analytics.export`
+- `reconciliation.read`
+- `reconciliation.manage`
+- `platform.migration.manage`
+- `platform.slo.read`
+
+Adapt permission names to the existing RBAC conventions.
+
+Never grant permissions merely because a user can access the admin panel.
+
+## 11.5 DASHBOARD DATA INTEGRITY
+
+All dashboard values must originate from actual backend APIs.
+
+Do not hardcode operational metrics.
+
+Do not fabricate:
+
+- Worker counts.
+- Queue depths.
+- Tenant counts.
+- Backup status.
+- Dataset freshness.
+- Dependency availability.
+- SLO measurements.
+- Error budgets.
+- Security status.
+- Reconciliation results.
+
+If data is unavailable, display an explicit unknown, unavailable or not-configured state.
+
+Distinguish:
+
+- Zero.
+- Unknown.
+- Not configured.
+- Unavailable.
+- Loading.
+- Stale.
+- Degraded.
+
+Do not display zero when the backend has no measurement.
+
+## 11.6 ADMINISTRATIVE ACTION SAFETY
+
+For consequential actions, implement:
+
+- Authorization.
+- Input validation.
+- Confirmation.
+- Preconditions.
+- Optimistic concurrency.
+- Idempotency where applicable.
+- Audit evidence.
+- Result feedback.
+- Failure handling.
+
+High-impact operations include:
+
+- Tenant suspension.
+- Tenant closure.
+- Membership revocation.
+- Job cancellation.
+- Workflow cancellation.
+- Cache namespace invalidation.
+- Secret rotation.
+- Restore requests.
+- Reconciliation correction.
+- Security exception approval.
+- Migration execution.
+
+Do not expose destructive actions without explicit permissions and appropriate confirmation.
+
+Do not execute production backup restoration or production secret rotation during this phase.
+
+## 11.7 OPERATIONAL AUDIT HISTORY
+
+Integrate with the existing audit system.
+
+The administrative interface must show authorized audit references for consequential operations.
+
+Do not create a second audit database.
+
+Audit records must preserve:
+
+- Actor.
+- Operation.
+- Resource.
+- Scope.
+- Timestamp.
+- Correlation ID.
+- Result.
+- Relevant approval reference.
+
+Do not expose confidential investigation evidence to ordinary administrators.
+
+## 11.8 END-TO-END INTEGRATION
+
+Implement end-to-end tests for critical platform workflows.
+
+Required scenarios:
+
+### Scenario 1 — Tenant onboarding
+
+- Create tenant.
+- Create organization.
+- Invite user.
+- Accept invitation.
+- Activate membership.
+- Resolve tenant context.
+- Verify tenant-scoped access.
+- Verify cross-tenant denial.
+
+### Scenario 2 — Tenant suspension
+
+- Suspend tenant.
+- Verify restricted business operations are denied.
+- Preserve historical records.
+- Preserve financial and compliance obligations.
+- Verify authorized administrative access.
+
+### Scenario 3 — Background job lifecycle
+
+- Submit job.
+- Validate idempotency.
+- Dispatch job.
+- Claim worker lease.
+- Execute handler.
+- Persist completion.
+- Verify duplicate delivery does not duplicate the operation.
+
+### Scenario 4 — Outbox delivery
+
+- Commit an authorized business operation.
+- Create the corresponding outbox record.
+- Publish through the configured provider.
+- Simulate provider failure.
+- Retry.
+- Verify exactly-once business effect through idempotent consumption, without falsely claiming exactly-once transport.
+
+### Scenario 5 — Durable workflow
+
+- Start workflow.
+- Execute initial step.
+- Simulate failure.
+- Persist checkpoint.
+- Resume.
+- Execute compensation where required.
+- Verify final state.
+
+### Scenario 6 — Cache invalidation
+
+- Read cacheable data.
+- Update authoritative source.
+- Trigger invalidation.
+- Verify stale data is not served beyond the configured policy.
+- Verify tenant isolation.
+
+### Scenario 7 — Secret rotation test
+
+- Use an isolated test secret provider.
+- Request rotation.
+- Validate new credential.
+- Simulate dependent service failure.
+- Verify safe failure handling.
+- Verify audit evidence.
+- Do not touch production credentials.
+
+### Scenario 8 — Backup and restore
+
+- Create isolated test backup.
+- Verify manifest.
+- Validate checksum.
+- Restore into isolated test target.
+- Compare restored data.
+- Verify legal-hold and retention metadata remains consistent.
+
+### Scenario 9 — Analytical pipeline
+
+- Ingest authorized source data.
+- Validate schema.
+- Apply quality rules.
+- Record lineage.
+- Publish curated dataset.
+- Verify privacy restrictions.
+- Verify source traceability.
+
+### Scenario 10 — Reconciliation
+
+- Create known source and target discrepancy.
+- Execute reconciliation.
+- Detect discrepancy.
+- Apply permitted resolution.
+- Verify audit evidence.
+- Verify unauthorized automatic correction is blocked.
+
+### Scenario 11 — Dependency failure
+
+- Simulate a noncritical dependency outage.
+- Verify graceful degradation.
+- Verify explicit unavailable state.
+- Restore dependency.
+- Verify circuit recovery.
+
+### Scenario 12 — Security-critical failure
+
+- Simulate an authorization dependency outage.
+- Verify protected operations fail closed.
+- Verify no cross-tenant access occurs.
+- Verify error and audit handling.
+
+## 11.9 REGRESSION TESTING
+
+Run all relevant existing application tests.
+
+Preserve the functionality of:
+
+- Authentication.
+- RBAC.
+- Public property discovery.
+- Property details.
+- Listing creation and editing.
+- Search.
+- Persian NLP search normalization.
+- Map and geospatial functions.
+- Valuation.
+- Neighborhood intelligence.
+- User profiles.
+- Brokerage.
+- Transactions.
+- Rental management.
+- Property management.
+- Documents.
+- Notifications.
+- Billing interfaces.
+- Customer support.
+- Trust and reputation.
+- Fraud controls.
+- Compliance.
+- Legal holds.
+- Data ingestion.
+- Existing administrative operations.
+
+Do not disable failing tests merely to obtain a successful build.
+
+Fix regressions introduced by the implementation.
+
+Do not alter unrelated business behavior.
+
+## 11.10 PERFORMANCE VALIDATION
+
+Validate:
+
+- API response behavior under representative load.
+- Bounded pagination.
+- Database query efficiency.
+- Cache isolation.
+- Worker concurrency.
+- Queue backpressure.
+- Workflow recovery.
+- Analytical query limits.
+- Admin dashboard request efficiency.
+
+Do not invent benchmark results.
+
+If load-testing infrastructure exists, use it with isolated data.
+
+Otherwise implement repeatable local performance tests for critical paths.
+
+## 11.11 SECURITY VALIDATION
+
+Validate:
+
+- Authentication.
+- RBAC.
+- Tenant isolation.
+- Organization isolation.
+- Cross-tenant denial.
+- Resource ownership.
+- Secret exposure.
+- SSRF protections.
+- Upload validation.
+- Signed URL authorization.
+- API credential restrictions.
+- Webhook verification.
+- Administrative action authorization.
+- Audit integrity.
+- Legal-hold preservation.
+- Retention precedence.
+- Export authorization.
+- Restore authorization.
+
+Do not weaken security checks to make integration tests pass.
+
+## 11.12 ACCESSIBILITY AND FRONTEND QUALITY
+
+The new admin interface must:
+
+- Preserve mobile usability.
+- Support Persian RTL.
+- Support existing localization conventions.
+- Use consistent loading states.
+- Use explicit error states.
+- Distinguish unavailable from empty data.
+- Avoid unbounded tables.
+- Support pagination.
+- Avoid excessive polling.
+- Use existing design components.
+- Preserve the established Radar Tehran visual identity.
+
+Do not redesign the entire application.
+
+## 11.13 FINAL DOCUMENTATION
+
+Update implementation-aligned engineering documentation.
+
+Include:
+
+- Final Employee ownership map.
+- Phase completion map.
+- Module registry reference.
+- Dependency registry reference.
+- Tenant model.
+- Job and workflow contracts.
+- Cache policies.
+- Security controls.
+- Recovery procedures.
+- Analytical dataset governance.
+- Reconciliation architecture.
+- API references.
+- Permission catalog.
+- Test commands.
+- Configuration requirements.
+- Known external infrastructure dependencies.
+- Explicitly blocked capabilities.
+
+Do not document unimplemented features as operational.
+
+## 11.14 FINAL PROGRAM MANIFEST
+
+Maintain one authoritative machine-readable program manifest.
+
+Program identifier:
+
+`RADAR_TEHRAN_BACKEND_EMPLOYEES_74_80`
+
+The manifest must contain:
+
+- Employee ID.
+- Employee name.
+- Owned domain.
+- Assigned phases.
+- Deliverable identifiers.
+- Implementation status.
+- Test status.
+- Validation status.
+- Relevant source paths.
+- Relevant test paths.
+- External dependency status.
+- Blocking issue references.
+- Completion timestamp where actually established.
+
+Each phase must have its own completion state.
+
+Each Employee must have an independently calculated completion state.
+
+Do not mark an Employee complete merely because one of its assigned phases has passed.
+
+## 11.15 FINAL ACCEPTANCE GATE
+
+The entire program is accepted only when:
+
+1. Phase 2 is complete.
+2. Phase 3 is complete.
+3. Phase 4 is complete.
+4. Phase 5 is complete.
+5. Phase 6 is complete.
+6. Phase 7 is complete.
+7. Phase 8 is complete.
+8. Phase 9 is complete.
+9. Phase 10 is complete.
+10. Phase 11 is complete.
+11. Employee 74 is fully implemented and validated.
+12. Employee 75 is fully implemented and validated.
+13. Employee 76 is fully implemented and validated.
+14. Employee 77 is fully implemented and validated.
+15. Employee 78 is fully implemented and validated.
+16. Employee 79 is fully implemented and validated.
+17. Employee 80 is fully implemented and validated.
+18. Existing Employees 53–73 remain compatible.
+19. No competing authoritative business system has been introduced.
+20. Tenant isolation is verified.
+21. Financial consistency is preserved.
+22. Legal holds and retention precedence are preserved.
+23. Security-critical operations fail safely.
+24. All required tests pass.
+25. Type checking passes.
+26. Production build passes.
+27. No production deployment has occurred.
+28. No production data has been modified.
+29. The final manifest accurately reflects implementation status.
+
+If an external infrastructure resource is not provisioned, do not fabricate operational success.
+
+The relevant adapter, integration boundary and tests must still be implemented where possible.
+
+Mark the external operational capability as `BLOCKED` or `NOT_CONFIGURED`.
+
+Do not falsely claim the entire program is operationally verified.
+
+---
+
+# PART C — GLOBAL DATA MODEL AND API CONTRACT RULES
+
+## C1. CANONICAL IDENTIFIERS
+
+Use stable identifiers consistent with the existing repository.
+
+Prefer opaque IDs.
+
+Do not expose internal database document paths as public identifiers unless already established as an intentional API contract.
+
+Every domain entity must have:
+
+- Stable identifier.
+- Creation timestamp.
+- Update timestamp where mutable.
+- Version or concurrency token where appropriate.
+- Owner reference.
+- Scope reference where applicable.
+
+## C2. VERSIONING
+
+Mutable records must use optimistic concurrency where supported.
+
+An update must either:
+
+- Succeed against the expected version.
+- Return a conflict.
+- Return an explicit stale-version error.
+
+Never silently overwrite a newer record.
+
+## C3. PAGINATION
+
+Collection endpoints must use bounded pagination.
+
+Default page size:
+
+25.
+
+Maximum page size:
+
+100.
+
+Use cursor pagination where the provider supports it.
+
+Use deterministic ordering.
+
+Never return unbounded collections.
+
+## C4. API RESPONSE FORMAT
+
+Preserve the existing API response convention.
+
+If no established convention exists, use:
+
+{
+  "success": true,
+  "data": {},
+  "meta": {
+    "requestId": "request-id",
+    "correlationId": "correlation-id",
+    "timestamp": "ISO-8601"
+  }
+}
+
+For errors:
+
+{
+  "success": false,
+  "error": {
+    "code": "STABLE_ERROR_CODE",
+    "category": "VALIDATION",
+    "message": "Human-readable message",
+    "retryable": false,
+    "details": []
+  },
+  "meta": {
+    "requestId": "request-id",
+    "correlationId": "correlation-id",
+    "timestamp": "ISO-8601"
+  }
+}
+
+Do not change existing response formats unnecessarily.
+
+## C5. ERROR CODES
+
+Use stable domain-specific error codes.
+
+Examples:
+
+- `TENANT_NOT_FOUND`
+- `TENANT_SUSPENDED`
+- `TENANT_ACCESS_DENIED`
+- `ORGANIZATION_SCOPE_MISMATCH`
+- `MEMBERSHIP_REQUIRED`
+- `INVITATION_EXPIRED`
+- `IDEMPOTENCY_CONFLICT`
+- `JOB_LEASE_EXPIRED`
+- `WORKFLOW_STEP_FAILED`
+- `DEPENDENCY_UNAVAILABLE`
+- `CIRCUIT_OPEN`
+- `CACHE_INVALIDATION_FAILED`
+- `BACKUP_INTEGRITY_FAILED`
+- `RESTORE_APPROVAL_REQUIRED`
+- `RETENTION_CONFLICT`
+- `LEGAL_HOLD_ACTIVE`
+- `DATASET_STALE`
+- `LINEAGE_INCOMPLETE`
+- `RECONCILIATION_CONFLICT`
+- `SECURITY_POLICY_VIOLATION`
+
+Error codes must be stable and documented.
+
+## C6. EVENT CONTRACTS
+
+Use the canonical event envelope established in Phase 1.
+
+Every new event must include:
+
+- Event ID.
+- Event type.
+- Event version.
+- Occurrence time.
+- Source module.
+- Aggregate type.
+- Aggregate ID.
+- Tenant ID where applicable.
+- Correlation ID.
+- Causation ID where applicable.
+- Schema reference.
+- Payload reference or validated payload.
+
+Use domain-qualified event names.
+
+Examples:
+
+- `tenant.created`
+- `tenant.activated`
+- `tenant.suspended`
+- `tenant.membership.created`
+- `job.created`
+- `job.started`
+- `job.completed`
+- `job.failed`
+- `workflow.started`
+- `workflow.completed`
+- `workflow.compensation_required`
+- `cache.invalidation_requested`
+- `secret.rotation.completed`
+- `backup.completed`
+- `restore.completed`
+- `dataset.published`
+- `reconciliation.discrepancy_detected`
+- `dependency.degraded`
+- `platform.circuit_opened`
+
+Do not publish events that claim an operation succeeded before authoritative persistence confirms success.
+
+## C7. AUDIT CONTRACT
+
+Every consequential administrative or security-sensitive operation must use the existing audit infrastructure.
+
+Include:
+
+- Actor.
+- Action.
+- Resource.
+- Resource ID.
+- Tenant scope where applicable.
+- Organization scope where applicable.
+- Timestamp.
+- Correlation ID.
+- Result.
+- Approval reference where applicable.
+
+Never place raw secrets, passwords, payment credentials or private message contents in audit records.
+
+## C8. RETENTION AND LEGAL-HOLD PRECEDENCE
+
+Employee 72 remains authoritative.
+
+All data lifecycle, backup expiration, export expiration, archival, deletion and restore operations must respect:
+
+1. Active valid authorized legal holds.
+2. Verified mandatory statutory or regulatory retention.
+3. Approved binding contractual preservation obligations.
+4. Approved internal retention policies.
+5. Ordinary lifecycle and deletion policies.
+
+Missing retention configuration must never be interpreted as permission to delete.
+
+Multiple active holds must be evaluated together.
+
+Contradictory instructions must be escalated for authorized legal review.
+
+No subsystem may directly bypass the central disposition gate.
+
+---
+
+# PART D — GLOBAL ANTI-DUPLICATION RULES
+
+The following capabilities already have or must retain authoritative owners.
+
+Do not create competing implementations.
+
+| Capability | Authoritative owner |
+|---|---|
+| Authentication | Existing authentication infrastructure |
+| General RBAC | Existing authorization infrastructure |
+| Tenant lifecycle | Employee 74 |
+| Financial ledger | Employee 54 |
+| Billing and entitlements | Employee 67 |
+| Job and queue execution | Employee 75 |
+| Notification orchestration | Employee 68 |
+| Search and ranking | Employee 69 |
+| Valuation calculations | Employee 59 |
+| Geographic boundaries | Employee 61 |
+| Master data quality | Employee 62 |
+| Document lifecycle and storage references | Employee 63 |
+| Customer case management | Employee 66 |
+| Fraud and risk assessment | Employee 71 |
+| Legal compliance and retention | Employee 72 |
+| API consumer governance | Employee 73 |
+| Cache and performance infrastructure | Employee 76 |
+| Backup and disaster recovery | Employee 77 |
+| Infrastructure security | Employee 78 |
+| Analytical data platform | Employee 79 |
+| Cross-module integration and resilience | Employee 80 |
+
+Before introducing any new shared service, verify that it does not duplicate an existing authoritative capability.
+
+If a duplicate is found, reuse the authoritative service and remove only newly introduced redundant code that has not become a compatibility dependency.
+
+Do not delete established legacy implementations without a safe migration and regression tests.
+
+---
+
+# PART E — EXECUTION CONTROL AND DELIVERABLE TRACKING
+
+## E1. PHASE EXECUTION ORDER
+
+Execute the phases in strict sequence.
+
+Do not ask the user to confirm each phase.
+
+Do not stop after generating a plan.
+
+Do not output a lengthy report between phases.
+
+Continue implementation until the full program is completed or a genuine technical blocker prevents further safe progress.
+
+## E2. PHASE MANIFEST
+
+Maintain one machine-readable manifest.
+
+Required program identifier:
+
+`RADAR_TEHRAN_BACKEND_EMPLOYEES_74_80`
+
+Required phase IDs:
+
+- `PHASE_02`
+- `PHASE_03`
+- `PHASE_04`
+- `PHASE_05`
+- `PHASE_06`
+- `PHASE_07`
+- `PHASE_08`
+- `PHASE_09`
+- `PHASE_10`
+- `PHASE_11`
+
+Required Employee IDs:
+
+- `EMPLOYEE_74`
+- `EMPLOYEE_75`
+- `EMPLOYEE_76`
+- `EMPLOYEE_77`
+- `EMPLOYEE_78`
+- `EMPLOYEE_79`
+- `EMPLOYEE_80`
+
+Allowed status values:
+
+- `NOT_STARTED`
+- `IN_PROGRESS`
+- `IMPLEMENTED`
+- `TESTED`
+- `VALIDATED`
+- `OPERATIONALLY_VERIFIED`
+- `BLOCKED`
+- `NOT_APPLICABLE`
+
+Do not use `OPERATIONALLY_VERIFIED` unless actual operational verification has occurred.
+
+## E3. PHASE COMPLETION EVIDENCE
+
+For every phase, preserve:
+
+- Deliverable identifiers.
+- Implementation paths.
+- Test paths.
+- Validation commands.
+- Test results.
+- Build result.
+- Known blockers.
+- External provider dependencies.
+- Completion state.
+
+Do not fabricate test results.
+
+Do not mark a test as passed without executing it.
+
+Do not mark a build as successful without running it.
+
+## E4. BLOCKER HANDLING
+
+If a required external service is not configured:
+
+1. Implement the provider interface.
+2. Implement the local or test adapter.
+3. Implement the domain service.
+4. Implement error handling.
+5. Implement configuration validation.
+6. Implement provider contract tests.
+7. Mark the actual external connection as `NOT_CONFIGURED` or `BLOCKED`.
+8. Continue unrelated work.
+
+If a required repository dependency is genuinely unavailable:
+
+1. Identify the exact missing dependency.
+2. Avoid inventing its behavior.
+3. Implement the compatible abstraction.
+4. Add tests for the available boundary.
+5. Mark only the affected capability as blocked.
+6. Continue other safe implementation work.
+
+Never claim that an external integration is operational when it has not been verified.
+
+## E5. FAILURE HANDLING
+
+If tests fail:
+
+- Determine whether the failure was introduced by the current implementation.
+- Fix the defect.
+- Rerun the affected tests.
+- Rerun relevant regression tests.
+- Preserve existing tests.
+- Do not disable validation to hide a failure.
+
+If a migration fails in the isolated test environment:
+
+- Fix the migration.
+- Preserve existing data.
+- Verify repeat safety.
+- Do not execute it against production.
+
+If a provider is unavailable:
+
+- Do not fabricate success.
+- Use the supported adapter boundary.
+- Preserve explicit unavailable status.
+
+## E6. CHANGE MANAGEMENT
+
+Avoid unnecessary repository-wide modifications.
+
+Do not:
+
+- Rewrite unrelated modules.
+- Reformat unrelated source files.
+- Rename working APIs without compatibility support.
+- Upgrade all dependencies indiscriminately.
+- Replace established infrastructure for stylistic reasons.
+- Delete working business logic.
+- Introduce arbitrary microservices.
+- Create duplicate databases.
+- Introduce duplicate event buses.
+- Introduce duplicate schedulers.
+- Introduce duplicate audit systems.
+- Introduce duplicate notification systems.
+- Introduce duplicate document storage.
+- Introduce duplicate telemetry systems.
+
+Every modification must contribute directly to one of the authorized phases or be necessary for compatibility and correctness.
+
+## E7. REQUIRED VALIDATION AFTER EACH PHASE
+
+After each phase:
+
+1. Run the new phase tests.
+2. Run affected domain regression tests.
+3. Run the existing test suite where practical.
+4. Run TypeScript type checking.
+5. Run linting where configured.
+6. Run the production build.
+7. Fix introduced regressions.
+8. Update the phase manifest.
+9. Confirm that no later-phase implementation was introduced prematurely.
+10. Proceed to the next phase only after the phase acceptance gate passes.
+
+## E8. FINAL VALIDATION
+
+After Phase 11:
+
+- Run the complete relevant automated test suite.
+- Run TypeScript validation.
+- Run linting.
+- Run the production build.
+- Verify the existing frontend routes.
+- Verify existing API compatibility.
+- Verify tenant isolation.
+- Verify critical authorization paths.
+- Verify financial-domain boundaries.
+- Verify legal-hold and retention precedence.
+- Verify document access controls.
+- Verify cross-module ownership.
+- Verify background job idempotency.
+- Verify workflow recovery.
+- Verify cache isolation.
+- Verify backup integrity in isolated tests.
+- Verify analytical data governance.
+- Verify reconciliation behavior.
+- Verify graceful degradation.
+- Verify administrative authorization.
+- Verify the final manifest.
+
+Do not deploy.
+
+Do not execute production writes.
+
+Do not modify production infrastructure.
+
+---
+
+# PART F — STRICT FINAL EXECUTION INSTRUCTION
+
+Implement Phases 2 through 11 directly in the existing Radar Tehran repository.
+
+This assignment authorizes implementation of the complete remaining backend program, subject to the domain ownership boundaries and phase sequence defined above.
+
+It does not authorize uncontrolled repository rewrites.
+
+It does not authorize production deployment.
+
+It does not authorize production data modification.
+
+It does not authorize real payment transactions, refunds, customer notifications, production secret rotation or production restore operations.
+
+Do not stop after analysis.
+
+Do not produce an audit report.
+
+Do not produce a proposal.
+
+Do not return a list of suggested files without implementing them.
+
+Do not create placeholder endpoints.
+
+Do not mark unimplemented capabilities as complete.
+
+Do not create duplicate infrastructure.
+
+Do not skip a phase.
+
+Do not silently change Employee ownership.
+
+Do not begin a later phase before its required upstream phase is accepted.
+
+Implement the complete functional scope of each phase.
+
+Run the tests and validation commands.
+
+Fix regressions introduced by the work.
+
+Maintain the authoritative program manifest.
+
+If an external service is not provisioned, implement the available integration boundary and explicitly mark the external operational capability as blocked or not configured.
+
+When all applicable deliverables across Phases 2–11 are implemented, tested and validated successfully, and the final program acceptance gate passes, output exactly:
+
+DONE
+
+If genuine external infrastructure prevents full operational verification, do not falsely output DONE. Finish all safe and implementable code, preserve the exact blocker state in the manifest, and report only the specific blocking dependency and affected deliverables.

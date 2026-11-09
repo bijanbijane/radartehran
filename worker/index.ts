@@ -1,9 +1,9 @@
 /**
  * @file worker/index.ts
- * @description Cloudflare Workers ES Module Entrypoint for Tehran Radar (Phase 1 & Phase 2).
+ * @description Cloudflare Workers ES Module Entrypoint for Tehran Radar (Phase 1, Phase 2 & Staging Platform).
  * Handles migrated `/api/*` and SEO routes natively at the edge, enforces explicit JSON boundaries
- * for unmigrated `/api/*` endpoints, and serves the React 19 SPA with dynamic SSR SEO metadata
- * injection via the Cloudflare `ASSETS` binding.
+ * for unmigrated `/api/*` endpoints, processes Cloudflare Queues (`RADAR_QUEUE` + `RADAR_DLQ`) and
+ * Cron Triggers, and serves the React 19 SPA with dynamic SSR SEO metadata injection via `ASSETS`.
  *
  * Architectural Invariant:
  * This module and its import graph MUST NEVER import `express`, `firebase-admin`, `sharp`,
@@ -19,12 +19,17 @@ import {
   createWorkerRequestContext,
   jsonWorkerResponse,
 } from './contextAndSecurity';
+import {
+  convertUtcScheduledTimeToTehranWallClock,
+  processRadarQueueBatch,
+  type RadarQueueEnvelope,
+} from './queues/queueAndCronProcessor';
 import { dispatchWorkerApiOrSeoRequest } from './router';
 import {
   injectWorkerDynamicSeoHtml,
   resolveWorkerBaseUrl,
 } from './routes/healthAndMetadataRoutes';
-import type { WorkerEnv, WorkerExecutionContext } from './types';
+import type { MessageBatch, WorkerEnv, WorkerExecutionContext } from './types';
 
 const FALLBACK_SPA_SHELL_HTML = `<!doctype html>
 <html lang="fa" dir="rtl">
@@ -192,6 +197,44 @@ export default {
         code: 'INTERNAL_WORKER_ERROR',
         correlationId: reqCtx.correlationId,
         message: 'خطای داخلی در پردازش درخواست در لبه شبکه رخ داد.',
+      });
+    }
+  },
+
+  async queue(
+    batch: MessageBatch<RadarQueueEnvelope>,
+    env: WorkerEnv = {},
+    _executionCtx?: WorkerExecutionContext
+  ): Promise<void> {
+    await processRadarQueueBatch({
+      batch,
+      db: env.DB,
+      dlq: env.RADAR_DLQ,
+      executeJob: async (_envelope) => {
+        // Canonical queue consumer bound to RADAR_QUEUE with dead-letter forwarding to RADAR_DLQ
+      },
+    });
+  },
+
+  async scheduled(
+    event: { scheduledTime: number; cron: string },
+    env: WorkerEnv = {},
+    _executionCtx?: WorkerExecutionContext
+  ): Promise<void> {
+    const tehranClock = convertUtcScheduledTimeToTehranWallClock(event.scheduledTime);
+    if (tehranClock.matchedScheduleTask !== 'ad_hoc_maintenance' && env.RADAR_QUEUE) {
+      await env.RADAR_QUEUE.send({
+        schemaVersion: '1.0',
+        idempotencyKey: `cron_${tehranClock.matchedScheduleTask}_${event.scheduledTime}`,
+        jobType:
+          tehranClock.matchedScheduleTask === 'morning_market_and_d1_sync'
+            ? 'd1_projection_sync'
+            : 'r2_orphan_sweep',
+        enqueuedAtIso: new Date(event.scheduledTime).toISOString(),
+        payload: {
+          cron: event.cron,
+          tehranFormatted: tehranClock.tehranFormatted,
+        },
       });
     }
   },

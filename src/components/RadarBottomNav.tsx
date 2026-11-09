@@ -45,7 +45,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
     { id: 'tools', label: navCopy.tools, icon: <Wrench className="w-4 h-4 stroke-[1.9]" /> },
     { id: 'home', label: navCopy.home, icon: <Home className="w-4 h-4 stroke-[1.9]" /> },
     { id: 'userspace', label: navCopy.userspace, icon: <User className="w-4 h-4 stroke-[1.9]" /> },
-    { id: 'admin', label: isEn ? 'Admin' : 'مدیریت', icon: <Shield className="w-4 h-4 stroke-[1.9]" /> },
+    { id: 'admin', label: isEn ? 'Admin' : 'مانیتورینگ', icon: <Shield className="w-4 h-4 stroke-[1.9]" /> },
   ];
 
   return (

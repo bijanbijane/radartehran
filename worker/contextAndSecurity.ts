@@ -17,7 +17,7 @@ import type {
 const SAFE_CORRELATION_ID_RE = /^[A-Za-z0-9._-]{8,64}$/;
 
 export function resolveWorkerEnvironment(env: WorkerEnv): DeploymentEnvironmentName {
-  const raw = (env.ENVIRONMENT || env.APP_ENV || 'development').trim().toLowerCase();
+  const raw = (env.ENVIRONMENT || env.APP_ENV || env.WORKER_ENV || 'development').trim().toLowerCase();
   if (raw === 'production' || raw === 'staging' || raw === 'preview') {
     return raw;
   }
@@ -41,7 +41,9 @@ export function resolveAllowedCorsOrigin(
   if (trimmed === canonical) return trimmed;
   if (
     nodeEnv !== 'production' &&
-    (trimmed === 'http://localhost:3000' || trimmed === 'http://127.0.0.1:3000')
+    (trimmed === 'http://localhost:3000' ||
+      trimmed === 'http://127.0.0.1:3000' ||
+      /^https:\/\/radartehran-(?:staging|preview)(?:\.[a-z0-9_-]+)?\.workers\.dev$/i.test(trimmed))
   ) {
     return trimmed;
   }

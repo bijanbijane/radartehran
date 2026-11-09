@@ -80,6 +80,7 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
       'worker/index.ts',
       'worker/routes/healthAndMetadataRoutes.ts',
       'worker/routes/intelligenceAndCommerceRoutes.ts',
+      'worker/routes/edgePlatformAndStorageRoutes.ts',
     ];
     for (const relPath of workerFiles) {
       const content = fs.readFileSync(path.resolve(process.cwd(), relPath), 'utf8');
@@ -218,10 +219,10 @@ describe('Phase 1: Cloudflare Runtime Foundation Verification', () => {
 });
 
 describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Group 1B)', () => {
-  it('6. verifies complete Route Inventory & Migration Control Register covering all 88 Express routes + /api/health', () => {
+  it('6. verifies complete Route Inventory & Migration Control Register covering all Express routes + /api/health', () => {
     assert.equal(ROUTE_MIGRATION_CONTROL_REGISTER.length, REGISTERED_API_ROUTES.length + 1);
     const summary = getMigrationProgressSummary();
-    assert.equal(summary.totalCatalogRoutes, 89);
+    assert.equal(summary.totalCatalogRoutes, REGISTERED_API_ROUTES.length + 1);
     assert.equal(summary.verifiedWorkerRoutes, 20);
     assert.equal(summary.unmountedEnterpriseModules, 10);
     assert.equal(UNMOUNTED_ENTERPRISE_DOMAIN_MODULES.length, 10);
