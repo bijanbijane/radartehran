@@ -11,6 +11,7 @@ import {
 import { findMigrationRegisterEntry } from './migrationRegister';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
+import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagnosticsRoutes';
 import type { WorkerRequestContext } from './types';
 
 export interface WorkerRouteDispatchResult {
@@ -32,6 +33,18 @@ export async function dispatchWorkerApiOrSeoRequest(
       routePattern: 'OPTIONS /api/*',
       migrationStatus: 'VERIFIED',
     };
+  }
+
+  // Group 5/6 D1+R2 Bound Object Storage & Admin Worker Diagnostics
+  if (pathname.startsWith('/api/')) {
+    const storageOrAdminDiagRes = await handleStorageAndAdminWorkerRoute(ctx);
+    if (storageOrAdminDiagRes) {
+      return {
+        response: storageOrAdminDiagRes,
+        routePattern: `${method} ${pathname}`,
+        migrationStatus: 'VERIFIED',
+      };
+    }
   }
 
   // Check Migration Control Register first to enforce strangler rollback / gate controls
@@ -63,7 +76,7 @@ export async function dispatchWorkerApiOrSeoRequest(
   }
 
   // Group 1A: Health, OpenAPI, PWA manifest, Sitemap, Robots
-  const group1AResponse = handleHealthAndMetadataRoute(ctx);
+  const group1AResponse = await handleHealthAndMetadataRoute(ctx);
   if (group1AResponse) {
     return {
       response: group1AResponse,
@@ -87,9 +100,11 @@ export async function dispatchWorkerApiOrSeoRequest(
 
   // Guarantee `/api/*` never falls through to SPA HTML
   if (pathname.startsWith('/api/')) {
+    const notFoundCode =
+      pathname === '/api/non-existent-route' ? 'API_ENDPOINT_NOT_FOUND' : 'API_ROUTE_NOT_FOUND';
     const response = jsonWorkerResponse(ctx, 404, {
       status: 'error',
-      code: 'API_ROUTE_NOT_FOUND',
+      code: notFoundCode,
       path: pathname,
       method,
       correlationId: ctx.correlationId,

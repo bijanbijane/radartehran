@@ -193,6 +193,14 @@ export function extractAndResolvePropertySignal(input: RawPropertySignalInput): 
     createdAtIso: input.observedAtIso || new Date().toISOString(),
   };
 
+  if (!extractedFactsById.has(factId) && extractedFactsById.size >= 2000) {
+    const oldestFactId = extractedFactsById.keys().next().value;
+    if (oldestFactId !== undefined) extractedFactsById.delete(oldestFactId);
+  }
+  if (!extractedFactIdBySourceHash.has(sourceHashSha256) && extractedFactIdBySourceHash.size >= 2000) {
+    const oldestHash = extractedFactIdBySourceHash.keys().next().value;
+    if (oldestHash !== undefined) extractedFactIdBySourceHash.delete(oldestHash);
+  }
   extractedFactsById.set(factId, fact);
   extractedFactIdBySourceHash.set(sourceHashSha256, factId);
   return { fact, deduplicatedSourceSignal: false, matchedExistingBuilding: resolution.matchedExisting, buildingSimilarityScore: resolution.similarityScore };

@@ -2,6 +2,18 @@ export * from './types';
 export * from './store';
 export * from './intakePartyClaimAndEvidenceService';
 export * from './mediationSettlementResolutionAndHistoryService';
+export { DisputeResolutionEngine } from './disputeEngine';
+export { MemoryDisputeStore, type DisputeRepository } from './disputeStore';
+export { createDisputeRouter } from './disputeRoutes';
+export {
+  sanitizeTextFa,
+  validateDisputeCaseInput,
+  validateDisputeTransition,
+} from './disputeValidator';
+export {
+  DisputeNegotiationEngine,
+  type CreateProposalParams,
+} from './disputeNegotiationEngine';
 
 import { IntakePartyClaimAndEvidenceService } from './intakePartyClaimAndEvidenceService';
 import { MediationSettlementResolutionAndHistoryService } from './mediationSettlementResolutionAndHistoryService';

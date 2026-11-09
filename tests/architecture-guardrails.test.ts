@@ -268,9 +268,9 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
       if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !staticDatasets.has(`${relDir}/${entry}`)) allNonDatasetFiles.push(`${relDir}/${entry}`);
     }
   }
-  assert.equal(allNonDatasetFiles.length, 245, `Expected 245 non-dataset source files, got ${allNonDatasetFiles.length}`);
+  assert.equal(allNonDatasetFiles.length, 246, `Expected 246 non-dataset source files, got ${allNonDatasetFiles.length}`);
   const all242RepoFiles = [...allNonDatasetFiles, ...staticDatasets];
-  assert.equal(all242RepoFiles.length, 254, `Expected 254 total repository source files, got ${all242RepoFiles.length}`);
+  assert.equal(all242RepoFiles.length, 255, `Expected 255 total repository source files, got ${all242RepoFiles.length}`);
   for (const rel of all242RepoFiles) {
     const srcText = fs.readFileSync(path.join(rootDir, rel), 'utf8');
     const lc = srcText.split(/\r?\n/).length;

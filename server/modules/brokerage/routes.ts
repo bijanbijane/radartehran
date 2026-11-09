@@ -5,11 +5,96 @@
  * The integration lead can mount them using createBrokerageRouter(facade).
  */
 
-import type { Request, Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
+import { type AuthenticatedPrincipal, CoreApiError } from '../core';
 import type { BrokerageFacade } from './facade';
+import { createBrokerageService } from './service';
+import type { BrokerageDependencies } from './types';
 import { BrokerageValidationError } from './validation';
 
-export function createBrokerageRouter(facade: BrokerageFacade) {
+async function authenticateBrokerageRequest(
+  req: Request,
+  deps: BrokerageDependencies
+): Promise<AuthenticatedPrincipal> {
+  const authHeader = String(req.headers.authorization || '').trim();
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!token || !deps.tokenVerifier) {
+    throw new CoreApiError('UNAUTHENTICATED', 401, 'Valid Bearer token is required.');
+  }
+  const decoded = await deps.tokenVerifier.verifyIdToken(token);
+  const email = (decoded.email || '').toLowerCase();
+  const isPlatformAdmin = Boolean(
+    deps.primaryAdminEmails?.some((e) => e.toLowerCase() === email)
+  );
+  return {
+    uid: decoded.uid,
+    email: decoded.email || null,
+    emailVerified: Boolean(decoded.email_verified),
+    role: isPlatformAdmin ? 'primary_admin' : 'verified_user',
+    authMode: 'firebase_id_token',
+    claims: {},
+  };
+}
+
+function createBrokerageExpressRouter(deps: BrokerageDependencies): Router {
+  const router = express.Router();
+  const service = createBrokerageService(deps);
+
+  router.get(
+    '/organizations/:brokerageId/agents/:agentUid/performance',
+    async (req: Request, res: Response) => {
+      try {
+        const principal = await authenticateBrokerageRequest(req, deps);
+        const metrics = await service.getAgentPerformance(
+          principal,
+          String(req.params.brokerageId || ''),
+          String(req.params.agentUid || '')
+        );
+        res.status(200).json({ status: 'ok', data: metrics });
+      } catch (err: any) {
+        const code = err instanceof CoreApiError ? err.status : 500;
+        res.status(code).json({
+          status: 'error',
+          code: err?.code || 'INTERNAL_ERROR',
+          message: err?.message || 'Unexpected error',
+        });
+      }
+    }
+  );
+
+  router.get(
+    '/organizations/:brokerageId/reports/operational',
+    async (req: Request, res: Response) => {
+      try {
+        const principal = await authenticateBrokerageRequest(req, deps);
+        const report = await service.getBrokerageOperationalReport(
+          principal,
+          String(req.params.brokerageId || '')
+        );
+        res.status(200).json({ status: 'ok', data: report });
+      } catch (err: any) {
+        const code = err instanceof CoreApiError ? err.status : 500;
+        res.status(code).json({
+          status: 'error',
+          code: err?.code || 'INTERNAL_ERROR',
+          message: err?.message || 'Unexpected error',
+        });
+      }
+    }
+  );
+
+  return router;
+}
+
+export function createBrokerageRouter(deps: BrokerageDependencies): Router;
+export function createBrokerageRouter(facade: BrokerageFacade): Record<string, (req: Request, res: Response) => Promise<any>>;
+export function createBrokerageRouter(
+  facadeOrDeps: BrokerageFacade | BrokerageDependencies
+): any {
+  if ('txRunner' in facadeOrDeps) {
+    return createBrokerageExpressRouter(facadeOrDeps);
+  }
+  const facade = facadeOrDeps;
   return {
     // Agency Endpoints
     createAgency: async (req: Request, res: Response) => {

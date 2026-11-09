@@ -1,286 +1,299 @@
-/** @file src/components/stage2/NeighborhoodCrowdClaimsPanel.tsx — Stage 2.3 Crowd Claims & Leaderboard UI */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Award, CheckCircle2, MapPin, MessageSquarePlus, ShieldCheck, ThumbsDown, ThumbsUp } from 'lucide-react';
-import type { ContributorRoleBadge, CrowdClaimCategory, CrowdClaimDocument, SpatialTargetLevel } from '../../cells/knowledge-crowd/crowdClaimsTypes';
-import { toPersianNum } from '../../data/neighborhoods';
-import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles } from 'lucide-react';
+import { toPersianNum as toPersianDigits } from '../../data/neighborhoods';
 
-export interface Stage2CurrentUser { uid: string; displayName?: string | null; roleBadge?: ContributorRoleBadge; getIdToken?: () => Promise<string>; }
-export interface TopContributorSummary { uid: string; displayName: string; roleBadge: ContributorRoleBadge; reputationPoints: number; trustWeight: number; verifiedClaimsCount: number; }
-export interface NeighborhoodCrowdClaimsPanelProps { hoodId: number; hoodName: string; cityId?: string; currentUser?: Stage2CurrentUser | null; intlCurrency?: IntlCurrencyCode; }
-
-const ROLE_BADGE_LABELS: Record<ContributorRoleBadge, { label: string; className: string }> = {
-  CITIZEN: { label: 'شهروند', className: 'bg-slate-100 text-slate-700 border-slate-300' },
-  LOCAL_RESIDENT: { label: 'ساکن محله', className: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
-  VERIFIED_REALTOR: { label: 'مشاور تاییدشده', className: 'bg-blue-50 text-blue-800 border-blue-300' },
-  OFFICIAL_EXPERT: { label: 'کارشناس رسمی', className: 'bg-amber-50 text-amber-900 border-amber-400' },
-};
-const CATEGORY_LABELS: Record<CrowdClaimCategory, string> = {
-  ALLEY_LIVABILITY: 'کیفیت سکونت و آرامش کوچه', PRICE_OBSERVATION: 'گزارش قیمت واقعی معامله',
-  CONSTRUCTION_QUALITY: 'کیفیت ساخت و نوسازی', INFRASTRUCTURE_POI: 'دسترسی، مترو و زیرساخت', DATA_CORRECTION: 'اصلاح داده مرجع محله',
-};
-
-function createSeededClaims(hoodId: number, hoodName: string): CrowdClaimDocument[] {
-  const nowIso = new Date().toISOString();
-  return [
-    {
-      claimId: `seed_ref_${hoodId}_1`, targetLevel: 'STREET_SEGMENT', cityId: 'tehran', hoodId,
-      streetNameRaw: 'خیابان گلستان سوم', streetNameNormalized: 'گلستان سوم', coords: null,
-      category: 'PRICE_OBSERVATION', estimatedPriceSqm: 134, parkingScore: 4, noiseLevelScore: 5, safetyScore: 5, slopeType: 'FLAT',
-      narrativeText: `معامله قطعی واحد ۱۰۵ متری در گلستان سوم ${hoodName} با سند تک‌برگ و پارکینگ سندی در محدوده متری ۱۳۴ میلیون تومان ثبت شد.`,
-      evidenceMediaObjectIds: ['doc_verified_1'], authorUid: 'expert_realtor_1', authorDisplayName: 'مهندس کاظمی',
-      authorRoleBadge: 'OFFICIAL_EXPERT', authorTrustWeightAtSubmission: 2.4, epistemicState: 'VERIFIED_REFERENCE',
-      aiPlausibilityScore: 92, plausibilityReasonFa: 'تاییدشده با اجماع کارشناسان و همخوانی با شاخص هدانیک محله.',
-      upvoteCount: 6, downvoteCount: 0, weightedConsensusScore: 4.85, citationCount: 12, votesByUid: {},
-      createdAtIso: nowIso, updatedAtIso: nowIso, promotedToReferenceAtIso: nowIso,
-    },
-    {
-      claimId: `seed_comm_${hoodId}_2`, targetLevel: 'STREET_SEGMENT', cityId: 'tehran', hoodId,
-      streetNameRaw: 'کوچه مهرگان شرقی', streetNameNormalized: 'مهرگان شرقی', coords: null,
-      category: 'ALLEY_LIVABILITY', estimatedPriceSqm: null, parkingScore: 3, noiseLevelScore: 5, safetyScore: 4, slopeType: 'FLAT',
-      narrativeText: `کوچه مهرگان شرقی در ${hoodName} بسیار دنج و مشجر است؛ شب‌ها روشنایی و امنیت عالی دارد اما بعد از ساعت ۲۱ جای پارک مهمان محدود می‌شود.`,
-      evidenceMediaObjectIds: [], authorUid: 'resident_sara_2', authorDisplayName: 'سارا احمدی',
-      authorRoleBadge: 'LOCAL_RESIDENT', authorTrustWeightAtSubmission: 1.35, epistemicState: 'STAGE_COMMUNITY',
-      aiPlausibilityScore: 86, plausibilityReasonFa: 'گزارش کیفی کوچه/محله با ساختار استاندارد همخوانی دارد.',
-      upvoteCount: 2, downvoteCount: 0, weightedConsensusScore: 2.1, citationCount: 1, votesByUid: {},
-      createdAtIso: nowIso, updatedAtIso: nowIso, promotedToReferenceAtIso: null,
-    },
-  ];
+export interface CrowdClaimItem {
+  id: string;
+  hoodId: number;
+  hoodName: string;
+  cityKey: string;
+  authorId: string;
+  authorDisplayName: string;
+  category: string;
+  claimType: 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE';
+  title: string;
+  body: string;
+  status: string;
+  trustWeightScore: number;
+  upvotes: number;
+  downvotes: number;
+  promotedToReference: boolean;
+  createdAtIso: string;
 }
 
-export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanelProps> = ({
-  hoodId, hoodName, cityId = 'tehran', currentUser, intlCurrency = 'USD',
-}) => {
-  const [claims, setClaims] = useState<CrowdClaimDocument[]>(() => createSeededClaims(hoodId, hoodName));
-  const [streetFilter, setStreetFilter] = useState(''), [streetName, setStreetName] = useState('');
-  const [targetLevel, setTargetLevel] = useState<SpatialTargetLevel>('STREET_SEGMENT');
-  const [category, setCategory] = useState<CrowdClaimCategory>('ALLEY_LIVABILITY');
-  const [roleBadge, setRoleBadge] = useState<ContributorRoleBadge>(currentUser?.roleBadge ?? 'LOCAL_RESIDENT');
-  const [authorNameInput, setAuthorNameInput] = useState(currentUser?.displayName || '');
-  const [parkingScore, setParkingScore] = useState(4), [noiseScore, setNoiseScore] = useState(4), [safetyScore, setSafetyScore] = useState(5);
-  const [estimatedPriceSqm, setEstimatedPriceSqm] = useState(''), [narrativeText, setNarrativeText] = useState('');
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+export interface ContributorSummary {
+  userId: string;
+  displayName: string;
+  points: number;
+  tier: string;
+  verifiedClaimsCount: number;
+}
 
-  const loadClaims = useCallback(async () => {
+interface NeighborhoodCrowdClaimsPanelProps {
+  hoodId: number;
+  hoodName: string;
+  cityKey: string;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  ALLEY_LIVABILITY: 'کیفیت زیست‌پذیری و جای پارک کوچه',
+  PRICE_OBSERVATION: 'گزارش قیمت معامله / شکاف آگهی',
+  CONSTRUCTION_QUALITY: 'کیفیت ساخت و تراکم نوسازی',
+  INFRASTRUCTURE_POI: 'دسترسی مترو، خدمات و زیرساخت',
+  DATA_CORRECTION: 'اصلاح داده مکانی یا مرزبندی محله',
+};
+
+const TIER_BADGES: Record<string, { label: string; color: string }> = {
+  CHIEF_INSPECTOR: { label: 'بازرس ارشد محله', color: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800' },
+  TRUSTED_SCOUT: { label: 'دیده‌بان معتمد', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800' },
+  LOCAL_RESIDENT: { label: 'ساکن تاییدشده', color: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/70 dark:text-blue-300 dark:border-blue-800' },
+  NEWCOMER: { label: 'مشارکت‌کننده جدید', color: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+};
+
+function buildSeedClaims(hoodId: number, hoodName: string, cityKey: string) {
+  const refClaim: CrowdClaimItem = {
+    id: `seed_ref_${hoodId}`, hoodId, hoodName, cityKey, authorId: 'usr_inspector_1',
+    authorDisplayName: 'مهندس کاظمی (ساکن محله)', category: 'PRICE_OBSERVATION',
+    claimType: 'VERIFIED_FACT_CANDIDATE',
+    title: `تخفیف واقعی پای نشست در خیابان‌های اصلی ${hoodName}`,
+    body: `بر اساس ۳ مبایعه‌نامه ثبت‌شده اخیر در ${hoodName}، قیمت نهایی معامله حدود ۷ تا ۹ درصد پایین‌تر از قیمت اولیه درج‌شده در آگهی‌ها بسته شده است.`,
+    status: 'VERIFIED_REFERENCE', trustWeightScore: 91, upvotes: 14, downvotes: 1, promotedToReference: true, createdAtIso: new Date().toISOString(),
+  };
+  const commClaim: CrowdClaimItem = {
+    id: `seed_comm_${hoodId}`, hoodId, hoodName, cityKey, authorId: 'usr_resident_2',
+    authorDisplayName: 'سارا محمدی (ساکن)', category: 'ALLEY_LIVABILITY',
+    claimType: 'SUBJECTIVE_EXPERIENCE',
+    title: `وضعیت تردد و جای پارک شبانه در کوچه‌های فرعی ${hoodName}`,
+    body: `کوچه‌های فرعی شرقی بعد از ساعت ۲۱ ظرفیت پارک مهمان محدودی دارند اما روشنایی و امنیت پیاده‌روی بسیار مطلوب است.`,
+    status: 'STAGE_COMMUNITY', trustWeightScore: 82, upvotes: 8, downvotes: 0, promotedToReference: false, createdAtIso: new Date().toISOString(),
+  };
+  return {
+    verified: [refClaim], all: [refClaim, commClaim],
+    leaders: [
+      { userId: 'usr_inspector_1', displayName: 'مهندس کاظمی', points: 145, tier: 'CHIEF_INSPECTOR', verifiedClaimsCount: 5 },
+      { userId: 'usr_resident_2', displayName: 'سارا محمدی', points: 80, tier: 'LOCAL_RESIDENT', verifiedClaimsCount: 2 },
+    ],
+  };
+}
+
+export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanelProps> = ({ hoodId, hoodName, cityKey }) => {
+  const [claims, setClaims] = useState<CrowdClaimItem[]>([]);
+  const [verifiedRefs, setVerifiedRefs] = useState<CrowdClaimItem[]>([]);
+  const [leaderboard, setLeaderboard] = useState<ContributorSummary[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const [authorName, setAuthorName] = useState('');
+  const [category, setCategory] = useState('ALLEY_LIVABILITY');
+  const [claimType, setClaimType] = useState<'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE'>('VERIFIED_FACT_CANDIDATE');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+
+  const fetchClaims = useCallback(async () => {
+    setLoading(true);
+    const seed = buildSeedClaims(hoodId, hoodName, cityKey);
     try {
-      const qs = streetFilter.trim() ? `?streetName=${encodeURIComponent(streetFilter.trim())}` : '';
-      const res = await fetch(`/api/v1/claims/hood/${hoodId}${qs}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const fetched: CrowdClaimDocument[] = [
-        ...(Array.isArray(data.VERIFIED_REFERENCE) ? data.VERIFIED_REFERENCE : []),
-        ...(Array.isArray(data.STAGE_COMMUNITY) ? data.STAGE_COMMUNITY : []),
-      ];
-      if (fetched.length > 0) setClaims(fetched);
-    } catch { /* retain local claims */ }
-  }, [hoodId, streetFilter]);
-
-  useEffect(() => { setClaims(createSeededClaims(hoodId, hoodName)); void loadClaims(); }, [hoodId, hoodName, loadClaims]);
-
-  const filteredClaims = useMemo(() => {
-    const q = streetFilter.trim().toLowerCase();
-    if (!q) return claims;
-    return claims.filter((c) => c.streetNameRaw.toLowerCase().includes(q) || c.streetNameNormalized.includes(q));
-  }, [claims, streetFilter]);
-
-  const verifiedClaims = useMemo(() => filteredClaims.filter((c) => c.epistemicState === 'VERIFIED_REFERENCE'), [filteredClaims]);
-  const communityClaims = useMemo(() => filteredClaims.filter((c) => c.epistemicState !== 'VERIFIED_REFERENCE'), [filteredClaims]);
-
-  const topContributors: TopContributorSummary[] = useMemo(() => [
-    { uid: 'expert_realtor_1', displayName: 'مهندس کاظمی', roleBadge: 'OFFICIAL_EXPERT', reputationPoints: 325, trustWeight: 2.4, verifiedClaimsCount: 13 },
-    { uid: 'realtor_niavaran_2', displayName: 'امیرحسین شریفی', roleBadge: 'VERIFIED_REALTOR', reputationPoints: 210, trustWeight: 1.85, verifiedClaimsCount: 8 },
-    { uid: 'resident_sara_2', displayName: 'سارا احمدی', roleBadge: 'LOCAL_RESIDENT', reputationPoints: 125, trustWeight: 1.35, verifiedClaimsCount: 5 },
-  ], []);
-
-  const handleSubmitClaim = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanNarrative = narrativeText.trim();
-    if (cleanNarrative.length < 5) {
-      setStatusMessage('لطفاً حداقل ۵ کاراکتر تجربه یا گزارش محلی بنویسید.');
-      return;
+      const res = await fetch(`/api/v1/claims/hood/${hoodId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const mapDoc = (d: Record<string, unknown>): CrowdClaimItem => ({
+          id: String(d.claimId || d.id || ''), hoodId, hoodName, cityKey,
+          authorId: String(d.authorUid || 'usr_1'), authorDisplayName: String(d.authorDisplayName || 'شهروند رادار'),
+          category: String(d.category || 'ALLEY_LIVABILITY'),
+          claimType: d.epistemicState === 'VERIFIED_REFERENCE' ? 'VERIFIED_FACT_CANDIDATE' : 'SUBJECTIVE_EXPERIENCE',
+          title: String(d.streetNameRaw || `گزارش میدانی ${hoodName}`), body: String(d.narrativeText || ''),
+          status: String(d.epistemicState || 'STAGE_COMMUNITY'), trustWeightScore: Number(d.aiPlausibilityScore || 80),
+          upvotes: Number(d.upvoteCount || 0), downvotes: Number(d.downvoteCount || 0),
+          promotedToReference: d.epistemicState === 'VERIFIED_REFERENCE', createdAtIso: String(d.createdAtIso || new Date().toISOString()),
+        });
+        const apiVerified = Array.isArray(data.verifiedReferenceClaims) ? data.verifiedReferenceClaims.map(mapDoc) : [];
+        const apiCommunity = Array.isArray(data.communityStageClaims) ? data.communityStageClaims.map(mapDoc) : [];
+        setVerifiedRefs(apiVerified.length > 0 ? apiVerified : seed.verified);
+        setClaims([...apiVerified, ...apiCommunity, ...seed.all]);
+        setLeaderboard(seed.leaders);
+      } else {
+        setVerifiedRefs(seed.verified); setClaims(seed.all); setLeaderboard(seed.leaders);
+      }
+    } catch {
+      setVerifiedRefs(seed.verified); setClaims(seed.all); setLeaderboard(seed.leaders);
+    } finally {
+      setLoading(false);
     }
-    const uid = currentUser?.uid || `citizen_${Date.now()}`;
-    const displayName = (authorNameInput.trim() || currentUser?.displayName || 'ساکن محله').slice(0, 60);
-    const parsedPrice = Number(estimatedPriceSqm);
-    const priceVal = Number.isFinite(parsedPrice) && parsedPrice > 0 ? parsedPrice : null;
-    const targetStreet = targetLevel === 'HOOD' ? `کل محله ${hoodName}` : streetName.trim() || 'کوچه اصلی';
-    const nowIso = new Date().toISOString();
+  }, [cityKey, hoodId, hoodName]);
 
-    const optimisticClaim: CrowdClaimDocument = {
-      claimId: `clm_${Date.now()}`, targetLevel, cityId: cityId as CrowdClaimDocument['cityId'], hoodId,
-      streetNameRaw: targetStreet, streetNameNormalized: targetStreet, coords: null, category,
-      estimatedPriceSqm: priceVal, parkingScore, noiseLevelScore: noiseScore, safetyScore, slopeType: 'FLAT',
-      narrativeText: cleanNarrative, evidenceMediaObjectIds: [], authorUid: uid, authorDisplayName: displayName,
-      authorRoleBadge: roleBadge, authorTrustWeightAtSubmission: 1.15, epistemicState: 'STAGE_COMMUNITY',
-      aiPlausibilityScore: 84, plausibilityReasonFa: 'ثبت فوری در لایه مشارکت مردمی (STAGE_COMMUNITY).',
-      upvoteCount: 0, downvoteCount: 0, weightedConsensusScore: 0, citationCount: 0, votesByUid: {},
-      createdAtIso: nowIso, updatedAtIso: nowIso, promotedToReferenceAtIso: null,
-    };
+  useEffect(() => { fetchClaims(); }, [fetchClaims]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !body.trim()) return;
+    setSubmitMessage(null);
     try {
       const res = await fetch('/api/v1/claims', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          targetLevel, cityId, hoodId, streetName: targetStreet, category, estimatedPriceSqm: priceVal,
-          parkingScore, noiseLevelScore: noiseScore, safetyScore, narrativeText: cleanNarrative,
-          authorUid: uid, authorDisplayName: displayName, authorRoleBadge: roleBadge,
+          hoodId, cityId: cityKey, authorUid: `usr_${Date.now().toString(36)}`,
+          authorDisplayName: authorName.trim() || 'شهروند رادار', category,
+          streetName: title.trim(), narrativeText: body.trim(),
         }),
       });
       if (res.ok) {
-        const json = await res.json();
-        if (json.claim) {
-          setClaims((prev) => [json.claim as CrowdClaimDocument, ...prev]);
-          setNarrativeText(''); setEstimatedPriceSqm('');
-          setStatusMessage('گزارش شما به نام خودتان در وضعیت STAGE_COMMUNITY ثبت شد.');
-          return;
-        }
+        setTitle(''); setBody(''); setShowForm(false);
+        setSubmitMessage('گزارش میدانی شما ثبت شد و در صف اعتبارسنجی معرفتی قرار گرفت (+۱۵ امتیاز).');
+        await fetchClaims();
       }
-    } catch { /* fallback */ }
-    setClaims((prev) => [optimisticClaim, ...prev]);
-    setNarrativeText(''); setEstimatedPriceSqm('');
-    setStatusMessage('گزارش شما به نام خودتان در لیست مشارکت مردمی محله ثبت شد.');
+    } catch {
+      setSubmitMessage('خطا در ارسال گزارش. لطفاً دوباره تلاش کنید.');
+    }
   };
 
-  const handleVote = async (claimId: string, direction: 'UP' | 'DOWN') => {
-    const voterUid = currentUser?.uid || 'voter_local_resident';
+  const handleVote = async (claimId: string, vote: 'UP' | 'DOWN') => {
+    if (claimId.startsWith('seed_')) {
+      setClaims((prev) => prev.map((c) => c.id === claimId ? { ...c, upvotes: vote === 'UP' ? c.upvotes + 1 : c.upvotes, downvotes: vote === 'DOWN' ? c.downvotes + 1 : c.downvotes } : c));
+      return;
+    }
     try {
-      const res = await fetch(`/api/v1/claims/${claimId}/vote`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voterUid, direction }),
+      const res = await fetch(`/api/v1/claims/${encodeURIComponent(claimId)}/vote`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voterUid: `voter_${Math.random().toString(36).slice(2, 8)}`, direction: vote }),
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.claim) { setClaims((prev) => prev.map((c) => (c.claimId === claimId ? (json.claim as CrowdClaimDocument) : c))); return; }
-      }
-    } catch { /* fallback */ }
-    setClaims((prev) => prev.map((c) => {
-      if (c.claimId !== claimId) return c;
-      const nextConsensus = Number((c.weightedConsensusScore + (direction === 'UP' ? 1.2 : -1.2)).toFixed(2));
-      return {
-        ...c, upvoteCount: direction === 'UP' ? c.upvoteCount + 1 : c.upvoteCount,
-        downvoteCount: direction === 'DOWN' ? c.downvoteCount + 1 : c.downvoteCount,
-        weightedConsensusScore: nextConsensus,
-        epistemicState: nextConsensus >= 3.0 && c.aiPlausibilityScore >= 70 ? 'VERIFIED_REFERENCE' : c.epistemicState,
-      };
-    }));
+      if (res.ok) await fetchClaims();
+    } catch { /* ignore */ }
   };
 
   return (
-    <div dir="rtl" className="space-y-4 text-right">
-      <div className="rounded-xl border border-amber-200 bg-gradient-to-l from-amber-50/90 to-white p-3.5 shadow-sm">
-        <div className="mb-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
-            <Award className="h-4 w-4 text-amber-600" />
-            <span>تابلوی افتخارات ۳ مشارکت‌کننده برتر محله {hoodName}</span>
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+            <ShieldCheck className="w-5 h-5" />
           </div>
-          <span className="text-xs text-amber-800">ضریب نفوذ رای: ۰.۱ تا ۵.۰</span>
+          <div>
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">راستی‌آزمایی جمعی و گزارش‌های میدانی ({hoodName})</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400">تفکیک «تاییدیه میدانی قابل راستی‌آزمایی» از «تجربه زیسته ساکنان» با امتیازدهی اعتبارسنجی</p>
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {topContributors.map((c, idx) => (
-            <div key={c.uid} className="flex items-center justify-between rounded-lg border border-amber-200/80 bg-white px-3 py-2 text-xs">
-              <div>
-                <div className="font-bold text-slate-800">#{toPersianNum(idx + 1)} {c.displayName}</div>
-                <span className={`mt-0.5 inline-block rounded border px-1.5 py-0.5 text-[10px] ${ROLE_BADGE_LABELS[c.roleBadge].className}`}>{ROLE_BADGE_LABELS[c.roleBadge].label}</span>
-              </div>
-              <div className="text-left">
-                <div className="font-bold text-amber-700">{toPersianNum(c.reputationPoints)} امتیاز</div>
-                <div className="text-[11px] text-slate-500">ضریب اعتماد: {toPersianNum(c.trustWeight)}×</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <button type="button" onClick={() => setShowForm((v) => !v)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors">
+          <MessageSquarePlus className="w-4 h-4" />
+          <span>{showForm ? 'بستن فرم گزارش' : 'ثبت گزارش میدانی (+۱۵ امتیاز)'}</span>
+        </button>
       </div>
 
-      <form onSubmit={handleSubmitClaim} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-          <MessageSquarePlus className="h-4 w-4 text-blue-600" />
-          <span>ثبت گزارش کوچه/محله به نام خودتان در گراف دانش {hoodName}</span>
+      {submitMessage && (
+        <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" /><span>{submitMessage}</span>
         </div>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          <input type="text" aria-label="نام نمایشی ثبت‌کننده گزارش" placeholder="نام شما (مثلاً: علی محمدی)" value={authorNameInput} onChange={(e) => setAuthorNameInput(e.target.value)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs" />
-          <select aria-label="نقش و نشان تخصصی مشارکت‌کننده" value={roleBadge} onChange={(e) => setRoleBadge(e.target.value as ContributorRoleBadge)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs">
-            <option value="LOCAL_RESIDENT">ساکن محله</option><option value="CITIZEN">شهروند</option>
-            <option value="VERIFIED_REALTOR">مشاور تاییدشده</option><option value="OFFICIAL_EXPERT">کارشناس رسمی</option>
-          </select>
-          <select aria-label="سطح هدف مکانی گزارش" value={targetLevel} onChange={(e) => setTargetLevel(e.target.value as SpatialTargetLevel)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs">
-            <option value="STREET_SEGMENT">کوچه یا خیابان مشخص</option><option value="HOOD">کل محله {hoodName}</option>
-          </select>
-        </div>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {targetLevel !== 'HOOD' && <input type="text" aria-label="نام کوچه یا خیابان" placeholder="نام کوچه/خیابان (مثلاً: گلستان سوم)" value={streetName} onChange={(e) => setStreetName(e.target.value)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs" />}
-          <select aria-label="دسته‌بندی موضوع گزارش" value={category} onChange={(e) => setCategory(e.target.value as CrowdClaimCategory)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs">
-            {Object.entries(CATEGORY_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-          </select>
-          <input type="number" aria-label="قیمت تخمینی هر متر مربع به میلیون تومان" placeholder="قیمت تخمینی هر متر (میلیون تومان - اختیاری)" value={estimatedPriceSqm} onChange={(e) => setEstimatedPriceSqm(e.target.value)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs" />
-        </div>
-        <div className="grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2 text-xs">
-          <label className="flex items-center justify-between gap-1"><span>جای پارک (۱-۵):</span><select aria-label="امتیاز جای پارک از ۱ تا ۵" value={parkingScore} onChange={(e) => setParkingScore(Number(e.target.value))} className="rounded border px-1.5 py-0.5">{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{toPersianNum(n)}</option>)}</select></label>
-          <label className="flex items-center justify-between gap-1"><span>آرامش و سکوت (۱-۵):</span><select aria-label="امتیاز آرامش و سکوت از ۱ تا ۵" value={noiseScore} onChange={(e) => setNoiseScore(Number(e.target.value))} className="rounded border px-1.5 py-0.5">{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{toPersianNum(n)}</option>)}</select></label>
-          <label className="flex items-center justify-between gap-1"><span>امنیت (۱-۵):</span><select aria-label="امتیاز امنیت از ۱ تا ۵" value={safetyScore} onChange={(e) => setSafetyScore(Number(e.target.value))} className="rounded border px-1.5 py-0.5">{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{toPersianNum(n)}</option>)}</select></label>
-        </div>
-        <textarea rows={2} aria-label="متن تجربه و گزارش کوچه یا محله" placeholder="تجربه واقعی خود از سکونت، شیب کوچه، ترافیک، کیفیت ساخت یا قیمت معاملات این کوچه را بنویسید..." value={narrativeText} onChange={(e) => setNarrativeText(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-xs" />
-        <div className="flex items-center justify-between">
-          {statusMessage ? <span className="text-xs font-medium text-emerald-700">{statusMessage}</span> : <span className="text-[11px] text-slate-500">با رسیدن امتیاز اجماع وزنی به ۳.۰+، گزارش به «مرجع تاییدشده» ارتقا می‌یابد (+۲۵ امتیاز شهرت).</span>}
-          <button type="submit" aria-label="ثبت گزارش به نام کاربر" className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-blue-700">ثبت گزارش به نام من</button>
-        </div>
-      </form>
+      )}
 
-      <input type="text" aria-label="فیلتر گزارش‌ها بر اساس نام کوچه یا خیابان" placeholder="جست‌وجوی نام کوچه یا خیابان در گزارش‌ها..." value={streetFilter} onChange={(e) => setStreetFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs" />
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نام نمایشی</label>
+              <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)} placeholder="مثلاً: علی (ساکن محله)" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">دسته‌بندی موضوعی</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نوع داده (تفکیک معرفتی)</label>
+              <select value={claimType} onChange={(e) => setClaimType(e.target.value as 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE')} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                <option value="VERIFIED_FACT_CANDIDATE">مشاهده عینی قابل راستی‌آزمایی (کاندیدای مرجع)</option>
+                <option value="SUBJECTIVE_EXPERIENCE">تجربه شخصی و نظر ساکنان</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">عنوان گزارش / نام خیابان</label>
+            <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثلاً: وضعیت جای پارک شبانه در خیابان‌های فرعی" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">شرح دقیق و مستند</label>
+            <textarea rows={2} required value={body} onChange={(e) => setBody(e.target.value)} placeholder="مشاهده دقیق خود را بنویسید. در صورت تایید سایر ساکنان، به داده مرجع محله تبدیل می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+          </div>
+          <div className="flex justify-end">
+            <button type="submit" className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+              <Send className="w-3.5 h-3.5" /><span>ارسال برای داوری جمعی</span>
+            </button>
+          </div>
+        </form>
+      )}
+
+      {verifiedRefs.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+            <Sparkles className="w-4 h-4" />
+            <span>فکت‌های میدانی ارتقایافته به مرجع رسمی محله ({toPersianDigits(verifiedRefs.length)})</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            {verifiedRefs.map((ref) => (
+              <div key={ref.id} className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">{ref.title}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200">امتیاز اطمینان: {toPersianDigits(ref.trustWeightScore)}٪</span>
+                </div>
+                <p className="text-xs text-emerald-800 dark:text-emerald-300/90 leading-relaxed">{ref.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
-          <ShieldCheck className="h-4 w-4 text-amber-600" />
-          <span>گزارش‌های تاییدشده مرجع (VERIFIED_REFERENCE — {toPersianNum(verifiedClaims.length)})</span>
-        </div>
-        {verifiedClaims.map((c) => (
-          <div key={c.claimId} className="rounded-xl border-2 border-amber-400/80 bg-amber-50/40 p-3 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-2 py-0.5 text-[11px] font-bold text-white"><CheckCircle2 className="h-3 w-3" /> نشان طلایی مرجع</span>
-                <span className="font-bold text-xs text-slate-900">{c.authorDisplayName}</span>
-                <span className={`rounded border px-1.5 py-0.5 text-[10px] ${ROLE_BADGE_LABELS[c.authorRoleBadge].className}`}>{ROLE_BADGE_LABELS[c.authorRoleBadge].label}</span>
+        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">همه گزارش‌ها و ادعاهای ثبت‌شده ({toPersianDigits(claims.length)})</div>
+        {loading ? (
+          <div className="text-xs text-slate-400 py-3">در حال بارگذاری گزارش‌های میدانی...</div>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            {claims.map((c) => (
+              <div key={c.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{c.title}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px]">{CATEGORY_LABELS[c.category] || c.category}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.promotedToReference ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300' : c.claimType === 'VERIFIED_FACT_CANDIDATE' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300'}`}>
+                    {c.promotedToReference ? 'داده مرجع تاییدشده' : c.claimType === 'VERIFIED_FACT_CANDIDATE' ? 'ادعای قابل راستی‌آزمایی' : 'تجربه شخصی ساکنان'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{c.body}</p>
+                <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>توسط: {c.authorDisplayName} • وزن اعتبار: {toPersianDigits(c.trustWeightScore)}٪</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => handleVote(c.id, 'UP')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400">
+                      <ThumbsUp className="w-3 h-3" /><span>تایید ({toPersianDigits(c.upvotes)})</span>
+                    </button>
+                    <button type="button" onClick={() => handleVote(c.id, 'DOWN')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-700 dark:text-rose-400">
+                      <ThumbsDown className="w-3 h-3" /><span>رد ({toPersianDigits(c.downvotes)})</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <span className="font-mono text-[11px] text-amber-900 bg-amber-100 px-2 py-0.5 rounded">REF-{c.claimId.toUpperCase()}</span>
-            </div>
-            <p className="text-xs leading-relaxed text-slate-800">{c.narrativeText}</p>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {c.streetNameRaw}</span>
-                {c.estimatedPriceSqm && <span className="font-bold text-emerald-800">متری {toPersianNum(c.estimatedPriceSqm)} م.ت ({formatMillionTomanAsIntlCurrency(c.estimatedPriceSqm, intlCurrency, 'fa')})</span>}
-              </div>
-              <div className="flex items-center gap-2">
-                <span>اجماع وزنی: {toPersianNum(c.weightedConsensusScore)}</span>
-                <button type="button" aria-label={`رای موافق به گزارش ${c.claimId}`} onClick={() => handleVote(c.claimId, 'UP')} className="inline-flex items-center gap-1 rounded border border-emerald-300 bg-white px-2 py-0.5 text-emerald-700 hover:bg-emerald-50"><ThumbsUp className="h-3 w-3" /> {toPersianNum(c.upvoteCount)}</button>
-                <button type="button" aria-label={`رای مخالف به گزارش ${c.claimId}`} onClick={() => handleVote(c.claimId, 'DOWN')} className="inline-flex items-center gap-1 rounded border border-rose-300 bg-white px-2 py-0.5 text-rose-700 hover:bg-rose-50"><ThumbsDown className="h-3 w-3" /> {toPersianNum(c.downvoteCount)}</button>
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
-      <div className="space-y-2">
-        <div className="text-xs font-bold text-slate-700">گزارش‌های تازهٔ مردمی در انتظار اجماع (STAGE_COMMUNITY — {toPersianNum(communityClaims.length)})</div>
-        {communityClaims.map((c) => (
-          <div key={c.claimId} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-xs text-slate-800">{c.authorDisplayName}</span>
-                <span className={`rounded border px-1.5 py-0.5 text-[10px] ${ROLE_BADGE_LABELS[c.authorRoleBadge].className}`}>{ROLE_BADGE_LABELS[c.authorRoleBadge].label}</span>
-                <span className="text-[11px] text-slate-500">({c.streetNameRaw})</span>
-              </div>
-              <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded">امتیاز امکان‌سنجی هوش مصنوعی: {toPersianNum(c.aiPlausibilityScore)}٪</span>
-            </div>
-            <p className="text-xs leading-relaxed text-slate-700">{c.narrativeText}</p>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600">
-              <span>پارک: {toPersianNum(c.parkingScore ?? 4)}/۵ · آرامش: {toPersianNum(c.noiseLevelScore ?? 4)}/۵ · امنیت: {toPersianNum(c.safetyScore ?? 5)}/۵</span>
-              <div className="flex items-center gap-2">
-                <span>اجماع وزنی: {toPersianNum(c.weightedConsensusScore)} / ۳.۰</span>
-                <button type="button" aria-label={`رای موافق به گزارش مردمی ${c.claimId}`} onClick={() => handleVote(c.claimId, 'UP')} className="inline-flex items-center gap-1 rounded border border-emerald-300 bg-emerald-50/50 px-2 py-0.5 text-emerald-700"><ThumbsUp className="h-3 w-3" /> {toPersianNum(c.upvoteCount)}</button>
-                <button type="button" aria-label={`رای مخالف به گزارش مردمی ${c.claimId}`} onClick={() => handleVote(c.claimId, 'DOWN')} className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-50/50 px-2 py-0.5 text-rose-700"><ThumbsDown className="h-3 w-3" /> {toPersianNum(c.downvoteCount)}</button>
-              </div>
-            </div>
+      {leaderboard.length > 0 && (
+        <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+            <Award className="w-4 h-4 text-amber-500" /><span>مشارکت‌کنندگان برتر راستی‌آزمایی میدانی</span>
           </div>
-        ))}
-      </div>
+          <div className="flex flex-wrap gap-2">
+            {leaderboard.slice(0, 3).map((u) => {
+              const badge = TIER_BADGES[u.tier] || TIER_BADGES.NEWCOMER;
+              return (
+                <div key={u.userId} className={`px-2.5 py-1 rounded-xl border text-[11px] flex items-center gap-1.5 ${badge.color}`}>
+                  <span className="font-bold">{u.displayName}</span><span>({badge.label})</span><span className="font-extrabold">• {toPersianDigits(u.points)} امتیاز</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

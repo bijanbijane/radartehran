@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   Calculator, Building2, Scale, ShieldAlert, Sparkles, FileCheck, Hammer,
-  GraduationCap, ArrowLeftRight, ChevronRight, ArrowUpRight, ClipboardCheck, Coins, Share2, Search, X
+  GraduationCap, ArrowLeftRight, ChevronRight, ArrowUpRight, ClipboardCheck, Coins, Share2, Search, X,
+  Compass, Network, Hourglass, Briefcase, Activity, PieChart, Wallet, Split, Award
 } from 'lucide-react';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
@@ -12,6 +13,7 @@ import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../.
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../../utils/security';
+import { Stage2MasterWidget } from '../stage2/Stage2MasterWidget';
 
 export interface ProductToolsViewProps {
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
@@ -30,7 +32,8 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const [toolQuery, setToolQuery] = useState<string>('');
-  const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban'>('all');
+  const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
+  const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false);
 
   const unitBuy = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit);
   const unitDeal = convertPricePerSqmToUnit(
@@ -40,6 +43,75 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const dealFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)})` : '';
 
   const toolCategories = useMemo(() => [
+    {
+      id: 'decision' as const,
+      category: isEn ? 'CASPER Decision Science & Game Theory' : 'نظریه بازی‌ها، تصمیم‌گیری و سرایت فضایی (CASPER)',
+      items: [
+        {
+          id: 'casper_decision_synthesis',
+          title: 'سنتز جامع کیفیت تصمیم، سقف خروج و آمادگی معامله (Executive Deal Readiness)',
+          desc: 'حکم نهایی ورود به معامله، ارزیابی ماتریس ۶گانه، تعیین سقف ترک جلسه و سناریوی افتتاحیه چانه‌زنی',
+          icon: Award,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_regret',
+          title: 'ماتریس کمینه‌ساز بیشینه پشیمانی ساواج (Savage Minimax Regret)',
+          desc: `شبیه‌سازی بازده ثروت نهایی ۳۶ ماهه در برابر ۳ رژیم جهش ارزی، رکود تورمی و ثبات در محله ${p.selectedHood.name}`,
+          icon: Compass,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_lemon',
+          title: 'شاخص عدم تقارن اطلاعاتی و بازار لیموها (Akerlof Lemon Index)',
+          desc: 'سنجش برتری اطلاعاتی فروشنده، نرخ آگهی‌های طعمه و فرمولاسیون چانه‌زنی ضد زیان‌گریزی کانمن (λ=۲٫۲۵)',
+          icon: Network,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_real_options',
+          title: 'اختیارات واقعی و نیمه‌عمر نقدشوندگی (Dixit-Pindyck Real Options)',
+          desc: 'محاسبه ارزش ریاضی اختیار تعویق در معامله، تابع بقای فروش مسکن و بتای سرریز دلار، طلا و تورم عمومی',
+          icon: Hourglass,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_urban_affordability',
+          title: 'هزینه کل اقتصادی سکونت و مرز تردد آلونسو-میلز (TCOH & Isochrone)',
+          desc: 'تنش استطاعت مسکن (PIR/RIR)، ارزش اتلاف وقت در ترافیک، استهلاک رفت‌وآمد و نقطه سربه‌سر آربیتراژ سکونت',
+          icon: Briefcase,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_monte_carlo',
+          title: 'شبیه‌ساز ۱٬۰۰۰ سناریوی مونت‌کارلو جهش-نفوذ مرتون و ارزش در معرض خطر (Merton VaR)',
+          desc: 'توزیع احتمالاتی بازده واقعی در برابر شوک ارزی، محاسبه سقف زیان در سطح اطمینان ۹۵٪ و ضریب سورتینو',
+          icon: Activity,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_housing_cycle',
+          title: 'رادار چرخه‌های ادواری مسکن و فرسایش حباب (Housing Cycle Radar)',
+          desc: 'تشخیص فازهای ۴گانه رکود، رونق، اشباع و کف‌سازی همراه با راهبرد اختصاصی خانه‌اولی‌ها و ارتقادهندگان',
+          icon: PieChart,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_macro_portfolio',
+          title: 'بهینه‌ساز سبد دارایی مارکوویتز، طلا و دلار (Markowitz Portfolio & Gold Arbitrage)',
+          desc: 'محاسبه وزن بهینه مسکن، سکه، دلار و درآمد ثابت ۳۰٪، مرز کارا و تحلیل سودآوری تبدیل طلا به ملک',
+          icon: Wallet,
+          action: () => setShowEmbeddedLab(true),
+        },
+        {
+          id: 'casper_rent_vs_buy',
+          title: 'مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد» (Rent vs. Buy NPV Arbitrage)',
+          desc: 'به چالش کشیدن باور سنتی «اجاره‌نشینی یعنی هدر دادن پول»، محاسبه ارزش فعلی خالص، استهلاک و نرخ بی‌تفاوتی',
+          icon: Split,
+          action: () => setShowEmbeddedLab(true),
+        },
+      ],
+    },
     {
       id: 'financial' as const,
       category: isEn ? 'Valuation & Financial Calculators' : 'قیمت‌گذاری و ارزیابی مالی',
@@ -140,7 +212,8 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         </div>
         <div className="flex items-center gap-1 overflow-x-auto text-xs">
           {[
-            { id: 'all' as const, label: isEn ? 'All (13)' : 'همه ابزارها (۱۳)' },
+            { id: 'all' as const, label: isEn ? 'All (22)' : 'همه ابزارها (۲۲)' },
+            { id: 'decision' as const, label: isEn ? 'Game Theory & Decision (9)' : 'نظریه بازی و پارتو (۹)' },
             { id: 'financial' as const, label: isEn ? 'Financial (5)' : 'مالی و قیمت (۵)' },
             { id: 'legal' as const, label: isEn ? 'Legal (4)' : 'حقوقی و بازدید (۴)' },
             { id: 'urban' as const, label: isEn ? 'Urban & Swap (4)' : 'ساخت و تهاتر (۴)' },
@@ -151,6 +224,35 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           ))}
         </div>
       </div>
+
+      {showEmbeddedLab && (
+        <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
+              <Compass className="w-4 h-4 text-indigo-600" />
+              <span>محیط تعاملی آزمایشگاه تصمیم‌یار و نظریه بازی‌های کسپر (CASPER Decision Lab)</span>
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowEmbeddedLab(false)}
+              className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white px-2 py-1 rounded-md bg-white dark:bg-slate-800 border cursor-pointer"
+            >
+              بستن پنل آزمایشگاه ✕
+            </button>
+          </div>
+          <Stage2MasterWidget
+            hoodId={p.selectedHood.id}
+            hoodName={p.selectedHood.name}
+            basePriceSqm={p.selectedHood.buyPerSqm}
+            intlCurrency={intlCurrency}
+            hood={p.selectedHood}
+            onSelectCompareHood={(targetName) => {
+              const match = p.evaluatedNeighborhoods?.find((h) => h.name === targetName);
+              if (match) p.onSelectNeighborhood?.(match);
+            }}
+          />
+        </div>
+      )}
 
       <div className="space-y-8">
         {filteredCategories.map((cat) => (

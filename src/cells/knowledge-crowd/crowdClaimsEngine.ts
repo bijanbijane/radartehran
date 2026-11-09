@@ -25,8 +25,7 @@ const VALID_ROLE_BADGES: ReadonlySet<ContributorRoleBadge> = new Set(['CITIZEN',
 const VALID_SLOPE_TYPES: ReadonlySet<AlleySlopeType> = new Set(['FLAT', 'MILD_SLOPE', 'STEEP_SLOPE']);
 
 function shouldAttemptFirestoreAdmin(): boolean {
-  if (process.env.CROWD_CLAIMS_FORCE_MEMORY === 'true') return false;
-  return Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  return process.env.CROWD_CLAIMS_FORCE_MEMORY !== 'true' && Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 }
 
 async function persistDocBestEffort(collectionName: 'crowdClaims' | 'contributorProfiles', docId: string, payload: unknown): Promise<void> {
@@ -34,22 +33,14 @@ async function persistDocBestEffort(collectionName: 'crowdClaims' | 'contributor
   try {
     const db = getFirebaseAdminFirestoreForServer(process.env);
     await db.collection(collectionName).doc(docId).set(payload as Record<string, unknown>, { merge: true });
-  } catch {
-    // Fallback to in-memory store when Admin SDK credentials/emulator are unavailable in test environment
-  }
+  } catch { /* Fallback to in-memory store when Admin SDK credentials/emulator are unavailable in test environment */ }
 }
 
 export function normalizeStreetName(raw: string): string {
   const cleaned = sanitizeInput(String(raw || ''), 120)
-    .replace(/[\u200B-\u200D\uFEFF]/g, ' ')
-    .replace(/ي/g, 'ی')
-    .replace(/ك/g, 'ک')
-    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
-    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
-    .replace(/^(?:خیابان|خ|کوچه|ک|بلوار|بن‌بست|بن بست)\s+/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
+    .replace(/[\u200B-\u200D\uFEFF]/g, ' ').replace(/ي/g, 'ی').replace(/ك/g, 'ک')
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/^(?:خیابان|خ|کوچه|ک|بلوار|بن‌بست|بن بست)\s+/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
   return cleaned || 'نامشخص';
 }
 
@@ -135,6 +126,10 @@ export function getOrCreateContributorProfile(
     roleBadge, reputationPoints: 0, trustWeight: initialWeight, verifiedClaimsCount: 0, totalSubmittedClaimsCount: 0,
     topSpecialtyHoodIds: [], shadowBanned: Boolean(defaults?.shadowBanned), createdAtIso: nowIso, updatedAtIso: nowIso,
   };
+  if (!inMemoryContributorProfiles.has(cleanUid) && inMemoryContributorProfiles.size >= 2000) {
+    const oldest = inMemoryContributorProfiles.keys().next().value;
+    if (oldest !== undefined) inMemoryContributorProfiles.delete(oldest);
+  }
   inMemoryContributorProfiles.set(cleanUid, created);
   return created;
 }
@@ -199,6 +194,10 @@ export async function submitCrowdClaim(input: SubmitCrowdClaimInput): Promise<Cr
     createdAtIso: nowIso, updatedAtIso: nowIso, promotedToReferenceAtIso: null,
   };
 
+  if (!inMemoryCrowdClaims.has(claim.claimId) && inMemoryCrowdClaims.size >= 1000) {
+    const oldestClaimId = inMemoryCrowdClaims.keys().next().value;
+    if (oldestClaimId !== undefined) inMemoryCrowdClaims.delete(oldestClaimId);
+  }
   inMemoryCrowdClaims.set(claim.claimId, claim);
   authorProfile.totalSubmittedClaimsCount += 1;
   if (!authorProfile.topSpecialtyHoodIds.includes(hoodId)) authorProfile.topSpecialtyHoodIds = [...authorProfile.topSpecialtyHoodIds, hoodId].slice(0, 10);
@@ -219,6 +218,9 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
   const effectiveVoteWeight = voterProfile.shadowBanned ? 0 : direction === 'UP' ? clampedVoterTrust : -clampedVoterTrust;
   const nowIso = new Date().toISOString();
 
+  if (!(voterUid in claim.votesByUid) && Object.keys(claim.votesByUid).length >= 500) {
+    throw new Error('CLAIM_VOTE_CAPACITY_REACHED');
+  }
   claim.votesByUid[voterUid] = {
     voterUid, direction, voterTrustWeightAtVote: clampedVoterTrust,
     effectiveWeight: effectiveVoteWeight, shadowBannedAtVote: voterProfile.shadowBanned, votedAtIso: nowIso,

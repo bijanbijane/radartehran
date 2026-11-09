@@ -10,6 +10,121 @@ export interface WorkerAssetFetcher {
 }
 
 export type DeploymentEnvironmentName = 'development' | 'preview' | 'staging' | 'production';
+export type WorkerEnvironmentName = DeploymentEnvironmentName;
+
+export interface D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement;
+  first<T = Record<string, unknown>>(colName?: string): Promise<T | null>;
+  run<T = unknown>(): Promise<{
+    results?: T[];
+    success: boolean;
+    meta?: { duration?: number; changes?: number };
+  }>;
+  all<T = Record<string, unknown>>(): Promise<{ results: T[]; success: boolean }>;
+  raw?<T = unknown[]>(): Promise<T[]>;
+}
+
+export interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  batch<T = unknown>(
+    statements: D1PreparedStatement[]
+  ): Promise<Array<{ results?: T[]; success: boolean }>>;
+  exec(query: string): Promise<{ count: number; duration: number }>;
+  dump?(): Promise<ArrayBuffer>;
+}
+
+export interface KVNamespace {
+  get(
+    key: string,
+    options?: { type?: 'text' | 'json' | 'arrayBuffer' | 'stream'; cacheTtl?: number }
+  ): Promise<any>;
+  put(
+    key: string,
+    value: string | ArrayBuffer | ArrayBufferView | ReadableStream,
+    options?: { expiration?: number; expirationTtl?: number; metadata?: unknown }
+  ): Promise<void>;
+  delete(key: string): Promise<void>;
+  list?(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{
+    keys: Array<{ name: string; expiration?: number; metadata?: unknown }>;
+    list_complete: boolean;
+    cursor?: string;
+  }>;
+}
+
+export interface RateLimitBinding {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
+export interface R2PutOptions {
+  httpMetadata?: {
+    contentType?: string;
+    contentDisposition?: string;
+    cacheControl?: string;
+  };
+  customMetadata?: Record<string, string>;
+  sha256?: string | ArrayBuffer;
+}
+
+export interface R2ObjectMetadata {
+  key: string;
+  size: number;
+  etag: string;
+  uploaded: Date;
+  httpMetadata?: R2PutOptions['httpMetadata'];
+  customMetadata?: Record<string, string>;
+}
+
+export interface R2ObjectBody extends R2ObjectMetadata {
+  body: ReadableStream<Uint8Array>;
+  arrayBuffer(): Promise<ArrayBuffer>;
+  text(): Promise<string>;
+}
+
+export interface R2Bucket {
+  put(
+    key: string,
+    value: Uint8Array | ArrayBuffer | string,
+    options?: R2PutOptions
+  ): Promise<R2ObjectMetadata | null>;
+  get(
+    key: string,
+    options?: { range?: { offset: number; length?: number } }
+  ): Promise<R2ObjectBody | null>;
+  head(key: string): Promise<R2ObjectMetadata | null>;
+  delete(keys: string | string[]): Promise<void>;
+  list(options?: {
+    prefix?: string;
+    limit?: number;
+  }): Promise<{ objects: R2ObjectMetadata[]; truncated: boolean }>;
+}
+
+export interface QueueMessage<T = unknown> {
+  readonly id: string;
+  readonly timestamp: Date;
+  readonly body: T;
+  readonly attempts: number;
+  retry(options?: { delaySeconds?: number }): void;
+  ack(): void;
+}
+
+export interface MessageBatch<T = unknown> {
+  readonly queue: string;
+  readonly messages: readonly QueueMessage<T>[];
+  ackAll(): void;
+  retryAll(options?: { delaySeconds?: number }): void;
+}
+
+export interface Queue<T = unknown> {
+  send(message: T, options?: { delaySeconds?: number }): Promise<void>;
+  sendBatch?(messages: Iterable<{ body: T; delaySeconds?: number }>): Promise<void>;
+}
+
+export interface DependencyCompatibilityEntry {
+  readonly packageName: string;
+  readonly currentUsage: string;
+  readonly officialStatus: 'WORKS_NATIVELY' | 'REQUIRES_POLYFILL_OR_ADAPTER' | 'NOT_SUPPORTED';
+  readonly edgeReplacement: string;
+}
 
 /**
  * Explicit Cloudflare Worker environment bindings.
@@ -19,17 +134,21 @@ export interface WorkerEnv {
   readonly ASSETS?: WorkerAssetFetcher;
   readonly ENVIRONMENT?: DeploymentEnvironmentName;
   readonly APP_ENV?: DeploymentEnvironmentName;
+  readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
   readonly FIREBASE_PROJECT_ID?: string;
   readonly ADMIN_EMAIL?: string;
   readonly ADMIN_API_SECRET?: string;
   readonly VALUATION_SEAL_SECRET?: string;
-  readonly MEDIA_BUCKET?: import('./storage/types').R2BucketBinding;
-  readonly DB?: import('./db/types').D1DatabaseBinding;
-  readonly MEDIA_QUEUE?: import('./queues/types').QueueBinding;
-  readonly DATA_SYNC_QUEUE?: import('./queues/types').QueueBinding;
-  readonly TELEMETRY_QUEUE?: import('./queues/types').QueueBinding;
-  readonly RADAR_KV?: import('./cache/types').KVNamespaceBinding;
+  readonly STRANGLER_FALLBACK_ENABLED?: string;
+  readonly STRANGLER_ORIGIN_URL?: string;
+  readonly MEDIA_BUCKET?: R2Bucket;
+  readonly DB?: D1Database;
+  readonly MEDIA_QUEUE?: Queue;
+  readonly DATA_SYNC_QUEUE?: Queue;
+  readonly TELEMETRY_QUEUE?: Queue;
+  readonly RADAR_KV?: KVNamespace;
+  readonly EDGE_RATE_LIMITER?: RateLimitBinding;
 }
 
 export interface WorkerExecutionContext {

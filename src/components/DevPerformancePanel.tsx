@@ -23,7 +23,7 @@ function getBudgetBadge(ms: number | null): { label: string; color: string; bg: 
 }
 
 export const DevPerformancePanel: React.FC = () => {
-  const [isDev, setIsDev] = useState<boolean>(false);
+  const [isDev] = useState<boolean>(() => isDevEnvironment());
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [scopeFilter, setScopeFilter] = useState<'All' | 'Map' | 'Filter' | 'Other'>('All');
@@ -31,13 +31,30 @@ export const DevPerformancePanel: React.FC = () => {
   const [benchmarking, setBenchmarking] = useState<boolean>(false);
   const [events, setEvents] = useState<readonly DiagnosticEventEntry[]>([]);
 
-  useEffect(() => { setIsDev(isDevEnvironment()); }, []);
-  const refreshData = useCallback(() => { setEvents(getDiagnosticSnapshots()); }, []);
+  const refreshRafRef = React.useRef<number | null>(null);
+  const refreshData = useCallback(() => {
+    if (refreshRafRef.current !== null) return;
+    refreshRafRef.current = requestAnimationFrame(() => {
+      refreshRafRef.current = null;
+      setEvents(getDiagnosticSnapshots());
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (refreshRafRef.current !== null) {
+        cancelAnimationFrame(refreshRafRef.current);
+        refreshRafRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isDev) return undefined;
     refreshData();
-    const unsubscribe = subscribeDiagnostics(() => { if (autoRefresh) refreshData(); });
+    const unsubscribe = subscribeDiagnostics(() => {
+      if (autoRefresh) refreshData();
+    });
     return () => unsubscribe();
   }, [isDev, autoRefresh, refreshData]);
 

@@ -7,6 +7,7 @@ import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle'
 import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
+import { Stage2MasterWidget } from '../stage2/Stage2MasterWidget';
 
 export interface ProductIntelligenceViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
@@ -198,11 +199,29 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
 
         <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span className="font-bold text-slate-900 dark:text-white">جمع‌بندی تحلیلی: </span>
+            <span className="font-bold text-slate-900 dark:text-white">جمع‌بندی تحلیلی و تفکیک معرفتی (CASPER): </span>
             {p.selectedHood.marketReport?.summary || 'تحلیل الگوی قیمت‌گذاری و نسبت قیمت به رهن در محدوده تعادلی ارزیابی می‌شود.'}
           </div>
-          <span className="text-[11px] text-slate-400 tabular-nums">پالایش موتور ضدتقلب: حذف {toPersianNum(selectedAgg.rejectedFraudCount)} آگهی پرت/طعمه</span>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+            <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold">
+              تفکیک داده: مشاهده آگهی ≠ نرخ قطعی معامله (حاشیه خطا ±{toPersianNum(Math.max(2.5, Number(((100 - selectedAgg.confidenceScore) * 0.28).toFixed(1))))}٪)
+            </span>
+            <span>پالایش موتور ضدتقلب: حذف {toPersianNum(selectedAgg.rejectedFraudCount)} آگهی پرت/طعمه</span>
+          </div>
         </div>
+
+        <Stage2MasterWidget
+          hoodId={p.selectedHood.id}
+          hoodName={p.selectedHood.name}
+          cityKey={p.activeCity}
+          basePriceSqm={p.selectedHood.buyPerSqm}
+          intlCurrency={intlCurrency}
+          hood={p.selectedHood}
+          onSelectCompareHood={(targetName) => {
+            const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName);
+            if (match) p.onSelectNeighborhood(match);
+          }}
+        />
       </div>
 
       {/* Filtered Market Segment Section */}

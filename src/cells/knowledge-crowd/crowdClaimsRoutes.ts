@@ -37,13 +37,27 @@ function normalizeVoteDirectionParam(raw: unknown): ClaimVoteDirection | null {
   return null;
 }
 
-export function registerCrowdClaimsRoutes(app: Express): void {
+export interface CrowdClaimsRouteSecurityOptions {
+  checkRateLimit?: (ip: string, bucket: 'general', maxRequests: number, windowMs: number) => boolean;
+  getClientIp?: (req: Request) => string;
+}
+
+export function registerCrowdClaimsRoutes(
+  app: Express,
+  options?: CrowdClaimsRouteSecurityOptions,
+): void {
   if (registeredCrowdClaimApps.has(app)) return;
   registeredCrowdClaimApps.add(app);
+  const clientIp = (req: Request): string =>
+    options?.getClientIp ? options.getClientIp(req) : req.ip || '127.0.0.1';
 
   // 1. POST /api/v1/claims — Submit a new user-attributed crowd claim in immediate STAGE_COMMUNITY state
   app.post('/api/v1/claims', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 20, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     try {
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
       const authorUid = sanitizeInput(String(body.authorUid || ''), 128);
@@ -123,6 +137,10 @@ export function registerCrowdClaimsRoutes(app: Express): void {
   // 2. GET /api/v1/claims/hood/:hoodId — Retrieve neighborhood claims split by VERIFIED_REFERENCE and STAGE_COMMUNITY
   app.get('/api/v1/claims/hood/:hoodId', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     const hoodId = Math.trunc(Number(req.params.hoodId));
     if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) {
       res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' });
@@ -146,6 +164,10 @@ export function registerCrowdClaimsRoutes(app: Express): void {
   // 3. POST /api/v1/claims/:claimId/vote — Cast weighted vote and auto-promote if threshold met
   app.post('/api/v1/claims/:claimId/vote', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 30, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     try {
       const claimId = sanitizeInput(String(req.params.claimId || ''), 100);
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
@@ -183,6 +205,10 @@ export function registerCrowdClaimsRoutes(app: Express): void {
   // 4. GET /api/v1/contributors/:uid — Retrieve contributor honor profile & verified claim ledger
   app.get('/api/v1/contributors/:uid', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     const uid = sanitizeInput(String(req.params.uid || ''), 128);
     if (!uid || !isValidFirestoreDocId(uid)) {
       res.status(400).json({ status: 'error', code: 'INVALID_CONTRIBUTOR_UID' });

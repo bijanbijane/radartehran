@@ -162,6 +162,10 @@ export function resolveOrMergeCanonicalBuilding(
     createdAtIso: nowIso,
     updatedAtIso: nowIso,
   };
+  if (!canonicalBuildingStore.has(canonicalBuildingId) && canonicalBuildingStore.size >= 2000) {
+    const oldestKey = canonicalBuildingStore.keys().next().value;
+    if (oldestKey !== undefined) canonicalBuildingStore.delete(oldestKey);
+  }
   canonicalBuildingStore.set(canonicalBuildingId, newRecord);
   void formatMillionTomanAsIntlCurrency(100, 'USD');
   return { canonicalBuildingId, matchedExisting: false, similarityScore: 1, within35mRadius: Boolean(fp.spatialCell35m), fingerprint: fp, buildingRecord: newRecord };
@@ -182,6 +186,10 @@ export function mergeDuplicateCanonicalBuildings(
   sourceRec.status = 'MERGED_INTO';
   sourceRec.mergedIntoBuildingId = targetResolved;
   sourceRec.updatedAtIso = nowIso;
+  if (buildingAliasRedirectMap.size >= 2000) {
+    const oldestAlias = buildingAliasRedirectMap.keys().next().value;
+    if (oldestAlias !== undefined) buildingAliasRedirectMap.delete(oldestAlias);
+  }
   buildingAliasRedirectMap.set(sourceBuildingId, targetResolved);
   buildingAliasRedirectMap.set(sourceResolved, targetResolved);
   for (const alias of sourceRec.aliasBuildingIds) {

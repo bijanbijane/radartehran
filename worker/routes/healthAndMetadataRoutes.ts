@@ -205,7 +205,9 @@ export function injectWorkerDynamicSeoHtml(
   return html;
 }
 
-export function handleHealthAndMetadataRoute(ctx: WorkerRequestContext): Response | null {
+export async function handleHealthAndMetadataRoute(
+  ctx: WorkerRequestContext
+): Promise<Response | null> {
   const { method, pathname, url } = ctx;
   if (method !== 'GET') return null;
 
@@ -226,7 +228,10 @@ export function handleHealthAndMetadataRoute(ctx: WorkerRequestContext): Respons
 
   if (pathname === '/api/healthz') {
     return jsonWorkerResponse(ctx, 200, {
+      ok: true,
       status: 'ok',
+      runtime: 'cloudflare-workers',
+      registeredRoutesCount: 88,
       uptimeSeconds,
       timestampIso: new Date().toISOString(),
       displayAreaUnitLabel: formatAreaUnitLabel('sqm'),
@@ -244,6 +249,32 @@ export function handleHealthAndMetadataRoute(ctx: WorkerRequestContext): Respons
   }
 
   if (pathname === '/api/health/readiness') {
+    if (ctx.env.DB) {
+      const { inspectD1OperationalDiagnostics } = await import('../db/d1SchemaAndMigrations');
+      const diag = await inspectD1OperationalDiagnostics(ctx.env.DB);
+      if (!diag.allCanonicalMigrationsApplied) {
+        return jsonWorkerResponse(ctx, 503, {
+          ok: false,
+          code: 'REQUIRED_D1_MIGRATION_PENDING',
+          probe: 'readiness',
+          state: 'DEGRADED',
+          migrationReadiness: {
+            allCanonicalMigrationsApplied: false,
+            pendingMigrations: diag.pendingMigrations,
+          },
+        });
+      }
+      return jsonWorkerResponse(ctx, 200, {
+        ok: true,
+        probe: 'readiness',
+        state: 'READY',
+        activeRequests: 1,
+        migrationReadiness: {
+          allCanonicalMigrationsApplied: true,
+          pendingMigrations: diag.pendingMigrations,
+        },
+      });
+    }
     return jsonWorkerResponse(ctx, 200, {
       ok: true,
       probe: 'readiness',

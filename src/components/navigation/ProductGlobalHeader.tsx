@@ -58,7 +58,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
     { id: 'tools', label: navCopy.tools, icon: <Wrench className="w-4 h-4" /> },
     { id: 'home', label: navCopy.home, icon: <Home className="w-4 h-4" /> },
     { id: 'userspace', label: navCopy.userspace, icon: <User className="w-4 h-4" /> },
-    { id: 'admin', label: isEn ? 'Admin' : 'مدیریت و مانیتورینگ', icon: <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> },
+    { id: 'admin', label: isEn ? 'Admin' : 'کنسول ادمین و مانیتورینگ', icon: <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> },
   ];
 
   return (
@@ -199,8 +199,8 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           <button
             type="button"
             onClick={() => onSelectPrimaryView('admin')}
-            aria-label={isEn ? 'Admin & Monitoring Panel' : 'پنل مدیریت و مانیتورینگ'}
-            title={isEn ? 'Admin & System Monitoring' : 'ورود مستقیم به صفحه کامل مدیریت و مانیتورینگ (بررسی بدون رمز)'}
+            aria-label={isEn ? 'Admin & Monitoring Panel' : 'کنسول ادمین و مانیتورینگ'}
+            title={isEn ? 'Admin & System Monitoring' : 'ورود مستقیم به صفحه کامل ادمین و مانیتورینگ (بررسی بدون رمز)'}
             data-testid="global-header-admin-btn"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${
               primaryView === 'admin'
@@ -209,7 +209,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             }`}
           >
             <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-extrabold">{isEn ? 'Admin' : 'مدیریت و مانیتورینگ'}</span>
+            <span className="font-extrabold">{isEn ? 'Admin' : 'کنسول ادمین و مانیتورینگ'}</span>
           </button>
 
           {/* Area Unit (m²/ft²), Language (FA/EN/AR/TR) & International Currency (IRT/USD/EUR/AED) */}

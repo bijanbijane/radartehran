@@ -23,6 +23,21 @@ import {
 } from './socioeconomicTypes';
 
 const inMemoryResearchRollups = new Map<string, NeighborhoodResearchRollupDocument>();
+const MAX_IN_MEMORY_ROLLUPS = 500;
+const VALID_PERIOD_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+export function normalizeRollupPeriodKey(rawPeriodKey?: string): string {
+  const cleaned = sanitizeInput(rawPeriodKey || '1405-08', 24).trim();
+  return VALID_PERIOD_KEY_RE.test(cleaned) ? cleaned : '1405-08';
+}
+
+function setBoundedRollupCache(key: string, doc: NeighborhoodResearchRollupDocument): void {
+  if (!inMemoryResearchRollups.has(key) && inMemoryResearchRollups.size >= MAX_IN_MEMORY_ROLLUPS) {
+    const oldestKey = inMemoryResearchRollups.keys().next().value;
+    if (oldestKey !== undefined) inMemoryResearchRollups.delete(oldestKey);
+  }
+  inMemoryResearchRollups.set(key, doc);
+}
 
 function resolveHoodMeta(hoodId: number, cityId: string = 'tehran'): { name: string; buyPerSqm: number; bargainPricesSqm: number[] } {
   const safeCity = validateCityParam(cityId, 'tehran') as CityId;
@@ -101,7 +116,7 @@ export async function aggregateNeighborhoodResearchRollup(
 ): Promise<BuildNeighborhoodRollupResult> {
   const cityId = validateCityParam(input.cityId, 'tehran');
   const hoodId = Math.max(1, Math.trunc(Number(input.hoodId) || 1));
-  const periodKey = sanitizeInput(input.periodKey || '1405-08', 24) || '1405-08';
+  const periodKey = normalizeRollupPeriodKey(input.periodKey);
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
   const hoodMeta = resolveHoodMeta(hoodId, cityId);
 
@@ -217,7 +232,7 @@ export async function aggregateNeighborhoodResearchRollup(
     updatedAtIso: new Date().toISOString(),
   };
 
-  inMemoryResearchRollups.set(rollupId, rollup);
+  setBoundedRollupCache(rollupId, rollup);
   await persistRollupBestEffort(rollup);
   return { rollup, priceSummary };
 }
@@ -231,16 +246,19 @@ export async function getOrBuildNeighborhoodRollup(
   periodKey: string = '1405-08',
 ): Promise<NeighborhoodResearchRollupDocument> {
   const safeCity = validateCityParam(cityId, 'tehran');
-  const rollupId = `${safeCity}_${hoodId}_${periodKey}`;
+  const safePeriod = normalizeRollupPeriodKey(periodKey);
+  const rollupId = `${safeCity}_${hoodId}_${safePeriod}`;
   const cached = inMemoryResearchRollups.get(rollupId);
   if (cached) return cached;
 
   const hoodMeta = resolveHoodMeta(hoodId, safeCity);
-  const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
-  const inflowA = cityHoods[(hoodId + 1) % cityHoods.length]?.id ?? 2;
-  const inflowB = cityHoods[(hoodId + 2) % cityHoods.length]?.id ?? 3;
-  const outflowA = cityHoods[(hoodId + 3) % cityHoods.length]?.id ?? 4;
-  const outflowB = cityHoods[(hoodId + 4) % cityHoods.length]?.id ?? 5;
+  const cityHoods = (MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS).filter((h) => h.id !== hoodId);
+  const pricier = cityHoods.filter((h) => h.buyPerSqm > hoodMeta.buyPerSqm).sort((a, b) => a.buyPerSqm - b.buyPerSqm);
+  const cheaper = cityHoods.filter((h) => h.buyPerSqm < hoodMeta.buyPerSqm).sort((a, b) => b.buyPerSqm - a.buyPerSqm);
+  const inflowA = (pricier[0] ?? cityHoods[0])?.id ?? 2;
+  const inflowB = (pricier[1] ?? cityHoods[1] ?? cityHoods[0])?.id ?? 3;
+  const outflowA = (cheaper[0] ?? cityHoods[cityHoods.length - 1])?.id ?? 4;
+  const outflowB = (cheaper[1] ?? cityHoods[Math.max(0, cityHoods.length - 2)])?.id ?? 5;
   const telemetryReport = getServerTelemetryStatusReport();
   const hoodTelemetry = telemetryReport.neighborhoodAnalyticsSummary.find((s) => s.hoodId === hoodId);
   const liveDevFactor = hoodTelemetry ? 1 + clampNumber(hoodTelemetry.avgRelativePriceDeviationPct / 100, -0.25, 0.35, 0) : 1;

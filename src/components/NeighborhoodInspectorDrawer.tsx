@@ -222,7 +222,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             {(activeTab === 'scorecard' || activeTab === 'vote') && ( <NeighborhoodPhotoGallery selectedHood={selectedHood} hoodLandmarks={hoodLandmarks} onFocusLandmarkOnMap={onFocusLandmarkOnMap} />
             )}
             <div className="my-3.5">
-              <Stage2MasterWidget hoodId={selectedHood.id} hoodName={selectedHood.name} cityId={activeCity} basePriceSqm={selectedHood.buyPerSqm} intlCurrency={intlCurrency} />
+              <Stage2MasterWidget hoodId={selectedHood.id} hoodName={selectedHood.name} cityId={activeCity} basePriceSqm={selectedHood.buyPerSqm} intlCurrency={intlCurrency} onSelectCompareHood={(name) => { const found = evaluatedNeighborhoods.find((h) => h.name === name); if (found) onSelectNeighborhood(found); }} />
             </div>
             <ExpandableComparisonTable
               currentHood={selectedHood} allNeighborhoods={evaluatedNeighborhoods}

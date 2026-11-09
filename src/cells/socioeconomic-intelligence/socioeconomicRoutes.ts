@@ -14,21 +14,37 @@ import {
   computeServerValuationSeal,
   type RawPriceObservation,
 } from '../valuation-authority/robustValuationEngine';
+import { buildNeighborhoodEpistemicDossier } from '../decision-epistemology/epistemicDecisionEngine';
 import {
   aggregateNeighborhoodResearchRollup,
   getOrBuildNeighborhoodRollup,
 } from './socioeconomicRollupEngine';
 import type { ResearchBehavioralEvent } from './socioeconomicTypes';
 
+export interface SocioeconomicRouteSecurityOptions {
+  verifyAdminAuth?: (req: Request) => Promise<{ ok: boolean; status: number; message: string }>;
+  checkRateLimit?: (ip: string, bucket: 'general' | 'sync', maxRequests: number, windowMs: number) => boolean;
+  getClientIp?: (req: Request) => string;
+}
+
 const registeredSocioeconomicApps = new WeakSet<Express>();
 
-export function registerSocioeconomicRoutes(app: Express): void {
+export function registerSocioeconomicRoutes(
+  app: Express,
+  options?: SocioeconomicRouteSecurityOptions,
+): void {
   if (registeredSocioeconomicApps.has(app)) return;
   registeredSocioeconomicApps.add(app);
+  const clientIp = (req: Request): string =>
+    options?.getClientIp ? options.getClientIp(req) : req.ip || '127.0.0.1';
 
-  // 1. GET /api/v1/reference/hood/:hoodId/rollup — Retrieve neighborhood research dossier & MAD reference price
+  // 1. GET /api/v1/reference/hood/:hoodId/rollup — Retrieve neighborhood research dossier, MAD reference price & CASPER epistemic dossier
   app.get('/api/v1/reference/hood/:hoodId/rollup', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     try {
       const hoodId = Math.trunc(Number(req.params.hoodId));
       if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) {
@@ -41,9 +57,16 @@ export function registerSocioeconomicRoutes(app: Express): void {
         : '1405-08';
 
       const rollup = await getOrBuildNeighborhoodRollup(hoodId, cityId, periodKey);
+      const epistemicDossier = buildNeighborhoodEpistemicDossier({
+        cityId,
+        hoodId,
+        hoodName: rollup.hoodName,
+        buyPerSqm: rollup.medianPriceSqm,
+      });
       res.status(200).json({
         status: 'ok',
         rollup,
+        epistemicDossier,
         referencePriceIntlText: formatMillionTomanAsIntlCurrency(rollup.weightedReferencePriceSqm, 'USD', 'fa'),
       });
     } catch (err) {
@@ -55,6 +78,10 @@ export function registerSocioeconomicRoutes(app: Express): void {
   // 2. POST /api/v1/valuation/verify-seal — Compute and issue server-signed Hedonic valuation seal
   app.post('/api/v1/valuation/verify-seal', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 30, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     try {
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
       const hoodId = Math.trunc(Number(body.hoodId || 1));
@@ -96,6 +123,17 @@ export function registerSocioeconomicRoutes(app: Express): void {
   // 3. POST /api/admin/rollups/trigger — Trigger research rollup aggregation for one or more neighborhoods
   app.post('/api/admin/rollups/trigger', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'sync', 10, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
+    if (options?.verifyAdminAuth) {
+      const auth = await options.verifyAdminAuth(req);
+      if (!auth.ok) {
+        res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
+        return;
+      }
+    }
     try {
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
       const cityId = validateCityParam(body.cityId, 'tehran');

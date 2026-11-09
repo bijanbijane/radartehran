@@ -37,13 +37,49 @@
       "vars": {
         "APP_ENV": "staging",
         "APP_URL": "https://staging.radartehran.example.com"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "radartehran-staging-db",
+          "database_id": "00000000-0000-0000-0000-000000000001",
+          "migrations_dir": "migrations/d1",
+          "migrations_table": "d1_migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA_BUCKET",
+          "bucket_name": "radartehran-staging-media"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "RADAR_KV",
+          "id": "00000000000000000000000000000002"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "RADAR_QUEUE",
+            "queue": "radartehran-staging-queue"
+          },
+          {
+            "binding": "RADAR_DLQ",
+            "queue": "radartehran-staging-dlq"
+          }
+        ],
+        "consumers": [
+          {
+            "queue": "radartehran-staging-queue",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "dead_letter_queue": "radartehran-staging-dlq"
+          }
+        ]
       }
-      // PENDING_PROVISIONING in Phase 10-B (Upon explicit user authorization):
-      // - d1_databases: [{ binding: "DB", database_name: "radartehran-staging-db", database_id: "<TO_BE_PROVISIONED>" }]
-      // - r2_buckets: [{ binding: "MEDIA_BUCKET", bucket_name: "radartehran-staging-media" }]
-      // - kv_namespaces: [{ binding: "CACHE_KV", id: "<TO_BE_PROVISIONED>" }]
-      // - queues.producers: [{ queue: "radar-background-jobs-staging", binding: "JOBS_QUEUE" }]
-      // - queues.consumers: [{ queue: "radar-background-jobs-staging", max_batch_size: 10, max_batch_timeout: 30 }]
     },
     "production": {
       "name": "radartehran",

@@ -5,8 +5,9 @@ import { formatTelemetryBenchmarkIntl } from './telemetryTypes';
 
 export interface TelemetryModuleOptions {
   service?: TelemetryDataProcessingService;
-  checkRateLimit?: (ip: string, bucket: string, max: number, windowMs: number) => boolean;
+  checkRateLimit?: (ip: string, bucket: 'general', max: number, windowMs: number) => boolean;
   getClientIp?: (req: Request) => string;
+  verifyAdminAuth?: (req: Request) => Promise<{ ok: boolean; status: number; message: string }>;
 }
 
 const registeredTelemetryApps = new WeakSet<Express>();
@@ -27,11 +28,11 @@ export function registerTelemetryModuleRoutes(app: Express, options?: TelemetryM
   const getClientIp = options?.getClientIp || ((req: Request) => req.ip || '127.0.0.1');
   const checkRateLimit =
     options?.checkRateLimit ||
-    ((_ip: string, _bucket: string, _max: number, _windowMs: number) => true);
+    ((_ip: string, _bucket: 'general', _max: number, _windowMs: number) => true);
 
   app.post('/api/v2/telemetry/events', (req: Request, res: Response) => {
     const ip = getClientIp(req);
-    if (!checkRateLimit(ip, 'telemetry_ingest', 120, 60 * 1000)) {
+    if (!checkRateLimit(ip, 'general', 120, 60 * 1000)) {
       res.status(429).json({
         status: 'error',
         code: 'RATE_LIMIT_EXCEEDED',
@@ -72,8 +73,15 @@ export function registerTelemetryModuleRoutes(app: Express, options?: TelemetryM
     });
   });
 
-  app.get('/api/v2/telemetry/diagnostics', (_req: Request, res: Response) => {
+  app.get('/api/v2/telemetry/diagnostics', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.verifyAdminAuth) {
+      const auth = await options.verifyAdminAuth(req);
+      if (!auth.ok) {
+        res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
+        return;
+      }
+    }
     const diagnostics = service.getDiagnostics();
     res.status(200).json({
       status: 'ok',
@@ -81,7 +89,14 @@ export function registerTelemetryModuleRoutes(app: Express, options?: TelemetryM
     });
   });
 
-  app.post('/api/v2/telemetry/retention/purge', (req: Request, res: Response) => {
+  app.post('/api/v2/telemetry/retention/purge', async (req: Request, res: Response) => {
+    if (options?.verifyAdminAuth) {
+      const auth = await options.verifyAdminAuth(req);
+      if (!auth.ok) {
+        res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
+        return;
+      }
+    }
     const retentionDays =
       typeof req.body?.retentionDays === 'number' && req.body.retentionDays >= 1
         ? req.body.retentionDays

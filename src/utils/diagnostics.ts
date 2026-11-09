@@ -157,12 +157,20 @@ export function recordDiagnosticEvent(
     if (diagnosticEventRingBuffer.length > MAX_DIAGNOSTIC_EVENTS) {
       diagnosticEventRingBuffer.length = MAX_DIAGNOSTIC_EVENTS;
     }
-    for (const sub of diagnosticSubscribers) {
-      try {
-        sub(entry, diagnosticEventRingBuffer);
-      } catch {
-        /* ignore subscriber failure */
+    const currentSnapshots = [...diagnosticEventRingBuffer];
+    const notifySubscribers = () => {
+      for (const sub of diagnosticSubscribers) {
+        try {
+          sub(entry, currentSnapshots);
+        } catch {
+          /* ignore subscriber failure */
+        }
       }
+    };
+    if (typeof queueMicrotask === 'function') {
+      queueMicrotask(notifySubscribers);
+    } else {
+      setTimeout(notifySubscribers, 0);
     }
   } catch {
     // Never throw from diagnostic ring buffer

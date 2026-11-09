@@ -7,14 +7,28 @@ import {
   mergeDuplicateCanonicalBuildings,
 } from './entityResolutionEngine';
 
+export interface AiIngestionRouteSecurityOptions {
+  checkRateLimit?: (ip: string, bucket: 'general', maxRequests: number, windowMs: number) => boolean;
+  getClientIp?: (req: Request) => string;
+}
+
 const mountedAiIngestionApps = new WeakSet<Express>();
 
-export function registerAiIngestionRoutes(app: Express): void {
+export function registerAiIngestionRoutes(
+  app: Express,
+  options?: AiIngestionRouteSecurityOptions,
+): void {
   if (mountedAiIngestionApps.has(app)) return;
   mountedAiIngestionApps.add(app);
+  const clientIp = (req: Request): string =>
+    options?.getClientIp ? options.getClientIp(req) : req.ip || '127.0.0.1';
 
   app.post('/api/v1/ai-ingestion/extract-and-resolve', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 30, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     const body = (req.body ?? {}) as Record<string, unknown>;
     const rawTextFa = typeof body.rawTextFa === 'string' ? sanitizeInput(body.rawTextFa, 2000) : '';
     const cityId = typeof body.cityId === 'string' ? sanitizeInput(body.cityId, 32) : 'tehran';
@@ -56,6 +70,10 @@ export function registerAiIngestionRoutes(app: Express): void {
 
   app.post('/api/v1/buildings/merge-duplicates', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 20, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     const body = (req.body ?? {}) as Record<string, unknown>;
     const sourceBuildingId =
       typeof body.sourceBuildingId === 'string' ? sanitizeInput(body.sourceBuildingId, 64) : '';
@@ -89,6 +107,10 @@ export function registerAiIngestionRoutes(app: Express): void {
 
   app.get('/api/v1/buildings/:buildingId/canonical', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
+      return;
+    }
     const buildingId = sanitizeInput(String(req.params.buildingId || ''), 64);
     const lookup = getCanonicalBuildingById(buildingId);
     if (!lookup.found) {
