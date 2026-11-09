@@ -228,5 +228,85 @@ const vAskingOverpriced = calculateHedonicValuation({
 });
 assert.equal(vAskingOverpriced.sellerPriceEvaluation?.verdict, 'overpriced');
 
-console.log('[PASS] All ASSESS-004 Hedonic Pricing Engine Benchmark Assertions Passed.');
+// Test 7: WS-A1-R Section 8.2 Hedonic Input Validation & Methodology Metadata
+assert.equal(resTehranPunak.isValid, true, 'Standard valid property has isValid = true');
+assert.equal(resTehranPunak.validationStatus, 'VALID', 'Standard valid property has validationStatus = VALID');
+assert.equal(resTehranPunak.methodologyKind, 'RULE_BASED_HEURISTIC_MULTIPLIER', 'Methodology kind is explicitly RULE_BASED_HEURISTIC_MULTIPLIER');
+assert.equal(resTehranPunak.isEmpiricallyCalibratedRegression, false, 'Explicitly flags non-regression status');
+
+const vZeroSqm = calculateHedonicValuation({
+  neighborhood: mockTehranPunak,
+  sqm: 0,
+  buildYear: currentJalaliYear - 5,
+  floor: 2,
+  renovationStatus: 'standard',
+});
+assert.equal(vZeroSqm.isValid, false, 'sqm = 0 is rejected as invalid');
+assert.equal(vZeroSqm.validationStatus, 'INVALID_INPUT', 'sqm = 0 sets INVALID_INPUT');
+assert.ok(vZeroSqm.validationErrors.includes('INVALID_OR_NON_POSITIVE_AREA'), 'sqm = 0 reports INVALID_OR_NON_POSITIVE_AREA');
+assert.equal(vZeroSqm.hedonicTotalMillion, 0, 'sqm = 0 never returns a clamped 30-sqm valuation');
+
+const vNegSqm = calculateHedonicValuation({
+  neighborhood: mockTehranPunak,
+  sqm: -50,
+  buildYear: currentJalaliYear - 5,
+  floor: 2,
+  renovationStatus: 'standard',
+});
+assert.equal(vNegSqm.isValid, false, 'sqm < 0 is rejected as invalid');
+assert.equal(vNegSqm.hedonicTotalMillion, 0, 'sqm < 0 returns 0 valuation');
+
+const vNanSqm = calculateHedonicValuation({
+  neighborhood: mockTehranPunak,
+  sqm: Number.NaN,
+  buildYear: currentJalaliYear - 5,
+  floor: 2,
+  renovationStatus: 'standard',
+});
+assert.equal(vNanSqm.isValid, false, 'sqm = NaN is rejected as invalid');
+assert.equal(vNanSqm.hedonicTotalMillion, 0, 'sqm = NaN never defaults to 85-sqm valuation');
+
+const vFloorExceedsTotal = calculateHedonicValuation({
+  neighborhood: mockTehranPunak,
+  sqm: 95,
+  buildYear: currentJalaliYear - 5,
+  floor: 12,
+  totalFloors: 4,
+  renovationStatus: 'standard',
+});
+assert.equal(vFloorExceedsTotal.isValid, false, 'floor > totalFloors is rejected as invalid');
+assert.ok(vFloorExceedsTotal.validationErrors.includes('FLOOR_EXCEEDS_TOTAL_FLOORS'), 'floor > totalFloors reports FLOOR_EXCEEDS_TOTAL_FLOORS');
+assert.equal(vFloorExceedsTotal.hedonicTotalMillion, 0, 'floor > totalFloors returns 0 valuation');
+
+const vMissingHood = calculateHedonicValuation({
+  neighborhood: null as unknown as EvaluatedNeighborhood,
+  sqm: 95,
+  buildYear: currentJalaliYear - 5,
+  floor: 2,
+  renovationStatus: 'standard',
+});
+assert.equal(vMissingHood.isValid, false, 'Missing neighborhood baseline is rejected as invalid');
+assert.ok(vMissingHood.validationErrors.includes('MISSING_OR_INVALID_NEIGHBORHOOD_BASELINE'), 'Missing neighborhood reports MISSING_OR_INVALID_NEIGHBORHOOD_BASELINE');
+assert.equal(vMissingHood.hedonicTotalMillion, 0, 'Missing neighborhood returns 0 valuation');
+
+// Test 8: WS-ARGON5-B / WP-3 Epistemic Uncertainty Basis & Non-Compensatory Warnings
+assert.equal(resTehranPunak.uncertaintyBasis, 'DETERMINISTIC_SENSITIVITY_BAND_3_5_PCT', 'Uncertainty basis is explicitly DETERMINISTIC_SENSITIVITY_BAND_3_5_PCT');
+assert.ok(resTehranPunak.calibrationDisclosureFa.includes('±۳.۵٪'), 'Calibration disclosure explicitly states ±3.5% deterministic sensitivity band');
+assert.equal(resTehranPunak.nonCompensatoryWarnings.length, 0, 'Standard 2nd floor unit with elevator/parking has 0 non-compensatory warnings');
+assert.ok(vWalkup4.nonCompensatoryWarnings.some((w) => w.includes('بدون آسانسور')), '4th floor walk-up triggers non-compensatory elevator warning');
+
+const vOldUnrenovatedNoParking = calculateHedonicValuation({
+  neighborhood: mockTehranPunak,
+  sqm: 110,
+  buildYear: currentJalaliYear - 28,
+  floor: 3,
+  hasElevator: false,
+  hasParking: false,
+  hasStorage: false,
+  renovationStatus: 'needs_renovation',
+});
+assert.equal(vOldUnrenovatedNoParking.nonCompensatoryWarnings.length, 3, 'Old unrenovated 110m walk-up without parking triggers all 3 non-compensatory warnings');
+
+console.log('[PASS] All ASSESS-004 + WS-A1-R + WS-ARGON5-B Hedonic Pricing Engine Benchmark Assertions Passed.');
+
 

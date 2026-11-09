@@ -1,0 +1,73 @@
+# WS-A1-V — Deliverable 8: End-to-End Data Provenance and Lineage Audit
+
+**Workstream ID:** `WS-A1-V` (Section 20 & Section 26 Deliverable 8)  
+**Evidence Level:** `E1` (Runtime Probes & Playwright DOM), `E2` (Static Source Inspection)
+
+---
+
+## 1. Source Inventory & Lifecycle Pipeline (Section 20)
+
+| Lifecycle Stage | Responsible Module(s) | Input Contract | Output Contract | Provenance Preservation Status |
+|---|---|---|---|---|
+| **1. Static Reference Source** | `src/data/neighborhoods.ts`, `src/data/multiCityData.ts`, `src/data/tehranCityRemainingHoods.ts`, `src/data/tehranCountiesHoods.ts` | Hardcoded TypeScript constants (`Neighborhood[]`) | `INITIAL_NEIGHBORHOODS` (`buyPerSqm`, `rahn80m`, `bargains[]`, `growth6m`, scores) | Baseline version tagged in `valuationTraceAndComparables.ts` (`2026.10-5city-104hoods-v1`), but individual `buyPerSqm` values carry no source citation or observation timestamp. |
+| **2. Ingestion & Text Parsing** | `src/data/realMarketPriceAggregator.ts` (`normalizePersianText`, `extractListingSpecsFromText`, `parseIranianPriceToMillionToman`) | Raw listing object `{ id, askingTotalMillion, description, yearOrAge }` | `ExtractedListingSpecs` (`sqm`, `floor`, `totalFloors`, `age`, amenities, `totalMillion`, `priceSourceType`) | **DEGRADED (`F-A1V-08`):** Missing `sqm`, `floor`, `age`, or amenities in `description` are silently replaced with defaults (`sqm=85`, `floor=2`, `age=10`, `hasParking=true`) without an `imputedFields` flag. |
+| **3. Validation & Anomaly Classification** | `src/data/realMarketPriceAggregator.ts` (`evalSample`, lines 248–259) | `ExtractedListingSpecs` + `baseHoodPerSqm` | `observedEvaluated[]`, `malformedSampleCount`, `suspectedFraudCount` | **DEGRADED (`F-A1V-03`):** Extreme price ratios (`< 0.42x` or `> 2.4x`) increment `suspectedFraudCount` (`FRAUD_SUSPECTED`) without multi-signal fraud verification. |
+| **4. Quality Normalization** | `src/data/realMarketPriceAggregator.ts` (`computeQualityMultiplier`, lines 209–226) | `ExtractedListingSpecs` + `baseHoodPerSqm` | `normPerSqm = rawPerSqm / max(0.68, qMult)` | Original `askingTotalMillion` and `perSqmMillion` are preserved on `AutoBargainSample`, while `normPerSqm` is stripped before returning `autoBargains`. |
+| **5. Aggregation & Synthetic Fallback** | `src/data/realMarketPriceAggregator.ts` (`aggregateNeighborhoodMarketMetrics`, lines 260–275) | `observedEvaluated[]` + `baseHoodPerSqm` | `AggregatedMarketMetrics` | **VIOLATED (`F-A1V-03`, `F-A1V-07`):** When `observedEvaluated.length < 3`, 12 PRNG synthetic samples overwrite `evaluated`, contaminating `sampleCount`, `validSampleCount`, `iqrLowPerSqm`, `iqrHighPerSqm`, and `autoBargains`. Duplicate inputs are not deduplicated. |
+| **6. Hedonic Estimation & Trace** | `src/data/hedonicPricingEngine.ts`, `src/data/valuationTraceAndComparables.ts` | `HedonicValuationInputs` / `ReproducibleValuationInputs` | `HedonicValuationResult` / `ValuationCalculationTrace` | **PRESERVED:** `buildReproducibleValuationTrace` records `traceId`, `reproducibilityDigest`, `formulaVersion: '2.4.0'`, inputs, applied coefficients, and `isStatisticalConfidenceInterval: false`. |
+| **7. UI Presentation** | `NeighborhoodInspectorDrawer.tsx`, `NeighborhoodInspectorTabs.tsx`, `ProductIntelligenceView.tsx`, `CompareModal.tsx`, `HedonicValuationResultsColumn.tsx` | `AggregatedMarketMetrics`, `HedonicValuationResult`, `EvaluatedNeighborhood` | Rendered RTL Persian DOM | **CONTRADICTORY ACROSS VIEWS (`F-A1V-04`):** Drawer passes `hood.bargains` (`2` samples for Punak), whereas `ProductIntelligenceView` and `CompareModal` pass `[]` (`0` samples for Punak). |
+
+---
+
+## 2. Representative Field-Level Lineage (Section 20.1)
+
+| Field | Origin | Intermediate Transformations | UI Representation | Can Origin Be Reconstructed? |
+|---|---|---|---|---|
+| **1. Property Price (`askingTotalMillion`)** | `hood.bargains[i].price` or user input `sellerAskingTotalMillion` | If `askingTotalMillion <= 0`, `evalSample` falls back to regex-parsed `specs.totalMillion` (`parseIranianPriceToMillionToman`, which adds tenant `rahn` if `کسر شده` is detected at `line 125`). | Displayed in Bargains list and Seller Price Evaluation card. | **Partially:** If tenant `rahn` was added via regex (`line 130`), the original unadjusted string price is overwritten. |
+| **2. Property Area (`sqm`)** | User input (`HedonicValuationInputs.sqm`) or regex extraction (`extractListingSpecsFromText`) | In `hedonicPricingEngine.ts:97`, clamped to `[30, 600]` (with `NaN -> 85`). In `extractListingSpecsFromText:137`, initialized to `85` if regex finds no match in `[35, 350]`. | Displayed in Hedonic calculator and bargain cards (`{b.sqm} متر`). | **No (`F-A1V-08`):** A bargain card or aggregation input with `sqm: 85` cannot be distinguished between an actual `85m²` apartment and a listing whose description omitted meterage. |
+| **3. Price per Square Meter (`perSqmMillion` / `hedonicAdjustedPerSqm`)** | Derived (`askingTotalMillion / sqm`) or `baseHoodPerSqm` | Divided by `computeQualityMultiplier` (`normPerSqm`), filtered by `[q1 - 1.5*iqr, q3 + 1.5*iqr]`, blended 50/50 with synthetic mean when `N in {1,2}`, and clamped to `[0.97*anchor, 1.03*anchor]` (`line 268`). | Displayed as `میانگین موزون هدونیک` (`NeighborhoodInspectorTabs.tsx:194`) and `میانگین قیمت موزون (تعدیل هدنیک)` (`ProductIntelligenceView.tsx:58`). | **No:** Due to the `±3%` anchor clamp (`line 268`) and 50/50 synthetic blend (`line 267`), the displayed value cannot be inverted back to the contributing listings. |
+| **4. Property Age (`buildingAge` / `age`)** | `buildYear` input or `resolveBuildingAge(yearOrAge, description)` | Converts Solar Hijri years (`1330..1405`), 3-digit years (`400..405`), or 2-digit years (`70..99`) to age; defaults to `10` if missing (`line 78`); overrides `age <= 1` to `8` if `بازسازی` is matched without explicit `yearOrAge` (`line 91`). | Displayed in Hedonic factor breakdown and bargain cards. | **No:** Defaulted (`age = 10`) and heuristic-overridden (`age = 8`) values carry no imputation marker. |
+| **5. Property Type** | Implicitly assumed residential apartment (`آپارتمان مسکونی`) | `extractListingSpecsFromText:147` skips meterage cues preceded by `زمین|مغازه|تجاری`, but does not reject non-residential listings from `evalSample`. | Assumed residential across all UI views. | **No:** No explicit `propertyType` field exists on `AutoBargainSample`. |
+| **6. Neighborhood (`hoodId`, `hoodName`)** | Static dataset (`INITIAL_NEIGHBORHOODS` / `MULTI_CITY_CONFIGS`) | Selected via URL `?hood=` or map click; passed into calculators and aggregators. | Displayed in Drawer header, Compare table, and Intelligence view. | **Yes:** Deterministic `hood.id` (`1..104`). |
+| **7. Market-Price Reference (`buyPerSqm`)** | Static constant in `src/data/neighborhoods.ts` | Adjusted in `useEvaluatedNeighborhoods.ts` by live market pulse multiplier if active; clamped `>= 15` in `hedonicPricingEngine.ts:98` (defaults to `120` if `0`/`NaN`). | Displayed as `نرخ پایه محله` (`HedonicValuationResultsColumn.tsx`). | **Partially:** Static baseline origin is traceable in code, unless `buyPerSqm` is `0` (where it silently becomes `120`). |
+| **8. Estimated Valuation (`hedonicTotalMillion`)** | `calculateHedonicValuation` (`hedonicPricingEngine.ts:208`) | `Math.round(hedonicPerSqm * safeSqm)` | Displayed in Hedonic calculator primary result card and reproducible trace (`ValuationCalculationTrace`). | **Yes:** Fully reconstructible via `buildReproducibleValuationTrace` (`src/data/valuationTraceAndComparables.ts`). |
+| **9. Evaluation Range (`sensitivityRangeMillion` / `iqrLowPerSqm`–`iqrHighPerSqm`)** | Hedonic: `round(total * 0.965)` to `round(total * 1.035)`. Aggregator: `q1` and `q3` of `evaluated` (`line 265`). | When `observedEvaluated.length < 3`, `q1` and `q3` are computed from 12 PRNG synthetic samples (`syntheticRaw`). | Hedonic range labeled `دامنه حساسیت (±۳.۵٪)`. Aggregator range labeled `بازه منطقی محله` / `بازه معتبر آماری محله (IQR)`. | **Hedonic: Yes. Aggregator: No (`F-A1V-03`):** When `N < 3`, UI displays PRNG synthetic quartiles as the neighborhood's IQR while `observedIqrLowPerSqm` (`null`) is ignored by the UI. |
+| **10. Confidence / Reliability Indicator (`evidenceIndexScore` / `confidenceScore`)** | `realMarketPriceAggregator.ts:274` | `evidenceIndexScore`: `0` (`N=0`), `35` (`N=1`), `52` (`N=2`), `clamp(62+3*N, 65, 98)` (`N>=3`). `confidenceScore`: `74` (`N<3`) vs `clamp(62+3*N, 65, 98)` (`N>=3`). | `evidenceIndexScore` displayed as `شاخص پوشش شواهد: ۵۲/۱۰۰` in Drawer/Tabs. | **Contradictory Across Views (`F-A1V-04`):** Drawer shows `52/100` (`N=2`) for Punak while Intelligence View and Compare Modal show `0` (`N=0`) because they pass `[]`. |
+
+---
+
+## 3. Provenance Preservation in Aggregation (Section 20.2)
+
+- **What Is Preserved:** `AggregatedMarketMetrics` preserves `observedSampleCount`, `eligibleObservedCount`, `syntheticSampleCount`, `excludedOutlierCount`, `malformedSampleCount`, `suspectedFraudCount`, `provenance`, `epistemicStatus`, `dataMode`, `observedMeanPerSqm`, `observedMedianPerSqm`, `observedIqrLowPerSqm`, and `observedIqrHighPerSqm`.
+- **What Is Destroyed or Obscured:**
+  1. Individual listing source timestamps (`listedAtIso`) are not accepted or tracked by `aggregateNeighborhoodMarketMetrics`.
+  2. Individual listing exclusion reasons (whether a specific listing ID was dropped as `malformed` vs `IQR outlier` vs `predatory anomaly`) are not retained.
+  3. `autoBargains` merges real `observedBargains` with synthetic `boot-{hoodId}-{idx}` bargains (`line 264`), mixing synthetic and observed items in the same array.
+  4. `rejectedFraudCount` (`line 271`) sums `excludedOutlierCount + suspectedFraudCount`, erasing the distinction between statistical IQR trimming and suspected fraud in that field.
+
+---
+
+## 4. Missing and Conflicting Information Behavior (Section 20.3)
+
+| Missing / Invalid Input Scenario | Actual Code Location | Observed Runtime Behavior (`E1` / `E2`) | Epistemic Honesty Assessment |
+|---|---|---|---|
+| Listing `description` omits property area (`sqm`) | `realMarketPriceAggregator.ts:137, 251` | Silently sets `sqm = 85`; `specs.sqm > 20` evaluates to `true`; `malformedSampleCount` remains `0`. | **VIOLATION (`F-A1V-08`):** Silent imputation of `85 m²` fabricates `rawPerSqm`. |
+| Listing `description` omits building age and `yearOrAge` is `undefined` | `realMarketPriceAggregator.ts:78` | Silently sets `age = 10` (`clampNumber(age, 0, 45, 10)`). | **VIOLATION:** Unknown age silently becomes a 10-year-old building (`-6.6%` quality adjustment). |
+| Listing `description` omits floor number | `realMarketPriceAggregator.ts:170` | Silently sets `resolvedFloor = 2`, `totalFloors = 5`. | **VIOLATION:** Unknown floor silently becomes 2nd floor of 5. |
+| Listing `description` omits parking / storage mentions | `realMarketPriceAggregator.ts:172, 174` | `resolveAmenityStatus` uses `defaultValue = true` for both `hasParking` and `hasStorage`! | **VIOLATION:** Listings that do not mention parking or storage are silently assumed to possess both (`+1.5%` bundle bonus instead of `-7.5%` / `-1.5%` penalties). |
+| `calculateHedonicValuation` called with `sqm: 0` or `sqm: -50` | `hedonicPricingEngine.ts:97` | Silently clamps `safeSqm = 30` and returns `4,446M` Toman valuation (`Punak`). | **VIOLATION (`F-A1V-08`):** Invalid zero/negative area generates an apparently valid valuation. |
+| `calculateHedonicValuation` called with `sqm: NaN` | `hedonicPricingEngine.ts:97` | Silently defaults `safeSqm = 85` and returns `12,121M` Toman valuation (`Punak`). | **VIOLATION (`F-A1V-08`):** `NaN` area silently becomes `85 m²`. |
+| `ProductIntelligenceView` / `CompareModal` called for neighborhood with `hood.bargains` | `ProductIntelligenceView.tsx:47, 231`, `CompareModal.tsx:8` | Caller passes hardcoded `[]`, ignoring `hood.bargains`. | **VIOLATION (`F-A1V-04`):** Existing repository data is dropped, misrepresenting coverage as `0` samples. |
+
+---
+
+## 5. Evaluation of Provenance Invariants (Section 20.4)
+
+| Invariant | Status | Source-Level Evidence |
+|---|---|---|
+| **Invariant 1:** Every consequential valuation input should have an identifiable origin or an explicit unknown status. | **VIOLATED** | `extractListingSpecsFromText` (`realMarketPriceAggregator.ts:137, 78, 170-175`) silently substitutes `sqm = 85`, `age = 10`, `floor = 2`, `hasParking = true`, `hasStorage = true` when omitted from text; `hedonicPricingEngine.ts:97-98` substitutes `sqm = 30` (for `<=0`), `sqm = 85` (for `NaN`), and `hoodBasePerSqm = 120` (for `0`/`NaN`). |
+| **Invariant 2:** Transformations should not silently erase source identity. | **VIOLATED** | `realMarketPriceAggregator.ts:264` appends synthetic `boot-*` bargains into `autoBargains` alongside `observedBargains`, and `line 265` computes `iqrLowPerSqm`/`iqrHighPerSqm` from synthetic `evaluated` when `observedEvaluated.length < 3`. |
+| **Invariant 3:** Conflicting observations should not disappear without a traceable resolution. | **PARTIALLY VIOLATED** | `realMarketPriceAggregator.ts:268` silently clamps `rawAveragePerSqm` to `[0.97 * anchor, 1.03 * anchor]` (`dayAnchorPrice`). While `isAnchorClamped: true` and `unclampedAveragePerSqm` exist on the object, neither `NeighborhoodInspectorTabs.tsx` nor `ProductIntelligenceView.tsx` discloses when `dayAnchorPrice` was clamped away from the observed sample mean. |
+| **Invariant 4:** Stale data should not be represented as current data. | **PARTIALLY VIOLATED** | `evaluateComparableProperties` (`valuationTraceAndComparables.ts:190, 208`) enforces a 90-day freshness check (`maxStaleMs`), but `aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts:243`) accepts no listing timestamp at all and treats timeless static `hood.bargains` as current observations. |
+| **Invariant 5:** Derived metrics should remain distinguishable from original observations. | **PARTIALLY VIOLATED** | Respected in `NeighborhoodInspectorDrawer.tsx` and `NeighborhoodInspectorTabs.tsx`, but violated in `ProductIntelligenceView.tsx:65, 182, 191` (`تخمین قیمت قطعی معاملات (مدل v6.4)`, `بازه معتبر آماری محله (IQR)` from PRNG rows). |
+| **Invariant 6:** The UI should not claim greater evidence quality than the underlying data supports. | **VIOLATED** | `ProductIntelligenceView.tsx:182` and `NeighborhoodInspectorTabs.tsx:201` display `iqrLowPerSqm`–`iqrHighPerSqm` (`131.3 – 154.3 م.ت`) as valid neighborhood statistical bounds when `0` or `2` listings exist, and `realMarketPriceAggregator.ts:274` sets `confidenceScore = 74` on `0` observed samples. |

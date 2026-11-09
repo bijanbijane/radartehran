@@ -256,7 +256,7 @@ export function RadarWorkspaceShell() {
       />
       <ReverseBudgetDiscoveryModal
         isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)} initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm} initialMaxAgeYears={buildingAgeSegment === 'new' ? 5 : buildingAgeSegment === 'mid' ? 12 : 20}
-        neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm }))}
+        neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm, overallScore: h.overallScore, bargains: h.bargains }))}
         onSelectNeighborhood={(id, budgetMillion, areaSqm, ageYears) => {
           const found = evaluatedNeighborhoods.find((h) => String(h.id) === id);
           if (typeof budgetMillion === 'number' && budgetMillion > 0) setBuyTotalBudget(budgetMillion);

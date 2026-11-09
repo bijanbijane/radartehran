@@ -14,9 +14,9 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
       isValid: hasValidPrices, };
   }, [activeHood.baseBuyPerSqm, activeHood.buyPerSqm, adClaimedAge, adClaimedSqmPrice, adText]); const negotiationResult = useMemo(() => calculateNegotiationStrategy({
     askingPriceMillion: adClaimedSqmPrice * adClaimedSqm,
-    neighborhoodAvgPriceMillion: activeHood.buyPerSqm * adClaimedSqm,
+    neighborhoodAvgPriceMillion: Math.round(Number(activeHood.baseBuyPerSqm ?? activeHood.buyPerSqm) * Math.max(0.74, 1 - Math.max(0, Number(adClaimedAge) || 0) * 0.012)) * adClaimedSqm,
     buyerReadyCashMillion, propertyAge: adClaimedAge,
-  }), [adClaimedSqmPrice, adClaimedSqm, activeHood.buyPerSqm, buyerReadyCashMillion, adClaimedAge]);
+  }), [adClaimedSqmPrice, adClaimedSqm, activeHood.baseBuyPerSqm, activeHood.buyPerSqm, buyerReadyCashMillion, adClaimedAge]);
   const auctionResult = useMemo(() => calculateAuctionBidding({
     retailMarketValueMillion: activeHood.buyPerSqm * adClaimedSqm, auctionBasePriceMillion,
   }), [activeHood.buyPerSqm, adClaimedSqm, auctionBasePriceMillion]);
@@ -103,7 +103,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <div>
-                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">گواهی رسمی کارشناسی هوشمند ارزش ملک</div>
+                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">گزارش تحلیلی کارشناسی هوشمند ارزش ملک (مدل هدونیک · غیررسمی)</div>
                 <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">واحد {formatAreaValue(valSqm, areaUnit, true)} در {activeHood.name}</div>
               </div>
               <Award className="w-6 h-6 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -152,9 +152,9 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
                   </div>
                 ))} </div>
             )} {portfolioNotice && <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold text-center">{portfolioNotice}</div>} <button type="button" onClick={() => {
-              const certText = `گواهی رسمی کارشناسی ملک رادار مسکن\nمحله: ${activeHood.name} | سند: ${valuationResult.deedInfo.label}\nمتراژ: ${formatAreaValue(valSqm, areaUnit, true)} | ارزش روز: ${toPersianNum((valuationResult.fairTotalMillion / 1000).toFixed(2))} میلیارد تومان${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fairTotalMillion, intlCurrency, locale)})` : ''}\nمعادل طلای ۱۸ عیار: ${toPersianNum(valuationResult.goldGramPriceTotal.toLocaleString())} گرم | رهن کامل: ${toPersianNum(valuationResult.fullRahnMillion)} میلیون تومان${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fullRahnMillion, intlCurrency, locale)})` : ''}`;
+              const certText = `گزارش تحلیلی کارشناسی ملک رادار مسکن (مدل هدونیک · غیررسمی)\nمحله: ${activeHood.name} | سند: ${valuationResult.deedInfo.label}\nمتراژ: ${formatAreaValue(valSqm, areaUnit, true)} | ارزش روز: ${toPersianNum((valuationResult.fairTotalMillion / 1000).toFixed(2))} میلیارد تومان${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fairTotalMillion, intlCurrency, locale)})` : ''}\nمعادل طلای ۱۸ عیار: ${toPersianNum(valuationResult.goldGramPriceTotal.toLocaleString())} گرم | رهن کامل: ${toPersianNum(valuationResult.fullRahnMillion)} میلیون تومان${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuationResult.fullRahnMillion, intlCurrency, locale)})` : ''}`;
               navigator.clipboard?.writeText(certText).catch(() => {}); setValCertificateCopied(true); setTimeout(() => setValCertificateCopied(false), 2000); }} className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-center gap-1.5 cursor-pointer transition">
-              <Copy className="w-3.5 h-3.5 stroke-[1.75]" /><span>{valCertificateCopied ? 'متن گواهی کپی شد!' : 'کپی متن گواهی کارشناسی'}</span>
+              <Copy className="w-3.5 h-3.5 stroke-[1.75]" /><span>{valCertificateCopied ? 'متن گزارش کپی شد!' : 'کپی متن گزارش تحلیلی کارشناسی'}</span>
             </button>
           </div>
         </div>
@@ -254,7 +254,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-3.5 space-y-2.5">
           <div className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold">قدرت خرید بر اساس نقدینگی، دارایی‌های قابل تبدیل و وام</div>
           <div className="text-xl font-black text-emerald-950 dark:text-emerald-200 tabular-nums">{toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(combinedPowerResult.totalPurchasingPowerWithRahnMillion, intlCurrency, locale)})` : ''}</div>
-          <div className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">ودیعهٔ مستأجر یک تعهد بازپرداخت است و به دارایی خالص شما اضافه نمی‌شود. با فرض قیمت متری ۷۵ میلیون تومان، بودجهٔ فعلی از نظر قیمت پایه برای حدود <strong>{formatAreaValue(combinedPowerResult.maxAffordableSqmAt75m ?? 0, areaUnit, true)}</strong> کافی است. هزینه‌های معامله، تعمیر و تعهدات احتمالی باید جداگانه بررسی شوند.</div>
+          <div className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">ودیعهٔ مستأجر یک تعهد بازپرداخت است و به دارایی خالص شما اضافه نمی‌شود. در محله فعلی (<strong>{activeHood.name}</strong> · متری {toPersianNum(activeHood.buyPerSqm)} م) این آورده خالص برای حدود <strong>{formatAreaValue(Math.floor(combinedPowerResult.totalEquityBeforeRahnMillion / Math.max(15, activeHood.buyPerSqm)), areaUnit, true)}</strong> کافی است (و با فرض قیمت متری ۷۵ میلیون تومان، از نظر قیمت پایه برای حدود <strong>{formatAreaValue(combinedPowerResult.maxAffordableSqmAt75m ?? 0, areaUnit, true)}</strong>). هزینه‌های معامله، تعمیر و تعهدات احتمالی باید جداگانه بررسی شوند.</div>
           {onApplyCombinedBudget && (
             <button type="button" onClick={() => onApplyCombinedBudget(combinedPowerResult.totalPurchasingPowerWithRahnMillion, valSqm)} className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition shadow-2xs">اعمال این بودجه ترکیبی روی رادار نقشه ({toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد)</button>
           )} </div>

@@ -1,0 +1,113 @@
+{
+  "workstreamId": "WS-A1-V",
+  "verifiedTargetWorkstreamId": "WS-G4A-A1",
+  "timestampUtc": "2026-11-08T21:01:00Z",
+  "executionMode": "READ_ONLY_FORENSIC_VERIFICATION",
+  "releaseGateDecision": "DECISION_C_REJECTED_REMEDIATION_REQUIRED",
+  "releaseRecommendation": "NO-GO",
+  "wsBAuthorizationStatus": "NOT_AUTHORIZED_AWAITING_HUMAN_DECISION",
+  "applicationSourceFilesModified": 0,
+  "testFilesModified": 0,
+  "existingArtifactsModified": 0,
+  "generatedVerificationDeliverables": [
+    {
+      "deliverableOrder": 1,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-VERIFICATION-REPORT.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 50313,
+      "lines": 309,
+      "sha256": "08ab716f3293192c7afd19425ac6677dc2024e59c3b2d4ad3a9575846a58c0e6"
+    },
+    {
+      "deliverableOrder": 2,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-FINDINGS.json",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 20144,
+      "lines": 264,
+      "sha256": "c69970b6da8ac878d2022ad8a926c46833c6ed54226718593d578a331eccb598"
+    },
+    {
+      "deliverableOrder": 3,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-COMMAND-EVIDENCE.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 14656,
+      "lines": 298,
+      "sha256": "84d7777118a0a7e59906eb661cfb1bca7c9199460208e0ecfcb9ee1bae1c97ad"
+    },
+    {
+      "deliverableOrder": 4,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-ARTIFACT-RECONCILIATION.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 7196,
+      "lines": 73,
+      "sha256": "fa87bba2af2c8de05ee14a8105c80a0f8768f0c583e9d53fc28837bf2bfb9dc6"
+    },
+    {
+      "deliverableOrder": 5,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-STATISTICAL-VALIDITY.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 14248,
+      "lines": 121,
+      "sha256": "b67aaadb080b900be970f1ffcdc2d96b2b4fa34b8830793953d7211cdf030190"
+    },
+    {
+      "deliverableOrder": 6,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-DATA-LINEAGE.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 14843,
+      "lines": 74,
+      "sha256": "b9574b3786983813d29cd651119a635e9a1b78211eaec846ae56c1391c4013a3"
+    },
+    {
+      "deliverableOrder": 7,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-REPRODUCIBILITY.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 8408,
+      "lines": 77,
+      "sha256": "f731a9185ae57c3576c7499547e86b39052694ceec3a2a9db5ad570829fb79b6"
+    },
+    {
+      "deliverableOrder": 8,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-ADVERSARIAL-TEST-ASSESSMENT.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 12308,
+      "lines": 71,
+      "sha256": "54af47110b9a03465e67823efc3e6110a544dbc0068da3f737f6089a15fa900a"
+    },
+    {
+      "deliverableOrder": 9,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-UX-DECISION-INTEGRITY.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 10908,
+      "lines": 78,
+      "sha256": "69ccaa41e23768fbadcddc9cea1780cfa354c6c3c597816e1927dba87145cc2e"
+    },
+    {
+      "deliverableOrder": 10,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-ACCEPTANCE-MATRIX-AND-TEST-PLAN.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 19197,
+      "lines": 107,
+      "sha256": "a8f54cf40e1837ec3fb166d985f6e788be9131cb7bcae064bcc8e25eb041748a"
+    },
+    {
+      "deliverableOrder": 11,
+      "path": "docs/engineering/WS-A1-V/WS-A1-V-ADR-GOVERNANCE-AND-DRIFT-AUDIT.md",
+      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
+      "workstreamId": "WS-A1-V",
+      "bytes": 13657,
+      "lines": 65,
+      "sha256": "484030708641b7c07867fe41c3048553876de013ad7a9ef023350e986f2605c2"
+    }
+  ]
+}

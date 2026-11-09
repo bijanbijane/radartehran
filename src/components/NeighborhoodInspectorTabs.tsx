@@ -1,4 +1,4 @@
-import React from 'react'; import { AlertTriangle, Award, Bell, Bookmark, Building2, Calculator, Clock, Compass, MapPin, Mountain, Phone, PlusCircle, ShieldCheck, Sparkles, ThumbsUp, TrainFront, Wifi, Wind, Zap, } from 'lucide-react'; import { BubbleReport, EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, WorkHub, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import type { NeighborhoodDeepInsight, RentVsBuyVerdict, } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { CommuteHubsMatrixCard } from './CommuteHubsMatrixCard'; import { BudgetBridgeAdvisorCard } from './BudgetBridgeAdvisorCard'; import { PurchasingPowerTrendCard } from './PurchasingPowerTrendCard'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; const NeighborhoodPriceChartLazy = React.lazy(() =>
+import React from 'react'; import { AlertTriangle, Award, Bell, Bookmark, Building2, Calculator, Clock, Compass, MapPin, Mountain, Phone, PlusCircle, ShieldCheck, Sparkles, ThumbsUp, TrainFront, Wifi, Wind, Zap, } from 'lucide-react'; import { BubbleReport, EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, WorkHub, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import type { NeighborhoodDeepInsight, RentVsBuyVerdict, } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { CommuteHubsMatrixCard } from './CommuteHubsMatrixCard'; import { BudgetBridgeAdvisorCard } from './BudgetBridgeAdvisorCard'; import { PurchasingPowerTrendCard } from './PurchasingPowerTrendCard'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; const NeighborhoodPriceChartLazy = React.lazy(() =>
   import('./NeighborhoodPriceChart').then((m) => ({ default: m.NeighborhoodPriceChart })) ); const HedonicInlineWidget = React.lazy(() => import('./HedonicInlineWidget').then((m) => ({ default: m.HedonicInlineWidget }))
 ); const NeighborhoodBargainsAndVotesTabs = React.lazy(() => import('./NeighborhoodBargainsAndVotesTabs').then((m) => ({ default: m.NeighborhoodBargainsAndVotesTabs }))
 ); const ResidentReviewsTabLazy = React.lazy(() => import('./inspector/ResidentReviewsTab').then((m) => ({ default: m.ResidentReviewsTab }))); export type InspectorTabId = 'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote' | 'osm_places'; export interface NeighborhoodInspectorTabsProps { activeTab: InspectorTabId; selectedHood: EvaluatedNeighborhood; activeCity: CityId; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; buildingAgeSegment: 'new' | 'mid' | 'older'; workHubId: string; selectedWorkHub: WorkHub; workHubs: WorkHub[]; onSelectWorkHubId: (hubId: string) => void; onChangeTargetSqm: (sqm: number) => void; onChangeBuildingAgeSegment: (seg: 'new' | 'mid' | 'older') => void; useLoanBooster: boolean; onToggleLoanBooster: () => void;
@@ -181,29 +181,38 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
     );
   }
   if (activeTab === 'market') {
-    const agg = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, (selectedHood.bargains || []).map((b) => ({ id: b.id, askingTotalMillion: Math.round(b.sqm * selectedHood.buyPerSqm * (1 - (b.discountPercent || 10) / 100)), description: `${b.sqm} متر ${b.title}` })));
-    const regimeNote = agg.marketRegime === 'HOT' ? 'بازار داغ - فروشندگان حداکثر ۲.۵٪ تخفیف می‌دهند' : agg.marketRegime === 'BALANCED' ? 'بازار متعادل - میانگین ۷٪ تخفیف پای معامله' : 'رکود نسبی - حدود ۱۰٪ تخفیف پای قولنامه';
+    const agg = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood));
+    const regimeNote = agg.isBootstrapped ? `پروفایل مرجع (${toPersianNum(agg.observedSampleCount)} آگهی مشاهده‌شده) · ضریب فرضی مذاکره ۷٪` : agg.marketRegime === 'HOT' ? 'تراکم بالای آگهی (۱۰+ نمونه) · ضریب فرضی مذاکره ۲.۵٪ (بدون داده سرعت معاملات)' : agg.marketRegime === 'BALANCED' ? 'پراکندگی متعادل آگهی‌ها · ضریب فرضی مذاکره ۷٪ (بدون داده حجم معاملات)' : 'پراکندگی بالای قیمت پیشنهادی (اکتشافی، نه رکود ثبتی) · ضریب فرضی مذاکره ۱۰٪';
     return (
       <div className="space-y-3.5 text-xs">
         <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5">
           <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2.5 tabular-nums">
             <div>
-              <div className="text-[10.5px] text-slate-500 dark:text-slate-400">میانه قیمت تابلو (معادل ۵ سال ساخت)</div>
+              <div className="text-[10.5px] text-slate-500 dark:text-slate-400">میانه قیمت اعلامی (تعدیل‌شده ۵ سال ساخت)</div>
               <div className="text-sm font-black text-slate-900 dark:text-white mt-0.5">{toPersianNum(convertPricePerSqmToUnit(agg.askingPricePerSqm, areaUnit))} میلیون تومان/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.askingPricePerSqm, areaUnit))}</div>
             </div>
             <div className="border-r border-slate-200/70 dark:border-slate-800 pr-2">
-              <div className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold">تخمین قیمت قطعی پای معامله</div>
+              <div className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold" title="سناریوی فرضی مذاکره بر پایه ضریب مفروض (۲.۵٪، ۷٪ یا ۱۰٪) از قیمت اعلامی؛ مستند به معاملات قطعی ثبتی نیست">سناریوی فرضی مذاکره (ضریب مفروض، غیرثبتی)</div>
               <div className="text-sm font-black text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit))} میلیون تومان/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit))}</div>
             </div>
           </div>
           <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800 rounded-[10px] p-2.5 space-y-1.5 text-[11px]">
             <div className="flex flex-wrap items-center justify-between gap-1">
-              <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">بازه منطقی محله: {toPersianNum(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))} تا {toPersianNum(convertPricePerSqmToUnit(agg.iqrHighPerSqm, areaUnit))} میلیون/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))}</span>
+              {agg.hasSufficientIqrEvidence ? (
+                <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">بازه منطقی محله: {toPersianNum(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))} تا {toPersianNum(convertPricePerSqmToUnit(agg.iqrHighPerSqm, areaUnit))} میلیون/{areaUnit === 'sqft' ? 'ft²' : 'متر'}{fxTag(convertPricePerSqmToUnit(agg.iqrLowPerSqm, areaUnit))}</span>
+              ) : (
+                <span className="font-bold text-amber-800 dark:text-amber-300 tabular-nums" data-testid="iqr-insufficient-evidence">محاسبه بازه چارکی (IQR) نیازمند حداقل ۳ آگهی معتبر است (تعداد فعلی: {toPersianNum(agg.eligibleObservedCount)} آگهی)</span>
+              )}
               <span className="text-emerald-800 dark:text-emerald-300 font-semibold text-[10px]">{regimeNote}</span>
             </div>
-            <div className="relative h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden="true">
-              <div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-500" style={{ width: `${Math.min(95, Math.max(10, Math.round(((agg.estimatedDealPricePerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.iqrHighPerSqm - agg.iqrLowPerSqm)) * 100)))}%` }} />
+            <div className="text-[10px] text-slate-600 dark:text-slate-400 tabular-nums" data-testid="market-anchor-clamp-disclosure">
+              {agg.isAnchorClamped ? `⚖️ مهار نوسان روزانه (±۳٪ نسبت به لنگر محله) فعال است · میانگین خام پیش از مهار: ${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م` : `پایداری لنگر روزانه (±۳٪): منطبق با میانگین خام (${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م)`}
             </div>
+            {agg.hasSufficientIqrEvidence && (
+              <div className="relative h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden="true">
+                <div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-500" style={{ width: `${Math.min(95, Math.max(10, Math.round(((agg.estimatedDealPricePerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.iqrHighPerSqm - agg.iqrLowPerSqm)) * 100)))}%` }} />
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between gap-2 pt-1">
             <span className="text-slate-500 dark:text-slate-400 font-medium">وضعیت حباب یا جاماندگی:</span>

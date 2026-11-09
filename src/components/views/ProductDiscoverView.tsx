@@ -5,7 +5,8 @@ import { toPersianNum } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { matchesPersianSearch } from '../../utils/security';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { isCoordInsideStoredViewport, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 
 export interface ProductDiscoverViewProps {
@@ -64,24 +65,19 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
       if (sortBy === 'score') return b.overallScore - a.overallScore;
       if (sortBy === 'air') return b.air - a.air;
       if (sortBy === 'rahn_asc') return a.rahn80m - b.rahn80m;
-      if (sortBy === 'price_asc') return aggregateNeighborhoodMarketMetrics(a.id, a.name, a.buyPerSqm, []).estimatedDealPricePerSqm - aggregateNeighborhoodMarketMetrics(b.id, b.name, b.buyPerSqm, []).estimatedDealPricePerSqm;
+      if (sortBy === 'price_asc') return aggregateNeighborhoodMarketMetrics(a.id, a.name, a.buyPerSqm, buildNeighborhoodListingSamples(a)).estimatedDealPricePerSqm - aggregateNeighborhoodMarketMetrics(b.id, b.name, b.buyPerSqm, buildNeighborhoodListingSamples(b)).estimatedDealPricePerSqm;
       return b.buyPerSqm - a.buyPerSqm;
     });
   }, [p.evaluatedNeighborhoods, inViewportHoods, filterRankingByViewport, statusFilter, priceBracket, zoneFilter, onlyFavorites, onlyWithBargains, p.favoriteHoodIds, p.mode, p.targetSqm, query, sortBy]);
 
+  const topFilteredScore = useMemo(() => (filtered.length > 0 ? Math.max(...filtered.map((h) => h.overallScore)) : undefined), [filtered]);
+  const tiedTopCount = useMemo(() => (topFilteredScore !== undefined ? filtered.filter((h) => Math.abs(h.overallScore - topFilteredScore) <= 0.3).length : 0), [filtered, topFilteredScore]);
   const hasActiveFilters = Boolean(query.trim() || statusFilter !== 'all' || priceBracket !== 'all' || zoneFilter !== 'all' || onlyFavorites || onlyWithBargains || filterRankingByViewport);
-  const resetAllFilters = () => {
-    setQuery(''); setStatusFilter('all'); setPriceBracket('all'); setZoneFilter('all'); setOnlyFavorites(false); setOnlyWithBargains(false);
-    updateMapAdvancedOverlayState({ filterRankingByViewport: false });
-  };
+  const resetAllFilters = () => { setQuery(''); setStatusFilter('all'); setPriceBracket('all'); setZoneFilter('all'); setOnlyFavorites(false); setOnlyWithBargains(false); updateMapAdvancedOverlayState({ filterRankingByViewport: false }); };
 
   const toggleComparisonArc = (hood: EvaluatedNeighborhood) => {
-    const isCurrentArc = comparisonArc.active &&
-      ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) ||
-       (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
-    updateMapAdvancedOverlayState({
-      comparisonArc: { active: !isCurrentArc, isPinned: !isCurrentArc, hoodA: p.selectedHood, hoodB: hood },
-    });
+    const isCurrentArc = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
+    updateMapAdvancedOverlayState({ comparisonArc: { active: !isCurrentArc, isPinned: !isCurrentArc, hoodA: p.selectedHood, hoodB: hood } });
   };
 
   return (
@@ -96,7 +92,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
             {isEn ? 'Residential Neighborhood Explorer' : 'کاشف محله‌های مسکونی'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            ارزیابی تحلیلی {toPersianNum(filtered.length)} محله بر پایه کیفیت زندگی، تناسب با بودجه و قیمت قطعی معامله (v6.4)
+            ارزیابی تحلیلی {toPersianNum(filtered.length)} محله بر پایه کیفیت زندگی، تناسب با بودجه و سناریوی معامله (مدل v6.4 — غیرثبتی)
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -181,7 +177,9 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
             const isFav = p.favoriteHoodIds.includes(hood.id);
             const isSelected = hood.id === p.selectedHood.id;
             const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+            const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore });
+            const isTiedTop = topFilteredScore !== undefined && Math.abs(hood.overallScore - topFilteredScore) <= 0.3 && tiedTopCount > 1;
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 
             return (
@@ -189,7 +187,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
-                      <div className="text-[11px] text-slate-400 font-medium">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)} از ۱۰</div>
+                      <div className="text-[11px] text-slate-400 font-medium">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)} از ۱۰ {isTiedTop && <span className="text-indigo-600 dark:text-indigo-400 font-bold">(≈ هم‌تراز ±۰.۳)</span>}</div>
                       <h3 className="text-base font-black text-slate-900 dark:text-white mt-0.5 flex items-center gap-1.5">
                         <span>محله {hood.name}</span>
                         {isSelected && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">فعال روی نقشه</span>}
@@ -221,7 +219,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
 
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5 leading-relaxed">
                     <div className="truncate"><span className="text-slate-700 dark:text-slate-300 font-semibold">شاخصه:</span> {hood.pros || 'موقعیت مناسب'}</div>
-                    <div className="truncate"><span className="text-slate-400 font-medium">نکته سکونت:</span> {hood.cons || 'تراکم منطقه‌ای'}</div>
+                    <div className="truncate"><span className="text-slate-400 font-medium">نکته سکونت:</span> {explain.nonCompensatoryWarningsFa[0] ? <span className="text-amber-600 dark:text-amber-400 font-bold">⚠ {explain.nonCompensatoryWarningsFa[0]}</span> : (hood.cons || 'تراکم منطقه‌ای')}</div>
                   </div>
                 </div>
 
@@ -247,7 +245,8 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           {filtered.map((hood) => {
             const isFav = p.favoriteHoodIds.includes(hood.id);
             const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+            const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore });
             const isSelected = hood.id === p.selectedHood.id;
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
             return (
@@ -259,7 +258,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                       <span>محله {hood.name}</span>
                       {isSelected && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">فعال روی نقشه</span>}
                     </div>
-                    <div className="text-[11px] text-slate-400">{hood.zone} · {hood.pros || 'موقعیت متوازن'}</div>
+                    <div className="text-[11px] text-slate-400">{hood.zone} · {explain.nonCompensatoryWarningsFa[0] ? `⚠ ${explain.nonCompensatoryWarningsFa[0]}` : (hood.pros || 'موقعیت متوازن')}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 tabular-nums">

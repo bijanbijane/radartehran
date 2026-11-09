@@ -71,7 +71,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                         <span className="text-[10px] text-slate-400">میلیون ({intlCurrency === 'IRT' ? formatMillionToVerbalPersian(deposit) : formatMillionTomanAsIntlCurrency(deposit, intlCurrency, radarLocale)})</span>
                       </div>
                     </div>
-                    <input type="range" aria-label="اسلایدر مبلغ ودیعه" min={100} max={3500} step={50} value={deposit} onChange={(e) => setDeposit(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <input type="range" aria-label="اسلایدر مبلغ ودیعه" min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
@@ -81,7 +81,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                         <span className="text-[10px] text-slate-400">میلیون</span>
                       </div>
                     </div>
-                    <input type="range" aria-label="اسلایدر اجاره ماهانه" min={0} max={90} step={2} value={monthlyRent} onChange={(e) => setMonthlyRent(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    <input type="range" aria-label="اسلایدر اجاره ماهانه" min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
                   </div>
                 </>
               ) : ( <div>
@@ -92,7 +92,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                       <span className="text-[10px] text-slate-400">میلیون ({intlCurrency === 'IRT' ? formatMillionToVerbalPersian(buyTotalBudget) : formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency, radarLocale)})</span>
                     </div>
                   </div>
-                  <input type="range" aria-label="اسلایدر بودجه کل خرید" min={3000} max={30000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                  <input type="range" aria-label="اسلایدر بودجه کل خرید" min={1000} max={100000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
                 </div> )}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
@@ -103,7 +103,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tabular-nums">{areaUnit === 'sqft' ? `≈ ${toPersianNum(convertAreaFromSqm(targetSqm, 'sqft'))} ft²` : formatAreaUnitLabel('sqm')}</span>
                   </div>
                 </div>
-                <input type="range" aria-label="اسلایدر متراژ مورد نظر" min={50} max={180} step={5} value={targetSqm} onChange={(e) => setTargetSqm(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                <input type="range" aria-label="اسلایدر متراژ مورد نظر" min={30} max={500} step={5} value={targetSqm} onChange={(e) => setTargetSqm(normalizeFinancialInput(e.target.value))} className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg" />
               </div>
               <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800">
                 <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">سن بنای هدف:</div>

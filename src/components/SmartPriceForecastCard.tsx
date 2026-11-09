@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'; import { TrendingUp, TrendingDown, Sparkles, ArrowUpRight, ArrowDownRight, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react'; import type { BubbleReport, EvaluatedNeighborhood } from '../data/neighborhoods'; import { toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { clampNumber } from '../utils/security'; import { calculateVersionedBrokerageCommission, evaluateBuildingConditionAndSeparatedDepreciation, evaluateRentalContractAndDepositConversion, } from '../data/rentalMarketCommissionAndPreSaleAudit'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; export interface SmartPriceForecastCardProps { selectedHood?: EvaluatedNeighborhood; hoodName?: string; currentBuyPerSqm?: number; marketReport: BubbleReport; compact?: boolean; } export interface ThreeMonthForecastResult { increaseBiasScore: number; decreaseBiasScore: number; expectedChange3mPercent: number; projectedBuyPerSqm: number;
+import React, { useMemo, useState } from 'react'; import { TrendingUp, TrendingDown, Sparkles, ArrowUpRight, ArrowDownRight, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react'; import type { BubbleReport, EvaluatedNeighborhood } from '../data/neighborhoods'; import { toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { getCurrentJalaliYear } from '../data/hedonicPricingEngine'; import { clampNumber } from '../utils/security'; import { calculateVersionedBrokerageCommission, evaluateBuildingConditionAndSeparatedDepreciation, evaluateRentalContractAndDepositConversion, } from '../data/rentalMarketCommissionAndPreSaleAudit'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; export interface SmartPriceForecastCardProps { selectedHood?: EvaluatedNeighborhood; hoodName?: string; currentBuyPerSqm?: number; marketReport: BubbleReport; compact?: boolean; } export interface ThreeMonthForecastResult { increaseBiasScore: number; decreaseBiasScore: number; expectedChange3mPercent: number; projectedBuyPerSqm: number;
   signalLabel: string; signalTone: 'bullish' | 'neutral' | 'bearish'; drivers: string[]; increaseProbPercent?: number; decreaseProbPercent?: number; confidencePercent?: number; } export function calculateThreeMonthForecast( buyPerSqm: number, marketReport: BubbleReport
 ): ThreeMonthForecastResult { const hoodGrowth6m = Number(marketReport.hoodGrowth6mPercent) || 0; const cityGrowth6m = Number(marketReport.tehranGrowth6mPercent) || 0; const prRatio = Number(marketReport.prRatio) || 18; const trend = Array.isArray(marketReport.trendData) ? marketReport.trendData : []; const catchUpGap = cityGrowth6m - hoodGrowth6m; let recentMomentumPercent = hoodGrowth6m / 2; if (trend.length >= 3) { const recentStart = Math.max(1, trend[trend.length - 3].hoodPrice); const recentEnd = Math.max(1, trend[trend.length - 1].hoodPrice); recentMomentumPercent = ((recentEnd - recentStart) / recentStart) * 100; }
   let rawIncreaseBias = 55; if (marketReport.status === 'undervalued') { rawIncreaseBias += 18; } else if (marketReport.status === 'bubble') { rawIncreaseBias -= 22; } else { rawIncreaseBias += 3; }
@@ -38,16 +38,17 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
   const financialAuditSummary = useMemo(() => {
     if (effectiveBuySqm <= 0) return null;
     const benchmark80mPrice = effectiveBuySqm * 80;
+    const curYear = getCurrentJalaliYear();
     const comm = calculateVersionedBrokerageCommission({ mode: 'buy', salePriceMillionToman: benchmark80mPrice });
     const landDep = evaluateBuildingConditionAndSeparatedDepreciation({
-      constructionYearJalali: 1396, currentYearJalali: 1404, renovationScope: 'NONE', maintenanceGrade: 'NORMAL',
+      constructionYearJalali: Math.max(1375, curYear - 8), currentYearJalali: curYear, renovationScope: 'NONE', maintenanceGrade: 'NORMAL',
       totalNewBenchmarkPropertyValueMillionToman: benchmark80mPrice, landValueShareRatio: 0.68,
     });
     const rahn80m = selectedHood?.rahn80m ?? Math.round(benchmark80mPrice * 0.14);
     const leaseAudit = evaluateRentalContractAndDepositConversion({
       contractId: `BENCH-${effectiveName}`, refundableSecurityDepositMillionToman: Math.round(rahn80m * 0.5),
       contractualMonthlyRentMillionToman: Number(((rahn80m * 0.5) * 0.03).toFixed(1)), leaseDurationMonths: 12,
-      commencementJalaliDate: '1404-01-01', expirationJalaliDate: '1405-01-01',
+      commencementJalaliDate: `${curYear}-01-01`, expirationJalaliDate: `${curYear + 1}-01-01`,
     });
     return {
       buyerCommissionWithVat: comm.isValid ? Number(comm.statutoryAndUnionTariff.buyerSideTotalMillionToman.toFixed(1)) : 0,
@@ -60,7 +61,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
   if (!effectiveName || !marketReport || !forecast) return null;
   const isPositiveChange = forecast.expectedChange3mPercent >= 0;
   const projectedUnitPrice = Number(convertPricePerSqmToUnit(forecast.projectedBuyPerSqm, areaUnit).toFixed(1));
-  const agg = selectedHood ? aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, effectiveBuySqm, []) : null;
+  const agg = selectedHood ? aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, effectiveBuySqm, buildNeighborhoodListingSamples(selectedHood)) : null;
   const projectedDealPerSqm = agg ? Math.round(agg.estimatedDealPricePerSqm * (1 + forecast.expectedChange3mPercent / 100)) : Math.round(forecast.projectedBuyPerSqm * 0.93);
   const projectedDealUnitPrice = Number(convertPricePerSqmToUnit(projectedDealPerSqm, areaUnit).toFixed(1));
   return (
@@ -69,9 +70,14 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
       className="apple-grouped-card dark:bg-slate-900 p-3.5 mb-3.5 space-y-2.5 text-xs border border-slate-200/80 dark:border-slate-800"
     >
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-        <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
-          <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span>پیش‌بینی هوشمند ۳ ماهه ({effectiveName})</span>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
+            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>پیش‌بینی هوشمند ۳ ماهه ({effectiveName})</span>
+          </div>
+          <span data-testid="forecast-epistemic-badge" className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400">
+            برون‌یابی قاعده‌محور روند ۶ ماهه و P/R (سناریوی تحلیلی · غیرپیش‌بینی اقتصادسنجی)
+          </span>
         </div>
         <span
           className={`px-2 py-0.5 rounded-[7px] text-[10.5px] font-extrabold border ${

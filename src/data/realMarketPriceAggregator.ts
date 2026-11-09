@@ -7,32 +7,45 @@ export interface QualityMultiplierSpecs {
   deedType?: 'single_deed' | 'endowment' | 'informal_contract' | 'probate_coop'; detectedSignals?: Partial<DetectedListingSignals>;
 }
 export interface ExtractedListingSpecs {
-  sqm: number; floor: number; totalFloors: number; age: number; buildingAge: number; hasElevator: boolean; hasParking: boolean; hasStorage: boolean; hasBalcony: boolean;
+  sqm: number; extractedSqm: number | null; hasExplicitSqm: boolean; floor: number; totalFloors: number; age: number; buildingAge: number;
+  hasElevator: boolean; hasParking: boolean; hasStorage: boolean; hasBalcony: boolean;
   renovationStatus: 'luxury_renovated' | 'renovated' | 'standard' | 'needs_renovation'; detectedSignals: DetectedListingSignals;
   totalMillion: number; perSqmMillion: number; askingTotalMillion: number; priceSourceType: PriceSourceType;
 }
-export interface AutoBargainSample {
-  id: string; sqm: number; age: number; floor: number; askingTotalMillion: number; perSqmMillion: number; fairPerSqmMillion: number; discountPct: number; description: string;
-}
+export interface AutoBargainSample { id: string; sqm: number; age: number; floor: number; askingTotalMillion: number; perSqmMillion: number; fairPerSqmMillion: number; discountPct: number; description: string; }
+export type MarketDataProvenance = 'OBSERVED_PRIMARY' | 'OBSERVED_SECONDARY' | 'USER_DECLARED' | 'USER_REPORTED' | 'ADMIN_VERIFIED' | 'MODEL_ESTIMATE' | 'HEURISTIC_ESTIMATE' | 'REFERENCE_BASELINE' | 'SIMULATED_EXAMPLE' | 'UNKNOWN_ORIGIN';
+export type EpistemicDataStatus = 'OBSERVED' | 'DECLARED' | 'INFERRED' | 'ESTIMATED' | 'SYNTHETIC' | 'MISSING' | 'STALE' | 'UNVERIFIED' | 'VERIFIED';
+export type FraudReviewState = 'NONE' | 'STATISTICAL_OUTLIER' | 'ANOMALOUS_RECORD' | 'UNVERIFIED_PRICE_ANOMALY' | 'SUSPICIOUS_LISTING' | 'FRAUD_SUSPECTED' | 'FRAUD_REVIEWED' | 'FRAUD_CONFIRMED';
+export type EvidenceQualityState = 'INSUFFICIENT_OBSERVATIONS' | 'LIMITED_OBSERVATIONS' | 'MODERATE_OBSERVATIONS' | 'ADEQUATE_OBSERVATIONS';
+export type EvidenceSufficiencyLevel = 'NONE' | 'INSUFFICIENT' | 'MODERATE' | 'SUFFICIENT';
+export type SampleCoverageState = 'BOOTSTRAPPED_BASELINE' | 'SPARSE_1_TO_2' | 'MODERATE_3_TO_9' | 'SUFFICIENT_10_PLUS';
 export interface AggregatedMarketMetrics {
-  hoodId: number; hoodName: string; sampleCount: number; validSampleCount: number; rejectedFraudCount: number; confidenceScore: number;
-  isBootstrapped: boolean; rawAveragePerSqm: number; hedonicAdjustedPerSqm: number; askingPricePerSqm: number;
+  hoodId: number; hoodName: string; rawInputCount: number; sampleCount: number; validSampleCount: number; rejectedFraudCount: number; confidenceScore: number;
+  observedSampleCount: number; duplicateSampleCount: number; probableDuplicateCount: number; eligibleObservedCount: number; syntheticSampleCount: number;
+  excludedOutlierCount: number; extremePriceAnomalyCount: number; malformedSampleCount: number; missingAreaSampleCount: number; suspectedFraudCount: number; verifiedTransactionCount: 0;
+  provenance: MarketDataProvenance; epistemicStatus: EpistemicDataStatus; dataMode: 'OBSERVED_MARKET' | 'LIMITED_OBSERVED_BLEND' | 'ILLUSTRATIVE_BOOTSTRAP';
+  fraudReviewState: FraudReviewState; dealPriceProvenance: 'HEURISTIC_ESTIMATE'; evidenceQuality: EvidenceQualityState; evidenceSufficiency: EvidenceSufficiencyLevel; coverageState: SampleCoverageState;
+  evidenceIndexScore: number; evidenceIndexFormula: '0_OBS=0|1_OBS=35|2_OBS=52|3PLUS_OBS=CLAMP(62+3*N,65,98)_COVERAGE_INDEX_NOT_PROBABILITY';
+  marketActivityEvidence: 'NO_TRANSACTION_VELOCITY_DATA_DISPERSION_HEURISTIC'; negotiationMultiplierBasis: 'HYPOTHETICAL_SCENARIO_ASSUMPTION_NOT_EMPIRICAL';
+  calibratedConfidencePct: number | null; hasSufficientIqrEvidence: boolean; observedMeanPerSqm: number | null; observedMedianPerSqm: number | null; observedIqrLowPerSqm: number | null; observedIqrHighPerSqm: number | null;
+  isAnchorClamped: boolean; unclampedAveragePerSqm: number; isBootstrapped: boolean; rawAveragePerSqm: number; hedonicAdjustedPerSqm: number; askingPricePerSqm: number;
   spreadAdjustedDealPerSqm: number; estimatedDealPricePerSqm: number; iqrLowPerSqm: number; iqrHighPerSqm: number;
   marketRegime: 'HOT' | 'BALANCED' | 'FROZEN'; askToDealRatio: number; preIqrBargainsCount: number;
   autoBargainIds: string[]; autoBargains: AutoBargainSample[]; dayAnchorPrice: number; intlEquivText?: string;
 }
+export interface NeighborhoodListingSource { id: number; name: string; buyPerSqm: number; bargains?: ReadonlyArray<{ id: string; sqm: number; title: string; discountPercent?: number; price?: number }> | null; }
+export function buildNeighborhoodListingSamples(hood?: NeighborhoodListingSource | null): Array<{ id: string; sqm: number; askingTotalMillion: number; description: string }> {
+  if (!hood || !Array.isArray(hood.bargains) || hood.bargains.length === 0) return [];
+  const baseBuy = clampNumber(hood.buyPerSqm, 10, 2000, 120);
+  return hood.bargains.map((b) => ({ id: b.id, sqm: b.sqm, askingTotalMillion: Math.round(b.sqm * baseBuy * (1 - (b.discountPercent || 10) / 100)), description: `${b.sqm} متر ${b.title}` }));
+}
 const WORD_INT_MAP: ReadonlyArray<[string, number]> = [['دوازده', 12], ['یازده', 11], ['چهار', 4], ['ده', 10], ['نه', 9], ['هشت', 8], ['هفت', 7], ['شش', 6], ['پنج', 5], ['سه', 3], ['دو', 2], ['یک', 1]];
 const WORD_HUNDRED_MAP: ReadonlyArray<[string, number]> = [['چهارصد', 400], ['پانصد', 500], ['ششصد', 600], ['هفتصد', 700], ['هشتصد', 800], ['نهصد', 900], ['دویست', 200], ['سیصد', 300], ['صد', 100]];
-
 export function normalizePersianText(raw: string): string {
   if (!raw || typeof raw !== 'string') return '';
   let text = raw.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632)).replace(/[يئ]/g, 'ی').replace(/ك/g, 'ک').replace(/\u200c/g, ' ').replace(/[ \t]+/g, ' ');
-  for (const [word, val] of WORD_INT_MAP) {
-    text = text.replace(new RegExp(`(?<=^|[\\s،,.!؟(«:])${word}(?=\\s*(?:و\\s*نیم\\s*میلیارد|میلیارد|میلیون|طبقه|واحد|سال\\s*ساخت)(?=$|[\\s،,.!؟)»:]))`, 'g'), String(val));
-  }
-  for (const [word, val] of WORD_HUNDRED_MAP) {
-    text = text.replace(new RegExp(`(?<=میلیارد\\s*و\\s*)${word}(?=$|[\\s،,.!؟)»:])`, 'g'), String(val)).replace(new RegExp(`(?<=^|[\\s،,.!؟(«:])${word}(?=\\s*(?:میلیون|هزار|تومان|تومن)(?=$|[\\s،,.!؟)»:]))`, 'g'), String(val));
-  }
+  for (const [word, val] of WORD_INT_MAP) text = text.replace(new RegExp(`(?<=^|[\\s،,.!؟(«:])${word}(?=\\s*(?:و\\s*نیم\\s*میلیارد|میلیارد|میلیون|طبقه|واحد|سال\\s*ساخت)(?=$|[\\s،,.!؟)»:]))`, 'g'), String(val));
+  for (const [word, val] of WORD_HUNDRED_MAP) text = text.replace(new RegExp(`(?<=میلیارد\\s*و\\s*)${word}(?=$|[\\s،,.!؟)»:])`, 'g'), String(val)).replace(new RegExp(`(?<=^|[\\s،,.!؟(«:])${word}(?=\\s*(?:میلیون|هزار|تومان|تومن)(?=$|[\\s،,.!؟)»:]))`, 'g'), String(val));
   text = text.replace(/(?<!\d)(\d{1,2})\s*و\s*نیم\s*میلیارد/g, (_, d) => `${parseInt(d, 10) * 1000 + 500} میلیون`).replace(/(?<=^|[\s،,.!؟(«:])نیم\s*میلیارد/g, '500 میلیون');
   text = text.replace(/(?<!\d)(?!1[34]\d{2}\/)\d{1,3}(?:[.,٬/]\d{3}){2,}(?!\d)/g, (m) => m.replace(/[.,٬/]/g, '')).replace(/(?<!\d)(\d{1,2})[.,٬/](\d{3})(?=\s*میلیارد)/g, '$1.$2');
   text = text.replace(/(?<!\d)([1-9]|[12]\d|30)[.,٬/](\d{3})(?=\s*میلیون)/g, '$1$2').replace(/(?<=\d)[,٬](?=\d{3}(?:\D|$))/g, '').replace(/(?<=\d)(?:٫|[,٬](?=\d{1,2}(?:\D|$)))/g, '.');
@@ -41,7 +54,6 @@ export function normalizePersianText(raw: string): string {
   text = text.replace(/(?<!\d)(\d+)\s*میلیون\s*و\s*(\d{1,3})\s*هزار/g, (_, m, k) => `${Math.round((parseInt(m, 10) + parseInt(k, 10) / 1000) * 10) / 10} میلیون`);
   return text.trim();
 }
-
 export function hasAffirmativeMatch(text: string, keywordPattern: string | RegExp): boolean {
   const normalized = normalizePersianText(text); if (!normalized) return false;
   const cleanRegex = typeof keywordPattern === 'string' ? new RegExp(keywordPattern, 'i') : new RegExp(keywordPattern.source, keywordPattern.flags.replace(/g/g, ''));
@@ -56,19 +68,16 @@ export function hasAffirmativeMatch(text: string, keywordPattern: string | RegEx
   }
   return false;
 }
-
 export function resolveAmenityStatus(text: string, amenityPattern: RegExp, defaultValue: boolean): boolean {
   const norm = normalizePersianText(text), cleanPattern = new RegExp(amenityPattern.source, amenityPattern.flags.replace(/g/g, ''));
   return cleanPattern.test(norm) ? hasAffirmativeMatch(norm, cleanPattern) : defaultValue;
 }
-
 export function resolveBuildingAge(yearOrAge?: number | null, description = '', currentSolarYear = 1405): number {
   const normDesc = normalizePersianText(description);
   const numericToAge = (v: number): number => (v >= 1330 && v <= currentSolarYear ? currentSolarYear - v : v >= 400 && v <= currentSolarYear - 1000 ? currentSolarYear - (1000 + v) : v >= 70 && v <= 99 ? currentSolarYear - (1300 + v) : v >= 0 && v <= 65 ? v : 30);
   let age = 10;
-  if (yearOrAge !== undefined && yearOrAge !== null && !Number.isNaN(yearOrAge) && yearOrAge > 0) {
-    age = numericToAge(Math.round(yearOrAge));
-  } else {
+  if (yearOrAge !== undefined && yearOrAge !== null && !Number.isNaN(yearOrAge) && yearOrAge > 0) age = numericToAge(Math.round(yearOrAge));
+  else {
     const divarTable = /متراژ[\s\n]+سال\s*ساخت[\s\n]+اتاق[\s\n]+(?<!\d)(\d{2,3})[\s\n]+(13[4-9]\d|140[0-6]|قبل\s*از\s*1370)/.exec(normDesc);
     const explicitAge = /(?:^|[^\d.])(?<!\d)(\d{1,2})\s*سال\s*ساخت/.exec(normDesc);
     const explicitYear = /(?:سال\s*ساخت|ساخت|مدل)\s*[:：\n]?\s*(?<!\d)(13[4-9]\d|140[0-6]|40[0-6]|[7-9]\d)(?=$|\D)/.exec(normDesc);
@@ -81,10 +90,7 @@ export function resolveBuildingAge(yearOrAge?: number | null, description = '', 
   if (age <= 1 && (yearOrAge === undefined || yearOrAge === null) && hasAffirmativeMatch(normDesc, /(بازسازی|تخلیه\s*چند\s*سال|سند\s*قدیمی)/)) age = 8;
   return clampNumber(age, 0, 45, 10);
 }
-
-export function parseIranianPriceToMillionToman(
-  rawInput: number | string, sqm = 85, hoodBasePerSqm = 120, priceCueContext = '', fullDescriptionText = '', priceSourceType: PriceSourceType = 'STANDALONE'
-): { totalMillion: number; perSqmMillion: number } {
+export function parseIranianPriceToMillionToman(rawInput: number | string, sqm = 85, hoodBasePerSqm = 120, priceCueContext = '', fullDescriptionText = '', priceSourceType: PriceSourceType = 'STANDALONE'): { totalMillion: number; perSqmMillion: number } {
   const safeSqm = clampNumber(sqm ?? 85, 25, 1000, 85), safeBase = clampNumber(hoodBasePerSqm ?? 120, 15, 2000, 120);
   const rawStr = typeof rawInput === 'number' ? String(rawInput) : (rawInput || '');
   const norm = normalizePersianText(rawStr), normCue = normalizePersianText(priceCueContext || rawStr), normFull = normalizePersianText(fullDescriptionText || priceCueContext || rawStr);
@@ -105,30 +111,25 @@ export function parseIranianPriceToMillionToman(
   if (rialMatch) { const r = parseFloat(rialMatch[1]); valMillion = r >= 1_000_000 ? r / 10_000_000 : r * 100; }
   else if (bnMatch) valMillion = parseFloat(bnMatch[1]) * 1000;
   else if (mnMatch) valMillion = parseFloat(mnMatch[1]);
-  else if (rawNumMatch) {
-    const n = parseFloat(rawNumMatch[1]);
-    valMillion = n >= 10_000_000 ? n / 1_000_000 : n >= 100_000 ? n / 1000 : n < 50 && (priceSourceType === 'EXPLICIT_TOTAL' || /میلیارد/.test(normCue)) ? n * 1000 : n;
-  }
+  else if (rawNumMatch) { const n = parseFloat(rawNumMatch[1]); valMillion = n >= 10_000_000 ? n / 1_000_000 : n >= 100_000 ? n / 1000 : n < 50 && (priceSourceType === 'EXPLICIT_TOTAL' || /میلیارد/.test(normCue)) ? n * 1000 : n; }
   if (valMillion <= 0 || !Number.isFinite(valMillion)) return { totalMillion: 0, perSqmMillion: 0 };
   const isPerSqm = priceSourceType === 'EXPLICIT_PER_SQM' || (priceSourceType === 'STANDALONE' && (/(?:متری|هر\s*متر|فی)/.test(normCue) || (valMillion >= safeBase * 0.4 && valMillion <= safeBase * 2.5 && valMillion < safeBase * safeSqm * 0.25)));
   let totalMillion = isPerSqm ? Math.round(valMillion * safeSqm) : Math.round(valMillion);
   if (!isPerSqm && /(?:کسر\s*(?:شده|گردیده|می\s*گردد|می\s*شود)|کم\s*شده|به\s*کسر\s*رهن)/.test(normFull)) {
     const rahnMatch = /(?<!\d)(\d+(?:\.\d+)?)\s*(میلیارد|میلیون)\s*(?:رهن|ودیعه)|(?:رهن(?:\s*مستاجر|\s*کامل)?|ودیعه)\s*(?:تا\s*مبلغ\s*|به\s*مبلغ\s*|مبلغ\s*|حدود\s*|[:：])?\s*(?<!\d)(\d+(?:\.\d+)?)\s*(میلیارد|میلیون)?/.exec(normFull);
     if (rahnMatch) {
-      const rVal = parseFloat(rahnMatch[1] || rahnMatch[3]), rUnit = rahnMatch[2] || rahnMatch[4] || (rVal < 30 ? 'میلیارد' : 'میلیون');
-      const rahnM = rUnit.includes('میلیارد') ? rVal * 1000 : rVal;
+      const rVal = parseFloat(rahnMatch[1] || rahnMatch[3]), rUnit = rahnMatch[2] || rahnMatch[4] || (rVal < 30 ? 'میلیارد' : 'میلیون'), rahnM = rUnit.includes('میلیارد') ? rVal * 1000 : rVal;
       if (rahnM > 0 && rahnM < totalMillion * 0.6) totalMillion = Math.round(totalMillion + rahnM);
     }
   }
   return { totalMillion, perSqmMillion: Math.round((totalMillion / safeSqm) * 10) / 10 };
 }
-
 export function extractListingSpecsFromText(rawText: string, fallbackHoodBasePerSqm = 120): ExtractedListingSpecs {
-  const norm = normalizePersianText(rawText); let sqm = 85;
+  const norm = normalizePersianText(rawText); let extractedSqm: number | null = null;
   const divarSqm = /متراژ[\s\n]+سال\s*ساخت[\s\n]+اتاق[\s\n]+(?<!\d)(\d{2,3})(?=\D|$)/.exec(norm);
   const explicitSqm = /(?:متراژ(?:\s*واحد|\s*بنا|\s*آپارتمان)?|زیربنا|بنای\s*مفید)\s*[:：\n]?\s*(?<!\d)(\d{2,3})(?=\D|$)/.exec(norm);
-  if (divarSqm) sqm = clampNumber(parseInt(divarSqm[1], 10), 35, 350, 85);
-  else if (explicitSqm) sqm = clampNumber(parseInt(explicitSqm[1], 10), 35, 350, 85);
+  if (divarSqm) { const v = parseInt(divarSqm[1], 10); if (v >= 25 && v <= 1000) extractedSqm = clampNumber(v, 35, 350, 85); }
+  else if (explicitSqm) { const v = parseInt(explicitSqm[1], 10); if (v >= 25 && v <= 1000) extractedSqm = clampNumber(v, 35, 350, 85); }
   else {
     for (const m of norm.matchAll(/(?<!\d)(\d{2,3})\s*(?:متر\s*مربع|متر|متری)(?=$|\D)/g)) {
       const cand = parseInt(m[1], 10); if (cand < 35 || cand > 350 || m.index === undefined) continue;
@@ -137,16 +138,16 @@ export function extractListingSpecsFromText(rawText: string, fallbackHoodBasePer
       const hasLandOrSub = /(?:زمین|زمینی|عرصه|حیاط|پاسیو|بالکن|تراس|انباری|تجاری|مغازه|بر\s*ملک|حاشیه)/.test(prev30 + ' ' + next20);
       const hasUnitCue = /(?:آپارتمان|واحد|بنا|زیربنا|مفید)\s*$/.test(prev30) || /^\s*(?:بنا|خواب|تک\s*خواب|دو\s*خواب|سه\s*خواب|مفید)/.test(next20);
       if (hasLandOrSub && !hasUnitCue) continue;
-      sqm = cand; break;
+      extractedSqm = cand; break;
     }
   }
+  const hasExplicitSqm = extractedSqm !== null, sqm = extractedSqm ?? 85;
   let totalFloors = 5, floor: number | undefined;
   const bldgFloors = /(?<!طبقه\s*[:：]?\s*\d{1,2}\s*(?:از|\/)\s*)(?:ساختمان\s*)?(?<!\d)(\d{1,2})\s*طبقه/.exec(norm);
   if (bldgFloors) totalFloors = clampNumber(parseInt(bldgFloors[1], 10), 1, 40, 5);
   const floorFrac = /(?:طبقه|ط)\s*[:：]?\s*(?<!\d)(-?\d{1,2})\s*(?:از|\/)\s*(?<!\d)(\d{1,2})/.exec(norm);
-  if (floorFrac) {
-    floor = clampNumber(parseInt(floorFrac[1], 10), -2, 40, 2); totalFloors = clampNumber(parseInt(floorFrac[2], 10), 1, 40, Math.max(totalFloors, floor));
-  } else {
+  if (floorFrac) { floor = clampNumber(parseInt(floorFrac[1], 10), -2, 40, 2); totalFloors = clampNumber(parseInt(floorFrac[2], 10), 1, 40, Math.max(totalFloors, floor)); }
+  else {
     const wordFloorMap: Record<string, number> = { اول: 1, یکم: 1, یک: 1, دوم: 2, دو: 2, سوم: 3, سه: 3, چهارم: 4, چهار: 4, پنجم: 5, پنج: 5, ششم: 6, شش: 6, هفتم: 7, هفت: 7, هشتم: 8, هشت: 8, نهم: 9, نه: 9, دهم: 10, ده: 10 };
     for (const fm of norm.matchAll(/(?<!(?:هر|\d)\s*)(?:طبقه|ط)\s*[:：]?\s*(\d{1,2}|زیر\s*همکف|همکف|زیرزمین|منفی\s*یک|منفی\s*1|اول|یکم|یک|دوم|دو|سوم|سه|چهارم|چهار|پنجم|پنج|ششم|شش|هفتم|هفت|هشتم|هشت|نهم|نه|دهم|ده|آخر)(?:\s*(?:از|\/)\s*\d{1,2})?(?!\s*واحدی)/g)) {
       const token = fm[1].trim();
@@ -158,11 +159,8 @@ export function extractListingSpecsFromText(rawText: string, fallbackHoodBasePer
     }
   }
   const resolvedFloor = floor ?? 2; totalFloors = Math.max(totalFloors, resolvedFloor);
-  const age = resolveBuildingAge(null, norm);
-  const hasParking = resolveAmenityStatus(norm, /(?:پارکینگ|پارک\s*سندی|پارکینگ\s*اختصاصی)/, true);
-  const hasElevator = resolveAmenityStatus(norm, /(?:آسانسور|اسانسور|لاین\s*آسانسور)/, resolvedFloor > 2);
-  const hasStorage = resolveAmenityStatus(norm, /(?:انباری|انبار\s*سندی)/, true);
-  const hasBalcony = resolveAmenityStatus(norm, /(?:بالکن|تراس)/, true);
+  const age = resolveBuildingAge(null, norm), hasParking = resolveAmenityStatus(norm, /(?:پارکینگ|پارک\s*سندی|پارکینگ\s*اختصاصی)/, true);
+  const hasElevator = resolveAmenityStatus(norm, /(?:آسانسور|اسانسور|لاین\s*آسانسور)/, resolvedFloor > 2), hasStorage = resolveAmenityStatus(norm, /(?:انباری|انبار\s*سندی)/, true), hasBalcony = resolveAmenityStatus(norm, /(?:بالکن|تراس)/, true);
   const detectedSignals: DetectedListingSignals = {
     hasLegalRisk: hasAffirmativeMatch(norm, /(?:قولنامه\s*ای|وکالتی|وقفی|اوقاف|سند\s*مادر|اصلاحی|ورثه\s*ای)/),
     hasTenantLag: hasAffirmativeMatch(norm, /(?:در\s*رهن\s*مستاجر|مستاجر\s*دارد|در\s*دست\s*مستاجر|مهلت\s*تخلیه)/),
@@ -176,13 +174,10 @@ export function extractListingSpecsFromText(rawText: string, fallbackHoodBasePer
   let priceRes = { totalMillion: 0, perSqmMillion: 0 }, priceSourceType: PriceSourceType = 'NONE';
   const explicitTotalMatch = /(?:قیمت\s*کل|مبلغ\s*کل|جمع\s*کل|قیمت\s*فروش|قیمت\s*نهایی|قیمت\s*اعلامی)\s*[:：]?\s*(?<!\d)(\d+(?:\.\d+)?)\s*(میلیارد|میلیون\s*تومان|میلیون|تومان|تومن|ریال)?/.exec(norm);
   const explicitPerSqmMatch = /(?:قیمت\s*هر\s*متر(?:\s*مربع)?|متری|هر\s*متر(?:\s*مربع)?|فی)\s*[:：]?\s*(?<!\d)(\d+(?:\.\d+)?)\s*(میلیارد|میلیون\s*تومان|میلیون|تومان|تومن)?/.exec(norm);
-  if (explicitTotalMatch) {
-    priceSourceType = 'EXPLICIT_TOTAL'; priceRes = parseIranianPriceToMillionToman(explicitTotalMatch[0], sqm, fallbackHoodBasePerSqm, explicitTotalMatch[0], norm, 'EXPLICIT_TOTAL');
-  } else if (explicitPerSqmMatch) {
-    priceSourceType = 'EXPLICIT_PER_SQM'; priceRes = parseIranianPriceToMillionToman(explicitPerSqmMatch[0], sqm, fallbackHoodBasePerSqm, explicitPerSqmMatch[0], norm, 'EXPLICIT_PER_SQM');
-  } else if (/(?:نقدینگی|آورده\s*نقدی|نقد)\s*[:：]?\s*(?<!\d)\d/.test(norm)) {
-    priceSourceType = 'NET_CASH'; priceRes = parseIranianPriceToMillionToman(norm, sqm, fallbackHoodBasePerSqm, norm, norm, 'NET_CASH');
-  } else {
+  if (explicitTotalMatch) { priceSourceType = 'EXPLICIT_TOTAL'; priceRes = parseIranianPriceToMillionToman(explicitTotalMatch[0], sqm, fallbackHoodBasePerSqm, explicitTotalMatch[0], norm, 'EXPLICIT_TOTAL'); }
+  else if (explicitPerSqmMatch) { priceSourceType = 'EXPLICIT_PER_SQM'; priceRes = parseIranianPriceToMillionToman(explicitPerSqmMatch[0], sqm, fallbackHoodBasePerSqm, explicitPerSqmMatch[0], norm, 'EXPLICIT_PER_SQM'); }
+  else if (/(?:نقدینگی|آورده\s*نقدی|نقد)\s*[:：]?\s*(?<!\d)\d/.test(norm)) { priceSourceType = 'NET_CASH'; priceRes = parseIranianPriceToMillionToman(norm, sqm, fallbackHoodBasePerSqm, norm, norm, 'NET_CASH'); }
+  else {
     for (const cm of norm.matchAll(/(?<!\d)(\d+(?:\.\d+)?)\s*(میلیارد|میلیون\s*تومان|میلیون|ریال|تومان|تومن)/g)) {
       const prev25 = norm.slice(Math.max(0, (cm.index ?? 0) - 25), cm.index ?? 0);
       if (/(?:رهن|اجاره|ودیعه|وام|اوراق|قسط|شارژ|کمیسیون|خسارت|وجه\s*التزام)/.test(prev25)) continue;
@@ -190,12 +185,8 @@ export function extractListingSpecsFromText(rawText: string, fallbackHoodBasePer
       if (candPrice.perSqmMillion >= fallbackHoodBasePerSqm * 0.35 && candPrice.perSqmMillion <= fallbackHoodBasePerSqm * 2.6) { priceRes = candPrice; priceSourceType = 'STANDALONE'; break; }
     }
   }
-  return {
-    sqm, floor: resolvedFloor, totalFloors, age, buildingAge: age, hasElevator, hasParking, hasStorage, hasBalcony,
-    renovationStatus, detectedSignals, totalMillion: priceRes.totalMillion, perSqmMillion: priceRes.perSqmMillion, askingTotalMillion: priceRes.totalMillion, priceSourceType,
-  };
+  return { sqm, extractedSqm, hasExplicitSqm, floor: resolvedFloor, totalFloors, age, buildingAge: age, hasElevator, hasParking, hasStorage, hasBalcony, renovationStatus, detectedSignals, totalMillion: priceRes.totalMillion, perSqmMillion: priceRes.perSqmMillion, askingTotalMillion: priceRes.totalMillion, priceSourceType };
 }
-
 export function computeQualityMultiplier(specs: QualityMultiplierSpecs): number {
   const age = specs.age ?? specs.buildingAge ?? 5, f = specs.floor ?? 2, tf = Math.max(1, specs.totalFloors ?? 5, f);
   const hasElevator = specs.hasElevator ?? (f > 2), hasParking = specs.hasParking ?? true, hasStorage = specs.hasStorage ?? true;
@@ -214,12 +205,10 @@ export function computeQualityMultiplier(specs: QualityMultiplierSpecs): number 
   if (specs.detectedSignals?.hasTenantLag || specs.hasTenant) multiplier *= 0.96;
   return Math.round(clampNumber(multiplier, 0.68, 1.32, 1.0) * 1000) / 1000;
 }
-
 export function seededRandom(seed: number): () => number {
   let state = (seed ^ 0x9e3779b9) >>> 0;
   return () => { state = (state + 0x6d2b79f5) >>> 0; let t = Math.imul(state ^ (state >>> 15), 1 | state); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-
 export function applySpatialGrowthFallback(targetHood: { id: number; lat: number; lng: number; buyPerSqm: number }, allHoods: ReadonlyArray<{ id: number; lat: number; lng: number; buyPerSqm: number; growthPct?: number }>): number {
   let weightedSum = 0, weightTotal = 0;
   for (const h of allHoods) {
@@ -229,58 +218,69 @@ export function applySpatialGrowthFallback(targetHood: { id: number; lat: number
   }
   return weightTotal > 0 ? Math.round((weightedSum / weightTotal) * 100) / 100 : 0;
 }
-
 export function aggregateNeighborhoodMarketMetrics(
   hoodId: number, hoodName: string, baseHoodPerSqm: number,
-  samples: Array<{ id?: string; askingTotalMillion: number; description: string; yearOrAge?: number }>, previousDayAnchorPrice?: number
+  samples: Array<{ id?: string; sqm?: number; askingTotalMillion: number; description: string; yearOrAge?: number }>, previousDayAnchorPrice?: number
 ): AggregatedMarketMetrics {
-  const isBootstrapped = samples.length < 3, rand = seededRandom(hoodId * 997 + Math.floor(Date.now() / 86_400_000));
-  const effectiveSamples = isBootstrapped
-    ? [0.86, 0.89, 0.91, 0.96, 0.98, 0.99, 1.0, 1.01, 1.02, 1.03, 1.04, 1.06].map((factor, idx) => ({ id: `boot-${hoodId}-${idx + 1}`, askingTotalMillion: Math.round(baseHoodPerSqm * factor * (80 + Math.round(rand() * 20)) * 10) / 10, description: `${80 + Math.round(rand() * 20)} متر طبقه 2 از 5 با پارکینگ و آسانسور ساخت 1400`, yearOrAge: 1400 }))
-    : samples;
-  const evaluated: Array<AutoBargainSample & { normPerSqm: number }> = [];
-  for (let i = 0; i < effectiveSamples.length; i++) {
-    const s = effectiveSamples[i], specs = extractListingSpecsFromText(s.description, baseHoodPerSqm), resolvedAge = resolveBuildingAge(s.yearOrAge, s.description);
-    const qMult = computeQualityMultiplier({ ...specs, age: resolvedAge, buildingAge: resolvedAge, hoodBasePerSqm: baseHoodPerSqm });
-    const parsedTotal = s.askingTotalMillion > 0 ? s.askingTotalMillion : specs.totalMillion, rawPerSqm = parsedTotal > 0 && specs.sqm > 20 ? parsedTotal / specs.sqm : baseHoodPerSqm, normPerSqm = rawPerSqm / Math.max(0.68, qMult);
-    if (normPerSqm > 15 && normPerSqm < 2000) {
-      const fairPerSqm = Math.round(baseHoodPerSqm * qMult * 10) / 10, discountPct = Math.max(0, Math.round(((fairPerSqm - rawPerSqm) / Math.max(1, fairPerSqm)) * 100));
-      evaluated.push({ id: s.id || `sample-${i + 1}`, sqm: specs.sqm, age: resolvedAge, floor: specs.floor, askingTotalMillion: Math.round(parsedTotal), perSqmMillion: Math.round(rawPerSqm * 10) / 10, fairPerSqmMillion: fairPerSqm, discountPct, description: s.description, normPerSqm });
-    }
+  const safeSamples = Array.isArray(samples) ? samples : [], rawInputCount = safeSamples.length, seenIds = new Set<string>(), seenFingerprints = new Set<string>(), seenSpecKeys = new Set<string>();
+  let duplicateSampleCount = 0, probableDuplicateCount = 0, malformedSampleCount = 0, missingAreaSampleCount = 0, extremePriceAnomalyCount = 0;
+  const suspectedFraudCount = 0, rejectedFraudCount = 0, uniqueRawSamples: typeof safeSamples = [], observedEvaluated: Array<AutoBargainSample & { normPerSqm: number }> = [];
+  for (const s of safeSamples) {
+    const idTrim = typeof s?.id === 'string' ? s.id.trim() : '', fp = `${normalizePersianText(s?.description || '')}|${Math.round(Number(s?.askingTotalMillion) || 0)}|${s?.yearOrAge ?? ''}|${s?.sqm ?? ''}`;
+    if ((idTrim && seenIds.has(idTrim)) || seenFingerprints.has(fp)) { duplicateSampleCount++; continue; }
+    if (idTrim) seenIds.add(idTrim); seenFingerprints.add(fp); uniqueRawSamples.push(s);
   }
-  const autoBargains = evaluated.filter((e) => e.normPerSqm <= baseHoodPerSqm * 0.92).map(({ normPerSqm: _n, ...rest }) => rest), autoBargainIds = autoBargains.map((b) => b.id);
-  const sortedPrices = evaluated.map((e) => e.normPerSqm).sort((a, b) => a - b);
-  const q1 = sortedPrices[Math.floor(sortedPrices.length * 0.25)] ?? baseHoodPerSqm * 0.94, q3 = sortedPrices[Math.floor(sortedPrices.length * 0.75)] ?? baseHoodPerSqm * 1.06, iqr = Math.max(1, q3 - q1);
-  const trimmed = sortedPrices.filter((p) => p >= q1 - 1.5 * iqr && p <= q3 + 1.5 * iqr);
-  const rawAveragePerSqm = trimmed.length > 0 ? Math.round((trimmed.reduce((a, b) => a + b, 0) / trimmed.length) * 10) / 10 : baseHoodPerSqm;
-  const anchor = previousDayAnchorPrice && previousDayAnchorPrice > 10 ? previousDayAnchorPrice : baseHoodPerSqm, dayAnchorPrice = Math.round(clampNumber(rawAveragePerSqm, anchor * 0.97, anchor * 1.03, anchor) * 10) / 10;
-  const marketRegime: AggregatedMarketMetrics['marketRegime'] = isBootstrapped ? 'BALANCED' : samples.length >= 10 ? 'HOT' : samples.length >= 3 ? 'BALANCED' : 'FROZEN';
-  const askToDealRatio = marketRegime === 'HOT' ? 0.975 : marketRegime === 'BALANCED' ? 0.93 : 0.90, dealPerSqm = Math.round(dayAnchorPrice * askToDealRatio * 10) / 10;
-  const validSampleCount = trimmed.length, rejectedFraudCount = Math.max(0, effectiveSamples.length - trimmed.length), confidenceScore = isBootstrapped ? 74 : clampNumber(62 + validSampleCount * 3, 65, 98, 82);
+  for (let i = 0; i < uniqueRawSamples.length; i++) {
+    const s = uniqueRawSamples[i], specs = extractListingSpecsFromText(s?.description || '', baseHoodPerSqm);
+    const hasExplicitValidSqm = s?.sqm !== undefined ? typeof s.sqm === 'number' && Number.isFinite(s.sqm) && s.sqm >= 25 && s.sqm <= 1000 : specs.hasExplicitSqm && specs.extractedSqm !== null && specs.extractedSqm >= 25;
+    const validSqm = s?.sqm !== undefined && hasExplicitValidSqm ? Math.round(s.sqm) : (specs.extractedSqm ?? -1);
+    const parsedTotal = typeof s?.askingTotalMillion === 'number' && Number.isFinite(s.askingTotalMillion) && s.askingTotalMillion > 0 ? s.askingTotalMillion : specs.totalMillion;
+    if (!hasExplicitValidSqm || validSqm <= 0) { malformedSampleCount++; missingAreaSampleCount++; continue; }
+    if (!(parsedTotal > 0) || !Number.isFinite(parsedTotal)) { malformedSampleCount++; continue; }
+    const resolvedAge = resolveBuildingAge(s?.yearOrAge, s?.description || ''), specKey = `${validSqm}|${specs.floor}|${resolvedAge}|${Math.round(parsedTotal)}`;
+    if (seenSpecKeys.has(specKey)) { if (!(typeof s?.id === 'string' && s.id.trim())) { duplicateSampleCount++; continue; } probableDuplicateCount++; }
+    seenSpecKeys.add(specKey);
+    const qMult = computeQualityMultiplier({ ...specs, sqm: validSqm, age: resolvedAge, buildingAge: resolvedAge, hoodBasePerSqm: baseHoodPerSqm }), rawPerSqm = parsedTotal / validSqm, normPerSqm = rawPerSqm / Math.max(0.68, qMult);
+    if (rawPerSqm < baseHoodPerSqm * 0.42 || rawPerSqm > baseHoodPerSqm * 2.4) { extremePriceAnomalyCount++; continue; }
+    if (!(normPerSqm > 15 && normPerSqm < 2000)) { malformedSampleCount++; continue; }
+    const fairPerSqm = Math.round(baseHoodPerSqm * qMult * 10) / 10, discountPct = Math.max(0, Math.round(((fairPerSqm - rawPerSqm) / Math.max(1, fairPerSqm)) * 100));
+    observedEvaluated.push({ id: s?.id || `sample-${i + 1}`, sqm: validSqm, age: resolvedAge, floor: specs.floor, askingTotalMillion: Math.round(parsedTotal), perSqmMillion: Math.round(rawPerSqm * 10) / 10, fairPerSqmMillion: fairPerSqm, discountPct, description: s?.description || '', normPerSqm });
+  }
+  const observedSampleCount = rawInputCount - duplicateSampleCount, isBootstrapped = observedEvaluated.length < 3, obsSorted = observedEvaluated.map((e) => e.normPerSqm).sort((a, b) => a - b);
+  const q1Obs = obsSorted.length >= 3 ? obsSorted[Math.floor(obsSorted.length * 0.25)] : null, q3Obs = obsSorted.length >= 3 ? obsSorted[Math.floor(obsSorted.length * 0.75)] : null, iqrObs = q1Obs !== null && q3Obs !== null ? Math.max(1, q3Obs - q1Obs) : 0;
+  const trimmed = obsSorted.length >= 4 && q1Obs !== null && q3Obs !== null ? obsSorted.filter((p) => p >= q1Obs - 1.5 * iqrObs && p <= q3Obs + 1.5 * iqrObs) : obsSorted;
+  const iqrOutlierCount = Math.max(0, obsSorted.length - trimmed.length), excludedOutlierCount = iqrOutlierCount + extremePriceAnomalyCount, eligibleObservedCount = trimmed.length, validSampleCount = eligibleObservedCount, sampleCount = observedSampleCount;
+  const autoBargains = observedEvaluated.filter((e) => e.normPerSqm <= baseHoodPerSqm * 0.92).map(({ normPerSqm: _n, ...rest }) => rest), autoBargainIds = autoBargains.map((b) => b.id);
+  const observedMeanPerSqm = trimmed.length > 0 ? Math.round((trimmed.reduce((a, b) => a + b, 0) / trimmed.length) * 10) / 10 : null;
+  const observedMedianPerSqm = obsSorted.length > 0 ? Math.round(((obsSorted.length % 2 === 1 ? obsSorted[Math.floor(obsSorted.length / 2)] : (obsSorted[obsSorted.length / 2 - 1] + obsSorted[obsSorted.length / 2]) / 2)) * 10) / 10 : null;
+  const hasSufficientIqrEvidence = trimmed.length >= 3 && q1Obs !== null && q3Obs !== null, observedIqrLowPerSqm = hasSufficientIqrEvidence ? Math.round(q1Obs * 10) / 10 : null, observedIqrHighPerSqm = hasSufficientIqrEvidence ? Math.round(q3Obs * 10) / 10 : null;
+  const rawAveragePerSqm = observedMeanPerSqm === null ? baseHoodPerSqm : isBootstrapped ? Math.round(((observedMeanPerSqm * 0.5 + baseHoodPerSqm * 0.5)) * 10) / 10 : observedMeanPerSqm;
+  const unclampedAveragePerSqm = rawAveragePerSqm, anchor = previousDayAnchorPrice && previousDayAnchorPrice > 10 ? previousDayAnchorPrice : baseHoodPerSqm, dayAnchorPrice = Math.round(clampNumber(rawAveragePerSqm, anchor * 0.97, anchor * 1.03, anchor) * 10) / 10, isAnchorClamped = Math.abs(unclampedAveragePerSqm - dayAnchorPrice) > 0.05;
+  const isStagnantRegime = !isBootstrapped && eligibleObservedCount < 10 && (((q3Obs ?? baseHoodPerSqm) - (q1Obs ?? baseHoodPerSqm)) / Math.max(1, baseHoodPerSqm) >= 0.16 || rawAveragePerSqm >= baseHoodPerSqm * 1.12);
+  const marketRegime: AggregatedMarketMetrics['marketRegime'] = isBootstrapped ? 'BALANCED' : eligibleObservedCount >= 10 ? 'HOT' : isStagnantRegime ? 'FROZEN' : 'BALANCED', askToDealRatio = marketRegime === 'HOT' ? 0.975 : marketRegime === 'BALANCED' ? 0.93 : 0.90, dealPerSqm = Math.round(dayAnchorPrice * askToDealRatio * 10) / 10;
+  const provenance: MarketDataProvenance = eligibleObservedCount === 0 ? 'REFERENCE_BASELINE' : isBootstrapped ? 'HEURISTIC_ESTIMATE' : 'OBSERVED_SECONDARY', evidenceQuality: EvidenceQualityState = eligibleObservedCount === 0 ? 'INSUFFICIENT_OBSERVATIONS' : isBootstrapped ? 'LIMITED_OBSERVATIONS' : eligibleObservedCount < 10 ? 'MODERATE_OBSERVATIONS' : 'ADEQUATE_OBSERVATIONS';
+  const evidenceSufficiency: EvidenceSufficiencyLevel = eligibleObservedCount === 0 ? 'NONE' : isBootstrapped ? 'INSUFFICIENT' : eligibleObservedCount < 10 ? 'MODERATE' : 'SUFFICIENT', coverageState: SampleCoverageState = eligibleObservedCount === 0 ? 'BOOTSTRAPPED_BASELINE' : isBootstrapped ? 'SPARSE_1_TO_2' : eligibleObservedCount < 10 ? 'MODERATE_3_TO_9' : 'SUFFICIENT_10_PLUS';
+  const epistemicStatus: EpistemicDataStatus = eligibleObservedCount === 0 ? 'ESTIMATED' : isBootstrapped ? 'ESTIMATED' : 'OBSERVED', dataMode = eligibleObservedCount === 0 ? 'ILLUSTRATIVE_BOOTSTRAP' : isBootstrapped ? 'LIMITED_OBSERVED_BLEND' : 'OBSERVED_MARKET';
+  const fraudReviewState: FraudReviewState = extremePriceAnomalyCount > 0 ? 'UNVERIFIED_PRICE_ANOMALY' : iqrOutlierCount > 0 ? 'STATISTICAL_OUTLIER' : malformedSampleCount > 0 ? 'ANOMALOUS_RECORD' : 'NONE', evidenceIndexScore = eligibleObservedCount === 0 ? 0 : eligibleObservedCount === 1 ? 35 : eligibleObservedCount === 2 ? 52 : clampNumber(62 + eligibleObservedCount * 3, 65, 98, 65);
   return {
-    hoodId, hoodName, sampleCount: effectiveSamples.length, validSampleCount, rejectedFraudCount, confidenceScore, isBootstrapped, rawAveragePerSqm, hedonicAdjustedPerSqm: dayAnchorPrice, askingPricePerSqm: dayAnchorPrice,
-    spreadAdjustedDealPerSqm: dealPerSqm, estimatedDealPricePerSqm: dealPerSqm, iqrLowPerSqm: Math.round(q1 * 10) / 10, iqrHighPerSqm: Math.round(q3 * 10) / 10, marketRegime, askToDealRatio, preIqrBargainsCount: autoBargainIds.length, autoBargainIds, autoBargains, dayAnchorPrice, intlEquivText: formatMillionTomanAsIntlCurrency(dayAnchorPrice, 'USD'),
+    hoodId, hoodName, rawInputCount, sampleCount, validSampleCount, rejectedFraudCount, confidenceScore: evidenceIndexScore, observedSampleCount, duplicateSampleCount, probableDuplicateCount, eligibleObservedCount, syntheticSampleCount: 0,
+    excludedOutlierCount, extremePriceAnomalyCount, malformedSampleCount, missingAreaSampleCount, suspectedFraudCount, verifiedTransactionCount: 0, provenance, epistemicStatus, dataMode, fraudReviewState, dealPriceProvenance: 'HEURISTIC_ESTIMATE', evidenceQuality, evidenceSufficiency, coverageState,
+    evidenceIndexScore, evidenceIndexFormula: '0_OBS=0|1_OBS=35|2_OBS=52|3PLUS_OBS=CLAMP(62+3*N,65,98)_COVERAGE_INDEX_NOT_PROBABILITY', marketActivityEvidence: 'NO_TRANSACTION_VELOCITY_DATA_DISPERSION_HEURISTIC', negotiationMultiplierBasis: 'HYPOTHETICAL_SCENARIO_ASSUMPTION_NOT_EMPIRICAL',
+    calibratedConfidencePct: null, hasSufficientIqrEvidence, observedMeanPerSqm, observedMedianPerSqm, observedIqrLowPerSqm, observedIqrHighPerSqm, isAnchorClamped, unclampedAveragePerSqm, isBootstrapped, rawAveragePerSqm, hedonicAdjustedPerSqm: dayAnchorPrice, askingPricePerSqm: dayAnchorPrice,
+    spreadAdjustedDealPerSqm: dealPerSqm, estimatedDealPricePerSqm: dealPerSqm, iqrLowPerSqm: observedIqrLowPerSqm ?? 0, iqrHighPerSqm: observedIqrHighPerSqm ?? 0, marketRegime, askToDealRatio, preIqrBargainsCount: autoBargainIds.length, autoBargainIds, autoBargains, dayAnchorPrice,
+    intlEquivText: formatMillionTomanAsIntlCurrency(dayAnchorPrice, 'USD'),
   };
 }
 export const aggregateNeighborhoodLivePrice = aggregateNeighborhoodMarketMetrics;
-
 export function verifyPricingEngineIntegrity(): { passed: boolean; failures: string[] } {
   const failures: string[] = [], check = (cond: boolean, msg: string) => { if (!cond) failures.push(msg); };
-  check(parseIranianPriceToMillionToman('۱۱ و نیم میلیارد', 100, 115).totalMillion === 11500, 'Case 1: 11.5B word fold failed');
-  check(parseIranianPriceToMillionToman('۱۲ میلیارد و پانصد', 100, 125).totalMillion === 12500, 'Case 2: 12B + 500M compound failed');
   const c3 = extractListingSpecsFromText('قیمت ۱۰ میلیارد و ۱۰۰ متر بنا', 100), c14 = extractListingSpecsFromText('بدون پارکینگ آسانسور دارد', 100);
-  check(c3.totalMillion === 10000 && c3.sqm === 100, 'Case 3: 10B + 100 sqm collision failed');
-  check(extractListingSpecsFromText('قیمت کل ۶.۵ میلیارد، ۸۰۰ میلیون رهن مستاجر کسر شده است', 100).totalMillion === 7300, 'Case 4: Rahn deduction addition failed');
-  check(parseIranianPriceToMillionToman('۱۲.۵۰۰.۰۰۰.۰۰۰ تومان', 100, 125).totalMillion === 12500, 'Case 5: Multi-dot thousands separator failed');
-  check(extractListingSpecsFromText('قیمت هر متر: ۶۵٬۰۰۰٬۰۰۰ تومان', 65).perSqmMillion === 65, 'Case 6: Explicit per-sqm Toman price failed');
-  check(extractListingSpecsFromText('۵ طبقه ۲ واحدی، طبقه چهارم', 100).floor === 4, 'Case 7: 5-floor 2-unit floor=4 extraction failed');
-  check(extractListingSpecsFromText('طبقه ۲ واحد جنوبی', 100).floor === 2, 'Case 8: Floor 2 south unit extraction failed');
-  check(extractListingSpecsFromText('ساختمان ۵ طبقه، طبقه آخر', 100).floor === 5, 'Case 9: Top floor (طبقه آخر) resolution failed');
-  check(extractListingSpecsFromText('طبقه همکف', 100).floor === 0, 'Case 10: Ground floor (طبقه همکف = 0) failed');
-  check(extractListingSpecsFromText('در زمینی به مساحت ۳۰۰ متر، واحد ۹۵ متری', 100).sqm === 95, 'Case 11: Land vs unit area disambiguation failed');
-  check(hasAffirmativeMatch('معاوضه با خودرو ندارم', /معاوضه/) === false, 'Case 12: Post-negation ندارم failed');
-  check(hasAffirmativeMatch('بدون هیچ گونه اصلاحی', /اصلاحی/) === false, 'Case 13: Pre-negation بدون هیچ گونه اصلاحی failed');
-  check(c14.hasParking === false && c14.hasElevator === true, 'Case 14: Sub-clause parking=false elevator=true failed');
-  check(extractListingSpecsFromText('صفر تا صد بازسازی شده', 100).detectedSignals.isRenovated === true && normalizePersianText('صفر تا صد بازسازی شده').includes('صفر تا صد'), 'Case 15: Idiom صفر تا صد renovation signal failed');
+  check(parseIranianPriceToMillionToman('۱۱ و نیم میلیارد', 100, 115).totalMillion === 11500 && parseIranianPriceToMillionToman('۱۲ میلیارد و پانصد', 100, 125).totalMillion === 12500, 'Case 1-2: Word fold failed');
+  check(c3.totalMillion === 10000 && c3.sqm === 100 && extractListingSpecsFromText('قیمت کل ۶.۵ میلیارد، ۸۰۰ میلیون رهن مستاجر کسر شده است', 100).totalMillion === 7300, 'Case 3-4: Total/Rahn failed');
+  check(parseIranianPriceToMillionToman('۱۲.۵۰۰.۰۰۰.۰۰۰ تومان', 100, 125).totalMillion === 12500 && extractListingSpecsFromText('قیمت هر متر: ۶۵٬۰۰۰٬۰۰۰ تومان', 65).perSqmMillion === 65, 'Case 5-6: Separator/PerSqm failed');
+  check(extractListingSpecsFromText('۵ طبقه ۲ واحدی، طبقه چهارم', 100).floor === 4 && extractListingSpecsFromText('طبقه ۲ واحد جنوبی', 100).floor === 2, 'Case 7-8: Floor extraction failed');
+  check(extractListingSpecsFromText('ساختمان ۵ طبقه، طبقه آخر', 100).floor === 5 && extractListingSpecsFromText('طبقه همکف', 100).floor === 0, 'Case 9-10: Top/ground floor failed');
+  check(extractListingSpecsFromText('در زمینی به مساحت ۳۰۰ متر، واحد ۹۵ متری', 100).sqm === 95 && !hasAffirmativeMatch('معاوضه با خودرو ندارم', /معاوضه/) && !hasAffirmativeMatch('بدون هیچ گونه اصلاحی', /اصلاحی/), 'Case 11-13: Area/Negation failed');
+  check(c14.hasParking === false && c14.hasElevator === true && extractListingSpecsFromText('صفر تا صد بازسازی شده', 100).detectedSignals.isRenovated === true && normalizePersianText('صفر تا صد بازسازی شده').includes('صفر تا صد'), 'Case 14-15: Sub-clause/Idiom failed');
   return { passed: failures.length === 0, failures };
 }

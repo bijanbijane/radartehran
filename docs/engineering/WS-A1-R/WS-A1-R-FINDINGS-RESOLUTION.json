@@ -1,0 +1,127 @@
+{
+  "workstream": "WS-A1-R",
+  "parentWorkstreams": [
+    "WS-A1",
+    "WS-A1-V"
+  ],
+  "timestampUtc": "2026-11-08T21:40:00Z",
+  "remediationVerdict": "REMEDIATION COMPLETE — AWAITING INDEPENDENT VERIFICATION",
+  "wsBAuthorization": "NOT GRANTED",
+  "findingsResolution": [
+    {
+      "findingId": "F-A1V-01",
+      "severity": "CRITICAL",
+      "category": "STATISTICAL_VALIDITY_AND_PROVENANCE",
+      "title": "Silent Default Area Substitution (85 sqm) on Missing/Unparseable Listing Area",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "src/data/realMarketPriceAggregator.ts",
+        "tests/real-market-price-aggregator.test.ts"
+      ],
+      "rootCause": "extractListingSpecsFromText defaulted sqm to 85 whenever regex extraction failed, causing aggregateNeighborhoodMarketMetrics to compute fabricated per-sqm prices (priceMillion / 85) and include them in median/IQR/confidence calculations.",
+      "remediationSummary": "Added explicit extractedSqm: number | null and hasExplicitSqm: boolean to ExtractedListingSpecs. In aggregateNeighborhoodMarketMetrics, any sample lacking explicit extracted area (or with sqm <= 0) is rejected before per-sqm calculation, incrementing malformedSampleCount and missingAreaSampleCount.",
+      "verificationEvidence": "tests/real-market-price-aggregator.test.ts Test 1 (No Silent Default Area Substitution) & Test 2 (Zero Valid Samples Graceful Fallback) — PASS (exit 0)."
+    },
+    {
+      "findingId": "F-A1V-02",
+      "severity": "HIGH",
+      "category": "STATISTICAL_VALIDITY_AND_PROVENANCE",
+      "title": "Over-Aggressive Spec-Only Deduplication Collapsing Distinct Units & Misclassifying Outliers as Fraud",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "src/data/realMarketPriceAggregator.ts",
+        "tests/real-market-price-aggregator.test.ts"
+      ],
+      "rootCause": "Deduplication keyed solely on askingTotalMillion|yearOrAge|sqm collapsed distinct apartments in the same building, and statistical IQR outliers / extreme price deviations were increments on suspectedFraudCount and rejectedFraudCount.",
+      "remediationSummary": "Implemented 3-tier conservative deduplication: (1) exact id match -> duplicateSampleCount++, (2) exact normalized description|price|age|sqm fingerprint -> duplicateSampleCount++, (3) identical price|age|sqm with distinct non-empty IDs -> probableDuplicateCount++ (retained in sample pool without silent collapse). Separated statistical outliers into excludedOutlierCount and extreme price deviations into extremePriceAnomalyCount (fraudReviewState: 'UNVERIFIED_PRICE_ANOMALY'), keeping suspectedFraudCount = 0 and rejectedFraudCount = 0 unless corroborated fraud signals exist.",
+      "verificationEvidence": "tests/real-market-price-aggregator.test.ts Test 3 (Conservative Deduplication) & Test 4 (Outlier vs Fraud Separation) — PASS (exit 0)."
+    },
+    {
+      "findingId": "F-A1V-03",
+      "severity": "HIGH",
+      "category": "STATISTICAL_VALIDITY_AND_PROVENANCE",
+      "title": "Unlabeled Synthetic PRNG Listing Generation Mixed Into Aggregator Fallback",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "src/data/realMarketPriceAggregator.ts",
+        "tests/real-market-price-aggregator.test.ts"
+      ],
+      "rootCause": "When rawSamples was empty or omitted, aggregateNeighborhoodMarketMetrics invoked generateNeighborhoodListingSamples (seeded with Date.now() in fallback path) to synthesize fake listings and populate autoBargains with boot-* items.",
+      "remediationSummary": "Removed all synthetic PRNG fallback calls from aggregateNeighborhoodMarketMetrics. When 0 real samples exist, observedSampleCount = 0, eligibleObservedCount = 0, syntheticSampleCount = 0, autoBargains = [], and provenanceSource = 'STATIC_BENCHMARK_FALLBACK'. Exported buildNeighborhoodListingSamples(hood) to construct deterministic observed samples strictly from hood.listings and hood.bargains.",
+      "verificationEvidence": "tests/real-market-price-aggregator.test.ts Test 2 (Zero Valid Samples Graceful Fallback) — PASS (exit 0)."
+    },
+    {
+      "findingId": "F-A1V-04",
+      "severity": "HIGH",
+      "category": "STATISTICAL_VALIDITY_AND_PROVENANCE",
+      "title": "Degenerate Two-Sample IQR Displayed as Robust Interquartile Range & Non-Monotonic Confidence Score",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "src/data/realMarketPriceAggregator.ts",
+        "src/components/views/ProductIntelligenceView.tsx",
+        "src/components/NeighborhoodInspectorTabs.tsx",
+        "tests/real-market-price-aggregator.test.ts"
+      ],
+      "rootCause": "With N=2 samples (e.g. Punak), quantile interpolation produced a 2-point min/max spread labeled as an interquartile range (IQR), and confidenceScore fell back to hood.confidenceScore (74) for N=1..2 while computing 71 for N=3 (violating monotonicity).",
+      "remediationSummary": "Added hasSufficientIqrEvidence = trimmed.length >= 3. When < 3 valid samples exist, observedIqrLowPerSqm = null, observedIqrHighPerSqm = null, iqrLowPerSqm = 0, iqrHighPerSqm = 0, and UI renders an explicit insufficient-sample notice ('محاسبه بازه چارکی (IQR) نیازمند حداقل ۳ آگهی معتبر است'). Unified confidenceScore with monotonic evidenceIndexScore (0 -> 0, 1 -> 35, 2 -> 52, 3 -> 71, 6 -> 85).",
+      "verificationEvidence": "tests/real-market-price-aggregator.test.ts Test 5 (Minimum Sample Threshold for IQR & Monotonic Evidence Index) — PASS (exit 0)."
+    },
+    {
+      "findingId": "F-A1V-05",
+      "severity": "HIGH",
+      "category": "ADVERSARIAL_INPUT_VALIDATION",
+      "title": "Silent Clamping of Invalid/Adversarial Hedonic Valuation Inputs & Overstated Empirical Calibration Claims",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "src/data/hedonicPricingEngine.ts",
+        "tests/assess-004-hedonic-accuracy-benchmark.test.ts"
+      ],
+      "rootCause": "calculateHedonicValuation silently clamped sqm <= 0 to 30 and NaN to 85, and accepted floor > totalFloors without error, returning a normal-looking valuation object.",
+      "remediationSummary": "Added validateHedonicInputs(params, currentYear) enforcing strict checks for sqm <= 0, NaN/Infinity, sqm > 1000, negative age, floor < -2, floor > totalFloors, and invalid neighborhood.buyPerSqm. Invalid inputs now return isValid: false, validationStatus: 'INVALID_INPUT', populated validationErrors, and zeroed price outputs. Added methodologyKind: 'RULE_BASED_HEURISTIC_MULTIPLIER' and isEmpiricallyCalibratedRegression: false.",
+      "verificationEvidence": "tests/assess-004-hedonic-accuracy-benchmark.test.ts Adversarial Input Rejection tests — PASS (exit 0)."
+    },
+    {
+      "findingId": "F-A1V-06",
+      "severity": "HIGH",
+      "category": "UX_EPISTEMIC_HONESTY_AND_CONSISTENCY",
+      "title": "Cross-Surface Sample Count Contradiction (1 vs 2 Samples for Punak) & Asking-vs-Transaction Semantic Drift",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "src/components/views/ProductIntelligenceView.tsx",
+        "src/components/CompareModal.tsx",
+        "src/components/NeighborhoodInspectorDrawer.tsx",
+        "src/components/NeighborhoodInspectorTabs.tsx"
+      ],
+      "rootCause": "Inspector passed only hood.listings (1 item for Punak) while ProductIntelligenceView passed hood.listings + hood.bargains (2 items) and CompareModal passed [] (0 items). Additionally, ProductIntelligenceView labeled FAST_SALE_FACTOR (0.88) outputs as 'تخمین قیمت قطعی معاملات' and 'همگرایی قیمت اعلامی با نرخ معامله'.",
+      "remediationSummary": "Wired all 4 surfaces to buildNeighborhoodListingSamples(hood) so Punak consistently reports 2 observed samples and Evidence Index 52/100 everywhere. Replaced transaction-price claims in ProductIntelligenceView with explicit asking-price and hypothetical negotiation scenario copy ('سناریوی مذاکره و فروش فوری فرضی — ۱۲٪ کمتر از میانه اعلامی').",
+      "verificationEvidence": "Verified in live Chromium via playwright-cli on /?hood=5&compare=5-14 and /?hood=5&view=intelligence; screenshots captured in public/ws-a1-r-compare-punak.png and public/ws-a1-r-intelligence-punak.png."
+    },
+    {
+      "findingId": "F-A1V-07",
+      "severity": "MEDIUM",
+      "category": "REPRODUCIBILITY_AND_PACKAGING",
+      "title": "Non-Standard Unified Patch Format in WS-G4A-A1.patch",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "docs/engineering/WS-A1-R/WS-A1-R.patch"
+      ],
+      "rootCause": "WS-G4A-A1.patch was assembled with synthetic hunk headers rather than generated programmatically via diff -u against the baseline tree.",
+      "remediationSummary": "Generated docs/engineering/WS-A1-R/WS-A1-R.patch directly via standard GNU diff -u comparing the extracted WS-A1 baseline archive against the remediated workspace, and verified clean applicability with patch --dry-run -p0.",
+      "verificationEvidence": "patch --dry-run -p0 < docs/engineering/WS-A1-R/WS-A1-R.patch verified with exit code 0."
+    },
+    {
+      "findingId": "F-A1V-08",
+      "severity": "LOW",
+      "category": "GOVERNANCE_AND_EVIDENCE",
+      "title": "Premature Unconditional GO Claim Without Disclosing Small-N Heuristic Limitations",
+      "status": "RESOLVED AND VERIFIED",
+      "remediatedFiles": [
+        "docs/engineering/WS-A1-R/WS-A1-R-EXECUTION-REPORT.md",
+        "docs/engineering/WS-A1-R/WS-A1-R-ACCEPTANCE-MATRIX.md"
+      ],
+      "rootCause": "WS-A1 report claimed unconditional statistical readiness despite N=1..2 static seed listings per neighborhood and heuristic hedonic multipliers.",
+      "remediationSummary": "Documented explicit epistemic boundaries, Phase 0–11 Reality Map, and the 12-part Roadmap Progress Report in WS-A1-R-EXECUTION-REPORT.md and WS-A1-R-ACCEPTANCE-MATRIX.md, setting final status to REMEDIATION COMPLETE — AWAITING INDEPENDENT VERIFICATION and keeping WS-B strictly blocked.",
+      "verificationEvidence": "docs/engineering/WS-A1-R/WS-A1-R-EXECUTION-REPORT.md and docs/engineering/WS-A1-R/WS-A1-R-ACCEPTANCE-MATRIX.md."
+    }
+  ]
+}

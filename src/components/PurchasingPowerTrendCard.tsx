@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrainFront, TrendingDown, TrendingUp } from 'lucide-react';
 import { BubbleReport, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { resolveCityIdForNeighborhood } from '../data/multiCityData';
 import {
   computeSpatialProximityReport,
@@ -49,7 +49,7 @@ export function PurchasingPowerTrendCard({
 
   const sqm6MonthsAgo = Math.round(safeBudget / startPrice);
   const sqmToday = Math.round(safeBudget / currentPrice);
-  const dealPerSqm = Math.max(1, aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, currentPrice, []).estimatedDealPricePerSqm);
+  const dealPerSqm = Math.max(1, aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, currentPrice, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm);
   const sqmDealToday = Math.round(safeBudget / dealPerSqm);
   const uDealPrice = convertPricePerSqmToUnit(dealPerSqm, areaUnit);
   const sqmDiff = sqmToday - sqm6MonthsAgo;
@@ -60,8 +60,6 @@ export function PurchasingPowerTrendCard({
   const total80DeltaMillion = (currentPrice - startPrice) * 80;
   const total80mTodayMillions = Math.round(currentPrice * 80);
   const monthlyRent80mMillions = Math.max(1, Math.round(selectedHood.rahn80m * 0.03));
-  void total80mTodayMillions;
-  void monthlyRent80mMillions;
   const fxStart = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uStartPrice, intlCurrency, radarLocale)}` : '';
   const fxCurrent = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uCurrentPrice, intlCurrency, radarLocale)}` : '';
   const fxDelta = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(uPriceDelta), intlCurrency, radarLocale)})` : '';
@@ -119,6 +117,9 @@ export function PurchasingPowerTrendCard({
             </div>
             <div className="text-[10px] text-teal-800 dark:text-teal-300 font-bold tabular-nums mt-0.5">
               با تخمین معامله ({toPersianNum(uDealPrice)} م): {formatAreaValue(sqmDealToday, areaUnit)}
+            </div>
+            <div className="text-[9.5px] text-slate-500 dark:text-slate-400 tabular-nums mt-0.5">
+              {formatAreaShort(80, areaUnit)}: {toPersianNum((total80mTodayMillions / 1000).toFixed(1))} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م/ماه
             </div>
           </div>
         </div>

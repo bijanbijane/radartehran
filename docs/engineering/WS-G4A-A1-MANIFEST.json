@@ -1,0 +1,78 @@
+{
+  "workstreamId": "WS-G4A-A1",
+  "appletId": "1b7f1cd5-314b-4917-bfe4-cab0c714119b",
+  "generatedAt": "2026-11-08T20:17:14.297Z",
+  "pinnedGovernanceChecksums": {
+    "docs/engineering/RMEP-001/MASTER-PROMPT.md": "4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63",
+    "docs/engineering/RMEP-001/EXECUTION-STATE.json": "984b679c2fdd05c81b090946533dbb8120407087c73be558fe501156120d8a1b",
+    "AGENTS.md": "0e9e990b9aac4c8926c6317e61b03d3961af9838c746eb162293ca1dcbe1c9a2",
+    "ARCHITECTURE.md": "c23071ea8234c005aaf91210a9764d2663cbe7a1c25bfd43abd43c81cabeeea1",
+    "architecture-baseline.json": "8b2835203b3df407bfaf54dea45e8c3db9293fdbccb5660e0dae2fab8cd4b555"
+  },
+  "changedFiles": [
+    {
+      "path": "src/data/realMarketPriceAggregator.ts",
+      "classification": "MODIFIED_DOMAIN_LOGIC",
+      "reason": "Add SampleCoverageState, coverageState, evidenceIndexFormula, marketActivityEvidence, and negotiationMultiplierBasis to AggregatedMarketMetrics and aggregateNeighborhoodMarketMetrics",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 290,
+      "sha256": "2c05a9979145b9cbeb3839a4f4a8e61c8a9afa06eb61b8d8f2ed78a1d508d43c"
+    },
+    {
+      "path": "src/components/NeighborhoodInspectorDrawer.tsx",
+      "classification": "MODIFIED_UI_DISCLOSURE",
+      "reason": "Qualify evidenceIndexScore as non-probabilistic (غیرآماری) and v6.4 deal price as hypothetical negotiation scenario (سناریوی فرضی مذاکره) in inspector-provenance-badge",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 249,
+      "sha256": "90535d45fa53ee4762a1e4fa1250756defb5748619423fbb8f0d5167f46dbde2"
+    },
+    {
+      "path": "src/components/NeighborhoodInspectorTabs.tsx",
+      "classification": "MODIFIED_UI_DISCLOSURE",
+      "reason": "Add market-anchor-clamp-disclosure for unclampedAveragePerSqm and isAnchorClamped (±3% daily clamp) and clarify marketRegime and negotiation multiplier heuristics",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 284,
+      "sha256": "99593f6c051843b14606234c60423fc9d2dc33b5c0d1e3acacc0cb2970fa1bc5"
+    },
+    {
+      "path": "src/components/CompareModal.tsx",
+      "classification": "MODIFIED_UI_DISCLOSURE",
+      "reason": "Append hypothetical negotiation scenario disclosure (سناریوی فرضی مذاکره · غیرثبتی) and non-probabilistic coverage index label in comparison matrix",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 255,
+      "sha256": "7f29c114604eaa34cd4371f315986085310bbc606694c8589d09cf7e8a8bd5ad"
+    },
+    {
+      "path": "src/components/views/ProductIntelligenceView.tsx",
+      "classification": "MODIFIED_UI_DISCLOSURE",
+      "reason": "Clarify hypothetical negotiation multiplier v6.4 and non-probabilistic sample coverage index in product intelligence cards",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 266,
+      "sha256": "2ec994b5edfb37a061d1f32c6e90c7d911ea185d8d71d7c12f88b09df8ec88c3"
+    },
+    {
+      "path": "tests/real-market-price-aggregator.test.ts",
+      "classification": "MODIFIED_UNIT_TEST",
+      "reason": "Add unit test assertions for coverageState, evidenceIndexFormula, marketActivityEvidence, and negotiationMultiplierBasis across 0, 1, 2, 4, and 10 sample regimes",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 214,
+      "sha256": "1eed43f37de6668b04818bbc99dd0dd6d57788f61ccfd79e7190b760550e119c"
+    },
+    {
+      "path": "docs/AUTONOMOUS-ENGINEERING-PROGRESS.md",
+      "classification": "MODIFIED_GOVERNANCE_PROGRESS",
+      "reason": "Record WS-G4A-A1 (WS-A1) completion in canonical engineering progress log",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 431,
+      "sha256": "34f87d2d0b8f7a5145023e408a5a7b29adc4a5c1c969c5bedf5a09f9c9b245c0"
+    },
+    {
+      "path": "docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md",
+      "classification": "CREATED_HANDOFF_ARTIFACT",
+      "reason": "Complete WS-A1 execution report in Markdown per Post-Execution Evidence & Handoff Contract",
+      "workstreamId": "WS-G4A-A1",
+      "lines": 65,
+      "sha256": "766c006f165c708419271529cc9baa05e4a8fe0659d392bd045d0256f86c70aa"
+    }
+  ]
+}

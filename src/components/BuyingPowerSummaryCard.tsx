@@ -7,7 +7,7 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import {
   convertPricePerSqmToUnit,
@@ -58,7 +58,9 @@ export function BuyingPowerSummaryCard({
   const hoodTotal80mMillions = (selectedHood?.buyPerSqm || 120) * 80;
   const monthlyRent80mMillions = Math.round(((selectedHood?.rahn80m || 1200) * 0.03) * 10) / 10;
   const hoodUnitRate = convertPricePerSqmToUnit(hoodPerSqm, areaUnit);
-  const agg = selectedHood ? aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, hoodPerSqm, []) : null;
+  const agg = selectedHood
+    ? aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, hoodPerSqm, buildNeighborhoodListingSamples(selectedHood))
+    : null;
   const dealPerSqm = Math.max(1, agg?.estimatedDealPricePerSqm || hoodPerSqm);
   const affordableDealSqmInHood = Math.round(effectivePurchasingPowerMillion / dealPerSqm);
   const dealUnitRate = convertPricePerSqmToUnit(dealPerSqm, areaUnit);
@@ -133,6 +135,23 @@ export function BuyingPowerSummaryCard({
         </span>
         <strong className="font-black text-teal-700 dark:text-teal-400">{formatAreaValue(affordableDealSqmInHood, areaUnit)}</strong>
       </div>
+
+      {(useLoanBooster || deductTenantRahnInBuy) && (
+        <div
+          data-testid="buying-power-liability-disclosure"
+          className="mt-1 pt-1.5 border-t border-amber-200/80 dark:border-amber-800/60 text-[10px] text-amber-900 dark:text-amber-300 leading-relaxed space-y-0.5"
+        >
+          <div className="font-bold flex items-center justify-between tabular-nums">
+            <span>آورده خالص نقدی: {toPersianNum((buyTotalBudget / 1000).toFixed(2))} میلیارد</span>
+            <span>تعهدات و اهرم‌ها: {toPersianNum(((effectivePurchasingPowerMillion - buyTotalBudget) / 1000).toFixed(2))} میلیارد</span>
+          </div>
+          <p className="text-[9.5px] text-amber-800/90 dark:text-amber-300/90">
+            {deductTenantRahnInBuy
+              ? 'توجه واقع‌بینانه: استفاده از «رهن مستأجر» به معنای عدم امکان سکونت شخصی تا پایان قرارداد اجاره است و «۱۰٪ تنفس سند» تخفیف نیست بلکه تعهد نقدی قابل پرداخت در روز انتقال سند محضری است.'
+              : 'توجه واقع‌بینانه: مبلغ وام مسکن بدهی بانکی با اقساط ماهانه و هزینه اوراق است و باید از آورده خالص تفکیک شود.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

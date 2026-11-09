@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'; import { AlertCircle, ArrowLeftRight, Award, Check, Copy, MapPin, Printer, RefreshCw, Sparkles, X } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { clampNumber, recordDiagnosticEvent, validateNeighborhoodId } from '../utils/security'; import { useDialogFocus } from './useDialogFocus'; import { getMapAdvancedOverlayState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from './mapAdvancedLayers'; import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit'; export interface CompareModalProps { open: boolean; onClose: () => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
+import React, { useEffect, useMemo, useState } from 'react'; import { AlertCircle, ArrowLeftRight, Award, Check, Copy, MapPin, Printer, RefreshCw, Sparkles, X } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { clampNumber, recordDiagnosticEvent, validateNeighborhoodId } from '../utils/security'; import { useDialogFocus } from './useDialogFocus'; import { getMapAdvancedOverlayState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from './mapAdvancedLayers'; import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit'; import { explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods'; export interface CompareModalProps { open: boolean; onClose: () => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
   compareId1: number; setCompareId1: React.Dispatch<React.SetStateAction<number>>; compareId2: number; setCompareId2: React.Dispatch<React.SetStateAction<number>>; compHood1: EvaluatedNeighborhood; compHood2: EvaluatedNeighborhood; mode?: 'rent' | 'buy'; buyTotalBudget?: number; totalRahnEquivalent?: number; rentAgeMultiplier?: number; deductTenantRahnInBuy?: boolean; onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void; } interface ComparisonMetricRow { label: string; v1: string; v2: string; win: 0 | 1 | 2; }
 export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1, setCompareId1, compareId2, setCompareId2, compHood1, compHood2, mode = 'buy', buyTotalBudget = 8500, totalRahnEquivalent = 1500, rentAgeMultiplier = 1, deductTenantRahnInBuy = false, onSelectNeighborhood, }: CompareModalProps): React.ReactElement | null { const dialogRef = useDialogFocus(open, onClose); const overlayState = useMapAdvancedOverlayState(); const [areaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const isEn = radarLocale === 'en'; const compareCopy = getRadarCompareCopy(radarLocale);
   const [copied, setCopied] = useState(false);
   const isArcPinned = overlayState.comparisonArc.isPinned; useEffect(() => { if (open && compHood1 && compHood2 && compHood1.id !== compHood2.id) { updateMapAdvancedOverlayState({ comparisonArc: { active: true, isPinned: getMapAdvancedOverlayState().comparisonArc.isPinned, hoodA: compHood1, hoodB: compHood2 }, }); }
   }, [open, compHood1, compHood2]); const safeNeighborhoods = useMemo(() => (Array.isArray(evaluatedNeighborhoods) ? evaluatedNeighborhoods : []), [evaluatedNeighborhoods]); const rows: ComparisonMetricRow[] = useMemo(() => { if (!compHood1 || !compHood2) return []; try { const buy1 = clampNumber(compHood1.buyPerSqm, 10, 2000, 100); const buy2 = clampNumber(compHood2.buyPerSqm, 10, 2000, 100);
       const uBuy1 = convertPricePerSqmToUnit(buy1, areaUnit); const uBuy2 = convertPricePerSqmToUnit(buy2, areaUnit);
-      const agg1 = aggregateNeighborhoodMarketMetrics(compHood1.id, compHood1.name, buy1, []); const agg2 = aggregateNeighborhoodMarketMetrics(compHood2.id, compHood2.name, buy2, []);
+      const agg1 = aggregateNeighborhoodMarketMetrics(compHood1.id, compHood1.name, buy1, buildNeighborhoodListingSamples(compHood1)); const agg2 = aggregateNeighborhoodMarketMetrics(compHood2.id, compHood2.name, buy2, buildNeighborhoodListingSamples(compHood2));
       const uDeal1 = convertPricePerSqmToUnit(agg1.estimatedDealPricePerSqm, areaUnit); const uDeal2 = convertPricePerSqmToUnit(agg2.estimatedDealPricePerSqm, areaUnit);
       const rahn1 = Math.round(clampNumber(compHood1.rahn80m, 50, 20000, 1000) * rentAgeMultiplier); const rahn2 = Math.round(clampNumber(compHood2.rahn80m, 50, 20000, 1000) * rentAgeMultiplier);
       const fxBuy1 = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uBuy1, intlCurrency, radarLocale)})` : ''; const fxBuy2 = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uBuy2, intlCurrency, radarLocale)})` : '';
@@ -13,10 +13,11 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
       const fxRahn1 = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(rahn1, intlCurrency, radarLocale)})` : ''; const fxRahn2 = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(rahn2, intlCurrency, radarLocale)})` : '';
       const growth1 = clampNumber(compHood1.marketReport?.hoodGrowth6mPercent, -50, 200, 10); const growth2 = clampNumber(compHood2.marketReport?.hoodGrowth6mPercent, -50, 200, 10);
       const rankStatus = (s?: string) => (s === 'undervalued' ? 0 : s === 'balanced' ? 1 : 2); const r1 = rankStatus(compHood1.marketReport?.status); const r2 = rankStatus(compHood2.marketReport?.status); const bubbleWin: 0 | 1 | 2 = r1 !== r2 ? (r1 < r2 ? 1 : 2) : growth1 === growth2 ? 0 : growth1 < growth2 ? 1 : 2;
-      const tScore1 = clampNumber(compHood1?.trafficInfo?.trafficScore, 1, 10, 6.5); const tScore2 = clampNumber(compHood2?.trafficInfo?.trafficScore, 1, 10, 6.5); return [
+      const tScore1 = clampNumber(compHood1?.trafficInfo?.trafficScore, 1, 10, 6.5); const tScore2 = clampNumber(compHood2?.trafficInfo?.trafficScore, 1, 10, 6.5);
+      const scoreTieBand = Math.abs(compHood1.overallScore - compHood2.overallScore) <= 0.3; return [
         { label: formatUnitBuyPriceTitle(areaUnit), v1: `${toPersianNum(uBuy1)} میلیون${fxBuy1}`, v2: `${toPersianNum(uBuy2)} میلیون${fxBuy2}`, win: buy1 === buy2 ? 0 : buy1 < buy2 ? 1 : 2 },
-        { label: isEn ? `v6.4 Estimated Closing Price (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `تخمین قیمت قطعی معامله v6.4 (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`, v1: `${toPersianNum(uDeal1)} میلیون${fxDeal1}`, v2: `${toPersianNum(uDeal2)} میلیون${fxDeal2}`, win: agg1.estimatedDealPricePerSqm === agg2.estimatedDealPricePerSqm ? 0 : agg1.estimatedDealPricePerSqm < agg2.estimatedDealPricePerSqm ? 1 : 2 },
-        { label: isEn ? 'Statistical Confidence & Samples' : 'ضریب اطمینان آماری و نمونه معتبر', v1: `${toPersianNum(agg1.confidenceScore)}٪ (${toPersianNum(agg1.validSampleCount)} نمونه)`, v2: `${toPersianNum(agg2.confidenceScore)}٪ (${toPersianNum(agg2.validSampleCount)} نمونه)`, win: agg1.confidenceScore === agg2.confidenceScore ? 0 : agg1.confidenceScore > agg2.confidenceScore ? 1 : 2 },
+        { label: isEn ? `v6.4 Hypothetical Negotiation Scenario (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `تخمین قیمت قطعی معامله v6.4 (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'}) · سناریوی فرضی مذاکره (غیرثبتی)`, v1: `${toPersianNum(uDeal1)} میلیون${fxDeal1}`, v2: `${toPersianNum(uDeal2)} میلیون${fxDeal2}`, win: agg1.estimatedDealPricePerSqm === agg2.estimatedDealPricePerSqm ? 0 : agg1.estimatedDealPricePerSqm < agg2.estimatedDealPricePerSqm ? 1 : 2 },
+        { label: isEn ? 'Data Provenance & Sample Coverage Index' : 'منشأ داده و شاخص پوشش نمونه (غیرآماری)', v1: agg1.observedSampleCount === 0 ? 'پروفایل مرجع (۰ آگهی مستقیم)' : `شاخص پوشش ${toPersianNum(agg1.evidenceIndexScore)}/۱۰۰ (${toPersianNum(agg1.eligibleObservedCount)} نمونه)`, v2: agg2.observedSampleCount === 0 ? 'پروفایل مرجع (۰ آگهی مستقیم)' : `شاخص پوشش ${toPersianNum(agg2.evidenceIndexScore)}/۱۰۰ (${toPersianNum(agg2.eligibleObservedCount)} نمونه)`, win: 0 },
         { label: `رهن کامل واحد ${formatAreaValue(80, areaUnit, true)}`, v1: `${toPersianNum(rahn1)} میلیون${fxRahn1}`, v2: `${toPersianNum(rahn2)} میلیون${fxRahn2}`, win: rahn1 === rahn2 ? 0 : rahn1 < rahn2 ? 1 : 2 },
         { label: 'وضعیت حباب یا جاماندگی ۶ ماهه', v1: (compHood1.marketReport?.badgeText || 'متعادل').replace(/^[💎⚖️🔥🟢🟡🔴]+\s*/, ''), v2: (compHood2.marketReport?.badgeText || 'متعادل').replace(/^[💎⚖️🔥🟢🟡🔴]+\s*/, ''), win: bubbleWin },
         { label: 'کیفیت هوا و فضای سبز', v1: `${toPersianNum(compHood1.air)} / ۱۰`, v2: `${toPersianNum(compHood2.air)} / ۱۰`, win: compHood1.air === compHood2.air ? 0 : compHood1.air > compHood2.air ? 1 : 2 },
@@ -26,7 +27,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
         { label: 'امنیت و آرامش شبانه', v1: `${toPersianNum(compHood1.security)} / ۱۰`, v2: `${toPersianNum(compHood2.security)} / ۱۰`, win: compHood1.security === compHood2.security ? 0 : compHood1.security > compHood2.security ? 1 : 2 },
         { label: 'روانی ترافیک ساعت ۸ شب', v1: `${toPersianNum(tScore1)} / ۱۰`, v2: `${toPersianNum(tScore2)} / ۱۰`, win: tScore1 === tScore2 ? 0 : tScore1 > tScore2 ? 1 : 2 },
         { label: 'همواری گذرها', v1: `${toPersianNum(compHood1.flatTerrain)} / ۱۰`, v2: `${toPersianNum(compHood2.flatTerrain)} / ۱۰`, win: compHood1.flatTerrain === compHood2.flatTerrain ? 0 : compHood1.flatTerrain > compHood2.flatTerrain ? 1 : 2 },
-        { label: 'امتیاز کل کیفیت زندگی', v1: `${toPersianNum(compHood1.overallScore)} / ۱۰`, v2: `${toPersianNum(compHood2.overallScore)} / ۱۰`, win: compHood1.overallScore === compHood2.overallScore ? 0 : compHood1.overallScore > compHood2.overallScore ? 1 : 2 },
+        { label: 'امتیاز کل کیفیت زندگی (میانگین هم‌وزن ۶ سنجه · بازه ±۰.۳ هم‌تراز)', v1: `${toPersianNum(compHood1.overallScore)} / ۱۰${scoreTieBand ? ' (≈ هم‌تراز)' : ''}`, v2: `${toPersianNum(compHood2.overallScore)} / ۱۰${scoreTieBand ? ' (≈ هم‌تراز)' : ''}`, win: scoreTieBand ? 0 : compHood1.overallScore > compHood2.overallScore ? 1 : 2 },
       ]; } catch { recordDiagnosticEvent('CompareModal', 'Fallback triggered while building rows', 'fallback'); return []; }
   }, [compHood1, compHood2, rentAgeMultiplier, areaUnit, intlCurrency, radarLocale, isEn]); const summaryStats = useMemo(() => { if (!compHood1 || !compHood2) return { win1: 0, win2: 0, sqm1: 0, sqm2: 0, diffSqm: 0, uSpread: 0 }; const win1 = rows.filter((r) => r.win === 1).length;
     const win2 = rows.filter((r) => r.win === 2).length; const calcSqm = (h: EvaluatedNeighborhood) => {
@@ -42,6 +43,9 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
   }, [rows, compHood1, compHood2, mode, buyTotalBudget, totalRahnEquivalent, rentAgeMultiplier, deductTenantRahnInBuy, areaUnit]);
   if (!open) return null;
   const activeBudgetMillion = mode === 'buy' ? buyTotalBudget : totalRahnEquivalent;
+  const topScoreRef = Math.max(compHood1?.overallScore ?? 0, compHood2?.overallScore ?? 0);
+  const explain1 = compHood1 ? explainNeighborhoodRecommendation(compHood1, { mode, topReferenceScore: topScoreRef }) : null;
+  const explain2 = compHood2 ? explainNeighborhoodRecommendation(compHood2, { mode, topReferenceScore: topScoreRef }) : null;
   const formatHoodOption = (n: EvaluatedNeighborhood, otherId: number) => {
     const val = mode === 'rent' ? Math.round(n.rahn80m * rentAgeMultiplier) : Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1));
     const unitTag = mode === 'rent' ? `رهن (${formatAreaShort(80, areaUnit)})` : areaUnit === 'sqft' ? 'ft²' : 'متری';
@@ -148,20 +152,28 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                   وجود دارد (اختلاف متراژ: <strong className="tabular-nums">{formatAreaValue(summaryStats.diffSqm, areaUnit)}</strong> · اختلاف هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: <strong className="tabular-nums">{toPersianNum(summaryStats.uSpread)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(summaryStats.uSpread, intlCurrency, radarLocale)})` : ''}</strong>).
                 </div>
               </div>
-              <div className="apple-grouped-card dark:bg-slate-800/70 dark:border-slate-800 p-3 text-slate-900 dark:text-slate-100 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 font-extrabold">
-                  <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>
-                    جمع‌بندی برنده مقایسه: محله {compHood1.name} در{' '}
-                    <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win1)} شاخص</span> و
-                    محله {compHood2.name} در{' '}
-                    <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win2)} شاخص</span>{' '}
-                    برتر است.
+              <div className="apple-grouped-card dark:bg-slate-800/70 dark:border-slate-800 p-3 text-slate-900 dark:text-slate-100 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 font-extrabold">
+                    <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>
+                      جمع‌بندی برنده مقایسه: محله {compHood1.name} در{' '}
+                      <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win1)} شاخص</span> و
+                      محله {compHood2.name} در{' '}
+                      <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win2)} شاخص</span>{' '}
+                      برتر است.
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold">
+                    {summaryStats.win1 > summaryStats.win2 ? `برتری کلی با ${compHood1.name}` : summaryStats.win2 > summaryStats.win1 ? `برتری کلی با ${compHood2.name}` : 'رقابت کاملاً برابر'}
                   </span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold">
-                  {summaryStats.win1 > summaryStats.win2 ? `برتری کلی با ${compHood1.name}` : summaryStats.win2 > summaryStats.win1 ? `برتری کلی با ${compHood2.name}` : 'رقابت کاملاً برابر'}
-                </span>
+                {explain1 && explain2 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-700 text-[10.5px] text-slate-600 dark:text-slate-300">
+                    <div><strong className="text-slate-900 dark:text-white">{compHood1.name} ({explain1.budgetFitSemanticsLabelFa}):</strong> {explain1.tradeOffSummaryFa}{explain1.nonCompensatoryWarningsFa[0] ? ` · ⚠️ ${explain1.nonCompensatoryWarningsFa[0]}` : ''}</div>
+                    <div><strong className="text-slate-900 dark:text-white">{compHood2.name} ({explain2.budgetFitSemanticsLabelFa}):</strong> {explain2.tradeOffSummaryFa}{explain2.nonCompensatoryWarningsFa[0] ? ` · ⚠️ ${explain2.nonCompensatoryWarningsFa[0]}` : ''}</div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="apple-grouped-card dark:bg-slate-800/50 dark:border-slate-800 overflow-hidden text-xs">

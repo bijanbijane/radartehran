@@ -206,14 +206,16 @@ export function evaluateRentVsBuyInNeighborhood(hood: EvaluatedNeighborhood): Re
 export function evaluateTradeUpOptions(params: TradeUpOptionsParams): TradeUpResult {
   const { currentHood, currentSqm, currentAgeYears, extraCashMillion = 0, useLoanBooster = false, useTenantRahnDeduction = false, targetNewSqm, targetAgeSegment, allNeighborhoods } = params;
   const currentAgeFactor = Math.max(0.60, 1 - (currentAgeYears || 0) * 0.012);
-  const currentHomeSaleValueMillion = Math.round(currentHood.buyPerSqm * currentSqm * currentAgeFactor);
+  const currentBaseBuyPerSqm = currentHood.baseBuyPerSqm ?? currentHood.buyPerSqm;
+  const currentHomeSaleValueMillion = Math.round(currentBaseBuyPerSqm * currentSqm * currentAgeFactor);
   const netProceedsFromSaleMillion = Math.round(currentHomeSaleValueMillion * 0.99);
   const loanAddition = useLoanBooster ? 1200 : 0;
   const totalBaseCapitalMillion = netProceedsFromSaleMillion + (extraCashMillion || 0) + loanAddition;
   const targetAgeMultiplier = targetAgeSegment === 'new' ? 1.0 : targetAgeSegment === 'mid' ? 0.88 : 0.76;
   const targetRentAgeMultiplier = targetAgeSegment === 'new' ? 1.0 : targetAgeSegment === 'mid' ? 0.90 : 0.80;
   const matchingHoods: TradeUpCandidate[] = allNeighborhoods.map((n) => {
-    const effectivePerSqm = Math.max(15, Math.round(n.buyPerSqm * targetAgeMultiplier));
+    const targetBaseBuyPerSqm = n.baseBuyPerSqm ?? n.buyPerSqm;
+    const effectivePerSqm = Math.max(15, Math.round(targetBaseBuyPerSqm * targetAgeMultiplier));
     const targetUnitTotalPriceMillion = effectivePerSqm * targetNewSqm;
     const targetTenantRahn = Math.max(50, Math.round(n.rahn80m * (targetNewSqm / 80) * targetRentAgeMultiplier));
     const netRequiredCash = useTenantRahnDeduction ? Math.max(500, targetUnitTotalPriceMillion - targetTenantRahn) : targetUnitTotalPriceMillion;

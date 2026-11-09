@@ -7,7 +7,7 @@ import {
   getNeighborhoodTrafficInfo,
   toPersianNum,
 } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import {
   updateMapAdvancedOverlayState,
@@ -92,7 +92,7 @@ export function BudgetBridgeAdvisorCard({
       ? Math.floor(effectiveBuyBudget / netCostPerSqmBuy)
       : Math.floor(totalRahnEquivalent / costPerSqmRent);
   const affordableSqm = Math.max(30, Math.min(250, rawAffordableSqm));
-  const agg = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []);
+  const agg = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood));
   const dealNetCostBuy = deductTenantRahnInBuy ? Math.max(15, agg.estimatedDealPricePerSqm * 0.9 - rahnPerSqm * rentAgeFactor) : Math.max(15, agg.estimatedDealPricePerSqm);
   const dealAffordableSqm = Math.max(30, Math.min(250, Math.floor(effectiveBuyBudget / dealNetCostBuy)));
 
@@ -121,7 +121,7 @@ export function BudgetBridgeAdvisorCard({
           <span>مشاور پل بودجه: راهکارهای عملی برای ورود به محله {selectedHood.name}</span>
         </div>
         <span className="px-2 py-0.5 rounded-md bg-amber-200/80 dark:bg-amber-900/50 text-amber-950 dark:text-amber-200 text-[10px] font-black tabular-nums">
-          کمبود بودجه ({formatAreaShort(targetSqm, areaUnit)}): {toPersianNum(selectedHood.diffPercent)}٪{budgetGapMillion > 0 ? ` (~${toPersianNum(budgetGapMillion)} م${fxTag(budgetGapMillion)})` : ''}
+          کمبود بودجه ({formatAreaShort(targetSqm, areaUnit)}): {toPersianNum(selectedHood.diffPercent)}٪{budgetGapMillion > 0 ? ` (~${toPersianNum(budgetGapMillion)} م${fxTag(budgetGapMillion)})` : ''} · اجاره ۸۰م: {toPersianNum(monthlyRent80mMillions)}م
         </span>
       </div>
 
@@ -211,7 +211,6 @@ export function BudgetBridgeAdvisorCard({
                 const diffSqm = Math.max(1, selectedHood.buyPerSqm - raw.buyPerSqm);
                 const diffRahn = Math.max(10, selectedHood.rahn80m - raw.rahn80m);
                 const diffRentMonthly = Math.max(1, Math.round(diffRahn * 0.03));
-                void monthlyRent80mMillions;
                 return (
                   <button
                     key={raw.id}

@@ -1,0 +1,263 @@
+[
+  {
+    "id": "F-A1V-01",
+    "title": "False and Non-Existent Code Symbols Claimed in WS-G4A-A1-EXECUTION-REPORT.md",
+    "category": "DOCUMENTATION",
+    "severity": "CRITICAL",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E2",
+    "source_paths": [
+      "docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md",
+      "src/data/realMarketPriceAggregator.ts",
+      "src/data/hedonicPricingEngine.ts"
+    ],
+    "symbols": [
+      "aggregateNeighborhoodMarketMetrics",
+      "seededRandom",
+      "FAST_SALE_FACTOR"
+    ],
+    "line_ranges": [
+      "docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md:16-20",
+      "docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md:62",
+      "src/data/realMarketPriceAggregator.ts:17-34",
+      "src/data/realMarketPriceAggregator.ts:228-275",
+      "src/data/hedonicPricingEngine.ts:3"
+    ],
+    "observed_condition": "WS-G4A-A1-EXECUTION-REPORT.md claims that src/data/realMarketPriceAggregator.ts implements computeTrimmedMean (lines 84-93), filterEligibleListings (lines 50-82) with median +/- 2.5 * MAD (OUTLIER_ROBUST_MAD_BAND), computeStdDev, computeMedian, computeMAD, dataSourceType: 'REFERENCE_PROFILE_NO_OBSERVED_SAMPLES', and confidenceLevel, claims 'Zero PRNG (mulberry32 / Math.random) exists in realMarketPriceAggregator.ts', and claims FAST_SALE_FACTOR = 0.96 in hedonicPricingEngine.ts. Direct source inspection confirms none of those functions or fields exist in realMarketPriceAggregator.ts, seededRandom (Mulberry32 PRNG) is defined at lines 228-231 and called at line 260, and FAST_SALE_FACTOR is 0.88 at hedonicPricingEngine.ts:3.",
+    "expected_condition": "Execution reports must accurately describe only the actual symbols, line numbers, algorithms, and constants present in the live workspace without fabricating functions or falsely claiming PRNG removal.",
+    "impact": "Invalidates the auditability of WS-G4A-A1-EXECUTION-REPORT.md and misleads reviewers into believing synthetic PRNG bootstrapping and outlier-fraud conflation were completely removed from realMarketPriceAggregator.ts.",
+    "affected_workflows": [
+      "WS-A1 Handoff Audit",
+      "Neighborhood Market Price Aggregation",
+      "Release Gate Certification"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Rewrite docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md to match the actual implementation after remediating the underlying aggregator defects.",
+    "verification_method": "Direct full-file read (view_file) of src/data/realMarketPriceAggregator.ts (290 lines), src/data/hedonicPricingEngine.ts (270 lines), and docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md (65 lines)."
+  },
+  {
+    "id": "F-A1V-02",
+    "title": "Hand-Fabricated Non-Applicable Unified Diff in docs/engineering/WS-G4A-A1.patch",
+    "category": "ARTIFACT",
+    "severity": "CRITICAL",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E1",
+    "source_paths": [
+      "docs/engineering/WS-G4A-A1.patch",
+      "src/data/realMarketPriceAggregator.ts",
+      "src/components/NeighborhoodInspectorDrawer.tsx",
+      "src/components/NeighborhoodInspectorTabs.tsx",
+      "src/components/views/ProductIntelligenceView.tsx"
+    ],
+    "symbols": [
+      "aggregateNeighborhoodMarketMetrics",
+      "NeighborhoodInspectorDrawer",
+      "NeighborhoodInspectorTabs",
+      "ProductIntelligenceView"
+    ],
+    "line_ranges": [
+      "docs/engineering/WS-G4A-A1.patch:1-98"
+    ],
+    "observed_condition": "docs/engineering/WS-G4A-A1.patch (98 lines, SHA-256 258601fe60da66f11c836716575c375b9343ddb7615f219f62f03dde0f7336d0) was manually authored via heredoc rather than diff -u. Automated hunk verification proved that in 4 of the 5 patched files, the '+' lines do not exist in the actual workspace files: realMarketPriceAggregator.ts (only 8/13 '+' lines exist; references non-existent OUTLIER_ROBUST_MAD_BAND, dataSourceType, confidenceLevel), NeighborhoodInspectorDrawer.tsx (0/4 '+' lines exist; uses 'agg.' instead of 'hoodAggMetrics.'), NeighborhoodInspectorTabs.tsx (2/8 '+' lines exist; uses 'if (tab === \"market\")' instead of 'if (activeTab === \"market\")'), and ProductIntelligenceView.tsx (0/2 '+' lines exist). Furthermore, 3 of the 8 manifest-listed files are omitted from the patch.",
+    "expected_condition": "A deliverable patch artifact must be programmatically generated via diff -u or git diff so that 100% of its hunks accurately reflect and apply cleanly to the workspace files.",
+    "impact": "Downstream consumers or automated CI pipelines attempting to apply or audit docs/engineering/WS-G4A-A1.patch will fail with hunk rejection errors.",
+    "affected_workflows": [
+      "Patch Application & Replay",
+      "Post-Execution Handoff Contract Deliverable 4"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Generate patches strictly via programmatic diff -u against baseline snapshots or /dev/null rather than manual text composition.",
+    "verification_method": "Automated Node.js hunk verification script checking every '+' line in docs/engineering/WS-G4A-A1.patch against live target files."
+  },
+  {
+    "id": "F-A1V-03",
+    "title": "Residual PRNG Synthetic Bootstrap Contamination, Confidence Score Inversion, and Outlier-into-Fraud Conflation in realMarketPriceAggregator.ts",
+    "category": "STATISTICAL_LOGIC",
+    "severity": "HIGH",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E1",
+    "source_paths": [
+      "src/data/realMarketPriceAggregator.ts",
+      "src/components/NeighborhoodInspectorTabs.tsx",
+      "src/components/views/ProductIntelligenceView.tsx"
+    ],
+    "symbols": [
+      "seededRandom",
+      "aggregateNeighborhoodMarketMetrics",
+      "AggregatedMarketMetrics"
+    ],
+    "line_ranges": [
+      "src/data/realMarketPriceAggregator.ts:228-231",
+      "src/data/realMarketPriceAggregator.ts:253-275",
+      "src/components/NeighborhoodInspectorTabs.tsx:201",
+      "src/components/views/ProductIntelligenceView.tsx:182"
+    ],
+    "observed_condition": "In aggregateNeighborhoodMarketMetrics (lines 260-275): (1) When observedEvaluated.length < 3 (isBootstrapped === true), seededRandom(hoodId * 997 + Math.floor(Date.now() / 86_400_000)) generates 12 synthetic listings (syntheticRaw) that populate evaluated; (2) sampleCount and validSampleCount return 12 even when observedSampleCount is 0, 1, or 2; (3) confidenceScore is hardcoded to 74 when isBootstrapped is true, which is higher than confidenceScore = 71 when 3 real observed listings are supplied (62 + 3*3 = 71); (4) iqrLowPerSqm and iqrHighPerSqm (131.3 - 154.3 in Punak) are computed from the 12 synthetic PRNG rows and displayed in NeighborhoodInspectorTabs.tsx:201 and ProductIntelligenceView.tsx:182 as the neighborhood's valid statistical range; (5) synthetic 'boot-*' listings are appended to autoBargains; (6) line 253 flags rawPerSqm < 0.42x or > 2.4x as isPredatoryAnomaly -> suspectedFraudCount -> fraudReviewState: 'FRAUD_SUSPECTED' from price ratio alone; and (7) line 271 computes rejectedFraudCount = excludedOutlierCount + suspectedFraudCount, adding statistical IQR outliers directly into rejectedFraudCount.",
+    "expected_condition": "Zero or sparse (<3) observed samples must never fabricate 12 synthetic PRNG listings to populate sampleCount, validSampleCount, iqrLowPerSqm, iqrHighPerSqm, or autoBargains; confidence/evidence scores must be monotonically non-decreasing with real sample count; and statistical price outliers must never be summed into rejectedFraudCount or labeled FRAUD_SUSPECTED without multi-signal fraud evidence.",
+    "impact": "Violates Missing-Data Transparency (0 samples has higher confidenceScore 74 than 3 real samples at 71), exposes time-dependent PRNG numbers as statistical IQR bounds in the UI, and conflates statistical outliers with rejected fraud counts.",
+    "affected_workflows": [
+      "Neighborhood Market Price Aggregation",
+      "Inspector Market Tab IQR Display",
+      "Product Intelligence View Market Benchmarks"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Remove syntheticRaw PRNG generation from aggregateNeighborhoodMarketMetrics when observedEvaluated.length < 3, return null or explicit baseline-only bounds when N < 3, fix confidenceScore monotonicity, and separate excludedOutlierCount from rejectedFraudCount and fraudReviewState.",
+    "verification_method": "Direct code inspection (lines 228-275) and runtime execution via npx tsx comparing N=0, N=2, and N=3 outputs."
+  },
+  {
+    "id": "F-A1V-04",
+    "title": "ProductIntelligenceView and CompareModal Pass Hardcoded Empty Array [] to aggregateNeighborhoodMarketMetrics and Retain Authoritative Transaction Labels",
+    "category": "UI_DISCLOSURE",
+    "severity": "HIGH",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E1",
+    "source_paths": [
+      "src/components/views/ProductIntelligenceView.tsx",
+      "src/components/CompareModal.tsx",
+      "src/components/NeighborhoodInspectorDrawer.tsx"
+    ],
+    "symbols": [
+      "ProductIntelligenceView",
+      "CompareModal",
+      "NeighborhoodInspectorDrawer"
+    ],
+    "line_ranges": [
+      "src/components/views/ProductIntelligenceView.tsx:47",
+      "src/components/views/ProductIntelligenceView.tsx:65",
+      "src/components/views/ProductIntelligenceView.tsx:116",
+      "src/components/views/ProductIntelligenceView.tsx:182-191",
+      "src/components/views/ProductIntelligenceView.tsx:231",
+      "src/components/CompareModal.tsx:8",
+      "src/components/NeighborhoodInspectorDrawer.tsx:20-29"
+    ],
+    "observed_condition": "NeighborhoodInspectorDrawer.tsx (lines 20-29) maps hood.bargains into aggregateNeighborhoodMarketMetrics, producing observedSampleCount = 2 and evidenceIndexScore = 52 for Punak (hood=5). However, ProductIntelligenceView.tsx (lines 47 and 231) and CompareModal.tsx (line 8) call aggregateNeighborhoodMarketMetrics(..., []) with a hardcoded empty array. As verified in Playwright at http://localhost:3000/?hood=5&view=intelligence and ?hood=5&compare=5-14, Punak simultaneously shows 'تخمین ترکیبی (نمونه محدود: ۲ آگهی)' in the Inspector Drawer and 'پروفایل مرجع (۰ آگهی مستقیم)' / '۰ آگهی' in ProductIntelligenceView and CompareModal. Additionally, ProductIntelligenceView.tsx still uses authoritative closing-transaction wording at line 65 ('تخمین قیمت قطعی معاملات (مدل v6.4)'), line 116 ('همگرایی قیمت اعلامی با نرخ معامله'), and line 191 ('جایگاه معامله قطعی: صدک ...').",
+    "expected_condition": "All views consuming aggregateNeighborhoodMarketMetrics for a neighborhood must pass the same mapped hood.bargains sample array so sample counts and epistemic badges are consistent across views, and ProductIntelligenceView must not label heuristic asking-price adjustments as confirmed closing transactions.",
+    "impact": "Creates a visible cross-component contradiction on the same screen (2 observed listings in Drawer vs 0 in Intelligence View and Compare Modal) and misrepresents heuristic deal estimates as confirmed transaction prices.",
+    "affected_workflows": [
+      "Product Intelligence View",
+      "Neighborhood Comparison Modal",
+      "Cross-View Epistemic Consistency"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Pass mapped hood.bargains into aggregateNeighborhoodMarketMetrics in ProductIntelligenceView.tsx (lines 47, 231) and CompareModal.tsx (line 8), and replace closing-transaction labels at ProductIntelligenceView.tsx lines 65, 116, and 191 with scenario-based asking-discount terminology.",
+    "verification_method": "Static source inspection and live Playwright browser inspection at http://localhost:3000/?hood=5&compare=5-14 and http://localhost:3000/?hood=5&view=intelligence."
+  },
+  {
+    "id": "F-A1V-05",
+    "title": "Pre-Audit Source Edits and 9-vs-8 Changed-File Discrepancy in WS-G4A-A1-MANIFEST.json",
+    "category": "GOVERNANCE",
+    "severity": "MEDIUM",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E4",
+    "source_paths": [
+      "docs/engineering/WS-G4A-A1-MANIFEST.json",
+      "src/data/hedonicPricingEngine.ts"
+    ],
+    "symbols": [
+      "sensitivityRangeMillion",
+      "calculateHedonicValuation"
+    ],
+    "line_ranges": [
+      "docs/engineering/WS-G4A-A1-MANIFEST.json:8-66",
+      "src/data/hedonicPricingEngine.ts:211-215"
+    ],
+    "observed_condition": "Filesystem mtime forensics show 7 source files were edited between 19:41Z and 19:46Z prior to delivering the Phase Zero Repository Reality Audit, then reverted between 20:01:23Z and 20:02:30Z. During the revert of src/data/hedonicPricingEngine.ts, sensitivityRangeMillion was omitted, causing a TS2339 error in src/data/valuationTraceAndComparables.ts, which was fixed by editing src/data/hedonicPricingEngine.ts at 20:10:45.841Z. Consequently, 9 project files were modified during the WS-A1 window (20:10Z-20:15Z), plus 4 handoff artifacts (MANIFEST, patch, 2 PNGs), whereas WS-G4A-A1-MANIFEST.json lists only 8 files in changedFiles.",
+    "expected_condition": "Phase Zero audit must precede any source file edits, and the changed-file manifest must account for all files touched during the workstream window.",
+    "impact": "Explains the 9-vs-8 changed-file discrepancy noted in the verification prompt; functional behavior of src/data/hedonicPricingEngine.ts was properly restored.",
+    "affected_workflows": [
+      "Artifact Provenance Tracking",
+      "Phase Zero Audit Protocol"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Include src/data/hedonicPricingEngine.ts and all generated handoff artifacts in the manifest inventory.",
+    "verification_method": "Node.js fs.statSync mtime forensic scan across all repository files and cross-comparison with WS-G4A-A1-MANIFEST.json."
+  },
+  {
+    "id": "F-A1V-06",
+    "title": "Non-Existent Test Filename (hedonic-pricing-engine.test.ts) Cited in Handoff Deliverable 5 Prose",
+    "category": "TEST_QUALITY",
+    "severity": "LOW",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E1",
+    "source_paths": [
+      "package.json",
+      "tests/pricing-engine-integrity.test.ts",
+      "tests/assess-004-hedonic-accuracy-benchmark.test.ts"
+    ],
+    "symbols": [
+      "test:unit"
+    ],
+    "line_ranges": [
+      "package.json:23"
+    ],
+    "observed_condition": "The previous handoff summary (Deliverable 5 table) listed 'hedonic-pricing-engine.test.ts' as executed under npm run test:unit. Direct execution of 'npx tsx tests/hedonic-pricing-engine.test.ts' failed with ERR_MODULE_NOT_FOUND (exit code 1). Inspection of package.json line 23 confirms the actual test files executed by npm run test:unit are tests/pricing-engine-integrity.test.ts, tests/hedonic-and-627-debug.test.ts, and tests/assess-004-hedonic-accuracy-benchmark.test.ts (all of which pass with exit code 0).",
+    "expected_condition": "Test evidence tables must cite the exact test file paths present in tests/ and package.json.",
+    "impact": "Causes confusion during independent command reproduction when running the literal filename cited in the handoff prose.",
+    "affected_workflows": [
+      "Test Evidence Verification"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Cite exact test script paths from package.json (tests/pricing-engine-integrity.test.ts and tests/assess-004-hedonic-accuracy-benchmark.test.ts).",
+    "verification_method": "Direct command execution of 'npx tsx tests/hedonic-pricing-engine.test.ts' (exit 1) and 'npm run test:unit' (exit 0)."
+  },
+  {
+    "id": "F-A1V-07",
+    "title": "Zero Listing Deduplication Allows Duplicate Records to Artificially Inflate Market Evidence Quality",
+    "category": "AGGREGATION",
+    "severity": "HIGH",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E1",
+    "source_paths": [
+      "src/data/realMarketPriceAggregator.ts"
+    ],
+    "symbols": [
+      "aggregateNeighborhoodMarketMetrics"
+    ],
+    "line_ranges": [
+      "src/data/realMarketPriceAggregator.ts:247-260"
+    ],
+    "observed_condition": "Adversarial metamorphic testing proved that passing 5 identical copies of the same listing ([sA, sA, sA, sA, sA] with identical id 'a', price 13500, and description) into aggregateNeighborhoodMarketMetrics yields observedSampleCount: 5, eligibleObservedCount: 5, evidenceIndexScore: 77, confidenceScore: 77, and upgrades evidenceQuality from INSUFFICIENT_OBSERVATIONS to MODERATE_OBSERVATIONS. Unlike evaluateComparableProperties in valuationTraceAndComparables.ts (lines 191, 212-217), aggregateNeighborhoodMarketMetrics performs zero deduplication by ID or content fingerprint.",
+    "expected_condition": "Duplicating the same observation (identical ID or identical normalized area/price/floor/age fingerprint) must not create additional market evidence or increase evidenceIndexScore.",
+    "impact": "Violates the Duplicate Sensitivity metamorphic property (Section 22.3) and Advanced Acceptance Gate 7; reposted or duplicated Divar listings artificially inflate neighborhood evidence scores and disable sparse-sample warnings.",
+    "affected_workflows": [
+      "Neighborhood Market Price Aggregation",
+      "Evidence Index Score Calculation"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Deduplicate input samples in aggregateNeighborhoodMarketMetrics by both sample.id and normalized (askingTotalMillion, sqm, floor, age) fingerprint prior to aggregation.",
+    "verification_method": "Runtime metamorphic probe via npx tsx passing [sA, sA, sA, sA, sA] to aggregateNeighborhoodMarketMetrics."
+  },
+  {
+    "id": "F-A1V-08",
+    "title": "Silent Imputation of Missing Area (85 sqm) in Listing Parser and Silent Clamping of Invalid Inputs in Hedonic Engine",
+    "category": "PROVENANCE",
+    "severity": "HIGH",
+    "verification_status": "VERIFIED",
+    "evidence_level": "E1",
+    "source_paths": [
+      "src/data/realMarketPriceAggregator.ts",
+      "src/data/hedonicPricingEngine.ts"
+    ],
+    "symbols": [
+      "extractListingSpecsFromText",
+      "aggregateNeighborhoodMarketMetrics",
+      "calculateHedonicValuation"
+    ],
+    "line_ranges": [
+      "src/data/realMarketPriceAggregator.ts:136-152",
+      "src/data/realMarketPriceAggregator.ts:248-259",
+      "src/data/hedonicPricingEngine.ts:96-101"
+    ],
+    "observed_condition": "(1) In extractListingSpecsFromText (line 137), sqm is initialized to 'let sqm = 85'. When listings omit meterage in their description (e.g., { askingTotalMillion: 14000, description: 'آپارتمان خوش نقشه در پونک' }), specs.sqm silently defaults to 85, passing 'specs.sqm > 20' at line 251 with malformedSampleCount = 0 and computing a fabricated per-sqm price (14000 / 85 = 164.7M/sqm, normalized to 183.2M/sqm). (2) In calculateHedonicValuation (lines 97-100), passing sqm: 0 or sqm: -50 silently clamps safeSqm to 30 and returns a valid valuation (4,446M Toman), passing sqm: NaN silently defaults to 85 sqm (12,121M Toman), and passing floor: 20 in a 4-floor building applies a +10.5% high-rise bonus without validating floor <= totalFloors.",
+    "expected_condition": "Missing required measurements (such as property area in a listing or invalid <=0/NaN area in valuation) must be explicitly flagged as malformed/invalid rather than silently substituted with 85 sqm or 30 sqm.",
+    "impact": "Violates Provenance Invariant 1 & Section 20.3 and Advanced Acceptance Gate 4 ('Invalid or missing inputs silently generate apparently valid valuation results').",
+    "affected_workflows": [
+      "NLP Listing Spec Extraction",
+      "Neighborhood Market Price Aggregation",
+      "Hedonic Property Valuation"
+    ],
+    "confidence": "HIGH",
+    "recommended_action": "Track whether sqm was explicitly extracted in extractListingSpecsFromText (rejecting listings with missing sqm in evalSample as malformedSampleCount++), and validate sqm > 0 and floor <= totalFloors in calculateHedonicValuation.",
+    "verification_method": "Adversarial runtime probe via npx tsx testing zero/negative/NaN sqm, floor > totalFloors, and descriptions without meterage."
+  }
+]

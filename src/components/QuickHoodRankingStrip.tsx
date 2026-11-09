@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'; import { Sparkles, TrendingDown, Wallet, Wind, TrainFront, MapPinned, BarChart3, Navigation, Scale } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, CityId, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood, } from '../data/multiCityData';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { evaluateHousingMarketStatisticalIndicators, type MarketListingObservation, } from '../data/rentalMarketCommissionAndPreSaleAudit'; import { isCoordInsideStoredViewport, updateMapAdvancedOverlayState, useMapAdvancedOverlayState, } from './mapAdvancedLayers'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; export type QuickRankingCriterionId = 'budget_match' | 'all_hoods' | 'nearest_work_hub' | 'tehran_counties' | 'undervalued' | 'cheapest' | 'clean_air' | 'best_metro'; export interface QuickHoodRankingStripProps { evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHoodId: number; mode: 'rent' | 'buy'; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; activeCity?: CityId;
+import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { evaluateHousingMarketStatisticalIndicators, type MarketListingObservation, } from '../data/rentalMarketCommissionAndPreSaleAudit'; import { isCoordInsideStoredViewport, updateMapAdvancedOverlayState, useMapAdvancedOverlayState, } from './mapAdvancedLayers'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; export type QuickRankingCriterionId = 'budget_match' | 'all_hoods' | 'nearest_work_hub' | 'tehran_counties' | 'undervalued' | 'cheapest' | 'clean_air' | 'best_metro'; export interface QuickHoodRankingStripProps { evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHoodId: number; mode: 'rent' | 'buy'; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; activeCity?: CityId;
   onSwitchCity?: (city: CityId, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => void; }
 const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.ComponentType<{ className?: string }>; }[] = [
-  { id: 'budget_match', label: 'مناسب بودجه من', icon: Sparkles }, { id: 'all_hoods', label: 'همه محلات', icon: MapPinned }, { id: 'tehran_counties', label: 'شهرستان‌ها و استان‌ها', icon: MapPinned }, { id: 'nearest_work_hub', label: 'نزدیک‌ترین به کار', icon: Navigation },
+  { id: 'budget_match', label: 'همخوان با بودجه من', icon: Sparkles }, { id: 'all_hoods', label: 'همه محلات', icon: MapPinned }, { id: 'tehran_counties', label: 'شهرستان‌ها و استان‌ها', icon: MapPinned }, { id: 'nearest_work_hub', label: 'نزدیک‌ترین به کار', icon: Navigation },
   { id: 'undervalued', label: 'جامانده از بازار', icon: TrendingDown }, { id: 'cheapest', label: 'ارزان‌ترین‌ها', icon: Wallet }, { id: 'clean_air', label: 'پاک‌ترین هوا', icon: Wind }, { id: 'best_metro', label: 'بهترین مترو', icon: TrainFront }, ]; export function QuickHoodRankingStrip({
   evaluatedNeighborhoods, selectedHoodId, mode, onSelectNeighborhood,
   activeCity = 'tehran', onSwitchCity, }: QuickHoodRankingStripProps): React.ReactElement {
@@ -202,16 +202,13 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
             comparisonArc.active &&
             ((comparisonArc.hoodA?.id === selectedHoodId && comparisonArc.hoodB?.id === hood.id) ||
               (comparisonArc.hoodB?.id === selectedHoodId && comparisonArc.hoodA?.id === hood.id));
-          const dotColor =
-            hood.status === 'green'
-              ? 'bg-emerald-500'
-              : hood.status === 'yellow'
-              ? 'bg-amber-500'
-              : 'bg-rose-500';
-          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${toPersianNum(index + 1)}.`;
+          const dotColor = hood.status === 'green' ? 'bg-emerald-500' : hood.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500';
+          const explain = explainNeighborhoodRecommendation(hood, { mode, topReferenceScore: rankedHoods[0]?.overallScore });
+          const rankPrefix = index > 0 && explain.isTieBandWithTop ? `≈${toPersianNum(index + 1)}.` : `${toPersianNum(index + 1)}.`;
           return (
             <div
               key={hood.id}
+              title={`${explain.budgetFitSemanticsLabelFa} · ${explain.scoreSemanticsLabelFa}: ${toPersianNum(hood.overallScore)}/۱۰ · ${explain.tradeOffSummaryFa}`}
               className={`rounded-[10px] border text-[11px] font-bold flex items-center whitespace-nowrap shrink-0 transition ${
                 isSelected
                   ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-600 text-emerald-900 dark:text-emerald-200 shadow-2xs ring-1 ring-emerald-500/30'
@@ -223,9 +220,9 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
                 onClick={() => onSelectNeighborhood(hood)}
                 className="px-2.5 py-1.5 flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} aria-label={explain.budgetFitSemanticsLabelFa} />
                 <span>
-                  {medal} {hood.name}
+                  {rankPrefix} {hood.name}
                 </span>
                 <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums">
                   · {formatSubMetric(hood)}

@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeftRight, ChevronDown, ChevronUp, Layers, Pin, Sparkles, TrainFront, Wind, Shield, Wifi, Coins } from 'lucide-react';
 import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState } from './mapAdvancedLayers';
 import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit';
+import { explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods';
 
 export interface ExpandableComparisonTableProps {
   currentHood: EvaluatedNeighborhood; allNeighborhoods: EvaluatedNeighborhood[]; targetSqm: number;
@@ -49,8 +50,8 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
   const metrics = useMemo(() => {
     const costBuyA = hoodA.buyPerSqm; const costBuyB = hoodB.buyPerSqm;
     const uBuyA = convertPricePerSqmToUnit(costBuyA, areaUnit); const uBuyB = convertPricePerSqmToUnit(costBuyB, areaUnit);
-    const aggA = aggregateNeighborhoodMarketMetrics(hoodA.id, hoodA.name, costBuyA, []);
-    const aggB = aggregateNeighborhoodMarketMetrics(hoodB.id, hoodB.name, costBuyB, []);
+    const aggA = aggregateNeighborhoodMarketMetrics(hoodA.id, hoodA.name, costBuyA, buildNeighborhoodListingSamples(hoodA));
+    const aggB = aggregateNeighborhoodMarketMetrics(hoodB.id, hoodB.name, costBuyB, buildNeighborhoodListingSamples(hoodB));
     const uDealA = convertPricePerSqmToUnit(aggA.estimatedDealPricePerSqm, areaUnit);
     const uDealB = convertPricePerSqmToUnit(aggB.estimatedDealPricePerSqm, areaUnit);
     const totalBuyA = costBuyA * targetSqm; const totalBuyB = costBuyB * targetSqm;
@@ -59,6 +60,9 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
     const scaledRahnB = Math.round(hoodB.rahn80m * (targetSqm / 80) * rentAgeMultiplier);
     const diffRentMonthly = Math.abs(Math.round(scaledRahnA * 0.03) - Math.round(scaledRahnB * 0.03));
     const unitLbl = areaUnit === 'sqft' ? 'ft²' : 'm²';
+    const isScoreTieBand = Math.abs(hoodA.overallScore - hoodB.overallScore) <= 0.3;
+    const explainA = explainNeighborhoodRecommendation(hoodA, { mode, topReferenceScore: Math.max(hoodA.overallScore, hoodB.overallScore) });
+    const explainB = explainNeighborhoodRecommendation(hoodB, { mode, topReferenceScore: Math.max(hoodA.overallScore, hoodB.overallScore) });
 
     const fxBuySubA = intlCurrency !== 'IRT'
       ? `${formatMillionTomanAsIntlCurrency(uBuyA, intlCurrency, radarLocale)}/${unitLbl} · ${isEn ? 'Total: ' : 'کل: '}${formatMillionTomanAsIntlCurrency(totalBuyA, intlCurrency, radarLocale)}`
@@ -68,6 +72,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
       : `${formatAreaShort(targetSqm, areaUnit)}: ${toPersianNum((totalBuyB / 1000).toFixed(1))} م.ت`;
     const fxRahnSubA = `${isEn ? 'Rent: ' : 'اجاره: '}${toPersianNum(Math.round(scaledRahnA * 0.03))}م (${isEn ? 'Diff: ' : 'اختلاف: '}${toPersianNum(diffRentMonthly)}م)${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(scaledRahnA, intlCurrency, radarLocale)}` : ''}`;
     const fxRahnSubB = `${isEn ? 'Rent: ' : 'اجاره: '}${toPersianNum(Math.round(scaledRahnB * 0.03))}م (${isEn ? 'Diff: ' : 'اختلاف: '}${toPersianNum(diffRentMonthly)}م)${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(scaledRahnB, intlCurrency, radarLocale)}` : ''}`;
+    void total80mA; void total80mB;
 
     return [
       { id: 'cost_buy', label: formatUnitBuyPriceTitle(areaUnit), icon: <Coins className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />, valA: `${toPersianNum(uBuyA)} میلیون`, valB: `${toPersianNum(uBuyB)} میلیون`, winner: costBuyA < costBuyB ? 'A' : costBuyA > costBuyB ? 'B' : 'equal', subA: fxBuySubA, subB: fxBuySubB },
@@ -77,9 +82,9 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
       { id: 'metro', label: isEn ? 'Metro & Transit Access' : 'دسترسی به خطوط مترو', icon: <TrainFront className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />, valA: `${toPersianNum(hoodA.metro)} / ۱۰`, valB: `${toPersianNum(hoodB.metro)} / ۱۰`, winner: hoodA.metro > hoodB.metro ? 'A' : hoodA.metro < hoodB.metro ? 'B' : 'equal', subA: hoodA.distKm != null ? `${toPersianNum(hoodA.distKm.toFixed(1))} km` : undefined, subB: hoodB.distKm != null ? `${toPersianNum(hoodB.distKm.toFixed(1))} km` : undefined },
       { id: 'security', label: isEn ? 'Security & Neighborhood Calm' : 'امنیت و آرامش محیطی', icon: <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />, valA: `${toPersianNum(hoodA.security)} / ۱۰`, valB: `${toPersianNum(hoodB.security)} / ۱۰`, winner: hoodA.security > hoodB.security ? 'A' : hoodA.security < hoodB.security ? 'B' : 'equal' },
       { id: 'internet', label: isEn ? 'Fiber & Internet Reliability' : 'پایداری اینترنت و فیبر', icon: <Wifi className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />, valA: `${toPersianNum(hoodA.internet)} / ۱۰`, valB: `${toPersianNum(hoodB.internet)} / ۱۰`, winner: hoodA.internet > hoodB.internet ? 'A' : hoodA.internet < hoodB.internet ? 'B' : 'equal' },
-      { id: 'overall', label: isEn ? 'Livability Score' : 'امتیاز جامع کالبدی', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />, valA: `${toPersianNum(hoodA.overallScore)} / ۱۰`, valB: `${toPersianNum(hoodB.overallScore)} / ۱۰`, winner: hoodA.overallScore > hoodB.overallScore ? 'A' : hoodA.overallScore < hoodB.overallScore ? 'B' : 'equal' },
+      { id: 'overall', label: isEn ? 'Livability Score (±0.3 tie-band)' : 'امتیاز جامع کالبدی (بازه ±۰.۳ هم‌تراز)', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />, valA: `${toPersianNum(hoodA.overallScore)} / ۱۰${isScoreTieBand ? ' (≈ هم‌تراز)' : ''}`, valB: `${toPersianNum(hoodB.overallScore)} / ۱۰${isScoreTieBand ? ' (≈ هم‌تراز)' : ''}`, winner: isScoreTieBand ? 'equal' : hoodA.overallScore > hoodB.overallScore ? 'A' : 'B', subA: explainA.nonCompensatoryWarningsFa[0] ? `${explainA.tradeOffSummaryFa} · ${explainA.nonCompensatoryWarningsFa[0]}` : explainA.tradeOffSummaryFa, subB: explainB.nonCompensatoryWarningsFa[0] ? `${explainB.tradeOffSummaryFa} · ${explainB.nonCompensatoryWarningsFa[0]}` : explainB.tradeOffSummaryFa },
     ];
-  }, [hoodA, hoodB, targetSqm, rentAgeMultiplier, areaUnit, intlCurrency, radarLocale, isEn]);
+  }, [hoodA, hoodB, targetSqm, rentAgeMultiplier, areaUnit, intlCurrency, radarLocale, isEn, mode]);
 
   const scoreWinsA = metrics.filter((m) => m.winner === 'A').length;
   const scoreWinsB = metrics.filter((m) => m.winner === 'B').length;

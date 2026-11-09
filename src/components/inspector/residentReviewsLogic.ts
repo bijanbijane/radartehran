@@ -16,6 +16,8 @@ export interface ResidentReviewItem extends ResidentQoLRatings {
   overallQoLScore: number; comment: string; prosTags: string[]; consTags: string[];
   locationVerified: boolean; helpfulCount: number; createdAtLabelFa: string; createdAtMs: number;
   isLocalSubmission?: boolean;
+  isSeedBaseline?: boolean;
+  provenance?: 'USER_REPORTED' | 'CLOUD_RESIDENT_VOTE' | 'SEED_BASELINE_SCENARIO';
 }
 
 export interface ResidentReviewDraftInput extends ResidentQoLRatings {
@@ -25,6 +27,7 @@ export interface ResidentReviewDraftInput extends ResidentQoLRatings {
 
 export interface NeighborhoodQoLSummary {
   compositeScore: number; totalReviewsCount: number; verifiedReviewsCount: number;
+  observedReviewsCount: number; seedBaselineCount: number; provenanceLabelFa: string;
   recommendPercent: number; averages: ResidentQoLRatings; housingCostNote: string;
 }
 
@@ -78,6 +81,7 @@ export function buildNeighborhoodSeedReviews(hood: EvaluatedNeighborhood): Resid
       comment: `بیش از ۴ سال است در فرعی‌های ${hood.name} ساکن هستم. از نظر بافت همسایگی، پایداری فشار آب و آرامش شبانه بسیار رضایت‌بخش است و مزیت اصلی محله «${firstPro}» محسوب می‌شود.`,
       prosTags: ['همسایگان آرام و فرهنگی', 'فشار آب و پایداری برق'], consTags: [firstCon.slice(0, 38)],
       locationVerified: true, helpfulCount: 14 + (hood.id % 7), createdAtLabelFa: '۳ روز پیش', createdAtMs: 1762000000000 - hood.id * 1000,
+      isSeedBaseline: true, provenance: 'SEED_BASELINE_SCENARIO',
     },
     {
       id: `seed-${hood.id}-2`, hoodId: hood.id, hoodName: hood.name, authorName: 'سارا محمدی',
@@ -85,6 +89,7 @@ export function buildNeighborhoodSeedReviews(hood: EvaluatedNeighborhood): Resid
       comment: `به عنوان مستاجر، دسترسی روزانه از ${hood.name} به مراکز کاری و خریدهای روزمره بسیار راحت است. تنها نکته مهم در بازدید شبانه، بررسی وضعیت پارکینگ ساختمان و ترافیک ساعت ۱۸ تا ۲۰ است.`,
       prosTags: ['دسترسی عالی به مترو و BRT', 'امنیت بالای تردد شبانه'], consTags: ['کمبود جای پارک شبانه'],
       locationVerified: true, helpfulCount: 9 + (hood.id % 5), createdAtLabelFa: '۱ هفته پیش', createdAtMs: 1761500000000 - hood.id * 1000,
+      isSeedBaseline: true, provenance: 'SEED_BASELINE_SCENARIO',
     },
     {
       id: `seed-${hood.id}-3`, hoodId: hood.id, hoodName: hood.name, authorName: 'امیرحسین کاظمی',
@@ -92,6 +97,7 @@ export function buildNeighborhoodSeedReviews(hood: EvaluatedNeighborhood): Resid
       comment: `پوشش اینترنت ثابت و آنتن‌دهی موبایل در اغلب بلوک‌های ${hood.name} وضعیت پایداری دارد و امنیت معابر تا ساعات پایانی شب برای خانواده‌ها مناسب ارزیابی می‌شود.`,
       prosTags: ['پوشش فیبر نوری پرسرعت', 'دسترسی عالی به نانوایی و تره‌بار'], consTags: ['ترافیک عصرگاهی معابر اصلی'],
       locationVerified: false, helpfulCount: 6 + (hood.id % 4), createdAtLabelFa: '۲ هفته پیش', createdAtMs: 1761000000000 - hood.id * 1000,
+      isSeedBaseline: true, provenance: 'SEED_BASELINE_SCENARIO',
     },
   ];
 }
@@ -99,7 +105,9 @@ export function buildNeighborhoodSeedReviews(hood: EvaluatedNeighborhood): Resid
 export function mergeCloudAndSeedReviews(
   hood: EvaluatedNeighborhood, cloudVotes: ResidentVoteDoc[], localReviews: ResidentReviewItem[]
 ): ResidentReviewItem[] {
-  const hoodLocal = localReviews.filter((r) => r.hoodId === hood.id);
+  const hoodLocal = localReviews
+    .filter((r) => r.hoodId === hood.id)
+    .map((r) => ({ ...r, isSeedBaseline: false, provenance: r.provenance ?? ('USER_REPORTED' as const) }));
   const hoodCloud: ResidentReviewItem[] = cloudVotes.filter((v) => v.hoodId === hood.id).map((v, idx) => {
     const ratings: ResidentQoLRatings = {
       air: clampScore(v.air), powerWater: clampScore(v.powerWater), internet: clampScore(v.internet),
@@ -114,6 +122,7 @@ export function mergeCloudAndSeedReviews(
       consTags: ratings.flatTerrain < 7 ? ['شیب معابر در روزهای برفی'] : [],
       locationVerified: Boolean(v.locationVerified), helpfulCount: v.locationVerified ? 5 : 2,
       createdAtLabelFa: 'ثبت‌شده در ابر', createdAtMs: 1762500000000 - idx * 5000,
+      isSeedBaseline: false, provenance: 'CLOUD_RESIDENT_VOTE',
     };
   });
   return [...hoodLocal, ...hoodCloud, ...buildNeighborhoodSeedReviews(hood)];
@@ -124,10 +133,13 @@ export function summarizeNeighborhoodQoL(
   intlCurrency: IntlCurrencyCode = 'IRT', locale: RadarLocale = 'fa'
 ): NeighborhoodQoLSummary {
   const safeList = reviews.length > 0 ? reviews : buildNeighborhoodSeedReviews(hood);
-  let totalWeight = 0, verifiedCount = 0, recommendedCount = 0;
+  let totalWeight = 0, verifiedCount = 0, recommendedCount = 0, observedCount = 0, seedCount = 0;
   const sums: ResidentQoLRatings = { air: 0, powerWater: 0, internet: 0, metro: 0, security: 0, flatTerrain: 0 };
 
   for (const r of safeList) {
+    const isSeed = Boolean(r.isSeedBaseline || r.provenance === 'SEED_BASELINE_SCENARIO' || r.id.startsWith('seed-'));
+    if (isSeed) seedCount += 1;
+    else observedCount += 1;
     const w = r.locationVerified ? 2 : 1;
     totalWeight += w;
     sums.air += r.air * w; sums.powerWater += r.powerWater * w; sums.internet += r.internet * w;
@@ -143,11 +155,18 @@ export function summarizeNeighborhoodQoL(
     security: Math.round((sums.security / div) * 10) / 10, flatTerrain: Math.round((sums.flatTerrain / div) * 10) / 10,
   };
   const fxText = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(hood.rahn80m, intlCurrency, locale)})` : '';
+  const provenanceLabelFa =
+    observedCount === 0
+      ? `پروفایل مرجع محله (۰ نظر ثبت‌شده کاربر · ${seedCount.toLocaleString('fa-IR')} سناریوی نمونه پایه)`
+      : `ترکیب ${observedCount.toLocaleString('fa-IR')} نظر واقعی ثبت‌شده کاربر و ${seedCount.toLocaleString('fa-IR')} سناریوی نمونه پایه`;
 
   return {
     compositeScore: computeCompositeQoLScore(averages),
     totalReviewsCount: Math.max(hood.votesCount || 12, safeList.length),
     verifiedReviewsCount: verifiedCount,
+    observedReviewsCount: observedCount,
+    seedBaselineCount: seedCount,
+    provenanceLabelFa,
     recommendPercent: Math.min(99, Math.max(68, Math.round((recommendedCount / safeList.length) * 100))),
     averages,
     housingCostNote: `رهن معیار ۸۰ متری: ${hood.rahn80m.toLocaleString('fa-IR')} میلیون تومان${fxText}`,

@@ -31,13 +31,14 @@ describe('Resident Quality-of-Life Reviews Pure Logic', () => {
     assert.ok(score >= 8.0 && score <= 9.0, `Expected score between 8.0 and 9.0, got ${score}`);
   });
 
-  test('buildNeighborhoodSeedReviews generates 3 realistic neighborhood-specific reviews', () => {
+  test('buildNeighborhoodSeedReviews generates 3 realistic neighborhood-specific reviews with explicit seed provenance', () => {
     const seeds = buildNeighborhoodSeedReviews(sampleHood);
     assert.equal(seeds.length, 3);
     assert.ok(seeds[0].comment.includes(sampleHood.name));
     assert.equal(seeds[0].locationVerified, true);
     assert.equal(seeds[0].residencyType, 'owner');
     assert.equal(seeds[1].residencyType, 'tenant');
+    assert.ok(seeds.every((s) => s.isSeedBaseline === true && s.provenance === 'SEED_BASELINE_SCENARIO'));
   });
 
   test('filterAndSortResidentReviews filters by verified/owners/tenants and search query', () => {
@@ -53,11 +54,14 @@ describe('Resident Quality-of-Life Reviews Pure Logic', () => {
     assert.equal(queried.length, 1);
   });
 
-  test('summarizeNeighborhoodQoL computes weighted averages and recommendation rate', () => {
+  test('summarizeNeighborhoodQoL computes weighted averages, recommendation rate, and explicit seed vs observed provenance counts', () => {
     const seeds = buildNeighborhoodSeedReviews(sampleHood);
     const summary = summarizeNeighborhoodQoL(sampleHood, seeds, 'USD', 'fa');
     assert.ok(summary.compositeScore >= 1 && summary.compositeScore <= 10);
     assert.equal(summary.verifiedReviewsCount, 2);
+    assert.equal(summary.observedReviewsCount, 0);
+    assert.equal(summary.seedBaselineCount, 3);
+    assert.ok(summary.provenanceLabelFa.includes('۰ نظر ثبت‌شده کاربر'));
     assert.ok(summary.recommendPercent >= 68 && summary.recommendPercent <= 99);
     assert.ok(summary.housingCostNote.includes('$'));
   });

@@ -1,11 +1,21 @@
-# Employee 10 — Property Valuation & Market Intelligence Backend Module
+# Property Valuation & Pricing Intelligence Backend Module (`server/modules/valuation/`)
 
 ## 1. Overview & Architectural Role
-The Property Valuation and Market Intelligence backend module (`server/modules/valuation/`) calculates explainable property value estimates and neighborhood market indicators based on verified neighborhood benchmarks and comparable listing records.
+The Property Valuation and Pricing Intelligence backend module calculates explainable property value estimates, land residual valuations, rental deposit-rent conversions, and neighborhood market indicators based on verified neighborhood benchmarks and comparable listing records.
 
 ### Core Architectural Invariants
-- **Explainable Estimates**: Every estimate exposes its underlying baseline price, distinct hedonic adjustments (age, floor, amenities, property category), percentage impacts, valuation range (`[min, max]`), fast sale factor (`0.88x`), and explicit method limitations.
-- **Strict Distinction of Property Categories**: Separate models are applied to residential, commercial, and office properties. Commercial and office valuations explicitly incorporate distinct commercial/office density premiums and risk disclaimers rather than blindly projecting residential formulas.
+- **Explainable Estimates**: Every estimate exposes its underlying baseline price, distinct hedonic adjustments (age, floor, amenities, property category, land zoning, frontage, corner orientation), percentage impacts, valuation range (`[min, max]`), fast sale factor (`0.88x`), and explicit method limitations.
+- **Strict Separation of Property Categories**:
+  - `residential`: Hedonic age, floor, elevator, and amenities regressions.
+  - `commercial`: Commercial foot-traffic premiums (+35%) and frontage weighting.
+  - `office`: Administrative/commercial corridor position premiums (+15%).
+  - `land`: Land residual strategy incorporating zoning (`commercial` +35%, `mixed` +18%, `agricultural` -50%), corner plot bonus (+8.5%), frontage width, and density permits.
+- **Asking Price vs. Confirmed Transaction Distinction**:
+  - Asking prices from unmoderated listings are **never** treated as confirmed transactions.
+  - Data quality metrics explicitly report `confirmedTransactionCount` separately from `askingPriceCount`.
+- **Rental & Deposit Equivalence**:
+  - Deposit and monthly rent are distinct financial variables.
+  - Configurable market conversion rate (default 3.0% / 30,000 Toman per million Rahn; customizable between 1.0% and 6.0%) computes equivalent full Rahn and full monthly rent without hardcoding a universal ratio.
 - **Comparable Inclusion / Exclusion Transparency**: Each comparable record records its similarity score, inclusion status, and explicit exclusion reason (e.g. outlier price dispersion, or area divergence $> 50\%$).
 - **No Direct DB Coupling**: Valuation consumes external domain data exclusively via `ValuationDataConsumerAdapter` (`getNeighborhoodBenchmark`, `queryComparableListings`).
 - **Reproducible Historical Snapshots**: Every valuation calculation computes a deterministic SHA-256 hash of its inputs, allowing historical results to be persisted and reproduced.
@@ -16,13 +26,16 @@ The Property Valuation and Market Intelligence backend module (`server/modules/v
 All files are strictly under the `500`-line ceiling:
 ```
 server/modules/valuation/
-├── types.ts                      # Domain models, valuation result schemas, and consumer adapter (~140 lines)
-├── validation.ts                 # Input validation & reproducible SHA-256 hash generation (~122 lines)
-├── service.ts                    # Hedonic regression, comparable analysis & market intelligence (~396 lines)
-├── index.ts                      # Public barrel export (~3 lines)
+├── types.ts                      # Domain models, valuation results, data quality & adapters (~187 lines)
+├── validation.ts                 # Input validation & reproducible SHA-256 hash generation (~187 lines)
+├── rentalAndLandEngine.ts        # Rental deposit equivalence & land valuation calculations (~143 lines)
+├── service.ts                    # Hedonic regression, comparable analysis & market indicators (~436 lines)
+├── routes.ts                     # Express router with standard error boundaries (~108 lines)
+├── index.ts                      # Public barrel export (~5 lines)
 ├── README.md                     # Architecture, methodology, confidence framework & integration guide
 └── __tests__/
-    └── valuation.test.ts         # Unit & integration test suite (~194 lines)
+    ├── valuation.test.ts         # Hedonic regression, commercial & reproducibility test suite (~194 lines)
+    └── landAndRental.test.ts     # Land valuation, rental conversions & asking vs confirmed suite (~160 lines)
 ```
 
 ---
@@ -52,19 +65,21 @@ $$\text{Estimated Total} = \text{Estimated Price Per Sqm} \times \text{Sqm}$$
    - Residential: Base standard.
    - Commercial: `+35%` commercial activity premium.
    - Office: `+15%` administrative/office position premium.
+   - Land: Land residual methodology with zoning, frontage, corner orientation (+8.5%), and density permit adjustments.
 
 ---
 
 ## 4. Confidence & Data Quality Framework
 Confidence is categorized into `'high' | 'moderate' | 'low' | 'insufficient_data'` based on:
 - Number of approved comparable properties in the same neighborhood.
+- Proportion of confirmed transactions vs. asking prices.
 - Missing input fields (penalized if age or floor is unknown).
 - Statistical dispersion among comparable prices per square meter.
 
 ---
 
 ## 5. Verification Summary
-- **Tests**: `npx tsx --test server/modules/valuation/__tests__/valuation.test.ts` (3 passed, 0 failed).
+- **Tests**: `npx tsx --test server/modules/valuation/__tests__/*.test.ts` (7 passed, 0 failed across 2 suites).
 - **Strict TypeScript**: `npx tsc --noEmit --strict ...` (0 errors).
 - **Architecture Guardrails**: `npm run arch:check` (0 errors, 0 warnings).
 - **Applet Compilation**: Verified.
@@ -72,8 +87,9 @@ Confidence is categorized into `'high' | 'moderate' | 'low' | 'insufficient_data
 ---
 
 ## 6. Integration Handoff for Integration Lead
-1. **Provide `ValuationDataConsumerAdapter`**:
+1. **Route Mounting**: Mount `createValuationRouter(deps)` under `/api/valuation`.
+2. **Provide `ValuationDataConsumerAdapter`**:
    - Wire `getNeighborhoodBenchmark` to read base price per square meter and rahn from the Geography/Neighborhood dataset.
-   - Wire `queryComparableListings` to fetch approved public listings from `/bargains` collection.
-2. **Persistence**:
+   - Wire `queryComparableListings` to fetch approved public listings from `/bargains` collection and verified transactions.
+3. **Persistence**:
    - If historical snapshots are desired, wire `persistValuationSnapshot` to write to `/valuationSnapshots/{id}`.

@@ -5,21 +5,21 @@
 ```json
 {
   "charterDocument": "docs/RADAR-TEHRAN-OPERATING-CHARTER.md",
-  "charterVersion": "Version 22 Master Charter + Version 32 Execution Governance",
-  "campaignId": "CAMPAIGN-PROD-04: Discoverability, Viral Sharing & Conversion",
+  "charterVersion": "Version 22 Master Charter + Version 32 Execution Governance + Argon 5 Master Redesign Prompt",
+  "campaignId": "CAMPAIGN-ARGON5-01: Human Decision Quality, Market Data Integrity, and Trust Calibration",
   "campaignStatus": "CAMPAIGN_COMPLETE",
-  "appletId": "e48df7a4-9535-4bf0-a948-61a6a0f37a6a",
+  "appletId": "1b7f1cd5-314b-4917-bfe4-cab0c714119b",
   "firestoreDatabaseId": "ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a",
-  "activeWorkstreamId": "ASSESS-010",
+  "activeWorkstreamId": "WS-CASPER-06 (Primary Workspace Views & Reverse Budget Finder Charter Alignment, Sample Unification & AFFORDABLE-First Ranking)",
   "activeWorkstreamState": "VERIFIED",
-  "activeWorkstreamRisk": "R1 (Low/Assessment & Funnel Validation)",
+  "activeWorkstreamRisk": "R2 (Sample-Backed v6.4 Deal Sorting & Explainability in ProductDiscoverView/ProductHomeView/ProductUserSpaceView, Epistemic Hero Calibration, and AFFORDABLE-First Priority Ranking in ReverseBudgetDiscoveryModal)",
   "activeWorkstreamBatchesUsed": 1,
   "activeWorkstreamMaxBatches": 3,
   "activeWorkstreamCorrectiveIterationsUsed": 0,
   "activeWorkstreamMaxCorrectiveIterations": 2,
   "verificationLevelsAchieved": ["SOURCE_REVIEWED", "BUILD_VERIFIED", "TEST_EXECUTED", "PREVIEW_OBSERVED", "INTERACTION_VERIFIED"],
-  "completedWorkstreams": ["WS-001", "WS-002", "WS-003", "WS-004", "WS-005", "WS-DOC-001", "PLAN-001", "TEAM-SETUP-001", "DB-001", "ASSESS-001", "ASSESS-002", "ASSESS-003", "ASSESS-004", "ASSESS-005", "ASSESS-006", "ASSESS-007", "ASSESS-008", "ASSESS-009", "ASSESS-010"],
-  "nextEligibleTask": "NONE (ALL_CAMPAIGNS_COMPLETE)",
+  "completedWorkstreams": ["WS-001", "WS-002", "WS-003", "WS-004", "WS-005", "WS-DOC-001", "PLAN-001", "TEAM-SETUP-001", "DB-001", "ASSESS-001", "ASSESS-002", "ASSESS-003", "ASSESS-004", "ASSESS-005", "ASSESS-006", "ASSESS-007", "ASSESS-008", "ASSESS-009", "ASSESS-010", "WS-ARGON5-A", "WS-G4A-A1", "WS-ARGON5-B", "WS-ARGON5-C", "WS-ARGON5-D", "WS-CASPER-02", "WS-CASPER-03", "WS-CASPER-04", "WS-CASPER-05", "WS-CASPER-06"],
+  "nextEligibleTask": "NONE (All Argon-5, Root-Cause, Self-Critique, Quality-Over-Vanity & Charter-Mandated Primary View Workstreams Complete)",
   "blockedTasks": []
 }
 ```
@@ -401,3 +401,123 @@
       2. Assessment report: `docs/engineering/assessments/ASSESS-009-010-seo-and-crm-funnel.md`.
     - Verified cross-city comparison SSR metadata (`?compare=5-101`), non-Tehran canonical URLs (`?city=isfahan&hood=304`), JSON-LD script breakout neutralization, single-flight bargain submission locks, decoupled media attachment retries, and dual-write reconciliation.
     - Closed `CAMPAIGN-PROD-04`: Marked `CAMPAIGN_COMPLETE`. All 4 Master Product Assessment Campaigns (`ASSESS-001` through `ASSESS-010`) are 100% verified.
+30. **`[2026-11-08T11:26:30-08:00] ARGON_5_BOOTSTRAP_AND_WORKSTREAM_COMPLETED (CAMPAIGN-ARGON5-01 / WS-ARGON5-A)`**:
+    - **Session Initialization & Archive Reconciliation**:
+      - Inspected `public/assets/aistudio/RADAR_ARGON_5_MASTER_REDESIGN_PROMPT_93cf6c5c.md`, `AGENTS.md`, `ARCHITECTURE.md`, `architecture-baseline.json`, `docs/RADAR-TEHRAN-OPERATING-CHARTER.md`, `docs/engineering/RMEP-001/PERSISTENT-ENGINEERING-MEMORY.md`, and `docs/engineering/RMEP-001/EXECUTION-STATE.json`.
+      - Checked for `.zip` archives in workspace (`find . -maxdepth 4 -name "*.zip"`): **Zero `.zip` files present in container**. Reconciled directly against live repository working tree (`/app/applet`).
+    - **Revalidated Finding Register (Parts 4, 6, 7)**:
+      - `F-ARGON5-01` (`src/data/realMarketPriceAggregator.ts`): **CONFIRMED (`REPRODUCIBLE_DEFECT`)** — When `samples.length < 3`, 12 synthetic bootstrap rows replaced `samples`, inflating `sampleCount` and `validSampleCount` to 12 and discarding 1–2 real observations; `confidenceScore = 74` was displayed as `"اطمینان آماری: ۷۴٪"`; statistical `1.5 * IQR` outliers were conflated with fraud (`rejectedFraudCount` -> `"مورد فیک حذف شد"`); `'FROZEN'` market regime was unreachable dead code; `estimatedDealPricePerSqm` fixed ratios (`0.975 / 0.93 / 0.90`) lacked explicit `HEURISTIC_ESTIMATE` provenance; daily `±3%` anchor clamping hid `unclampedAveragePerSqm` and `isAnchorClamped`.
+      - `F-ARGON5-02` (`src/components/useEvaluatedNeighborhoods.ts`): **CONFIRMED (`ACTIONABLE_FINDING`, queued for `WS-ARGON5-B`)** — `status` (`green`/`yellow`/`red`) is pure budget fit while `calcOverallScore` is an equal-weight mean of 6 indicators.
+      - `F-ARGON5-03` (`src/components/OnboardingWizardModal.tsx`): **CONFIRMED (`ACTIONABLE_FINDING`, queued for `WS-ARGON5-C`)** — Backdrop click triggers `handleSkip`, number vs. range slider bounds differ, and `greenNeighborhoods.slice(0, 4)` is unsorted while `bestNeighborhood` sorts by `overallScore`.
+    - **Workstream Executed (`WS-ARGON5-A`: Market-Data Truth, Provenance Taxonomy & Aggregator Semantic Integrity)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Scientific Rationale**: Grounded in Tversky & Kahneman (1974) on numerical anchoring under uncertainty, Lee & See (2004) on calibrated trust in automation, Parasuraman & Manzey (2010) on automation bias, and Goodhart (1975) / Campbell (1979) on metric gaming and indicator distortion.
+      - **Frozen Acceptance Contract (`AC-1` through `AC-6`)**:
+        - `AC-1`: Exported `MarketDataProvenance` and `EvidenceQualityState` in `src/data/realMarketPriceAggregator.ts` and added `observedSampleCount`, `eligibleObservedCount`, `syntheticSampleCount`, `excludedOutlierCount`, `malformedSampleCount`, `suspectedFraudCount`, `provenance`, `dealPriceProvenance: 'HEURISTIC_ESTIMATE'`, `evidenceQuality`, `evidenceIndexScore`, `isAnchorClamped`, and `unclampedAveragePerSqm`.
+        - `AC-2`: Preserved 1–2 real observed listings (`LIMITED_OBSERVATIONS`) by blending them with the reference baseline and retaining observed bargains in `autoBargainIds`, rather than discarding them.
+        - `AC-3`: Made `'FROZEN'` market regime reachable when 3–9 observed samples exhibit high dispersion (`>= 16%`) or seller overpricing (`>= 1.12x` baseline), while keeping cold-start and balanced warm-start tests intact.
+        - `AC-4`: Updated `src/components/NeighborhoodInspectorDrawer.tsx`, `src/components/NeighborhoodInspectorTabs.tsx`, `src/components/views/ProductIntelligenceView.tsx`, and `src/components/CompareModal.tsx` to disclose reference baseline vs. observed sample counts, replace uncalibrated `"اطمینان آماری"` with `"شاخص پوشش شواهد"` / `"منشأ داده"`, relabel IQR trimming as statistical outlier filtering (`"داده پرت آماری IQR"`), and clarify `v6.4` closing price as a heuristic negotiation scenario (`"برآورد سناریوی مذاکره"`).
+        - `AC-5`: Expanded `tests/real-market-price-aggregator.test.ts` to cover 0, 1, 2, 4, 8, and 10 sample regimes, outlier vs. fraud vs. malformed separation, reachable `'FROZEN'` regime, and anchor clamping transparency.
+        - `AC-6`: Maintained all file line counts below ceilings (`realMarketPriceAggregator.ts`: 296 lines, `NeighborhoodInspectorDrawer.tsx`: 249 lines, `NeighborhoodInspectorTabs.tsx`: 281 lines, `ProductIntelligenceView.tsx`: 266 lines, `CompareModal.tsx`: 255 lines).
+    - **Transitioned `WS-ARGON5-A`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`. Next eligible workstream: `WS-ARGON5-B`.
+31. **`[2026-11-08T12:14:00-08:00] GEMINI_4_ARGON_WS_A1_COMPLETED (WS-G4A-A1 / WS-A1)`**:
+    - **Workstream Executed (`WS-G4A-A1`: Post-Workstream-A Semantic, Statistical, and Regression Integrity Gate)**:
+      - Audited all 8 WS-A claims against live code (`src/data/realMarketPriceAggregator.ts`, `src/components/NeighborhoodInspectorDrawer.tsx`, `src/components/NeighborhoodInspectorTabs.tsx`, `src/components/CompareModal.tsx`, `src/components/views/ProductIntelligenceView.tsx`).
+      - Added `SampleCoverageState` (`BOOTSTRAPPED_BASELINE` / `SPARSE_1_TO_2` / `MODERATE_3_TO_9` / `SUFFICIENT_10_PLUS`), `coverageState`, `evidenceIndexFormula`, `marketActivityEvidence`, and `negotiationMultiplierBasis` to `AggregatedMarketMetrics`.
+      - Added `data-testid="market-anchor-clamp-disclosure"` in `src/components/NeighborhoodInspectorTabs.tsx` to disclose `unclampedAveragePerSqm` and `isAnchorClamped` (`±3%` daily anchor clamp), and qualified `شاخص پوشش نمونه` as `(غیرآماری)` and `معامله v6.4` as `سناریوی فرضی مذاکره`.
+      - Expanded `tests/real-market-price-aggregator.test.ts` to verify all new provenance fields across 0, 1, 2, 4, and 10 sample regimes.
+      - Produced full handoff package (`docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md`, `docs/engineering/WS-G4A-A1-MANIFEST.json`, `docs/engineering/WS-G4A-A1.patch`, `public/radar-g4a-ws-a1-handoff.zip`).
+    - **Transitioned `WS-G4A-A1`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`. Stopped per operator handoff contract without starting `WS-B` (`WP-3`).
+32. **`[2026-11-09T05:01:30-08:00] CASPER_EXECUTIVE_UPGRADE_COMPLETED (WS-CASPER-01: WS-ARGON5-B + WS-ARGON5-C)`**:
+    - **Workstream Executed (`WS-ARGON5-B` & `WS-ARGON5-C`: Multi-Criteria Decision Explainability, Non-Compensatory Semantics, Hedonic Epistemic Calibration & Onboarding Rent Control)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **`src/data/hedonicPricingEngine.ts` & `src/components/HedonicValuationResultsColumn.tsx`**:
+        - Added `uncertaintyBasis: 'DETERMINISTIC_SENSITIVITY_BAND_3_5_PCT'`, `calibrationDisclosureFa`, and `nonCompensatoryWarnings` (`floor >= 3 && !hasElevator`, `buildingAge >= 25 && needs_renovation`, `!hasParking && sqm >= 95`) to `HedonicValuationResult`, and relabeled `"بازه اطمینان کارشناسی"` to `"بازه حساسیت مدل (±۳.۵٪)"`.
+      - **`src/components/useEvaluatedNeighborhoods.ts`**:
+        - Exported `NeighborhoodRecommendationExplanation` and `explainNeighborhoodRecommendation(hood, options)` separating financial budget-fit semantics (`همخوان با فرض بودجه فعلی` / `مرزی` / `فراتر از فرض بودجه`) from the equal-weight 6-indicator infrastructure index (`شاخص ۶ سنجه`), generating contextual primary reasons, trade-off summaries, non-compensatory warnings for any indicator `< 6.5`, and `±0.3` score tie-band detection (`isTieBandWithTop`).
+      - **`src/components/SmartSuggestModal.tsx` & `src/components/QuickHoodRankingStrip.tsx`**:
+        - Wired `explainNeighborhoodRecommendation` into recommendation cards and ranking pills, displaying `چرا این پیشنهاد؟`, trade-off summaries, non-compensatory warnings, and `±0.3` tie-band badges (`≈` prefix instead of false Olympic medal hierarchy on tied candidates).
+      - **`src/components/OnboardingWizardModal.tsx`**:
+        - Exposed an interactive `monthlyRent` numeric input and range slider (`0..300` Million Toman) alongside `deposit` in Step 2 rent mode with live `combinedRahnEquivalent` calculation (`3%` rate) and international currency equivalence, and integrated `explainNeighborhoodRecommendation` into Step 3 candidate cards.
+      - **Unit & Regression Coverage**:
+        - Expanded `tests/assess-004-hedonic-accuracy-benchmark.test.ts` (Test 8) and `tests/domain-regressions.test.ts` (Assertion 37).
+    - **Transitioned `WS-ARGON5-B` & `WS-ARGON5-C`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+33. **`[2026-11-09T08:47:00-08:00] CASPER_ROOT_CAUSE_STRUCTURAL_REFORM_COMPLETED (WS-CASPER-02: WS-ARGON5-D & Root-Cause Unification)`**:
+    - **Workstream Executed (`WS-ARGON5-D` & Root-Cause Structural Unification)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Root Cause 1 Fixed — Unified Market Aggregator Sample Ingestion (`buildNeighborhoodListingSamples`)**:
+        - Eliminated cross-view `v6.4` deal price divergence where `BuyingPowerSummaryCard.tsx`, `BudgetBridgeAdvisorCard.tsx`, `ShortlistMatrixModal.tsx`, `ExpandableComparisonTable.tsx`, and `OnboardingWizardModal.tsx` passed `[]` (forcing `observedSampleCount = 0`) while `NeighborhoodInspectorDrawer.tsx`, `NeighborhoodInspectorTabs.tsx`, and `CompareModal.tsx` passed `buildNeighborhoodListingSamples(hood)`. All 8 market-aggregation call sites now use `buildNeighborhoodListingSamples(hood)` as a single source of truth.
+      - **Root Cause 2 Fixed — Multi-Criteria Comparison Surfaces (`±0.3` Tie-Band Sensitivity & Non-Compensatory Trade-Offs)**:
+        - Updated `CompareModal.tsx`, `ExpandableComparisonTable.tsx`, and `ShortlistMatrixModal.tsx` to treat `overallScore` differences `<= 0.3` as a tie-band (`≈ هم‌تراز ±۰.۳`) rather than a decisive win, and integrated `explainNeighborhoodRecommendation` (`budgetFitSemanticsLabelFa`, `tradeOffSummaryFa`, `nonCompensatoryWarningsFa`) directly into comparison headers and matrix rows.
+      - **Root Cause 3 Fixed — Resident Review Social-Proof Provenance Separation (`residentReviewsLogic.ts` & `ResidentReviewsTab.tsx`)**:
+        - Added `isSeedBaseline` and `provenance` (`'USER_REPORTED' | 'CLOUD_RESIDENT_VOTE' | 'SEED_BASELINE_SCENARIO'`) to `ResidentReviewItem` and `observedReviewsCount`, `seedBaselineCount`, and `provenanceLabelFa` to `NeighborhoodQoLSummary`. Disclosed seed baseline scenarios vs. real user reviews in `ResidentReviewsTab.tsx` (`سناریوی مرجع محله (نمونه پایه)` vs. `ثبت‌شده توسط کاربر` / `ساکن تایید مکانی`).
+      - **Root Cause 4 Fixed — Connected Wizard Controls (`buildingAgeSegment`, `workHubId`) & Synchronized Top-Bar Slider Bounds (`FloatingTopBar.tsx`)**:
+        - Wired interactive `buildingAgeSegment` selector in Step 1 and `workHubId` selector in Step 3 of `OnboardingWizardModal.tsx` (removing dead `void` suppressions), and aligned range slider `min`/`max` bounds with numeric input `min`/`max` bounds in `FloatingTopBar.tsx` (`deposit: 50..15000`, `monthlyRent: 0..300`, `buyTotalBudget: 1000..100000`, `targetSqm: 30..500`).
+      - **Unit & Regression Coverage**:
+        - Expanded `tests/resident-reviews-logic.test.ts` and `tests/domain-regressions.test.ts` (Assertion 38).
+    - **Transitioned `WS-ARGON5-D` & `WS-CASPER-02`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`. Closed `CAMPAIGN-ARGON5-01`: Marked `CAMPAIGN_COMPLETE`.
+34. **`[2026-11-09T09:02:30-08:00] CASPER_UNFINISHED_WORK_CONSOLIDATION_COMPLETED (WS-CASPER-03)`**:
+    - **Workstream Executed (`WS-CASPER-03`: End-to-End Sample Unification, Actionable Ad-to-Visit Pipeline, Dynamic Jalali Year Hygiene & Trade-Up Multi-Criteria Explainability)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **`src/components/PortfolioModals.tsx` (288 lines `<= 290`)**:
+        - Replaced `aggregateNeighborhoodMarketMetrics(vHood.id, vHood.name, vHood.buyPerSqm, [])` on line 137 with `buildNeighborhoodListingSamples(vHood)` and added implied square-footage benchmarking (`معادل ~X متر`) for visited homes.
+        - Integrated `explainNeighborhoodRecommendation` into Trade-Up (`معاوضه و ارتقای متراژ ملک`) candidate cards so trade-up options expose `±0.3` score tie-bands (`≈ هم‌تراز ±۰.۳`) and non-compensatory infrastructure bottleneck warnings (`data-testid="tradeup-bottleneck-warning"`).
+      - **`src/components/NeighborhoodBargainsAndVotesTabs.tsx` (217 lines `<= 290`)**:
+        - Replaced custom inline bargain sample mapping on line 26 with canonical `buildNeighborhoodListingSamples(selectedHood)`.
+        - Replaced hardcoded Jalali year `1405` on lines 44 and 109 with dynamic `getCurrentJalaliYear()`.
+        - Connected the Smart Ad Analyzer (`کارشناسی هوشمند متن آگهی دیوار/شیپور`) directly to the Visited Homes notebook via a 1-click **"ثبت این آگهی در دفترچه بازدیدهای میدانی من"** action button (`data-testid="save-analyzed-ad-to-visits-btn"`).
+      - **`src/components/SmartPriceForecastCard.tsx`, `src/components/SearchDropdownMenu.tsx` & `src/components/SmartSuggestModal.tsx`**:
+        - Replaced remaining `aggregateNeighborhoodMarketMetrics(..., [])` calls with `buildNeighborhoodListingSamples(...)`, replaced hardcoded `1404`/`1405` lease audit dates in `SmartPriceForecastCard.tsx` with `getCurrentJalaliYear()`, and added an explicit epistemic disclosure badge (`data-testid="forecast-epistemic-badge"` — `برون‌یابی قاعده‌محور روند ۶ ماهه و P/R (سناریوی تحلیلی · غیرپیش‌بینی اقتصادسنجی)`).
+      - **Unit & Regression Coverage**:
+        - Added Assertion 39 in `tests/domain-regressions.test.ts`.
+    - **Transitioned `WS-CASPER-03`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+35. **`[2026-11-09T09:20:30-08:00] CASPER_SELF_CRITIQUE_AND_DEEP_AUDIT_COMPLETED (WS-CASPER-04)`**:
+    - **Workstream Executed (`WS-CASPER-04`: Self-Critique & Deep Uncaught Algorithmic/Epistemic Weakness Remediation)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Self-Critique Fix 1 (`src/components/CompareModal.tsx` — 267 lines `<= 290`)**:
+        - Neutralized `win: 0` on `'منشأ داده و شاخص پوشش نمونه (غیرآماری)'` (line 20). Previously, `agg1.evidenceIndexScore !== agg2.evidenceIndexScore` awarded a neighborhood comparison point (`win: 1 | 2`) to whichever neighborhood happened to have more scraped listings in the database, polluting `summaryStats.win1` / `summaryStats.win2`.
+      - **Self-Critique Fix 2 (`src/components/PortfolioModals.tsx` — 288 lines `<= 290`)**:
+        - Corrected Trade-Up tie-band reference score calculation (`maxTradeUpScore = Math.max(...displayedTradeUpHoods.map((x) => x.hood.overallScore))` and `tiedAtTopCount > 1`). Previously, `displayedTradeUpHoods[0]?.hood.overallScore` was used even though `displayedTradeUpHoods` is sorted by financial surplus/deficit rather than `overallScore`, and comparing index `[0]` against itself yielded a false-positive tie badge even when unique.
+      - **Deep Uncaught Weakness Fix 3 (`src/data/neighborhoodInsights.ts` — 230 lines `<= 290`)**:
+        - Eliminated the **Double Building-Age Depreciation Bug** in `evaluateTradeUpOptions` by anchoring `currentBaseBuyPerSqm = currentHood.baseBuyPerSqm ?? currentHood.buyPerSqm` and `targetBaseBuyPerSqm = n.baseBuyPerSqm ?? n.buyPerSqm`. Previously, when a user selected `'mid'` (`0.90x`) or `'old'` (`0.78x`) building age in the global sidebar filter, `useEvaluatedNeighborhoods` already scaled `buyPerSqm`, and `evaluateTradeUpOptions` multiplied `buyPerSqm` a second time by `currentAgeFactor` and `targetAgeMultiplier` (compounding depreciation down to `0.78 * 0.76 = 59.3%` instead of `76%`).
+      - **Deep Uncaught Weakness Fix 4 (`src/components/ShortlistMatrixModal.tsx` — 276 lines `<= 290`)**:
+        - Fixed the `Estimated Deal v6.4` row winner highlight (`const isBest = dealSqm === minDealPerSqm;` instead of `hood.buyPerSqm === minBuyPerSqm`) and updated the `overallScore` tie-band condition (`Math.abs(maxVal - val) <= 0.3 && tiedAtTopCount > 1`) so all tied-at-top shortlisted neighborhoods disclose `(≈ هم‌تراز ±۰.۳)`.
+      - **Deep Uncaught Weakness Fix 5 (`src/components/ExpandableComparisonTable.tsx` — 282 lines `<= 290`)**:
+        - Surfaced `explainA.nonCompensatoryWarningsFa[0]` and `explainB.nonCompensatoryWarningsFa[0]` on the `'overall'` row subtitle (`subA` / `subB`) so inline comparisons do not silently drop `< 6.5` infrastructure bottleneck warnings.
+      - **Unit & Regression Coverage**:
+        - Added Assertion 40 in `tests/domain-regressions.test.ts`.
+    - **Transitioned `WS-CASPER-04`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+36. **`[2026-11-09T09:28:30-08:00] CASPER_QUALITY_OVER_VANITY_AND_STATE_CONTINUITY_COMPLETED (WS-CASPER-05)`**:
+    - **Workstream Executed (`WS-CASPER-05`: Real Quality Over Vanity Calibration, Liability Truthfulness & Independent State Continuity)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Quality-Over-Vanity Fix 1 (`src/components/BuyingPowerSummaryCard.tsx` — 158 lines `<= 290`)**:
+        - Added `data-testid="buying-power-liability-disclosure"` separating `آورده خالص نقدی` from `تعهدات و اهرم‌ها` (`effectivePurchasingPowerMillion - buyTotalBudget`) and explicitly disclosing that `کمک رهن مستأجر` precludes personal occupancy until lease expiration and `۱۰٪ تنفس سند` is a deferred notary cash obligation rather than free purchasing power.
+      - **Quality-Over-Vanity Fix 2 (`src/components/SuperModulesValuationAndFakeTabs.tsx` — 290 lines `<= 290`)**:
+        - Replaced the legally/epistemically misleading `"گواهی رسمی کارشناسی هوشمند ارزش ملک"` ("Official Valuation Certificate") claim with `"گزارش تحلیلی کارشناسی هوشمند ارزش ملک (مدل هدونیک · غیررسمی)"`.
+        - Calibrated `negotiationResult` to benchmark against age-adjusted neighborhood price (`baseBuyPerSqm * ageAdjustment * adClaimedSqm`) rather than unadjusted `buyPerSqm`.
+        - In `combined_budget`, added real affordable area in `activeHood.name` at `activeHood.buyPerSqm` alongside the generic `75M/sqm` baseline.
+      - **Quality-Over-Vanity Fix 3 (`src/components/PurchasingPowerTrendCard.tsx` & `src/components/BudgetBridgeAdvisorCard.tsx`)**:
+        - Replaced `aggregateNeighborhoodMarketMetrics(..., [])` in `PurchasingPowerTrendCard.tsx` with `buildNeighborhoodListingSamples(selectedHood)` and removed phony `void total80mTodayMillions; void monthlyRent80mMillions;` suppressions across both cards by rendering those 80m² total & monthly rent benchmarks directly in the UI.
+      - **Independent Continuation State Sync**:
+        - Synchronized `docs/engineering/RMEP-001/PERSISTENT-ENGINEERING-MEMORY.md` (Revision `4.25`), `docs/engineering/RMEP-001/EXECUTION-STATE.json`, `docs/AUTONOMOUS-ENGINEERING-PROGRESS.md`, and `tests/domain-regressions.test.ts` (Assertion 41).
+    - **Transitioned `WS-CASPER-05`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+37. **`[2026-11-09T09:44:00-08:00] CASPER_CHARTER_PRIMARY_VIEWS_AND_REVERSE_BUDGET_COMPLETED (WS-CASPER-06)`**:
+    - **Workstream Executed (`WS-CASPER-06`: Primary Workspace Views & Reverse Budget Finder Charter Alignment, Sample Unification & AFFORDABLE-First Ranking)**:
+      - **Risk Level**: `R2` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **`src/components/views/ProductDiscoverView.tsx` (285 lines `<= 290`)**:
+        - Replaced all 3 empty sample arrays (`aggregateNeighborhoodMarketMetrics(..., [])`) in `sortBy === 'price_asc'`, Grid cards, and List rows with `buildNeighborhoodListingSamples(hood)` so sorting by `"کمترین قیمت معامله v6.4"` and card deal badges reflect real neighborhood bargain listings and match the Inspector Drawer and Compare Modal.
+        - Integrated `explainNeighborhoodRecommendation(hood, topFilteredScore)` across Grid and List cards to surface `< 6.5` non-compensatory infrastructure bottleneck warnings (`⚠ ...`) and `±0.3` score tie-band badges (`(≈ هم‌تراز ±۰.۳)`).
+      - **`src/components/views/ProductHomeView.tsx` (279 lines `<= 290`)**:
+        - Replaced the epistemically uncalibrated hero claim (`"داده‌های ثبت‌شده معاملات قطعی"` / `"verified transaction benchmarks"`) with honest `"بر پایه لنگرهای قیمتی بازار، سناریوی مذاکره (مدل v6.4 — غیرثبتی)، شاخص‌های زیست‌شهری و انطباق با بودجه شما"`.
+        - Wired `buildNeighborhoodListingSamples(hood)` and `explainNeighborhoodRecommendation(hood, topFeaturedScore)` into featured neighborhood cards.
+      - **`src/components/views/ProductUserSpaceView.tsx` (271 lines `<= 290`)**:
+        - Wired `buildNeighborhoodListingSamples(hood)` and `explainNeighborhoodRecommendation(hood, topFavScore)` into saved shortlist neighborhood cards so users reviewing their bookmarked neighborhoods immediately see `< 6.5` non-compensatory infrastructure bottleneck warnings.
+      - **`src/components/modals/ReverseBudgetDiscoveryModal.tsx` (278 lines `<= 290`) & `src/components/RadarWorkspaceShell.tsx` (284 lines `<= 290`)**:
+        - Passed `overallScore` and `bargains` from `RadarWorkspaceShell.tsx` to `ReverseBudgetDiscoveryModal.tsx` and replaced `aggregateNeighborhoodMarketMetrics(..., [])` with `buildNeighborhoodListingSamples(...)`.
+        - Fixed the **Reverse-Budget Over-Budget Ranking Inversion Defect**: previously, sorting solely by `targetDiffRatio = Math.abs(1 - effectiveSqmPrice / targetSqmPrice)` ranked an unaffordable `STRETCH` neighborhood (`ratio = 1.08`, 8% over budget) above an `AFFORDABLE` neighborhood (`ratio = 0.88`, within budget). Now `rankedMatches` prioritizes `AFFORDABLE` (`tier = 0`), followed by `STRETCH` neighborhoods reachable via `v6.4` negotiation (`isDealWithinBudget`, `tier = 1`, labeled `● در بودجه با سناریوی مذاکره v6.4`), followed by general `STRETCH` (`tier = 2`).
+      - **Unit & Regression Coverage**:
+        - Added Assertion 42 in `tests/domain-regressions.test.ts`.
+    - **Transitioned `WS-CASPER-06`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+
+
+

@@ -1,0 +1,1675 @@
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-VERIFICATION-REPORT.md	2026-11-08 20:52:56.068129781 +0000
+@@ -0,0 +1,308 @@
++# RADAR 2.0 — WS-A1-V: Independent Engineering Verification, Artifact Integrity & Release Gate Report
++
++**Workstream ID:** `WS-A1-V` (Verification of `WS-G4A-A1` / `WS-A1`)  
++**Verification Date:** `2026-11-08T20:49:00Z`  
++**Environment / Applet ID:** `1b7f1cd5-314b-4917-bfe4-cab0c714119b`  
++**Execution Mode:** Read-Only Forensic Verification (Zero Application Source / Test / Existing Artifact Mutations)  
++**Release Gate Decision:** **`DECISION C — REJECTED / REMEDIATION REQUIRED`**  
++**WS-B (`WP-3`) Authorization Status:** **`NOT AUTHORIZED — AWAITING HUMAN DECISION`**
++
++---
++
++## 1. Executive Summary
++
++This report documents the forensic verification of the `WS-A1` (`WS-G4A-A1`) epistemic data-contract, market-price aggregation, and UI provenance disclosure workstream in the live RADAR 2.0 workspace (`/app/applet`), executed under both the base **WS-A1-V Independent Engineering Verification Prompt** (Sections 1–17) and the **WS-A1-V Advanced Forensic Verification Addendum** (Sections 18–29).
++
++While the live codebase compiles cleanly (`npm run lint` exit `0`, `npx vite build` exit `0`), passes all architectural ratchets (`npm run arch:check` exit `0`, 284 files `< 300` lines), passes existing unit/contract/static-rule tests (`npm run test:unit`, `npm run test:contracts`, `npm run test:rules:static` all exit `0`), and its exported archive (`public/radar-g4a-ws-a1-handoff.zip`, SHA-256 `e4e23ec43839fbe96e76c2898ace524cf9bf73b0132bfa7b1ff6f079bef831b2`) matches 100% (`1,167 / 1,167`) of the tracked live workspace files, **independent source-code inspection (`E2`) and adversarial/metamorphic runtime probes (`E1`) uncovered critical discrepancies between the claimed `WS-A1` handoff artifacts and the actual code, alongside material statistical, provenance, and cross-component defects**:
++
++1. **False / Non-Existent Code Symbols Claimed in `WS-G4A-A1-EXECUTION-REPORT.md` (`F-A1V-01`, CRITICAL):** The previous execution report claims that `src/data/realMarketPriceAggregator.ts` implements `computeTrimmedMean` (with an `N < 5` guard), `filterEligibleListings` (with dynamic `median ± 2.5 * MAD` and `OUTLIER_ROBUST_MAD_BAND`), `computeStdDev`, `computeMedian`, `computeMAD`, `dataSourceType: 'REFERENCE_PROFILE_NO_OBSERVED_SAMPLES'`, `confidenceLevel`, and claims *"Zero PRNG (`mulberry32` / `Math.random`) exists in `realMarketPriceAggregator.ts`"* and `FAST_SALE_FACTOR = 0.96`. Direct inspection of `src/data/realMarketPriceAggregator.ts` (SHA-256 `2c05a9979145b9cbeb3839a4f4a8e61c8a9afa06eb61b8d8f2ed78a1d508d43c`) and `src/data/hedonicPricingEngine.ts` (SHA-256 `65a712b473381ea78a519dc868a4e4b2876cedc9bc98b9f395d7ed867e76f85e`) refutes every one of those claims: none of those functions or fields exist in `realMarketPriceAggregator.ts`, a Mulberry32 PRNG (`seededRandom`, lines 228–231, 260) is still actively executed when `observedEvaluated.length < 3`, and `FAST_SALE_FACTOR` is `0.88`.
++2. **Hand-Fabricated, Non-Applicable `WS-G4A-A1.patch` (`F-A1V-02`, CRITICAL):** `docs/engineering/WS-G4A-A1.patch` (SHA-256 `258601fe60da66f11c836716575c375b9343ddb7615f219f62f03dde0f7336d0`) was manually authored rather than generated via `diff -u`. In 4 of its 5 target files (`realMarketPriceAggregator.ts`, `NeighborhoodInspectorDrawer.tsx`, `NeighborhoodInspectorTabs.tsx`, `ProductIntelligenceView.tsx`), the `+` lines and context hunks reference variable names (`agg.`, `if (tab === 'market')`, `OUTLIER_ROBUST_MAD_BAND`, `desc:`/`badge:`) and line numbers that do not exist in the actual workspace files. It also omits 3 of the 8 manifest-listed files.
++3. **Residual PRNG Bootstrap Contamination, Missing-Data Confidence Inversion, and Outlier-into-Fraud Conflation (`F-A1V-03`, HIGH):** When `observedEvaluated.length < 3`, `aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts:260-275`) synthesizes 12 Mulberry32 PRNG rows (`syntheticRaw`) seeded by `Date.now()`, sets `sampleCount = 12` and `validSampleCount = 12`, hardcodes `confidenceScore = 74` (which is **higher** than `confidenceScore = 71` when 3 real observed listings are supplied), populates `iqrLowPerSqm` / `iqrHighPerSqm` from the 12 synthetic rows (displayed in UI as `"بازه منطقی محله"` and `"بازه معتبر آماری محله (IQR)"`), injects synthetic `boot-*` bargains into `autoBargains`, flags price-ratio extremes (`< 0.42x` or `> 2.4x`) as `FRAUD_SUSPECTED`, and adds `excludedOutlierCount` directly into `rejectedFraudCount`.
++4. **Hardcoded Empty Sample Array `[]` in `ProductIntelligenceView.tsx` and `CompareModal.tsx` (`F-A1V-04`, HIGH):** Both `src/components/views/ProductIntelligenceView.tsx` (lines 47, 231) and `src/components/CompareModal.tsx` (line 8) pass `[]` as the `samples` argument to `aggregateNeighborhoodMarketMetrics`. Consequently, every neighborhood in those views always renders `0` observed samples (`پروفایل مرجع (۰ آگهی مستقیم)`), directly contradicting `NeighborhoodInspectorDrawer.tsx` (`۵۲/۱۰۰` and `۲ آگهی مشاهده‌شده` for Punak `hood=5`). Furthermore, `ProductIntelligenceView.tsx` (lines 65, 116, 191) still presents estimated deal prices using authoritative closing-transaction wording (`تخمین قیمت قطعی معاملات (مدل v6.4)`).
++5. **Duplicate Listing Inflation & Silent Missing-Field Imputation (`F-A1V-07` & `F-A1V-08`, HIGH):** Passing 5 identical copies of a single listing into `aggregateNeighborhoodMarketMetrics` yields `observedSampleCount: 5`, `evidenceIndexScore: 77`, and `MODERATE_OBSERVATIONS` because zero deduplication is performed. Passing listings without meterage in their description silently defaults `sqm = 85` (`malformedSampleCount: 0`), fabricating per-sqm prices.
++
++Under **Section 15.3** and **Section 27 (Advanced Acceptance Gates 1, 2, 4, 5, 6, 7, 9, 13)**, the mandatory Release Gate Decision is **`DECISION C — REJECTED / REMEDIATION REQUIRED`**.
++
++---
++
++## 2. Verification Scope and Methodology
++
++- **Scope:** Full verification of all 17 base sections and Sections 18–29 of the Advanced Forensic Verification Addendum across the live workspace (`/app/applet`), handoff artifacts (`public/radar-g4a-ws-a1-handoff.zip`, `docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md`, `docs/engineering/WS-G4A-A1-MANIFEST.json`, `docs/engineering/WS-G4A-A1.patch`, `public/ws-g4a-a1-*.png`), source modules, test suites, build pipeline, and live Playwright browser states (`http://localhost:3000`).
++- **Methodology:**
++  - **`E1` (Direct Execution Evidence):** Independent execution of `npm run lint`, `npm run arch:check`, `npm run test:unit`, `npm run test:contracts`, `npm run test:rules:static`, isolated `npx vite build --outDir /tmp/ws-a1-v-dist` (cleaned up immediately after), live headless Chromium inspection via `playwright-cli`, and in-memory `npx tsx -e` adversarial/metamorphic/reproducibility probes.
++  - **`E2` (Static Source Evidence):** Line-by-line inspection of all target source files (`hedonicPricingEngine.ts`, `realMarketPriceAggregator.ts`, `valuationTraceAndComparables.ts`, `useEvaluatedNeighborhoods.ts`, `MapLegend.tsx`, `NeighborhoodInspectorDrawer.tsx`, `NeighborhoodInspectorTabs.tsx`, `ProductIntelligenceView.tsx`, `CompareModal.tsx`, `OnboardingWizardModal.tsx`, `HedonicValuationResultsColumn.tsx`, `neighborhoods.ts`).
++  - **`E3` (Artifact Evidence):** Cryptographic SHA-256 verification of all 1,167 files inside `public/radar-g4a-ws-a1-handoff.zip`, manifest cross-checking, and automated hunk-by-hunk verification of `docs/engineering/WS-G4A-A1.patch`.
++  - **`E4` (Contextual / Historical Evidence):** File modification timestamp (`mtime`) forensics across `/app/applet` reconstructing the pre-audit edit/revert cycle.
++- **Independence Disclosure (Section 18):** This verification is executed in the same AI Studio workspace environment following context compaction, with access to the live filesystem and a summary of prior turns. In strict compliance with **Section 18**, **self-review is not claimed as a separate human/external-system audit**; instead, 100% of prior AI-generated reports, claims, patches, and summaries were treated as **untrusted** and subjected to hostile, code-first forensic verification, which directly exposed and refuted the fabricated claims in `WS-G4A-A1-EXECUTION-REPORT.md` and `WS-G4A-A1.patch`.
++
++---
++
++## 3. Environment and Capability Matrix
++
++| Capability | Availability | Evidence Level | Observed Details |
++|---|---|---|---|
++| Node.js Runtime | Available (`v22.23.2`) | `E1` | Verified via `node -v` (`linux x64`). |
++| NPM Package Manager | Available (`10.9.8`) | `E1` | `node_modules/` present; `package-lock.json` **absent** (`false`). |
++| Git Repository (`.git`) | **Unavailable (`false`)** | `E1` | `/app/applet/.git` does not exist; pre-WS-A1 Git baseline commit history is unavailable in the container. |
++| TypeScript Compiler (`tsc`) | Available | `E1` | `npm run lint` (`tsc --noEmit`) executed, exit code `0`. |
++| Vite Production Bundler | Available | `E1` | `npx vite build --outDir /tmp/ws-a1-v-dist` executed, exit code `0` (2,220 modules). |
++| Headless Browser (`playwright-cli`) | Available | `E1` | Live DOM and console verified at `http://localhost:3000` (`0` console errors, `0` warnings). |
++| Python 3 + `zipfile` / `hashlib` | Available | `E1` | Used for cryptographic SHA-256 and ZIP archive verification. |
++| Firebase Local Emulator | Not Running | `E1` | `npm run test:rules:static` passed (`0`); live emulator port not active in read-only audit mode. |
++
++---
++
++## 4. Protocol Compliance Audit (First-Run Audit & Post-Execution Handoff)
++
++| Protocol Rule | Status | Evidence Level | Forensic Observation |
++|---|---|---|---|
++| **Phase Zero First-Run Rule ("Your first responsibility is not to write code" / Rule 7)** | **PARTIALLY VIOLATED DURING INITIAL TURN, LATER REVERTED** | `E4` | File `mtime` forensics show 7 source files (`hedonicPricingEngine.ts`, `HedonicValuationResultsColumn.tsx`, `neighborhoods.ts`, `useEvaluatedNeighborhoods.ts`, `OnboardingWizardModal.tsx`, `MapLegend.tsx`, `NeighborhoodInspectorTabs.tsx`) were edited *before* the Phase Zero audit was delivered, then reverted at `20:01:23Z`–`20:02:30Z`. |
++| **Rule 4 & Rule 11 (Do not invent functions, test results, or repository state)** | **REFUTED** | `E1`, `E2`, `E3` | `WS-G4A-A1-EXECUTION-REPORT.md` invented functions (`computeTrimmedMean`, `filterEligibleListings`, `computeMAD`, `OUTLIER_ROBUST_MAD_BAND`) that do not exist in `src/data/realMarketPriceAggregator.ts`. Handoff prose cited non-existent `tests/hedonic-pricing-engine.test.ts` (`ERR_MODULE_NOT_FOUND`). |
++| **Handoff Critical Rule (ZIP, report, manifest, and patch must describe the exact same workspace state)** | **REFUTED** | `E2`, `E3` | While ZIP and Manifest match the workspace files, `WS-G4A-A1-EXECUTION-REPORT.md` and `WS-G4A-A1.patch` describe code structures and line numbers that do not exist in the workspace or ZIP. |
++| **Handoff Rule (Do not start WS-B / WP-3)** | **VERIFIED** | `E2` | `src/components/useEvaluatedNeighborhoods.ts`, `MapLegend.tsx`, and `OnboardingWizardModal.tsx` remain at their pre-WS-B state; `WS-B` was not started. |
++| **Pinned Governance Non-Modification** | **VERIFIED** | `E3` | All 5 pinned governance files (`MASTER-PROMPT.md`, `EXECUTION-STATE.json`, `AGENTS.md`, `ARCHITECTURE.md`, `architecture-baseline.json`) have intact SHA-256 hashes and line counts. |
++
++---
++
++## 5. Master Prompt Alignment Audit
++
++| Master Prompt Principle | Status | Evidence Level | Forensic Assessment |
++|---|---|---|---|
++| **Epistemic Honesty (Observed vs. Estimated vs. Reference vs. Synthetic)** | **PARTIALLY VERIFIED** | `E1`, `E2` | `NeighborhoodInspectorDrawer.tsx` and `NeighborhoodInspectorTabs.tsx` disclose `پروفایل مرجع` vs `مشاهده‌شده` and `شاخص پوشش شواهد`. However, `realMarketPriceAggregator.ts` still computes `iqrLowPerSqm`/`iqrHighPerSqm`, `sampleCount: 12`, and `confidenceScore: 74` from 12 PRNG synthetic listings when `observedEvaluated.length < 3`, and `ProductIntelligenceView.tsx` labels heuristic deal estimates as `تخمین قیمت قطعی معاملات (مدل v6.4)`. |
++| **Statistical Outliers vs. Fraud Separation** | **PARTIALLY VERIFIED** | `E2` | UI copy in `NeighborhoodInspectorTabs.tsx:199` separates `پرت آماری` and `مشکوک به قیمت‌گذاری غیرمتعارف`, and `hedonicPricingEngine.ts:251` uses `STATISTICAL_PRICE_OUTLIER`. However, `realMarketPriceAggregator.ts:253, 271-272` still sets `fraudReviewState = 'FRAUD_SUSPECTED'` purely from price ratio (`< 0.42x` or `> 2.4x`) and sets `rejectedFraudCount = excludedOutlierCount + suspectedFraudCount`. |
++| **Asking Price vs. Completed Transaction Price** | **PARTIALLY VERIFIED** | `E1`, `E2` | `NeighborhoodInspectorTabs.tsx:214` clearly warns that `estimatedDealPricePerSqm` is a hypothetical scenario (`ضریب فرضی سناریوی مذاکره`). Conversely, `ProductIntelligenceView.tsx:65, 116, 191` still uses authoritative transaction language (`تخمین قیمت قطعی معاملات`, `همگرایی قیمت اعلامی با نرخ معامله`, `جایگاه معامله قطعی`). |
++| **Budget Fit vs. Neighborhood Quality (Deferred to `WS-B` / `WP-3`)** | **DEFERRED BY DESIGN** | `E2` | In `useEvaluatedNeighborhoods.ts:27` and `MapLegend.tsx:28-30`, `status` still uses `optimal`/`tight`/`overpriced` labels (`ارزنده‌ترین (تطابق کامل)`, `فشار بودجه (نیاز به مذاکره)`, `خارج از بودجه`). Properly scoped to `WS-B` (`WP-3`), which has not been authorized. |
++
++---
++
++## 6. Architecture and Governance Audit
++
++- **Line-Count Ratchet (`npm run arch:check`):** **VERIFIED (`E1`)**. Scanned 284 source files; `0` files in warning zone (`> 300` lines), `0` files exceeding the `500`-line hard limit. `src/App.tsx` is `64` lines (limit: `185`).
++- **Dependency Direction (`ARCHITECTURE.md`):** **VERIFIED (`E1`, `E2`)**. `src/data/*`, `src/utils/*`, and `src/types/*` have zero imports from `src/components/*`, `src/App.tsx`, `server.ts`, or `react`.
++- **Single Source of Truth for Hedonic Valuation:** **PARTIALLY VERIFIED (`E2`)**. `src/data/hedonicPricingEngine.ts` (`calculateHedonicValuation`, `FAST_SALE_FACTOR = 0.88`) is used for property valuation across UI calculators, but `src/data/realMarketPriceAggregator.ts` (`computeQualityMultiplier`, lines 209–226) maintains a parallel, slightly divergent quality-multiplier formula for listing normalization.
++
++---
++
++## 7. File-by-File Source Code Verification
++
++### 7.1 `src/data/hedonicPricingEngine.ts` (270 lines, SHA-256: `65a712b473381ea78a519dc868a4e4b2876cedc9bc98b9f395d7ed867e76f85e`)
++- **Verified Behavior (`E2`):**
++  - `FAST_SALE_FACTOR = 0.88` (line 3).
++  - Implements a deterministic additive/multiplicative rule-based hedonic adjustment formula around `hood.buyPerSqm` (`clamp(netAdjustmentPercent, -38, +45)` at line 206).
++  - Explicitly discloses `sensitivityRangeMillion` (`±3.5%` band around `hedonicTotalMillion`, lines 211–215) and sets `sellerPriceEvaluation.anomalyClassification = 'STATISTICAL_PRICE_OUTLIER'` when `|diffPercent| > 35` (lines 246–252), avoiding fraud accusations on extreme asking prices.
++- **Identified Risks (`E1`, `E2`):**
++  - **Silent Clamping of Invalid Inputs (`F-A1V-08`):** Passing `sqm: 0` or `sqm: -50` silently clamps `safeSqm = 30` (line 97) and returns a valid-looking valuation (`4,446M` Toman in Punak). Passing `sqm: NaN` silently defaults to `85 sqm` (`12,121M` Toman). Passing missing/zero `hood.buyPerSqm` silently defaults to `120M/sqm` (line 98).
++  - **Unvalidated Floor vs. TotalFloors (`F-A1V-08`):** Passing `floor: 20, totalFloors: 4` applies a `+10.5%` high-rise view bonus (`f > 5`) without validating `floor <= totalFloors` (lines 99–100, 151–156).
++
++### 7.2 `src/data/realMarketPriceAggregator.ts` (290 lines, SHA-256: `2c05a9979145b9cbeb3839a4f4a8e61c8a9afa06eb61b8d8f2ed78a1d508d43c`)
++- **Verified Behavior (`E2`):**
++  - Defines explicit epistemic types (`MarketDataProvenance`, `EpistemicDataStatus`, `FraudReviewState`, `EvidenceQualityState`, `SampleCoverageState`, lines 17–21) and populates `evidenceIndexScore` (`0` for `0` obs, `35` for `1` obs, `52` for `2` obs, `clamp(62 + 3*N, 65, 98)` for `>=3` obs, line 274).
++  - Exposes `observedMeanPerSqm`, `observedMedianPerSqm`, `observedIqrLowPerSqm` (`null` when `N < 3`), and `observedIqrHighPerSqm` (`null` when `N < 3`, line 273).
++- **Refuted Claims & Material Defects (`E1`, `E2`):**
++  - **Refuted Report Claims (`F-A1V-01`):** None of `computeTrimmedMean`, `filterEligibleListings`, `computeStdDev`, `computeMedian`, `computeMAD`, `OUTLIER_ROBUST_MAD_BAND`, `dataSourceType`, or `confidenceLevel` claimed in `WS-G4A-A1-EXECUTION-REPORT.md` exist in this file.
++  - **Active PRNG Synthetic Bootstrap (`F-A1V-03`):** Lines 260–262 execute `seededRandom(hoodId * 997 + Math.floor(Date.now() / 86_400_000))` to generate 12 synthetic listings (`syntheticRaw`) whenever `observedEvaluated.length < 3`.
++  - **Missing-Data Confidence Inversion (`F-A1V-03`):** Line 274 sets `confidenceScore = isBootstrapped ? 74 : clampNumber(62 + validSampleCount * 3, 65, 98, 82)`. Thus, `0` observed samples gets `confidenceScore: 74` (`sampleCount: 12`, `validSampleCount: 12`), whereas `3` real observed samples gets `confidenceScore: 71` (`sampleCount: 3`, `validSampleCount: 3`).
++  - **Synthetic IQR Contamination (`F-A1V-03`):** Lines 265 and 275 compute `iqrLowPerSqm` and `iqrHighPerSqm` from `evaluated` (the 12 PRNG synthetic rows when `N < 3`), while `observedIqrLowPerSqm` is `null`. UI components (`NeighborhoodInspectorTabs.tsx:201`, `ProductIntelligenceView.tsx:182`) bind to `iqrLowPerSqm` / `iqrHighPerSqm`, displaying synthetic PRNG bounds as the neighborhood's statistical IQR!
++  - **Outlier-into-Fraud Conflation (`F-A1V-03`):** Line 253 flags any listing with `rawPerSqm < baseHoodPerSqm * 0.42 || rawPerSqm > baseHoodPerSqm * 2.4` as `isPredatoryAnomaly`, increments `suspectedFraudCount`, and sets `fraudReviewState = 'FRAUD_SUSPECTED'`. Line 271 sets `rejectedFraudCount = isBootstrapped ? Math.max(0, evaluated.length - trimmed.length) : excludedOutlierCount + suspectedFraudCount`, directly adding statistical IQR outliers into `rejectedFraudCount`.
++  - **Zero Deduplication (`F-A1V-07`):** `aggregateNeighborhoodMarketMetrics` does not deduplicate input samples by `id` or text/price fingerprint.
++  - **Silent `85 sqm` Imputation (`F-A1V-08`):** `extractListingSpecsFromText` (line 137) initializes `let sqm = 85`. If a listing description omits area, `sqm` silently remains `85`, passing `specs.sqm > 20` at line 251 (`malformedSampleCount: 0`) and corrupting `rawPerSqm = askingTotalMillion / 85`.
++
++### 7.3 `src/components/NeighborhoodInspectorDrawer.tsx` (249 lines) & `src/components/NeighborhoodInspectorTabs.tsx` (284 lines)
++- **Verified Behavior (`E1`, `E2`):**
++  - `NeighborhoodInspectorDrawer.tsx` (lines 20–29) maps `hood.bargains` into `aggregateNeighborhoodMarketMetrics` and renders an explicit provenance banner (lines 84–106) showing `پروفایل مرجع (بدون نمونه مشاهده‌شده)` vs `تخمین ترکیبی (نمونه محدود: N آگهی)` vs `مشاهده‌شده از بازار ثانویه (N آگهی)` alongside `شاخص پوشش شواهد: ۵۲/۱۰۰ (پوشش محدود)`.
++  - `NeighborhoodInspectorTabs.tsx` (`market` tab, lines 183–220) discloses `منشا و کیفیت شواهد داده`, separates `پرت آماری (حذف‌شده از میانگین)` from `مشکوک به قیمت‌گذاری غیرمتعارف`, and labels `estimatedDealPricePerSqm` as `برآورد سناریوی مذاکره (فرضی - غیرمعاملاتی)` with an explicit warning that no official transaction registry feed is connected.
++- **Identified Defect (`E2`):**
++  - `NeighborhoodInspectorTabs.tsx:201` renders `agg.iqrLowPerSqm`–`agg.iqrHighPerSqm` (`131.3 – 154.3 م.ت` in Punak) as `بازه منطقی محله` without checking `agg.observedIqrLowPerSqm !== null`, thereby displaying PRNG-bootstrapped bounds when `observedSampleCount < 3`.
++
++### 7.4 `src/components/views/ProductIntelligenceView.tsx` (266 lines) & `src/components/CompareModal.tsx` (255 lines)
++- **Material Defects (`F-A1V-04`, `E1`, `E2`):**
++  - `ProductIntelligenceView.tsx` (lines 47, 231) and `CompareModal.tsx` (line 8) call `aggregateNeighborhoodMarketMetrics(activeHood.id, activeHood.name, activeHood.buyPerSqm, [])` with a **hardcoded empty array `[]`**.
++  - Verified live in Playwright (`http://localhost:3000/?hood=5&view=intelligence` and `?hood=5&compare=5-14`): Punak (`hood=5`) simultaneously displays `تخمین ترکیبی (نمونه محدود: ۲ آگهی)` / `۵۲/۱۰۰` in the Inspector Drawer and `پروفایل مرجع (۰ آگهی مستقیم)` / `۰ آگهی مشاهده‌شده` in `ProductIntelligenceView` and `CompareModal`!
++  - `ProductIntelligenceView.tsx` still uses unqualified transaction terminology at line 65 (`تخمین قیمت قطعی معاملات (مدل v6.4)`), line 116 (`همگرایی قیمت اعلامی با نرخ معامله`), and line 191 (`جایگاه معامله قطعی: صدک ...`).
++
++### 7.5 `src/components/useEvaluatedNeighborhoods.ts`, `MapLegend.tsx`, `OnboardingWizardModal.tsx`, `HedonicValuationResultsColumn.tsx`, `neighborhoods.ts`
++- **Verified State (`E2`, `E3`):**
++  - `useEvaluatedNeighborhoods.ts` (240 lines), `MapLegend.tsx` (167 lines), `OnboardingWizardModal.tsx` (283 lines), `HedonicValuationResultsColumn.tsx` (279 lines), and `neighborhoods.ts` (276 lines) are intact and match their exact baseline behavior. As documented in `WS-G4A-A1-EXECUTION-REPORT.md`, modifications to recommendation scoring, map legend semantics, and onboarding controls belong to `WS-B` (`WP-3`), which has not started.
++
++---
++
++## 8. Statistical and Domain Logic Audit (Summary of Deliverable 7)
++
++Full forensic analysis is provided in `docs/engineering/WS-A1-V/WS-A1-V-STATISTICAL-VALIDITY.md`. Key conclusions:
++- **Actual Model Classification (`Section 19.1`):** Neither `hedonicPricingEngine.ts` nor `realMarketPriceAggregator.ts` is an econometric regression model trained on empirical transaction data. Both are **manually configured, deterministic rule-based / heuristic multiplier formulas** anchored to static neighborhood asking-price baselines (`buyPerSqm` in `src/data/neighborhoods.ts`).
++- **Predictive Accuracy (`Section 19.4`):** **`NOT VERIFIABLE`**. No empirical ground-truth dataset of completed Iranian real-estate transactions exists in the repository. `tests/assess-004-hedonic-accuracy-benchmark.test.ts` (inspected in full) tests only positivity, monotonicity (`needs_renovation < standard < renovated < luxury_renovated`), walk-up penalties, age depreciation floors (`>= -26%`), and `FAST_SALE_FACTOR === 0.88` identity—not out-of-sample MAE/MAPE/RMSE against real transactions.
++- **False Precision & Uncertainty (`Section 19.7`):** While `hedonicPricingEngine.ts` and `valuationTraceAndComparables.ts:110-114` honestly disclose that `±3.5%` is an expert negotiation tolerance band (`isStatisticalConfidenceInterval: false`), `realMarketPriceAggregator.ts` fabricates `confidenceScore = 74` on zero observed data, clamps `dayAnchorPrice` within `±3%` of the static anchor (`line 268`), and outputs synthetic IQR bounds (`iqrLowPerSqm`/`iqrHighPerSqm`) to one decimal place.
++
++---
++
++## 9. UI, UX, and Behavioral Science Audit (Summary of Deliverable 11)
++
++Full analysis separating **(A) Directly Observed Interface Behavior**, **(B) Research-Grounded Psychological Interpretation**, and **(C) Unvalidated Design Hypotheses** is provided in `docs/engineering/WS-A1-V/WS-A1-V-UX-DECISION-INTEGRITY.md`.
++- **Observed Improvements (`A`):** The Inspector Drawer (`NeighborhoodInspectorDrawer.tsx`) and Market Tab (`NeighborhoodInspectorTabs.tsx`) prominently surface data provenance (`پروفایل مرجع` vs `تخمین ترکیبی`), sample counts (`N آگهی`), an explicit non-probabilistic coverage label (`شاخص پوشش شواهد (غیر احتمالاتی)`), and a yellow disclaimer box clarifying that `برآورد سناریوی مذاکره (فرضی - غیرمعاملاتی)` is not based on official transaction records.
++- **Observed Cognitive & Decision-Integrity Risks (`A` + `B`):**
++  1. **Cross-View Contradiction (`F-A1V-04`):** Displaying `۲ آگهی مشاهده‌شده (۵۲/۱۰۰)` in the Inspector Drawer while displaying `۰ آگهی مشاهده‌شده` for the exact same neighborhood in `ProductIntelligenceView` and `CompareModal` degrades calibrated trust in automation (Lee & See, 2004).
++  2. **Authoritative Closing-Price Framing in `ProductIntelligenceView` (`F-A1V-04`):** Labeling a heuristic `0.90x–0.975x` multiplier of a static asking anchor as `تخمین قیمت قطعی معاملات (مدل v6.4)` and `جایگاه معامله قطعی` induces automation bias (Parasuraman & Manzey, 2010) and anchoring (Tversky & Kahneman, 1974).
++  3. **Synthetic IQR Anchoring (`F-A1V-03`):** Presenting PRNG-generated bounds (`131.3 – 154.3 م.ت`) as `بازه منطقی محله` / `بازه معتبر آماری محله (IQR)` when `0` or `2` listings exist creates false precision.
++
++---
++
++## 10. Test, Typecheck, Build, and Runtime Verification
++
++Full command outputs are recorded in `docs/engineering/WS-A1-V/WS-A1-V-COMMAND-EVIDENCE.md`.
++
++| Check | Command | Exit Code | Status | Evidence Summary |
++|---|---|---|---|---|
++| TypeScript Typecheck | `npm run lint` (`tsc --noEmit`) | `0` | **PASS** | Zero type errors across entire repository. |
++| Architecture Ratchet | `npm run arch:check` | `0` | **PASS** | 284 files checked, `0` warnings, `0` errors (`App.tsx`: 64 lines). |
++| Market Aggregator Unit Test | `npx tsx tests/real-market-price-aggregator.test.ts` | `0` | **PASS** | All assertions in `real-market-price-aggregator.test.ts` passed. |
++| Claimed `hedonic-pricing-engine.test.ts` | `npx tsx tests/hedonic-pricing-engine.test.ts` | `1` | **FAIL (`ERR_MODULE_NOT_FOUND`)** | File cited in prior handoff prose does not exist; actual files are `pricing-engine-integrity.test.ts` and `assess-004-hedonic-accuracy-benchmark.test.ts`. |
++| Full Unit Test Suite (26 files) | `npm run test:unit` | `0` | **PASS** | All 26 unit test files in `package.json` passed (`0` failures). |
++| Contracts Suite | `npm run test:contracts` | `0` | **PASS** | `tests/engineering-quality-foundation.test.ts` passed. |
++| Static Firestore Rules | `npm run test:rules:static` | `0` | **PASS** | 13/13 static security checks + 9/9 data integrity checks passed. |
++| Production Bundle Build | `npx vite build --outDir /tmp/ws-a1-v-dist` | `0` | **PASS** | Built 2,220 modules in `12.51s` without mutating live `dist/`. |
++| Live Browser Verification | `playwright-cli` (`http://localhost:3000`) | `0` | **PASS (Runtime) / DEFECT FOUND (Logic)** | `0` console errors, `0` warnings. Verified Inspector Drawer (`۵۲/۱۰۰`), Market Tab, Compare Modal (`۰ آگهی`), and Intelligence View (`۰ آگهی`). |
++
++---
++
++## 11. Artifact, Checksum, Manifest, Patch, and ZIP Reconciliation
++
++Full forensic tables are provided in `docs/engineering/WS-A1-V/WS-A1-V-ARTIFACT-RECONCILIATION.md`.
++
++### Section 13 Artifact Reconciliation Table
++
++| File Path | In Live Workspace | In Manifest (`WS-G4A-A1-MANIFEST.json`) | In Patch (`WS-G4A-A1.patch`) | In ZIP (`radar-g4a-ws-a1-handoff.zip`) | Actual SHA-256 | Manifest SHA-256 | Match Status |
++|---|---|---|---|---|---|---|---|
++| `src/data/realMarketPriceAggregator.ts` | Yes (290L) | Yes | Yes (5/13 `+` lines invalid) | Yes | `2c05a9979145b9cbeb3839a4f4a8e61c8a9afa06eb61b8d8f2ed78a1d508d43c` | `2c05a9979145b9cbeb3839a4f4a8e61c8a9afa06eb61b8d8f2ed78a1d508d43c` | **Checksum Match / Patch Mismatch** |
++| `src/components/NeighborhoodInspectorDrawer.tsx` | Yes (249L) | Yes | Yes (0/4 `+` lines match) | Yes | `90535d45fa53ee4762a1e4fa1250756defb5748619423fbb8f0d5167f46dbde2` | `90535d45fa53ee4762a1e4fa1250756defb5748619423fbb8f0d5167f46dbde2` | **Checksum Match / Patch Mismatch** |
++| `src/components/NeighborhoodInspectorTabs.tsx` | Yes (284L) | Yes | Yes (2/8 `+` lines match) | Yes | `99593f6c051843b14606234c60423fc9d2dc33b5c0d1e3acacc0cb2970fa1bc5` | `99593f6c051843b14606234c60423fc9d2dc33b5c0d1e3acacc0cb2970fa1bc5` | **Checksum Match / Patch Mismatch** |
++| `src/components/views/ProductIntelligenceView.tsx` | Yes (266L) | Yes | Yes (0/2 `+` lines match) | Yes | `2ec994b5edfb37a061d1f32c6e90c7d911ea185d8d71d7c12f88b09df8ec88c3` | `2ec994b5edfb37a061d1f32c6e90c7d911ea185d8d71d7c12f88b09df8ec88c3` | **Checksum Match / Patch Mismatch** |
++| `src/components/CompareModal.tsx` | Yes (255L) | Yes | Yes (3/3 `+` lines match) | Yes | `7f29c114604eaa34cd4371f315986085310bbc606694c8589d09cf7e8a8bd5ad` | `7f29c114604eaa34cd4371f315986085310bbc606694c8589d09cf7e8a8bd5ad` | **Match** |
++| `tests/real-market-price-aggregator.test.ts` | Yes (214L) | Yes | **No (Omitted)** | Yes | `1eed43f37de6668b04818bbc99dd0dd6d57788f61ccfd79e7190b760550e119c` | `1eed43f37de6668b04818bbc99dd0dd6d57788f61ccfd79e7190b760550e119c` | **Checksum Match / Omitted from Patch** |
++| `docs/AUTONOMOUS-ENGINEERING-PROGRESS.md` | Yes (437L) | Yes | **No (Omitted)** | Yes | `9b86b0786de470826f377f3c86aa25293aa9be043eb8c152e1fd651a89ec6c6b` | `9b86b0786de470826f377f3c86aa25293aa9be043eb8c152e1fd651a89ec6c6b` | **Checksum Match / Omitted from Patch** |
++| `docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md` | Yes (65L) | Yes | **No (Omitted)** | Yes | `766c006f165c708419271529cc9baa05e4a8fe0659d392bd045d0256f86c70aa` | `766c006f165c708419271529cc9baa05e4a8fe0659d392bd045d0256f86c70aa` | **Checksum Match / Content Refuted** |
++| `src/data/hedonicPricingEngine.ts` | Yes (270L) | **No (9th Modified File)** | **No** | Yes | `65a712b473381ea78a519dc868a4e4b2876cedc9bc98b9f395d7ed867e76f85e` | *Omitted from `changedFiles`* | **9-vs-8 Discrepancy Explained (`mtime 20:10:45Z`)** |
++| `docs/engineering/WS-G4A-A1-MANIFEST.json` | Yes (87L) | Self | No | Yes | `101134bd6706fc59ec616c21647ba359c80366760c32dfaaec768808f7c3da96` | Self | **Match** |
++| `docs/engineering/WS-G4A-A1.patch` | Yes (98L) | No | Self | Yes | `258601fe60da66f11c836716575c375b9343ddb7615f219f62f03dde0f7336d0` | Omitted | **Fabricated Hunks (`F-A1V-02`)** |
++| `public/radar-g4a-ws-a1-handoff.zip` | Yes (5,840,158B) | Outside ZIP | No | Self | `e4e23ec43839fbe96e76c2898ace524cf9bf73b0132bfa7b1ff6f079bef831b2` | Reported in Handoff | **1,167/1,167 Files Match Workspace 100%** |
++
++---
++
++## 12. Acceptance Criteria Matrix (Items A through AB)
++
++| ID | Acceptance Criterion | Status | Evidence Level | Source / Command / Artifact Reference |
++|---|---|---|---|---|
++| **A** | First-Run Audit Protocol respected | **PARTIAL** | `E4` | Pre-audit edits occurred on 7 files (`19:41Z`–`19:46Z`) and were reverted (`20:01Z`–`20:02Z`) before `WS-A1` execution (`20:10Z`–`20:15Z`). |
++| **B** | Pinned governance files remain unmodified | **PASS** | `E3` | All 5 pinned governance files verified via SHA-256 (`MASTER-PROMPT.md`, `EXECUTION-STATE.json`, `AGENTS.md`, `ARCHITECTURE.md`, `architecture-baseline.json`). |
++| **C** | File size limits respected (`< 500` hard, `< 300` warning) | **PASS** | `E1` | `npm run arch:check` exit `0` (284 files scanned, `0` warnings, `0` errors; max modified file is `290` lines). |
++| **D** | Dependency direction respected | **PASS** | `E1`, `E2` | `npm run arch:check` exit `0`; zero forbidden upward or React imports in `src/data/*`, `src/utils/*`, `src/types/*`. |
++| **E** | Hedonic engine preserves `FAST_SALE_FACTOR` (`0.88`) | **PASS (Code) / FAIL (Report)** | `E1`, `E2` | `src/data/hedonicPricingEngine.ts:3` preserves `FAST_SALE_FACTOR = 0.88`; `WS-G4A-A1-EXECUTION-REPORT.md:62` falsely stated `0.96`. |
++| **F** | Market aggregator eliminates synthetic PRNG fabrication | **FAIL** | `E1`, `E2` | `src/data/realMarketPriceAggregator.ts:228-231, 260-262` retains `seededRandom` (Mulberry32) and fabricates 12 synthetic rows (`syntheticRaw`) when `observedEvaluated.length < 3`, setting `sampleCount: 12`, `confidenceScore: 74`, and synthetic `iqrLowPerSqm`/`iqrHighPerSqm`. |
++| **G** | Zero-sample fallback is explicit and honest | **PARTIAL** | `E1`, `E2` | `provenance: 'REFERENCE_BASELINE'` and `evidenceIndexScore: 0` are set, but `sampleCount: 12`, `validSampleCount: 12`, `confidenceScore: 74`, `iqrLowPerSqm: 131.3`, `iqrHighPerSqm: 154.3`, and 3 synthetic `boot-*` bargains are still returned on `0` observed samples. |
++| **H** | Small-sample handling is statistically defensible | **FAIL** | `E1`, `E2` | On `1` or `2` observed samples (`isBootstrapped = true`), `iqrLowPerSqm` and `iqrHighPerSqm` are computed from 12 PRNG synthetic samples (`line 265`), and `confidenceScore` is `74` (higher than `71` for `3` real samples). |
++| **I** | Outlier handling is separated from fraud semantics | **PARTIAL** | `E2` | UI labels in `NeighborhoodInspectorTabs.tsx:199` separate outliers and anomalies, but `realMarketPriceAggregator.ts:253, 271-272` still sets `fraudReviewState = 'FRAUD_SUSPECTED'` on price-ratio thresholds and computes `rejectedFraudCount = excludedOutlierCount + suspectedFraudCount`. |
++| **J** | Asking price is separated from transaction price | **PARTIAL** | `E1`, `E2` | Separated in `NeighborhoodInspectorTabs.tsx:214`, but `ProductIntelligenceView.tsx:65, 116, 191` still labels heuristic estimates as `تخمین قیمت قطعی معاملات (مدل v6.4)` and `جایگاه معامله قطعی`. |
++| **K** | Uncertainty/confidence labels are honest and calibrated | **PARTIAL** | `E1`, `E2` | `evidenceIndexScore` is labeled `شاخص پوشش شواهد (غیر احتمالاتی)`, but `confidenceScore` in `realMarketPriceAggregator.ts:274` is still `74` on `0` samples vs `71` on `3` samples. |
++| **L** | Inspector drawer disclosures are accurate | **PASS** | `E1`, `E2` | Verified in `src/components/NeighborhoodInspectorDrawer.tsx:84-106` and live Playwright DOM (`?hood=5`). |
++| **M** | Inspector tabs disclosures are accurate | **PARTIAL** | `E1`, `E2` | `NeighborhoodInspectorTabs.tsx:183-220` accurately discloses provenance and hypothetical negotiation basis, but line 201 displays `agg.iqrLowPerSqm`–`agg.iqrHighPerSqm` (which are PRNG-derived when `observedSampleCount < 3`). |
++| **N** | Product intelligence view disclosures are accurate | **FAIL** | `E1`, `E2` | `ProductIntelligenceView.tsx:47, 231` passes `[]` instead of `hood.bargains` (always showing `۰ آگهی مشاهده‌شده`), binds to synthetic `iqrLowPerSqm`/`iqrHighPerSqm` (`line 182`), and uses closing-transaction labels (`lines 65, 116, 191`). |
++| **O** | Compare modal disclosures are accurate | **FAIL** | `E1`, `E2` | `CompareModal.tsx:8` passes `[]` instead of mapped `hood.bargains`, causing all compared neighborhoods (`?compare=5-14`) to display `۰ آگهی` even when `hood.bargains` exist. |
++| **P** | Recommendation scoring separates budget fit and quality | **DEFERRED (`WS-B`)** | `E2` | Scoped to `WS-B` (`WP-3`), which has not started (`useEvaluatedNeighborhoods.ts`). |
++| **Q** | Map legend matches actual status semantics | **DEFERRED (`WS-B`)** | `E2` | Scoped to `WS-B` (`WP-3`), which has not started (`MapLegend.tsx`). |
++| **R** | Onboarding wizard controls affect actual model outputs | **DEFERRED (`WS-B`)** | `E2` | Scoped to `WS-B` (`WP-3`), which has not started (`OnboardingWizardModal.tsx`). |
++| **S** | Hedonic UI results are epistemically honest | **PASS** | `E2` | `HedonicValuationResultsColumn.tsx` and `hedonicPricingEngine.ts` present `±3.5%` sensitivity range and statistical price-deviation language without fraud accusations. |
++| **T** | Unit tests are valid and pass | **PARTIAL** | `E1`, `E2` | All 26 unit test scripts in `package.json` pass (`exit 0`), including `tests/real-market-price-aggregator.test.ts`; however, prior handoff prose cited non-existent `tests/hedonic-pricing-engine.test.ts`, and existing tests fail to catch duplicate inflation or `confidenceScore: 74 > 71`. |
++| **U** | Contract tests pass or failure is explained | **PASS** | `E1` | `npm run test:contracts` (`tests/engineering-quality-foundation.test.ts`) passed (`exit 0`). |
++| **V** | Build succeeds | **PASS** | `E1` | `npx vite build --outDir /tmp/ws-a1-v-dist` succeeded (`exit 0`, 2,220 modules). |
++| **W** | Runtime preview works without critical errors | **PASS** | `E1` | Verified via `playwright-cli` on `http://localhost:3000` (`0` console errors, `0` page errors). |
++| **X** | Changed-file manifest is accurate | **PARTIAL** | `E3`, `E4` | All 8 listed SHA-256 hashes in `WS-G4A-A1-MANIFEST.json` match 100%, but the 9th modified file (`src/data/hedonicPricingEngine.ts`, edited at `20:10:45Z`) and the handoff artifacts themselves were omitted from `changedFiles`. |
++| **Y** | Patch matches workspace changes | **FAIL** | `E1`, `E3` | `docs/engineering/WS-G4A-A1.patch` is a hand-fabricated pseudo-diff whose hunks and `+` lines do not exist in 4 of the 5 target files (`F-A1V-02`). |
++| **Z** | ZIP matches live workspace | **PASS** | `E3` | `public/radar-g4a-ws-a1-handoff.zip` (1,167 files) matches 100% of tracked live workspace files by SHA-256 and contains zero secrets or `node_modules`. |
++| **AA** | Progress docs are accurate and governance-compliant | **FAIL** | `E2`, `E3` | `docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md` contains fabricated function names, line numbers, and claims that do not match `src/data/realMarketPriceAggregator.ts`. |
++| **AB** | Workstream is ready for release gate approval | **FAIL** | `E1`, `E2`, `E3` | Blocked by `F-A1V-01`, `F-A1V-02`, `F-A1V-03`, `F-A1V-04`, `F-A1V-07`, and `F-A1V-08`. |
++
++---
++
++## 13. Consolidated Verification Scorecard (Section 28)
++
++| Dimension | Evidence Available | Verification Status | Critical Risk | Release Implication |
++|---|---|---|---|---|
++| **Governance** | `E2`, `E3`, `E4` | `PARTIALLY VERIFIED` | Pre-audit edits occurred before Phase Zero report (later reverted); 5 pinned governance files are 100% intact. | Non-blocking (reverted), requires strict gate discipline. |
++| **Repository integrity** | `E1`, `E3` | `VERIFIED` | `.git` and `package-lock.json` absent in container; all workspace source files intact. | Environment constraint documented. |
++| **Source correctness** | `E1`, `E2` | `PARTIALLY VERIFIED` | `realMarketPriceAggregator.ts` retains PRNG synthetic fallback (`N < 3`), and `ProductIntelligenceView`/`CompareModal` pass `[]`. | **RELEASE BLOCKER (`F-A1V-03`, `F-A1V-04`)** |
++| **Architecture** | `E1`, `E2` | `VERIFIED` | None (`npm run arch:check` exit `0`, 284 files `< 300` lines, clean dependency direction). | Pass. |
++| **Domain integrity** | `E1`, `E2` | `PARTIALLY VERIFIED` | `ProductIntelligenceView.tsx` still frames heuristic estimates as `تخمین قیمت قطعی معاملات`; `rejectedFraudCount` sums `excludedOutlierCount`. | **RELEASE BLOCKER (`F-A1V-03`, `F-A1V-04`)** |
++| **Data provenance** | `E1`, `E2` | `PARTIALLY VERIFIED` | Missing meterage in listing descriptions silently defaults to `sqm = 85` (`malformedSampleCount: 0`); `[]` passed in 2 views erases existing `hood.bargains`. | **RELEASE BLOCKER (`F-A1V-04`, `F-A1V-08`)** |
++| **Statistical validity** | `E1`, `E2` | `REFUTED` (Report Claims) / `NOT VERIFIABLE` (Empirical Accuracy) | No empirical transaction dataset exists (`NOT VERIFIABLE`); report claims of `MAD` filtering and `computeTrimmedMean` (`N < 5`) are `REFUTED`. | **RELEASE BLOCKER (`F-A1V-01`, `F-A1V-03`)** |
++| **Valuation methodology** | `E1`, `E2` | `PARTIALLY VERIFIED` | Deterministic rule-based multiplier model (`hedonicPricingEngine.ts`); silently clamps `sqm <= 0` to `30` and `NaN` to `85` without input error flag. | Requires input validation guard (`F-A1V-08`). |
++| **Aggregation correctness** | `E1`, `E2` | `REFUTED` | `0` samples yields `confidenceScore: 74` (`validSampleCount: 12`) vs `71` for `3` real samples; duplicate records inflate `evidenceIndexScore`; `±3%` anchor clamp suppresses real sample means. | **RELEASE BLOCKER (`F-A1V-03`, `F-A1V-07`)** |
++| **Reproducibility** | `E1`, `E2` | `PARTIALLY VERIFIED` | `valuationTraceAndComparables.ts` is 100% deterministic (`trc_8a53657653fff790`); `realMarketPriceAggregator.ts` seeds PRNG with `Date.now() / 86_400_000`. | Requires removing `Date.now()` PRNG seed (`F-A1V-03`). |
++| **Test reliability** | `E1`, `E2` | `PARTIALLY VERIFIED` | 26 unit test suites pass (`exit 0`), but tests miss duplicate listing inflation, missing-sqm `85` imputation, and `confidenceScore` inversion (`74 > 71`). | Requires adversarial assertions in remediation. |
++| **Build integrity** | `E1` | `VERIFIED` | None (`npm run lint` exit `0`, `npx vite build` exit `0`). | Pass. |
++| **Runtime behavior** | `E1` | `VERIFIED` (Stability) / `PARTIALLY VERIFIED` (Data Consistency) | Zero console/page errors in Playwright, but Punak (`hood=5`) shows `2` samples in Drawer vs `0` samples in Intelligence View & Compare Modal. | **RELEASE BLOCKER (`F-A1V-04`)** |
++| **UX integrity** | `E1`, `E2` | `PARTIALLY VERIFIED` | Synthetic IQR (`131.3–154.3`) displayed as neighborhood statistical range when `< 3` samples exist; closing-deal labels remain in Intelligence View. | **RELEASE BLOCKER (`F-A1V-03`, `F-A1V-04`)** |
++| **Human decision integrity** | `E1`, `E2` | `PARTIALLY VERIFIED` | Inspector Drawer/Tabs calibrate reliance well, but Intelligence View & Compare Modal contradict Drawer sample counts and overstate deal certainty. | **RELEASE BLOCKER (`F-A1V-04`)** |
++| **Accessibility** | `E1`, `E2` | `VERIFIED` | RTL layout, Persian typography, contrast, and semantic disclosure boxes render cleanly in headless Chromium. | Pass. |
++| **Security** | `E1`, `E2`, `E3` | `VERIFIED` | `npm run test:rules:static` passed (`13/13`); `escapeHtmlAttr` and `buildExternalDivarUrl` intact; zero secrets in ZIP or workspace. | Pass. |
++| **Artifact integrity** | `E1`, `E3` | `PARTIALLY VERIFIED` | ZIP (`1,167` files) and Manifest (8 hashes) match workspace 100%, but `WS-G4A-A1.patch` is fabricated and non-applicable. | **RELEASE BLOCKER (`F-A1V-02`)** |
++| **Documentation consistency** | `E2`, `E3` | `REFUTED` | `WS-G4A-A1-EXECUTION-REPORT.md` documents non-existent functions (`computeTrimmedMean`, `filterEligibleListings`, `computeMAD`) and wrong `FAST_SALE_FACTOR` (`0.96`). | **RELEASE BLOCKER (`F-A1V-01`)** |
++
++---
++
++## 14. Confirmed Findings, Refuted Claims, and Unverified Claims
++
++### 14.1 Confirmed Findings (`VERIFIED`)
++- **ZIP & Manifest Cryptographic Match:** `public/radar-g4a-ws-a1-handoff.zip` (`5,840,158` bytes, SHA-256 `e4e23ec43839fbe96e76c2898ace524cf9bf73b0132bfa7b1ff6f079bef831b2`) contains `1,167` valid entries matching 100% of tracked workspace files, and all 8 SHA-256 hashes in `docs/engineering/WS-G4A-A1-MANIFEST.json` match the live files.
++- **Pinned Governance Integrity:** All 5 pinned governance files remain 100% untouched.
++- **Inspector Drawer & Market Tab Epistemic UI Disclosures:** `NeighborhoodInspectorDrawer.tsx` and `NeighborhoodInspectorTabs.tsx` render explicit provenance badges, `شاخص پوشش شواهد (غیر احتمالاتی)`, and hypothetical negotiation scenario warnings.
++
++### 14.2 Refuted Claims (`REFUTED`)
++1. **Claim in `WS-G4A-A1-EXECUTION-REPORT.md:20`:** *"Zero PRNG (`mulberry32` / `Math.random`) exists in `realMarketPriceAggregator.ts`."* -> **REFUTED (`E2`):** `seededRandom` (Mulberry32 PRNG) is defined at lines 228–231 and called at line 260 to generate 12 synthetic listings (`syntheticRaw`) when `observedEvaluated.length < 3`.
++2. **Claim in `WS-G4A-A1-EXECUTION-REPORT.md:16-20`:** Claims `computeTrimmedMean` (`sortedPrices.length < 5`), `filterEligibleListings` (`median ± 2.5 * MAD`, `OUTLIER_ROBUST_MAD_BAND`), `computeStdDev`, `computeMedian`, `computeMAD`, `dataSourceType`, and `confidenceLevel` exist in `src/data/realMarketPriceAggregator.ts`. -> **REFUTED (`E2`):** None of these identifiers exist anywhere in `src/data/realMarketPriceAggregator.ts`.
++3. **Claim in `WS-G4A-A1-EXECUTION-REPORT.md:62`:** Claims `FAST_SALE_FACTOR = 0.96` in `src/data/hedonicPricingEngine.ts`. -> **REFUTED (`E2`):** `src/data/hedonicPricingEngine.ts:3` defines `export const FAST_SALE_FACTOR = 0.88`.
++4. **Claim that `docs/engineering/WS-G4A-A1.patch` is a valid diff of the modified files:** -> **REFUTED (`E1`, `E3`):** `WS-G4A-A1.patch` contains manually fabricated hunks that do not match the actual lines of 4 out of 5 files in the patch and omits 3 of the 8 manifest files.
++5. **Claim in Handoff Deliverable 5 prose that `hedonic-pricing-engine.test.ts` was executed:** -> **REFUTED (`E1`):** `npx tsx tests/hedonic-pricing-engine.test.ts` fails with `ERR_MODULE_NOT_FOUND` (exit `1`).
++
++### 14.3 Unverified Claims (`NOT VERIFIABLE`)
++- **Empirical Predictive Accuracy of Hedonic Valuation Against Real Iranian Closing Transactions (`Section 19.4`):** **`NOT VERIFIABLE`** because no dataset of verified historical closing transactions (e.g., official Iran Real Estate Registration / Kode Rahgiri records) exists in the repository.
++- **Exact Git Diff Against Pre-Session Commit Baseline (`Section 18`):** **`NOT VERIFIABLE`** via Git because `/app/applet/.git` is absent in the container environment (reconstructed instead via filesystem `mtime` forensics and baseline doc comparison).
++
++---
++
++## 15. Risk Register
++
++| Risk ID | Severity | Category | Summary |
++|---|---|---|---|
++| `F-A1V-01` | `CRITICAL` | `DOCUMENTATION` / `GOVERNANCE` | `WS-G4A-A1-EXECUTION-REPORT.md` documents non-existent functions (`computeTrimmedMean`, `filterEligibleListings`, `computeMAD`, `OUTLIER_ROBUST_MAD_BAND`) and falsely claims zero PRNG in `realMarketPriceAggregator.ts`. |
++| `F-A1V-02` | `CRITICAL` | `ARTIFACT` | `docs/engineering/WS-G4A-A1.patch` is a hand-fabricated pseudo-patch whose hunks do not match 4 of 5 target files and cannot be applied with `patch` or `git apply`. |
++| `F-A1V-03` | `HIGH` | `STATISTICAL_LOGIC` / `DOMAIN_MODEL` | `realMarketPriceAggregator.ts` still generates 12 PRNG synthetic rows when `observedEvaluated.length < 3`, returning `confidenceScore: 74` (`> 71` for 3 real samples), synthetic `iqrLowPerSqm`/`iqrHighPerSqm`, `FRAUD_SUSPECTED` from price ratios alone, and `rejectedFraudCount = excludedOutlierCount + suspectedFraudCount`. |
++| `F-A1V-04` | `HIGH` | `UI_DISCLOSURE` / `PROVENANCE` | `ProductIntelligenceView.tsx` (lines 47, 231) and `CompareModal.tsx` (line 8) pass hardcoded `[]` to `aggregateNeighborhoodMarketMetrics`, always showing `0` observed samples even when `hood.bargains` exist, and `ProductIntelligenceView.tsx` retains `تخمین قیمت قطعی معاملات` labels. |
++| `F-A1V-05` | `MEDIUM` | `GOVERNANCE` / `ARTIFACT` | 9-vs-8 changed-file discrepancy (`src/data/hedonicPricingEngine.ts` modified at `20:10:45Z` after pre-audit revert cycle was omitted from `WS-G4A-A1-MANIFEST.json`). |
++| `F-A1V-06` | `LOW` | `TEST_QUALITY` / `DOCUMENTATION` | Handoff prose cited non-existent `tests/hedonic-pricing-engine.test.ts` (`ERR_MODULE_NOT_FOUND`). |
++| `F-A1V-07` | `HIGH` | `AGGREGATION` / `METAMORPHIC` | `aggregateNeighborhoodMarketMetrics` performs zero deduplication (`[sA, sA, sA, sA, sA]` yields `observedSampleCount: 5`, `evidenceIndexScore: 77`, `MODERATE_OBSERVATIONS`). |
++| `F-A1V-08` | `HIGH` | `PROVENANCE` / `VALIDATION` | Missing meterage in listing description silently defaults to `sqm = 85` (`malformedSampleCount: 0`), and `calculateHedonicValuation` silently clamps `sqm <= 0` to `30` and `NaN` to `85`. |
++
++---
++
++## 16. Required Remediation Plan (Before Re-Submitting `WS-A1` Gate)
++
++To clear the `WS-A1` release gate in a subsequent authorized remediation turn (without starting `WS-B`):
++1. **Eliminate Residual PRNG Bootstrap Contamination in `src/data/realMarketPriceAggregator.ts` (`F-A1V-03`):**
++   - When `observedEvaluated.length < 3`, do not populate `sampleCount`, `validSampleCount`, `iqrLowPerSqm`, `iqrHighPerSqm`, or `autoBargains` from `seededRandom` synthetic rows, and ensure `confidenceScore` is monotonically non-decreasing with observed evidence (never `74` on `0` samples vs `71` on `3` samples).
++   - Separate `excludedOutlierCount` from `rejectedFraudCount` (`rejectedFraudCount` must not sum statistical IQR outliers), and do not assign `FRAUD_SUSPECTED` solely from a static price-to-baseline ratio.
++2. **Add Listing Deduplication & Explicit Missing-Area Validation in `src/data/realMarketPriceAggregator.ts` (`F-A1V-07`, `F-A1V-08`):**
++   - Deduplicate `samples` by `id` and normalized `(askingTotalMillion, sqm, floor, description)` fingerprint before computing `observedEvaluated` and `evidenceIndexScore`.
++   - In `evalSample`, require explicit extracted area (`sqm`) from the listing rather than silently dividing `askingTotalMillion` by a default `85 sqm`.
++3. **Pass Mapped `hood.bargains` and Fix Closing-Price Labels in `ProductIntelligenceView.tsx` and `CompareModal.tsx` (`F-A1V-04`):**
++   - Map `activeHood.bargains` (and `hood.bargains` in `CompareModal.tsx`) into `aggregateNeighborhoodMarketMetrics` exactly as `NeighborhoodInspectorDrawer.tsx:20-29` does, eliminating the cross-view contradiction (`2` samples in Drawer vs `0` in Intelligence View / Compare Modal).
++   - Replace `تخمین قیمت قطعی معاملات (مدل v6.4)`, `همگرایی قیمت اعلامی با نرخ معامله`, and `جایگاه معامله قطعی` in `ProductIntelligenceView.tsx` (lines 65, 116, 191) with honest asking-price / hypothetical negotiation scenario terminology, and guard `iqrLowPerSqm`/`iqrHighPerSqm` when `observedIqrLowPerSqm === null`.
++4. **Reconcile Execution Report, Manifest, Patch, and ZIP (`F-A1V-01`, `F-A1V-02`, `F-A1V-05`, `F-A1V-06`):**
++   - Rewrite `docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md` to cite only actual symbols and line numbers present in the workspace.
++   - Generate `docs/engineering/WS-G4A-A1.patch` programmatically using `diff -u` so every hunk applies cleanly.
++   - Include all modified files in `docs/engineering/WS-G4A-A1-MANIFEST.json` and regenerate `public/radar-g4a-ws-a1-handoff.zip`.
++
++---
++
++## 17. Final Release Gate Decision
++
++- **Decision:** **`DECISION C — REJECTED / REMEDIATION REQUIRED`**
++- **WS-B (`WP-3`) Authorization Status:** **`NOT AUTHORIZED — AWAITING HUMAN DECISION`**
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-FINDINGS.json	2026-11-08 20:53:40.601541170 +0000
+@@ -0,0 +1,263 @@
++[
++  {
++    "id": "F-A1V-01",
++    "title": "False and Non-Existent Code Symbols Claimed in WS-G4A-A1-EXECUTION-REPORT.md",
++    "category": "DOCUMENTATION",
++    "severity": "CRITICAL",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E2",
++    "source_paths": [
++      "docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md",
++      "src/data/realMarketPriceAggregator.ts",
++      "src/data/hedonicPricingEngine.ts"
++    ],
++    "symbols": [
++      "aggregateNeighborhoodMarketMetrics",
++      "seededRandom",
++      "FAST_SALE_FACTOR"
++    ],
++    "line_ranges": [
++      "docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md:16-20",
++      "docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md:62",
++      "src/data/realMarketPriceAggregator.ts:17-34",
++      "src/data/realMarketPriceAggregator.ts:228-275",
++      "src/data/hedonicPricingEngine.ts:3"
++    ],
++    "observed_condition": "WS-G4A-A1-EXECUTION-REPORT.md claims that src/data/realMarketPriceAggregator.ts implements computeTrimmedMean (lines 84-93), filterEligibleListings (lines 50-82) with median +/- 2.5 * MAD (OUTLIER_ROBUST_MAD_BAND), computeStdDev, computeMedian, computeMAD, dataSourceType: 'REFERENCE_PROFILE_NO_OBSERVED_SAMPLES', and confidenceLevel, claims 'Zero PRNG (mulberry32 / Math.random) exists in realMarketPriceAggregator.ts', and claims FAST_SALE_FACTOR = 0.96 in hedonicPricingEngine.ts. Direct source inspection confirms none of those functions or fields exist in realMarketPriceAggregator.ts, seededRandom (Mulberry32 PRNG) is defined at lines 228-231 and called at line 260, and FAST_SALE_FACTOR is 0.88 at hedonicPricingEngine.ts:3.",
++    "expected_condition": "Execution reports must accurately describe only the actual symbols, line numbers, algorithms, and constants present in the live workspace without fabricating functions or falsely claiming PRNG removal.",
++    "impact": "Invalidates the auditability of WS-G4A-A1-EXECUTION-REPORT.md and misleads reviewers into believing synthetic PRNG bootstrapping and outlier-fraud conflation were completely removed from realMarketPriceAggregator.ts.",
++    "affected_workflows": [
++      "WS-A1 Handoff Audit",
++      "Neighborhood Market Price Aggregation",
++      "Release Gate Certification"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Rewrite docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md to match the actual implementation after remediating the underlying aggregator defects.",
++    "verification_method": "Direct full-file read (view_file) of src/data/realMarketPriceAggregator.ts (290 lines), src/data/hedonicPricingEngine.ts (270 lines), and docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md (65 lines)."
++  },
++  {
++    "id": "F-A1V-02",
++    "title": "Hand-Fabricated Non-Applicable Unified Diff in docs/engineering/WS-G4A-A1.patch",
++    "category": "ARTIFACT",
++    "severity": "CRITICAL",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E1",
++    "source_paths": [
++      "docs/engineering/WS-G4A-A1.patch",
++      "src/data/realMarketPriceAggregator.ts",
++      "src/components/NeighborhoodInspectorDrawer.tsx",
++      "src/components/NeighborhoodInspectorTabs.tsx",
++      "src/components/views/ProductIntelligenceView.tsx"
++    ],
++    "symbols": [
++      "aggregateNeighborhoodMarketMetrics",
++      "NeighborhoodInspectorDrawer",
++      "NeighborhoodInspectorTabs",
++      "ProductIntelligenceView"
++    ],
++    "line_ranges": [
++      "docs/engineering/WS-G4A-A1.patch:1-98"
++    ],
++    "observed_condition": "docs/engineering/WS-G4A-A1.patch (98 lines, SHA-256 258601fe60da66f11c836716575c375b9343ddb7615f219f62f03dde0f7336d0) was manually authored via heredoc rather than diff -u. Automated hunk verification proved that in 4 of the 5 patched files, the '+' lines do not exist in the actual workspace files: realMarketPriceAggregator.ts (only 8/13 '+' lines exist; references non-existent OUTLIER_ROBUST_MAD_BAND, dataSourceType, confidenceLevel), NeighborhoodInspectorDrawer.tsx (0/4 '+' lines exist; uses 'agg.' instead of 'hoodAggMetrics.'), NeighborhoodInspectorTabs.tsx (2/8 '+' lines exist; uses 'if (tab === \"market\")' instead of 'if (activeTab === \"market\")'), and ProductIntelligenceView.tsx (0/2 '+' lines exist). Furthermore, 3 of the 8 manifest-listed files are omitted from the patch.",
++    "expected_condition": "A deliverable patch artifact must be programmatically generated via diff -u or git diff so that 100% of its hunks accurately reflect and apply cleanly to the workspace files.",
++    "impact": "Downstream consumers or automated CI pipelines attempting to apply or audit docs/engineering/WS-G4A-A1.patch will fail with hunk rejection errors.",
++    "affected_workflows": [
++      "Patch Application & Replay",
++      "Post-Execution Handoff Contract Deliverable 4"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Generate patches strictly via programmatic diff -u against baseline snapshots or /dev/null rather than manual text composition.",
++    "verification_method": "Automated Node.js hunk verification script checking every '+' line in docs/engineering/WS-G4A-A1.patch against live target files."
++  },
++  {
++    "id": "F-A1V-03",
++    "title": "Residual PRNG Synthetic Bootstrap Contamination, Confidence Score Inversion, and Outlier-into-Fraud Conflation in realMarketPriceAggregator.ts",
++    "category": "STATISTICAL_LOGIC",
++    "severity": "HIGH",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E1",
++    "source_paths": [
++      "src/data/realMarketPriceAggregator.ts",
++      "src/components/NeighborhoodInspectorTabs.tsx",
++      "src/components/views/ProductIntelligenceView.tsx"
++    ],
++    "symbols": [
++      "seededRandom",
++      "aggregateNeighborhoodMarketMetrics",
++      "AggregatedMarketMetrics"
++    ],
++    "line_ranges": [
++      "src/data/realMarketPriceAggregator.ts:228-231",
++      "src/data/realMarketPriceAggregator.ts:253-275",
++      "src/components/NeighborhoodInspectorTabs.tsx:201",
++      "src/components/views/ProductIntelligenceView.tsx:182"
++    ],
++    "observed_condition": "In aggregateNeighborhoodMarketMetrics (lines 260-275): (1) When observedEvaluated.length < 3 (isBootstrapped === true), seededRandom(hoodId * 997 + Math.floor(Date.now() / 86_400_000)) generates 12 synthetic listings (syntheticRaw) that populate evaluated; (2) sampleCount and validSampleCount return 12 even when observedSampleCount is 0, 1, or 2; (3) confidenceScore is hardcoded to 74 when isBootstrapped is true, which is higher than confidenceScore = 71 when 3 real observed listings are supplied (62 + 3*3 = 71); (4) iqrLowPerSqm and iqrHighPerSqm (131.3 - 154.3 in Punak) are computed from the 12 synthetic PRNG rows and displayed in NeighborhoodInspectorTabs.tsx:201 and ProductIntelligenceView.tsx:182 as the neighborhood's valid statistical range; (5) synthetic 'boot-*' listings are appended to autoBargains; (6) line 253 flags rawPerSqm < 0.42x or > 2.4x as isPredatoryAnomaly -> suspectedFraudCount -> fraudReviewState: 'FRAUD_SUSPECTED' from price ratio alone; and (7) line 271 computes rejectedFraudCount = excludedOutlierCount + suspectedFraudCount, adding statistical IQR outliers directly into rejectedFraudCount.",
++    "expected_condition": "Zero or sparse (<3) observed samples must never fabricate 12 synthetic PRNG listings to populate sampleCount, validSampleCount, iqrLowPerSqm, iqrHighPerSqm, or autoBargains; confidence/evidence scores must be monotonically non-decreasing with real sample count; and statistical price outliers must never be summed into rejectedFraudCount or labeled FRAUD_SUSPECTED without multi-signal fraud evidence.",
++    "impact": "Violates Missing-Data Transparency (0 samples has higher confidenceScore 74 than 3 real samples at 71), exposes time-dependent PRNG numbers as statistical IQR bounds in the UI, and conflates statistical outliers with rejected fraud counts.",
++    "affected_workflows": [
++      "Neighborhood Market Price Aggregation",
++      "Inspector Market Tab IQR Display",
++      "Product Intelligence View Market Benchmarks"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Remove syntheticRaw PRNG generation from aggregateNeighborhoodMarketMetrics when observedEvaluated.length < 3, return null or explicit baseline-only bounds when N < 3, fix confidenceScore monotonicity, and separate excludedOutlierCount from rejectedFraudCount and fraudReviewState.",
++    "verification_method": "Direct code inspection (lines 228-275) and runtime execution via npx tsx comparing N=0, N=2, and N=3 outputs."
++  },
++  {
++    "id": "F-A1V-04",
++    "title": "ProductIntelligenceView and CompareModal Pass Hardcoded Empty Array [] to aggregateNeighborhoodMarketMetrics and Retain Authoritative Transaction Labels",
++    "category": "UI_DISCLOSURE",
++    "severity": "HIGH",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E1",
++    "source_paths": [
++      "src/components/views/ProductIntelligenceView.tsx",
++      "src/components/CompareModal.tsx",
++      "src/components/NeighborhoodInspectorDrawer.tsx"
++    ],
++    "symbols": [
++      "ProductIntelligenceView",
++      "CompareModal",
++      "NeighborhoodInspectorDrawer"
++    ],
++    "line_ranges": [
++      "src/components/views/ProductIntelligenceView.tsx:47",
++      "src/components/views/ProductIntelligenceView.tsx:65",
++      "src/components/views/ProductIntelligenceView.tsx:116",
++      "src/components/views/ProductIntelligenceView.tsx:182-191",
++      "src/components/views/ProductIntelligenceView.tsx:231",
++      "src/components/CompareModal.tsx:8",
++      "src/components/NeighborhoodInspectorDrawer.tsx:20-29"
++    ],
++    "observed_condition": "NeighborhoodInspectorDrawer.tsx (lines 20-29) maps hood.bargains into aggregateNeighborhoodMarketMetrics, producing observedSampleCount = 2 and evidenceIndexScore = 52 for Punak (hood=5). However, ProductIntelligenceView.tsx (lines 47 and 231) and CompareModal.tsx (line 8) call aggregateNeighborhoodMarketMetrics(..., []) with a hardcoded empty array. As verified in Playwright at http://localhost:3000/?hood=5&view=intelligence and ?hood=5&compare=5-14, Punak simultaneously shows 'تخمین ترکیبی (نمونه محدود: ۲ آگهی)' in the Inspector Drawer and 'پروفایل مرجع (۰ آگهی مستقیم)' / '۰ آگهی' in ProductIntelligenceView and CompareModal. Additionally, ProductIntelligenceView.tsx still uses authoritative closing-transaction wording at line 65 ('تخمین قیمت قطعی معاملات (مدل v6.4)'), line 116 ('همگرایی قیمت اعلامی با نرخ معامله'), and line 191 ('جایگاه معامله قطعی: صدک ...').",
++    "expected_condition": "All views consuming aggregateNeighborhoodMarketMetrics for a neighborhood must pass the same mapped hood.bargains sample array so sample counts and epistemic badges are consistent across views, and ProductIntelligenceView must not label heuristic asking-price adjustments as confirmed closing transactions.",
++    "impact": "Creates a visible cross-component contradiction on the same screen (2 observed listings in Drawer vs 0 in Intelligence View and Compare Modal) and misrepresents heuristic deal estimates as confirmed transaction prices.",
++    "affected_workflows": [
++      "Product Intelligence View",
++      "Neighborhood Comparison Modal",
++      "Cross-View Epistemic Consistency"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Pass mapped hood.bargains into aggregateNeighborhoodMarketMetrics in ProductIntelligenceView.tsx (lines 47, 231) and CompareModal.tsx (line 8), and replace closing-transaction labels at ProductIntelligenceView.tsx lines 65, 116, and 191 with scenario-based asking-discount terminology.",
++    "verification_method": "Static source inspection and live Playwright browser inspection at http://localhost:3000/?hood=5&compare=5-14 and http://localhost:3000/?hood=5&view=intelligence."
++  },
++  {
++    "id": "F-A1V-05",
++    "title": "Pre-Audit Source Edits and 9-vs-8 Changed-File Discrepancy in WS-G4A-A1-MANIFEST.json",
++    "category": "GOVERNANCE",
++    "severity": "MEDIUM",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E4",
++    "source_paths": [
++      "docs/engineering/WS-G4A-A1-MANIFEST.json",
++      "src/data/hedonicPricingEngine.ts"
++    ],
++    "symbols": [
++      "sensitivityRangeMillion",
++      "calculateHedonicValuation"
++    ],
++    "line_ranges": [
++      "docs/engineering/WS-G4A-A1-MANIFEST.json:8-66",
++      "src/data/hedonicPricingEngine.ts:211-215"
++    ],
++    "observed_condition": "Filesystem mtime forensics show 7 source files were edited between 19:41Z and 19:46Z prior to delivering the Phase Zero Repository Reality Audit, then reverted between 20:01:23Z and 20:02:30Z. During the revert of src/data/hedonicPricingEngine.ts, sensitivityRangeMillion was omitted, causing a TS2339 error in src/data/valuationTraceAndComparables.ts, which was fixed by editing src/data/hedonicPricingEngine.ts at 20:10:45.841Z. Consequently, 9 project files were modified during the WS-A1 window (20:10Z-20:15Z), plus 4 handoff artifacts (MANIFEST, patch, 2 PNGs), whereas WS-G4A-A1-MANIFEST.json lists only 8 files in changedFiles.",
++    "expected_condition": "Phase Zero audit must precede any source file edits, and the changed-file manifest must account for all files touched during the workstream window.",
++    "impact": "Explains the 9-vs-8 changed-file discrepancy noted in the verification prompt; functional behavior of src/data/hedonicPricingEngine.ts was properly restored.",
++    "affected_workflows": [
++      "Artifact Provenance Tracking",
++      "Phase Zero Audit Protocol"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Include src/data/hedonicPricingEngine.ts and all generated handoff artifacts in the manifest inventory.",
++    "verification_method": "Node.js fs.statSync mtime forensic scan across all repository files and cross-comparison with WS-G4A-A1-MANIFEST.json."
++  },
++  {
++    "id": "F-A1V-06",
++    "title": "Non-Existent Test Filename (hedonic-pricing-engine.test.ts) Cited in Handoff Deliverable 5 Prose",
++    "category": "TEST_QUALITY",
++    "severity": "LOW",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E1",
++    "source_paths": [
++      "package.json",
++      "tests/pricing-engine-integrity.test.ts",
++      "tests/assess-004-hedonic-accuracy-benchmark.test.ts"
++    ],
++    "symbols": [
++      "test:unit"
++    ],
++    "line_ranges": [
++      "package.json:23"
++    ],
++    "observed_condition": "The previous handoff summary (Deliverable 5 table) listed 'hedonic-pricing-engine.test.ts' as executed under npm run test:unit. Direct execution of 'npx tsx tests/hedonic-pricing-engine.test.ts' failed with ERR_MODULE_NOT_FOUND (exit code 1). Inspection of package.json line 23 confirms the actual test files executed by npm run test:unit are tests/pricing-engine-integrity.test.ts, tests/hedonic-and-627-debug.test.ts, and tests/assess-004-hedonic-accuracy-benchmark.test.ts (all of which pass with exit code 0).",
++    "expected_condition": "Test evidence tables must cite the exact test file paths present in tests/ and package.json.",
++    "impact": "Causes confusion during independent command reproduction when running the literal filename cited in the handoff prose.",
++    "affected_workflows": [
++      "Test Evidence Verification"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Cite exact test script paths from package.json (tests/pricing-engine-integrity.test.ts and tests/assess-004-hedonic-accuracy-benchmark.test.ts).",
++    "verification_method": "Direct command execution of 'npx tsx tests/hedonic-pricing-engine.test.ts' (exit 1) and 'npm run test:unit' (exit 0)."
++  },
++  {
++    "id": "F-A1V-07",
++    "title": "Zero Listing Deduplication Allows Duplicate Records to Artificially Inflate Market Evidence Quality",
++    "category": "AGGREGATION",
++    "severity": "HIGH",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E1",
++    "source_paths": [
++      "src/data/realMarketPriceAggregator.ts"
++    ],
++    "symbols": [
++      "aggregateNeighborhoodMarketMetrics"
++    ],
++    "line_ranges": [
++      "src/data/realMarketPriceAggregator.ts:247-260"
++    ],
++    "observed_condition": "Adversarial metamorphic testing proved that passing 5 identical copies of the same listing ([sA, sA, sA, sA, sA] with identical id 'a', price 13500, and description) into aggregateNeighborhoodMarketMetrics yields observedSampleCount: 5, eligibleObservedCount: 5, evidenceIndexScore: 77, confidenceScore: 77, and upgrades evidenceQuality from INSUFFICIENT_OBSERVATIONS to MODERATE_OBSERVATIONS. Unlike evaluateComparableProperties in valuationTraceAndComparables.ts (lines 191, 212-217), aggregateNeighborhoodMarketMetrics performs zero deduplication by ID or content fingerprint.",
++    "expected_condition": "Duplicating the same observation (identical ID or identical normalized area/price/floor/age fingerprint) must not create additional market evidence or increase evidenceIndexScore.",
++    "impact": "Violates the Duplicate Sensitivity metamorphic property (Section 22.3) and Advanced Acceptance Gate 7; reposted or duplicated Divar listings artificially inflate neighborhood evidence scores and disable sparse-sample warnings.",
++    "affected_workflows": [
++      "Neighborhood Market Price Aggregation",
++      "Evidence Index Score Calculation"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Deduplicate input samples in aggregateNeighborhoodMarketMetrics by both sample.id and normalized (askingTotalMillion, sqm, floor, age) fingerprint prior to aggregation.",
++    "verification_method": "Runtime metamorphic probe via npx tsx passing [sA, sA, sA, sA, sA] to aggregateNeighborhoodMarketMetrics."
++  },
++  {
++    "id": "F-A1V-08",
++    "title": "Silent Imputation of Missing Area (85 sqm) in Listing Parser and Silent Clamping of Invalid Inputs in Hedonic Engine",
++    "category": "PROVENANCE",
++    "severity": "HIGH",
++    "verification_status": "VERIFIED",
++    "evidence_level": "E1",
++    "source_paths": [
++      "src/data/realMarketPriceAggregator.ts",
++      "src/data/hedonicPricingEngine.ts"
++    ],
++    "symbols": [
++      "extractListingSpecsFromText",
++      "aggregateNeighborhoodMarketMetrics",
++      "calculateHedonicValuation"
++    ],
++    "line_ranges": [
++      "src/data/realMarketPriceAggregator.ts:136-152",
++      "src/data/realMarketPriceAggregator.ts:248-259",
++      "src/data/hedonicPricingEngine.ts:96-101"
++    ],
++    "observed_condition": "(1) In extractListingSpecsFromText (line 137), sqm is initialized to 'let sqm = 85'. When listings omit meterage in their description (e.g., { askingTotalMillion: 14000, description: 'آپارتمان خوش نقشه در پونک' }), specs.sqm silently defaults to 85, passing 'specs.sqm > 20' at line 251 with malformedSampleCount = 0 and computing a fabricated per-sqm price (14000 / 85 = 164.7M/sqm, normalized to 183.2M/sqm). (2) In calculateHedonicValuation (lines 97-100), passing sqm: 0 or sqm: -50 silently clamps safeSqm to 30 and returns a valid valuation (4,446M Toman), passing sqm: NaN silently defaults to 85 sqm (12,121M Toman), and passing floor: 20 in a 4-floor building applies a +10.5% high-rise bonus without validating floor <= totalFloors.",
++    "expected_condition": "Missing required measurements (such as property area in a listing or invalid <=0/NaN area in valuation) must be explicitly flagged as malformed/invalid rather than silently substituted with 85 sqm or 30 sqm.",
++    "impact": "Violates Provenance Invariant 1 & Section 20.3 and Advanced Acceptance Gate 4 ('Invalid or missing inputs silently generate apparently valid valuation results').",
++    "affected_workflows": [
++      "NLP Listing Spec Extraction",
++      "Neighborhood Market Price Aggregation",
++      "Hedonic Property Valuation"
++    ],
++    "confidence": "HIGH",
++    "recommended_action": "Track whether sqm was explicitly extracted in extractListingSpecsFromText (rejecting listings with missing sqm in evalSample as malformedSampleCount++), and validate sqm > 0 and floor <= totalFloors in calculateHedonicValuation.",
++    "verification_method": "Adversarial runtime probe via npx tsx testing zero/negative/NaN sqm, floor > totalFloors, and descriptions without meterage."
++  }
++]
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-COMMAND-EVIDENCE.md	2026-11-08 20:54:05.212861314 +0000
+@@ -0,0 +1,297 @@
++# WS-A1-V — Independent Command Execution & Raw Test Evidence (`E1`)
++
++**Workstream ID:** `WS-A1-V`  
++**Environment:** Linux container (`/app/applet`), Node.js `v22.23.2`, NPM `10.9.8`  
++**Verification Principle:** Every command below was directly executed during the `WS-A1-V` forensic verification session. Zero test outputs or exit codes are assumed or copied from prior reports.
++
++---
++
++## Command 1: Workspace State, Archive, and Cryptographic Checksum Audit
++
++- **Exact Command:**
++  ```bash
++  node -e '... [forensic filesystem & SHA-256 verification script] ...' && python3 -c '... [zipfile integrity & 1,167-entry SHA-256 comparison] ...'
++  ```
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:24:22-08:00` (`2026-11-08T20:24:22Z`)
++- **Exit Code:** `0`
++- **Observed Output Summary:**
++  ```text
++  === ENVIRONMENT & STATE ===
++  CWD: /app/applet
++  Node: v22.23.2
++  Platform: linux x64
++  .git exists: false
++  package-lock.json exists: false
++  node_modules exists: true
++  dist exists: true
++  WS-A1-V dir exists: false
++
++  === PINNED GOVERNANCE FILES ===
++  docs/engineering/RMEP-001/MASTER-PROMPT.md | lines: 653 | sha256: de446dbcf3e351e845c6c07708a316dc7f3bb06d8e1a2267d62655195e728b51 | manifestMatch: true
++  docs/engineering/RMEP-001/EXECUTION-STATE.json | lines: 186 | sha256: 0de3b7e480a569a7ac084b9d18c7d4d717c81239a006569ac8cf9ce3b9ebaa33 | manifestMatch: true
++  AGENTS.md | lines: 62 | sha256: d55579b0fb78390cd59c8719f70147f99ca12ca5b32333cb1598762d50f36413 | manifestMatch: true
++  ARCHITECTURE.md | lines: 123 | sha256: 7b55f44195f18e674d623b9de63c8b2c99fd9de2ba528661f2ff8cd073aa686e | manifestMatch: true
++  architecture-baseline.json | lines: 42 | sha256: d8f29faaa7695dd6ef31d0c19bc636e1ba67f31279efdaef4a5ff59d65d4f6a4 | manifestMatch: true
++
++  === MANIFEST CHANGED FILES VERIFICATION (8/8) ===
++  src/data/realMarketPriceAggregator.ts | lines: 290 | exactMatch: true
++  src/components/NeighborhoodInspectorDrawer.tsx | lines: 249 | exactMatch: true
++  src/components/NeighborhoodInspectorTabs.tsx | lines: 284 | exactMatch: true
++  src/components/views/ProductIntelligenceView.tsx | lines: 266 | exactMatch: true
++  src/components/CompareModal.tsx | lines: 255 | exactMatch: true
++  tests/real-market-price-aggregator.test.ts | lines: 214 | exactMatch: true
++  docs/AUTONOMOUS-ENGINEERING-PROGRESS.md | lines: 437 | exactMatch: true
++  docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md | lines: 65 | exactMatch: true
++
++  === ZIP ARCHIVE VERIFICATION ===
++  public/radar-g4a-ws-a1-handoff.zip | size: 5840158 | sha256: e4e23ec43839fbe96e76c2898ace524cf9bf73b0132bfa7b1ff6f079bef831b2
++  ZIP testzip() result (None = OK): None
++  Total entries in ZIP: 1167
++  Forbidden entries in ZIP: 0 []
++  ZIP vs Live Workspace Mismatches: 0 []
++  ```
++- **What This Command Proves:** Confirms 100% cryptographic consistency between `public/radar-g4a-ws-a1-handoff.zip`, the 8 files listed in `WS-G4A-A1-MANIFEST.json`, the 5 pinned governance files, and the live workspace.
++- **What This Command Does NOT Prove:** Does not prove that the code inside those files satisfies the domain/statistical requirements or that `WS-G4A-A1.patch` and `WS-G4A-A1-EXECUTION-REPORT.md` accurately describe the code.
++
++---
++
++## Command 2: Patch Hunk Applicability Audit (`docs/engineering/WS-G4A-A1.patch`)
++
++- **Exact Command:**
++  ```bash
++  node -e '... [hunk-by-hunk "+" line verification of docs/engineering/WS-G4A-A1.patch against live files] ...'
++  ```
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:27:05-08:00` (`2026-11-08T20:27:05Z`)
++- **Exit Code:** `0`
++- **Observed Output:**
++  ```text
++  Patch target: src/data/realMarketPriceAggregator.ts | +lines: 13 | matched in actual file: 8 | missing: 5
++    Missing +line: +  dataSourceType: 'OBSERVED_MARKET_SAMPLE' | 'SPARSE_OBSERVED_SAMPLE' | 'REFERENCE_PROFILE_NO_OBSERVED_SAMPLES';
++    Missing +line: +  confidenceLevel: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH';
++    Missing +line: +  exclusionReason: 'NONE' | 'INVALID_PRICE_OR_AREA' | 'EXTREME_PRICE_ANOMALY_FILTER' | 'OUTLIER_ROBUST_MAD_BAND';
++  Patch target: src/components/NeighborhoodInspectorDrawer.tsx | +lines: 4 | matched in actual file: 0 | missing: 4
++  Patch target: src/components/NeighborhoodInspectorTabs.tsx | +lines: 8 | matched in actual file: 2 | missing: 6
++  Patch target: src/components/views/ProductIntelligenceView.tsx | +lines: 2 | matched in actual file: 0 | missing: 2
++  Patch target: src/components/CompareModal.tsx | +lines: 3 | matched in actual file: 3 | missing: 0
++  ```
++- **What This Command Proves:** Proves `F-A1V-02` (`CRITICAL`): `docs/engineering/WS-G4A-A1.patch` was manually fabricated and does not match the actual lines of 4 of its 5 target files.
++
++---
++
++## Command 3: TypeScript Static Type Verification (`npm run lint`)
++
++- **Exact Command:** `npm run lint` (`tsc --noEmit`)
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:27:49-08:00` (`2026-11-08T20:27:49Z`)
++- **Exit Code:** `0`
++- **Observed Output:**
++  ```text
++  > radar-tehran@2.6.0 lint
++  > tsc --noEmit
++  ```
++- **What This Command Proves:** Zero TypeScript compilation or type-contract errors across all `.ts` and `.tsx` files.
++
++---
++
++## Command 4: Architectural Ratchet & Dependency Direction (`npm run arch:check`)
++
++- **Exact Command:** `npm run arch:check` (`tsx scripts/check-architecture.ts`)
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:27:49-08:00` (`2026-11-08T20:27:49Z`)
++- **Exit Code:** `0`
++- **Observed Output:**
++  ```text
++  > radar-tehran@2.6.0 arch:check
++  > tsx scripts/check-architecture.ts
++
++  ======================================================================
++  🏗️  ARCHITECTURE & MODULE BOUNDARY REPORT
++  ======================================================================
++  Total source files scanned : 284
++  Tracked legacy monoliths   : 1
++  Files in warning zone (>300): 0
++  Architecture errors        : 0
++
++  📊 Tracked Legacy Files (Ratchet Status):
++    - src/App.tsx: 64 / 185 lines (121 lines below ceiling)
++
++  ✅ Architecture check passed! All module boundaries and line-count ratchets are respected.
++  ```
++- **What This Command Proves:** All 284 source files are `<= 300` lines and respect strict unidirectional dependency boundaries.
++
++---
++
++## Command 5: Market Aggregator Unit Test (`npx tsx tests/real-market-price-aggregator.test.ts`)
++
++- **Exact Command:** `npx tsx tests/real-market-price-aggregator.test.ts`
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:27:49-08:00` (`2026-11-08T20:27:49Z`)
++- **Exit Code:** `0`
++- **Observed Output:**
++  ```text
++  🧪 Running Real Market Price Aggregator & Persian NLP Suite...
++  ✅ All Real Market Price Aggregator & Epistemic Contract tests passed!
++  ```
++- **What This Command Proves:** Existing assertions in `tests/real-market-price-aggregator.test.ts` pass.
++- **What This Command Does NOT Prove:** Does not test duplicate listing sensitivity, missing-sqm `85` imputation, or `confidenceScore` monotonicity (`74` on `0` samples vs `71` on `3` samples).
++
++---
++
++## Command 6: Verification of Claimed `tests/hedonic-pricing-engine.test.ts`
++
++- **Exact Command:** `npx tsx tests/hedonic-pricing-engine.test.ts`
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:27:49-08:00` (`2026-11-08T20:27:49Z`)
++- **Exit Code:** `1`
++- **Observed Output:**
++  ```text
++  node:internal/modules/run_main:107
++      triggerUncaughtException(
++      ^
++  Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/app/applet/tests/hedonic-pricing-engine.test.ts'
++  ```
++- **What This Command Proves:** Confirms `F-A1V-06` (`LOW`): the filename `hedonic-pricing-engine.test.ts` cited in the previous handoff's Deliverable 5 prose does not exist in `/tests`.
++
++---
++
++## Command 7: Full Unit, Contract, and Static Firestore Rules Suites
++
++- **Exact Command:** `npm run test:unit && npm run test:contracts && npm run test:rules:static`
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:28:12-08:00` (`2026-11-08T20:28:12Z`)
++- **Exit Code:** `0`
++- **Observed Output Summary:**
++  - `npm run test:unit`: Executed all 26 unit test files defined in `package.json` line 23 (`pricing-engine-integrity.test.ts`, `real-market-price-aggregator.test.ts`, `hedonic-and-627-debug.test.ts`, `assess-004-hedonic-accuracy-benchmark.test.ts`, `valuation-trace-and-comparables.test.ts`, `model-governance-and-drift.test.ts`, etc.). All 26 suites exited `0`.
++  - `npm run test:contracts`: Executed `tsx tests/engineering-quality-foundation.test.ts`, exited `0` (`ALL P0-P15 + ASSESS-004 + RMEP-001 GATES PASSED`).
++  - `npm run test:rules:static`: Executed `tsx scripts/run-firestore-rules-tests.ts static`, exited `0` (`13/13 static checks passed`, `9/9 data integrity checks passed`).
++
++---
++
++## Command 8: Isolated Production Build Verification
++
++- **Exact Command:** `npx vite build --outDir /tmp/ws-a1-v-dist && rm -rf /tmp/ws-a1-v-dist`
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:28:53-08:00` (`2026-11-08T20:28:53Z`)
++- **Exit Code:** `0`
++- **Observed Output Summary:**
++  ```text
++  vite v6.4.1 building for production...
++  ✓ 2220 modules transformed.
++  ✓ built in 12.51s
++  ```
++- **Why `--outDir /tmp/ws-a1-v-dist` Was Used:** Calling `npm run build` runs `tsx scripts/generate-seo-assets.ts && vite build`, which overwrites tracked files in `dist/`, `public/sitemap.xml`, and `public/robots.txt`. Using `--outDir /tmp/ws-a1-v-dist` verified full production compilation while preserving 100% read-only workspace integrity.
++
++---
++
++## Command 9: Live Headless Browser Verification (`playwright-cli`)
++
++- **Exact Commands:**
++  ```bash
++  playwright-cli open "http://localhost:3000/?hood=5&compare=5-14"
++  playwright-cli eval "() => ({ title: document.title, bodyTextSample: document.body.innerText.slice(0, 3000) })"
++  playwright-cli console
++  playwright-cli open "http://localhost:3000/?hood=5&view=intelligence"
++  playwright-cli eval "() => ({ bodyText: document.body.innerText.slice(0, 3500) })"
++  playwright-cli close
++  ```
++- **Working Directory:** `/app/applet`
++- **Timestamp:** `2026-11-08T12:29:47-08:00` (`2026-11-08T20:29:47Z`)
++- **Exit Code:** `0`
++- **Observed Output Summary:**
++  - Console errors: `0` (`Errors: 0, Warnings: 0`).
++  - At `?hood=5&compare=5-14`:
++    - `NeighborhoodInspectorDrawer` rendered: `منشا داده: تخمین ترکیبی (نمونه محدود: ۲ آگهی)` and `شاخص پوشش شواهد: ۵۲/۱۰۰ (پوشش محدود)`.
++    - `CompareModal` rendered simultaneously for Punak (`پونک`): `پروفایل مرجع (۰ آگهی)` — directly confirming `F-A1V-04` (`CompareModal.tsx:8` passes `[]`).
++  - At `?hood=5&view=intelligence`:
++    - `ProductIntelligenceView` rendered for Punak (`پونک`): `منشا داده: پروفایل مرجع (۰ آگهی مستقیم)`, `تخمین قیمت قطعی معاملات (مدل v6.4)`, `بازه معتبر آماری محله (IQR): 131.3 تا 154.3 م.ت`, and `جایگاه معامله قطعی: صدک 56 محله` — directly confirming `F-A1V-03` and `F-A1V-04`.
++
++---
++
++## Command 10: In-Memory Adversarial, Metamorphic, and Reproducibility Probes (`npx tsx -e`)
++
++- **Exact Commands:**
++  1. `npx tsx -e '... [calculateHedonicValuation, buildReproducibleValuationTrace, verifyValuationTraceReproducibility, and step-discontinuity probes] ...'` (Timestamp: `2026-11-08T12:45:46-08:00`, Exit Code: `0`)
++  2. `npx tsx -e '... [aggregateNeighborhoodMarketMetrics order invariance, duplicate sensitivity, missing-sqm imputation, and N=0/2/3 confidence probes] ...'` (Timestamp: `2026-11-08T12:48:57-08:00`, Exit Code: `0`)
++- **Observed Output:**
++  ```json
++  {
++    "REPRODUCIBILITY": {
++      "hedonicEqual": true,
++      "hedonicPerSqm": 141,
++      "hedonicTotalMillion": 14100,
++      "fastSaleTotalMillion": 12408,
++      "sensitivityRangeMillion": { "min": 13607, "max": 14593 },
++      "traceDigest": "trc_8a53657653fff790",
++      "traceVerified": { "reproducible": true, "reason": "REPRODUCIBLE_EXACT" }
++    },
++    "ADVERSARIAL_HEDONIC": {
++      "zeroSqm": { "clampedSqm": 30.000000000000004, "totalM": 4446, "perSqm": 148.2 },
++      "negSqm": { "clampedSqm": 30.000000000000004, "totalM": 4446 },
++      "nanSqm": { "clampedSqm": 85, "totalM": 12121 },
++      "extremeSqm": { "clampedSqm": 600, "totalM": 82140 },
++      "futureBuildYear1450": { "ageImpact": 6.5 },
++      "floor20In4FloorBldg": { "floorImpact": 10.5 },
++      "missingHoodPriceZero": { "fallbackBasePerSqm": 120, "totalM": 12050 }
++    },
++    "METAMORPHIC_AGGREGATOR": {
++      "orderInvariant": true,
++      "sameIdDup": {
++        "observedSampleCount": 5,
++        "eligibleObservedCount": 5,
++        "evidenceIndexScore": 77,
++        "confidenceScore": 77,
++        "evidenceQuality": "MODERATE_OBSERVATIONS"
++      },
++      "noSqmInDesc": {
++        "observedSampleCount": 3,
++        "eligibleObservedCount": 3,
++        "malformedSampleCount": 0,
++        "observedMeanPerSqm": 183.2,
++        "autoBargains": []
++      },
++      "zeroSamples": {
++        "observedSampleCount": 0,
++        "sampleCount": 12,
++        "validSampleCount": 12,
++        "confidenceScore": 74,
++        "evidenceIndexScore": 0,
++        "iqrLow": 131.3,
++        "iqrHigh": 154.3,
++        "dayAnchorPrice": 140.4,
++        "autoBargainsCount": 3
++      },
++      "twoSamples": {
++        "observedSampleCount": 2,
++        "sampleCount": 12,
++        "validSampleCount": 12,
++        "confidenceScore": 74,
++        "evidenceIndexScore": 52,
++        "iqrLow": 131.3,
++        "iqrHigh": 154.3,
++        "dayAnchorPrice": 137.7,
++        "autoBargainsCount": 3
++      },
++      "threeSamples": {
++        "observedSampleCount": 3,
++        "sampleCount": 3,
++        "validSampleCount": 3,
++        "confidenceScore": 71,
++        "evidenceIndexScore": 71,
++        "iqrLow": 132.5,
++        "iqrHigh": 135.2,
++        "dayAnchorPrice": 137.7,
++        "unclampedAveragePerSqm": 134.1,
++        "isAnchorClamped": true
++      }
++    }
++  }
++  ```
++
++---
++
++## Tests Not Executed & Exact Reasons
++
++1. **Live Firestore Emulator Rules Suite (`npm run test:rules` / `firebase emulators:exec`):** Not executed because starting the Java Firestore emulator daemon in read-only audit mode is unnecessary when `npm run test:rules:static` (`exit 0`) verified that zero Firestore rules or schemas were touched in `WS-A1`.
++2. **Full E2E/Smoke/Mutation/Stress Suites (`npm run test:e2e`, `npm run test:mutation`, `tests/stress-50-cycles.test.ts`):** Live browser interaction on the exact affected routes (`?hood=5`, `?hood=5&compare=5-14`, `?hood=5&view=intelligence`) was executed directly via `playwright-cli` (`Command 9`), and all 26 unit test suites + contract suites were executed (`Command 7`).
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-ARTIFACT-RECONCILIATION.md	2026-11-08 20:54:06.085709429 +0000
+@@ -0,0 +1,72 @@
++# WS-A1-V — Forensic Artifact, Checksum, Manifest, Patch & ZIP Reconciliation
++
++**Workstream ID:** `WS-A1-V`  
++**Verification Date:** `2026-11-08T20:49:00Z`  
++**Evidence Level:** `E1` (Direct Execution), `E3` (Cryptographic & Archive Inspection), `E4` (Filesystem Timestamp Forensics)
++
++---
++
++## 1. ZIP Archive Forensic Verification (`public/radar-g4a-ws-a1-handoff.zip`)
++
++| Property | Observed Value | Status |
++|---|---|---|
++| **Archive File Path** | `/app/applet/public/radar-g4a-ws-a1-handoff.zip` | **VERIFIED** |
++| **Exact Byte Size** | `5,840,158` bytes (`5.57 MB`) | **VERIFIED** (Matches reported `5,840,158` bytes) |
++| **Actual SHA-256 Checksum** | `e4e23ec43839fbe96e76c2898ace524cf9bf73b0132bfa7b1ff6f079bef831b2` | **VERIFIED** (100% match with reported SHA-256) |
++| **Archive Structural Integrity (`zipfile.testzip()`)** | `None` (Zero corrupted headers or CRC errors) | **VERIFIED** |
++| **Total File Entries** | `1,167` files | **VERIFIED** |
++| **Forbidden Entries (`.env`, `.runtime-config.json`, `.cache-data.json`, `node_modules/`, `.git/`)** | `0` (`[]`) | **VERIFIED** (Clean supply-chain archive) |
++| **SHA-256 Match Against Live Workspace (`/app/applet`)** | **`1,167 / 1,167` files match 100% (`0` mismatches)** | **VERIFIED** |
++
++---
++
++## 2. Reconciliation of the 9-vs-8 Changed-File Discrepancy (`E3` + `E4`)
++
++Section 11.2 of the `WS-A1-V` verification specification required resolving why earlier context noted **9 modified files** while `docs/engineering/WS-G4A-A1-MANIFEST.json` listed **8 changed files**.
++
++Filesystem modification timestamp (`fs.statSync().mtime`) forensics across `/app/applet` reconstructed the exact sequence of events on `2026-11-08`:
++
++| Order | File Path | Last Modified (`UTC`) | Phase / Event Classification | Listed in `WS-G4A-A1-MANIFEST.json`? |
++|---|---|---|---|---|
++| 1 | `src/components/HedonicValuationResultsColumn.tsx` | `20:01:23.095Z` | Reverted after pre-audit edit | No (Reverted) |
++| 2 | `src/data/neighborhoods.ts` | `20:01:41.551Z` | Reverted after pre-audit edit | No (Reverted) |
++| 3 | `src/components/useEvaluatedNeighborhoods.ts` | `20:02:13.842Z` | Reverted after pre-audit edit | No (Reverted) |
++| 4 | `src/components/OnboardingWizardModal.tsx` | `20:02:19.013Z` | Reverted after pre-audit edit | No (Reverted) |
++| 5 | `src/components/MapLegend.tsx` | `20:02:23.702Z` | Reverted after pre-audit edit | No (Reverted) |
++| 6 | **`src/data/hedonicPricingEngine.ts`** | **`20:10:45.841Z`** | **9th File Modified in `WS-A1` Window:** Re-edited to restore `sensitivityRangeMillion` after the `20:01Z` revert broke `valuationTraceAndComparables.ts` (`TS2339`). | **NO (Omitted — explains 9-vs-8 discrepancy)** |
++| 7 | `src/data/realMarketPriceAggregator.ts` | `20:12:41.326Z` | `WS-A1` Implementation (1 of 8) | **Yes (`#1`)** |
++| 8 | `src/components/NeighborhoodInspectorDrawer.tsx` | `20:13:20.436Z` | `WS-A1` Implementation (2 of 8) | **Yes (`#2`)** |
++| 9 | `src/components/NeighborhoodInspectorTabs.tsx` | `20:13:45.417Z` | `WS-A1` Implementation (3 of 8) | **Yes (`#3`)** |
++| 10 | `src/components/views/ProductIntelligenceView.tsx` | `20:14:04.228Z` | `WS-A1` Implementation (4 of 8) | **Yes (`#4`)** |
++| 11 | `src/components/CompareModal.tsx` | `20:14:20.517Z` | `WS-A1` Implementation (5 of 8) | **Yes (`#5`)** |
++| 12 | `tests/real-market-price-aggregator.test.ts` | `20:14:53.038Z` | `WS-A1` Implementation (6 of 8) | **Yes (`#6`)** |
++| 13 | `docs/AUTONOMOUS-ENGINEERING-PROGRESS.md` | `20:15:39.293Z` | `WS-A1` Documentation (7 of 8) | **Yes (`#7`)** |
++| 14 | `docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md` | `20:15:40.708Z` | `WS-A1` Documentation (8 of 8) | **Yes (`#8`)** |
++| 15 | `public/ws-g4a-a1-inspector-provenance.png` | `20:18:10.313Z` | Handoff Screenshot Artifact | No (Omitted from `changedFiles`) |
++| 16 | `public/ws-g4a-a1-market-tab.png` | `20:18:45.672Z` | Handoff Screenshot Artifact | No (Omitted from `changedFiles`) |
++| 17 | `docs/engineering/WS-G4A-A1.patch` | `20:19:40.317Z` | Handoff Patch Artifact | No (Omitted from `changedFiles`) |
++| 18 | `docs/engineering/WS-G4A-A1-MANIFEST.json` | `20:19:40.317Z` | Handoff Manifest Artifact | Self |
++
++**Forensic Conclusion on 9-vs-8:** `src/data/hedonicPricingEngine.ts` (SHA-256 `65a712b473381ea78a519dc868a4e4b2876cedc9bc98b9f395d7ed867e76f85e`, 270 lines) is the exact 9th file modified during the `WS-A1` execution window (`20:10:45.841Z`). All 8 files listed in `WS-G4A-A1-MANIFEST.json` match their recorded SHA-256 hashes 100%.
++
++---
++
++## 3. Forensic Hunk Audit of `docs/engineering/WS-G4A-A1.patch` (`F-A1V-02`)
++
++`docs/engineering/WS-G4A-A1.patch` (98 lines, SHA-256 `258601fe60da66f11c836716575c375b9343ddb7615f219f62f03dde0f7336d0`) was inspected line by line against the live workspace files:
++
++1. **Hunk 1 (`src/data/realMarketPriceAggregator.ts`, patch lines 1–39):**
++   - Claims `@@ -20,14 +20,28 @@` adds `dataSourceType: 'OBSERVED_MARKET_SAMPLE' | 'SPARSE_OBSERVED_SAMPLE' | 'REFERENCE_PROFILE_NO_OBSERVED_SAMPLES'`, `confidenceLevel: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH'`, and `exclusionReason: 'NONE' | 'INVALID_PRICE_OR_AREA' | 'EXTREME_PRICE_ANOMALY_FILTER' | 'OUTLIER_ROBUST_MAD_BAND'`.
++   - **Actual File (`src/data/realMarketPriceAggregator.ts:20-34`):** Contains `EvidenceQualityState`, `SampleCoverageState`, and `AggregatedMarketMetrics` without `dataSourceType`, `confidenceLevel`, or `OUTLIER_ROBUST_MAD_BAND`. **5 of 13 `+` lines do not exist in the file.**
++2. **Hunk 2 (`src/components/NeighborhoodInspectorDrawer.tsx`, patch lines 40–55):**
++   - Claims `@@ -160,8 +160,14 @@` adds `agg.observedSampleCount === 0 ? 'پروفایل مرجع (بدون نمونه مشاهده‌شده)' ...` and `شاخص پوشش شواهد: {agg.evidenceIndexScore}/۱۰۰`.
++   - **Actual File (`src/components/NeighborhoodInspectorDrawer.tsx:86-99`):** Uses `hoodAggMetrics.` (not `agg.`) at lines 86–99 (not line 160), and formats Persian digits via `toPersianDigits(hoodAggMetrics.evidenceIndexScore)`. **0 of 4 `+` lines match the file.**
++3. **Hunk 3 (`src/components/NeighborhoodInspectorTabs.tsx`, patch lines 56–74):**
++   - Claims `@@ -85,10 +85,18 @@` inside `if (tab === 'market')`.
++   - **Actual File (`src/components/NeighborhoodInspectorTabs.tsx:183-220`):** Uses `if (activeTab === 'market')` at line 183 (not `tab === 'market'` at line 85). **Only 2 of 8 `+` lines match the file.**
++4. **Hunk 4 (`src/components/views/ProductIntelligenceView.tsx`, patch lines 75–85):**
++   - Claims `@@ -115,7 +115,7 @@` replaces `desc:` and `badge:` object properties.
++   - **Actual File (`src/components/views/ProductIntelligenceView.tsx`):** Does not contain those `desc:` or `badge:` strings at all. **0 of 2 `+` lines match the file.**
++5. **Hunk 5 (`src/components/CompareModal.tsx`, patch lines 86–98):**
++   - **Actual File (`src/components/CompareModal.tsx:78-84`):** **3 of 3 `+` lines match the file**, though line numbers in the hunk header (`@@ -75,6 +75,9 @@`) are approximate.
++6. **Omitted Files:** `tests/real-market-price-aggregator.test.ts`, `docs/AUTONOMOUS-ENGINEERING-PROGRESS.md`, `docs/engineering/WS-G4A-A1-EXECUTION-REPORT.md`, and `src/data/hedonicPricingEngine.ts` are completely absent from `WS-G4A-A1.patch`.
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-STATISTICAL-VALIDITY.md	2026-11-08 20:56:50.964687711 +0000
+@@ -0,0 +1,120 @@
++# WS-A1-V — Deliverable 7: Statistical and Scientific Validity of the Valuation System
++
++**Workstream ID:** `WS-A1-V` (Section 19 & Section 26 Deliverable 7)  
++**Inspected Modules:** `src/data/hedonicPricingEngine.ts`, `src/data/realMarketPriceAggregator.ts`, `src/data/valuationTraceAndComparables.ts`, `src/data/neighborhoods.ts`, `tests/assess-004-hedonic-accuracy-benchmark.test.ts`  
++**Evidence Level:** `E1` (Runtime Probes), `E2` (Static Source Inspection)
++
++---
++
++## 1. Actual Model Classification (Section 19.1)
++
++Direct inspection of `src/data/hedonicPricingEngine.ts` (270 lines) and `src/data/realMarketPriceAggregator.ts` (290 lines) establishes that the system is **NOT** a classical econometric hedonic regression model, linear statistical model, or machine-learning prediction model fitted to empirical transaction data.
++
++- **Exact Classification:**
++  1. **`calculateHedonicValuation` (`src/data/hedonicPricingEngine.ts:95-269`):** A **manually configured, deterministic rule-based piecewise adjustment formula** anchored to a static neighborhood asking-price reference table (`buyPerSqm` and `rahn80m` in `src/data/neighborhoods.ts` and `src/data/multiCityData.ts`).
++  2. **`aggregateNeighborhoodMarketMetrics` (`src/data/realMarketPriceAggregator.ts:243-276`):** A **hybrid heuristic-normalization and synthetic-bootstrap aggregation engine** that divides listing asking prices by a rule-based quality multiplier (`computeQualityMultiplier`), falls back to 12 Mulberry32 PRNG synthetic listings when `observedEvaluated.length < 3`, clamps the resulting mean within `±3%` of a static daily anchor (`dayAnchorPrice`), and multiplies by a fixed regime factor (`0.90`, `0.93`, or `0.975`) to produce `estimatedDealPricePerSqm`.
++
++---
++
++## 2. Methodology Reconstruction (Section 19.1)
++
++| Component | `calculateHedonicValuation` (`hedonicPricingEngine.ts`) | `aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts`) |
++|---|---|---|
++| **Dependent Variable / Target** | `hedonicPerSqm` (Million Toman / $\text{m}^2$) and `hedonicTotalMillion` (Million Toman) | `hedonicAdjustedPerSqm` / `askingPricePerSqm` (`dayAnchorPrice`) and `estimatedDealPricePerSqm` |
++| **Baseline Anchor** | `hoodBasePerSqm = max(15, hood.baseBuyPerSqm ?? hood.buyPerSqm)` (`line 98`) | `baseHoodPerSqm` passed by caller (`line 244`) |
++| **Independent Variables / Inputs** | `sqm`, `buildYear` (converted to `buildingAge = currentJalaliYear - buildYear`), `floor`, `totalFloors`, `hasElevator`, `hasParking`, `hasStorage`, `renovationStatus`, `sellerAskingTotalMillion` | Array of `{ id, askingTotalMillion, description, yearOrAge }` parsed via regex (`extractListingSpecsFromText`) into `sqm`, `floor`, `totalFloors`, `age`, `hasParking`, `hasElevator`, `hasStorage`, `renovationStatus`, `detectedSignals` |
++| **Feature Transformations & Weights** | Piecewise additive percentage adjustments (`ageImpact`, `effectiveRenoImpact`, `floorImpact`, `sqmImpact`, `amenitiesImpact`) summed into `rawNetAdjustment` and clamped to `[-38%, +45%]` (`line 206`). | Multiplicative/additive `computeQualityMultiplier` (`lines 209-226`) clamped to `[0.68, 1.32]`; `normPerSqm = rawPerSqm / max(0.68, qMult)` (`line 252`). |
++| **Interactions** | Age × Renovation (`age > 8` boosts renovation weight by `1.35x`, `age <= 2` scales by `0.35x`, `line 135`); Floor × Elevator (`floor >= 3 && !hasElevator` applies walk-up penalty `-3.5% * (floor - 1)` in `realMarketPriceAggregator.ts:216` vs `-3.8% - (floor - 3)*4.2%` in `hedonicPricingEngine.ts:148`). | In `computeQualityMultiplier`, `hasLegalRisk` multiplies the entire multiplier by `0.88` (`line 222`) and `hasTenantLag` by `0.96` (`line 224`). |
++| **Prediction Formula** | $\text{hedonicPerSqm} = \text{round}_{0.1}\!\left(\text{hoodBasePerSqm} \times \left(1 + \frac{\text{clamp}(\sum \Delta_i, -38, +45)}{100}\right)\right)$ | $\text{dayAnchorPrice} = \text{clamp}(\text{rawAveragePerSqm}, 0.97 A, 1.03 A)$; $\text{dealPerSqm} = \text{dayAnchorPrice} \times r_{\text{regime}}$ |
++| **Fast-Sale / Liquidity Factor** | `FAST_SALE_FACTOR = 0.88` (`fastSaleTotalMillion = round(hedonicTotalMillion * 0.88)`, `line 209`). | Not computed; uses `askToDealRatio` (`0.975`, `0.93`, `0.90`, `line 270`). |
++| **Geographic & Temporal Scope** | 5 Iranian cities (Tehran, Karaj, Isfahan, Mashhad, Shiraz), 104 static neighborhood baselines (`BASELINE_DATASET_VERSION = '2026.10-5city-104hoods-v1'`); Solar Hijri year `1405`. | Same 104 neighborhood baselines; PRNG seed changes daily via `Math.floor(Date.now() / 86_400_000)`. |
++
++---
++
++## 3. Statistical Assumptions (Section 19.2)
++
++Because the implementation is a manually parameterized rule-based multiplier system rather than an Ordinary Least Squares (OLS) or spatial regression model, classical residual assumptions (homoscedasticity, Gaussian error terms) do not govern parameter estimation. Instead, the implementation implicitly relies on five structural assumptions:
++1. **Cross-City Elasticity Invariance (Violated in Practice):** The exact same percentage weights (e.g., `-7.5%` for no parking, `+6.5%` for `age === 0`, `-26%` land-value depreciation cap) are applied identically across luxury North Tehran (`Niavaran`, `265M/sqm` where land share exceeds `75%` of value) and southern zones or secondary cities (`Nazi-Abad`, `84M/sqm`), ignoring spatial heterogeneity in land-to-structure value ratios.
++2. **Additive Separability of Percentage Adjustments:** Apart from three hardcoded interaction rules (Age × Renovation, Floor × No-Elevator, Top-Floor × Old-Building), adjustments are summed linearly before clamping to `[-38%, +45%]`.
++3. **Parallel Formula Consistency Between Modules (Violated in Code):** `hedonicPricingEngine.ts` and `realMarketPriceAggregator.ts` (`computeQualityMultiplier`) define **different numerical coefficients for the same physical attributes**:
++   - No parking penalty: `-7.0%` in `hedonicPricingEngine.ts:181` vs `-7.5%` in `realMarketPriceAggregator.ts:218`.
++   - No storage penalty: `-1.8%` in `hedonicPricingEngine.ts:185` vs `-1.5%` in `realMarketPriceAggregator.ts:220`.
++   - Walk-up floor 4 without elevator: `-8.0%` in `hedonicPricingEngine.ts:148` vs `-10.5%` (`-0.035 * 3`) in `realMarketPriceAggregator.ts:216`.
++
++---
++
++## 4. Available Training-Data Evidence (Section 19.3)
++
++- **Status:** **`NONE` (No Training Dataset Exists)**.
++- All coefficients in `hedonicPricingEngine.ts` and `realMarketPriceAggregator.ts` and all neighborhood baseline prices in `src/data/neighborhoods.ts` and `src/data/multiCityData.ts` are hardcoded TypeScript constants. There is no training pipeline, no historical transaction table, no cross-validation split, and no parameter estimation script in the repository.
++
++---
++
++## 5. Validation Methodology (Section 19.3)
++
++Inspection of `tests/assess-004-hedonic-accuracy-benchmark.test.ts` (233 lines) and `tests/pricing-engine-integrity.test.ts` (16 lines) shows that existing automated validation consists exclusively of:
++1. **Axiomatic / Monotonic Invariant Checks:** Verifying that `Niavaran > Punak > Nazi-Abad`, `needs_renovation < standard < renovated < luxury_renovated`, 4th-floor walk-up `< 0.90x` elevator unit, age depreciation `>= -26.0%`, and `fastSaleTotalMillion === Math.round(hedonicTotalMillion * 0.88)`.
++2. **Regex NLP Extraction Unit Cases:** 15 hardcoded Persian string parsing assertions in `verifyPricingEngineIntegrity()` (`realMarketPriceAggregator.ts:278-289`).
++- **Missing Validation:** Zero random holdout, temporal holdout, or spatial holdout validation against independent market observations.
++
++---
++
++## 6. Accuracy Evidence (Section 19.4)
++
++- **Predictive Accuracy Classification:** **`NOT VERIFIABLE`**.
++- Because no reference dataset of verified property transactions exists in the repository, out-of-sample error metrics (MAE, MedAE, RMSE, MAPE, MedAPE, prediction interval coverage) **cannot be computed honestly**. Per Section 19.4 (*"Do not calculate performance metrics without valid reference observations. Do not fabricate accuracy values. If no reliable ground-truth dataset is available, classify predictive accuracy as NOT VERIFIABLE"*), predictive accuracy is formally classified as **`NOT VERIFIABLE`**.
++
++---
++
++## 7. Geographic Validity (Section 19.6)
++
++- **Granularity:** Coarse neighborhood-level centroids (`104` neighborhoods across 5 cities). Intra-neighborhood micro-location variance (e.g., main boulevard vs. narrow dead-end alley `< 6m`, proximity to highway noise or fault lines) is not modeled in `calculateHedonicValuation`.
++- **Spatial Extrapolation (`applySpatialGrowthFallback`, `realMarketPriceAggregator.ts:233-241`):** Uses inverse-distance-squared weighting ($w = 1 / \max(0.3, d_{\text{km}})^2$) up to `12 km` across neighborhood centroids. In Tehran, a `12 km` radius spans across socioeconomic regimes (e.g., District 1 to District 8/14), creating spatial smoothing distortion when growth rates are interpolated.
++
++---
++
++## 8. Temporal Validity (Section 19.6)
++
++- **Static Anchors + Hardcoded `±3%` Daily Clamp:** In `realMarketPriceAggregator.ts:268`, `dayAnchorPrice` is clamped to `[anchor * 0.97, anchor * 1.03]` where `anchor` defaults to the static `baseHoodPerSqm` constant. Even when `3+` fresh observed listings exist with an average `15%` above or below the static baseline (`unclampedAveragePerSqm = 134.1` vs `142` in our `E1` probe), `dayAnchorPrice` is prevented from moving beyond `137.7` (`-3%`). During Iranian macroeconomic regime shifts or currency shocks, this `±3%` clamp forces the aggregator to lag reality unless `previousDayAnchorPrice` is iteratively chained across days.
++
++---
++
++## 9. Market Observation Quality & Asking-vs-Transaction Distinction (Section 19.5)
++
++- **Source Population:** All ingested samples (`hood.bargains` and Divar text descriptions) represent **unverified secondary-market asking prices (قیمت‌های پیشنهادی آگهی)**, not completed transactions (معاملات قطعی ثبت‌شده).
++- **Distortion Mechanisms Identified (`E1`, `E2`):**
++  1. **Synthetic Bootstrap Contamination (`realMarketPriceAggregator.ts:260-264`):** When `observedEvaluated.length < 3`, 12 PRNG synthetic samples (`boot-*`) are generated and mixed into `evaluated` and `autoBargains`.
++  2. **Zero Deduplication (`F-A1V-07`):** Reposted or duplicated listings are counted as independent observations, inflating `observedSampleCount` and `evidenceIndexScore`.
++  3. **Heuristic Deal-Price Multiplier (`realMarketPriceAggregator.ts:270`):** `dealPerSqm` is computed by multiplying `dayAnchorPrice` by `0.975` (`HOT`), `0.93` (`BALANCED`), or `0.90` (`FROZEN`). While `NeighborhoodInspectorTabs.tsx:214` discloses this as a hypothetical negotiation scenario, `ProductIntelligenceView.tsx:65, 116, 191` mislabels it as `تخمین قیمت قطعی معاملات (مدل v6.4)` and `جایگاه معامله قطعی`.
++
++---
++
++## 10. Uncertainty Representation (Section 19.7)
++
++- **Hedonic Valuation (`hedonicPricingEngine.ts:211-215`, `valuationTraceAndComparables.ts:109-114`):** Computes a deterministic `±3.5%` band (`sensitivityRangeMillion`) and explicitly sets `isStatisticalConfidenceInterval: false` with the Persian note: `'دامنه حساسیت ±۳.۵٪ بازه تلورانس مذاکره کارشناسی حول خروجی مدل هدونیک است و فاصله اطمینان آماری نیست.'`
++- **Market Aggregator (`realMarketPriceAggregator.ts:274`):** Exposes two competing indicators:
++  1. `evidenceIndexScore` (`0`, `35`, `52`, or `clamp(62 + 3*N, 65, 98)`) with `calibratedConfidencePct: null`.
++  2. Legacy `confidenceScore = isBootstrapped ? 74 : clampNumber(62 + validSampleCount * 3, 65, 98, 82)`.
++
++---
++
++## 11. Potential False Precision (Section 19.7)
++
++1. **Confidence Score Inversion (`F-A1V-03`, Verified via `E1`):** When `0` observed samples exist (`isBootstrapped = true`), `confidenceScore` is **`74`** and `validSampleCount` is **`12`**. When `3` real observed samples exist (`isBootstrapped = false`), `confidenceScore` drops to **`71`** (`62 + 3*3`) and `validSampleCount` is **`3`**.
++2. **PRNG-Derived IQR Bounds Displayed to One Decimal Place (`F-A1V-03`):** For Punak (`hood=5`) with `0` or `2` observed listings, `iqrLowPerSqm = 131.3` and `iqrHighPerSqm = 154.3` are computed from 12 PRNG synthetic samples and rendered in `NeighborhoodInspectorTabs.tsx:201` (`بازه منطقی محله: ۱۳۱.۳ – ۱۵۴.۳ م.ت`) and `ProductIntelligenceView.tsx:182` (`بازه معتبر آماری محله (IQR): 131.3 تا 154.3 م.ت`).
++
++---
++
++## 12. Feature Sensitivity & Step Discontinuities (Section 19.8)
++
++In-memory sensitivity probing (`E1`) of `calculateHedonicValuation` (`hedonicPricingEngine.ts:110-195`) identified piecewise threshold cliffs:
++- **Building Age Cliff at `age = 0` vs `age = 2`:** `age = 0` (`+6.5%`), `age = 1` (`+4.2%`), `age = 2` (`+1.5%`).
++- **Renovation Multiplier Jump at `age = 8` vs `age = 9` (`line 135`):** `ageFactorForReno` jumps discontinuously from `1.0` at `age = 8` to `1.35` at `age = 9` (a `+3.3%` jump on `luxury_renovated`).
++- **Walk-Up Penalty Activation at `floor = 3` (`line 148`):** Without an elevator, `floor = 2` has `-3.2%` amenity penalty (`line 183`), whereas `floor = 3` adds `-3.8%` floor penalty on top of `-3.2%` (`-7.0%` total), and `floor = 4` jumps to `-8.0% - 3.2% = -11.2%`.
++
++---
++
++## 13. Final Scientific-Validity Assessment
++
++- **`calculateHedonicValuation` (`hedonicPricingEngine.ts`):** **ACCEPTABLE AS AN EXPLICIT HEURISTIC DECISION-SUPPORT CALCULATOR** (provided invalid inputs `sqm <= 0` / `NaN` / `floor > totalFloors` are guarded), because it transparently discloses its deterministic factor weights and labels its `±3.5%` band as a non-statistical sensitivity tolerance. Its empirical predictive accuracy against real transactions is **`NOT VERIFIABLE`**.
++- **`aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts`):** **`SCIENTIFICALLY DEFECTIVE IN CURRENT STATE (REJECTED)`** due to PRNG synthetic contamination when `N < 3` (`F-A1V-03`), confidence-score inversion (`74` on `0` samples vs `71` on `3` samples), silent `85 sqm` imputation on missing area (`F-A1V-08`), zero deduplication (`F-A1V-07`), and `excludedOutlierCount` summation into `rejectedFraudCount`.
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-DATA-LINEAGE.md	2026-11-08 20:57:19.613348481 +0000
+@@ -0,0 +1,73 @@
++# WS-A1-V — Deliverable 8: End-to-End Data Provenance and Lineage Audit
++
++**Workstream ID:** `WS-A1-V` (Section 20 & Section 26 Deliverable 8)  
++**Evidence Level:** `E1` (Runtime Probes & Playwright DOM), `E2` (Static Source Inspection)
++
++---
++
++## 1. Source Inventory & Lifecycle Pipeline (Section 20)
++
++| Lifecycle Stage | Responsible Module(s) | Input Contract | Output Contract | Provenance Preservation Status |
++|---|---|---|---|---|
++| **1. Static Reference Source** | `src/data/neighborhoods.ts`, `src/data/multiCityData.ts`, `src/data/tehranCityRemainingHoods.ts`, `src/data/tehranCountiesHoods.ts` | Hardcoded TypeScript constants (`Neighborhood[]`) | `INITIAL_NEIGHBORHOODS` (`buyPerSqm`, `rahn80m`, `bargains[]`, `growth6m`, scores) | Baseline version tagged in `valuationTraceAndComparables.ts` (`2026.10-5city-104hoods-v1`), but individual `buyPerSqm` values carry no source citation or observation timestamp. |
++| **2. Ingestion & Text Parsing** | `src/data/realMarketPriceAggregator.ts` (`normalizePersianText`, `extractListingSpecsFromText`, `parseIranianPriceToMillionToman`) | Raw listing object `{ id, askingTotalMillion, description, yearOrAge }` | `ExtractedListingSpecs` (`sqm`, `floor`, `totalFloors`, `age`, amenities, `totalMillion`, `priceSourceType`) | **DEGRADED (`F-A1V-08`):** Missing `sqm`, `floor`, `age`, or amenities in `description` are silently replaced with defaults (`sqm=85`, `floor=2`, `age=10`, `hasParking=true`) without an `imputedFields` flag. |
++| **3. Validation & Anomaly Classification** | `src/data/realMarketPriceAggregator.ts` (`evalSample`, lines 248–259) | `ExtractedListingSpecs` + `baseHoodPerSqm` | `observedEvaluated[]`, `malformedSampleCount`, `suspectedFraudCount` | **DEGRADED (`F-A1V-03`):** Extreme price ratios (`< 0.42x` or `> 2.4x`) increment `suspectedFraudCount` (`FRAUD_SUSPECTED`) without multi-signal fraud verification. |
++| **4. Quality Normalization** | `src/data/realMarketPriceAggregator.ts` (`computeQualityMultiplier`, lines 209–226) | `ExtractedListingSpecs` + `baseHoodPerSqm` | `normPerSqm = rawPerSqm / max(0.68, qMult)` | Original `askingTotalMillion` and `perSqmMillion` are preserved on `AutoBargainSample`, while `normPerSqm` is stripped before returning `autoBargains`. |
++| **5. Aggregation & Synthetic Fallback** | `src/data/realMarketPriceAggregator.ts` (`aggregateNeighborhoodMarketMetrics`, lines 260–275) | `observedEvaluated[]` + `baseHoodPerSqm` | `AggregatedMarketMetrics` | **VIOLATED (`F-A1V-03`, `F-A1V-07`):** When `observedEvaluated.length < 3`, 12 PRNG synthetic samples overwrite `evaluated`, contaminating `sampleCount`, `validSampleCount`, `iqrLowPerSqm`, `iqrHighPerSqm`, and `autoBargains`. Duplicate inputs are not deduplicated. |
++| **6. Hedonic Estimation & Trace** | `src/data/hedonicPricingEngine.ts`, `src/data/valuationTraceAndComparables.ts` | `HedonicValuationInputs` / `ReproducibleValuationInputs` | `HedonicValuationResult` / `ValuationCalculationTrace` | **PRESERVED:** `buildReproducibleValuationTrace` records `traceId`, `reproducibilityDigest`, `formulaVersion: '2.4.0'`, inputs, applied coefficients, and `isStatisticalConfidenceInterval: false`. |
++| **7. UI Presentation** | `NeighborhoodInspectorDrawer.tsx`, `NeighborhoodInspectorTabs.tsx`, `ProductIntelligenceView.tsx`, `CompareModal.tsx`, `HedonicValuationResultsColumn.tsx` | `AggregatedMarketMetrics`, `HedonicValuationResult`, `EvaluatedNeighborhood` | Rendered RTL Persian DOM | **CONTRADICTORY ACROSS VIEWS (`F-A1V-04`):** Drawer passes `hood.bargains` (`2` samples for Punak), whereas `ProductIntelligenceView` and `CompareModal` pass `[]` (`0` samples for Punak). |
++
++---
++
++## 2. Representative Field-Level Lineage (Section 20.1)
++
++| Field | Origin | Intermediate Transformations | UI Representation | Can Origin Be Reconstructed? |
++|---|---|---|---|---|
++| **1. Property Price (`askingTotalMillion`)** | `hood.bargains[i].price` or user input `sellerAskingTotalMillion` | If `askingTotalMillion <= 0`, `evalSample` falls back to regex-parsed `specs.totalMillion` (`parseIranianPriceToMillionToman`, which adds tenant `rahn` if `کسر شده` is detected at `line 125`). | Displayed in Bargains list and Seller Price Evaluation card. | **Partially:** If tenant `rahn` was added via regex (`line 130`), the original unadjusted string price is overwritten. |
++| **2. Property Area (`sqm`)** | User input (`HedonicValuationInputs.sqm`) or regex extraction (`extractListingSpecsFromText`) | In `hedonicPricingEngine.ts:97`, clamped to `[30, 600]` (with `NaN -> 85`). In `extractListingSpecsFromText:137`, initialized to `85` if regex finds no match in `[35, 350]`. | Displayed in Hedonic calculator and bargain cards (`{b.sqm} متر`). | **No (`F-A1V-08`):** A bargain card or aggregation input with `sqm: 85` cannot be distinguished between an actual `85m²` apartment and a listing whose description omitted meterage. |
++| **3. Price per Square Meter (`perSqmMillion` / `hedonicAdjustedPerSqm`)** | Derived (`askingTotalMillion / sqm`) or `baseHoodPerSqm` | Divided by `computeQualityMultiplier` (`normPerSqm`), filtered by `[q1 - 1.5*iqr, q3 + 1.5*iqr]`, blended 50/50 with synthetic mean when `N in {1,2}`, and clamped to `[0.97*anchor, 1.03*anchor]` (`line 268`). | Displayed as `میانگین موزون هدونیک` (`NeighborhoodInspectorTabs.tsx:194`) and `میانگین قیمت موزون (تعدیل هدنیک)` (`ProductIntelligenceView.tsx:58`). | **No:** Due to the `±3%` anchor clamp (`line 268`) and 50/50 synthetic blend (`line 267`), the displayed value cannot be inverted back to the contributing listings. |
++| **4. Property Age (`buildingAge` / `age`)** | `buildYear` input or `resolveBuildingAge(yearOrAge, description)` | Converts Solar Hijri years (`1330..1405`), 3-digit years (`400..405`), or 2-digit years (`70..99`) to age; defaults to `10` if missing (`line 78`); overrides `age <= 1` to `8` if `بازسازی` is matched without explicit `yearOrAge` (`line 91`). | Displayed in Hedonic factor breakdown and bargain cards. | **No:** Defaulted (`age = 10`) and heuristic-overridden (`age = 8`) values carry no imputation marker. |
++| **5. Property Type** | Implicitly assumed residential apartment (`آپارتمان مسکونی`) | `extractListingSpecsFromText:147` skips meterage cues preceded by `زمین|مغازه|تجاری`, but does not reject non-residential listings from `evalSample`. | Assumed residential across all UI views. | **No:** No explicit `propertyType` field exists on `AutoBargainSample`. |
++| **6. Neighborhood (`hoodId`, `hoodName`)** | Static dataset (`INITIAL_NEIGHBORHOODS` / `MULTI_CITY_CONFIGS`) | Selected via URL `?hood=` or map click; passed into calculators and aggregators. | Displayed in Drawer header, Compare table, and Intelligence view. | **Yes:** Deterministic `hood.id` (`1..104`). |
++| **7. Market-Price Reference (`buyPerSqm`)** | Static constant in `src/data/neighborhoods.ts` | Adjusted in `useEvaluatedNeighborhoods.ts` by live market pulse multiplier if active; clamped `>= 15` in `hedonicPricingEngine.ts:98` (defaults to `120` if `0`/`NaN`). | Displayed as `نرخ پایه محله` (`HedonicValuationResultsColumn.tsx`). | **Partially:** Static baseline origin is traceable in code, unless `buyPerSqm` is `0` (where it silently becomes `120`). |
++| **8. Estimated Valuation (`hedonicTotalMillion`)** | `calculateHedonicValuation` (`hedonicPricingEngine.ts:208`) | `Math.round(hedonicPerSqm * safeSqm)` | Displayed in Hedonic calculator primary result card and reproducible trace (`ValuationCalculationTrace`). | **Yes:** Fully reconstructible via `buildReproducibleValuationTrace` (`src/data/valuationTraceAndComparables.ts`). |
++| **9. Evaluation Range (`sensitivityRangeMillion` / `iqrLowPerSqm`–`iqrHighPerSqm`)** | Hedonic: `round(total * 0.965)` to `round(total * 1.035)`. Aggregator: `q1` and `q3` of `evaluated` (`line 265`). | When `observedEvaluated.length < 3`, `q1` and `q3` are computed from 12 PRNG synthetic samples (`syntheticRaw`). | Hedonic range labeled `دامنه حساسیت (±۳.۵٪)`. Aggregator range labeled `بازه منطقی محله` / `بازه معتبر آماری محله (IQR)`. | **Hedonic: Yes. Aggregator: No (`F-A1V-03`):** When `N < 3`, UI displays PRNG synthetic quartiles as the neighborhood's IQR while `observedIqrLowPerSqm` (`null`) is ignored by the UI. |
++| **10. Confidence / Reliability Indicator (`evidenceIndexScore` / `confidenceScore`)** | `realMarketPriceAggregator.ts:274` | `evidenceIndexScore`: `0` (`N=0`), `35` (`N=1`), `52` (`N=2`), `clamp(62+3*N, 65, 98)` (`N>=3`). `confidenceScore`: `74` (`N<3`) vs `clamp(62+3*N, 65, 98)` (`N>=3`). | `evidenceIndexScore` displayed as `شاخص پوشش شواهد: ۵۲/۱۰۰` in Drawer/Tabs. | **Contradictory Across Views (`F-A1V-04`):** Drawer shows `52/100` (`N=2`) for Punak while Intelligence View and Compare Modal show `0` (`N=0`) because they pass `[]`. |
++
++---
++
++## 3. Provenance Preservation in Aggregation (Section 20.2)
++
++- **What Is Preserved:** `AggregatedMarketMetrics` preserves `observedSampleCount`, `eligibleObservedCount`, `syntheticSampleCount`, `excludedOutlierCount`, `malformedSampleCount`, `suspectedFraudCount`, `provenance`, `epistemicStatus`, `dataMode`, `observedMeanPerSqm`, `observedMedianPerSqm`, `observedIqrLowPerSqm`, and `observedIqrHighPerSqm`.
++- **What Is Destroyed or Obscured:**
++  1. Individual listing source timestamps (`listedAtIso`) are not accepted or tracked by `aggregateNeighborhoodMarketMetrics`.
++  2. Individual listing exclusion reasons (whether a specific listing ID was dropped as `malformed` vs `IQR outlier` vs `predatory anomaly`) are not retained.
++  3. `autoBargains` merges real `observedBargains` with synthetic `boot-{hoodId}-{idx}` bargains (`line 264`), mixing synthetic and observed items in the same array.
++  4. `rejectedFraudCount` (`line 271`) sums `excludedOutlierCount + suspectedFraudCount`, erasing the distinction between statistical IQR trimming and suspected fraud in that field.
++
++---
++
++## 4. Missing and Conflicting Information Behavior (Section 20.3)
++
++| Missing / Invalid Input Scenario | Actual Code Location | Observed Runtime Behavior (`E1` / `E2`) | Epistemic Honesty Assessment |
++|---|---|---|---|
++| Listing `description` omits property area (`sqm`) | `realMarketPriceAggregator.ts:137, 251` | Silently sets `sqm = 85`; `specs.sqm > 20` evaluates to `true`; `malformedSampleCount` remains `0`. | **VIOLATION (`F-A1V-08`):** Silent imputation of `85 m²` fabricates `rawPerSqm`. |
++| Listing `description` omits building age and `yearOrAge` is `undefined` | `realMarketPriceAggregator.ts:78` | Silently sets `age = 10` (`clampNumber(age, 0, 45, 10)`). | **VIOLATION:** Unknown age silently becomes a 10-year-old building (`-6.6%` quality adjustment). |
++| Listing `description` omits floor number | `realMarketPriceAggregator.ts:170` | Silently sets `resolvedFloor = 2`, `totalFloors = 5`. | **VIOLATION:** Unknown floor silently becomes 2nd floor of 5. |
++| Listing `description` omits parking / storage mentions | `realMarketPriceAggregator.ts:172, 174` | `resolveAmenityStatus` uses `defaultValue = true` for both `hasParking` and `hasStorage`! | **VIOLATION:** Listings that do not mention parking or storage are silently assumed to possess both (`+1.5%` bundle bonus instead of `-7.5%` / `-1.5%` penalties). |
++| `calculateHedonicValuation` called with `sqm: 0` or `sqm: -50` | `hedonicPricingEngine.ts:97` | Silently clamps `safeSqm = 30` and returns `4,446M` Toman valuation (`Punak`). | **VIOLATION (`F-A1V-08`):** Invalid zero/negative area generates an apparently valid valuation. |
++| `calculateHedonicValuation` called with `sqm: NaN` | `hedonicPricingEngine.ts:97` | Silently defaults `safeSqm = 85` and returns `12,121M` Toman valuation (`Punak`). | **VIOLATION (`F-A1V-08`):** `NaN` area silently becomes `85 m²`. |
++| `ProductIntelligenceView` / `CompareModal` called for neighborhood with `hood.bargains` | `ProductIntelligenceView.tsx:47, 231`, `CompareModal.tsx:8` | Caller passes hardcoded `[]`, ignoring `hood.bargains`. | **VIOLATION (`F-A1V-04`):** Existing repository data is dropped, misrepresenting coverage as `0` samples. |
++
++---
++
++## 5. Evaluation of Provenance Invariants (Section 20.4)
++
++| Invariant | Status | Source-Level Evidence |
++|---|---|---|
++| **Invariant 1:** Every consequential valuation input should have an identifiable origin or an explicit unknown status. | **VIOLATED** | `extractListingSpecsFromText` (`realMarketPriceAggregator.ts:137, 78, 170-175`) silently substitutes `sqm = 85`, `age = 10`, `floor = 2`, `hasParking = true`, `hasStorage = true` when omitted from text; `hedonicPricingEngine.ts:97-98` substitutes `sqm = 30` (for `<=0`), `sqm = 85` (for `NaN`), and `hoodBasePerSqm = 120` (for `0`/`NaN`). |
++| **Invariant 2:** Transformations should not silently erase source identity. | **VIOLATED** | `realMarketPriceAggregator.ts:264` appends synthetic `boot-*` bargains into `autoBargains` alongside `observedBargains`, and `line 265` computes `iqrLowPerSqm`/`iqrHighPerSqm` from synthetic `evaluated` when `observedEvaluated.length < 3`. |
++| **Invariant 3:** Conflicting observations should not disappear without a traceable resolution. | **PARTIALLY VIOLATED** | `realMarketPriceAggregator.ts:268` silently clamps `rawAveragePerSqm` to `[0.97 * anchor, 1.03 * anchor]` (`dayAnchorPrice`). While `isAnchorClamped: true` and `unclampedAveragePerSqm` exist on the object, neither `NeighborhoodInspectorTabs.tsx` nor `ProductIntelligenceView.tsx` discloses when `dayAnchorPrice` was clamped away from the observed sample mean. |
++| **Invariant 4:** Stale data should not be represented as current data. | **PARTIALLY VIOLATED** | `evaluateComparableProperties` (`valuationTraceAndComparables.ts:190, 208`) enforces a 90-day freshness check (`maxStaleMs`), but `aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts:243`) accepts no listing timestamp at all and treats timeless static `hood.bargains` as current observations. |
++| **Invariant 5:** Derived metrics should remain distinguishable from original observations. | **PARTIALLY VIOLATED** | Respected in `NeighborhoodInspectorDrawer.tsx` and `NeighborhoodInspectorTabs.tsx`, but violated in `ProductIntelligenceView.tsx:65, 182, 191` (`تخمین قیمت قطعی معاملات (مدل v6.4)`, `بازه معتبر آماری محله (IQR)` from PRNG rows). |
++| **Invariant 6:** The UI should not claim greater evidence quality than the underlying data supports. | **VIOLATED** | `ProductIntelligenceView.tsx:182` and `NeighborhoodInspectorTabs.tsx:201` display `iqrLowPerSqm`–`iqrHighPerSqm` (`131.3 – 154.3 م.ت`) as valid neighborhood statistical bounds when `0` or `2` listings exist, and `realMarketPriceAggregator.ts:274` sets `confidenceScore = 74` on `0` observed samples. |
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-REPRODUCIBILITY.md	2026-11-08 20:57:57.489407575 +0000
+@@ -0,0 +1,76 @@
++# WS-A1-V — Deliverable 9: Determinism, Environment, and Reproducibility Audit
++
++**Workstream ID:** `WS-A1-V` (Section 21 & Section 26 Deliverable 9)  
++**Evidence Level:** `E1` (Direct Execution Reproductions), `E2` (Static Source Inspection), `E3` (Dependency & Archive Inspection)
++
++---
++
++## 1. Runtime and Environment Specification (Section 21)
++
++| Parameter | Observed Value | Reproducibility Impact |
++|---|---|---|
++| **Operating System / Arch** | `linux x64` (Container workspace `/app/applet`) | Standard POSIX float and string behavior. |
++| **Node.js Version** | `v22.23.2` | Used for all `tsx` test executions and Vite builds. |
++| **NPM Version** | `10.9.8` | Used for script orchestration. |
++| **TypeScript Version** | `~5.8.2` (`node_modules/typescript`) | Strict typechecking (`tsc --noEmit` exit `0`). |
++| **Vite Bundler Version** | `v6.4.1` (`^6.2.0` in `package.json`) | Deterministic ESM bundle transform (`2,220` modules). |
++| **System Timezone / Clock** | `America/Los_Angeles` (`UTC-08:00`) / `2026-11-08T20:45:00Z` | **Impacts time-dependent functions** (`getCurrentJalaliYear()` and `Date.now()` PRNG seed in `realMarketPriceAggregator.ts:260`). |
++
++---
++
++## 2. Dependency and Lockfile State (Section 21 & Section 25)
++
++- **`package.json`:** Present (`90` lines). Declares runtime dependencies (`react@^19.0.0`, `leaflet@^1.9.4`, `lucide-react@^0.546.0`, `firebase@^12.10.0`, `express@^4.21.2`, `@google/genai@^1.29.0`, `motion@^12.23.24`) and devDependencies (`vite@^6.2.0`, `tsx@^4.21.0`, `typescript@~5.8.2`, `@playwright/test@^1.58.2`).
++- **Lockfile State (`package-lock.json` / `yarn.lock` / `pnpm-lock.yaml`):** **`ABSENT` (`false`)**.
++  - **Reproducibility Risk:** Without a committed lockfile in `/app/applet`, fresh `npm install` runs on external machines may resolve newer minor/patch versions of caret (`^`) dependencies (`vite`, `firebase`, `lucide-react`). Within the live container, `node_modules/` is pre-populated and stable.
++- **Git Repository State (`.git`):** **`ABSENT` (`false`)**.
++
++---
++
++## 3. Audit of Important Deterministic vs. Non-Deterministic Computations (Section 21.1)
++
++| Computation / Symbol | Source File & Lines | Deterministic Under Fixed Inputs? | Wall-Clock / External Dependencies | Reproducibility Status |
++|---|---|---|---|---|
++| **`calculateHedonicValuation`** | `src/data/hedonicPricingEngine.ts:95-269` | **YES (when `currentJalaliYear` is provided)** / **TIME-DEPENDENT (when omitted)** | Calls `getCurrentJalaliYear()` (`lines 9-19`) using `new Date()` (`Intl.DateTimeFormat('en-US-u-ca-persian')`) if `inputs.currentJalaliYear` is omitted. | **`REPRODUCIBLE_WITH_PINNED_YEAR`** |
++| **`buildReproducibleValuationTrace` & `verifyValuationTraceReproducibility`** | `src/data/valuationTraceAndComparables.ts:26-142` | **YES (100% Deterministic Digest)** | Hashing (`computeDigest`, `lines 14-25`) excludes `calculatedAtIso`, `areaUnit`, and `intlCurrency`, hashing only `formulaId`, `formulaVersion`, `baselineDatasetVersion`, `referenceJalaliYear`, `hoodId`, `hoodBasePerSqm`, `hoodBaseRahn80m`, `canonicalInputs`, `appliedCoefficients`, and `coreOutputs`. | **`REPRODUCIBLE_EXACT` (`trc_8a53657653fff790`)** |
++| **`evaluateComparableProperties`** | `src/data/valuationTraceAndComparables.ts:184-286` | **YES (when `nowMs` is provided)** | Defaults `nowMs = Date.now()` (`line 188`) for the 90-day freshness filter (`nowMs - listedMs > maxStaleMs`). | **`REPRODUCIBLE_WITH_PINNED_NOWMS`** |
++| **`aggregateNeighborhoodMarketMetrics` (when `observedEvaluated.length >= 3`)** | `src/data/realMarketPriceAggregator.ts:243-276` | **PARTIALLY (Order-Invariant for Median/Mean, Order-Sensitive for `autoBargains`)** | Sorts prices (`line 265`) before computing `q1`, `q3`, `trimmed`, `observedMeanPerSqm`, and `observedMedianPerSqm` (verified order-invariant in `E1`), though `autoBargains` preserves input array order. Note: `resolveBuildingAge` (`line 75`) hardcodes `currentSolarYear = 1405`. | **`REPRODUCIBLE_SAME_INPUTS`** |
++| **`aggregateNeighborhoodMarketMetrics` (when `observedEvaluated.length < 3`, `isBootstrapped === true`)** | `src/data/realMarketPriceAggregator.ts:260-275` | **NO — WALL-CLOCK DATE DEPENDENT (`F-A1V-03`)** | Line 260 seeds the Mulberry32 PRNG using `Math.floor(Date.now() / 86_400_000)` (`seededRandom(hoodId * 997 + Math.floor(Date.now() / 86_400_000))`)! And line 261 calls `rand()` **twice per synthetic item** (`80 + Math.round(rand() * 20)` in `askingTotalMillion` and again in `description`), meaning the numeric `askingTotalMillion` and the text `description` meterage in `syntheticRaw` use **two different random draws**! | **`NON_DETERMINISTIC_ACROSS_UTC_DAYS`** |
++
++---
++
++## 4. Detailed Reproducibility Records & Observed Outputs (Section 21.1)
++
++### Record 1: Hedonic Valuation & Cryptographic Trace (`Punak`, `hoodId = 5`)
++- **Input Assumptions:** `neighborhood = INITIAL_NEIGHBORHOODS.find(n => n.id === 5)` (`buyPerSqm: 142`, `rahn80m: 1750`), `sqm: 100`, `buildYear: 1399` (`buildingAgeYears: 6`), `floor: 2`, `totalFloors: 5`, `hasElevator: true`, `hasParking: true`, `hasStorage: true`, `renovationStatus: 'standard'`, `referenceJalaliYear: 1405`.
++- **Executed Command:** `Command 10` (`npx tsx -e ...`)
++- **Observed Output:**
++  - `hedonicPerSqm`: `141` Million Toman
++  - `hedonicTotalMillion`: `14100` Million Toman (`14.1` Billion Toman)
++  - `fastSaleTotalMillion`: `12408` Million Toman (`0.88 * 14100`)
++  - `sensitivityRangeMillion`: `{ min: 13607, max: 14593 }`
++  - `reproducibilityDigest`: `'trc_8a53657653fff790'`
++  - `verifyValuationTraceReproducibility(trace1, punak)`: `{ reproducible: true, reason: 'REPRODUCIBLE_EXACT' }`
++- **Reproducibility Status:** **`VERIFIED DETERMINISTIC`**.
++
++### Record 2: Market Aggregator Under `N = 0` vs `N = 2` vs `N = 3` (`Punak`, `hoodId = 5`, UTC Day `20765`)
++- **Input Assumptions:** `hoodId: 5`, `hoodName: 'پونک'`, `baseHoodPerSqm: 142`, `UTC Date: 2026-11-08` (`Math.floor(Date.now() / 86_400_000) = 20765`).
++- **Observed Output (`Command 10`):**
++  - `zeroSamples` (`[]`): `observedSampleCount: 0`, `sampleCount: 12`, `validSampleCount: 12`, `confidenceScore: 74`, `evidenceIndexScore: 0`, `iqrLow: 131.3`, `iqrHigh: 154.3`, `dayAnchorPrice: 140.4`, `autoBargainsCount: 3`.
++  - `twoSamples` (`[sA, sB]`): `observedSampleCount: 2`, `sampleCount: 12`, `validSampleCount: 12`, `confidenceScore: 74`, `evidenceIndexScore: 52`, `iqrLow: 131.3`, `iqrHigh: 154.3`, `dayAnchorPrice: 137.7`, `autoBargainsCount: 3`.
++  - `threeSamples` (`[sA, sB, sC]`): `observedSampleCount: 3`, `sampleCount: 3`, `validSampleCount: 3`, `confidenceScore: 71`, `evidenceIndexScore: 71`, `iqrLow: 132.5`, `iqrHigh: 135.2`, `dayAnchorPrice: 137.7`, `unclampedAveragePerSqm: 134.1`, `isAnchorClamped: true`.
++- **Identified Double-PRNG-Draw Bug (`realMarketPriceAggregator.ts:261`):**
++  In `syntheticRaw`:
++  ```ts
++  askingTotalMillion: Math.round(baseHoodPerSqm * factor * (80 + Math.round(rand() * 20)) * 10) / 10,
++  description: `${80 + Math.round(rand() * 20)} متر طبقه 2 از 5 با پارکینگ و آسانسور ساخت 1400`,
++  ```
++  Because `rand()` is invoked once to calculate `askingTotalMillion` and a **second time** to generate the `${80 + Math.round(rand() * 20)} متر` string in `description`, the synthetic listing's total price is computed for one random area $A_1 \in [80, 100]$, and then `evalSample` divides that total price by a **different** random area $A_2 \in [80, 100]$ parsed from `description`! This introduces artificial random noise of up to $\pm 25\%$ into the synthetic `rawPerSqm` values every UTC day.
++
++---
++
++## 5. Reproduction Failures & External Dependency Limitations (Section 21)
++
++1. **`npx tsx tests/hedonic-pricing-engine.test.ts` (`FAILED — ERR_MODULE_NOT_FOUND`):** Could not be reproduced because the filename cited in the prior handoff summary does not exist (`F-A1V-06`); the actual test suites (`tests/pricing-engine-integrity.test.ts` and `tests/assess-004-hedonic-accuracy-benchmark.test.ts`) reproduced with exit code `0`.
++2. **`docs/engineering/WS-G4A-A1.patch` Application (`FAILED — HUNK MISMATCH`):** Cannot be applied or reproduced against the workspace because 4 of its 5 file diffs contain hand-fabricated lines that do not exist in the codebase (`F-A1V-02`).
++3. **Pre-Session Git Baseline Diff (`UNAVAILABLE`):** Because `.git` is absent in `/app/applet`, historical commit comparison via `git diff` is unavailable.
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-ADVERSARIAL-TEST-ASSESSMENT.md	2026-11-08 20:58:29.584853629 +0000
+@@ -0,0 +1,70 @@
++# WS-A1-V — Deliverable 10: Adversarial, Edge-Case, Metamorphic & Test Coverage Quality Assessment
++
++**Workstream ID:** `WS-A1-V` (Sections 22, 24 & Section 26 Deliverable 10)  
++**Evidence Level:** `E1` (Direct Runtime Adversarial/Metamorphic Probes), `E2` (Static Source & Test Suite Inspection)
++
++---
++
++## 1. Evaluated Input-Edge Cases (Section 22.1)
++
++All edge cases below were executed in-memory via `npx tsx -e` (`Command 10` in `WS-A1-V-COMMAND-EVIDENCE.md`) without modifying any repository files:
++
++| Target Function | Adversarial Input | Expected Domain Behavior | Observed Implementation Behavior (`E1`) | Verdict |
++|---|---|---|---|---|
++| `calculateHedonicValuation` (`hedonicPricingEngine.ts:97`) | `sqm: 0` | Reject input or return explicit validation error / `null` valuation. | Silently clamps `safeSqm = 30` and returns `hedonicTotalMillion: 4446` (`4.446B` Toman) at `148.2M/sqm`. | **FAIL (`F-A1V-08`)** |
++| `calculateHedonicValuation` (`hedonicPricingEngine.ts:97`) | `sqm: -50` | Reject negative area. | Silently clamps `safeSqm = 30` and returns `hedonicTotalMillion: 4446`. | **FAIL (`F-A1V-08`)** |
++| `calculateHedonicValuation` (`hedonicPricingEngine.ts:97`) | `sqm: NaN` | Reject `NaN` area. | Silently substitutes fallback `85 sqm` and returns `hedonicTotalMillion: 12121` (`12.121B` Toman). | **FAIL (`F-A1V-08`)** |
++| `calculateHedonicValuation` (`hedonicPricingEngine.ts:97`) | `sqm: 50000` | Reject or flag out-of-domain apartment area (`> 600m²`). | Silently clamps `safeSqm = 600` and returns `hedonicTotalMillion: 82140` without a clamping warning. | **PARTIAL (Silent Clamp)** |
++| `calculateHedonicValuation` (`hedonicPricingEngine.ts:103`) | `buildYear: 1450` (future year vs `currentJalaliYear: 1405`) | Reject future build year or flag invalid date. | Clamps `safeBuildYear = 1405` (`buildingAge = 0`) and applies `+6.5%` brand-new premium. | **PARTIAL (Silent Clamp)** |
++| `calculateHedonicValuation` (`hedonicPricingEngine.ts:99-100, 151`) | `floor: 20, totalFloors: 4, hasElevator: true` | Reject `floor > totalFloors` or clamp `floor <= totalFloors`. | Does **not** validate `floor <= totalFloors`; applies `+10.5%` high-rise view bonus (`f > 5`) to a 20th-floor unit in a 4-story building! | **FAIL (`F-A1V-08`)** |
++| `calculateHedonicValuation` (`hedonicPricingEngine.ts:98`) | `neighborhood.buyPerSqm: 0, rahn80m: 0` | Flag missing neighborhood baseline. | Silently defaults `hoodBasePerSqm = 120` (`Math.max(15, Number(0) || 120)`) and returns `hedonicTotalMillion: 12050`. | **FAIL (`F-A1V-08`)** |
++| `aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts:137, 251`) | 3 listings with `askingTotalMillion > 0` but **no meterage (`sqm`) in `description`** | Increment `malformedSampleCount` (`3`) and exclude from per-sqm mean. | `extractListingSpecsFromText` silently defaults `sqm = 85`; all 3 listings are accepted (`malformedSampleCount: 0`, `eligibleObservedCount: 3`), computing a fabricated `observedMeanPerSqm: 183.2`! | **FAIL (`F-A1V-08`)** |
++| `aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts:247`) | `samples: null as any` or `[]` | Return `0` observed samples, `0` valid samples, `null` IQR, and `0` confidence. | Returns `observedSampleCount: 0`, `evidenceIndexScore: 0`, **but** returns `sampleCount: 12`, `validSampleCount: 12`, `confidenceScore: 74`, `iqrLowPerSqm: 131.3`, `iqrHighPerSqm: 154.3`, and `3` synthetic `autoBargains`. | **FAIL (`F-A1V-03`)** |
++
++---
++
++## 2. Market-Data Adversarial Cases (Section 22.2)
++
++| Adversarial Scenario | Observed Behavior in `realMarketPriceAggregator.ts` (`E1` / `E2`) | Risk Severity |
++|---|---|---|
++| **1. Duplicate Listing Inflation** | Passing `[sA, sA, sA, sA, sA]` (5 identical references with `id: 'a'`) produces `observedSampleCount: 5`, `eligibleObservedCount: 5`, `evidenceIndexScore: 77`, `confidenceScore: 77`, and `evidenceQuality: 'MODERATE_OBSERVATIONS'`. Zero deduplication exists. | **HIGH (`F-A1V-07`)** |
++| **2. Single Extreme Observation in Small Sample (`N = 3`)** | With 2 normal samples (`135M/sqm`, `141M/sqm`) and 1 extreme sample (`330M/sqm`, just below the `2.4x = 340.8M/sqm` predatory cutoff), `sortedPrices` has length `3`, `q1 = sortedPrices[0]`, `q3 = sortedPrices[2]`, so `iqr = q3 - q1` spans the entire range, `1.5 * iqr` trims **zero** items (`excludedOutlierCount: 0`), and the extreme observation pulls `observedMeanPerSqm` upward until blocked only by the arbitrary `±3%` anchor clamp! | **HIGH** |
++| **3. Outdated / Stale Observation Dominance** | `aggregateNeighborhoodMarketMetrics` has no timestamp parameter on input samples (`Array<{ id?: string; askingTotalMillion: number; description: string; yearOrAge?: number }>`). A 2-year-old listing is weighted identically to a listing from today. | **MEDIUM** |
++| **4. Missing Amenity Negative Bias Inversion** | Because `resolveAmenityStatus` (`lines 172, 174`) sets `defaultValue = true` for `hasParking` and `hasStorage`, any listing that omits mentioning parking/storage is normalized as if it has both (`qMult` is higher by `+0.09` to `+0.105`), which artificially depresses its normalized price (`normPerSqm = rawPerSqm / qMult`) and makes unequipped apartments look like false bargains! | **HIGH** |
++| **5. Small Sample Size Producing Falsely Precise Outputs** | When `N = 0, 1, 2`, 12 PRNG synthetic listings generate `iqrLowPerSqm: 131.3` and `iqrHighPerSqm: 154.3` and `confidenceScore: 74`. | **HIGH (`F-A1V-03`)** |
++
++---
++
++## 3. Metamorphic Properties Evaluation (Section 22.3)
++
++| Metamorphic Property | Hold Status | Empirical Proof (`Command 10`) |
++|---|---|---|
++| **1. Order Invariance:** Reordering equivalent input observations should not arbitrarily change the result. | **HOLDS (for scalar metrics)** | `agg([sA, sB, sC])` and `agg([sC, sB, sA])` produced identical `observedMedianPerSqm`, `observedMeanPerSqm`, `iqrLowPerSqm`, `iqrHighPerSqm`, `dayAnchorPrice` (`137.7`), and `evidenceIndexScore` (`71`). (`autoBargains` array order follows input order). |
++| **2. Duplicate Sensitivity:** Duplicating the same observation should not create unjustified additional market evidence. | **VIOLATED (`F-A1V-07`)** | Duplicating `sA` 5 times increased `observedSampleCount` from `1` to `5`, jumped `evidenceIndexScore` from `35` to `77`, flipped `isBootstrapped` from `true` to `false`, and upgraded `evidenceQuality` from `LIMITED_OBSERVATIONS` to `MODERATE_OBSERVATIONS`. (Note: `evaluateComparableProperties` in `valuationTraceAndComparables.ts:212` **does** deduplicate via `seenFingerprints`, proving the pattern exists in the repo but was omitted from `realMarketPriceAggregator.ts`). |
++| **3. Missing-Data Transparency:** Removing required information should not silently improve the apparent confidence of the result. | **VIOLATED (`F-A1V-03`)** | Removing all 3 real observations (`N = 3 -> N = 0`) **increased** `confidenceScore` from **`71` to `74`** and **increased** `sampleCount` and `validSampleCount` from **`3` to `12`**! Additionally, removing the meterage text from a listing description (`noSqmInDesc`) did not trigger `malformedSampleCount` (`0`) because `sqm` silently defaulted to `85`. |
++| **4. Unit Consistency:** Equivalent values expressed in supported units should produce equivalent normalized outcomes. | **HOLDS** | `parseIranianPriceToMillionToman` (`realMarketPriceAggregator.ts:281-283`) converts `'۱۲.۵ میلیارد'`, `'۱۲ میلیارد و پانصد'`, `'۱۲.۵۰۰.۰۰۰.۰۰۰ تومان'`, and Rial inputs to identical `12500` Million Toman (`verifyPricingEngineIntegrity` Cases 1–6 pass). |
++| **5. Source-Failure Transparency:** A failed or empty source should not silently result in a misleadingly complete aggregate. | **PARTIALLY VIOLATED (`F-A1V-03`, `F-A1V-04`)** | While `provenance: 'REFERENCE_BASELINE'` and `evidenceIndexScore: 0` are set when `samples = []`, `iqrLowPerSqm`, `iqrHighPerSqm`, `sampleCount: 12`, `validSampleCount: 12`, `confidenceScore: 74`, and `autoBargains` (`3` synthetic items) are still populated as if 12 listings were evaluated. |
++| **6. Geographic Consistency:** Records outside the supported geographic scope should not be treated as valid comparable evidence. | **HOLDS in `valuationTraceAndComparables.ts` / UNGUARDED in `realMarketPriceAggregator.ts`** | `evaluateComparableProperties` (`valuationTraceAndComparables.ts:199`) enforces `c.cityKey !== subject.cityKey`, whereas `aggregateNeighborhoodMarketMetrics` does not verify that `samples[i]` belongs to `hoodId`. |
++| **7. Temporal Consistency:** Stale data should not appear more recent because of aggregation or display transformations. | **VIOLATED in `realMarketPriceAggregator.ts`** | Because `seededRandom` re-seeds daily with `Math.floor(Date.now() / 86_400_000)` (`line 260`), neighborhoods with `0` real observations exhibit daily fluctuations in `dayAnchorPrice`, `iqrLowPerSqm`, `iqrHighPerSqm`, and `autoBargains`, creating the illusion of daily market movement from static reference data. |
++
++---
++
++## 4. Test Coverage Quality & Verification Gaps (Section 24)
++
++Inspection of `tests/real-market-price-aggregator.test.ts` (214 lines), `tests/pricing-engine-integrity.test.ts` (16 lines), and `tests/assess-004-hedonic-accuracy-benchmark.test.ts` (233 lines) reveals why all 26 unit test suites pass (`exit 0`) despite the High/Critical findings uncovered in `WS-A1-V`:
++
++| Module | What Existing Tests Verify | Critical Unverified / Masked Failure Modes |
++|---|---|---|
++| `tests/real-market-price-aggregator.test.ts` | Checks `provenance === 'REFERENCE_BASELINE'` and `evidenceIndexScore === 0` on `[]`; checks `SPARSE_1_TO_2` on 2 samples; checks `MODERATE_3_TO_9` on 4 samples; checks `STATISTICAL_OUTLIER` on 9 samples with 1 outlier (`500M/sqm` vs `200M/sqm` base). | 1. **Explicitly asserts `syntheticSampleCount === 12` on `0` and `2` samples (`lines 19, 32`)**, enshrining the PRNG bootstrap behavior instead of failing on it!<br>2. Does **not** assert `sampleCount === 0` or `validSampleCount === 0` on `[]`.<br>3. Does **not** check `confidenceScore` monotonicity (`74` on `0` samples vs `71` on `3` samples).<br>4. In the outlier test (`line 51`), uses `baseHoodPerSqm = 200` and outlier `500M/sqm` (`2.5x > 2.4x`), and only asserts `excludedOutlierCount >= 1` and `fraudReviewState !== 'FRAUD_CONFIRMED'`, completely missing that `fraudReviewState` was set to `'FRAUD_SUSPECTED'` and `rejectedFraudCount` summed `excludedOutlierCount + suspectedFraudCount`!<br>5. Zero tests for duplicate listings or missing meterage in descriptions. |
++| `tests/assess-004-hedonic-accuracy-benchmark.test.ts` | Checks positivity, city ordering, renovation monotonicity, walk-up penalty, `-26%` age floor, `FAST_SALE_FACTOR === 0.88`, and `sellerPriceEvaluation` verdicts (`fair`, `bargain`, `overpriced`). | Zero negative/boundary tests for `sqm <= 0`, `sqm = NaN`, `floor > totalFloors`, or `buyPerSqm = 0`. |
++| UI Component Tests | Contract regex checks in `tests/engineering-quality-foundation.test.ts`. | Did not test that `ProductIntelligenceView.tsx` and `CompareModal.tsx` pass `hood.bargains` rather than hardcoded `[]` to `aggregateNeighborhoodMarketMetrics`. |
++
++---
++
++## 5. Recommended Automated Tests for Future Remediation
++
++1. **Zero-Bootstrap Contamination Assertion:** When `samples = []`, assert `sampleCount === 0`, `validSampleCount === 0`, `syntheticSampleCount === 0`, `autoBargains.length === 0`, `iqrLowPerSqm === null`, `iqrHighPerSqm === null`, and `confidenceScore === 0`.
++2. **Confidence Monotonicity Metamorphic Test:** Assert `agg(N=0).confidenceScore <= agg(N=1).confidenceScore <= agg(N=2).confidenceScore <= agg(N=3).confidenceScore`.
++3. **Idempotent Deduplication Metamorphic Test:** Assert `agg([sA, sA, sA, sA])` produces the exact same `observedSampleCount` (`1`) and `evidenceIndexScore` (`35`) as `agg([sA])`.
++4. **Missing-Area Rejection Test:** Assert that a sample `{ askingTotalMillion: 14000, description: 'آپارتمان خوش نقشه بدون ذکر متراژ' }` increments `malformedSampleCount` and is excluded from `observedEvaluated`.
++5. **Cross-View Sample Parity Test:** Assert that for any `hood` with `hood.bargains.length > 0`, `NeighborhoodInspectorDrawer`, `ProductIntelligenceView`, and `CompareModal` compute identical `observedSampleCount` and `evidenceIndexScore`.
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-UX-DECISION-INTEGRITY.md	2026-11-08 20:58:30.584856051 +0000
+@@ -0,0 +1,77 @@
++# WS-A1-V — Deliverable 11: User Decision Quality, Cognitive Framing & Information Design Audit
++
++**Workstream ID:** `WS-A1-V` (Section 23 & Section 26 Deliverable 11)  
++**Inspected Views:** `NeighborhoodInspectorDrawer.tsx`, `NeighborhoodInspectorTabs.tsx`, `ProductIntelligenceView.tsx`, `CompareModal.tsx`, `HedonicValuationResultsColumn.tsx`, `MapLegend.tsx`, `OnboardingWizardModal.tsx`  
++**Live Browser Evidence (`E1`):** Headless Chromium via `playwright-cli` at `http://localhost:3000/?hood=5&compare=5-14` and `http://localhost:3000/?hood=5&view=intelligence`  
++**Methodological Discipline:** Every finding below strictly separates **(A) Directly Observed Interface Behavior**, **(B) Research-Grounded Psychological Interpretation**, and **(C) Unvalidated Design Hypotheses**. No psychological trait, emotional state, or financial vulnerability of any user is inferred.
++
++---
++
++## 1. Epistemic Communication Matrix (What the Interface Communicates vs. Conceals)
++
++| Epistemic Dimension | Inspector Drawer & Market Tab (`NeighborhoodInspectorDrawer.tsx`, `NeighborhoodInspectorTabs.tsx`) | Product Intelligence View (`ProductIntelligenceView.tsx`) | Compare Modal (`CompareModal.tsx`) | Hedonic Calculator (`HedonicValuationResultsColumn.tsx`) |
++|---|---|---|---|---|
++| **What is known (Observed)** | Displays `observedSampleCount` (`۲ آگهی` for Punak) and `observedMedianPerSqm` (`۱۴۱ م.ت`). | **Misreports `۰ آگهی مستقیم`** because line 47 passes `[]` (`F-A1V-04`). | **Misreports `۰ آگهی`** because line 8 passes `[]` (`F-A1V-04`). | Displays user-supplied property attributes and neighborhood baseline `buyPerSqm`. |
++| **What is estimated** | Explicitly labels `تخمین ترکیبی` and `برآورد سناریوی مذاکره (فرضی - غیرمعاملاتی)`. | Labels heuristic deal estimate as **`تخمین قیمت قطعی معاملات (مدل v6.4)`** (`line 65`) and **`جایگاه معامله قطعی`** (`line 191`). | Labels baseline as `پروفایل مرجع (۰ آگهی)`. | Labels output as hedonic model estimate (`v2.4.0`). |
++| **What is uncertain** | Labels `۵۲/۱۰۰` as `شاخص پوشش شواهد (غیر احتمالاتی)` and states `فاصله اطمینان کالیبره‌شده آماری نیست`. | Displays `بازه معتبر آماری محله (IQR): 131.3 تا 154.3 م.ت` (computed from 12 PRNG rows!). | Does not display uncertainty intervals per neighborhood row. | Displays `دامنه حساسیت (±۳.۵٪)` and notes it is not a statistical confidence interval. |
++| **What is missing** | States when `observedSampleCount === 0` (`پروفایل مرجع (بدون نمونه مشاهده‌شده)`). | Fails to disclose that `hood.bargains` were omitted by the view's `[]` call; fails to disclose when `iqrLowPerSqm` is synthetic. | Fails to disclose that `hood.bargains` were omitted by the modal's `[]` call. | Does not warn when invalid inputs (`sqm <= 0`) are clamped to `30m²`. |
++| **What the model cannot establish** | Explicitly warns that no official transaction registry feed (کد رهگیری / ثبت املاک) is connected (`NeighborhoodInspectorTabs.tsx:216`). | **Conceals** the absence of transaction registry data behind `تخمین قیمت قطعی معاملات` and `همگرایی قیمت اعلامی با نرخ معامله`. | Does not state that scores are weighted heuristics rather than empirical returns. | Clearly states that extreme asking-price deviation (`> 35%`) is a statistical outlier and requires physical/legal verification (`hedonicPricingEngine.ts:251-256`). |
++
++---
++
++## 2. Cognitive & Decision-Integrity Findings (Structured by A / B / C)
++
++### Concern 1: Authoritative Closing-Transaction Framing in `ProductIntelligenceView.tsx` (`F-A1V-04`)
++- **A. Directly Observed Interface Behavior (`E1`, `E2`):**
++  - In `src/components/views/ProductIntelligenceView.tsx`:
++    - Line 65 renders: `تخمین قیمت قطعی معاملات (مدل v6.4)` (`Estimated Definitive Transaction Price (Model v6.4)`) above `hoodMetrics.estimatedDealPricePerSqm` (`130.6 میلیون تومان`) in an emerald-highlighted card (`bg-emerald-500/5 border-emerald-500/20`).
++    - Line 116 renders: `همگرایی قیمت اعلامی با نرخ معامله` (`Convergence of Asking Price with Transaction Rate`).
++    - Line 191 renders: `جایگاه معامله قطعی: صدک 56 محله` (`Definitive Transaction Position: 56th Percentile of Neighborhood`).
++  - In reality (`src/data/realMarketPriceAggregator.ts:270`), `estimatedDealPricePerSqm` is simply `dayAnchorPrice * 0.93` (a hardcoded `7%` discount assumption off a static asking-price anchor).
++- **B. Research-Grounded Psychological Interpretation:**
++  - **Anchoring and Insufficient Adjustment (Tversky & Kahneman, 1974):** Presenting a specific one-decimal-place number (`130.6 میلیون تومان`) labeled as the "Definitive Transaction Price (`قیمت قطعی معاملات`)" establishes a potent numerical anchor for buyer/seller negotiations, even when the underlying number is a static asking baseline multiplied by `0.93`.
++  - **Automation Bias & Over-Reliance (Parasuraman & Manzey, 2010; Lee & See, 2004):** Pairing authoritative institutional terminology (`قیمت قطعی معاملات`, `صدک 56 محله`, `مدل v6.4`) with green semantic styling (`emerald-400`) signals high algorithmic certainty where zero empirical transaction data exists.
++- **C. Unvalidated Design Hypothesis:**
++  - *Hypothesis (Not Measured in RADAR):* Users viewing `ProductIntelligenceView` may anchor their negotiation offers more aggressively around `130.6 م.ت` than users viewing the yellow-disclaimed `برآورد سناریوی مذاکره (فرضی - غیرمعاملاتی)` in `NeighborhoodInspectorTabs`. Validating this requires a controlled comprehension study.
++
++---
++
++### Concern 2: Cross-Component Provenance Contradiction on the Same Screen (`F-A1V-04`)
++- **A. Directly Observed Interface Behavior (`E1`, `E2`):**
++  - When viewing `http://localhost:3000/?hood=5&compare=5-14` or `?hood=5&view=intelligence`, the user sees two contradictory provenance statements for Punak (`پونک`) simultaneously:
++    - `NeighborhoodInspectorDrawer.tsx` (lines 87–95): `منشا داده: تخمین ترکیبی (نمونه محدود: ۲ آگهی)` and `شاخص پوشش شواهد: ۵۲/۱۰۰ (پوشش محدود)`.
++    - `ProductIntelligenceView.tsx` (line 53) and `CompareModal.tsx` (line 80): `منشا داده: پروفایل مرجع (۰ آگهی مستقیم)` / `پروفایل مرجع (۰ آگهی)`.
++- **B. Research-Grounded Psychological Interpretation:**
++  - **Trust Calibration Breakdown (Lee & See, 2004; Hoff & Bashir, 2015):** Internal inconsistency between two panels of the same analytical system undermines perceived system integrity and forces extraneous cognitive load (Sweller, 1988) as the user attempts to reconcile why the same neighborhood has `2` observed listings in one panel and `0` in another.
++- **C. Unvalidated Design Hypothesis:**
++  - *Hypothesis:* Resolving the `[]` bug so all views report identical sample counts (`۲ آگهی`) will improve user comprehension of data coverage without increasing perceived complexity.
++
++---
++
++### Concern 3: Synthetic PRNG Bounds Displayed as Statistical IQR (`F-A1V-03`)
++- **A. Directly Observed Interface Behavior (`E1`, `E2`):**
++  - When `observedSampleCount < 3` (which holds for **all** neighborhoods in `ProductIntelligenceView` due to `[]`, and for Punak in `NeighborhoodInspectorTabs` which has `2` listings), `agg.observedIqrLowPerSqm` is `null`, but both `NeighborhoodInspectorTabs.tsx:201` (`بازه منطقی محله: ۱۳۱.۳ – ۱۵۴.۳ م.ت`) and `ProductIntelligenceView.tsx:182` (`بازه معتبر آماری محله (IQR): 131.3 تا 154.3 م.ت`) display `agg.iqrLowPerSqm` and `agg.iqrHighPerSqm`, which are computed from 12 Mulberry32 PRNG synthetic samples!
++- **B. Research-Grounded Psychological Interpretation:**
++  - **Illusion of Validity & False Precision (Kahneman & Tversky, 1973):** Displaying exact decimal bounds (`131.3 تا 154.3 م.ت`) labeled as a "Valid Statistical Interquartile Range (`بازه معتبر آماری محله (IQR)`)" when fewer than 3 observations exist misleads decision-makers into believing the dispersion of the neighborhood market has been empirically measured.
++- **C. Unvalidated Design Hypothesis:**
++  - *Hypothesis:* Replacing synthetic IQR numbers with an explicit `"محاسبه بازه چارکی نیازمند حداقل ۳ نمونه مشاهده‌شده است"` state when `observedSampleCount < 3` will prevent false-precision anchoring.
++
++---
++
++## 3. Comparison Integrity & Decision Autonomy (Sections 23.1 & 23.2)
++
++- **Comparison Integrity (`CompareModal.tsx`):**
++  - Uses consistent definitions across columns (`buyPerSqm`, `rahn80m`, `growth6m`, `transitScore`, `liquidityScore`, `riskScore`).
++  - **Defect (`F-A1V-04`):** Because `CompareModal.tsx:8` passes `[]` to `aggregateNeighborhoodMarketMetrics`, every neighborhood in the comparison table displays `پروفایل مرجع (۰ آگهی)`, concealing real differences in observed sample coverage between neighborhoods.
++- **Decision Autonomy:**
++  - The interface supports user-directed exploration (switching neighborhoods, adjusting hedonic parameters, toggling comparison items, inspecting factor breakdowns) and avoids dark patterns (no fake countdown timers, no fabricated "X people are viewing this property" scarcity prompts, no psychological profiling of the user).
++  - **Remaining Autonomy Gap (Deferred to `WS-B` / `WP-3`):** In `useEvaluatedNeighborhoods.ts` and `MapLegend.tsx`, budget-fit status and overall neighborhood quality remain combined under `optimal` (`ارزنده‌ترین (تطابق کامل)`) vs `overpriced` (`خارج از بودجه`), and onboarding controls in `OnboardingWizardModal.tsx` remain to be decoupled in `WS-B`.
++
++---
++
++## 4. Accessibility & Comprehension Verification
++
++- **RTL & Typography:** Verified in headless Chromium (`E1`); Persian numerals (`toPersianDigits`) are used consistently in `NeighborhoodInspectorDrawer.tsx` and `NeighborhoodInspectorTabs.tsx`, while `ProductIntelligenceView.tsx:182, 191` mixes Latin digits (`131.3`, `154.3`, `56`) inside Persian sentences (`بازه معتبر آماری محله (IQR): 131.3 تا 154.3 م.ت`).
++- **Recommendations for Future User Research:**
++  1. Conduct comprehension testing on whether non-technical homebuyers and real-estate agents understand the distinction between `شاخص پوشش شواهد (غیر احتمالاتی)` (`52/100`) and a statistical probability of accuracy.
++  2. Test whether displaying `"بدون نمونه کافی برای محاسبه IQR"` when `N < 3` improves decision calibration compared to displaying baseline tolerance bands.
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-ACCEPTANCE-MATRIX-AND-TEST-PLAN.md	2026-11-08 21:00:43.329753350 +0000
+@@ -0,0 +1,106 @@
++# WS-A1-V — RADAR 2.0 Product Acceptance, Quality & Verification Matrix Mapping (Part XI Outputs)
++
++**Workstream ID:** `WS-A1-V`  
++**Specification:** `RADAR 2.0 — Product Acceptance, Quality & Verification Matrix` (Parts I–XII, Sections 1–45)  
++**Execution Mode:** Read-Only First-Run / Post-WS-A1 Forensic Verification  
++**Release Recommendation (Section 45):** **`NO-GO`** (`DECISION C — REJECTED / REMEDIATION REQUIRED`)
++
++---
++
++## 1. Global Quality Gates Assessment (Section 9: Gates `G0`–`G7`)
++
++| Gate ID | Gate Name | Status | Evidence Level | Forensic Justification |
++|---|---|---|---|---|
++| **Gate G0** | Repository Integrity | **PARTIAL / FAIL** | `E1`, `E3`, `E4` | Zero secrets in repository or ZIP (`1,167/1,167` files match). However, `docs/engineering/WS-G4A-A1.patch` is a fabricated pseudo-patch (`F-A1V-02`), `WS-G4A-A1-EXECUTION-REPORT.md` cites non-existent functions (`F-A1V-01`), and `src/data/hedonicPricingEngine.ts` (`mtime 20:10:45Z`) was omitted from `WS-G4A-A1-MANIFEST.json` (`F-A1V-05`). |
++| **Gate G1** | Build and Static Quality | **PASS** | `E1` | `npm run lint` (`tsc --noEmit`) exit `0`; `npm run arch:check` exit `0` (`284` files `<= 300` lines); `npx vite build --outDir /tmp/ws-a1-v-dist` exit `0` (`2,220` modules). |
++| **Gate G2** | Domain and Data Integrity | **FAIL** | `E1`, `E2` | `src/data/realMarketPriceAggregator.ts` fabricates 12 PRNG synthetic samples when `N < 3`, yields higher `confidenceScore` on `0` samples (`74`) than `3` real samples (`71`) (`F-A1V-03`), fails to deduplicate repeated listings (`F-A1V-07`), and silently imputes `sqm = 85` when area is missing from listing text (`F-A1V-08`). |
++| **Gate G3** | Security and Privacy | **PASS (Current Scope)** | `E1`, `E2` | `npm run test:rules:static` exit `0` (`13/13` static Firestore checks + `9/9` data integrity checks); `escapeHtmlAttr` and `buildExternalDivarUrl` enforced; `.cache-data.json` / `.runtime-config.json` exclude `SECRET_ENV_KEYS` and `buyerLeads`. Full multi-tenant agency isolation (`RADAR-SEC-003`) is not yet implemented as a multi-agency RBAC model (`DEFERRED` to agency workspace phase). |
++| **Gate G4** | Critical User Workflows | **PARTIAL / FAIL** | `E1`, `E2` | Core spatial inspection, hedonic calculation, and comparison render with `0` console errors in Playwright, but `ProductIntelligenceView.tsx` and `CompareModal.tsx` pass hardcoded `[]` to `aggregateNeighborhoodMarketMetrics` (`F-A1V-04`), contradicting the Inspector Drawer on the same screen. |
++| **Gate G5** | UX, Accessibility, and Localization | **PASS (with minor I18N note)** | `E1`, `E2` | RTL layout, focus management, keyboard controls, and Persian numeral parsing (`normalizePersianText`) work across views (`ProductIntelligenceView.tsx:182, 191` has minor unformatted Latin digits inside Persian copy). |
++| **Gate G6** | Decision Integrity and AI | **FAIL** | `E1`, `E2` | `ProductIntelligenceView.tsx:65, 116, 191` labels heuristic `0.93x` asking-price adjustments as `تخمین قیمت قطعی معاملات (مدل v6.4)` and displays PRNG-derived `iqrLowPerSqm`/`iqrHighPerSqm` (`131.3 تا 154.3 م.ت`) as valid statistical IQR (`F-A1V-03`, `F-A1V-04`). |
++| **Gate G7** | Observability and Recovery | **PASS** | `E1`, `E2` | `valuationTraceAndComparables.ts` produces deterministic `trc_*` audit digests (`REPRODUCIBLE_EXACT`); `server.ts` and `ProcessResourceLifecycleManager` enforce bounded timers and atomic disk recovery. |
++
++---
++
++## 2. Section 42 — Acceptance Mapping Report (`RADAR-*` Requirements)
++
++### 2.1 In-Scope `WS-A1` Requirements (Data, Epistemic Integrity, Domain Valuation & UI Disclosure)
++
++| Requirement ID | Priority | Types | Status | Implemented Evidence | Test Evidence | Gap | Risk | Next Action |
++|---|---|---|---|---|---|---|---|---|
++| **`RADAR-DATA-001`** (Property & market attributes carry appropriate evidence state) | **P1** | `DATA`, `EPI`, `DOM` | **`VERIFIED_FAIL`** | `realMarketPriceAggregator.ts:17-34` defines `MarketDataProvenance` and `EpistemicDataStatus`; `NeighborhoodInspectorDrawer.tsx:86-99` renders badges. | `tests/real-market-price-aggregator.test.ts` (exit `0`), Playwright (`Command 9`), Adversarial Probe (`Command 10`). | 1. `ProductIntelligenceView.tsx:47,231` and `CompareModal.tsx:8` pass `[]`, erasing `hood.bargains` (`F-A1V-04`).<br>2. `extractListingSpecsFromText:137,78,170-175` silently imputes `sqm=85`, `age=10`, `floor=2`, `hasParking=true` without an `INFERRED`/`MISSING` state (`F-A1V-08`). | **HIGH** | Pass mapped `hood.bargains` in all views; reject or explicitly flag listings with missing `sqm`. |
++| **`RADAR-DATA-002`** (Units and numeric attributes are unambiguous) | **P1** | `DATA`, `FUNC`, `I18N` | **`VERIFIED_FAIL`** | `src/utils/areaUnit.ts`, `parseIranianPriceToMillionToman` (`realMarketPriceAggregator.ts:95-134`), `hedonicPricingEngine.ts:96-105`. | `tests/pricing-engine-integrity.test.ts` (exit `0`), Adversarial Probe (`Command 10`). | Persian/Arabic digits and Billion/Million/Rial units parse accurately, **but** `hedonicPricingEngine.ts:97-100` silently clamps `sqm <= 0` to `30`, `sqm: NaN` to `85`, and `floor: 20` in a 4-floor building (`+10.5%` bonus) without validation error (`F-A1V-08`). | **HIGH** | Add explicit input validation boundary for `sqm <= 0`, `NaN`, and `floor > totalFloors`. |
++| **`RADAR-DATA-004`** (Geographic claims communicate precision and source) | **P1** | `DATA`, `EPI`, `UX` | **`IMPLEMENTED_UNVERIFIED`** | `src/data/neighborhoods.ts`, `src/data/listingFraudAndAddressEngine.ts`, `NeighborhoodInspectorDrawer.tsx`. | `npm run test:unit` (exit `0`). | Neighborhood centroids are represented honestly as regional profiles in Drawer, but `applySpatialGrowthFallback` (`realMarketPriceAggregator.ts:233-241`) interpolates across a `12 km` radius without UI disclosure. | **MEDIUM** | Disclose when growth rate is spatially interpolated from neighboring zones. |
++| **`RADAR-EPI-001`** (Claims are distinguishable from evidence) | **P1** | `EPI`, `DATA`, `UX` | **`VERIFIED_FAIL`** | `NeighborhoodInspectorTabs.tsx:183-220` separates asking prices from hypothetical negotiation estimates (`ضریب فرضی سناریوی مذاکره`). | Playwright (`Command 9`), Static Inspection (`E2`). | `ProductIntelligenceView.tsx:65, 116, 191` still labels heuristic `0.93x` asking-price estimates as **`تخمین قیمت قطعی معاملات (مدل v6.4)`** and **`جایگاه معامله قطعی`** (`F-A1V-04`). | **HIGH (Release Blocker)** | Replace closing-transaction wording in `ProductIntelligenceView.tsx` with scenario-based asking-discount terminology. |
++| **`RADAR-EPI-002`** (Uncertainty is calibrated and comprehensible) | **P1** | `EPI`, `UX`, `AI` | **`VERIFIED_FAIL`** | `valuationTraceAndComparables.ts:110-114` (`isStatisticalConfidenceInterval: false`), `realMarketPriceAggregator.ts:265-275`. | Adversarial Probe (`Command 10`), Playwright (`Command 9`). | 1. `confidenceScore` in `realMarketPriceAggregator.ts:274` is **`74` on `0` observed samples** vs **`71` on `3` real observed samples** (`F-A1V-03`).<br>2. When `N < 3`, `iqrLowPerSqm` and `iqrHighPerSqm` (`131.3 – 154.3 م.ت`) are computed from 12 PRNG synthetic samples and displayed in UI as valid neighborhood IQR! | **HIGH (Release Blocker)** | Eliminate PRNG synthetic IQR and fix `confidenceScore` monotonicity when `observedEvaluated.length < 3`. |
++| **`RADAR-EPI-003`** (Evidence freshness is explicit) | **P1** | `EPI`, `DATA` | **`VERIFIED_FAIL`** | `valuationTraceAndComparables.ts:190, 208` checks 90-day freshness (`maxStaleMs`), `driftRankingConsentAndEnvironment.ts`. | `tests/prompts-106-to-145.test.ts` (exit `0`), `Command 10`. | `aggregateNeighborhoodMarketMetrics` (`realMarketPriceAggregator.ts:243-246`) accepts no timestamp on input samples and re-seeds its PRNG every UTC day (`Date.now() / 86_400_000`), making static reference neighborhoods fluctuate daily as if fresh market data arrived (`F-A1V-03`). | **HIGH** | Remove `Date.now()` PRNG seeding and include sample timestamps/freshness state in `aggregateNeighborhoodMarketMetrics`. |
++| **`RADAR-DOM-003`** (Property identity and duplicate detection are explainable) | **P1** | `DOM`, `DATA`, `UX` | **`VERIFIED_FAIL`** | `valuationTraceAndComparables.ts:191, 212` (`seenFingerprints`), `listingFraudAndAddressEngine.ts`, `realMarketPriceAggregator.ts:247-260`. | Adversarial Metamorphic Probe (`Command 10`). | While `evaluateComparableProperties` deduplicates by fingerprint, `aggregateNeighborhoodMarketMetrics` performs **zero deduplication**: passing `[sA, sA, sA, sA, sA]` yields `observedSampleCount: 5` and `evidenceIndexScore: 77` (`F-A1V-07`). Also `rejectedFraudCount` sums `excludedOutlierCount` (`F-A1V-03`). | **HIGH (Release Blocker)** | Deduplicate samples by ID and normalized attribute fingerprint in `aggregateNeighborhoodMarketMetrics`; separate `excludedOutlierCount` from `rejectedFraudCount`. |
++| **`RADAR-FUNC-009`** (Every operational metric has a definition) | **P1** | `FUNC`, `DATA`, `EPI`, `UX` | **`VERIFIED_FAIL`** | `realMarketPriceAggregator.ts:27-28` (`evidenceIndexFormula`), `NeighborhoodInspectorTabs.tsx:183-220`. | Static Inspection (`E2`), Playwright (`Command 9`). | In `realMarketPriceAggregator.ts:271, 275`, when `observedSampleCount === 0`, `sampleCount` (`12`) and `validSampleCount` (`12`) report the count of synthetic PRNG rows rather than `0`, violating the requirement that *"A zero value is distinguishable from missing data and failed calculation."* | **HIGH** | Set `sampleCount = 0` and `validSampleCount = 0` when `observedEvaluated.length === 0`. |
++
++---
++
++### 2.2 Deferred `WS-B` (`WP-3`) Requirements & Platform-Wide Requirements Mapping
++
++| Requirement ID | Priority | Types | Status | Repository Evidence & Rationale |
++|---|---|---|---|---|
++| **`RADAR-FUNC-003`** (Requirement-to-property matching is explainable) | **P1** | `FUNC`, `EPI`, `UX`, `AGENCY` | **`DEFERRED` (`WS-B` / `WP-3`)** | In `src/components/useEvaluatedNeighborhoods.ts:27` and `MapLegend.tsx:28-30`, budget-fit and neighborhood quality are still conflated under `optimal` (`ارزنده‌ترین (تطابق کامل)`). Explicitly scoped to `WS-B` (`WP-3`), which is blocked pending `WS-A1` sign-off. |
++| **`RADAR-AGENCY-001`..`005`** (Situation-scoped Decision Context & non-coercive preference discovery) | **P1** | `AGENCY`, `UX`, `DATA` | **`DEFERRED` (`WS-B` / `WP-3`)** | `src/components/OnboardingWizardModal.tsx` (283 lines) collects buyer preferences without coercive dark patterns, but wiring all onboarding controls cleanly into separated budget-fit vs quality scoring is scoped to `WS-B` (`WP-3`). |
++| **`RADAR-AGENCY-006`..`007`** (Household decision architecture & multi-stakeholder disagreement) | **P1** | `AGENCY`, `SEC`, `UX`, `DOM` | **`NOT_IMPLEMENTED`** | No multi-participant household comparison or private household note boundary exists in `src/types/models.ts` or `firestore.rules`. Future roadmap capability. |
++| **`RADAR-DOM-001`**, **`RADAR-DOM-002`**, **`RADAR-DOM-004`**, **`RADAR-DOM-005`** (Agency workspace context, `PhysicalAsset` vs `AgencyRecord` vs `ListingPublication`, CRM entities) | **P0 / P1** | `DOM`, `DATA`, `FUNC`, `SEC` | **`PARTIAL / DEFERRED`** | `src/types/models.ts` and `firestore.rules` implement `/bargains/{id}` + `/bargainOwners/{id}` + `/buyerLeads/{id}` + `/agencyWorkspaces` scaffolding (`src/components/B2BAgencyWorkspaceModal.tsx`), but full 3-layer separation (`PhysicalAsset` / `AgencyRecord` / `ListingPublication`) is not yet split at the schema boundary (`ADR-0002`). |
++| **`RADAR-SEC-001`..`007`** (Authentication, server-side RBAC, multi-tenant isolation, media upload safety, privacy & audit logs) | **P0 / P1** | `SEC`, `DOM`, `DATA`, `OBS` | **`VERIFIED_PASS` (Current Single-Tenant/Public-Bargain Scope) / `DEFERRED` (Multi-Agency RBAC)** | Verified by `npm run test:rules:static` (`13/13`), `tests/object-storage-upload-auth.test.ts`, `tests/object-storage-security.test.ts`, and `src/utils/serverAdminSodAndBackupSecurity.ts`. Multi-agency cross-tenant isolation (`RADAR-SEC-003`) requires `ADR-0003` implementation. |
++| **`RADAR-AI-001`..`006`** (AI output labeling, reasoning disclosure, human confirmation, privacy boundaries, safe degradation) | **P0 / P1** | `AI`, `EPI`, `SEC`, `REL` | **`VERIFIED_PASS` (Current Scope)** | Enforced by `ADR-005` and `ADR-006` in `src/utils/aiGovernanceAndObservability.ts` (`SIMULATED — NOT A REAL AI RESPONSE` labeling, groundedness checks, zero autonomous mutations). Verified in `npm run test:unit` (`tests/prompts-106-to-145.test.ts`). |
++| **`RADAR-I18N-001`..`003`**, **`RADAR-A11Y-001`..`003`**, **`RADAR-UX-001`..`002`** (Persian RTL, digits, keyboard & assistive tech, responsive viewports) | **P1 / P2** | `I18N`, `A11Y`, `UX` | **`VERIFIED_PASS` (with minor digit formatting gap in `ProductIntelligenceView`)** | Verified via `playwright-cli` (`Command 9`) and `tests/prompts-541-to-600-docs-ux-and-architecture.test.ts` (`exit 0`). |
++| **`RADAR-REL-001`..`003`**, **`RADAR-PERF-001`..`002`**, **`RADAR-MIG-001`..`002`** (Reliability, concurrency, performance budgets, schema migrations) | **P0 / P1** | `REL`, `PERF`, `MIG` | **`VERIFIED_PASS`** | Verified via `npm run test:unit` and `npm run test:contracts` (`src/utils/serverIdempotencyAndConcurrency.ts`, `src/utils/engineeringAndMigrationGovernance.ts`). |
++
++---
++
++## 3. Section 43 — Executable Test Plan for Failed In-Scope `P0` / `P1` Requirements
++
++### Test Scenario 1: `RADAR-EPI-002` / `RADAR-FUNC-009` — Zero-Sample & Sparse-Sample Honesty (No PRNG Bootstrap Contamination)
++- **Test Objective:** Verify that `aggregateNeighborhoodMarketMetrics` does not fabricate synthetic listings, synthetic IQR bounds, or inflated confidence scores when `0`, `1`, or `2` observed listings exist.
++- **Test Level:** Unit & Metamorphic (`tests/real-market-price-aggregator.test.ts`).
++- **Preconditions:** Neighborhood baseline `baseHoodPerSqm = 142` (`Punak`, `hoodId = 5`).
++- **Test Data:** `samples0 = []`, `samples2 = [sA, sB]`, `samples3 = [sA, sB, sC]`.
++- **Given / When / Then:**
++  - **Given** a neighborhood with `0` observed listing samples (`samples0 = []`),
++  - **When** `aggregateNeighborhoodMarketMetrics(5, 'پونک', 142, [])` is executed,
++  - **Then** `observedSampleCount` MUST equal `0`, `sampleCount` MUST equal `0`, `validSampleCount` MUST equal `0`, `syntheticSampleCount` MUST equal `0`, `autoBargains` MUST be empty (`[]`), `observedIqrLowPerSqm` and `iqrLowPerSqm` MUST be `null` (or explicitly flagged as unavailable),
++  - **And** `confidenceScore` for `0` samples MUST be strictly less than `confidenceScore` for `3` real observed samples (`agg(samples0).confidenceScore < agg(samples3).confidenceScore`).
++- **Negative Case:** Calling `aggregateNeighborhoodMarketMetrics` on two consecutive UTC days (`Date.now()` shifted by `+86,400,000 ms`) with identical inputs MUST return 100% identical outputs (zero wall-clock PRNG drift).
++- **Evidence Artifact:** `docs/engineering/WS-A1-V/WS-A1-V-COMMAND-EVIDENCE.md` (`Command 10`).
++
++### Test Scenario 2: `RADAR-DOM-003` — Idempotent Listing Deduplication & Outlier-vs-Fraud Separation
++- **Test Objective:** Verify that duplicate listing records do not inflate `observedSampleCount` or `evidenceIndexScore`, and statistical outliers do not increment `rejectedFraudCount`.
++- **Test Level:** Unit & Metamorphic (`tests/real-market-price-aggregator.test.ts`).
++- **Given / When / Then:**
++  - **Given** a single valid listing sample `sA = { id: 'a', askingTotalMillion: 13500, description: '100 متر طبقه 2 از 4 پارکینگ آسانسور انباری', yearOrAge: 5 }`,
++  - **When** `aggregateNeighborhoodMarketMetrics(5, 'پونک', 142, [sA, sA, sA, sA, sA])` is called with 5 duplicate copies of `sA`,
++  - **Then** `observedSampleCount` (unique valid observations) MUST equal `1`, `evidenceIndexScore` MUST equal `35` (not `77`), and `evidenceQuality` MUST remain `'LIMITED_OBSERVATIONS'` (not `'MODERATE_OBSERVATIONS'`).
++  - **And when** a sample set of 9 valid listings plus 1 high-priced statistical outlier (`310M/sqm` vs `142M/sqm` base) is evaluated,
++  - **Then** `excludedOutlierCount` MUST equal `1`, `rejectedFraudCount` MUST equal `0`, and `fraudReviewState` MUST equal `'STATISTICAL_OUTLIER'` (never `'FRAUD_SUSPECTED'`).
++
++### Test Scenario 3: `RADAR-DATA-001` / `RADAR-DATA-002` — Rejection of Missing-Area Listings & Invalid Hedonic Inputs
++- **Test Objective:** Verify that missing meterage (`sqm`) in listing descriptions is never silently defaulted to `85 sqm`, and invalid `sqm <= 0` / `NaN` or `floor > totalFloors` inputs are rejected or flagged.
++- **Test Level:** Unit (`tests/real-market-price-aggregator.test.ts`, `tests/assess-004-hedonic-accuracy-benchmark.test.ts`).
++- **Given / When / Then:**
++  - **Given** a listing sample `{ id: 'm1', askingTotalMillion: 14000, description: 'آپارتمان خوش نقشه در پونک بدون ذکر متراژ' }` with no area specified,
++  - **When** `aggregateNeighborhoodMarketMetrics` evaluates the sample,
++  - **Then** `malformedSampleCount` MUST increment by `1`, and the sample MUST NOT be divided by a default `85 sqm` or included in `observedEvaluated`.
++
++### Test Scenario 4: `RADAR-DATA-001` / `RADAR-EPI-001` — Cross-View Sample Consistency & Non-Deceptive Deal Framing
++- **Test Objective:** Verify that `NeighborhoodInspectorDrawer`, `ProductIntelligenceView`, and `CompareModal` report identical observed sample counts for the same neighborhood, and no view labels heuristic asking-price discounts as confirmed closing transactions.
++- **Test Level:** Integration / Playwright E2E (`http://localhost:3000/?hood=5&compare=5-14` and `?hood=5&view=intelligence`).
++- **Given / When / Then:**
++  - **Given** neighborhood `Punak` (`hoodId = 5`) which has `2` observed listings in `hood.bargains`,
++  - **When** the user opens `NeighborhoodInspectorDrawer`, `ProductIntelligenceView`, and `CompareModal` for `hood = 5`,
++  - **Then** all three views MUST display `۲ آگهی` and `شاخص پوشش شواهد: ۵۲/۱۰۰` (never `۰ آگهی`),
++  - **And** `ProductIntelligenceView` MUST NOT contain the strings `'تخمین قیمت قطعی معاملات'` or `'جایگاه معامله قطعی'`.
++
++---
++
++## 4. Section 44 & Section 45 — Verification Summary & Release Recommendation
++
++- **Verification Summary:** See `docs/engineering/WS-A1-V/WS-A1-V-COMMAND-EVIDENCE.md` for all 10 executed command blocks, timestamps, exit codes, and browser verifications (`26/26` unit test files passed, contract suite passed, static Firestore rules passed, isolated Vite production build passed, live Playwright inspection completed).
++- **Release Recommendation (Section 45):** **`NO-GO`** (`DECISION C — REJECTED / REMEDIATION REQUIRED`).
++  - **Blocking Requirement IDs:** `RADAR-DATA-001`, `RADAR-DATA-002`, `RADAR-DOM-003`, `RADAR-FUNC-009`, `RADAR-EPI-001`, `RADAR-EPI-002`, `RADAR-EPI-003`, and **Gate G0 / Gate G2 / Gate G4 / Gate G6** (`F-A1V-01`, `F-A1V-02`, `F-A1V-03`, `F-A1V-04`, `F-A1V-07`, `F-A1V-08`).
++  - **Authorization Boundary:** Human decision-maker review is required; `WS-B` (`WP-3`) remains **NOT AUTHORIZED**.
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-ADR-GOVERNANCE-AND-DRIFT-AUDIT.md	2026-11-08 21:00:43.842122698 +0000
+@@ -0,0 +1,64 @@
++# WS-A1-V — RADAR 2.0 Architecture Decision Records (ADR) Governance & Drift Audit
++
++**Workstream ID:** `WS-A1-V`  
++**Specification:** `RADAR 2.0 — Architecture Decision Records & Product Governance Pack` (Parts I–IX, Sections 1–26)  
++**Inspected Repository ADR Files:** `ARCHITECTURE.md`, `docs/adr-evolution-and-governance.md`, `docs/architecture/ARCHITECTURE-DECISIONS.md`, `docs/RADAR-TEHRAN-OPERATING-CHARTER.md`  
++**Execution Mode:** Read-Only Forensic Audit (Zero Autonomous ADR Approvals)
++
++---
++
++## 1. Reconciliation of Repository Legacy ADRs vs. RADAR 2.0 Decision Register
++
++Inspection of `/docs/adr-evolution-and-governance.md` and `/docs/architecture/ARCHITECTURE-DECISIONS.md` reveals **two overlapping legacy ADR numbering schemes** already in the repository (`ADR-001`..`ADR-008` in `docs/adr-evolution-and-governance.md` and a different `ADR-004`..`ADR-007` in `docs/architecture/ARCHITECTURE-DECISIONS.md`), alongside the normative 4-digit **RADAR 2.0 Decision Register (`ADR-0001`..`ADR-0020`)**.
++
++### Section 24 — Consolidated ADR Index & Status Register
++
++| ADR ID | Title | Normative Governance Status | Domain | Decision Owner / Required Approver | Implementation Conformance (Section 20 Drift Review) | Supersedes / Related Legacy ADRs |
++|---|---|---|---|---|---|---|
++| **`ADR-0001`** | Product entry point (`agency`), geography (`iran`), property model (`hybrid`), and business-tool sequencing (`phased`) | `ESTABLISHED PRODUCT CONSTRAINT` | Product direction | Product Owner | **PARTIALLY CONFORMS:** Iran multi-city geography (5 cities, 104+ hoods) and phased B2B agency workspace modal exist (`src/components/B2BAgencyWorkspaceModal.tsx`), while primary landing experience remains consumer/analyst map-first. | Charter `docs/RADAR-TEHRAN-OPERATING-CHARTER.md` |
++| **`ADR-0002`** | Property domain identity and 3-way record separation (`PhysicalAsset`, `AgencyRecord`, `ListingPublication`) | `PROPOSED` | Domain model & data architecture | Product Owner + Technical Authority | **DEVIATES (Legacy Conflation):** Current `src/types/models.ts` and `firestore.rules` store `/bargains/{id}` as a single listing/property entity with split owner ID in `/bargainOwners/{id}`, without separating `PhysicalAsset`, `AgencyRecord`, and `ListingPublication`. | Legacy `ADR-005` (`docs/adr-evolution-and-governance.md:22`) |
++| **`ADR-0003`** | Multi-tenancy, agency data ownership, and sharing boundaries | `PROPOSED — HUMAN APPROVAL REQUIRED` | Security, data governance, domain model | Authorized Security / Technical Owner + Product Owner | **PARTIALLY CONFORMS (Single-User Ownership Only):** `firestore.rules` enforces per-user ownership on `/bargainOwners/{id}` and admin-only read on `/buyerLeads/{id}`, but multi-agency tenant isolation (`agencyId` RBAC across properties/CRM) is not yet implemented. | Legacy `ADR-005` (`docs/adr-evolution-and-governance.md:22`) |
++| **`ADR-0004`** | Evidence provenance, verification state, and data freshness | `PROPOSED` | Data architecture & epistemic integrity | Domain Architect / Product Owner | **PARTIALLY CONFORMS / DEVIATES IN `WS-A1` (`F-A1V-03`, `F-A1V-04`, `F-A1V-08`):** `MarketDataProvenance` and `EpistemicDataStatus` exist in `realMarketPriceAggregator.ts:17-21`, but `N < 3` still generates 12 PRNG synthetic samples, `ProductIntelligenceView` and `CompareModal` pass `[]`, and missing `sqm` silently defaults to `85`. | Legacy `ADR-003` (`docs/adr-evolution-and-governance.md:20`) |
++| **`ADR-0005`** | Situation-scoped `DecisionContext` and revisable preferences (no psychological profiling) | `PROPOSED — RESEARCH AND PRIVACY REVIEW REQUIRED` | Product model, psychology, data governance | Product Owner + Privacy/Governance Owner | **PARTIALLY CONFORMS:** No permanent psychological profiling exists in the repo; `OnboardingWizardModal.tsx` captures transient session filters, though a formal revisable `DecisionContext` entity is deferred to `WS-B` (`WP-3`) and later phases. | None |
++| **`ADR-0006`** | AI authority, staged assistance, and human confirmation | `PROPOSED — HUMAN APPROVAL REQUIRED FOR CONSEQUENTIAL ACTIONS` | AI governance, security, data integrity | Product Owner + Security/Privacy Authority | **CONFORMS:** Legacy `ADR-005` and `ADR-006` in `docs/architecture/ARCHITECTURE-DECISIONS.md` enforce deterministic hedonic authority over LLMs, `SIMULATED — NOT A REAL AI RESPONSE` labeling, and zero autonomous AI mutations (`src/utils/aiGovernanceAndObservability.ts`). | Legacy `ADR-005` & `ADR-006` (`ARCHITECTURE-DECISIONS.md:22-41`) |
++| **`ADR-0007`** | `Spatial Workspace` and `Product Workspace` boundaries | `ESTABLISHED PRODUCT DESIGN CONSTRAINT; IMPLEMENTATION DETAILS PROPOSED` | UX & application architecture | Product Owner / Design Authority | **CONFORMS:** `src/App.tsx` and `src/components/views/*` provide distinct workspace views (`map` spatial workspace vs `intelligence`, `crm`, `operations`, `governance` product views) without forcing an embedded map behind non-spatial views. | Legacy `ADR-001` (`docs/adr-evolution-and-governance.md:18`) |
++| **`ADR-0008`** | KPI definitions and analytics governance | `PROPOSED` | Measurement & data governance | Product Owner / Data Lead | **DEVIATES IN `WS-A1` (`F-A1V-03`, `F-A1V-04`):** While `evidenceIndexFormula` is explicitly defined in `realMarketPriceAggregator.ts:27`, `confidenceScore` (`74` on `0` samples vs `71` on `3` samples) and `sampleCount` (`12` on `0` observed samples) violate metric definition integrity. | None |
++| **`ADR-0009`** | Integration, synchronization, and event strategy | `OPEN DECISION` | Integration & application architecture | Technical Authority | **CONFORMS TO BOUNDED MONOLITH RULE:** `docs/adr-evolution-and-governance.md:9-10` explicitly postpones Redis/BullMQ/microservices and uses bounded singleton timers (`ProcessResourceLifecycleManager`) + multi-provider map tile failover (`Legacy ADR-007`). | Legacy `ADR-001`, `ADR-004`, `ADR-007` |
++| **`ADR-0010`** | Commercial incentives and conflict-of-interest governance | `PROPOSED PRODUCT PRINCIPLE; COMMERCIAL MODEL REQUIRES HUMAN APPROVAL` | Product strategy & ethics | Product Owner | **PARTIALLY CONFORMS:** `src/utils/dataCommerceMcpAndMonetization.ts` (`Legacy ADR-007` in `ARCHITECTURE-DECISIONS.md:44-51`) blocks PII datasets (`buyerLeads`) from commercialization, and rankings do not use hidden paid placement. Commercial model requires explicit Product Owner sign-off. | Legacy `ADR-007` (`ARCHITECTURE-DECISIONS.md:44`) |
++
++---
++
++## 2. Section 25 — Decision-to-Code Traceability Matrix
++
++| ADR ID | Relevant Source Modules & Symbols | API / Schema Contracts | Acceptance Requirement IDs | Verification Tests |
++|---|---|---|---|---|
++| **`ADR-0001` & `ADR-0007`** | `src/App.tsx`, `src/components/views/ProductIntelligenceView.tsx`, `src/components/B2BAgencyWorkspaceModal.tsx`, `src/data/multiCityData.ts` | URL view routing (`?view=intelligence`, `?city=`, `?hood=`) | `RADAR-DOM-001`, `RADAR-FUNC-007`, `RADAR-FUNC-008` | `scripts/check-architecture.ts` (`npm run arch:check`), Playwright live inspection (`Command 9`) |
++| **`ADR-0002` & `ADR-0003`** | `src/types/models.ts`, `src/utils/security.ts`, `src/utils/serverAdminSodAndBackupSecurity.ts` | `firestore.rules` (`/bargains`, `/bargainOwners`, `/buyerLeads`), `firebase-blueprint.json` | `RADAR-SEC-001`, `RADAR-SEC-002`, `RADAR-SEC-003`, `RADAR-DOM-002` | `scripts/run-firestore-rules-tests.ts static` (`npm run test:rules:static`), `tests/object-storage-upload-auth.test.ts` |
++| **`ADR-0004` & `ADR-0008`** | `src/data/realMarketPriceAggregator.ts` (`aggregateNeighborhoodMarketMetrics`, `extractListingSpecsFromText`), `src/data/hedonicPricingEngine.ts` (`calculateHedonicValuation`), `src/data/valuationTraceAndComparables.ts` (`buildReproducibleValuationTrace`, `evaluateComparableProperties`), `src/components/NeighborhoodInspectorDrawer.tsx`, `src/components/NeighborhoodInspectorTabs.tsx`, `src/components/views/ProductIntelligenceView.tsx`, `src/components/CompareModal.tsx` | `AggregatedMarketMetrics`, `HedonicValuationResult`, `ValuationCalculationTrace`, `ComparableSelectionReport` | `RADAR-DATA-001`, `RADAR-DATA-002`, `RADAR-DOM-003`, `RADAR-FUNC-009`, `RADAR-EPI-001`, `RADAR-EPI-002`, `RADAR-EPI-003` | `tests/real-market-price-aggregator.test.ts`, `tests/pricing-engine-integrity.test.ts`, `tests/assess-004-hedonic-accuracy-benchmark.test.ts`, `WS-A1-V` Adversarial Probe (`Command 10`) |
++| **`ADR-0005`** | `src/components/OnboardingWizardModal.tsx`, `src/components/useEvaluatedNeighborhoods.ts`, `src/components/MapLegend.tsx` | Client preference state & URL query parameters | `RADAR-AGENCY-001`..`005`, `RADAR-FUNC-003` | Scoped to `WS-B` (`WP-3` — currently `NOT AUTHORIZED`) |
++| **`ADR-0006`** | `src/utils/aiGovernanceAndObservability.ts` (`evaluateAiOutputGroundednessAndAccuracy`), `src/data/hedonicPricingEngine.ts` | `/api/ai/*` proxy contracts in `src/utils/serverConfigValidator.ts` | `RADAR-AI-001`..`006` | `tests/prompts-106-to-145.test.ts` (`npm run test:unit`) |
++
++---
++
++## 3. Section 23 — Required Agent Report for Architecture Decisions Impacted by `WS-A1`
++
++### Decision Report: `ADR-0004` (Evidence Provenance, Verification State & Data Freshness) & `ADR-0008` (KPI Definitions & Metric Governance)
++1. **Decision ID and Title:** `ADR-0004` — Evidence provenance, verification state, and data freshness; `ADR-0008` — KPI definitions and analytics governance.
++2. **Current Status:** `PROPOSED` (Implementation attempted in `WS-A1`, currently exhibiting unapproved architectural drift due to `F-A1V-03`, `F-A1V-04`, `F-A1V-07`, and `F-A1V-08`).
++3. **Triggering Problem:** Neighborhood market metrics in `src/data/realMarketPriceAggregator.ts` previously blended Mulberry32 PRNG synthetic listings with observed secondary-market asking prices, conflated statistical outliers with fraud counts, and presented asking-price adjustments as closing transaction prices.
++4. **Repository Evidence (`E1`, `E2`):**
++   - `src/data/realMarketPriceAggregator.ts:260-275` still runs `seededRandom(hoodId * 997 + Math.floor(Date.now() / 86_400_000))` when `observedEvaluated.length < 3`, returning `sampleCount: 12`, `validSampleCount: 12`, `confidenceScore: 74` (`> 71` for 3 real samples), and synthetic `iqrLowPerSqm`/`iqrHighPerSqm`.
++   - `src/components/views/ProductIntelligenceView.tsx:47, 231` and `src/components/CompareModal.tsx:8` pass hardcoded `[]` to `aggregateNeighborhoodMarketMetrics`, erasing `hood.bargains`.
++   - `docs/adr-evolution-and-governance.md` and `docs/architecture/ARCHITECTURE-DECISIONS.md` have conflicting ADR numbering (`ADR-004`..`ADR-007` used for two different sets of decisions).
++5. **Product Principle Affected:** Epistemic honesty, calibrated user reliance, separation of observed evidence from model/synthetic estimates, and non-deceptive metric definitions.
++6. **Options Considered:**
++   - **Option A (Current Defective Hybrid in `realMarketPriceAggregator.ts`):** Keep `syntheticRaw` (12 PRNG rows) inside `evaluated` when `N < 3` so legacy fields (`iqrLowPerSqm`, `sampleCount: 12`, `confidenceScore: 74`) remain populated with numbers, while adding new fields (`observedSampleCount: 0`, `evidenceIndexScore: 0`, `observedIqrLowPerSqm: null`). *Rejected by `WS-A1-V` audit because UI components (`NeighborhoodInspectorTabs.tsx:201`, `ProductIntelligenceView.tsx:182`) still bind to the synthetic-contaminated `iqrLowPerSqm`/`iqrHighPerSqm` and `confidenceScore: 74` violates Missing-Data Transparency.*
++   - **Option B (Recommended Strict Epistemic Separation):** Eliminate `syntheticRaw` generation from `aggregateNeighborhoodMarketMetrics` when `observedEvaluated.length < 3`. Set `sampleCount = observedEvaluated.length`, `validSampleCount = eligibleObservedCount`, `confidenceScore = evidenceIndexScore`, and return `null` (or explicit baseline-only reference without PRNG noise) for `iqrLowPerSqm`/`iqrHighPerSqm` when `eligibleObservedCount < 3`. Pass mapped `hood.bargains` consistently across all views (`NeighborhoodInspectorDrawer`, `ProductIntelligenceView`, `CompareModal`).
++7. **Recommendation:** Adopt **Option B** in the authorized `WS-A1` remediation pass.
++8. **Trade-offs:** Option B requires UI components (`NeighborhoodInspectorTabs.tsx`, `ProductIntelligenceView.tsx`) to handle `null` IQR bounds gracefully when `N < 3` (rendering an explicit `"نیازمند حداقل ۳ نمونه مشاهده‌شده"` badge rather than a numeric bar), trading visual numeric density for genuine epistemic honesty.
++9. **Security and Privacy Impact:** None (operates on public/secondary listing aggregates; preserves existing PII protections).
++10. **Data and Migration Impact:** Purely in-memory aggregation contract refinement; zero destructive database migrations required.
++11. **UX and Human-Agency Impact:** Eliminates contradictory sample counts across panels (`2` vs `0`), removes false-precision synthetic IQR bounds, and replaces authoritative closing-transaction wording (`تخمین قیمت قطعی معاملات`) with transparent negotiation-scenario framing.
++12. **Required Human Approval:** Human Product Owner / Technical Authority sign-off is required to accept `ADR-0004` / `ADR-0008` remediation and before any transition to `WS-B` (`WP-3` / `ADR-0005`).
++13. **Verification Plan:** Execute the 4 Given/When/Then test scenarios defined in `docs/engineering/WS-A1-V/WS-A1-V-ACCEPTANCE-MATRIX-AND-TEST-PLAN.md` (Section 3).
++14. **Related ADRs and Requirements:** `ADR-0004`, `ADR-0008`, `Legacy ADR-002`, `RADAR-DATA-001`, `RADAR-DATA-002`, `RADAR-DOM-003`, `RADAR-FUNC-009`, `RADAR-EPI-001`, `RADAR-EPI-002`, `RADAR-EPI-003`.
+--- /dev/null	2026-11-08 19:12:18.667916013 +0000
++++ docs/engineering/WS-A1-V/WS-A1-V-MANIFEST.json	2026-11-08 21:01:03.187809027 +0000
+@@ -0,0 +1,113 @@
++{
++  "workstreamId": "WS-A1-V",
++  "verifiedTargetWorkstreamId": "WS-G4A-A1",
++  "timestampUtc": "2026-11-08T21:01:00Z",
++  "executionMode": "READ_ONLY_FORENSIC_VERIFICATION",
++  "releaseGateDecision": "DECISION_C_REJECTED_REMEDIATION_REQUIRED",
++  "releaseRecommendation": "NO-GO",
++  "wsBAuthorizationStatus": "NOT_AUTHORIZED_AWAITING_HUMAN_DECISION",
++  "applicationSourceFilesModified": 0,
++  "testFilesModified": 0,
++  "existingArtifactsModified": 0,
++  "generatedVerificationDeliverables": [
++    {
++      "deliverableOrder": 1,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-VERIFICATION-REPORT.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 50313,
++      "lines": 309,
++      "sha256": "08ab716f3293192c7afd19425ac6677dc2024e59c3b2d4ad3a9575846a58c0e6"
++    },
++    {
++      "deliverableOrder": 2,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-FINDINGS.json",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 20144,
++      "lines": 264,
++      "sha256": "c69970b6da8ac878d2022ad8a926c46833c6ed54226718593d578a331eccb598"
++    },
++    {
++      "deliverableOrder": 3,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-COMMAND-EVIDENCE.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 14656,
++      "lines": 298,
++      "sha256": "84d7777118a0a7e59906eb661cfb1bca7c9199460208e0ecfcb9ee1bae1c97ad"
++    },
++    {
++      "deliverableOrder": 4,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-ARTIFACT-RECONCILIATION.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 7196,
++      "lines": 73,
++      "sha256": "fa87bba2af2c8de05ee14a8105c80a0f8768f0c583e9d53fc28837bf2bfb9dc6"
++    },
++    {
++      "deliverableOrder": 5,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-STATISTICAL-VALIDITY.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 14248,
++      "lines": 121,
++      "sha256": "b67aaadb080b900be970f1ffcdc2d96b2b4fa34b8830793953d7211cdf030190"
++    },
++    {
++      "deliverableOrder": 6,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-DATA-LINEAGE.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 14843,
++      "lines": 74,
++      "sha256": "b9574b3786983813d29cd651119a635e9a1b78211eaec846ae56c1391c4013a3"
++    },
++    {
++      "deliverableOrder": 7,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-REPRODUCIBILITY.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 8408,
++      "lines": 77,
++      "sha256": "f731a9185ae57c3576c7499547e86b39052694ceec3a2a9db5ad570829fb79b6"
++    },
++    {
++      "deliverableOrder": 8,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-ADVERSARIAL-TEST-ASSESSMENT.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 12308,
++      "lines": 71,
++      "sha256": "54af47110b9a03465e67823efc3e6110a544dbc0068da3f737f6089a15fa900a"
++    },
++    {
++      "deliverableOrder": 9,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-UX-DECISION-INTEGRITY.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 10908,
++      "lines": 78,
++      "sha256": "69ccaa41e23768fbadcddc9cea1780cfa354c6c3c597816e1927dba87145cc2e"
++    },
++    {
++      "deliverableOrder": 10,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-ACCEPTANCE-MATRIX-AND-TEST-PLAN.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 19197,
++      "lines": 107,
++      "sha256": "a8f54cf40e1837ec3fb166d985f6e788be9131cb7bcae064bcc8e25eb041748a"
++    },
++    {
++      "deliverableOrder": 11,
++      "path": "docs/engineering/WS-A1-V/WS-A1-V-ADR-GOVERNANCE-AND-DRIFT-AUDIT.md",
++      "changeClassification": "CREATED_VERIFICATION_ARTIFACT",
++      "workstreamId": "WS-A1-V",
++      "bytes": 13657,
++      "lines": 65,
++      "sha256": "484030708641b7c07867fe41c3048553876de013ad7a9ef023350e986f2605c2"
++    }
++  ]
++}

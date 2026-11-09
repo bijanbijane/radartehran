@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   calculateDetailedValuation,
   calculateLandShare,
@@ -33,6 +35,12 @@ import {
   mergeNeighborhoodWithSeed,
   validateAndBuildRestoredState,
 } from '../src/data/neighborhoods';
+import { explainNeighborhoodRecommendation } from '../src/components/useEvaluatedNeighborhoods';
+import {
+  buildNeighborhoodSeedReviews,
+  mergeCloudAndSeedReviews,
+  summarizeNeighborhoodQoL,
+} from '../src/components/inspector/residentReviewsLogic';
 import {
   buildSanitizedBargainPayload,
   buildSanitizedOverridePayload,
@@ -902,6 +910,193 @@ function runDomainRegressionTests(): void {
   assert('36. Buyer alert cache: a failed durable write is not stored in the memory cache', rejected === false && accepted === true && serverSideBuyerLeads.length === before + 1 && serverSideBuyerLeads.some((lead) => lead.id === leadId), `before=${before} after=${serverSideBuyerLeads.length}`);
   const cachedIndex = serverSideBuyerLeads.findIndex((lead) => lead.id === leadId);
   if (cachedIndex >= 0) serverSideBuyerLeads.splice(cachedIndex, 1);
+
+  // 37. WS-ARGON5-B & WS-ARGON5-C: Multi-criteria decision explainability, non-compensatory alerts, and ±0.3 tie-band sensitivity
+  const explainHighMetroWeakAir = explainNeighborhoodRecommendation(
+    {
+      name: 'محله تست',
+      status: 'green',
+      diffPercent: -8,
+      overallScore: 7.8,
+      air: 5.5,
+      powerWater: 8.5,
+      internet: 8.0,
+      metro: 9.5,
+      security: 8.0,
+      flatTerrain: 7.5,
+      distKm: 3.2,
+    },
+    { mode: 'buy', priority: 'metro', sortBy: 'commute_metro', topReferenceScore: 8.0 },
+  );
+  const explainFarFromTop = explainNeighborhoodRecommendation(
+    {
+      name: 'محله دوم',
+      status: 'yellow',
+      diffPercent: 11,
+      overallScore: 7.2,
+      air: 7.0,
+      powerWater: 7.5,
+      internet: 7.5,
+      metro: 7.0,
+      security: 7.5,
+      flatTerrain: 7.0,
+      distKm: null,
+    },
+    { mode: 'rent', priority: 'balanced', sortBy: 'score', topReferenceScore: 8.0 },
+  );
+  assert(
+    '37. explainNeighborhoodRecommendation separates budget-fit semantics from composite score, flags non-compensatory <6.5 indicators, and detects ±0.3 tie-bands',
+    explainHighMetroWeakAir.budgetFitSemanticsLabelFa === 'همخوان با فرض بودجه فعلی' &&
+      explainHighMetroWeakAir.isTieBandWithTop === true &&
+      explainHighMetroWeakAir.nonCompensatoryWarningsFa.some((w) => w.includes('کیفیت هوا')) &&
+      explainHighMetroWeakAir.strongestDimensionLabelFa.includes('دسترسی مترو') &&
+      explainFarFromTop.budgetFitSemanticsLabelFa.includes('مرزی') &&
+      explainFarFromTop.isTieBandWithTop === false &&
+      explainFarFromTop.nonCompensatoryWarningsFa.length === 0,
+    `tieBand=${explainHighMetroWeakAir.isTieBandWithTop}, warnings=${explainHighMetroWeakAir.nonCompensatoryWarningsFa.length}`,
+  );
+
+  // 38. WS-ARGON5-D & Root-Cause Unification: Resident review provenance separates observed user submissions from seed baseline scenarios
+  const seedOnlySummary = summarizeNeighborhoodQoL(sampleHood, buildNeighborhoodSeedReviews(sampleHood));
+  const mergedWithOneCloudVote = mergeCloudAndSeedReviews(
+    sampleHood,
+    [
+      {
+        id: 'vote-1',
+        hoodId: sampleHood.id,
+        hoodName: sampleHood.name,
+        userId: 'user-1',
+        userDisplayName: 'مریم کریمی',
+        air: 8,
+        powerWater: 9,
+        internet: 8,
+        metro: 8,
+        security: 9,
+        flatTerrain: 8,
+        comment: 'محله بسیار آرام و مناسب خانواده است.',
+        locationVerified: true,
+      },
+    ],
+    [],
+  );
+  const observedAndSeedSummary = summarizeNeighborhoodQoL(sampleHood, mergedWithOneCloudVote);
+  assert(
+    '38. Resident review provenance separates observed user submissions from seed baseline scenarios',
+    seedOnlySummary.observedReviewsCount === 0 &&
+      seedOnlySummary.seedBaselineCount === 3 &&
+      seedOnlySummary.provenanceLabelFa.includes('۰ نظر ثبت‌شده کاربر') &&
+      observedAndSeedSummary.observedReviewsCount === 1 &&
+      observedAndSeedSummary.seedBaselineCount === 3 &&
+      observedAndSeedSummary.provenanceLabelFa.includes('۱ نظر واقعی ثبت‌شده کاربر'),
+    `seedOnlyObserved=${seedOnlySummary.observedReviewsCount}, withCloudObserved=${observedAndSeedSummary.observedReviewsCount}`,
+  );
+
+  // 39. WS-CASPER-03: End-to-End Sample Unification, Dynamic Jalali Year, Actionable Ad-to-Visit Pipeline & Trade-Up Multi-Criteria Explainability
+  const portfolioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
+  const bargainsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodBargainsAndVotesTabs.tsx'), 'utf-8');
+  const forecastSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartPriceForecastCard.tsx'), 'utf-8');
+  const searchDropSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
+  const smartSuggestSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartSuggestModal.tsx'), 'utf-8');
+  assert(
+    '39. WS-CASPER-03 unifies buildNeighborhoodListingSamples across Portfolio/Bargains/Forecast/Search/Suggest, removes hardcoded Jalali years, wires 1-click Ad-to-Visits, and adds Trade-Up non-compensatory explainability',
+    portfolioSrc.includes('buildNeighborhoodListingSamples(vHood)') &&
+      portfolioSrc.includes('explainNeighborhoodRecommendation(item.hood') &&
+      portfolioSrc.includes('data-testid="tradeup-bottleneck-warning"') &&
+      bargainsSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      bargainsSrc.includes('getCurrentJalaliYear()') &&
+      bargainsSrc.includes('data-testid="save-analyzed-ad-to-visits-btn"') &&
+      !bargainsSrc.includes('1405 -') &&
+      forecastSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      forecastSrc.includes('getCurrentJalaliYear()') &&
+      forecastSrc.includes('data-testid="forecast-epistemic-badge"') &&
+      searchDropSrc.includes('buildNeighborhoodListingSamples({') &&
+      smartSuggestSrc.includes('buildNeighborhoodListingSamples(n)'),
+    'WS-CASPER-03 contract check failed',
+  );
+
+  // 40. WS-CASPER-04: Self-Critique & Deep Uncaught Weakness Remediation (Double-Depreciation Prevention, Non-Scoring Provenance Row, True Deal Winner & Tie-Band Symmetry)
+  const compareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf-8');
+  const shortlistMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShortlistMatrixModal.tsx'), 'utf-8');
+  const expandableTableSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpandableComparisonTable.tsx'), 'utf-8');
+  const depreciatedCurrentHood: EvaluatedNeighborhood = {
+    ...sampleHood,
+    baseBuyPerSqm: 150,
+    buyPerSqm: Math.round(150 * 0.78), // Simulates global sidebar 'old' building age filter
+  };
+  const depreciatedTargetHood: EvaluatedNeighborhood = {
+    ...sampleHood,
+    id: 99,
+    name: 'محله هدف تست',
+    baseBuyPerSqm: 200,
+    buyPerSqm: Math.round(200 * 0.78),
+  };
+  const tradeUpNoDoubleDepreciation = evaluateTradeUpOptions({
+    currentHood: depreciatedCurrentHood,
+    currentSqm: 80,
+    currentAgeYears: 10, // 0.88 factor -> 150 * 80 * 0.88 = 10560
+    extraCashMillion: 0,
+    useLoanBooster: false,
+    useTenantRahnDeduction: false,
+    targetNewSqm: 100,
+    targetAgeSegment: 'older', // 0.76 factor -> round(200 * 0.76) * 100 = 15200
+    allNeighborhoods: [depreciatedTargetHood],
+  });
+  assert(
+    '40. WS-CASPER-04 prevents double age depreciation in evaluateTradeUpOptions, neutralizes sample-count win bias in CompareModal, highlights true lowest v6.4 deal price in ShortlistMatrixModal, and surfaces non-compensatory warnings in ExpandableComparisonTable',
+    tradeUpNoDoubleDepreciation.currentHomeSaleValueMillion === Math.round(150 * 80 * 0.88) &&
+      tradeUpNoDoubleDepreciation.matchingHoods[0].targetUnitTotalPriceMillion === Math.round(200 * 0.76) * 100 &&
+      compareModalSrc.includes("'منشأ داده و شاخص پوشش نمونه (غیرآماری)'") &&
+      compareModalSrc.includes('win: 0 },') &&
+      !compareModalSrc.includes('agg1.evidenceIndexScore > agg2.evidenceIndexScore ? 1 : 2') &&
+      portfolioSrc.includes('const maxTradeUpScore = Math.max(') &&
+      portfolioSrc.includes('const showTieBadge = recExp.isTieBandWithTop && tiedAtTopCount > 1') &&
+      shortlistMatrixSrc.includes('const isBest = dealSqm === minDealPerSqm;') &&
+      shortlistMatrixSrc.includes('const isTieBand = row.key === \'overallScore\' && Math.abs(maxVal - val) <= 0.3 && tiedAtTopCount > 1;') &&
+      expandableTableSrc.includes('explainA.nonCompensatoryWarningsFa[0]'),
+    `saleValue=${tradeUpNoDoubleDepreciation.currentHomeSaleValueMillion}, targetTotal=${tradeUpNoDoubleDepreciation.matchingHoods[0]?.targetUnitTotalPriceMillion}`,
+  );
+
+  // 41. WS-CASPER-05: Real Quality Over Vanity/Speed Calibration (Liability & Occupancy Lockout Disclosure, Unofficial Valuation Report Truthfulness, Age-Matched Negotiation & Zero Phony void Suppressions)
+  const buyingPowerCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyingPowerSummaryCard.tsx'), 'utf-8');
+  const purchasingPowerTrendSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf-8');
+  const budgetBridgeCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BudgetBridgeAdvisorCard.tsx'), 'utf-8');
+  const superModulesValFakeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesValuationAndFakeTabs.tsx'), 'utf-8');
+  assert(
+    '41. WS-CASPER-05 enforces liability & occupancy disclosure in BuyingPowerSummaryCard, removes phony void suppressions in PurchasingPowerTrendCard & BudgetBridgeAdvisorCard, and replaces official-certificate overclaims in SuperModulesValuationAndFakeTabs',
+    buyingPowerCardSrc.includes('data-testid="buying-power-liability-disclosure"') &&
+      buyingPowerCardSrc.includes('آورده خالص نقدی:') &&
+      buyingPowerCardSrc.includes('تعهدات و اهرم‌ها:') &&
+      purchasingPowerTrendSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      !purchasingPowerTrendSrc.includes('void total80mTodayMillions') &&
+      !budgetBridgeCardSrc.includes('void monthlyRent80mMillions') &&
+      !superModulesValFakeSrc.includes('گواهی رسمی کارشناسی') &&
+      superModulesValFakeSrc.includes('گزارش تحلیلی کارشناسی هوشمند ارزش ملک (مدل هدونیک · غیررسمی)') &&
+      superModulesValFakeSrc.includes('در محله فعلی (<strong>{activeHood.name}</strong>'),
+    'WS-CASPER-05 contract check failed',
+  );
+
+  // 42. WS-CASPER-06: Primary Workspace Views & ReverseBudgetDiscoveryModal Charter Alignment (Sample Unification, Epistemic Hero Truthfulness, Non-Compensatory Warnings & AFFORDABLE-First Ranking)
+  const discoverViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductDiscoverView.tsx'), 'utf-8');
+  const homeViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductHomeView.tsx'), 'utf-8');
+  const userSpaceViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductUserSpaceView.tsx'), 'utf-8');
+  const reverseBudgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/modals/ReverseBudgetDiscoveryModal.tsx'), 'utf-8');
+  assert(
+    '42. WS-CASPER-06 unifies buildNeighborhoodListingSamples & explainNeighborhoodRecommendation across ProductDiscoverView, ProductHomeView, ProductUserSpaceView, and enforces AFFORDABLE-first ranking in ReverseBudgetDiscoveryModal',
+    discoverViewSrc.includes('buildNeighborhoodListingSamples(a)') &&
+      discoverViewSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      discoverViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore })') &&
+      !discoverViewSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, [])') &&
+      homeViewSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      homeViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore })') &&
+      !homeViewSrc.includes('داده‌های ثبت‌شده معاملات قطعی') &&
+      !homeViewSrc.includes('verified transaction benchmarks') &&
+      userSpaceViewSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      userSpaceViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFavScore })') &&
+      reverseBudgetSrc.includes('buildNeighborhoodListingSamples({ id: numId, name: hood.nameFa, buyPerSqm: effectiveSqmPrice, bargains: hood.bargains })') &&
+      reverseBudgetSrc.includes("const tierA = a.status === 'AFFORDABLE' ? 0 : a.isDealWithinBudget ? 1 : 2;") &&
+      reverseBudgetSrc.includes('در بودجه با سناریوی مذاکره v6.4'),
+    'WS-CASPER-06 primary views & ReverseBudgetDiscoveryModal contract check failed',
+  );
 
   console.log('\n=======================================================');
   console.log('[DOMAIN REGRESSION SUITE PASS] All assertions passed!');

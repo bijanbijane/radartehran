@@ -2,11 +2,12 @@ import React from 'react';
 import { Award, Heart, MapPin, Scale, Trash2, X } from 'lucide-react';
 import { useDialogFocus } from './useDialogFocus';
 import { EvaluatedNeighborhood, getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { computeSpatialProximityReport, updateMapAdvancedOverlayState } from './mapAdvancedLayers';
 import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods';
 
 export interface ShortlistMatrixModalProps {
   open: boolean;
@@ -67,11 +68,14 @@ export function ShortlistMatrixModal({
   };
 
   const minBuyPerSqm = shortlistedHoods.length ? Math.min(...shortlistedHoods.map((h) => h.buyPerSqm)) : 0;
+  const dealPerSqmById = new Map(shortlistedHoods.map((h) => [h.id, aggregateNeighborhoodMarketMetrics(h.id, h.name, h.buyPerSqm, buildNeighborhoodListingSamples(h)).estimatedDealPricePerSqm]));
+  const minDealPerSqm = shortlistedHoods.length ? Math.min(...shortlistedHoods.map((h) => dealPerSqmById.get(h.id) ?? h.buyPerSqm)) : 0;
   const minRahn80m = shortlistedHoods.length ? Math.min(...shortlistedHoods.map((h) => h.rahn80m)) : 0;
   const maxAffordable = shortlistedHoods.length ? Math.max(...shortlistedHoods.map((h) => getAffordableSqm(h))) : 0;
+  const maxOverallScore = shortlistedHoods.length ? Math.max(...shortlistedHoods.map((h) => h.overallScore)) : 0;
 
   const scoreRows = [
-    { key: 'overallScore', labelFa: 'امتیاز کل کیفیت زندگی', labelEn: 'Overall Livability Score', getValue: (h: EvaluatedNeighborhood) => h.overallScore },
+    { key: 'overallScore', labelFa: 'امتیاز کل کیفیت زندگی (میانگین ۶ سنجه)', labelEn: 'Overall Livability Score', getValue: (h: EvaluatedNeighborhood) => h.overallScore },
     { key: 'air', labelFa: 'کیفیت هوا و فضای سبز', labelEn: 'Clean Air & Green Spaces', getValue: (h: EvaluatedNeighborhood) => h.air ?? 7 },
     { key: 'powerWater', labelFa: 'پایداری آب و برق', labelEn: 'Power & Water Reliability', getValue: (h: EvaluatedNeighborhood) => h.powerWater ?? 8 },
     { key: 'internet', labelFa: 'اینترنت و فیبر نوری', labelEn: 'Internet & Fiber Speed', getValue: (h: EvaluatedNeighborhood) => h.internet ?? 8 },
@@ -96,7 +100,7 @@ export function ShortlistMatrixModal({
                 {isEn ? `Shortlist Decision Matrix (${toPersianNum(shortlistedHoods.length)} Neighborhoods)` : `ماتریس مقایسه هم‌زمان محله‌های منتخب (${toPersianNum(shortlistedHoods.length)} محله)`}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {isEn ? 'The top-ranking neighborhood in each category is highlighted with an emerald badge' : 'برترین محله در هر شاخص با کادر سبز زمردی مشخص شده است'}
+                {isEn ? 'Top category values and ±0.3 tie-bands are highlighted alongside non-compensatory trade-offs' : 'برترین محله در هر شاخص و بازه هم‌تراز (±۰.۳ امتیاز) همراه با هشدارهای غیرجبرانی نمایش داده شده است'}
               </p>
             </div>
           </div>
@@ -168,9 +172,9 @@ export function ShortlistMatrixModal({
                     {isEn ? `Estimated Deal v6.4 (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `تخمین قیمت قطعی معامله v6.4 (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`}
                   </td>
                   {shortlistedHoods.map((hood) => {
-                    const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []);
-                    const unitDeal = Number(convertPricePerSqmToUnit(agg.estimatedDealPricePerSqm, areaUnit).toFixed(1));
-                    const isBest = hood.buyPerSqm === minBuyPerSqm;
+                    const dealSqm = dealPerSqmById.get(hood.id) ?? hood.buyPerSqm;
+                    const unitDeal = Number(convertPricePerSqmToUnit(dealSqm, areaUnit).toFixed(1));
+                    const isBest = dealSqm === minDealPerSqm;
                     return (
                       <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black' : 'text-teal-700 dark:text-teal-400'}`}>
                         {toPersianNum(unitDeal)} {isEn ? 'M' : 'میلیون'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)})` : ''}
@@ -208,6 +212,23 @@ export function ShortlistMatrixModal({
                 </tr>
                 <tr>
                   <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
+                    {isEn ? 'Budget Fit & Non-Compensatory Trade-Offs' : 'تطابق بودجه و موازنه غیرجبرانی شاخص‌ها'}
+                  </td>
+                  {shortlistedHoods.map((hood) => {
+                    const explain = explainNeighborhoodRecommendation(hood, { mode, topReferenceScore: maxOverallScore });
+                    return (
+                      <td key={hood.id} className="p-3 text-[10.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+                        <div className="font-extrabold text-slate-900 dark:text-white">{explain.budgetFitSemanticsLabelFa}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{explain.tradeOffSummaryFa}</div>
+                        {explain.nonCompensatoryWarningsFa.length > 0 && (
+                          <div className="text-[9.5px] font-bold text-amber-700 dark:text-amber-400 mt-0.5">{explain.nonCompensatoryWarningsFa[0]}</div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr>
+                  <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
                     {isEn ? 'Nearest Metro (GIS)' : 'نزدیک‌ترین خط مترو (GIS)'}
                   </td>
                   {shortlistedHoods.map((hood) => {
@@ -226,6 +247,7 @@ export function ShortlistMatrixModal({
                 </tr>
                 {scoreRows.map((row) => {
                   const maxVal = Math.max(...shortlistedHoods.map((h) => row.getValue(h)));
+                  const tiedAtTopCount = row.key === 'overallScore' ? shortlistedHoods.filter((h) => Math.abs(maxVal - row.getValue(h)) <= 0.3).length : 0;
                   return (
                     <tr key={row.key}>
                       <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
@@ -234,9 +256,10 @@ export function ShortlistMatrixModal({
                       {shortlistedHoods.map((hood) => {
                         const val = row.getValue(hood);
                         const isBest = val === maxVal;
+                        const isTieBand = row.key === 'overallScore' && Math.abs(maxVal - val) <= 0.3 && tiedAtTopCount > 1;
                         return (
-                          <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black' : 'text-slate-800 dark:text-slate-200'}`}>
-                            {toPersianNum(val)}/10
+                          <td key={hood.id} className={`p-3 tabular-nums font-bold ${isBest ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-black' : isTieBand ? 'bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                            {toPersianNum(val)}/10{isTieBand ? ' (≈ هم‌تراز ±۰.۳)' : ''}
                           </td>
                         );
                       })}

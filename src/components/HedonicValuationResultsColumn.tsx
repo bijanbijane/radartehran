@@ -81,7 +81,7 @@ export function HedonicValuationResultsColumn({
 
           <div className="pt-2.5 border-t border-emerald-200/70 dark:border-emerald-800/70 grid grid-cols-3 gap-2 text-[11px] text-slate-600 dark:text-slate-400 tabular-nums">
             <div>
-              <span className="text-slate-500 dark:text-slate-400 block">بازه منصفانه معامله:</span>
+              <span className="text-slate-500 dark:text-slate-400 block" title={valuation.calibrationDisclosureFa}>بازه حساسیت مدل (±۳.۵٪):</span>
               <strong className="text-slate-900 dark:text-white">
                 {toPersianNum((valuation.confidenceRangeMillion.min / 1000).toFixed(2))} تا {toPersianNum((valuation.confidenceRangeMillion.max / 1000).toFixed(2))} میلیارد
                 {intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valuation.confidenceRangeMillion.min, intlCurrency, radarLocale)} – ${formatMillionTomanAsIntlCurrency(valuation.confidenceRangeMillion.max, intlCurrency, radarLocale)})` : ''}
@@ -108,6 +108,14 @@ export function HedonicValuationResultsColumn({
                 اجاره ماهانه: {toPersianNum(Math.round(valuation.estimatedRahnMillion * 0.03))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.round(valuation.estimatedRahnMillion * 0.03), intlCurrency, radarLocale)})` : ''}
               </span>
             </div>
+          </div>
+          <div className="pt-1.5 border-t border-emerald-200/50 dark:border-emerald-800/50 text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            <span>شفافیت روش‌شناختی: {valuation.calibrationDisclosureFa}</span>
+            {valuation.nonCompensatoryWarnings?.length > 0 && (
+              <div className="mt-1 text-amber-800 dark:text-amber-300 font-bold">
+                {valuation.nonCompensatoryWarnings.join(' · ')}
+              </div>
+            )}
           </div>
         </div>
 

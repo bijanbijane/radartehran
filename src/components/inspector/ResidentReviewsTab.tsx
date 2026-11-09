@@ -80,7 +80,8 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
       authorName: check.sanitizedAuthor, residencyType, residencyDuration,
       air: voteAir, powerWater: votePower, internet: voteInternet, metro: voteMetro, security: voteSecurity, flatTerrain: voteFlat,
       overallQoLScore: draftComposite, comment: check.sanitizedComment, prosTags: selectedPros, consTags: selectedCons,
-      locationVerified: useGeo, helpfulCount: 1, createdAtLabelFa: 'هم‌اکنون', createdAtMs: Date.now(), isLocalSubmission: true,
+      locationVerified: useGeo, helpfulCount: 1, createdAtLabelFa: 'هم‌اکنون', createdAtMs: Date.now(),
+      isLocalSubmission: true, isSeedBaseline: false, provenance: 'USER_REPORTED',
     };
     setLocalReviews((prev) => [newReview, ...prev.slice(0, 49)]);
     setFormNotice({ type: 'success', text: `تجربه سکونت شما با امتیاز ترکیبی ${toPersianNum(draftComposite)} از ۱۰ برای محله ${selectedHood.name} ثبت شد و در ابتدای فهرست نظرات قرار گرفت.` });
@@ -104,7 +105,7 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
         <div className="flex items-start justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700/70 pb-2.5">
           <div>
             <h3 className="font-black text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"><UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[2]" /><span>ترازنامه کیفیت زندگی ساکنان {selectedHood.name}</span></h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">بر پایه {toPersianNum(summary.totalReviewsCount)} تجربه ثبت‌شده ({toPersianNum(summary.verifiedReviewsCount)} تایید مکانی GPS){fxBuyLabel}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">{summary.provenanceLabelFa}{fxBuyLabel}</p>
           </div>
           <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-[12px] px-3 py-1.5 text-center shrink-0">
             <div className="text-base font-black text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(summary.compositeScore)} / ۱۰</div>
@@ -198,13 +199,22 @@ export function ResidentReviewsTab(props: ResidentReviewsTabProps): React.ReactE
           {filteredReviews.map((rev) => {
             const isLiked = Boolean(helpfulMap[rev.id]);
             const displayHelpful = rev.helpfulCount + (isLiked ? 1 : 0);
+            const isSeed = Boolean(rev.isSeedBaseline || rev.provenance === 'SEED_BASELINE_SCENARIO' || rev.id.startsWith('seed-'));
             return (
               <article key={rev.id} className="py-3 first:pt-1 last:pb-0 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">{rev.authorName}</span>
-                      {rev.locationVerified && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded-[6px]"><CheckCircle2 className="w-3 h-3" /><span>ساکن تایید مکانی</span></span>}
+                      {isSeed ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded-[6px]" title="این مورد بر اساس شاخص‌های پایه محله تولید شده و نظر مستقیم ثبت‌شده کاربر نیست">
+                          <span>سناریوی مرجع محله (نمونه پایه)</span>
+                        </span>
+                      ) : rev.locationVerified ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded-[6px]"><CheckCircle2 className="w-3 h-3" /><span>ساکن تایید مکانی</span></span>
+                      ) : (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 px-1.5 py-0.5 rounded-[6px]"><span>ثبت‌شده توسط کاربر</span></span>
+                      )}
                     </div>
                     <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5">{getResidencyLabelFa(rev.residencyType, rev.residencyDuration)} · {rev.createdAtLabelFa}</div>
                   </div>

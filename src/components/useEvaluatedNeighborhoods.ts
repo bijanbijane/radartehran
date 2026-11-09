@@ -59,6 +59,44 @@ export function compareEvaluatedNeighborhoodsForSuggestion(
   if (Math.abs(priceDiff) > EPS) return priceDiff < 0 ? -1 : 1;
   return a.id - b.id;
 }
+export interface NeighborhoodRecommendationExplanation {
+  budgetFitStatus: HousingStatus; budgetFitSemanticsLabelFa: string; scoreSemanticsLabelFa: string;
+  primaryReasonFa: string; tradeOffSummaryFa: string; nonCompensatoryWarningsFa: string[];
+  isTieBandWithTop: boolean; tieBandNoticeFa: string | null; strongestDimensionLabelFa: string; weakestDimensionLabelFa: string;
+}
+export function explainNeighborhoodRecommendation(
+  hood: Pick<EvaluatedNeighborhood, 'name' | 'status' | 'diffPercent' | 'overallScore' | 'air' | 'powerWater' | 'internet' | 'metro' | 'security' | 'flatTerrain' | 'distKm'>,
+  options: { mode?: 'rent' | 'buy'; priority?: SuggestPriorityMode; sortBy?: SuggestSortMode; topReferenceScore?: number } = {},
+): NeighborhoodRecommendationExplanation {
+  const { priority = 'balanced', sortBy = 'score', topReferenceScore } = options;
+  const dims = [
+    { key: 'metro', label: 'دسترسی مترو', val: hood.metro }, { key: 'air', label: 'کیفیت هوا', val: hood.air },
+    { key: 'security', label: 'امنیت محله', val: hood.security }, { key: 'powerWater', label: 'پایداری آب و برق', val: hood.powerWater },
+    { key: 'internet', label: 'کیفیت اینترنت', val: hood.internet }, { key: 'flatTerrain', label: 'شیب زمین', val: hood.flatTerrain },
+  ];
+  const sortedDims = [...dims].sort((a, b) => b.val - a.val);
+  const strongest = sortedDims[0], weakest = sortedDims[sortedDims.length - 1];
+  const budgetFitSemanticsLabelFa = hood.status === 'green' ? 'همخوان با فرض بودجه فعلی' : hood.status === 'yellow' ? 'مرزی (تا ۱۵٪ بالاتر از فرض بودجه)' : 'فراتر از فرض بودجه فعلی';
+  const primaryReasonFa =
+    sortBy === 'cheap' || sortBy === 'cheapest' ? `رتبه‌بندی بر پایه کمترین هزینه ورود مالی (${budgetFitSemanticsLabelFa})`
+    : sortBy === 'commute' || sortBy === 'commute_metro' ? `کمترین فاصله تردد${hood.distKm !== null ? ` (${hood.distKm} km)` : ''} و مترو ${hood.metro}/10`
+    : sortBy === 'clean_calm' ? `ترکیب هوای پاک (${hood.air}/10) و امنیت (${hood.security}/10)`
+    : sortBy === 'yield' || sortBy === 'undervalued' ? `نسبت بازده اجاره به قیمت خرید بالاتر از میانگین`
+    : priority === 'metro' ? `اولویت مترو و حمل‌ونقل (${hood.metro}/10) همراه با ${budgetFitSemanticsLabelFa}`
+    : priority === 'air' ? `اولویت کیفیت هوا (${hood.air}/10) همراه با ${budgetFitSemanticsLabelFa}`
+    : priority === 'security' ? `اولویت امنیت (${hood.security}/10) همراه با ${budgetFitSemanticsLabelFa}`
+    : `توازن ۶ شاخص زیرساختی (${hood.overallScore}/10) و ${budgetFitSemanticsLabelFa}`;
+  const nonCompensatoryWarningsFa = dims.filter((d) => d.val < 6.5).map((d) => `هشدار غیرجبرانی: ${d.label} (${d.val}/10) پایین است و با امتیاز سایر شاخص‌ها جبران نمی‌شود`);
+  const tradeOffSummaryFa = `قوت اصلی: ${strongest.label} (${strongest.val}/10) · محدودیت اصلی: ${weakest.label} (${weakest.val}/10)${hood.diffPercent > 0 ? ` و +${hood.diffPercent}٪ فاصله بودجه` : ''}`;
+  const isTieBandWithTop = typeof topReferenceScore === 'number' && Number.isFinite(topReferenceScore) && Math.abs(topReferenceScore - hood.overallScore) <= 0.3;
+  return {
+    budgetFitStatus: hood.status, budgetFitSemanticsLabelFa,
+    scoreSemanticsLabelFa: 'میانگین هم‌وزن ۶ سنجه زیرساختی (توصیفی، نه مطلوبیت مطلق)',
+    primaryReasonFa, tradeOffSummaryFa, nonCompensatoryWarningsFa, isTieBandWithTop,
+    tieBandNoticeFa: isTieBandWithTop ? 'هم‌تراز حساسیت (±۰.۳ امتیاز؛ تفاوت قاطع نیست)' : null,
+    strongestDimensionLabelFa: `${strongest.label} (${strongest.val}/10)`, weakestDimensionLabelFa: `${weakest.label} (${weakest.val}/10)`,
+  };
+}
 export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParams) {
   const {
     activeCity, activeCitySeedList, neighborhoods,

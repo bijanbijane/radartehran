@@ -8,7 +8,8 @@ import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { SearchHistory } from '../SearchHistory';
 
@@ -36,6 +37,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const isEn = radarLocale === 'en';
   const { comparisonArc } = useMapAdvancedOverlayState();
   const favoriteHoods = p.evaluatedNeighborhoods.filter((h) => p.favoriteHoodIds.includes(h.id));
+  const topFavScore = favoriteHoods.length > 0 ? Math.max(...favoriteHoods.map((h) => h.overallScore)) : undefined;
   const budgetFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? p.buyTotalBudget : p.deposit, intlCurrency, radarLocale)})` : '';
   const avgShortlistScore = favoriteHoods.length > 0 ? (favoriteHoods.reduce((acc, h) => acc + h.overallScore, 0) / favoriteHoods.length).toFixed(1) : null;
 
@@ -225,7 +227,8 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {favoriteHoods.map((hood) => {
               const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-              const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+              const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+              const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFavScore });
               const isSelected = p.selectedHood?.id === hood.id;
               const isArcActive = p.selectedHood && comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 
@@ -237,7 +240,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
                         <h3 className="font-black text-slate-900 dark:text-white text-sm">محله {hood.name}</h3>
                         {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">فعال روی نقشه</span>}
                       </div>
-                      <span className="text-[11px] text-slate-400">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰</span>
+                      <span className="text-[11px] text-slate-400">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-600 dark:text-amber-400">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>
                     </div>
                     <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={`حذف ${hood.name} از منتخب‌ها`} className="text-rose-500 hover:text-rose-600 p-1 cursor-pointer">
                       <Heart className="w-4 h-4 fill-rose-500" />

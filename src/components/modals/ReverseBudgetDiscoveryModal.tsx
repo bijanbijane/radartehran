@@ -8,7 +8,8 @@ import {
 } from '../../utils/persianFinancials';
 import { useDialogFocus } from '../useDialogFocus';
 import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import type { BargainListing } from '../../data/neighborhoods';
 import {
   convertPricePerSqmToUnit,
   formatAreaShort,
@@ -21,6 +22,8 @@ export interface HoodDiscoverySummary {
   districtNumber: number;
   zoneLabel?: string;
   avgPricePerSqmMillion: number;
+  overallScore?: number;
+  bargains?: ReadonlyArray<BargainListing>;
 }
 
 interface ReverseBudgetDiscoveryModalProps {
@@ -74,29 +77,34 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
 
     return neighborhoods
       .map((hood) => {
+        const numId = Number(hood.id) || 1;
         const effectiveSqmPrice = Math.round(hood.avgPricePerSqmMillion * ageFactor.multiplier);
-        const estimatedDealSqmPrice = aggregateNeighborhoodMarketMetrics(
-          Number(hood.id) || 1,
-          hood.nameFa,
-          effectiveSqmPrice,
-          []
-        ).estimatedDealPricePerSqm;
+        const samples = buildNeighborhoodListingSamples({ id: numId, name: hood.nameFa, buyPerSqm: effectiveSqmPrice, bargains: hood.bargains });
+        const estimatedDealSqmPrice = aggregateNeighborhoodMarketMetrics(numId, hood.nameFa, effectiveSqmPrice, samples).estimatedDealPricePerSqm;
         const estimatedTotal = Math.round(effectiveSqmPrice * desiredAreaSqm);
+        const dealTotal = Math.round(estimatedDealSqmPrice * desiredAreaSqm);
         const ratio = estimatedTotal / totalBudgetMillion;
+        const isDealWithinBudget = dealTotal <= totalBudgetMillion;
         const status: 'AFFORDABLE' | 'STRETCH' | 'OUT_OF_REACH' =
-          ratio <= 1.0 ? 'AFFORDABLE' : ratio <= 1.12 ? 'STRETCH' : 'OUT_OF_REACH';
+          ratio <= 1.0 ? 'AFFORDABLE' : (ratio <= 1.12 || isDealWithinBudget) ? 'STRETCH' : 'OUT_OF_REACH';
 
         return {
           ...hood,
           effectiveSqmPrice,
           estimatedDealSqmPrice,
           estimatedTotalMillion: estimatedTotal,
+          isDealWithinBudget,
           targetDiffRatio: Math.abs(1 - effectiveSqmPrice / targetSqmPrice),
           status,
         };
       })
       .filter((item) => item.status !== 'OUT_OF_REACH')
-      .sort((a, b) => a.targetDiffRatio - b.targetDiffRatio)
+      .sort((a, b) => {
+        const tierA = a.status === 'AFFORDABLE' ? 0 : a.isDealWithinBudget ? 1 : 2;
+        const tierB = b.status === 'AFFORDABLE' ? 0 : b.isDealWithinBudget ? 1 : 2;
+        if (tierA !== tierB) return tierA - tierB;
+        return a.targetDiffRatio - b.targetDiffRatio;
+      })
       .slice(0, 12);
   }, [isOpen, totalBudgetMillion, desiredAreaSqm, neighborhoods, ageFactor.multiplier]);
 
@@ -238,6 +246,8 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                       <span className="text-[11px] font-semibold">
                         {hood.status === 'AFFORDABLE' ? (
                           <span className="text-emerald-600 dark:text-emerald-400">{isEn ? '● Within Budget' : '● همخوان با بودجه'}</span>
+                        ) : hood.isDealWithinBudget ? (
+                          <span className="text-teal-600 dark:text-teal-400">{isEn ? '● Within Budget via v6.4 Negotiation' : '● در بودجه با سناریوی مذاکره v6.4'}</span>
                         ) : (
                           <span className="text-amber-600 dark:text-amber-400">{isEn ? '● Negotiable (up to 12%)' : '● نیازمند چانه‌زنی (تا ۱۲٪)'}</span>
                         )}
