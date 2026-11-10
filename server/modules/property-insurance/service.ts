@@ -19,8 +19,10 @@ import {
 } from './eligibilityAndRiskEngine.js';
 import {
   analyzeInsuredValueAdequacy,
+  calculateArticle10ProportionalSettlement,
   calculateDeductibleDeduction,
-  calculateIndicativeAnnualPremium
+  calculateIndicativeAnnualPremium,
+  ProportionalSettlementResult
 } from './formulas.js';
 import {
   createQuoteReferenceWorkflow,
@@ -208,9 +210,20 @@ export class PropertyInsuranceService {
 
   calculateDeductible(
     assessedLossAmount: number,
-    deductible: DeductibleStructure
+    deductible: DeductibleStructure,
+    totalSumInsured?: number
   ): { deductibleAmount: number; netPayableClaimAmount: number } {
-    return calculateDeductibleDeduction(assessedLossAmount, deductible);
+    return calculateDeductibleDeduction(assessedLossAmount, deductible, totalSumInsured);
+  }
+
+  calculateProportionalSettlement(params: {
+    assessedGrossLossAmount: number;
+    replacementCostAtLoss: number;
+    declaredSumInsured: number;
+    deductible: DeductibleStructure;
+    currency?: string;
+  }): ProportionalSettlementResult {
+    return calculateArticle10ProportionalSettlement(params);
   }
 
   // --- 4. Premium Estimation Engine ---
@@ -255,7 +268,29 @@ export class PropertyInsuranceService {
       institutionsMap.set(inst.institutionId, inst);
     }
 
-    const report = compareInsuranceProducts(products, institutionsMap, query);
+    const indicativePremiums = new Map<string, number>();
+    for (const prod of products) {
+      if (prod.availabilityStatus === 'active' && Number.isFinite(query.propertyValue) && query.propertyValue > 0) {
+        try {
+          const est = calculateIndicativeAnnualPremium({
+            productId: prod.productId,
+            productVersion: prod.productVersion,
+            buildingReplacementValue: query.propertyValue,
+            formulaBasis: {
+              baseRatePerThousandBuilding: 0.7,
+              earthquakeZoneFactor: 1.5,
+              floodFactor: 0.05,
+              constructionMultiplier: query.constructionType === 'traditional_masonry' ? 1.35 : query.constructionType === 'reinforced_concrete' ? 1.1 : 1.0,
+              applicableTaxesPercent: 9.0
+            },
+            currency: query.currency
+          });
+          indicativePremiums.set(prod.productId, est.totalIndicativeAnnualPremium);
+        } catch {}
+      }
+    }
+
+    const report = compareInsuranceProducts(products, institutionsMap, query, indicativePremiums);
     await this.repository.saveComparisonReport(report);
     await this.emitEvent('property_insurance.comparison.created', report.comparisonId, undefined, { report });
     return report;

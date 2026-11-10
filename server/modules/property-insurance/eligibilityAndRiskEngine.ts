@@ -80,9 +80,12 @@ export function evaluateInsuranceEligibility(
 
     if (rule.criterionType === 'max_building_age_years') {
       const maxAge = Number(rule.targetValue);
-      if (query.buildingAgeYears !== undefined && query.buildingAgeYears > maxAge) {
+      const invalidAge = query.buildingAgeYears !== undefined && (!Number.isFinite(query.buildingAgeYears) || query.buildingAgeYears < 0);
+      if (invalidAge || (query.buildingAgeYears !== undefined && Number.isFinite(maxAge) && query.buildingAgeYears > maxAge)) {
         passed = false;
-        explanationFa = `سن بنا (${query.buildingAgeYears} سال) فراتر از حداکثر مجاز آیین‌نامه (${maxAge} سال) است. نیاز به بازدید ویژه کارشناسی دارد.`;
+        explanationFa = invalidAge
+          ? 'سن بنا اعلام‌شده نامعتبر است.'
+          : `سن بنا (${query.buildingAgeYears} سال) فراتر از حداکثر مجاز آیین‌نامه (${maxAge} سال) است. نیاز به بازدید ویژه کارشناسی دارد.`;
       }
     } else if (rule.criterionType === 'requires_fire_extinguisher') {
       if (query.hasFireExtinguisher === false) {
@@ -91,15 +94,19 @@ export function evaluateInsuranceEligibility(
       }
     } else if (rule.criterionType === 'min_insured_value') {
       const minVal = Number(rule.targetValue);
-      if (query.declaredBuildingValue < minVal) {
+      if (!Number.isFinite(minVal) || !Number.isFinite(query.declaredBuildingValue) || query.declaredBuildingValue < minVal) {
         passed = false;
-        explanationFa = `سرمایه اعلامی کمتر از حداقل نصاب ارزش بیمه‌نامه (${minVal.toLocaleString('fa-IR')}) است.`;
+        explanationFa = Number.isFinite(minVal)
+          ? `سرمایه اعلامی کمتر از حداقل نصاب ارزش بیمه‌نامه (${minVal.toLocaleString('fa-IR')}) است.`
+          : 'ضابطه حداقل نصاب ارزش بیمه‌نامه به دلیل عدم تعیین مقدار هدف نامعتبر است.';
       }
     } else if (rule.criterionType === 'max_insured_value') {
       const maxVal = Number(rule.targetValue);
-      if (query.declaredBuildingValue > maxVal) {
+      if (!Number.isFinite(maxVal) || !Number.isFinite(query.declaredBuildingValue) || query.declaredBuildingValue > maxVal) {
         passed = false;
-        explanationFa = `سرمایه اعلامی بیشتر از سقف اختیارات شعبه صدور (${maxVal.toLocaleString('fa-IR')}) است.`;
+        explanationFa = Number.isFinite(maxVal)
+          ? `سرمایه اعلامی بیشتر از سقف اختیارات شعبه صدور (${maxVal.toLocaleString('fa-IR')}) است.`
+          : 'ضابطه حداکثر سقف اختیارات صدور به دلیل عدم تعیین مقدار هدف نامعتبر است.';
       }
     }
 

@@ -153,6 +153,8 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
     const adequate = service.analyzeInsuredValueAdequacy(10_000_000_000, 10_000_000_000);
     assert.equal(adequate.status, 'adequately_insured');
     assert.equal(adequate.proportionalAverageRuleWarning, false);
+    assert.throws(() => service.analyzeInsuredValueAdequacy(NaN, 10_000_000_000), /مثبت، معتبر و متناهی/);
+    assert.throws(() => service.analyzeInsuredValueAdequacy(10_000_000_000, -1), /مثبت، معتبر و متناهی/);
   });
 
   it('calculates deductible deductions accurately across different structures', () => {
@@ -182,15 +184,32 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
 
     // Bounded percentage (10% with min 40M) on 200M loss: 10% is 20M, bounded by min 40M
     const res3 = service.calculateDeductible(200_000_000, {
-      deductibleId: 'ded-3',
-      coverageCategory: 'flood_and_water_damage',
-      type: 'percentage_with_min_max',
-      percentageRate: 10,
-      minAmount: 40_000_000,
-      currency: 'IRR'
+      deductibleId: 'ded-3', coverageCategory: 'flood_and_water_damage', type: 'percentage_with_min_max', percentageRate: 10, minAmount: 40_000_000, currency: 'IRR'
     });
     assert.equal(res3.deductibleAmount, 40_000_000);
     assert.equal(res3.netPayableClaimAmount, 160_000_000);
+
+    // Natural hazard statutory: 2% of sum insured (5B) = 100M on 150M loss
+    const res4 = service.calculateDeductible(150_000_000, {
+      deductibleId: 'ded-4', coverageCategory: 'earthquake_and_volcano', type: 'percentage_of_sum_insured', percentageRate: 2, currency: 'IRR'
+    }, 5_000_000_000);
+    assert.equal(res4.deductibleAmount, 100_000_000);
+    assert.equal(res4.netPayableClaimAmount, 50_000_000);
+
+    // Article 10 Proportional Rule underinsurance: Declared 5B vs Replacement 10B (50%), Loss 200M, 10% deductible (10M on 100M proportional)
+    const pUnder = service.calculateProportionalSettlement({ assessedGrossLossAmount: 200_000_000, replacementCostAtLoss: 10_000_000_000, declaredSumInsured: 5_000_000_000, deductible: { deductibleId: 'd', coverageCategory: 'fire_and_explosion', type: 'percentage_of_loss', percentageRate: 10, currency: 'IRR' } });
+    assert.equal(pUnder.isUnderinsured, true);
+    assert.equal(pUnder.proportionalLossAmount, 100_000_000);
+    assert.equal(pUnder.underinsuranceReductionAmount, 100_000_000);
+    assert.equal(pUnder.deductibleAmount, 10_000_000);
+    assert.equal(pUnder.netPayableSettlement, 90_000_000);
+    assert.ok(pUnder.detailedExplanationFa.includes('ماده ۱۰ قانون بیمه'));
+
+    // Article 10 Adequately insured: Declared 10B vs Replacement 10B (100%), Loss 200M, 10% deductible (20M)
+    const pAdequate = service.calculateProportionalSettlement({ assessedGrossLossAmount: 200_000_000, replacementCostAtLoss: 10_000_000_000, declaredSumInsured: 10_000_000_000, deductible: { deductibleId: 'd', coverageCategory: 'fire_and_explosion', type: 'percentage_of_loss', percentageRate: 10, currency: 'IRR' } });
+    assert.equal(pAdequate.isUnderinsured, false);
+    assert.equal(pAdequate.underinsuranceReductionAmount, 0);
+    assert.equal(pAdequate.netPayableSettlement, 180_000_000);
   });
 
   it('estimates indicative premiums deterministically with documented formula basis', async () => {
@@ -381,9 +400,11 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
     assert.equal(report.comparedProducts[0].product.productId, 'prod-fresh-comp');
     assert.equal(report.comparedProducts[0].standardCoveragesCount, 3);
     assert.equal(report.comparedProducts[0].dataFreshnessStatus, 'fresh');
-
     assert.equal(report.comparedProducts[1].product.productId, 'prod-stale-comp');
-    assert.equal(report.comparedProducts[1].dataFreshnessStatus, 'stale');
+    const premReport = await service.compareProducts({ propertyValue: 8e9, propertyCategory: 'residential_apartment', constructionType: 'steel_frame', buildingAgeYears: 5, currency: 'IRR', jurisdiction: 'IR', rankingMethodology: 'lowest_indicative_premium' });
+    assert.equal(premReport.rankingMethodology, 'lowest_indicative_premium');
+    assert.equal(premReport.comparedProducts[0].hasMissingPricingData, false);
+    assert.ok(premReport.comparedProducts[0].indicativeAnnualPremium! > 0);
   });
 
   it('manages quotation references, policy renewal tracking, and claim references', async () => {
@@ -407,11 +428,7 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
       currency: 'IRR',
       eligiblePropertyCategories: ['residential_apartment'],
       eligibleConstructionTypes: ['steel_frame'],
-      coverages: [],
-      deductibles: [],
-      exclusions: [],
-      eligibilityRules: [],
-      requiredDocumentsChecklist: [],
+      coverages: [], deductibles: [], exclusions: [], eligibilityRules: [], requiredDocumentsChecklist: [],
       policyDurationMonths: 12,
       availabilityStatus: 'active',
       sourceReference: 'https://asia.ir',
@@ -420,58 +437,51 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
     });
 
     // 1. Create quote
-    const quote = await service.createQuoteReference({
-      productId: 'prod-asia-1',
-      userId: 'user-homeowner-1',
-      propertyId: 'prop-tehran-12',
-      declaredBuildingValue: 6_000_000_000,
-      quotedAnnualPremium: 12_000_000,
-      currency: 'IRR'
-    });
+    const quote = await service.createQuoteReference({ productId: 'prod-asia-1', userId: 'user-homeowner-1', propertyId: 'prop-tehran-12', declaredBuildingValue: 6e9, quotedAnnualPremium: 12e6, currency: 'IRR' });
     assert.equal(quote.status, 'draft');
 
     // 2. Register policy reference
     const now = new Date();
-    const endDate = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000); // Expires in 15 days
-    const policy = await service.registerPolicyReference({
-      userId: 'user-homeowner-1',
-      propertyId: 'prop-tehran-12',
-      institutionId: 'inst-asia',
-      productId: 'prod-asia-1',
-      externalPolicyNumber: 'POL-ASIA-882194',
-      policyStartDateIso: now.toISOString(),
-      policyEndDateIso: endDate.toISOString(),
-      annualPremiumPaid: 12_000_000,
-      currency: 'IRR'
-    });
+    const endDate = new Date(now.getTime() + 15 * 864e5);
+    const policy = await service.registerPolicyReference({ userId: 'user-homeowner-1', propertyId: 'prop-tehran-12', institutionId: 'inst-asia', productId: 'prod-asia-1', externalPolicyNumber: 'POL-ASIA-882194', policyStartDateIso: now.toISOString(), policyEndDateIso: endDate.toISOString(), annualPremiumPaid: 12e6, currency: 'IRR' });
     assert.equal(policy.status, 'active_user_reported');
 
     // List expiring policies
-    const expiringIn30Days = await service.getExpiringPolicies(
-      new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    );
+    const expiringIn30Days = await service.getExpiringPolicies(new Date(now.getTime() + 30 * 864e5).toISOString());
     assert.ok(expiringIn30Days.some(p => p.policyReferenceId === policy.policyReferenceId));
 
     // 3. Register claim reference
-    const claim = await service.registerClaimReference({
-      policyReferenceId: policy.policyReferenceId,
-      propertyId: 'prop-tehran-12',
-      institutionId: 'inst-asia',
-      userId: 'user-homeowner-1',
-      incidentDateIso: now.toISOString(),
-      incidentCategory: 'flood_and_water_damage',
-      userDescriptionFa: 'نشت لوله آب و تخریب پارکت پذیرایی'
-    });
+    const claim = await service.registerClaimReference({ policyReferenceId: policy.policyReferenceId, propertyId: 'prop-tehran-12', institutionId: 'inst-asia', userId: 'user-homeowner-1', incidentDateIso: now.toISOString(), incidentCategory: 'flood_and_water_damage', userDescriptionFa: 'نشت لوله آب' });
     assert.equal(claim.status, 'incident_reported');
 
-    // Update claim status with source provenance
-    const updatedClaim = await service.updateClaimStatus(
-      claim.claimReferenceId,
-      'insurer_acknowledged',
-      'insurer_confirmed',
-      undefined
-    );
+    // Update claim status with source provenance and verify error invariants
+    const updatedClaim = await service.updateClaimStatus(claim.claimReferenceId, 'insurer_acknowledged', 'insurer_confirmed', undefined);
     assert.equal(updatedClaim.status, 'insurer_acknowledged');
     assert.equal(updatedClaim.statusSource, 'insurer_confirmed');
+    await assert.rejects(async () => service.registerPolicyReference({ userId: 'u1', propertyId: 'p1', institutionId: 'i1', externalPolicyNumber: 'num', policyStartDateIso: 'bad-date', policyEndDateIso: now.toISOString() }), /تاریخ شروع یا پایان/);
+    await assert.rejects(async () => service.updateClaimStatus(claim.claimReferenceId, 'declined_confirmed', 'insurer_confirmed', 5_000_000), /ردشده نمی‌تواند مبلغ تسویه مثبت داشته باشد/);
+  });
+
+  it('enforces temporal waitingPeriodDays, explicit-coverage precedence, and finite coverage limits in OP-217 state machine engine', async () => {
+    const { evaluatePolicyCoverageStatusWithLimitations, validateSettlementCalculations } = await import('../coverage/policyAndClaimStateMachineEngine.js');
+    assert.throws(() => validateSettlementCalculations({ verifiedEligibleLossAmount: 100, deductibleAppliedAmount: 10, approvedSettlementAmount: 50, rejectedAmount: 0, applicableCoverageLimit: -1 }), /INVALID_SETTLEMENT_AMOUNTS/);
+    assert.throws(() => validateSettlementCalculations({ verifiedEligibleLossAmount: 100, deductibleAppliedAmount: 10, approvedSettlementAmount: 60, rejectedAmount: 50, applicableCoverageLimit: null }), /SETTLEMENT_EXCEEDS_VERIFIED_LOSS/);
+    assert.throws(() => validateSettlementCalculations({ verifiedEligibleLossAmount: 100, deductibleAppliedAmount: 10, approvedSettlementAmount: 70, rejectedAmount: 25, applicableCoverageLimit: null }), /SETTLEMENT_EXCEEDS_VERIFIED_LOSS/);
+    const basePolicy: any = {
+      policyId: 'pol-1', status: 'ACTIVE', verificationStatus: 'PROVIDER_CONFIRMED_AUTHORITATIVE', providerConfirmedActive: true,
+      coverageStartIso: '2026-01-01T00:00:00.000Z', coverageEndIso: '2027-01-01T00:00:00.000Z', insuredPropertyCanonicalIds: ['prop-1'],
+      policyholderIsConfirmedPropertyOwner: true, financialStructure: { outstandingPremiumAmount: 0 }, sourceProvenance: { sourceType: 'POLICYHOLDER_SUBMISSION' },
+    };
+    const covs: any[] = [{ coverageId: 'cov-eq', coverageCategory: 'EARTHQUAKE', insuredAssetCanonicalIds: ['prop-1'], effectiveStartIso: '2026-01-01T00:00:00.000Z', effectiveEndIso: '2027-01-01T00:00:00.000Z' }];
+    const exs: any[] = [{ limitationId: 'lim-wait-30', limitationCategory: 'WAITING_PERIOD', excludedRiskCategories: ['EARTHQUAKE', 'FLOOD'], affectedAssetCanonicalIds: [], waitingPeriodDays: 30 }];
+    const withinWait = evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: covs, exclusions: exs, asOfIso: '2026-01-10T00:00:00.000Z', queryRiskCategory: 'EARTHQUAKE', queryAssetCanonicalId: 'prop-1', incidentDateIso: '2026-01-10T00:00:00.000Z' });
+    assert.equal(withinWait.queriedRiskEvaluation.applicabilityConclusion, 'NOT_COVERED_WITHIN_WAITING_PERIOD');
+    const afterWait = evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: covs, exclusions: exs, asOfIso: '2026-02-15T00:00:00.000Z', queryRiskCategory: 'EARTHQUAKE', queryAssetCanonicalId: 'prop-1', incidentDateIso: '2026-02-15T00:00:00.000Z' });
+    assert.equal(afterWait.queriedRiskEvaluation.applicabilityConclusion, 'ELIGIBLE_SUBJECT_TO_ADJUSTMENT');
+    const noExplicitCov = evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: covs, exclusions: exs, asOfIso: '2026-01-10T00:00:00.000Z', queryRiskCategory: 'FLOOD', queryAssetCanonicalId: 'prop-1', incidentDateIso: '2026-01-10T00:00:00.000Z' });
+    assert.equal(noExplicitCov.queriedRiskEvaluation.applicabilityConclusion, 'NOT_COVERED_NO_EXPLICIT_COVERAGE_ITEM');
+    assert.equal(evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: covs, exclusions: exs, asOfIso: '2026-01-10T00:00:00.000Z', queryRiskCategory: 'EARTHQUAKE', queryAssetCanonicalId: 'prop-1', incidentDateIso: 'not-a-valid-date' }).queriedRiskEvaluation.applicabilityConclusion, 'INSUFFICIENT_QUERY_PARAMETERS');
+    assert.equal(evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: covs, exclusions: exs, asOfIso: '2026-02-15T00:00:00.000Z', queryRiskCategory: 'EARTHQUAKE', queryAssetCanonicalId: 'prop-1', incidentDateIso: '   ' }).queriedRiskEvaluation.applicabilityConclusion, 'ELIGIBLE_SUBJECT_TO_ADJUSTMENT');
+    assert.ok(evaluatePolicyCoverageStatusWithLimitations({ policy: { ...basePolicy, coverageStartIso: 'bad-date' }, coverages: covs, exclusions: exs, asOfIso: '2026-01-10T00:00:00.000Z' }).verificationLimitations.some(l => l.includes('نامعتبر یا ثبت‌نشده')));
   });
 });

@@ -25,8 +25,14 @@ export function createQuoteReferenceWorkflow(params: {
   quoteValidityDays?: number;
   externalQuoteNumber?: string;
 }): InsuranceQuoteReference {
+  if (!Number.isFinite(params.declaredBuildingValue) || params.declaredBuildingValue <= 0 || params.declaredBuildingValue > Number.MAX_SAFE_INTEGER) {
+    throw new Error('ارزش اعلامی اعیان باید عددی مثبت، معتبر و متناهی باشد.');
+  }
+  if (!Number.isFinite(params.quotedAnnualPremium) || params.quotedAnnualPremium < 0 || params.quotedAnnualPremium > Number.MAX_SAFE_INTEGER) {
+    throw new Error('حق بیمه اعلامی باید عددی نامنفی و متناهی باشد.');
+  }
   const now = new Date();
-  const validityDays = params.quoteValidityDays ?? 30;
+  const validityDays = typeof params.quoteValidityDays === 'number' && Number.isSafeInteger(params.quoteValidityDays) && params.quoteValidityDays > 0 ? params.quoteValidityDays : 30;
   const expiryDate = new Date(now.getTime() + validityDays * 24 * 60 * 60 * 1000);
 
   return {
@@ -62,9 +68,17 @@ export function registerPolicyReferenceWorkflow(params: {
   currency?: string;
 }): InsurancePolicyReference {
   const now = new Date();
+  const startDate = new Date(params.policyStartDateIso);
   const endDate = new Date(params.policyEndDateIso);
-  const thirtyDaysBeforeExpiry = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    throw new Error('تاریخ شروع یا پایان بیمه‌نامه نامعتبر است.');
+  }
+  if (startDate.getTime() > endDate.getTime()) {
+    throw new Error('تاریخ شروع بیمه‌نامه نمی‌تواند پس از تاریخ پایان آن باشد.');
+  }
+
+  const thirtyDaysBeforeExpiry = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
   const isExpired = endDate.getTime() < now.getTime();
 
   return {
@@ -121,11 +135,22 @@ export function updateClaimStatusWorkflow(
   statusSource: InsuranceClaimReference['statusSource'],
   settlementAmount?: number
 ): InsuranceClaimReference {
+  let verifiedSettlement = claim.settlementAmountRecorded;
+  if (settlementAmount !== undefined) {
+    if (!Number.isFinite(settlementAmount) || settlementAmount < 0 || settlementAmount > Number.MAX_SAFE_INTEGER) {
+      throw new Error('مبلغ خسارت پرداختی باید عددی نامنفی، معتبر و متناهی باشد.');
+    }
+    if (newStatus === 'declined_confirmed' && settlementAmount > 0) {
+      throw new Error('پرونده خسارت ردشده نمی‌تواند مبلغ تسویه مثبت داشته باشد.');
+    }
+    verifiedSettlement = settlementAmount;
+  }
+
   return {
     ...claim,
     status: newStatus,
     statusSource,
-    settlementAmountRecorded: settlementAmount !== undefined ? settlementAmount : claim.settlementAmountRecorded,
+    settlementAmountRecorded: verifiedSettlement,
     updatedAtIso: new Date().toISOString()
   };
 }

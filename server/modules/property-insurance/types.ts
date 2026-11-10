@@ -42,7 +42,8 @@ export type DeductibleType =
   | 'fixed_amount'
   | 'percentage_of_loss'
   | 'percentage_with_min_max'
-  | 'per_claim_fixed';
+  | 'per_claim_fixed'
+  | 'percentage_of_sum_insured';
 
 export type ProductAvailabilityStatus =
   | 'active'

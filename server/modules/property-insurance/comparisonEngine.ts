@@ -27,7 +27,8 @@ export interface CompareInsuranceProductsQuery {
 export function compareInsuranceProducts(
   products: PropertyInsuranceProduct[],
   institutions: Map<string, InsuranceInstitution>,
-  query: CompareInsuranceProductsQuery
+  query: CompareInsuranceProductsQuery,
+  indicativePremiums?: Map<string, number>
 ): InsuranceComparisonReport {
   const rankingMethodology = query.rankingMethodology ?? 'most_comprehensive_coverage';
   const now = Date.now();
@@ -57,6 +58,7 @@ export function compareInsuranceProducts(
 
     const standardCoverages = product.coverages.filter(c => c.isStandard);
     const optionalCoverages = product.coverages.filter(c => !c.isStandard);
+    const indicativePremium = indicativePremiums?.get(product.productId);
 
     comparisonItems.push({
       product,
@@ -64,7 +66,8 @@ export function compareInsuranceProducts(
       standardCoveragesCount: standardCoverages.length,
       optionalCoveragesCount: optionalCoverages.length,
       exclusionsCount: product.exclusions.length,
-      hasMissingPricingData: false,
+      indicativeAnnualPremium: indicativePremium,
+      hasMissingPricingData: indicativePremium === undefined,
       dataFreshnessStatus: isStale ? 'stale' : 'fresh',
       meetsPropertyCriteria: unmetCriteria.length === 0 && product.availabilityStatus === 'active',
       unmetCriteriaExplanationFa: unmetCriteria.length > 0 ? unmetCriteria : undefined
@@ -80,6 +83,18 @@ export function compareInsuranceProducts(
 
     if (rankingMethodology === 'most_comprehensive_coverage') {
       // More standard coverages first, fewer exclusions second
+      if (b.standardCoveragesCount !== a.standardCoveragesCount) {
+        return b.standardCoveragesCount - a.standardCoveragesCount;
+      }
+      return a.exclusionsCount - b.exclusionsCount;
+    }
+
+    if (rankingMethodology === 'lowest_indicative_premium') {
+      const priceA = typeof a.indicativeAnnualPremium === 'number' && Number.isFinite(a.indicativeAnnualPremium) ? a.indicativeAnnualPremium : Number.POSITIVE_INFINITY;
+      const priceB = typeof b.indicativeAnnualPremium === 'number' && Number.isFinite(b.indicativeAnnualPremium) ? b.indicativeAnnualPremium : Number.POSITIVE_INFINITY;
+      if (priceA !== priceB) {
+        return priceA - priceB;
+      }
       if (b.standardCoveragesCount !== a.standardCoveragesCount) {
         return b.standardCoveragesCount - a.standardCoveragesCount;
       }

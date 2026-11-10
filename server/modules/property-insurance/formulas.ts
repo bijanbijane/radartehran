@@ -12,6 +12,7 @@ import {
 } from './types.js';
 
 export function roundCurrency(amount: number, currency: string = 'IRR'): number {
+  if (!Number.isFinite(amount)) return 0;
   if (currency.toUpperCase() === 'IRR' || currency.toUpperCase() === 'TOMAN') {
     return Math.round(amount);
   }
@@ -27,11 +28,11 @@ export function analyzeInsuredValueAdequacy(
   proportionalAverageRuleWarning: boolean;
   explanationFa: string;
 } {
-  if (replacementCostEstimate <= 0) {
-    throw new Error('برآورد هزینه ساخت مجدد (Replacement Cost) باید عددی مثبت باشد.');
+  if (!Number.isFinite(replacementCostEstimate) || replacementCostEstimate <= 0 || replacementCostEstimate > Number.MAX_SAFE_INTEGER) {
+    throw new Error('برآورد هزینه ساخت مجدد (Replacement Cost) باید عددی مثبت، معتبر و متناهی باشد.');
   }
-  if (declaredInsuredValue <= 0) {
-    throw new Error('ارزش بیمه‌شده اعلامی باید عددی مثبت باشد.');
+  if (!Number.isFinite(declaredInsuredValue) || declaredInsuredValue <= 0 || declaredInsuredValue > Number.MAX_SAFE_INTEGER) {
+    throw new Error('ارزش بیمه‌شده اعلامی باید عددی مثبت، معتبر و متناهی باشد.');
   }
 
   const ratio = (declaredInsuredValue / replacementCostEstimate) * 100;
@@ -65,12 +66,13 @@ export function analyzeInsuredValueAdequacy(
 
 export function calculateDeductibleDeduction(
   assessedLossAmount: number,
-  deductible: DeductibleStructure
+  deductible: DeductibleStructure,
+  totalSumInsured?: number
 ): {
   deductibleAmount: number;
   netPayableClaimAmount: number;
 } {
-  if (assessedLossAmount <= 0) {
+  if (!Number.isFinite(assessedLossAmount) || assessedLossAmount <= 0) {
     return { deductibleAmount: 0, netPayableClaimAmount: 0 };
   }
 
@@ -84,12 +86,15 @@ export function calculateDeductibleDeduction(
   } else if (deductible.type === 'percentage_with_min_max') {
     const rate = (deductible.percentageRate ?? 0) / 100;
     let computed = assessedLossAmount * rate;
-    if (deductible.minAmount !== undefined) {
-      computed = Math.max(computed, deductible.minAmount);
-    }
-    if (deductible.maxAmount !== undefined) {
-      computed = Math.min(computed, deductible.maxAmount);
-    }
+    if (deductible.minAmount !== undefined) computed = Math.max(computed, deductible.minAmount);
+    if (deductible.maxAmount !== undefined) computed = Math.min(computed, deductible.maxAmount);
+    deductibleAmount = computed;
+  } else if (deductible.type === 'percentage_of_sum_insured') {
+    const baseAmount = totalSumInsured && Number.isFinite(totalSumInsured) && totalSumInsured > 0 ? totalSumInsured : assessedLossAmount;
+    const rate = (deductible.percentageRate ?? 0) / 100;
+    let computed = baseAmount * rate;
+    if (deductible.minAmount !== undefined) computed = Math.max(computed, deductible.minAmount);
+    if (deductible.maxAmount !== undefined) computed = Math.min(computed, deductible.maxAmount);
     deductibleAmount = computed;
   }
 
@@ -114,8 +119,11 @@ export function calculateIndicativeAnnualPremium(params: {
   const contentsValue = params.contentsValue ?? 0;
   const basis = params.formulaBasis;
 
-  if (params.buildingReplacementValue <= 0) {
-    throw new Error('ارزش ساخت مجدد اعیان باید بزرگ‌تر از صفر باشد.');
+  if (!Number.isFinite(params.buildingReplacementValue) || params.buildingReplacementValue <= 0 || params.buildingReplacementValue > Number.MAX_SAFE_INTEGER) {
+    throw new Error('ارزش ساخت مجدد اعیان باید عددی مثبت، معتبر و متناهی باشد.');
+  }
+  if (!Number.isFinite(contentsValue) || contentsValue < 0 || contentsValue > Number.MAX_SAFE_INTEGER) {
+    throw new Error('ارزش اثاثیه باید عددی نامنفی، معتبر و متناهی باشد.');
   }
 
   // Base building premium: (Value / 1000) * baseRate * constructionMultiplier
@@ -165,5 +173,70 @@ export function calculateIndicativeAnnualPremium(params: {
     disclaimerFa:
       'این مبلغ صرفاً برآورد اولیه بر مبنای تعرفه رسمی مصوب بیمه مرکزی بوده و صدور قطعی بیمه‌نامه منوط به بازدید کارشناس رسمی بیمه‌گر و استعلام نهایی می‌باشد.',
     calculatedAtIso: new Date().toISOString()
+  };
+}
+
+export interface ProportionalSettlementResult {
+  adequacyRatioPercent: number;
+  isUnderinsured: boolean;
+  grossAssessedLoss: number;
+  proportionalLossAmount: number;
+  underinsuranceReductionAmount: number;
+  deductibleAmount: number;
+  netPayableSettlement: number;
+  legalBasisReferenceFa: string;
+  detailedExplanationFa: string;
+}
+
+export function calculateArticle10ProportionalSettlement(params: {
+  assessedGrossLossAmount: number;
+  replacementCostAtLoss: number;
+  declaredSumInsured: number;
+  deductible: DeductibleStructure;
+  currency?: string;
+}): ProportionalSettlementResult {
+  const currency = params.currency ?? params.deductible.currency ?? 'IRR';
+  if (!Number.isFinite(params.assessedGrossLossAmount) || params.assessedGrossLossAmount <= 0) {
+    return {
+      adequacyRatioPercent: 0,
+      isUnderinsured: false,
+      grossAssessedLoss: 0,
+      proportionalLossAmount: 0,
+      underinsuranceReductionAmount: 0,
+      deductibleAmount: 0,
+      netPayableSettlement: 0,
+      legalBasisReferenceFa: 'ماده ۱۰ قانون بیمه مصوب ۱۳۱۶',
+      detailedExplanationFa: 'مبلغ خسارت وارده صفر یا نامعتبر است.'
+    };
+  }
+
+  const adequacy = analyzeInsuredValueAdequacy(params.replacementCostAtLoss, params.declaredSumInsured);
+  const isUnderinsured = adequacy.status === 'underinsured';
+  const ratioFactor = Math.min(1.0, params.declaredSumInsured / params.replacementCostAtLoss);
+  const proportionalLoss = isUnderinsured
+    ? roundCurrency(params.assessedGrossLossAmount * ratioFactor, currency)
+    : params.assessedGrossLossAmount;
+  const underinsuranceReduction = Math.max(0, params.assessedGrossLossAmount - proportionalLoss);
+
+  const { deductibleAmount, netPayableClaimAmount } = calculateDeductibleDeduction(
+    proportionalLoss,
+    params.deductible,
+    params.declaredSumInsured
+  );
+
+  const explanationFa = isUnderinsured
+    ? `به دلیل کم‌بیمه‌گی (${adequacy.adequacyRatioPercent}% نسبت سرمایه)، طبق ماده ۱۰ قانون بیمه، خسارت به تناسب سرمایه تعدیل گردید (${roundCurrency(underinsuranceReduction, currency).toLocaleString('fa-IR')} کسر شد). پس از کسر فرانشیز (${roundCurrency(deductibleAmount, currency).toLocaleString('fa-IR')})، خالص پرداختی ${roundCurrency(netPayableClaimAmount, currency).toLocaleString('fa-IR')} می‌باشد.`
+    : `سرمایه بیمه‌شده منطبق بر ارزش واقعی بوده و مشمول قاعده نسبی ماده ۱۰ قانون بیمه نمی‌باشد. پس از کسر فرانشیز، خالص پرداختی ${roundCurrency(netPayableClaimAmount, currency).toLocaleString('fa-IR')} تعیین گردید.`;
+
+  return {
+    adequacyRatioPercent: adequacy.adequacyRatioPercent,
+    isUnderinsured,
+    grossAssessedLoss: params.assessedGrossLossAmount,
+    proportionalLossAmount: proportionalLoss,
+    underinsuranceReductionAmount: underinsuranceReduction,
+    deductibleAmount,
+    netPayableSettlement: netPayableClaimAmount,
+    legalBasisReferenceFa: 'ماده ۱۰ قانون بیمه مصوب ۱۳۱۶ (قاعده نسبی سرمایه)',
+    detailedExplanationFa: explanationFa
   };
 }
