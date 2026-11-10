@@ -19,6 +19,7 @@ import { synthesizeExecutiveDecisionReport } from '../decision-epistemology/unif
 import { verifyAdminApiAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
 import {
   aggregateNeighborhoodResearchRollup,
+  getDefaultRollupPeriodKey,
   getOrBuildNeighborhoodRollup,
 } from './socioeconomicRollupEngine';
 import type { ResearchBehavioralEvent } from './socioeconomicTypes';
@@ -56,7 +57,7 @@ export function registerSocioeconomicRoutes(
       const cityId = validateCityParam(req.query.cityId, 'tehran');
       const periodKey = typeof req.query.periodKey === 'string' && req.query.periodKey.trim()
         ? sanitizeInput(req.query.periodKey, 24)
-        : '1405-08';
+        : getDefaultRollupPeriodKey();
 
       const rollup = await getOrBuildNeighborhoodRollup(hoodId, cityId, periodKey);
       const epistemicDossier = buildNeighborhoodEpistemicDossier({
@@ -162,7 +163,7 @@ export function registerSocioeconomicRoutes(
       const hoodId = Math.max(1, Math.trunc(Number(body.hoodId) || 1));
       const periodKey = typeof body.periodKey === 'string' && body.periodKey.trim()
         ? sanitizeInput(body.periodKey, 24)
-        : '1405-08';
+        : getDefaultRollupPeriodKey();
 
       const priceObservations = Array.isArray(body.priceObservations)
         ? (body.priceObservations as RawPriceObservation[])

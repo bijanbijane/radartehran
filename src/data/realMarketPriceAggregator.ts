@@ -72,15 +72,16 @@ export function resolveAmenityStatus(text: string, amenityPattern: RegExp, defau
   const norm = normalizePersianText(text), cleanPattern = new RegExp(amenityPattern.source, amenityPattern.flags.replace(/g/g, ''));
   return cleanPattern.test(norm) ? hasAffirmativeMatch(norm, cleanPattern) : defaultValue;
 }
-export function resolveBuildingAge(yearOrAge?: number | null, description = '', currentSolarYear = 1405): number {
+const getDynamicSolarYear = (): number => { try { const p = Number.parseInt(new Intl.DateTimeFormat('en-US-u-ca-persian', { year: 'numeric' }).format(new Date()).replace(/[^\d]/g, ''), 10); if (Number.isInteger(p) && p >= 1400 && p <= 1500) return p; } catch {} return 1405; };
+export function resolveBuildingAge(yearOrAge?: number | null, description = '', currentSolarYear = getDynamicSolarYear()): number {
   const normDesc = normalizePersianText(description);
   const numericToAge = (v: number): number => (v >= 1330 && v <= currentSolarYear ? currentSolarYear - v : v >= 400 && v <= currentSolarYear - 1000 ? currentSolarYear - (1000 + v) : v >= 70 && v <= 99 ? currentSolarYear - (1300 + v) : v >= 0 && v <= 65 ? v : 30);
   let age = 10;
   if (yearOrAge !== undefined && yearOrAge !== null && !Number.isNaN(yearOrAge) && yearOrAge > 0) age = numericToAge(Math.round(yearOrAge));
   else {
-    const divarTable = /متراژ[\s\n]+سال\s*ساخت[\s\n]+اتاق[\s\n]+(?<!\d)(\d{2,3})[\s\n]+(13[4-9]\d|140[0-6]|قبل\s*از\s*1370)/.exec(normDesc);
+    const divarTable = /متراژ[\s\n]+سال\s*ساخت[\s\n]+اتاق[\s\n]+(?<!\d)(\d{2,3})[\s\n]+(13[4-9]\d|14[0-1]\d|قبل\s*از\s*1370)/.exec(normDesc);
     const explicitAge = /(?:^|[^\d.])(?<!\d)(\d{1,2})\s*سال\s*ساخت/.exec(normDesc);
-    const explicitYear = /(?:سال\s*ساخت|ساخت|مدل)\s*[:：\n]?\s*(?<!\d)(13[4-9]\d|140[0-6]|40[0-6]|[7-9]\d)(?=$|\D)/.exec(normDesc);
+    const explicitYear = /(?:سال\s*ساخت|ساخت|مدل)\s*[:：\n]?\s*(?<!\d)(13[4-9]\d|14[0-1]\d|4[0-1]\d|[7-9]\d)(?=$|\D)/.exec(normDesc);
     if (/قبل\s*از\s*1370/.test(normDesc)) age = 36;
     else if (divarTable) age = divarTable[2].includes('قبل') ? 36 : numericToAge(parseInt(divarTable[2], 10));
     else if (explicitAge) age = parseInt(explicitAge[1], 10);

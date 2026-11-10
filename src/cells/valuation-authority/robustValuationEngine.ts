@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import {
   calculateHedonicValuation,
+  getCurrentJalaliYear,
   FAST_SALE_FACTOR,
   type HedonicInputParams,
   type HedonicRenovationStatus,
@@ -211,7 +212,7 @@ export function computeServerValuationSeal(input: ServerValuationSealInput): Ser
   const hedonicParams: HedonicInputParams = {
     neighborhood,
     sqm: clampNumber(input.sqm, 30, 600, 90),
-    buildYear: clampNumber(input.buildYear, 1365, 1405, 1400),
+    buildYear: clampNumber(input.buildYear, 1365, getCurrentJalaliYear() + 1, getCurrentJalaliYear() - 5),
     renovationStatus: input.renovationStatus ?? 'standard',
     floor: safeFloor,
     totalFloors: safeTotalFloors,

@@ -20,9 +20,22 @@ const inMemoryResearchRollups = new Map<string, NeighborhoodResearchRollupDocume
 const MAX_IN_MEMORY_ROLLUPS = 500;
 const VALID_PERIOD_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+export function getDefaultRollupPeriodKey(referenceDate: Date = new Date()): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-u-ca-persian', { year: 'numeric', month: 'numeric' }).formatToParts(referenceDate);
+    const jy = Number(parts.find((p) => p.type === 'year')?.value);
+    const jm = Number(parts.find((p) => p.type === 'month')?.value);
+    if (Number.isFinite(jy) && Number.isFinite(jm) && jm >= 1 && jm <= 12) {
+      return `${jy}-${String(jm).padStart(2, '0')}`;
+    }
+  } catch { /* fallback */ }
+  return '1405-08';
+}
+
 export function normalizeRollupPeriodKey(rawPeriodKey?: string): string {
-  const cleaned = sanitizeInput(rawPeriodKey || '1405-08', 24).trim();
-  return VALID_PERIOD_KEY_RE.test(cleaned) ? cleaned : '1405-08';
+  const defaultKey = getDefaultRollupPeriodKey();
+  const cleaned = sanitizeInput(rawPeriodKey || defaultKey, 24).trim();
+  return VALID_PERIOD_KEY_RE.test(cleaned) ? cleaned : defaultKey;
 }
 
 function setBoundedRollupCache(key: string, doc: NeighborhoodResearchRollupDocument): void {
@@ -230,9 +243,7 @@ export async function aggregateNeighborhoodResearchRollup(
  * Retrieves an existing rollup or generates a k-anonymous research rollup incorporating live telemetry and verified crowd claims.
  */
 export async function getOrBuildNeighborhoodRollup(
-  hoodId: number,
-  cityId: string = 'tehran',
-  periodKey: string = '1405-08',
+  hoodId: number, cityId: string = 'tehran', periodKey: string = getDefaultRollupPeriodKey(),
 ): Promise<NeighborhoodResearchRollupDocument> {
   const safeCity = validateCityParam(cityId, 'tehran');
   const safePeriod = normalizeRollupPeriodKey(periodKey);
