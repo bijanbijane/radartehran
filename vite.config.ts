@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => {
       minify: 'esbuild',
       // Task 494: Do not publish public source maps in production build artifacts.
       sourcemap: false,
-      chunkSizeWarningLimit: 650,
+      chunkSizeWarningLimit: 700,
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -76,6 +76,9 @@ export default defineConfig(({ mode }) => {
               }
               if (id.includes('react-dom') || id.includes('react')) {
                 return 'vendor-react';
+              }
+              if (id.includes('leaflet')) {
+                return 'vendor-leaflet';
               }
             }
             if (
@@ -97,12 +100,8 @@ export default defineConfig(({ mode }) => {
             ) {
               return 'data-neighborhoods';
             }
-            if (
-              id.includes('src/components/views/') ||
-              id.includes('src/components/modals/') ||
-              id.includes('src/components/layout/')
-            ) {
-              return 'ui-product-views';
+            if (id.includes('src/components/modals/')) {
+              return 'ui-modals';
             }
             return undefined;
           },

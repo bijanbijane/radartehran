@@ -35,6 +35,7 @@ export interface BubbleReport {
   prRatio: number;
   summary: string;
   trendData: BubbleTrendPoint[];
+  estimatedDealPricePerSqm?: number;
 }
 export interface EvaluatedNeighborhood extends Neighborhood {
   baseBuyPerSqm?: number;

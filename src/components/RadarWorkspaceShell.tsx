@@ -1,5 +1,5 @@
 /** @file src/components/RadarWorkspaceShell.tsx — Extracted Spatial GIS & PropTech Workspace Shell (< 275 lines) [RULE-01] */
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
@@ -19,7 +19,7 @@ import { FeatureErrorBoundary } from './FeatureErrorBoundary';
 import { useMarketPulseSync } from './useMarketPulseSync';
 import { FEATURE_FLAGS_STORAGE_KEY, useAppPersistenceAndDerivedState } from './useAppPersistenceAndDerivedState';
 import { formatAreaShort, formatMillionTomanAsIntlCurrency, getRadarLocaleDirection, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale, subscribeAreaUnit } from '../utils/areaUnit';
-import { ReverseBudgetDiscoveryModal } from './modals/ReverseBudgetDiscoveryModal';
+const ReverseBudgetDiscoveryModal = lazy(() => import('./modals/ReverseBudgetDiscoveryModal').then((m) => ({ default: m.ReverseBudgetDiscoveryModal })));
 import { ProductGlobalHeader } from './navigation/ProductGlobalHeader';
 import { ProductViewRouter } from './views/ProductViewRouter';
 import { DevPerformancePanel } from './DevPerformancePanel';
@@ -255,15 +255,17 @@ export function RadarWorkspaceShell() {
         onOpenSmartSuggest={() => ui.setShowSmartSuggestModal(true)} onOpenCompare={() => ui.setShowCompareModal(true)}
         onOpenSubmitProperty={() => { ui.setBargainHoodId(ui.selectedHoodId); ui.setSponsorHoodId(ui.selectedHoodId); ui.setShowAgencyModal(true); }}
       />
-      <ReverseBudgetDiscoveryModal
-        isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)} initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm} initialMaxAgeYears={buildingAgeSegment === 'new' ? 5 : buildingAgeSegment === 'mid' ? 12 : 20}
-        neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm, overallScore: h.overallScore, bargains: h.bargains }))}
-        onSelectNeighborhood={(id, budgetMillion, areaSqm, ageYears) => {
-          const found = evaluatedNeighborhoods.find((h) => String(h.id) === id);
-          if (typeof budgetMillion === 'number' && budgetMillion > 0) setBuyTotalBudget(budgetMillion);
-          if (typeof areaSqm === 'number' && areaSqm >= 35) setTargetSqm(areaSqm); if (typeof ageYears === 'number') setBuildingAgeSegment(ageYears <= 5 ? 'new' : ageYears <= 15 ? 'mid' : 'older');
-          if (found) { setMode('buy'); handleSelectNeighborhood(found); ui.setMobileSheetOpen(true); }
-        }} />
+      {showReverseBudgetModal && (<Suspense fallback={null}>
+        <ReverseBudgetDiscoveryModal
+          isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)} initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm} initialMaxAgeYears={buildingAgeSegment === 'new' ? 5 : buildingAgeSegment === 'mid' ? 12 : 20}
+          neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm, overallScore: h.overallScore, bargains: h.bargains }))}
+          onSelectNeighborhood={(id, budgetMillion, areaSqm, ageYears) => {
+            const found = evaluatedNeighborhoods.find((h) => String(h.id) === id);
+            if (typeof budgetMillion === 'number' && budgetMillion > 0) setBuyTotalBudget(budgetMillion);
+            if (typeof areaSqm === 'number' && areaSqm >= 35) setTargetSqm(areaSqm); if (typeof ageYears === 'number') setBuildingAgeSegment(ageYears <= 5 ? 'new' : ageYears <= 15 ? 'mid' : 'older');
+            if (found) { setMode('buy'); handleSelectNeighborhood(found); ui.setMobileSheetOpen(true); }
+          }} />
+      </Suspense>)}
       <FeatureErrorBoundary sectionName="پنجره‌ها و ابزارهای تخصصی" resetKey={ui.activeCity}>
         <AppModalsPortal
           ui={ui} mode={mode} setMode={setMode} totalRahnEquivalent={totalRahnEquivalent} maxAffordablePerSqm={maxAffordablePerSqm}

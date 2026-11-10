@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Users, BookOpen, Scale, Compass, Network, Hourglass, Briefcase, Activity, PieChart, Wallet, Split, Award } from 'lucide-react';
-import type { Neighborhood } from '../../data/neighborhoods';
-import type { CityId } from '../../data/multiCityData';
+import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../../data/neighborhoods';
+import { getAllMultiCityNeighborhoods, type CityId } from '../../data/multiCityData';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { NeighborhoodCrowdClaimsPanel } from './NeighborhoodCrowdClaimsPanel';
 import { SocioeconomicReferenceCard } from './SocioeconomicReferenceCard';
@@ -100,9 +100,13 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
   };
 
   const resolvedHoodId = hoodId ?? hood?.id ?? 1;
-  const resolvedHoodName = hoodName ?? hood?.name ?? 'محله';
+  const effectiveHood: Neighborhood =
+    hood ??
+    getAllMultiCityNeighborhoods().find((n) => n.id === resolvedHoodId) ??
+    INITIAL_NEIGHBORHOODS[0];
+  const resolvedHoodName = hoodName ?? effectiveHood.name ?? 'محله';
   const resolvedCity = String(cityId ?? cityKey ?? 'tehran');
-  const resolvedBasePrice = basePriceSqm ?? hood?.buyPerSqm ?? 120;
+  const resolvedBasePrice = basePriceSqm ?? effectiveHood.buyPerSqm ?? 120;
   const activeTabMeta = STAGE2_TABS.find((t) => t.id === activeTab) ?? STAGE2_TABS[0];
   const activeDomain = activeTabMeta.domain;
   const domainTabs = STAGE2_TABS.filter((t) => t.domain === activeDomain);
@@ -210,10 +214,10 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
         </div>
       </div>
 
-      {/* Active Tab Panel */}
+      {/* Active Tab Panel (neighborhood={effectiveHood}) */}
       <div id={`stage2-panel-${activeTab}`} role="tabpanel" aria-labelledby={`stage2-tab-${activeTab}`}>
         {(() => {
-          const common = { hoodId: resolvedHoodId, hoodName: resolvedHoodName, cityKey: resolvedCity, basePriceSqm: resolvedBasePrice, hood };
+          const common = { hoodId: resolvedHoodId, hoodName: resolvedHoodName, cityKey: resolvedCity, basePriceSqm: resolvedBasePrice, hood: effectiveHood };
           switch (activeTab) {
             case 'DECISION_SYNTHESIS':
               return <UnifiedDecisionSynthesisCard {...common} initialTargetSqm={sharedTargetSqm} onTargetSqmChange={setSharedTargetSqm} intlCurrency={intlCurrency} onSelectTab={(t) => setActiveTab(t as Stage2ActiveTab)} />;

@@ -225,6 +225,7 @@ export function detectEnvironmentConfigDrift(env: Record<string, string | undefi
   const drifts: string[] = []; const isProd = env.NODE_ENV === 'production';
   if (isProd && (env.FIRESTORE_EMULATOR_HOST || env.FIREBASE_AUTH_EMULATOR_HOST)) drifts.push('EMULATOR_LEAK_IN_PRODUCTION');
   if (isProd && env.APP_URL && !env.APP_URL.trim().startsWith('https://')) drifts.push('INSECURE_APP_URL_IN_PRODUCTION');
+  if (!isPlaceholderValue(env.CASPER_HUB_URL) && !env.CASPER_HUB_URL!.trim().startsWith('https://')) drifts.push('INSECURE_CASPER_HUB_URL');
   if (clientConfig?.projectId && clientConfig.projectId !== EXPECTED_FIREBASE_PROJECT_ID) drifts.push('FIREBASE_PROJECT_ID_DRIFT');
   if (clientConfig?.firestoreDatabaseId && clientConfig.firestoreDatabaseId !== EXPECTED_FIRESTORE_DATABASE_ID) drifts.push('FIRESTORE_DATABASE_ID_DRIFT');
   if (!isPlaceholderValue(env.OBJECT_STORAGE_ACCESS_KEY) !== !isPlaceholderValue(env.OBJECT_STORAGE_SECRET_KEY)) drifts.push('PARTIAL_OBJECT_STORAGE_S3_CONFIG');

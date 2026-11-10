@@ -94,7 +94,7 @@ export function computeDixitPindyckRealOption(
   const disc = b * b + 4 * a * r;
   const beta1 = (-b + Math.sqrt(Math.max(0.0001, disc))) / (2 * a);
 
-  const perpetualSpread = beta1 / Math.max(1.05, beta1 - 1) - 1;
+  const perpetualSpread = 0.032 / Math.max(0.05, beta1 - 1);
   const horizonWeight = 0.55 + 0.45 * (1 - Math.exp(-1.2 * Math.max(0.05, tau)));
   const hurdleRateMultiplier = Number((1 + perpetualSpread * horizonWeight).toFixed(3));
   const hurdlePricePerSqm = Number((basePriceSqm * hurdleRateMultiplier).toFixed(1));

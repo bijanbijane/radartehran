@@ -12,31 +12,25 @@ import { convertAreaFromSqm, formatMillionTomanAsIntlCurrency } from '../src/uti
 import { escapeHtmlAttr, buildExternalDivarUrl, isValidIranianMobile } from '../src/utils/security';
 import { parseSingleByteRange } from '../src/utils/serverObjectStorage';
 import { validateObjectStorageEndpoint } from '../src/utils/serverConfigValidator';
+import { evaluateCasperNeighborhoodDecision } from '../src/cells/socioeconomic-intelligence/casperDecisionEngine';
+import { resolveCasperHubConfig, CasperHubClientError } from '../server/modules/casper-hub/casperHubClient';
+import { computeSavageMinimaxRegretMatrix } from '../src/cells/decision-epistemology/paretoRegretEngine';
+import { synthesizeExecutiveDecisionReport } from '../src/cells/decision-epistemology/unifiedDecisionSynthesisEngine';
+import { computeDixitPindyckRealOption } from '../src/cells/decision-epistemology/realOptionsLiquidityEngine';
+import { simulateMertonJumpDiffusionVaR } from '../src/cells/decision-epistemology/monteCarloRiskDensityEngine';
 
 interface MutantScenario<TFn> {
-  id: string;
-  targetModule: string;
-  description: string;
-  realImpl: TFn;
-  mutantImpl: TFn;
-  oracle: (fn: TFn) => void;
+  id: string; targetModule: string; description: string;
+  realImpl: TFn; mutantImpl: TFn; oracle: (fn: TFn) => void;
 }
 
 console.log('🧬 Running Targeted Critical-Path Mutation Testing Suite...\n');
 
 const sampleHood = INITIAL_NEIGHBORHOODS[0] as unknown as EvaluatedNeighborhood;
 const baselineHedonicInput: HedonicInputParams = {
-  neighborhood: sampleHood,
-  sqm: 100,
-  buildYear: 1400,
-  renovationStatus: 'renovated',
-  floor: 4,
-  totalFloors: 5,
-  hasElevator: true,
-  hasParking: true,
-  hasStorage: true,
-  parkingAdjustmentPercent: 5,
-  currentJalaliYear: 1405,
+  neighborhood: sampleHood, sqm: 100, buildYear: 1400, renovationStatus: 'renovated',
+  floor: 4, totalFloors: 5, hasElevator: true, hasParking: true, hasStorage: true,
+  parkingAdjustmentPercent: 5, currentJalaliYear: 1405,
 };
 
 const scenarios: MutantScenario<any>[] = [
@@ -45,29 +39,16 @@ const scenarios: MutantScenario<any>[] = [
     targetModule: 'src/data/hedonicPricingEngine.ts',
     description: 'Mutate FAST_SALE_FACTOR from 0.88 to 0.95 in fastSaleTotalMillion calculation',
     realImpl: (input: HedonicInputParams) => calculateHedonicValuation(input),
-    mutantImpl: (input: HedonicInputParams) => {
-      const res = calculateHedonicValuation(input);
-      return { ...res, fastSaleTotalMillion: Math.round(res.hedonicTotalMillion * 0.95) };
-    },
-    oracle: (calc) => {
-      const out = calc(baselineHedonicInput);
-      assert.equal(out.fastSaleTotalMillion, Math.round(out.hedonicTotalMillion * FAST_SALE_FACTOR));
-    },
+    mutantImpl: (input: HedonicInputParams) => ({ ...calculateHedonicValuation(input), fastSaleTotalMillion: Math.round(calculateHedonicValuation(input).hedonicTotalMillion * 0.95) }),
+    oracle: (calc) => assert.equal(calc(baselineHedonicInput).fastSaleTotalMillion, Math.round(calc(baselineHedonicInput).hedonicTotalMillion * FAST_SALE_FACTOR)),
   },
   {
     id: 'MUT-02',
     targetModule: 'src/data/hedonicPricingEngine.ts',
     description: 'Invert upper-floor walk-up penalty (missing elevator on floor 4)',
     realImpl: (input: HedonicInputParams) => calculateHedonicValuation(input),
-    mutantImpl: (input: HedonicInputParams) => {
-      const res = calculateHedonicValuation({ ...input, hasElevator: true });
-      return res;
-    },
-    oracle: (calc) => {
-      const withElevator = calc({ ...baselineHedonicInput, hasElevator: true });
-      const withoutElevator = calc({ ...baselineHedonicInput, hasElevator: false });
-      assert.ok(withoutElevator.hedonicPerSqm < withElevator.hedonicPerSqm, 'Floor 4 walk-up must lower per-sqm price');
-    },
+    mutantImpl: (input: HedonicInputParams) => calculateHedonicValuation({ ...input, hasElevator: true }),
+    oracle: (calc) => assert.ok(calc({ ...baselineHedonicInput, hasElevator: false }).hedonicPerSqm < calc({ ...baselineHedonicInput, hasElevator: true }).hedonicPerSqm, 'Floor 4 walk-up must lower per-sqm price'),
   },
   {
     id: 'MUT-03',
@@ -162,10 +143,125 @@ const scenarios: MutantScenario<any>[] = [
       assert.equal(validator('http://169.254.169.254/latest/meta-data', false).valid, false);
     },
   },
+  {
+    id: 'MUT-11',
+    targetModule: 'src/cells/socioeconomic-intelligence/casperDecisionEngine.ts',
+    description: 'Suppress non-compensatory safety veto when safety score < 5.2',
+    realImpl: evaluateCasperNeighborhoodDecision,
+    mutantImpl: (input: any) => {
+      const res = evaluateCasperNeighborhoodDecision(input);
+      return { ...res, nonCompensatoryVetoTriggered: false, decisionVerdict: 'OPTIMAL_BUY' };
+    },
+    oracle: (evaluator) => {
+      const out = evaluator({
+        hoodId: 99,
+        hoodName: 'محله فرضی پرریسک',
+        askingPricePerSqm: 100,
+        estimatedDealPricePerSqm: 95,
+        iqrLowPerSqm: 90,
+        iqrHighPerSqm: 100,
+        validSampleCount: 15,
+        rejectedFraudCount: 0,
+        confidenceScore: 80,
+        safetyScore: 4.0, // Critical safety risk (< 5.2 threshold)
+      });
+      assert.equal(out.nonCompensatoryVetoTriggered, true, 'Safety score < 5.2 must trigger non-compensatory veto');
+      assert.equal(out.decisionVerdict, 'HIGH_RISK_AVOID', 'Critical risk veto must force HIGH_RISK_AVOID verdict');
+    },
+  },
+  {
+    id: 'MUT-12',
+    targetModule: 'server/modules/casper-hub/casperHubClient.ts',
+    description: 'Allow IPv6-mapped loopback SSRF target in resolveCasperHubConfig',
+    realImpl: resolveCasperHubConfig,
+    mutantImpl: (_env: Record<string, string | undefined>) => ({
+      baseUrl: 'https://[::ffff:127.0.0.1]:8080',
+      token: 'chub_test_token_12345678',
+      agentId: 'CASPER-03' as const,
+      configured: true,
+    }),
+    oracle: (resolver) => {
+      assert.throws(
+        () => resolver({ CASPER_HUB_URL: 'https://[::ffff:127.0.0.1]:8080', CASPER_HUB_TOKEN: 'chub_test_token_12345678' }),
+        (err: any) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_URL_INVALID',
+        'IPv6 loopback must be rejected as CASPER_HUB_URL_INVALID'
+      );
+    },
+  },
+  {
+    id: 'MUT-13',
+    targetModule: 'src/utils/security.ts',
+    description: 'Omit ampersand escaping in escapeHtmlAttr',
+    realImpl: escapeHtmlAttr,
+    mutantImpl: (raw: string) => raw.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    oracle: (esc) => {
+      const out = esc('سرمایه‌گذاری & توسعه');
+      assert.ok(out.includes('&amp;'), 'Ampersands must be escaped to &amp; in HTML attributes');
+      assert.ok(!out.includes('& '), 'Raw unescaped ampersand must not remain');
+    },
+  },
+  {
+    id: 'MUT-14',
+    targetModule: 'src/cells/decision-epistemology/paretoRegretEngine.ts',
+    description: 'Invert Savage Minimax Regret rule to pick maximal regret strategy',
+    realImpl: () => computeSavageMinimaxRegretMatrix({ hoodId: 1, basePriceSqm: 120 }),
+    mutantImpl: () => {
+      const res = computeSavageMinimaxRegretMatrix({ hoodId: 1, basePriceSqm: 120 });
+      const worst = res.strategies.reduce((w, s) => (s.maxRegretMillion > w.maxRegretMillion ? s : w), res.strategies[0]);
+      return { ...res, minimaxWinnerId: worst.strategyId, strategies: res.strategies.map((s) => ({ ...s, isMinimaxOptimal: s.strategyId === worst.strategyId })) };
+    },
+    oracle: (fn) => {
+      const out = fn();
+      const minRegret = Math.min(...out.strategies.map((s: any) => s.maxRegretMillion));
+      const winner = out.strategies.find((s: any) => s.strategyId === out.minimaxWinnerId);
+      assert.ok(winner && winner.isMinimaxOptimal && winner.maxRegretMillion === minRegret, 'Winner must strictly minimize max regret');
+    },
+  },
+  {
+    id: 'MUT-15',
+    targetModule: 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts',
+    description: 'Invert Walk-Away Price Ceiling to scale with inflated asking price',
+    realImpl: () => synthesizeExecutiveDecisionReport(1, 'پونک', 'tehran', 100, 160),
+    mutantImpl: () => {
+      const rep = synthesizeExecutiveDecisionReport(1, 'پونک', 'tehran', 100, 160);
+      return { ...rep, walkAwayPriceCeilingPerSqm: Math.round(160 * 1.05) };
+    },
+    oracle: (fn) => {
+      const rep = fn();
+      assert.ok(rep.walkAwayPriceCeilingPerSqm <= rep.fairPricePerSqm * 1.04, 'Walk-away ceiling must not exceed fair price * 1.04');
+    },
+  },
+  {
+    id: 'MUT-16',
+    targetModule: 'src/cells/decision-epistemology/realOptionsLiquidityEngine.ts',
+    description: 'Invert volatility effect on buyer reservation price',
+    realImpl: (sigma: number) => computeDixitPindyckRealOption(100, 0.05, sigma),
+    mutantImpl: (sigma: number) => {
+      const opt = computeDixitPindyckRealOption(100, 0.05, sigma);
+      return { ...opt, buyerReservationPricePerSqm: Number((100 * (1 + sigma)).toFixed(1)) };
+    },
+    oracle: (fn) => {
+      const lowVol = fn(0.15), highVol = fn(0.45);
+      assert.ok(highVol.buyerReservationPricePerSqm < lowVol.buyerReservationPricePerSqm, 'Higher volatility must lower buyer reservation price');
+    },
+  },
+  {
+    id: 'MUT-17',
+    targetModule: 'src/cells/decision-epistemology/monteCarloRiskDensityEngine.ts',
+    description: 'Invert illiquidity haircut so emergency exit VaR equals or beats paper VaR',
+    realImpl: () => simulateMertonJumpDiffusionVaR(120, { horizonMonths: 12, trialCount: 500 }, 42).metrics,
+    mutantImpl: () => {
+      const res = simulateMertonJumpDiffusionVaR(120, { horizonMonths: 12, trialCount: 500 }, 42).metrics;
+      return { ...res, illiquidityAdjustedVaR95RealPct: res.var95RealPct - 2.0 };
+    },
+    oracle: (fn) => {
+      const m = fn();
+      assert.ok(m.illiquidityAdjustedVaR95RealPct > m.var95RealPct + 8.0, 'Illiquidity-adjusted real VaR must exceed paper VaR by >= 8%');
+    },
+  },
 ];
 
-let killedCount = 0;
-let survivedCount = 0;
+let killedCount = 0, survivedCount = 0;
 
 for (const s of scenarios) {
   // 1. Verify real implementation passes the oracle

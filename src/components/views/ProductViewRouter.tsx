@@ -6,13 +6,15 @@ import type { FeatureFlags, CityId } from '../../types/models';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
-import { ProductHomeView } from './ProductHomeView';
-import { ProductDiscoverView } from './ProductDiscoverView';
-import { ProductIntelligenceView } from './ProductIntelligenceView';
-import { ProductToolsView } from './ProductToolsView';
-import { ProductUserSpaceView } from './ProductUserSpaceView';
-import { ProductAdminMonitoringView } from './ProductAdminMonitoringView';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
+import { InspectorDrawerSkeleton } from '../NeighborhoodLoadingSkeletons';
+
+const ProductHomeView = React.lazy(() => import('./ProductHomeView').then((m) => ({ default: m.ProductHomeView })));
+const ProductDiscoverView = React.lazy(() => import('./ProductDiscoverView').then((m) => ({ default: m.ProductDiscoverView })));
+const ProductIntelligenceView = React.lazy(() => import('./ProductIntelligenceView').then((m) => ({ default: m.ProductIntelligenceView })));
+const ProductToolsView = React.lazy(() => import('./ProductToolsView').then((m) => ({ default: m.ProductToolsView })));
+const ProductUserSpaceView = React.lazy(() => import('./ProductUserSpaceView').then((m) => ({ default: m.ProductUserSpaceView })));
+const ProductAdminMonitoringView = React.lazy(() => import('./ProductAdminMonitoringView').then((m) => ({ default: m.ProductAdminMonitoringView })));
 
 export interface ProductViewRouterProps {
   primaryView: PrimaryViewId;
@@ -273,7 +275,9 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   return (
     <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitMapMode ? 'mt-[175px] h-[calc(100%-175px)] rounded-t-3xl border-t lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]' : 'h-full w-full lg:w-[calc(100%-220px)]'}`}>
       {mapAxisBar}
-      {content}
+      <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>
+        {content}
+      </React.Suspense>
     </div>
   );
 };

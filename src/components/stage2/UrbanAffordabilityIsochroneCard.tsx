@@ -45,6 +45,9 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
     const safeCity = (cityKey in MULTI_CITY_CONFIGS ? cityKey : 'tehran') as CityId;
     return MULTI_CITY_CONFIGS[safeCity]?.workHubs ?? WORK_HUBS;
   }, [cityKey]);
+  const effectiveHubId = useMemo(() => {
+    return availableHubs.some((h) => h.id === selectedHubId) ? selectedHubId : (availableHubs[0]?.id || 'vanak');
+  }, [availableHubs, selectedHubId]);
 
   const report = useMemo(() => {
     return generateCasperUrbanAffordabilityReport(
@@ -52,12 +55,12 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
       hoodName,
       cityKey,
       basePriceSqm,
-      selectedHubId,
+      effectiveHubId,
       monthlyIncomeMillion,
       hood,
       intlCurrency
     );
-  }, [hoodId, hoodName, cityKey, basePriceSqm, selectedHubId, monthlyIncomeMillion, hood, intlCurrency]);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, effectiveHubId, monthlyIncomeMillion, hood, intlCurrency]);
 
   const tcohFx = intlCurrency !== 'IRT'
     ? ` (${formatMillionTomanAsIntlCurrency(report.arbitrage.totalCostOfHousingMillion, intlCurrency, 'fa')})`
@@ -127,7 +130,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           </div>
           <div className="relative">
             <select
-              value={selectedHubId}
+              value={effectiveHubId}
               onChange={(e) => setSelectedHubId(e.target.value)}
               aria-label="انتخاب قطب اشتغال"
               className="w-full px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 appearance-none cursor-pointer focus:outline-none focus:border-indigo-500"

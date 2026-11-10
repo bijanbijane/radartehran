@@ -175,7 +175,7 @@ export function generateCasperHousingCycleReport(
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
   const resolvedRahn = hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18);
   const transitScore = hood.metro ?? 7;
-  const samples = buildNeighborhoodListingSamples({ ...hood, buyPerSqm: resolvedPrice });
+  const samples = buildNeighborhoodListingSamples(hood);
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, samples);
   const insight = getNeighborhoodDeepInsight(hood);
   const computedSpread = Number((((agg.askingPricePerSqm - agg.estimatedDealPricePerSqm) / Math.max(1, agg.askingPricePerSqm)) * 100).toFixed(1));

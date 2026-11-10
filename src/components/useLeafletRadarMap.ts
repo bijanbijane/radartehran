@@ -19,9 +19,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
   useEffect(() => {
     const el = mapContainerRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return undefined;
-    const obs = new IntersectionObserver((entries) => {
-      if (entries[0]) setIsMapIntersectingViewport(entries[0].isIntersecting);
-    }, { threshold: 0.01 });
+    const obs = new IntersectionObserver((entries) => { if (entries[0]) setIsMapIntersectingViewport(entries[0].isIntersecting); }, { threshold: 0.01 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -115,8 +113,13 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
   useEffect(() => {
     tileLayerRef.current?.syncPreferredStyle(mapTileStyle);
   }, [mapTileStyle]);
+  const prevCityRef = useRef(activeCity);
   useEffect(() => {
     let cancelled = false;
+    if (prevCityRef.current !== activeCity) {
+      prevCityRef.current = activeCity;
+      setOsmBoundariesByHood({});
+    }
     const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
     const sourceList = activeCity === 'tehran' ? neighborhoodsRef.current.filter((n) => n.id < 100) : (cityCfg.neighborhoods || neighborhoodsRef.current);
     if (!sourceList.length) return;
@@ -263,18 +266,12 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     landmarkPinsRef.current.forEach((pin) => map.removeLayer(pin));
     landmarkPinsRef.current = [];
     if (selectedWorkHub.lat !== null && selectedWorkHub.lng !== null && selectedHood) {
-      const safeHubName = escapeHtmlAttr(selectedWorkHub.name);
-      const safeHoodLabel = escapeHtmlAttr(selectedHood.name);
-      const hubIcon = L.divIcon({
-        className: 'work-hub-pin',
-        html: `<div style="transform:translate(-50%,-50%);background:#0284c7;color:#fff;padding:4px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;white-space:nowrap;border:2px solid #fff;box-shadow:0 0 15px rgba(2,132,199,0.8);">🏢 محل کار: ${safeHubName}</div>`,
-        iconSize: [0, 0],
-      });
+      const safeHubName = escapeHtmlAttr(selectedWorkHub.name); const safeHoodLabel = escapeHtmlAttr(selectedHood.name);
+      const hubIcon = L.divIcon({ className: 'work-hub-pin', html: `<div style="transform:translate(-50%,-50%);background:#0284c7;color:#fff;padding:4px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;white-space:nowrap;border:2px solid #fff;box-shadow:0 0 15px rgba(2,132,199,0.8);">🏢 محل کار: ${safeHubName}</div>`, iconSize: [0, 0] });
       workMarkerRef.current = L.marker([selectedWorkHub.lat, selectedWorkHub.lng], { icon: hubIcon, zIndexOffset: 900 }).addTo(map);
       const distVal = areaUnit === 'sqft' ? ((selectedHood.distKm || 0) * 0.621371).toFixed(1) : (selectedHood.distKm || 0).toFixed(1);
       workLineRef.current = L.polyline([[selectedHood.lat, selectedHood.lng], [selectedWorkHub.lat, selectedWorkHub.lng]], { color: '#38bdf8', weight: 2.5, dashArray: '6, 6', opacity: 0.85 }).addTo(map).bindTooltip(
-        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;">🚗 مسیر ${safeHoodLabel} تا ${safeHubName}: <strong>${toPersianNum(distVal)} ${areaUnit === 'sqft' ? 'مایل' : 'کیلومتر'}</strong></div>`,
-        { sticky: true, direction: 'top' }
+        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;">🚗 مسیر ${safeHoodLabel} تا ${safeHubName}: <strong>${toPersianNum(distVal)} ${areaUnit === 'sqft' ? 'مایل' : 'کیلومتر'}</strong></div>`, { sticky: true, direction: 'top' }
       );
     }
     if (showLandmarkPins && selectedHood) {
@@ -283,15 +280,12 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
         const badgeColor = lm.category === 'مترو و حمل‌ونقل' ? '#0284c7' : lm.category === 'پارک و فضای سبز' ? '#059669' : lm.category === 'مرکز خرید و رفاهی' ? '#d97706' : '#e11d48';
         const emoji = lm.category === 'مترو و حمل‌ونقل' ? '🚇' : lm.category === 'پارک و فضای سبز' ? '🌳' : lm.category === 'مرکز خرید و رفاهی' ? '🛍️' : '🏥';
         const safeLmName = escapeHtmlAttr(lm.name); const safeLmCategory = escapeHtmlAttr(lm.category); const safeLmDesc = escapeHtmlAttr(lm.desc);
-        const lmIcon = L.divIcon({
-          className: 'hood-landmark-pin',
-          html: `<div style="display:flex;justify-content:center;align-items:center;transform:translate(-50%,-50%);"><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;color:#ffffff;background:${badgeColor};border:1.5px solid #ffffff;box-shadow:0 3px 10px rgba(0,0,0,0.5);">${emoji} ${safeLmName}</span></div>`,
-          iconSize: [0, 0],
-        });
-        const lPin = L.marker([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], { icon: lmIcon })
-          .addTo(map)
-          .bindTooltip(
-            `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;max-width:220px;"><strong>${emoji} ${safeLmName}</strong> (${safeLmCategory})<br/><span style="font-size:11px;opacity:0.85;">${safeLmDesc}</span></div>`,
-            { direction: 'top' }
-          );
-        landmarkPinsRef.current.push(lPin); }); } }, [selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks, areaUnit]); const handleFocusLandmarkOnMap = (lm: LocalLandmark) => { if (mapInstanceRef.current && selectedHood) { mapInstanceRef.current.flyTo([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], 15, { duration: 0.7 }); } }; return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded }; }
+        const lmIcon = L.divIcon({ className: 'hood-landmark-pin', html: `<div style="display:flex;justify-content:center;align-items:center;transform:translate(-50%,-50%);"><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;color:#ffffff;background:${badgeColor};border:1.5px solid #ffffff;box-shadow:0 3px 10px rgba(0,0,0,0.5);">${emoji} ${safeLmName}</span></div>`, iconSize: [0, 0] });
+        const lPin = L.marker([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], { icon: lmIcon }).addTo(map).bindTooltip(`<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;max-width:220px;"><strong>${emoji} ${safeLmName}</strong> (${safeLmCategory})<br/><span style="font-size:11px;opacity:0.85;">${safeLmDesc}</span></div>`, { direction: 'top' });
+        landmarkPinsRef.current.push(lPin);
+      });
+    }
+  }, [selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks, areaUnit]);
+  const handleFocusLandmarkOnMap = (lm: LocalLandmark) => { if (mapInstanceRef.current && selectedHood) { mapInstanceRef.current.flyTo([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], 15, { duration: 0.7 }); } };
+  return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded };
+}

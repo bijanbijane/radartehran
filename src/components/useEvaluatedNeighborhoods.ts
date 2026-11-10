@@ -1,5 +1,5 @@
 import { useMemo } from 'react'; import { BargainListing, calcDistanceKm, EvaluatedNeighborhood, getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, Neighborhood, NeighborhoodSponsor, ResidentVoteDoc, WorkHub, } from '../data/neighborhoods';
-import { getTrafficZoneStatus } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { matchesPersianSearch } from '../utils/security'; import { createExecutionTimer } from '../utils/diagnostics'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export type HousingStatus = 'green' | 'yellow' | 'red';
+import { getTrafficZoneStatus } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { matchesPersianSearch } from '../utils/security'; import { createExecutionTimer } from '../utils/diagnostics'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export type HousingStatus = 'green' | 'yellow' | 'red';
 export type SuggestSortMode = 'cheapest' | 'clean_calm' | 'commute_metro' | 'undervalued' | 'score' | 'cheap' | 'commute' | 'yield'; export type SuggestPriorityMode = 'balanced' | 'metro' | 'air' | 'security';
 export const EVALUATED_RECOMMENDATION_WEIGHTS_VERSION = '2026.10.v2' as const; export const EVALUATED_RECOMMENDATION_WEIGHTS = { version: EVALUATED_RECOMMENDATION_WEIGHTS_VERSION, seedVoteBaseWeight: 8, locationVerifiedVoteWeight: 2,
   unverifiedVoteWeight: 1, loanBoosterRahnMillion: 400, loanBoosterBuyMillion: 1200, deedHoldbackRatio: 0.10, priorityFactorMultiplier: 2.0, balancedOverallMultiplier: 2.0,
@@ -35,9 +35,11 @@ export function compareEvaluatedNeighborhoodsForSuggestion(
 ): number {
   const { mode, suggestSortBy, suggestPriority = 'balanced' } = options;
   const EPS = 1e-9;
+  const dealA = a.marketReport?.estimatedDealPricePerSqm ?? (Array.isArray(a.bargains) && a.bargains.length > 0 ? aggregateNeighborhoodMarketMetrics(a.id, a.name, a.buyPerSqm, buildNeighborhoodListingSamples(a)).estimatedDealPricePerSqm : a.buyPerSqm);
+  const dealB = b.marketReport?.estimatedDealPricePerSqm ?? (Array.isArray(b.bargains) && b.bargains.length > 0 ? aggregateNeighborhoodMarketMetrics(b.id, b.name, b.buyPerSqm, buildNeighborhoodListingSamples(b)).estimatedDealPricePerSqm : b.buyPerSqm);
   let primaryDiff = 0;
   if (suggestSortBy === 'cheap' || suggestSortBy === 'cheapest') {
-    primaryDiff = mode === 'rent' ? a.rahn80m - b.rahn80m : a.buyPerSqm - b.buyPerSqm;
+    primaryDiff = mode === 'rent' ? a.rahn80m - b.rahn80m : dealA - dealB;
   } else if (suggestSortBy === 'commute' || suggestSortBy === 'commute_metro') {
     const distA = a.distKm ?? EVALUATED_RECOMMENDATION_WEIGHTS.defaultMissingDistanceKm;
     const distB = b.distKm ?? EVALUATED_RECOMMENDATION_WEIGHTS.defaultMissingDistanceKm;
@@ -46,8 +48,8 @@ export function compareEvaluatedNeighborhoodsForSuggestion(
   } else if (suggestSortBy === 'clean_calm') {
     primaryDiff = (b.air + b.security) - (a.air + a.security);
   } else if (suggestSortBy === 'yield' || suggestSortBy === 'undervalued') {
-    const yieldA = a.rahn80m / Math.max(1, a.buyPerSqm * 80);
-    const yieldB = b.rahn80m / Math.max(1, b.buyPerSqm * 80);
+    const yieldA = a.rahn80m / Math.max(1, dealA * 80);
+    const yieldB = b.rahn80m / Math.max(1, dealB * 80);
     primaryDiff = yieldB - yieldA;
   } else {
     primaryDiff = computeVersionedPriorityScore(b, suggestPriority) - computeVersionedPriorityScore(a, suggestPriority);
@@ -55,7 +57,7 @@ export function compareEvaluatedNeighborhoodsForSuggestion(
   if (Math.abs(primaryDiff) > EPS) return primaryDiff < 0 ? -1 : 1;
   const scoreDiff = b.overallScore - a.overallScore;
   if (Math.abs(scoreDiff) > EPS) return scoreDiff < 0 ? -1 : 1;
-  const priceDiff = mode === 'rent' ? a.rahn80m - b.rahn80m : a.buyPerSqm - b.buyPerSqm;
+  const priceDiff = mode === 'rent' ? a.rahn80m - b.rahn80m : dealA - dealB;
   if (Math.abs(priceDiff) > EPS) return priceDiff < 0 ? -1 : 1;
   return a.id - b.id;
 }
