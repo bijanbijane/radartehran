@@ -87,7 +87,7 @@ export function buildMultiCollectionSnapshotManifest(params: {
 }
 const PROTECTED_RESTORE_ROOT_KEYS: ReadonlySet<string> = new Set([
   'FIREBASE_PROJECT_ID', 'FIRESTORE_DATABASE_ID', 'ADMIN_EMAIL', 'ADMIN_API_SECRET',
-  'admins', 'runtimeEnvConfig', 'BACKUP_ENCRYPTION_KEY', 'OBJECT_STORAGE_SECRET_KEY',
+  'admins', 'runtimeEnvConfig', 'BACKUP_ENCRYPTION_KEY', 'OBJECT_STORAGE_SECRET_KEY', 'CASPER_HUB_TOKEN', 'CASPER_HUB_URL',
 ]);
 interface StoredRestorePreflight {
   preflightToken: string; artifactDigest: string; targetStateVersion: number;

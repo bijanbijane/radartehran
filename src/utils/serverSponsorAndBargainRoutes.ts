@@ -7,8 +7,8 @@ export async function executePostCommitSideEffectsTransaction<TResult>(params: {
       ? rec.createdByUid.trim()
       : typeof rec.ownerUid === 'string' && rec.ownerUid.trim() ? rec.ownerUid.trim() : ''; if (!ownerUid) { quarantinedIds.push(id); continue; } if ((typeof rec.schemaVersion === 'number' && rec.schemaVersion > 2) || (rec.schemaVersion === 2 && typeof rec.updatedAtMs === 'number' && rec.updatedAtMs > nowMs)) { skippedNewerIds.push(id); continue; }
     const status = rec.status === 'approved' || rec.status === 'rejected' ? rec.status : 'pending'; const safeCopy = Object.fromEntries(Object.entries(rec).filter(([k]) => k !== '__proto__' && k !== 'constructor' && k !== 'prototype')); migrated.push({ ...safeCopy, id, createdByUid: ownerUid, status, schemaVersion: 2, migratedAtIso: new Date(nowMs).toISOString() }); }
-  return { migrated, quarantinedIds, skippedNewerIds, dryRun: Boolean(options.dryRun), displayAreaUnitLabel: formatAreaUnitLabel(options.areaUnit ?? 'sqm'), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(10000, options.intlCurrency ?? 'USD', 'en') }; } const sponsorIdempotencyMap = new Map<
-  string, { response: Record<string, unknown>; createdAtMs: number } >(); const MAX_SPONSOR_IDEMPOTENCY_ENTRIES = 250; const SPONSOR_IDEMPOTENCY_TTL_MS = 15 * 60 * 1000; const registeredSponsorBargainApps = new WeakSet<Express>();
+  return { migrated, quarantinedIds, skippedNewerIds, dryRun: Boolean(options.dryRun), displayAreaUnitLabel: formatAreaUnitLabel(options.areaUnit ?? 'sqm'), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(10000, options.intlCurrency ?? 'USD', 'en') }; } import { computeCanonicalPayloadFingerprint } from './serverIdempotencyAndConcurrency'; const sponsorIdempotencyMap = new Map<
+  string, { response: Record<string, unknown>; payloadFingerprint: string; createdAtMs: number } >(); const MAX_SPONSOR_IDEMPOTENCY_ENTRIES = 250; const SPONSOR_IDEMPOTENCY_TTL_MS = 15 * 60 * 1000; const registeredSponsorBargainApps = new WeakSet<Express>();
 function pruneSponsorIdempotencyMap(nowMs = Date.now()): void { for (const [k, v] of sponsorIdempotencyMap.entries()) { if (nowMs - v.createdAtMs >= SPONSOR_IDEMPOTENCY_TTL_MS) sponsorIdempotencyMap.delete(k); } while (sponsorIdempotencyMap.size >= MAX_SPONSOR_IDEMPOTENCY_ENTRIES) { const oldestKey = sponsorIdempotencyMap.keys().next().value; if (!oldestKey) break; sponsorIdempotencyMap.delete(oldestKey); } }
 const ALLOWED_SPONSOR_RESERVE_KEYS: ReadonlySet<string> = new Set([
   'hoodId', 'hoodName', 'city', 'agencyName', 'phone', 'specialty', 'experienceYears', 'planMonths', ]); function resolveServerNeighborhood(rawCity: unknown, rawHoodId: unknown): { hoodId: number | null; matchedHood?: Neighborhood } { const city = validateCityParam(rawCity, 'tehran'); const cityHoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city]?.neighborhoods || []; const allHoods = getAllMultiCityNeighborhoods(); const hoodId = validateNeighborhoodId(rawHoodId, allHoods.map((h) => h.id));
@@ -30,9 +30,13 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         }
       }
       const idemHeader = typeof req.headers['idempotency-key'] === 'string' ? req.headers['idempotency-key'].trim().slice(0, 64) : '';
+      const payloadFingerprint = idemHeader ? computeCanonicalPayloadFingerprint(req.body) : '';
       if (idemHeader) {
         const cached = sponsorIdempotencyMap.get(`${userAuth.uid}:${idemHeader}`);
-        if (cached && Date.now() - cached.createdAtMs < 15 * 60 * 1000) { res.status(200).json(cached.response); return; }
+        if (cached && Date.now() - cached.createdAtMs < 15 * 60 * 1000) {
+          if (cached.payloadFingerprint !== payloadFingerprint) { res.status(409).json({ status: 'error', error: 'idempotency_key_reused_with_different_request', code: 'IDEMPOTENCY_PAYLOAD_MISMATCH', message: 'Use a new Idempotency-Key for a new request.' }); return; }
+          res.status(200).json({ ...cached.response, replayed: true }); return;
+        }
       }
       const { hoodId, matchedHood } = resolveServerNeighborhood(req.body.city, req.body.hoodId);
       const agencyName = sanitizeInput(req.body.agencyName || '', 80).replace(/[<>]/g, '');
@@ -89,10 +93,10 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
         res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'ثبت درخواست اسپانسر در پایگاه داده انجام نشد.' });
         return;
       }
-      const responsePayload = { status: 'ok', request: sponsorRequestDoc };
+      const responsePayload = { status: 'ok', request: sponsorRequestDoc, replayed: false };
       if (idemHeader) {
         pruneSponsorIdempotencyMap(Date.now());
-        sponsorIdempotencyMap.set(`${userAuth.uid}:${idemHeader}`, { response: responsePayload, createdAtMs: Date.now() });
+        sponsorIdempotencyMap.set(`${userAuth.uid}:${idemHeader}`, { response: responsePayload, payloadFingerprint, createdAtMs: Date.now() });
       }
       res.status(200).json(responsePayload);
     })();

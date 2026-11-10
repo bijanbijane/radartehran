@@ -24,6 +24,7 @@ export interface SpatialContagionLabCardProps {
   basePriceSqm?: number;
   hood?: Neighborhood;
   intlCurrency?: IntlCurrencyCode;
+  targetSqm?: number;
   onSelectCompareHood?: (hoodName: string) => void;
 }
 
@@ -34,13 +35,14 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
   basePriceSqm = 120,
   hood,
   intlCurrency = 'USD',
+  targetSqm = 80,
   onSelectCompareHood,
 }) => {
   const [anchorMarkupPct, setAnchorMarkupPct] = useState<number>(0);
 
   const report = useMemo(
-    () => buildNeighborhoodSpatialContagionReport(hoodId, hoodName, cityKey, basePriceSqm, hood),
-    [hoodId, hoodName, cityKey, basePriceSqm, hood],
+    () => buildNeighborhoodSpatialContagionReport(hoodId, hoodName, cityKey, basePriceSqm, hood, targetSqm),
+    [hoodId, hoodName, cityKey, basePriceSqm, hood, targetSqm],
   );
 
   const { akerlofLemon, contagionNodes, spatialAutocorrelationMoranI } = report;
@@ -49,8 +51,8 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
     if (anchorMarkupPct === 0) return report.prospectTheory;
     const baseAsk = Math.round(basePriceSqm * (1 + anchorMarkupPct / 100));
     const fairDeal = report.prospectTheory.fairDealPricePerSqm || Math.round(basePriceSqm * 0.92);
-    return computeKahnemanProspectAnalysis(baseAsk, fairDeal);
-  }, [anchorMarkupPct, basePriceSqm, report.prospectTheory]);
+    return computeKahnemanProspectAnalysis(baseAsk, fairDeal, targetSqm);
+  }, [anchorMarkupPct, basePriceSqm, report.prospectTheory, targetSqm]);
 
   const lemonBadgeStyle =
     akerlofLemon.regime === 'SEVERE_LEMON_TRAP'
@@ -221,7 +223,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-bold text-indigo-900 dark:text-indigo-200 bg-white/60 dark:bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50 tabular-nums">
           <span>مقاومت روانی فروشنده (Disposition Effect): {toPersianNum(prospectTheory.dispositionRigidityPct)}٪</span>
           <span>ضریب زیان‌گریزی: λ={toPersianNum(prospectTheory.lossAversionLambda)}</span>
-          <span>شکاف چانه‌زنی ۸۰ متر: {toPersianNum(prospectTheory.nominalDiscountMillion80m)} م.ت ({formatMillionTomanAsIntlCurrency(prospectTheory.nominalDiscountMillion80m, intlCurrency, 'fa')})</span>
+          <span>شکاف چانه‌زنی {toPersianNum(targetSqm)} متر: {toPersianNum(prospectTheory.nominalDiscountMillion80m)} م.ت ({formatMillionTomanAsIntlCurrency(prospectTheory.nominalDiscountMillion80m, intlCurrency, 'fa')})</span>
         </div>
 
         <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">

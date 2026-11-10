@@ -133,11 +133,26 @@ export function computeAkerlofLemonIndex(
 export function computeKahnemanProspectAnalysis(
   askingPricePerSqm: number,
   dealPricePerSqm: number,
+  targetSqm: number = 80
 ): KahnemanProspectAnalysis {
   const lambda = 2.25; // Kahneman-Tversky empirical loss aversion ratio
   const alpha = 0.88; // Diminishing sensitivity exponent
-  const spreadPerSqm = Math.max(1, askingPricePerSqm - dealPricePerSqm);
-  const nominalDiscountMillion80m = Math.round(spreadPerSqm * 80);
+  const spreadPerSqm = Math.max(0, askingPricePerSqm - dealPricePerSqm);
+  const nominalDiscountMillion80m = Math.round(spreadPerSqm * Math.max(10, targetSqm));
+
+  if (spreadPerSqm <= 0) {
+    return {
+      lossAversionLambda: lambda,
+      sellerReferencePricePerSqm: Math.round(askingPricePerSqm),
+      fairDealPricePerSqm: Math.round(dealPricePerSqm),
+      nominalDiscountMillion80m: 0,
+      perceivedSellerPainUnits: 0,
+      dispositionRigidityPct: 10,
+      recommendedNegotiationFramingFa: `قیمت اعلامی فروشنده (متری ${Math.round(askingPricePerSqm)} م.ت) در محدوده ارزش منصفانه یا زیر ارزش ذاتی است؛ زیان‌گریزی فروشنده مانع معامله نیست و اولویت بر قطعی‌سازی فوری قرارداد است.`,
+      stagedPaymentTacticFa:
+        'به دلیل همگرایی قیمتی با ارزش منصفانه، از فرسایشی کردن نشست بپرهیزید و تمرکز را بر اخذ تضمین‌های سندی و تعهد تخلیه در چک‌های مرحله‌ای بگذارید.',
+    };
+  }
 
   // Perceived psychological pain to seller anchored on peak asking price
   const perceivedSellerPainUnits = Math.round(lambda * Math.pow(nominalDiscountMillion80m, alpha));
@@ -160,21 +175,22 @@ export function buildNeighborhoodSpatialContagionReport(
   hoodId: number,
   hoodName: string,
   cityKey: CityId | string = 'tehran',
-  basePriceSqm: number = 120,
+  basePriceSqm?: number,
   customHood?: Neighborhood,
+  targetSqm: number = 80
 ): NeighborhoodSpatialContagionReport {
   const safeCity = (['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'].includes(String(cityKey)) ? cityKey : 'tehran') as CityId;
   const allHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   const target = customHood ?? allHoods.find((h) => h.id === hoodId || h.name === hoodName) ?? allHoods[0];
-  const targetSamples = target ? buildNeighborhoodListingSamples(target) : [];
-  const targetAgg = aggregateNeighborhoodMarketMetrics(target?.id ?? hoodId, target?.name ?? hoodName, target?.buyPerSqm ?? basePriceSqm, targetSamples);
-  const akerlofLemon = computeAkerlofLemonIndex(target?.id ?? hoodId, target?.name ?? hoodName, target?.buyPerSqm ?? basePriceSqm, target);
-  const prospectTheory = computeKahnemanProspectAnalysis(targetAgg.askingPricePerSqm, targetAgg.estimatedDealPricePerSqm);
+  const targetBuy = typeof basePriceSqm === 'number' && basePriceSqm > 0 ? basePriceSqm : (target?.buyPerSqm ?? 120);
+  const targetSamples = target ? buildNeighborhoodListingSamples({ ...target, buyPerSqm: targetBuy }) : [];
+  const targetAgg = aggregateNeighborhoodMarketMetrics(target?.id ?? hoodId, target?.name ?? hoodName, targetBuy, targetSamples);
+  const akerlofLemon = computeAkerlofLemonIndex(target?.id ?? hoodId, target?.name ?? hoodName, targetBuy, target);
+  const prospectTheory = computeKahnemanProspectAnalysis(targetAgg.askingPricePerSqm, targetAgg.estimatedDealPricePerSqm, targetSqm);
 
   // Build spatial network graph around target
   const targetLat = target?.lat ?? 35.72;
   const targetLng = target?.lng ?? 51.38;
-  const targetBuy = target?.buyPerSqm ?? basePriceSqm;
 
   const neighborsWithDist = allHoods
     .filter((h) => h.id !== (target?.id ?? hoodId))
@@ -252,11 +268,7 @@ export function buildNeighborhoodSpatialContagionReport(
   let spatialLagZ = 0;
   const totalWeight = pool.reduce((acc, x) => acc + (1 / Math.max(0.5, x.distKm)), 0);
   if (totalWeight > 0) {
-    spatialLagZ = pool.reduce((acc, x) => {
-      const wNormalized = (1 / Math.max(0.5, x.distKm)) / totalWeight;
-      const zNeighbor = (x.hood.buyPerSqm - cityMeanPrice) / cityStd;
-      return acc + wNormalized * zNeighbor;
-    }, 0);
+    spatialLagZ = pool.reduce((acc, x) => acc + ((1 / Math.max(0.5, x.distKm)) / totalWeight) * ((x.hood.buyPerSqm - cityMeanPrice) / cityStd), 0);
   }
   const rawMoranI = zTarget * spatialLagZ;
   const spatialAutocorrelationMoranI = Number(Math.min(0.91, Math.max(0.35, 0.50 + Math.tanh(rawMoranI * 0.4) * 0.38)).toFixed(2));

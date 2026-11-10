@@ -3,7 +3,7 @@ import { TrendingUp, Users, Compass, Building2, BookOpen, ArrowLeftRight, Layers
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
-import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface SocioeconomicRollupView {
   hoodId: number;
@@ -36,6 +36,7 @@ interface SocioeconomicReferenceCardProps {
   basePriceSqm?: number;
   hood?: Neighborhood;
   cityKey: string;
+  intlCurrency?: IntlCurrencyCode;
   onSelectCompareHood?: (hoodName: string) => void;
 }
 
@@ -52,6 +53,7 @@ function buildFallbackRollup(
   basePriceSqm: number,
   cityKey: string,
   hood?: Neighborhood,
+  intlCurrency: IntlCurrencyCode = 'USD',
 ): SocioeconomicRollupView {
   const ask = Math.max(15, basePriceSqm || 100);
   const cityConfig = MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
@@ -103,27 +105,27 @@ function buildFallbackRollup(
     ],
     epistemicConfidence: agg.confidenceScore,
     academicCitationTag: `RADAR-SE-${cityKey.toUpperCase()}-H${hoodId}`,
-    policySummary: `محله ${hoodName} با میانگین قیمت قطعی معامله ${toPersianDigits(fair)} م.ت/متر (${formatMillionTomanAsIntlCurrency(fair, 'USD', 'fa')})، نیازمند حدود ${toPersianDigits(years)} سال پس‌انداز کامل خانوار برای خرید واحد ۸۵ متری است.`,
+    policySummary: `محله ${hoodName} با میانگین قیمت قطعی معامله ${toPersianDigits(fair)} م.ت/متر (${formatMillionTomanAsIntlCurrency(fair, intlCurrency, 'fa')})، نیازمند حدود ${toPersianDigits(years)} سال پس‌انداز کامل خانوار برای خرید واحد ۸۵ متری است.`,
     provenanceSource: 'LOCAL_BASELINE',
   };
 }
 
 export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProps> = ({
-  hoodId, hoodName, basePriceSqm, hood, cityKey, onSelectCompareHood,
+  hoodId, hoodName, basePriceSqm, hood, cityKey, intlCurrency = 'USD', onSelectCompareHood,
 }) => {
   const resolvedId = hoodId ?? hood?.id ?? 1;
   const resolvedName = hoodName ?? hood?.name ?? 'محله';
   const resolvedPrice = basePriceSqm ?? hood?.buyPerSqm ?? 120;
 
   const [rollup, setRollup] = useState<SocioeconomicRollupView>(() =>
-    buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey, hood)
+    buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey, hood, intlCurrency)
   );
 
   useEffect(() => {
     let active = true;
-    const base = buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey, hood);
+    const base = buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey, hood, intlCurrency);
     setRollup(base);
-    fetch(`/api/v1/reference/hood/${resolvedId}/rollup?cityId=${encodeURIComponent(cityKey)}`)
+    fetch(`/api/v1/reference/hood/${resolvedId}/rollup?cityId=${encodeURIComponent(cityKey)}&intlCurrency=${encodeURIComponent(intlCurrency)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!active || !data?.rollup) return;
@@ -136,6 +138,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
         const liveFair = r.weightedReferencePriceSqm || base.estimatedFairDealMillionToman;
         const liveYears = Math.round(((liveFair * 85) / 264) * 10) / 10;
         const liveBurden = Math.min(95, Math.max(18, Math.round((liveYears / 22) * 100)));
+        const liveIntl = formatMillionTomanAsIntlCurrency(liveFair, intlCurrency, 'fa');
         setRollup({
           ...base,
           medianPriceMillionToman: r.medianPriceSqm || base.medianPriceMillionToman,
@@ -143,7 +146,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
           yearsOfHouseholdSavingRequired: liveYears,
           affordabilityPressureIndex: liveBurden,
           academicCitationTag: r.citationCode || base.academicCitationTag,
-          policySummary: r.citationTextFa || base.policySummary,
+          policySummary: r.citationTextFa ? `${r.citationTextFa} (${liveIntl} • حدود ${toPersianDigits(liveYears)} سال پس‌انداز خانوار)` : base.policySummary,
           provenanceSource: 'SERVER_K_ANONYMITY',
           distinctSessionCount: typeof r.distinctSessionCount === 'number' ? r.distinctSessionCount : undefined,
           hesitationRatePct: typeof r.hesitationRatePct === 'number' ? r.hesitationRatePct : null,
@@ -164,7 +167,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
       })
       .catch(() => { /* keep synchronous fallback */ });
     return () => { active = false; };
-  }, [resolvedId, resolvedName, resolvedPrice, cityKey, hood]);
+  }, [resolvedId, resolvedName, resolvedPrice, cityKey, hood, intlCurrency]);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">

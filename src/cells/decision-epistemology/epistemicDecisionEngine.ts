@@ -5,7 +5,7 @@
  * and Algorithmic Accountability Engine.
  */
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
-import { INITIAL_NEIGHBORHOODS } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { clampNumber, validateCityParam } from '../../utils/security';
@@ -197,11 +197,11 @@ export function evaluateCognitiveDecisionBiases(input: {
 
 export function buildNeighborhoodEpistemicDossier(input: {
   cityId?: string; hoodId: number; hoodName?: string; buyPerSqm?: number; rahn80m?: number;
-  bargainsCount?: number; votesCount?: number; intlCurrency?: IntlCurrencyCode;
+  bargainsCount?: number; votesCount?: number; intlCurrency?: IntlCurrencyCode; customHood?: Neighborhood;
 }): NeighborhoodEpistemicDossier {
   const safeCity = validateCityParam(input.cityId, 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
-  const found = cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0];
+  const found = (input.customHood && input.customHood.id === input.hoodId) ? input.customHood : (cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0]);
   const hoodName = input.hoodName || found?.name || `محله ${input.hoodId}`;
   const buyPerSqm = input.buyPerSqm && input.buyPerSqm > 0 ? input.buyPerSqm : found?.buyPerSqm || 120;
   const rahn80m = input.rahn80m && input.rahn80m > 0 ? input.rahn80m : found?.rahn80m || 1200;

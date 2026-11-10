@@ -69,7 +69,8 @@ export interface UnifiedDecisionSynthesisReport {
   generatedAtIso: string;
 }
 
-export function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string): Neighborhood {
+export function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string, providedHood?: Neighborhood): Neighborhood {
+  if (providedHood && providedHood.buyPerSqm > 0) return providedHood;
   const safeCity = (cityId in MULTI_CITY_CONFIGS ? cityId : 'tehran') as CityId;
   const hoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   return hoods.find((h) => h.id === hoodId || (fallbackName && h.name === fallbackName)) ?? hoods[0] ?? INITIAL_NEIGHBORHOODS[0];
@@ -86,8 +87,9 @@ export function synthesizeExecutiveDecisionReport(
   customAskingPriceSqm?: number,
   targetSqm: number = 80,
   intlCurrency: IntlCurrencyCode = 'USD',
+  providedHood?: Neighborhood,
 ): UnifiedDecisionSynthesisReport {
-  const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const hood = resolveNeighborhood(cityId, hoodId, hoodName, providedHood);
   const resolvedHoodName = hood.name || hoodName;
   const fairPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const hoodBaselineAsk = hood.buyPerSqm || fairPrice;
@@ -113,15 +115,21 @@ export function synthesizeExecutiveDecisionReport(
   const hurdleExcess = Math.max(0, (option.hurdleRateMultiplier - 1.25) * 100) + Math.max(0, spreadPct - 10) * 1.1;
   const liquidityScore = Math.round(Math.min(100, Math.max(10, 95 - hurdleExcess * 0.8)));
 
-  // 5. Downside Tail Risk Pillar: Monte Carlo VaR + immediate mark-to-market drawdown risk
-  const merton = simulateMertonJumpDiffusionVaR(askingPrice, { horizonMonths: 24, trialCount: 500 }, 777);
-  const overpaymentDrawdownPenalty = Math.max(0, spreadPct - 8) * 0.9;
-  const downsideScore = Math.round(Math.min(100, Math.max(10, 100 - merton.metrics.probRealCapitalLossPct * 1.2 - overpaymentDrawdownPenalty)));
-
-  // 6. Data Provenance & Epistemic Confidence Pillar
+  // 5. Data Provenance & Epistemic Confidence Pillar + Empirical IQR Volatility for Monte Carlo
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name || hoodName, hoodBaselineAsk, buildNeighborhoodListingSamples(hood));
   const epistemicOutlierPenalty = Math.max(0, spreadPct - 18) * 0.35;
   const confidenceScore = Math.round(Math.min(100, Math.max(35, (agg.confidenceScore ?? 75) + 8 - epistemicOutlierPenalty)));
+
+  // 6. Downside Tail Risk Pillar: Monte Carlo VaR calibrated with empirical IQR volatility & immediate drawdown risk
+  const iqrSpreadRatio = Math.max(0.06, Math.min(0.28, (agg.iqrHighPerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.estimatedDealPricePerSqm)));
+  const calibratedSigma = Number(Math.min(0.38, (askingPrice >= 170 ? 0.28 : askingPrice >= 100 ? 0.21 : 0.16) + iqrSpreadRatio * 0.25).toFixed(3));
+  const merton = simulateMertonJumpDiffusionVaR(
+    askingPrice,
+    { horizonMonths: 24, trialCount: 500, annualVolSigma: calibratedSigma },
+    hood.id * 101 + 77,
+  );
+  const overpaymentDrawdownPenalty = Math.max(0, spreadPct - 8) * 0.9;
+  const downsideScore = Math.round(Math.min(100, Math.max(10, 100 - merton.metrics.probRealCapitalLossPct * 1.2 - overpaymentDrawdownPenalty)));
 
   const pillars: DecisionPillarScore[] = [
     { id: 'VALUATION', targetTabId: 'PARETO_REGRET', nameFa: 'حاشیه امنیت قیمت‌گذاری (v6.4)', score: valuationScore, weightPct: 25, gradeFa: valuationScore >= 70 ? 'عالی' : valuationScore >= 50 ? 'متوسط' : 'پرریسک', detailFa: `شکاف قیمت پیشنهادی: ${toPersianNum(spreadPct)}٪` },
@@ -186,20 +194,23 @@ export function synthesizeExecutiveDecisionReport(
     executiveDirectiveFa = 'ملک به شدت بیش‌قیمت‌گذاری شده و عدم تقارن اطلاعاتی و ریسک دم بلند در سقف تاریخی است؛ خرید در این شرایط تله ثروت ایجاد می‌کند.';
   }
 
-  // Financial figures for negotiation & 3-stage escrow execution playbook
+  // Risk-adaptive Walk-Away Ceiling & 3-Stage Escrow Playbook (eliminating flat +2% & static 30/40/30 shortcuts)
   const totalAskingMillion = Math.round(askingPrice * targetSqm);
   const totalFairMillion = Math.round(fairPrice * targetSqm);
-  const walkAwayPriceCeilingPerSqm = askingPrice < fairPrice ? askingPrice : Math.round(fairPrice * 1.02);
+  const isHighRiskRegime = cycleReport.bubbleExhaustionRiskPct >= 65 || effectiveLemonScore >= 60 || spreadPct >= 12;
+  const walkAwayMarkupFactor = isHighRiskRegime ? 1.0 : 1.02;
+  const walkAwayPriceCeilingPerSqm = askingPrice < fairPrice ? askingPrice : Math.round(fairPrice * walkAwayMarkupFactor);
   const walkAwayCeilingTotalMillion = Math.round(walkAwayPriceCeilingPerSqm * targetSqm);
   const targetDiscountMillion = Math.max(0, totalAskingMillion - totalFairMillion);
   const negotiationOpeningOfferMillion = Math.round(Math.min(askingPrice * 0.95, (totalFairMillion * 0.95) / targetSqm) * targetSqm);
 
-  const signingStagePct = 30;
-  const handoverStagePct = 40;
-  const deedStagePct = 30;
-  const signingStageMillion = Math.round(totalFairMillion * (signingStagePct / 100));
-  const handoverStageMillion = Math.round(totalFairMillion * (handoverStagePct / 100));
-  const deedStageMillion = totalFairMillion - signingStageMillion - handoverStageMillion;
+  const targetExecutionMillion = Math.min(totalAskingMillion, totalFairMillion);
+  const signingStagePct = isHighRiskRegime ? 25 : 30;
+  const handoverStagePct = isHighRiskRegime ? 35 : 40;
+  const deedStagePct = 100 - signingStagePct - handoverStagePct;
+  const signingStageMillion = Math.round(targetExecutionMillion * (signingStagePct / 100));
+  const handoverStageMillion = Math.round(targetExecutionMillion * (handoverStagePct / 100));
+  const deedStageMillion = targetExecutionMillion - signingStageMillion - handoverStageMillion;
 
   const executionPlaybook: DealExecutionPlaybook = {
     signingStagePct,

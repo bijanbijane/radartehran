@@ -118,7 +118,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
         </div>
 
         {/* Primary View Tabs (Desktop / Tablet) */}
-        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 overflow-x-auto no-scrollbar shrink-0">
+        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden lg:flex flex-1 justify-center items-center gap-0.5 min-w-0 overflow-x-auto no-scrollbar">
           {navItems.map((item) => {
             const isActive = primaryView === item.id;
             return (
@@ -128,7 +128,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                 data-testid={`global-nav-${item.id}`}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => onSelectPrimaryView(item.id)}
-                className={`relative flex items-center gap-1 xl:gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+                className={`relative flex items-center gap-1 px-1.5 xl:px-2 py-1.5 rounded-lg text-[11px] xl:text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
                   isActive
                     ? 'text-slate-900 dark:text-white bg-slate-100/90 dark:bg-slate-800 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'

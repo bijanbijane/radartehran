@@ -26,6 +26,7 @@ export interface RealOptionsLiquidityCardProps {
   basePriceSqm?: number;
   intlCurrency?: IntlCurrencyCode;
   hood?: Neighborhood;
+  targetSqm?: number;
 }
 
 export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> = ({
@@ -35,12 +36,13 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
   basePriceSqm = 120,
   intlCurrency = 'USD',
   hood,
+  targetSqm = 85,
 }) => {
   const [horizonMonths, setHorizonMonths] = useState<number>(6);
 
   const report = useMemo(() => {
-    return generateCasperLiquidityReport(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
-  }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency]);
+    return generateCasperLiquidityReport(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm]);
 
   // Recalculate Dixit-Pindyck with user-selected horizon
   const customRealOptions = useMemo(() => {
@@ -49,9 +51,10 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
       report.realOptions.dividendYieldDelta,
       report.realOptions.volatilitySigma,
       0.22,
-      horizonMonths
+      horizonMonths,
+      targetSqm
     );
-  }, [report.basePriceSqm, report.realOptions.dividendYieldDelta, report.realOptions.volatilitySigma, horizonMonths]);
+  }, [report.basePriceSqm, report.realOptions.dividendYieldDelta, report.realOptions.volatilitySigma, horizonMonths, targetSqm]);
 
   const valueWaitingFx = intlCurrency !== 'IRT'
     ? ` (${formatMillionTomanAsIntlCurrency(customRealOptions.valueOfWaitingTomanMln, intlCurrency, 'fa')})`
@@ -118,7 +121,7 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
           </div>
 
           <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 space-y-1">
-            <div className="text-[10px] text-slate-500 dark:text-slate-400">ارزش خالص اختیار تعویق (برای ۸۵ متر):</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">ارزش خالص اختیار تعویق (برای {toPersianNum(targetSqm)} متر):</div>
             <div className="text-sm font-black text-amber-600 dark:text-amber-400">
               {toPersianNum(customRealOptions.valueOfWaitingTomanMln)} میلیون تومان
               <span className="text-[10px] font-normal text-slate-400">{valueWaitingFx}</span>

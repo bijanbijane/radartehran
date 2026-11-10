@@ -84,10 +84,22 @@ assert.ok(sampleHood, 'INITIAL_NEIGHBORHOODS must contain at least one neighborh
   assert.equal(val.hoodAverageTotalMillion, 20000);
   assert.equal(val.fastSaleTotalMillion, Math.round(20680 * FAST_SALE_FACTOR));
 
-  // Boundary & zero/negative area protection (Prompt 265)
-  const zeroSqmVal = calculateHedonicValuation({
+  // Boundary & zero/negative area protection (Prompt 265 + WS-A1-R)
+  const zeroSqmRejected = calculateHedonicValuation({
     neighborhood: { ...sampleHood, buyPerSqm: 150, rahn80m: 1600 },
-    sqm: 0, // Clamped to minimum 30 sqm
+    sqm: 0,
+    buildYear: 1300,
+    currentJalaliYear: 1405,
+    renovationStatus: 'needs_renovation',
+    floor: 4,
+    totalFloors: 4,
+  });
+  assert.equal(zeroSqmRejected.isValid, false, 'Zero sqm must be rejected as INVALID_INPUT');
+  assert.equal(zeroSqmRejected.hedonicTotalMillion, 0, 'Zero sqm must return 0 valuation');
+
+  const subMinSqmVal = calculateHedonicValuation({
+    neighborhood: { ...sampleHood, buyPerSqm: 150, rahn80m: 1600 },
+    sqm: 10, // Positive sub-minimum micro-unit clamped to minimum 30 sqm
     buildYear: 1300, // Clamped to minimum 1365
     currentJalaliYear: 1405,
     renovationStatus: 'needs_renovation',
@@ -97,10 +109,10 @@ assert.ok(sampleHood, 'INITIAL_NEIGHBORHOODS must contain at least one neighborh
     hasParking: false,
     hasStorage: false,
   });
-  assert.equal(zeroSqmVal.sqm, 30, 'Zero sqm must be safely clamped to 30 sqm');
-  assert.equal(zeroSqmVal.buildYear, 1365, 'Ancient buildYear must be clamped to 1365');
-  assert.ok(zeroSqmVal.netAdjustmentPercent >= -42, 'Net adjustment must respect -42% floor');
-  assert.ok(zeroSqmVal.hedonicPerSqm >= 10, 'Hedonic price per sqm must never be <= 0');
+  assert.equal(subMinSqmVal.sqm, 30, 'Sub-minimum positive sqm must be safely clamped to 30 sqm');
+  assert.equal(subMinSqmVal.buildYear, 1365, 'Ancient buildYear must be clamped to 1365');
+  assert.ok(subMinSqmVal.netAdjustmentPercent >= -42, 'Net adjustment must respect -42% floor');
+  assert.ok(subMinSqmVal.hedonicPerSqm >= 10, 'Hedonic price per sqm must never be <= 0');
 
   // Seller price evaluation (bargain vs fair vs overpriced)
   const withBargainAsking = calculateHedonicValuation({

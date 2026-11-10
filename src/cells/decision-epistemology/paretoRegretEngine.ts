@@ -5,7 +5,7 @@
  * - Pareto Frontier & Multi-Criteria Spatial Arbitrage Solver (MAUT)
  */
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
-import { INITIAL_NEIGHBORHOODS, toPersianNum } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, type Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
@@ -108,11 +108,13 @@ export function computeNeighborhoodUtilityScore(hood: {
 }
 
 export function findParetoDominantNeighborhoods(input: {
-  cityId?: string; hoodId: number; basePriceSqm?: number; targetSqm?: number; intlCurrency?: IntlCurrencyCode;
+  cityId?: string; hoodId: number; basePriceSqm?: number; targetSqm?: number; intlCurrency?: IntlCurrencyCode; providedHood?: Neighborhood;
 }): { targetUtilityScore: number; candidates: ParetoArbitrageCandidate[] } {
   const safeCity = validateCityParam(input.cityId, 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
-  const targetHood = cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0];
+  const targetHood = (input.providedHood && input.providedHood.id === input.hoodId)
+    ? input.providedHood
+    : cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0];
   const targetSqm = clampNumber(input.targetSqm ?? 85, 35, 500, 85);
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
 
@@ -158,11 +160,13 @@ export function findParetoDominantNeighborhoods(input: {
 }
 
 export function computeSavageMinimaxRegretMatrix(input: {
-  cityId?: string; hoodId: number; hoodName?: string; basePriceSqm?: number; targetSqm?: number; intlCurrency?: IntlCurrencyCode; optimismAlpha?: number;
+  cityId?: string; hoodId: number; hoodName?: string; basePriceSqm?: number; targetSqm?: number; intlCurrency?: IntlCurrencyCode; optimismAlpha?: number; providedHood?: Neighborhood;
 }): ParetoRegretAnalysisResult {
   const safeCity = validateCityParam(input.cityId, 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
-  const targetHood = cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0];
+  const targetHood = (input.providedHood && input.providedHood.id === input.hoodId)
+    ? input.providedHood
+    : cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0];
   const hoodName = input.hoodName || targetHood.name;
   const targetSqm = clampNumber(input.targetSqm ?? 85, 35, 500, 85);
   const optimismAlpha = clampNumber(input.optimismAlpha ?? 0.35, 0, 1, 0.35);
@@ -179,7 +183,7 @@ export function computeSavageMinimaxRegretMatrix(input: {
   const rahnEquivalentMillion = Math.round(scaledBaseRahn * (targetSqm / 80));
 
   const { targetUtilityScore, candidates } = findParetoDominantNeighborhoods({
-    cityId: safeCity, hoodId: targetHood.id, basePriceSqm: buySqm, targetSqm, intlCurrency,
+    cityId: safeCity, hoodId: targetHood.id, basePriceSqm: buySqm, targetSqm, intlCurrency, providedHood: input.providedHood,
   });
   const bestArbitrage = candidates[0];
   const arbitrageSavingsRatio = bestArbitrage ? clampNumber(bestArbitrage.priceSavingsPct / 100, 0.05, 0.30, 0.12) : 0.12;

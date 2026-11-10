@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from 'express';
-import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { detectPromptInjection, sanitizeInput } from '../../utils/security';
+import { verifyAdminApiAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
 import { extractAndResolvePropertySignal } from './aiSeedExtractionService';
 import {
   getCanonicalBuildingById,
@@ -34,6 +35,9 @@ export function registerAiIngestionRoutes(
     const rawTextFa = typeof body.rawTextFa === 'string' ? sanitizeInput(body.rawTextFa, 2000) : '';
     const cityId = typeof body.cityId === 'string' ? sanitizeInput(body.cityId, 32) : 'tehran';
     const hoodId = typeof body.hoodId === 'number' && Number.isFinite(body.hoodId) ? Math.round(body.hoodId) : 1;
+    const intlCurrency: IntlCurrencyCode = ['IRT', 'USD', 'EUR', 'AED'].includes(String(body.intlCurrency))
+      ? (body.intlCurrency as IntlCurrencyCode)
+      : 'USD';
 
     if (!rawTextFa || rawTextFa.trim().length < 4) {
       res.status(400).json({
@@ -76,7 +80,7 @@ export function registerAiIngestionRoutes(
     res.status(200).json({
       status: 'ok',
       ...result,
-      referenceIntlText: formatMillionTomanAsIntlCurrency(result.fact.totalPrice, 'USD'),
+      referenceIntlText: formatMillionTomanAsIntlCurrency(result.fact.totalPrice, intlCurrency),
     });
   });
 
@@ -90,6 +94,18 @@ export function registerAiIngestionRoutes(
       const auth = await options.verifyAdminAuth(req);
       if (!auth.ok) {
         res.status(auth.status ?? 401).json({ status: 'error', code: auth.message || 'ADMIN_AUTH_REQUIRED' });
+        return;
+      }
+    } else {
+      const fallbackAuth = await verifyAdminApiAuthorization(
+        req.headers as Record<string, string | string[] | undefined>,
+      );
+      if (!fallbackAuth.authorized) {
+        res.status(fallbackAuth.statusCode).json({
+          status: 'error',
+          code: fallbackAuth.reason || 'ADMIN_AUTH_REQUIRED',
+          message: 'ادغام شناسنامه ساختمان‌های تکراری نیازمند احراز هویت مدیر سیستم است.',
+        });
         return;
       }
     }

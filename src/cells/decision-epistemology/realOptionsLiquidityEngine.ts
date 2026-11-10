@@ -81,7 +81,8 @@ export function computeDixitPindyckRealOption(
   rentalYieldDelta: number,
   volatilitySigma: number,
   riskFreeRate: number = 0.22,
-  horizonMonths: number = 6
+  horizonMonths: number = 6,
+  targetSqm: number = 85
 ): RealOptionsValuation {
   const tau = horizonMonths / 12.0;
   const sigma = Math.max(0.12, Math.min(0.55, volatilitySigma));
@@ -103,7 +104,7 @@ export function computeDixitPindyckRealOption(
   const d1 = (Math.log(basePriceSqm / (basePriceSqm * 0.95)) + (r - delta + 0.5 * sigma * sigma) * tau) / (sigma * Math.sqrt(tau));
   const d2 = d1 - sigma * Math.sqrt(tau);
   const valueOfWaitingPerSqm = basePriceSqm * Math.exp(-delta * tau) * normalCdf(d1) - (basePriceSqm * 0.95) * Math.exp(-r * tau) * normalCdf(d2);
-  const valueOfWaitingTomanMln = Number((Math.max(0, valueOfWaitingPerSqm) * 85).toFixed(1));
+  const valueOfWaitingTomanMln = Number((Math.max(0, valueOfWaitingPerSqm) * Math.max(10, targetSqm)).toFixed(1));
 
   let optimalAction: RealOptionsValuation['optimalAction'] = 'HOLD_OPTION_TO_WAIT';
   let actionReasonFa = '';
@@ -253,17 +254,19 @@ export function generateCasperLiquidityReport(
   cityId: string = 'tehran',
   basePriceSqm?: number,
   providedHood?: Neighborhood,
-  intlCurrency: IntlCurrencyCode = 'USD'
+  intlCurrency: IntlCurrencyCode = 'USD',
+  targetSqm: number = 85
 ): CasperLiquidityAndRealOptionsReport {
   const hood = providedHood ?? resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
-  const rahn80m = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
-  // True annual rental yield: annual rent (rahn80m * 0.36) divided by 80m² purchase price
-  const annualRentalYield = (rahn80m * 0.36) / Math.max(1, resolvedPrice * 80);
+  const baseNeighborhoodRahn = hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18);
+  const annualRent80m = baseNeighborhoodRahn * 0.36;
+  // Property Yield on Cost: actual annual market rent divided by total acquisition cost
+  const annualRentalYield = annualRent80m / Math.max(1, resolvedPrice * 80);
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, buildNeighborhoodListingSamples(hood));
 
   const realOptions = computeDixitPindyckRealOption(
-    resolvedPrice, annualRentalYield, resolvedPrice > 160 ? 0.31 : resolvedPrice > 110 ? 0.25 : 0.21, 0.22, 6
+    resolvedPrice, annualRentalYield, resolvedPrice > 160 ? 0.31 : resolvedPrice > 110 ? 0.25 : 0.21, 0.22, 6, targetSqm
   );
   const transitAndQualityScore = Math.round(((hood.metro ?? 7) + (hood.air ?? 7)) / 2);
   const computedSpread = Number((((agg.askingPricePerSqm - agg.estimatedDealPricePerSqm) / Math.max(1, agg.askingPricePerSqm)) * 100).toFixed(1));

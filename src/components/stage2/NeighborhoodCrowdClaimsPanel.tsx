@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles, AlertTriangle } from 'lucide-react';
-import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
-import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface CrowdClaimItem {
   id: string; hoodId: number; hoodName: string; cityKey: string;
@@ -20,6 +20,7 @@ export interface ContributorSummary {
 
 interface NeighborhoodCrowdClaimsPanelProps {
   hoodId: number; hoodName: string; cityKey: string;
+  basePriceSqm?: number; hood?: Neighborhood; intlCurrency?: IntlCurrencyCode;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -37,14 +38,15 @@ const TIER_BADGES: Record<string, { label: string; color: string }> = {
   NEWCOMER: { label: 'مشارکت‌کننده جدید', color: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
 };
 
-function buildSeedClaims(hoodId: number, hoodName: string, cityKey: string) {
+function buildSeedClaims(hoodId: number, hoodName: string, cityKey: string, basePriceSqm?: number, providedHood?: Neighborhood, intlCurrency: IntlCurrencyCode = 'USD') {
   const safeCity = (cityKey in MULTI_CITY_CONFIGS ? cityKey : 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
-  const hood = cityHoods.find((h) => h.id === hoodId || h.name === hoodName) ?? cityHoods[0] ?? INITIAL_NEIGHBORHOODS[0];
-  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hoodName || hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood));
+  const hood = providedHood ?? cityHoods.find((h) => h.id === hoodId || h.name === hoodName) ?? cityHoods[0] ?? INITIAL_NEIGHBORHOODS[0];
+  const ask = basePriceSqm && basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hoodName || hood.name, ask, buildNeighborhoodListingSamples({ ...hood, buyPerSqm: ask }));
   const spreadLow = Math.max(3, Math.round((1 - agg.askToDealRatio) * 100));
   const spreadHigh = spreadLow + 2;
-  const dealIntl = formatMillionTomanAsIntlCurrency(agg.estimatedDealPricePerSqm, 'USD', 'fa');
+  const dealIntl = formatMillionTomanAsIntlCurrency(agg.estimatedDealPricePerSqm, intlCurrency, 'fa');
 
   const refClaim: CrowdClaimItem = {
     id: `seed_ref_${hoodId}`, hoodId, hoodName, cityKey, authorId: 'usr_inspector_1',
@@ -71,7 +73,9 @@ function buildSeedClaims(hoodId: number, hoodName: string, cityKey: string) {
   };
 }
 
-export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanelProps> = ({ hoodId, hoodName, cityKey }) => {
+export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanelProps> = ({
+  hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency = 'USD',
+}) => {
   const [claims, setClaims] = useState<CrowdClaimItem[]>([]);
   const [verifiedRefs, setVerifiedRefs] = useState<CrowdClaimItem[]>([]);
   const [leaderboard, setLeaderboard] = useState<ContributorSummary[]>([]);
@@ -91,7 +95,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
 
   const fetchClaims = useCallback(async () => {
     setLoading(true);
-    const seed = buildSeedClaims(hoodId, hoodName, cityKey);
+    const seed = buildSeedClaims(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
     try {
       const res = await fetch(`/api/v1/claims/hood/${hoodId}`);
       if (res.ok) {
@@ -100,7 +104,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
           id: String(d.claimId || d.id || ''), hoodId, hoodName, cityKey,
           authorId: String(d.authorUid || 'usr_1'), authorDisplayName: String(d.authorDisplayName || 'شهروند رادار'),
           category: String(d.category || 'ALLEY_LIVABILITY'),
-          claimType: d.epistemicState === 'VERIFIED_REFERENCE' ? 'VERIFIED_FACT_CANDIDATE' : 'SUBJECTIVE_EXPERIENCE',
+          claimType: d.epistemicState === 'VERIFIED_REFERENCE' || d.targetLevel === 'STREET_SEGMENT' || d.category === 'PRICE_OBSERVATION' || d.category === 'DATA_CORRECTION' ? 'VERIFIED_FACT_CANDIDATE' : 'SUBJECTIVE_EXPERIENCE',
           title: String(d.streetNameRaw || `گزارش میدانی ${hoodName}`), body: String(d.narrativeText || ''),
           status: String(d.epistemicState || 'STAGE_COMMUNITY'), trustWeightScore: Number(d.aiPlausibilityScore || 80),
           upvotes: Number(d.upvoteCount || 0), downvotes: Number(d.downvoteCount || 0),
@@ -121,7 +125,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     } finally {
       setLoading(false);
     }
-  }, [cityKey, hoodId, hoodName]);
+  }, [basePriceSqm, cityKey, hood, hoodId, hoodName, intlCurrency]);
 
   useEffect(() => { fetchClaims(); }, [fetchClaims]);
 
@@ -136,7 +140,9 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         body: JSON.stringify({
           hoodId, cityId: cityKey, authorUid: sessionAuthorUid,
           authorDisplayName: authorName.trim() || 'شهروند رادار', category,
+          targetLevel: claimType === 'VERIFIED_FACT_CANDIDATE' ? 'STREET_SEGMENT' : 'NEIGHBORHOOD',
           streetName: title.trim(), narrativeText: body.trim(),
+          baseHoodPriceSqmOverride: basePriceSqm, intlCurrency,
         }),
       });
       if (res.ok) {

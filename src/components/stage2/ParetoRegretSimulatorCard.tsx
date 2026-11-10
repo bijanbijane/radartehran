@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Compass, Trophy, ArrowLeftRight, TrendingUp, ShieldAlert, CheckCircle2, Sliders } from 'lucide-react';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import type { IntlCurrencyCode } from '../../utils/areaUnit';
 import {
   computeSavageMinimaxRegretMatrix,
@@ -16,6 +16,7 @@ export interface ParetoRegretSimulatorCardProps {
   onTargetSqmChange?: (sqm: number) => void;
   intlCurrency?: IntlCurrencyCode;
   onSelectCompareHood?: (hoodName: string) => void;
+  hood?: Neighborhood;
 }
 
 export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps> = ({
@@ -27,6 +28,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
   onTargetSqmChange,
   intlCurrency = 'USD',
   onSelectCompareHood,
+  hood,
 }) => {
   const [targetSqm, setTargetSqm] = useState<number>(initialTargetSqm);
   const [selectedRegime, setSelectedRegime] = useState<MacroRegimeId>('STAGFLATION_LOCK');
@@ -46,8 +48,9 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
         targetSqm,
         intlCurrency,
         optimismAlpha,
+        providedHood: hood,
       }),
-    [cityKey, hoodId, hoodName, basePriceSqm, targetSqm, intlCurrency, optimismAlpha]
+    [cityKey, hoodId, hoodName, basePriceSqm, targetSqm, intlCurrency, optimismAlpha, hood]
   );
 
   const activeRegimeSpec = analysis.regimes.find((r) => r.regimeId === selectedRegime) ?? analysis.regimes[0];

@@ -222,24 +222,24 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
             case 'PARETO_REGRET':
               return <ParetoRegretSimulatorCard {...common} initialTargetSqm={sharedTargetSqm} onTargetSqmChange={setSharedTargetSqm} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
             case 'SPATIAL_CONTAGION':
-              return <SpatialContagionLabCard {...common} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
+              return <SpatialContagionLabCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
             case 'REAL_OPTIONS':
-              return <RealOptionsLiquidityCard {...common} intlCurrency={intlCurrency} />;
+              return <RealOptionsLiquidityCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'URBAN_AFFORDABILITY':
               return <UrbanAffordabilityIsochroneCard {...common} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
             case 'MONTE_CARLO_VAR':
-              return <MonteCarloRiskDensityCard {...common} intlCurrency={intlCurrency} />;
+              return <MonteCarloRiskDensityCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'HOUSING_CYCLE':
               return <HousingCycleRegimeCard {...common} intlCurrency={intlCurrency} />;
             case 'MACRO_PORTFOLIO':
-              return <MacroPortfolioArbitrageCard {...common} intlCurrency={intlCurrency} />;
+              return <MacroPortfolioArbitrageCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'RENT_VS_BUY':
               return <RentVsBuyArbitrageCard {...common} initialTargetSqm={sharedTargetSqm} onTargetSqmChange={setSharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'CROWD_CLAIMS':
-              return <NeighborhoodCrowdClaimsPanel hoodId={resolvedHoodId} hoodName={resolvedHoodName} cityKey={resolvedCity} />;
+              return <NeighborhoodCrowdClaimsPanel {...common} intlCurrency={intlCurrency} />;
             case 'SOCIOECONOMIC_REFERENCE':
             default:
-              return <SocioeconomicReferenceCard {...common} onSelectCompareHood={onSelectCompareHood} />;
+              return <SocioeconomicReferenceCard {...common} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
           }
         })()}
       </div>

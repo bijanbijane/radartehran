@@ -162,7 +162,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">
             {toPersianNum(cycle.priceToRentRatio)} سال
           </div>
-          <div className="text-[9px] text-slate-400">لنگر تعادلی محله: {toPersianNum(cycle.dynamicEquilibriumPR)} سال{rahnFx}</div>
+          <div className="text-[9px] text-slate-400">لنگر تعادلی: {toPersianNum(cycle.dynamicEquilibriumPR)} سال{rahnFx ? ` · رهن: ${toPersianNum(report.rahn80m)}م${rahnFx}` : ''}</div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">

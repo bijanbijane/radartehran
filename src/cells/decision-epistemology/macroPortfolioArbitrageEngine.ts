@@ -9,7 +9,7 @@
 import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
-import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export type MacroAssetClassId = 'HOUSING' | 'GOLD_COIN' | 'US_DOLLAR' | 'FIXED_INCOME';
 
@@ -84,7 +84,8 @@ const CORRELATION_MATRIX: Record<MacroAssetClassId, Record<MacroAssetClassId, nu
 const BASELINE_CPI_INFLATION = 0.44;
 const RISK_FREE_RATE = 0.24;
 
-function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string): Neighborhood {
+function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string, providedHood?: Neighborhood): Neighborhood {
+  if (providedHood && providedHood.buyPerSqm > 0) return providedHood;
   const safeCity = (cityId in MULTI_CITY_CONFIGS ? cityId : 'tehran') as CityId;
   const hoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   return hoods.find((h) => h.id === hoodId || (fallbackName && h.name === fallbackName)) ?? hoods[0] ?? INITIAL_NEIGHBORHOODS[0];
@@ -231,20 +232,24 @@ export function generateCasperMacroPortfolioDossier(
   hoodId: number,
   hoodName: string,
   cityId: string = 'tehran',
-  basePriceSqm: number = 120
+  basePriceSqm: number = 120,
+  providedHood?: Neighborhood,
+  intlCurrency: IntlCurrencyCode = 'USD',
+  targetSqm: number = 80
 ): CasperMacroPortfolioDossier {
-  const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const hood = resolveNeighborhood(cityId, hoodId, hoodName, providedHood);
   const resolvedHoodName = hood.name || hoodName;
   const rawPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, resolvedHoodName, rawPrice, buildNeighborhoodListingSamples(hood));
   const resolvedPrice = agg.estimatedDealPricePerSqm;
-  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  const resolvedRahn = hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18);
+  const targetCapital = Math.round(resolvedPrice * targetSqm);
 
   const assets = buildMacroAssetSpecs(resolvedPrice, resolvedRahn);
   const defensive = evaluatePortfolioAllocation({ housingWeightPct: 45, goldWeightPct: 15, usdWeightPct: 10, fixedIncomeWeightPct: 30 }, assets);
   const optimalSharpe = evaluatePortfolioAllocation({ housingWeightPct: 55, goldWeightPct: 25, usdWeightPct: 15, fixedIncomeWeightPct: 5 }, assets);
   const inflationHedge = evaluatePortfolioAllocation({ housingWeightPct: 65, goldWeightPct: 25, usdWeightPct: 10, fixedIncomeWeightPct: 0 }, assets);
-  const swapAnalysis = evaluateAssetSwapToHousing('GOLD_COIN', resolvedHoodName, Math.round(resolvedPrice * 80), assets.HOUSING.cashflowYieldPct);
+  const swapAnalysis = evaluateAssetSwapToHousing('GOLD_COIN', resolvedHoodName, targetCapital, assets.HOUSING.cashflowYieldPct);
 
   return {
     hoodId: hood.id,
@@ -252,7 +257,7 @@ export function generateCasperMacroPortfolioDossier(
     cityId,
     basePriceSqm: resolvedPrice,
     rahn80m: resolvedRahn,
-    intlBenchmarkText: formatMillionTomanAsIntlCurrency(resolvedPrice * 80, 'USD', 'fa'),
+    intlBenchmarkText: formatMillionTomanAsIntlCurrency(targetCapital, intlCurrency, 'fa'),
     assets,
     canonicalPortfolios: { defensive, optimalSharpe, inflationHedge },
     swapAnalysis,

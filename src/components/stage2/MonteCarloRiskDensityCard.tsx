@@ -9,7 +9,7 @@ import {
   generateCasperMonteCarloRiskReport,
   simulateMertonJumpDiffusionVaR,
 } from '../../cells/decision-epistemology/monteCarloRiskDensityEngine';
-import { toPersianNum } from '../../data/neighborhoods';
+import { type Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface MonteCarloRiskDensityCardProps {
@@ -18,6 +18,8 @@ export interface MonteCarloRiskDensityCardProps {
   cityKey?: string;
   basePriceSqm?: number;
   intlCurrency?: IntlCurrencyCode;
+  hood?: Neighborhood;
+  targetSqm?: number;
 }
 
 export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps> = ({
@@ -26,13 +28,15 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
   cityKey = 'tehran',
   basePriceSqm = 120,
   intlCurrency = 'USD',
+  hood,
+  targetSqm = 85,
 }) => {
   const [horizonMonths, setHorizonMonths] = useState<number>(12);
   const [jumpIntensity, setJumpIntensity] = useState<number>(0.45);
   const [seedOffset, setSeedOffset] = useState<number>(1);
 
   const report = useMemo(() => {
-    const base = generateCasperMonteCarloRiskReport(hoodId, hoodName, cityKey, basePriceSqm, horizonMonths);
+    const base = generateCasperMonteCarloRiskReport(hoodId, hoodName, cityKey, basePriceSqm, horizonMonths, hood, intlCurrency, targetSqm);
     const customResult = simulateMertonJumpDiffusionVaR(
       base.basePriceSqm,
       {
@@ -48,12 +52,11 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
       metrics: customResult.metrics,
       distributionBuckets: customResult.distributionBuckets,
     };
-  }, [hoodId, hoodName, cityKey, basePriceSqm, horizonMonths, jumpIntensity, seedOffset]);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, horizonMonths, jumpIntensity, seedOffset, hood, intlCurrency, targetSqm]);
 
   const maxDensity = Math.max(...report.distributionBuckets.map((b) => b.densityPercent), 1);
-  const varCapital80mMln = Math.round(report.basePriceSqm * 80 * (Math.abs(report.metrics.var95RealPct) / 100));
-  const illiquidVarCapital80mMln = Math.round(report.basePriceSqm * 80 * (Math.abs(report.metrics.illiquidityAdjustedVaR95RealPct) / 100));
-  const varFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(varCapital80mMln, intlCurrency, 'fa')})` : '';
+  const illiquidVarCapitalMln = Math.round(report.basePriceSqm * Math.max(10, targetSqm) * (Math.abs(report.metrics.illiquidityAdjustedVaR95RealPct) / 100));
+  const varFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(illiquidVarCapitalMln, intlCurrency, 'fa')})` : '';
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -163,7 +166,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           <div className="text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5" data-testid="stage2-illiquid-var-value">
             -{toPersianNum(report.metrics.var95RealPct)}٪ / -{toPersianNum(report.metrics.illiquidityAdjustedVaR95RealPct)}٪
           </div>
-          <div className="text-[9px] text-slate-400">خروج فوری ۸۰م: {toPersianNum(illiquidVarCapital80mMln)} م.ت{varFx}</div>
+          <div className="text-[9px] text-slate-400">خروج فوری {toPersianNum(targetSqm)}م: {toPersianNum(illiquidVarCapitalMln)} م.ت{varFx}</div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">

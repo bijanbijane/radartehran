@@ -2,10 +2,10 @@ import crypto from 'node:crypto'; import fs from 'node:fs'; import path from 'no
 export type DeploymentEnvironmentName = 'development' | 'test' | 'staging' | 'production'; export interface EnvironmentValidationReport { environment: DeploymentEnvironmentName; valid: boolean; exposedClientSecrets: string[]; devUrlsInProduction: string[]; prodTargetsInTest: string[];
   missingRequiredVars: string[]; unsafeFallbacksDetected: string[]; }
 const SERVER_ONLY_SECRET_NAMES = new Set([
-  'ADMIN_API_SECRET', 'GEMINI_API_KEY', 'OBJECT_STORAGE_ACCESS_KEY', 'OBJECT_STORAGE_SECRET_KEY', 'TELEGRAM_BOT_TOKEN', 'FIREBASE_SERVICE_ACCOUNT_KEY', ]); export function validateEnvironmentSeparationMatrix(params: { environment: DeploymentEnvironmentName;
+  'ADMIN_API_SECRET', 'GEMINI_API_KEY', 'OBJECT_STORAGE_ACCESS_KEY', 'OBJECT_STORAGE_SECRET_KEY', 'TELEGRAM_BOT_TOKEN', 'CASPER_HUB_TOKEN', 'FIREBASE_SERVICE_ACCOUNT_KEY', ]); export function validateEnvironmentSeparationMatrix(params: { environment: DeploymentEnvironmentName;
   envVars: Record<string, string | undefined>; }): EnvironmentValidationReport { const exposedClientSecrets: string[] = []; const devUrlsInProduction: string[] = [];
   const prodTargetsInTest: string[] = []; const missingRequiredVars: string[] = []; const unsafeFallbacksDetected: string[] = []; for (const [key, rawVal] of Object.entries(params.envVars)) { const val = (rawVal ?? '').trim(); if (key.startsWith('VITE_')) { const stripped = key.replace(/^VITE_/, ''); if (
-        SERVER_ONLY_SECRET_NAMES.has(stripped) || /SECRET|PRIVATE_KEY|BOT_TOKEN|ADMIN_API|GEMINI_API/i.test(key)
+        SERVER_ONLY_SECRET_NAMES.has(stripped) || /SECRET|PRIVATE_KEY|BOT_TOKEN|HUB_TOKEN|ADMIN_API|GEMINI_API/i.test(key)
       ) { exposedClientSecrets.push(key); } }
     if (params.environment === 'production' && val) { if (
         /^(https?|ws):\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(val) && (key.includes('URL') || key.includes('ENDPOINT') || key.includes('ORIGIN'))

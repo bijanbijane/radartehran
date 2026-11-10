@@ -62,9 +62,9 @@ export function computeAffordabilityStress(
   const safeIncome = Math.max(10, monthlyMedianIncomeMillion);
   const annualIncome = safeIncome * 12;
   const totalBuyPrice80m = pricePerSqm * 80;
-  const priceToIncomeRatio = Math.min(60, Math.max(5, Number((totalBuyPrice80m / annualIncome).toFixed(1))));
+  const priceToIncomeRatio = Math.max(0.5, Number((totalBuyPrice80m / annualIncome).toFixed(1)));
   const monthlyRentEquivalent = rahn80m * 0.03;
-  const rentToIncomeRatioPct = Math.min(400, Math.max(10, Number(((monthlyRentEquivalent / safeIncome) * 100).toFixed(1))));
+  const rentToIncomeRatioPct = Math.max(1, Number(((monthlyRentEquivalent / safeIncome) * 100).toFixed(1)));
 
   let affordabilityTier: UrbanAffordabilityStressMetrics['affordabilityTier'] = 'MODERATE_STRESS';
   let affordabilityTierFa = 'فشار استطاعت متوسط (قابل مدیریت)';
@@ -116,9 +116,8 @@ export function computeCommuteRentArbitrage(
   const monthlyRentSavingsMillion = hubCoreMonthlyRentMillion - monthlyHousingDirectCostMillion;
   const netMonthlyArbitrageSurplusMillion = Number((monthlyRentSavingsMillion - commute.totalMonthlyFrictionCostMillion).toFixed(2));
   const minutesCostPerMonth = commute.monthlyTimeOpportunityCostMillion / Math.max(1, commute.estimatedOneWayMinutes);
-  const breakEvenCommuteMinutes = Math.round(
-    Math.max(15, (monthlyRentSavingsMillion - commute.monthlyDirectTransitCostMillion) / Math.max(0.01, minutesCostPerMonth))
-  );
+  const netRentBuffer = monthlyRentSavingsMillion - commute.monthlyDirectTransitCostMillion;
+  const breakEvenCommuteMinutes = netRentBuffer <= 0 ? 0 : Math.round(netRentBuffer / Math.max(0.01, minutesCostPerMonth));
 
   let arbitrageVerdict: CommuteRentArbitrageIndifference['arbitrageVerdict'] = 'SUBURB_ARBITRAGE_VIABLE';
   let arbitrageVerdictFa = 'آربیتراژ مثبت سکونت پیرامونی';

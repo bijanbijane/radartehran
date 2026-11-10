@@ -21,7 +21,7 @@ import {
   simulateRentVsBuyEquivalence,
   RentVsBuyComparisonResult
 } from '../../cells/decision-epistemology/rentVsBuyArbitrageEngine';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface RentVsBuyArbitrageCardProps {
@@ -32,6 +32,7 @@ export interface RentVsBuyArbitrageCardProps {
   initialTargetSqm?: number;
   onTargetSqmChange?: (sqm: number) => void;
   intlCurrency?: IntlCurrencyCode;
+  hood?: Neighborhood;
 }
 
 export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
@@ -42,6 +43,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
   initialTargetSqm = 80,
   onTargetSqmChange,
   intlCurrency = 'USD',
+  hood,
 }) => {
   const [horizonYears, setHorizonYears] = useState<number>(5);
   const [alternativeReturnPct, setAlternativeReturnPct] = useState<number>(42);
@@ -58,8 +60,8 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
   };
 
   const dossier = useMemo(
-    () => generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm),
-    [hoodId, hoodName, cityKey, basePriceSqm]
+    () => generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency),
+    [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency]
   );
   const totalUnitCostMillion = Math.round(dossier.basePriceSqm * targetSqm);
   const rahn80m = dossier.rahn80m;

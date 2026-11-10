@@ -9,7 +9,7 @@
 import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
-import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface RentVsBuySimulationParams {
   horizonYears: number; // 3, 5, or 10 years
@@ -71,7 +71,8 @@ export interface CasperRentVsBuyDossier {
 
 const DEFAULT_INFLATION = 0.40;
 
-function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string): Neighborhood {
+function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: string, providedHood?: Neighborhood): Neighborhood {
+  if (providedHood && providedHood.buyPerSqm > 0) return providedHood;
   const safeCity = (cityId in MULTI_CITY_CONFIGS ? cityId : 'tehran') as CityId;
   const hoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   return hoods.find((h) => h.id === hoodId || (fallbackName && h.name === fallbackName)) ?? hoods[0] ?? INITIAL_NEIGHBORHOODS[0];
@@ -231,9 +232,11 @@ export function generateCasperRentVsBuyDossier(
   hoodId: number,
   hoodName: string,
   cityId: string = 'tehran',
-  basePriceSqm: number = 120
+  basePriceSqm: number = 120,
+  providedHood?: Neighborhood,
+  intlCurrency: IntlCurrencyCode = 'USD',
 ): CasperRentVsBuyDossier {
-  const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const hood = resolveNeighborhood(cityId, hoodId, hoodName, providedHood);
   const resolvedHoodName = hood.name || hoodName;
   const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, resolvedHoodName, resolvedPrice, buildNeighborhoodListingSamples(hood));
@@ -260,7 +263,7 @@ export function generateCasperRentVsBuyDossier(
     basePriceSqm: resolvedPrice,
     estimatedDealPriceSqm: agg.estimatedDealPricePerSqm,
     rahn80m: resolvedRahn,
-    intlBenchmarkText: formatMillionTomanAsIntlCurrency(resolvedPrice * 80, 'USD', 'fa'),
+    intlBenchmarkText: formatMillionTomanAsIntlCurrency(resolvedPrice * 80, intlCurrency, 'fa'),
     fiveYearAnalysis,
     tenYearAnalysis,
     generatedAtIso: new Date().toISOString(),

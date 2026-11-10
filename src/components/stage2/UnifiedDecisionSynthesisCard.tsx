@@ -11,7 +11,7 @@ import {
   synthesizeExecutiveDecisionReport,
   UnifiedDecisionSynthesisReport,
 } from '../../cells/decision-epistemology/unifiedDecisionSynthesisEngine';
-import { toPersianNum } from '../../data/neighborhoods';
+import { type Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
@@ -24,6 +24,7 @@ export interface UnifiedDecisionSynthesisCardProps {
   onTargetSqmChange?: (sqm: number) => void;
   intlCurrency?: IntlCurrencyCode;
   onSelectTab?: (tabId: string) => void;
+  hood?: Neighborhood;
 }
 
 export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCardProps> = ({
@@ -35,6 +36,7 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
   onTargetSqmChange,
   intlCurrency = 'USD',
   onSelectTab,
+  hood,
 }) => {
   const [targetSqm, setTargetSqm] = useState<number>(initialTargetSqm || 80);
   const [scenarioMode, setScenarioMode] = useState<'FAIR' | 'MARKET' | 'BUBBLE' | 'CUSTOM'>('MARKET');
@@ -45,7 +47,7 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
     if (initialTargetSqm && initialTargetSqm > 0) setTargetSqm(initialTargetSqm);
   }, [initialTargetSqm]);
 
-  const resolvedHood = useMemo(() => resolveNeighborhood(cityKey, hoodId, hoodName), [cityKey, hoodId, hoodName]);
+  const resolvedHood = useMemo(() => resolveNeighborhood(cityKey, hoodId, hoodName, hood), [cityKey, hoodId, hoodName, hood]);
   const aggMetrics = useMemo(
     () => aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, buildNeighborhoodListingSamples(resolvedHood)),
     [hoodId, hoodName, basePriceSqm, resolvedHood],
@@ -65,8 +67,8 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
   }, [targetSqm]);
 
   const report: UnifiedDecisionSynthesisReport = useMemo(
-    () => synthesizeExecutiveDecisionReport(hoodId, hoodName, cityKey, fairDealSqm, customAskingSqm, targetSqm, intlCurrency),
-    [hoodId, hoodName, cityKey, fairDealSqm, customAskingSqm, targetSqm, intlCurrency],
+    () => synthesizeExecutiveDecisionReport(hoodId, hoodName, cityKey, fairDealSqm, customAskingSqm, targetSqm, intlCurrency, resolvedHood),
+    [hoodId, hoodName, cityKey, fairDealSqm, customAskingSqm, targetSqm, intlCurrency, resolvedHood],
   );
 
   const scoreBadgeColors = {

@@ -49,8 +49,8 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
   React.useEffect(() => { setUnitAreaSqm(initialTargetSqm); }, [initialTargetSqm]);
 
   const dossier = useMemo(
-    () => buildNeighborhoodEpistemicDossier({ cityId: cityKey, hoodId, hoodName, buyPerSqm: basePriceSqm, rahn80m: hood?.rahn80m, intlCurrency }),
-    [hoodId, hoodName, cityKey, basePriceSqm, hood?.rahn80m, intlCurrency]
+    () => buildNeighborhoodEpistemicDossier({ cityId: cityKey, hoodId, hoodName, buyPerSqm: basePriceSqm, rahn80m: hood?.rahn80m, intlCurrency, customHood: hood }),
+    [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency]
   );
 
   const counterfactual = useMemo(

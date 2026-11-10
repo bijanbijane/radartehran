@@ -13,7 +13,7 @@ import {
   evaluateAssetSwapToHousing,
   PortfolioAllocationWeights
 } from '../../cells/decision-epistemology/macroPortfolioArbitrageEngine';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface MacroPortfolioArbitrageCardProps {
@@ -22,6 +22,8 @@ export interface MacroPortfolioArbitrageCardProps {
   cityKey?: string;
   basePriceSqm?: number;
   intlCurrency?: IntlCurrencyCode;
+  hood?: Neighborhood;
+  targetSqm?: number;
 }
 
 export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardProps> = ({
@@ -30,10 +32,12 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
   cityKey = 'tehran',
   basePriceSqm = 120,
   intlCurrency = 'USD',
+  hood,
+  targetSqm = 80,
 }) => {
   const [selectedStrategy, setSelectedStrategy] = useState<'optimal' | 'inflation' | 'defensive' | 'custom'>('optimal');
   const [swapSourceAsset, setSwapSourceAsset] = useState<'GOLD_COIN' | 'US_DOLLAR' | 'FIXED_INCOME'>('GOLD_COIN');
-  const [capitalBillion, setCapitalBillion] = useState<number>(() => Math.max(6, Math.round((basePriceSqm * 80) / 1000)));
+  const [capitalBillion, setCapitalBillion] = useState<number>(() => Math.max(6, Math.round((basePriceSqm * targetSqm) / 1000)));
   const [customWeights, setCustomWeights] = useState<PortfolioAllocationWeights>({
     housingWeightPct: 50,
     goldWeightPct: 25,
@@ -42,8 +46,8 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
   });
 
   const dossier = useMemo(() => {
-    return generateCasperMacroPortfolioDossier(hoodId, hoodName, cityKey, basePriceSqm);
-  }, [hoodId, hoodName, cityKey, basePriceSqm]);
+    return generateCasperMacroPortfolioDossier(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm]);
 
   const activeEvaluation = useMemo(() => {
     if (selectedStrategy === 'defensive') return dossier.canonicalPortfolios.defensive;
