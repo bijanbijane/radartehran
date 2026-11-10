@@ -11,7 +11,7 @@ export function redactSensitiveForensicText(raw: string): string {
   return String(raw)
     .replace(/[\r\n\u0000]+/g, ' ')
     .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED]')
-    .replace(/\b(?:AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|ghp_[0-9A-Za-z]{20,})\b/g, '[REDACTED_API_KEY]')
+    .replace(/\b(?:AIza[0-9A-Za-z_-]{20,}|sk-[0-9A-Za-z_-]{20,}|ghp_[0-9A-Za-z]{20,}|chub_[0-9A-Za-z_-]{16,})\b/g, '[REDACTED_API_KEY]')
     .replace(/\b\d{8,12}:[A-Za-z0-9_-]{30,}\b/g, '[REDACTED_TELEGRAM_TOKEN]')
     .replace(/([0۰٠][9۹٩][0-9۰-۹٠-٩]{2})[0-9۰-۹٠-٩]{3}([0-9۰-۹٠-٩]{4})/g, '$1***$2')
     .replace(/\b([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g, '$1***@$2')

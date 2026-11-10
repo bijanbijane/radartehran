@@ -216,7 +216,7 @@ export function serializeFirestoreAndDomainPayloadSafely(
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(candidate)) {
       if (v === undefined || k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
-      if (/^_firestore|password|secret|private[_-]?key|api[_-]?key|bot[_-]?token|access[_-]?token|refresh[_-]?token|authorization|cookie/i.test(k)) continue;
+      if (/^_firestore|password|secret|private[_-]?key|api[_-]?key|(?:bot|access|refresh|(?:casper[_-]?)?hub)[_-]?token|authorization|cookie/i.test(k)) continue;
       out[k] = serializeFirestoreAndDomainPayloadSafely(v, seen, depth + 1);
     }
     return out;

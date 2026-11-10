@@ -40,7 +40,6 @@ export function OnboardingWizardModal({
   const buyAgeMultiplier = buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.88 : 0.76;
   const effectiveBuyPowerMillion = Math.round((buyTotalBudget + (useLoanBooster ? 1200 : 0)) / (deductTenantRahnInBuy ? 0.72 : 1.0));
   const combinedRahnEquivalent = deposit + Math.round((monthlyRent * 100) / 3) + (useLoanBooster ? 400 : 0);
-  void effectiveBuyPowerMillion;
 
   if (!open) return null;
 
@@ -168,7 +167,7 @@ export function OnboardingWizardModal({
                     </div>
                     <input type="range" aria-label={isEn ? 'Cash budget slider' : 'اسلایدر بودجه نقدی خرید'} min={500} max={150000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                   </div>
-                  <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 space-y-3">
+                  <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 space-y-2.5">
                     <label className="flex items-start gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 cursor-pointer">
                       <input type="checkbox" aria-label={isEn ? 'Deduct tenant deposit' : 'کسر خودکار رهن به مستأجر'} checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} className="mt-0.5 rounded text-emerald-600" />
                       <div className="text-xs"><strong className="text-slate-900 dark:text-white block font-bold">{isEn ? 'Tenant Deposit Deduction' : 'کسر خودکار رهن به مستأجر + ۱۰٪ تنفس سند'}</strong></div>
@@ -177,6 +176,10 @@ export function OnboardingWizardModal({
                       <input type="checkbox" aria-label={isEn ? 'Enable housing loan' : 'محاسبه با وام مسکن جعاله'} checked={useLoanBooster} onChange={(e) => setUseLoanBooster(e.target.checked)} className="mt-0.5 rounded text-emerald-600" />
                       <div className="text-xs"><strong className="text-slate-900 dark:text-white block font-bold">{isEn ? 'Housing Loan (+1.2B Toman)' : 'محاسبه با وام مسکن جعاله (+۱.۲ میلیارد تومان)'}</strong></div>
                     </label>
+                    <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 pt-1 border-t border-emerald-200/80 dark:border-emerald-800">
+                      <span>{isEn ? 'Effective Purchasing Power:' : 'قدرت خرید مؤثر با اهرم‌ها:'}</span>
+                      <strong className="text-emerald-700 dark:text-emerald-400 tabular-nums">{toPersianNum(effectiveBuyPowerMillion)} م{showIntl && ` (${formatMillionTomanAsIntlCurrency(effectiveBuyPowerMillion, currency, locale)})`}</strong>
+                    </div>
                   </div>
                 </div>
               ) : (

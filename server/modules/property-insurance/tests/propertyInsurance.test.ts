@@ -657,6 +657,27 @@ test('2. Enforces policy verification authorization, lifecycle transitions, expi
     'NOT_COVERED_NO_EXPLICIT_COVERAGE_ITEM',
   );
 
+  await h.service.registerExclusion({
+    principal: h.holderPrincipal,
+    idempotencyKey: 'idem_excl_active_flood',
+    policyId: policy.policyId,
+    limitationCategory: 'EVENT_SPECIFIC_EXCLUSION',
+    excludedRiskCategories: ['FLOOD'],
+    sourcePolicyProvisionRef: 'Clause 4.B',
+    originalSourceWordingVerbatim: 'خسارت ناشی از سیل مستثنی است.',
+    structuredClassificationSummary: 'Flood excluded.',
+  });
+  const floodExclEval = await h.service.getPolicyCoverageStatusWithLimitations({
+    principal: h.holderPrincipal,
+    policyId: policy.policyId,
+    queryRiskCategory: 'FLOOD',
+    queryAssetCanonicalId: 'bldg_valid_1',
+  });
+  assert.equal(
+    floodExclEval.queriedRiskEvaluation.applicabilityConclusion,
+    'EXCLUDED_BY_EXPLICIT_LIMITATION',
+  );
+
   // Renewal reminder does NOT extend existing policy's coverageEndIso!
   const reminderRenewal = await h.service.createRenewalReference({
     principal: h.holderPrincipal,

@@ -3,53 +3,69 @@ export * from './store';
 export * from './transactionParticipantOfferAndNegotiationService';
 export * from './termsConditionsMilestonesAndContractService';
 export * from './closingHandoverCompletionAndReportingService';
+export * from './contracts/externalAdapters';
+export type {
+  RealEstateTransactionCaseStatus,
+  ParticipantInvitationStatus,
+  ParticipantPermissionScope,
+  PurchaseFinancialTerms,
+  RentalFinancialTerms,
+  TransactionFinancialTermsUnion,
+  FinancialTermsVersionEntry,
+  NegotiationOfferLifecycleState,
+  ContractWorkflowLifecycleState,
+  TransactionContractMetadataRecord,
+  TransactionMilestoneType,
+  MilestoneVerificationStage,
+  TransactionPaymentReferenceRecord,
+  TransactionCancellationOrDisputeRecord,
+} from './domain/types';
+export * from './state-machines/negotiationAndCompletionStateMachine';
+export * from './services/realEstateTransactionsService';
 
-import { ClosingHandoverCompletionAndReportingService } from './closingHandoverCompletionAndReportingService';
 import {
   createDefaultTransactionAdapters,
-  RealEstateTransactionCrossModuleAdapters,
+  type RealEstateTransactionCrossModuleAdapters,
   TransactionalRealEstateTransactionStore,
 } from './store';
-import { TermsConditionsMilestonesAndContractService } from './termsConditionsMilestonesAndContractService';
 import { TransactionParticipantOfferAndNegotiationService } from './transactionParticipantOfferAndNegotiationService';
+import { TermsConditionsMilestonesAndContractService } from './termsConditionsMilestonesAndContractService';
+import { ClosingHandoverCompletionAndReportingService } from './closingHandoverCompletionAndReportingService';
 
-export interface RealEstateTransactionsModuleFacade {
-  store: TransactionalRealEstateTransactionStore;
-  adapters: RealEstateTransactionCrossModuleAdapters;
-  transactionParticipantOfferAndNegotiationService: TransactionParticipantOfferAndNegotiationService;
-  termsConditionsMilestonesAndContractService: TermsConditionsMilestonesAndContractService;
-  closingHandoverCompletionAndReportingService: ClosingHandoverCompletionAndReportingService;
-}
+export const REAL_ESTATE_TRANSACTIONS_ROUTE_REGISTRATION_SPEC = [
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases', operation: 'createTransactionCase' },
+  { method: 'GET', path: '/api/v1/real-estate-transactions/cases/:transactionId', operation: 'getTransactionCaseById' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/participants', operation: 'inviteParticipant' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/participants/:participantId/respond', operation: 'respondToParticipantInvitation' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/offers', operation: 'submitOfferOrCounteroffer' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/offers/:offerId/decision', operation: 'decideOnOffer' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/contract-metadata', operation: 'upsertContractMetadata' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/contract-metadata/transition', operation: 'transitionContractWorkflowState' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/milestones', operation: 'upsertClosingMilestone' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/payment-references', operation: 'recordVerifiedPaymentReference' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/complete', operation: 'completeTransactionCase' },
+  { method: 'POST', path: '/api/v1/real-estate-transactions/cases/:transactionId/cancellation-or-dispute', operation: 'recordCancellationTerminationOrDispute' },
+  { method: 'GET', path: '/api/v1/real-estate-transactions/properties/:canonicalPropertyId/history', operation: 'queryPropertyTransactionHistory' },
+] as const;
 
-export function createRealEstateTransactionsModuleFacade(options?: {
-  store?: TransactionalRealEstateTransactionStore;
-  adapters?: Partial<RealEstateTransactionCrossModuleAdapters>;
-}): RealEstateTransactionsModuleFacade {
-  const store = options?.store ?? new TransactionalRealEstateTransactionStore();
-  const defaults = createDefaultTransactionAdapters();
+export function createRealEstateTransactionsModuleFacade(
+  customAdapters?: Partial<RealEstateTransactionCrossModuleAdapters>,
+) {
+  const store = new TransactionalRealEstateTransactionStore();
   const adapters: RealEstateTransactionCrossModuleAdapters = {
-    propertyRegistry: options?.adapters?.propertyRegistry ?? defaults.propertyRegistry,
-    propertyOwnership: options?.adapters?.propertyOwnership ?? defaults.propertyOwnership,
-    brokerageOperations: options?.adapters?.brokerageOperations ?? defaults.brokerageOperations,
-    payments: options?.adapters?.payments ?? defaults.payments,
-    media: options?.adapters?.media ?? defaults.media,
-    notifications: options?.adapters?.notifications ?? defaults.notifications,
+    ...createDefaultTransactionAdapters(),
+    ...customAdapters,
   };
-
   return {
     store,
     adapters,
-    transactionParticipantOfferAndNegotiationService: new TransactionParticipantOfferAndNegotiationService(
-      store,
-      adapters
-    ),
-    termsConditionsMilestonesAndContractService: new TermsConditionsMilestonesAndContractService(
-      store,
-      adapters
-    ),
-    closingHandoverCompletionAndReportingService: new ClosingHandoverCompletionAndReportingService(
-      store,
-      adapters
-    ),
+    transactionParticipantOfferAndNegotiationService:
+      new TransactionParticipantOfferAndNegotiationService(store, adapters),
+    termsConditionsMilestonesAndContractService:
+      new TermsConditionsMilestonesAndContractService(store, adapters),
+    closingHandoverCompletionAndReportingService:
+      new ClosingHandoverCompletionAndReportingService(store, adapters),
   };
 }
+
+export const createRealEstateTransactionsModule = createRealEstateTransactionsModuleFacade;

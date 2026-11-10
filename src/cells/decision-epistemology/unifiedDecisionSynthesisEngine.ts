@@ -62,6 +62,8 @@ export interface UnifiedDecisionSynthesisReport {
   walkAwayTotalIntlText: string;
   isStagflationaryIllusion: boolean;
   illiquidityAdjustedVaR95RealPct: number;
+  nonCompensatoryVetoTriggered: boolean;
+  vetoReasonsFa: string[];
   executionPlaybook: DealExecutionPlaybook;
   pillars: DecisionPillarScore[];
   generatedAtIso: string;
@@ -130,17 +132,39 @@ export function synthesizeExecutiveDecisionReport(
     { id: 'EPISTEMIC', targetTabId: 'EPISTEMIC_PROVENANCE', nameFa: 'قطعیت معرفتی داده‌های میدانی', score: confidenceScore, weightPct: 10, gradeFa: confidenceScore >= 75 ? 'مستند' : 'نیازمند استعلام', detailFa: `امتیاز اعتبارسنجی: ${toPersianNum(confidenceScore)}٪` },
   ];
 
+  // Non-Compensatory MCDA Veto Rules: high secondary scores cannot mask critical risks
+  const vetoReasonsFa: string[] = [];
+  if (spreadPct >= 35) {
+    vetoReasonsFa.push(`بیش‌قیمت‌گذاری شدید فروشنده (+${toPersianNum(spreadPct)}٪ بالاتر از ارزش ذاتی قطعی v6.4)`);
+  }
+  if (effectiveLemonScore >= 85) {
+    vetoReasonsFa.push(`عدم تقارن اطلاعاتی حاد و ریسک بازار لیمو (شاخص آکرلوف ${toPersianNum(effectiveLemonScore)} از ۱۰۰)`);
+  }
+  if (cycleReport.bubbleExhaustionRiskPct >= 80) {
+    vetoReasonsFa.push(`ریسک اشباع حباب مسکن (${toPersianNum(cycleReport.bubbleExhaustionRiskPct)}٪ در فاز توزیع/اشباع)`);
+  }
+  if (merton.metrics.probRealCapitalLossPct >= 65) {
+    vetoReasonsFa.push(`ریسک بحرانی زیان سرمایه حقیقی در مدل مونت‌کارلو (${toPersianNum(merton.metrics.probRealCapitalLossPct)}٪)`);
+  }
+  const nonCompensatoryVetoTriggered = vetoReasonsFa.length > 0;
+
   // Weighted Composite Deal Execution Readiness Score
   const rawReadiness = pillars.reduce((acc, p) => acc + (p.score * p.weightPct) / 100, 0);
   const severeOverpricePenalty = spreadPct > 25 ? (spreadPct - 25) * 0.45 : 0;
-  const readinessScore = Math.round(Math.max(5, Math.min(100, rawReadiness - severeOverpricePenalty)));
+  const rawScore = Math.round(Math.max(5, Math.min(100, rawReadiness - severeOverpricePenalty)));
+  const readinessScore = nonCompensatoryVetoTriggered ? Math.min(38, rawScore) : rawScore;
 
   let verdictId: DealExecutionVerdictId;
   let verdictTitleFa: string;
   let verdictBadgeColor: string;
   let executiveDirectiveFa: string;
 
-  if (readinessScore >= 74) {
+  if (nonCompensatoryVetoTriggered) {
+    verdictId = 'ABORT_HIGH_RISK';
+    verdictTitleFa = 'قرمز · وتوی غیرجبرانی ریسک بحرانی (Non-Compensatory Veto)';
+    verdictBadgeColor = 'rose';
+    executiveDirectiveFa = `به دلیل فعال شدن خط قرمز غیرجبرانی (${vetoReasonsFa.join('؛ ')})، امتیاز سایر اضلاع تصمیم مجوز ورود به معامله را صادر نمی‌کند؛ از معامله با این شرایط انصراف دهید یا قیمت را تا ارزش قطعی v6.4 تعدیل کنید.`;
+  } else if (readinessScore >= 74) {
     verdictId = 'IMMEDIATE_EXECUTION';
     verdictTitleFa = 'سبز · آماده ورود و نهایی‌سازی معامله در محدوده ارزش ذاتی';
     verdictBadgeColor = 'emerald';
@@ -212,6 +236,8 @@ export function synthesizeExecutiveDecisionReport(
     walkAwayTotalIntlText: formatMillionTomanAsIntlCurrency(walkAwayCeilingTotalMillion, intlCurrency, 'fa'),
     isStagflationaryIllusion: cycleReport.isStagflationaryIllusion,
     illiquidityAdjustedVaR95RealPct: merton.metrics.illiquidityAdjustedVaR95RealPct,
+    nonCompensatoryVetoTriggered,
+    vetoReasonsFa,
     executionPlaybook,
     pillars,
     generatedAtIso: new Date().toISOString(),

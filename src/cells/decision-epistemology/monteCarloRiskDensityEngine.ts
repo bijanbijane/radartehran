@@ -9,8 +9,6 @@ import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
-import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
-void formatMillionTomanAsIntlCurrency;
 
 export interface MonteCarloSimulationConfig {
   horizonMonths: number;

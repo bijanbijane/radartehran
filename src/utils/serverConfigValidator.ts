@@ -229,6 +229,12 @@ export function detectEnvironmentConfigDrift(env: Record<string, string | undefi
   if (clientConfig?.firestoreDatabaseId && clientConfig.firestoreDatabaseId !== EXPECTED_FIRESTORE_DATABASE_ID) drifts.push('FIRESTORE_DATABASE_ID_DRIFT');
   if (!isPlaceholderValue(env.OBJECT_STORAGE_ACCESS_KEY) !== !isPlaceholderValue(env.OBJECT_STORAGE_SECRET_KEY)) drifts.push('PARTIAL_OBJECT_STORAGE_S3_CONFIG');
   if (!isPlaceholderValue(env.TELEGRAM_BOT_TOKEN) !== !isPlaceholderValue(env.TELEGRAM_CHANNEL_ID)) drifts.push('PARTIAL_TELEGRAM_CONFIG');
+  if (!isPlaceholderValue(env.CASPER_HUB_URL)) {
+    try {
+      const u = new URL(env.CASPER_HUB_URL!.trim());
+      if (u.protocol !== 'https:' || u.username || u.password || u.hostname.toLowerCase() !== 'casper-hub-api.bijanbijane-1.workers.dev') drifts.push('INVALID_CASPER_HUB_URL');
+    } catch { drifts.push('INVALID_CASPER_HUB_URL'); }
+  }
   return { valid: drifts.length === 0, drifts };
 }
 export function buildOpenApiSpecification(baseUrl = 'http://localhost:3000', areaUnit: AreaUnit = 'sqm', intlCurrency: IntlCurrencyCode = 'USD'): Record<string, unknown> {

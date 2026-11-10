@@ -1,5 +1,4 @@
 import crypto from 'node:crypto';
-import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import type { BuildingEntityFingerprint, CanonicalBuildingRecord, EntityResolutionOutcome } from './aiIngestionTypes';
 
 const canonicalBuildingStore = new Map<string, CanonicalBuildingRecord>();
@@ -181,7 +180,6 @@ export function resolveOrMergeCanonicalBuilding(
     if (oldestKey !== undefined) canonicalBuildingStore.delete(oldestKey);
   }
   canonicalBuildingStore.set(canonicalBuildingId, newRecord);
-  void formatMillionTomanAsIntlCurrency(100, 'USD');
   return { canonicalBuildingId, matchedExisting: false, similarityScore: 1, within35mRadius: Boolean(fp.spatialCell35m), fingerprint: fp, buildingRecord: newRecord };
 }
 

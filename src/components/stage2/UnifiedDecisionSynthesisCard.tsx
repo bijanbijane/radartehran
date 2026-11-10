@@ -164,6 +164,19 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
           </div>
         </div>
         <p className="text-xs leading-relaxed font-medium">{report.executiveDirectiveFa}</p>
+        {report.nonCompensatoryVetoTriggered && (
+          <div data-testid="synthesis-veto-banner" className="p-2 rounded-lg bg-rose-100/90 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1">
+            <span className="font-extrabold flex items-center gap-1 text-[11.5px]">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span>وتوی غیرجبرانی ریسک بحرانی فعال است (Non-Compensatory Veto):</span>
+            </span>
+            <ul className="list-disc list-inside text-[11px] font-medium leading-relaxed space-y-0.5">
+              {report.vetoReasonsFa.map((r, idx) => (
+                <li key={idx}>{r}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Negotiation Numbers & Walk-Away Ceiling */}

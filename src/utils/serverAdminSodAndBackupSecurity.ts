@@ -21,10 +21,10 @@ export class AdminSeparationOfDutiesController { private readonly requests = new
     return true; } }
 export interface EncryptedBackupEnvelope { format: 'TEHRAN_RADAR_ENC_BACKUP_V1'; cipherAlgorithm: 'aes-256-gcm'; kdf: 'scrypt'; keyId: string; appVersion: string; schemaVersion: string; createdAtIso: string; saltHex: string; ivHex: string; authTagHex: string; ciphertextBase64: string; manifestHmacHex: string;
   manifest: { version: string; algorithm: string; createdAtIso: string; createdByEmail: string; manifestHmacSha256: string; recordCounts: { neighborhoods: number; bargains: number; sponsorRequests: number }; }; }
-const FORBIDDEN_BACKUP_SECRET_KEYS = ['GEMINI_API_KEY', 'TELEGRAM_BOT_TOKEN', 'OBJECT_STORAGE_SECRET_ACCESS_KEY', 'PRIVATE_KEY'];
+const FORBIDDEN_BACKUP_SECRET_KEYS = ['GEMINI_API_KEY', 'TELEGRAM_BOT_TOKEN', 'OBJECT_STORAGE_SECRET_ACCESS_KEY', 'PRIVATE_KEY', 'CASPER_HUB_TOKEN', 'CASPER_HUB_URL', 'HUB_TOKEN'];
 export function scrubSecretsFromBackupObject(input: Record<string, unknown>, depth = 0): Record<string, unknown> { const clean: Record<string, unknown> = {}; if (!input || typeof input !== 'object' || depth > 8) return clean;
   for (const [k, v] of Object.entries(input)) {
-    if (k === '__proto__' || k === 'constructor' || k === 'prototype' || FORBIDDEN_BACKUP_SECRET_KEYS.includes(k) || /SECRET|PRIVATE[_-]?KEY|PASSWORD|API[_-]?KEY|BOT[_-]?TOKEN|ACCESS[_-]?KEY/i.test(k)) continue;
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype' || FORBIDDEN_BACKUP_SECRET_KEYS.includes(k) || /SECRET|PRIVATE[_-]?KEY|PASSWORD|API[_-]?KEY|BOT[_-]?TOKEN|ACCESS[_-]?KEY|(?:casper[_-]?)?hub[_-]?(?:token|url)/i.test(k)) continue;
     clean[k] = Array.isArray(v) ? v.map((item) => (item && typeof item === 'object' && !Array.isArray(item) ? scrubSecretsFromBackupObject(item as Record<string, unknown>, depth + 1) : item)) : v && typeof v === 'object' ? scrubSecretsFromBackupObject(v as Record<string, unknown>, depth + 1) : v;
   }
   return clean; }

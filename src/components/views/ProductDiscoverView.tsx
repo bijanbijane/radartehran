@@ -41,10 +41,11 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
   const filtered = useMemo(() => {
     let list = filterRankingByViewport ? inViewportHoods : p.evaluatedNeighborhoods;
     if (statusFilter !== 'all') list = list.filter((h) => h.status === statusFilter);
-    if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : h.buyPerSqm * p.targetSqm < 5000);
-    else if (priceBracket === '5to10b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val >= 1000 && val <= 2000 : val >= 5000 && val <= 10000; });
-    else if (priceBracket === '10to20b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val > 2000 && val <= 4000 : val > 10000 && val <= 20000; });
-    else if (priceBracket === 'luxury') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : h.buyPerSqm * p.targetSqm > 20000);
+    const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
+    if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
+    else if (priceBracket === '5to10b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? val >= 1000 && val <= 2000 : val >= 5000 && val <= 10000; });
+    else if (priceBracket === '10to20b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? val > 2000 && val <= 4000 : val > 10000 && val <= 20000; });
+    else if (priceBracket === 'luxury') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : dealSqm(h) * p.targetSqm > 20000);
     if (zoneFilter !== 'all') list = list.filter((h) => h.zone === zoneFilter);
     if (onlyFavorites) list = list.filter((h) => p.favoriteHoodIds.includes(h.id));
     if (onlyWithBargains) list = list.filter((h) => (h.bargains?.length || 0) > 0);
@@ -56,8 +57,8 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
       if (sortBy === 'score') return b.overallScore - a.overallScore;
       if (sortBy === 'air') return b.air - a.air;
       if (sortBy === 'rahn_asc') return a.rahn80m - b.rahn80m;
-      if (sortBy === 'price_asc') return (dealPriceByHoodId.get(a.id) ?? a.buyPerSqm) - (dealPriceByHoodId.get(b.id) ?? b.buyPerSqm);
-      return b.buyPerSqm - a.buyPerSqm;
+      if (sortBy === 'price_asc') return dealSqm(a) - dealSqm(b);
+      return dealSqm(b) - dealSqm(a);
     });
   }, [p.evaluatedNeighborhoods, inViewportHoods, filterRankingByViewport, statusFilter, priceBracket, zoneFilter, onlyFavorites, onlyWithBargains, p.favoriteHoodIds, p.mode, p.targetSqm, query, sortBy, dealPriceByHoodId]);
 

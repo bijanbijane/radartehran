@@ -26,12 +26,6 @@
   },
   "exclude": [
     "dist",
-    "server/modules/brokerage",
-    "server/modules/market-intelligence/tests",
-    "server/modules/property-due-diligence/tests",
-    "server/modules/property-insurance/tests",
-    "server/modules/real-estate-transactions/tests",
-    "tests/brokerage-module.test.ts",
-    "tests/dispute-resolution-module.test.ts"
+    "node_modules"
   ]
 }

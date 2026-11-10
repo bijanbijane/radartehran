@@ -258,7 +258,7 @@ export function auditRuntimeEnvironmentAndSecurityPosture(
   });
 
   const hasViteSecretLeak = Object.keys(env).some(
-    (k) => k.startsWith('VITE_') && Boolean(env[k]?.trim()) && /SECRET|PRIVATE_KEY|BOT_TOKEN|GEMINI_API_KEY|SERVICE_ACCOUNT|ADMIN_TOKEN|PASSWORD/i.test(k),
+    (k) => k.startsWith('VITE_') && Boolean(env[k]?.trim()) && /SECRET|PRIVATE_KEY|BOT_TOKEN|GEMINI_API_KEY|SERVICE_ACCOUNT|ADMIN_TOKEN|PASSWORD|(?:CASPER_)?HUB_TOKEN/i.test(k),
   );
   checks.push({
     id: 'NO_CLIENT_BUNDLE_SECRET_EXPOSURE',

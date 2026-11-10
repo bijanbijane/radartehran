@@ -34,6 +34,8 @@ Copy `.env.example` to `.env` (or configure in your hosting environment). All se
 | `OBJECT_STORAGE_ALLOWED_HOSTS` | Optional | Default S3/R2/Arvan/Liara | Public | Comma-separated allowlist of HTTPS S3/R2 endpoints to prevent SSRF. |
 | `R2_ACCOUNT_ID` | Optional | Empty | Public | Cloudflare account ID used to construct `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`. |
 | `R2_SIGNING_SECRET` | Optional | Empty | **Secret** | Worker HMAC-SHA256 secret for presigned R2 media URLs (`worker/storage/r2StorageAdapter.ts`). |
+| `CASPER_HUB_URL` | Optional | `https://casper-hub-api.bijanbijane-1.workers.dev` | Public | Server-side base URL for the shared CASPER HUB coordination service (`server/modules/casper-hub`). |
+| `CASPER_HUB_TOKEN` | Optional | Empty | **Secret** | Dedicated server-only Bearer credential for authenticating `CASPER-02` with CASPER HUB. Never exposed to the browser or persisted to disk. |
 
 ---
 
