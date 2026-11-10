@@ -17,3 +17,4 @@ export * from './analyticsService';
 export * from './facade';
 export * from './service';
 export * from './routes';
+export { createBrokerageService } from './service';

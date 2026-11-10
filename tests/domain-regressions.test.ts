@@ -1097,6 +1097,48 @@ function runDomainRegressionTests(): void {
       reverseBudgetSrc.includes('در بودجه با سناریوی مذاکره v6.4'),
     'WS-CASPER-06 primary views & ReverseBudgetDiscoveryModal contract check failed',
   );
+  // 43. WS-CASPER-07: Universal Empirical Listing Parity & Zero Empty Sample Verification
+  const trendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf-8');
+  const priceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');
+  const commuteHubsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CommuteHubsMatrixCard.tsx'), 'utf-8');
+  const shareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShareModal.tsx'), 'utf-8');
+  const futureSuperSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/FutureSuperModulesModal.tsx'), 'utf-8');
+  const spatialContagionSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/spatialContagionEngine.ts'), 'utf-8');
+  assert(
+    '43. WS-CASPER-07 eliminates empty sample arrays [] across NeighborhoodPriceTrendModal, NeighborhoodPriceChart, CommuteHubsMatrixCard, ShareModal, FutureSuperModulesModal, and spatialContagionEngine peer nodes',
+    trendModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      !trendModalSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, [])') &&
+      priceChartSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      !priceChartSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, [])') &&
+      !priceChartSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, buyVal, [])') &&
+      commuteHubsSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      !commuteHubsSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, [])') &&
+      shareModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
+      !shareModalSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, [])') &&
+      futureSuperSrc.includes('buildNeighborhoodListingSamples(n)') &&
+      !futureSuperSrc.includes('aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, [])') &&
+      spatialContagionSrc.includes('buildNeighborhoodListingSamples(x.hood)') &&
+      !spatialContagionSrc.includes('aggregateNeighborhoodMarketMetrics(x.hood.id, x.hood.name, x.hood.buyPerSqm, [])'),
+    'WS-CASPER-07 empirical listing parity check failed',
+  );
+
+  // 44. WS-CASPER-10: Residual Empirical Gap Remediation & Stage 2 Decision Intelligence Binding
+  const toolsViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductToolsView.tsx'), 'utf-8');
+  const drawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
+  const stage2WidgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/Stage2MasterWidget.tsx'), 'utf-8');
+  const casperPanelPath = path.join(process.cwd(), 'src/components/stage2/CasperDecisionIntelligencePanel.tsx');
+  const casperPanelLines = fs.readFileSync(casperPanelPath, 'utf-8').split('\n').length;
+
+  assert(
+    '44. WS-CASPER-10 eliminates residual empty samples in ProductToolsView, passes hood in NeighborhoodInspectorDrawer, binds effectiveHood in Stage2MasterWidget, and keeps CasperDecisionIntelligencePanel <= 290 lines',
+    toolsViewSrc.includes('buildNeighborhoodListingSamples(p.selectedHood)') &&
+      !toolsViewSrc.includes('aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, [])') &&
+      drawerSrc.includes('hood={selectedHood}') &&
+      stage2WidgetSrc.includes('effectiveHood') &&
+      stage2WidgetSrc.includes('neighborhood={effectiveHood}') &&
+      casperPanelLines <= 290,
+    `WS-CASPER-10 verification failed: casperPanelLines=${casperPanelLines}`
+  );
 
   // 43. WS-CASPER-07: Decision Epistemology Engines & SearchDropdownMenu Canonical Listing Samples Unification
   const searchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');

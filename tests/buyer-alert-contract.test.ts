@@ -914,7 +914,8 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op166HedonicResultsSrc.includes('اجاره ماهانه: {toPersianNum(Math.round(valuation.estimatedRahnMillion * 0.03))} م') &&
       op166ProvinceModalSrc.includes('const avgProvUnit = provHoods.length > 0 ? convertPricePerSqmToUnit(') &&
       op166ProvinceModalSrc.includes('const total80m = h.buyPerSqm * 80;') &&
-      op166ShareModalSrc.includes('معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, []).estimatedDealPricePerSqm, areaUnit))} م') &&
+      op166ShareModalSrc.includes('معامله v6.4:') &&
+      op166ShareModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
       op166ShareModalSrc.includes('رهن کامل ${formatAreaShort(80, areaUnit)}:'),
     'HedonicValuationModal, HedonicValuationResultsColumn, NationwideProvinceModal, and ShareModal must expose full OP-166 area unit, imperial distance, and international currency equivalence'
   );
@@ -1084,7 +1085,8 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op179AgencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf-8');
   assert.ok(
     op179SmartSuggestSrc.includes('· معامله v6.4: ${toPersianNum(uDeal)} م') &&
-      op179ShareModalSrc.includes('معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, []).estimatedDealPricePerSqm, areaUnit))} م') &&
+      op179ShareModalSrc.includes('معامله v6.4:') &&
+      op179ShareModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
       op179PurchasingPowerSrc.includes('با تخمین معامله ({toPersianNum(uDealPrice)} م): {formatAreaValue(sqmDealToday, areaUnit)}') &&
       op179AgencyModalSrc.includes('· قطعی معامله: ${toPersianNum(uDealBench)} م') &&
       op179AgencyModalSrc.includes('· اجاره: ${toPersianNum(Math.round(scaledRahn * 0.03))} م'),
@@ -1134,7 +1136,8 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op183LegalAdvisorSrc.includes("· معامله مرجع v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(INITIAL_NEIGHBORHOODS[0].id, INITIAL_NEIGHBORHOODS[0].name, INITIAL_NEIGHBORHOODS[0].buyPerSqm, buildNeighborhoodListingSamples(INITIAL_NEIGHBORHOODS[0])).estimatedDealPricePerSqm, areaUnit))} م/{areaUnit === 'sqft' ? 'ft²' : 'متر'}") &&
       op183SponsorTabSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
       op183SponsorTabSrc.includes("· معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
-      op183CommuteMatrixSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م.ت"),
+      op183CommuteMatrixSrc.includes("· معامله v6.4:") &&
+      op183CommuteMatrixSrc.includes("buildNeighborhoodListingSamples(selectedHood)"),
     'BuyerAlertPriceSparkline, ContractLegalAdvisorView, AgencySponsorReservationTab, and CommuteHubsMatrixCard must expose full OP-183 v6.4 deal price, area unit, and FX parity'
   );
   const op184PriceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');

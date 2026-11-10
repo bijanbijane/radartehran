@@ -224,16 +224,19 @@ export async function handleStorageAndAdminWorkerRoute(
         declaredMimeType: session.mime_type,
         bytes: assembled,
       });
-      await ctx.env.DB.prepare('DELETE FROM upload_sessions WHERE session_id = ?1')
-        .bind(sessionId)
-        .run();
-
       if ('errorCode' in stored) {
         return jsonWorkerResponse(ctx, stored.statusCode, {
           status: 'error',
           code: stored.errorCode,
         });
       }
+      await ctx.env.DB.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1')
+        .bind(sessionId)
+        .run();
+      await ctx.env.DB.prepare('DELETE FROM upload_sessions WHERE session_id = ?1')
+        .bind(sessionId)
+        .run();
+
       return jsonWorkerResponse(ctx, 200, {
         status: 'ok',
         mediaObject: stored.mediaObject,

@@ -263,7 +263,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     // =========================================================================
     // 6. Admin UI Visibility & Unauthorized-User Security Behavior
     // =========================================================================
-    await page.locator('button:has-text("مدیریت")').first().click({ force: true });
+    await page.locator('button:has(span:text-is("مدیریت"))').first().click({ force: true });
     await page.waitForSelector('[role="dialog"][aria-label="پنل مدیریت سایت"]', { timeout: 8000 });
     await page.waitForTimeout(250);
 

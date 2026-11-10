@@ -13,7 +13,7 @@ import {
   useMapAdvancedOverlayState,
 } from './mapAdvancedLayers';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 
 export interface CommuteHubsMatrixCardProps {
@@ -77,7 +77,7 @@ export function CommuteHubsMatrixCard({
             const monthlyRent80mMillions = Math.max(1, Math.round(selectedHood.rahn80m * 0.03));
             return (
               <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
-                هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م.ت{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''} · اجاره {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م.ت
+                هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م.ت{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''} · اجاره {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م.ت
               </span>
             );
           })()}

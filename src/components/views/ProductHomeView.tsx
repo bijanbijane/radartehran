@@ -12,23 +12,13 @@ import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../ma
 import { matchesPersianSearch } from '../../utils/security';
 
 export interface ProductHomeViewProps {
-  evaluatedNeighborhoods: EvaluatedNeighborhood[];
-  selectedHood: EvaluatedNeighborhood;
-  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
-  onOpenInspector?: (hood: EvaluatedNeighborhood) => void;
-  onNavigateView: (view: PrimaryViewId) => void;
-  onOpenBudgetFilter: () => void;
-  onOpenReverseBudget: () => void;
-  onOpenHedonic: () => void;
-  onOpenCompare: () => void;
-  onOpenSmartSuggest: () => void;
-  onOpenSuperModule: (tab: any) => void;
-  mode: 'rent' | 'buy';
-  setMode: (m: 'rent' | 'buy') => void;
-  targetSqm: number;
-  totalRahnEquivalent: number;
-  buyTotalBudget: number;
-  counts: { green: number; yellow: number; red: number };
+  evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
+  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; onOpenInspector?: (hood: EvaluatedNeighborhood) => void;
+  onNavigateView: (view: PrimaryViewId) => void; onOpenBudgetFilter: () => void;
+  onOpenReverseBudget: () => void; onOpenHedonic: () => void; onOpenCompare: () => void;
+  onOpenSmartSuggest: () => void; onOpenSuperModule: (tab: any) => void;
+  mode: 'rent' | 'buy'; setMode: (m: 'rent' | 'buy') => void; targetSqm: number;
+  totalRahnEquivalent: number; buyTotalBudget: number; counts: { green: number; yellow: number; red: number };
   featureFlags: FeatureFlags;
 }
 
@@ -48,12 +38,13 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
     if (!q) return list.slice(0, 6);
     return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q)).slice(0, 8);
   }, [p.evaluatedNeighborhoods, homeQuery, priceBracket, p.targetSqm]);
-  const topFeaturedScore = featuredHoods.length > 0 ? Math.max(...featuredHoods.map((h) => h.overallScore)) : undefined;
   const bargainsCount = p.evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0);
   const budgetDisplay = p.mode === 'buy'
     ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} م.ت`)
     : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : `${toPersianNum(p.totalRahnEquivalent)} م.ت رهن کامل`);
   const fxBudget = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent, intlCurrency, radarLocale)})` : '';
+
+  const topFeaturedScore = featuredHoods.length > 0 ? Math.max(...featuredHoods.map((h) => h.overallScore)) : undefined;
 
   const pillars = [
     { id: 'map' as const, num: isEn ? '01' : '۰۱', title: isEn ? 'Interactive GIS Map Atlas' : 'اطلس مکانی و نقشه زنده GIS', sub: isEn ? 'Layered map of metro lines, traffic zones, and live neighborhood price heatmap' : 'محور اصلی رادار: نقشه لایه‌ای معابر، مترو، طرح ترافیک و هیت‌مپ قیمت', act: () => p.onNavigateView('map'), meta: isEn ? 'Primary Spatial Canvas' : 'محور اصلی سامانه' },
@@ -79,8 +70,8 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 font-medium max-w-2xl leading-relaxed">
                 {isEn
-                  ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on hedonic model estimates, urban livability scores, and your budget.`
-                  : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه تخمین‌های مدل هدانیک، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
+                  ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on statistical listing models, urban livability scores, and your budget.`
+                  : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه الگوهای آماری مظنه‌ها، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
               </p>
             </div>
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/80 shrink-0 self-start md:self-end">

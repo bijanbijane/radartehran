@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react'; import { ArrowLeftRight, Building2, Calculator, ClipboardCheck, FileCheck, GraduationCap, Hammer, Scale, ShieldAlert, Sparkles, X,
-} from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import type { FeatureFlags } from '../types/models';
+} from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import type { FeatureFlags } from '../types/models';
 import { DeedType, ParkingType, GOLD_18K_TOMAN_PRICE, USD_TOMAN_PRICE, calculateDetailedValuation, } from '../data/superModulesLogic'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { useDialogFocus } from './useDialogFocus'; import { SuperModulesValuationAndFakeTabs } from './SuperModulesValuationAndFakeTabs'; import { SuperModulesLegalAndBuildingTabs } from './SuperModulesLegalAndBuildingTabs'; import { SuperModulesSwapAndStudioTabs } from './SuperModulesSwapAndStudioTabs';
 
@@ -162,7 +162,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
               }}
               className="max-w-[185px] sm:max-w-[280px] truncate bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-2.5 py-1.5 font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-600 cursor-pointer"
             >
-              {neighborhoods.map((n) => { const unitPrice = convertPricePerSqmToUnit(n.buyPerSqm, areaUnit); const uDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit); return (
+              {neighborhoods.map((n) => { const unitPrice = convertPricePerSqmToUnit(n.buyPerSqm, areaUnit); const uDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, buildNeighborhoodListingSamples(n)).estimatedDealPricePerSqm, areaUnit); return (
                   <option key={n.id} value={n.id}>{n.name} ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(unitPrice)} م · معامله: {toPersianNum(uDeal)} م · کل {formatAreaValue(80, areaUnit, true)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, locale)}` : ''})</option>
                 ); })}
             </select>
