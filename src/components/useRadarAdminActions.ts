@@ -3,7 +3,7 @@ export const persistHoodOverrideToCloud = async (overrideHoodId: number, buyVal:
   await setDoc(doc(db, 'neighborhoodOverrides', String(overrideHoodId)), {
     hoodId: overrideHoodId, buyPerSqm: buyVal, rahn80m: rahnVal,
     overrideSource: 'ADMIN_MANUAL', manualLockUntilMs: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    ...(sponsorVal ? { sponsor: sponsorVal } : {}), updatedAt: serverTimestamp(),
+    ...(sponsorVal !== undefined ? { sponsor: sponsorVal } : {}), updatedAt: serverTimestamp(),
   });
 };
 export interface UseRadarAdminActionsParams { isVerifiedAdmin: boolean; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; allExpansionSeeds: Neighborhood[]; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>;
@@ -25,18 +25,18 @@ export function useRadarAdminActions(p: UseRadarAdminActionsParams) {
     p.setNeighborhoods((prev) => { const exists = prev.some((n) => n.id === reqItem.hoodId); if (!exists && seedHood) return [...prev, { ...seedHood, buyPerSqm: baseBuy, sponsor: approvedSponsor }]; return prev.map((n) => (n.id !== reqItem.hoodId ? n : { ...n, sponsor: approvedSponsor })); });
   };
   const handleExtendSponsor30Days = (hoodId: number) => {
-    if (!p.isVerifiedAdmin) return;
+    if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: تمدید اسپانسر نیازمند احراز هویت ادمین است.'); return; }
     p.setNeighborhoods((prev) => prev.map((n) => {
       if (n.id !== hoodId || !n.sponsor) return n;
       const nextExpiry = computeExtendedSponsorExpirationIso(n.sponsor.expiresAtIso, 30); const baseBuy = (n as EvaluatedNeighborhood).baseBuyPerSqm ?? n.buyPerSqm;
-      void setDoc(doc(db, 'neighborhoodOverrides', String(hoodId)), { hoodId, buyPerSqm: baseBuy, rahn80m: Math.max(50, n.rahn80m), sponsor: { ...n.sponsor, expiresAtIso: nextExpiry }, updatedAt: serverTimestamp() }).catch(() => {});
+      void persistHoodOverrideToCloud(hoodId, baseBuy, Math.max(50, n.rahn80m), { ...n.sponsor, expiresAtIso: nextExpiry }).catch((err) => { p.setAdminPriceSavedMsg('خطا در ثبت تمدید اسپانسر در فایراستور.'); try { handleFirestoreError(err, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} });
       return { ...n, sponsor: { ...n.sponsor, expiresAtIso: nextExpiry } };
     }));
   };
   const handleReleaseHoodSponsor = (hoodId: number) => {
-    if (!p.isVerifiedAdmin) return;
+    if (!p.isVerifiedAdmin) { p.setAdminPriceSavedMsg('خطا: آزادسازی اسپانسر نیازمند احراز هویت ادمین است.'); return; }
     const pastIso = new Date(Date.now() - 86400000).toISOString(); const target = p.neighborhoods.find((n) => n.id === hoodId) || p.evaluatedNeighborhoods.find((n) => n.id === hoodId);
-    if (target) { const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; void setDoc(doc(db, 'neighborhoodOverrides', String(hoodId)), { hoodId, buyPerSqm: baseBuy, rahn80m: Math.max(50, target.rahn80m), sponsor: null, updatedAt: serverTimestamp() }).catch(() => {}); }
+    if (target) { const baseBuy = (target as EvaluatedNeighborhood).baseBuyPerSqm ?? target.buyPerSqm; void persistHoodOverrideToCloud(hoodId, baseBuy, Math.max(50, target.rahn80m), null).catch((err) => { p.setAdminPriceSavedMsg('خطا در آزادسازی اسپانسر در فایراستور.'); try { handleFirestoreError(err, OperationType.WRITE, `neighborhoodOverrides/${hoodId}`); } catch {} }); }
     p.setNeighborhoods((prev) => prev.map((n) => (n.id !== hoodId || !n.sponsor ? n : { ...n, sponsor: { ...n.sponsor, expiresAtIso: pastIso } })));
   };
   const handleAdminDeleteSponsorRequest = async (reqId: string) => {

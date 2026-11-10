@@ -433,7 +433,11 @@ service cloud.firestore {
           isAdmin() ||
           (isVerifiedUser() && (resource == null || existing().userId == request.auth.uid))
         );
-      allow list: if isAdmin() && existing().hoodId >= 1 && existing().hoodId <= 999;
+      allow list: if isAdmin() && existing().hoodId >= 1 && existing().hoodId <= 999 ||
+        (
+          isVerifiedUser() &&
+          existing().userId == request.auth.uid
+        );
       allow create: if isVerifiedUser() &&
         isValidId(alertId) &&
         isValidBuyerAlertLead(incoming()) &&

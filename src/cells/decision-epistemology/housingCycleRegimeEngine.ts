@@ -10,6 +10,7 @@ import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodDeepInsight } from '../../data/neighborhoodInsights';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export type HousingCycleRegimeId =
   | 'ACCUMULATION_RECOVERY'
@@ -29,7 +30,11 @@ export interface HousingCycleRegimeReport {
   cycleScore: number; // 0 (deep freeze) to 100 (extreme speculative bubble)
   bubbleExhaustionRiskPct: number; // probability that current growth is near market peak
   priceToRentRatio: number; // P/R multiple (equilibrium ~ 18-22x annual rent)
+  dynamicEquilibriumPR: number; // transit & real-growth adjusted equilibrium P/R
   historicalMomentum6mPct: number;
+  realMomentum6mPct: number;
+  isStagflationaryIllusion: boolean;
+  stagflationWarningFa: string;
   askingToDealSpreadPct: number;
   regimeDescriptionFa: string;
   guidance: PersonaStrategicGuidance;
@@ -41,6 +46,8 @@ export interface CasperHousingCycleDossier {
   cityId: string;
   basePriceSqm: number;
   rahn80m: number;
+  basePriceIntlText?: string;
+  rahn80mIntlText?: string;
   cycle: HousingCycleRegimeReport;
   generatedAtIso: string;
 }
@@ -70,11 +77,19 @@ export function classifyHousingCycleRegime(
   // Inferred or provided asking-to-deal spread
   const askingToDealSpreadPct = customSpreadPct ?? (pricePerSqm >= 170 ? 14 : pricePerSqm >= 100 ? 10.5 : 7.5);
 
-  // Inferred or empirical 6-month growth momentum
+  // Inferred or empirical 6-month growth momentum & CPI-deflated real momentum
   const historicalMomentum6mPct = customMomentum6mPct ?? (pricePerSqm >= 160 ? 28 : pricePerSqm >= 95 ? 22 : 16);
+  const cpi6mBaselinePct = 18;
+  const realMomentum6mPct = Number((historicalMomentum6mPct - cpi6mBaselinePct).toFixed(1));
+  const isStagflationaryIllusion = historicalMomentum6mPct > 0 && realMomentum6mPct < 0;
+  const dynamicEquilibriumPR = Number(
+    (18.5 + (trafficScore - 7) * 0.8 + (realMomentum6mPct > 0 ? 1.2 : 0)).toFixed(1)
+  );
+  const stagflationWarningFa = isStagflationaryIllusion
+    ? 'توهم پولی رکود تورمی: رشد اسمی مثبت است اما از تورم عمومی ۶ماهه (۱۸٪) جا مانده و بازده حقیقی ملک منفی است.'
+    : 'رشد ۶ماهه ملک از نرخ تورم عمومی پیشی گرفته و حفظ قدرت خرید حقیقی برقرار است.';
 
   // Composite Cycle Score (0 to 100)
-  // Equilibrium P/R is ~18-22x annual rent; higher P/R, higher spread, and higher momentum push towards exhaustion
   const prComponent = Math.min(40, Math.max(0, (priceToRentRatio - 18.0) * 1.35));
   const spreadComponent = Math.min(30, Math.max(0, askingToDealSpreadPct * 2.0));
   const momentumComponent = Math.min(30, Math.max(0, (historicalMomentum6mPct - 10) * 1.5 - (trafficScore - 7) * 0.5));
@@ -110,7 +125,7 @@ export function classifyHousingCycleRegime(
     regimeId = 'CONTRACTION_STAGNATION';
     regimeNameFa = 'رکود معاملاتی و چسبندگی قیمتی';
     bubbleExhaustionRiskPct = 25;
-    regimeDescriptionFa = 'حجم معاملات کاهش یافته و فروشندگان با مقاومت در برابر کاهش اسمی، بازار را به انجماد کشانده‌اند؛ فرصت مناسب برای چانه‌زنی.',
+    regimeDescriptionFa = 'حجم معاملات کاهش یافته و فروشندگان با مقاومت در برابر کاهش اسمی، بازار را به انجماد کشانده‌اند؛ فرصت مناسب برای چانه‌زنی.';
     guidance = {
       firstTimeBuyerActionFa: 'بهترین فرصت برای چانه‌زنی تهاجمی (۸ تا ۱۵ درصد زیر قیمت پیشنهادی) با فروشندگانی که نیاز مبرم به نقدینگی دارند.',
       tradeUpUpgraderActionFa: 'جابه‌جایی نیازمند حوصله برای فروش واحد فعلی است؛ مبایعه‌نامه مشروط به تسویه مرحله‌ای تنظیم کنید.',
@@ -134,7 +149,11 @@ export function classifyHousingCycleRegime(
     cycleScore,
     bubbleExhaustionRiskPct,
     priceToRentRatio,
+    dynamicEquilibriumPR,
     historicalMomentum6mPct,
+    realMomentum6mPct,
+    isStagflationaryIllusion,
+    stagflationWarningFa,
     askingToDealSpreadPct,
     regimeDescriptionFa,
     guidance,
@@ -148,9 +167,11 @@ export function generateCasperHousingCycleReport(
   hoodId: number,
   hoodName?: string,
   cityId: string = 'tehran',
-  basePriceSqm?: number
+  basePriceSqm?: number,
+  providedHood?: Neighborhood,
+  intlCurrency: IntlCurrencyCode = 'USD'
 ): CasperHousingCycleDossier {
-  const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const hood = providedHood ?? resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
   const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
   const transitScore = hood.metro ?? 7;
@@ -177,6 +198,8 @@ export function generateCasperHousingCycleReport(
     cityId,
     basePriceSqm: resolvedPrice,
     rahn80m: resolvedRahn,
+    basePriceIntlText: formatMillionTomanAsIntlCurrency(resolvedPrice, intlCurrency, 'fa'),
+    rahn80mIntlText: formatMillionTomanAsIntlCurrency(resolvedRahn, intlCurrency, 'fa'),
     cycle,
     generatedAtIso: new Date().toISOString(),
   };

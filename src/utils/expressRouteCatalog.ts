@@ -18,6 +18,7 @@ const SP = 'src/utils/serverSponsorAndBargainRoutes.ts';
 const UT = 'src/utils/serverUtilityRoutes.ts';
 const CC = 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts';
 const SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts';
+const IG = 'src/cells/ai-ingestion/aiIngestionRoutes.ts';
 const TM = 'server/modules/telemetry/telemetryRoutes.ts';
 const PF = 'server/modules/platform-foundation/routes.ts';
 export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
@@ -105,6 +106,9 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/v1/reference/hood/:hoodId/rollup', SE, 'PUBLIC', 120, 'general', true, 'Read k-anonymous socioeconomic research rollup and citation code'),
   route('POST', '/api/v1/valuation/verify-seal', SE, 'PUBLIC', 60, 'general', true, 'Verify HMAC-SHA256 valuation certificate seal'),
   route('POST', '/api/admin/rollups/trigger', SE, 'ADMIN', 10, 'sync', true, 'Admin trigger for socioeconomic neighborhood research rollup'),
+  route('POST', '/api/v1/ai-ingestion/extract-and-resolve', IG, 'PUBLIC', 30, 'general', true, 'Extract property specs and resolve canonical building entity'),
+  route('POST', '/api/v1/buildings/merge-duplicates', IG, 'ADMIN', 20, 'general', true, 'Admin merge duplicate canonical building records'),
+  route('GET', '/api/v1/buildings/:buildingId/canonical', IG, 'PUBLIC', 60, 'general', true, 'Lookup canonical building record with redirect chain resolution'),
   route('POST', '/api/v2/telemetry/events', TM, 'PUBLIC', 120, 'general', true, 'Durable write-ahead batch telemetry event ingestion'),
   route('GET', '/api/v2/telemetry/aggregates', TM, 'PUBLIC', 120, 'general', true, 'Read k-anonymized aggregated telemetry metrics'),
   route('GET', '/api/v2/telemetry/diagnostics', TM, 'ADMIN', 30, 'general', true, 'Operational telemetry queue health and error diagnostics'),

@@ -1,4 +1,4 @@
-import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './areaUnit'; import { normalizePersianDisplayText } from './persianSearchAndPersonalWorkspace'; import type { BuyerAlertLeadItem } from '../types/models'; import { isValidFirestoreDocId } from './security'; import { executeAuthorizedAdminFirestoreOperation, getFirebaseAdminFirestoreForServer } from './serverAdminAndTelegramSecurity'; export type AuthSessionState = 'initializing' | 'unauthenticated' | 'authenticated' | 'refreshing_credentials' | 'session_expired' | 'auth_error'; export type ContactVerificationState = 'not_provided' | 'pending_verification' | 'verified' | 'verification_expired' | 'verification_error'; export interface AuthSessionSnapshot { state: AuthSessionState; uid: string | null; email: string | null; emailVerificationState: ContactVerificationState; isAdmin: boolean; sessionGeneration: number; lastVerifiedAtMs: number | null; }
+import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './areaUnit'; import { normalizePersianDisplayText } from './persianSearchAndPersonalWorkspace'; import type { BuyerAlertLeadItem } from '../types/models'; import { isValidFirestoreDocId } from './security'; import { EXPECTED_FIREBASE_PROJECT_ID, EXPECTED_FIRESTORE_DATABASE_ID, executeAuthorizedAdminFirestoreOperation, getFirebaseAdminFirestoreForServer } from './serverAdminAndTelegramSecurity'; export type AuthSessionState = 'initializing' | 'unauthenticated' | 'authenticated' | 'refreshing_credentials' | 'session_expired' | 'auth_error'; export type ContactVerificationState = 'not_provided' | 'pending_verification' | 'verified' | 'verification_expired' | 'verification_error'; export interface AuthSessionSnapshot { state: AuthSessionState; uid: string | null; email: string | null; emailVerificationState: ContactVerificationState; isAdmin: boolean; sessionGeneration: number; lastVerifiedAtMs: number | null; }
 export function isOperationValidForSession( operationStartedByUid: string | null, operationSessionGen: number, currentSession: AuthSessionSnapshot, ): boolean { if (currentSession.state !== 'authenticated' || !currentSession.uid) return false; return operationStartedByUid === currentSession.uid && operationSessionGen === currentSession.sessionGeneration; }
 export const GENERIC_ACCOUNT_RECOVERY_MESSAGE_FA = 'در صورت وجود حساب کاربری مرتبط با این نشانی ایمیل، پیوند بازیابی رمز عبور ارسال شده است.'; export function validateAccountRecoveryEmailInput(rawEmail: string): { valid: boolean; normalizedEmail: string; errorFa: string | null; publicConfirmationFa: string; } { const email = String(rawEmail || '').trim().toLowerCase(); const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) && email.length <= 254; if (!isValidFormat) { return { valid: false, normalizedEmail: '', errorFa: 'لطفاً یک نشانی ایمیل معتبر وارد کنید.', publicConfirmationFa: '' }; } return { valid: true, normalizedEmail: email, errorFa: null, publicConfirmationFa: GENERIC_ACCOUNT_RECOVERY_MESSAGE_FA }; }
 const SERVER_MANAGED_PROFILE_FIELDS = new Set(['uid', 'role', 'isAdmin', 'admin', 'permissions', 'emailVerified', 'createdAt', 'quotaOverride', '__proto__', 'constructor', 'prototype']);
@@ -72,111 +72,34 @@ export function formatTriStateBooleanAttributeFa(value: boolean | null | undefin
 export type ContactVisibilityPolicy = 'publicly_visible' | 'reveal_on_action' | 'authorized_only' | 'not_available';
 export function resolveListingContactDisclosure(input: { rawPhone?: string | null; policy: ContactVisibilityPolicy; explicitRevealRequested: boolean; isAuthenticated: boolean; }): { canDisplayFullPhone: boolean; displayedPhoneFa: string; cacheControlHeader: string; } {
   const cleanPhone = String(input.rawPhone || '').trim();
-  if (!cleanPhone || input.policy === 'not_available') {
-    return { canDisplayFullPhone: false, displayedPhoneFa: 'تماس تلفنی ثبت نشده (ثبت درخواست مشاوره)', cacheControlHeader: 'private, no-store' };
-  }
-  if (input.policy === 'authorized_only' && !input.isAuthenticated) {
-    return {
-      canDisplayFullPhone: false,
-      displayedPhoneFa: 'برای مشاهده شماره تماس وارد حساب کاربری شوید',
-      cacheControlHeader: 'private, no-store',
-    };
-  }
+  if (!cleanPhone || input.policy === 'not_available') return { canDisplayFullPhone: false, displayedPhoneFa: 'تماس تلفنی ثبت نشده (ثبت درخواست مشاوره)', cacheControlHeader: 'private, no-store' };
+  if (input.policy === 'authorized_only' && !input.isAuthenticated) return { canDisplayFullPhone: false, displayedPhoneFa: 'برای مشاهده شماره تماس وارد حساب کاربری شوید', cacheControlHeader: 'private, no-store' };
   if (input.policy === 'reveal_on_action' && !input.explicitRevealRequested) {
-    const masked =
-      cleanPhone.length >= 10
-        ? `${cleanPhone.slice(0, 4)}•••${cleanPhone.slice(-4)}`
-        : '۰۹۱۲•••••••';
-    return {
-      canDisplayFullPhone: false,
-      displayedPhoneFa: `${masked} (نمایش کامل پس از کلیک)`,
-      cacheControlHeader: 'private, no-store',
-    };
+    const masked = cleanPhone.length >= 10 ? `${cleanPhone.slice(0, 4)}•••${cleanPhone.slice(-4)}` : '۰۹۱۲•••••••';
+    return { canDisplayFullPhone: false, displayedPhoneFa: `${masked} (نمایش کامل پس از کلیک)`, cacheControlHeader: 'private, no-store' };
   }
-  return {
-    canDisplayFullPhone: true,
-    displayedPhoneFa: cleanPhone,
-    cacheControlHeader: 'private, no-store',
-  };
+  return { canDisplayFullPhone: true, displayedPhoneFa: cleanPhone, cacheControlHeader: 'private, no-store' };
 }
-export type ListingFreshnessStatus =
-  | 'recently_published'
-  | 'updated_by_publisher'
-  | 'renewed_by_publisher'
-  | 'expiring_soon'
-  | 'expired'
-  | 'active_standard';
-export function evaluateListingFreshnessIndicator(input: {
-  publishedAtMs: number;
-  updatedAtMs?: number | null;
-  renewedAtMs?: number | null;
-  expiresAtMs?: number | null;
-  nowMs?: number;
-}): { status: ListingFreshnessStatus; badgeFa: string; explanationFa: string } {
-  const now = input.nowMs ?? Date.now();
-  const dayMs = 24 * 60 * 60 * 1000;
-  if (input.expiresAtMs && input.expiresAtMs <= now) {
-    return {
-      status: 'expired',
-      badgeFa: 'منقضی‌شده',
-      explanationFa: 'مهلت نمایش این آگهی به پایان رسیده و نیازمند تمدید توسط منتشرکننده است.',
-    };
-  }
-  if (input.expiresAtMs && input.expiresAtMs - now <= 3 * dayMs) {
-    return {
-      status: 'expiring_soon',
-      badgeFa: 'در آستانه انقضا',
-      explanationFa: 'کمتر از ۳ روز تا پایان مهلت نمایش این آگهی باقی مانده است.',
-    };
-  }
-  if (input.renewedAtMs && now - input.renewedAtMs <= 5 * dayMs) {
-    return {
-      status: 'renewed_by_publisher',
-      badgeFa: 'تمدیدشده توسط منتشرکننده',
-      explanationFa: 'این آگهی اخیراً توسط ثبت‌کننده تمدید شده است (به‌معنای بازبینی حضوری جدید نیست).',
-    };
-  }
-  if (input.updatedAtMs && input.updatedAtMs > input.publishedAtMs + 60_000 && now - input.updatedAtMs <= 3 * dayMs) {
-    return {
-      status: 'updated_by_publisher',
-      badgeFa: 'به‌روزرسانی‌شده توسط منتشرکننده',
-      explanationFa: 'اطلاعات یا قیمت این آگهی در ۳ روز گذشته توسط ثبت‌کننده ویرایش شده است.',
-    };
-  }
-  if (now - input.publishedAtMs <= 2 * dayMs) {
-    return {
-      status: 'recently_published',
-      badgeFa: 'ثبت جدید (کمتر از ۴۸ ساعت)',
-      explanationFa: 'این آگهی در ۴۸ ساعت گذشته ثبت شده است.',
-    };
-  }
-  return {
-    status: 'active_standard',
-    badgeFa: 'آگهی فعال',
-    explanationFa: 'در بازه زمانی معتبر نمایش قرار دارد.',
-  };
+export type ListingFreshnessStatus = 'recently_published' | 'updated_by_publisher' | 'renewed_by_publisher' | 'expiring_soon' | 'expired' | 'active_standard';
+export function evaluateListingFreshnessIndicator(input: { publishedAtMs: number; updatedAtMs?: number | null; renewedAtMs?: number | null; expiresAtMs?: number | null; nowMs?: number; }): { status: ListingFreshnessStatus; badgeFa: string; explanationFa: string } {
+  const now = input.nowMs ?? Date.now(), dayMs = 24 * 60 * 60 * 1000;
+  if (input.expiresAtMs && input.expiresAtMs <= now) return { status: 'expired', badgeFa: 'منقضی‌شده', explanationFa: 'مهلت نمایش این آگهی به پایان رسیده و نیازمند تمدید توسط منتشرکننده است.' };
+  if (input.expiresAtMs && input.expiresAtMs - now <= 3 * dayMs) return { status: 'expiring_soon', badgeFa: 'در آستانه انقضا', explanationFa: 'کمتر از ۳ روز تا پایان مهلت نمایش این آگهی باقی مانده است.' };
+  if (input.renewedAtMs && now - input.renewedAtMs <= 5 * dayMs) return { status: 'renewed_by_publisher', badgeFa: 'تمدیدشده توسط منتشرکننده', explanationFa: 'این آگهی اخیراً توسط ثبت‌کننده تمدید شده است (به‌معنای بازبینی حضوری جدید نیست).' };
+  if (input.updatedAtMs && input.updatedAtMs > input.publishedAtMs + 60_000 && now - input.updatedAtMs <= 3 * dayMs) return { status: 'updated_by_publisher', badgeFa: 'به‌روزرسانی‌شده توسط منتشرکننده', explanationFa: 'اطلاعات یا قیمت این آگهی در ۳ روز گذشته توسط ثبت‌کننده ویرایش شده است.' };
+  if (now - input.publishedAtMs <= 2 * dayMs) return { status: 'recently_published', badgeFa: 'ثبت جدید (کمتر از ۴۸ ساعت)', explanationFa: 'این آگهی در ۴۸ ساعت گذشته ثبت شده است.' };
+  return { status: 'active_standard', badgeFa: 'آگهی فعال', explanationFa: 'در بازه زمانی معتبر نمایش قرار دارد.' };
 }
 export type ApiErrorCategory = 'validation' | 'authentication' | 'authorization' | 'not_found' | 'conflict' | 'rate_limit' | 'dependency_outage' | 'timeout' | 'internal';
 export interface CanonicalApiErrorEnvelope { ok: false; error: { code: string; category: ApiErrorCategory; messageFa: string; correlationId: string; retryable: boolean; }; }
 export function normalizeOrGenerateCorrelationId(rawHeaderValue?: string | null): string {
   const cleaned = String(rawHeaderValue || '').trim();
-  if (/^[a-zA-Z0-9_-]{8,64}$/.test(cleaned)) return cleaned;
-  return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  return /^[a-zA-Z0-9_-]{8,64}$/.test(cleaned) ? cleaned : `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 }
 export function buildCanonicalApiErrorResponse(input: { code: string; category: ApiErrorCategory; messageFa: string; correlationId?: string | null; }): { httpStatus: number; body: CanonicalApiErrorEnvelope } {
   const statusMap: Record<ApiErrorCategory, number> = { validation: 400, authentication: 401, authorization: 403, not_found: 404, conflict: 409, rate_limit: 429, dependency_outage: 503, timeout: 504, internal: 500 };
   const retryableCategories = new Set<ApiErrorCategory>(['rate_limit', 'dependency_outage', 'timeout']);
-  return {
-    httpStatus: statusMap[input.category] || 500,
-    body: {
-      ok: false,
-      error: {
-        code: input.code, category: input.category, messageFa: input.messageFa,
-        correlationId: normalizeOrGenerateCorrelationId(input.correlationId),
-        retryable: retryableCategories.has(input.category),
-      },
-    },
-  };
+  return { httpStatus: statusMap[input.category] || 500, body: { ok: false, error: { code: input.code, category: input.category, messageFa: input.messageFa, correlationId: normalizeOrGenerateCorrelationId(input.correlationId), retryable: retryableCategories.has(input.category) } } };
 }
 export type BackendRuntimeLifecycleState = 'starting' | 'ready' | 'degraded' | 'shutting_down' | 'unavailable';
 export class BackendLifecycleCoordinator {
@@ -187,11 +110,7 @@ export class BackendLifecycleCoordinator {
   public markDegraded(): void { if (this.state !== 'shutting_down') this.state = 'degraded'; }
   public getState(): BackendRuntimeLifecycleState { return this.state; }
   public isAcceptingTraffic(): boolean { return this.state === 'ready' || this.state === 'degraded'; }
-  public onRequestStart(): boolean {
-    if (!this.isAcceptingTraffic()) return false;
-    this.activeRequestsCount += 1;
-    return true;
-  }
+  public onRequestStart(): boolean { if (!this.isAcceptingTraffic()) return false; this.activeRequestsCount += 1; return true; }
   public onRequestEnd(): void { this.activeRequestsCount = Math.max(0, this.activeRequestsCount - 1); }
   public getActiveRequestsCount(): number { return this.activeRequestsCount; }
   public initiateGracefulShutdown(cleanupCallback?: () => Promise<void> | void): Promise<void> {
@@ -202,63 +121,107 @@ export class BackendLifecycleCoordinator {
   }
 }
 export const globalBackendLifecycle = new BackendLifecycleCoordinator();
-export async function listDurableBuyerAlerts(callerUid: string, callerEmail?: string): Promise<BuyerAlertLeadItem[]> {
-  const snap = await executeAuthorizedAdminFirestoreOperation({
-    policy: 'ADMIN', callerUid, callerEmail, isAdmin: true,
-    operation: () => getFirebaseAdminFirestoreForServer().collection('buyerAlerts').limit(200).get(),
-  });
+function extractBearer(raw?: string | string[]): string {
+  const s = Array.isArray(raw) ? raw[0] || '' : String(raw || '').trim();
+  return s.toLowerCase().startsWith('bearer ') ? s.slice(7).trim() : s;
+}
+const FS_REST_ROOT = `https://firestore.googleapis.com/v1/projects/${EXPECTED_FIREBASE_PROJECT_ID}/databases/${EXPECTED_FIRESTORE_DATABASE_ID}/documents`;
+export async function listDurableBuyerAlerts(callerUid: string, callerEmail?: string, rawAuthHeaderOrToken?: string | string[], fetchFn: typeof fetch = fetch): Promise<BuyerAlertLeadItem[]> {
+  const isCustomFetch = fetchFn !== fetch;
   const nowMs = Date.now();
-  const leads: BuyerAlertLeadItem[] = [];
-  snap.forEach((docSnap) => {
-    const data = docSnap.data() as Record<string, unknown>;
-    const expiresAtIso = typeof data.expiresAtIso === 'string' ? data.expiresAtIso : '';
-    const expiresMs = Date.parse(expiresAtIso);
-    if (Number.isFinite(expiresMs) && expiresMs <= nowMs) return;
-    const hoodId = Number(data.hoodId);
-    if (!Number.isInteger(hoodId) || typeof data.fullName !== 'string' || typeof data.phone !== 'string') return;
-    const createdAtIso = typeof data.createdAtIso === 'string' ? data.createdAtIso : undefined;
-    const rawCreatedAtFa = typeof data.createdAtFa === 'string' ? data.createdAtFa.trim() : '';
-    const createdAtFa = rawCreatedAtFa || (createdAtIso && Number.isFinite(Date.parse(createdAtIso)) ? new Date(createdAtIso).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }) : '');
-    leads.push({
-      id: docSnap.id, hoodId, hoodName: typeof data.hoodName === 'string' ? data.hoodName : '',
-      fullName: data.fullName, phone: data.phone, dealType: data.dealType === 'اجاره' ? 'اجاره' : 'خرید',
-      maxBudgetText: typeof data.maxBudgetText === 'string' ? data.maxBudgetText : '',
-      createdAtFa, createdAtIso, expiresAtIso: expiresAtIso || undefined,
-      consentAtIso: typeof data.consentAtIso === 'string' ? data.consentAtIso : undefined,
-      consentVersion: typeof data.consentVersion === 'string' ? data.consentVersion : undefined,
-      submittedByUid: typeof data.userId === 'string' ? data.userId : undefined,
+  if (!isCustomFetch && (process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIRESTORE_EMULATOR_HOST || !extractBearer(rawAuthHeaderOrToken))) {
+    const snap = await executeAuthorizedAdminFirestoreOperation({
+      policy: 'ADMIN', callerUid, callerEmail, isAdmin: true,
+      operation: () => getFirebaseAdminFirestoreForServer().collection('buyerAlerts').limit(200).get(),
     });
-  });
+    const leads: BuyerAlertLeadItem[] = [];
+    snap.forEach((docSnap) => {
+      const data = docSnap.data() as Record<string, unknown>;
+      const expiresAtIso = typeof data.expiresAtIso === 'string' ? data.expiresAtIso : '';
+      if (Number.isFinite(Date.parse(expiresAtIso)) && Date.parse(expiresAtIso) <= nowMs) return;
+      const hoodId = Number(data.hoodId);
+      if (!Number.isInteger(hoodId) || typeof data.fullName !== 'string' || typeof data.phone !== 'string') return;
+      const createdAtIso = typeof data.createdAtIso === 'string' ? data.createdAtIso : undefined;
+      const rawCreatedAtFa = typeof data.createdAtFa === 'string' ? data.createdAtFa.trim() : '';
+      const createdAtFa = rawCreatedAtFa || (createdAtIso && Number.isFinite(Date.parse(createdAtIso)) ? new Date(createdAtIso).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }) : '');
+      leads.push({ id: docSnap.id, hoodId, hoodName: typeof data.hoodName === 'string' ? data.hoodName : '', fullName: data.fullName, phone: data.phone, dealType: data.dealType === 'اجاره' ? 'اجاره' : 'خرید', maxBudgetText: typeof data.maxBudgetText === 'string' ? data.maxBudgetText : '', createdAtFa, createdAtIso, expiresAtIso: expiresAtIso || undefined, consentAtIso: typeof data.consentAtIso === 'string' ? data.consentAtIso : undefined, consentVersion: typeof data.consentVersion === 'string' ? data.consentVersion : undefined, submittedByUid: typeof data.userId === 'string' ? data.userId : undefined });
+    });
+    return leads;
+  }
+  const bearer = extractBearer(rawAuthHeaderOrToken);
+  if (!bearer) throw new Error('FIREBASE_ADMIN_CREDENTIALS_MISSING');
+  const qRes = await fetchFn(`${FS_REST_ROOT}:runQuery`, { method: 'POST', headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'buyerAlerts' }], where: { compositeFilter: { op: 'AND', filters: [{ fieldFilter: { field: { fieldPath: 'hoodId' }, op: 'GREATER_THAN_OR_EQUAL', value: { integerValue: '1' } } }, { fieldFilter: { field: { fieldPath: 'hoodId' }, op: 'LESS_THAN_OR_EQUAL', value: { integerValue: '999' } } }] } }, limit: 200 } }) });
+  if (!qRes.ok) throw new Error(`FIRESTORE_REST_ADMIN_LIST_FAILED_${qRes.status}`);
+  const rows = (await qRes.json()) as Array<{ document?: { name?: string; fields?: Record<string, { stringValue?: string; integerValue?: string; timestampValue?: string }> } }>;
+  const leads: BuyerAlertLeadItem[] = [];
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const docObj = row?.document; if (!docObj?.name || !docObj.fields) continue;
+    const f = docObj.fields; const str = (k: string) => String(f[k]?.stringValue || f[k]?.timestampValue || '');
+    const expiresAtIso = str('expiresAtIso') || str('expiresAt');
+    if (Number.isFinite(Date.parse(expiresAtIso)) && Date.parse(expiresAtIso) <= nowMs) continue;
+    const hoodId = Number(f.hoodId?.integerValue || f.hoodId?.stringValue);
+    if (!Number.isInteger(hoodId) || !str('fullName') || !str('phone')) continue;
+    leads.push({ id: docObj.name.split('/').pop() || '', hoodId, hoodName: str('hoodName'), fullName: str('fullName'), phone: str('phone'), dealType: str('dealType') === 'اجاره' ? 'اجاره' : 'خرید', maxBudgetText: str('maxBudgetText'), createdAtFa: str('createdAtFa'), createdAtIso: str('createdAtIso') || undefined, expiresAtIso: expiresAtIso || undefined, consentAtIso: str('consentAtIso') || undefined, consentVersion: str('consentVersion') || undefined, submittedByUid: str('userId') || undefined });
+  }
   return leads;
 }
-export async function persistBuyerAlertDocument(params: { uid: string; email?: string; hoodId: number; hoodName: string; fullName: string; phone: string; dealType: 'خرید' | 'اجاره'; maxBudgetText: string; }): Promise<{ duplicate: boolean; expiresAtIso: string; id: string }> {
+export async function persistBuyerAlertDocument(params: { uid: string; email?: string; hoodId: number; hoodName: string; fullName: string; phone: string; dealType: 'خرید' | 'اجاره'; maxBudgetText: string; rawAuthHeaderOrToken?: string | string[]; }, fetchFn: typeof fetch = fetch): Promise<{ duplicate: boolean; expiresAtIso: string; id: string }> {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
   const alertDocId = `${params.uid}_hood_${params.hoodId}`;
   if (!isValidFirestoreDocId(alertDocId)) throw new Error('INVALID_ALERT_DOC');
-  const duplicate = await executeAuthorizedAdminFirestoreOperation({
-    policy: 'RESOURCE_OWNER', callerUid: params.uid, callerEmail: params.email, resourceOwnerUid: params.uid,
-    operation: async () => {
-      const ref = getFirebaseAdminFirestoreForServer().collection('buyerAlerts').doc(alertDocId);
-      const existing = await ref.get();
-      const createdAtFa = now.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
-      const fields = { userId: params.uid, hoodId: params.hoodId, hoodName: params.hoodName.slice(0, 80), fullName: params.fullName, phone: params.phone, dealType: params.dealType, maxBudgetText: params.maxBudgetText, consentVersion: 'buyer-alert-2026-10-v1', expiresAtIso: expiresAt.toISOString(), updatedAtIso: now.toISOString() };
-      if (existing.exists) { await ref.set(fields, { merge: true }); return true; }
-      await ref.set({ ...fields, createdAtFa, createdAtIso: now.toISOString(), consentAtIso: now.toISOString() });
-      return false;
-    },
-  });
-  return { duplicate, expiresAtIso: expiresAt.toISOString(), id: alertDocId };
+  const isCustomFetch = fetchFn !== fetch;
+  const bearer = extractBearer(params.rawAuthHeaderOrToken);
+  if (!isCustomFetch && (process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIRESTORE_EMULATOR_HOST || !bearer)) {
+    const duplicate = await executeAuthorizedAdminFirestoreOperation({
+      policy: 'RESOURCE_OWNER', callerUid: params.uid, callerEmail: params.email, resourceOwnerUid: params.uid,
+      operation: async () => {
+        const ref = getFirebaseAdminFirestoreForServer().collection('buyerAlerts').doc(alertDocId);
+        const existing = await ref.get();
+        const createdAtFa = now.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
+        const fields = { userId: params.uid, hoodId: params.hoodId, hoodName: params.hoodName.slice(0, 80), fullName: params.fullName, phone: params.phone, dealType: params.dealType, maxBudgetText: params.maxBudgetText, consentVersion: 'buyer-alert-2026-10-v1', expiresAtIso: expiresAt.toISOString(), updatedAtIso: now.toISOString() };
+        if (existing.exists) { await ref.set(fields, { merge: true }); return true; }
+        await ref.set({ ...fields, createdAtFa, createdAtIso: now.toISOString(), consentAtIso: now.toISOString() });
+        return false;
+      },
+    });
+    return { duplicate, expiresAtIso: expiresAt.toISOString(), id: alertDocId };
+  }
+  const docUrl = `${FS_REST_ROOT}/buyerAlerts/${encodeURIComponent(alertDocId)}`;
+  const getRes = await fetchFn(docUrl, { method: 'GET', headers: { Authorization: `Bearer ${bearer}` } });
+  const duplicate = getRes.status === 200;
+  const nowIso = now.toISOString(), expIso = expiresAt.toISOString(), createdAtFa = now.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
+  const patchRes = await fetchFn(docUrl, { method: 'PATCH', headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { userId: { stringValue: params.uid }, hoodId: { integerValue: String(params.hoodId) }, hoodName: { stringValue: params.hoodName.slice(0, 80) }, fullName: { stringValue: params.fullName }, phone: { stringValue: params.phone }, dealType: { stringValue: params.dealType }, maxBudgetText: { stringValue: params.maxBudgetText }, consentVersion: { stringValue: 'buyer-alert-2026-10-v1' }, createdAtFa: { stringValue: createdAtFa }, createdAtIso: { stringValue: nowIso }, consentAtIso: { stringValue: nowIso }, expiresAtIso: { stringValue: expIso }, updatedAtIso: { stringValue: nowIso }, createdAt: { timestampValue: nowIso }, expiresAt: { timestampValue: expIso } } }) });
+  if (!patchRes.ok) throw new Error(`FIRESTORE_REST_ALERT_WRITE_FAILED_${patchRes.status}`);
+  return { duplicate, expiresAtIso: expIso, id: alertDocId };
 }
-export async function reconcileUserBuyerAlertsInFirestore(uid: string, mode: 'export' | 'delete'): Promise<BuyerAlertLeadItem[]> {
-  if (!uid || process.env.PREVENT_PROD_FIREBASE_IN_TEST === 'true') return [];
+export async function reconcileUserBuyerAlertsInFirestore(uid: string, mode: 'export' | 'delete', rawAuthHeaderOrToken?: string | string[], fetchFn: typeof fetch = fetch): Promise<BuyerAlertLeadItem[]> {
+  const isCustomFetch = fetchFn !== fetch;
+  if (!uid || (process.env.PREVENT_PROD_FIREBASE_IN_TEST === 'true' && !isCustomFetch)) return [];
+  if (!isCustomFetch && (process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIRESTORE_EMULATOR_HOST)) {
+    try {
+      const snap = await getFirebaseAdminFirestoreForServer().collection('buyerAlerts').where('userId', '==', uid).limit(100).get();
+      const items: BuyerAlertLeadItem[] = [];
+      for (const d of snap.docs) {
+        const r = d.data() as Record<string, unknown>;
+        items.push({ id: d.id, hoodId: Number(r.hoodId) || 1, hoodName: String(r.hoodName || ''), fullName: String(r.fullName || ''), phone: String(r.phone || ''), dealType: r.dealType === 'اجاره' ? 'اجاره' : 'خرید', maxBudgetText: String(r.maxBudgetText || ''), createdAtFa: String(r.createdAtFa || ''), createdAtIso: typeof r.createdAtIso === 'string' ? r.createdAtIso : undefined, expiresAtIso: typeof r.expiresAtIso === 'string' ? r.expiresAtIso : undefined, submittedByUid: uid });
+        if (mode === 'delete') await d.ref.delete();
+      }
+      return items;
+    } catch { /* fall through to user-token REST delegation */ }
+  }
+  const bearerToken = extractBearer(rawAuthHeaderOrToken);
+  if (!bearerToken) return [];
   try {
-    const snap = await getFirebaseAdminFirestoreForServer().collection('buyerAlerts').where('userId', '==', uid).limit(100).get();
+    const qRes = await fetchFn(`${FS_REST_ROOT}:runQuery`, { method: 'POST', headers: { Authorization: `Bearer ${bearerToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'buyerAlerts' }], where: { fieldFilter: { field: { fieldPath: 'userId' }, op: 'EQUAL', value: { stringValue: uid } } }, limit: 100 } }) });
+    if (!qRes.ok) return [];
+    const rows = (await qRes.json()) as Array<{ document?: { name?: string; fields?: Record<string, { stringValue?: string; integerValue?: string; timestampValue?: string }> } }>;
     const items: BuyerAlertLeadItem[] = [];
-    for (const d of snap.docs) {
-      const r = d.data() as Record<string, unknown>;
-      items.push({ id: d.id, hoodId: Number(r.hoodId) || 1, hoodName: String(r.hoodName || ''), fullName: String(r.fullName || ''), phone: String(r.phone || ''), dealType: r.dealType === 'اجاره' ? 'اجاره' : 'خرید', maxBudgetText: String(r.maxBudgetText || ''), createdAtFa: String(r.createdAtFa || ''), createdAtIso: typeof r.createdAtIso === 'string' ? r.createdAtIso : undefined, expiresAtIso: typeof r.expiresAtIso === 'string' ? r.expiresAtIso : undefined, submittedByUid: uid });
-      if (mode === 'delete') await d.ref.delete();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const docObj = row?.document; if (!docObj?.name || !docObj.fields) continue;
+      const f = docObj.fields; const str = (k: string) => String(f[k]?.stringValue || f[k]?.timestampValue || '');
+      items.push({ id: docObj.name.split('/').pop() || '', hoodId: Number(f.hoodId?.integerValue || f.hoodId?.stringValue) || 1, hoodName: str('hoodName'), fullName: str('fullName'), phone: str('phone'), dealType: str('dealType') === 'اجاره' ? 'اجاره' : 'خرید', maxBudgetText: str('maxBudgetText'), createdAtFa: str('createdAtFa'), createdAtIso: str('createdAtIso') || str('createdAt') || undefined, expiresAtIso: str('expiresAtIso') || str('expiresAt') || undefined, submittedByUid: uid });
+      if (mode === 'delete') await fetchFn(`https://firestore.googleapis.com/v1/${docObj.name}`, { method: 'DELETE', headers: { Authorization: `Bearer ${bearerToken}` } });
     }
     return items;
   } catch { return []; }

@@ -10,29 +10,19 @@ import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget } from '../stage2/Stage2MasterWidget';
 
 export interface ProductIntelligenceViewProps {
-  evaluatedNeighborhoods: EvaluatedNeighborhood[];
-  selectedHood: EvaluatedNeighborhood;
-  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
-  marketPulse: MarketPulseData | null;
-  onOpenPriceTrend: () => void;
-  onOpenPulseModal: () => void;
-  onOpenInspector: (hood: EvaluatedNeighborhood) => void;
-  onNavigateView?: (view: PrimaryViewId) => void;
-  onSyncMapLens?: (lens: 'bubble' | 'heatmap' | 'budget') => void;
-  activeCity: string;
+  evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
+  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; marketPulse: MarketPulseData | null;
+  onOpenPriceTrend: () => void; onOpenPulseModal: () => void;
+  onOpenInspector: (hood: EvaluatedNeighborhood) => void; onNavigateView?: (view: PrimaryViewId) => void;
+  onSyncMapLens?: (lens: 'bubble' | 'heatmap' | 'budget') => void; activeCity: string;
 }
 
 export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const { comparisonArc } = useMapAdvancedOverlayState();
-  const [activeSegment, setActiveSegment] = useState<'undervalued' | 'balanced' | 'bubble'>('undervalued');
-  const [segQuery, setSegQuery] = useState<string>('');
-
-  const handleSelectSegment = (seg: 'undervalued' | 'balanced' | 'bubble') => {
-    setActiveSegment(seg);
-    p.onSyncMapLens?.('bubble');
-  };
+  const [activeSegment, setActiveSegment] = useState<'undervalued' | 'balanced' | 'bubble'>('undervalued'), [segQuery, setSegQuery] = useState<string>('');
+  const handleSelectSegment = (seg: 'undervalued' | 'balanced' | 'bubble') => { setActiveSegment(seg); p.onSyncMapLens?.('bubble'); };
 
   const undervaluedList = useMemo(() => p.evaluatedNeighborhoods.filter((h) => h.marketReport?.status === 'undervalued'), [p.evaluatedNeighborhoods]);
   const balancedList = useMemo(() => p.evaluatedNeighborhoods.filter((h) => h.marketReport?.status === 'balanced'), [p.evaluatedNeighborhoods]);
@@ -46,10 +36,8 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
   }, [activeSegment, undervaluedList, balancedList, premiumList, segQuery]);
 
   const selectedAgg = useMemo(() => aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, buildNeighborhoodListingSamples(p.selectedHood)), [p.selectedHood]);
-  const uAsking = convertPricePerSqmToUnit(selectedAgg.askingPricePerSqm, areaUnit);
-  const uDeal = convertPricePerSqmToUnit(selectedAgg.estimatedDealPricePerSqm, areaUnit);
-  const uIqrLow = convertPricePerSqmToUnit(selectedAgg.iqrLowPerSqm, areaUnit);
-  const uIqrHigh = convertPricePerSqmToUnit(selectedAgg.iqrHighPerSqm, areaUnit);
+  const uAsking = convertPricePerSqmToUnit(selectedAgg.askingPricePerSqm, areaUnit), uDeal = convertPricePerSqmToUnit(selectedAgg.estimatedDealPricePerSqm, areaUnit);
+  const uIqrLow = convertPricePerSqmToUnit(selectedAgg.iqrLowPerSqm, areaUnit), uIqrHigh = convertPricePerSqmToUnit(selectedAgg.iqrHighPerSqm, areaUnit);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-7 animate-fadeIn" data-testid="product-intelligence-view">
@@ -101,28 +89,19 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <button type="button" onClick={() => handleSelectSegment('undervalued')} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border text-start flex flex-col justify-between transition cursor-pointer ${activeSegment === 'undervalued' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-400'}`}>
           <div className="text-[11px] font-bold text-slate-400">{isEn ? '01 · Undervalued Areas' : '۰۱ · فرصت‌های زیر ارزش ذاتی'}</div>
-          <div className="my-3">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{toPersianNum(undervaluedList.length)}</span>
-            <span className="text-xs text-slate-400 mx-1.5">{isEn ? 'areas' : 'محله'}</span>
-          </div>
+          <div className="my-3"><span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{toPersianNum(undervaluedList.length)}</span><span className="text-xs text-slate-400 mx-1.5">{isEn ? 'areas' : 'محله'}</span></div>
           <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">{isEn ? '≥10% below intrinsic value' : 'حداقل ۱۰٪ ارزان‌تر از ارزش برآوردی'}</div>
         </button>
 
         <button type="button" onClick={() => handleSelectSegment('balanced')} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border text-start flex flex-col justify-between transition cursor-pointer ${activeSegment === 'balanced' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-400'}`}>
           <div className="text-[11px] font-bold text-slate-400">{isEn ? '02 · Balanced Areas' : '۰۲ · محلات در محدوده تعادل'}</div>
-          <div className="my-3">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{toPersianNum(balancedList.length)}</span>
-            <span className="text-xs text-slate-400 mx-1.5">{isEn ? 'areas' : 'محله'}</span>
-          </div>
+          <div className="my-3"><span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{toPersianNum(balancedList.length)}</span><span className="text-xs text-slate-400 mx-1.5">{isEn ? 'areas' : 'محله'}</span></div>
           <div className="text-[11px] text-slate-500 font-medium">{isEn ? 'Aligned with closing benchmarks' : 'همگرایی قیمت اعلامی با دامنه تعادلی'}</div>
         </button>
 
         <button type="button" onClick={() => handleSelectSegment('bubble')} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border text-start flex flex-col justify-between transition cursor-pointer ${activeSegment === 'bubble' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-400'}`}>
           <div className="text-[11px] font-bold text-slate-400">{isEn ? '03 · Speculative Bubble' : '۰۳ · حباب مثبت و نرخ هیجانی'}</div>
-          <div className="my-3">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{toPersianNum(premiumList.length)}</span>
-            <span className="text-xs text-slate-400 mx-1.5">{isEn ? 'areas' : 'محله'}</span>
-          </div>
+          <div className="my-3"><span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{toPersianNum(premiumList.length)}</span><span className="text-xs text-slate-400 mx-1.5">{isEn ? 'areas' : 'محله'}</span></div>
           <div className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">{isEn ? 'Requires strong negotiation' : 'احتیاط معاملاتی و چانه‌زنی بالا'}</div>
         </button>
 
@@ -131,12 +110,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             <span>{isEn ? '04 · v6.4 Closing Discount' : '۰۴ · شکاف تخفیف قطعی v6.4'}</span>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 group-hover:underline">{isEn ? 'Trend ↗' : 'تحلیل روند ↗'}</span>
           </div>
-          <div className="my-3">
-            <span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">
-              -{toPersianNum(Math.max(1, Math.round((1 - selectedAgg.askToDealRatio) * 100)))}٪
-            </span>
-            <span className="text-xs text-slate-400 mx-1.5">{isEn ? 'closing spread' : 'تخفیف جلسه معامله'}</span>
-          </div>
+          <div className="my-3"><span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">-{toPersianNum(Math.max(1, Math.round((1 - selectedAgg.askToDealRatio) * 100)))}٪</span><span className="text-xs text-slate-400 mx-1.5">{isEn ? 'closing spread' : 'تخفیف جلسه معامله'}</span></div>
           <div className="text-[11px] text-slate-500 font-medium truncate">
             وضعیت: <strong className="text-slate-800 dark:text-slate-200">{selectedAgg.marketRegime === 'HOT' ? 'داغ و رقابتی' : selectedAgg.marketRegime === 'FROZEN' ? 'رکودی (به نفع خریدار)' : 'متعادل و پایدار'}</strong>
           </div>
@@ -170,30 +144,22 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
             <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-0.5">ادعای آگهی‌دهنده (Advertiser Claim)</span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">میانه قیمت اعلامی آگهی‌ها:</span>
-            <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">
-              {toPersianNum(uAsking)} <span className="text-xs font-normal text-slate-400">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}</span>
-            </strong>
+            <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">{toPersianNum(uAsking)} <span className="text-xs font-normal text-slate-400">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}</span></strong>
           </div>
           <div className="p-4 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20">
             <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">برآورد مدل (Model Estimate v6.4)</span>
             <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-bold">تخمین قطعی پای معامله (v6.4):</span>
-            <strong className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-1.5 block">
-              {toPersianNum(uDeal)} <span className="text-xs font-normal text-emerald-600/70">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDeal, intlCurrency, radarLocale)})` : ''}</span>
-            </strong>
+            <strong className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-1.5 block">{toPersianNum(uDeal)} <span className="text-xs font-normal text-emerald-600/70">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDeal, intlCurrency, radarLocale)})` : ''}</span></strong>
           </div>
           <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/30 dark:bg-indigo-950/20">
             <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block mb-0.5">نقدشوندگی فوری (Fast-Sale 0.88)</span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">کف تسویه نقدی و فروش سریع:</span>
-            <strong className="text-xl font-black text-indigo-700 dark:text-indigo-300 mt-1.5 block">
-              {toPersianNum(Math.round(uAsking * 0.88))} <span className="text-xs font-normal text-slate-400">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}</span>
-            </strong>
+            <strong className="text-xl font-black text-indigo-700 dark:text-indigo-300 mt-1.5 block">{toPersianNum(Math.round(uAsking * 0.88))} <span className="text-xs font-normal text-slate-400">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}</span></strong>
           </div>
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
             <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">دامنه عدم‌قطعیت (Statistical IQR)</span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">بازه معتبر آماری محله (IQR):</span>
-            <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">
-              {toPersianNum(uIqrLow)} تا {toPersianNum(uIqrHigh)} <span className="text-xs font-normal text-slate-400">م.ت</span>
-            </strong>
+            <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">{toPersianNum(uIqrLow)} تا {toPersianNum(uIqrHigh)} <span className="text-xs font-normal text-slate-400">م.ت</span></strong>
           </div>
         </div>
         <div className="space-y-1.5 pt-1 tabular-nums">
@@ -208,30 +174,17 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
         </div>
 
         <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <span className="font-bold text-slate-900 dark:text-white">جمع‌بندی تحلیلی و تفکیک معرفتی (CASPER): </span>
-            {p.selectedHood.marketReport?.summary || 'تحلیل الگوی قیمت‌گذاری و نسبت قیمت به رهن در محدوده تعادلی ارزیابی می‌شود.'}
-          </div>
+          <div><span className="font-bold text-slate-900 dark:text-white">جمع‌بندی تحلیلی و تفکیک معرفتی (CASPER): </span>{p.selectedHood.marketReport?.summary || 'تحلیل الگوی قیمت‌گذاری و نسبت قیمت به رهن در محدوده تعادلی ارزیابی می‌شود.'}</div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-            <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold">
-              تفکیک داده: مشاهده آگهی ≠ نرخ قطعی معامله (حاشیه خطا ±{toPersianNum(Math.max(2.5, Number(((100 - selectedAgg.confidenceScore) * 0.28).toFixed(1))))}٪)
-            </span>
+            <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold">تفکیک داده: مشاهده آگهی ≠ نرخ قطعی معامله (حاشیه خطا ±{toPersianNum(Math.max(2.5, Number(((100 - selectedAgg.confidenceScore) * 0.28).toFixed(1))))}٪)</span>
             <span>پالایش موتور ضدتقلب: حذف {toPersianNum(selectedAgg.rejectedFraudCount)} آگهی پرت/طعمه</span>
           </div>
         </div>
 
         <Stage2MasterWidget
-          hoodId={p.selectedHood.id}
-          hoodName={p.selectedHood.name}
-          cityKey={p.activeCity}
-          basePriceSqm={p.selectedHood.buyPerSqm}
-          intlCurrency={intlCurrency}
-          hood={p.selectedHood}
-          initialTab="HOUSING_CYCLE"
-          onSelectCompareHood={(targetName) => {
-            const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName);
-            if (match) p.onSelectNeighborhood(match);
-          }}
+          hoodId={p.selectedHood.id} hoodName={p.selectedHood.name} cityKey={p.activeCity}
+          basePriceSqm={p.selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={p.selectedHood} initialTab="HOUSING_CYCLE"
+          onSelectCompareHood={(targetName) => { const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName); if (match) p.onSelectNeighborhood(match); }}
         />
       </div>
 

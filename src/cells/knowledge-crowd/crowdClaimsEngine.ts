@@ -100,6 +100,10 @@ export function evaluateClaimPlausibility(input: PlausibilityEvaluationInput): P
   };
 }
 
+export function hasContributorProfile(uid: string): boolean {
+  return inMemoryContributorProfiles.has(sanitizeInput(uid, 128));
+}
+
 export function getOrCreateContributorProfile(
   uid: string,
   defaults?: { displayName?: string; roleBadge?: ContributorRoleBadge; trustWeight?: number; shadowBanned?: boolean },
@@ -151,21 +155,16 @@ export async function submitCrowdClaim(input: SubmitCrowdClaimInput): Promise<Cr
   const narrativeText = sanitizeInput(input.narrativeText || '', 1200);
   if (narrativeText.length < 5) throw new Error('NARRATIVE_TOO_SHORT');
   const streetNameRaw = sanitizeInput(input.streetName || 'کوچه اصلی', 120) || 'کوچه اصلی';
-  if (detectPromptInjection(narrativeText).blocked || detectPromptInjection(streetNameRaw).blocked) {
-    throw new Error('PROMPT_INJECTION_DETECTED');
-  }
+  if (detectPromptInjection(narrativeText).blocked || detectPromptInjection(streetNameRaw).blocked) throw new Error('PROMPT_INJECTION_DETECTED');
 
   const category: CrowdClaimCategory = VALID_CATEGORIES.has(input.category) ? input.category : 'ALLEY_LIVABILITY';
   const targetLevel: SpatialTargetLevel = input.targetLevel && VALID_TARGET_LEVELS.has(input.targetLevel) ? input.targetLevel : 'STREET_SEGMENT';
   const cityId = validateCityParam(input.cityId, 'tehran');
   const authorProfile = getOrCreateContributorProfile(authorUid, { displayName: input.authorDisplayName, roleBadge: input.authorRoleBadge });
   const evidenceMediaObjectIds = Array.isArray(input.evidenceMediaObjectIds)
-    ? input.evidenceMediaObjectIds.map((id) => sanitizeInput(String(id), 120)).filter((id) => id.length > 0 && isValidFirestoreDocId(id)).slice(0, 10)
-    : [];
-  const estimatedPriceSqm = typeof input.estimatedPriceSqm === 'number' && Number.isFinite(input.estimatedPriceSqm) && input.estimatedPriceSqm > 0
-    ? Number(input.estimatedPriceSqm) : null;
-  const baseHoodPriceSqm = typeof input.baseHoodPriceSqmOverride === 'number' && input.baseHoodPriceSqmOverride > 0
-    ? input.baseHoodPriceSqmOverride : resolveNeighborhoodBaseBuyPriceSqm(hoodId, cityId);
+    ? input.evidenceMediaObjectIds.map((id) => sanitizeInput(String(id), 120)).filter((id) => id.length > 0 && isValidFirestoreDocId(id)).slice(0, 10) : [];
+  const estimatedPriceSqm = typeof input.estimatedPriceSqm === 'number' && Number.isFinite(input.estimatedPriceSqm) && input.estimatedPriceSqm > 0 ? Number(input.estimatedPriceSqm) : null;
+  const baseHoodPriceSqm = typeof input.baseHoodPriceSqmOverride === 'number' && input.baseHoodPriceSqmOverride > 0 ? input.baseHoodPriceSqmOverride : resolveNeighborhoodBaseBuyPriceSqm(hoodId, cityId);
   const plausibility = evaluateClaimPlausibility({
     category, estimatedPriceSqm, baseHoodPriceSqm, evidenceMediaObjectIds, narrativeText,
     parkingScore: input.parkingScore, noiseLevelScore: input.noiseLevelScore, safetyScore: input.safetyScore,
@@ -177,14 +176,11 @@ export async function submitCrowdClaim(input: SubmitCrowdClaimInput): Promise<Cr
   const intlCurrency: IntlCurrencyCode = input.intlCurrency || 'USD';
 
   const claim: CrowdClaimDocument = {
-    claimId: rawClaimId, targetLevel, cityId, hoodId, streetNameRaw,
-    streetNameNormalized: normalizeStreetName(streetNameRaw),
+    claimId: rawClaimId, targetLevel, cityId, hoodId, streetNameRaw, streetNameNormalized: normalizeStreetName(streetNameRaw),
     coords: input.coords && Number.isFinite(input.coords.lat) && Number.isFinite(input.coords.lng)
       ? { lat: clampNumber(input.coords.lat, 24, 40, 35.7), lng: clampNumber(input.coords.lng, 44, 64, 51.4) } : null,
     category, estimatedPriceSqm,
-    estimatedPriceSqmIntlText: estimatedPriceSqm !== null
-      ? formatClaimPriceSqmIntl(estimatedPriceSqm, intlCurrency) ?? formatMillionTomanAsIntlCurrency(estimatedPriceSqm, intlCurrency, 'fa')
-      : undefined,
+    estimatedPriceSqmIntlText: estimatedPriceSqm !== null ? formatClaimPriceSqmIntl(estimatedPriceSqm, intlCurrency) ?? formatMillionTomanAsIntlCurrency(estimatedPriceSqm, intlCurrency, 'fa') : undefined,
     parkingScore: typeof input.parkingScore === 'number' ? clampNumber(input.parkingScore, 1, 10, 5) : null,
     noiseLevelScore: typeof input.noiseLevelScore === 'number' ? clampNumber(input.noiseLevelScore, 1, 10, 5) : null,
     safetyScore: typeof input.safetyScore === 'number' ? clampNumber(input.safetyScore, 1, 10, 5) : null,
@@ -222,13 +218,8 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
   const effectiveVoteWeight = voterProfile.shadowBanned ? 0 : direction === 'UP' ? clampedVoterTrust : -clampedVoterTrust;
   const nowIso = new Date().toISOString();
 
-  if (!(voterUid in claim.votesByUid) && Object.keys(claim.votesByUid).length >= 500) {
-    throw new Error('CLAIM_VOTE_CAPACITY_REACHED');
-  }
-  claim.votesByUid[voterUid] = {
-    voterUid, direction, voterTrustWeightAtVote: clampedVoterTrust,
-    effectiveWeight: effectiveVoteWeight, shadowBannedAtVote: voterProfile.shadowBanned, votedAtIso: nowIso,
-  };
+  if (!(voterUid in claim.votesByUid) && Object.keys(claim.votesByUid).length >= 500) throw new Error('CLAIM_VOTE_CAPACITY_REACHED');
+  claim.votesByUid[voterUid] = { voterUid, direction, voterTrustWeightAtVote: clampedVoterTrust, effectiveWeight: effectiveVoteWeight, shadowBannedAtVote: voterProfile.shadowBanned, votedAtIso: nowIso };
 
   let upCount = 0, downCount = 0, weightedSum = 0;
   for (const vote of Object.values(claim.votesByUid)) {
@@ -243,12 +234,7 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
 
   const authorProfile = getOrCreateContributorProfile(claim.authorUid, { displayName: claim.authorDisplayName, roleBadge: claim.authorRoleBadge });
   let promotedToVerifiedReference = false;
-  if (
-    claim.epistemicState !== 'VERIFIED_REFERENCE' &&
-    !claim.promotedToReferenceAtIso &&
-    claim.weightedConsensusScore >= PROMOTION_CONSENSUS_THRESHOLD &&
-    claim.aiPlausibilityScore >= PROMOTION_PLAUSIBILITY_THRESHOLD
-  ) {
+  if (claim.epistemicState !== 'VERIFIED_REFERENCE' && !claim.promotedToReferenceAtIso && claim.weightedConsensusScore >= PROMOTION_CONSENSUS_THRESHOLD && claim.aiPlausibilityScore >= PROMOTION_PLAUSIBILITY_THRESHOLD) {
     claim.epistemicState = 'VERIFIED_REFERENCE';
     claim.promotedToReferenceAtIso = nowIso;
     promotedToVerifiedReference = true;

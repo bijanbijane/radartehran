@@ -10,8 +10,10 @@
 import type { Express, Request, Response } from 'express';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { isValidFirestoreDocId, sanitizeInput } from '../../utils/security';
+import { verifyFirebaseUserAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
 import {
   getContributorProfileWithClaims,
+  hasContributorProfile,
   processClaimVoteAndPromotion,
   queryNeighborhoodCrowdClaims,
   submitCrowdClaim,
@@ -40,6 +42,7 @@ function normalizeVoteDirectionParam(raw: unknown): ClaimVoteDirection | null {
 export interface CrowdClaimsRouteSecurityOptions {
   checkRateLimit?: (ip: string, bucket: 'general', maxRequests: number, windowMs: number) => boolean;
   getClientIp?: (req: Request) => string;
+  verifyUserAuth?: (req: Request) => Promise<{ authorized: boolean; statusCode: number; uid?: string; reason?: string }>;
 }
 
 export function registerCrowdClaimsRoutes(
@@ -50,6 +53,17 @@ export function registerCrowdClaimsRoutes(
   registeredCrowdClaimApps.add(app);
   const clientIp = (req: Request): string =>
     options?.getClientIp ? options.getClientIp(req) : req.ip || '127.0.0.1';
+  const verifyAuthIfPresent = async (req: Request): Promise<{ hasAuthHeader: boolean; authorized: boolean; statusCode: number; uid?: string; reason?: string }> => {
+    const rawAuth = req.headers.authorization;
+    const hasAuthHeader = Boolean(rawAuth && String(rawAuth).trim().length > 0);
+    if (!hasAuthHeader) return { hasAuthHeader: false, authorized: false, statusCode: 200 };
+    if (options?.verifyUserAuth) {
+      const r = await options.verifyUserAuth(req);
+      return { hasAuthHeader: true, ...r };
+    }
+    const r = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    return { hasAuthHeader: true, authorized: r.authorized, statusCode: r.statusCode, uid: r.uid, reason: r.reason };
+  };
 
   // 1. POST /api/v1/claims — Submit a new user-attributed crowd claim in immediate STAGE_COMMUNITY state
   app.post('/api/v1/claims', async (req: Request, res: Response) => {
@@ -59,15 +73,30 @@ export function registerCrowdClaimsRoutes(
       return;
     }
     try {
+      const authState = await verifyAuthIfPresent(req);
+      if (authState.hasAuthHeader && !authState.authorized) {
+        res.status(authState.statusCode || 401).json({ status: 'error', code: authState.reason || 'UNAUTHORIZED_TOKEN' });
+        return;
+      }
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
-      const authorUid = sanitizeInput(String(body.authorUid || ''), 128);
+      const rawBodyAuthorUid = sanitizeInput(String(body.authorUid || ''), 128);
+      if (authState.authorized && authState.uid && rawBodyAuthorUid && rawBodyAuthorUid !== authState.uid) {
+        res.status(403).json({ status: 'error', code: 'UID_SPOOFING_FORBIDDEN', message: 'جعل شناسه نویسنده گزارش مجاز نیست.' });
+        return;
+      }
+      const authorUid = authState.authorized && authState.uid ? authState.uid : rawBodyAuthorUid;
       const authorDisplayName = sanitizeInput(String(body.authorDisplayName || 'کاربر رادار'), 80);
       const hoodId = Math.trunc(Number(body.hoodId));
       const streetName = sanitizeInput(String(body.streetName || body.streetNameNormalized || ''), 120);
       const narrativeText = sanitizeInput(String(body.narrativeText || ''), 1200);
       const category = String(body.category || 'ALLEY_LIVABILITY') as CrowdClaimCategory;
       const targetLevel = String(body.targetLevel || 'STREET_SEGMENT') as SpatialTargetLevel;
-      const authorRoleBadge = String(body.authorRoleBadge || 'CITIZEN') as ContributorRoleBadge;
+      const requestedBadge = String(body.authorRoleBadge || 'CITIZEN') as ContributorRoleBadge;
+      const isPrivilegedBadge = requestedBadge === 'OFFICIAL_EXPERT' || requestedBadge === 'VERIFIED_REALTOR';
+      const authorRoleBadge: ContributorRoleBadge =
+        isPrivilegedBadge && !authState.authorized && !hasContributorProfile(authorUid)
+          ? 'CITIZEN'
+          : requestedBadge;
       const slopeType = body.slopeType ? (String(body.slopeType) as AlleySlopeType) : null;
       const intlCurrency: IntlCurrencyCode = ['IRT', 'USD', 'EUR', 'AED'].includes(String(body.intlCurrency))
         ? (body.intlCurrency as IntlCurrencyCode)
@@ -154,6 +183,7 @@ export function registerCrowdClaimsRoutes(
       streetNameFilterNormalized: result.streetNameFilterNormalized,
       VERIFIED_REFERENCE: result.verifiedReferenceClaims,
       STAGE_COMMUNITY: result.communityStageClaims,
+      DISPUTED: result.disputedClaims,
       verifiedReferenceClaims: result.verifiedReferenceClaims,
       communityStageClaims: result.communityStageClaims,
       disputedClaims: result.disputedClaims,
@@ -169,9 +199,19 @@ export function registerCrowdClaimsRoutes(
       return;
     }
     try {
+      const authState = await verifyAuthIfPresent(req);
+      if (authState.hasAuthHeader && !authState.authorized) {
+        res.status(authState.statusCode || 401).json({ status: 'error', code: authState.reason || 'UNAUTHORIZED_TOKEN' });
+        return;
+      }
       const claimId = sanitizeInput(String(req.params.claimId || ''), 100);
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
-      const voterUid = sanitizeInput(String(body.voterUid || ''), 128);
+      const rawBodyVoterUid = sanitizeInput(String(body.voterUid || ''), 128);
+      if (authState.authorized && authState.uid && rawBodyVoterUid && rawBodyVoterUid !== authState.uid) {
+        res.status(403).json({ status: 'error', code: 'UID_SPOOFING_FORBIDDEN', message: 'جعل شناسه رأی‌دهنده مجاز نیست.' });
+        return;
+      }
+      const voterUid = authState.authorized && authState.uid ? authState.uid : rawBodyVoterUid;
       const direction = normalizeVoteDirectionParam(body.direction ?? body.vote ?? body.voteType);
 
       if (!claimId || !isValidFirestoreDocId(claimId)) {

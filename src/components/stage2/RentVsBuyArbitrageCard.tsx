@@ -29,6 +29,8 @@ export interface RentVsBuyArbitrageCardProps {
   hoodName?: string;
   cityKey?: string;
   basePriceSqm?: number;
+  initialTargetSqm?: number;
+  onTargetSqmChange?: (sqm: number) => void;
   intlCurrency?: IntlCurrencyCode;
 }
 
@@ -37,12 +39,23 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
   hoodName = 'پونک',
   cityKey = 'tehran',
   basePriceSqm = 120,
+  initialTargetSqm = 80,
+  onTargetSqmChange,
   intlCurrency = 'USD',
 }) => {
   const [horizonYears, setHorizonYears] = useState<number>(5);
   const [alternativeReturnPct, setAlternativeReturnPct] = useState<number>(42);
-  const [targetSqm, setTargetSqm] = useState<number>(80);
+  const [targetSqm, setTargetSqm] = useState<number>(initialTargetSqm);
   const [showRealPurchasingPower, setShowRealPurchasingPower] = useState<boolean>(true);
+
+  React.useEffect(() => {
+    setTargetSqm(initialTargetSqm);
+  }, [initialTargetSqm]);
+
+  const handleSqmSelect = (sqm: number) => {
+    setTargetSqm(sqm);
+    onTargetSqmChange?.(sqm);
+  };
 
   const dossier = useMemo(
     () => generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm),
@@ -104,11 +117,11 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             {showRealPurchasingPower ? '✓ قدرت خرید واقعی (به قیمت امروز)' : 'نمایش اسمی (تورمی)'}
           </button>
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-            {[65, 80, 100, 130].map((sqm) => (
+            {[65, 85, 110, 135].map((sqm) => (
               <button
                 key={sqm}
                 type="button"
-                onClick={() => setTargetSqm(sqm)}
+                onClick={() => handleSqmSelect(sqm)}
                 className={`px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-all cursor-pointer ${
                   targetSqm === sqm ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
@@ -138,7 +151,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
         </div>
       </div>
 
-      {/* Alternative Yield Controller */}
+      {/* Alternative Yield Controller + Exact Break-Even Solver Button */}
       <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-indigo-600 shrink-0" />
@@ -147,17 +160,25 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             <span className="text-[10px] text-slate-500 dark:text-slate-400">میانگین بازده سالانه سبد طلا، دلار یا صندوق‌ها (تامین‌کننده مابه‌التفاوت تمدید سالانه ودیعه)</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            data-testid="snap-breakeven-alt-return-btn"
+            onClick={() => setAlternativeReturnPct(Math.round(analysis.breakEvenAlternativeReturnPct))}
+            className="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 cursor-pointer"
+          >
+            نرخ سربه‌سر دقیق: ٪{toPersianNum(analysis.breakEvenAlternativeReturnPct)} (اعمال)
+          </button>
           <input
             type="range"
             aria-label="نرخ بازده جایگزین"
             min={25}
-            max={60}
+            max={65}
             value={alternativeReturnPct}
             onChange={(e) => setAlternativeReturnPct(Number(e.target.value))}
-            className="w-36 accent-indigo-600 h-1.5 cursor-pointer"
+            className="w-32 accent-indigo-600 h-1.5 cursor-pointer"
           />
-          <strong className="text-indigo-700 dark:text-indigo-400 font-black tabular-nums min-w-[50px] text-left">٪{toPersianNum(alternativeReturnPct)}</strong>
+          <strong className="text-indigo-700 dark:text-indigo-400 font-black tabular-nums min-w-[44px] text-left">٪{toPersianNum(alternativeReturnPct)}</strong>
         </div>
       </div>
 

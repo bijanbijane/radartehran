@@ -208,13 +208,14 @@ export function RadarWorkspaceShell() {
       {ui.primaryView !== 'map' && (
         <main className="relative z-10 w-full flex-1 overflow-hidden pointer-events-none flex justify-start">
           <ProductViewRouter
-            primaryView={ui.primaryView} ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods}
+            primaryView={ui.primaryView} ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} allNeighborhoods={neighborhoods}
             selectedHood={selectedHood} handleSelectNeighborhood={handleSelectNeighborhood}
             favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood} mode={mode}
             setMode={setMode} targetSqm={targetSqm} totalRahnEquivalent={totalRahnEquivalent}
             buyTotalBudget={buyTotalBudget} deposit={deposit} monthlyRent={monthlyRent} counts={counts}
             featureFlags={featureFlags} currentUser={currentUser} isVerifiedAdmin={isVerifiedAdmin}
-            activeCity={ui.activeCity} crudActions={crudActions} setShowReverseBudgetModal={setShowReverseBudgetModal}
+            activeCity={ui.activeCity} crudActions={crudActions} handleDeepWebSync={handleDeepWebSync}
+            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal}
             onSignOut={() => signOut(auth)}
           />
         </main>

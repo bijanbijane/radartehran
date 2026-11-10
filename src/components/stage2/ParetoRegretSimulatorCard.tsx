@@ -12,6 +12,8 @@ export interface ParetoRegretSimulatorCardProps {
   hoodName: string;
   cityKey: string;
   basePriceSqm: number;
+  initialTargetSqm?: number;
+  onTargetSqmChange?: (sqm: number) => void;
   intlCurrency?: IntlCurrencyCode;
   onSelectCompareHood?: (hoodName: string) => void;
 }
@@ -21,12 +23,18 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
   hoodName,
   cityKey,
   basePriceSqm,
+  initialTargetSqm = 85,
+  onTargetSqmChange,
   intlCurrency = 'USD',
   onSelectCompareHood,
 }) => {
-  const [targetSqm, setTargetSqm] = useState<number>(85);
+  const [targetSqm, setTargetSqm] = useState<number>(initialTargetSqm);
   const [selectedRegime, setSelectedRegime] = useState<MacroRegimeId>('STAGFLATION_LOCK');
   const [optimismAlpha, setOptimismAlpha] = useState<number>(0.35);
+
+  React.useEffect(() => {
+    setTargetSqm(initialTargetSqm);
+  }, [initialTargetSqm]);
 
   const analysis = useMemo(
     () =>
@@ -89,10 +97,10 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
             id="pareto-sqm-select"
             aria-label="متراژ هدف برای ماتریس پشیمانی ساواج"
             value={targetSqm}
-            onChange={(e) => setTargetSqm(Number(e.target.value))}
+            onChange={(e) => { const v = Number(e.target.value); setTargetSqm(v); onTargetSqmChange?.(v); }}
             className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 dark:text-slate-100"
           >
-            {[65, 85, 105, 135].map((sqm) => (
+            {[65, 85, 110, 135].map((sqm) => (
               <option key={sqm} value={sqm}>{toPersianNum(sqm)} مترمربع</option>
             ))}
           </select>

@@ -438,6 +438,43 @@ async function runBrowserSmokeSuite(): Promise<void> {
       evidence: `Aborted /api/** routes + set browser context offline, triggered live Market Pulse sync; UI remained responsive with fallback state and 0 uncaught errors`,
     });
 
+    // =========================================================================
+    // 10. Stage 2 Casper Epistemic Decision Intelligence (Playbook, Swap, Rent/Buy, Real Options)
+    // =========================================================================
+    const stage2Widget = page.locator('[data-testid="stage2-master-widget"]').first();
+    await stage2Widget.scrollIntoViewIfNeeded();
+    const quickJumpSelect = stage2Widget.locator('select[aria-label="پرش سریع به آزمایشگاه تصمیم‌گیری"]');
+    await quickJumpSelect.selectOption('DECISION_SYNTHESIS');
+    await page.waitForTimeout(150);
+    const hasPlaybookPanel = (await stage2Widget.locator('[data-testid="casper-execution-playbook-panel"]').count()) === 1;
+    const hasCopyPlaybookBtn = (await stage2Widget.locator('[data-testid="copy-deal-playbook-btn"]').count()) === 1;
+
+    await quickJumpSelect.selectOption('MACRO_PORTFOLIO');
+    await page.waitForTimeout(150);
+    const hasSwapSourceSelector = (await stage2Widget.locator('[data-testid="swap-source-asset-selector"]').count()) === 1;
+
+    await quickJumpSelect.selectOption('RENT_VS_BUY');
+    await page.waitForTimeout(150);
+    const hasBreakEvenBtn = (await stage2Widget.locator('[data-testid="snap-breakeven-alt-return-btn"]').count()) === 1;
+    await stage2Widget.locator('[data-testid="snap-breakeven-alt-return-btn"]').click();
+    await page.waitForTimeout(100);
+
+    await quickJumpSelect.selectOption('REAL_OPTIONS');
+    await page.waitForTimeout(150);
+    const hasBuyerCeiling = (await stage2Widget.locator('[data-testid="buyer-reservation-ceiling"]').count()) === 1;
+
+    if (!hasPlaybookPanel || !hasCopyPlaybookBtn || !hasSwapSourceSelector || !hasBreakEvenBtn || !hasBuyerCeiling || uncaughtPageErrors.length > 0) {
+      throw new Error(
+        `Workflow 10 failed: playbook=${hasPlaybookPanel}, copyBtn=${hasCopyPlaybookBtn}, swapSelector=${hasSwapSourceSelector}, breakEvenBtn=${hasBreakEvenBtn}, buyerCeiling=${hasBuyerCeiling}, errors=${uncaughtPageErrors.length}`
+      );
+    }
+    results.push({
+      id: 10,
+      workflow: 'Stage 2 Casper Epistemic Decision Intelligence interactive verification',
+      status: 'PASS',
+      evidence: `Verified 3-Stage Sayadi Escrow Playbook, Swap Source Asset Selector, Rent-vs-Buy Bisection Break-Even Snapper, and Real Options Buyer Reservation Ceiling with 0 errors`,
+    });
+
     console.log(
       `[BROWSER SMOKE PASS] ${results.length}/${results.length} real Chromium workflows passed (uncaughtPageErrors=${uncaughtPageErrors.length}):`
     );

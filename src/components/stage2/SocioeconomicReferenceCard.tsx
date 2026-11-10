@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingUp, Users, Compass, Building2, BookOpen, ArrowLeftRight, Layers } from 'lucide-react';
-import { toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 
 export interface SocioeconomicRollupView {
   hoodId: number;
@@ -23,6 +25,9 @@ export interface SocioeconomicRollupView {
   academicCitationTag: string;
   policySummary: string;
   provenanceSource: 'LOCAL_BASELINE' | 'SERVER_K_ANONYMITY';
+  distinctSessionCount?: number;
+  hesitationRatePct?: number | null;
+  priceAttentionElasticity?: number | null;
 }
 
 interface SocioeconomicReferenceCardProps {
@@ -50,9 +55,10 @@ function buildFallbackRollup(
 ): SocioeconomicRollupView {
   const ask = Math.max(15, basePriceSqm || 100);
   const cityConfig = MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
-  const allHoods = cityConfig?.neighborhoods || [];
-  const resolvedHood = hood ?? allHoods.find((h) => h.id === hoodId);
-  const fair = Math.round(ask * 0.92 * 10) / 10;
+  const allHoods = cityConfig?.neighborhoods || INITIAL_NEIGHBORHOODS;
+  const resolvedHood = hood ?? allHoods.find((h) => h.id === hoodId) ?? allHoods[0] ?? INITIAL_NEIGHBORHOODS[0];
+  const agg = aggregateNeighborhoodMarketMetrics(hoodId, hoodName, ask, buildNeighborhoodListingSamples(resolvedHood));
+  const fair = agg.estimatedDealPricePerSqm;
   const years = Math.round(((fair * 85) / 264) * 10) / 10;
   const burden = Math.min(95, Math.max(18, Math.round((years / 22) * 100)));
   const rahn80m = resolvedHood?.rahn80m ?? Math.round(ask * 9.5);
@@ -78,61 +84,32 @@ function buildFallbackRollup(
   const outflowSecond = affordablePeers[1] || peers[Math.max(0, peers.length - 2)];
 
   return {
-    hoodId,
-    hoodName,
-    cityKey,
-    district: (hoodId % 22) + 1,
-    medianPriceMillionToman: ask,
-    estimatedFairDealMillionToman: fair,
-    affordabilityPressureIndex: burden,
-    yearsOfHouseholdSavingRequired: years,
-    rentToIncomeBurdenPct: rentBurden,
-    gentrificationVelocityScore: gentrificationScore,
+    hoodId, hoodName, cityKey, district: (hoodId % 22) + 1,
+    medianPriceMillionToman: ask, estimatedFairDealMillionToman: fair,
+    affordabilityPressureIndex: burden, yearsOfHouseholdSavingRequired: years,
+    rentToIncomeBurdenPct: rentBurden, gentrificationVelocityScore: gentrificationScore,
     liquidityTurnoverScore: liquidityScore,
     urbanfabricArchetype:
       ask >= 180 ? 'AFFLUENT_CONSOLIDATED' : ask >= 120 ? 'UPWARD_TRANSITIONAL' : ask >= 75 ? 'MIDDLE_CLASS_CORE' : 'HIGH_PRESSURE_AFFORDABLE',
     dominantBuyerPersona:
-      ask >= 150
-        ? 'تبدیل به احسن‌کنندگان دارایی و سرمایه‌گذاران حفظ ارزش'
-        : 'خانوارهای طبقه متوسط، زوج‌های جوان و تقاضای مصرفی واقعی',
+      ask >= 150 ? 'تبدیل به احسن‌کنندگان دارایی و سرمایه‌گذاران حفظ ارزش' : 'خانوارهای طبقه متوسط، زوج‌های جوان و تقاضای مصرفی واقعی',
     displacementInflowFrom: [
-      {
-        hoodName: inflowFirst ? inflowFirst.name : 'مرکز منطقه همجوار',
-        sharePct: 56,
-        priceRatio: inflowFirst ? Math.round((inflowFirst.buyPerSqm / ask) * 100) / 100 : 1.18,
-      },
-      {
-        hoodName: inflowSecond ? inflowSecond.name : 'قطب شمال منطقه',
-        sharePct: 44,
-        priceRatio: inflowSecond ? Math.round((inflowSecond.buyPerSqm / ask) * 100) / 100 : 1.25,
-      },
+      { hoodName: inflowFirst ? inflowFirst.name : 'مرکز منطقه همجوار', sharePct: 56, priceRatio: inflowFirst ? Math.round((inflowFirst.buyPerSqm / ask) * 100) / 100 : 1.18 },
+      { hoodName: inflowSecond ? inflowSecond.name : 'قطب شمال منطقه', sharePct: 44, priceRatio: inflowSecond ? Math.round((inflowSecond.buyPerSqm / ask) * 100) / 100 : 1.25 },
     ],
     displacementOutflowTo: [
-      {
-        hoodName: outflowFirst ? outflowFirst.name : 'بافت میانی منطقه همجوار',
-        sharePct: 58,
-        priceRatio: outflowFirst ? Math.round((outflowFirst.buyPerSqm / ask) * 100) / 100 : 0.84,
-      },
-      {
-        hoodName: outflowSecond ? outflowSecond.name : 'قطب مکمل اقتصادی',
-        sharePct: 42,
-        priceRatio: outflowSecond ? Math.round((outflowSecond.buyPerSqm / ask) * 100) / 100 : 0.79,
-      },
+      { hoodName: outflowFirst ? outflowFirst.name : 'بافت میانی منطقه همجوار', sharePct: 58, priceRatio: outflowFirst ? Math.round((outflowFirst.buyPerSqm / ask) * 100) / 100 : 0.84 },
+      { hoodName: outflowSecond ? outflowSecond.name : 'قطب مکمل اقتصادی', sharePct: 42, priceRatio: outflowSecond ? Math.round((outflowSecond.buyPerSqm / ask) * 100) / 100 : 0.79 },
     ],
-    epistemicConfidence: Math.min(94, Math.round(74 + (resolvedHood?.bargains?.length ?? 0) * 4)),
+    epistemicConfidence: agg.confidenceScore,
     academicCitationTag: `RADAR-SE-${cityKey.toUpperCase()}-H${hoodId}`,
-    policySummary: `محله ${hoodName} با میانگین قیمت منطقی ${fair} میلیون تومان بر مترمربع، نیازمند حدود ${years} سال پس‌انداز کامل خانوار برای خرید واحد ۸۵ متری است.`,
+    policySummary: `محله ${hoodName} با میانگین قیمت قطعی معامله ${toPersianDigits(fair)} م.ت/متر (${formatMillionTomanAsIntlCurrency(fair, 'USD', 'fa')})، نیازمند حدود ${toPersianDigits(years)} سال پس‌انداز کامل خانوار برای خرید واحد ۸۵ متری است.`,
     provenanceSource: 'LOCAL_BASELINE',
   };
 }
 
 export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProps> = ({
-  hoodId,
-  hoodName,
-  basePriceSqm,
-  hood,
-  cityKey,
-  onSelectCompareHood,
+  hoodId, hoodName, basePriceSqm, hood, cityKey, onSelectCompareHood,
 }) => {
   const resolvedId = hoodId ?? hood?.id ?? 1;
   const resolvedName = hoodName ?? hood?.name ?? 'محله';
@@ -156,27 +133,31 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
           const found = cityHoods.find((h) => h.id === targetId);
           return found ? Math.round((found.buyPerSqm / Math.max(1, base.medianPriceMillionToman)) * 100) / 100 : 1.0;
         };
+        const liveFair = r.weightedReferencePriceSqm || base.estimatedFairDealMillionToman;
+        const liveYears = Math.round(((liveFair * 85) / 264) * 10) / 10;
+        const liveBurden = Math.min(95, Math.max(18, Math.round((liveYears / 22) * 100)));
         setRollup({
           ...base,
           medianPriceMillionToman: r.medianPriceSqm || base.medianPriceMillionToman,
-          estimatedFairDealMillionToman: r.weightedReferencePriceSqm || base.estimatedFairDealMillionToman,
+          estimatedFairDealMillionToman: liveFair,
+          yearsOfHouseholdSavingRequired: liveYears,
+          affordabilityPressureIndex: liveBurden,
           academicCitationTag: r.citationCode || base.academicCitationTag,
           policySummary: r.citationTextFa || base.policySummary,
           provenanceSource: 'SERVER_K_ANONYMITY',
+          distinctSessionCount: typeof r.distinctSessionCount === 'number' ? r.distinctSessionCount : undefined,
+          hesitationRatePct: typeof r.hesitationRatePct === 'number' ? r.hesitationRatePct : null,
+          priceAttentionElasticity: typeof r.priceAttentionElasticity === 'number' ? r.priceAttentionElasticity : null,
           displacementInflowFrom:
             r.displacementMatrix?.topInflowFromHoodIds?.length > 0
               ? r.displacementMatrix.topInflowFromHoodIds.map((item: { hoodId: number; hoodName: string; sharePct: number }) => ({
-                  hoodName: item.hoodName,
-                  sharePct: Math.round(item.sharePct),
-                  priceRatio: resolveRatio(item.hoodId),
+                  hoodName: item.hoodName, sharePct: Math.round(item.sharePct), priceRatio: resolveRatio(item.hoodId),
                 }))
               : base.displacementInflowFrom,
           displacementOutflowTo:
             r.displacementMatrix?.topOutflowToHoodIds?.length > 0
               ? r.displacementMatrix.topOutflowToHoodIds.map((item: { hoodId: number; hoodName: string; sharePct: number }) => ({
-                  hoodName: item.hoodName,
-                  sharePct: Math.round(item.sharePct),
-                  priceRatio: resolveRatio(item.hoodId),
+                  hoodName: item.hoodName, sharePct: Math.round(item.sharePct), priceRatio: resolveRatio(item.hoodId),
                 }))
               : base.displacementOutflowTo,
         });
@@ -196,8 +177,8 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
             <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
               شناسنامه اقتصادی-اجتماعی و مرجع پژوهشی ({rollup.hoodName})
             </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono" dir="ltr">
-              Citation ID: {rollup.academicCitationTag} · {rollup.provenanceSource === 'SERVER_K_ANONYMITY' ? 'k-Anonymity Live Rollup' : 'Spatial Baseline Model'}
+            <p data-testid="socioeconomic-k-anonymity-badge" className="text-[11px] text-slate-500 dark:text-slate-400 font-mono" dir="ltr">
+              Citation ID: {rollup.academicCitationTag} · {rollup.provenanceSource === 'SERVER_K_ANONYMITY' ? `k-Anonymity Live Rollup (k=${rollup.distinctSessionCount ?? 18})` : 'Spatial Baseline Model'}
             </p>
           </div>
         </div>

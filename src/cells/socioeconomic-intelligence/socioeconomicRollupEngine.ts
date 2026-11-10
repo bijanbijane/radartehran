@@ -1,25 +1,19 @@
 /** @file src/cells/socioeconomic-intelligence/socioeconomicRollupEngine.ts — Stage 2.2 Socioeconomic Rollup Engine */
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { INITIAL_NEIGHBORHOODS } from '../../data/neighborhoods';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { getServerTelemetryStatusReport } from '../../utils/productAnalyticsEngine';
 import { clampNumber, sanitizeInput, validateCityParam } from '../../utils/security';
 import { getFirebaseAdminFirestoreForServer } from '../../utils/serverAdminAndTelegramSecurity';
 import { deepSyncedOverrides } from '../../utils/serverMarketPulseEngine';
 import { queryNeighborhoodCrowdClaims } from '../knowledge-crowd/crowdClaimsEngine';
+import { filterOutliersUsingMAD, type RawPriceObservation } from '../valuation-authority/robustValuationEngine';
 import {
-  filterOutliersUsingMAD,
-  type RawPriceObservation,
-} from '../valuation-authority/robustValuationEngine';
-import {
-  formatRollupPriceIntl,
-  K_ANONYMITY_MIN_DISTINCT_SESSIONS,
-  type BuildNeighborhoodRollupInput,
-  type BuildNeighborhoodRollupResult,
-  type DisplacementFlowEntry,
-  type NeighborhoodDisplacementMatrix,
-  type NeighborhoodResearchRollupDocument,
-  type ResearchBehavioralEvent,
+  formatRollupPriceIntl, K_ANONYMITY_MIN_DISTINCT_SESSIONS,
+  type BuildNeighborhoodRollupInput, type BuildNeighborhoodRollupResult,
+  type DisplacementFlowEntry, type NeighborhoodDisplacementMatrix,
+  type NeighborhoodResearchRollupDocument, type ResearchBehavioralEvent,
 } from './socioeconomicTypes';
 
 const inMemoryResearchRollups = new Map<string, NeighborhoodResearchRollupDocument>();
@@ -39,24 +33,24 @@ function setBoundedRollupCache(key: string, doc: NeighborhoodResearchRollupDocum
   inMemoryResearchRollups.set(key, doc);
 }
 
-function resolveHoodMeta(hoodId: number, cityId: string = 'tehran'): { name: string; buyPerSqm: number; bargainPricesSqm: number[] } {
+function resolveHoodMeta(hoodId: number, cityId: string = 'tehran'): { name: string; buyPerSqm: number; dealPerSqm: number; bargainPricesSqm: number[] } {
   const safeCity = validateCityParam(cityId, 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
-  const found = cityHoods.find((h) => h.id === hoodId) ?? INITIAL_NEIGHBORHOODS.find((h) => h.id === hoodId);
+  const found = cityHoods.find((h) => h.id === hoodId) ?? INITIAL_NEIGHBORHOODS.find((h) => h.id === hoodId) ?? INITIAL_NEIGHBORHOODS[0];
   const overridePrice = deepSyncedOverrides[safeCity]?.[hoodId]?.buyPerSqm;
   const basePrice = typeof overridePrice === 'number' && overridePrice > 0
     ? overridePrice
     : found && Number.isFinite(found.buyPerSqm) && found.buyPerSqm > 0 ? found.buyPerSqm : 120;
+  const agg = aggregateNeighborhoodMarketMetrics(hoodId, found?.name || `محله ${hoodId}`, basePrice, buildNeighborhoodListingSamples({ ...found, buyPerSqm: basePrice }));
+  const dealPerSqm = agg.estimatedDealPricePerSqm > 0 ? agg.estimatedDealPricePerSqm : Number((basePrice * 0.925).toFixed(1));
   const bargainPricesSqm = (found?.bargains ?? [])
     .filter((b) => b.type === 'خرید' && b.sqm > 0)
     .map((b) => Number((basePrice * (1 - (Number(b.discountPercent) || 8) / 100)).toFixed(2)));
-  return { name: found?.name || `محله ${hoodId}`, buyPerSqm: basePrice, bargainPricesSqm };
+  return { name: found?.name || `محله ${hoodId}`, buyPerSqm: basePrice, dealPerSqm, bargainPricesSqm };
 }
 
 export function computeInverseSamplingWeight(samplingProbability: number | undefined): number {
-  if (typeof samplingProbability !== 'number' || !Number.isFinite(samplingProbability) || samplingProbability <= 0) {
-    return 1.0;
-  }
+  if (typeof samplingProbability !== 'number' || !Number.isFinite(samplingProbability) || samplingProbability <= 0) return 1.0;
   const safeProb = clampNumber(samplingProbability, 0.01, 1.0, 1.0);
   return Number((1 / safeProb).toFixed(4));
 }
@@ -67,8 +61,7 @@ export function computeWeightedMedian(items: ReadonlyArray<{ value: number; weig
     .slice()
     .sort((a, b) => a.value - b.value);
   if (valid.length === 0) return 0;
-  const totalWeight = valid.reduce((acc, item) => acc + item.weight, 0);
-  const halfWeight = totalWeight / 2;
+  const halfWeight = valid.reduce((acc, item) => acc + item.weight, 0) / 2;
   let cumulative = 0;
   for (const item of valid) {
     cumulative += item.weight;
@@ -107,10 +100,6 @@ async function persistRollupBestEffort(doc: NeighborhoodResearchRollupDocument):
   } catch { /* Fallback to in-memory rollup store in local/test environments */ }
 }
 
-/**
- * Aggregates neighborhood price observations (via MAD filter) and behavioral telemetry events
- * (with inverse sampling weights w_i = 1 / p_i and k-anonymity lock k >= 15 sessions).
- */
 export async function aggregateNeighborhoodResearchRollup(
   input: BuildNeighborhoodRollupInput,
 ): Promise<BuildNeighborhoodRollupResult> {
@@ -132,11 +121,11 @@ export async function aggregateNeighborhoodResearchRollup(
       id: `bargain-${hoodId}-${idx}`, priceSqm: p, sourceType: 'APPROVED_BARGAIN' as const, ageDays: 7,
     }));
     defaultObservations = [
-      { id: 'seed-1', priceSqm: hoodMeta.buyPerSqm * 0.96, sourceType: 'VERIFIED_DEAL', ageDays: 5 },
-      { id: 'seed-2', priceSqm: hoodMeta.buyPerSqm * 1.0, sourceType: 'VERIFIED_DEAL', ageDays: 9 },
-      { id: 'seed-3', priceSqm: hoodMeta.buyPerSqm * 1.04, sourceType: 'APPROVED_BARGAIN', ageDays: 12 },
-      { id: 'seed-4', priceSqm: hoodMeta.buyPerSqm * 0.98, sourceType: 'VERIFIED_CLAIM', ageDays: 15 },
-      { id: 'seed-5', priceSqm: hoodMeta.buyPerSqm * 1.02, sourceType: 'AI_SEED', ageDays: 20 },
+      { id: 'seed-1', priceSqm: Number((hoodMeta.dealPerSqm * 0.99).toFixed(2)), sourceType: 'VERIFIED_DEAL', ageDays: 5 },
+      { id: 'seed-2', priceSqm: Number((hoodMeta.dealPerSqm * 1.01).toFixed(2)), sourceType: 'VERIFIED_DEAL', ageDays: 9 },
+      { id: 'seed-3', priceSqm: Number((hoodMeta.dealPerSqm * 1.03).toFixed(2)), sourceType: 'APPROVED_BARGAIN', ageDays: 12 },
+      { id: 'seed-4', priceSqm: Number((hoodMeta.buyPerSqm * 0.98).toFixed(2)), sourceType: 'VERIFIED_CLAIM', ageDays: 15 },
+      { id: 'seed-5', priceSqm: Number(hoodMeta.buyPerSqm.toFixed(2)), sourceType: 'AI_SEED', ageDays: 20 },
       ...bargainObs,
       ...verifiedClaimObs,
     ];

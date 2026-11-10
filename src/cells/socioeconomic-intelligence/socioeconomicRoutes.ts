@@ -70,6 +70,7 @@ export function registerSocioeconomicRoutes(
         rollup.hoodName,
         cityId,
         rollup.weightedReferencePriceSqm,
+        rollup.medianPriceSqm,
       );
       res.status(200).json({
         status: 'ok',
@@ -116,7 +117,7 @@ export function registerSocioeconomicRoutes(
         hasElevator: typeof body.hasElevator === 'boolean' ? body.hasElevator : true,
         hasParking: typeof body.hasParking === 'boolean' ? body.hasParking : true,
         hasStorage: typeof body.hasStorage === 'boolean' ? body.hasStorage : true,
-        sellerAskingTotalMillion: Number.isFinite(Number(body.sellerAskingTotalMillion))
+        sellerAskingTotalMillion: Number.isFinite(Number(body.sellerAskingTotalMillion)) && Number(body.sellerAskingTotalMillion) > 0
           ? Number(body.sellerAskingTotalMillion)
           : undefined,
         intlCurrency,

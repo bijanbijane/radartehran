@@ -248,15 +248,10 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
   }));
   app.get('/api/account/export-data', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    const auth = await verifyFirebaseUserAuthorization(
-      req.headers as Record<string, string | string[] | undefined>,
-    );
-    if (!auth.authorized || !auth.uid) {
-      res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' });
-      return;
-    }
+    const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' }); return; }
     const ownListings = Array.from(serverPublishedBargains.values()).filter((b) => b.ownerUid === auth.uid);
-    const firestoreLeads = await reconcileUserBuyerAlertsInFirestore(auth.uid, 'export');
+    const firestoreLeads = await reconcileUserBuyerAlertsInFirestore(auth.uid, 'export', req.headers.authorization);
     const seenAlertKeys = new Set(firestoreLeads.map((l) => `${l.id || ''}_${l.hoodId}`));
     const ownBuyerLeads = [...firestoreLeads, ...serverSideBuyerLeads.filter((l) => l.submittedByUid === auth.uid).filter((l) => !seenAlertKeys.has(`${l.id || ''}_${l.hoodId}`))];
     const ownCorrections = serverDataCorrections.filter((c) => c.reporterUid === auth.uid);
@@ -271,7 +266,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
       res.status(400).json({ status: 'error', code: 'EXPLICIT_CONFIRMATION_REQUIRED', message: 'تأیید صریح حذف حساب کاربری الزامی است.' });
       return;
     }
-    await reconcileUserBuyerAlertsInFirestore(auth.uid, 'delete');
+    await reconcileUserBuyerAlertsInFirestore(auth.uid, 'delete', req.headers.authorization);
     for (const [id, rec] of serverPublishedBargains.entries()) { if (rec.ownerUid === auth.uid) serverPublishedBargains.delete(id); }
     for (let i = serverSideBuyerLeads.length - 1; i >= 0; i--) { if (serverSideBuyerLeads[i].submittedByUid === auth.uid) serverSideBuyerLeads.splice(i, 1); }
     for (let i = serverDataCorrections.length - 1; i >= 0; i--) { if (serverDataCorrections[i].reporterUid === auth.uid) serverDataCorrections.splice(i, 1); }

@@ -10,7 +10,7 @@ import {
   generateCasperHousingCycleReport,
   HousingCycleRegimeId
 } from '../../cells/decision-epistemology/housingCycleRegimeEngine';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface HousingCycleRegimeCardProps {
@@ -19,6 +19,7 @@ export interface HousingCycleRegimeCardProps {
   cityKey?: string;
   basePriceSqm?: number;
   intlCurrency?: IntlCurrencyCode;
+  hood?: Neighborhood;
 }
 
 export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
@@ -27,15 +28,16 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
   cityKey = 'tehran',
   basePriceSqm = 120,
   intlCurrency = 'USD',
+  hood,
 }) => {
   const [selectedPersona, setSelectedPersona] = useState<'buyer' | 'upgrader' | 'investor'>('buyer');
 
   const report = useMemo(() => {
-    return generateCasperHousingCycleReport(hoodId, hoodName, cityKey, basePriceSqm);
-  }, [hoodId, hoodName, cityKey, basePriceSqm]);
+    return generateCasperHousingCycleReport(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency]);
 
   const cycle = report.cycle;
-  const rahnFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(report.rahn80m, intlCurrency, 'fa')})` : '';
+  const rahnFx = intlCurrency !== 'IRT' && report.rahn80mIntlText ? ` (${report.rahn80mIntlText})` : '';
 
   const phaseColors: Record<HousingCycleRegimeId, { bg: string; text: string; border: string }> = {
     ACCUMULATION_RECOVERY: {

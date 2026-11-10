@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { ShieldCheck, Scale, AlertTriangle, Sliders, Eye, FileWarning, Cpu, Brain } from 'lucide-react';
 import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
-import type { IntlCurrencyCode } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import { CasperDecisionMatrixCard } from './CasperDecisionMatrixCard';
 import {
   buildNeighborhoodEpistemicDossier,
   evaluateCounterfactualDecisionScenario,
@@ -10,12 +11,8 @@ import {
 } from '../../cells/decision-epistemology/epistemicDecisionEngine';
 
 export interface EpistemicProvenancePanelProps {
-  hoodId: number;
-  hoodName: string;
-  cityKey: string;
-  basePriceSqm: number;
-  hood?: Neighborhood;
-  intlCurrency?: IntlCurrencyCode;
+  hoodId: number; hoodName: string; cityKey: string; basePriceSqm: number;
+  hood?: Neighborhood; initialTargetSqm?: number; onTargetSqmChange?: (sqm: number) => void; intlCurrency?: IntlCurrencyCode;
 }
 
 const PROVENANCE_BADGE_STYLE: Record<RadarDataProvenanceLayerId, string> = {
@@ -44,11 +41,12 @@ const EPISTEMIC_CLASS_LABEL: Record<EpistemicStatementClass, string> = {
 };
 
 export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> = ({
-  hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency = 'USD',
+  hoodId, hoodName, cityKey, basePriceSqm, hood, initialTargetSqm = 85, onTargetSqmChange, intlCurrency = 'USD',
 }) => {
   const [filterMode, setFilterMode] = useState<'ALL' | 'EVIDENCE_AND_FACT' | 'INFERENCE_AND_MODEL' | 'UNCERTAINTY_AND_CONFLICT'>('ALL');
   const [buyerDiscountPct, setBuyerDiscountPct] = useState<number>(8);
-  const [unitAreaSqm, setUnitAreaSqm] = useState<number>(85);
+  const [unitAreaSqm, setUnitAreaSqm] = useState<number>(initialTargetSqm);
+  React.useEffect(() => { setUnitAreaSqm(initialTargetSqm); }, [initialTargetSqm]);
 
   const dossier = useMemo(
     () => buildNeighborhoodEpistemicDossier({ cityId: cityKey, hoodId, hoodName, buyPerSqm: basePriceSqm, rahn80m: hood?.rahn80m, intlCurrency }),
@@ -170,10 +168,10 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
             <label htmlFor="casper-area-select" className="text-slate-600 dark:text-slate-300 font-medium">متراژ مبنا:</label>
             <select
               id="casper-area-select" aria-label="متراژ مبنا برای شبیه‌سازی مذاکره" value={unitAreaSqm}
-              onChange={(e) => setUnitAreaSqm(Number(e.target.value))}
+              onChange={(e) => { const v = Number(e.target.value); setUnitAreaSqm(v); onTargetSqmChange?.(v); }}
               className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-[11px] text-slate-800 dark:text-slate-100"
             >
-              {[65, 85, 110, 140].map((sqm) => <option key={sqm} value={sqm}>{toPersianNum(sqm)} متر</option>)}
+              {[65, 85, 110, 135].map((sqm) => <option key={sqm} value={sqm}>{toPersianNum(sqm)} متر</option>)}
             </select>
           </div>
         </div>
@@ -193,7 +191,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
           <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
             <div className="text-[10px] text-slate-500 dark:text-slate-400">کل مبلغ اعلامی آگهی</div>
-            <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{toPersianNum(counterfactual.askingTotalMillion)} م‌ت</div>
+            <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{toPersianNum(counterfactual.askingTotalMillion)} م‌ت ({formatMillionTomanAsIntlCurrency(counterfactual.askingTotalMillion, intlCurrency, 'fa')})</div>
           </div>
           <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
             <div className="text-[10px] text-slate-500 dark:text-slate-400">پیشنهاد شما ({toPersianNum(buyerDiscountPct)}٪-)</div>
@@ -201,7 +199,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
           </div>
           <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
             <div className="text-[10px] text-slate-500 dark:text-slate-400">حفظ سرمایه در برابر آگهی</div>
-            <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(counterfactual.capitalPreservedMillion)} م‌ت</div>
+            <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{toPersianNum(counterfactual.capitalPreservedMillion)} م‌ت ({formatMillionTomanAsIntlCurrency(counterfactual.capitalPreservedMillion, intlCurrency, 'fa')})</div>
           </div>
           <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200/80 dark:border-slate-800">
             <div className="text-[10px] text-slate-500 dark:text-slate-400">احتمال پذیرش فروشنده</div>
@@ -210,6 +208,8 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         </div>
         <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">{counterfactual.consequenceSummaryFa}</p>
       </div>
+
+      <CasperDecisionMatrixCard hoodId={hoodId} hoodName={hoodName} basePriceSqm={basePriceSqm} hood={hood} intlCurrency={intlCurrency} compact />
 
       {/* 12-Layer Provenance Matrix */}
       <div className="space-y-2.5">

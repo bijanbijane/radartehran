@@ -1,4 +1,7 @@
 import crypto from 'node:crypto';
+import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
+import { INITIAL_NEIGHBORHOODS } from '../../data/neighborhoods';
+import { getCurrentJalaliYear } from '../../data/hedonicPricingEngine';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { normalizeDigitsToAscii, normalizePersianStreetName, resolveOrMergeCanonicalBuilding, resetEntityResolutionStoreForTests } from './entityResolutionEngine';
 import type { DealModeCode, ExtractedPropertyFactRecord, PropertyTypeCode, RawPropertySignalInput, StructuralConditionCode } from './aiIngestionTypes';
@@ -14,7 +17,7 @@ export function computeSignalSourceHashSha256(input: RawPropertySignalInput): st
   return crypto.createHash('sha256').update(`${input.cityId || 'tehran'}|${input.hoodId || 1}|${normalizedText}`).digest('hex');
 }
 
-export function extractFastRegexPropertySpecs(rawTextFa: string, currentJalaliYear = 1405): {
+export function extractFastRegexPropertySpecs(rawTextFa: string, currentJalaliYear = getCurrentJalaliYear()): {
   areaSqm: number | null;
   buildingAgeYears: number | null;
   floorNumber: number | null;
@@ -30,7 +33,11 @@ export function extractFastRegexPropertySpecs(rawTextFa: string, currentJalaliYe
   propertyType: PropertyTypeCode;
   matchedFieldsCount: number;
 } {
-  const text = normalizeDigitsToAscii(rawTextFa || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\u200c]/g, ' ');
+  const text = normalizeDigitsToAscii(rawTextFa || '')
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/[\u200c]/g, ' ')
+    .replace(/(\d+)[/,](\d+)\s*(میلیارد|میلیون)/g, '$1.$2 $3');
   let matchedFieldsCount = 0;
 
   const areaMatch = text.match(/(\d{2,4})\s*(?:متر\s*مربع|متری|متر)/);
@@ -89,8 +96,8 @@ export function extractFastRegexPropertySpecs(rawTextFa: string, currentJalaliYe
     pricePerSqmMillionToman = perSqmMatch[2] === 'میلیارد' ? val * 1000 : val;
     matchedFieldsCount += 1;
   }
-  const totalBillionMatch = text.match(/(?:قیمت\s*کل|قیمت|مبلغ)?\s*(\d+(?:\.\d+)?)\s*میلیارد/);
-  const totalMillionMatch = text.match(/(?:قیمت\s*کل|قیمت|رهن)?\s*(\d{3,6})\s*میلیون/);
+  const totalBillionMatch = text.match(/(?:قیمت\s*کل|قیمت|مبلغ|رهن\s*کامل|رهن|ودیعه)?\s*(\d+(?:\.\d+)?)\s*میلیارد/);
+  const totalMillionMatch = text.match(/(?:قیمت\s*کل|قیمت|رهن\s*کامل|رهن|ودیعه)?\s*(\d{3,6})\s*میلیون/);
   if (totalBillionMatch && (!perSqmMatch || totalBillionMatch.index !== perSqmMatch.index)) {
     totalPriceMillionToman = Math.round(Number(totalBillionMatch[1]) * 1000);
     matchedFieldsCount += 1;
@@ -151,28 +158,38 @@ export function extractAndResolvePropertySignal(input: RawPropertySignalInput): 
   const floorNumber = Math.max(0, Math.round(input.floorNumberHint ?? fast.floorNumber ?? 2));
   const totalFloors = Math.max(floorNumber || 1, Math.round(input.totalFloorsHint ?? fast.totalFloors ?? 5));
   const streetNameNormalized = input.streetNameHint ? normalizePersianStreetName(input.streetNameHint) : fast.streetNameNormalized;
+  const resolvedDealMode = input.dealMode ?? fast.dealMode;
+  const normalizedCity = String(input.cityId || 'tehran').toLowerCase() as CityId;
+  const normalizedHoodId = Math.max(1, Math.round(Number(input.hoodId) || 1));
 
   let totalPrice = input.totalPriceMillionTomanHint ?? fast.totalPriceMillionToman ?? 0;
   let pricePerSqm = input.pricePerSqmMillionTomanHint ?? fast.pricePerSqmMillionToman ?? 0;
   if (totalPrice > 0 && pricePerSqm <= 0) pricePerSqm = Number((totalPrice / areaSqm).toFixed(2));
   else if (pricePerSqm > 0 && totalPrice <= 0) totalPrice = Math.round(pricePerSqm * areaSqm);
   else if (totalPrice <= 0 && pricePerSqm <= 0) {
-    pricePerSqm = 120;
-    totalPrice = areaSqm * pricePerSqm;
+    const cityHoods = MULTI_CITY_CONFIGS[normalizedCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
+    const matchedHood = cityHoods.find((h) => h.id === normalizedHoodId) ?? INITIAL_NEIGHBORHOODS.find((h) => h.id === normalizedHoodId);
+    if (resolvedDealMode === 'rent' && matchedHood?.rahn80m) {
+      totalPrice = Math.max(50, Math.round((matchedHood.rahn80m / 80) * areaSqm));
+      pricePerSqm = Number((totalPrice / areaSqm).toFixed(2));
+    } else {
+      pricePerSqm = matchedHood?.buyPerSqm ?? 120;
+      totalPrice = Math.round(areaSqm * pricePerSqm);
+    }
   }
 
   const factId = input.signalId || `fact_${sourceHashSha256.slice(0, 14)}`;
   const resolution = resolveOrMergeCanonicalBuilding(
-    { cityId: input.cityId || 'tehran', hoodId: input.hoodId || 1, streetNameNormalized, areaSqm, buildingAgeYears, totalFloors, lat: input.lat, lng: input.lng },
+    { cityId: normalizedCity, hoodId: normalizedHoodId, streetNameNormalized, areaSqm, buildingAgeYears, totalFloors, lat: input.lat, lng: input.lng },
     factId,
   );
   const confidenceScore = Number(Math.min(0.99, Math.max(0.55, 0.5 + fast.matchedFieldsCount * 0.08)).toFixed(2));
   const fact: ExtractedPropertyFactRecord = {
     factId,
-    cityId: String(input.cityId || 'tehran').toLowerCase(),
-    hoodId: Math.max(1, Math.round(Number(input.hoodId) || 1)),
+    cityId: normalizedCity,
+    hoodId: normalizedHoodId,
     propertyType: input.propertyType ?? fast.propertyType,
-    dealMode: input.dealMode ?? fast.dealMode,
+    dealMode: resolvedDealMode,
     areaSqm,
     buildingAgeYears,
     floorNumber,

@@ -1,6 +1,6 @@
 /** @file src/components/views/ProductViewRouter.tsx — View Router for تهران رادار (< 250 lines) [RULE-01] */
 import React from 'react';
-import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
+import type { EvaluatedNeighborhood, Neighborhood, MapTileServerId } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
 import type { FeatureFlags, CityId } from '../../types/models';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
@@ -18,6 +18,7 @@ export interface ProductViewRouterProps {
   primaryView: PrimaryViewId;
   ui: any;
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
+  allNeighborhoods?: Neighborhood[];
   selectedHood: EvaluatedNeighborhood;
   handleSelectNeighborhood: (h: EvaluatedNeighborhood) => void;
   favoriteHoodIds: number[];
@@ -35,6 +36,9 @@ export interface ProductViewRouterProps {
   isVerifiedAdmin: boolean;
   activeCity: CityId;
   crudActions: any;
+  handleDeepWebSync?: () => void;
+  mapTileStyle?: MapTileServerId;
+  setMapTileStyle?: (s: MapTileServerId) => void;
   setShowReverseBudgetModal: (b: boolean) => void;
   onSignOut: () => void;
 }
@@ -256,10 +260,11 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   } else if (primaryView === 'admin') {
     content = (
       <ProductAdminMonitoringView
-        ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} activeCity={p.activeCity}
+        ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} allNeighborhoods={p.allNeighborhoods} activeCity={p.activeCity}
         totalLiveBargainsCount={evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0)}
-        featureFlags={p.featureFlags} currentUser={p.currentUser} isVerifiedAdmin={true}
-        crudActions={p.crudActions} handleDeepWebSync={() => {}} onBackToMap={() => ui.setPrimaryView('map')}
+        featureFlags={p.featureFlags} currentUser={p.currentUser} isVerifiedAdmin={p.isVerifiedAdmin}
+        crudActions={p.crudActions} handleDeepWebSync={p.handleDeepWebSync || (() => {})}
+        mapTileStyle={p.mapTileStyle} setMapTileStyle={p.setMapTileStyle} onBackToMap={() => ui.setPrimaryView('map')}
       />
     );
   }

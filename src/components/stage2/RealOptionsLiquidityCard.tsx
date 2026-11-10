@@ -15,7 +15,7 @@ import {
   generateCasperLiquidityReport,
   computeDixitPindyckRealOption,
 } from '../../cells/decision-epistemology/realOptionsLiquidityEngine';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import type { IntlCurrencyCode } from '../../utils/areaUnit';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 
@@ -25,6 +25,7 @@ export interface RealOptionsLiquidityCardProps {
   cityKey?: string;
   basePriceSqm?: number;
   intlCurrency?: IntlCurrencyCode;
+  hood?: Neighborhood;
 }
 
 export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> = ({
@@ -33,12 +34,13 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
   cityKey = 'tehran',
   basePriceSqm = 120,
   intlCurrency = 'USD',
+  hood,
 }) => {
   const [horizonMonths, setHorizonMonths] = useState<number>(6);
 
   const report = useMemo(() => {
-    return generateCasperLiquidityReport(hoodId, hoodName, cityKey, basePriceSqm);
-  }, [hoodId, hoodName, cityKey, basePriceSqm]);
+    return generateCasperLiquidityReport(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency]);
 
   // Recalculate Dixit-Pindyck with user-selected horizon
   const customRealOptions = useMemo(() => {
@@ -121,9 +123,13 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
               {toPersianNum(customRealOptions.valueOfWaitingTomanMln)} میلیون تومان
               <span className="text-[10px] font-normal text-slate-400">{valueWaitingFx}</span>
             </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-              <span>ضریب آستانه: {toPersianNum(customRealOptions.hurdleRateMultiplier)} برابر</span>
-              <span>سقف توجیه: متری {toPersianNum(customRealOptions.hurdlePricePerSqm)} م.ت</span>
+            <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold flex justify-between pt-0.5" data-testid="buyer-reservation-ceiling">
+              <span>سقف ورود فوری خریدار: متری {toPersianNum(customRealOptions.buyerReservationPricePerSqm)} م.ت</span>
+              <span>(-{toPersianNum(customRealOptions.requiredBuyerDiscountPct)}٪)</span>
+            </div>
+            <div className="text-[9.5px] text-slate-500 dark:text-slate-400 flex justify-between">
+              <span>ضریب آستانه: {toPersianNum(customRealOptions.hurdleRateMultiplier)}x</span>
+              <span>ارزش بنیادی لازم: متری {toPersianNum(customRealOptions.hurdlePricePerSqm)} م.ت</span>
             </div>
           </div>
 

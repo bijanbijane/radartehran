@@ -8,6 +8,9 @@
 import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+void formatMillionTomanAsIntlCurrency;
 
 export interface MonteCarloSimulationConfig {
   horizonMonths: number;
@@ -225,7 +228,10 @@ export function generateCasperMonteCarloRiskReport(
 ): CasperMonteCarloRiskReport {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
-  const annualVolSigma = resolvedPrice >= 170 ? 0.31 : resolvedPrice >= 100 ? 0.23 : 0.18;
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, buildNeighborhoodListingSamples(hood));
+  const iqrSpreadRatio = Math.max(0.06, Math.min(0.28, (agg.iqrHighPerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.estimatedDealPricePerSqm)));
+  const tierSigma = resolvedPrice >= 170 ? 0.28 : resolvedPrice >= 100 ? 0.21 : 0.16;
+  const annualVolSigma = Number(Math.min(0.38, tierSigma + iqrSpreadRatio * 0.25).toFixed(3));
   const annualDriftMu = resolvedPrice >= 170 ? 0.42 : resolvedPrice >= 100 ? 0.38 : 0.34;
 
   const simConfig: Partial<MonteCarloSimulationConfig> = {

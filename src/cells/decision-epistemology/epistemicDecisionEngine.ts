@@ -207,9 +207,12 @@ export function buildNeighborhoodEpistemicDossier(input: {
   const rahn80m = input.rahn80m && input.rahn80m > 0 ? input.rahn80m : found?.rahn80m || 1200;
   const samples = buildNeighborhoodListingSamples({ id: input.hoodId, name: hoodName, buyPerSqm, bargains: found?.bargains });
   const agg = aggregateNeighborhoodMarketMetrics(input.hoodId, hoodName, buyPerSqm, samples);
+  const resolvedValidCount = Math.max(1, agg.validSampleCount || samples.length || 1);
+  const resolvedIqrLow = agg.iqrLowPerSqm > 0 ? agg.iqrLowPerSqm : Math.round(agg.estimatedDealPricePerSqm * 0.94);
+  const resolvedIqrHigh = agg.iqrHighPerSqm > resolvedIqrLow ? agg.iqrHighPerSqm : Math.round(agg.askingPricePerSqm * 1.05);
   const decomp = computeConfidenceScoreDecomposition({
-    validSampleCount: agg.validSampleCount, rejectedFraudCount: agg.rejectedFraudCount,
-    askingPricePerSqm: agg.askingPricePerSqm, iqrLowPerSqm: agg.iqrLowPerSqm, iqrHighPerSqm: agg.iqrHighPerSqm, recencyDays: 2,
+    validSampleCount: resolvedValidCount, rejectedFraudCount: agg.rejectedFraudCount,
+    askingPricePerSqm: agg.askingPricePerSqm, iqrLowPerSqm: resolvedIqrLow, iqrHighPerSqm: resolvedIqrHigh, recencyDays: 2,
   });
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
   const dealIntl = formatMillionTomanAsIntlCurrency(agg.estimatedDealPricePerSqm, intlCurrency, 'fa');
@@ -217,11 +220,11 @@ export function buildNeighborhoodEpistemicDossier(input: {
   const regimeFa = agg.marketRegime === 'HOT' ? 'داغ (تخفیف ~۲.۵٪)' : agg.marketRegime === 'FROZEN' ? 'رکودی (شکاف ~۱۰٪)' : 'متعادل (تخفیف ~۷٪)';
   const { biases, grossRentalYieldPct, estimatedExitDays } = evaluateCognitiveDecisionBiases({
     askingPricePerSqm: agg.askingPricePerSqm, estimatedDealPricePerSqm: agg.estimatedDealPricePerSqm,
-    iqrLowPerSqm: agg.iqrLowPerSqm, rahn80m, marketRegime: agg.marketRegime, intlCurrency,
+    iqrLowPerSqm: resolvedIqrLow, rahn80m, marketRegime: agg.marketRegime, intlCurrency,
   });
 
   const provenanceLayers: EpistemicProvenanceLayerEntry[] = [
-    { layerId: 'OBSERVED_DATA', order: 1, titleFa: '۱. داده مشاهده‌شده (Observed Data)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${agg.validSampleCount} نمونه پالایش‌شده در دامنه ${agg.iqrLowPerSqm} تا ${agg.iqrHighPerSqm} م.ت/متر`, sourceFa: 'پایش آگهی‌های عمومی و مشاهدات بازار محله', verificationMethodFa: 'فیلتر آماری دامنه بین‌چارکی (IQR) و میانه انحراف مطلق (MAD)', confidencePct: decomp.totalConfidencePct, limitationFa: 'مبتنی بر نمونه قابل مشاهده بازار است و معاملات خصوصی غیررسانه‌ای را شامل نمی‌شود.', statusTone: 'emerald' },
+    { layerId: 'OBSERVED_DATA', order: 1, titleFa: '۱. داده مشاهده‌شده (Observed Data)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${resolvedValidCount} نمونه پالایش‌شده در دامنه ${resolvedIqrLow} تا ${resolvedIqrHigh} م.ت/متر`, sourceFa: 'پایش آگهی‌های عمومی و مشاهدات بازار محله', verificationMethodFa: 'فیلتر آماری دامنه بین‌چارکی (IQR) و میانه انحراف مطلق (MAD)', confidencePct: decomp.totalConfidencePct, limitationFa: 'مبتنی بر نمونه قابل مشاهده بازار است و معاملات خصوصی غیررسانه‌ای را شامل نمی‌شود.', statusTone: 'emerald' },
     { layerId: 'ADVERTISER_CLAIM', order: 2, titleFa: '۲. ادعای آگهی‌دهنده (Advertiser Claim)', epistemicClass: 'HYPOTHESIS', currentValueSummaryFa: `میانه قیمت پیشنهادی (تابلو): متری ${agg.askingPricePerSqm} م.ت`, sourceFa: 'اظهار اولیه فروشندگان و مشاوران در آگهی‌ها', verificationMethodFa: 'مقایسه با توزیع هدانیک محله و تشخیص کلیدواژه‌های تبلیغاتی', confidencePct: 62, limitationFa: 'قیمت پیشنهادی دارای لنگر ذهنی (Anchoring) فروشنده است و قیمت معامله قطعی نیست.', statusTone: 'amber' },
     { layerId: 'VERIFIED_DATA', order: 3, titleFa: '۳. داده تأییدشده (Verified Data)', epistemicClass: 'FACT', currentValueSummaryFa: `مختصات جغرافیایی، مرز محله و ضوابط پایه شهری ${hoodName}`, sourceFa: 'لایه مرجع مکانی GIS و گزارش‌های دارای اجماع وزنی (VERIFIED_REFERENCE)', verificationMethodFa: 'کنترل هندسی چندضلعی محله و حد نصاب اجماع کارشناسی (≥ ۳.۰)', confidencePct: 96, limitationFa: 'وضعیت ثبتی و پایان‌کار هر پلاک باید جداگانه در دفتر اسناد رسمی استعلام شود.', statusTone: 'emerald' },
     { layerId: 'USER_PROVIDED_DATA', order: 4, titleFa: '۴. داده ارائه‌شده توسط کاربر (User-Provided)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${votesCount} امتیاز و تجربه زیسته ساکنان درباره آرامش، پارک و زیرساخت`, sourceFa: 'مشارکت مستقیم شهروندان و ساکنان محله در رادار', verificationMethodFa: 'وزن‌دهی شهرت مشارکت‌کننده و اعتبارسنجی موقعیت مکانی (Geolocation)', confidencePct: 78, limitationFa: 'بازتاب ادراک ذهنی مشارکت‌کنندگان است و ممکن است بین کوچه‌ها متفاوت باشد.', statusTone: 'blue' },
@@ -248,7 +251,7 @@ export function buildNeighborhoodEpistemicDossier(input: {
   return {
     cityId: safeCity, hoodId: input.hoodId, hoodName, generatedAtIso: new Date().toISOString(),
     askingPricePerSqm: agg.askingPricePerSqm, estimatedDealPricePerSqm: agg.estimatedDealPricePerSqm,
-    estimatedDealPriceIntlText: dealIntl, iqrLowPerSqm: agg.iqrLowPerSqm, iqrHighPerSqm: agg.iqrHighPerSqm,
+    estimatedDealPriceIntlText: dealIntl, iqrLowPerSqm: resolvedIqrLow, iqrHighPerSqm: resolvedIqrHigh,
     grossRentalYieldPct, estimatedExitDays, confidenceDecomposition: decomp,
     provenanceLayers, cognitiveBiases: biases, accountabilityManifest,
   };

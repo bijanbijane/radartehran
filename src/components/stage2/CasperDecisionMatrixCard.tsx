@@ -9,7 +9,7 @@ import {
   evaluateCasperNeighborhoodDecision,
   type UserDecisionWeights,
 } from '../../cells/socioeconomic-intelligence/casperDecisionEngine';
-import { toPersianNum, type Neighborhood } from '../../data/neighborhoods';
+import { toPersianNum, type Neighborhood, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
@@ -24,7 +24,7 @@ export interface CasperDecisionMatrixCardProps {
   marketStatus?: 'undervalued' | 'balanced' | 'bubble';
   intlCurrency?: IntlCurrencyCode;
   compact?: boolean;
-  hood?: Neighborhood;
+  hood?: Neighborhood | EvaluatedNeighborhood;
 }
 
 export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> = ({
@@ -54,6 +54,15 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
     [hoodId, hoodName, basePriceSqm, hood],
   );
 
+  const evalHood = hood as Partial<EvaluatedNeighborhood> | undefined;
+  const effectiveOverall = evalHood?.overallScore ?? overallScore;
+  const effectiveTransit = hood?.metro ?? transitScore;
+  const effectiveSafety = hood?.security ?? safetyScore;
+  const effectiveRahn80m = hood?.rahn80m ?? rahn80m ?? Math.round(agg.estimatedDealPricePerSqm * 80 * 0.14);
+  const effectiveStatus = evalHood?.status === 'green' ? 'undervalued' : evalHood?.status === 'red' ? 'bubble' : marketStatus;
+  const totalWeightSum =
+    weights.priceWeight + weights.commuteWeight + weights.environmentWeight + weights.liquidityWeight + weights.safetyWeight || 1;
+
   const evaluation = useMemo(
     () =>
       evaluateCasperNeighborhoodDecision(
@@ -67,17 +76,17 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
           validSampleCount: agg.validSampleCount,
           rejectedFraudCount: agg.rejectedFraudCount,
           confidenceScore: agg.confidenceScore,
-          marketStatus,
+          marketStatus: effectiveStatus,
           marketRegime: agg.marketRegime,
-          overallScore,
-          transitScore,
-          safetyScore,
-          rahn80m: rahn80m ?? Math.round(agg.estimatedDealPricePerSqm * 80 * 0.14),
+          overallScore: effectiveOverall,
+          transitScore: effectiveTransit,
+          safetyScore: effectiveSafety,
+          rahn80m: effectiveRahn80m,
           intlCurrency,
         },
         weights,
       ),
-    [hoodId, hoodName, agg, marketStatus, overallScore, transitScore, safetyScore, rahn80m, intlCurrency, weights],
+    [hoodId, hoodName, agg, effectiveStatus, effectiveOverall, effectiveTransit, effectiveSafety, effectiveRahn80m, intlCurrency, weights],
   );
 
   const applyPreset = (preset: 'balanced' | 'investor' | 'family' | 'commuter') => {
@@ -106,7 +115,6 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
 
   return (
     <div dir="rtl" className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-4 text-right" data-testid="casper-decision-matrix-card">
-      {/* Header & Risk-Adjusted Utility Score */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div className="flex items-center gap-2">
           <BrainCircuit className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -190,33 +198,37 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
             { key: 'environmentWeight' as const, label: 'کیفیت محیطی', score: evaluation.dimensionScores.environmentUtility },
             { key: 'liquidityWeight' as const, label: 'نقدشوندگی خروج', score: evaluation.dimensionScores.liquidityUtility },
             { key: 'safetyWeight' as const, label: 'ایمنی و سازه', score: evaluation.dimensionScores.safetyUtility },
-          ].map((item) => (
-            <label key={item.key} className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-1 font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">
-                <span>{item.label}</span>
-                <span className="text-emerald-600 dark:text-emerald-400 tabular-nums">{toPersianNum(weights[item.key])}٪</span>
-              </div>
-              <input
-                type="range"
-                min={5}
-                max={70}
-                step={5}
-                aria-label={`وزن ${item.label}`}
-                value={weights[item.key]}
-                onChange={(e) => {
-                  setActivePreset('balanced');
-                  setWeights((prev) => ({ ...prev, [item.key]: Number(e.target.value) }));
-                }}
-                className="w-full accent-emerald-600 cursor-pointer"
-              />
-              <span className="text-[10px] text-slate-400 tabular-nums">
-                امتیاز محله: {toPersianNum(item.score)}/۱۰۰
-              </span>
-            </label>
-          ))}
+          ].map((item) => {
+            const normalizedSharePct = Math.round((weights[item.key] / totalWeightSum) * 100);
+            return (
+              <label key={item.key} className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-1 font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                  <span>{item.label}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    {toPersianNum(normalizedSharePct)}٪ (وزن {toPersianNum(weights[item.key])})
+                  </span>
+                </div>
+                <input
+                  type="range" min={5} max={70} step={5} aria-label={`وزن ${item.label}`}
+                  value={weights[item.key]}
+                  onChange={(e) => {
+                    setActivePreset('balanced');
+                    setWeights((prev) => ({ ...prev, [item.key]: Number(e.target.value) }));
+                  }}
+                  className="w-full accent-emerald-600 cursor-pointer"
+                />
+                <span className="text-[10px] text-slate-400 tabular-nums">امتیاز محله: {toPersianNum(item.score)}/۱۰۰</span>
+              </label>
+            );
+          })}
         </div>
 
-        {/* Verdict & Counterfactual Sensitivity */}
+        {evaluation.nonCompensatoryVetoTriggered && (
+          <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-2.5 text-[11px] font-bold text-rose-900 dark:text-rose-200">
+            هشدار خط قرمز غیرجبرانی: {evaluation.vetoReasonsFa.join(' • ')}
+          </div>
+        )}
+
         <div className={`rounded-xl border p-3 space-y-1.5 ${verdictBadgeClass}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-black">
@@ -241,7 +253,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
           <ShieldAlert className="h-4 w-4 text-amber-600" />
           <span>سپر محافظت در برابر خطاهای شناختی و تله‌های روانی بازار</span>
         </div>
-        <div className={`grid grid-cols-1 ${compact ? '' : 'md:grid-cols-3'} gap-2.5`}>
+        <div className={`grid grid-cols-1 ${compact ? '' : 'md:grid-cols-2'} gap-2.5`}>
           {evaluation.biasAlerts.map((b) => (
             <div key={b.id} className="rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20 p-3 space-y-1">
               <div className="flex items-center justify-between gap-1">

@@ -3,6 +3,7 @@ import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSq
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 
 export interface CrowdClaimItem {
   id: string; hoodId: number; hoodName: string; cityKey: string;
@@ -43,13 +44,14 @@ function buildSeedClaims(hoodId: number, hoodName: string, cityKey: string) {
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hoodName || hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood));
   const spreadLow = Math.max(3, Math.round((1 - agg.askToDealRatio) * 100));
   const spreadHigh = spreadLow + 2;
+  const dealIntl = formatMillionTomanAsIntlCurrency(agg.estimatedDealPricePerSqm, 'USD', 'fa');
 
   const refClaim: CrowdClaimItem = {
     id: `seed_ref_${hoodId}`, hoodId, hoodName, cityKey, authorId: 'usr_inspector_1',
     authorDisplayName: 'مهندس کاظمی (ارزیاب میدانی محله)', category: 'PRICE_OBSERVATION',
     claimType: 'VERIFIED_FACT_CANDIDATE',
     title: `شکاف واقعی معامله تا آگهی در خیابان‌های اصلی ${hoodName}`,
-    body: `بر اساس پایش آگهی‌های پالایش‌شده و مبایعه‌نامه‌های اخیر در ${hoodName}، قیمت قطعی معامله متری ${toPersianDigits(agg.estimatedDealPricePerSqm)} م.ت (حدود ${toPersianDigits(spreadLow)} تا ${toPersianDigits(spreadHigh)} درصد پایین‌تر از میانگین اعلامی متری ${toPersianDigits(agg.askingPricePerSqm)} م.ت) بسته شده است.`,
+    body: `بر اساس پایش آگهی‌های پالایش‌شده و مبایعه‌نامه‌های اخیر در ${hoodName}، قیمت قطعی معامله متری ${toPersianDigits(agg.estimatedDealPricePerSqm)} م.ت (${dealIntl} — حدود ${toPersianDigits(spreadLow)} تا ${toPersianDigits(spreadHigh)} درصد پایین‌تر از میانگین اعلامی متری ${toPersianDigits(agg.askingPricePerSqm)} م.ت) بسته شده است.`,
     status: 'VERIFIED_REFERENCE', trustWeightScore: Math.max(82, agg.confidenceScore), upvotes: 12 + (hoodId % 7), downvotes: 1, promotedToReference: true, createdAtIso: new Date().toISOString(),
   };
   const commClaim: CrowdClaimItem = {
@@ -76,6 +78,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [votedIds, setVotedIds] = useState<Record<string, 'UP' | 'DOWN'>>({});
+  const [sessionAuthorUid] = useState(() => `usr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`);
   const [sessionVoterUid] = useState(() => `voter_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`);
 
   const [authorName, setAuthorName] = useState('');
@@ -103,9 +106,11 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
           upvotes: Number(d.upvoteCount || 0), downvotes: Number(d.downvoteCount || 0),
           promotedToReference: d.epistemicState === 'VERIFIED_REFERENCE', createdAtIso: String(d.createdAtIso || new Date().toISOString()),
         });
-        const apiVerified = Array.isArray(data.verifiedReferenceClaims) ? data.verifiedReferenceClaims.map(mapDoc) : [];
-        const apiCommunity = Array.isArray(data.communityStageClaims) ? data.communityStageClaims.map(mapDoc) : [];
-        setVerifiedRefs(apiVerified.length > 0 ? apiVerified : seed.verified);
+        const rawVerified = data.verifiedReferenceClaims ?? data.VERIFIED_REFERENCE;
+        const rawCommunity = data.communityStageClaims ?? data.STAGE_COMMUNITY;
+        const apiVerified = Array.isArray(rawVerified) ? rawVerified.map(mapDoc) : [];
+        const apiCommunity = Array.isArray(rawCommunity) ? rawCommunity.map(mapDoc) : [];
+        setVerifiedRefs(apiVerified.length > 0 ? [...apiVerified, ...seed.verified] : seed.verified);
         setClaims([...apiVerified, ...apiCommunity, ...seed.all]);
         setLeaderboard(seed.leaders);
       } else {
@@ -129,7 +134,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
       const res = await fetch('/api/v1/claims', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          hoodId, cityId: cityKey, authorUid: `usr_${Date.now().toString(36)}`,
+          hoodId, cityId: cityKey, authorUid: sessionAuthorUid,
           authorDisplayName: authorName.trim() || 'شهروند رادار', category,
           streetName: title.trim(), narrativeText: body.trim(),
         }),
@@ -168,7 +173,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
+    <div data-testid="neighborhood-crowd-claims-panel" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"><ShieldCheck className="w-5 h-5" /></div>

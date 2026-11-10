@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
-import { sanitizeInput } from '../../utils/security';
+import { detectPromptInjection, sanitizeInput } from '../../utils/security';
 import { extractAndResolvePropertySignal } from './aiSeedExtractionService';
 import {
   getCanonicalBuildingById,
@@ -10,6 +10,7 @@ import {
 export interface AiIngestionRouteSecurityOptions {
   checkRateLimit?: (ip: string, bucket: 'general', maxRequests: number, windowMs: number) => boolean;
   getClientIp?: (req: Request) => string;
+  verifyAdminAuth?: (req: Request) => Promise<{ ok: boolean; status?: number; message?: string }>;
 }
 
 const mountedAiIngestionApps = new WeakSet<Express>();
@@ -43,6 +44,17 @@ export function registerAiIngestionRoutes(
       return;
     }
 
+    const injectionCheck = detectPromptInjection(rawTextFa);
+    if (injectionCheck.blocked) {
+      res.status(422).json({
+        status: 'error',
+        code: 'PROMPT_INJECTION_DETECTED',
+        reason: injectionCheck.reason,
+        message: 'متن ورودی حاوی الگوی تزریق دستور غیرمجاز است.',
+      });
+      return;
+    }
+
     const result = extractAndResolvePropertySignal({
       signalId: typeof body.signalId === 'string' ? sanitizeInput(body.signalId, 64) : undefined,
       cityId,
@@ -68,11 +80,18 @@ export function registerAiIngestionRoutes(
     });
   });
 
-  app.post('/api/v1/buildings/merge-duplicates', (req: Request, res: Response) => {
+  app.post('/api/v1/buildings/merge-duplicates', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 20, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
       return;
+    }
+    if (options?.verifyAdminAuth) {
+      const auth = await options.verifyAdminAuth(req);
+      if (!auth.ok) {
+        res.status(auth.status ?? 401).json({ status: 'error', code: auth.message || 'ADMIN_AUTH_REQUIRED' });
+        return;
+      }
     }
     const body = (req.body ?? {}) as Record<string, unknown>;
     const sourceBuildingId =

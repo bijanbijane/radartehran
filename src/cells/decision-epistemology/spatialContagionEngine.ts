@@ -79,7 +79,9 @@ export function computeAkerlofLemonIndex(
   const samples = hood ? buildNeighborhoodListingSamples(hood) : [];
   const agg = aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, samples);
   const medianDeal = Math.max(10, agg.estimatedDealPricePerSqm);
-  const iqrSpreadPct = Number((((agg.iqrHighPerSqm - agg.iqrLowPerSqm) / medianDeal) * 100).toFixed(1));
+  const iqrLow = agg.iqrLowPerSqm > 0 ? agg.iqrLowPerSqm : Math.round(medianDeal * 0.94);
+  const iqrHigh = agg.iqrHighPerSqm > iqrLow ? agg.iqrHighPerSqm : Math.round(agg.askingPricePerSqm * 1.05);
+  const iqrSpreadPct = Number((((iqrHigh - iqrLow) / medianDeal) * 100).toFixed(1));
   const totalRaw = Math.max(1, agg.validSampleCount + agg.rejectedFraudCount);
   const baitRejectionRatePct = Number(((agg.rejectedFraudCount / totalRaw) * 100).toFixed(1));
   const askDealSpreadPct = Number(Math.max(1, (1 - agg.askToDealRatio) * 100).toFixed(1));
@@ -159,31 +161,15 @@ export function buildNeighborhoodSpatialContagionReport(
   hoodName: string,
   cityKey: CityId | string = 'tehran',
   basePriceSqm: number = 120,
+  customHood?: Neighborhood,
 ): NeighborhoodSpatialContagionReport {
-  const safeCity = (['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'].includes(String(cityKey))
-    ? cityKey
-    : 'tehran') as CityId;
+  const safeCity = (['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'].includes(String(cityKey)) ? cityKey : 'tehran') as CityId;
   const allHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
-  const target = allHoods.find((h) => h.id === hoodId || h.name === hoodName) ?? allHoods[0];
+  const target = customHood ?? allHoods.find((h) => h.id === hoodId || h.name === hoodName) ?? allHoods[0];
   const targetSamples = target ? buildNeighborhoodListingSamples(target) : [];
-  const targetAgg = aggregateNeighborhoodMarketMetrics(
-    target?.id ?? hoodId,
-    target?.name ?? hoodName,
-    target?.buyPerSqm ?? basePriceSqm,
-    targetSamples,
-  );
-
-  const akerlofLemon = computeAkerlofLemonIndex(
-    target?.id ?? hoodId,
-    target?.name ?? hoodName,
-    target?.buyPerSqm ?? basePriceSqm,
-    target,
-  );
-
-  const prospectTheory = computeKahnemanProspectAnalysis(
-    targetAgg.askingPricePerSqm,
-    targetAgg.estimatedDealPricePerSqm,
-  );
+  const targetAgg = aggregateNeighborhoodMarketMetrics(target?.id ?? hoodId, target?.name ?? hoodName, target?.buyPerSqm ?? basePriceSqm, targetSamples);
+  const akerlofLemon = computeAkerlofLemonIndex(target?.id ?? hoodId, target?.name ?? hoodName, target?.buyPerSqm ?? basePriceSqm, target);
+  const prospectTheory = computeKahnemanProspectAnalysis(targetAgg.askingPricePerSqm, targetAgg.estimatedDealPricePerSqm);
 
   // Build spatial network graph around target
   const targetLat = target?.lat ?? 35.72;

@@ -28,18 +28,21 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   const { ui, crudActions } = p;
 
   const fetchSystemHealth = async () => {
+    if (!p.isVerifiedAdmin || !p.currentUser || !p.currentUser.emailVerified) {
+      ui.setSystemHealth(null);
+      return;
+    }
     ui.setLoadingSystemHealth(true);
     try {
-      const headers: Record<string, string> = {};
-      if (p.currentUser) {
-        try {
-          const idToken = await p.currentUser.getIdToken();
-          if (idToken) headers.Authorization = `Bearer ${idToken}`;
-        } catch {
-          // ignore token error in temporary inspection mode
-        }
+      const idToken = await p.currentUser.getIdToken();
+      if (!idToken) {
+        ui.setSystemHealth(null);
+        return;
       }
-      const res = await fetch('/api/system-health', { headers, cache: 'no-store' });
+      const res = await fetch('/api/system-health', {
+        headers: { Authorization: `Bearer ${idToken}` },
+        cache: 'no-store',
+      });
       if (!res.ok) {
         ui.setSystemHealth(null);
         return;
@@ -58,8 +61,10 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   };
 
   useEffect(() => {
-    ui.setAdminUnlocked(true);
-  }, []);
+    if (p.isVerifiedAdmin && ui.adminUnlocked && ui.adminTab === 'security') {
+      void fetchSystemHealth();
+    }
+  }, [p.isVerifiedAdmin, ui.adminUnlocked, ui.adminTab]);
 
   const mergedNeighborhoods = p.allNeighborhoods
     ? p.allNeighborhoods.map((n) => p.evaluatedNeighborhoods.find((ev) => ev.id === n.id) || n)
@@ -69,10 +74,10 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
     <div data-testid="admin-monitoring-full-page" className="w-full min-h-full bg-[#F8F9FA] dark:bg-slate-950 pb-20">
       <div className="max-w-5xl mx-auto px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">صفحه مستقل مدیریت و مانیتورینگ سیستم</h2>
+          <span className={`w-2.5 h-2.5 rounded-full ${p.isVerifiedAdmin && ui.adminUnlocked ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+          <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">صفحه مستقل مانیتورینگ سیستم و حاکمیت داده</h2>
           <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
-            بررسی موقت بدون رمز
+            {p.isVerifiedAdmin && ui.adminUnlocked ? 'نشست ادمین تاییدشده (RBAC)' : 'محافظت‌شده با احراز هویت ادمین (Zero-Trust)'}
           </span>
         </div>
         <button
@@ -86,9 +91,8 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
       <AdminModal
         open={true}
         asPageView={true}
-        temporaryInspectionMode={true}
         onClose={p.onBackToMap}
-        adminUnlocked={true}
+        adminUnlocked={ui.adminUnlocked}
         setAdminUnlocked={ui.setAdminUnlocked}
         adminPassInput={ui.adminPassInput}
         setAdminPassInput={ui.setAdminPassInput}
@@ -128,7 +132,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
         onDownloadFullBackupJson={crudActions.handleDownloadFullBackupJson}
         onRestoreFullBackupJson={crudActions.handleRestoreFullBackupJson}
         backupStatusMsg={ui.backupStatusMsg}
-        isVerifiedAdmin={true}
+        isVerifiedAdmin={p.isVerifiedAdmin}
         currentUserEmail={p.currentUser?.email || null}
         onGoogleSignIn={() => {
           ui.setAdminPassError('');

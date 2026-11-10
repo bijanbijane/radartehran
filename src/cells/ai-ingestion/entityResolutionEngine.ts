@@ -80,8 +80,10 @@ export function computeBuildingSimilarityScore(
     within35mRadius = distanceMeters <= 35;
     if (distanceMeters > 120) return { similarityScore: 0.15, within35mRadius: false, distanceMeters };
   }
-  const streetScore =
-    fp.streetNameNormalized === candidate.streetNameNormalized
+  const hasKnownStreet = fp.streetNameNormalized !== 'نامشخص' && candidate.streetNameNormalized !== 'نامشخص';
+  const streetScore = !hasKnownStreet
+    ? 0
+    : fp.streetNameNormalized === candidate.streetNameNormalized
       ? 1
       : fp.streetNameNormalized.includes(candidate.streetNameNormalized) || candidate.streetNameNormalized.includes(fp.streetNameNormalized)
         ? 0.85
@@ -92,7 +94,16 @@ export function computeBuildingSimilarityScore(
   const ageScore = ageDiff === 0 ? 1 : ageDiff <= 2 ? 0.9 : ageDiff <= 4 ? 0.6 : 0;
   const floorDiff = Math.abs(fp.totalFloors - candidate.totalFloors);
   const floorScore = floorDiff === 0 ? 1 : floorDiff === 1 ? 0.85 : 0;
-  const spatialScore = distanceMeters === null ? 0.9 : within35mRadius ? 1 : distanceMeters <= 60 ? 0.65 : 0.2;
+  const spatialScore =
+    distanceMeters === null
+      ? streetScore > 0
+        ? 0.9
+        : 0.35
+      : within35mRadius
+        ? 1
+        : distanceMeters <= 60
+          ? 0.65
+          : 0.2;
   const weighted = streetScore * 0.32 + areaScore * 0.2 + ageScore * 0.16 + floorScore * 0.16 + spatialScore * 0.16;
   return { similarityScore: Number(Math.min(1, Math.max(0, weighted)).toFixed(4)), within35mRadius, distanceMeters };
 }
@@ -144,7 +155,10 @@ export function resolveOrMergeCanonicalBuilding(
     return { canonicalBuildingId: activeRecord.canonicalBuildingId, matchedExisting: true, similarityScore: bestSimilarity, within35mRadius: bestWithin35m, fingerprint: fp, buildingRecord: activeRecord };
   }
 
-  const canonicalBuildingId = `bld_${fp.fingerprintHash.slice(0, 12)}`;
+  const baseBuildingId = `bld_${fp.fingerprintHash.slice(0, 12)}`;
+  const canonicalBuildingId = canonicalBuildingStore.has(baseBuildingId)
+    ? `bld_${crypto.createHash('sha256').update(`${fp.fingerprintHash}|${factId || canonicalBuildingStore.size}`).digest('hex').slice(0, 12)}`
+    : baseBuildingId;
   const newRecord: CanonicalBuildingRecord = {
     canonicalBuildingId,
     cityId: fp.cityId,

@@ -121,7 +121,8 @@ export interface Queue<T = unknown> {
 
 export interface DependencyCompatibilityEntry {
   readonly packageName: string;
-  readonly currentUsage: string;
+  readonly currentUsage?: string;
+  readonly rationale?: string;
   readonly officialStatus: 'WORKS_NATIVELY' | 'REQUIRES_POLYFILL_OR_ADAPTER' | 'NOT_SUPPORTED';
   readonly edgeReplacement: string;
 }
@@ -144,6 +145,8 @@ export interface WorkerEnv {
   readonly STRANGLER_ORIGIN_URL?: string;
   readonly MEDIA_BUCKET?: R2Bucket;
   readonly DB?: D1Database;
+  readonly RADAR_QUEUE?: Queue;
+  readonly RADAR_DLQ?: Queue;
   readonly MEDIA_QUEUE?: Queue;
   readonly DATA_SYNC_QUEUE?: Queue;
   readonly TELEMETRY_QUEUE?: Queue;

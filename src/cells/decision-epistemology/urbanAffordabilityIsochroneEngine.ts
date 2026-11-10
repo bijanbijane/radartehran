@@ -7,6 +7,8 @@
 
 import { calcDistanceKm, INITIAL_NEIGHBORHOODS, Neighborhood, toPersianNum, WORK_HUBS, WorkHub } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface UrbanAffordabilityStressMetrics {
   priceToIncomeRatio: number; rentToIncomeRatioPct: number;
@@ -141,12 +143,20 @@ export function computeCommuteRentArbitrage(
 }
 
 export function generateCasperUrbanAffordabilityReport(
-  hoodId: number, hoodName?: string, cityId: string = 'tehran',
-  basePriceSqm?: number, workHubId?: string, monthlyIncomeMillion: number = 42
+  hoodId: number,
+  hoodName?: string,
+  cityId: string = 'tehran',
+  basePriceSqm?: number,
+  workHubId?: string,
+  monthlyIncomeMillion: number = 42,
+  providedHood?: Neighborhood,
+  intlCurrency: IntlCurrencyCode = 'USD'
 ): CasperUrbanAffordabilityReport {
-  const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const hood = providedHood ?? resolveNeighborhood(cityId, hoodId, hoodName);
   const hub = resolveWorkHub(cityId, workHubId);
-  const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
+  const rawPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, hoodName || hood.name, rawPrice, buildNeighborhoodListingSamples(hood));
+  const resolvedPrice = agg.estimatedDealPricePerSqm;
   const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
   const effectiveRent = resolvedRahn * 0.03;
   const transitAccessibilityScore = hood.metro ?? 7;
@@ -166,30 +176,32 @@ export function generateCasperUrbanAffordabilityReport(
   const commute = computeCommuteOpportunityCost(hood.lat, hood.lng, hub, transitAccessibilityScore, estimatedAqi, monthlyIncomeMillion);
   const arbitrage = computeCommuteRentArbitrage(resolvedRahn, commute, hubCoreRahn80m);
 
-  // Socio-spatially realistic TCOH Isochrone Arbitrage Substitute
+  // Socio-spatially realistic TCOH Isochrone Arbitrage Substitute grounded in v6.4 Deal Prices
   let optimalIsochroneSubstitute: IsochroneArbitrageSubstitute | null = null;
   let bestTcoh = arbitrage.totalCostOfHousingMillion;
   const targetQuality = (hood.metro ?? 6) + (hood.air ?? 6);
   for (const cand of cityHoods) {
     if (cand.id === hood.id || cand.lat === null || cand.lng === null) continue;
-    if (cand.buyPerSqm >= resolvedPrice || cand.buyPerSqm < resolvedPrice * 0.40 || (cand.metro ?? 6) + (cand.air ?? 6) < targetQuality - 4) continue;
+    const candDealSqm = aggregateNeighborhoodMarketMetrics(cand.id, cand.name, cand.buyPerSqm, buildNeighborhoodListingSamples(cand)).estimatedDealPricePerSqm;
+    if (candDealSqm >= resolvedPrice || candDealSqm < resolvedPrice * 0.40 || (cand.metro ?? 6) + (cand.air ?? 6) < targetQuality - 4) continue;
     const candAqi = (cand.air ?? 6) <= 10 ? Math.round(185 - (cand.air ?? 6) * 13) : (cand.air ?? 110);
     const candCommute = computeCommuteOpportunityCost(cand.lat, cand.lng, hub, cand.metro ?? 7, candAqi, monthlyIncomeMillion);
     if (candCommute.estimatedOneWayMinutes > Math.min(42, commute.estimatedOneWayMinutes + 8)) continue;
-    const candRahn = cand.rahn80m || Math.round(cand.buyPerSqm * 80 * 0.18);
+    const candRahn = cand.rahn80m || Math.round(candDealSqm * 80 * 0.18);
     const candRent = Number((candRahn * 0.03).toFixed(2));
     const candTcoh = Number((candRent + candCommute.totalMonthlyFrictionCostMillion).toFixed(2));
     if (candTcoh < bestTcoh - 1.0) {
       bestTcoh = candTcoh;
       const savings = Number((arbitrage.totalCostOfHousingMillion - candTcoh).toFixed(1));
-      const capitalFreed80mMillion = Math.max(80, Math.round((resolvedPrice - cand.buyPerSqm) * 80));
+      const capitalFreed80mMillion = Math.max(80, Math.round((resolvedPrice - candDealSqm) * 80));
+      const savingsFx = formatMillionTomanAsIntlCurrency(savings, intlCurrency, 'fa');
       optimalIsochroneSubstitute = {
         hoodId: cand.id, hoodName: cand.name, zone: cand.zone || 'منطقه شهری',
         distanceKm: candCommute.distanceKm, estimatedOneWayMinutes: candCommute.estimatedOneWayMinutes,
         oneWayMinutes: candCommute.estimatedOneWayMinutes,
         monthlyRentMillion: candRent, totalCostOfHousingMillion: candTcoh, monthlyTcohSavingsMillion: savings,
         capitalFreed80mMillion,
-        rationaleFa: `سکونت در «${cand.name}» با فاصله ${toPersianNum(candCommute.estimatedOneWayMinutes)} دقیقه تا ${hub.name}، هزینه جامع ماهانه (اجاره + تردد) را ${toPersianNum(savings)} م.ت کاهش می‌دهد.`,
+        rationaleFa: `سکونت در «${cand.name}» با فاصله ${toPersianNum(candCommute.estimatedOneWayMinutes)} دقیقه تا ${hub.name}، هزینه جامع ماهانه (اجاره + تردد) را ${toPersianNum(savings)} م.ت (${savingsFx}) کاهش می‌دهد.`,
       };
     }
   }

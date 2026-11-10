@@ -21,39 +21,30 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const { filterRankingByViewport, viewportBounds, comparisonArc } = useMapAdvancedOverlayState();
-  const [query, setQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'green' | 'yellow' | 'red'>('all');
-  const [zoneFilter, setZoneFilter] = useState<string>('all');
-  const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
-  const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
-  const [onlyWithBargains, setOnlyWithBargains] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<'score' | 'price_asc' | 'price_desc' | 'rahn_asc' | 'air'>('score');
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
+  const [query, setQuery] = useState<string>(''), [statusFilter, setStatusFilter] = useState<'all' | 'green' | 'yellow' | 'red'>('all');
+  const [zoneFilter, setZoneFilter] = useState<string>('all'), [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
+  const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false), [onlyWithBargains, setOnlyWithBargains] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState<'score' | 'price_asc' | 'price_desc' | 'rahn_asc' | 'air'>('score'), [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
 
-  const zones = useMemo(() => {
-    const s = new Set<string>();
-    p.evaluatedNeighborhoods.forEach((h) => { if (h.zone) s.add(h.zone); });
-    return Array.from(s);
-  }, [p.evaluatedNeighborhoods]);
-
+  const zones = useMemo(() => { const s = new Set<string>(); p.evaluatedNeighborhoods.forEach((h) => { if (h.zone) s.add(h.zone); }); return Array.from(s); }, [p.evaluatedNeighborhoods]);
   const inViewportHoods = useMemo(() => {
     if (!viewportBounds) return p.evaluatedNeighborhoods;
     const inside = p.evaluatedNeighborhoods.filter((h) => isCoordInsideStoredViewport(h.lat, h.lng, viewportBounds));
     return inside.length > 0 ? inside : p.evaluatedNeighborhoods;
   }, [p.evaluatedNeighborhoods, viewportBounds]);
+  const dealPriceByHoodId = useMemo(() => {
+    const m = new Map<number, number>();
+    p.evaluatedNeighborhoods.forEach((hood) => m.set(hood.id, aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm));
+    return m;
+  }, [p.evaluatedNeighborhoods]);
 
   const filtered = useMemo(() => {
     let list = filterRankingByViewport ? inViewportHoods : p.evaluatedNeighborhoods;
     if (statusFilter !== 'all') list = list.filter((h) => h.status === statusFilter);
-    if (priceBracket === 'under5b') {
-      list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : h.buyPerSqm * p.targetSqm < 5000);
-    } else if (priceBracket === '5to10b') {
-      list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val >= 1000 && val <= 2000 : val >= 5000 && val <= 10000; });
-    } else if (priceBracket === '10to20b') {
-      list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val > 2000 && val <= 4000 : val > 10000 && val <= 20000; });
-    } else if (priceBracket === 'luxury') {
-      list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : h.buyPerSqm * p.targetSqm > 20000);
-    }
+    if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : h.buyPerSqm * p.targetSqm < 5000);
+    else if (priceBracket === '5to10b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val >= 1000 && val <= 2000 : val >= 5000 && val <= 10000; });
+    else if (priceBracket === '10to20b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : h.buyPerSqm * p.targetSqm; return p.mode === 'rent' ? val > 2000 && val <= 4000 : val > 10000 && val <= 20000; });
+    else if (priceBracket === 'luxury') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : h.buyPerSqm * p.targetSqm > 20000);
     if (zoneFilter !== 'all') list = list.filter((h) => h.zone === zoneFilter);
     if (onlyFavorites) list = list.filter((h) => p.favoriteHoodIds.includes(h.id));
     if (onlyWithBargains) list = list.filter((h) => (h.bargains?.length || 0) > 0);
@@ -65,10 +56,10 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
       if (sortBy === 'score') return b.overallScore - a.overallScore;
       if (sortBy === 'air') return b.air - a.air;
       if (sortBy === 'rahn_asc') return a.rahn80m - b.rahn80m;
-      if (sortBy === 'price_asc') return aggregateNeighborhoodMarketMetrics(a.id, a.name, a.buyPerSqm, buildNeighborhoodListingSamples(a)).estimatedDealPricePerSqm - aggregateNeighborhoodMarketMetrics(b.id, b.name, b.buyPerSqm, buildNeighborhoodListingSamples(b)).estimatedDealPricePerSqm;
+      if (sortBy === 'price_asc') return (dealPriceByHoodId.get(a.id) ?? a.buyPerSqm) - (dealPriceByHoodId.get(b.id) ?? b.buyPerSqm);
       return b.buyPerSqm - a.buyPerSqm;
     });
-  }, [p.evaluatedNeighborhoods, inViewportHoods, filterRankingByViewport, statusFilter, priceBracket, zoneFilter, onlyFavorites, onlyWithBargains, p.favoriteHoodIds, p.mode, p.targetSqm, query, sortBy]);
+  }, [p.evaluatedNeighborhoods, inViewportHoods, filterRankingByViewport, statusFilter, priceBracket, zoneFilter, onlyFavorites, onlyWithBargains, p.favoriteHoodIds, p.mode, p.targetSqm, query, sortBy, dealPriceByHoodId]);
 
   const topFilteredScore = useMemo(() => (filtered.length > 0 ? Math.max(...filtered.map((h) => h.overallScore)) : undefined), [filtered]);
   const tiedTopCount = useMemo(() => (topFilteredScore !== undefined ? filtered.filter((h) => Math.abs(h.overallScore - topFilteredScore) <= 0.3).length : 0), [filtered, topFilteredScore]);
@@ -177,7 +168,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
             const isFav = p.favoriteHoodIds.includes(hood.id);
             const isSelected = hood.id === p.selectedHood.id;
             const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+            const unitDeal = convertPricePerSqmToUnit(dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm, areaUnit);
             const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore });
             const isTiedTop = topFilteredScore !== undefined && Math.abs(hood.overallScore - topFilteredScore) <= 0.3 && tiedTopCount > 1;
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
@@ -245,7 +236,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           {filtered.map((hood) => {
             const isFav = p.favoriteHoodIds.includes(hood.id);
             const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+            const unitDeal = convertPricePerSqmToUnit(dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm, areaUnit);
             const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore });
             const isSelected = hood.id === p.selectedHood.id;
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));

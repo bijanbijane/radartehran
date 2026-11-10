@@ -31,6 +31,17 @@ export interface DecisionPillarScore {
   detailFa: string;
 }
 
+export interface DealExecutionPlaybook {
+  signingStagePct: number;
+  handoverStagePct: number;
+  deedStagePct: number;
+  signingStageMillion: number;
+  handoverStageMillion: number;
+  deedStageMillion: number;
+  protectiveClausesFa: string[];
+  copyableActionSheetFa: string;
+}
+
 export interface UnifiedDecisionSynthesisReport {
   hoodId: number;
   hoodName: string;
@@ -49,6 +60,9 @@ export interface UnifiedDecisionSynthesisReport {
   walkAwayCeilingTotalMillion: number;
   fairTotalIntlText: string;
   walkAwayTotalIntlText: string;
+  isStagflationaryIllusion: boolean;
+  illiquidityAdjustedVaR95RealPct: number;
+  executionPlaybook: DealExecutionPlaybook;
   pillars: DecisionPillarScore[];
   generatedAtIso: string;
 }
@@ -72,6 +86,7 @@ export function synthesizeExecutiveDecisionReport(
   intlCurrency: IntlCurrencyCode = 'USD',
 ): UnifiedDecisionSynthesisReport {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const resolvedHoodName = hood.name || hoodName;
   const fairPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const hoodBaselineAsk = hood.buyPerSqm || fairPrice;
   const askingPrice = customAskingPriceSqm ?? Math.round(fairPrice * 1.085);
@@ -147,18 +162,39 @@ export function synthesizeExecutiveDecisionReport(
     executiveDirectiveFa = 'ملک به شدت بیش‌قیمت‌گذاری شده و عدم تقارن اطلاعاتی و ریسک دم بلند در سقف تاریخی است؛ خرید در این شرایط تله ثروت ایجاد می‌کند.';
   }
 
-  // Financial figures for negotiation
+  // Financial figures for negotiation & 3-stage escrow execution playbook
   const totalAskingMillion = Math.round(askingPrice * targetSqm);
   const totalFairMillion = Math.round(fairPrice * targetSqm);
-  // Rational boundary: Walk-away ceiling is never higher than asking price if seller is already below fair value
   const walkAwayPriceCeilingPerSqm = askingPrice < fairPrice ? askingPrice : Math.round(fairPrice * 1.02);
   const walkAwayCeilingTotalMillion = Math.round(walkAwayPriceCeilingPerSqm * targetSqm);
   const targetDiscountMillion = Math.max(0, totalAskingMillion - totalFairMillion);
-  const negotiationOpeningOfferMillion = Math.round(Math.min(askingPrice * 0.95, totalFairMillion * 0.95 / targetSqm) * targetSqm);
+  const negotiationOpeningOfferMillion = Math.round(Math.min(askingPrice * 0.95, (totalFairMillion * 0.95) / targetSqm) * targetSqm);
+
+  const signingStagePct = 30;
+  const handoverStagePct = 40;
+  const deedStagePct = 30;
+  const signingStageMillion = Math.round(totalFairMillion * (signingStagePct / 100));
+  const handoverStageMillion = Math.round(totalFairMillion * (handoverStagePct / 100));
+  const deedStageMillion = totalFairMillion - signingStageMillion - handoverStageMillion;
+
+  const executionPlaybook: DealExecutionPlaybook = {
+    signingStagePct,
+    handoverStagePct,
+    deedStagePct,
+    signingStageMillion,
+    handoverStageMillion,
+    deedStageMillion,
+    protectiveClausesFa: [
+      'شرط استعلام آنی ثبتی و عدم بازداشت پلاک پیش از آزادسازی مرحله اول ثمن معامله',
+      'منوط کردن پرداخت قسط تحویل کلید به تحویل فیزیکی واحد، پارکینگ و انباری منطبق با صورتمجلس تفکیکی',
+      'تعیین وجه التزام روزانه بابت تأخیر در اخذ مفاصاحساب شهرداری، دارایی و حضور در دفترخانه اسناد رسمی',
+    ],
+    copyableActionSheetFa: `برگه اقدام اتاق قرارداد (${resolvedHoodName} - ${toPersianNum(targetSqm)} متر): پیشنهاد افتتاحیه ${toPersianNum(negotiationOpeningOfferMillion)} م.ت | ارزش منصفانه ${toPersianNum(totalFairMillion)} م.ت | سقف ترک مذاکره ${toPersianNum(walkAwayCeilingTotalMillion)} م.ت`,
+  };
 
   return {
     hoodId,
-    hoodName: hood.name || hoodName,
+    hoodName: resolvedHoodName,
     cityId,
     askingPricePerSqm: askingPrice,
     fairPricePerSqm: fairPrice,
@@ -174,6 +210,9 @@ export function synthesizeExecutiveDecisionReport(
     walkAwayCeilingTotalMillion,
     fairTotalIntlText: formatMillionTomanAsIntlCurrency(totalFairMillion, intlCurrency, 'fa'),
     walkAwayTotalIntlText: formatMillionTomanAsIntlCurrency(walkAwayCeilingTotalMillion, intlCurrency, 'fa'),
+    isStagflationaryIllusion: cycleReport.isStagflationaryIllusion,
+    illiquidityAdjustedVaR95RealPct: merton.metrics.illiquidityAdjustedVaR95RealPct,
+    executionPlaybook,
     pillars,
     generatedAtIso: new Date().toISOString(),
   };

@@ -8,6 +8,8 @@
 
 import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 
 export type MacroAssetClassId = 'HOUSING' | 'GOLD_COIN' | 'US_DOLLAR' | 'FIXED_INCOME';
 
@@ -37,15 +39,18 @@ export interface PortfolioEvaluationResult {
   sharpeRatio: number;
   threeYearWealthMultiplier: number;
   maxEstimatedDrawdownPct: number;
+  weightedLiquidityDays: number;
   portfolioTierFa: string;
   strategicGuidanceFa: string;
 }
 
 export interface AssetSwapArbitrageAnalysis {
   sourceAsset: 'GOLD_COIN' | 'US_DOLLAR' | 'FIXED_INCOME';
+  sourceAssetLabelFa: string;
   targetHoodName: string;
   capitalAmountMillion: number;
   transactionFrictionCostMillion: number;
+  totalFrictionRatePct: number;
   annualRentalYieldMillion: number;
   twoYearNetArbitrageAdvantageMillion: number;
   verdictFa: string;
@@ -58,6 +63,7 @@ export interface CasperMacroPortfolioDossier {
   cityId: string;
   basePriceSqm: number;
   rahn80m: number;
+  intlBenchmarkText: string;
   assets: Record<MacroAssetClassId, MacroAssetSpec>;
   canonicalPortfolios: {
     defensive: PortfolioEvaluationResult;
@@ -134,6 +140,15 @@ export function evaluatePortfolioAllocation(
   const sharpe = Number(((expectedReturnNominal - RISK_FREE_RATE) / annualVol).toFixed(2));
   const wealthMultiplier = Number(Math.pow(1 + expectedReturnNominal, 3).toFixed(2));
   const maxDrawdown = Number(Math.max(5, (annualVol * 1.645 * 100 - expectedReturnReal * 100)).toFixed(1));
+  const weightedLiquidityDays = Math.max(
+    1,
+    Math.round(
+      wH * assets.HOUSING.liquidityDays +
+      wG * assets.GOLD_COIN.liquidityDays +
+      wU * assets.US_DOLLAR.liquidityDays +
+      wF * assets.FIXED_INCOME.liquidityDays
+    )
+  );
 
   let portfolioTierFa = 'سبد متعادل با نقدشوندگی ترکیبی';
   let strategicGuidanceFa = 'توزیع بهینه میان دارایی‌های سرمایه‌ای و جریان نقدی پایدار.';
@@ -162,6 +177,7 @@ export function evaluatePortfolioAllocation(
     sharpeRatio: sharpe,
     threeYearWealthMultiplier: wealthMultiplier,
     maxEstimatedDrawdownPct: maxDrawdown,
+    weightedLiquidityDays,
     portfolioTierFa,
     strategicGuidanceFa,
   };
@@ -173,26 +189,37 @@ export function evaluateAssetSwapToHousing(
   capitalAmountMillion: number,
   rentalYieldPct: number
 ): AssetSwapArbitrageAnalysis {
-  const frictionRate = 0.015;
-  const frictionCost = Math.round(capitalAmountMillion * frictionRate);
+  // Source-asset-specific liquidation spread + housing entry commission/tax (1.5%)
+  const sourceConfig = {
+    GOLD_COIN: { labelFa: 'سکه تمام و طلا', exitSlippage: 0.011, twoYrExcessGrowthRate: 0.04 },
+    US_DOLLAR: { labelFa: 'اسکناس دلار و تتر', exitSlippage: 0.007, twoYrExcessGrowthRate: 0.14 },
+    FIXED_INCOME: { labelFa: 'صندوق درآمد ثابت ۳۰٪', exitSlippage: 0.001, twoYrExcessGrowthRate: 0.28 },
+  }[sourceAsset];
+
+  const totalFrictionRate = 0.015 + sourceConfig.exitSlippage;
+  const frictionCost = Math.round(capitalAmountMillion * totalFrictionRate);
   const netInvestedInHousing = capitalAmountMillion - frictionCost;
   const annualRentalYield = Math.round((netInvestedInHousing * rentalYieldPct) / 100);
   const twoYearRentalTotal = annualRentalYield * 2;
-  const twoYearNetAdvantage = Math.round(twoYearRentalTotal - frictionCost);
-  const breakEvenMonths = Math.max(2, Math.round((frictionCost / Math.max(1, annualRentalYield / 12))));
+  const twoYearCapitalGrowthAdvantage = Math.round(netInvestedInHousing * sourceConfig.twoYrExcessGrowthRate);
+  const twoYearNetAdvantage = Math.round(twoYearRentalTotal + twoYearCapitalGrowthAdvantage - frictionCost);
+  const effectiveMonthlyGain = Math.max(1, (annualRentalYield + twoYearCapitalGrowthAdvantage / 2) / 12);
+  const breakEvenMonths = Math.max(2, Math.round(frictionCost / effectiveMonthlyGain));
 
-  let verdictFa = 'تبدیل کاملاً توجیه‌پذیر با جریان نقدی مثبت';
-  if (breakEvenMonths > 18) {
-    verdictFa = 'افق میان‌مدت ضروری است؛ هزینه اصطکاک ورود به مسکن بالاست.';
-  } else if (breakEvenMonths <= 8) {
-    verdictFa = 'فرصت طلایی آربیتراژ؛ بازده اجاره در کمتر از یک سال هزینه‌های معامله را جبران می‌کند.';
+  let verdictFa = `تبدیل از ${sourceConfig.labelFa} به مسکن با جریان نقدی و پوشش تورمی مثبت`;
+  if (breakEvenMonths > 16) {
+    verdictFa = `افق میان‌مدت ضروری است؛ اصطکاک تبدیل ${sourceConfig.labelFa} به ملک در ${breakEvenMonths} ماه جبران می‌شود.`;
+  } else if (breakEvenMonths <= 7) {
+    verdictFa = `فرصت طلایی آربیتراژ از ${sourceConfig.labelFa}؛ مزایای اجاره و رشد سرمایه‌ای در ${breakEvenMonths} ماه اصطکاک را جبران می‌کند.`;
   }
 
   return {
     sourceAsset,
+    sourceAssetLabelFa: sourceConfig.labelFa,
     targetHoodName,
     capitalAmountMillion,
     transactionFrictionCostMillion: frictionCost,
+    totalFrictionRatePct: Number((totalFrictionRate * 100).toFixed(1)),
     annualRentalYieldMillion: annualRentalYield,
     twoYearNetArbitrageAdvantageMillion: twoYearNetAdvantage,
     verdictFa,
@@ -208,7 +235,9 @@ export function generateCasperMacroPortfolioDossier(
 ): CasperMacroPortfolioDossier {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedHoodName = hood.name || hoodName;
-  const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
+  const rawPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, resolvedHoodName, rawPrice, buildNeighborhoodListingSamples(hood));
+  const resolvedPrice = agg.estimatedDealPricePerSqm;
   const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
   const assets = buildMacroAssetSpecs(resolvedPrice, resolvedRahn);
@@ -223,6 +252,7 @@ export function generateCasperMacroPortfolioDossier(
     cityId,
     basePriceSqm: resolvedPrice,
     rahn80m: resolvedRahn,
+    intlBenchmarkText: formatMillionTomanAsIntlCurrency(resolvedPrice * 80, 'USD', 'fa'),
     assets,
     canonicalPortfolios: { defensive, optimalSharpe, inflationHedge },
     swapAnalysis,

@@ -32,6 +32,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
   intlCurrency = 'USD',
 }) => {
   const [selectedStrategy, setSelectedStrategy] = useState<'optimal' | 'inflation' | 'defensive' | 'custom'>('optimal');
+  const [swapSourceAsset, setSwapSourceAsset] = useState<'GOLD_COIN' | 'US_DOLLAR' | 'FIXED_INCOME'>('GOLD_COIN');
   const [capitalBillion, setCapitalBillion] = useState<number>(() => Math.max(6, Math.round((basePriceSqm * 80) / 1000)));
   const [customWeights, setCustomWeights] = useState<PortfolioAllocationWeights>({
     housingWeightPct: 50,
@@ -55,9 +56,8 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
   const allocMillion = (pct: number) => Math.round((capitalMillion * pct) / 100);
 
   const swapAnalysis = useMemo(() => {
-    const totalUnitCost = Math.round(dossier.basePriceSqm * 80);
-    return evaluateAssetSwapToHousing('GOLD_COIN', dossier.hoodName, totalUnitCost, dossier.assets.HOUSING.cashflowYieldPct);
-  }, [dossier]);
+    return evaluateAssetSwapToHousing(swapSourceAsset, dossier.hoodName, capitalMillion, dossier.assets.HOUSING.cashflowYieldPct);
+  }, [swapSourceAsset, dossier, capitalMillion]);
   const swapAdvantageFx = intlCurrency !== 'IRT'
     ? ` (${formatMillionTomanAsIntlCurrency(swapAnalysis.twoYearNetArbitrageAdvantageMillion, intlCurrency, 'fa')})`
     : '';
@@ -113,9 +113,9 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
           <span className="text-[10px] text-slate-400 block mt-0.5">بازده واقعی: {toPersianNum(activeEvaluation.expectedAnnualReturnRealPct)}٪</span>
         </div>
         <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">نوسان سالانه سبد (σ)</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">نوسان (σ) و نقدشوندگی سبد</span>
           <span className="text-base font-black text-slate-800 dark:text-slate-200 tabular-nums">٪{toPersianNum(activeEvaluation.annualVolatilityPct)}</span>
-          <span className="text-[10px] text-slate-400 block mt-0.5">ریسک انحراف معیار</span>
+          <span className="text-[10px] text-slate-400 block mt-0.5">نقدشوندگی وزنی: {toPersianNum(activeEvaluation.weightedLiquidityDays)} روز</span>
         </div>
         <div className="p-3 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40">
           <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">ضریب شارپ (Sharpe)</span>
@@ -218,15 +218,31 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
 
       {/* Asset-Swap Arbitrage Panel */}
       <div className="p-3.5 rounded-lg border border-indigo-200/80 dark:border-indigo-900/60 bg-gradient-to-r from-indigo-50/50 via-white to-slate-50/50 dark:from-slate-900 dark:to-indigo-950/20 space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-          <span className="flex items-center gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5 text-indigo-600" /><span>آربیتراژ و هزینه فرصت تبدیل طلا/دلار به مسکن ({dossier.hoodName})</span></span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold">سربه‌سر: {toPersianNum(swapAnalysis.breakEvenMonths)} ماه</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+          <span className="flex items-center gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5 text-indigo-600" /><span>آربیتراژ و هزینه فرصت تبدیل دارایی به مسکن ({dossier.hoodName})</span></span>
+          <div className="flex flex-wrap items-center gap-1.5" data-testid="swap-source-asset-selector">
+            {[
+              { id: 'GOLD_COIN' as const, label: 'از طلا و سکه' },
+              { id: 'US_DOLLAR' as const, label: 'از دلار و تتر' },
+              { id: 'FIXED_INCOME' as const, label: 'از درآمد ثابت ۳۰٪' },
+            ].map((src) => (
+              <button
+                key={src.id} type="button" onClick={() => setSwapSourceAsset(src.id)}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                  swapSourceAsset === src.id ? 'bg-indigo-600 text-white shadow-2xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                {src.label}
+              </button>
+            ))}
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold">سربه‌سر: {toPersianNum(swapAnalysis.breakEvenMonths)} ماه</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
           <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-            <span className="text-slate-400 block text-[10px]">هزینه اصطکاک ورود (کمیسیون+مالیات):</span>
-            <strong className="text-slate-700 dark:text-slate-200 tabular-nums">{toPersianNum(swapAnalysis.transactionFrictionCostMillion)} میلیون تومان (۱٫۵٪)</strong>
+            <span className="text-slate-400 block text-[10px]">اصطکاک خروج {swapAnalysis.sourceAssetLabelFa} + ورود ملک:</span>
+            <strong className="text-slate-700 dark:text-slate-200 tabular-nums">{toPersianNum(swapAnalysis.transactionFrictionCostMillion)} م.ت ({toPersianNum(swapAnalysis.totalFrictionRatePct)}٪)</strong>
           </div>
           <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <span className="text-slate-400 block text-[10px]">جریان نقدی اجاره سالانه مسکن:</span>
@@ -237,6 +253,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
             <strong className="text-indigo-600 dark:text-indigo-400 tabular-nums">+{toPersianNum(swapAnalysis.twoYearNetArbitrageAdvantageMillion)} م.ت{swapAdvantageFx}</strong>
           </div>
         </div>
+        <p className="text-[10.5px] text-slate-600 dark:text-slate-300">{toPersianNum(swapAnalysis.verdictFa)}</p>
       </div>
     </div>
   );

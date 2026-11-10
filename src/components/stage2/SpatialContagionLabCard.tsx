@@ -11,6 +11,7 @@ import {
 import { toPersianNum } from '../../data/neighborhoods';
 import type { Neighborhood } from '../../data/neighborhoods';
 import type { CityId } from '../../data/multiCityData';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import {
   buildNeighborhoodSpatialContagionReport,
   computeKahnemanProspectAnalysis,
@@ -22,6 +23,7 @@ export interface SpatialContagionLabCardProps {
   cityKey?: CityId | string;
   basePriceSqm?: number;
   hood?: Neighborhood;
+  intlCurrency?: IntlCurrencyCode;
   onSelectCompareHood?: (hoodName: string) => void;
 }
 
@@ -31,6 +33,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
   cityKey = 'tehran',
   basePriceSqm = 120,
   hood,
+  intlCurrency = 'USD',
   onSelectCompareHood,
 }) => {
   const [anchorMarkupPct, setAnchorMarkupPct] = useState<number>(0);
@@ -170,10 +173,13 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
                   {node.mechanismFa}
                 </p>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-700/60 pt-1.5 tabular-nums">
-                  <span>فاصله: {toPersianNum(node.distanceKm)} کیلومتر</span>
-                  <span>ضریب سرایت: β={toPersianNum(node.spatialCorrelationBeta)}</span>
-                  <span>وقفه زمانی: {toPersianNum(node.transmissionLagWeeks)} هفته</span>
+                <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-700/60 pt-1.5 tabular-nums">
+                  <span className="font-bold text-slate-700 dark:text-slate-200">
+                    متری {toPersianNum(node.dealPricePerSqm)} م.ت ({formatMillionTomanAsIntlCurrency(node.dealPricePerSqm, intlCurrency, 'fa')})
+                  </span>
+                  <span>فاصله: {toPersianNum(node.distanceKm)} ک.م</span>
+                  <span>β={toPersianNum(node.spatialCorrelationBeta)}</span>
+                  <span>وقفه: {toPersianNum(node.transmissionLagWeeks)} هفته</span>
                 </div>
               </div>
             );
@@ -215,7 +221,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-bold text-indigo-900 dark:text-indigo-200 bg-white/60 dark:bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-900/50 tabular-nums">
           <span>مقاومت روانی فروشنده (Disposition Effect): {toPersianNum(prospectTheory.dispositionRigidityPct)}٪</span>
           <span>ضریب زیان‌گریزی: λ={toPersianNum(prospectTheory.lossAversionLambda)}</span>
-          <span>شکاف چانه‌زنی ۸۰ متر: {toPersianNum(prospectTheory.nominalDiscountMillion80m)} م.ت</span>
+          <span>شکاف چانه‌زنی ۸۰ متر: {toPersianNum(prospectTheory.nominalDiscountMillion80m)} م.ت ({formatMillionTomanAsIntlCurrency(prospectTheory.nominalDiscountMillion80m, intlCurrency, 'fa')})</span>
         </div>
 
         <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">

@@ -68,6 +68,9 @@ export interface CasperDecisionEvaluation {
     liquidityUtility: number;
     safetyUtility: number;
   };
+  annualRentalYieldPct: number;
+  nonCompensatoryVetoTriggered: boolean;
+  vetoReasonsFa: string[];
   expectedUtilityScore: number;
   riskAdjustedUtilityScore: number;
   uncertaintyMarginPct: number;
@@ -109,11 +112,9 @@ export function evaluateCasperNeighborhoodDecision(
 
   const anchoringPremiumPct = Number(clamp(((ask - deal) / deal) * 100, 0, 60).toFixed(1));
   const overpaymentRisk80mMillion = Math.max(0, Math.round((ask - deal) * 80));
-  const uncertaintyMarginPct = Number(
-    clamp(((iqrHigh - iqrLow) / (2 * deal)) * 100, 2, 45).toFixed(1),
-  );
+  const uncertaintyMarginPct = Number(clamp(((iqrHigh - iqrLow) / (2 * deal)) * 100, 2, 45).toFixed(1));
+  const annualRentalYieldPct = input.rahn80m ? Number((((input.rahn80m * 0.36) / (deal * 80)) * 100).toFixed(2)) : 5.2;
 
-  // Target negotiation offer: anchored to lower half of IQR when bubble, or deal benchmark
   const rawTargetOffer =
     input.marketStatus === 'bubble'
       ? Math.round(deal * 0.96)
@@ -123,7 +124,6 @@ export function evaluateCasperNeighborhoodDecision(
   const targetOfferPerSqm = clamp(rawTargetOffer, iqrLow, deal);
   const targetOfferIntlText = formatMillionTomanAsIntlCurrency(targetOfferPerSqm, currency, 'fa');
 
-  // 1. Epistemic Data Layers
   const epistemicLayers: EpistemicDataLayerItem[] = [
     {
       id: 'observed',
@@ -159,7 +159,6 @@ export function evaluateCasperNeighborhoodDecision(
     },
   ];
 
-  // 2. Cognitive & Behavioral Bias Guardrails
   const biasAlerts: CognitiveBiasAlert[] = [
     {
       id: 'anchoring',
@@ -185,16 +184,21 @@ export function evaluateCasperNeighborhoodDecision(
       explanationFa: 'تمرکز صرف روی قیمت هر مترمربع، هزینه‌های پنهان (کمیسیون، مالیات و بازسازی تاسیسات) را پنهان می‌کند.',
       countermeasureFa: 'حداقل ۳ تا ۵ درصد بودجه کل را به عنوان ذخیره احتیاطی خارج از ثمن معامله نگه دارید.',
     },
+    {
+      id: 'base_rate',
+      titleFa: 'غفلت از نرخ پایه نقدشوندگی و بازده اجاره (Base-Rate Neglect)',
+      severity: annualRentalYieldPct < 4.5 || samples < 12 ? 'HIGH' : 'MEDIUM',
+      explanationFa: `بازده خالص اجاره سالانه در این محله حدود ${annualRentalYieldPct}٪ (معادل ۳۶٪ رهن کامل بر ارزش کل) و حجم نمونه معتبر ${samples} مورد است.`,
+      countermeasureFa: 'پیش از تصمیم‌گیری بر اساس روایت‌های هیجانی، نرخ پایه زمان فروش و بازده اجاره محله را با میانگین منطقه مقایسه کنید.',
+    },
   ];
 
-  // 3. Multi-Criteria Decision Analysis (MCDA)
   const baseOverall = clamp((input.overallScore ?? 7.2) * 10, 35, 96);
   const statusBonus = input.marketStatus === 'undervalued' ? 14 : input.marketStatus === 'bubble' ? -14 : 2;
   const priceUtility = Math.round(clamp(72 + statusBonus - (anchoringPremiumPct - 6) * 1.1, 25, 98));
   const commuteUtility = Math.round(clamp(((input.transitScore ?? (input.overallScore ?? 7.0)) * 10), 30, 98));
   const environmentUtility = Math.round(clamp(baseOverall, 35, 96));
-  const rahnYieldPct = input.rahn80m ? ((input.rahn80m / (deal * 80)) * 100) : 14;
-  const liquidityUtility = Math.round(clamp(confidence * 0.65 + clamp(rahnYieldPct * 2, 15, 35), 35, 98));
+  const liquidityUtility = Math.round(clamp(confidence * 0.65 + clamp(annualRentalYieldPct * 5.2, 15, 35), 35, 98));
   const safetyUtility = Math.round(clamp(((input.safetyScore ?? (input.overallScore ?? 7.2)) * 10), 35, 98));
 
   const wPrice = Math.max(0, weights.priceWeight);
@@ -205,38 +209,39 @@ export function evaluateCasperNeighborhoodDecision(
   const wSum = wPrice + wCommute + wEnv + wLiq + wSafety || 1;
 
   const expectedUtilityScore = Math.round(
-    (priceUtility * wPrice +
-      commuteUtility * wCommute +
-      environmentUtility * wEnv +
-      liquidityUtility * wLiq +
-      safetyUtility * wSafety) /
-      wSum,
+    (priceUtility * wPrice + commuteUtility * wCommute + environmentUtility * wEnv + liquidityUtility * wLiq + safetyUtility * wSafety) / wSum,
   );
 
-  const uncertaintyPenalty = Math.round(
-    Math.max(0, (uncertaintyMarginPct - 8) * 0.6) + (input.marketStatus === 'bubble' ? 6 : 0),
-  );
-  const riskAdjustedUtilityScore = clamp(expectedUtilityScore - uncertaintyPenalty, 15, 98);
+  const vetoReasonsFa: string[] = [];
+  if (safetyUtility < 52) vetoReasonsFa.push('ریسک بحرانی ایمنی و فرسودگی سازه‌ای (امتیاز ایمنی زیر حد نصاب غیرجبرانی ۵۲)');
+  if (liquidityUtility < 48) vetoReasonsFa.push('قفل نقدشوندگی و ریسک رکود خروج سرمایه (امتیاز نقدشوندگی زیر حد نصاب ۴۸)');
+  if (priceUtility < 40) vetoReasonsFa.push('حباب قیمتی شدید یا شکاف غیرمنطقی قیمت اعلامی (امتیاز قیمت زیر حد نصاب ۴۰)');
+  const nonCompensatoryVetoTriggered = vetoReasonsFa.length > 0;
+
+  const uncertaintyPenalty = Math.round(Math.max(0, (uncertaintyMarginPct - 8) * 0.6) + (input.marketStatus === 'bubble' ? 6 : 0));
+  const rawRiskAdjusted = clamp(expectedUtilityScore - uncertaintyPenalty - vetoReasonsFa.length * 14, 15, 98);
+  const riskAdjustedUtilityScore = nonCompensatoryVetoTriggered ? Math.min(58, rawRiskAdjusted) : rawRiskAdjusted;
 
   let decisionVerdict: CasperDecisionEvaluation['decisionVerdict'] = 'CAUTIOUS_HOLD';
   let verdictTitleFa = 'بررسی مشروط و مذاکره مرحله‌ای';
   let verdictSummaryFa = `امتیاز مطلوبیت تعدیل‌شده با ریسک (${riskAdjustedUtilityScore} از ۱۰۰) نشان می‌دهد خرید تنها در صورت اخذ تخفیف تا سقف متری ${targetOfferPerSqm} م.ت توجیه اقتصادی دارد.`;
 
-  if (riskAdjustedUtilityScore >= 76 && input.marketStatus !== 'bubble') {
+  if (!nonCompensatoryVetoTriggered && riskAdjustedUtilityScore >= 76 && input.marketStatus !== 'bubble') {
     decisionVerdict = 'OPTIMAL_BUY';
     verdictTitleFa = 'گزینه مطلوب با ارزش ذاتی مناسب (Optimal)';
     verdictSummaryFa = `با توجه به اولویت‌های شما، محله ${input.hoodName} تعادل مطلوبی بین ارزش ذاتی، نقدشوندگی و کیفیت زیست‌پذیری دارد.`;
-  } else if (riskAdjustedUtilityScore >= 62) {
+  } else if (riskAdjustedUtilityScore >= 62 && !nonCompensatoryVetoTriggered) {
     decisionVerdict = 'NEGOTIATE_HARD';
     verdictTitleFa = 'ورود مشروط به چانه‌زنی سنگین (Negotiate Hard)';
     verdictSummaryFa = `شکاف ${anchoringPremiumPct} درصدی قیمت تابلو و معامله نیازمند مذاکره هدفمند روی نرخ متری ${targetOfferPerSqm} م.ت است.`;
-  } else if (riskAdjustedUtilityScore < 48) {
+  } else if (riskAdjustedUtilityScore < 48 || nonCompensatoryVetoTriggered) {
     decisionVerdict = 'HIGH_RISK_AVOID';
-    verdictTitleFa = 'عدم تناسب ریسک به بازده (نیازمند محله جایگزین)';
-    verdictSummaryFa = `با وزن‌های انتخابی شما، ریسک حباب یا عدم قطعیت قیمتی در این محله بالاست؛ بررسی محلات هم‌جوار زیر ارزش ذاتی توصیه می‌شود.`;
+    verdictTitleFa = nonCompensatoryVetoTriggered ? 'وتوی غیرجبرانی ریسک بحرانی (Non-Compensatory Veto)' : 'عدم تناسب ریسک به بازده (نیازمند محله جایگزین)';
+    verdictSummaryFa = nonCompensatoryVetoTriggered
+      ? `به دلیل فعال شدن خط قرمز غیرجبرانی (${vetoReasonsFa.join('؛ ')})، امتیاز بالای سایر معیارها مجوز جبران این ریسک را ندارد.`
+      : `با وزن‌های انتخابی شما، ریسک حباب یا عدم قطعیت قیمتی در این محله بالاست؛ بررسی محلات هم‌جوار زیر ارزش ذاتی توصیه می‌شود.`;
   }
 
-  // Counterfactual sensitivity explanation ("What changes this decision?")
   const neededDiscountPct = Math.max(3, Math.round(((ask - targetOfferPerSqm) / ask) * 100));
   const counterfactualFlipFa =
     decisionVerdict === 'OPTIMAL_BUY'
@@ -246,13 +251,10 @@ export function evaluateCasperNeighborhoodDecision(
   return {
     epistemicLayers,
     biasAlerts,
-    dimensionScores: {
-      priceUtility,
-      commuteUtility,
-      environmentUtility,
-      liquidityUtility,
-      safetyUtility,
-    },
+    dimensionScores: { priceUtility, commuteUtility, environmentUtility, liquidityUtility, safetyUtility },
+    annualRentalYieldPct,
+    nonCompensatoryVetoTriggered,
+    vetoReasonsFa,
     expectedUtilityScore,
     riskAdjustedUtilityScore,
     uncertaintyMarginPct,

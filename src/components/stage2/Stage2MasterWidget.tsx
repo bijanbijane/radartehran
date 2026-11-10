@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Users, BookOpen, Scale, Compass, Network, Hourglass, Briefcase, Activity, PieChart, Wallet, Split, Award } from 'lucide-react';
 import type { Neighborhood } from '../../data/neighborhoods';
 import type { CityId } from '../../data/multiCityData';
-import type { IntlCurrencyCode } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { NeighborhoodCrowdClaimsPanel } from './NeighborhoodCrowdClaimsPanel';
 import { SocioeconomicReferenceCard } from './SocioeconomicReferenceCard';
 import { EpistemicProvenancePanel } from './EpistemicProvenancePanel';
@@ -82,13 +82,17 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
   onSelectCompareHood,
 }) => {
   const [activeTab, setActiveTabState] = useState<Stage2ActiveTab>(initialTab ?? 'DECISION_SYNTHESIS');
+  const [sharedTargetSqm, setSharedTargetSqm] = useState<number>(targetSqm);
 
-  // Synchronize when parent passes a new initialTab
   React.useEffect(() => {
     if (initialTab && initialTab !== activeTab) {
       setActiveTabState(initialTab);
     }
   }, [initialTab]);
+
+  React.useEffect(() => {
+    setSharedTargetSqm(targetSqm);
+  }, [targetSqm]);
 
   const setActiveTab = (tab: Stage2ActiveTab) => {
     setActiveTabState(tab);
@@ -105,6 +109,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
 
   return (
     <section
+      data-testid="stage2-master-widget"
       aria-label="هوش معرفتی، اجتماعی-اقتصادی و راستی‌آزمایی میدانی محله"
       className="mt-4 rounded-2xl border border-indigo-200/80 dark:border-indigo-900/70 bg-gradient-to-br from-indigo-50/40 via-white to-slate-50/60 dark:from-slate-900 dark:via-slate-900/95 dark:to-indigo-950/30 p-3.5 shadow-sm space-y-3"
       dir="rtl"
@@ -120,7 +125,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
               موتور تصمیم‌یار معرفتی، پارتو، سرایت فضایی و هوش اجتماعی ({resolvedHoodName})
             </h3>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              ۴ حوزه راهبردی و ۱۲ آزمایشگاه ریاضی (بدون دیوار دکمه‌های شلوغ)
+              ۴ حوزه راهبردی و ۱۲ آزمایشگاه ریاضی • پایه محله: {formatMillionTomanAsIntlCurrency(resolvedBasePrice, intlCurrency, 'fa')}
             </p>
           </div>
         </div>
@@ -211,13 +216,13 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
           const common = { hoodId: resolvedHoodId, hoodName: resolvedHoodName, cityKey: resolvedCity, basePriceSqm: resolvedBasePrice, hood };
           switch (activeTab) {
             case 'DECISION_SYNTHESIS':
-              return <UnifiedDecisionSynthesisCard {...common} initialTargetSqm={targetSqm} intlCurrency={intlCurrency} onSelectTab={(t) => setActiveTab(t as Stage2ActiveTab)} />;
+              return <UnifiedDecisionSynthesisCard {...common} initialTargetSqm={sharedTargetSqm} onTargetSqmChange={setSharedTargetSqm} intlCurrency={intlCurrency} onSelectTab={(t) => setActiveTab(t as Stage2ActiveTab)} />;
             case 'EPISTEMIC_PROVENANCE':
-              return <EpistemicProvenancePanel {...common} intlCurrency={intlCurrency} />;
+              return <EpistemicProvenancePanel {...common} initialTargetSqm={sharedTargetSqm} onTargetSqmChange={setSharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'PARETO_REGRET':
-              return <ParetoRegretSimulatorCard {...common} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
+              return <ParetoRegretSimulatorCard {...common} initialTargetSqm={sharedTargetSqm} onTargetSqmChange={setSharedTargetSqm} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
             case 'SPATIAL_CONTAGION':
-              return <SpatialContagionLabCard {...common} onSelectCompareHood={onSelectCompareHood} />;
+              return <SpatialContagionLabCard {...common} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
             case 'REAL_OPTIONS':
               return <RealOptionsLiquidityCard {...common} intlCurrency={intlCurrency} />;
             case 'URBAN_AFFORDABILITY':
@@ -229,7 +234,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
             case 'MACRO_PORTFOLIO':
               return <MacroPortfolioArbitrageCard {...common} intlCurrency={intlCurrency} />;
             case 'RENT_VS_BUY':
-              return <RentVsBuyArbitrageCard {...common} intlCurrency={intlCurrency} />;
+              return <RentVsBuyArbitrageCard {...common} initialTargetSqm={sharedTargetSqm} onTargetSqmChange={setSharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'CROWD_CLAIMS':
               return <NeighborhoodCrowdClaimsPanel hoodId={resolvedHoodId} hoodName={resolvedHoodName} cityKey={resolvedCity} />;
             case 'SOCIOECONOMIC_REFERENCE':

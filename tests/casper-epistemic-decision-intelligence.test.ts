@@ -56,6 +56,15 @@ import {
   getOrBuildNeighborhoodRollup,
   resetSocioeconomicRollupsForTests,
 } from '../src/cells/socioeconomic-intelligence/socioeconomicRollupEngine';
+import {
+  DEFAULT_CASPER_DECISION_WEIGHTS,
+  evaluateCasperNeighborhoodDecision,
+} from '../src/cells/socioeconomic-intelligence/casperDecisionEngine';
+import {
+  extractAndResolvePropertySignal,
+  extractFastRegexPropertySpecs,
+  resetAiSeedExtractionForTests,
+} from '../src/cells/ai-ingestion/aiSeedExtractionService';
 
 describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto & Minimax Regret Engine', () => {
   it('1. decomposes neighborhood confidence score into 4 transparent mathematical components with margin of error', () => {
@@ -432,15 +441,21 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
     assert.ok(custom.expectedAnnualReturnNominalPct > 30);
     assert.ok(custom.annualVolatilityPct > 5);
     assert.ok(custom.threeYearWealthMultiplier > 1.5);
+    assert.ok(custom.weightedLiquidityDays > 10 && custom.weightedLiquidityDays < 75);
     assert.ok(custom.portfolioTierFa.length > 5);
 
-    // Asset swap arbitrage verification
-    const swap = evaluateAssetSwapToHousing('GOLD_COIN', sampleHood.name, 8000, 3.8);
-    assert.equal(swap.transactionFrictionCostMillion, 120); // 8000 * 0.015 = 120
-    assert.ok(swap.annualRentalYieldMillion > 0);
-    assert.ok(swap.breakEvenMonths > 0 && swap.breakEvenMonths <= 36);
-    assert.ok(swap.twoYearNetArbitrageAdvantageMillion > 0);
-    assert.ok(swap.verdictFa.length > 5);
+    // Asset swap arbitrage verification across all 3 source assets (challenging flat-friction assumption)
+    const swapGold = evaluateAssetSwapToHousing('GOLD_COIN', sampleHood.name, 8000, 3.8);
+    const swapUsd = evaluateAssetSwapToHousing('US_DOLLAR', sampleHood.name, 8000, 3.8);
+    const swapFixed = evaluateAssetSwapToHousing('FIXED_INCOME', sampleHood.name, 8000, 3.8);
+    assert.equal(swapGold.transactionFrictionCostMillion, 208); // 8000 * (1.5% + 1.1% gold spread) = 208
+    assert.equal(swapUsd.transactionFrictionCostMillion, 176); // 8000 * (1.5% + 0.7% FX spread) = 176
+    assert.equal(swapFixed.transactionFrictionCostMillion, 128); // 8000 * (1.5% + 0.1% bond redemption) = 128
+    assert.ok(swapFixed.twoYearNetArbitrageAdvantageMillion > swapGold.twoYearNetArbitrageAdvantageMillion);
+    assert.ok(swapGold.annualRentalYieldMillion > 0);
+    assert.ok(swapGold.breakEvenMonths > 0 && swapGold.breakEvenMonths <= 36);
+    assert.ok(swapGold.twoYearNetArbitrageAdvantageMillion > 0);
+    assert.ok(swapGold.verdictFa.length > 5);
   });
 
   it('13. computes Rent vs. Buy Lifetime Arbitrage, NPV equivalence, and Indifference Cap Rate', () => {
@@ -701,7 +716,7 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       'Both purchase value and rahn deposit must scale proportionally with targetSqm (120/80 = 1.5x)',
     );
 
-    // 8. Dixit-Pindyck real option hurdleRateMultiplier and hurdlePricePerSqm must scale monotonically with horizonMonths
+    // 8. Dixit-Pindyck real option hurdleRateMultiplier and hurdlePricePerSqm must scale monotonically with horizonMonths, while buyerReservationPricePerSqm scales inversely
     const option3m = computeDixitPindyckRealOption(120, 0.04, 0.25, 0.22, 3);
     const option24m = computeDixitPindyckRealOption(120, 0.04, 0.25, 0.22, 24);
     assert.ok(
@@ -709,11 +724,16 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       `Finite-horizon Dixit-Pindyck hurdle multiplier must increase with horizon (24m=${option24m.hurdleRateMultiplier} vs 3m=${option3m.hurdleRateMultiplier})`,
     );
     assert.ok(option24m.hurdlePricePerSqm > option3m.hurdlePricePerSqm);
+    assert.ok(
+      option24m.buyerReservationPricePerSqm < option3m.buyerReservationPricePerSqm,
+      'Buyer immediate entry reservation ceiling must DECREASE when waiting horizon/uncertainty increases',
+    );
+    assert.ok(option24m.requiredBuyerDiscountPct > option3m.requiredBuyerDiscountPct);
     assert.ok(option24m.valueOfWaitingTomanMln > option3m.valueOfWaitingTomanMln);
   });
 
   it('18. challenges conventional PropTech assumptions with capital-conserving Rahn dynamics, Fisher real wealth, Non-Compensatory MAUT veto, Hurwicz α, Stagflation Illusion, and Illiquidity-Adjusted Real VaR', () => {
-    // 1. Capital-conserving Rahn lease renewal top-ups & Fisher CPI-deflated Year-0 real purchasing power
+    // 1. Capital-conserving Rahn lease renewal top-ups, Fisher CPI-deflated Year-0 real purchasing power & exact break-even return solver
     const sim5y = simulateRentVsBuyEquivalence({
       horizonYears: 5,
       buyerEquityMillion: 12000,
@@ -725,6 +745,17 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
     });
     assert.ok(sim5y.rentScenario.cumulativeRahnTopUpsMillion > 0, 'Must track cumulative annual Rahn lease-renewal top-ups');
     assert.ok(sim5y.rentScenario.movingAndRenewalFrictionMillion > 0, 'Must deduct renewal & moving friction');
+    assert.ok(sim5y.breakEvenAlternativeReturnPct > 25 && sim5y.breakEvenAlternativeReturnPct < 65, 'Must solve exact break-even alternative return pct');
+    const simAtBreakEven = simulateRentVsBuyEquivalence({
+      horizonYears: 5,
+      buyerEquityMillion: 12000,
+      pricePerSqm: 140,
+      rahn80m: 1800,
+      targetSqm: 80,
+      alternativeReturnNominalPct: sim5y.breakEvenAlternativeReturnPct,
+      housingAppreciationNominalPct: 38,
+    });
+    assert.equal(simAtBreakEven.winner, 'INDIFFERENCE', 'Simulating at breakEvenAlternativeReturnPct must yield INDIFFERENCE equilibrium');
     assert.ok(
       sim5y.rentScenario.terminalLockedRahnMillion > sim5y.rentScenario.initialRahnOutlayMillion,
       'Terminal locked Rahn deposit must reflect initial Rahn + cumulative top-ups',
@@ -824,6 +855,259 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       const codeDirect = getCode(city, 1, '1405-08');
       assert.equal(codeDirect, rollup.citationCode);
     }
+  });
+
+  it('20. executes user-token-delegated Firestore REST reconciliation for GDPR export and account deletion when FIREBASE_SERVICE_ACCOUNT_JSON is absent', async () => {
+    const { reconcileUserBuyerAlertsInFirestore } = await import('../src/utils/identityLifecycleAndBackendGovernance');
+    const capturedCalls: Array<{ url: string; method: string; authHeader: string }> = [];
+    const mockFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method || 'GET';
+      const headers = (init?.headers || {}) as Record<string, string>;
+      capturedCalls.push({ url, method, authHeader: headers.Authorization || '' });
+      if (url.endsWith(':runQuery')) {
+        return new Response(
+          JSON.stringify([
+            {
+              document: {
+                name: 'projects/gen-lang-client-0713157837/databases/ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a/documents/buyerAlerts/user_abc_hood_5',
+                fields: {
+                  userId: { stringValue: 'user_abc' },
+                  hoodId: { integerValue: '5' },
+                  hoodName: { stringValue: 'پونک' },
+                  fullName: { stringValue: 'کاربر تست کسپر' },
+                  phone: { stringValue: '09121234567' },
+                  dealType: { stringValue: 'خرید' },
+                  maxBudgetText: { stringValue: '۱۲ میلیارد' },
+                  createdAtFa: { stringValue: '۱۴۰۵/۰۸/۱۹' },
+                },
+              },
+            },
+          ]),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    const exported = await reconcileUserBuyerAlertsInFirestore('user_abc', 'export', 'Bearer test_jwt_token_123', mockFetch);
+    assert.equal(exported.length, 1);
+    assert.equal(exported[0].id, 'user_abc_hood_5');
+    assert.equal(exported[0].hoodId, 5);
+    assert.equal(exported[0].hoodName, 'پونک');
+    assert.equal(capturedCalls.length, 1);
+    assert.equal(capturedCalls[0].method, 'POST');
+    assert.equal(capturedCalls[0].authHeader, 'Bearer test_jwt_token_123');
+
+    const deleted = await reconcileUserBuyerAlertsInFirestore('user_abc', 'delete', 'Bearer test_jwt_token_123', mockFetch);
+    assert.equal(deleted.length, 1);
+    assert.equal(capturedCalls.length, 3);
+    assert.equal(capturedCalls[2].method, 'DELETE');
+    assert.ok(capturedCalls[2].url.endsWith('/documents/buyerAlerts/user_abc_hood_5'));
+    assert.equal(capturedCalls[2].authHeader, 'Bearer test_jwt_token_123');
+  });
+
+  it('21. enforces WS-CASPER-15 zero-MAD dispersion floor, cryptographic seal verification, floor <= totalFloors clamping, and Bearer REST delegation for listDurableBuyerAlerts & persistBuyerAlertDocument', async () => {
+    const {
+      filterOutliersUsingMAD,
+      computeServerValuationSeal,
+      verifyServerValuationSeal,
+    } = await import('../src/cells/valuation-authority/robustValuationEngine');
+    const {
+      listDurableBuyerAlerts,
+      persistBuyerAlertDocument,
+    } = await import('../src/utils/identityLifecycleAndBackendGovernance');
+
+    // 1. Zero-MAD dispersion floor prevents 1.5% inlier from being falsely rejected when >= 50% of observations are identical
+    const zeroMadSummary = filterOutliersUsingMAD([
+      { id: 'obs-1', priceSqm: 120, sourceType: 'VERIFIED_DEAL', ageDays: 2 },
+      { id: 'obs-2', priceSqm: 120, sourceType: 'VERIFIED_DEAL', ageDays: 4 },
+      { id: 'obs-3', priceSqm: 120, sourceType: 'APPROVED_BARGAIN', ageDays: 6 },
+      { id: 'obs-4-close-inlier', priceSqm: 122, sourceType: 'VERIFIED_CLAIM', ageDays: 5 },
+      { id: 'obs-5-true-outlier', priceSqm: 195, sourceType: 'AI_SEED', ageDays: 1 },
+    ]);
+    assert.equal(zeroMadSummary.madValue, 0);
+    assert.equal(zeroMadSummary.evaluatedObservations.find((o) => o.id === 'obs-4-close-inlier')?.isOutlier, false);
+    assert.equal(zeroMadSummary.evaluatedObservations.find((o) => o.id === 'obs-5-true-outlier')?.isOutlier, true);
+
+    // 2. Server Valuation Seal clamps floor <= totalFloors and cryptographically verifies HMAC signature
+    const seal = computeServerValuationSeal({
+      cityId: 'tehran',
+      hoodId: 1,
+      sqm: 95,
+      buildYear: 1402,
+      floor: 14,
+      totalFloors: 5,
+    });
+    assert.equal(seal.hedonicValuation.floor, 5, 'Floor must be clamped to totalFloors (5)');
+    assert.equal(verifyServerValuationSeal(seal), true, 'Valid server seal must pass cryptographic verification');
+    assert.equal(
+      verifyServerValuationSeal({
+        ...seal,
+        hedonicValuation: { ...seal.hedonicValuation, hedonicTotalMillion: seal.hedonicValuation.hedonicTotalMillion + 500 },
+      }),
+      false,
+      'Tampered valuation payload must fail cryptographic seal verification',
+    );
+
+    // 3. Bearer token Firestore REST delegation for listDurableBuyerAlerts and persistBuyerAlertDocument
+    const restCalls: Array<{ url: string; method: string }> = [];
+    const mockAlertFetch: typeof fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method || 'GET';
+      restCalls.push({ url, method });
+      if (url.endsWith(':runQuery')) {
+        return new Response(
+          JSON.stringify([
+            {
+              document: {
+                name: 'projects/gen-lang-client-0713157837/databases/ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a/documents/buyerAlerts/usr_9_hood_3',
+                fields: {
+                  userId: { stringValue: 'usr_9' },
+                  hoodId: { integerValue: '3' },
+                  hoodName: { stringValue: 'سعادت‌آباد' },
+                  fullName: { stringValue: 'سارا نیازی' },
+                  phone: { stringValue: '09129876543' },
+                  dealType: { stringValue: 'خرید' },
+                  maxBudgetText: { stringValue: '۱۸ میلیارد' },
+                },
+              },
+            },
+          ]),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (method === 'GET') return new Response('{}', { status: 404 });
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    const adminLeads = await listDurableBuyerAlerts('admin_1', 'eskandar8dll@gmail.com', 'Bearer admin_token_xyz', mockAlertFetch);
+    assert.equal(adminLeads.length, 1);
+    assert.equal(adminLeads[0].hoodName, 'سعادت‌آباد');
+
+    const persisted = await persistBuyerAlertDocument(
+      {
+        uid: 'usr_9',
+        email: 'user9@example.com',
+        hoodId: 3,
+        hoodName: 'سعادت‌آباد',
+        fullName: 'سارا نیازی',
+        phone: '09129876543',
+        dealType: 'خرید',
+        maxBudgetText: '۱۸ میلیارد',
+        rawAuthHeaderOrToken: 'Bearer user_token_xyz',
+      },
+      mockAlertFetch,
+    );
+    assert.equal(persisted.duplicate, false);
+    assert.equal(persisted.id, 'usr_9_hood_3');
+    assert.ok(restCalls.some((c) => c.method === 'PATCH' && c.url.includes('/buyerAlerts/usr_9_hood_3')));
+  });
+
+  it('22. WS-CASPER-16: prevents false-positive entity merges when street name is missing (نامشخص), anchors missing-price extraction to empirical neighborhood buyPerSqm, and enforces non-compensatory MCDA veto + base_rate bias alert', () => {
+    resetAiSeedExtractionForTests();
+
+    // 1. Two unrelated listings in the same neighborhood without street names and without GPS must NOT merge
+    const firstStreetless = extractAndResolvePropertySignal({
+      cityId: 'tehran',
+      hoodId: 1,
+      rawTextFa: 'آپارتمان ۱۱۰ متری طبقه ۳ از ۵ ساخت ۱۴۰۱ دارای آسانسور و پارکینگ',
+    });
+    const secondStreetless = extractAndResolvePropertySignal({
+      cityId: 'tehran',
+      hoodId: 1,
+      rawTextFa: 'واحد ۱۱۲ متری طبقه ۳ از ۵ ساخت ۱۴۰۱ با آسانسور و پارکینگ و انباری',
+    });
+    assert.equal(firstStreetless.fact.streetNameNormalized, 'نامشخص');
+    assert.equal(secondStreetless.fact.streetNameNormalized, 'نامشخص');
+    assert.equal(secondStreetless.matchedExistingBuilding, false, 'Unrelated streetless listings without GPS must not merge');
+    assert.notEqual(firstStreetless.fact.canonicalBuildingId, secondStreetless.fact.canonicalBuildingId);
+
+    // 2. Missing price in raw signal resolves to empirical neighborhood buyPerSqm (not hardcoded 120)
+    const hood1 = INITIAL_NEIGHBORHOODS.find((h) => h.id === 1)!;
+    assert.equal(firstStreetless.fact.pricePerSqm, hood1.buyPerSqm);
+
+    // 3. Decimal slash/comma and ودیعه extraction
+    const parsedSlash = extractFastRegexPropertySpecs('آپارتمان ۱۰۰ متری قیمت ۱۸/۴ میلیارد');
+    assert.equal(parsedSlash.totalPriceMillionToman, 18400);
+    const parsedVadieh = extractFastRegexPropertySpecs('آپارتمان ۸۵ متری ودیعه ۹۵۰ میلیون');
+    assert.equal(parsedVadieh.dealMode, 'rent');
+    assert.equal(parsedVadieh.totalPriceMillionToman, 950);
+
+    // 4. Non-compensatory MCDA veto & 4th base_rate bias alert in evaluateCasperNeighborhoodDecision
+    const unsafeEval = evaluateCasperNeighborhoodDecision(
+      {
+        hoodId: 8,
+        hoodName: 'پونک',
+        askingPricePerSqm: 145,
+        estimatedDealPricePerSqm: 138,
+        iqrLowPerSqm: 132,
+        iqrHighPerSqm: 146,
+        validSampleCount: 24,
+        rejectedFraudCount: 2,
+        confidenceScore: 90,
+        marketStatus: 'undervalued',
+        marketRegime: 'BALANCED',
+        overallScore: 8.8,
+        transitScore: 9.0,
+        safetyScore: 4.2, // Critical structural/seismic hazard (< 5.2 => safetyUtility 42 < 52)
+        rahn80m: 1650,
+      },
+      DEFAULT_CASPER_DECISION_WEIGHTS,
+    );
+    assert.equal(unsafeEval.biasAlerts.length, 4, 'Must include all 4 cognitive bias alerts including base_rate');
+    assert.ok(unsafeEval.biasAlerts.some((b) => b.id === 'base_rate'));
+    assert.ok(unsafeEval.annualRentalYieldPct > 3 && unsafeEval.annualRentalYieldPct < 9, 'Annual rental yield must be ~5.4% (not 15% deposit ratio)');
+    assert.equal(unsafeEval.nonCompensatoryVetoTriggered, true);
+    assert.ok(unsafeEval.vetoReasonsFa.length >= 1);
+    assert.equal(unsafeEval.decisionVerdict, 'HIGH_RISK_AVOID', 'Non-compensatory safety veto must prevent OPTIMAL_BUY');
+  });
+
+  it('23. WS-CASPER-17: verifies Urban Affordability multi-currency Isochrone formatting, Hub vanak resolution, and Housing Cycle / Real Options hood & intlCurrency parity', () => {
+    // 1. Urban Affordability Isochrone with custom intlCurrency (EUR) and provided hood
+    const customHood = { ...INITIAL_NEIGHBORHOODS[0], buyPerSqm: 420 };
+    const affReport = generateCasperUrbanAffordabilityReport(
+      customHood.id,
+      customHood.name,
+      'tehran',
+      customHood.buyPerSqm,
+      'vanak',
+      55,
+      customHood,
+      'EUR',
+    );
+    assert.equal(affReport.commute.workHubId, 'vanak');
+    assert.ok(affReport.basePriceSqm > 300 && affReport.basePriceSqm <= customHood.buyPerSqm);
+    if (affReport.optimalIsochroneSubstitute) {
+      assert.ok(affReport.optimalIsochroneSubstitute.rationaleFa.includes('€'), 'Must format savings in requested EUR currency');
+    }
+
+    // 2. Housing Cycle report with hood and intlCurrency
+    const cycleReport = generateCasperHousingCycleReport(
+      customHood.id,
+      customHood.name,
+      'tehran',
+      customHood.buyPerSqm,
+      customHood,
+      'EUR',
+    );
+    assert.equal(cycleReport.basePriceSqm, customHood.buyPerSqm);
+    assert.ok(cycleReport.basePriceIntlText && cycleReport.basePriceIntlText.includes('€'));
+    assert.ok(cycleReport.rahn80mIntlText && cycleReport.rahn80mIntlText.includes('€'));
+
+    // 3. Real Options liquidity report with hood and intlCurrency
+    const liqReport = generateCasperLiquidityReport(
+      customHood.id,
+      customHood.name,
+      'tehran',
+      customHood.buyPerSqm,
+      customHood,
+      'EUR',
+    );
+    assert.equal(liqReport.basePriceSqm, customHood.buyPerSqm);
+    assert.ok(liqReport.basePriceIntlText && liqReport.basePriceIntlText.includes('€'));
+    assert.ok(liqReport.valueOfWaitingIntlText && liqReport.valueOfWaitingIntlText.includes('€'));
+    assert.ok(liqReport.buyerReservationIntlText && liqReport.buyerReservationIntlText.includes('€'));
   });
 });
 

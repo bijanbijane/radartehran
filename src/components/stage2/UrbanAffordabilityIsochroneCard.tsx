@@ -14,7 +14,7 @@ import {
 import {
   generateCasperUrbanAffordabilityReport,
 } from '../../cells/decision-epistemology/urbanAffordabilityIsochroneEngine';
-import { toPersianNum, WORK_HUBS } from '../../data/neighborhoods';
+import { toPersianNum, WORK_HUBS, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, CityId } from '../../data/multiCityData';
 import type { IntlCurrencyCode } from '../../utils/areaUnit';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
@@ -26,6 +26,7 @@ export interface UrbanAffordabilityIsochroneCardProps {
   basePriceSqm?: number;
   intlCurrency?: IntlCurrencyCode;
   onSelectCompareHood?: (hoodName: string) => void;
+  hood?: Neighborhood;
 }
 
 export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochroneCardProps> = ({
@@ -35,9 +36,10 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
   basePriceSqm = 120,
   intlCurrency = 'USD',
   onSelectCompareHood,
+  hood,
 }) => {
   const [monthlyIncomeMillion, setMonthlyIncomeMillion] = useState<number>(45);
-  const [selectedHubId, setSelectedHubId] = useState<string>('hub-mirdamad');
+  const [selectedHubId, setSelectedHubId] = useState<string>('vanak');
 
   const availableHubs = useMemo(() => {
     const safeCity = (cityKey in MULTI_CITY_CONFIGS ? cityKey : 'tehran') as CityId;
@@ -51,9 +53,11 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
       cityKey,
       basePriceSqm,
       selectedHubId,
-      monthlyIncomeMillion
+      monthlyIncomeMillion,
+      hood,
+      intlCurrency
     );
-  }, [hoodId, hoodName, cityKey, basePriceSqm, selectedHubId, monthlyIncomeMillion]);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, selectedHubId, monthlyIncomeMillion, hood, intlCurrency]);
 
   const tcohFx = intlCurrency !== 'IRT'
     ? ` (${formatMillionTomanAsIntlCurrency(report.arbitrage.totalCostOfHousingMillion, intlCurrency, 'fa')})`

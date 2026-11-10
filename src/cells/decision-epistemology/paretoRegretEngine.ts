@@ -41,7 +41,9 @@ export interface EvaluatedStrategyRow {
   cells: Record<MacroRegimeId, StrategyRegimeCell>;
   maxRegretMillion: number;
   expectedWealthMillion: number;
+  hurwiczScoreMillion: number;
   isMinimaxOptimal: boolean;
+  isHurwiczOptimal: boolean;
 }
 
 export interface ParetoArbitrageCandidate {
@@ -64,6 +66,7 @@ export interface ParetoRegretAnalysisResult {
   hoodName: string;
   targetSqm: number;
   horizonYears: number;
+  optimismAlpha: number;
   targetUtilityScore: number;
   regimes: MacroRegimeSpec[];
   strategies: EvaluatedStrategyRow[];
@@ -98,7 +101,9 @@ export function computeNeighborhoodUtilityScore(hood: {
   const trafficVal = Number(hood.traffic ?? hood.density) || 6.5;
   const walkVal = Number(hood.walking) || 6.5;
   const baseOverall = Number(hood.overallScore) || (transitVal + airVal + trafficVal + walkVal) / 4;
-  const raw = baseOverall * 4.5 + transitVal * 2.0 + airVal * 1.5 + trafficVal * 1.0 + walkVal * 1.0;
+  const minDim = Math.min(transitVal, airVal, trafficVal, walkVal);
+  const vetoPenalty = minDim < 5.0 ? (5.0 - minDim) * 8.5 : 0;
+  const raw = baseOverall * 4.5 + transitVal * 2.0 + airVal * 1.5 + trafficVal * 1.0 + walkVal * 1.0 - vetoPenalty;
   return Math.round(clampNumber(raw, 25, 99, 72));
 }
 
@@ -153,13 +158,14 @@ export function findParetoDominantNeighborhoods(input: {
 }
 
 export function computeSavageMinimaxRegretMatrix(input: {
-  cityId?: string; hoodId: number; hoodName?: string; basePriceSqm?: number; targetSqm?: number; intlCurrency?: IntlCurrencyCode;
+  cityId?: string; hoodId: number; hoodName?: string; basePriceSqm?: number; targetSqm?: number; intlCurrency?: IntlCurrencyCode; optimismAlpha?: number;
 }): ParetoRegretAnalysisResult {
   const safeCity = validateCityParam(input.cityId, 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   const targetHood = cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0];
   const hoodName = input.hoodName || targetHood.name;
   const targetSqm = clampNumber(input.targetSqm ?? 85, 35, 500, 85);
+  const optimismAlpha = clampNumber(input.optimismAlpha ?? 0.35, 0, 1, 0.35);
   const horizonYears = 3;
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
 
@@ -224,33 +230,39 @@ export function computeSavageMinimaxRegretMatrix(input: {
 
   const rows: EvaluatedStrategyRow[] = strategyMeta.map((meta) => {
     const cells = {} as Record<MacroRegimeId, StrategyRegimeCell>;
-    let maxRegret = 0, sumWealth = 0;
+    let maxRegret = 0, sumWealth = 0, minW = Infinity, maxW = -Infinity;
     for (const reg of MACRO_REGIMES_3Y) {
       const w = rawWealth[meta.id][reg.regimeId];
       const regret = Math.max(0, bestInRegime[reg.regimeId] - w);
       if (regret > maxRegret) maxRegret = regret;
+      if (w < minW) minW = w;
+      if (w > maxW) maxW = w;
       sumWealth += w;
       cells[reg.regimeId] = {
         regimeId: reg.regimeId, terminalWealthMillion: w,
         terminalWealthIntlText: formatMillionTomanAsIntlCurrency(w, intlCurrency, 'fa'), regretMillion: regret,
       };
     }
+    const hurwiczScoreMillion = Math.round(optimismAlpha * maxW + (1 - optimismAlpha) * minW);
     return {
       strategyId: meta.id, titleFa: meta.titleFa, subtitleFa: meta.subtitleFa, cells,
-      maxRegretMillion: maxRegret, expectedWealthMillion: Math.round(sumWealth / MACRO_REGIMES_3Y.length), isMinimaxOptimal: false,
+      maxRegretMillion: maxRegret, expectedWealthMillion: Math.round(sumWealth / MACRO_REGIMES_3Y.length),
+      hurwiczScoreMillion, isMinimaxOptimal: false, isHurwiczOptimal: false,
     };
   });
 
-  let minimaxWinner = rows[0];
+  let minimaxWinner = rows[0], hurwiczWinner = rows[0];
   for (const r of rows) {
     if (r.maxRegretMillion < minimaxWinner.maxRegretMillion || (r.maxRegretMillion === minimaxWinner.maxRegretMillion && r.expectedWealthMillion > minimaxWinner.expectedWealthMillion)) {
       minimaxWinner = r;
     }
+    if (r.hurwiczScoreMillion > hurwiczWinner.hurwiczScoreMillion) hurwiczWinner = r;
   }
   minimaxWinner.isMinimaxOptimal = true;
+  hurwiczWinner.isHurwiczOptimal = true;
 
   return {
-    cityId: safeCity, hoodId: targetHood.id, hoodName, targetSqm, horizonYears, targetUtilityScore,
+    cityId: safeCity, hoodId: targetHood.id, hoodName, targetSqm, horizonYears, optimismAlpha, targetUtilityScore,
     regimes: [...MACRO_REGIMES_3Y], strategies: rows, minimaxWinnerId: minimaxWinner.strategyId,
     minimaxSummaryFa: `بر اساس معیار «کمینه‌سازی حداکثر پشیمانی ساواج» (Savage Minimax Regret)، راهبرد «${minimaxWinner.titleFa}» کمترین ریسک پشیمانی (${toPersianNum(minimaxWinner.maxRegretMillion)} م.ت در بدترین سناریوی کلان) و میانگین ثروت ۳ ساله ${toPersianNum(minimaxWinner.expectedWealthMillion)} م.ت را ایجاد می‌کند.`,
     paretoAlternatives: candidates,

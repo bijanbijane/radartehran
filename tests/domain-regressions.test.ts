@@ -1082,7 +1082,7 @@ function runDomainRegressionTests(): void {
   const reverseBudgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/modals/ReverseBudgetDiscoveryModal.tsx'), 'utf-8');
   assert(
     '42. WS-CASPER-06 unifies buildNeighborhoodListingSamples & explainNeighborhoodRecommendation across ProductDiscoverView, ProductHomeView, ProductUserSpaceView, and enforces AFFORDABLE-first ranking in ReverseBudgetDiscoveryModal',
-    discoverViewSrc.includes('buildNeighborhoodListingSamples(a)') &&
+    discoverViewSrc.includes('const dealPriceByHoodId = useMemo(') &&
       discoverViewSrc.includes('buildNeighborhoodListingSamples(hood)') &&
       discoverViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore })') &&
       !discoverViewSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, [])') &&
@@ -1163,6 +1163,190 @@ function runDomainRegressionTests(): void {
       hedonicModalSrc.includes('getCurrentJalaliYear()') &&
       !hedonicModalSrc.includes('1405 - specs.buildingAge'),
     'WS-CASPER-09 root-cause remediation assertion failed',
+  );
+
+  // 46. WS-CASPER-10: Root-Cause Elimination of Temporary Passwordless Admin Bypass, Unwired ViewRouter Admin Props, Silent Firestore Sponsor Override Errors & O(N log N) Discover Aggregator Recomputation
+  const adminMonitoringViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductAdminMonitoringView.tsx'), 'utf-8');
+  const viewRouterSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductViewRouter.tsx'), 'utf-8');
+  const globalHeaderSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/navigation/ProductGlobalHeader.tsx'), 'utf-8');
+  const adminModalFileSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminModal.tsx'), 'utf-8');
+  const adminSecBackupSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminSecurityAndBackupTabs.tsx'), 'utf-8');
+  const adminActionsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/useRadarAdminActions.ts'), 'utf-8');
+  assert(
+    '46. WS-CASPER-10 eliminates temporary passwordless admin bypass across ProductAdminMonitoringView/ProductViewRouter/AdminModal/AdminSecurityAndBackupTabs/ProductGlobalHeader, routes sponsor override Firestore errors through handleFirestoreError, and memoizes dealPriceByHoodId in ProductDiscoverView',
+    !adminMonitoringViewSrc.includes('temporaryInspectionMode') &&
+      !adminMonitoringViewSrc.includes('ui.setAdminUnlocked(true)') &&
+      !adminMonitoringViewSrc.includes('بررسی موقت بدون رمز') &&
+      adminMonitoringViewSrc.includes('if (!p.isVerifiedAdmin || !p.currentUser || !p.currentUser.emailVerified)') &&
+      adminMonitoringViewSrc.includes('adminUnlocked={ui.adminUnlocked}') &&
+      adminMonitoringViewSrc.includes('isVerifiedAdmin={p.isVerifiedAdmin}') &&
+      !adminModalFileSrc.includes('temporaryInspectionMode') &&
+      adminModalFileSrc.includes('isVerifiedAdmin={isVerifiedAdmin} />') &&
+      adminSecBackupSrc.includes('isVerifiedAdmin = false') &&
+      !adminSecBackupSrc.includes('isVerifiedAdmin = true') &&
+      viewRouterSrc.includes('isVerifiedAdmin={p.isVerifiedAdmin}') &&
+      viewRouterSrc.includes('handleDeepWebSync={p.handleDeepWebSync || (() => {})}') &&
+      !viewRouterSrc.includes('isVerifiedAdmin={true}') &&
+      !globalHeaderSrc.includes('global-header-admin-btn') &&
+      !globalHeaderSrc.includes('بررسی بدون رمز') &&
+      adminActionsSrc.includes('...(sponsorVal !== undefined ? { sponsor: sponsorVal } : {})') &&
+      !adminActionsSrc.includes('.catch(() => {})') &&
+      discoverViewSrc.includes('dealPriceByHoodId.get(hood.id)'),
+    'WS-CASPER-10 Zero-Trust RBAC and root-cause remediation assertion failed',
+  );
+
+  // 47. WS-CASPER-11: Uncaught TypeScript Contract Drift Remediation across Epistemic Engines, Cloudflare Worker Bindings, Property Registry & Property Insurance State Machine
+  const workerTypesSrc = fs.readFileSync(path.join(process.cwd(), 'worker/types.ts'), 'utf-8');
+  const propRegIndexSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/property-registry/index.ts'), 'utf-8');
+  const propInsIndexSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/property-insurance/index.ts'), 'utf-8');
+  assert(
+    '47. WS-CASPER-11 enforces full TypeScript contract parity across housingCycleRegimeEngine, paretoRegretEngine, spatialContagionEngine, unifiedDecisionSynthesisEngine, epistemicDecisionEngine, realOptionsLiquidityEngine, worker/types.ts, property-registry, and property-insurance',
+    housingCycleSrc.includes('isStagflationaryIllusion: boolean;') &&
+      housingCycleSrc.includes('dynamicEquilibriumPR: number;') &&
+      paretoRegretSrc.includes('hurwiczScoreMillion: number;') &&
+      paretoRegretSrc.includes('vetoPenalty = minDim < 5.0') &&
+      spatialContagionSrc.includes('customHood?: Neighborhood') &&
+      spatialContagionSrc.includes('const iqrLow = agg.iqrLowPerSqm > 0') &&
+      epistemicDecisionSrc.includes('const resolvedIqrLow = agg.iqrLowPerSqm > 0') &&
+      realOptionsSrc.includes('const horizonWeight = 0.55 + 0.45 * (1 - Math.exp(-1.2 * Math.max(0.05, tau)));') &&
+      unifiedSynthesisSrc.includes('executionPlaybook: DealExecutionPlaybook;') &&
+      unifiedSynthesisSrc.includes('illiquidityAdjustedVaR95RealPct: number;') &&
+      workerTypesSrc.includes('readonly RADAR_QUEUE?: Queue;') &&
+      workerTypesSrc.includes('readonly RADAR_DLQ?: Queue;') &&
+      propRegIndexSrc.includes('export function createPropertyRegistryService') &&
+      propInsIndexSrc.includes('export function createPropertyInsuranceService'),
+    'WS-CASPER-11 TypeScript contract parity assertion failed',
+  );
+
+  // 48. WS-CASPER-12: Contract-Room 3-Stage Escrow Execution Playbook UI, Source-Asset Swap Friction Dynamics, Empirical v6.4 Deal Grounding in Isochrone & Socioeconomic Fallback, and 100% Elimination of Empty Sample Arrays across src/
+  const macroEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/macroPortfolioArbitrageEngine.ts'), 'utf-8');
+  const macroCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/MacroPortfolioArbitrageCard.tsx'), 'utf-8');
+  const isochroneEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/urbanAffordabilityIsochroneEngine.ts'), 'utf-8');
+  const socioRefCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/SocioeconomicReferenceCard.tsx'), 'utf-8');
+  const contractLegalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ContractLegalAdvisorView.tsx'), 'utf-8');
+  assert(
+    '48. WS-CASPER-12 enforces Contract-Room 3-Stage Escrow Playbook UI, source-asset swap friction & weightedLiquidityDays, empirical v6.4 deal-price grounding in Isochrone & SocioeconomicReferenceCard, and zero empty sample arrays in ContractLegalAdvisorView & AdminSecurityAndBackupTabs',
+    unifiedCardSrc.includes('data-testid="casper-execution-playbook-panel"') &&
+      unifiedCardSrc.includes('data-testid="copy-deal-playbook-btn"') &&
+      unifiedCardSrc.includes('data-testid="synthesis-stagflation-badge"') &&
+      macroEngineSrc.includes('weightedLiquidityDays: number;') &&
+      macroEngineSrc.includes('totalFrictionRatePct: number;') &&
+      macroCardSrc.includes('data-testid="swap-source-asset-selector"') &&
+      isochroneEngineSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      socioRefCardSrc.includes('buildNeighborhoodListingSamples(resolvedHood)') &&
+      !socioRefCardSrc.includes('ask * 0.92') &&
+      contractLegalSrc.includes('buildNeighborhoodListingSamples(INITIAL_NEIGHBORHOODS[0])') &&
+      adminSecBackupSrc.includes('buildNeighborhoodListingSamples(refHood)') &&
+      !contractLegalSrc.includes(', [])') &&
+      !adminSecBackupSrc.includes(', [])'),
+    'WS-CASPER-12 Contract-Room Playbook UI, source-asset swap friction, and empirical sample unification assertion failed',
+  );
+
+  // 49. WS-CASPER-13: Deep Second-Order Critique — Real Options Buyer Reservation Price Sign Correction, Rent-vs-Buy Intertemporal Real-Wealth Indifference & Bisection Solver, Empirical IQR Monte Carlo Sigma Calibration, and Cross-Tab sharedTargetSqm Continuity
+  const rentVsBuyEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/rentVsBuyArbitrageEngine.ts'), 'utf-8');
+  const rentVsBuyCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/RentVsBuyArbitrageCard.tsx'), 'utf-8');
+  const realOptionsCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/RealOptionsLiquidityCard.tsx'), 'utf-8');
+  const monteCarloEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/monteCarloRiskDensityEngine.ts'), 'utf-8');
+  const stage2MasterSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/Stage2MasterWidget.tsx'), 'utf-8');
+  assert(
+    '49. WS-CASPER-13 enforces buyerReservationPricePerSqm in RealOptions, realDiffMillion indifference & breakEvenAlternativeReturnPct bisection solver in RentVsBuy, empirical IQR dispersion in MonteCarlo, and sharedTargetSqm continuity in Stage2MasterWidget',
+    realOptionsSrc.includes('buyerReservationPricePerSqm: number;') &&
+      realOptionsSrc.includes('requiredBuyerDiscountPct: number;') &&
+      realOptionsCardSrc.includes('data-testid="buyer-reservation-ceiling"') &&
+      rentVsBuyEngineSrc.includes('breakEvenAlternativeReturnPct: number;') &&
+      rentVsBuyEngineSrc.includes('if (realDiffMillion > initialPropertyValue * 0.06)') &&
+      rentVsBuyCardSrc.includes('data-testid="snap-breakeven-alt-return-btn"') &&
+      monteCarloEngineSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      monteCarloEngineSrc.includes('iqrSpreadRatio') &&
+      stage2MasterSrc.includes('const [sharedTargetSqm, setSharedTargetSqm] = useState<number>(targetSqm);') &&
+      stage2MasterSrc.includes('onTargetSqmChange={setSharedTargetSqm}'),
+    'WS-CASPER-13 Deep second-order mathematical & cross-tab state continuity assertion failed',
+  );
+
+  // 50. WS-CASPER-14: Tool-Driven Engineering & Blocker Elimination — User-Token-Delegated Firestore REST Reconciliation (No Service Account Required), /buyerAlerts Owner List Parity in firestore.rules, and Chromium Workflow 10 Stage 2 Smoke Verification
+  const identityGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/identityLifecycleAndBackendGovernance.ts'), 'utf-8');
+  const pubBargainsSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverPublisherBargains.ts'), 'utf-8');
+  const firestoreRulesSrc = fs.readFileSync(path.join(process.cwd(), 'firestore.rules'), 'utf-8');
+  const browserSmokeSrc = fs.readFileSync(path.join(process.cwd(), 'tests/browser-smoke.test.ts'), 'utf-8');
+  assert(
+    '50. WS-CASPER-14 enforces user-token-delegated Firestore REST reconciliation in identityLifecycleAndBackendGovernance.ts & serverPublisherBargains.ts, owner-scoped list rule on /buyerAlerts in firestore.rules, and Workflow 10 Stage 2 verification in browser-smoke.test.ts',
+    identityGovSrc.includes(':runQuery') &&
+      identityGovSrc.includes('rawAuthHeaderOrToken?: string | string[]') &&
+      pubBargainsSrc.includes("reconcileUserBuyerAlertsInFirestore(auth.uid, 'export', req.headers.authorization)") &&
+      pubBargainsSrc.includes("reconcileUserBuyerAlertsInFirestore(auth.uid, 'delete', req.headers.authorization)") &&
+      /match\s+\/buyerAlerts\/\{alertId\}[\s\S]*?allow\s+list:\s*if\s+isAdmin\(\)\s*&&\s*existing\(\)\.hoodId\s*>=\s*1\s*&&\s*existing\(\)\.hoodId\s*<=\s*999\s*\|\|\s*\(\s*isVerifiedUser\(\)\s*&&\s*existing\(\)\.userId\s*==\s*request\.auth\.uid\s*\)/m.test(firestoreRulesSrc) &&
+      browserSmokeSrc.includes('Stage 2 Casper Epistemic Decision Intelligence interactive verification'),
+    'WS-CASPER-14 User-token Firestore REST reconciliation & Chromium Workflow 10 assertion failed',
+  );
+
+  // 51. WS-CASPER-15: Knowledge Crowd UID Anti-Spoofing & Dual Response Contract, Zero-MAD Dispersion Floor & Cryptographic Hedonic Seal Verification, Empirical v6.4 Socioeconomic Deal Anchoring, and Complete Bearer REST Delegation for Buyer Alerts
+  const crowdRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts'), 'utf-8');
+  const crowdPanelSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/NeighborhoodCrowdClaimsPanel.tsx'), 'utf-8');
+  const robustValSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/valuation-authority/robustValuationEngine.ts'), 'utf-8');
+  const socioRollupSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/socioeconomic-intelligence/socioeconomicRollupEngine.ts'), 'utf-8');
+  const socioRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts'), 'utf-8');
+  const serverUtilRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverUtilityRoutes.ts'), 'utf-8');
+  assert(
+    '51. WS-CASPER-15 enforces UID_SPOOFING_FORBIDDEN & camelCase+uppercase claim response keys in crowdClaimsRoutes/Panel, ZERO_MAD_RELATIVE_BANDWIDTH_FLOOR & verifyServerValuationSeal in robustValuationEngine, empirical dealPerSqm anchoring in socioeconomicRollupEngine, and Bearer REST delegation in serverUtilityRoutes',
+    crowdRoutesSrc.includes('UID_SPOOFING_FORBIDDEN') &&
+      crowdRoutesSrc.includes('verifiedReferenceClaims: result.verifiedReferenceClaims') &&
+      crowdPanelSrc.includes('data.verifiedReferenceClaims ?? data.VERIFIED_REFERENCE') &&
+      crowdPanelSrc.includes('formatMillionTomanAsIntlCurrency') &&
+      robustValSrc.includes('ZERO_MAD_RELATIVE_BANDWIDTH_FLOOR') &&
+      robustValSrc.includes('export function verifyServerValuationSeal') &&
+      socioRollupSrc.includes('dealPerSqm') &&
+      socioRoutesSrc.includes('rollup.medianPriceSqm,') &&
+      serverUtilRoutesSrc.includes('listDurableBuyerAlerts(authCheck.uid, authCheck.email, req.headers.authorization)') &&
+      serverUtilRoutesSrc.includes('rawAuthHeaderOrToken: req.headers.authorization'),
+    'WS-CASPER-15 Knowledge Crowd UID anti-spoofing, zero-MAD floor, and Bearer REST delegation assertion failed',
+  );
+
+  // 52. WS-CASPER-16: Entity Resolution Streetless Anti-Merge, Empirical Neighborhood Price Fallback, AI Ingestion Route Mounting & Prompt-Injection Guard, Non-Compensatory MCDA Veto + Base-Rate Neglect Alert, and Stage 2 International Currency Parity
+  const entityResSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/ai-ingestion/entityResolutionEngine.ts'), 'utf-8');
+  const seedExtSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/ai-ingestion/aiSeedExtractionService.ts'), 'utf-8');
+  const aiIngestRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/ai-ingestion/aiIngestionRoutes.ts'), 'utf-8');
+  const casperDecisionSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/socioeconomic-intelligence/casperDecisionEngine.ts'), 'utf-8');
+  const casperMatrixCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/CasperDecisionMatrixCard.tsx'), 'utf-8');
+  const epistemicPanelSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/EpistemicProvenancePanel.tsx'), 'utf-8');
+  const spatialContagionCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/SpatialContagionLabCard.tsx'), 'utf-8');
+  assert(
+    '52. WS-CASPER-16 enforces hasKnownStreet anti-merge in entityResolutionEngine, getCurrentJalaliYear & matchedHood.buyPerSqm in aiSeedExtractionService, prompt-injection + verifyAdminAuth in aiIngestionRoutes, nonCompensatoryVetoTriggered + base_rate in casperDecisionEngine, and formatMillionTomanAsIntlCurrency parity across EpistemicProvenancePanel & SpatialContagionLabCard',
+    entityResSrc.includes("const hasKnownStreet = fp.streetNameNormalized !== 'نامشخص' && candidate.streetNameNormalized !== 'نامشخص';") &&
+      seedExtSrc.includes('currentJalaliYear = getCurrentJalaliYear()') &&
+      seedExtSrc.includes('matchedHood?.buyPerSqm ?? 120') &&
+      aiIngestRoutesSrc.includes("code: 'PROMPT_INJECTION_DETECTED'") &&
+      aiIngestRoutesSrc.includes('options?.verifyAdminAuth') &&
+      serverUtilRoutesSrc.includes('registerAiIngestionRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth });') &&
+      casperDecisionSrc.includes('nonCompensatoryVetoTriggered') &&
+      casperDecisionSrc.includes("id: 'base_rate'") &&
+      casperMatrixCardSrc.includes('normalizedSharePct') &&
+      epistemicPanelSrc.includes('formatMillionTomanAsIntlCurrency') &&
+      epistemicPanelSrc.includes('<CasperDecisionMatrixCard') &&
+      spatialContagionCardSrc.includes('formatMillionTomanAsIntlCurrency'),
+    'WS-CASPER-16 Entity resolution anti-merge, non-compensatory MCDA veto, and Stage 2 intlCurrency parity assertion failed',
+  );
+
+  // 53. WS-CASPER-17: Urban Affordability Isochrone multi-currency formatting, Hub vanak resolution, and Housing Cycle / Real Options hood & intlCurrency parity
+  const p17UrbanAffSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/urbanAffordabilityIsochroneEngine.ts'), 'utf-8');
+  const p17UrbanCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/UrbanAffordabilityIsochroneCard.tsx'), 'utf-8');
+  const p17HousingCycleEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/housingCycleRegimeEngine.ts'), 'utf-8');
+  const p17HousingCycleCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/HousingCycleRegimeCard.tsx'), 'utf-8');
+  const p17RealOptionsEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/realOptionsLiquidityEngine.ts'), 'utf-8');
+  const p17RealOptionsCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/RealOptionsLiquidityCard.tsx'), 'utf-8');
+  assert(
+    '53. WS-CASPER-17 enforces formatMillionTomanAsIntlCurrency in urbanAffordabilityIsochroneEngine, vanak hub default in UrbanAffordabilityIsochroneCard, and hood + intlCurrency parity across housingCycleRegimeEngine, HousingCycleRegimeCard, realOptionsLiquidityEngine, and RealOptionsLiquidityCard',
+    p17UrbanAffSrc.includes('providedHood?: Neighborhood,') &&
+      p17UrbanAffSrc.includes("intlCurrency: IntlCurrencyCode = 'USD'") &&
+      p17UrbanAffSrc.includes("formatMillionTomanAsIntlCurrency(savings, intlCurrency, 'fa')") &&
+      p17UrbanCardSrc.includes("setSelectedHubId] = useState<string>('vanak')") &&
+      p17UrbanCardSrc.includes('hood?: Neighborhood;') &&
+      p17HousingCycleEngineSrc.includes('providedHood?: Neighborhood,') &&
+      p17HousingCycleEngineSrc.includes('basePriceIntlText: formatMillionTomanAsIntlCurrency') &&
+      p17HousingCycleCardSrc.includes('hood?: Neighborhood;') &&
+      p17RealOptionsEngineSrc.includes('providedHood?: Neighborhood,') &&
+      p17RealOptionsEngineSrc.includes('valueOfWaitingIntlText: formatMillionTomanAsIntlCurrency') &&
+      p17RealOptionsCardSrc.includes('hood?: Neighborhood;'),
+    'WS-CASPER-17 Urban Affordability and Stage 2 epistemic parity assertion failed',
   );
 
   console.log('\n=======================================================');

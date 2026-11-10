@@ -1131,7 +1131,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
   assert.ok(
     op183SparklineSrc.includes("aggregateNeighborhoodMarketMetrics(neighborhood.id, neighborhood.name, series.endMillion, []).estimatedDealPricePerSqm") &&
       op183SparklineSrc.includes("` (معامله v6.4: ${toPersianNum(uDealEnd)} ${unitSuffix})`") &&
-      op183LegalAdvisorSrc.includes("· معامله مرجع v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, 'تهران', 135, []).estimatedDealPricePerSqm, areaUnit))} م/{areaUnit === 'sqft' ? 'ft²' : 'متر'}") &&
+      op183LegalAdvisorSrc.includes("· معامله مرجع v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(INITIAL_NEIGHBORHOODS[0].id, INITIAL_NEIGHBORHOODS[0].name, INITIAL_NEIGHBORHOODS[0].buyPerSqm, buildNeighborhoodListingSamples(INITIAL_NEIGHBORHOODS[0])).estimatedDealPricePerSqm, areaUnit))} م/{areaUnit === 'sqft' ? 'ft²' : 'متر'}") &&
       op183SponsorTabSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
       op183SponsorTabSrc.includes("· معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
       op183CommuteMatrixSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م.ت"),
