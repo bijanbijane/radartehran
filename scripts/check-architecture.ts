@@ -56,6 +56,7 @@ function collectSourceFiles(rootDir: string): string[] {
 
   walk('src');
   walk('server/modules/telemetry');
+  walk('server/modules/casper-hub');
   return results.sort();
 }
 

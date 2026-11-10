@@ -917,11 +917,27 @@ export function createPropertyInsuranceClaimsOperations(
               const allCoverages = await tx.query<PolicyCoverageRecord>(
                 PROPERTY_INSURANCE_COLLECTIONS.COVERAGES,
               );
-              const matchingCov = allCoverages.find(
-                (c) =>
-                  c.policyId === claim.policyId &&
-                  c.coverageCategory === claim.claimEventCategory,
-              );
+              const incidentEpoch = Date.parse(claim.incidentDateIso);
+              const matchingCov = allCoverages.find((c) => {
+                if (c.policyId !== claim.policyId || c.coverageCategory !== claim.claimEventCategory) {
+                  return false;
+                }
+                if (
+                  c.insuredAssetCanonicalIds.length > 0 &&
+                  !claim.insuredPropertyCanonicalIds.some((id) => c.insuredAssetCanonicalIds.includes(id))
+                ) {
+                  return false;
+                }
+                const covStart = Date.parse(c.effectiveStartIso);
+                const covEnd = Date.parse(c.effectiveEndIso);
+                if (Number.isFinite(incidentEpoch) && Number.isFinite(covStart) && incidentEpoch < covStart) {
+                  return false;
+                }
+                if (Number.isFinite(incidentEpoch) && Number.isFinite(covEnd) && incidentEpoch > covEnd) {
+                  return false;
+                }
+                return true;
+              });
 
               const { partiallyApprovedFlag } = validateSettlementCalculations({
                 verifiedEligibleLossAmount: verifiedLoss,
@@ -1070,6 +1086,14 @@ export function createPropertyInsuranceClaimsOperations(
                   'NOT_FOUND',
                   404,
                   'CLAIM_OR_SETTLEMENT_NOT_FOUND: Matching claim and settlement not found.',
+                );
+              }
+
+              if (paymentCheck.currency && paymentCheck.currency !== settlement.currency) {
+                throw new CoreApiError(
+                  'CONFLICT',
+                  409,
+                  `SETTLEMENT_CURRENCY_MISMATCH: Payment currency (${paymentCheck.currency}) does not match settlement currency (${settlement.currency}).`,
                 );
               }
 

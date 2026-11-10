@@ -216,6 +216,7 @@ export interface SystemHealthData {
       }
     >;
     geminiConfigured: boolean;
+    casperHubConfigured?: boolean;
   };
   securityMetrics: {
     payloadLimit: string;

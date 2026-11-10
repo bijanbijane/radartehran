@@ -26,6 +26,7 @@ export interface ProductToolsViewProps {
   onOpenReverseBudget: () => void;
   onOpenCompare: () => void;
   featureFlags: FeatureFlags;
+  activeCity?: string;
 }
 
 export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {

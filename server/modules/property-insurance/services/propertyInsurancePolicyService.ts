@@ -819,6 +819,7 @@ export function createPropertyInsurancePolicyOperations(
       const nowIso = nowDate.toISOString();
 
       let confirmedPaidIncrement = 0;
+      let confirmedPaidCurrency: InsuranceCurrencyCode | null = null;
       if (input.authoritativePremiumPaymentRefId) {
         const payRef = requireValidId(
           input.authoritativePremiumPaymentRefId,
@@ -838,6 +839,7 @@ export function createPropertyInsurancePolicyOperations(
           );
         }
         confirmedPaidIncrement = paymentCheck.confirmedAmount;
+        confirmedPaidCurrency = paymentCheck.currency;
       }
 
       const res = await executeIdempotentMutation({
@@ -869,8 +871,26 @@ export function createPropertyInsurancePolicyOperations(
                 );
               }
 
+              if (
+                confirmedPaidCurrency &&
+                confirmedPaidCurrency !== policy.financialStructure.currency
+              ) {
+                throw new CoreApiError(
+                  'CONFLICT',
+                  409,
+                  `PREMIUM_PAYMENT_CURRENCY_MISMATCH: Payment currency (${confirmedPaidCurrency}) does not match policy currency (${policy.financialStructure.currency}).`,
+                );
+              }
+
+              const alreadyApplied = Boolean(
+                input.authoritativePremiumPaymentRefId &&
+                  policy.financialStructure.authoritativePaymentRefIds.includes(
+                    input.authoritativePremiumPaymentRefId,
+                  ),
+              );
               const nextConfirmedPaid =
-                policy.financialStructure.authoritativeConfirmedPaidAmount + confirmedPaidIncrement;
+                policy.financialStructure.authoritativeConfirmedPaidAmount +
+                (alreadyApplied ? 0 : confirmedPaidIncrement);
               const nextOutstanding = Math.max(
                 0,
                 policy.financialStructure.issuedPremiumAmount - nextConfirmedPaid,

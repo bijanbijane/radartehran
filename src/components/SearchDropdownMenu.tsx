@@ -7,28 +7,14 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { SmartNaturalSearchMatchesSection } from './SmartNaturalSearchMatchesSection';
 import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { matchesPersianSearch } from '../utils/security';
 export {
-  SearchHistory,
-  getRecentSearches,
-  recordRecentSearch,
-  removeRecentSearch,
-  clearAllRecentSearches,
-  useSearchHistory,
-  RECENT_SEARCHES_STORAGE_KEY,
-  MAX_RECENT_SEARCHES,
+  SearchHistory, getRecentSearches, recordRecentSearch, removeRecentSearch,
+  clearAllRecentSearches, useSearchHistory, RECENT_SEARCHES_STORAGE_KEY, MAX_RECENT_SEARCHES,
 } from './SearchHistory';
 import { SearchHistory, recordRecentSearch } from './SearchHistory';
 
-export const POPULAR_HOOD_NAMES = [
-  'سعادت‌آباد',
-  'شهرک غرب',
-  'پونک',
-  'نیاوران',
-  'چیتگر',
-  'تهران‌پارس غربی',
-  'ونک',
-  'یوسف‌آباد',
-];
+export const POPULAR_HOOD_NAMES = ['سعادت‌آباد', 'شهرک غرب', 'پونک', 'نیاوران', 'چیتگر', 'تهران‌پارس غربی', 'ونک', 'یوسف‌آباد'];
 
 export function getTrendingNeighborhoods(
   allHoods: EvaluatedNeighborhood[],
@@ -85,19 +71,12 @@ export function SearchDropdownMenu({
   const allNationwideHoods = useMemo(() => getAllMultiCityNeighborhoods(), []);
   const trendingHoods = useMemo(() => getTrendingNeighborhoods(evaluatedNeighborhoods, searchMatches), [evaluatedNeighborhoods, searchMatches]);
   const handleSelectNeighborhood = (n: EvaluatedNeighborhood) => {
-    recordRecentSearch(n.name);
-    onSelectNeighborhood(n);
-    setMobileSheetOpen(true);
-    setSearchQuery('');
-    setShowSearchDropdown(false);
+    recordRecentSearch(n.name); onSelectNeighborhood(n); setMobileSheetOpen(true); setSearchQuery(''); setShowSearchDropdown(false);
   };
   const handleSelectCrossCityNeighborhood = (n: Neighborhood) => {
     const targetCity = resolveCityIdForNeighborhood(n.id);
-    recordRecentSearch(n.name);
-    if (onSwitchCity) onSwitchCity(targetCity, n.id);
-    setMobileSheetOpen(true);
-    setSearchQuery('');
-    setShowSearchDropdown(false);
+    recordRecentSearch(n.name); if (onSwitchCity) onSwitchCity(targetCity, n.id);
+    setMobileSheetOpen(true); setSearchQuery(''); setShowSearchDropdown(false);
   };
   const handleSelectRecentSearchName = (name: string) => {
     const norm = name.trim().toLowerCase();
@@ -125,11 +104,8 @@ export function SearchDropdownMenu({
         <div className="py-1">
           <SearchHistory
             onSelectNeighborhood={(name) => handleSelectRecentSearchName(name)}
-            evaluatedNeighborhoods={evaluatedNeighborhoods}
-            mode={mode}
-            showPriceTag={true}
-            showClearAll={true}
-            showIndividualRemove={true}
+            evaluatedNeighborhoods={evaluatedNeighborhoods} mode={mode}
+            showPriceTag={true} showClearAll={true} showIndividualRemove={true}
             emptyMessage="نام محله مورد نظر خود را برای جست‌وجو وارد کنید."
           />
           {trendingHoods.length > 0 && (
@@ -177,51 +153,35 @@ export function SearchDropdownMenu({
       ) : (
         <div className="py-1">
           <SmartNaturalSearchMatchesSection
-            searchQuery={searchQuery}
-            evaluatedNeighborhoods={evaluatedNeighborhoods}
-            mode={mode}
-            onSelectNeighborhood={handleSelectNeighborhood}
+            searchQuery={searchQuery} evaluatedNeighborhoods={evaluatedNeighborhoods}
+            mode={mode} onSelectNeighborhood={handleSelectNeighborhood}
           />
           {searchMatches.length > 0 && (
             <div>
               <div className="px-3 py-1 flex items-center justify-between text-[11px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
                 <span>نتایج جست‌وجو (↑↓ و Enter)</span>
-                <span className="text-[10px] text-slate-400 tabular-nums">
-                  {toPersianNum(searchMatches.length)} محله
-                </span>
+                <span className="text-[10px] text-slate-400 tabular-nums">{toPersianNum(searchMatches.length)} محله</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {searchMatches.slice(0, 50).map((n, idx) => (
                   <button
-                    key={n.id}
-                    type="button"
-                    style={{ animationDelay: `${Math.min(idx * 30, 180)}ms` }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseEnter={() => setHighlightedIndex(idx)}
-                    onClick={() => handleSelectNeighborhood(n)}
+                    key={n.id} type="button" style={{ animationDelay: `${Math.min(idx * 30, 180)}ms` }}
+                    onMouseDown={(e) => e.preventDefault()} onMouseEnter={() => setHighlightedIndex(idx)} onClick={() => handleSelectNeighborhood(n)}
                     className={`w-full text-right px-3.5 py-2.5 transition flex items-center justify-between text-xs cursor-pointer ios-stagger-item group ${
                       idx === highlightedIndex ? 'bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100' : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          n.status === 'green' ? 'bg-emerald-500' : n.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'
-                        }`}
-                      />
+                      <span className={`w-2 h-2 rounded-full ${n.status === 'green' ? 'bg-emerald-500' : n.status === 'yellow' ? 'bg-amber-500' : 'bg-rose-500'}`} />
                       <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
-                      {searchQuery.trim() && !n.name.includes(searchQuery.trim()) && (n.pros.includes(searchQuery.trim()) || (n.bargains?.[0]?.street && n.bargains[0].street.includes(searchQuery.trim()))) && (
+                      {searchQuery.trim() && !matchesPersianSearch(n.name, searchQuery.trim()) && (matchesPersianSearch(n.pros, searchQuery.trim()) || n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, searchQuery.trim())) || (b.title && matchesPersianSearch(b.title, searchQuery.trim()))))) && (
                         <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[9.5px] font-bold">زیرمحله / خیابان</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold tabular-nums">
-                        {toPersianNum(n.overallScore)}/۱۰
-                      </span>
-                      <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
-                        {formatHoodPriceMetric(n)}
-                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold tabular-nums">{toPersianNum(n.overallScore)}/۱۰</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">{formatHoodPriceMetric(n)}</span>
                     </div>
                   </button>
                 ))}

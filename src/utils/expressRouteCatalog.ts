@@ -21,6 +21,7 @@ const SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts';
 const IG = 'src/cells/ai-ingestion/aiIngestionRoutes.ts';
 const TM = 'server/modules/telemetry/telemetryRoutes.ts';
 const PF = 'server/modules/platform-foundation/routes.ts';
+const CH = 'server/modules/casper-hub/casperHubRoutes.ts';
 export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/healthz', S, 'PUBLIC', 180, 'general', false, 'Public liveness probe'),
   route('GET', '/api/openapi.json', S, 'PUBLIC', 60, 'general', false, 'OpenAPI 3.1 specification'),
@@ -199,6 +200,10 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/admin/resilience/slos', PF, 'ADMIN', 60, 'general', true, 'List versioned SLOs and measured error-budget status'),
   route('GET', '/api/admin/resilience/migrations', PF, 'ADMIN', 60, 'general', true, 'List schema migration concurrency locks'),
   route('GET', '/api/admin/resilience/readiness', PF, 'ADMIN', 60, 'general', true, 'Read platform readiness and external cloud binding status'),
+  route('GET', '/api/casper-hub/whoami', CH, 'ADMIN', 60, 'general', true, 'CASPER HUB agent identity and connection health verification'),
+  route('GET', '/api/casper-hub/bootstrap', CH, 'ADMIN', 60, 'general', true, 'CASPER HUB roadmaps, tasks, active notes, and epistemic telemetry'),
+  route('GET', '/api/casper-hub/changes', CH, 'ADMIN', 60, 'general', true, 'CASPER HUB change-feed delta stream with sequence gap tracking'),
+  route('POST', '/api/casper-hub/notes', CH, 'ADMIN', 30, 'general', true, 'CASPER HUB shared note dispatch with deterministic UUIDv5 idempotency and prompt guard'),
 ];
 export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES;
 export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/'));

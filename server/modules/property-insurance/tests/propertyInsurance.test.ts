@@ -596,7 +596,45 @@ test('2. Enforces policy verification authorization, lifecycle transitions, expi
   });
   assert.equal(activePol.status, 'ACTIVE');
 
-  // Evaluate FIRE vs EARTHQUAKE (never infer EARTHQUAKE coverage when only FIRE is registered)
+  // Register FLOOD exclusion on bldg_valid_1 + 30-day waiting period on FIRE:
+  // Querying FIRE on bldg_valid_1 in June 2026 (after 30-day waiting period) must NOT be falsely excluded by FLOOD exclusion!
+  await h.service.registerExclusion({
+    principal: h.holderPrincipal,
+    idempotencyKey: 'idem_excl_conjunctive_flood',
+    policyId: policy.policyId,
+    limitationCategory: 'EVENT_SPECIFIC_EXCLUSION',
+    excludedRiskCategories: ['FLOOD'],
+    affectedAssetCanonicalIds: ['bldg_valid_1'],
+    sourcePolicyProvisionRef: 'Clause 4.2',
+    originalSourceWordingVerbatim: 'خسارت سیل برای ساختمان شماره ۱ مستثنی است.',
+    structuredClassificationSummary: 'Flood excluded on bldg_valid_1 only.',
+  });
+  await h.service.registerExclusion({
+    principal: h.holderPrincipal,
+    idempotencyKey: 'idem_excl_waiting_30d',
+    policyId: policy.policyId,
+    limitationCategory: 'WAITING_PERIOD_LIMITATION',
+    excludedRiskCategories: ['FIRE'],
+    waitingPeriodDays: 30,
+    sourcePolicyProvisionRef: 'Clause 4.3',
+    originalSourceWordingVerbatim: 'دوره انتظار پوشش آتش‌سوزی ۳۰ روز از تاریخ شروع بیمه‌نامه است.',
+    structuredClassificationSummary: '30-day waiting period for FIRE.',
+  });
+
+  // Incident within 30-day waiting period (2026-01-10) is excluded by waiting period
+  const fireDuringWaitEval = await h.service.getPolicyCoverageStatusWithLimitations({
+    principal: h.holderPrincipal,
+    policyId: policy.policyId,
+    queryRiskCategory: 'FIRE',
+    queryAssetCanonicalId: 'bldg_valid_1',
+    incidentDateIso: '2026-01-10T00:00:00.000Z',
+  });
+  assert.equal(
+    fireDuringWaitEval.queriedRiskEvaluation.applicabilityConclusion,
+    'EXCLUDED_BY_POLICY_LIMITATION',
+  );
+
+  // Evaluate FIRE vs EARTHQUAKE in June 2026 (after waiting period; FLOOD exclusion on bldg_valid_1 does NOT block FIRE)
   const fireEval = await h.service.getPolicyCoverageStatusWithLimitations({
     principal: h.holderPrincipal,
     policyId: policy.policyId,
@@ -850,6 +888,23 @@ test('3. Manages claims, duplicate claim protection, private evidence, multi-ass
     (err: unknown) =>
       err instanceof CoreApiError &&
       err.message.includes('SETTLEMENT_EXCEEDS_ELIGIBLE_AFTER_DEDUCTIBLE'),
+  );
+
+  // Settlement validation: negative deductible is rejected fail-closed (not silently coerced to 0)
+  await assert.rejects(
+    async () =>
+      h.service.recordSettlementDecision({
+        principal: h.reviewerPrincipal,
+        idempotencyKey: 'idem_settle_neg_deductible',
+        claimId: claim.claimId,
+        deductibleAppliedAmount: -10_000_000,
+        approvedSettlementAmount: 200_000_000,
+        rejectedAmount: 50_000_000,
+        settlementDecisionReference: 'SYNTH-SET-NEG',
+      }),
+    (err: unknown) =>
+      err instanceof CoreApiError &&
+      err.message.includes('INVALID_SETTLEMENT_AMOUNT'),
   );
 
   // Record valid settlement (200M eligible - 20M deductible = 180M approved, 50M rejected)

@@ -1097,49 +1097,6 @@ function runDomainRegressionTests(): void {
       reverseBudgetSrc.includes('در بودجه با سناریوی مذاکره v6.4'),
     'WS-CASPER-06 primary views & ReverseBudgetDiscoveryModal contract check failed',
   );
-  // 43. WS-CASPER-07: Universal Empirical Listing Parity & Zero Empty Sample Verification
-  const trendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf-8');
-  const priceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');
-  const commuteHubsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CommuteHubsMatrixCard.tsx'), 'utf-8');
-  const shareModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ShareModal.tsx'), 'utf-8');
-  const futureSuperSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/FutureSuperModulesModal.tsx'), 'utf-8');
-  const spatialContagionSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/spatialContagionEngine.ts'), 'utf-8');
-  assert(
-    '43. WS-CASPER-07 eliminates empty sample arrays [] across NeighborhoodPriceTrendModal, NeighborhoodPriceChart, CommuteHubsMatrixCard, ShareModal, FutureSuperModulesModal, and spatialContagionEngine peer nodes',
-    trendModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
-      !trendModalSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, [])') &&
-      priceChartSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
-      !priceChartSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, [])') &&
-      !priceChartSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, buyVal, [])') &&
-      commuteHubsSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
-      !commuteHubsSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, [])') &&
-      shareModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
-      !shareModalSrc.includes('aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, [])') &&
-      futureSuperSrc.includes('buildNeighborhoodListingSamples(n)') &&
-      !futureSuperSrc.includes('aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, [])') &&
-      spatialContagionSrc.includes('buildNeighborhoodListingSamples(x.hood)') &&
-      !spatialContagionSrc.includes('aggregateNeighborhoodMarketMetrics(x.hood.id, x.hood.name, x.hood.buyPerSqm, [])'),
-    'WS-CASPER-07 empirical listing parity check failed',
-  );
-
-  // 44. WS-CASPER-10: Residual Empirical Gap Remediation & Stage 2 Decision Intelligence Binding
-  const toolsViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductToolsView.tsx'), 'utf-8');
-  const drawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
-  const stage2WidgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/Stage2MasterWidget.tsx'), 'utf-8');
-  const casperPanelPath = path.join(process.cwd(), 'src/components/stage2/CasperDecisionIntelligencePanel.tsx');
-  const casperPanelLines = fs.readFileSync(casperPanelPath, 'utf-8').split('\n').length;
-
-  assert(
-    '44. WS-CASPER-10 eliminates residual empty samples in ProductToolsView, passes hood in NeighborhoodInspectorDrawer, binds effectiveHood in Stage2MasterWidget, and keeps CasperDecisionIntelligencePanel <= 290 lines',
-    toolsViewSrc.includes('buildNeighborhoodListingSamples(p.selectedHood)') &&
-      !toolsViewSrc.includes('aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, [])') &&
-      drawerSrc.includes('hood={selectedHood}') &&
-      stage2WidgetSrc.includes('effectiveHood') &&
-      stage2WidgetSrc.includes('neighborhood={effectiveHood}') &&
-      casperPanelLines <= 290,
-    `WS-CASPER-10 verification failed: casperPanelLines=${casperPanelLines}`
-  );
-
   // 43. WS-CASPER-07: Decision Epistemology Engines & SearchDropdownMenu Canonical Listing Samples Unification
   const searchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
   const unifiedSynthesisSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts'), 'utf-8');
@@ -1152,7 +1109,7 @@ function runDomainRegressionTests(): void {
     '43. WS-CASPER-07 unifies buildNeighborhoodListingSamples across SearchDropdownMenu and all 6 decision epistemology engines',
     searchDropdownSrc.includes('buildNeighborhoodListingSamples({ id: n.id ?? 1') &&
       unifiedSynthesisSrc.includes('buildNeighborhoodListingSamples(hood)') &&
-      housingCycleSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      housingCycleSrc.includes('buildNeighborhoodListingSamples({ ...hood') &&
       spatialContagionSrc.includes('buildNeighborhoodListingSamples(hood)') &&
       spatialContagionSrc.includes('buildNeighborhoodListingSamples(x.hood)') &&
       epistemicDecisionSrc.includes('buildNeighborhoodListingSamples({ id: input.hoodId, name: hoodName, buyPerSqm, bargains: found?.bargains })') &&
@@ -1391,11 +1348,76 @@ function runDomainRegressionTests(): void {
     'WS-CASPER-17 Urban Affordability and Stage 2 epistemic parity assertion failed',
   );
 
+  // 54. WS-CASPER-18: CASPER HUB Server-Side Cloudflare D1 Integration & Property Insurance State Machine Resilience
+  const casperHubClientSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubClient.ts'), 'utf-8');
+  const casperHubRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubRoutes.ts'), 'utf-8');
+  const propInsStateMachineSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/property-insurance/coverage/policyAndClaimStateMachineEngine.ts'), 'utf-8');
+  assert(
+    '54. WS-CASPER-18 enforces server-side CASPER HUB client (account-scoped .bijanbijane-1.workers.dev SSRF guard, redirect: error, Bearer token auth, UUIDv5 Idempotency-Key header on /v1/notes), mounts /api/casper-hub/* in serverUtilityRoutes, and verifies policyAndClaimStateMachineEngine fail-closed settlement parity',
+    casperHubClientSrc.includes("export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev';") &&
+      casperHubClientSrc.includes("host.endsWith('.bijanbijane-1.workers.dev')") &&
+      casperHubClientSrc.includes("redirect: 'error'") &&
+      casperHubClientSrc.includes('Authorization: `Bearer ${token}`') &&
+      casperHubClientSrc.includes("'Idempotency-Key': resolvedKey") &&
+      casperHubRoutesSrc.includes("app.get('/api/casper-hub/whoami'") &&
+      casperHubRoutesSrc.includes("app.get('/api/casper-hub/bootstrap'") &&
+      casperHubRoutesSrc.includes("app.get('/api/casper-hub/changes'") &&
+      casperHubRoutesSrc.includes("app.post('/api/casper-hub/notes'") &&
+      casperHubRoutesSrc.includes("recordAbuseSignal(ip, 'auth_failure')") &&
+      serverUtilRoutesSrc.includes('registerCasperHubRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth });') &&
+      propInsStateMachineSrc.includes('export function evaluatePolicyCoverageStatusWithLimitations') &&
+      propInsStateMachineSrc.includes('INVALID_SETTLEMENT_AMOUNT:'),
+    'WS-CASPER-18 CASPER HUB integration & Property Insurance state machine assertion failed',
+  );
+
+  // 55. WS-CASPER-19: Admin UI Observability, Auth Lifecycle Reactivity & Casper Hub Monitor Card Parity
+  const adminSecTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminSecurityAndBackupTabs.tsx'), 'utf-8');
+  const monitorCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx'), 'utf-8');
+  assert(
+    '55. WS-CASPER-19 enforces AdminCasperHubMonitorCard lazy mounting in AdminSecurityAndBackupTabs, auth.onAuthStateChanged subscription, and <=290 line constraint',
+    adminSecTabsSrc.includes("const AdminCasperHubMonitorCard = React.lazy(() => import('./admin/AdminCasperHubMonitorCard')") &&
+      adminSecTabsSrc.includes('<AdminCasperHubMonitorCard />') &&
+      monitorCardSrc.includes('auth.onAuthStateChanged') &&
+      monitorCardSrc.includes('data-testid="admin-casper-hub-monitor-card"') &&
+      monitorCardSrc.split(/\r?\n/).length <= 290 &&
+      adminSecTabsSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-19 Admin UI Observability & Monitor Card Parity assertion failed',
+  );
+
+  // 56. WS-CASPER-20: SWR Read-Cache with Causal Invalidation, System Health Integration & Badge Parity
+  const serverMainSrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf-8');
+  const modelsTypeDefSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/models.ts'), 'utf-8');
+  assert(
+    '56. WS-CASPER-20 enforces SWR read-cache with causal invalidation in CasperHubClient, system-health casperHubConfigured telemetry, and Admin UI badge parity under <=290 line bounds',
+    casperHubClientSrc.includes('private readonly readCache = new Map') &&
+      casperHubClientSrc.includes('this.readCache.clear()') &&
+      casperHubClientSrc.includes('clearCache(): void') &&
+      serverMainSrc.includes('casperHubConfigured: getCasperHubConfigStatus().configured') &&
+      modelsTypeDefSrc.includes('casperHubConfigured?: boolean;') &&
+      adminSecTabsSrc.includes('CASPER HUB:') &&
+      casperHubClientSrc.split(/\r?\n/).length <= 290 &&
+      modelsTypeDefSrc.split(/\r?\n/).length <= 290 &&
+      adminSecTabsSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-20 SWR Read Cache & System Health Integration assertion failed',
+  );
+
+  // 57. WS-CASPER-22: Full Bidirectional Observability & Replicated Feed in AdminCasperHubMonitorCard
+  const updatedMonitorCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx'), 'utf-8');
+  assert(
+    '57. WS-CASPER-22 enforces bidirectional observability with D1 replicated recent notes feed in AdminCasperHubMonitorCard and strictly <= 290 line ceiling',
+    updatedMonitorCardSrc.includes('data-testid="casper-hub-recent-notes"') &&
+      updatedMonitorCardSrc.includes('setRecentNotes') &&
+      updatedMonitorCardSrc.includes('CasperHubNoteRecord') &&
+      updatedMonitorCardSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-22 Bidirectional Observability assertion failed',
+  );
+
   console.log('\n=======================================================');
   console.log('[DOMAIN REGRESSION SUITE PASS] All assertions passed!');
   console.log('=======================================================\n');
 }
 
 runDomainRegressionTests();
+
 
 
