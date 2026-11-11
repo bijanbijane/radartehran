@@ -6,37 +6,20 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Target, Sparkles, Award, ArrowUpLeft, ShieldCheck, Copy, Check, AlertTriangle } from 'lucide-react';
-import {
-  resolveNeighborhood,
-  synthesizeExecutiveDecisionReport,
-  UnifiedDecisionSynthesisReport,
-} from '../../cells/decision-epistemology/unifiedDecisionSynthesisEngine';
+import { resolveNeighborhood, synthesizeExecutiveDecisionReport, UnifiedDecisionSynthesisReport } from '../../cells/decision-epistemology/unifiedDecisionSynthesisEngine';
 import { type Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface UnifiedDecisionSynthesisCardProps {
-  hoodId?: number;
-  hoodName?: string;
-  cityKey?: string;
-  basePriceSqm?: number;
-  initialTargetSqm?: number;
-  onTargetSqmChange?: (sqm: number) => void;
-  intlCurrency?: IntlCurrencyCode;
-  onSelectTab?: (tabId: string) => void;
-  hood?: Neighborhood;
+  hoodId?: number; hoodName?: string; cityKey?: string; basePriceSqm?: number;
+  initialTargetSqm?: number; onTargetSqmChange?: (sqm: number) => void;
+  intlCurrency?: IntlCurrencyCode; onSelectTab?: (tabId: string) => void; hood?: Neighborhood;
 }
 
 export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCardProps> = ({
-  hoodId = 1,
-  hoodName = 'پونک',
-  cityKey = 'tehran',
-  basePriceSqm = 120,
-  initialTargetSqm = 80,
-  onTargetSqmChange,
-  intlCurrency = 'USD',
-  onSelectTab,
-  hood,
+  hoodId = 1, hoodName = 'پونک', cityKey = 'tehran', basePriceSqm = 120,
+  initialTargetSqm = 80, onTargetSqmChange, intlCurrency = 'USD', onSelectTab, hood,
 }) => {
   const [targetSqm, setTargetSqm] = useState<number>(initialTargetSqm || 80);
   const [scenarioMode, setScenarioMode] = useState<'FAIR' | 'MARKET' | 'BUBBLE' | 'CUSTOM'>('MARKET');
@@ -78,29 +61,17 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
     rose: 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800',
   };
   const badgeClass = scoreBadgeColors[report.verdictBadgeColor as keyof typeof scoreBadgeColors] || scoreBadgeColors.indigo;
-  const fxTag = (valMillion: number) =>
-    intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valMillion, intlCurrency, 'fa')})` : '';
+  const fxTag = (valMillion: number) => intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(valMillion, intlCurrency, 'fa')})` : '';
   const pb = report.executionPlaybook;
 
   return (
-    <div
-      data-testid="casper-unified-decision-card"
-      className="rounded-xl border border-indigo-200/90 dark:border-indigo-900/60 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3.5 text-slate-800 dark:text-slate-200"
-      dir="rtl"
-    >
+    <div data-testid="casper-unified-decision-card" className="rounded-xl border border-indigo-200/90 dark:border-indigo-900/60 bg-white dark:bg-slate-900 p-4 shadow-xs space-y-3.5 text-slate-800 dark:text-slate-200" dir="rtl">
       {/* Interactive Scenario Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800 text-xs">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">متراژ هدف معامله:</span>
           {areaOptions.map((sqm) => (
-            <button
-              key={sqm}
-              type="button"
-              onClick={() => { setTargetSqm(sqm); onTargetSqmChange?.(sqm); }}
-              className={`px-2 py-0.5 rounded-lg text-[11px] font-black tabular-nums transition cursor-pointer ${
-                targetSqm === sqm ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
+            <button key={sqm} type="button" onClick={() => { setTargetSqm(sqm); onTargetSqmChange?.(sqm); }} className={`px-2 py-0.5 rounded-lg text-[11px] font-black tabular-nums transition cursor-pointer ${targetSqm === sqm ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}`}>
               {toPersianNum(sqm)} متر
             </button>
           ))}
@@ -114,30 +85,13 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
             { id: 'BUBBLE' as const, label: '+۱۸٪ (حبابی)' },
             { id: 'CUSTOM' as const, label: 'قیمت دلخواه...' },
           ].map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => {
-                setScenarioMode(opt.id);
-                if (opt.id === 'CUSTOM' && userCustomAskingSqm === 0) setUserCustomAskingSqm(aggMetrics.askingPricePerSqm);
-              }}
-              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition cursor-pointer ${
-                scenarioMode === opt.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-              }`}
-            >
+            <button key={opt.id} type="button" onClick={() => { setScenarioMode(opt.id); if (opt.id === 'CUSTOM' && userCustomAskingSqm === 0) setUserCustomAskingSqm(aggMetrics.askingPricePerSqm); }} className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition cursor-pointer ${scenarioMode === opt.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
               {opt.label}
             </button>
           ))}
           {scenarioMode === 'CUSTOM' && (
             <div className="flex items-center gap-1">
-              <input
-                type="number"
-                aria-label="قیمت پیشنهادی هر متر مربع به میلیون تومان"
-                value={userCustomAskingSqm || ''}
-                onChange={(e) => setUserCustomAskingSqm(Math.max(1, Number(e.target.value)))}
-                placeholder="متری (م.ت)"
-                className="w-20 px-2 py-0.5 text-[11px] font-bold rounded-md border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white tabular-nums"
-              />
+              <input type="number" aria-label="قیمت پیشنهادی هر متر مربع به میلیون تومان" value={userCustomAskingSqm || ''} onChange={(e) => setUserCustomAskingSqm(Math.max(1, Number(e.target.value)))} placeholder="متری (م.ت)" className="w-20 px-2 py-0.5 text-[11px] font-bold rounded-md border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white tabular-nums" />
               <span className="text-[10px] text-slate-400">م.ت/متر</span>
             </div>
           )}

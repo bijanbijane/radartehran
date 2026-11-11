@@ -260,13 +260,14 @@ export function generateCasperLiquidityReport(
   const hood = providedHood ?? resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
   const baseNeighborhoodRahn = hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18);
-  const annualRent80m = baseNeighborhoodRahn * 0.36;
-  // Property Yield on Cost: actual annual market rent divided by total acquisition cost
-  const annualRentalYield = annualRent80m / Math.max(1, resolvedPrice * 80);
+  const baselineYield = (baseNeighborhoodRahn * 0.36) / Math.max(1, (hood.buyPerSqm || resolvedPrice) * 80);
+  // Property Yield on Cost: scales inversely with deal price relative to neighborhood baseline within [0.65x, 1.35x]
+  const annualRentalYield = baselineYield * Math.max(0.65, Math.min(1.35, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, buildNeighborhoodListingSamples(hood));
-
+  const iqrSpreadRatio = Math.max(0.06, Math.min(0.28, (agg.iqrHighPerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.estimatedDealPricePerSqm)));
+  const dynamicSigma = Number(Math.min(0.38, (resolvedPrice > 160 ? 0.26 : resolvedPrice > 110 ? 0.21 : 0.17) + iqrSpreadRatio * 0.22).toFixed(3));
   const realOptions = computeDixitPindyckRealOption(
-    resolvedPrice, annualRentalYield, resolvedPrice > 160 ? 0.31 : resolvedPrice > 110 ? 0.25 : 0.21, 0.22, 6, targetSqm
+    resolvedPrice, annualRentalYield, dynamicSigma, 0.22, 6, targetSqm
   );
   const transitAndQualityScore = Math.round(((hood.metro ?? 7) + (hood.air ?? 7)) / 2);
   const computedSpread = Number((((agg.askingPricePerSqm - agg.estimatedDealPricePerSqm) / Math.max(1, agg.askingPricePerSqm)) * 100).toFixed(1));

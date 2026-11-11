@@ -91,10 +91,15 @@ function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: stri
   return hoods.find((h) => h.id === hoodId || (fallbackName && h.name === fallbackName)) ?? hoods[0] ?? INITIAL_NEIGHBORHOODS[0];
 }
 
-export function buildMacroAssetSpecs(pricePerSqm: number, rahn80m: number): Record<MacroAssetClassId, MacroAssetSpec> {
+export function buildMacroAssetSpecs(pricePerSqm: number, rahn80m: number, hoodBaselinePriceSqm?: number): Record<MacroAssetClassId, MacroAssetSpec> {
   const buyCost80m = Math.max(1, pricePerSqm * 80);
   const rentalYieldPct = Number(((rahn80m * 0.36) / buyCost80m * 100).toFixed(1));
-  const housingCapitalGrowth = pricePerSqm >= 170 ? 41.5 : pricePerSqm >= 100 ? 43.0 : 44.5;
+  const tierRef = hoodBaselinePriceSqm && hoodBaselinePriceSqm > 0 ? hoodBaselinePriceSqm : pricePerSqm;
+  const baseGrowth = tierRef >= 170 ? 41.5 : tierRef >= 100 ? 43.0 : 44.5;
+  const valAlphaPct = hoodBaselinePriceSqm && hoodBaselinePriceSqm > 0
+    ? Math.max(-4.5, Math.min(4.5, ((hoodBaselinePriceSqm - pricePerSqm) / Math.max(1, hoodBaselinePriceSqm)) * 12))
+    : 0;
+  const housingCapitalGrowth = Number((baseGrowth + valAlphaPct).toFixed(1));
   const totalHousingReturn = Number((housingCapitalGrowth + rentalYieldPct).toFixed(1));
 
   return {
@@ -241,11 +246,13 @@ export function generateCasperMacroPortfolioDossier(
   const resolvedHoodName = hood.name || hoodName;
   const rawPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, resolvedHoodName, rawPrice, buildNeighborhoodListingSamples(hood));
-  const resolvedPrice = agg.estimatedDealPricePerSqm;
-  const resolvedRahn = hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18);
-  const targetCapital = Math.round(resolvedPrice * targetSqm);
+  const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : agg.estimatedDealPricePerSqm;
+  const yieldBoost = Math.max(0.85, Math.min(1.18, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));
+  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * yieldBoost * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  const safeSqm = Math.max(20, targetSqm || 80);
+  const targetCapital = Math.round(resolvedPrice * safeSqm);
 
-  const assets = buildMacroAssetSpecs(resolvedPrice, resolvedRahn);
+  const assets = buildMacroAssetSpecs(resolvedPrice, resolvedRahn, hood.buyPerSqm);
   const defensive = evaluatePortfolioAllocation({ housingWeightPct: 45, goldWeightPct: 15, usdWeightPct: 10, fixedIncomeWeightPct: 30 }, assets);
   const optimalSharpe = evaluatePortfolioAllocation({ housingWeightPct: 55, goldWeightPct: 25, usdWeightPct: 15, fixedIncomeWeightPct: 5 }, assets);
   const inflationHedge = evaluatePortfolioAllocation({ housingWeightPct: 65, goldWeightPct: 25, usdWeightPct: 10, fixedIncomeWeightPct: 0 }, assets);

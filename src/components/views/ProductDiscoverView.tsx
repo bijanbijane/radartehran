@@ -8,6 +8,7 @@ import { matchesPersianSearch } from '../../utils/security';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { isCoordInsideStoredViewport, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
+import { CasperInstantVerdictCard } from '../casper/CasperInstantVerdictCard';
 
 export interface ProductDiscoverViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
@@ -97,6 +98,15 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           </div>
         </div>
       </div>
+
+      {/* Casper Instant Decision Verdict Card */}
+      <CasperInstantVerdictCard
+        evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+        selectedHood={p.selectedHood}
+        onSelectNeighborhood={p.onSelectNeighborhood}
+        targetSqm={p.targetSqm}
+        onOpenInspector={p.onOpenInspector}
+      />
 
       {/* Filter and Control Bar */}
       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-3.5">

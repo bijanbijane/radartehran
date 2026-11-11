@@ -57,13 +57,15 @@ function resolveWorkHub(cityId: string, hubId?: string): WorkHub {
 }
 
 export function computeAffordabilityStress(
-  pricePerSqm: number, rahn80m: number, monthlyMedianIncomeMillion: number = 42
+  pricePerSqm: number, rahn80m: number, monthlyMedianIncomeMillion: number = 42, targetSqm: number = 80
 ): UrbanAffordabilityStressMetrics {
   const safeIncome = Math.max(10, monthlyMedianIncomeMillion);
   const annualIncome = safeIncome * 12;
-  const totalBuyPrice80m = pricePerSqm * 80;
+  const safeArea = Math.max(25, targetSqm);
+  const areaScale = safeArea / 80;
+  const totalBuyPrice80m = pricePerSqm * safeArea;
   const priceToIncomeRatio = Math.max(0.5, Number((totalBuyPrice80m / annualIncome).toFixed(1)));
-  const monthlyRentEquivalent = rahn80m * 0.03;
+  const monthlyRentEquivalent = rahn80m * areaScale * 0.03;
   const rentToIncomeRatioPct = Math.max(1, Number(((monthlyRentEquivalent / safeIncome) * 100).toFixed(1)));
 
   let affordabilityTier: UrbanAffordabilityStressMetrics['affordabilityTier'] = 'MODERATE_STRESS';
@@ -149,15 +151,20 @@ export function generateCasperUrbanAffordabilityReport(
   workHubId?: string,
   monthlyIncomeMillion: number = 42,
   providedHood?: Neighborhood,
-  intlCurrency: IntlCurrencyCode = 'USD'
+  intlCurrency: IntlCurrencyCode = 'USD',
+  targetSqm: number = 80
 ): CasperUrbanAffordabilityReport {
   const hood = providedHood ?? resolveNeighborhood(cityId, hoodId, hoodName);
   const hub = resolveWorkHub(cityId, workHubId);
+  const safeArea = Math.max(25, targetSqm);
+  const areaScale = safeArea / 80;
   const rawPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hoodName || hood.name, rawPrice, buildNeighborhoodListingSamples(hood));
-  const resolvedPrice = agg.estimatedDealPricePerSqm;
-  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
-  const effectiveRent = resolvedRahn * 0.03;
+  const resolvedPrice = Math.max(15, Math.round(agg.estimatedDealPricePerSqm * (rawPrice / Math.max(1, hood.buyPerSqm))));
+  const yieldBoost = Math.max(0.85, Math.min(1.18, (hood.buyPerSqm || rawPrice) / Math.max(1, rawPrice)));
+  const resolvedRahn80 = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * yieldBoost * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  const scaledRahn = Math.round(resolvedRahn80 * areaScale);
+  const effectiveRent = scaledRahn * 0.03;
   const transitAccessibilityScore = hood.metro ?? 7;
   const rawAirScore = hood.air ?? 6;
   const estimatedAqi = rawAirScore <= 10 ? Math.round(185 - rawAirScore * 13) : rawAirScore;
@@ -171,11 +178,10 @@ export function generateCasperUrbanAffordabilityReport(
   const hubCoreRahn80m = nearestToHub.length > 0
     ? Math.round(nearestToHub.reduce((acc, h) => acc + h.rahn80m, 0) / nearestToHub.length) : 2400;
 
-  const affordability = computeAffordabilityStress(resolvedPrice, resolvedRahn, monthlyIncomeMillion);
+  const affordability = computeAffordabilityStress(resolvedPrice, resolvedRahn80, monthlyIncomeMillion, safeArea);
   const commute = computeCommuteOpportunityCost(hood.lat, hood.lng, hub, transitAccessibilityScore, estimatedAqi, monthlyIncomeMillion);
-  const arbitrage = computeCommuteRentArbitrage(resolvedRahn, commute, hubCoreRahn80m);
+  const arbitrage = computeCommuteRentArbitrage(scaledRahn, commute, Math.round(hubCoreRahn80m * areaScale));
 
-  // Socio-spatially realistic TCOH Isochrone Arbitrage Substitute grounded in v6.4 Deal Prices
   let optimalIsochroneSubstitute: IsochroneArbitrageSubstitute | null = null;
   let bestTcoh = arbitrage.totalCostOfHousingMillion;
   const targetQuality = (hood.metro ?? 6) + (hood.air ?? 6);
@@ -186,13 +192,13 @@ export function generateCasperUrbanAffordabilityReport(
     const candAqi = (cand.air ?? 6) <= 10 ? Math.round(185 - (cand.air ?? 6) * 13) : (cand.air ?? 110);
     const candCommute = computeCommuteOpportunityCost(cand.lat, cand.lng, hub, cand.metro ?? 7, candAqi, monthlyIncomeMillion);
     if (candCommute.estimatedOneWayMinutes > Math.min(42, commute.estimatedOneWayMinutes + 8)) continue;
-    const candRahn = cand.rahn80m || Math.round(candDealSqm * 80 * 0.18);
+    const candRahn = Math.round((cand.rahn80m || Math.round(candDealSqm * 80 * 0.18)) * areaScale);
     const candRent = Number((candRahn * 0.03).toFixed(2));
     const candTcoh = Number((candRent + candCommute.totalMonthlyFrictionCostMillion).toFixed(2));
     if (candTcoh < bestTcoh - 1.0) {
       bestTcoh = candTcoh;
       const savings = Number((arbitrage.totalCostOfHousingMillion - candTcoh).toFixed(1));
-      const capitalFreed80mMillion = Math.max(80, Math.round((resolvedPrice - candDealSqm) * 80));
+      const capitalFreed80mMillion = Math.max(80, Math.round((resolvedPrice - candDealSqm) * safeArea));
       const savingsFx = formatMillionTomanAsIntlCurrency(savings, intlCurrency, 'fa');
       optimalIsochroneSubstitute = {
         hoodId: cand.id, hoodName: cand.name, zone: cand.zone || 'منطقه شهری',
@@ -206,7 +212,7 @@ export function generateCasperUrbanAffordabilityReport(
   }
 
   return {
-    hoodId: hood.id, hoodName: hood.name, cityId, basePriceSqm: resolvedPrice, rahn80m: resolvedRahn,
+    hoodId: hood.id, hoodName: hood.name, cityId, basePriceSqm: resolvedPrice, rahn80m: scaledRahn,
     effectiveRentPerMonthMillion: Number(effectiveRent.toFixed(2)), affordability, commute, arbitrage,
     optimalIsochroneSubstitute, generatedAtIso: new Date().toISOString(),
   };

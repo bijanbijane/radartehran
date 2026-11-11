@@ -18,6 +18,7 @@ export interface HousingCycleRegimeCardProps {
   hoodName?: string;
   cityKey?: string;
   basePriceSqm?: number;
+  targetSqm?: number;
   intlCurrency?: IntlCurrencyCode;
   hood?: Neighborhood;
 }
@@ -27,14 +28,15 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
   hoodName = 'پونک',
   cityKey = 'tehran',
   basePriceSqm = 120,
+  targetSqm = 80,
   intlCurrency = 'USD',
   hood,
 }) => {
   const [selectedPersona, setSelectedPersona] = useState<'buyer' | 'upgrader' | 'investor'>('buyer');
 
   const report = useMemo(() => {
-    return generateCasperHousingCycleReport(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
-  }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency]);
+    return generateCasperHousingCycleReport(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm]);
 
   const cycle = report.cycle;
   const rahnFx = intlCurrency !== 'IRT' && report.rahn80mIntlText ? ` (${report.rahn80mIntlText})` : '';
@@ -162,7 +164,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">
             {toPersianNum(cycle.priceToRentRatio)} سال
           </div>
-          <div className="text-[9px] text-slate-400">لنگر تعادلی: {toPersianNum(cycle.dynamicEquilibriumPR)} سال{rahnFx ? ` · رهن: ${toPersianNum(report.rahn80m)}م${rahnFx}` : ''}</div>
+          <div className="text-[9px] text-slate-400">لنگر تعادلی: {toPersianNum(cycle.dynamicEquilibriumPR)} سال{rahnFx ? ` · رهن ${toPersianNum(targetSqm)}م: ${toPersianNum(report.rahn80m)}م${rahnFx}` : ''}</div>
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">

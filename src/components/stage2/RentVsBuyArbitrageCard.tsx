@@ -60,8 +60,8 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
   };
 
   const dossier = useMemo(
-    () => generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency),
-    [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency]
+    () => generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm),
+    [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm]
   );
   const totalUnitCostMillion = Math.round(dossier.basePriceSqm * targetSqm);
   const rahn80m = dossier.rahn80m;

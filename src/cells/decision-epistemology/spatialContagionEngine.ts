@@ -1,5 +1,5 @@
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
-import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, type Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import type { EpistemicStatementClass, RadarDataProvenanceLayerId } from './epistemicDecisionEngine';
 
@@ -120,8 +120,8 @@ export function computeAkerlofLemonIndex(
     provenanceLayer: 'INFERRED_DATA',
     sellerAdvantageWarningFa:
       lemonIndexScore >= 62
-        ? `در ${hoodName} پراکندگی قیمتی (${iqrSpreadPct}٪) و نرخ آگهی‌های طعمه (${baitRejectionRatePct}٪) بالاست؛ فروشندگان واحدهای فرسوده یا دارای نقص سندی تلاش می‌کنند ملک خود را هم‌ردیف واحدهای کلیدنخورده قیمت‌گذاری کنند.`
-        : `پراکندگی بین‌چارکی محله ${hoodName} معادل ${iqrSpreadPct}٪ است؛ برای پوشش ریسک عیوب پنهان تأسیساتی و سندی، حداقل ${requiredInformationDiscountPct}٪ حاشیه احتیاط فراتر از قیمت اعلامی لحاظ کنید.`,
+        ? `در ${hoodName} پراکندگی قیمتی (${toPersianNum(iqrSpreadPct)}٪) و نرخ آگهی‌های طعمه (${toPersianNum(baitRejectionRatePct)}٪) بالاست؛ فروشندگان واحدهای فرسوده یا دارای نقص سندی تلاش می‌کنند ملک خود را هم‌ردیف واحدهای کلیدنخورده قیمت‌گذاری کنند.`
+        : `پراکندگی بین‌چارکی محله ${hoodName} معادل ${toPersianNum(iqrSpreadPct)}٪ است؛ برای پوشش ریسک عیوب پنهان تأسیساتی و سندی، حداقل ${toPersianNum(requiredInformationDiscountPct)}٪ حاشیه احتیاط فراتر از قیمت اعلامی لحاظ کنید.`,
     dueDiligenceProtocolFa: [
       'استعلام ثبتی آنی، بررسی صورتمجلس تفکیکی (پلاک ثبتی پارکینگ و انباری) و عدم بازداشت سند پیش از هرگونه بیعانه',
       'کارشناسی فیزیکی تأسیسات مکانیکی، افت فشار آب طبقات بالا و تست صدای مشاعات در ساعات اوج ترافیک عصرگاهی',
@@ -148,7 +148,7 @@ export function computeKahnemanProspectAnalysis(
       nominalDiscountMillion80m: 0,
       perceivedSellerPainUnits: 0,
       dispositionRigidityPct: 10,
-      recommendedNegotiationFramingFa: `قیمت اعلامی فروشنده (متری ${Math.round(askingPricePerSqm)} م.ت) در محدوده ارزش منصفانه یا زیر ارزش ذاتی است؛ زیان‌گریزی فروشنده مانع معامله نیست و اولویت بر قطعی‌سازی فوری قرارداد است.`,
+      recommendedNegotiationFramingFa: `قیمت اعلامی فروشنده (متری ${toPersianNum(Math.round(askingPricePerSqm))} م.ت) در محدوده ارزش منصفانه یا زیر ارزش ذاتی است؛ زیان‌گریزی فروشنده مانع معامله نیست و اولویت بر قطعی‌سازی فوری قرارداد است.`,
       stagedPaymentTacticFa:
         'به دلیل همگرایی قیمتی با ارزش منصفانه، از فرسایشی کردن نشست بپرهیزید و تمرکز را بر اخذ تضمین‌های سندی و تعهد تخلیه در چک‌های مرحله‌ای بگذارید.',
     };
@@ -165,7 +165,7 @@ export function computeKahnemanProspectAnalysis(
     nominalDiscountMillion80m,
     perceivedSellerPainUnits,
     dispositionRigidityPct,
-    recommendedNegotiationFramingFa: `طبق نظریه چشم‌انداز کانمن-تورسکی (λ=${lambda})، کاهش مستقیم ${nominalDiscountMillion80m} میلیون تومان از قیمت اسمی برای فروشنده در حکم «زیان قطعی» از نقطه مرجع ذهنی اوست و مقاومت روانی ${dispositionRigidityPct}٪ ایجاد می‌کند.`,
+    recommendedNegotiationFramingFa: `طبق نظریه چشم‌انداز کانمن-تورسکی (λ=${toPersianNum(lambda)})، کاهش مستقیم ${toPersianNum(nominalDiscountMillion80m)} میلیون تومان از قیمت اسمی برای فروشنده در حکم «زیان قطعی» از نقطه مرجع ذهنی اوست و مقاومت روانی ${toPersianNum(dispositionRigidityPct)}٪ ایجاد می‌کند.`,
     stagedPaymentTacticFa:
       'به‌جای چانه‌زنی صرفاً روی عدد متری، تخفیف را در قالب «تنفس پرداخت ۴۵ تا ۶۰ روزه»، «رهن کامل واحد توسط فروشنده به نرخ روز» یا «تهاتر با دارایی نقدشونده» بسته‌بندی کنید تا اثر زیان‌گریزی اسمی خنثی شود.',
   };
@@ -231,7 +231,7 @@ export function buildNeighborhoodSpatialContagionReport(
         priceRatioToTarget: Number(x.priceRatio.toFixed(2)),
         spatialCorrelationBeta: beta,
         transmissionLagWeeks: lag,
-        mechanismFa: `تغییرات نرخ معامله در ${x.hood.name} با ضریب همبستگی فضایی β=${beta} پس از حدود ${lag} هفته به ${target?.name ?? hoodName} سرایت می‌کند.`,
+        mechanismFa: `تغییرات نرخ معامله در ${x.hood.name} با ضریب همبستگی فضایی β=${toPersianNum(beta)} پس از حدود ${toPersianNum(lag)} هفته به ${target?.name ?? hoodName} سرایت می‌کند.`,
       };
     });
 
@@ -253,7 +253,7 @@ export function buildNeighborhoodSpatialContagionReport(
         priceRatioToTarget: Number(x.priceRatio.toFixed(2)),
         spatialCorrelationBeta: beta,
         transmissionLagWeeks: lag,
-        mechanismFa: `با افزایش فشار قیمتی در ${target?.name ?? hoodName}، تقاضای مصرفی با وقفه ${lag} هفته‌ای به سمت ${x.hood.name} سرریز می‌شود.`,
+        mechanismFa: `با افزایش فشار قیمتی در ${target?.name ?? hoodName}، تقاضای مصرفی با وقفه ${toPersianNum(lag)} هفته‌ای به سمت ${x.hood.name} سرریز می‌شود.`,
       };
     });
 

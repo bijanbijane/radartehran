@@ -90,7 +90,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
       const data = await res.json();
       if (!isMountedRef.current) return;
       if (res.ok) {
-        setNoteSuccessMsg(`یادداشت با موفقیت در دیتابیس اشتراکی D1 هاب ثبت شد (شناسه: ${data?.data?.note_id ?? 'OK'}).`);
+        setNoteSuccessMsg(`یادداشت با موفقیت در ${data?.mode === 'LOCAL_LEDGER_FALLBACK' ? 'دفتر معرفتی محلی (Fallback)' : 'دیتابیس اشتراکی D1 هاب'} ثبت شد (شناسه: ${data?.data?.note_id ?? 'OK'}).`);
         setNoteTitle(''); setNoteSummary(''); void fetchHubState();
       } else { setErrorMsg(data?.message || `خطا در ثبت یادداشت: کد ${data?.code || res.status}`); }
     } catch (err: unknown) {
@@ -144,15 +144,15 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>هویت نماینده محلی</span> <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 font-mono">{whoami?.agent_id || 'CASPER-01'}</div>
-          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">احراز هویت سرور: تاییدشده</div>
+          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 font-mono">{whoami?.agent_id || 'CASPER-05'}</div>
+          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">{whoami?.authenticated ? 'احراز هویت سرور: تاییدشده' : 'نیازمند ورود حساب مدیر'}</div>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
             <span>دیتابیس D1 ابری</span> <Cpu className="w-3.5 h-3.5 text-indigo-600" />
           </div>
-          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1">{whoami?.database === 'connected' ? 'متصل (Connected)' : 'پایدار'}</div>
+          <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1">{whoami?.database === 'connected' ? 'متصل (Connected)' : whoami?.database === 'local-ledger-fallback' ? 'دفتر معرفتی محلی (Fallback)' : 'پایدار'}</div>
           <div className="text-[10px] text-slate-500 mt-0.5 font-mono">bijanbijane-1.workers.dev</div>
         </div>
 

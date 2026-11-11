@@ -120,7 +120,7 @@ export function findParetoDominantNeighborhoods(input: {
 
   const targetBuySqm = input.basePriceSqm && input.basePriceSqm > 0 ? input.basePriceSqm : targetHood.buyPerSqm;
   const targetAgg = aggregateNeighborhoodMarketMetrics(targetHood.id, targetHood.name, targetBuySqm, buildNeighborhoodListingSamples(targetHood));
-  const targetDealSqm = Math.max(15, targetAgg.estimatedDealPricePerSqm);
+  const targetDealSqm = Math.max(15, Math.round(targetAgg.estimatedDealPricePerSqm * (targetBuySqm / Math.max(1, targetHood.buyPerSqm))));
   const targetUtilityScore = computeNeighborhoodUtilityScore(targetHood);
 
   const preFiltered = cityHoods
@@ -174,11 +174,12 @@ export function computeSavageMinimaxRegretMatrix(input: {
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
 
   const buySqm = input.basePriceSqm && input.basePriceSqm > 0 ? input.basePriceSqm : targetHood.buyPerSqm;
-  const agg = aggregateNeighborhoodMarketMetrics(targetHood.id, hoodName, buySqm, buildNeighborhoodListingSamples(targetHood));
+  const agg = aggregateNeighborhoodMarketMetrics(targetHood.id, hoodName, buySqm, buildNeighborhoodListingSamples({ ...targetHood, buyPerSqm: buySqm }));
   const dealSqm = Math.max(15, agg.estimatedDealPricePerSqm);
   const initialCapitalMillion = Math.round(dealSqm * targetSqm);
+  const yieldBoost = Math.max(0.85, Math.min(1.18, (targetHood.buyPerSqm || buySqm) / Math.max(1, buySqm)));
   const scaledBaseRahn = Math.round(
-    (dealSqm / Math.max(1, targetHood.buyPerSqm)) * (targetHood.rahn80m || Math.round(targetHood.buyPerSqm * 80 * 0.18))
+    (dealSqm / Math.max(1, targetHood.buyPerSqm)) * yieldBoost * (targetHood.rahn80m || Math.round(targetHood.buyPerSqm * 80 * 0.18))
   );
   const rahnEquivalentMillion = Math.round(scaledBaseRahn * (targetSqm / 80));
 
@@ -194,19 +195,22 @@ export function computeSavageMinimaxRegretMatrix(input: {
     PARETO_SPATIAL_ARBITRAGE: { CURRENCY_SHOCK: 0, STAGFLATION_LOCK: 0, REAL_YIELD_DISINFLATION: 0 },
   };
 
+  const valConvergence = Math.max(0.92, Math.min(1.12, Math.pow((targetHood.buyPerSqm || dealSqm) / Math.max(1, dealSqm), 0.30)));
   for (const reg of MACRO_REGIMES_3Y) {
     const propMult = Math.pow(1 + reg.annualPropertyGrowthPct / 100, horizonYears);
     const shieldMult = Math.pow(1 + reg.annualLiquidShieldReturnPct / 100, horizonYears);
     const liqFactor = reg.regimeId === 'STAGFLATION_LOCK' ? (1 + FAST_SALE_FACTOR) / 2 : 0.985;
+    const netRentCarry = Math.round(rahnEquivalentMillion * 0.30 * horizonYears * (1 + reg.annualPropertyGrowthPct / 200));
+    const rahnTopUpDrag = Math.round(rahnEquivalentMillion * (reg.annualInflationPct / 100) * Math.max(0, shieldMult - 1) * 0.35);
 
-    rawWealth.BUY_TARGET_NEGOTIATED[reg.regimeId] = Math.round(initialCapitalMillion * propMult * liqFactor);
+    rawWealth.BUY_TARGET_NEGOTIATED[reg.regimeId] = Math.round(initialCapitalMillion * propMult * valConvergence * liqFactor + netRentCarry);
     const investableAfterRahn = Math.max(0, initialCapitalMillion - rahnEquivalentMillion);
-    rawWealth.RENT_AND_CAPITAL_SHIELD[reg.regimeId] = Math.round(rahnEquivalentMillion + investableAfterRahn * shieldMult);
+    rawWealth.RENT_AND_CAPITAL_SHIELD[reg.regimeId] = Math.round(rahnEquivalentMillion + Math.max(0, investableAfterRahn * shieldMult - rahnTopUpDrag));
 
     const arbPropertyCost = initialCapitalMillion * (1 - arbitrageSavingsRatio);
     const freedCapital = initialCapitalMillion * arbitrageSavingsRatio;
     rawWealth.PARETO_SPATIAL_ARBITRAGE[reg.regimeId] = Math.round(
-      arbPropertyCost * propMult * Math.min(0.99, liqFactor + 0.025) + freedCapital * shieldMult,
+      arbPropertyCost * propMult * Math.min(0.99, liqFactor + 0.025) + netRentCarry + freedCapital * shieldMult,
     );
   }
 

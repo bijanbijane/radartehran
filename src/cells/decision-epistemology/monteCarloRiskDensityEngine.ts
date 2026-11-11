@@ -9,6 +9,7 @@ import { INITIAL_NEIGHBORHOODS, Neighborhood } from '../../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface MonteCarloSimulationConfig {
   horizonMonths: number;
@@ -49,6 +50,8 @@ export interface CasperMonteCarloRiskReport {
   hoodName: string;
   cityId: string;
   basePriceSqm: number;
+  basePriceIntlText?: string;
+  illiquidVarCapital80mIntlText?: string;
   config: MonteCarloSimulationConfig;
   metrics: ValueAtRiskMetrics;
   distributionBuckets: MonteCarloDistributionBucket[];
@@ -222,15 +225,21 @@ export function generateCasperMonteCarloRiskReport(
   hoodName?: string,
   cityId: string = 'tehran',
   basePriceSqm?: number,
-  horizonMonths: number = 12
+  horizonMonths: number = 12,
+  providedHood?: Neighborhood,
+  intlCurrency: IntlCurrencyCode = 'USD',
+  targetSqm: number = 85
 ): CasperMonteCarloRiskReport {
-  const hood = resolveNeighborhood(cityId, hoodId, hoodName);
+  const hood = providedHood ?? resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, buildNeighborhoodListingSamples(hood));
   const iqrSpreadRatio = Math.max(0.06, Math.min(0.28, (agg.iqrHighPerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.estimatedDealPricePerSqm)));
-  const tierSigma = resolvedPrice >= 170 ? 0.28 : resolvedPrice >= 100 ? 0.21 : 0.16;
+  const hoodTierPrice = hood.buyPerSqm || resolvedPrice;
+  const tierSigma = hoodTierPrice >= 170 ? 0.28 : hoodTierPrice >= 100 ? 0.21 : 0.16;
   const annualVolSigma = Number(Math.min(0.38, tierSigma + iqrSpreadRatio * 0.25).toFixed(3));
-  const annualDriftMu = resolvedPrice >= 170 ? 0.42 : resolvedPrice >= 100 ? 0.38 : 0.34;
+  const baseTierDrift = hoodTierPrice >= 170 ? 0.42 : hoodTierPrice >= 100 ? 0.38 : 0.34;
+  const valuationAlpha = Math.max(-0.08, Math.min(0.08, ((hoodTierPrice - resolvedPrice) / Math.max(1, hoodTierPrice)) * 0.25));
+  const annualDriftMu = Number((baseTierDrift + valuationAlpha).toFixed(3));
 
   const simConfig: Partial<MonteCarloSimulationConfig> = {
     horizonMonths,
@@ -243,12 +252,16 @@ export function generateCasperMonteCarloRiskReport(
   };
 
   const simResult = simulateMertonJumpDiffusionVaR(resolvedPrice, simConfig, hood.id * 101);
+  const illiquidVarCapitalMln =
+    Math.round(resolvedPrice * Math.max(10, targetSqm) * (Math.abs(simResult.metrics.illiquidityAdjustedVaR95RealPct) / 100));
 
   return {
     hoodId: hood.id,
     hoodName: hood.name,
     cityId,
     basePriceSqm: resolvedPrice,
+    basePriceIntlText: formatMillionTomanAsIntlCurrency(resolvedPrice, intlCurrency, 'fa'),
+    illiquidVarCapital80mIntlText: formatMillionTomanAsIntlCurrency(illiquidVarCapitalMln, intlCurrency, 'fa'),
     config: {
       horizonMonths,
       trialCount: 1000,

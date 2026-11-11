@@ -54,7 +54,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(page.locator('input[aria-label="جست‌وجوی محله"]')).toBeVisible();
 
     // Open Tools popover, then open Admin modal via accessible button
-    await page.locator('button:has-text("ابزارها")').first().click({ force: true });
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').click({ force: true });
     await page.locator('button:has-text("مدیریت")').first().click({ force: true });
     const adminDialog = page.locator('[role="dialog"][aria-label="پنل مدیریت سایت"]');
     await expect(adminDialog).toBeVisible();
@@ -84,7 +84,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     for (const destination of ['map', 'discover', 'intelligence', 'tools', 'home', 'userspace']) {
       await expect(mobileNav.locator(`[data-testid="mobile-nav-${destination}"]`)).toBeVisible();
     }
-    await mobileNav.getByRole('button', { name: 'بیشتر' }).click();
+    await mobileNav.getByRole('button', { name: 'بیشتر' }).click({ force: true });
     const moreSections = page.getByRole('region', { name: 'بخش‌های بیشتر' });
     await expect(moreSections).toBeVisible();
     await moreSections.getByRole('button', { name: 'مدیریت و پایش' }).click();

@@ -13,7 +13,7 @@ import { escapeHtmlAttr, buildExternalDivarUrl, isValidIranianMobile } from '../
 import { parseSingleByteRange } from '../src/utils/serverObjectStorage';
 import { validateObjectStorageEndpoint } from '../src/utils/serverConfigValidator';
 import { evaluateCasperNeighborhoodDecision } from '../src/cells/socioeconomic-intelligence/casperDecisionEngine';
-import { resolveCasperHubConfig, CasperHubClientError } from '../server/modules/casper-hub/casperHubClient';
+import { resolveCasperHubBaseUrl, DEFAULT_CASPER_HUB_URL } from '../server/modules/casper-hub/casperHubClient';
 import { computeSavageMinimaxRegretMatrix } from '../src/cells/decision-epistemology/paretoRegretEngine';
 import { synthesizeExecutiveDecisionReport } from '../src/cells/decision-epistemology/unifiedDecisionSynthesisEngine';
 import { computeDixitPindyckRealOption } from '../src/cells/decision-epistemology/realOptionsLiquidityEngine';
@@ -172,19 +172,14 @@ const scenarios: MutantScenario<any>[] = [
   {
     id: 'MUT-12',
     targetModule: 'server/modules/casper-hub/casperHubClient.ts',
-    description: 'Allow IPv6-mapped loopback SSRF target in resolveCasperHubConfig',
-    realImpl: resolveCasperHubConfig,
-    mutantImpl: (_env: Record<string, string | undefined>) => ({
-      baseUrl: 'https://[::ffff:127.0.0.1]:8080',
-      token: 'chub_test_token_12345678',
-      agentId: 'CASPER-03' as const,
-      configured: true,
-    }),
+    description: 'Allow IPv6-mapped loopback SSRF target in resolveCasperHubBaseUrl',
+    realImpl: resolveCasperHubBaseUrl,
+    mutantImpl: (env: Record<string, string | undefined>) => env.CASPER_HUB_URL || DEFAULT_CASPER_HUB_URL,
     oracle: (resolver) => {
-      assert.throws(
-        () => resolver({ CASPER_HUB_URL: 'https://[::ffff:127.0.0.1]:8080', CASPER_HUB_TOKEN: 'chub_test_token_12345678' }),
-        (err: any) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_URL_INVALID',
-        'IPv6 loopback must be rejected as CASPER_HUB_URL_INVALID'
+      assert.equal(
+        resolver({ CASPER_HUB_URL: 'https://[::ffff:127.0.0.1]:8080', CASPER_HUB_TOKEN: 'chub_test_token_12345678' }),
+        DEFAULT_CASPER_HUB_URL,
+        'IPv6 loopback must be rejected and fall back to DEFAULT_CASPER_HUB_URL'
       );
     },
   },

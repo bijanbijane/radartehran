@@ -209,7 +209,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
         <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">{counterfactual.consequenceSummaryFa}</p>
       </div>
 
-      <CasperDecisionMatrixCard hoodId={hoodId} hoodName={hoodName} basePriceSqm={basePriceSqm} hood={hood} intlCurrency={intlCurrency} compact />
+      <CasperDecisionMatrixCard hoodId={hoodId} hoodName={hoodName} basePriceSqm={basePriceSqm} targetSqm={unitAreaSqm} hood={hood} intlCurrency={intlCurrency} compact />
 
       {/* 12-Layer Provenance Matrix */}
       <div className="space-y-2.5">

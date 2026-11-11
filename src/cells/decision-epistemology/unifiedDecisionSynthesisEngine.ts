@@ -7,6 +7,7 @@
  */
 
 import { INITIAL_NEIGHBORHOODS, Neighborhood, toPersianNum } from '../../data/neighborhoods';
+import { getNeighborhoodDeepInsight } from '../../data/neighborhoodInsights';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
@@ -89,19 +90,23 @@ export function synthesizeExecutiveDecisionReport(
   intlCurrency: IntlCurrencyCode = 'USD',
   providedHood?: Neighborhood,
 ): UnifiedDecisionSynthesisReport {
+  const safeTargetSqm = Math.max(20, targetSqm || 80);
   const hood = resolveNeighborhood(cityId, hoodId, hoodName, providedHood);
   const resolvedHoodName = hood.name || hoodName;
   const fairPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const hoodBaselineAsk = hood.buyPerSqm || fairPrice;
   const askingPrice = customAskingPriceSqm ?? Math.round(fairPrice * 1.085);
-  const rahn80m = Math.round((fairPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  const yieldBoost = Math.max(0.85, Math.min(1.18, hoodBaselineAsk / Math.max(1, fairPrice)));
+  const rahn80m = Math.round((fairPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)) * yieldBoost);
 
   // 1. Valuation Pillar: spread between asking and fair price
   const spreadPct = Number((((askingPrice - fairPrice) / Math.max(1, fairPrice)) * 100).toFixed(1));
   const valuationScore = Math.round(Math.min(100, Math.max(5, 100 - spreadPct * 6.0)));
 
   // 2. Cycle Pillar: bubble exhaustion evaluated at the proposed transaction price
-  const cycleReport = classifyHousingCycleRegime(askingPrice, rahn80m, 6, Math.max(5, spreadPct));
+  const insight = getNeighborhoodDeepInsight(hood);
+  const empiricalMomentum6mPct = insight?.futureGrowthScore && insight.futureGrowthScore > 0 ? Math.round((insight.futureGrowthScore - 6.0) * 8.2) : undefined;
+  const cycleReport = classifyHousingCycleRegime(askingPrice, rahn80m, hood.metro ?? 7, Math.max(5, spreadPct), empiricalMomentum6mPct);
   const cycleScore = Math.round(Math.min(100, Math.max(10, 100 - cycleReport.bubbleExhaustionRiskPct * 0.9)));
 
   // 3. Information Asymmetry Pillar: Akerlof index + seller asking distortion
@@ -111,7 +116,7 @@ export function synthesizeExecutiveDecisionReport(
 
   // 4. Liquidity & Real Options Pillar: hurdle rate inverse + illiquidity of overpriced listing
   const annualRentalYield = (rahn80m * 0.36) / Math.max(1, askingPrice * 80);
-  const option = computeDixitPindyckRealOption(askingPrice, annualRentalYield, askingPrice > 160 ? 0.30 : 0.24, 0.22, 6);
+  const option = computeDixitPindyckRealOption(askingPrice, annualRentalYield, askingPrice > 160 ? 0.30 : 0.24, 0.22, 6, safeTargetSqm);
   const hurdleExcess = Math.max(0, (option.hurdleRateMultiplier - 1.25) * 100) + Math.max(0, spreadPct - 10) * 1.1;
   const liquidityScore = Math.round(Math.min(100, Math.max(10, 95 - hurdleExcess * 0.8)));
 
@@ -120,12 +125,13 @@ export function synthesizeExecutiveDecisionReport(
   const epistemicOutlierPenalty = Math.max(0, spreadPct - 18) * 0.35;
   const confidenceScore = Math.round(Math.min(100, Math.max(35, (agg.confidenceScore ?? 75) + 8 - epistemicOutlierPenalty)));
 
-  // 6. Downside Tail Risk Pillar: Monte Carlo VaR calibrated with empirical IQR volatility & immediate drawdown risk
+  // 6. Downside Tail Risk Pillar: Monte Carlo VaR calibrated with empirical IQR volatility & mean-reversion drift
   const iqrSpreadRatio = Math.max(0.06, Math.min(0.28, (agg.iqrHighPerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.estimatedDealPricePerSqm)));
   const calibratedSigma = Number(Math.min(0.38, (askingPrice >= 170 ? 0.28 : askingPrice >= 100 ? 0.21 : 0.16) + iqrSpreadRatio * 0.25).toFixed(3));
+  const calibratedDrift = Number(Math.max(0.24, Math.min(0.48, (fairPrice >= 170 ? 0.42 : fairPrice >= 100 ? 0.38 : 0.34) - (spreadPct / 100) * 0.25)).toFixed(3));
   const merton = simulateMertonJumpDiffusionVaR(
     askingPrice,
-    { horizonMonths: 24, trialCount: 500, annualVolSigma: calibratedSigma },
+    { horizonMonths: 24, trialCount: 500, annualVolSigma: calibratedSigma, annualDriftMu: calibratedDrift },
     hood.id * 101 + 77,
   );
   const overpaymentDrawdownPenalty = Math.max(0, spreadPct - 8) * 0.9;
@@ -195,14 +201,14 @@ export function synthesizeExecutiveDecisionReport(
   }
 
   // Risk-adaptive Walk-Away Ceiling & 3-Stage Escrow Playbook (eliminating flat +2% & static 30/40/30 shortcuts)
-  const totalAskingMillion = Math.round(askingPrice * targetSqm);
-  const totalFairMillion = Math.round(fairPrice * targetSqm);
+  const totalAskingMillion = Math.round(askingPrice * safeTargetSqm);
+  const totalFairMillion = Math.round(fairPrice * safeTargetSqm);
   const isHighRiskRegime = cycleReport.bubbleExhaustionRiskPct >= 65 || effectiveLemonScore >= 60 || spreadPct >= 12;
   const walkAwayMarkupFactor = isHighRiskRegime ? 1.0 : 1.02;
   const walkAwayPriceCeilingPerSqm = askingPrice < fairPrice ? askingPrice : Math.round(fairPrice * walkAwayMarkupFactor);
-  const walkAwayCeilingTotalMillion = Math.round(walkAwayPriceCeilingPerSqm * targetSqm);
+  const walkAwayCeilingTotalMillion = Math.round(walkAwayPriceCeilingPerSqm * safeTargetSqm);
   const targetDiscountMillion = Math.max(0, totalAskingMillion - totalFairMillion);
-  const negotiationOpeningOfferMillion = Math.round(Math.min(askingPrice * 0.95, (totalFairMillion * 0.95) / targetSqm) * targetSqm);
+  const negotiationOpeningOfferMillion = Math.round(Math.min(askingPrice * 0.95, (totalFairMillion * 0.95) / safeTargetSqm) * safeTargetSqm);
 
   const targetExecutionMillion = Math.min(totalAskingMillion, totalFairMillion);
   const signingStagePct = isHighRiskRegime ? 25 : 30;
@@ -224,7 +230,7 @@ export function synthesizeExecutiveDecisionReport(
       'منوط کردن پرداخت قسط تحویل کلید به تحویل فیزیکی واحد، پارکینگ و انباری منطبق با صورتمجلس تفکیکی',
       'تعیین وجه التزام روزانه بابت تأخیر در اخذ مفاصاحساب شهرداری، دارایی و حضور در دفترخانه اسناد رسمی',
     ],
-    copyableActionSheetFa: `برگه اقدام اتاق قرارداد (${resolvedHoodName} - ${toPersianNum(targetSqm)} متر): پیشنهاد افتتاحیه ${toPersianNum(negotiationOpeningOfferMillion)} م.ت | ارزش منصفانه ${toPersianNum(totalFairMillion)} م.ت | سقف ترک مذاکره ${toPersianNum(walkAwayCeilingTotalMillion)} م.ت`,
+    copyableActionSheetFa: `برگه اقدام اتاق قرارداد (${resolvedHoodName} - ${toPersianNum(safeTargetSqm)} متر): پیشنهاد افتتاحیه ${toPersianNum(negotiationOpeningOfferMillion)} م.ت | ارزش منصفانه ${toPersianNum(totalFairMillion)} م.ت | سقف ترک مذاکره ${toPersianNum(walkAwayCeilingTotalMillion)} م.ت`,
   };
 
   return {
@@ -234,7 +240,7 @@ export function synthesizeExecutiveDecisionReport(
     askingPricePerSqm: askingPrice,
     fairPricePerSqm: fairPrice,
     walkAwayPriceCeilingPerSqm,
-    targetSqm,
+    targetSqm: safeTargetSqm,
     readinessScore,
     verdictId,
     verdictTitleFa,

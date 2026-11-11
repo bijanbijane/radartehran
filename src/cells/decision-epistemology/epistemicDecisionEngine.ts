@@ -5,14 +5,12 @@
  * and Algorithmic Accountability Engine.
  */
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
-import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { clampNumber, validateCityParam } from '../../utils/security';
 
-export type EpistemicStatementClass =
-  | 'FACT' | 'EVIDENCE' | 'INFERENCE' | 'HYPOTHESIS' | 'ASSUMPTION' | 'UNKNOWN' | 'RECOMMENDATION';
-
+export type EpistemicStatementClass = 'FACT' | 'EVIDENCE' | 'INFERENCE' | 'HYPOTHESIS' | 'ASSUMPTION' | 'UNKNOWN' | 'RECOMMENDATION';
 export type RadarDataProvenanceLayerId =
   | 'OBSERVED_DATA' | 'USER_PROVIDED_DATA' | 'ADVERTISER_CLAIM' | 'VERIFIED_DATA'
   | 'THIRD_PARTY_DATA' | 'ESTIMATED_DATA' | 'INFERRED_DATA' | 'PREDICTED_DATA'
@@ -25,92 +23,43 @@ export const ALL_EPISTEMIC_STATEMENT_CLASSES: readonly EpistemicStatementClass[]
 export const ALL_DATA_PROVENANCE_LAYERS: readonly RadarDataProvenanceLayerId[] = ['OBSERVED_DATA', 'ADVERTISER_CLAIM', 'VERIFIED_DATA', 'USER_PROVIDED_DATA', 'THIRD_PARTY_DATA', 'ESTIMATED_DATA', 'INFERRED_DATA', 'PREDICTED_DATA', 'CONFLICTING_DATA', 'OUTDATED_DATA', 'MISSING_DATA', 'UNKNOWN_DATA'];
 
 export interface EpistemicProvenanceLayerEntry {
-  layerId: RadarDataProvenanceLayerId;
-  order: number;
-  titleFa: string;
-  epistemicClass: EpistemicStatementClass;
-  currentValueSummaryFa: string;
-  sourceFa: string;
-  verificationMethodFa: string;
-  confidencePct: number | null;
-  limitationFa: string;
-  statusTone: 'emerald' | 'blue' | 'amber' | 'rose' | 'slate';
+  layerId: RadarDataProvenanceLayerId; order: number; titleFa: string; epistemicClass: EpistemicStatementClass;
+  currentValueSummaryFa: string; sourceFa: string; verificationMethodFa: string; confidencePct: number | null;
+  limitationFa: string; statusTone: 'emerald' | 'blue' | 'amber' | 'rose' | 'slate';
 }
 
 export interface CognitiveBiasDiagnostic {
-  biasId: CognitiveBiasId;
-  titleFa: string;
-  severity: 'HIGH' | 'MODERATE' | 'LOW';
-  riskScore: number;
-  metricSummaryFa: string;
-  mechanismFa: string;
-  debiasingActionFa: string;
+  biasId: CognitiveBiasId; titleFa: string; severity: 'HIGH' | 'MODERATE' | 'LOW'; riskScore: number;
+  metricSummaryFa: string; mechanismFa: string; debiasingActionFa: string;
 }
 
 export interface ConfidenceScoreDecomposition {
-  totalConfidencePct: number;
-  marginOfErrorPct: number;
-  sampleSufficiencyPoints: number;
-  maxSampleSufficiencyPoints: 35;
-  iqrConsistencyPoints: number;
-  maxIqrConsistencyPoints: 30;
-  fraudFilterPoints: number;
-  maxFraudFilterPoints: 20;
-  temporalFreshnessPoints: number;
-  maxTemporalFreshnessPoints: 14;
-  formulaText: string;
-  statisticalMeaningFa: string;
-  epistemicWarningFa: string;
+  totalConfidencePct: number; marginOfErrorPct: number; sampleSufficiencyPoints: number; maxSampleSufficiencyPoints: 35;
+  iqrConsistencyPoints: number; maxIqrConsistencyPoints: 30; fraudFilterPoints: number; maxFraudFilterPoints: 20;
+  temporalFreshnessPoints: number; maxTemporalFreshnessPoints: 14; formulaText: string; statisticalMeaningFa: string; epistemicWarningFa: string;
 }
 
 export interface AlgorithmicAccountabilityManifest {
-  algorithmId: string;
-  version: string;
-  purposeFa: string;
-  inputVariablesFa: string[];
-  assumptionsFa: string[];
-  knownLimitationsFa: string[];
-  biasRisksFa: string[];
-  humanAgencyPrincipleFa: string;
+  algorithmId: string; version: string; purposeFa: string; inputVariablesFa: string[];
+  assumptionsFa: string[]; knownLimitationsFa: string[]; biasRisksFa: string[]; humanAgencyPrincipleFa: string;
 }
 
 export interface NeighborhoodEpistemicDossier {
-  cityId: CityId;
-  hoodId: number;
-  hoodName: string;
-  generatedAtIso: string;
-  askingPricePerSqm: number;
-  estimatedDealPricePerSqm: number;
-  estimatedDealPriceIntlText: string;
-  iqrLowPerSqm: number;
-  iqrHighPerSqm: number;
-  grossRentalYieldPct: number;
-  estimatedExitDays: number;
-  confidenceDecomposition: ConfidenceScoreDecomposition;
-  provenanceLayers: EpistemicProvenanceLayerEntry[];
-  cognitiveBiases: CognitiveBiasDiagnostic[];
-  accountabilityManifest: AlgorithmicAccountabilityManifest;
+  cityId: CityId; hoodId: number; hoodName: string; generatedAtIso: string; askingPricePerSqm: number;
+  estimatedDealPricePerSqm: number; estimatedDealPriceIntlText: string; iqrLowPerSqm: number; iqrHighPerSqm: number;
+  grossRentalYieldPct: number; estimatedExitDays: number; confidenceDecomposition: ConfidenceScoreDecomposition;
+  provenanceLayers: EpistemicProvenanceLayerEntry[]; cognitiveBiases: CognitiveBiasDiagnostic[]; accountabilityManifest: AlgorithmicAccountabilityManifest;
 }
 
 export interface CounterfactualScenarioInput {
-  askingPricePerSqm: number;
-  estimatedDealPricePerSqm: number;
-  targetSqm: number;
-  buyerProposedDiscountPct: number;
-  expectedAnnualInflationPct?: number;
-  intlCurrency?: IntlCurrencyCode;
+  askingPricePerSqm: number; estimatedDealPricePerSqm: number; targetSqm: number;
+  buyerProposedDiscountPct: number; expectedAnnualInflationPct?: number; intlCurrency?: IntlCurrencyCode;
 }
 
 export interface CounterfactualScenarioResult {
-  askingTotalMillion: number;
-  modelFairTotalMillion: number;
-  buyerOfferTotalMillion: number;
-  buyerOfferIntlText: string;
-  capitalPreservedMillion: number;
-  acceptanceProbabilityPct: number;
-  epistemicClassification: EpistemicStatementClass;
-  consequenceSummaryFa: string;
-  uncertaintyNoteFa: string;
+  askingTotalMillion: number; modelFairTotalMillion: number; buyerOfferTotalMillion: number; buyerOfferIntlText: string;
+  capitalPreservedMillion: number; acceptanceProbabilityPct: number; epistemicClassification: EpistemicStatementClass;
+  consequenceSummaryFa: string; uncertaintyNoteFa: string;
 }
 
 export function computeConfidenceScoreDecomposition(input: {
@@ -142,7 +91,7 @@ export function computeConfidenceScoreDecomposition(input: {
     iqrConsistencyPoints, maxIqrConsistencyPoints: 30, fraudFilterPoints, maxFraudFilterPoints: 20,
     temporalFreshnessPoints, maxTemporalFreshnessPoints: 14,
     formulaText: 'C = S_sample(35) + S_iqr(30) + S_filter(20) + S_freshness(14)',
-    statisticalMeaningFa: `درصد اطمینان (${totalConfidencePct}٪) بیانگر پایداری نمونه پس از حذف داده‌های پرت با حاشیه خطای برآوردی ±${marginOfErrorPct}٪ در سطح محله است؛ نه قطعیت قیمت یک ملک خاص.`,
+    statisticalMeaningFa: `درصد اطمینان (${toPersianNum(totalConfidencePct)}٪) بیانگر پایداری نمونه پس از حذف داده‌های پرت با حاشیه خطای برآوردی ±${toPersianNum(marginOfErrorPct)}٪ در سطح محله است؛ نه قطعیت قیمت یک ملک خاص.`,
     epistemicWarningFa: 'خروجی مدل جایگزین کارشناسی حضوری، بررسی سند ثبتی و رؤیت فیزیکی بنا نیست.',
   };
 }
@@ -154,7 +103,7 @@ export function evaluateCognitiveDecisionBiases(input: {
   const ask = Math.max(10, input.askingPricePerSqm);
   const deal = Math.max(10, input.estimatedDealPricePerSqm);
   const askMarkupPct = Number((((ask - deal) / deal) * 100).toFixed(1));
-  const annualRent80m = Math.max(50, input.rahn80m * 0.30);
+  const annualRent80m = Math.max(50, input.rahn80m * 0.36);
   const grossRentalYieldPct = Number(clampNumber((annualRent80m / (deal * 80)) * 100, 1.5, 14, 4.2).toFixed(1));
   const estimatedExitDays = input.marketRegime === 'HOT' ? 35 : input.marketRegime === 'FROZEN' ? 115 : 65;
   const dealIntl = formatMillionTomanAsIntlCurrency(deal, input.intlCurrency ?? 'USD', 'fa');
@@ -164,15 +113,15 @@ export function evaluateCognitiveDecisionBiases(input: {
       biasId: 'ANCHORING_BIAS', titleFa: '۱. سوگیری لنگر قیمتی فروشنده (Anchoring Trap)',
       severity: askMarkupPct >= 9 ? 'HIGH' : askMarkupPct >= 5 ? 'MODERATE' : 'LOW',
       riskScore: clampNumber(Math.round(askMarkupPct * 8.5), 18, 95, 64),
-      metricSummaryFa: `شکاف لنگر آگهی نسبت به معامله قطعی: +${askMarkupPct}٪ (متری ${ask - deal} م.ت حاشیه کاذب)`,
+      metricSummaryFa: `شکاف لنگر آگهی نسبت به معامله قطعی: +${toPersianNum(askMarkupPct)}٪ (متری ${toPersianNum(ask - deal)} م.ت حاشیه کاذب)`,
       mechanismFa: 'ذهن انسان اولین عدد دیده‌شده در آگهی را به‌عنوان «ارزش مرجع» می‌پذیرد.',
-      debiasingActionFa: `مذاکره را از کف میان‌چارکی (${input.iqrLowPerSqm} م.ت) آغاز کنید و نرخ قطعی مدل (${deal} م.ت) را سقف توافق قرار دهید.`,
+      debiasingActionFa: `مذاکره را از کف میان‌چارکی (${toPersianNum(input.iqrLowPerSqm)} م.ت) آغاز کنید و نرخ قطعی مدل (${toPersianNum(deal)} م.ت) را سقف توافق قرار دهید.`,
     },
     {
       biasId: 'FOMO_HERD_CONTAGION', titleFa: '۲. تله ترس از جاماندن و هیجان گله‌ای (FOMO)',
       severity: input.marketRegime === 'HOT' || grossRentalYieldPct < 3.6 ? 'HIGH' : 'MODERATE',
       riskScore: input.marketRegime === 'HOT' ? 84 : grossRentalYieldPct < 3.8 ? 72 : 48,
-      metricSummaryFa: `بازده اجاره به قیمت: ${grossRentalYieldPct}٪ سالانه (نسبت P/R ~${Math.round(100 / grossRentalYieldPct)} سال)`,
+      metricSummaryFa: `بازده اجاره به قیمت: ${toPersianNum(grossRentalYieldPct)}٪ سالانه (نسبت P/R ~${toPersianNum(Math.round(100 / grossRentalYieldPct))} سال)`,
       mechanismFa: 'فشار روانی «اگر امروز نخرم فردا گران‌تر می‌شود» باعث چشم‌پوشی از عیوب حقوقی و فنی ملک می‌شود.',
       debiasingActionFa: 'قاعده توقف ۲۴ ساعته: پیش از هر بیعانه، استعلام ثبتی و چک‌لیست ۵۰ نقطه‌ای بازدید را تکمیل کنید.',
     },
@@ -180,7 +129,7 @@ export function evaluateCognitiveDecisionBiases(input: {
       biasId: 'LIQUIDITY_LOCK_ILLUSION', titleFa: '۳. توهم نقدشوندگی و ریسک قفل سرمایه (Illiquidity Risk)',
       severity: estimatedExitDays >= 90 ? 'HIGH' : estimatedExitDays >= 60 ? 'MODERATE' : 'LOW',
       riskScore: clampNumber(Math.round(estimatedExitDays * 0.78), 25, 92, 58),
-      metricSummaryFa: `زمان انتظار فروش متعارف: ~${estimatedExitDays} روز (هزینه خروج فوری: ۱۲٪ کسر قیمت)`,
+      metricSummaryFa: `زمان انتظار فروش متعارف: ~${toPersianNum(estimatedExitDays)} روز (هزینه خروج فوری: ۱۲٪ کسر قیمت)`,
       mechanismFa: 'خریداران تصور می‌کنند ملک در هر لحظه به قیمت تابلو قابل تبدیل به پول نقد است.',
       debiasingActionFa: 'حداقل ۶ ماه نقدینگی احتیاطی خارج از ملک نگه دارید تا مجبور به فروش فوری با ضریب ۰٫۸۸ نشوید.',
     },
@@ -203,10 +152,23 @@ export function buildNeighborhoodEpistemicDossier(input: {
   const cityHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   const found = (input.customHood && input.customHood.id === input.hoodId) ? input.customHood : (cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0]);
   const hoodName = input.hoodName || found?.name || `محله ${input.hoodId}`;
-  const buyPerSqm = input.buyPerSqm && input.buyPerSqm > 0 ? input.buyPerSqm : found?.buyPerSqm || 120;
-  const rahn80m = input.rahn80m && input.rahn80m > 0 ? input.rahn80m : found?.rahn80m || 1200;
+  const hoodBaseBuy = found?.buyPerSqm || 120;
+  const buyPerSqm = input.buyPerSqm && input.buyPerSqm > 0 ? input.buyPerSqm : hoodBaseBuy;
+  const baseRahn = found?.rahn80m || Math.round(hoodBaseBuy * 80 * 0.18);
+  const yieldBoost = Math.max(0.85, Math.min(1.18, hoodBaseBuy / Math.max(1, buyPerSqm)));
+  const rahn80m = input.rahn80m && input.rahn80m > 0 && input.rahn80m !== found?.rahn80m
+    ? input.rahn80m
+    : Math.round((buyPerSqm / Math.max(1, hoodBaseBuy)) * baseRahn * yieldBoost);
   const samples = buildNeighborhoodListingSamples({ id: input.hoodId, name: hoodName, buyPerSqm, bargains: found?.bargains });
-  const agg = aggregateNeighborhoodMarketMetrics(input.hoodId, hoodName, buyPerSqm, samples);
+  const rawAgg = aggregateNeighborhoodMarketMetrics(input.hoodId, hoodName, buyPerSqm, samples);
+  const pScale = buyPerSqm / Math.max(1, hoodBaseBuy);
+  const agg = pScale === 1 ? rawAgg : {
+    ...rawAgg,
+    askingPricePerSqm: Math.max(15, Math.round(rawAgg.askingPricePerSqm * pScale)),
+    estimatedDealPricePerSqm: Math.max(15, Math.round(rawAgg.estimatedDealPricePerSqm * pScale)),
+    iqrLowPerSqm: rawAgg.iqrLowPerSqm > 0 ? Math.max(12, Math.round(rawAgg.iqrLowPerSqm * pScale)) : 0,
+    iqrHighPerSqm: rawAgg.iqrHighPerSqm > 0 ? Math.max(18, Math.round(rawAgg.iqrHighPerSqm * pScale)) : 0,
+  };
   const resolvedValidCount = Math.max(1, agg.validSampleCount || samples.length || 1);
   const resolvedIqrLow = agg.iqrLowPerSqm > 0 ? agg.iqrLowPerSqm : Math.round(agg.estimatedDealPricePerSqm * 0.94);
   const resolvedIqrHigh = agg.iqrHighPerSqm > resolvedIqrLow ? agg.iqrHighPerSqm : Math.round(agg.askingPricePerSqm * 1.05);
@@ -224,15 +186,15 @@ export function buildNeighborhoodEpistemicDossier(input: {
   });
 
   const provenanceLayers: EpistemicProvenanceLayerEntry[] = [
-    { layerId: 'OBSERVED_DATA', order: 1, titleFa: '۱. داده مشاهده‌شده (Observed Data)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${resolvedValidCount} نمونه پالایش‌شده در دامنه ${resolvedIqrLow} تا ${resolvedIqrHigh} م.ت/متر`, sourceFa: 'پایش آگهی‌های عمومی و مشاهدات بازار محله', verificationMethodFa: 'فیلتر آماری دامنه بین‌چارکی (IQR) و میانه انحراف مطلق (MAD)', confidencePct: decomp.totalConfidencePct, limitationFa: 'مبتنی بر نمونه قابل مشاهده بازار است و معاملات خصوصی غیررسانه‌ای را شامل نمی‌شود.', statusTone: 'emerald' },
-    { layerId: 'ADVERTISER_CLAIM', order: 2, titleFa: '۲. ادعای آگهی‌دهنده (Advertiser Claim)', epistemicClass: 'HYPOTHESIS', currentValueSummaryFa: `میانه قیمت پیشنهادی (تابلو): متری ${agg.askingPricePerSqm} م.ت`, sourceFa: 'اظهار اولیه فروشندگان و مشاوران در آگهی‌ها', verificationMethodFa: 'مقایسه با توزیع هدانیک محله و تشخیص کلیدواژه‌های تبلیغاتی', confidencePct: 62, limitationFa: 'قیمت پیشنهادی دارای لنگر ذهنی (Anchoring) فروشنده است و قیمت معامله قطعی نیست.', statusTone: 'amber' },
+    { layerId: 'OBSERVED_DATA', order: 1, titleFa: '۱. داده مشاهده‌شده (Observed Data)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${toPersianNum(resolvedValidCount)} نمونه پالایش‌شده در دامنه ${toPersianNum(resolvedIqrLow)} تا ${toPersianNum(resolvedIqrHigh)} م.ت/متر`, sourceFa: 'پایش آگهی‌های عمومی و مشاهدات بازار محله', verificationMethodFa: 'فیلتر آماری دامنه بین‌چارکی (IQR) و میانه انحراف مطلق (MAD)', confidencePct: decomp.totalConfidencePct, limitationFa: 'مبتنی بر نمونه قابل مشاهده بازار است و معاملات خصوصی غیررسانه‌ای را شامل نمی‌شود.', statusTone: 'emerald' },
+    { layerId: 'ADVERTISER_CLAIM', order: 2, titleFa: '۲. ادعای آگهی‌دهنده (Advertiser Claim)', epistemicClass: 'HYPOTHESIS', currentValueSummaryFa: `میانه قیمت پیشنهادی (تابلو): متری ${toPersianNum(agg.askingPricePerSqm)} م.ت`, sourceFa: 'اظهار اولیه فروشندگان و مشاوران در آگهی‌ها', verificationMethodFa: 'مقایسه با توزیع هدانیک محله و تشخیص کلیدواژه‌های تبلیغاتی', confidencePct: 62, limitationFa: 'قیمت پیشنهادی دارای لنگر ذهنی (Anchoring) فروشنده است و قیمت معامله قطعی نیست.', statusTone: 'amber' },
     { layerId: 'VERIFIED_DATA', order: 3, titleFa: '۳. داده تأییدشده (Verified Data)', epistemicClass: 'FACT', currentValueSummaryFa: `مختصات جغرافیایی، مرز محله و ضوابط پایه شهری ${hoodName}`, sourceFa: 'لایه مرجع مکانی GIS و گزارش‌های دارای اجماع وزنی (VERIFIED_REFERENCE)', verificationMethodFa: 'کنترل هندسی چندضلعی محله و حد نصاب اجماع کارشناسی (≥ ۳.۰)', confidencePct: 96, limitationFa: 'وضعیت ثبتی و پایان‌کار هر پلاک باید جداگانه در دفتر اسناد رسمی استعلام شود.', statusTone: 'emerald' },
-    { layerId: 'USER_PROVIDED_DATA', order: 4, titleFa: '۴. داده ارائه‌شده توسط کاربر (User-Provided)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${votesCount} امتیاز و تجربه زیسته ساکنان درباره آرامش، پارک و زیرساخت`, sourceFa: 'مشارکت مستقیم شهروندان و ساکنان محله در رادار', verificationMethodFa: 'وزن‌دهی شهرت مشارکت‌کننده و اعتبارسنجی موقعیت مکانی (Geolocation)', confidencePct: 78, limitationFa: 'بازتاب ادراک ذهنی مشارکت‌کنندگان است و ممکن است بین کوچه‌ها متفاوت باشد.', statusTone: 'blue' },
+    { layerId: 'USER_PROVIDED_DATA', order: 4, titleFa: '۴. داده ارائه‌شده توسط کاربر (User-Provided)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${toPersianNum(votesCount)} امتیاز و تجربه زیسته ساکنان درباره آرامش، پارک و زیرساخت`, sourceFa: 'مشارکت مستقیم شهروندان و ساکنان محله در رادار', verificationMethodFa: 'وزن‌دهی شهرت مشارکت‌کننده و اعتبارسنجی موقعیت مکانی (Geolocation)', confidencePct: 78, limitationFa: 'بازتاب ادراک ذهنی مشارکت‌کنندگان است و ممکن است بین کوچه‌ها متفاوت باشد.', statusTone: 'blue' },
     { layerId: 'THIRD_PARTY_DATA', order: 5, titleFa: '۵. داده منبع ثالث (Third-Party Data)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: 'نقشه‌های پایه، ایستگاه‌های مترو، شریان‌های ترافیکی و شاخص کیفیت هوا (AQI)', sourceFa: 'سرویس‌های نقشه نشان، OpenStreetMap و ایستگاه‌های پایش محیطی', verificationMethodFa: 'اعتبارسنجی طرح‌واره (Schema Bounds) و تطبیق مختصات ایستگاه‌ها', confidencePct: 90, limitationFa: 'وابسته به دقت و زمان به‌روزرسانی سرویس‌دهندگان بیرونی است.', statusTone: 'blue' },
-    { layerId: 'ESTIMATED_DATA', order: 6, titleFa: '۶. داده تخمینی مدل (Estimated Data v6.4)', epistemicClass: 'INFERENCE', currentValueSummaryFa: `تخمین قیمت قطعی معامله: متری ${agg.estimatedDealPricePerSqm} م.ت (${dealIntl}) · رهن ۸۰متر: ${rahn80m} م.ت`, sourceFa: 'موتور قیمت‌گذاری هدانیک v6.4 و ضریب شکاف معامله (Ask-to-Deal Spread)', verificationMethodFa: 'بنچمارک ۱۵ سناریوی کنترلی و تعدیل سن بنا، طبقه، آسانسور، پارکینگ و بازسازی', confidencePct: decomp.totalConfidencePct, limitationFa: `تخمین آماری با حاشیه خطای ±${decomp.marginOfErrorPct}٪ برای واحد استاندارد ۵ سال ساخت است.`, statusTone: 'emerald' },
-    { layerId: 'INFERRED_DATA', order: 7, titleFa: '۷. داده استنباطی (Inferred Data)', epistemicClass: 'INFERENCE', currentValueSummaryFa: `رژیم بازار محله: ${regimeFa} · دوره خروج متعارف: ~${estimatedExitDays} روز`, sourceFa: 'تحلیل نسبت قیمت به اجاره (P/R) و پراکندگی پیشنهادها', verificationMethodFa: 'استنباط از کشش قیمتی توجه و سرعت جذب فایل‌ها در محله', confidencePct: 82, limitationFa: 'استنباط ساختاری از رفتار بازار است و شرایط اضطراری فروشنده خاص را پیش‌بینی نمی‌کند.', statusTone: 'blue' },
+    { layerId: 'ESTIMATED_DATA', order: 6, titleFa: '۶. داده تخمینی مدل (Estimated Data v6.4)', epistemicClass: 'INFERENCE', currentValueSummaryFa: `تخمین قیمت قطعی معامله: متری ${toPersianNum(agg.estimatedDealPricePerSqm)} م.ت (${dealIntl}) · رهن ۸۰متر: ${toPersianNum(rahn80m)} م.ت`, sourceFa: 'موتور قیمت‌گذاری هدانیک v6.4 و ضریب شکاف معامله (Ask-to-Deal Spread)', verificationMethodFa: 'بنچمارک ۱۵ سناریوی کنترلی و تعدیل سن بنا، طبقه، آسانسور، پارکینگ و بازسازی', confidencePct: decomp.totalConfidencePct, limitationFa: `تخمین آماری با حاشیه خطای ±${toPersianNum(decomp.marginOfErrorPct)}٪ برای واحد استاندارد ۵ سال ساخت است.`, statusTone: 'emerald' },
+    { layerId: 'INFERRED_DATA', order: 7, titleFa: '۷. داده استنباطی (Inferred Data)', epistemicClass: 'INFERENCE', currentValueSummaryFa: `رژیم بازار محله: ${regimeFa} · دوره خروج متعارف: ~${toPersianNum(estimatedExitDays)} روز`, sourceFa: 'تحلیل نسبت قیمت به اجاره (P/R) و پراکندگی پیشنهادها', verificationMethodFa: 'استنباط از کشش قیمتی توجه و سرعت جذب فایل‌ها در محله', confidencePct: 82, limitationFa: 'استنباط ساختاری از رفتار بازار است و شرایط اضطراری فروشنده خاص را پیش‌بینی نمی‌کند.', statusTone: 'blue' },
     { layerId: 'PREDICTED_DATA', order: 8, titleFa: '۸. داده پیش‌بینی‌شده (Predicted Data)', epistemicClass: 'HYPOTHESIS', currentValueSummaryFa: 'چشم‌انداز ۳ تا ۶ ماهه قیمت و مقایسه بازده خرید در برابر رهن + سرمایه‌گذاری', sourceFa: 'مدل سناریونگاری روند کلان و همبستگی تاریخی محله با میانگین شهر', verificationMethodFa: 'آزمون پس‌نگری (Backtesting) روی بازه‌های زمانی قبلی', confidencePct: 68, limitationFa: 'به تکانه‌های کلان ارزی، سیاست‌های پولی و ریسک‌های سیستماتیک حساس است.', statusTone: 'amber' },
-    { layerId: 'CONFLICTING_DATA', order: 9, titleFa: '۹. داده‌های متناقض و پرت (Conflicting / Outliers)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${agg.rejectedFraudCount} آگهی با انحراف شدید قیمتی یا ادعای متناقض قرنطینه شد`, sourceFa: 'موتور تشخیص آگهی فیک/طعمه و فیلتر |P_i - M| > 2.5 × MAD', verificationMethodFa: 'حذف خودکار از میانگین محله برای جلوگیری از مسمومیت آماری (Data Poisoning)', confidencePct: 91, limitationFa: 'املاک بسیار خاص ممکن است به‌عنوان داده پرت فیلتر شوند.', statusTone: 'rose' },
+    { layerId: 'CONFLICTING_DATA', order: 9, titleFa: '۹. داده‌های متناقض و پرت (Conflicting / Outliers)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${toPersianNum(agg.rejectedFraudCount)} آگهی با انحراف شدید قیمتی یا ادعای متناقض قرنطینه شد`, sourceFa: 'موتور تشخیص آگهی فیک/طعمه و فیلتر |P_i - M| > 2.5 × MAD', verificationMethodFa: 'حذف خودکار از میانگین محله برای جلوگیری از مسمومیت آماری (Data Poisoning)', confidencePct: 91, limitationFa: 'املاک بسیار خاص ممکن است به‌عنوان داده پرت فیلتر شوند.', statusTone: 'rose' },
     { layerId: 'OUTDATED_DATA', order: 10, titleFa: '۱۰. داده قدیمی و زوال زمانی (Outdated / Decayed)', epistemicClass: 'ASSUMPTION', currentValueSummaryFa: 'اعمال ضریب زوال نمایی با نیمه‌عمر ۳۰ روزه روی مشاهدات قدیمی‌تر', sourceFa: 'تابع وزن‌دهی زمانی W_time = 0.5^(ageDays / 30)', verificationMethodFa: 'کاهش خودکار وزن مشاهدات بیش از ۱۴ روز در محاسبه قیمت مرجع', confidencePct: 88, limitationFa: 'در جهش‌های ناگهانی بازار، داده‌های بیش از ۷ روز ممکن است با تأخیر همراه باشند.', statusTone: 'slate' },
     { layerId: 'MISSING_DATA', order: 11, titleFa: '۱۱. داده ناموجود (Missing Data)', epistemicClass: 'UNKNOWN', currentValueSummaryFa: 'جزئیات ریزمعاملات ثبت‌شده در سامانه رسمی املاک که عمومی نشده‌اند', sourceFa: 'محدودیت دسترسی عمومی به پایگاه داده‌های حاکمیتی معاملات', verificationMethodFa: 'جبران نسبی از طریق تقاطع آگهی‌های تاییدشده، گزارش‌های مردمی و ضریب Ask-to-Deal', confidencePct: null, limitationFa: 'نبود داده عمومی به‌معنای نبود معامله در واقعیت نیست (تمایز فقدان داده و فقدان پدیده).', statusTone: 'slate' },
     { layerId: 'UNKNOWN_DATA', order: 12, titleFa: '۱۲. وضعیت نامعلوم ملک هدف (Property Unknowns)', epistemicClass: 'UNKNOWN', currentValueSummaryFa: 'سلامت سازه، تأسیسات پنهان، بدهی شارژ، رهن بانک یا معارض حقوقی پلاک مشخص', sourceFa: 'نیازمند ممیزی فیزیکی و حقوقی پیش از امضای قرارداد', verificationMethodFa: 'چک‌لیست ضدتقلب قولنامه و کارشناسی حضوری ساختمان در جعبه ابزار رادار', confidencePct: null, limitationFa: 'هیچ الگوریتمی بدون بازدید میدانی و استعلام ثبتی قادر به تایید سلامت حقوقی واحد خاص نیست.', statusTone: 'rose' },
@@ -242,7 +204,7 @@ export function buildNeighborhoodEpistemicDossier(input: {
     algorithmId: 'RADAR-HEDONIC-MAD-V6.4', version: '6.4.3-CASPER',
     purposeFa: 'کاهش عدم تقارن اطلاعاتی میان خریدار/مستأجر و فروشنده/موجر از طریق تفکیک قیمت تابلو از تخمین معامله قطعی.',
     inputVariablesFa: ['میانه قیمت پایه محله (فیلتر MAD)', 'متراژ، سن بنا، طبقه، آسانسور، پارکینگ و انباری', 'کیفیت بازسازی، نورگیری و نوع سند', 'رژیم نقدشوندگی محله (HOT / BALANCED / FROZEN) و نسبت P/R'],
-    assumptionsFa: ['بنای مرجع محله بر اساس واحد استاندارد ۸۰ تا ۱۰۰ متری، ۵ سال ساخت با امکانات کامل سنجیده شده است.', `شکاف متعارف قیمت اعلامی تا معامله قطعی در وضعیت فعلی محله ${Math.max(1, Math.round((1 - agg.askToDealRatio) * 100))}٪ فرض شده است.`],
+    assumptionsFa: ['بنای مرجع محله بر اساس واحد استاندارد ۸۰ تا ۱۰۰ متری، ۵ سال ساخت با امکانات کامل سنجیده شده است.', `شکاف متعارف قیمت اعلامی تا معامله قطعی در وضعیت فعلی محله ${toPersianNum(Math.max(1, Math.round((1 - agg.askToDealRatio) * 100)))}٪ فرض شده است.`],
     knownLimitationsFa: ['ویژگی‌های میکرو-مکانی خاص (مجاورت با بزرگراه یا دید ابدی) نیاز به تنظیم دستی در ماشین‌حساب هدانیک دارند.', 'در شرایط تکانه شدید ارزی، ضریب تبدیل قیمت پیشنهادی به معامله قطعی دستخوش نوسان کوتاه‌مدت می‌شود.'],
     biasRisksFa: ['سوگیری بقا (Survivorship Bias): آگهی‌های خوش‌قیمت سریع‌تر جذب می‌شوند و فایل‌های گران مدت بیشتری در فهرست‌ها می‌مانند.', 'سوگیری انتخاب (Selection Bias): املاک نوساز یا لوکس ممکن است سهم بیشتری در آگهی‌های آنلاین داشته باشند.'],
     humanAgencyPrincipleFa: 'رادار برای فروش ملک به شما طراحی نشده است؛ مأموریت رادار آشکارسازی حقیقت پشت داده‌های ملک، شبیه‌سازی پیامد انتخاب‌ها و حفظ کامل اختیار تصمیم‌گیری در دستان شماست.',
@@ -274,10 +236,10 @@ export function evaluateCounterfactualDecisionScenario(input: CounterfactualScen
   const acceptanceProbabilityPct = Math.round(clampNumber(78 - deltaFromFair * 4.8, 8, 96, 65));
 
   const consequenceSummaryFa = deltaFromFair <= -2
-    ? `پیشنهاد شما (${discountPct}٪ تخفیف) بالاتر از تخمین معامله قطعی مدل است؛ احتمال پذیرش فروشنده بالاست (${acceptanceProbabilityPct}٪) اما بخشی از حاشیه چانه‌زنی را واگذار می‌کنید.`
+    ? `پیشنهاد شما (${toPersianNum(discountPct)}٪ تخفیف) بالاتر از تخمین معامله قطعی مدل است؛ احتمال پذیرش فروشنده بالاست (${toPersianNum(acceptanceProbabilityPct)}٪) اما بخشی از حاشیه چانه‌زنی را واگذار می‌کنید.`
     : deltaFromFair <= 3.5
-      ? `پیشنهاد شما (${discountPct}٪ تخفیف) در هسته تعادلی معامله قطعی قرار دارد؛ حفظ سرمایه ${capitalPreservedMillion.toLocaleString('fa-IR')} م.ت همراه با شانس توافق متعادل (${acceptanceProbabilityPct}٪).`
-      : `پیشنهاد شما (${discountPct}٪ تخفیف) تهاجمی‌تر از عرف فعلی محله است؛ در صورت پذیرش، ${capitalPreservedMillion.toLocaleString('fa-IR')} م.ت صرفه‌جویی می‌کنید اما شانس توافق فروشنده عادی ~${acceptanceProbabilityPct}٪ است.`;
+      ? `پیشنهاد شما (${toPersianNum(discountPct)}٪ تخفیف) در هسته تعادلی معامله قطعی قرار دارد؛ حفظ سرمایه ${toPersianNum(capitalPreservedMillion)} م.ت همراه با شانس توافق متعادل (${toPersianNum(acceptanceProbabilityPct)}٪).`
+      : `پیشنهاد شما (${toPersianNum(discountPct)}٪ تخفیف) تهاجمی‌تر از عرف فعلی محله است؛ در صورت پذیرش، ${toPersianNum(capitalPreservedMillion)} م.ت صرفه‌جویی می‌کنید اما شانس توافق فروشنده عادی ~${toPersianNum(acceptanceProbabilityPct)}٪ است.`;
 
   return {
     askingTotalMillion, modelFairTotalMillion, buyerOfferTotalMillion,

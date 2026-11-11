@@ -55,6 +55,7 @@ export interface CasperNeighborhoodDecisionInput {
   transitScore?: number;     // 0..10
   safetyScore?: number;      // 0..10
   rahn80m?: number;          // Million Toman for 80m²
+  targetSqm?: number;
   intlCurrency?: IntlCurrencyCode;
 }
 
@@ -108,10 +109,11 @@ export function evaluateCasperNeighborhoodDecision(
   const samples = Math.max(0, Math.round(input.validSampleCount));
   const rejected = Math.max(0, Math.round(input.rejectedFraudCount));
   const confidence = clamp(Math.round(input.confidenceScore), 25, 99);
+  const areaSqm = clamp(Math.round(input.targetSqm ?? 80), 35, 500);
   const currency = input.intlCurrency ?? 'USD';
 
   const anchoringPremiumPct = Number(clamp(((ask - deal) / deal) * 100, 0, 60).toFixed(1));
-  const overpaymentRisk80mMillion = Math.max(0, Math.round((ask - deal) * 80));
+  const overpaymentRisk80mMillion = Math.max(0, Math.round((ask - deal) * areaSqm));
   const uncertaintyMarginPct = Number(clamp(((iqrHigh - iqrLow) / (2 * deal)) * 100, 2, 45).toFixed(1));
   const annualRentalYieldPct = input.rahn80m ? Number((((input.rahn80m * 0.36) / (deal * 80)) * 100).toFixed(2)) : 5.2;
 
@@ -139,7 +141,7 @@ export function evaluateCasperNeighborhoodDecision(
       status: 'UNVERIFIED_CLAIM',
       badgeTextFa: 'ادعای فروشنده (نیازمند تعدیل)',
       primaryMetricFa: `متری ${ask} م.ت (+${anchoringPremiumPct}٪ بالاتر از نرخ معامله)`,
-      secondaryDetailFa: `ریسک اضافه‌پرداخت واحد ۸۰ متری بدون چانه‌زنی: ${overpaymentRisk80mMillion} میلیون تومان`,
+      secondaryDetailFa: `ریسک اضافه‌پرداخت واحد ${areaSqm} متری بدون چانه‌زنی: ${overpaymentRisk80mMillion} میلیون تومان`,
     },
     {
       id: 'model',

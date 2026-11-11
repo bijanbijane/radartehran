@@ -247,7 +247,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     // =========================================================================
     // 5. Login / Logout UI Flows & Unauthenticated Guardrails
     // =========================================================================
-    await page.locator('button:has-text("ابزارها")').first().click({ force: true });
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').first().click({ force: true });
     await page.waitForTimeout(250);
     const googleSignInBtnCount = await page.locator('button[title="ورود با گوگل"]').count();
     if (googleSignInBtnCount < 1) {
@@ -322,7 +322,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     // 7. Lazy Modal Opening & Closing (Suspense Chunks)
     // =========================================================================
     // 7a. Smart Suggest Modal
-    await page.locator('button:has-text("ابزارها")').first().click({ force: true });
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').first().click({ force: true });
     await page.waitForTimeout(200);
     await page.locator('button:has-text("پیشنهاد هوشمند محله")').first().click({ force: true });
     await page.waitForSelector('[role="dialog"][aria-label="پیشنهاد هوشمند محله"]', { timeout: 6000 });
@@ -330,7 +330,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     await page.waitForTimeout(200);
 
     // 7b. Agency / Bargain Submission Modal
-    await page.locator('button:has-text("ابزارها")').first().click({ force: true });
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').first().click({ force: true });
     await page.waitForTimeout(200);
     await page.locator('button:has-text("ثبت ملک زیر قیمت")').first().click({ force: true });
     await page.waitForSelector('button[aria-label="بستن پنجره ثبت ملک"]', { timeout: 6000 });
@@ -338,7 +338,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     await page.waitForTimeout(200);
 
     // 7c. Buyer Alert Modal (SecondaryModals lazy chunk)
-    await page.locator('button:has-text("ابزارها")').first().click({ force: true });
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').first().click({ force: true });
     await page.waitForTimeout(200);
     await page.locator('button:has-text("هشدار شکار")').first().click({ force: true });
     await page.waitForSelector('[role="dialog"][aria-label="ثبت شماره برای هشدار فوری ملک زیر قیمت"]', { timeout: 6000 });
@@ -346,7 +346,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     await page.waitForTimeout(200);
 
     // 7d. Expansion Modules Modal (Commission Calculator)
-    await page.locator('button:has-text("ابزارها")').first().click({ force: true });
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').first().click({ force: true });
     await page.waitForTimeout(200);
     await page.locator('button:has-text("ماشین‌حساب کمیسیون و محضر")').first().click({ force: true });
     await page.waitForSelector('[role="dialog"]', { timeout: 6000 });
@@ -354,7 +354,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     await page.waitForTimeout(250);
 
     // 7e. Phase 3–6 FutureSuperModulesModal (All 9 PropTech Super-Module Tabs)
-    await page.locator('button:has-text("ابزارها")').first().click({ force: true });
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').first().click({ force: true });
     await page.waitForTimeout(250);
     await page.locator('button:has-text("ابرماژول‌ها و جعبه ابزار جامع مسکن")').first().click({ force: true });
     await page.waitForSelector('[role="dialog"][aria-label="ابرماژول‌ها و جعبه ابزار جامع مسکن"]', {
@@ -409,7 +409,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
     // 9. Offline / Failed-Network Graceful Degradation
     // =========================================================================
     await page.route('**/api/**', (route: any) => route.abort('failed'));
-    await page.locator('button:has-text("ابزارها")').first().click();
+    await page.locator('button[aria-expanded]:has-text("ابزارها")').first().click();
     await page.waitForTimeout(250);
     await page.locator('button:has-text("نبض بازار و هوا")').first().click();
     await page.waitForSelector('button[aria-label="بستن نبض بازار"]', {
@@ -441,6 +441,11 @@ async function runBrowserSmokeSuite(): Promise<void> {
     // =========================================================================
     // 10. Stage 2 Casper Epistemic Decision Intelligence (Playbook, Swap, Rent/Buy, Real Options)
     // =========================================================================
+    const detailsAccordion = page.locator('details:has([data-testid="stage2-master-widget"])').first();
+    if ((await detailsAccordion.count()) > 0 && !(await detailsAccordion.evaluate((d: any) => d.open))) {
+      await page.locator('summary:has-text("تحلیل پیشرفته و مقایسه")').first().click();
+      await page.waitForTimeout(200);
+    }
     const stage2Widget = page.locator('[data-testid="stage2-master-widget"]').first();
     await stage2Widget.scrollIntoViewIfNeeded();
     const quickJumpSelect = stage2Widget.locator('select[aria-label="پرش سریع به آزمایشگاه تصمیم‌گیری"]');

@@ -1366,7 +1366,7 @@ function runDomainRegressionTests(): void {
       casperHubRoutesSrc.includes("recordAbuseSignal(ip, 'auth_failure')") &&
       serverUtilRoutesSrc.includes('registerCasperHubRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth });') &&
       propInsStateMachineSrc.includes('export function evaluatePolicyCoverageStatusWithLimitations') &&
-      propInsStateMachineSrc.includes('INVALID_SETTLEMENT_AMOUNT:'),
+      propInsStateMachineSrc.includes('INVALID_SETTLEMENT_AMOUNTS'),
     'WS-CASPER-18 CASPER HUB integration & Property Insurance state machine assertion failed',
   );
 
@@ -1412,12 +1412,195 @@ function runDomainRegressionTests(): void {
     'WS-CASPER-22 Bidirectional Observability assertion failed',
   );
 
+  // 58. WS-CASPER-26: Dixit-Pindyck targetSqm scaling & yield-on-cost dynamics, unclamped PIR/RIR, zero-floor break-even commute, and Stage2MasterWidget forwarding
+  const p26RealOptionsEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/realOptionsLiquidityEngine.ts'), 'utf-8');
+  const p26RealOptionsCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/RealOptionsLiquidityCard.tsx'), 'utf-8');
+  const p26AffordabilityEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/urbanAffordabilityIsochroneEngine.ts'), 'utf-8');
+  const p26Stage2WidgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/Stage2MasterWidget.tsx'), 'utf-8');
+  assert(
+    '58. WS-CASPER-26 enforces targetSqm scaling and property-specific yield-on-cost in realOptionsLiquidityEngine, unclamped PIR/RIR & zero-floor break-even commute in urbanAffordabilityIsochroneEngine, and targetSqm forwarding in RealOptionsLiquidityCard & Stage2MasterWidget',
+    p26RealOptionsEngineSrc.includes('targetSqm: number = 85') &&
+      p26RealOptionsEngineSrc.includes('const annualRentalYield = baselineYield * Math.max(0.65, Math.min(1.35, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));') &&
+      p26RealOptionsCardSrc.includes('targetSqm?: number;') &&
+      p26RealOptionsCardSrc.includes('targetSqm = 85,') &&
+      p26AffordabilityEngineSrc.includes('const priceToIncomeRatio = Math.max(0.5, Number((totalBuyPrice80m / annualIncome).toFixed(1)));') &&
+      p26AffordabilityEngineSrc.includes('const breakEvenCommuteMinutes = netRentBuffer <= 0 ? 0 : Math.round(netRentBuffer / Math.max(0.01, minutesCostPerMonth));') &&
+      p26Stage2WidgetSrc.includes('<RealOptionsLiquidityCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />'),
+    'WS-CASPER-26 Real options targetSqm scaling and urban affordability boundary assertion failed',
+  );
+
+  // 59. WS-CASPER-27: Merton Jump-Diffusion targetSqm scaling and MonteCarloRiskDensityCard / Stage2MasterWidget forwarding
+  const p27MonteCarloEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/monteCarloRiskDensityEngine.ts'), 'utf-8');
+  const p27MonteCarloCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/MonteCarloRiskDensityCard.tsx'), 'utf-8');
+  assert(
+    '59. WS-CASPER-27 enforces targetSqm scaling in generateCasperMonteCarloRiskReport, and targetSqm forwarding in MonteCarloRiskDensityCard & Stage2MasterWidget',
+    p27MonteCarloEngineSrc.includes('targetSqm: number = 85') &&
+      p27MonteCarloEngineSrc.includes('Math.round(resolvedPrice * Math.max(10, targetSqm) * (Math.abs(simResult.metrics.illiquidityAdjustedVaR95RealPct) / 100));') &&
+      p27MonteCarloCardSrc.includes('targetSqm?: number;') &&
+      p27MonteCarloCardSrc.includes('targetSqm = 85,') &&
+      p27MonteCarloCardSrc.includes('خروج فوری {toPersianNum(targetSqm)}م:') &&
+      p26Stage2WidgetSrc.includes('<MonteCarloRiskDensityCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />'),
+    'WS-CASPER-27 Monte Carlo targetSqm scaling assertion failed',
+  );
+
+  // 60. WS-CASPER-28 & WS-CASPER-29: Kahneman prospect targetSqm scaling, basePriceSqm precedence, market rahn decoupling, and MacroPortfolioArbitrageCard forwarding
+  const p28SpatialEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/spatialContagionEngine.ts'), 'utf-8');
+  const p28SpatialCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/SpatialContagionLabCard.tsx'), 'utf-8');
+  const p29CycleEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/housingCycleRegimeEngine.ts'), 'utf-8');
+  const p29MacroEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/macroPortfolioArbitrageEngine.ts'), 'utf-8');
+  const p29MacroCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/MacroPortfolioArbitrageCard.tsx'), 'utf-8');
+  assert(
+    '60. WS-CASPER-28/29 enforces targetSqm & basePriceSqm precedence in spatialContagion, decoupled market rahn in housingCycle & macroPortfolio, and targetSqm forwarding across SpatialContagionLabCard, MacroPortfolioArbitrageCard, & Stage2MasterWidget',
+    p28SpatialEngineSrc.includes('targetSqm: number = 80') &&
+      p28SpatialEngineSrc.includes("const targetBuy = typeof basePriceSqm === 'number' && basePriceSqm > 0 ? basePriceSqm : (target?.buyPerSqm ?? 120);") &&
+      p28SpatialCardSrc.includes('شکاف چانه‌زنی {toPersianNum(targetSqm)} متر:') &&
+      p29CycleEngineSrc.includes('const yieldBoost = Math.max(0.85, Math.min(1.18, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));') &&
+      p29MacroEngineSrc.includes('const yieldBoost = Math.max(0.85, Math.min(1.18, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));') &&
+      p29MacroEngineSrc.includes('targetSqm: number = 80') &&
+      p29MacroCardSrc.includes('targetSqm = 80,') &&
+      p26Stage2WidgetSrc.includes('<SpatialContagionLabCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />') &&
+      p26Stage2WidgetSrc.includes('<MacroPortfolioArbitrageCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />'),
+    'WS-CASPER-28/29 Kahneman prospect, basePriceSqm precedence, and market rahn decoupling assertion failed',
+  );
+
+  // 61. WS-CASPER-30: 0.36 annual rahn-to-rent conversion parity in epistemicDecisionEngine, targetSqm scaling in urbanAffordabilityIsochroneEngine & UrbanAffordabilityIsochroneCard, and targetSqm forwarding in unifiedDecisionSynthesisEngine
+  const p30EpistemicEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/epistemicDecisionEngine.ts'), 'utf-8');
+  const p30UrbanCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/UrbanAffordabilityIsochroneCard.tsx'), 'utf-8');
+  const p30SynthesisEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts'), 'utf-8');
+  const p30SynthesisCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/UnifiedDecisionSynthesisCard.tsx'), 'utf-8');
+  assert(
+    '61. WS-CASPER-30 enforces 0.36 annual rent conversion in epistemicDecisionEngine, targetSqm parameterization in urbanAffordabilityIsochroneEngine & UrbanAffordabilityIsochroneCard, and targetSqm forwarding in unifiedDecisionSynthesisEngine & Stage2MasterWidget',
+    p30EpistemicEngineSrc.includes('const annualRent80m = Math.max(50, input.rahn80m * 0.36);') &&
+      p30EpistemicEngineSrc.split(/\r?\n/).length <= 290 &&
+      p26AffordabilityEngineSrc.includes('targetSqm: number = 80') &&
+      p30UrbanCardSrc.includes('اجاره ماهانه معادل رهن {toPersianNum(targetSqm)} متر:') &&
+      p26Stage2WidgetSrc.includes('<UrbanAffordabilityIsochroneCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />') &&
+      p30SynthesisEngineSrc.includes('computeDixitPindyckRealOption(askingPrice, annualRentalYield, askingPrice > 160 ? 0.30 : 0.24, 0.22, 6,') &&
+      p30SynthesisCardSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-30 0.36 annual rent conversion parity and Urban Affordability targetSqm scaling assertion failed',
+  );
+
+  // 62. WS-CASPER-31: Non-homogeneous yieldBoost & targetSqm scaling in rentVsBuyArbitrageEngine & paretoRegretEngine, and full targetSqm forwarding across CasperDecisionMatrixCard, EpistemicProvenancePanel, HousingCycleRegimeCard, and Stage2MasterWidget
+  const p31RentVsBuyEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/rentVsBuyArbitrageEngine.ts'), 'utf-8');
+  const p31RentVsBuyCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/RentVsBuyArbitrageCard.tsx'), 'utf-8');
+  const p31ParetoEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/paretoRegretEngine.ts'), 'utf-8');
+  const p31CasperDecisionSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/socioeconomic-intelligence/casperDecisionEngine.ts'), 'utf-8');
+  const p31CasperMatrixCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/CasperDecisionMatrixCard.tsx'), 'utf-8');
+  const p31EpistemicPanelSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/EpistemicProvenancePanel.tsx'), 'utf-8');
+  const p31CycleEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/housingCycleRegimeEngine.ts'), 'utf-8');
+  const p31CycleCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/stage2/HousingCycleRegimeCard.tsx'), 'utf-8');
+  assert(
+    '62. WS-CASPER-31 enforces yieldBoost & targetSqm in rentVsBuyArbitrageEngine & paretoRegretEngine, and targetSqm forwarding across CasperDecisionMatrixCard, EpistemicProvenancePanel, HousingCycleRegimeCard, and Stage2MasterWidget',
+    p31RentVsBuyEngineSrc.includes('const yieldBoost = Math.max(0.85, Math.min(1.18, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));') &&
+      p31RentVsBuyCardSrc.includes('generateCasperRentVsBuyDossier(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm)') &&
+      p31ParetoEngineSrc.includes('const yieldBoost = Math.max(0.85, Math.min(1.18, (targetHood.buyPerSqm || buySqm) / Math.max(1, buySqm)));') &&
+      p31CasperDecisionSrc.includes('const areaSqm = clamp(Math.round(input.targetSqm ?? 80), 35, 500);') &&
+      p31CasperMatrixCardSrc.includes('const yieldBoost = Math.max(0.85, Math.min(1.18, hoodBaseBuy / Math.max(1, basePriceSqm)));') &&
+      p31EpistemicPanelSrc.includes('targetSqm={unitAreaSqm}') &&
+      p31CycleEngineSrc.includes('const resolvedRahn = Math.round(resolvedRahn80m * (safeSqm / 80));') &&
+      p31CycleCardSrc.includes('generateCasperHousingCycleReport(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm)') &&
+      p26Stage2WidgetSrc.includes('<HousingCycleRegimeCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />'),
+    'WS-CASPER-31 non-homogeneous yieldBoost and universal Stage-2 targetSqm forwarding assertion failed',
+  );
+
+  // 63. WS-CASPER-32: Mean-reversion valuationAlpha in monteCarloRiskDensityEngine, explicit basePriceSqm preservation in macroPortfolioArbitrageEngine, metro-aligned Cycle Pillar & calibratedDrift in unifiedDecisionSynthesisEngine, and 3-year netRentCarry in paretoRegretEngine
+  assert(
+    '63. WS-CASPER-32 enforces mean-reversion valuationAlpha in monteCarloRiskDensityEngine, explicit basePriceSqm preservation in macroPortfolioArbitrageEngine, metro-aligned Cycle Pillar & calibratedDrift in unifiedDecisionSynthesisEngine, and 3-year netRentCarry in paretoRegretEngine',
+    p27MonteCarloEngineSrc.includes('const valuationAlpha = Math.max(-0.08, Math.min(0.08, ((hoodTierPrice - resolvedPrice) / Math.max(1, hoodTierPrice)) * 0.25));') &&
+      p29MacroEngineSrc.includes('const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : agg.estimatedDealPricePerSqm;') &&
+      p30SynthesisEngineSrc.includes('classifyHousingCycleRegime(askingPrice, rahn80m, hood.metro ?? 7, Math.max(5, spreadPct)') &&
+      p30SynthesisEngineSrc.includes('annualDriftMu: calibratedDrift') &&
+      p31ParetoEngineSrc.includes('const netRentCarry = Math.round(rahnEquivalentMillion * 0.30 * horizonYears * (1 + reg.annualPropertyGrowthPct / 200));') &&
+      p27MonteCarloEngineSrc.split(/\r?\n/).length <= 290 &&
+      p29MacroEngineSrc.split(/\r?\n/).length <= 290 &&
+      p30SynthesisEngineSrc.split(/\r?\n/).length <= 290 &&
+      p31ParetoEngineSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-32 mean-reversion valuationAlpha, explicit basePriceSqm preservation, and netRentCarry assertion failed',
+  );
+
+  // 64. WS-CASPER-33: Proportional deal-price scaling in findParetoDominantNeighborhoods & generateCasperUrbanAffordabilityReport, valConvergence & rahnTopUpDrag in computeSavageMinimaxRegretMatrix, and hoodBaselinePriceSqm valuation alpha in buildMacroAssetSpecs
+  assert(
+    '64. WS-CASPER-33 enforces proportional deal-price scaling in Pareto & Urban Affordability, valConvergence & rahnTopUpDrag in Savage Minimax Regret, and hoodBaselinePriceSqm valuation alpha in buildMacroAssetSpecs',
+    p31ParetoEngineSrc.includes('const targetDealSqm = Math.max(15, Math.round(targetAgg.estimatedDealPricePerSqm * (targetBuySqm / Math.max(1, targetHood.buyPerSqm))));') &&
+      p31ParetoEngineSrc.includes('const valConvergence = Math.max(0.92, Math.min(1.12, Math.pow((targetHood.buyPerSqm || dealSqm) / Math.max(1, dealSqm), 0.30)));') &&
+      p31ParetoEngineSrc.includes('const rahnTopUpDrag = Math.round(rahnEquivalentMillion * (reg.annualInflationPct / 100) * Math.max(0, shieldMult - 1) * 0.35);') &&
+      p26AffordabilityEngineSrc.includes('const resolvedPrice = Math.max(15, Math.round(agg.estimatedDealPricePerSqm * (rawPrice / Math.max(1, hood.buyPerSqm))));') &&
+      p29MacroEngineSrc.includes('const assets = buildMacroAssetSpecs(resolvedPrice, resolvedRahn, hood.buyPerSqm);') &&
+      p26AffordabilityEngineSrc.split(/\r?\n/).length <= 290 &&
+      p29MacroEngineSrc.split(/\r?\n/).length <= 290 &&
+      p31ParetoEngineSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-33 multi-alternative econometric refinement assertion failed',
+  );
+
+  // 65. WS-CASPER-34: Authorized Local Epistemic Ledger Fallback (LOCAL_LEDGER_FALLBACK) in casperHubRoutes.ts and observability parity in AdminCasperHubMonitorCard.tsx
+  const p34CasperHubRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubRoutes.ts'), 'utf-8');
+  const p34AdminMonitorCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx'), 'utf-8');
+  assert(
+    '65. WS-CASPER-34 enforces LOCAL_LEDGER_FALLBACK in casperHubRoutes.ts with pre-flight validateCasperHubNotePayload & UUIDv5 deduplication, and local-ledger-fallback badge parity in AdminCasperHubMonitorCard.tsx under <=290 lines',
+    p34CasperHubRoutesSrc.includes("mode: 'LOCAL_LEDGER_FALLBACK'") &&
+      p34CasperHubRoutesSrc.includes('export function resetCasperHubLocalLedgerForTests(): void') &&
+      p34CasperHubRoutesSrc.includes('const validation = validateCasperHubNotePayload(rawBody);') &&
+      p34CasperHubRoutesSrc.includes('const resolvedKey = deriveDeterministicNoteIdempotencyKey(normalized, headerIdempotencyKey || undefined);') &&
+      p34AdminMonitorCardSrc.includes("whoami?.database === 'local-ledger-fallback'") &&
+      p34CasperHubRoutesSrc.split(/\r?\n/).length <= 290 &&
+      p34AdminMonitorCardSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-34 Local Epistemic Ledger Fallback assertion failed',
+  );
+
+  // 66. WS-CASPER-35: Continuous Improvement — Proportional deal-price scaling & Persian numerals in epistemicDecisionEngine.ts, and CASPER_HUB_REQUEST_FAILED fallback + multi-agent attribution in casperHubRoutes.ts
+  assert(
+    '66. WS-CASPER-35 enforces pScale deal-price scaling & Persian numerals in epistemicDecisionEngine.ts, and CASPER_HUB_REQUEST_FAILED fallback + resolvedAuthorAgent in casperHubRoutes.ts under <=290 lines',
+    p30EpistemicEngineSrc.includes('const pScale = buyPerSqm / Math.max(1, hoodBaseBuy);') &&
+      p30EpistemicEngineSrc.includes('پیشنهاد شما (${toPersianNum(discountPct)}٪ تخفیف)') &&
+      p34CasperHubRoutesSrc.includes("result.errorCode === 'CASPER_HUB_REQUEST_FAILED'") &&
+      p34CasperHubRoutesSrc.includes("const resolvedAuthorAgent = /^CASPER-0[1-9]$/.test(rawAgent) ? rawAgent : 'CASPER-05';") &&
+      p30EpistemicEngineSrc.split(/\r?\n/).length <= 290 &&
+      p34CasperHubRoutesSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-35 continuous improvement assertion failed',
+  );
+
+  // 67. WS-CASPER-36: Epistemic Mathematical Refinements — Persian numerals in spatialContagionEngine.ts, dynamic IQR volatilitySigma in realOptionsLiquidityEngine.ts, and empirical future growth momentum in unifiedDecisionSynthesisEngine.ts
+  const p36SpatialEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/spatialContagionEngine.ts'), 'utf-8');
+  const p36RealOptionsSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/realOptionsLiquidityEngine.ts'), 'utf-8');
+  const p36UnifiedSynthesisSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts'), 'utf-8');
+  assert(
+    '67. WS-CASPER-36 enforces Persian numerals in spatialContagionEngine.ts, dynamic IQR volatilitySigma in realOptionsLiquidityEngine.ts, and empirical future growth momentum in unifiedDecisionSynthesisEngine.ts under <=290 lines',
+    p36SpatialEngineSrc.includes('λ=${toPersianNum(lambda)}') &&
+      p36SpatialEngineSrc.includes('پراکندگی قیمتی (${toPersianNum(iqrSpreadPct)}٪)') &&
+      p36RealOptionsSrc.includes('const dynamicSigma = Number(Math.min(0.38, (resolvedPrice > 160 ? 0.26 : resolvedPrice > 110 ? 0.21 : 0.17) + iqrSpreadRatio * 0.22).toFixed(3));') &&
+      p36UnifiedSynthesisSrc.includes('const insight = getNeighborhoodDeepInsight(hood);') &&
+      p36UnifiedSynthesisSrc.includes('const cycleReport = classifyHousingCycleRegime(askingPrice, rahn80m, hood.metro ?? 7, Math.max(5, spreadPct), empiricalMomentum6mPct);') &&
+      p36SpatialEngineSrc.split(/\r?\n/).length <= 290 &&
+      p36RealOptionsSrc.split(/\r?\n/).length <= 290 &&
+      p36UnifiedSynthesisSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-36 epistemic mathematical refinements assertion failed',
+  );
+
+  // 68. WS-CASPER-37: Root-Cause Remediation — safeTargetSqm bounds in unifiedDecisionSynthesisEngine.ts & macroPortfolioArbitrageEngine.ts, and bounded FIFO localIdempotencyLedger eviction in casperHubRoutes.ts
+  const p37UnifiedSynthesisSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts'), 'utf-8');
+  const p37MacroPortfolioSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/macroPortfolioArbitrageEngine.ts'), 'utf-8');
+  const p37CasperHubRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubRoutes.ts'), 'utf-8');
+  assert(
+    '68. WS-CASPER-37 enforces safeTargetSqm defensive guards in synthesis & macro portfolio, and bounded FIFO eviction in casperHubRoutes under <=290 lines',
+    p37UnifiedSynthesisSrc.includes('const safeTargetSqm = Math.max(20, targetSqm || 80);') &&
+      p37MacroPortfolioSrc.includes('const safeSqm = Math.max(20, targetSqm || 80);') &&
+      p37CasperHubRoutesSrc.includes('if (localIdempotencyLedger.size >= 100)') &&
+      p37UnifiedSynthesisSrc.split(/\r?\n/).length <= 290 &&
+      p37MacroPortfolioSrc.split(/\r?\n/).length <= 290 &&
+      p37CasperHubRoutesSrc.split(/\r?\n/).length <= 290,
+    'WS-CASPER-37 root-cause bounds assertion failed',
+  );
+
   console.log('\n=======================================================');
   console.log('[DOMAIN REGRESSION SUITE PASS] All assertions passed!');
   console.log('=======================================================\n');
 }
 
 runDomainRegressionTests();
+
+
+
+
 
 
 

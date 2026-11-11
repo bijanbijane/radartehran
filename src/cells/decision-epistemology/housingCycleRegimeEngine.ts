@@ -169,13 +169,17 @@ export function generateCasperHousingCycleReport(
   cityId: string = 'tehran',
   basePriceSqm?: number,
   providedHood?: Neighborhood,
-  intlCurrency: IntlCurrencyCode = 'USD'
+  intlCurrency: IntlCurrencyCode = 'USD',
+  targetSqm: number = 80
 ): CasperHousingCycleDossier {
   const hood = providedHood ?? resolveNeighborhood(cityId, hoodId, hoodName);
   const resolvedPrice = basePriceSqm ?? hood.buyPerSqm ?? 120;
-  const resolvedRahn = hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18);
+  const safeSqm = Math.max(20, targetSqm || 80);
+  const yieldBoost = Math.max(0.85, Math.min(1.18, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));
+  const resolvedRahn80m = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * yieldBoost * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  const resolvedRahn = Math.round(resolvedRahn80m * (safeSqm / 80));
   const transitScore = hood.metro ?? 7;
-  const samples = buildNeighborhoodListingSamples(hood);
+  const samples = buildNeighborhoodListingSamples({ ...hood, buyPerSqm: resolvedPrice });
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, resolvedPrice, samples);
   const insight = getNeighborhoodDeepInsight(hood);
   const computedSpread = Number((((agg.askingPricePerSqm - agg.estimatedDealPricePerSqm) / Math.max(1, agg.askingPricePerSqm)) * 100).toFixed(1));
@@ -187,7 +191,7 @@ export function generateCasperHousingCycleReport(
 
   const cycle = classifyHousingCycleRegime(
     resolvedPrice,
-    resolvedRahn,
+    resolvedRahn80m,
     transitScore,
     empiricalSpreadPct,
     empiricalMomentum6mPct

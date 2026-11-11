@@ -13,7 +13,7 @@ export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.work
 const DEFAULT_TIMEOUT_MS = 10_000;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SECRET_LEAK_REGEX =
-  /\b(Bearer\s+[A-Za-z0-9._~+/-]{12,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|\d{8,11}:[A-Za-z0-9_-]{35}|AIza[0-9A-Za-z_-]{20,}|sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|glpat-[A-Za-z0-9_-]{16,}|-----BEGIN\s+[A-Z\s]+PRIVATE\s+KEY-----)\b/i;
+  /\b(Bearer\s+[A-Za-z0-9._~+/-]{12,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|\d{8,11}:[A-Za-z0-9_-]{30,45}|AIza[0-9A-Za-z_-]{20,}|sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|glpat-[A-Za-z0-9_-]{16,}|-----BEGIN\s+[A-Z\s]+PRIVATE\s+KEY-----)\b/i;
 const VALID_NOTE_SCOPES = new Set(['global', 'roadmap', 'task']);
 const VALID_NOTE_TYPES = new Set(['checkpoint', 'finding', 'blocker', 'handoff', 'observation', 'verification']);
 

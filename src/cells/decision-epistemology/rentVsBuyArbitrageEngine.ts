@@ -235,25 +235,30 @@ export function generateCasperRentVsBuyDossier(
   basePriceSqm: number = 120,
   providedHood?: Neighborhood,
   intlCurrency: IntlCurrencyCode = 'USD',
+  targetSqm: number = 80,
 ): CasperRentVsBuyDossier {
   const hood = resolveNeighborhood(cityId, hoodId, hoodName, providedHood);
   const resolvedHoodName = hood.name || hoodName;
   const resolvedPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
-  const agg = aggregateNeighborhoodMarketMetrics(hood.id, resolvedHoodName, resolvedPrice, buildNeighborhoodListingSamples(hood));
-  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
+  const safeSqm = Math.max(20, targetSqm || 80);
+  const agg = aggregateNeighborhoodMarketMetrics(hood.id, resolvedHoodName, resolvedPrice, buildNeighborhoodListingSamples({ ...hood, buyPerSqm: resolvedPrice }));
+  const yieldBoost = Math.max(0.85, Math.min(1.18, (hood.buyPerSqm || resolvedPrice) / Math.max(1, resolvedPrice)));
+  const resolvedRahn = Math.round((resolvedPrice / Math.max(1, hood.buyPerSqm)) * yieldBoost * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)));
 
   const fiveYearAnalysis = simulateRentVsBuyEquivalence({
     horizonYears: 5,
-    buyerEquityMillion: resolvedPrice * 80,
+    buyerEquityMillion: resolvedPrice * safeSqm,
     pricePerSqm: resolvedPrice,
     rahn80m: resolvedRahn,
+    targetSqm: safeSqm,
   });
 
   const tenYearAnalysis = simulateRentVsBuyEquivalence({
     horizonYears: 10,
-    buyerEquityMillion: resolvedPrice * 80,
+    buyerEquityMillion: resolvedPrice * safeSqm,
     pricePerSqm: resolvedPrice,
     rahn80m: resolvedRahn,
+    targetSqm: safeSqm,
   });
 
   return {
@@ -263,7 +268,7 @@ export function generateCasperRentVsBuyDossier(
     basePriceSqm: resolvedPrice,
     estimatedDealPriceSqm: agg.estimatedDealPricePerSqm,
     rahn80m: resolvedRahn,
-    intlBenchmarkText: formatMillionTomanAsIntlCurrency(resolvedPrice * 80, intlCurrency, 'fa'),
+    intlBenchmarkText: formatMillionTomanAsIntlCurrency(resolvedPrice * safeSqm, intlCurrency, 'fa'),
     fiveYearAnalysis,
     tenYearAnalysis,
     generatedAtIso: new Date().toISOString(),

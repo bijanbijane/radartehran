@@ -230,11 +230,11 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
             case 'REAL_OPTIONS':
               return <RealOptionsLiquidityCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'URBAN_AFFORDABILITY':
-              return <UrbanAffordabilityIsochroneCard {...common} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
+              return <UrbanAffordabilityIsochroneCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} onSelectCompareHood={onSelectCompareHood} />;
             case 'MONTE_CARLO_VAR':
               return <MonteCarloRiskDensityCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'HOUSING_CYCLE':
-              return <HousingCycleRegimeCard {...common} intlCurrency={intlCurrency} />;
+              return <HousingCycleRegimeCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'MACRO_PORTFOLIO':
               return <MacroPortfolioArbitrageCard {...common} targetSqm={sharedTargetSqm} intlCurrency={intlCurrency} />;
             case 'RENT_VS_BUY':

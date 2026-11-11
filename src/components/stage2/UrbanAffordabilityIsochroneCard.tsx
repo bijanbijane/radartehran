@@ -24,6 +24,7 @@ export interface UrbanAffordabilityIsochroneCardProps {
   hoodName?: string;
   cityKey?: string;
   basePriceSqm?: number;
+  targetSqm?: number;
   intlCurrency?: IntlCurrencyCode;
   onSelectCompareHood?: (hoodName: string) => void;
   hood?: Neighborhood;
@@ -34,6 +35,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
   hoodName = 'پونک',
   cityKey = 'tehran',
   basePriceSqm = 120,
+  targetSqm = 80,
   intlCurrency = 'USD',
   onSelectCompareHood,
   hood,
@@ -58,9 +60,10 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
       effectiveHubId,
       monthlyIncomeMillion,
       hood,
-      intlCurrency
+      intlCurrency,
+      targetSqm
     );
-  }, [hoodId, hoodName, cityKey, basePriceSqm, effectiveHubId, monthlyIncomeMillion, hood, intlCurrency]);
+  }, [hoodId, hoodName, cityKey, basePriceSqm, effectiveHubId, monthlyIncomeMillion, hood, intlCurrency, targetSqm]);
 
   const tcohFx = intlCurrency !== 'IRT'
     ? ` (${formatMillionTomanAsIntlCurrency(report.arbitrage.totalCostOfHousingMillion, intlCurrency, 'fa')})`
@@ -172,7 +175,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           </div>
 
           <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-            اجاره ماهانه معادل رهن ۸۰ متر: <span className="font-bold text-slate-700 dark:text-slate-200">{toPersianNum(report.effectiveRentPerMonthMillion)} م.ت</span>
+            اجاره ماهانه معادل رهن {toPersianNum(targetSqm)} متر: <span className="font-bold text-slate-700 dark:text-slate-200">{toPersianNum(report.effectiveRentPerMonthMillion)} م.ت</span>
           </div>
         </div>
 
@@ -247,7 +250,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
               <span>پیشنهاد آربیتراژ ایزوکرون کسپر برای شاغلان «{report.commute.workHubName}»: محله {sub.hoodName}</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300">
-              صرفه‌جویی خالص <strong>{toPersianNum(sub.monthlyTcohSavingsMillion)} م.ت در ماه</strong> در هزینه کل سکونت و تردد + آزادسازی <strong>{toPersianNum(sub.capitalFreed80mMillion)} م.ت</strong> سرمایه خرید ۸۰ متر (زمان تردد: {toPersianNum(sub.oneWayMinutes)} دقیقه).
+              صرفه‌جویی خالص <strong>{toPersianNum(sub.monthlyTcohSavingsMillion)} م.ت در ماه</strong> در هزینه کل سکونت و تردد + آزادسازی <strong>{toPersianNum(sub.capitalFreed80mMillion)} م.ت</strong> سرمایه خرید {toPersianNum(targetSqm)} متر (زمان تردد: {toPersianNum(sub.oneWayMinutes)} دقیقه).
             </p>
           </div>
           {onSelectCompareHood && (

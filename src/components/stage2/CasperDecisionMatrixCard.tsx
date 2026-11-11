@@ -21,6 +21,7 @@ export interface CasperDecisionMatrixCardProps {
   transitScore?: number;
   safetyScore?: number;
   rahn80m?: number;
+  targetSqm?: number;
   marketStatus?: 'undervalued' | 'balanced' | 'bubble';
   intlCurrency?: IntlCurrencyCode;
   compact?: boolean;
@@ -35,6 +36,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
   transitScore = 7.5,
   safetyScore = 7.4,
   rahn80m,
+  targetSqm = 80,
   marketStatus = 'balanced',
   intlCurrency = 'USD',
   compact = false,
@@ -49,7 +51,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
         hoodId,
         hoodName,
         basePriceSqm,
-        hood ? buildNeighborhoodListingSamples(hood) : buildNeighborhoodListingSamples({ id: hoodId, name: hoodName, buyPerSqm: basePriceSqm }),
+        hood ? buildNeighborhoodListingSamples({ ...hood, buyPerSqm: basePriceSqm || hood.buyPerSqm }) : buildNeighborhoodListingSamples({ id: hoodId, name: hoodName, buyPerSqm: basePriceSqm }),
       ),
     [hoodId, hoodName, basePriceSqm, hood],
   );
@@ -58,7 +60,10 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
   const effectiveOverall = evalHood?.overallScore ?? overallScore;
   const effectiveTransit = hood?.metro ?? transitScore;
   const effectiveSafety = hood?.security ?? safetyScore;
-  const effectiveRahn80m = hood?.rahn80m ?? rahn80m ?? Math.round(agg.estimatedDealPricePerSqm * 80 * 0.14);
+  const hoodBaseBuy = hood?.buyPerSqm || basePriceSqm || 125;
+  const yieldBoost = Math.max(0.85, Math.min(1.18, hoodBaseBuy / Math.max(1, basePriceSqm)));
+  const rawRahn80m = hood?.rahn80m ?? rahn80m ?? Math.round(agg.estimatedDealPricePerSqm * 80 * 0.14);
+  const effectiveRahn80m = Math.round((basePriceSqm / Math.max(1, hoodBaseBuy)) * yieldBoost * rawRahn80m);
   const effectiveStatus = evalHood?.status === 'green' ? 'undervalued' : evalHood?.status === 'red' ? 'bubble' : marketStatus;
   const totalWeightSum =
     weights.priceWeight + weights.commuteWeight + weights.environmentWeight + weights.liquidityWeight + weights.safetyWeight || 1;
@@ -82,11 +87,12 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
           transitScore: effectiveTransit,
           safetyScore: effectiveSafety,
           rahn80m: effectiveRahn80m,
+          targetSqm,
           intlCurrency,
         },
         weights,
       ),
-    [hoodId, hoodName, agg, effectiveStatus, effectiveOverall, effectiveTransit, effectiveSafety, effectiveRahn80m, intlCurrency, weights],
+    [hoodId, hoodName, agg, effectiveStatus, effectiveOverall, effectiveTransit, effectiveSafety, effectiveRahn80m, targetSqm, intlCurrency, weights],
   );
 
   const applyPreset = (preset: 'balanced' | 'investor' | 'family' | 'commuter') => {
