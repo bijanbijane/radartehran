@@ -17,17 +17,24 @@ import {
 } from './socioeconomicTypes';
 
 const inMemoryResearchRollups = new Map<string, NeighborhoodResearchRollupDocument>();
+const rollupVerifiedClaimSignatures = new Map<string, string>();
 const MAX_IN_MEMORY_ROLLUPS = 500;
 const VALID_PERIOD_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+function getVerifiedPriceClaimsSignature(hoodId: number, cityId: string): string {
+  const safeCity = validateCityParam(cityId, 'tehran') as CityId;
+  const overridePrice = deepSyncedOverrides[safeCity]?.[hoodId]?.buyPerSqm ?? '';
+  const claims = queryNeighborhoodCrowdClaims(hoodId, undefined, safeCity).verifiedReferenceClaims
+    .filter((c) => typeof c.estimatedPriceSqm === 'number' && c.estimatedPriceSqm > 0).map((c) => `${c.claimId}:${c.estimatedPriceSqm}`).join('|');
+  return `${overridePrice}#${claims}`;
+}
 
 export function getDefaultRollupPeriodKey(referenceDate: Date = new Date()): string {
   try {
     const parts = new Intl.DateTimeFormat('en-u-ca-persian', { year: 'numeric', month: 'numeric' }).formatToParts(referenceDate);
     const jy = Number(parts.find((p) => p.type === 'year')?.value);
     const jm = Number(parts.find((p) => p.type === 'month')?.value);
-    if (Number.isFinite(jy) && Number.isFinite(jm) && jm >= 1 && jm <= 12) {
-      return `${jy}-${String(jm).padStart(2, '0')}`;
-    }
+    if (Number.isFinite(jy) && Number.isFinite(jm) && jm >= 1 && jm <= 12) return `${jy}-${String(jm).padStart(2, '0')}`;
   } catch { /* fallback */ }
   return '1405-08';
 }
@@ -38,12 +45,13 @@ export function normalizeRollupPeriodKey(rawPeriodKey?: string): string {
   return VALID_PERIOD_KEY_RE.test(cleaned) ? cleaned : defaultKey;
 }
 
-function setBoundedRollupCache(key: string, doc: NeighborhoodResearchRollupDocument): void {
+function setBoundedRollupCache(key: string, doc: NeighborhoodResearchRollupDocument, claimSig: string): void {
   if (!inMemoryResearchRollups.has(key) && inMemoryResearchRollups.size >= MAX_IN_MEMORY_ROLLUPS) {
     const oldestKey = inMemoryResearchRollups.keys().next().value;
-    if (oldestKey !== undefined) inMemoryResearchRollups.delete(oldestKey);
+    if (oldestKey !== undefined) { inMemoryResearchRollups.delete(oldestKey); rollupVerifiedClaimSignatures.delete(oldestKey); }
   }
   inMemoryResearchRollups.set(key, doc);
+  rollupVerifiedClaimSignatures.set(key, claimSig);
 }
 
 function resolveHoodMeta(hoodId: number, cityId: string = 'tehran'): { name: string; buyPerSqm: number; dealPerSqm: number; bargainPricesSqm: number[] } {
@@ -121,12 +129,13 @@ export async function aggregateNeighborhoodResearchRollup(
   const periodKey = normalizeRollupPeriodKey(input.periodKey);
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
   const hoodMeta = resolveHoodMeta(hoodId, cityId);
+  const currentClaimSig = getVerifiedPriceClaimsSignature(hoodId, cityId);
 
   let defaultObservations: RawPriceObservation[];
   if (input.priceObservations && input.priceObservations.length > 0) {
     defaultObservations = [...input.priceObservations];
   } else {
-    const liveClaims = queryNeighborhoodCrowdClaims(hoodId);
+    const liveClaims = queryNeighborhoodCrowdClaims(hoodId, undefined, cityId);
     const verifiedClaimObs: RawPriceObservation[] = liveClaims.verifiedReferenceClaims
       .filter((c) => typeof c.estimatedPriceSqm === 'number' && c.estimatedPriceSqm > 0)
       .map((c) => ({ id: c.claimId, priceSqm: c.estimatedPriceSqm!, sourceType: 'VERIFIED_CLAIM' as const, ageDays: 3 }));
@@ -186,6 +195,7 @@ export async function aggregateNeighborhoodResearchRollup(
 
   const distinctSessionCount = distinctSessions.size;
   const kAnonymitySatisfied = distinctSessionCount >= K_ANONYMITY_MIN_DISTINCT_SESSIONS;
+  const isSyntheticSimulation = events.length > 0 && events.every((e) => typeof e.sessionId === 'string' && e.sessionId.startsWith('seed_sess_'));
 
   let affordabilityStressIndex: number | null = null;
   let priceAttentionElasticity: number | null = null;
@@ -232,57 +242,47 @@ export async function aggregateNeighborhoodResearchRollup(
     citationCode,
     citationTextFa: `سامانه پژوهشی رادار مسکن (${periodKey}). شناسنامه اقتصادی-اجتماعی محله ${hoodMeta.name}، میانه متری ${medianPriceSqm} میلیون تومان. کد رفرنس: ${citationCode}`,
     updatedAtIso: new Date().toISOString(),
+    isSyntheticSimulation,
   };
 
-  setBoundedRollupCache(rollupId, rollup);
+  setBoundedRollupCache(rollupId, rollup, currentClaimSig);
   await persistRollupBestEffort(rollup);
   return { rollup, priceSummary };
 }
 
-/**
- * Retrieves an existing rollup or generates a k-anonymous research rollup incorporating live telemetry and verified crowd claims.
- */
 export async function getOrBuildNeighborhoodRollup(
-  hoodId: number, cityId: string = 'tehran', periodKey: string = getDefaultRollupPeriodKey(),
+  hoodId: number, cityId: string = 'tehran', periodKey: string = getDefaultRollupPeriodKey(), intlCurrency: IntlCurrencyCode = 'USD',
 ): Promise<NeighborhoodResearchRollupDocument> {
   const safeCity = validateCityParam(cityId, 'tehran');
   const safePeriod = normalizeRollupPeriodKey(periodKey);
   const rollupId = `${safeCity}_${hoodId}_${safePeriod}`;
   const cached = inMemoryResearchRollups.get(rollupId);
-  if (cached) return cached;
+  if (cached && rollupVerifiedClaimSignatures.get(rollupId) === getVerifiedPriceClaimsSignature(hoodId, safeCity)) {
+    const medianPriceIntlText = formatRollupPriceIntl(cached.medianPriceSqm, intlCurrency) || formatMillionTomanAsIntlCurrency(cached.medianPriceSqm, intlCurrency, 'fa');
+    return medianPriceIntlText === cached.medianPriceIntlText ? cached : { ...cached, medianPriceIntlText };
+  }
 
   const hoodMeta = resolveHoodMeta(hoodId, safeCity);
   const cityHoods = (MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS).filter((h) => h.id !== hoodId);
   const pricier = cityHoods.filter((h) => h.buyPerSqm > hoodMeta.buyPerSqm).sort((a, b) => a.buyPerSqm - b.buyPerSqm);
   const cheaper = cityHoods.filter((h) => h.buyPerSqm < hoodMeta.buyPerSqm).sort((a, b) => b.buyPerSqm - a.buyPerSqm);
-  const inflowA = (pricier[0] ?? cityHoods[0])?.id ?? 2;
-  const inflowB = (pricier[1] ?? cityHoods[1] ?? cityHoods[0])?.id ?? 3;
-  const outflowA = (cheaper[0] ?? cityHoods[cityHoods.length - 1])?.id ?? 4;
-  const outflowB = (cheaper[1] ?? cityHoods[Math.max(0, cityHoods.length - 2)])?.id ?? 5;
-  const telemetryReport = getServerTelemetryStatusReport();
-  const hoodTelemetry = telemetryReport.neighborhoodAnalyticsSummary.find((s) => s.hoodId === hoodId);
+  const inflowA = (pricier[0] ?? cityHoods[0])?.id ?? 2, inflowB = (pricier[1] ?? cityHoods[1] ?? cityHoods[0])?.id ?? 3;
+  const outflowA = (cheaper[0] ?? cityHoods[cityHoods.length - 1])?.id ?? 4, outflowB = (cheaper[1] ?? cityHoods[Math.max(0, cityHoods.length - 2)])?.id ?? 5;
+  const hoodTelemetry = getServerTelemetryStatusReport().neighborhoodAnalyticsSummary.find((s) => s.hoodId === hoodId);
   const liveDevFactor = hoodTelemetry ? 1 + clampNumber(hoodTelemetry.avgRelativePriceDeviationPct / 100, -0.25, 0.35, 0) : 1;
 
   const seededEvents: ResearchBehavioralEvent[] = Array.from({ length: 18 }, (_, i) => ({
-    sessionId: `seed_sess_${hoodId}_${i + 1}`,
-    cityId: safeCity,
-    hoodId,
-    samplingProbability: 0.5,
+    sessionId: `seed_sess_${hoodId}_${i + 1}`, cityId: safeCity, hoodId, samplingProbability: 0.5,
     searcherBudgetPerSqm: Math.round(hoodMeta.buyPerSqm * (0.82 + (i % 5) * 0.03)),
-    observedListingPriceSqm: i % 3 === 0 ? hoodMeta.buyPerSqm * 1.15 * liveDevFactor : hoodMeta.buyPerSqm * liveDevFactor,
-    activeAttentionMs: i % 3 === 0 ? 14000 : 28000,
-    liked: i % 2 === 0,
-    unliked: i % 6 === 0,
-    previousHoodId: i % 2 === 0 ? inflowA : inflowB,
-    nextHoodId: i % 3 === 0 ? outflowA : outflowB,
+    observedListingPriceSqm: (i % 3 === 0 ? hoodMeta.buyPerSqm * 1.15 : hoodMeta.buyPerSqm) * liveDevFactor,
+    activeAttentionMs: i % 3 === 0 ? 14000 : 28000, liked: i % 2 === 0, unliked: i % 6 === 0,
+    previousHoodId: i % 2 === 0 ? inflowA : inflowB, nextHoodId: i % 3 === 0 ? outflowA : outflowB,
   }));
-
-  const built = await aggregateNeighborhoodResearchRollup({
-    cityId: safeCity, hoodId, periodKey, behavioralEvents: seededEvents,
-  });
+  const built = await aggregateNeighborhoodResearchRollup({ cityId: safeCity, hoodId, periodKey, behavioralEvents: seededEvents, intlCurrency });
   return built.rollup;
 }
 
 export function resetSocioeconomicRollupsForTests(): void {
   inMemoryResearchRollups.clear();
+  rollupVerifiedClaimSignatures.clear();
 }

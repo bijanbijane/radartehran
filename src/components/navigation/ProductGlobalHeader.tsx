@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import {
   ChevronDown, Map as MapIcon, MoreHorizontal, Search, Moon, Sun,
-  SlidersHorizontal, Calculator, Shield,
+  SlidersHorizontal, Calculator, Shield, ShieldAlert,
 } from 'lucide-react';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { PrimaryViewId, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
@@ -18,6 +18,7 @@ export interface ProductGlobalHeaderProps {
   onToggleAppleTheme: () => void;
   onOpenBudgetFilter?: () => void;
   onOpenReverseBudget?: () => void;
+  onOpenListingVerifier?: () => void;
   onOpenSearch?: () => void;
   onOpenSecurityAdmin?: () => void;
   searchQuery?: string;
@@ -40,6 +41,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   onToggleAppleTheme,
   onOpenBudgetFilter,
   onOpenReverseBudget,
+  onOpenListingVerifier,
   onOpenSearch,
   onOpenSecurityAdmin,
   searchQuery,
@@ -204,6 +206,20 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             >
               <Calculator className="w-3.5 h-3.5" />
               <span className="hidden 2xl:inline">{isEn ? 'Reverse Budget' : 'بودجه معکوس'}</span>
+            </button>
+          )}
+
+          {onOpenListingVerifier && (
+            <button
+              type="button"
+              data-testid="header-open-listing-verifier-btn"
+              onClick={onOpenListingVerifier}
+              aria-label={isEn ? 'Scan Listing & Red Flags' : 'کارشناسی آگهی و کشف تله‌ها'}
+              title={isEn ? 'Scan real-estate listing for traps' : 'کارشناسی آگهی و حباب‌سنج مسکن'}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800 hover:bg-rose-100/70 transition cursor-pointer whitespace-nowrap shadow-2xs"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+              <span className="hidden sm:inline">{isEn ? 'Verify Ad' : 'کارشناسی آگهی'}</span>
             </button>
           )}
 

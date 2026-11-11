@@ -167,6 +167,7 @@ export interface ProcessClaimVoteResult {
   voterProfile: ContributorProfileDocument;
   effectiveVoteWeight: number;
   promotedToVerifiedReference: boolean;
+  demotedFromVerifiedReference?: boolean;
 }
 
 export interface HoodClaimsQueryResult {

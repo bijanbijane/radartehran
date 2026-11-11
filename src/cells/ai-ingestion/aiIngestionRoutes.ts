@@ -2,6 +2,7 @@ import type { Express, Request, Response } from 'express';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { detectPromptInjection, sanitizeInput } from '../../utils/security';
 import { verifyAdminApiAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
+import { recordAbuseSignal } from '../../utils/serverDeliveryAndAbuseGuard';
 import { extractAndResolvePropertySignal } from './aiSeedExtractionService';
 import {
   getCanonicalBuildingById,
@@ -27,12 +28,14 @@ export function registerAiIngestionRoutes(
 
   app.post('/api/v1/ai-ingestion/extract-and-resolve', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 30, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
       return;
     }
     const body = (req.body ?? {}) as Record<string, unknown>;
     const rawTextFa = typeof body.rawTextFa === 'string' ? sanitizeInput(body.rawTextFa, 2000) : '';
+    const streetNameHint = typeof body.streetNameHint === 'string' ? sanitizeInput(body.streetNameHint, 120) : undefined;
     const cityId = typeof body.cityId === 'string' ? sanitizeInput(body.cityId, 32) : 'tehran';
     const hoodId = typeof body.hoodId === 'number' && Number.isFinite(body.hoodId) ? Math.round(body.hoodId) : 1;
     const intlCurrency: IntlCurrencyCode = ['IRT', 'USD', 'EUR', 'AED'].includes(String(body.intlCurrency))
@@ -49,11 +52,13 @@ export function registerAiIngestionRoutes(
     }
 
     const injectionCheck = detectPromptInjection(rawTextFa);
-    if (injectionCheck.blocked) {
+    const streetInjection = streetNameHint ? detectPromptInjection(streetNameHint) : { blocked: false, reason: '' };
+    if (injectionCheck.blocked || streetInjection.blocked) {
+      recordAbuseSignal(clientIp(req), 'prompt_injection');
       res.status(422).json({
         status: 'error',
         code: 'PROMPT_INJECTION_DETECTED',
-        reason: injectionCheck.reason,
+        reason: injectionCheck.reason || streetInjection.reason,
         message: 'متن ورودی حاوی الگوی تزریق دستور غیرمجاز است.',
       });
       return;
@@ -74,25 +79,30 @@ export function registerAiIngestionRoutes(
         typeof body.totalPriceMillionTomanHint === 'number' ? body.totalPriceMillionTomanHint : undefined,
       pricePerSqmMillionTomanHint:
         typeof body.pricePerSqmMillionTomanHint === 'number' ? body.pricePerSqmMillionTomanHint : undefined,
-      streetNameHint: typeof body.streetNameHint === 'string' ? sanitizeInput(body.streetNameHint, 120) : undefined,
+      streetNameHint,
     });
+    const referenceIntlText = formatMillionTomanAsIntlCurrency(result.fact.totalPrice, intlCurrency);
 
     res.status(200).json({
       status: 'ok',
       ...result,
-      referenceIntlText: formatMillionTomanAsIntlCurrency(result.fact.totalPrice, intlCurrency),
+      fact: { ...result.fact, totalPriceIntlText: referenceIntlText },
+      referenceIntlText,
     });
   });
 
   app.post('/api/v1/buildings/merge-duplicates', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 20, 60_000)) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const ip = clientIp(req);
+    if (options?.checkRateLimit && !options.checkRateLimit(ip, 'general', 20, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
       return;
     }
     if (options?.verifyAdminAuth) {
       const auth = await options.verifyAdminAuth(req);
       if (!auth.ok) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(auth.status ?? 401).json({ status: 'error', code: auth.message || 'ADMIN_AUTH_REQUIRED' });
         return;
       }
@@ -101,6 +111,7 @@ export function registerAiIngestionRoutes(
         req.headers as Record<string, string | string[] | undefined>,
       );
       if (!fallbackAuth.authorized) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(fallbackAuth.statusCode).json({
           status: 'error',
           code: fallbackAuth.reason || 'ADMIN_AUTH_REQUIRED',
@@ -142,6 +153,7 @@ export function registerAiIngestionRoutes(
 
   app.get('/api/v1/buildings/:buildingId/canonical', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
       return;

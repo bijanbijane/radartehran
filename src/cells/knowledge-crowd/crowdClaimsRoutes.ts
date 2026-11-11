@@ -9,8 +9,9 @@
  */
 import type { Express, Request, Response } from 'express';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
-import { isValidFirestoreDocId, sanitizeInput } from '../../utils/security';
+import { isValidFirestoreDocId, sanitizeInput, validateCityParam } from '../../utils/security';
 import { verifyFirebaseUserAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
+import { recordAbuseSignal } from '../../utils/serverDeliveryAndAbuseGuard';
 import { IdempotencyLedger } from '../../utils/serverIdempotencyAndConcurrency';
 import { getContributorProfileWithClaims, hasContributorProfile, processClaimVoteAndPromotion, queryNeighborhoodCrowdClaims, submitCrowdClaim } from './crowdClaimsEngine';
 import type { AlleySlopeType, ClaimVoteDirection, ContributorRoleBadge, CrowdClaimCategory, SpatialTargetLevel } from './crowdClaimsTypes';
@@ -48,17 +49,21 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
 
   app.post('/api/v1/claims', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 20, 60_000)) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const ip = clientIp(req);
+    if (options?.checkRateLimit && !options.checkRateLimit(ip, 'general', 20, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' }); return;
     }
     try {
       const authState = await verifyAuthIfPresent(req);
       if (authState.hasAuthHeader && !authState.authorized) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(authState.statusCode || 401).json({ status: 'error', code: authState.reason || 'UNAUTHORIZED_TOKEN' }); return;
       }
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
       const rawBodyAuthorUid = sanitizeInput(String(body.authorUid || ''), 128);
       if (authState.authorized && authState.uid && rawBodyAuthorUid && rawBodyAuthorUid !== authState.uid) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(403).json({ status: 'error', code: 'UID_SPOOFING_FORBIDDEN', message: 'جعل شناسه نویسنده گزارش مجاز نیست.' }); return;
       }
       const authorUid = authState.authorized && authState.uid ? authState.uid : rawBodyAuthorUid;
@@ -124,12 +129,15 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
       }
       res.status(201).json(responseBody);
     } catch (err) {
-      res.status(400).json({ status: 'error', code: err instanceof Error ? err.message : 'CLAIM_SUBMISSION_FAILED' });
+      const code = err instanceof Error ? err.message : 'CLAIM_SUBMISSION_FAILED';
+      if (code === 'PROMPT_INJECTION_DETECTED') recordAbuseSignal(ip, 'prompt_injection');
+      res.status(400).json({ status: 'error', code });
     }
   });
 
   app.get('/api/v1/claims/hood/:hoodId', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' }); return;
     }
@@ -138,10 +146,12 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
       res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return;
     }
     const streetName = typeof req.query.streetName === 'string' ? req.query.streetName : undefined;
-    const result = queryNeighborhoodCrowdClaims(hoodId, streetName);
+    const cityId = typeof req.query.cityId === 'string' ? req.query.cityId : undefined;
+    const result = queryNeighborhoodCrowdClaims(hoodId, streetName, cityId);
     res.status(200).json({
       status: 'ok',
       hoodId: result.hoodId,
+      cityId: cityId ? validateCityParam(cityId, 'tehran') : 'tehran',
       streetNameFilterNormalized: result.streetNameFilterNormalized,
       VERIFIED_REFERENCE: result.verifiedReferenceClaims,
       STAGE_COMMUNITY: result.communityStageClaims,
@@ -155,18 +165,22 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
 
   app.post('/api/v1/claims/:claimId/vote', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 30, 60_000)) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const ip = clientIp(req);
+    if (options?.checkRateLimit && !options.checkRateLimit(ip, 'general', 30, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' }); return;
     }
     try {
       const authState = await verifyAuthIfPresent(req);
       if (authState.hasAuthHeader && !authState.authorized) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(authState.statusCode || 401).json({ status: 'error', code: authState.reason || 'UNAUTHORIZED_TOKEN' }); return;
       }
       const claimId = sanitizeInput(String(req.params.claimId || ''), 100);
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
       const rawBodyVoterUid = sanitizeInput(String(body.voterUid || ''), 128);
       if (authState.authorized && authState.uid && rawBodyVoterUid && rawBodyVoterUid !== authState.uid) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(403).json({ status: 'error', code: 'UID_SPOOFING_FORBIDDEN', message: 'جعل شناسه رأی‌دهنده مجاز نیست.' }); return;
       }
       const voterUid = authState.authorized && authState.uid ? authState.uid : rawBodyVoterUid;
@@ -192,6 +206,7 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
         authorProfile: outcome.authorProfile,
         effectiveVoteWeight: outcome.effectiveVoteWeight,
         promotedToVerifiedReference: outcome.promotedToVerifiedReference,
+        demotedFromVerifiedReference: outcome.demotedFromVerifiedReference ?? false,
         replayed: false,
       };
       if (idemOutcome) {
@@ -206,6 +221,7 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
 
   app.get('/api/v1/contributors/:uid', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' }); return;
     }

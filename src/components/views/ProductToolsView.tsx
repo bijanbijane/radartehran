@@ -15,6 +15,9 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
 
+const InstantListingVerifierModal = React.lazy(() => import('../modals/InstantListingVerifierModal').then((m) => ({ default: m.InstantListingVerifierModal })));
+const ContractRoomShieldModal = React.lazy(() => import('../modals/ContractRoomShieldModal').then((m) => ({ default: m.ContractRoomShieldModal })));
+
 export interface ProductToolsViewProps {
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
@@ -36,6 +39,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
   const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false);
   const [activeDecisionTab, setActiveDecisionTab] = useState<Stage2ActiveTab>('DECISION_SYNTHESIS');
+  const [showVerifierModal, setShowVerifierModal] = useState<boolean>(false), [showContractShieldModal, setShowContractShieldModal] = useState<boolean>(false);
 
   const openDecisionTool = (tabId: Stage2ActiveTab) => {
     setActiveDecisionTab(tabId);
@@ -74,6 +78,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       id: 'financial' as const,
       category: isEn ? 'Valuation & Financial Calculators' : 'قیمت‌گذاری و ارزیابی مالی',
       items: [
+        { id: 'deal_verifier', title: 'آنتی‌ویروس و کارشناسی فوری آگهی‌های دیوار (Deal Verifier)', desc: 'الصاق متن یا لینک آگهی، کشف حباب قیمت، تله‌های سندی و سناریوی چانه‌زنی با مشاور املاک', icon: ShieldAlert, action: () => setShowVerifierModal(true) },
         { id: 'hedonic', title: 'کارشناسی هوشمند ارزش ملک (Hedonic)', desc: `محاسبه ارزش منصفانه و قیمت فروش فوری واحد در محله ${p.selectedHood.name} با در نظر گرفتن سن بنا، طبقه و امکانات`, icon: Calculator, action: p.onOpenHedonic },
         { id: 'reverse_budget', title: 'کاشف معکوس بودجه مسکن', desc: '«با بودجه من کجای شهر می‌توانم خانه بخرم؟» تطبیق فوری متراژ و قدرت خرید', icon: Sparkles, action: p.onOpenReverseBudget },
         { id: 'commission', title: 'ماشین‌حساب کمیسیون املاک و هزینه محضر', desc: 'محاسبه دقیق حق‌الزحمه قانونی مشاور، ۹٪ ارزش افزوده و هزینه ثبت در دفترخانه اسناد رسمی', icon: Scale, action: () => p.onOpenExpansionModal('commission') },
@@ -85,6 +90,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       id: 'legal' as const,
       category: isEn ? 'Legal Security & Contract Verification' : 'امنیت حقوقی و راستی‌آزمایی قراردادها',
       items: [
+        { id: 'contract_shield', title: 'سپر و دستیار زنده اتاق قرارداد (Contract-Room Shield)', desc: 'تقویم امن چک‌ها (قرارداد/تحویل/سند)، وجه التزام متقارن روزانه و پاتک به شگردهای روانی مشاور', icon: Scale, action: () => setShowContractShieldModal(true) },
         { id: 'fake_ad', title: 'مچ‌گیر هوشمند آگهی‌های فیک و قیمت طعمه', desc: 'تشخیص آگهی‌های غیرواقعی، راستی‌آزمایی تله‌های قیمتی و تولید سوالات کلیدی استعلام تلفنی', icon: ShieldAlert, action: () => p.onOpenSuperModule('fake_detector') },
         { id: 'contract', title: 'مشاور حقوقی هوشمند قولنامه و مبایعه‌نامه', desc: 'بررسی بندهای حقوقی، شروط فسخ، خیارات غبن، نحوه پرداخت چک‌ها و جلوگیری از کلاهبرداری', icon: FileCheck, action: () => p.onOpenExpansionModal('contract') },
         { id: 'tenant_rights', title: 'داور هوشمند روابط موجر و مستأجر', desc: 'تفکیک قانونی هزینه‌های اساسی و جاری ساختمان، فرمول شارژ و تقویم حقوقی قرارداد', icon: Scale, action: () => p.onOpenSuperModule('tenant_rights') },
@@ -258,6 +264,17 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           </section>
         ))}
       </div>
+
+      {showVerifierModal && (
+        <React.Suspense fallback={null}>
+          <InstantListingVerifierModal isOpen={showVerifierModal} onClose={() => setShowVerifierModal(false)} initialHoodName={p.selectedHood?.name} cityKey={p.activeCity || 'tehran'} evaluatedNeighborhoods={p.evaluatedNeighborhoods} />
+        </React.Suspense>
+      )}
+      {showContractShieldModal && (
+        <React.Suspense fallback={null}>
+          <ContractRoomShieldModal isOpen={showContractShieldModal} onClose={() => setShowContractShieldModal(false)} initialTotalMillion={p.selectedHood ? Math.round(p.selectedHood.buyPerSqm * 80) : 12000} />
+        </React.Suspense>
+      )}
     </div>
   );
 }

@@ -97,7 +97,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     setLoading(true);
     const seed = buildSeedClaims(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
     try {
-      const res = await fetch(`/api/v1/claims/hood/${hoodId}`);
+      const res = await fetch(`/api/v1/claims/hood/${hoodId}?cityId=${encodeURIComponent(cityKey)}`);
       if (res.ok) {
         const data = await res.json();
         const mapDoc = (d: Record<string, unknown>): CrowdClaimItem => ({
@@ -140,7 +140,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         body: JSON.stringify({
           hoodId, cityId: cityKey, authorUid: sessionAuthorUid,
           authorDisplayName: authorName.trim() || 'شهروند رادار', category,
-          targetLevel: claimType === 'VERIFIED_FACT_CANDIDATE' ? 'STREET_SEGMENT' : 'NEIGHBORHOOD',
+          targetLevel: claimType === 'VERIFIED_FACT_CANDIDATE' ? 'STREET_SEGMENT' : 'HOOD',
           streetName: title.trim(), narrativeText: body.trim(),
           baseHoodPriceSqmOverride: basePriceSqm, intlCurrency,
         }),
@@ -210,31 +210,31 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">{Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نوع داده (تفکیک معرفتی)</label>
+              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نوع گزارش</label>
               <select value={claimType} onChange={(e) => setClaimType(e.target.value as 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE')} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                <option value="VERIFIED_FACT_CANDIDATE">مشاهده عینی قابل راستی‌آزمایی (کاندیدای مرجع)</option>
-                <option value="SUBJECTIVE_EXPERIENCE">تجربه شخصی و نظر ساکنان</option>
+                <option value="VERIFIED_FACT_CANDIDATE">قیمت قطعی معامله / فکت مستند ملکی</option>
+                <option value="SUBJECTIVE_EXPERIENCE">تجربه سکونت / کیفیت کوچه و جای پارک</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">عنوان گزارش / نام خیابان</label>
-            <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثلاً: وضعیت جای پارک شبانه در خیابان‌های فرعی" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">عنوان گزارش / نام کوچه یا خیابان</label>
+            <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثلاً: قیمت معامله طبقه سوم در خیابان اصلی یا وضعیت پارک شبانه" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </div>
           <div>
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">شرح دقیق و مستند</label>
-            <textarea rows={2} required value={body} onChange={(e) => setBody(e.target.value)} placeholder="مشاهده دقیق خود را بنویسید. در صورت تایید سایر ساکنان، به داده مرجع محله تبدیل می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            <textarea rows={2} required value={body} onChange={(e) => setBody(e.target.value)} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </div>
-          <div className="flex justify-end"><button type="submit" className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"><Send className="w-3.5 h-3.5" /><span>ارسال برای داوری جمعی</span></button></div>
+          <div className="flex justify-end"><button type="submit" className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"><Send className="w-3.5 h-3.5" /><span>ثبت گزارش برای بررسی اهالی</span></button></div>
         </form>
       )}
       {verifiedRefs.length > 0 && (
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400"><Sparkles className="w-4 h-4" /><span>فکت‌های میدانی ارتقایافته به مرجع رسمی محله ({toPersianDigits(verifiedRefs.length)})</span></div>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400"><Sparkles className="w-4 h-4" /><span>قیمت‌ها و گزارش‌های تاییدشده محله ({toPersianDigits(verifiedRefs.length)})</span></div>
           <div className="grid grid-cols-1 gap-2">
             {verifiedRefs.map((ref) => (
               <div key={ref.id} className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-2"><span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">{ref.title}</span><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200">امتیاز اطمینان: {toPersianDigits(ref.trustWeightScore)}٪</span></div>
+                <div className="flex items-center justify-between gap-2"><span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">{ref.title}</span><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200">میزان اطمینان: {toPersianDigits(ref.trustWeightScore)}٪</span></div>
                 <p className="text-xs text-emerald-800 dark:text-emerald-300/90 leading-relaxed">{ref.body}</p>
               </div>
             ))}
@@ -242,7 +242,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         </div>
       )}
       <div className="space-y-2">
-        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">همه گزارش‌ها و ادعاهای ثبت‌شده ({toPersianDigits(claims.length)})</div>
+        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">همه گزارش‌های اهالی و مشاوران محله ({toPersianDigits(claims.length)})</div>
         {loading ? <div className="text-xs text-slate-400 py-3">در حال بارگذاری گزارش‌های میدانی...</div> : (
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {claims.map((c) => (

@@ -156,9 +156,10 @@ export function filterOutliersUsingMAD(
   const medianPriceSqm = computeMedian(prices);
   const absDeviations = prices.map((p) => Math.abs(p - medianPriceSqm));
   const madValue = computeMedian(absDeviations);
-  const maxAllowedDeviation = madValue > 0
-    ? MAD_OUTLIER_THRESHOLD_MULTIPLIER * madValue
-    : Number((medianPriceSqm * ZERO_MAD_RELATIVE_BANDWIDTH_FLOOR).toFixed(4));
+  const minRelativeBandwidth = medianPriceSqm * ZERO_MAD_RELATIVE_BANDWIDTH_FLOOR;
+  const maxAllowedDeviation = Number(
+    Math.max(minRelativeBandwidth, MAD_OUTLIER_THRESHOLD_MULTIPLIER * madValue).toFixed(4),
+  );
 
   const evaluatedObservations: EvaluatedPriceObservation[] = normalizedList.map(({ obs, normalizedPriceSqm }) => {
     const absDeviationFromMedian = Number(Math.abs(normalizedPriceSqm - medianPriceSqm).toFixed(4));

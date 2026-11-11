@@ -12,7 +12,7 @@ import {
 } from './crowdClaimsTypes';
 
 export const TRUST_WEIGHT_MIN = 0.1, TRUST_WEIGHT_MAX = 5.0, DEFAULT_INITIAL_TRUST_WEIGHT = 1.0;
-export const PROMOTION_CONSENSUS_THRESHOLD = 3.0, PROMOTION_PLAUSIBILITY_THRESHOLD = 70;
+export const PROMOTION_CONSENSUS_THRESHOLD = 3.0, REVOCATION_CONSENSUS_THRESHOLD = 2.0, PROMOTION_PLAUSIBILITY_THRESHOLD = 70;
 export const PROMOTION_REPUTATION_REWARD = 25, PROMOTION_TRUST_WEIGHT_REWARD = 0.05, MAX_PRICE_DEVIATION_WITHOUT_EVIDENCE = 0.40;
 const inMemoryCrowdClaims = new Map<string, CrowdClaimDocument>();
 const inMemoryContributorProfiles = new Map<string, ContributorProfileDocument>();
@@ -51,18 +51,23 @@ export function resolveNeighborhoodBaseBuyPriceSqm(hoodId: number, cityId: strin
   return matched && Number.isFinite(matched.buyPerSqm) && matched.buyPerSqm > 0 ? matched.buyPerSqm : 120;
 }
 
+export function extractPriceSqmFromNarrative(text: string): number | null {
+  const norm = text.replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632)).replace(/[,٫]/g, '.');
+  const m =
+    norm.match(/(?:متری|هر\s*متر(?:\s*مربع)?|مترمربع|متر\s*مربع)\s*(?:[:=-]|حدود|تقریباً|نزدیک)?\s*(\d+(?:\.\d+)?)\s*(?:میلیون|م\.?\s*ت|تومان)/) ??
+    norm.match(/(?<!\d\s*)(?:متری|هر\s*متر(?:\s*مربع)?|مترمربع|متر\s*مربع)\s*(?:[:=-]|حدود|تقریباً|نزدیک)?\s*(\d+(?:\.\d+)?)(?!\s*(?:سال|واحد|طبقه|خواب|متر))/);
+  const val = m ? Number(m[1]) : NaN;
+  return Number.isFinite(val) && val >= 5 && val <= 2500 ? Number(val.toFixed(2)) : null;
+}
+
 export function evaluateClaimPlausibility(input: PlausibilityEvaluationInput): PlausibilityEvaluationResult {
-  const evidenceIds = Array.isArray(input.evidenceMediaObjectIds)
-    ? input.evidenceMediaObjectIds.filter((id) => typeof id === 'string' && id.trim().length > 0)
-    : [];
+  const evidenceIds = Array.isArray(input.evidenceMediaObjectIds) ? input.evidenceMediaObjectIds.filter((id) => typeof id === 'string' && id.trim().length > 0) : [];
   const hasSupportingEvidence = evidenceIds.length > 0;
   const narrativeLen = (input.narrativeText || '').trim().length;
   const basePrice = Number.isFinite(input.baseHoodPriceSqm) && input.baseHoodPriceSqm > 0 ? input.baseHoodPriceSqm : 120;
 
   let score = 78 + (narrativeLen >= 25 ? 6 : 0) + (hasSupportingEvidence ? 8 : 0);
-  if (typeof input.parkingScore === 'number' || typeof input.noiseLevelScore === 'number' || typeof input.safetyScore === 'number') {
-    score += 4;
-  }
+  if (typeof input.parkingScore === 'number' || typeof input.noiseLevelScore === 'number' || typeof input.safetyScore === 'number') score += 4;
 
   const hasPrice = typeof input.estimatedPriceSqm === 'number' && Number.isFinite(input.estimatedPriceSqm) && input.estimatedPriceSqm > 0;
   if (hasPrice) {
@@ -70,34 +75,17 @@ export function evaluateClaimPlausibility(input: PlausibilityEvaluationInput): P
     const roundedDev = Number(deviationRatio.toFixed(4));
     if (deviationRatio > MAX_PRICE_DEVIATION_WITHOUT_EVIDENCE && !hasSupportingEvidence) {
       const penaltyScore = Math.max(15, Math.round(42 - Math.min(25, (deviationRatio - 0.4) * 40)));
-      return {
-        aiPlausibilityScore: penaltyScore, deviationRatio: roundedDev, hasSupportingEvidence: false, flaggedUnverifiedPriceOutlier: true,
-        reasonFa: `انحراف قیمت ادعایی (${Math.round(deviationRatio * 100)}٪) بیش از سقف مجاز ۴۰٪ نسبت به میانگین محله بدون پیوست مدرک معتبر است.`,
-      };
+      return { aiPlausibilityScore: penaltyScore, deviationRatio: roundedDev, hasSupportingEvidence: false, flaggedUnverifiedPriceOutlier: true, reasonFa: `انحراف قیمت ادعایی (${Math.round(deviationRatio * 100)}٪) بیش از سقف مجاز ۴۰٪ نسبت به میانگین محله بدون پیوست مدرک معتبر است.` };
     }
     if (deviationRatio > MAX_PRICE_DEVIATION_WITHOUT_EVIDENCE && hasSupportingEvidence) {
-      return {
-        aiPlausibilityScore: clampNumber(72, 0, 100, 72), deviationRatio: roundedDev, hasSupportingEvidence: true, flaggedUnverifiedPriceOutlier: false,
-        reasonFa: 'انحراف قیمتی بالا ولی دارای مستندات پیوست؛ نیازمند اجماع همسایگان و کارشناسان.',
-      };
+      return { aiPlausibilityScore: clampNumber(72, 0, 100, 72), deviationRatio: roundedDev, hasSupportingEvidence: true, flaggedUnverifiedPriceOutlier: false, reasonFa: 'انحراف قیمتی بالا ولی دارای مستندات پیوست؛ نیازمند اجماع همسایگان و کارشناسان.' };
     }
     const closenessBonus = Math.round((1 - deviationRatio / MAX_PRICE_DEVIATION_WITHOUT_EVIDENCE) * 8);
-    return {
-      aiPlausibilityScore: clampNumber(score + closenessBonus, 0, 100, 80), deviationRatio: roundedDev, hasSupportingEvidence, flaggedUnverifiedPriceOutlier: false,
-      reasonFa: 'قیمت گزارش‌شده در بازه منطقی محله قرار دارد.',
-    };
+    return { aiPlausibilityScore: clampNumber(score + closenessBonus, 0, 100, 80), deviationRatio: roundedDev, hasSupportingEvidence, flaggedUnverifiedPriceOutlier: false, reasonFa: 'قیمت گزارش‌شده در بازه منطقی محله قرار دارد.' };
   }
 
-  if (narrativeLen < 8) {
-    return {
-      aiPlausibilityScore: 45, deviationRatio: null, hasSupportingEvidence, flaggedUnverifiedPriceOutlier: false,
-      reasonFa: 'توضیحات متنی گزارش بسیار کوتاه است.',
-    };
-  }
-  return {
-    aiPlausibilityScore: clampNumber(score, 0, 100, 78), deviationRatio: null, hasSupportingEvidence, flaggedUnverifiedPriceOutlier: false,
-    reasonFa: 'گزارش کیفی کوچه/محله با ساختار استاندارد همخوانی دارد.',
-  };
+  if (narrativeLen < 8) return { aiPlausibilityScore: 45, deviationRatio: null, hasSupportingEvidence, flaggedUnverifiedPriceOutlier: false, reasonFa: 'توضیحات متنی گزارش بسیار کوتاه است.' };
+  return { aiPlausibilityScore: clampNumber(score, 0, 100, 78), deviationRatio: null, hasSupportingEvidence, flaggedUnverifiedPriceOutlier: false, reasonFa: 'گزارش کیفی کوچه/محله با ساختار استاندارد همخوانی دارد.' };
 }
 
 export function hasContributorProfile(uid: string): boolean {
@@ -115,16 +103,13 @@ export function getOrCreateContributorProfile(
     if (defaults?.displayName && existing.displayName === 'کاربر رادار') existing.displayName = sanitizeInput(defaults.displayName, 80);
     if (defaults?.roleBadge && VALID_ROLE_BADGES.has(defaults.roleBadge)) existing.roleBadge = defaults.roleBadge;
     if (typeof defaults?.shadowBanned === 'boolean') existing.shadowBanned = defaults.shadowBanned;
-    if (typeof defaults?.trustWeight === 'number' && Number.isFinite(defaults.trustWeight)) {
-      existing.trustWeight = clampNumber(defaults.trustWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX, DEFAULT_INITIAL_TRUST_WEIGHT);
-    }
+    if (typeof defaults?.trustWeight === 'number' && Number.isFinite(defaults.trustWeight)) existing.trustWeight = clampNumber(defaults.trustWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX, DEFAULT_INITIAL_TRUST_WEIGHT);
     return existing;
   }
   const nowIso = new Date().toISOString();
   const roleBadge: ContributorRoleBadge = defaults?.roleBadge && VALID_ROLE_BADGES.has(defaults.roleBadge) ? defaults.roleBadge : 'CITIZEN';
   const initialWeight = typeof defaults?.trustWeight === 'number' && Number.isFinite(defaults.trustWeight)
-    ? clampNumber(defaults.trustWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX, DEFAULT_INITIAL_TRUST_WEIGHT)
-    : DEFAULT_INITIAL_TRUST_WEIGHT;
+    ? clampNumber(defaults.trustWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX, DEFAULT_INITIAL_TRUST_WEIGHT) : DEFAULT_INITIAL_TRUST_WEIGHT;
   const created: ContributorProfileDocument = {
     uid: cleanUid, displayName: sanitizeInput(defaults?.displayName || 'کاربر رادار', 80) || 'کاربر رادار',
     roleBadge, reputationPoints: 0, trustWeight: initialWeight, verifiedClaimsCount: 0, totalSubmittedClaimsCount: 0,
@@ -163,7 +148,9 @@ export async function submitCrowdClaim(input: SubmitCrowdClaimInput): Promise<Cr
   const authorProfile = getOrCreateContributorProfile(authorUid, { displayName: input.authorDisplayName, roleBadge: input.authorRoleBadge });
   const evidenceMediaObjectIds = Array.isArray(input.evidenceMediaObjectIds)
     ? input.evidenceMediaObjectIds.map((id) => sanitizeInput(String(id), 120)).filter((id) => id.length > 0 && isValidFirestoreDocId(id)).slice(0, 10) : [];
-  const estimatedPriceSqm = typeof input.estimatedPriceSqm === 'number' && Number.isFinite(input.estimatedPriceSqm) && input.estimatedPriceSqm > 0 ? Number(input.estimatedPriceSqm) : null;
+  const estimatedPriceSqm = typeof input.estimatedPriceSqm === 'number' && Number.isFinite(input.estimatedPriceSqm) && input.estimatedPriceSqm > 0
+    ? Number(input.estimatedPriceSqm)
+    : category === 'PRICE_OBSERVATION' ? extractPriceSqmFromNarrative(narrativeText) : null;
   const baseHoodPriceSqm = typeof input.baseHoodPriceSqmOverride === 'number' && input.baseHoodPriceSqmOverride > 0 ? input.baseHoodPriceSqmOverride : resolveNeighborhoodBaseBuyPriceSqm(hoodId, cityId);
   const plausibility = evaluateClaimPlausibility({
     category, estimatedPriceSqm, baseHoodPriceSqm, evidenceMediaObjectIds, narrativeText,
@@ -233,8 +220,16 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
   claim.updatedAtIso = nowIso;
 
   const authorProfile = getOrCreateContributorProfile(claim.authorUid, { displayName: claim.authorDisplayName, roleBadge: claim.authorRoleBadge });
-  let promotedToVerifiedReference = false;
-  if (claim.epistemicState !== 'VERIFIED_REFERENCE' && !claim.promotedToReferenceAtIso && claim.weightedConsensusScore >= PROMOTION_CONSENSUS_THRESHOLD && claim.aiPlausibilityScore >= PROMOTION_PLAUSIBILITY_THRESHOLD) {
+  let promotedToVerifiedReference = false, demotedFromVerifiedReference = false;
+  const hasSupportingEvidence = Array.isArray(claim.evidenceMediaObjectIds) && claim.evidenceMediaObjectIds.length > 0;
+  const hasEstablishedVoter = Object.values(claim.votesByUid).some((v) => v.direction === 'UP' && !v.shadowBannedAtVote && v.voterTrustWeightAtVote > 1.0);
+  const meetsSybilGuard = upCount >= 3 && (hasSupportingEvidence || hasEstablishedVoter || upCount >= 4);
+
+  if (
+    claim.epistemicState !== 'VERIFIED_REFERENCE' && !claim.promotedToReferenceAtIso &&
+    claim.weightedConsensusScore >= PROMOTION_CONSENSUS_THRESHOLD && meetsSybilGuard &&
+    claim.aiPlausibilityScore >= PROMOTION_PLAUSIBILITY_THRESHOLD
+  ) {
     claim.epistemicState = 'VERIFIED_REFERENCE';
     claim.promotedToReferenceAtIso = nowIso;
     promotedToVerifiedReference = true;
@@ -244,20 +239,31 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
     if (!authorProfile.topSpecialtyHoodIds.includes(claim.hoodId)) authorProfile.topSpecialtyHoodIds = [...authorProfile.topSpecialtyHoodIds, claim.hoodId].slice(0, 10);
     authorProfile.updatedAtIso = nowIso;
     inMemoryContributorProfiles.set(authorProfile.uid, authorProfile);
+  } else if (claim.epistemicState === 'VERIFIED_REFERENCE' && claim.weightedConsensusScore < REVOCATION_CONSENSUS_THRESHOLD) {
+    claim.epistemicState = claim.weightedConsensusScore <= -PROMOTION_CONSENSUS_THRESHOLD ? 'DISPUTED' : 'STAGE_COMMUNITY';
+    claim.promotedToReferenceAtIso = null;
+    demotedFromVerifiedReference = true;
+    authorProfile.reputationPoints = Math.max(0, authorProfile.reputationPoints - PROMOTION_REPUTATION_REWARD);
+    authorProfile.trustWeight = Number(clampNumber(authorProfile.trustWeight - PROMOTION_TRUST_WEIGHT_REWARD, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX, DEFAULT_INITIAL_TRUST_WEIGHT).toFixed(4));
+    authorProfile.verifiedClaimsCount = Math.max(0, authorProfile.verifiedClaimsCount - 1);
+    authorProfile.updatedAtIso = nowIso;
+    inMemoryContributorProfiles.set(authorProfile.uid, authorProfile);
   } else if (claim.epistemicState === 'STAGE_COMMUNITY' && claim.weightedConsensusScore <= -PROMOTION_CONSENSUS_THRESHOLD) {
     claim.epistemicState = 'DISPUTED';
   }
 
   inMemoryCrowdClaims.set(claim.claimId, claim);
   await Promise.all([persistDocBestEffort('crowdClaims', claim.claimId, claim), persistDocBestEffort('contributorProfiles', authorProfile.uid, authorProfile)]);
-  return { claim, authorProfile, voterProfile, effectiveVoteWeight, promotedToVerifiedReference };
+  return { claim, authorProfile, voterProfile, effectiveVoteWeight, promotedToVerifiedReference, demotedFromVerifiedReference };
 }
 
-export function queryNeighborhoodCrowdClaims(hoodId: number, streetNameFilter?: string): HoodClaimsQueryResult {
+export function queryNeighborhoodCrowdClaims(hoodId: number, streetNameFilter?: string, cityId?: string): HoodClaimsQueryResult {
   const normalizedFilter = typeof streetNameFilter === 'string' && streetNameFilter.trim().length > 0 ? normalizeStreetName(streetNameFilter) : null;
+  const safeCity = cityId ? validateCityParam(cityId, 'tehran') : null;
   const verifiedReferenceClaims: CrowdClaimDocument[] = [], communityStageClaims: CrowdClaimDocument[] = [], disputedClaims: CrowdClaimDocument[] = [];
   for (const claim of inMemoryCrowdClaims.values()) {
     if (claim.hoodId !== hoodId) continue;
+    if (safeCity && claim.cityId !== safeCity) continue;
     if (normalizedFilter && !claim.streetNameNormalized.includes(normalizedFilter) && !normalizedFilter.includes(claim.streetNameNormalized)) continue;
     if (claim.epistemicState === 'VERIFIED_REFERENCE') verifiedReferenceClaims.push(claim);
     else if (claim.epistemicState === 'STAGE_COMMUNITY') communityStageClaims.push(claim);

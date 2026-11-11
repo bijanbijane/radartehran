@@ -17,6 +17,7 @@ import {
 import { buildNeighborhoodEpistemicDossier } from '../decision-epistemology/epistemicDecisionEngine';
 import { synthesizeExecutiveDecisionReport } from '../decision-epistemology/unifiedDecisionSynthesisEngine';
 import { verifyAdminApiAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
+import { recordAbuseSignal } from '../../utils/serverDeliveryAndAbuseGuard';
 import {
   aggregateNeighborhoodResearchRollup,
   getDefaultRollupPeriodKey,
@@ -40,10 +41,15 @@ export function registerSocioeconomicRoutes(
   registeredSocioeconomicApps.add(app);
   const clientIp = (req: Request): string =>
     options?.getClientIp ? options.getClientIp(req) : req.ip || '127.0.0.1';
+  const applySecurityHeaders = (res: Response): void => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  };
 
   // 1. GET /api/v1/reference/hood/:hoodId/rollup — Retrieve neighborhood research dossier, MAD reference price & CASPER epistemic dossier
   app.get('/api/v1/reference/hood/:hoodId/rollup', async (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
+    applySecurityHeaders(res);
     if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 60, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
       return;
@@ -58,13 +64,17 @@ export function registerSocioeconomicRoutes(
       const periodKey = typeof req.query.periodKey === 'string' && req.query.periodKey.trim()
         ? sanitizeInput(req.query.periodKey, 24)
         : getDefaultRollupPeriodKey();
+      const intlCurrency: IntlCurrencyCode = ['IRT', 'USD', 'EUR', 'AED'].includes(String(req.query.intlCurrency))
+        ? (String(req.query.intlCurrency) as IntlCurrencyCode)
+        : 'USD';
 
-      const rollup = await getOrBuildNeighborhoodRollup(hoodId, cityId, periodKey);
+      const rollup = await getOrBuildNeighborhoodRollup(hoodId, cityId, periodKey, intlCurrency);
       const epistemicDossier = buildNeighborhoodEpistemicDossier({
         cityId,
         hoodId,
         hoodName: rollup.hoodName,
         buyPerSqm: rollup.medianPriceSqm,
+        intlCurrency,
       });
       const executiveSynthesis = synthesizeExecutiveDecisionReport(
         hoodId,
@@ -72,13 +82,15 @@ export function registerSocioeconomicRoutes(
         cityId,
         rollup.weightedReferencePriceSqm,
         rollup.medianPriceSqm,
+        85,
+        intlCurrency,
       );
       res.status(200).json({
         status: 'ok',
         rollup,
         epistemicDossier,
         executiveSynthesis,
-        referencePriceIntlText: formatMillionTomanAsIntlCurrency(rollup.weightedReferencePriceSqm, 'USD', 'fa'),
+        referencePriceIntlText: formatMillionTomanAsIntlCurrency(rollup.weightedReferencePriceSqm, intlCurrency, 'fa'),
       });
     } catch (err) {
       const code = err instanceof Error ? err.message : 'ROLLUP_FETCH_FAILED';
@@ -88,7 +100,7 @@ export function registerSocioeconomicRoutes(
 
   // 2. POST /api/v1/valuation/verify-seal — Compute and issue server-signed Hedonic valuation seal
   app.post('/api/v1/valuation/verify-seal', (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
+    applySecurityHeaders(res);
     if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'general', 30, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
       return;
@@ -133,14 +145,16 @@ export function registerSocioeconomicRoutes(
 
   // 3. POST /api/admin/rollups/trigger — Trigger research rollup aggregation for one or more neighborhoods
   app.post('/api/admin/rollups/trigger', async (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    if (options?.checkRateLimit && !options.checkRateLimit(clientIp(req), 'sync', 10, 60_000)) {
+    applySecurityHeaders(res);
+    const ip = clientIp(req);
+    if (options?.checkRateLimit && !options.checkRateLimit(ip, 'sync', 10, 60_000)) {
       res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
       return;
     }
     if (options?.verifyAdminAuth) {
       const auth = await options.verifyAdminAuth(req);
       if (!auth.ok) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(auth.status).json({ status: 'error', code: 'ADMIN_FORBIDDEN', message: auth.message });
         return;
       }
@@ -149,6 +163,7 @@ export function registerSocioeconomicRoutes(
         req.headers as Record<string, string | string[] | undefined>,
       );
       if (!fallbackAuth.authorized) {
+        recordAbuseSignal(ip, 'auth_failure');
         res.status(fallbackAuth.statusCode).json({
           status: 'error',
           code: fallbackAuth.reason || 'ADMIN_FORBIDDEN',
@@ -164,6 +179,9 @@ export function registerSocioeconomicRoutes(
       const periodKey = typeof body.periodKey === 'string' && body.periodKey.trim()
         ? sanitizeInput(body.periodKey, 24)
         : getDefaultRollupPeriodKey();
+      const intlCurrency: IntlCurrencyCode = ['IRT', 'USD', 'EUR', 'AED'].includes(String(body.intlCurrency))
+        ? (body.intlCurrency as IntlCurrencyCode)
+        : 'USD';
 
       const priceObservations = Array.isArray(body.priceObservations)
         ? (body.priceObservations as RawPriceObservation[])
@@ -178,6 +196,7 @@ export function registerSocioeconomicRoutes(
         periodKey,
         priceObservations,
         behavioralEvents,
+        intlCurrency,
       });
 
       res.status(200).json({

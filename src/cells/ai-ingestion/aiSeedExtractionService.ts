@@ -14,7 +14,8 @@ const ORDINAL_FLOOR_MAP: Record<string, number> = {
 
 export function computeSignalSourceHashSha256(input: RawPropertySignalInput): string {
   const normalizedText = normalizeDigitsToAscii(input.rawTextFa || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s+/g, ' ').trim();
-  return crypto.createHash('sha256').update(`${input.cityId || 'tehran'}|${input.hoodId || 1}|${normalizedText}`).digest('hex');
+  const hintsSig = [input.streetNameHint ? normalizePersianStreetName(input.streetNameHint) : '', input.areaSqmHint ?? '', input.totalPriceMillionTomanHint ?? '', input.pricePerSqmMillionTomanHint ?? '', input.dealMode ?? ''].join(':');
+  return crypto.createHash('sha256').update(`${input.cityId || 'tehran'}|${input.hoodId || 1}|${normalizedText}|${hintsSig}`).digest('hex');
 }
 
 export function extractFastRegexPropertySpecs(rawTextFa: string, currentJalaliYear = getCurrentJalaliYear()): {

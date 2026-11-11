@@ -70,6 +70,7 @@ export interface NeighborhoodResearchRollupDocument {
   citationCode: string;
   citationTextFa: string;
   updatedAtIso: string;
+  isSyntheticSimulation?: boolean;
 }
 
 export interface BuildNeighborhoodRollupInput {

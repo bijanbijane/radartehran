@@ -177,7 +177,8 @@ export type PolicyLimitationCategory =
   | 'DEDUCTIBLE_CONDITION'
   | 'MAXIMUM_COVERAGE_LIMIT'
   | 'SPECIAL_ENDORSEMENT'
-  | 'WAITING_PERIOD';
+  | 'WAITING_PERIOD'
+  | 'WAITING_PERIOD_LIMITATION';
 
 export interface PolicyExclusionOrLimitationRecord {
   limitationId: string;
