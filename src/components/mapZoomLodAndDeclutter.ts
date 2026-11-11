@@ -39,6 +39,13 @@ export function computeDeclutteredMarkerTiers(
     return b.overallScore - a.overallScore;
   });
   const placedBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
+  const markerSizes: Record<Exclude<MarkerVisualTier, 'dot'>, { w: number; h: number }> = {
+    compact_chip: { w: 82, h: 21 },
+    standard_pill: { w: 100, h: 23 },
+    detailed_pill: { w: 148, h: 26 },
+  };
+  const horizontalGap = 8;
+  const verticalGap = 6;
   const canPlaceBox = (x: number, y: number, w: number, h: number): boolean => {
     for (const box of placedBoxes) {
       if (Math.abs(x - box.x) * 2 < w + box.w && Math.abs(y - box.y) * 2 < h + box.h) {
@@ -46,6 +53,14 @@ export function computeDeclutteredMarkerTiers(
       }
     }
     return true;
+  };
+  const markerBox = (tier: Exclude<MarkerVisualTier, 'dot'>) => ({
+    w: markerSizes[tier].w + horizontalGap,
+    h: markerSizes[tier].h + verticalGap,
+  });
+  const registerMarker = (x: number, y: number, tier: Exclude<MarkerVisualTier, 'dot'>) => {
+    const box = markerBox(tier);
+    placedBoxes.push({ x, y, ...box });
   };
   for (const hood of prioritized) {
     const isSelected = hood.id === selectedHoodId;
@@ -61,39 +76,25 @@ export function computeDeclutteredMarkerTiers(
     }
     if (isSelected) {
       const tier: MarkerVisualTier = zoom >= 14 ? 'detailed_pill' : 'standard_pill';
-      const boxW = tier === 'detailed_pill' ? 148 : 108;
-      placedBoxes.push({ x: pt.x, y: pt.y, w: boxW, h: 28 });
+      registerMarker(pt.x, pt.y, tier);
       result.set(hood.id, tier);
       continue;
     }
-    if (zoom === 12) {
-      if (canPlaceBox(pt.x, pt.y, 88, 32)) {
-        placedBoxes.push({ x: pt.x, y: pt.y, w: 88, h: 32 });
-        result.set(hood.id, 'compact_chip');
-      } else {
-        result.set(hood.id, 'dot');
-      }
-    } else if (zoom === 13) {
-      if (canPlaceBox(pt.x, pt.y, 104, 30)) {
-        placedBoxes.push({ x: pt.x, y: pt.y, w: 104, h: 30 });
-        result.set(hood.id, 'standard_pill');
-      } else if (canPlaceBox(pt.x, pt.y, 62, 24)) {
-        placedBoxes.push({ x: pt.x, y: pt.y, w: 62, h: 24 });
-        result.set(hood.id, 'compact_chip');
-      } else {
-        result.set(hood.id, 'dot');
-      }
-    } else {
-      if (canPlaceBox(pt.x, pt.y, 146, 30)) {
-        placedBoxes.push({ x: pt.x, y: pt.y, w: 146, h: 30 });
-        result.set(hood.id, 'detailed_pill');
-      } else if (canPlaceBox(pt.x, pt.y, 98, 26)) {
-        placedBoxes.push({ x: pt.x, y: pt.y, w: 98, h: 26 });
-        result.set(hood.id, 'standard_pill');
-      } else {
-        result.set(hood.id, 'compact_chip');
-      }
+    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = zoom < 13
+      ? ['compact_chip']
+      : zoom < 14
+        ? ['standard_pill', 'compact_chip']
+        : ['detailed_pill', 'standard_pill', 'compact_chip'];
+    let placed = false;
+    for (const tier of candidateTiers) {
+      const box = markerBox(tier);
+      if (!canPlaceBox(pt.x, pt.y, box.w, box.h)) continue;
+      registerMarker(pt.x, pt.y, tier);
+      result.set(hood.id, tier);
+      placed = true;
+      break;
     }
+    if (!placed) result.set(hood.id, 'dot');
   }
   return result;
 }

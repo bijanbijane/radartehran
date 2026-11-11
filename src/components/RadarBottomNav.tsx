@@ -107,6 +107,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
           type="button"
           aria-expanded={moreOpen}
           aria-controls="radar-mobile-more-menu"
+          aria-label={isEn ? 'More sections' : 'بخش‌های بیشتر'}
           onClick={() => {
             p.setMobileSheetOpen(false);
             p.setMobileFilterOpen(false);
@@ -117,7 +118,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
         >
           {(moreOpen || isMoreView) && <span className="absolute top-0 inset-x-2 h-0.5 rounded-b-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />}
           <MoreHorizontal className="w-4 h-4" />
-          <span>{isEn ? 'Admin' : 'مدیریت'}</span>
+          <span>{isEn ? 'More' : 'بیشتر'}</span>
           </button>
         </div>
       </nav>

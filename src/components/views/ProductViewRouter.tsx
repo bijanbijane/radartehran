@@ -140,7 +140,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
             </button>
           ))}
         </div>
-        <div role="group" aria-label={isEn ? 'Map overlays' : 'لایه‌های روی نقشه'} className="flex items-center gap-1 shrink-0">
+        <div role="group" aria-label={isEn ? 'Map overlays' : 'لایه‌های روی نقشه'} className="flex items-center gap-1 shrink-0 lg:hidden">
           <button
             type="button"
             aria-pressed={showMetroLines}

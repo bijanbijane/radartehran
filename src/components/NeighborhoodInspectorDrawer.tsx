@@ -122,19 +122,26 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               <div className="text-[10px] text-slate-400 mt-0.5 tabular-nums">{selectedHood.distKm !== null ? `فاصله تا ${selectedWorkHub.name}: ${toPersianNum(selectedHood.distKm)} کم${areaUnit === 'sqft' ? ` (${toPersianNum((selectedHood.distKm * 0.621371).toFixed(1))} mi)` : ''}` : `پایه ${formatAreaShort(80, areaUnit)} نوساز: ${toPersianNum(selectedHood.rahn80m)} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : ''}`}</div>
             </div>
           </div>
-          <div ref={anatomyTabsRef} role="tablist" className="grid grid-cols-5 gap-0.5 apple-segmented dark:bg-slate-800 p-1 rounded-[10px] mb-3.5 text-[10px] font-bold whitespace-nowrap">
+          <div ref={anatomyTabsRef} role="tablist" aria-label={radarLocale === 'en' ? 'Neighborhood information' : 'بخش‌های کارنامه محله'} aria-orientation="horizontal" className="flex gap-1 overflow-x-auto no-scrollbar apple-segmented dark:bg-slate-800 p-1 rounded-[10px] mb-3.5 text-xs font-bold">
             {[
               { id: 'scorecard' as const, label: inspectorCopy.scorecardTab }, { id: 'market' as const, label: inspectorCopy.marketTab },
               { id: 'bargains' as const, label: `${inspectorCopy.bargainsTabPrefix} (${toPersianNum((selectedHood?.bargains || []).length)})` },
               { id: 'reviews' as const, label: inspectorCopy.reviewsTab },
               { id: 'vote' as const, label: inspectorCopy.voteTab }, ].map((t, idx, arr) => { const isActive = t.id === 'vote' ? activeTab === 'vote' || activeTab === 'osm_places' : activeTab === t.id; return ( <button
-                  key={t.id} type="button" role="tab" aria-selected={isActive} data-testid={`inspector-tab-${t.id}`} onClick={() => setActiveTab(t.id)} onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); setActiveTab(arr[(idx + (e.key === 'ArrowLeft' ? 1 : arr.length - 1)) % arr.length].id); } }}
-                  className={`py-1.5 px-1 rounded-[8px] text-center truncate transition cursor-pointer ${isActive ? 'apple-segmented-pill-active dark:bg-slate-900 dark:text-white font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                  key={t.id} id={`inspector-tab-${t.id}`} type="button" role="tab" aria-selected={isActive} aria-controls={`inspector-panel-${t.id}`} tabIndex={isActive ? 0 : -1} data-testid={`inspector-tab-${t.id}`} onClick={() => setActiveTab(t.id)} onKeyDown={(event) => { const nextIndex = event.key === 'ArrowLeft' ? (idx + 1) % arr.length : event.key === 'ArrowRight' ? (idx + arr.length - 1) % arr.length : event.key === 'Home' ? 0 : event.key === 'End' ? arr.length - 1 : -1; if (nextIndex >= 0) { event.preventDefault(); setActiveTab(arr[nextIndex].id); event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus(); } }}
+                  className={`min-h-11 shrink-0 rounded-[8px] px-2.5 text-center whitespace-nowrap transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${isActive ? 'apple-segmented-pill-active dark:bg-slate-900 dark:text-white font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   {t.label}
                 </button>
               ); })}
           </div>
+          <div
+            id={`inspector-panel-${activeTab === 'osm_places' ? 'vote' : activeTab}`}
+            role="tabpanel"
+            aria-labelledby={`inspector-tab-${activeTab === 'osm_places' ? 'vote' : activeTab}`}
+            tabIndex={0}
+            className="outline-none"
+          >
           <NeighborhoodInspectorTabs
             key={selectedHood.id} activeTab={activeTab} selectedHood={selectedHood} activeCity={activeCity} mode={mode}
             targetSqm={targetSqm} rentAgeMultiplier={rentAgeMultiplier}
@@ -170,6 +177,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             setVoteComment={setVoteComment} verifyingGeo={verifyingGeo}
             onResidentVote={onResidentVote} voteStatus={voteStatus} cloudVotes={cloudVotes}
           />
+          </div>
           <div className="my-3.5 space-y-2">
             <button type="button" onClick={() => setShowHedonicModal(true)} className="w-full py-2.5 px-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 text-xs font-black flex items-center justify-between transition cursor-pointer shadow-xs">
               <span className="flex items-center gap-1.5">
@@ -225,7 +233,12 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
           <React.Suspense fallback={null}>
             {(activeTab === 'scorecard' || activeTab === 'vote') && ( <NeighborhoodPhotoGallery selectedHood={selectedHood} hoodLandmarks={hoodLandmarks} onFocusLandmarkOnMap={onFocusLandmarkOnMap} />
             )}
-            <div className="my-3.5">
+            <details className="my-3.5 rounded-xl border border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-900/70">
+              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-slate-800 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:text-slate-200">
+                <span>تحلیل پیشرفته و مقایسه</span>
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Stage 2 · ماتریس محله‌ها</span>
+              </summary>
+              <div className="space-y-3 border-t border-slate-200 p-3 dark:border-slate-800">
               <Stage2MasterWidget
                 hoodId={selectedHood.id}
                 hoodName={selectedHood.name}
@@ -240,12 +253,13 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   if (found) onSelectNeighborhood(found as EvaluatedNeighborhood);
                 }}
               />
-            </div>
-            <ExpandableComparisonTable
-              currentHood={selectedHood} allNeighborhoods={evaluatedNeighborhoods}
-              targetSqm={targetSqm} rentAgeMultiplier={rentAgeMultiplier} mode={mode}
-              onSelectNeighborhood={onSelectNeighborhood}
-            />
+                <ExpandableComparisonTable
+                  currentHood={selectedHood} allNeighborhoods={evaluatedNeighborhoods}
+                  targetSqm={targetSqm} rentAgeMultiplier={rentAgeMultiplier} mode={mode}
+                  onSelectNeighborhood={onSelectNeighborhood}
+                />
+              </div>
+            </details>
           </React.Suspense>
         </div>
         <InspectorSponsorFooter

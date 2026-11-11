@@ -143,12 +143,12 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
               <span className="text-indigo-200 font-black">×</span>
             </button>
           )}
-        {(!hideOnMobileSheet) && <button type="button" aria-pressed={overlayState.showMetroLines} onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !overlayState.showMetroLines })} className={`px-2.5 py-2 rounded-xl text-[11px] font-bold transition cursor-pointer border ${overlayState.showMetroLines ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-transparent dark:border-slate-800'}`} title="نمایش یا مخفی‌سازی خطوط مترو روی نقشه">
+        <button type="button" aria-pressed={overlayState.showMetroLines} onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !overlayState.showMetroLines })} className={`px-2.5 py-2 rounded-xl text-[11px] font-bold transition cursor-pointer border ${overlayState.showMetroLines ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-transparent dark:border-slate-800'}`} title="نمایش یا مخفی‌سازی خطوط مترو روی نقشه">
           {legendCopy.metroPillLabel}
-        </button>}
-        {(!hideOnMobileSheet) && <button type="button" aria-pressed={overlayState.showTrafficZones} onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !overlayState.showTrafficZones })} className={`px-2.5 py-2 rounded-xl text-[11px] font-bold transition cursor-pointer border ${overlayState.showTrafficZones ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-transparent dark:border-slate-800'}`} title="نمایش یا مخفی‌سازی محدوده طرح ترافیک و کنترل آلودگی هوا">
+        </button>
+        <button type="button" aria-pressed={overlayState.showTrafficZones} onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !overlayState.showTrafficZones })} className={`px-2.5 py-2 rounded-xl text-[11px] font-bold transition cursor-pointer border ${overlayState.showTrafficZones ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-transparent dark:border-slate-800'}`} title="نمایش یا مخفی‌سازی محدوده طرح ترافیک و کنترل آلودگی هوا">
           {legendCopy.trafficPillLabel}
-        </button>}
+        </button>
         <button type="button" aria-expanded={open} onClick={onToggle} className="flex items-center gap-1.5 apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 border border-transparent dark:border-slate-800 transition cursor-pointer">
           <span className="flex items-center gap-1" aria-hidden="true">
             <span className="w-2 h-2 rounded-full bg-emerald-500" /><span className="w-2 h-2 rounded-full bg-amber-500" /><span className="w-2 h-2 rounded-full bg-rose-500" />

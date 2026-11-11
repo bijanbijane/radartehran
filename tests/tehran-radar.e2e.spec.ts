@@ -99,5 +99,15 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     // Verify mobile inspector sheet handle has accessible role and label
     const sheetHandle = page.locator('[role="button"][aria-label*="پنل کالبدشکافی"]');
     await expect(sheetHandle).toBeVisible();
+    await sheetHandle.click();
+    const inspectorTabs = page.getByRole('tablist', { name: 'بخش‌های کارنامه محله' });
+    await expect(inspectorTabs.getByRole('tab')).toHaveCount(5);
+    const scorecardTab = page.getByRole('tab', { name: 'کارنامه' });
+    const marketTab = page.getByRole('tab', { name: 'بازار و نمودار' });
+    await scorecardTab.focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(marketTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#inspector-panel-market')).toBeVisible();
+    await expect(page.getByText('تحلیل پیشرفته و مقایسه')).toBeVisible();
   });
 });
