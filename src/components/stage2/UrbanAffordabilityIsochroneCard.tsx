@@ -45,7 +45,8 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
 
   const availableHubs = useMemo(() => {
     const safeCity = (cityKey in MULTI_CITY_CONFIGS ? cityKey : 'tehran') as CityId;
-    return MULTI_CITY_CONFIGS[safeCity]?.workHubs ?? WORK_HUBS;
+    const raw = MULTI_CITY_CONFIGS[safeCity]?.workHubs ?? WORK_HUBS;
+    return raw.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null);
   }, [cityKey]);
   const effectiveHubId = useMemo(() => {
     return availableHubs.some((h) => h.id === selectedHubId) ? selectedHubId : (availableHubs[0]?.id || 'vanak');

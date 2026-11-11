@@ -272,14 +272,17 @@ export class PropertyInsuranceService {
     for (const prod of products) {
       if (prod.availabilityStatus === 'active' && Number.isFinite(query.propertyValue) && query.propertyValue > 0) {
         try {
+          const hasEarthquake = prod.coverages.some(c => c.category === 'earthquake_and_volcano');
+          const hasFlood = prod.coverages.some(c => c.category === 'flood_and_water_damage' || c.category === 'storm_and_atmospheric');
+          const extraCovCount = Math.max(0, prod.coverages.length - 1);
           const est = calculateIndicativeAnnualPremium({
             productId: prod.productId,
             productVersion: prod.productVersion,
             buildingReplacementValue: query.propertyValue,
             formulaBasis: {
-              baseRatePerThousandBuilding: 0.7,
-              earthquakeZoneFactor: 1.5,
-              floodFactor: 0.05,
+              baseRatePerThousandBuilding: Number((0.6 + Math.min(4, extraCovCount) * 0.05).toFixed(2)),
+              earthquakeZoneFactor: hasEarthquake ? 1.5 : 1.0,
+              floodFactor: hasFlood ? 0.05 : 0.0,
               constructionMultiplier: query.constructionType === 'traditional_masonry' ? 1.35 : query.constructionType === 'reinforced_concrete' ? 1.1 : 1.0,
               applicableTaxesPercent: 9.0
             },

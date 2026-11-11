@@ -7,7 +7,7 @@
 import crypto from 'node:crypto';
 import { sanitizeInput } from '../../../src/utils/security';
 
-export const CASPER_AGENT_ID = 'CASPER-02' as const;
+export const CASPER_AGENT_ID = 'CASPER-04' as const;
 export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev' as const;
 export const ALLOWED_CASPER_HUB_HOST = 'casper-hub-api.bijanbijane-1.workers.dev' as const;
 export const MAX_HUB_RESPONSE_BYTES = 512 * 1024;
@@ -18,99 +18,45 @@ export interface CasperHubResolvedConfig {
   readonly tokenConfigured: boolean;
 }
 
-export interface CasperHubChangesQuery {
-  after?: number;
-  limit?: number;
-}
+export interface CasperHubChangesQuery { after?: number; limit?: number; }
 
 export interface CasperHubAgentIdentity {
-  agent_id: string;
-  display_name?: string;
-  role?: string;
-  status?: string;
-  capabilities?: string[];
-  last_seen_at?: string;
+  agent_id: string; display_name?: string; role?: string; status?: string; capabilities?: string[]; last_seen_at?: string;
 }
 
 export interface CasperHubWhoamiData {
-  authenticated?: boolean;
-  agent_id?: string;
-  display_name?: string;
-  role?: string;
-  status?: string;
-  capabilities?: string[];
-  server_time?: string;
+  authenticated?: boolean; agent_id?: string; display_name?: string; role?: string; status?: string; capabilities?: string[]; server_time?: string;
   [key: string]: unknown;
 }
 
 export interface CasperHubNoteRecord {
-  note_id: string;
-  author_agent_id?: string;
-  created_by_agent_id?: string;
-  note_scope: 'global' | 'roadmap' | 'task' | 'agent' | string;
-  roadmap_id: string | null;
-  task_id: string | null;
-  note_type: 'checkpoint' | 'finding' | 'blocker' | 'decision' | 'handover' | string;
-  importance: number;
-  title: string;
-  summary: string;
-  detail_ref: string | null;
-  tags?: string[];
-  created_at: string | number;
+  note_id: string; author_agent_id?: string; created_by_agent_id?: string; note_scope: 'global' | 'roadmap' | 'task' | 'agent' | string;
+  roadmap_id: string | null; task_id: string | null; note_type: 'checkpoint' | 'finding' | 'blocker' | 'decision' | 'handover' | string;
+  importance: number; title: string; summary: string; detail_ref: string | null; tags?: string[]; created_at: string | number;
 }
 
 export interface CasperHubBootstrapData {
-  hub?: {
-    service?: string;
-    version?: string;
-    server_time?: string;
-  };
-  agent?: CasperHubAgentIdentity;
-  roadmaps?: Array<Record<string, unknown>>;
-  relevant_notes?: CasperHubNoteRecord[];
-  assigned_tasks?: Array<Record<string, unknown>>;
-  sync_cursor?: {
-    latest_event_id?: number;
-  };
-  limits?: Record<string, number>;
+  hub?: { service?: string; version?: string; server_time?: string; };
+  agent?: CasperHubAgentIdentity; roadmaps?: Array<Record<string, unknown>>; relevant_notes?: CasperHubNoteRecord[];
+  assigned_tasks?: Array<Record<string, unknown>>; sync_cursor?: { latest_event_id?: number; }; limits?: Record<string, number>;
   [key: string]: unknown;
 }
 
 export interface CasperHubChangeEvent {
-  event_id: number | string;
-  event_seq?: number;
-  event_type: string;
-  actor_agent_id: string;
-  entity_type: string;
-  entity_id: string;
-  roadmap_id?: string | null;
-  task_id?: string | null;
-  summary: string;
-  payload?: Record<string, unknown>;
-  created_at: string | number;
+  event_id: number | string; event_seq?: number; event_type: string; actor_agent_id: string;
+  entity_type: string; entity_id: string; roadmap_id?: string | null; task_id?: string | null;
+  summary: string; payload?: Record<string, unknown>; created_at: string | number;
 }
 
 export interface CasperHubChangesData {
-  events?: CasperHubChangeEvent[];
-  next_cursor?: number;
-  has_more?: boolean;
+  events?: CasperHubChangeEvent[]; next_cursor?: number; has_more?: boolean;
   [key: string]: unknown;
 }
 
 export interface CasperHubNotePayload {
-  title?: string;
-  summary?: string;
-  content?: string;
-  note_scope?: 'global' | 'roadmap' | 'task' | 'agent' | string;
-  roadmap_id?: string | null;
-  task_id?: string | null;
-  note_type?: 'checkpoint' | 'finding' | 'blocker' | 'decision' | 'handover' | string;
-  importance?: number;
-  detail_ref?: string | null;
-  tags?: string[];
-  idempotency_key?: string;
-  category?: string;
-  missionId?: string;
+  title?: string; summary?: string; content?: string; note_scope?: 'global' | 'roadmap' | 'task' | 'agent' | string;
+  roadmap_id?: string | null; task_id?: string | null; note_type?: 'checkpoint' | 'finding' | 'blocker' | 'decision' | 'handover' | string;
+  importance?: number; detail_ref?: string | null; tags?: string[]; idempotency_key?: string; category?: string; missionId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -137,50 +83,43 @@ export function registerRuntimeHubTokenForRedaction(token?: string): void {
   }
 }
 
-/**
- * Redacts any accidental Bearer token or credential fragments from error or note strings.
- */
-export function redactSensitiveTokenText(text: string, extraToken?: string, maxLength = 500): string {
-  const envToken = typeof process !== 'undefined' ? process.env?.CASPER_HUB_TOKEN?.trim() : '';
-  let safe = String(text || '').replace(/\bBearer\s+\S+/gi, 'Bearer [REDACTED]');
-  for (const candidate of [envToken, registeredRuntimeHubToken, extraToken?.trim()]) {
-    if (candidate && candidate.length >= 4) {
-      safe = safe.split(candidate).join('[REDACTED_CASPER_HUB_TOKEN]');
+export function redactSensitiveText(input: string, secretToken?: string | null): string {
+  let out = input.replace(/\bBearer\s+\S+/gi, 'Bearer [REDACTED]').replace(/\\u0042earer\s+\S+/gi, 'Bearer [REDACTED]');
+  if (secretToken && secretToken.length >= 4) {
+    const enc = encodeURIComponent(secretToken), b64 = Buffer.from(secretToken, 'utf8').toString('base64'), esc = secretToken.replace(/\//g, '\\/');
+    for (const s of [secretToken, enc, b64, esc]) {
+      if (s) out = out.split(s).join('[REDACTED]');
     }
   }
-  const safeMax = Number.isInteger(maxLength) && maxLength > 0 ? Math.min(4000, maxLength) : 500;
-  return safe.slice(0, safeMax);
+  return out;
 }
 
-/**
- * Derives a deterministic SHA-256 idempotency key from canonical note content so retries
- * of identical notes after transient network drops never duplicate records in D1.
- */
-export function deriveDeterministicNoteIdempotencyKey(fields: {
-  note_scope: string;
-  roadmap_id: string | null;
-  task_id: string | null;
-  note_type: string;
-  importance: number;
-  title: string;
-  summary: string;
-  detail_ref: string | null;
-  tags: string[];
-}): string {
-  const canonical = JSON.stringify({
-    agent_id: CASPER_AGENT_ID,
-    note_scope: fields.note_scope,
-    roadmap_id: fields.roadmap_id,
-    task_id: fields.task_id,
-    note_type: fields.note_type,
-    importance: fields.importance,
-    title: fields.title,
-    summary: fields.summary,
-    detail_ref: fields.detail_ref,
-    tags: [...fields.tags].sort(),
-  });
-  const digest = crypto.createHash('sha256').update(canonical, 'utf8').digest('hex');
-  return `casper02-note-${digest.slice(0, 32)}`;
+export function redactSensitiveTokenText(text: string, extraToken?: string, maxLength = 500): string {
+  return redactSensitiveText(text, extraToken).slice(0, maxLength);
+}
+
+function canonicalizeUnicode(v: unknown): string {
+  if (typeof v !== 'string') return '';
+  return v.normalize('NFC').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[٠-٩]/g, (c) => String.fromCharCode(c.charCodeAt(0) + (0x06f0 - 0x0660))).trim();
+}
+
+export function deriveDeterministicNoteIdempotencyKey(payload: any, seed?: string): string {
+  if (seed && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(seed.trim())) return seed.trim().toLowerCase();
+  const tags = Array.isArray(payload?.tags) ? Array.from(new Set(payload.tags.map((t: any) => canonicalizeUnicode(t)).filter(Boolean))).sort() : [];
+  const canonical = {
+    note_scope: canonicalizeUnicode(payload?.note_scope) || 'global',
+    roadmap_id: canonicalizeUnicode(payload?.roadmap_id) || null,
+    task_id: canonicalizeUnicode(payload?.task_id) || null,
+    note_type: canonicalizeUnicode(payload?.note_type) || 'checkpoint',
+    importance: typeof payload?.importance === 'string' ? (payload.importance === 'high' ? 4 : 3) : Number(payload?.importance ?? 3),
+    title: canonicalizeUnicode(payload?.title),
+    summary: canonicalizeUnicode(payload?.summary),
+    detail_ref: canonicalizeUnicode(payload?.detail_ref) || null,
+    tags,
+  };
+  const hex = crypto.createHash('sha256').update(seed ? `casper-hub-key-v1:${canonicalizeUnicode(seed)}:${JSON.stringify(canonical)}` : `casper-hub-note-v1:${JSON.stringify(canonical)}`).digest('hex');
+  const variant = ((parseInt(hex.slice(16, 17), 16) & 0x3) | 0x8).toString(16);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
 export class CasperHubClientError extends Error {
@@ -271,4 +210,70 @@ export function assertCasper02Identity(
       403,
     );
   }
+}
+
+export function stripBidiAndControl(text: string): string {
+  return text.replace(/[\u200E-\u200F\u202A-\u202E\u2066-\u2069\x00-\x1F\x7F]/g, '');
+}
+
+export function buildDeterministicNoteIdempotencyKey(fields: {
+  note_scope: string; roadmap_id: string | null; task_id: string | null;
+  note_type: string; title: string; summary: string;
+}): string {
+  const norm = (s: unknown) => (typeof s === 'string' ? s.normalize('NFC').replace(/\s+/g, ' ').trim() : '');
+  const tuple = [
+    'CASPER-04', norm(fields.note_scope), norm(fields.roadmap_id),
+    norm(fields.task_id), norm(fields.note_type), norm(fields.title), norm(fields.summary),
+  ];
+  return `casper-04-${crypto.createHash('sha256').update(JSON.stringify(tuple), 'utf8').digest('hex').slice(0, 32)}`;
+}
+
+function computeEntropy(counts: Map<string, number>, total: number): number {
+  if (total <= 1 || counts.size <= 1) return 0;
+  let ent = 0;
+  for (const c of counts.values()) { if (c > 0) { const p = c / total; ent -= p * Math.log2(p); } }
+  return Math.round(ent * 1000) / 1000;
+}
+
+export function parseSafeHubJsonAST(rawText: string, secretToken?: string | null): any {
+  try {
+    return JSON.parse(rawText || '{}', (k, v) => {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') return undefined;
+      return typeof v === 'string' ? redactSensitiveText(stripBidiAndControl(v), secretToken) : v;
+    });
+  } catch {
+    return {};
+  }
+}
+
+export function analyzeCasperHubEpistemicState(payload: any) {
+  const feed = Array.isArray(payload?.change_feed) ? payload.change_feed : Array.isArray(payload?.events) ? payload.events : [];
+  const notes = Array.isArray(payload?.notes) ? payload.notes : Array.isArray(payload?.relevant_notes) ? payload.relevant_notes : [];
+  const tasks = Array.isArray(payload?.assigned_tasks) ? payload.assigned_tasks : [];
+  const seqs = feed.map((item: any) => Number(item?.seq ?? item?.event_seq ?? item?.event_id)).filter((n: any) => Number.isFinite(n) && n >= 0);
+  let isMonotonic = true, sequenceGapCount = 0;
+  for (let i = 1; i < seqs.length; i++) {
+    if (seqs[i] <= seqs[i - 1]) isMonotonic = false;
+    else if (seqs[i] - seqs[i - 1] > 1) sequenceGapCount += seqs[i] - seqs[i - 1] - 1;
+  }
+  const minSeq = seqs.length > 0 ? Math.min(...seqs) : 0, maxSeq = seqs.length > 0 ? Math.max(...seqs) : 0;
+  const cursorObj = payload?.sync_cursor;
+  const rawLastSeq = typeof cursorObj === 'object' && cursorObj !== null ? (cursorObj.last_seq ?? cursorObj.latest_event_id) : (cursorObj ?? payload?.next_cursor ?? payload?.effective_sync_cursor ?? maxSeq);
+  const lastSeq = Number(rawLastSeq ?? maxSeq);
+  const syncCursorLag = Number.isFinite(lastSeq) ? Math.max(0, maxSeq - lastSeq) : 0;
+  const agentCounts = new Map<string, number>(), typeCounts = new Map<string, number>();
+  let criticalNotesCount = 0, activeBlockersCount = tasks.filter((t: any) => t?.status === 'blocked').length;
+  for (const n of notes) {
+    const agent = String(n?.author_agent || n?.author_agent_id || n?.created_by_agent_id || 'UNKNOWN'), nType = String(n?.note_type || 'checkpoint');
+    agentCounts.set(agent, (agentCounts.get(agent) ?? 0) + 1); typeCounts.set(nType, (typeCounts.get(nType) ?? 0) + 1);
+    const imp = typeof n?.importance === 'string' ? (n.importance === 'high' ? 4 : n.importance === 'critical' ? 5 : 3) : Number(n?.importance ?? 3);
+    if (imp >= 4) criticalNotesCount++;
+    if (nType === 'blocker') activeBlockersCount++;
+  }
+  return {
+    minSeq, maxSeq, isMonotonic, sequenceGapCount, syncCursorLag,
+    agentContributionEntropyBits: computeEntropy(agentCounts, notes.length),
+    noteTypeEntropyBits: computeEntropy(typeCounts, notes.length),
+    criticalNotesCount, activeBlockersCount,
+  };
 }

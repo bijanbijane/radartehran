@@ -928,6 +928,23 @@ test('3. Manages claims, duplicate claim protection, private evidence, multi-ass
       err.message.includes('INVALID_SETTLEMENT_AMOUNT'),
   );
 
+  // Settlement validation: deductible below contractual minimum (20M fixed deductible on FIRE coverage) is rejected
+  await assert.rejects(
+    async () =>
+      h.service.recordSettlementDecision({
+        principal: h.reviewerPrincipal,
+        idempotencyKey: 'idem_settle_below_contractual_ded',
+        claimId: claim.claimId,
+        deductibleAppliedAmount: 5_000_000,
+        approvedSettlementAmount: 180_000_000,
+        rejectedAmount: 15_000_000,
+        settlementDecisionReference: 'SYNTH-SET-LOW-DED',
+      }),
+    (err: unknown) =>
+      err instanceof CoreApiError &&
+      err.message.includes('DEDUCTIBLE_BELOW_CONTRACTUAL_MINIMUM'),
+  );
+
   // Record valid settlement (200M eligible - 20M deductible = 180M approved, 50M rejected)
   const settlementRes = await h.service.recordSettlementDecision({
     principal: h.reviewerPrincipal,

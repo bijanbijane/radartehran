@@ -179,7 +179,7 @@ export function buildNeighborhoodSpatialContagionReport(
   customHood?: Neighborhood,
   targetSqm: number = 80
 ): NeighborhoodSpatialContagionReport {
-  const safeCity = (['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'].includes(String(cityKey)) ? cityKey : 'tehran') as CityId;
+  const safeCity = (String(cityKey) in MULTI_CITY_CONFIGS ? String(cityKey) : 'tehran') as CityId;
   const allHoods = MULTI_CITY_CONFIGS[safeCity]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   const target = customHood ?? allHoods.find((h) => h.id === hoodId || h.name === hoodName) ?? allHoods[0];
   const targetBuy = typeof basePriceSqm === 'number' && basePriceSqm > 0 ? basePriceSqm : (target?.buyPerSqm ?? 120);

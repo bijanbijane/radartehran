@@ -76,29 +76,32 @@ export function calculateDeductibleDeduction(
     return { deductibleAmount: 0, netPayableClaimAmount: 0 };
   }
 
+  const safeNonNeg = (v: number | undefined): number =>
+    typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0;
+  const clampMinMax = (val: number): number => {
+    let res = val;
+    const minAmt = deductible.minAmount !== undefined && Number.isFinite(deductible.minAmount) ? Math.max(0, deductible.minAmount) : undefined;
+    const maxAmt = deductible.maxAmount !== undefined && Number.isFinite(deductible.maxAmount) ? Math.max(0, deductible.maxAmount) : undefined;
+    if (minAmt !== undefined) res = Math.max(res, minAmt);
+    if (maxAmt !== undefined) res = Math.min(res, minAmt !== undefined ? Math.max(minAmt, maxAmt) : maxAmt);
+    return res;
+  };
+
   let deductibleAmount = 0;
+  const rate = Math.min(1, Math.max(0, safeNonNeg(deductible.percentageRate) / 100));
 
   if (deductible.type === 'fixed_amount' || deductible.type === 'per_claim_fixed') {
-    deductibleAmount = deductible.fixedAmount ?? 0;
+    deductibleAmount = safeNonNeg(deductible.fixedAmount);
   } else if (deductible.type === 'percentage_of_loss') {
-    const rate = (deductible.percentageRate ?? 0) / 100;
     deductibleAmount = assessedLossAmount * rate;
   } else if (deductible.type === 'percentage_with_min_max') {
-    const rate = (deductible.percentageRate ?? 0) / 100;
-    let computed = assessedLossAmount * rate;
-    if (deductible.minAmount !== undefined) computed = Math.max(computed, deductible.minAmount);
-    if (deductible.maxAmount !== undefined) computed = Math.min(computed, deductible.maxAmount);
-    deductibleAmount = computed;
+    deductibleAmount = clampMinMax(assessedLossAmount * rate);
   } else if (deductible.type === 'percentage_of_sum_insured') {
     const baseAmount = totalSumInsured && Number.isFinite(totalSumInsured) && totalSumInsured > 0 ? totalSumInsured : assessedLossAmount;
-    const rate = (deductible.percentageRate ?? 0) / 100;
-    let computed = baseAmount * rate;
-    if (deductible.minAmount !== undefined) computed = Math.max(computed, deductible.minAmount);
-    if (deductible.maxAmount !== undefined) computed = Math.min(computed, deductible.maxAmount);
-    deductibleAmount = computed;
+    deductibleAmount = clampMinMax(baseAmount * rate);
   }
 
-  const finalDeductible = Math.min(deductibleAmount, assessedLossAmount);
+  const finalDeductible = Math.max(0, Math.min(deductibleAmount, assessedLossAmount));
   const netPayable = Math.max(0, assessedLossAmount - finalDeductible);
 
   return {
@@ -125,17 +128,37 @@ export function calculateIndicativeAnnualPremium(params: {
   if (!Number.isFinite(contentsValue) || contentsValue < 0 || contentsValue > Number.MAX_SAFE_INTEGER) {
     throw new Error('ارزش اثاثیه باید عددی نامنفی، معتبر و متناهی باشد.');
   }
+  if (
+    !basis ||
+    !Number.isFinite(basis.baseRatePerThousandBuilding) ||
+    basis.baseRatePerThousandBuilding <= 0 ||
+    !Number.isFinite(basis.constructionMultiplier) ||
+    basis.constructionMultiplier <= 0 ||
+    !Number.isFinite(basis.earthquakeZoneFactor) ||
+    basis.earthquakeZoneFactor < 0 ||
+    !Number.isFinite(basis.floodFactor) ||
+    basis.floodFactor < 0 ||
+    !Number.isFinite(basis.applicableTaxesPercent) ||
+    basis.applicableTaxesPercent < 0 ||
+    basis.applicableTaxesPercent > 100 ||
+    (basis.officialDiscountsPercent !== undefined && (!Number.isFinite(basis.officialDiscountsPercent) || basis.officialDiscountsPercent < 0 || basis.officialDiscountsPercent > 100))
+  ) {
+    throw new Error('ضرایب و نرخ‌های تعرفه محاسبه حق بیمه نامعتبر یا خارج از دامنه مجاز است.');
+  }
 
   // Base building premium: (Value / 1000) * baseRate * constructionMultiplier
   const buildingPerThousand = params.buildingReplacementValue / 1000;
   const baseBuildingPremium = buildingPerThousand * basis.baseRatePerThousandBuilding * basis.constructionMultiplier;
 
-  // Contents premium
+  // Contents premium (subject to host building structural risk multiplier)
   let contentsPremium = 0;
   if (contentsValue > 0) {
     const contentsPerThousand = contentsValue / 1000;
-    const rateContents = basis.baseRatePerThousandContents ?? basis.baseRatePerThousandBuilding;
-    contentsPremium = contentsPerThousand * rateContents;
+    const rateContents =
+      basis.baseRatePerThousandContents !== undefined && Number.isFinite(basis.baseRatePerThousandContents) && basis.baseRatePerThousandContents > 0
+        ? basis.baseRatePerThousandContents
+        : basis.baseRatePerThousandBuilding;
+    contentsPremium = contentsPerThousand * rateContents * basis.constructionMultiplier;
   }
 
   // Environmental and natural hazard surcharges
@@ -145,7 +168,8 @@ export function calculateIndicativeAnnualPremium(params: {
   const floodSurcharge = baseTotal * Math.max(0, basis.floodFactor);
 
   const subtotalBeforeDiscounts = baseTotal + earthquakeSurcharge + floodSurcharge;
-  const discounts = subtotalBeforeDiscounts * ((basis.officialDiscountsPercent ?? 0) / 100);
+  const discountPct = Math.min(100, Math.max(0, basis.officialDiscountsPercent ?? 0));
+  const discounts = subtotalBeforeDiscounts * (discountPct / 100);
   const taxableAmount = Math.max(0, subtotalBeforeDiscounts - discounts);
   const taxesAndOfficialLevies = taxableAmount * (basis.applicableTaxesPercent / 100);
 
@@ -164,7 +188,7 @@ export function calculateIndicativeAnnualPremium(params: {
     floodSurcharge: roundCurrency(floodSurcharge, currency),
     taxesAndOfficialLevies: roundCurrency(taxesAndOfficialLevies, currency),
     totalIndicativeAnnualPremium: totalIndicative,
-    breakdownSummaryFa: `حق بیمه اعیان: ${roundCurrency(baseBuildingPremium, currency).toLocaleString('fa-IR')} | زلزله: ${roundCurrency(earthquakeSurcharge, currency).toLocaleString('fa-IR')} | مالیات و عوارض: ${roundCurrency(taxesAndOfficialLevies, currency).toLocaleString('fa-IR')}`,
+    breakdownSummaryFa: `حق بیمه اعیان: ${roundCurrency(baseBuildingPremium, currency).toLocaleString('fa-IR')} | زلزله: ${roundCurrency(earthquakeSurcharge, currency).toLocaleString('fa-IR')} | سیل: ${roundCurrency(floodSurcharge, currency).toLocaleString('fa-IR')} | مالیات و عوارض: ${roundCurrency(taxesAndOfficialLevies, currency).toLocaleString('fa-IR')}`,
     assumptions: [
       `ضریب سازه: ${basis.constructionMultiplier}`,
       `ضریب پهنه زلزله: ${basis.earthquakeZoneFactor}`,
@@ -212,10 +236,13 @@ export function calculateArticle10ProportionalSettlement(params: {
 
   const adequacy = analyzeInsuredValueAdequacy(params.replacementCostAtLoss, params.declaredSumInsured);
   const isUnderinsured = adequacy.status === 'underinsured';
+  // Principle of Indemnity (Articles 10, 12, 19 of Iranian Insurance Law): eligible loss cannot exceed actual replacement value or policy sum insured
+  const indemnityBoundedGrossLoss = Math.min(params.assessedGrossLossAmount, params.replacementCostAtLoss);
   const ratioFactor = Math.min(1.0, params.declaredSumInsured / params.replacementCostAtLoss);
-  const proportionalLoss = isUnderinsured
-    ? roundCurrency(params.assessedGrossLossAmount * ratioFactor, currency)
-    : params.assessedGrossLossAmount;
+  const rawProportionalLoss = isUnderinsured
+    ? roundCurrency(indemnityBoundedGrossLoss * ratioFactor, currency)
+    : indemnityBoundedGrossLoss;
+  const proportionalLoss = Math.min(rawProportionalLoss, params.declaredSumInsured, params.replacementCostAtLoss);
   const underinsuranceReduction = Math.max(0, params.assessedGrossLossAmount - proportionalLoss);
 
   const { deductibleAmount, netPayableClaimAmount } = calculateDeductibleDeduction(
@@ -226,7 +253,7 @@ export function calculateArticle10ProportionalSettlement(params: {
 
   const explanationFa = isUnderinsured
     ? `به دلیل کم‌بیمه‌گی (${adequacy.adequacyRatioPercent}% نسبت سرمایه)، طبق ماده ۱۰ قانون بیمه، خسارت به تناسب سرمایه تعدیل گردید (${roundCurrency(underinsuranceReduction, currency).toLocaleString('fa-IR')} کسر شد). پس از کسر فرانشیز (${roundCurrency(deductibleAmount, currency).toLocaleString('fa-IR')})، خالص پرداختی ${roundCurrency(netPayableClaimAmount, currency).toLocaleString('fa-IR')} می‌باشد.`
-    : `سرمایه بیمه‌شده منطبق بر ارزش واقعی بوده و مشمول قاعده نسبی ماده ۱۰ قانون بیمه نمی‌باشد. پس از کسر فرانشیز، خالص پرداختی ${roundCurrency(netPayableClaimAmount, currency).toLocaleString('fa-IR')} تعیین گردید.`;
+    : `سرمایه بیمه‌شده منطبق بر ارزش واقعی بوده و مشمول قاعده نسبی ماده ۱۰ قانون بیمه نمی‌باشد. پس از کسر فرانشیز و اعمال سقف تعهد و اصل غرامت، خالص پرداختی ${roundCurrency(netPayableClaimAmount, currency).toLocaleString('fa-IR')} تعیین گردید.`;
 
   return {
     adequacyRatioPercent: adequacy.adequacyRatioPercent,
@@ -236,7 +263,7 @@ export function calculateArticle10ProportionalSettlement(params: {
     underinsuranceReductionAmount: underinsuranceReduction,
     deductibleAmount,
     netPayableSettlement: netPayableClaimAmount,
-    legalBasisReferenceFa: 'ماده ۱۰ قانون بیمه مصوب ۱۳۱۶ (قاعده نسبی سرمایه)',
+    legalBasisReferenceFa: 'ماده ۱۰ و ۱۲ قانون بیمه مصوب ۱۳۱۶ (قاعده نسبی سرمایه و اصل غرامت)',
     detailedExplanationFa: explanationFa
   };
 }

@@ -28,6 +28,9 @@ export function createQuoteReferenceWorkflow(params: {
   if (!Number.isFinite(params.declaredBuildingValue) || params.declaredBuildingValue <= 0 || params.declaredBuildingValue > Number.MAX_SAFE_INTEGER) {
     throw new Error('ارزش اعلامی اعیان باید عددی مثبت، معتبر و متناهی باشد.');
   }
+  if (params.declaredContentsValue !== undefined && (!Number.isFinite(params.declaredContentsValue) || params.declaredContentsValue < 0 || params.declaredContentsValue > Number.MAX_SAFE_INTEGER)) {
+    throw new Error('ارزش اعلامی اثاثیه باید عددی نامنفی، معتبر و متناهی باشد.');
+  }
   if (!Number.isFinite(params.quotedAnnualPremium) || params.quotedAnnualPremium < 0 || params.quotedAnnualPremium > Number.MAX_SAFE_INTEGER) {
     throw new Error('حق بیمه اعلامی باید عددی نامنفی و متناهی باشد.');
   }
@@ -67,6 +70,9 @@ export function registerPolicyReferenceWorkflow(params: {
   annualPremiumPaid?: number;
   currency?: string;
 }): InsurancePolicyReference {
+  if (typeof params.externalPolicyNumber !== 'string' || params.externalPolicyNumber.trim().length === 0) {
+    throw new Error('شماره بیمه‌نامه الزامی است.');
+  }
   const now = new Date();
   const startDate = new Date(params.policyStartDateIso);
   const endDate = new Date(params.policyEndDateIso);
@@ -78,6 +84,10 @@ export function registerPolicyReferenceWorkflow(params: {
     throw new Error('تاریخ شروع بیمه‌نامه نمی‌تواند پس از تاریخ پایان آن باشد.');
   }
 
+  if (params.annualPremiumPaid !== undefined && (!Number.isFinite(params.annualPremiumPaid) || params.annualPremiumPaid < 0 || params.annualPremiumPaid > Number.MAX_SAFE_INTEGER)) {
+    throw new Error('حق بیمه پرداخت‌شده باید عددی نامنفی، معتبر و متناهی باشد.');
+  }
+
   const thirtyDaysBeforeExpiry = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
   const isExpired = endDate.getTime() < now.getTime();
 
@@ -87,7 +97,7 @@ export function registerPolicyReferenceWorkflow(params: {
     propertyId: params.propertyId,
     institutionId: params.institutionId,
     productId: params.productId,
-    externalPolicyNumberProtected: params.externalPolicyNumber,
+    externalPolicyNumberProtected: params.externalPolicyNumber.trim(),
     policyStartDateIso: params.policyStartDateIso,
     policyEndDateIso: params.policyEndDateIso,
     annualPremiumPaid: params.annualPremiumPaid,
@@ -111,6 +121,13 @@ export function registerClaimReferenceWorkflow(params: {
   externalClaimNumber?: string;
 }): InsuranceClaimReference {
   const now = new Date();
+  const incidentDate = new Date(params.incidentDateIso);
+  if (Number.isNaN(incidentDate.getTime())) {
+    throw new Error('تاریخ وقوع حادثه نامعتبر است.');
+  }
+  if (typeof params.userDescriptionFa !== 'string' || params.userDescriptionFa.trim().length === 0) {
+    throw new Error('شرح حادثه الزامی است.');
+  }
 
   return {
     claimReferenceId: randomUUID(),
@@ -120,7 +137,7 @@ export function registerClaimReferenceWorkflow(params: {
     userId: params.userId,
     incidentDateIso: params.incidentDateIso,
     incidentCategory: params.incidentCategory,
-    userDescriptionFa: params.userDescriptionFa,
+    userDescriptionFa: params.userDescriptionFa.trim(),
     externalClaimNumber: params.externalClaimNumber,
     status: 'incident_reported',
     statusSource: 'user_declaration',

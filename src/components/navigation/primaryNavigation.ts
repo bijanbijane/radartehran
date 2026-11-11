@@ -1,53 +1,77 @@
+/** @file src/components/navigation/primaryNavigation.ts — Primary Navigation Items (< 100 lines) [RULE-01] */
+import type { ComponentType } from 'react';
 import {
-  Compass,
-  Home,
-  Map as MapIcon,
-  Shield,
-  TrendingUp,
-  User,
-  Wrench,
-  type LucideIcon,
+  Home, Compass, TrendingUp, SlidersHorizontal, User, Map, ShieldAlert,
 } from 'lucide-react';
 import {
   getRadarGlobalNavCopy,
   type PrimaryViewId,
-  type RadarGlobalNavCopy,
+  type RadarLocale,
 } from '../../utils/areaUnit';
 
 export type NavigationGroup = 'primary' | 'administrative';
-type NavigationLabelKey = Exclude<keyof RadarGlobalNavCopy, 'searchPlaceholder'>;
 
 export interface ProductNavigationItem {
   id: PrimaryViewId;
-  label: string;
-  Icon: LucideIcon;
   group: NavigationGroup;
-  priority: number;
-  protected: boolean;
+  label: string;
+  Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
+  description?: string;
+  badge?: string;
 }
 
-const NAVIGATION_CONFIG: ReadonlyArray<{
-  id: PrimaryViewId;
-  labelKey: NavigationLabelKey;
-  Icon: LucideIcon;
-  group: NavigationGroup;
-  priority: number;
-  protected: boolean;
-}> = [
-  { id: 'map', labelKey: 'map', Icon: MapIcon, group: 'primary', priority: 10, protected: false },
-  { id: 'discover', labelKey: 'discover', Icon: Compass, group: 'primary', priority: 20, protected: false },
-  { id: 'intelligence', labelKey: 'intelligence', Icon: TrendingUp, group: 'primary', priority: 30, protected: false },
-  { id: 'tools', labelKey: 'tools', Icon: Wrench, group: 'primary', priority: 40, protected: false },
-  { id: 'home', labelKey: 'home', Icon: Home, group: 'primary', priority: 50, protected: false },
-  { id: 'userspace', labelKey: 'userspace', Icon: User, group: 'primary', priority: 60, protected: false },
-  { id: 'admin', labelKey: 'admin', Icon: Shield, group: 'administrative', priority: 100, protected: true },
-];
-
-export function getProductNavigationItems(
-  locale: Parameters<typeof getRadarGlobalNavCopy>[0]
-): ProductNavigationItem[] {
+export function getProductNavigationItems(locale: RadarLocale): ProductNavigationItem[] {
   const copy = getRadarGlobalNavCopy(locale);
-  return [...NAVIGATION_CONFIG]
-    .sort((left, right) => left.priority - right.priority)
-    .map((item) => ({ ...item, label: copy[item.labelKey] }));
+
+  return [
+    {
+      id: 'home',
+      group: 'primary',
+      label: copy.home,
+      Icon: Home,
+      description: locale === 'en' ? 'Radar Home & Quick Insights' : 'خانه و چشم‌انداز سریع رادار',
+    },
+    {
+      id: 'discover',
+      group: 'primary',
+      label: copy.discover,
+      Icon: Compass,
+      description: locale === 'en' ? 'Explore Neighborhoods' : 'کشف و تحلیل جامع محله‌ها',
+    },
+    {
+      id: 'map',
+      group: 'primary',
+      label: copy.map,
+      Icon: Map,
+      description: locale === 'en' ? 'Interactive Spatial Atlas' : 'اطلس مکانی و نقشه تهران',
+    },
+    {
+      id: 'intelligence',
+      group: 'primary',
+      label: copy.intelligence,
+      Icon: TrendingUp,
+      description: locale === 'en' ? 'Market Pulse & Price Metrics' : 'نبض بازار و شاخص‌های تورم مسکن',
+    },
+    {
+      id: 'tools',
+      group: 'primary',
+      label: copy.tools,
+      Icon: SlidersHorizontal,
+      description: locale === 'en' ? 'Calculators & Valuation' : 'ابزارهای محاسباتی و قیمت‌گذاری',
+    },
+    {
+      id: 'userspace',
+      group: 'primary',
+      label: copy.userspace,
+      Icon: User,
+      description: locale === 'en' ? 'Saved Searches & Shortlist' : 'فضای شخصی و نشان‌شده‌ها',
+    },
+    {
+      id: 'admin',
+      group: 'administrative',
+      label: copy.admin,
+      Icon: ShieldAlert,
+      description: locale === 'en' ? 'System Monitoring & Security' : 'مدیریت و پایش سیستم',
+    },
+  ];
 }

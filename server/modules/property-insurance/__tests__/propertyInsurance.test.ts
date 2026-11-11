@@ -210,6 +210,11 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
     assert.equal(pAdequate.isUnderinsured, false);
     assert.equal(pAdequate.underinsuranceReductionAmount, 0);
     assert.equal(pAdequate.netPayableSettlement, 180_000_000);
+    // Principle of Indemnity & Policy Ceiling: 9.5B declared vs 10B replacement (95% adequate), 10B total loss -> capped at 9.5B
+    const pCapped = service.calculateProportionalSettlement({ assessedGrossLossAmount: 10_000_000_000, replacementCostAtLoss: 10_000_000_000, declaredSumInsured: 9_500_000_000, deductible: { deductibleId: 'd0', coverageCategory: 'fire_and_explosion', type: 'fixed_amount', fixedAmount: -50_000_000, currency: 'IRR' } });
+    assert.equal(pCapped.proportionalLossAmount, 9_500_000_000);
+    assert.equal(pCapped.deductibleAmount, 0);
+    assert.equal(pCapped.netPayableSettlement, 9_500_000_000);
   });
 
   it('estimates indicative premiums deterministically with documented formula basis', async () => {
@@ -265,6 +270,7 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
     assert.ok(estimate.taxesAndOfficialLevies > 0);
     assert.ok(estimate.totalIndicativeAnnualPremium > 0);
     assert.ok(estimate.disclaimerFa.includes('صرفاً برآورد اولیه'));
+    await assert.rejects(async () => service.calculatePremiumEstimate({ productId: 'prod-dana-villa', buildingReplacementValue: 10e9, formulaBasis: { baseRatePerThousandBuilding: -0.5, earthquakeZoneFactor: 1.5, floodFactor: 0.1, constructionMultiplier: 1.0, applicableTaxesPercent: 9 } }), /ضرایب و نرخ‌های تعرفه/);
   });
 
   it('evaluates explainable eligibility criteria and identifies unmet conditions', async () => {
@@ -292,14 +298,9 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
       deductibles: [],
       exclusions: [],
       eligibilityRules: [
-        {
-          ruleId: 'rule-extinguisher',
-          criterionType: 'requires_fire_extinguisher',
-          targetValue: true,
-          isMandatory: true,
-          descriptionFa: 'کپسول آتش‌نشانی الزامی است',
-          sourceReference: 'دستورالعمل بیمه البرز'
-        }
+        { ruleId: 'rule-extinguisher', criterionType: 'requires_fire_extinguisher', targetValue: true, isMandatory: true, descriptionFa: 'کپسول آتش‌نشانی الزامی است', sourceReference: 'دستورالعمل بیمه البرز' },
+        { ruleId: 'rule-elec', criterionType: 'requires_standard_electrical', targetValue: true, isMandatory: true, descriptionFa: 'استاندارد برق الزامی است', sourceReference: 'دستورالعمل بیمه البرز' },
+        { ruleId: 'rule-age', criterionType: 'max_building_age_years', targetValue: 25, isMandatory: true, descriptionFa: 'حداکثر سن بنا ۲۵ سال', sourceReference: 'دستورالعمل بیمه البرز' }
       ],
       requiredDocumentsChecklist: [],
       policyDurationMonths: 12,
@@ -309,18 +310,21 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
       effectiveFromIso: new Date().toISOString()
     });
 
-    // Incompatible construction (masonry vs steel_frame) and missing extinguisher
+    // Incompatible construction (masonry vs steel_frame), missing extinguisher, uncertified electrical, and missing mandatory buildingAgeYears
     const evalReport = await service.evaluateEligibility('prod-alborz-apart', {
       propertyCategory: 'residential_apartment',
       constructionType: 'traditional_masonry',
       declaredBuildingValue: 5_000_000_000,
-      hasFireExtinguisher: false
+      hasFireExtinguisher: false,
+      electricalSafetyCertified: false
     });
 
     assert.equal(evalReport.appearsEligible, false);
     assert.equal(evalReport.allMandatoryPassed, false);
     assert.ok(evalReport.unmetRules.some(r => r.criterionType === 'allowed_construction_types'));
     assert.ok(evalReport.unmetRules.some(r => r.criterionType === 'requires_fire_extinguisher'));
+    assert.ok(evalReport.unmetRules.some(r => r.criterionType === 'requires_standard_electrical'));
+    assert.ok(evalReport.unmetRules.some(r => r.criterionType === 'max_building_age_years'));
   });
 
   it('compares insurance products by coverage completeness and flags stale data', async () => {
@@ -361,7 +365,7 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
       effectiveFromIso: new Date().toISOString()
     });
 
-    // Product 2: Stale with 1 standard coverage (verified 200 days ago)
+    // Product 2: Stale with 1 standard coverage (verified 200 days ago) and max_building_age_years rule
     const staleDateIso = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString();
     await service.createProduct({
       productId: 'prod-stale-comp',
@@ -377,12 +381,12 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
       ],
       deductibles: [],
       exclusions: [],
-      eligibilityRules: [],
+      eligibilityRules: [{ ruleId: 'r-age-3', criterionType: 'max_building_age_years', targetValue: 3, isMandatory: true, descriptionFa: 'حداکثر ۳ سال', sourceReference: 's' }],
       requiredDocumentsChecklist: [],
       policyDurationMonths: 12,
       availabilityStatus: 'active',
       sourceReference: 'https://novin.ir/old',
-      lastVerifiedTimestampIso: staleDateIso,
+      lastVerifiedTimestampIso: 'corrupted-date',
       effectiveFromIso: staleDateIso
     });
 
@@ -401,10 +405,12 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
     assert.equal(report.comparedProducts[0].standardCoveragesCount, 3);
     assert.equal(report.comparedProducts[0].dataFreshnessStatus, 'fresh');
     assert.equal(report.comparedProducts[1].product.productId, 'prod-stale-comp');
+    assert.equal(report.comparedProducts[1].dataFreshnessStatus, 'stale');
+    assert.equal(report.comparedProducts[1].meetsPropertyCriteria, false);
     const premReport = await service.compareProducts({ propertyValue: 8e9, propertyCategory: 'residential_apartment', constructionType: 'steel_frame', buildingAgeYears: 5, currency: 'IRR', jurisdiction: 'IR', rankingMethodology: 'lowest_indicative_premium' });
     assert.equal(premReport.rankingMethodology, 'lowest_indicative_premium');
     assert.equal(premReport.comparedProducts[0].hasMissingPricingData, false);
-    assert.ok(premReport.comparedProducts[0].indicativeAnnualPremium! > 0);
+    assert.ok(premReport.comparedProducts[0].indicativeAnnualPremium! > premReport.comparedProducts[1].indicativeAnnualPremium! && premReport.comparedProducts[1].indicativeAnnualPremium! > 0);
   });
 
   it('manages quotation references, policy renewal tracking, and claim references', async () => {
@@ -459,6 +465,10 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
     assert.equal(updatedClaim.status, 'insurer_acknowledged');
     assert.equal(updatedClaim.statusSource, 'insurer_confirmed');
     await assert.rejects(async () => service.registerPolicyReference({ userId: 'u1', propertyId: 'p1', institutionId: 'i1', externalPolicyNumber: 'num', policyStartDateIso: 'bad-date', policyEndDateIso: now.toISOString() }), /تاریخ شروع یا پایان/);
+    await assert.rejects(async () => service.registerPolicyReference({ userId: 'u1', propertyId: 'p1', institutionId: 'i1', externalPolicyNumber: 'num', policyStartDateIso: now.toISOString(), policyEndDateIso: endDate.toISOString(), annualPremiumPaid: -100 }), /حق بیمه پرداخت‌شده/);
+    await assert.rejects(async () => service.registerPolicyReference({ userId: 'u1', propertyId: 'p1', institutionId: 'i1', externalPolicyNumber: '   ', policyStartDateIso: now.toISOString(), policyEndDateIso: endDate.toISOString() }), /شماره بیمه‌نامه الزامی/);
+    await assert.rejects(async () => service.getExpiringPolicies('bad-date'), /تاریخ مرجع استعلام/);
+    await assert.rejects(async () => service.registerClaimReference({ policyReferenceId: policy.policyReferenceId, propertyId: 'prop-tehran-12', institutionId: 'inst-asia', userId: 'user-homeowner-1', incidentDateIso: 'bad-date', incidentCategory: 'flood_and_water_damage', userDescriptionFa: 'نشت لوله' }), /تاریخ وقوع حادثه نامعتبر/);
     await assert.rejects(async () => service.updateClaimStatus(claim.claimReferenceId, 'declined_confirmed', 'insurer_confirmed', 5_000_000), /ردشده نمی‌تواند مبلغ تسویه مثبت داشته باشد/);
   });
 

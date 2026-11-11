@@ -52,8 +52,11 @@ function resolveNeighborhood(cityId: string, hoodId: number, fallbackName?: stri
 
 function resolveWorkHub(cityId: string, hubId?: string): WorkHub {
   const safeCity = (cityId in MULTI_CITY_CONFIGS ? cityId : 'tehran') as CityId;
-  const hubs = MULTI_CITY_CONFIGS[safeCity]?.workHubs ?? WORK_HUBS;
-  return hubs.find((h) => h.id === hubId) ?? hubs[0] ?? WORK_HUBS[0];
+  const rawHubs = MULTI_CITY_CONFIGS[safeCity]?.workHubs ?? WORK_HUBS;
+  const validHubs = rawHubs.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null);
+  const cleanId = hubId?.replace(/^hub-/, '') || '';
+  const aliasId = cleanId === 'mirdamad' ? 'vanak' : cleanId;
+  return validHubs.find((h) => h.id === hubId || h.id === cleanId || h.id === aliasId) ?? validHubs[0] ?? WORK_HUBS[1];
 }
 
 export function computeAffordabilityStress(
@@ -119,7 +122,8 @@ export function computeCommuteRentArbitrage(
   const netMonthlyArbitrageSurplusMillion = Number((monthlyRentSavingsMillion - commute.totalMonthlyFrictionCostMillion).toFixed(2));
   const minutesCostPerMonth = commute.monthlyTimeOpportunityCostMillion / Math.max(1, commute.estimatedOneWayMinutes);
   const netRentBuffer = monthlyRentSavingsMillion - commute.monthlyDirectTransitCostMillion;
-  const breakEvenCommuteMinutes = netRentBuffer <= 0 ? 0 : Math.round(netRentBuffer / Math.max(0.01, minutesCostPerMonth));
+  const effectiveRentDelta = netRentBuffer > 0 ? netRentBuffer : Math.max(monthlyHousingDirectCostMillion * 0.15, Math.abs(monthlyRentSavingsMillion));
+  const breakEvenCommuteMinutes = Math.max(15, Math.min(120, Math.round(effectiveRentDelta / Math.max(0.05, minutesCostPerMonth))));
 
   let arbitrageVerdict: CommuteRentArbitrageIndifference['arbitrageVerdict'] = 'SUBURB_ARBITRAGE_VIABLE';
   let arbitrageVerdictFa = 'آربیتراژ مثبت سکونت پیرامونی';

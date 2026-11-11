@@ -190,6 +190,9 @@ export class InMemoryPropertyInsuranceRepository implements PropertyInsuranceRep
 
   async listExpiringPolicies(beforeIso: string): Promise<InsurancePolicyReference[]> {
     const thresholdTime = new Date(beforeIso).getTime();
+    if (Number.isNaN(thresholdTime)) {
+      throw new Error('تاریخ مرجع استعلام انقضای بیمه‌نامه نامعتبر است.');
+    }
     const list = Array.from(this.policies.values()).filter(p => {
       const endTime = new Date(p.policyEndDateIso).getTime();
       return endTime <= thresholdTime && p.status !== 'cancelled' && p.status !== 'renewed';

@@ -168,7 +168,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
             )}
             <div className="text-[10px] text-slate-400 flex justify-between">
               <span>جریان اجاره: {toPersianNum(dossier.assets.HOUSING.cashflowYieldPct)}٪ سالانه</span>
-              <span>نقدشوندگی: ۷۵ روز</span>
+              <span>نقدشوندگی: {toPersianNum(dossier.assets.HOUSING.liquidityDays)} روز</span>
             </div>
           </div>
 

@@ -555,6 +555,20 @@ export function createPropertyInsuranceClaimsOperations(
         );
       }
 
+      for (const [dimName, dimVal] of [
+        ['estimatedRepairCostAmount', input.lossDimensions.estimatedRepairCostAmount],
+        ['estimatedReplacementCostAmount', input.lossDimensions.estimatedReplacementCostAmount],
+        ['verifiedEligibleLossAmount', input.lossDimensions.verifiedEligibleLossAmount],
+      ] as const) {
+        if (dimVal !== undefined && dimVal !== null && (!Number.isFinite(dimVal) || dimVal < 0)) {
+          throw new CoreApiError(
+            'VALIDATION_FAILED',
+            400,
+            `INVALID_ASSESSMENT_AMOUNT: ${dimName} must be a non-negative finite number.`,
+          );
+        }
+      }
+
       const nowDate = now();
       const nowIso = nowDate.toISOString();
 
@@ -939,12 +953,49 @@ export function createPropertyInsuranceClaimsOperations(
                 return true;
               });
 
+              let effectiveCoverageLimit: number | null = matchingCov
+                ? matchingCov.coverageLimitAmount
+                : null;
+              if (matchingCov && matchingCov.subLimits && matchingCov.subLimits.length > 0 && claim.assessmentIds.length > 0) {
+                const allAssessments = await tx.query<DamageAndLossAssessmentRecord>(
+                  PROPERTY_INSURANCE_COLLECTIONS.ASSESSMENTS,
+                );
+                const claimAssessments = allAssessments.filter((a) => a.claimId === claimId);
+                const verifiedAssessments = claimAssessments.filter(
+                  (a) => a.reviewStatus === 'VERIFIED_BY_ADJUSTER',
+                );
+                const authoritativeAssessments =
+                  verifiedAssessments.length > 0
+                    ? verifiedAssessments
+                    : claimAssessments.length > 0
+                      ? [
+                          claimAssessments.reduce((latest, cur) =>
+                            cur.assessmentVersion >= latest.assessmentVersion ? cur : latest,
+                          ),
+                        ]
+                      : [];
+                for (const ass of authoritativeAssessments) {
+                  const compNorm = ass.affectedBuildingComponent.trim().toLowerCase();
+                  const matchedSub = matchingCov.subLimits.find(
+                    (s) => s.subCategoryName.trim().toLowerCase() === compNorm,
+                  );
+                  if (matchedSub) {
+                    effectiveCoverageLimit =
+                      effectiveCoverageLimit !== null
+                        ? Math.min(effectiveCoverageLimit, matchedSub.limitAmount)
+                        : matchedSub.limitAmount;
+                  }
+                }
+              }
+
               const { partiallyApprovedFlag } = validateSettlementCalculations({
                 verifiedEligibleLossAmount: verifiedLoss,
                 deductibleAppliedAmount: input.deductibleAppliedAmount,
                 approvedSettlementAmount: input.approvedSettlementAmount,
                 rejectedAmount: input.rejectedAmount,
-                applicableCoverageLimit: matchingCov ? matchingCov.coverageLimitAmount : null,
+                applicableCoverageLimit: effectiveCoverageLimit,
+                contractualDeductibleMethod: matchingCov ? matchingCov.deductibleMethod : null,
+                contractualDeductibleValue: matchingCov ? matchingCov.deductibleValue : null,
               });
 
               const settlementId = `insset_${randomUUID().replace(/-/g, '').slice(0, 16)}`;

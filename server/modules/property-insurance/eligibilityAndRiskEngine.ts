@@ -80,31 +80,41 @@ export function evaluateInsuranceEligibility(
 
     if (rule.criterionType === 'max_building_age_years') {
       const maxAge = Number(rule.targetValue);
-      const invalidAge = query.buildingAgeYears !== undefined && (!Number.isFinite(query.buildingAgeYears) || query.buildingAgeYears < 0);
-      if (invalidAge || (query.buildingAgeYears !== undefined && Number.isFinite(maxAge) && query.buildingAgeYears > maxAge)) {
+      const targetInvalid = !Number.isFinite(maxAge) || maxAge < 0;
+      const invalidAge = query.buildingAgeYears === undefined
+        ? rule.isMandatory
+        : (!Number.isFinite(query.buildingAgeYears) || query.buildingAgeYears < 0);
+      if (targetInvalid || invalidAge || (query.buildingAgeYears !== undefined && query.buildingAgeYears > maxAge)) {
         passed = false;
-        explanationFa = invalidAge
-          ? 'سن بنا اعلام‌شده نامعتبر است.'
-          : `سن بنا (${query.buildingAgeYears} سال) فراتر از حداکثر مجاز آیین‌نامه (${maxAge} سال) است. نیاز به بازدید ویژه کارشناسی دارد.`;
+        explanationFa = targetInvalid
+          ? 'ضابطه حداکثر سن بنا به دلیل عدم تعیین مقدار هدف معتبر نامعتبر است.'
+          : invalidAge
+            ? 'سن بنا اعلام‌شده نامعتبر یا ثبت‌نشده است.'
+            : `سن بنا (${query.buildingAgeYears} سال) فراتر از حداکثر مجاز آیین‌نامه (${maxAge} سال) است. نیاز به بازدید ویژه کارشناسی دارد.`;
       }
     } else if (rule.criterionType === 'requires_fire_extinguisher') {
-      if (query.hasFireExtinguisher === false) {
+      if (rule.targetValue !== false && query.hasFireExtinguisher !== true) {
         passed = false;
         explanationFa = 'وجود کپسول اطفاء حریق دارای تاییدیه معتبر الزامی است.';
       }
+    } else if (rule.criterionType === 'requires_standard_electrical') {
+      if (rule.targetValue !== false && query.electricalSafetyCertified !== true) {
+        passed = false;
+        explanationFa = 'تاییدیه ایمنی سیستم برق و ارتینگ استاندارد ساختمان الزامی است.';
+      }
     } else if (rule.criterionType === 'min_insured_value') {
       const minVal = Number(rule.targetValue);
-      if (!Number.isFinite(minVal) || !Number.isFinite(query.declaredBuildingValue) || query.declaredBuildingValue < minVal) {
+      if (!Number.isFinite(minVal) || minVal < 0 || !Number.isFinite(query.declaredBuildingValue) || query.declaredBuildingValue < minVal) {
         passed = false;
-        explanationFa = Number.isFinite(minVal)
+        explanationFa = Number.isFinite(minVal) && minVal >= 0
           ? `سرمایه اعلامی کمتر از حداقل نصاب ارزش بیمه‌نامه (${minVal.toLocaleString('fa-IR')}) است.`
           : 'ضابطه حداقل نصاب ارزش بیمه‌نامه به دلیل عدم تعیین مقدار هدف نامعتبر است.';
       }
     } else if (rule.criterionType === 'max_insured_value') {
       const maxVal = Number(rule.targetValue);
-      if (!Number.isFinite(maxVal) || !Number.isFinite(query.declaredBuildingValue) || query.declaredBuildingValue > maxVal) {
+      if (!Number.isFinite(maxVal) || maxVal <= 0 || !Number.isFinite(query.declaredBuildingValue) || query.declaredBuildingValue > maxVal) {
         passed = false;
-        explanationFa = Number.isFinite(maxVal)
+        explanationFa = Number.isFinite(maxVal) && maxVal > 0
           ? `سرمایه اعلامی بیشتر از سقف اختیارات شعبه صدور (${maxVal.toLocaleString('fa-IR')}) است.`
           : 'ضابطه حداکثر سقف اختیارات صدور به دلیل عدم تعیین مقدار هدف نامعتبر است.';
       }

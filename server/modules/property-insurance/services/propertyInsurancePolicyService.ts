@@ -524,11 +524,16 @@ export function createPropertyInsurancePolicyOperations(
           'INVALID_COVERAGE_LIMIT: coverageLimitAmount must be a positive finite number.',
         );
       }
-      if (!Number.isFinite(input.deductibleValue) || input.deductibleValue < 0) {
+      if (
+        !Number.isFinite(input.deductibleValue) ||
+        input.deductibleValue < 0 ||
+        (input.deductibleMethod === 'PERCENTAGE_OF_LOSS' && input.deductibleValue > 100) ||
+        (input.deductibleMethod === 'FIXED_AMOUNT' && input.deductibleValue > input.coverageLimitAmount)
+      ) {
         throw new CoreApiError(
           'VALIDATION_FAILED',
           400,
-          'INVALID_DEDUCTIBLE_VALUE: deductibleValue must be a non-negative finite number.',
+          'INVALID_DEDUCTIBLE_VALUE: deductibleValue must be non-negative and within valid percentage (<=100%) or coverage limit bounds.',
         );
       }
 
@@ -648,6 +653,17 @@ export function createPropertyInsurancePolicyOperations(
           'VALIDATION_FAILED',
           400,
           'MISSING_ORIGINAL_EXCLUSION_WORDING: originalSourceWordingVerbatim is required.',
+        );
+      }
+      if (
+        input.waitingPeriodDays !== undefined &&
+        input.waitingPeriodDays !== null &&
+        (!Number.isFinite(input.waitingPeriodDays) || input.waitingPeriodDays < 0 || input.waitingPeriodDays > 3650)
+      ) {
+        throw new CoreApiError(
+          'VALIDATION_FAILED',
+          400,
+          'INVALID_WAITING_PERIOD_DAYS: waitingPeriodDays must be a non-negative finite number <= 3650.',
         );
       }
 

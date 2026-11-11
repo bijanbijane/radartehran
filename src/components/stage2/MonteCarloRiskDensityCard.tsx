@@ -36,7 +36,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
   const [seedOffset, setSeedOffset] = useState<number>(1);
 
   const report = useMemo(() => {
-    const base = generateCasperMonteCarloRiskReport(hoodId, hoodName, cityKey, basePriceSqm, horizonMonths, hood, intlCurrency, targetSqm);
+    const base = generateCasperMonteCarloRiskReport(hoodId, hoodName, cityKey, basePriceSqm, horizonMonths, hood);
     const customResult = simulateMertonJumpDiffusionVaR(
       base.basePriceSqm,
       {

@@ -1401,15 +1401,19 @@ function runDomainRegressionTests(): void {
     'WS-CASPER-20 SWR Read Cache & System Health Integration assertion failed',
   );
 
-  // 57. WS-CASPER-22: Full Bidirectional Observability & Replicated Feed in AdminCasperHubMonitorCard
+  // 57. WS-CASPER-22 & WS-CASPER-23: Full Bidirectional Observability, D1 relevant_notes Feed Parity, Expired Cache Key Eviction & Sentinel WorkHub Filtering
   const updatedMonitorCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx'), 'utf-8');
   assert(
-    '57. WS-CASPER-22 enforces bidirectional observability with D1 replicated recent notes feed in AdminCasperHubMonitorCard and strictly <= 290 line ceiling',
+    '57. WS-CASPER-22 & WS-CASPER-23 enforce bidirectional observability with D1 relevant_notes feed in AdminCasperHubMonitorCard, expired SWR key deletion in CasperHubClient, and sentinel WorkHub filtering in Isochrone engine/card under <= 290 line ceiling',
     updatedMonitorCardSrc.includes('data-testid="casper-hub-recent-notes"') &&
+      updatedMonitorCardSrc.includes('bootJson?.data?.relevant_notes ?? bootJson?.data?.notes') &&
       updatedMonitorCardSrc.includes('setRecentNotes') &&
       updatedMonitorCardSrc.includes('CasperHubNoteRecord') &&
+      casperHubClientSrc.includes('this.readCache.delete(k)') &&
+      p17UrbanAffSrc.includes("rawHubs.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null)") &&
+      p17UrbanCardSrc.includes("raw.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null)") &&
       updatedMonitorCardSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-22 Bidirectional Observability assertion failed',
+    'WS-CASPER-22 & WS-CASPER-23 Bidirectional Observability & Root-Cause Invariant assertion failed',
   );
 
   // 58. WS-CASPER-26: Dixit-Pindyck targetSqm scaling & yield-on-cost dynamics, unclamped PIR/RIR, zero-floor break-even commute, and Stage2MasterWidget forwarding

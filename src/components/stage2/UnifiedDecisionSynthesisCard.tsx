@@ -120,6 +120,11 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
           </div>
         </div>
         <p className="text-xs leading-relaxed font-medium">{report.executiveDirectiveFa}</p>
+        <div data-testid="synthesis-provenance-label" className="text-[10.5px] opacity-90 flex flex-wrap items-center gap-1.5 pt-1 border-t border-current/15">
+          <span>منشأ داده محله: <strong>{report.dataProvenanceLabelFa}</strong></span>
+          <span aria-hidden="true">·</span>
+          <span>رژیم معاملاتی: <strong>{report.marketRegimeLabelFa}</strong></span>
+        </div>
         {report.nonCompensatoryVetoTriggered && (
           <div data-testid="synthesis-veto-banner" className="p-2 rounded-lg bg-rose-100/90 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1">
             <span className="font-extrabold flex items-center gap-1 text-[11.5px]">

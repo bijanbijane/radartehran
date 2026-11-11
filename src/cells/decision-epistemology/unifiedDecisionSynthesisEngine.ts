@@ -65,6 +65,10 @@ export interface UnifiedDecisionSynthesisReport {
   illiquidityAdjustedVaR95RealPct: number;
   nonCompensatoryVetoTriggered: boolean;
   vetoReasonsFa: string[];
+  observedSampleCount: number;
+  dataProvenanceMode: 'OBSERVED_MARKET' | 'LIMITED_OBSERVED_BLEND' | 'ILLUSTRATIVE_BOOTSTRAP';
+  dataProvenanceLabelFa: string;
+  marketRegimeLabelFa: string;
   executionPlaybook: DealExecutionPlaybook;
   pillars: DecisionPillarScore[];
   generatedAtIso: string;
@@ -123,7 +127,16 @@ export function synthesizeExecutiveDecisionReport(
   // 5. Data Provenance & Epistemic Confidence Pillar + Empirical IQR Volatility for Monte Carlo
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name || hoodName, hoodBaselineAsk, buildNeighborhoodListingSamples(hood));
   const epistemicOutlierPenalty = Math.max(0, spreadPct - 18) * 0.35;
-  const confidenceScore = Math.round(Math.min(100, Math.max(35, (agg.confidenceScore ?? 75) + 8 - epistemicOutlierPenalty)));
+  const baseEvidenceScore = agg.eligibleObservedCount === 0 ? 48 : agg.evidenceIndexScore;
+  const confidenceScore = Math.round(Math.min(100, Math.max(35, baseEvidenceScore + 8 - epistemicOutlierPenalty)));
+  const dataProvenanceLabelFa =
+    agg.dataMode === 'OBSERVED_MARKET'
+      ? `داده مشاهده‌شده میدانی (${toPersianNum(agg.eligibleObservedCount)} آگهی معتبر)`
+      : agg.dataMode === 'LIMITED_OBSERVED_BLEND'
+        ? `ترکیب مشاهدات محدود (${toPersianNum(agg.eligibleObservedCount)} آگهی) و مدل پایه`
+        : 'برآورد مدل پایه (بدون آگهی مشاهده‌شده)';
+  const marketRegimeLabelFa =
+    agg.marketRegime === 'HOT' ? 'پرتقاضا و نقدشونده' : agg.marketRegime === 'FROZEN' ? 'رکود و انجماد معاملاتی' : 'متعادل';
 
   // 6. Downside Tail Risk Pillar: Monte Carlo VaR calibrated with empirical IQR volatility & mean-reversion drift
   const iqrSpreadRatio = Math.max(0.06, Math.min(0.28, (agg.iqrHighPerSqm - agg.iqrLowPerSqm) / Math.max(1, agg.estimatedDealPricePerSqm)));
@@ -255,6 +268,10 @@ export function synthesizeExecutiveDecisionReport(
     illiquidityAdjustedVaR95RealPct: merton.metrics.illiquidityAdjustedVaR95RealPct,
     nonCompensatoryVetoTriggered,
     vetoReasonsFa,
+    observedSampleCount: agg.eligibleObservedCount,
+    dataProvenanceMode: agg.dataMode,
+    dataProvenanceLabelFa,
+    marketRegimeLabelFa,
     executionPlaybook,
     pillars,
     generatedAtIso: new Date().toISOString(),

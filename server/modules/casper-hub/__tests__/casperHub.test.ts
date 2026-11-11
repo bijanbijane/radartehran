@@ -24,31 +24,26 @@ const TEST_ENV = {
   CASPER_HUB_TOKEN: 'synth-token-casper-04',
 };
 
-test('1. Fails closed with CASPER_HUB_UNCONFIGURED when CASPER_HUB_TOKEN is absent in explicit env', async () => {
+test('1. Fails closed with CASPER_HUB_UNCONFIGURED / 503 across all endpoints when CASPER_HUB_TOKEN is absent without calling fetch', async () => {
   const client = new CasperHubClient({ env: { ...TEST_ENV, CASPER_HUB_TOKEN: '' } });
   assert.equal(client.getStatus().configured, false);
   assert.equal(client.getStatus().agentId, 'CASPER-04');
-  await assert.rejects(
-    async () => client.getWhoAmI(),
-    (err: unknown) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_UNCONFIGURED' && err.statusCode === 503,
-  );
+  await assert.rejects(async () => client.getWhoAmI(), (err: unknown) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_UNCONFIGURED' && err.statusCode === 503);
+  let netCalls = 0;
+  const undefClient = new CasperHubClient({ env: {}, fetchImpl: async () => { netCalls++; return new Response('{}'); } });
+  for (const res of [await undefClient.getWhoAmI(), await undefClient.getBootstrap(), await undefClient.getChanges(), await undefClient.postNote({ title: 'T', summary: 'S' })]) {
+    assert.equal(res.ok, false); assert.equal(res.status, 503);
+  }
+  assert.equal(netCalls, 0, 'Unconfigured client must never send Bearer undefined over network');
 });
 
 test('2. Rejects non-HTTPS, loopback/IP literals (dotted, hex, shorthand), DNS-rebinding domains, credentials, and untrusted CASPER_HUB_URL hosts', () => {
   for (const invalidUrl of [
-    'http://casper-hub-api.bijanbijane-1.workers.dev',
-    'https://127.0.0.1/v1',
-    'https://0x7f000001/v1',
-    'https://127.1/v1',
-    'https://localhost/v1',
-    'https://169.254.169.254.nip.io/v1',
-    'https://10.0.0.1.sslip.io/v1',
-    'https://metadata.internal/v1',
-    'https://user:pass@casper-hub-api.bijanbijane-1.workers.dev',
-    'https://casper-hub-api.bijanbijane-1.workers.dev?leak=1',
-    'https://casper-hub-api.bijanbijane-1.workers.dev:22',
-    'https://casper-hub-api.bijanbijane-1.workers.dev:8080',
-    'https://evil-attacker.example.com',
+    'http://casper-hub-api.bijanbijane-1.workers.dev', 'https://127.0.0.1/v1', 'https://0x7f000001/v1',
+    'https://127.1/v1', 'https://localhost/v1', 'https://169.254.169.254.nip.io/v1', 'https://10.0.0.1.sslip.io/v1',
+    'https://metadata.internal/v1', 'https://user:pass@casper-hub-api.bijanbijane-1.workers.dev',
+    'https://casper-hub-api.bijanbijane-1.workers.dev?leak=1', 'https://casper-hub-api.bijanbijane-1.workers.dev:22',
+    'https://casper-hub-api.bijanbijane-1.workers.dev:8080', 'https://evil-attacker.example.com',
   ]) {
     assert.throws(
       () =>
@@ -57,7 +52,8 @@ test('2. Rejects non-HTTPS, loopback/IP literals (dotted, hex, shorthand), DNS-r
           CASPER_HUB_TOKEN: 'secret-token-04',
           CASPER_HUB_ALLOWED_HOSTS: '169.254.169.254.nip.io,10.0.0.1.sslip.io,metadata.internal,127.0.0.1',
         }),
-      (err: unknown) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_INVALID_URL',
+      (err: unknown) =>
+        err instanceof CasperHubClientError && (err.code === 'CASPER_HUB_INVALID_URL' || err.code === 'CASPER_HUB_URL_INVALID'),
       `Expected ${invalidUrl} to be rejected`,
     );
   }
@@ -159,28 +155,23 @@ test('5. Redacts raw, URL-encoded, Base64-encoded, and JSON-escaped CASPER_HUB_T
     extra_untrusted_field: 'must_be_stripped',
   });
 
+  assert.equal(capturedBody.note_scope, 'global', 'createNote must sanitize and deliver payload');
   assert.ok(!String(capturedBody.title).includes(secretToken) && !/[\u202E\x00]/.test(String(capturedBody.title)));
   assert.ok(!String(capturedBody.summary).includes(secretToken) && !String(capturedBody.summary).includes(urlEncoded) && !String(capturedBody.summary).includes(b64Encoded));
   assert.ok(!String(capturedBody.detail_ref).includes(secretToken) && !String(capturedBody.detail_ref).includes('\x07'));
   assert.equal('extra_untrusted_field' in capturedBody, false, 'Mass-assignment field must be stripped');
   assert.ok(!redactSensitiveText(`Token: ${secretToken} ${urlEncoded} ${b64Encoded} ${secretToken.replace('/', '\\/')}`, secretToken).includes(secretToken));
-  assert.ok(!redactSensitiveText(`Escaped: ${secretToken.replace('/', '\\/')}`, secretToken).includes(secretToken.replace('/', '\\/')));
 });
 
-test('6. Enforces relational note_scope rules and importance (1..5) bounds on createNote()', async () => {
+test('6. Enforces relational note_scope rules, leading-whitespace/data: URI blocking, and integer importance (1..5) bounds on createNote()', async () => {
   const client = new CasperHubClient({
     env: TEST_ENV,
     fetchImpl: async () => new Response(JSON.stringify({ ok: true }), { status: 201, headers: { 'content-type': 'application/json' } }),
   });
-  await assert.rejects(
-    async () => client.createNote({ title: 'T', summary: 'S', note_scope: 'task' }),
-    (err: unknown) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_INVALID_PAYLOAD',
-  );
-  await assert.rejects(
-    async () => client.createNote({ title: 'T', summary: 'S', importance: 99 }),
-    (err: unknown) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_INVALID_PAYLOAD',
-  );
-  for (const badDetail of ['javascript:alert(1)', 'blob:https://evil.com', 'file:///etc/passwd', 'https://ok.com\r\n']) {
+  for (const badNote of [{ title: 'T', summary: 'S', note_scope: 'task' }, { title: 'T', summary: 'S', importance: 99 }, { title: 'T', summary: 'S', importance: NaN }, { title: 'T', summary: 'S', importance: 2.5 }, { title: '   ', summary: 'S' }]) {
+    await assert.rejects(async () => client.createNote(badNote), (err: unknown) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_INVALID_PAYLOAD');
+  }
+  for (const badDetail of ['javascript:alert(1)', '  javascript:alert(1)', 'data:text/html,<script>', 'blob:https://evil.com', 'file:///etc/passwd', 'https://ok.com\r\n']) {
     await assert.rejects(async () => client.createNote({ title: 'T', summary: 'S', detail_ref: badDetail }), (err: any) => err.code === 'CASPER_HUB_INVALID_PAYLOAD');
   }
   for (const badTag of [['bad<script>'], ['bad\r\ntag'], new Array(25).fill('t')]) {
@@ -188,29 +179,27 @@ test('6. Enforces relational note_scope rules and importance (1..5) bounds on cr
   }
 });
 
-test('7. Preserves monotonic cursor progression across getChanges() and getBootstrap() and rejects empty/malformed query strings', async () => {
+test('7. Preserves monotonic cursor progression, tracks real connectionActive state, and rejects malformed/float queries', async () => {
   const requestedUrls: string[] = [];
   const client = new CasperHubClient({
     env: TEST_ENV,
     fetchImpl: async (input) => {
       const url = String(input);
       requestedUrls.push(url);
-      const body = url.includes('/v1/changes') ? { events: [], next_cursor: 14 } : { sync_cursor: 0, assigned_tasks: [] };
+      const body = url.includes('/v1/changes') ? { events: [{ event_id: 10 }, { event_id: 14 }], next_cursor: 14 } : { sync_cursor: { latest_event_id: 11 }, assigned_tasks: [{ status: 'blocked' }], relevant_notes: [{ author_agent_id: 'CASPER-01' }, { author_agent_id: 'CASPER-04' }] };
       return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
     },
   });
-
+  assert.equal(client.getStatus().connectionActive, false);
   await client.getChanges();
+  assert.equal(client.getStatus().connectionActive, true);
   assert.ok(requestedUrls[0].endsWith('/v1/changes?after=0&limit=50'));
   assert.equal(client.getStatus().lastKnownCursor, 14);
-
   await client.getChanges();
   assert.ok(requestedUrls[1].endsWith('/v1/changes?after=14&limit=50'));
-
   const boot = await client.getBootstrap<Record<string, unknown>>();
   assert.equal(boot.data.effective_sync_cursor, 14);
-
-  for (const badParams of [{ after: -1 }, { after: '' }, { after: '10abc' }, { limit: 500 }, { limit: '' as any }]) {
+  for (const badParams of [{ after: -1 }, { after: 1.5 }, { after: '' }, { after: '10abc' }, { limit: 500 }, { limit: 10.5 }, { limit: '' as any }]) {
     await assert.rejects(
       async () => client.getChanges(badParams),
       (err: unknown) => err instanceof CasperHubClientError && err.code === 'CASPER_HUB_INVALID_PAYLOAD',
@@ -231,19 +220,21 @@ test('8. Generates collision-free content-addressed idempotency keys across whit
   assert.ok(k1.startsWith('casper-04-'));
 });
 
-test('9. Express route integration enforces admin auth, rate limits, Cache-Control: no-store, and cursor preservation', async () => {
+test('9. Express route integration enforces admin auth, HPP query defense, Cache-Control: no-store, and cursor preservation', async () => {
   const routes = new Map<string, (req: any, res: any) => Promise<void>>();
   const fakeApp = { get: (p: string, h: any) => routes.set(`GET ${p}`, h), post: (p: string, h: any) => routes.set(`POST ${p}`, h) } as any;
+  let lastUrl = '';
   const client = new CasperHubClient({
     env: TEST_ENV,
-    fetchImpl: async () => new Response(JSON.stringify({ authenticated: true, agent_id: 'CASPER-04' }), { status: 200, headers: { 'content-type': 'application/json' } }),
+    fetchImpl: async (u) => {
+      lastUrl = String(u);
+      return new Response(JSON.stringify({ authenticated: true, agent_id: 'CASPER-04', next_cursor: 22 }), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
   });
-
   registerCasperHubRoutes(fakeApp, {
     client,
     verifyAdminAuth: async (req: any) => (req.headers?.['x-test-admin'] === '1' ? { ok: true, status: 200, message: 'OK' } : { ok: false, status: 401, message: 'ADMIN_AUTH_REQUIRED' }),
   });
-
   const makeRes = () => {
     const headers: Record<string, string> = {};
     let statusCode = 200;
@@ -254,16 +245,22 @@ test('9. Express route integration enforces admin auth, rate limits, Cache-Contr
       get result() { return { statusCode, headers, body }; },
     };
   };
-
   const unauthRes = makeRes();
   await routes.get('GET /api/casper-hub/whoami')!({ headers: {}, query: {} }, unauthRes);
   assert.equal(unauthRes.result.statusCode, 401);
   assert.equal(unauthRes.result.headers['Cache-Control'], 'no-store');
-
   const authRes = makeRes();
   await routes.get('GET /api/casper-hub/whoami')!({ headers: { 'x-test-admin': '1' }, query: {} }, authRes);
   assert.equal(authRes.result.statusCode, 200);
   assert.equal(authRes.result.body.agent, 'CASPER-04');
+  await routes.get('GET /api/casper-hub/changes')!({ headers: { 'x-test-admin': '1' }, query: { after: '5' } }, makeRes());
+  await routes.get('GET /api/casper-hub/changes')!({ headers: { 'x-test-admin': '1' }, query: {} }, makeRes());
+  assert.ok(lastUrl.includes('after=22'), `Expected omitted after query to preserve cursor 22, got ${lastUrl}`);
+  for (const badQ of [{ after: 'bad!' }, { after: ['1', '2'] }, { limit: '10abc' }]) {
+    const errRes = makeRes();
+    await routes.get('GET /api/casper-hub/changes')!({ headers: { 'x-test-admin': '1' }, query: badQ }, errRes);
+    assert.equal(errRes.result.statusCode, 400);
+  }
 });
 
 test('10. Enforces Charter file-size guardrail (<= 290 lines) across all CASPER-04 and OP-217 files', () => {

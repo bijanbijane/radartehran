@@ -126,3 +126,23 @@ export type {
   DatasetChangeSummary,
 } from './geographyTypes';
 
+export {
+  MAX_BULK_SPATIAL_QUERY_LIMIT,
+  doGeoJsonPolygonsIntersect,
+  doesPolygonContainPolygon,
+  isPointWithinGeoJsonGeometry,
+  transformCoordinatesToWgs84,
+  validateGeoJsonGeometry,
+} from './geometryCrsAndSpatialEngine';
+
+export { extractAllDistrictNumbersFromZone } from './hierarchyVersioningAndGraphEngine';
+export { Employee18GeographyEngine } from './qualityIntelligenceAndCrossModuleService';
+
+export type {
+  GeoJsonGeometry,
+  GeographyAdminActor,
+  GeographyDomainEvent,
+  StructuredAddressReference,
+} from './employee18Contracts';
+
+

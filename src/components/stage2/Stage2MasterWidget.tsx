@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, Users, BookOpen, Scale, Compass, Network, Hourglass, Briefcase, Activity, PieChart, Wallet, Split, Award } from 'lucide-react';
-import { INITIAL_NEIGHBORHOODS, type Neighborhood } from '../../data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS, toPersianNum, type Neighborhood } from '../../data/neighborhoods';
 import { getAllMultiCityNeighborhoods, type CityId } from '../../data/multiCityData';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 import { NeighborhoodCrowdClaimsPanel } from './NeighborhoodCrowdClaimsPanel';
 import { SocioeconomicReferenceCard } from './SocioeconomicReferenceCard';
@@ -110,6 +111,16 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
   const activeTabMeta = STAGE2_TABS.find((t) => t.id === activeTab) ?? STAGE2_TABS[0];
   const activeDomain = activeTabMeta.domain;
   const domainTabs = STAGE2_TABS.filter((t) => t.domain === activeDomain);
+  const liveAgg = React.useMemo(
+    () => aggregateNeighborhoodMarketMetrics(resolvedHoodId, resolvedHoodName, resolvedBasePrice, buildNeighborhoodListingSamples(effectiveHood)),
+    [resolvedHoodId, resolvedHoodName, resolvedBasePrice, effectiveHood],
+  );
+  const provenanceTitleFa =
+    liveAgg.dataMode === 'OBSERVED_MARKET'
+      ? `داده مشاهده‌شده واقعی (${toPersianNum(liveAgg.eligibleObservedCount)} آگهی)`
+      : liveAgg.dataMode === 'LIMITED_OBSERVED_BLEND'
+        ? `ترکیب مشاهدات محدود (${toPersianNum(liveAgg.eligibleObservedCount)} آگهی) و مدل پایه`
+        : 'برآورد مدل پایه (بدون آگهی مشاهده‌شده)';
 
   return (
     <section
@@ -129,7 +140,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
               موتور تصمیم‌یار معرفتی، پارتو، سرایت فضایی و هوش اجتماعی ({resolvedHoodName})
             </h3>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              ۴ حوزه راهبردی و ۱۲ آزمایشگاه ریاضی • پایه محله: {formatMillionTomanAsIntlCurrency(resolvedBasePrice, intlCurrency, 'fa')}
+              ارزش قطعی معامله (v6.4): متری {toPersianNum(liveAgg.estimatedDealPricePerSqm)} م.ت ({formatMillionTomanAsIntlCurrency(liveAgg.estimatedDealPricePerSqm, intlCurrency, 'fa')}) · منشأ: {provenanceTitleFa} · شکارهای زیر قیمت: {toPersianNum(liveAgg.autoBargains.length)} مورد
             </p>
           </div>
         </div>

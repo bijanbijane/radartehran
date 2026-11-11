@@ -123,9 +123,10 @@ function computeRentTerminalWealthForAltRate(
  * and solves via bisection for the exact break-even alternative return rate.
  */
 export function simulateRentVsBuyEquivalence(params: RentVsBuySimulationParams): RentVsBuyComparisonResult {
-  const sqm = params.targetSqm ?? 80;
-  const initialPropertyValue = params.pricePerSqm * sqm;
-  const horizon = Math.max(1, Math.min(15, params.horizonYears));
+  const sqm = Math.max(20, Number.isFinite(params.targetSqm) && (params.targetSqm as number) > 0 ? (params.targetSqm as number) : 80);
+  const safePriceSqm = Math.max(1, Number.isFinite(params.pricePerSqm) && params.pricePerSqm > 0 ? params.pricePerSqm : 100);
+  const initialPropertyValue = safePriceSqm * sqm;
+  const horizon = Math.max(1, Math.min(15, Number.isFinite(params.horizonYears) ? params.horizonYears : 5));
 
   const altReturn = (params.alternativeReturnNominalPct ?? 42) / 100;
   const propGrowth = (params.housingAppreciationNominalPct ?? 39) / 100;
@@ -142,10 +143,10 @@ export function simulateRentVsBuyEquivalence(params: RentVsBuySimulationParams):
   const cumulativeMaintenance = Math.round(initialPropertyValue * maintDrag * horizon * 1.5);
   const terminalBuyWealth = terminalGrossPropertyValue - saleFriction;
   const realBuyTerminalWealth = Math.round(terminalBuyWealth / cpiDeflator);
-  const buyIrr = Number(((Math.pow(terminalBuyWealth / totalBuyInitialOutlay, 1 / horizon) - 1) * 100).toFixed(1));
+  const buyIrr = Number(((Math.pow(Math.max(0.01, terminalBuyWealth / totalBuyInitialOutlay), 1 / horizon) - 1) * 100).toFixed(1));
 
   // 2. RENT & INVEST SCENARIO:
-  const baseRahn80m = params.rahn80m > 0 ? params.rahn80m : Math.round(params.pricePerSqm * 80 * 0.16);
+  const baseRahn80m = Number.isFinite(params.rahn80m) && params.rahn80m > 0 ? params.rahn80m : Math.round(safePriceSqm * 80 * 0.16);
   const initialRahn = Math.round(baseRahn80m * (sqm / 80));
   const investedSurplus = Math.max(0, totalBuyInitialOutlay - initialRahn);
 
@@ -153,7 +154,7 @@ export function simulateRentVsBuyEquivalence(params: RentVsBuySimulationParams):
   const terminalLockedRahn = Math.round(rentSim.lockedRahnBalance);
   const terminalRentWealth = Math.round(rentSim.currentPortfolio + terminalLockedRahn);
   const realRentTerminalWealth = Math.round(terminalRentWealth / cpiDeflator);
-  const rentIrr = Number(((Math.pow(terminalRentWealth / totalBuyInitialOutlay, 1 / horizon) - 1) * 100).toFixed(1));
+  const rentIrr = Number(((Math.pow(Math.max(0.01, terminalRentWealth / totalBuyInitialOutlay), 1 / horizon) - 1) * 100).toFixed(1));
 
   // Exact bisection solver for breakEvenAlternativeReturnPct (where terminalRentWealth == terminalBuyWealth)
   let lowRate = 0.15;

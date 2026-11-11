@@ -233,7 +233,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
           <React.Suspense fallback={null}>
             {(activeTab === 'scorecard' || activeTab === 'vote') && ( <NeighborhoodPhotoGallery selectedHood={selectedHood} hoodLandmarks={hoodLandmarks} onFocusLandmarkOnMap={onFocusLandmarkOnMap} />
             )}
-            <details className="my-3.5 rounded-xl border border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-900/70">
+            <details open className="my-3.5 rounded-xl border border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-900/70">
               <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-slate-800 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:text-slate-200">
                 <span>تحلیل پیشرفته و مقایسه</span>
                 <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Stage 2 · ماتریس محله‌ها</span>
