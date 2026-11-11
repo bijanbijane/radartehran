@@ -12,6 +12,7 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { SearchHistory } from '../SearchHistory';
+import { getProductNavigationItems } from '../navigation/primaryNavigation';
 
 const CLIENT_STORAGE_KEYS_FALLBACK = [
   'tehran_housing_radar_v35_neighborhoods', 'tehran_radar_feature_flags_v35', 'tehran_radar_visited_homes_v1',
@@ -28,13 +29,13 @@ export interface ProductUserSpaceViewProps {
   mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number; targetSqm: number;
   onOpenBudgetFilter: () => void;
 }
-
 export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const [busyAction, setBusyAction] = useState<'export' | 'delete' | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [privacyNotice, setPrivacyNotice] = useState<string | null>(null);
   const isEn = radarLocale === 'en';
+  const adminNavigationItem = getProductNavigationItems(radarLocale).find((item) => item.group === 'administrative');
   const { comparisonArc } = useMapAdvancedOverlayState();
   const favoriteHoods = p.evaluatedNeighborhoods.filter((h) => p.favoriteHoodIds.includes(h.id));
   const topFavScore = favoriteHoods.length > 0 ? Math.max(...favoriteHoods.map((h) => h.overallScore)) : undefined;
@@ -105,7 +106,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             ) : (
               <button type="button" onClick={p.onGoogleSignIn} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span></button>
             )}
-            <button type="button" onClick={() => (p.onNavigateView ? p.onNavigateView('admin') : p.onOpenAdminModal())} className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /><span>{isEn ? 'Admin & Monitoring Page' : 'صفحه کامل مدیریت و مانیتورینگ ↗'}</span></button>
+            <button type="button" aria-label={adminNavigationItem?.label} onClick={() => (p.isVerifiedAdmin && p.onNavigateView ? p.onNavigateView('admin') : p.onOpenAdminModal())} className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /><span>{adminNavigationItem?.label || (isEn ? 'Admin' : 'مدیریت')}</span></button>
           </div>
         </div>
         {confirmDeleteOpen && p.currentUser && (

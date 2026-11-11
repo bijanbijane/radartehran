@@ -200,10 +200,10 @@ export interface RadarGlobalNavCopy {
 }
 
 const GLOBAL_NAV_COPY: Record<RadarLocale, RadarGlobalNavCopy> = {
-  fa: { home: 'خانه و مرور', discover: 'کشف محله‌ها', intelligence: 'نبض و هوش بازار', tools: 'جعبه‌ابزار هوشمند', userspace: 'فضای شخصی', map: 'نقشه تعاملی', searchPlaceholder: 'جست‌وجوی محله، منطقه یا شهر...', admin: 'کنسول ادمین و مانیتورینگ' },
-  en: { home: 'Home', discover: 'Discover', intelligence: 'Market Pulse', tools: 'Smart Tools', userspace: 'My Space', map: 'Interactive Map', searchPlaceholder: 'Search neighborhood, district or city...', admin: 'Admin & Monitor' },
-  ar: { home: 'الرئيسية', discover: 'اكتشاف الأحياء', intelligence: 'ذكاء السوق', tools: 'الأدوات الذكية', userspace: 'مساحتي', map: 'الخريطة التفاعلية', searchPlaceholder: 'ابحث عن الحي، المنطقة أو المدينة...', admin: 'الإدارة والمراقبة' },
-  tr: { home: 'Ana Sayfa', discover: 'Keşfet', intelligence: 'Piyasa Analizi', tools: 'Akıllı Araçlar', userspace: 'Kullanıcı Alanı', map: 'Harita', searchPlaceholder: 'Mahalle, bölge veya şehir ara...', admin: 'Yönetim ve İzleme' },
+  fa: { home: 'خانه', discover: 'کشف محله', intelligence: 'نبض بازار', tools: 'ابزارها', userspace: 'فضای من', map: 'نقشه', searchPlaceholder: 'جست‌وجوی محله، منطقه یا شهر...', admin: 'مدیریت و پایش' },
+  en: { home: 'Home', discover: 'Explore', intelligence: 'Market', tools: 'Tools', userspace: 'My Space', map: 'Map', searchPlaceholder: 'Search neighborhood, district or city...', admin: 'Admin' },
+  ar: { home: 'الرئيسية', discover: 'الأحياء', intelligence: 'السوق', tools: 'الأدوات', userspace: 'مساحتي', map: 'الخريطة', searchPlaceholder: 'ابحث عن الحي، المنطقة أو المدينة...', admin: 'الإدارة' },
+  tr: { home: 'Ana Sayfa', discover: 'Mahalleler', intelligence: 'Piyasa', tools: 'Araçlar', userspace: 'Alanım', map: 'Harita', searchPlaceholder: 'Mahalle, bölge veya şehir ara...', admin: 'Yönetim' },
 };
 
 export function getRadarGlobalNavCopy(locale: RadarLocale): RadarGlobalNavCopy { return GLOBAL_NAV_COPY[locale] || GLOBAL_NAV_COPY.fa; }

@@ -164,11 +164,11 @@ export function RadarWorkspaceShell() {
   });
 
   return (
-    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-screen overflow-hidden bg-[#F8F9FA] dark:bg-slate-950 text-slate-900 dark:text-slate-100 select-none flex flex-col">
+    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-screen overflow-hidden bg-[#F8F9FA] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
       <ProductGlobalHeader
         primaryView={ui.primaryView} onSelectPrimaryView={(v) => { ui.setMobileSheetOpen(false); ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown(false); ui.setPrimaryView(v); }} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
         appleTheme={appleTheme} onToggleAppleTheme={toggleAppleTheme} onOpenBudgetFilter={() => { ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); ui.setMobileFilterOpen((p) => !p); }}
-        onOpenReverseBudget={() => { ui.setMobileFilterOpen(false); ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); setShowReverseBudgetModal(true); }} onOpenSearch={() => { ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }} searchQuery={ui.searchQuery}
+        onOpenReverseBudget={() => { ui.setMobileFilterOpen(false); ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); setShowReverseBudgetModal(true); }} onOpenSearch={() => { ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }} onOpenSecurityAdmin={isVerifiedAdmin ? () => { ui.setPrimaryView('admin'); ui.setMobileSheetOpen(false); } : undefined} searchQuery={ui.searchQuery}
       />
       <div role="region" aria-label="نقشه تعاملی محله‌ها" className="fixed inset-0 top-16 z-0">
         <div ref={mapContainerRef} className="w-full h-full bg-[#E5E5EA]" />
@@ -251,6 +251,7 @@ export function RadarWorkspaceShell() {
       <RadarBottomNav
         primaryView={ui.primaryView} onSelectPrimaryView={(v) => { ui.setShowSearchDropdown(false); ui.setPrimaryView(v); }} mobileSheetOpen={ui.mobileSheetOpen} setMobileSheetOpen={ui.setMobileSheetOpen}
         mobileFilterOpen={ui.mobileFilterOpen} setMobileFilterOpen={ui.setMobileFilterOpen} showToolsPopover={ui.showToolsPopover} setShowToolsPopover={ui.setShowToolsPopover}
+        isVerifiedAdmin={isVerifiedAdmin} onOpenAdminModal={() => ui.setShowAdminModal(true)}
         onFlyToHood={() => { if (mapInstanceRef.current && selectedHood) mapInstanceRef.current.flyTo([selectedHood.lat, selectedHood.lng], 12.5, { duration: 0.5 }); }}
         onOpenSmartSuggest={() => ui.setShowSmartSuggestModal(true)} onOpenCompare={() => ui.setShowCompareModal(true)}
         onOpenSubmitProperty={() => { ui.setBargainHoodId(ui.selectedHoodId); ui.setSponsorHoodId(ui.selectedHoodId); ui.setShowAgencyModal(true); }}

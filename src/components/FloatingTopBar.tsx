@@ -45,7 +45,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
         {primaryView === 'map' && !mobileFilterOpen && !showSearchDropdown && (
           <div className="xl:hidden flex items-center gap-1 overflow-x-auto no-scrollbar apple-vibrancy-bar p-1 rounded-[11px] text-[11px] font-bold pointer-events-auto">
             {LENS_OPTIONS.map((lens) => (
-              <button key={lens.id} type="button" onClick={() => { setMapLens(lens.id); if (lens.id === 'traffic') updateMapAdvancedOverlayState({ showTrafficZones: true }); }} className={`px-2.5 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${mapLens === lens.id ? 'apple-primary-btn shadow-2xs' : 'text-slate-600 dark:text-slate-300'}`}>{lens.label}</button>
+              <button key={lens.id} type="button" aria-pressed={mapLens === lens.id} onClick={() => setMapLens(lens.id)} className={`px-2.5 py-1 rounded-[8px] whitespace-nowrap shrink-0 transition cursor-pointer ${mapLens === lens.id ? 'apple-primary-btn shadow-2xs' : 'text-slate-600 dark:text-slate-300'}`}>{lens.label}</button>
             ))}
           </div>
         )}
@@ -136,8 +136,8 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
               </select>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              {activeCity === 'tehran' && ( <button type="button" onClick={() => { const next = !onlyOutsideTrafficZone; setOnlyOutsideTrafficZone(next); updateMapAdvancedOverlayState({ showTrafficZones: next }); }} className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${onlyOutsideTrafficZone ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}>🚗 فقط خارج از طرح ترافیک</button> )}
-              <button type="button" onClick={() => { const next = !onlyHighMetro; setOnlyHighMetro(next); updateMapAdvancedOverlayState({ showMetroLines: next }); }} className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${onlyHighMetro ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}>🚇 فقط دسترسی عالی مترو (امتیاز ۸+)</button>
+              {activeCity === 'tehran' && ( <button type="button" aria-pressed={onlyOutsideTrafficZone} onClick={() => setOnlyOutsideTrafficZone((value) => !value)} className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${onlyOutsideTrafficZone ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}>🚗 فقط خارج از طرح ترافیک</button> )}
+              <button type="button" aria-pressed={onlyHighMetro} onClick={() => setOnlyHighMetro((value) => !value)} className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${onlyHighMetro ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}>🚇 فقط دسترسی عالی مترو (امتیاز ۸+)</button>
             </div>
             <div className="flex items-center justify-between gap-1 apple-segmented bg-slate-100 dark:bg-slate-800 p-1 rounded-[10px] text-[11px]">
               {[
@@ -164,7 +164,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
       {(primaryView === 'map' || showToolsPopover) && <div className="fixed top-20 left-4 z-30 flex items-center gap-2 pointer-events-none">
         {primaryView === 'map' && <div className="hidden xl:flex items-center gap-0.5 apple-vibrancy-bar p-1 rounded-[12px] text-xs font-medium text-slate-700 dark:text-slate-200 pointer-events-auto">
           {LENS_OPTIONS.map((lens) => (
-            <button key={lens.id} type="button" onClick={() => { setMapLens(lens.id); if (lens.id === 'traffic') updateMapAdvancedOverlayState({ showTrafficZones: true }); }} className={`px-3 py-1.5 rounded-[9px] font-bold transition cursor-pointer whitespace-nowrap ${mapLens === lens.id ? 'apple-primary-btn shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-slate-200/50'}`}>{lens.label}</button>
+            <button key={lens.id} type="button" aria-pressed={mapLens === lens.id} onClick={() => setMapLens(lens.id)} className={`px-3 py-1.5 rounded-[9px] font-bold transition cursor-pointer whitespace-nowrap ${mapLens === lens.id ? 'apple-primary-btn shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 hover:bg-slate-200/50'}`}>{lens.label}</button>
           ))}
         </div>}
         {primaryView === 'map' && onOpenReverseBudgetModal && <button type="button" onClick={onOpenReverseBudgetModal} className="hidden 2xl:flex items-center gap-1.5 apple-vibrancy-bar hover:bg-white px-3 py-2 rounded-[12px] text-xs font-bold text-indigo-700 dark:text-indigo-300 transition cursor-pointer pointer-events-auto"><Sparkles className="w-3.5 h-3.5 text-indigo-600" /><span>کشف محله با بودجه</span></button>}
@@ -173,7 +173,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
             <LayoutGrid className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>{topCopy.toolsBtnLabel}</span><ChevronDown className="w-3.5 h-3.5 stroke-[1.75] text-slate-400" />
           </button>}
           {showToolsPopover && (
-            <div role="dialog" className="fixed lg:absolute bottom-16 lg:bottom-auto lg:top-12 left-4 right-4 lg:right-auto lg:w-68 max-h-[78vh] overflow-y-auto apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-[16px] p-2.5 z-50 space-y-1.5 text-xs">
+            <div role="dialog" className="fixed lg:absolute bottom-[calc(3.5rem+var(--safe-bottom))] lg:bottom-auto lg:top-12 left-4 right-4 lg:right-auto lg:w-68 max-h-[calc(100dvh-5rem-var(--safe-bottom))] overflow-y-auto apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-[16px] p-2.5 z-50 space-y-1.5 text-xs">
               <div className="lg:hidden pb-2 mb-1 border-b border-slate-200/70 dark:border-slate-800 space-y-2">
                 {featureFlags.enableMultiCity && ( <div>
                     <div className="text-[11px] font-bold text-slate-500 px-2 py-1">انتخاب کلانشهر</div>
@@ -259,6 +259,6 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
             </div>
           )} </div>
       </div>}
-      <MapLegend open={showMapLegendPopover} onToggle={() => { setShowMapLegendPopover((prev) => !prev); setShowToolsPopover(false); }} statusFilter={statusFilter} onChangeStatusFilter={setStatusFilter} mapLens={mapLens} counts={counts} totalCount={evaluatedNeighborhoods.length} hideOnMobileSheet={mobileSheetOpen || primaryView !== 'map'} />
+      <MapLegend open={showMapLegendPopover} onToggle={() => { setShowMapLegendPopover((prev) => !prev); setShowToolsPopover(false); }} statusFilter={statusFilter} onChangeStatusFilter={setStatusFilter} mapLens={mapLens} counts={counts} totalCount={evaluatedNeighborhoods.length} hideOnMobileSheet={primaryView !== 'map'} />
     </>
   ); }

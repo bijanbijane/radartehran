@@ -121,16 +121,18 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         </div>
       </div>
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar pt-0.5 text-[11px]">
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg shrink-0">
+        <div role="group" aria-label={isEn ? 'Map lens' : 'لنز نمایش نقشه'} className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg shrink-0">
           {[
             { id: 'budget' as const, label: isEn ? 'Budget Lens' : 'لنز بودجه' },
             { id: 'heatmap' as const, label: isEn ? 'Price Heatmap' : 'هیت‌مپ قیمت' },
             { id: 'bubble' as const, label: isEn ? 'Bubble Lens' : 'حباب قیمت' },
             { id: 'air' as const, label: isEn ? 'Air Quality' : 'کیفیت هوا' },
+            { id: 'traffic' as const, label: isEn ? 'Traffic Score' : 'امتیاز ترافیک' },
           ].map((l) => (
             <button
               key={l.id}
               type="button"
+              aria-pressed={ui.mapLens === l.id}
               onClick={() => ui.setMapLens(l.id)}
               className={`px-2 py-0.5 rounded-md font-bold transition cursor-pointer whitespace-nowrap ${ui.mapLens === l.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
             >
@@ -138,7 +140,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div role="group" aria-label={isEn ? 'Map overlays' : 'لایه‌های روی نقشه'} className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             aria-pressed={showMetroLines}

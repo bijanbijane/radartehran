@@ -79,6 +79,23 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     });
     expect(hasHorizontalOverflow).toBe(false);
 
+    const mobileNav = page.getByRole('navigation', { name: 'نوار پیمایش موبایل' });
+    await expect(mobileNav.getByRole('button')).toHaveCount(7);
+    for (const destination of ['map', 'discover', 'intelligence', 'tools', 'home', 'userspace']) {
+      await expect(mobileNav.locator(`[data-testid="mobile-nav-${destination}"]`)).toBeVisible();
+    }
+    await mobileNav.getByRole('button', { name: 'بیشتر' }).click();
+    const moreSections = page.getByRole('region', { name: 'بخش‌های بیشتر' });
+    await expect(moreSections).toBeVisible();
+    await moreSections.getByRole('button', { name: 'مدیریت و پایش' }).click();
+    const adminDialog = page.locator('[role="dialog"][aria-label="پنل مدیریت سایت"]');
+    await expect(adminDialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(adminDialog).toBeHidden();
+    await mobileNav.getByRole('button', { name: 'خانه' }).click();
+    await expect(page.locator('[data-testid="product-home-view"]')).toBeVisible();
+    await mobileNav.getByRole('button', { name: 'نقشه' }).click();
+
     // Verify mobile inspector sheet handle has accessible role and label
     const sheetHandle = page.locator('[role="button"][aria-label*="پنل کالبدشکافی"]');
     await expect(sheetHandle).toBeVisible();

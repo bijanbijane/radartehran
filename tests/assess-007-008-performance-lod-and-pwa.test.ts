@@ -136,6 +136,61 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   const dotDemotedCount = Array.from(tiersCollidingZ13.values()).filter((t) => t === 'dot').length;
   assert.equal(dotDemotedCount, tehranSlice.length - 1, 'Colliding lower-priority markers at same pixel must demote to dot');
 
+  const markerMap = {
+    latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng, y: lat }),
+  };
+  const markerAt = (hood: EvaluatedNeighborhood, id: number, x: number): EvaluatedNeighborhood => ({
+    ...hood,
+    id,
+    lat: 0,
+    lng: x,
+  });
+  const selectedMarker = markerAt(tehranSlice[0], 1, 0);
+  const candidateMarker = markerAt(tehranSlice[1], 2, 124);
+  const compactCollisionMarker = markerAt(tehranSlice[2], 3, 209);
+  const tiersZ12 = computeDeclutteredMarkerTiers(
+    markerMap,
+    [selectedMarker, markerAt(tehranSlice[1], 2, 200)],
+    12,
+    1,
+    () => false
+  );
+  assert.equal(tiersZ12.get(1), 'standard_pill', 'Selected neighborhood keeps its readable tier at zoom 12');
+  assert.equal(tiersZ12.get(2), 'compact_chip', 'A fitting compact marker remains visible at zoom 12');
+
+  const tiersZ14 = computeDeclutteredMarkerTiers(
+    markerMap,
+    [selectedMarker, candidateMarker, compactCollisionMarker],
+    14,
+    1,
+    () => false
+  );
+  assert.equal(tiersZ14.get(1), 'detailed_pill', 'Selected neighborhood keeps the detailed tier at zoom 14');
+  assert.equal(tiersZ14.get(2), 'compact_chip', 'A compact chip is used only when its actual footprint fits');
+  assert.equal(tiersZ14.get(3), 'dot', 'A marker colliding with a placed compact chip falls back to a dot');
+
+  const sponsorMarker = markerAt({ ...tehranSlice[2], sponsor: { name: 'Agency', phone: '1', specialty: 'Homes', experienceYears: 1 } }, 3, 300);
+  const ordinaryMarker = markerAt(tehranSlice[1], 2, 300);
+  const sponsorPriorityTiers = computeDeclutteredMarkerTiers(
+    markerMap,
+    [selectedMarker, ordinaryMarker, sponsorMarker],
+    14,
+    1,
+    (hood) => hood.id === 3
+  );
+  assert.equal(sponsorPriorityTiers.get(3), 'detailed_pill', 'Sponsored neighborhoods retain priority among ordinary markers');
+  assert.equal(sponsorPriorityTiers.get(2), 'dot', 'Lower-priority colliding markers demote to a dot');
+
+  const denseZoomTiers = computeDeclutteredMarkerTiers(
+    { latLngToContainerPoint: () => ({ x: 100, y: 100 }) },
+    tehranSlice.slice(0, 5),
+    14,
+    1,
+    () => false
+  );
+  assert.equal(denseZoomTiers.get(1), 'detailed_pill');
+  assert.ok(Array.from(denseZoomTiers.values()).slice(1).every((tier) => tier === 'dot'));
+
   // Verify XSS escaping in buildNeighborhoodLodDivIconConfig
   const maliciousHood: EvaluatedNeighborhood = {
     ...tehranSlice[0],
