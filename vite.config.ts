@@ -89,14 +89,21 @@ export default defineConfig(({ mode }) => {
             ) {
               return 'data-iran-provinces';
             }
+            if (id.includes('src/cells/')) {
+              return 'engine-decision-cells';
+            }
             if (
-              id.includes('src/data/neighborhoods') ||
-              id.includes('src/data/multiCityData') ||
-              id.includes('src/data/neighborhoodInsights') ||
               id.includes('src/data/tehranExtendedInsights') ||
               id.includes('src/data/provincialExtendedInsights') ||
               id.includes('src/data/tehranCityRemainingHoods') ||
               id.includes('src/data/tehranCountiesHoods')
+            ) {
+              return 'data-extended-insights';
+            }
+            if (
+              id.includes('src/data/neighborhoods') ||
+              id.includes('src/data/multiCityData') ||
+              id.includes('src/data/neighborhoodInsights')
             ) {
               return 'data-neighborhoods';
             }

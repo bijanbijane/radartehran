@@ -57,17 +57,17 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const toolCategories = useMemo(() => [
     {
       id: 'decision' as const,
-      category: isEn ? 'CASPER Decision Science & Game Theory' : 'نظریه بازی‌ها، تصمیم‌گیری و سرایت فضایی (CASPER)',
+      category: isEn ? 'Smart Deal Readiness & Market Risk' : 'تصمیم‌یار خرید، چانه‌زنی و سنجش ریسک بازار',
       items: [
-        { id: 'casper_decision_synthesis', title: 'سنتز جامع کیفیت تصمیم، سقف خروج و آمادگی معامله (Executive Deal Readiness)', desc: 'حکم نهایی ورود به معامله، ارزیابی ماتریس ۶گانه، تعیین سقف ترک جلسه و سناریوی افتتاحیه چانه‌زنی', icon: Award, action: () => openDecisionTool('DECISION_SYNTHESIS') },
-        { id: 'casper_regret', title: 'ماتریس کمینه‌ساز بیشینه پشیمانی ساواج (Savage Minimax Regret)', desc: `شبیه‌سازی بازده ثروت نهایی ۳۶ ماهه در برابر ۳ رژیم جهش ارزی، رکود تورمی و ثبات در محله ${p.selectedHood.name}`, icon: Compass, action: () => openDecisionTool('PARETO_REGRET') },
-        { id: 'casper_lemon', title: 'شاخص عدم تقارن اطلاعاتی و بازار لیموها (Akerlof Lemon Index)', desc: 'سنجش برتری اطلاعاتی فروشنده، نرخ آگهی‌های طعمه و فرمولاسیون چانه‌زنی ضد زیان‌گریزی کانمن (λ=۲٫۲۵)', icon: Network, action: () => openDecisionTool('SPATIAL_CONTAGION') },
-        { id: 'casper_real_options', title: 'اختیارات واقعی و نیمه‌عمر نقدشوندگی (Dixit-Pindyck Real Options)', desc: 'محاسبه ارزش ریاضی اختیار تعویق در معامله، تابع بقای فروش مسکن و بتای سرریز دلار، طلا و تورم عمومی', icon: Hourglass, action: () => openDecisionTool('REAL_OPTIONS') },
-        { id: 'casper_urban_affordability', title: 'هزینه کل اقتصادی سکونت و مرز تردد آلونسو-میلز (TCOH & Isochrone)', desc: 'تنش استطاعت مسکن (PIR/RIR)، ارزش اتلاف وقت در ترافیک، استهلاک رفت‌وآمد و نقطه سربه‌سر آربیتراژ سکونت', icon: Briefcase, action: () => openDecisionTool('URBAN_AFFORDABILITY') },
-        { id: 'casper_monte_carlo', title: 'شبیه‌ساز ۱٬۰۰۰ سناریوی مونت‌کارلو جهش-نفوذ مرتون و ارزش در معرض خطر (Merton VaR)', desc: 'توزیع احتمالاتی بازده واقعی در برابر شوک ارزی، محاسبه سقف زیان در سطح اطمینان ۹۵٪ و ضریب سورتینو', icon: Activity, action: () => openDecisionTool('MONTE_CARLO_VAR') },
-        { id: 'casper_housing_cycle', title: 'رادار چرخه‌های ادواری مسکن و فرسایش حباب (Housing Cycle Radar)', desc: 'تشخیص فازهای ۴گانه رکود، رونق، اشباع و کف‌سازی همراه با راهبرد اختصاصی خانه‌اولی‌ها و ارتقادهندگان', icon: PieChart, action: () => openDecisionTool('HOUSING_CYCLE') },
-        { id: 'casper_macro_portfolio', title: 'بهینه‌ساز سبد دارایی مارکوویتز، طلا و دلار (Markowitz Portfolio & Gold Arbitrage)', desc: 'محاسبه وزن بهینه مسکن، سکه، دلار و درآمد ثابت ۳۰٪، مرز کارا و تحلیل سودآوری تبدیل طلا به ملک', icon: Wallet, action: () => openDecisionTool('MACRO_PORTFOLIO') },
-        { id: 'casper_rent_vs_buy', title: 'مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد» (Rent vs. Buy NPV Arbitrage)', desc: 'به چالش کشیدن باور سنتی «اجاره‌نشینی یعنی هدر دادن پول»، محاسبه ارزش فعلی خالص، استهلاک و نرخ بی‌تفاوتی', icon: Split, action: () => openDecisionTool('RENT_VS_BUY') },
+        { id: 'casper_decision_synthesis', title: 'خلاصه تصمیم خرید، سقف قیمت و راهنمای چانه‌زنی (Executive Deal Readiness)', desc: 'حکم نهایی ورود به معامله، ارزیابی ۶ شاخص کلیدی، تعیین سقف ترک جلسه و پیشنهاد قیمت شروع مذاکره', icon: Award, action: () => openDecisionTool('DECISION_SYNTHESIS') },
+        { id: 'casper_regret', title: 'مقایسه محله‌های جایگزین و کمترین ریسک پشیمانی (Savage Minimax Regret)', desc: `شبیه‌سازی ارزش ۳ ساله دارایی در ۳ وضعیت جهش ارزی، رکود تورمی و ثبات در محله ${p.selectedHood.name}`, icon: Compass, action: () => openDecisionTool('PARETO_REGRET') },
+        { id: 'casper_lemon', title: 'تشخیص حباب آگهی‌ها و فرمول چانه‌زنی قیمت (Akerlof Lemon Index)', desc: 'سنجش ریسک آگهی‌های غیرواقعی یا طعمه و محاسبه تخفیف منطقی پای میز مذاکره (λ=۲٫۲۵)', icon: Network, action: () => openDecisionTool('SPATIAL_CONTAGION') },
+        { id: 'casper_real_options', title: 'بررسی زمان مناسب خرید و سرعت فروش ملک (Dixit-Pindyck Real Options)', desc: 'مقایسه سود خرید فوری یا صبر کردن، تخمین مدت‌زمان فروش ملک و اثر دلار و طلا بر مسکن', icon: Hourglass, action: () => openDecisionTool('REAL_OPTIONS') },
+        { id: 'casper_urban_affordability', title: 'هزینه واقعی زندگی و رفت‌وآمد در محله (TCOH & Isochrone)', desc: 'محاسبه نسبت قیمت به درآمد، هزینه اتلاف وقت در ترافیک، استهلاک خودرو و مقایسه با محله‌های نزدیک محل کار', icon: Briefcase, action: () => openDecisionTool('URBAN_AFFORDABILITY') },
+        { id: 'casper_monte_carlo', title: 'شبیه‌سازی ۱٬۰۰۰ حالت آینده قیمت و ریسک افت سرمایه (Merton VaR)', desc: 'پیش‌بینی بازده واقعی ملک در برابر نوسان دلار و محاسبه حداکثر ریسک افت سرمایه با اطمینان ۹۵٪', icon: Activity, action: () => openDecisionTool('MONTE_CARLO_VAR') },
+        { id: 'casper_housing_cycle', title: 'تشخیص وضعیت فعلی بازار مسکن: رکود یا رونق؟ (Housing Cycle Radar)', desc: 'شناسایی فاز فعلی بازار (رکود، رونق، اشباع یا کف قیمتی) همراه با پیشنهاد عملی برای خانه‌اولی‌ها و سرمایه‌گذاران', icon: PieChart, action: () => openDecisionTool('HOUSING_CYCLE') },
+        { id: 'casper_macro_portfolio', title: 'مقایسه سود مسکن با طلا، دلار و سود بانکی (Markowitz Portfolio & Gold Arbitrage)', desc: 'پیشنهاد ترکیب بهینه سرمایه بین ملک، طلا، دلار و صندوق درآمد ثابت و بررسی به‌صرفه بودن تبدیل طلا به مسکن', icon: Wallet, action: () => openDecisionTool('MACRO_PORTFOLIO') },
+        { id: 'casper_rent_vs_buy', title: 'مقایسه دقیق «خرید خانه» یا «اجاره‌نشینی + سرمایه‌گذاری» (Rent vs. Buy NPV Arbitrage)', desc: 'مقایسه مالی ۵ ساله بین خرید ملک یا اجاره‌نشینی و سرمایه‌گذاری الباقی پول با احتساب هزینه تعمیرات و استهلاک', icon: Split, action: () => openDecisionTool('RENT_VS_BUY') },
       ],
     },
     {
@@ -125,7 +125,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
             {isEn ? 'Real Estate Transaction Toolkit' : 'جعبه‌ابزار هوشمند معاملات مسکن'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            مجموعه ۱۳ ابزار کارشناسی، شبیه‌ساز مالی، ارزیابی ریسک حقوقی و راستی‌آزمایی معاملات ملک
+            مجموعه ۲۲ ابزار کارشناسی قیمت، شبیه‌ساز مالی، راهنمای چانه‌زنی و بررسی حقوقی معاملات ملک در ۴ گام
           </p>
         </div>
         <div className="p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs space-y-2 min-w-[260px]">
@@ -161,6 +161,22 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         </div>
       </div>
 
+      {/* 3-Step Guided Workflow Quick-Start Banner */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <button type="button" onClick={p.onOpenReverseBudget} className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/70 text-right hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
+          <div><div className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">گام ۱ · کشف و تطبیق بودجه</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">با بودجه من کجا خانه بخرم؟</div></div>
+          <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+        </button>
+        <button type="button" onClick={p.onOpenHedonic} className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/70 text-right hover:border-sky-500 transition cursor-pointer flex items-center justify-between">
+          <div><div className="text-[10px] font-black text-sky-700 dark:text-sky-400">گام ۲ · کارشناسی قیمت منصفانه</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">محاسبه قیمت واقعی ملک هدف</div></div>
+          <Calculator className="w-4 h-4 text-sky-600 shrink-0" />
+        </button>
+        <button type="button" onClick={() => p.onOpenExpansionModal('contract')} className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/70 text-right hover:border-amber-500 transition cursor-pointer flex items-center justify-between">
+          <div><div className="text-[10px] font-black text-amber-700 dark:text-amber-400">گام ۳ · امنیت حقوقی پیش از امضا</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">چک‌لیست قولنامه و کمیسیون</div></div>
+          <FileCheck className="w-4 h-4 text-amber-600 shrink-0" />
+        </button>
+      </div>
+
       {/* Instant Tool Filter & Category Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
         <div className="relative flex-1">
@@ -171,9 +187,9 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         <div className="flex items-center gap-1 overflow-x-auto text-xs">
           {[
             { id: 'all' as const, label: isEn ? 'All (22)' : 'همه ابزارها (۲۲)' },
-            { id: 'decision' as const, label: isEn ? 'Game Theory & Decision (9)' : 'نظریه بازی و پارتو (۹)' },
             { id: 'financial' as const, label: isEn ? 'Financial (5)' : 'مالی و قیمت (۵)' },
             { id: 'legal' as const, label: isEn ? 'Legal (4)' : 'حقوقی و بازدید (۴)' },
+            { id: 'decision' as const, label: isEn ? 'Deal & Risk Lab (9)' : 'تصمیم‌یار و چانه‌زنی (۹)' },
             { id: 'urban' as const, label: isEn ? 'Urban & Swap (4)' : 'ساخت و تهاتر (۴)' },
           ].map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveCat(tab.id)} className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition cursor-pointer ${activeCat === tab.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
@@ -188,7 +204,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
               <Compass className="w-4 h-4 text-indigo-600" />
-              <span>محیط تعاملی آزمایشگاه تصمیم‌یار و نظریه بازی‌های کسپر (CASPER Decision Lab)</span>
+              <span>پنل تعاملی تصمیم‌یار خرید، چانه‌زنی و ارزیابی ریسک بازار</span>
             </h3>
             <button
               type="button"

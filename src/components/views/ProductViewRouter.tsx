@@ -56,8 +56,8 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const activeDealFx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(activeDealUnit, intlCurrency, radarLocale)}` : '';
 
   const mapAxisBar = (
-    <div className="sticky top-0 z-20 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-2 space-y-1.5">
-      <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+    <div className="sticky top-0 z-20 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-1.5 space-y-1">
+      <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-1.5 text-xs">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
             {isEn ? 'Live Map Axis:' : 'محور نقشه زنده:'}
@@ -275,7 +275,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
 
   if (!content) return null;
   return (
-    <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitMapMode ? 'mt-[175px] h-[calc(100%-175px)] rounded-t-3xl border-t lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]' : 'h-full w-full lg:w-[calc(100%-220px)]'}`}>
+    <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitMapMode ? 'mt-[136px] h-[calc(100%-136px)] rounded-t-3xl border-t lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]' : 'h-full w-full lg:w-[calc(100%-220px)]'}`}>
       {mapAxisBar}
       <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>
         {content}

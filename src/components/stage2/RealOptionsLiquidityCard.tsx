@@ -70,13 +70,13 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <span>نظریه اختیارات واقعی (Dixit-Pindyck) و نیمه‌عمر نقدشوندگی مسکن</span>
+              <span>زمان‌بندی معامله و سرعت فروش: الان بخرم، چانه بزنم یا صبر کنم؟</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-normal">
                 {report.hoodName}
               </span>
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              ارزیابی ریاضی ارزش تعویق در معامله، تابع بقای فروش (Hazard Rate) و بتای سرریز دلار و طلا
+              محاسبه ارزش صبر کردن (مدل اختیارات واقعی Dixit-Pindyck)، سرعت نقدشوندگی و حساسیت به دلار و طلا
             </p>
           </div>
         </div>

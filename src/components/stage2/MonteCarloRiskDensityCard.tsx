@@ -68,13 +68,13 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <span>شبیه‌ساز مونت‌کارلو جهش-نفوذ مرتون و VaR تعدیل‌شده نقدشوندگی</span>
+              <span>آزمون استرس ۱٬۰۰۰ سناریوی قیمت و ریسک فروش اضطراری</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-normal">
                 {report.hoodName}
               </span>
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              ارزیابی ۱٬۰۰۰ سناریوی مستقل، تفکیک VaR کاغذی از VaR خروج اضطراری (کسر ۱۲٪ فروش فوری) و ضریب سورتینو
+              شبیه‌سازی مونت‌کارلو (مدل پرش-انتشار مرتون) با تفکیک ریسک کاغذی از کسر ۱۲٪ فروش فوری
             </p>
           </div>
         </div>

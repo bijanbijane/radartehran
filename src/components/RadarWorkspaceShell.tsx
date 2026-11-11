@@ -32,8 +32,8 @@ export function RadarWorkspaceShell() {
   const allExpansionSeeds = useMemo(() => getAllMultiCityNeighborhoods().filter((n) => n.id >= 100 && !(n.id >= 500 && n.id <= 599)), []);
   const activeCityRef = useRef<CityId>(initialUrlState.initialCity || 'tehran');
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>(() => hydrateNeighborhoodsFromStorage(allExpansionSeeds));
-  const [mode, setMode] = useState<'rent' | 'buy'>(initialUrlState.initialMode || 'rent'), [deposit, setDeposit] = useState<number>(initialUrlState.initialDeposit ?? 700), [monthlyRent, setMonthlyRent] = useState<number>(initialUrlState.initialMonthlyRent ?? 20);
-  const [buyTotalBudget, setBuyTotalBudget] = useState<number>(initialUrlState.initialBuyBudget ?? 9500), [targetSqm, setTargetSqm] = useState<number>(initialUrlState.initialTargetSqm ?? 80);
+  const [mode, setMode] = useState<'rent' | 'buy'>(initialUrlState.initialMode || 'rent'), [deposit, setDeposit] = useState<number>(initialUrlState.initialDeposit ?? 2800), [monthlyRent, setMonthlyRent] = useState<number>(initialUrlState.initialMonthlyRent ?? 45);
+  const [buyTotalBudget, setBuyTotalBudget] = useState<number>(initialUrlState.initialBuyBudget ?? 24500), [targetSqm, setTargetSqm] = useState<number>(initialUrlState.initialTargetSqm ?? 80);
   const [buildingAgeSegment, setBuildingAgeSegment] = useState<'new' | 'mid' | 'older'>('new'), [deductTenantRahnInBuy, setDeductTenantRahnInBuy] = useState<boolean>(false), [workHubId, setWorkHubId] = useState<string>(initialUrlState.initialWorkHubId || 'none'), [showReverseBudgetModal, setShowReverseBudgetModal] = useState<boolean>(false);
   const [favoriteHoodIds, setFavoriteHoodIds] = useState<number[]>(() => {
     try { const s = localStorage.getItem('tehran_radar_favorites_v1'); if (s) { const p = JSON.parse(s); if (Array.isArray(p)) return p.filter((id) => typeof id === 'number' && !Number.isNaN(id)).slice(0, 25); } } catch { /* ignore */ }

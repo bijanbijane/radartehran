@@ -168,7 +168,9 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
     clientGeoJsonLruCache.setMaxEntries(lazyPolicy.maxLruCacheSize);
     const refLat = selectedHood?.lat ?? (MULTI_CITY_CONFIGS[activeCity]?.center[0] || 35.735); const refLng = selectedHood?.lng ?? (MULTI_CITY_CONFIGS[activeCity]?.center[1] || 51.395);
     const isCameraAtTarget = isNeighborhoodInLeafletViewport(map, refLat, refLng, 0.5);
-    renderHoods.forEach((hood) => {
+    const placedPillCoords: Array<[number, number]> = [];
+    const sortedHoods = [...renderHoods].sort((a, b) => (a.id === currentSelectedId ? -1 : b.id === currentSelectedId ? 1 : a.id - b.id));
+    sortedHoods.forEach((hood) => {
       if (statusFilter !== 'all' && hood.status !== statusFilter) return;
       const isSelected = hood.id === currentSelectedId;
       const inTargetArea = activeCity === 'tehran' || (isCameraAtTarget ? isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, Math.max(0.6, lazyPolicy.viewportPadRatio)) : (Math.abs(hood.lat - refLat) <= 0.55 && Math.abs(hood.lng - refLng) <= 0.65));
@@ -177,13 +179,10 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
       const safeSqmPill = Math.max(25, targetSqm || 75);
       const scaledRahnPill = Math.round(hood.rahn80m * (safeSqmPill / 80) * rentAgeMultiplier);
       let priceLabel = '';
-      if (mapLens === 'bubble') {
-        priceLabel = hood.marketReport.status === 'undervalued' ? 'جامانده 💎' : hood.marketReport.status === 'balanced' ? 'متعادل' : 'حباب بالا';
-      } else if (mapLens === 'air') {
-        priceLabel = `هوا ${toPersianNum(hood.air)}/۱۰`;
-      } else if (mapLens === 'traffic') {
-        priceLabel = `ترافیک ${toPersianNum(hood.trafficInfo?.trafficScore ?? 6.5)}/۱۰`;
-      } else {
+      if (mapLens === 'bubble') priceLabel = hood.marketReport.status === 'undervalued' ? 'جامانده 💎' : hood.marketReport.status === 'balanced' ? 'متعادل' : 'حباب بالا';
+      else if (mapLens === 'air') priceLabel = `هوا ${toPersianNum(hood.air)}/۱۰`;
+      else if (mapLens === 'traffic') priceLabel = `ترافیک ${toPersianNum(hood.trafficInfo?.trafficScore ?? 6.5)}/۱۰`;
+      else {
         const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit); const unitLabel = formatAreaUnitLabel(areaUnit);
         const fxTag = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(mode === 'rent' ? scaledRahnPill : unitBuy, intlCurrency, locale)})` : '';
         priceLabel = mode === 'rent' ? `${toPersianNum(scaledRahnPill)}م رهن${fxTag}` : `${unitLabel} ${toPersianNum(unitBuy)}م${fxTag}`;
@@ -196,30 +195,22 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
         { zoom: currentZoom, isSelected, lowBandwidthMode: advancedOverlayState.lowBandwidthGeoLazyMode }
       );
       const hasSponsor = isSponsorActive(hood.sponsor, featureFlags.enableSponsorBilling);
-      const pillConfig = buildZoomAdaptivePillIconConfig({
-        hood, zoom: currentZoom, isSelected, hasSponsor, isDarkMap, pillBg, priceLabel,
-      });
-      const pillIcon = L.divIcon({
-        className: 'custom-hood-pill price-pill-icon',
-        html: pillConfig.html,
-        iconSize: pillConfig.iconSize,
-        iconAnchor: pillConfig.iconAnchor,
-      });
-      const marker = L.marker([hood.lat, hood.lng], {
-        icon: pillIcon,
-        zIndexOffset: isSelected ? 1000 : hasSponsor ? 250 : 0,
-      }).addTo(map);
+      const minDegDist = currentZoom <= 11 ? 0.032 : currentZoom <= 12 ? 0.022 : 0;
+      const isTooCloseAtLowZoom = !isSelected && minDegDist > 0 && placedPillCoords.some(([pLat, pLng]) => Math.hypot(hood.lat - pLat, (hood.lng - pLng) * 0.82) < minDegDist);
+      if (isTooCloseAtLowZoom) {
+        markersMapRef.current[hood.id] = { circle, marker: null, stroke, fill, pillBg, hasSponsor };
+        return;
+      }
+      placedPillCoords.push([hood.lat, hood.lng]);
+      const pillConfig = buildZoomAdaptivePillIconConfig({ hood, zoom: currentZoom, isSelected, hasSponsor, isDarkMap, pillBg, priceLabel });
+      const pillIcon = L.divIcon({ className: 'custom-hood-pill price-pill-icon', html: pillConfig.html, iconSize: pillConfig.iconSize, iconAnchor: pillConfig.iconAnchor });
+      const marker = L.marker([hood.lat, hood.lng], { icon: pillIcon, zIndexOffset: isSelected ? 1000 : hasSponsor ? 250 : 0 }).addTo(map);
       marker.on('click', handleHoodClick);
-      const richPopupHtml = buildNeighborhoodRichTooltipHtml({
-        hood, activeCity, mode, safeSqmPill, scaledRahnPill, isDarkMap,
-      });
+      const richPopupHtml = buildNeighborhoodRichTooltipHtml({ hood, activeCity, mode, safeSqmPill, scaledRahnPill, isDarkMap });
       marker.bindTooltip(richPopupHtml, { direction: 'top', interactive: true, offset: [0, -10] });
       markersMapRef.current[hood.id] = { circle, marker, stroke, fill, pillBg, hasSponsor };
       if (showGoldPins && currentZoom >= lazyPolicy.secondaryPinsMinZoom && Array.isArray(hood.bargains) && hood.bargains.length > 0) {
-        const gPin = renderGoldBargainPinOnLeaflet({
-          L, map, hood, isDarkMap,
-          onClickBargain: (hId) => onOpenModalQuickRef.current(hId, 'bargains'),
-        });
+        const gPin = renderGoldBargainPinOnLeaflet({ L, map, hood, isDarkMap, onClickBargain: (hId) => onOpenModalQuickRef.current(hId, 'bargains') });
         if (gPin) goldPinsRef.current.push(gPin);
       }
     });
@@ -227,31 +218,15 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
   }, [deferredMapNeighborhoods, mapZoomLevel, mode, targetSqm, rentAgeMultiplier, statusFilter, mapLens, mapTileStyle, showGoldPins, osmBoundariesByHood, activeCity, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, areaUnit, intlCurrency, locale, markerRenderEpoch]);
   useEffect(() => {
     const timer = createExecutionTimer('Map', 'updateSelectionPills');
-    if (selectedHoodId && !markersMapRef.current[selectedHoodId]) {
-      setMarkerRenderEpoch((c) => c + 1);
-      timer('fallback');
-      return;
-    }
-    const isDarkMap =
-      mapTileStyle === 'carto_dark' ||
-      mapTileStyle === 'satellite' ||
-      (typeof document !== 'undefined' && document.documentElement.classList.contains('apple-dark'));
+    if (selectedHoodId && !markersMapRef.current[selectedHoodId]?.marker) { setMarkerRenderEpoch((c) => c + 1); timer('fallback'); return; }
+    const isDarkMap = mapTileStyle === 'carto_dark' || mapTileStyle === 'satellite' || (typeof document !== 'undefined' && document.documentElement.classList.contains('apple-dark'));
     Object.entries(markersMapRef.current).forEach(([idStr, entry]) => {
-      const hoodId = Number(idStr);
-      const isSelected = hoodId === selectedHoodId;
-      if (entry.circle && typeof entry.circle.setStyle === 'function') {
-        entry.circle.setStyle(getZoomAdaptivePolygonStyle(mapZoomLevel, isSelected, entry.stroke, entry.fill));
-      }
-      if (typeof entry.marker?.setZIndexOffset === 'function') {
-        entry.marker.setZIndexOffset(isSelected ? 1000 : entry.hasSponsor ? 250 : 0);
-      }
-      const el = entry.marker?.getElement?.() as HTMLElement | null;
-      const pillSpan = el?.querySelector?.('[data-hood-pill]') as HTMLElement | null;
+      const hoodId = Number(idStr); const isSelected = hoodId === selectedHoodId;
+      if (entry.circle && typeof entry.circle.setStyle === 'function') entry.circle.setStyle(getZoomAdaptivePolygonStyle(mapZoomLevel, isSelected, entry.stroke, entry.fill));
+      if (typeof entry.marker?.setZIndexOffset === 'function') entry.marker.setZIndexOffset(isSelected ? 1000 : entry.hasSponsor ? 250 : 0);
+      const el = entry.marker?.getElement?.() as HTMLElement | null; const pillSpan = el?.querySelector?.('[data-hood-pill]') as HTMLElement | null;
       if (pillSpan) {
-        pillSpan.style.border = isSelected
-          ? isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a'
-          : entry.hasSponsor ? '1.5px solid #fbbf24'
-          : isDarkMap ? '1px solid rgba(255,255,255,0.65)' : '1px solid rgba(255,255,255,0.35)';
+        pillSpan.style.border = isSelected ? (isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a') : entry.hasSponsor ? '1.5px solid #fbbf24' : isDarkMap ? '1px solid rgba(255,255,255,0.65)' : '1px solid rgba(255,255,255,0.35)';
         pillSpan.style.boxShadow = isSelected ? '0 0 0 3px rgba(56,189,248,0.45), 0 8px 20px rgba(0,0,0,0.45)' : '0 2px 8px rgba(0,0,0,0.35)';
       }
     });

@@ -65,10 +65,10 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
           </div>
           <div>
             <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-              ماتریس پشیمانی ساواج، معیار هورwicz و بهینگی غیرجبرانی پارتو ({hoodName})
+              شبیه‌ساز کمترین پشیمانی در ۳ سال آینده و محلات جایگزین ({hoodName})
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              نظریه تصمیم تحت عدم قطعیت کلان (افق ۳۶ ماهه) با جریمه وتوی گلوگاه‌های زیست‌پذیری
+              مقایسه «خرید نقدی، خرید با وام یا اجاره» در ۳ سناریوی کلان (مدل ساواج، هورwicz و پارتو)
             </p>
           </div>
         </div>

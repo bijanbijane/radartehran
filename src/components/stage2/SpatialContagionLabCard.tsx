@@ -69,7 +69,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
           <div className="flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
-              شاخص عدم تقارن اطلاعاتی و «بازار لیموها» (مدل نوبل جرج آکرلوف)
+              شفافیت قیمت محله و ریسک آگهی‌های طعمه یا قیمت‌سازی‌شده (مدل آکرلوف)
             </h4>
           </div>
           <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold ${lemonBadgeStyle}`}>

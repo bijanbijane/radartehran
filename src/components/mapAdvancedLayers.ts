@@ -5,18 +5,21 @@ export function useMapAdvancedOverlayState(): MapAdvancedOverlayStoreState { ret
   ); }
 export function isCoordInsideStoredViewport(lat: number, lng: number, bounds: MapViewportBoundsState | null): boolean { if (!bounds) return true; return lat <= bounds.north && lat >= bounds.south && lng <= bounds.east && lng >= bounds.west; }
 export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighborhood; zoom: number; isSelected: boolean; hasSponsor: boolean; isDarkMap: boolean; pillBg: string; priceLabel: string; }): { html: string; iconSize: [number, number]; iconAnchor: [number, number] } {
-  const { hood, zoom, isSelected, hasSponsor, isDarkMap, pillBg, priceLabel } = params; const areaUnit = getStoredAreaUnit(); const safeHoodName = escapeHtmlAttr(hood.name); const safePriceLabel = escapeHtmlAttr(priceLabel); const safeSponsorName = escapeHtmlAttr(hood.sponsor?.name || ''); const sponsorStar = hasSponsor
+  const { hood, zoom, isSelected, hasSponsor, isDarkMap, pillBg, priceLabel } = params; const areaUnit = getStoredAreaUnit();
+  const conciseHoodName = isSelected || zoom >= 13 ? hood.name : hood.name.replace(/\s*\([^)]*\)/g, '').trim();
+  const concisePriceLabel = isSelected || zoom >= 13 ? priceLabel : priceLabel.replace(/\s*\|\s*معامله:.*$/, '').replace(/\s*رهن$/, '').trim();
+  const safeHoodName = escapeHtmlAttr(conciseHoodName); const safePriceLabel = escapeHtmlAttr(concisePriceLabel); const safeSponsorName = escapeHtmlAttr(hood.sponsor?.name || ''); const sponsorStar = hasSponsor && (isSelected || zoom >= 13)
     ? `<span title="دارای کارشناس رسمی محله: ${safeSponsorName}" style="color:#fbbf24;margin-left:3px;font-size:11px;">★</span>`
     : ''; const borderRule = isSelected
     ? isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a'
     : hasSponsor ? '1.5px solid #fbbf24'
     : isDarkMap ? '1px solid rgba(255,255,255,0.65)' : '1px solid rgba(255,255,255,0.35)'; const shadowRule = isSelected
     ? '0 0 0 3px rgba(56,189,248,0.45), 0 8px 20px rgba(0,0,0,0.45)'
-    : '0 2px 8px rgba(0,0,0,0.35)'; if (zoom <= 11 && !isSelected) {
+    : '0 2px 6px rgba(0,0,0,0.28)'; if (zoom <= 11 && !isSelected) {
     const compactText = escapeHtmlAttr(`${toPersianNum(convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit))}م`);
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${safeHoodName}</span><span style="opacity:0.92;font-weight:700;border-right:1px solid rgba(255,255,255,0.28);padding-right:3px;">${safePriceLabel || compactText}</span>
+        <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:2.5px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.5px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"><span>${safeHoodName}</span><span style="opacity:0.92;font-weight:700;border-right:1px solid rgba(255,255,255,0.28);padding-right:2.5px;">${safePriceLabel || compactText}</span>
         </span>
       </div>`,
       iconSize: [54, 22], iconAnchor: [27, 11], }; }
@@ -30,11 +33,12 @@ export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighbo
         </span>
       </div>`,
       iconSize: [165, 28], iconAnchor: [82, 14], }; }
+  const isCompactZoom12 = zoom <= 12 && !isSelected;
   return {
     html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-      <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">
+      <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:${isCompactZoom12 ? '3px' : '4px'};padding:${isCompactZoom12 ? '2px 7px' : '3px 9px'};border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:${isCompactZoom12 ? '10px' : '11px'};font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};">
         ${sponsorStar}<span>${safeHoodName}</span>
-        <span style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:4px;">${safePriceLabel}</span>
+        <span style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:${isCompactZoom12 ? '3px' : '4px'};">${safePriceLabel}</span>
       </span>
     </div>`,
     iconSize: [110, 26], iconAnchor: [55, 13],
@@ -90,44 +94,24 @@ export const CITY_TRAFFIC_ZONES: Record<CityId, { core: [number, number][]; oute
 export function isPointInPolygon(lat: number, lng: number, polygon: [number, number][]): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [yi, xi] = polygon[i];
-    const [yj, xj] = polygon[j];
-    const intersect = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;
-    if (intersect) inside = !inside;
+    const [yi, xi] = polygon[i]; const [yj, xj] = polygon[j];
+    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi) inside = !inside;
   }
   return inside;
 }
-export interface SpatialProximityReport {
-  nearestMetroLineName: string;
-  nearestMetroColor: string;
-  nearestMetroDistKm: number;
-  walkingMinutesEstimate: number;
-  trafficZoneStatus: 'inside_core' | 'inside_outer' | 'outside';
-  trafficZoneLabelFa: string;
-}
-export function computeSpatialProximityReport(
-  hood: Pick<EvaluatedNeighborhood, 'lat' | 'lng'>,
-  activeCity: CityId = 'tehran'
-): SpatialProximityReport {
+export interface SpatialProximityReport { nearestMetroLineName: string; nearestMetroColor: string; nearestMetroDistKm: number; walkingMinutesEstimate: number; trafficZoneStatus: 'inside_core' | 'inside_outer' | 'outside'; trafficZoneLabelFa: string; }
+export function computeSpatialProximityReport(hood: Pick<EvaluatedNeighborhood, 'lat' | 'lng'>, activeCity: CityId = 'tehran'): SpatialProximityReport {
   const lines = CITY_METRO_LINES[activeCity] || CITY_METRO_LINES.tehran;
-  let minDist = Infinity;
-  let bestLine = lines[0];
+  let minDist = Infinity; let bestLine = lines[0];
   for (const line of lines) {
     for (let i = 0; i < line.coords.length; i++) {
       const [sLat, sLng] = line.coords[i];
       const d = calcDistanceKm(hood.lat, hood.lng, sLat, sLng) ?? Infinity;
-      if (d < minDist) {
-        minDist = d;
-        bestLine = line;
-      }
+      if (d < minDist) { minDist = d; bestLine = line; }
       if (i + 1 < line.coords.length) {
-        const midLat = (sLat + line.coords[i + 1][0]) / 2;
-        const midLng = (sLng + line.coords[i + 1][1]) / 2;
+        const midLat = (sLat + line.coords[i + 1][0]) / 2; const midLng = (sLng + line.coords[i + 1][1]) / 2;
         const dMid = calcDistanceKm(hood.lat, hood.lng, midLat, midLng) ?? Infinity;
-        if (dMid < minDist) {
-          minDist = dMid;
-          bestLine = line;
-        }
+        if (dMid < minDist) { minDist = dMid; bestLine = line; }
       }
     }
   }

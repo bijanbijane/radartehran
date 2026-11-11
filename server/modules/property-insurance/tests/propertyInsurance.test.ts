@@ -613,7 +613,7 @@ test('2. Enforces policy verification authorization, lifecycle transitions, expi
     principal: h.holderPrincipal,
     idempotencyKey: 'idem_excl_waiting_30d',
     policyId: policy.policyId,
-    limitationCategory: 'WAITING_PERIOD_LIMITATION',
+    limitationCategory: 'WAITING_PERIOD',
     excludedRiskCategories: ['FIRE'],
     waitingPeriodDays: 30,
     sourcePolicyProvisionRef: 'Clause 4.3',
@@ -631,7 +631,7 @@ test('2. Enforces policy verification authorization, lifecycle transitions, expi
   });
   assert.equal(
     fireDuringWaitEval.queriedRiskEvaluation.applicabilityConclusion,
-    'EXCLUDED_BY_POLICY_LIMITATION',
+    'EXCLUDED_BY_EXPLICIT_LIMITATION',
   );
 
   // Evaluate FIRE vs EARTHQUAKE in June 2026 (after waiting period; FLOOD exclusion on bldg_valid_1 does NOT block FIRE)

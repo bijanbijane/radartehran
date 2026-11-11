@@ -103,7 +103,7 @@ export function validatePlatformEnvironmentConfig(
     const stripped = key.slice('VITE_'.length);
     if (
       secretKeySet.has(stripped) ||
-      /SECRET|PRIVATE_KEY|SERVICE_ACCOUNT|PASSWORD|WEBHOOK_TOKEN|GEMINI_API_KEY|ADMIN_API_KEY/i.test(key)
+      /SECRET|PRIVATE_KEY|SERVICE_ACCOUNT|PASSWORD|(?:WEBHOOK|BOT|CASPER_HUB|HUB)_TOKEN|GEMINI_API_KEY|ADMIN_API_KEY/i.test(key)
     ) {
       errors.push(
         `FRONTEND_SECRET_EXPOSURE: Server secret variable '${key}' must not use the client-exposed VITE_ prefix.`,
