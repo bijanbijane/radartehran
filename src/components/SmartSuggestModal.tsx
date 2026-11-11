@@ -39,7 +39,13 @@ export function SmartSuggestModal({
   if (!open) return null;
 
   const safeRahn = clampNumber(totalRahnEquivalent, 10, 100000, 1200);
-  const safeBuySqm = clampNumber(maxAffordablePerSqm, 10, 2000, 110);
+  const effectiveMaxPerSqm = useMemo(() => {
+    const greenMax = safeList.filter((h) => h.status === 'green').length > 0
+      ? Math.max(...safeList.filter((h) => h.status === 'green').map((h) => h.buyPerSqm))
+      : maxAffordablePerSqm;
+    return Math.max(maxAffordablePerSqm, greenMax);
+  }, [safeList, maxAffordablePerSqm]);
+  const safeBuySqm = clampNumber(effectiveMaxPerSqm, 10, 5000, 110);
   const safeTargetSqm = clampNumber(targetSqm, 30, 350, 80);
 
   const handleSelectItem = (hood: EvaluatedNeighborhood): void => {

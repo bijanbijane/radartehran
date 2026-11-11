@@ -14,9 +14,11 @@ export interface ShortlistMatrixModalProps {
   onClose: () => void;
   favoriteHoodIds: number[];
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
+  nationwideEvaluatedNeighborhoods?: EvaluatedNeighborhood[];
   mode: 'rent' | 'buy';
   buyTotalBudget: number;
   totalRahnEquivalent: number;
+  targetSqm?: number;
   rentAgeMultiplier?: number;
   deductTenantRahnInBuy?: boolean;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
@@ -24,8 +26,8 @@ export interface ShortlistMatrixModalProps {
 }
 
 export function ShortlistMatrixModal({
-  open, onClose, favoriteHoodIds, evaluatedNeighborhoods, mode, buyTotalBudget, totalRahnEquivalent,
-  rentAgeMultiplier = 1, deductTenantRahnInBuy = false, onSelectNeighborhood, onRemoveFavorite,
+  open, onClose, favoriteHoodIds, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, mode, buyTotalBudget, totalRahnEquivalent,
+  targetSqm = 80, rentAgeMultiplier = 1, deductTenantRahnInBuy = false, onSelectNeighborhood, onRemoveFavorite,
 }: ShortlistMatrixModalProps): React.ReactElement | null {
   const dialogRef = useDialogFocus(open, onClose);
   const [areaUnit] = useAreaUnit();
@@ -36,16 +38,24 @@ export function ShortlistMatrixModal({
   if (!open) return null;
 
   const allKnownHoods = getAllMultiCityNeighborhoods();
+  const safeSqm = Math.max(25, Number(targetSqm) || 80);
   const shortlistedHoods = favoriteHoodIds
     .map((id) => {
-      const evaluated = evaluatedNeighborhoods.find((n) => n.id === id);
+      const evaluated = evaluatedNeighborhoods.find((n) => n.id === id) || nationwideEvaluatedNeighborhoods?.find((n) => n.id === id);
       if (evaluated) return evaluated;
       const raw = allKnownHoods.find((n) => n.id === id);
       if (!raw) return undefined;
+      const buyAgeMult = rentAgeMultiplier === 1 ? 1.0 : rentAgeMultiplier >= 0.89 ? 0.88 : 0.76;
+      const effBuySqm = Math.max(15, Math.round(raw.buyPerSqm * buyAgeMult));
+      const scaledRahn = Math.max(50, Math.round(raw.rahn80m * (safeSqm / 80) * rentAgeMultiplier));
+      const totalBuy = effBuySqm * safeSqm;
+      const netCash = deductTenantRahnInBuy ? Math.max(500, Math.round(totalBuy * 0.9) - scaledRahn) : totalBuy;
+      const ratio = mode === 'rent' ? scaledRahn / Math.max(1, totalRahnEquivalent) : netCash / Math.max(1, buyTotalBudget);
       return {
-        ...raw, baseBuyPerSqm: raw.buyPerSqm,
+        ...raw, baseBuyPerSqm: raw.buyPerSqm, buyPerSqm: effBuySqm,
         overallScore: Math.round(((raw.air + raw.powerWater + raw.internet + raw.metro + raw.security + raw.flatTerrain) / 6) * 10) / 10,
-        status: 'yellow' as const, diffPercent: 0, distKm: null,
+        status: ratio <= 1.0 ? ('green' as const) : ratio <= 1.15 ? ('yellow' as const) : ('red' as const),
+        diffPercent: Math.round((ratio - 1) * 100), distKm: null,
         trafficInfo: getNeighborhoodTrafficInfo(raw), marketReport: getNeighborhoodMarketReport(raw),
       } satisfies EvaluatedNeighborhood;
     })

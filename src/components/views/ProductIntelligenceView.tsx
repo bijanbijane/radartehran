@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { BarChart3, TrendingUp, ArrowUpRight, Flame, MapPin, Scale, Search, ShieldCheck, X } from 'lucide-react';
+import { BarChart3, TrendingUp, ArrowUpRight, Flame, MapPin, Scale, Search, ShieldCheck, Sparkles, X } from 'lucide-react';
 import type { EvaluatedNeighborhood, MarketPulseData } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
-import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useAreaUnit, useExperienceMode, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
-import { Stage2MasterWidget } from '../stage2/Stage2MasterWidget';
+import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
 
 export interface ProductIntelligenceViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
@@ -18,10 +18,11 @@ export interface ProductIntelligenceViewProps {
 }
 
 export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.ReactElement {
-  const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
+  const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale(), [experienceMode, setExperienceMode] = useExperienceMode();
   const isEn = radarLocale === 'en';
   const { comparisonArc } = useMapAdvancedOverlayState();
   const [activeSegment, setActiveSegment] = useState<'undervalued' | 'balanced' | 'bubble'>('undervalued'), [segQuery, setSegQuery] = useState<string>('');
+  const [stage2Tab, setStage2Tab] = useState<Stage2ActiveTab>('HOUSING_CYCLE');
   const handleSelectSegment = (seg: 'undervalued' | 'balanced' | 'bubble') => { setActiveSegment(seg); p.onSyncMapLens?.('bubble'); };
 
   const undervaluedList = useMemo(() => p.evaluatedNeighborhoods.filter((h) => h.marketReport?.status === 'undervalued'), [p.evaluatedNeighborhoods]);
@@ -181,11 +182,42 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           </div>
         </div>
 
-        <Stage2MasterWidget
-          hoodId={p.selectedHood.id} hoodName={p.selectedHood.name} cityKey={p.activeCity}
-          basePriceSqm={p.selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={p.selectedHood} initialTab="HOUSING_CYCLE"
-          onSelectCompareHood={(targetName) => { const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName); if (match) p.onSelectNeighborhood(match); }}
-        />
+        <div data-testid="intelligence-experience-mode-bar" className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <span className="font-bold text-slate-800 dark:text-slate-100">
+              {experienceMode === 'simple'
+                ? 'حالت ساده (خلاصه کاربردی خریدار و مستأجر فعال است)'
+                : 'حالت حرفه‌ای (۱۲ آزمایشگاه اقتصادسنجی، نظریه بازی‌ها و راستی‌آزمایی جمعی فعال است)'}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              data-testid="intelligence-open-crowd-claims-btn"
+              onClick={() => { setStage2Tab('CROWD_CLAIMS'); setExperienceMode('pro'); }}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition"
+            >
+              ثبت / مشاهده قیمت واقعی قولنامه‌ها (راستی‌آزمایی مردمی)
+            </button>
+            <button
+              type="button"
+              onClick={() => setExperienceMode(experienceMode === 'pro' ? 'simple' : 'pro')}
+              className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold cursor-pointer hover:bg-slate-100 transition"
+            >
+              {experienceMode === 'pro' ? 'بازگشت به حالت ساده' : 'ورود به حالت حرفه‌ای (۱۲ آزمایشگاه CASPER)'}
+            </button>
+          </div>
+        </div>
+
+        {experienceMode === 'pro' && (
+          <Stage2MasterWidget
+            hoodId={p.selectedHood.id} hoodName={p.selectedHood.name} cityKey={p.activeCity}
+            basePriceSqm={p.selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={p.selectedHood} initialTab={stage2Tab}
+            onTabChange={(t) => setStage2Tab(t)}
+            onSelectCompareHood={(targetName) => { const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName); if (match) p.onSelectNeighborhood(match); }}
+          />
+        )}
       </div>
 
       {/* Filtered Market Segment Section */}

@@ -127,8 +127,13 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
   const maxAffordablePerSqm = useMemo(() => {
     const safeSqm = Math.max(25, Number(targetSqm) || 75);
     const effectiveBuy = useLoanBooster ? buyTotalBudget + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterBuyMillion : buyTotalBudget;
-    return Math.round(effectiveBuy / safeSqm);
-  }, [buyTotalBudget, targetSqm, useLoanBooster]);
+    if (!deductTenantRahnInBuy) return Math.round(effectiveBuy / safeSqm);
+    const scaleFactor = safeSqm / 80;
+    const refRahn = 1200 * scaleFactor * (rentAgeMultiplier || 1);
+    const rawTotal = effectiveBuy + refRahn;
+    const effectivePower = Math.round(rawTotal / 0.9);
+    return Math.round(effectivePower / safeSqm);
+  }, [buyTotalBudget, targetSqm, useLoanBooster, deductTenantRahnInBuy, rentAgeMultiplier]);
   const maxAffordablePerUnit = convertPricePerSqmToUnit(maxAffordablePerSqm, areaUnit);
   const maxAffordableIntlText = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(maxAffordablePerUnit, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)}` : '';
   const extraGreenWithLoan = useMemo(() => {

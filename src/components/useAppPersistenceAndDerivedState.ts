@@ -8,7 +8,7 @@ import { useEffect, useMemo } from 'react';
 import {
   Neighborhood, EvaluatedNeighborhood, FeatureFlags, WorkHub, getBestHoodIndicator,
   getNeighborhoodLandmarks, generateLocalNeighborhoodAnalysis, getNeighborhoodMarketReport,
-  LOCAL_STORAGE_KEY, ADMIN_PASS_STORAGE_KEY, BUYER_ALERTS_STORAGE_KEY, SPONSOR_CRM_STORAGE_KEY,
+  LOCAL_STORAGE_KEY, ADMIN_PASS_STORAGE_KEY, BUYER_ALERTS_STORAGE_KEY, SPONSOR_CRM_STORAGE_KEY, toPersianNum,
 } from '../data/neighborhoods';
 import {
   getNeighborhoodDeepInsight, checkDirectMetroCommute, evaluateRentVsBuyInNeighborhood, evaluateTradeUpOptions,
@@ -169,18 +169,32 @@ export function useAppPersistenceAndDerivedState({
     return Math.max(0, Math.round(((scaledRahn - ui.hoodCustomDeposit) * 3) / 100));
   }, [selectedHood, ui.hoodCustomDeposit, targetSqm, rentAgeMultiplier]);
 
-  const localAnalysis = useMemo(
-    () =>
-      generateLocalNeighborhoodAnalysis(
-        selectedHood,
-        mode,
-        mode === 'rent' ? totalRahnEquivalent : maxAffordablePerSqm,
-        targetSqm,
-        selectedHood.distKm,
-        selectedWorkHub.name
-      ),
-    [selectedHood, mode, totalRahnEquivalent, maxAffordablePerSqm, targetSqm, selectedWorkHub]
-  );
+  useEffect(() => {
+    ui.setAlertDealType(mode === 'rent' ? 'اجاره' : 'خرید');
+    const estBuyBillion = Math.round(((maxAffordablePerSqm * Math.max(25, targetSqm || 80)) / 1000) * 10) / 10;
+    ui.setAlertMaxBudget(
+      mode === 'rent'
+        ? `${toPersianNum(totalRahnEquivalent)} میلیون تومان رهن کامل (${toPersianNum(targetSqm)} متر)`
+        : `${toPersianNum(estBuyBillion)} میلیارد تومان (واحد ${toPersianNum(targetSqm)} متری)`
+    );
+  }, [mode, targetSqm, totalRahnEquivalent, maxAffordablePerSqm]);
+
+  const localAnalysis = useMemo(() => {
+    const effectiveUserBuyPerSqm =
+      selectedHood.diffPercent <= 0
+        ? Math.max(maxAffordablePerSqm, Math.round(selectedHood.buyPerSqm * (1 - selectedHood.diffPercent / 100)))
+        : selectedHood.status === 'yellow'
+          ? Math.max(maxAffordablePerSqm, Math.round(selectedHood.buyPerSqm * 0.9))
+          : maxAffordablePerSqm;
+    return generateLocalNeighborhoodAnalysis(
+      selectedHood,
+      mode,
+      mode === 'rent' ? totalRahnEquivalent : effectiveUserBuyPerSqm,
+      targetSqm,
+      selectedHood.distKm,
+      selectedWorkHub.name
+    );
+  }, [selectedHood, mode, totalRahnEquivalent, maxAffordablePerSqm, targetSqm, selectedWorkHub]);
 
   const marketReport = useMemo(() => getNeighborhoodMarketReport(selectedHood), [selectedHood]);
   const bestIndicator = useMemo(() => getBestHoodIndicator(selectedHood), [selectedHood]);

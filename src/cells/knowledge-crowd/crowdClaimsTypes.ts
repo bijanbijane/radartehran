@@ -177,6 +177,8 @@ export interface HoodClaimsQueryResult {
   communityStageClaims: CrowdClaimDocument[];
   disputedClaims: CrowdClaimDocument[];
   totalMatchedCount: number;
+  crowdVerifiedDealMedianPerSqm?: number | null;
+  crowdPriceObservationCount?: number;
 }
 
 export function formatClaimPriceSqmIntl(

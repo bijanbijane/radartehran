@@ -2,17 +2,21 @@ import React, { useSyncExternalStore } from 'react';
 import {
   AreaUnit,
   IntlCurrencyCode,
+  RadarExperienceMode,
   RadarLocale,
   formatAreaUnitLabel,
   formatMillionTomanAsIntlCurrency,
   getStoredAreaUnit,
+  getStoredExperienceMode,
   getStoredIntlCurrency,
   getStoredRadarLocale,
   setStoredAreaUnit,
+  setStoredExperienceMode,
   setStoredIntlCurrency,
   setStoredRadarLocale,
   subscribeAreaUnit,
   toggleStoredAreaUnit,
+  toggleStoredExperienceMode,
 } from '../utils/areaUnit';
 
 export function useAreaUnit(): [AreaUnit, (next: AreaUnit) => void, () => AreaUnit] {
@@ -28,6 +32,11 @@ export function useRadarLocale(): [RadarLocale, (next: RadarLocale) => void] {
 export function useIntlCurrency(): [IntlCurrencyCode, (next: IntlCurrencyCode) => void] {
   const currency = useSyncExternalStore(subscribeAreaUnit, getStoredIntlCurrency, () => 'IRT' as IntlCurrencyCode);
   return [currency, setStoredIntlCurrency];
+}
+
+export function useExperienceMode(): [RadarExperienceMode, (next: RadarExperienceMode) => void, () => RadarExperienceMode] {
+  const mode = useSyncExternalStore(subscribeAreaUnit, getStoredExperienceMode, () => 'simple' as RadarExperienceMode);
+  return [mode, setStoredExperienceMode, toggleStoredExperienceMode];
 }
 
 interface AreaUnitToggleProps {

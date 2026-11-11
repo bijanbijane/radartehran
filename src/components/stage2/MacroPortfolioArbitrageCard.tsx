@@ -5,7 +5,7 @@
  * Allows interactive Markowitz asset allocation and swap evaluation across Housing, Gold, USD, and Bonds.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Wallet, Sliders, ArrowRightLeft } from 'lucide-react';
 import {
   generateCasperMacroPortfolioDossier,
@@ -37,7 +37,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
 }) => {
   const [selectedStrategy, setSelectedStrategy] = useState<'optimal' | 'inflation' | 'defensive' | 'custom'>('optimal');
   const [swapSourceAsset, setSwapSourceAsset] = useState<'GOLD_COIN' | 'US_DOLLAR' | 'FIXED_INCOME'>('GOLD_COIN');
-  const [capitalBillion, setCapitalBillion] = useState<number>(() => Math.max(6, Math.round((basePriceSqm * targetSqm) / 1000)));
+  const [capitalBillion, setCapitalBillion] = useState<number>(() => Math.max(2, Math.round((basePriceSqm * targetSqm) / 1000)));
   const [customWeights, setCustomWeights] = useState<PortfolioAllocationWeights>({
     housingWeightPct: 50,
     goldWeightPct: 25,
@@ -48,6 +48,10 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
   const dossier = useMemo(() => {
     return generateCasperMacroPortfolioDossier(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm);
   }, [hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency, targetSqm]);
+
+  useEffect(() => {
+    setCapitalBillion(Math.max(2, Math.round((dossier.basePriceSqm * targetSqm) / 1000)));
+  }, [dossier.basePriceSqm, targetSqm, hoodId, cityKey]);
 
   const activeEvaluation = useMemo(() => {
     if (selectedStrategy === 'defensive') return dossier.canonicalPortfolios.defensive;

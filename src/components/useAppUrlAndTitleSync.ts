@@ -43,6 +43,12 @@ export interface UseAppUrlAndTitleSyncParams {
   setPrimaryView?: (v: any) => void;
   mapInstanceRef: React.MutableRefObject<any>;
   hasUrlBudgetParams: boolean;
+  useLoanBooster?: boolean;
+  setUseLoanBooster?: (v: boolean) => void;
+  deductTenantRahnInBuy?: boolean;
+  setDeductTenantRahnInBuy?: (v: boolean) => void;
+  buildingAgeSegment?: 'new' | 'mid' | 'older';
+  setBuildingAgeSegment?: (v: 'new' | 'mid' | 'older') => void;
 }
 
 function buildAllCityHoods(): { cityId: CityId; hood: Neighborhood }[] {
@@ -59,6 +65,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
     compHood1, compHood2, mode, setMode, deposit, setDeposit,
     monthlyRent, setMonthlyRent, buyTotalBudget, setBuyTotalBudget,
     targetSqm, setTargetSqm, workHubId, setWorkHubId, primaryView, setPrimaryView, mapInstanceRef, hasUrlBudgetParams,
+    useLoanBooster, setUseLoanBooster, deductTenantRahnInBuy, setDeductTenantRahnInBuy, buildingAgeSegment, setBuildingAgeSegment,
   } = p;
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
@@ -146,6 +153,12 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       if (!Number.isNaN(sqmParam) && sqmParam >= 30 && sqmParam <= 500) setTargetSqm(sqmParam);
       const hubParam = params.get('hub')?.trim();
       if (hubParam && /^[a-zA-Z0-9_-]{1,40}$/.test(hubParam) && setWorkHubId) setWorkHubId(hubParam);
+      const loanParam = params.get('loan');
+      if ((loanParam === '1' || loanParam === '0') && setUseLoanBooster) setUseLoanBooster(loanParam === '1');
+      const rahnDeductParam = params.get('rahnDeduct');
+      if ((rahnDeductParam === '1' || rahnDeductParam === '0') && setDeductTenantRahnInBuy) setDeductTenantRahnInBuy(rahnDeductParam === '1');
+      const ageParam = params.get('age');
+      if ((ageParam === 'new' || ageParam === 'mid' || ageParam === 'older') && setBuildingAgeSegment) setBuildingAgeSegment(ageParam);
     };
 
     applyUrlParams(false);
@@ -167,7 +180,8 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       const hubPart = workHubId && workHubId !== 'none' ? `&hub=${encodeURIComponent(workHubId)}` : '';
       const intlSuffix = `${locale !== 'fa' ? `&lang=${locale}` : ''}${intlCurrency !== 'IRT' ? `&currency=${intlCurrency}` : ''}${areaUnit !== 'sqm' ? `&unit=${areaUnit}` : ''}`;
       const viewSuffix = primaryView && primaryView !== 'map' ? `&view=${primaryView}` : '';
-      const budgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}` : hubPart) + intlSuffix + viewSuffix;
+      const leveragePart = `${useLoanBooster ? '&loan=1' : ''}${deductTenantRahnInBuy ? '&rahnDeduct=1' : ''}${buildingAgeSegment && buildingAgeSegment !== 'new' ? `&age=${buildingAgeSegment}` : ''}`;
+      const budgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}${leveragePart}` : `${hubPart}${leveragePart}`) + intlSuffix + viewSuffix;
       const pathname = window.location.pathname || '/';
       const setMetaContent = (selector: string, content: string) => {
         const el = document.querySelector<HTMLMetaElement>(selector);
@@ -223,5 +237,5 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
     } catch {
       // Ignore History API errors in restricted iframe contexts
     }
-  }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, areaUnit, intlCurrency, locale]);
+  }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, areaUnit, intlCurrency, locale, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment]);
 }

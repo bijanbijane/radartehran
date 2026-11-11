@@ -28,16 +28,22 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const [homeQuery, setHomeQuery] = useState<string>('');
   const { comparisonArc } = useMapAdvancedOverlayState();
   const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
+  const dealPriceByHoodId = useMemo(() => {
+    const m = new Map<number, number>();
+    p.evaluatedNeighborhoods.forEach((hood) => m.set(hood.id, aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm));
+    return m;
+  }, [p.evaluatedNeighborhoods]);
   const featuredHoods = useMemo(() => {
     let list = p.evaluatedNeighborhoods;
-    if (priceBracket === 'under5b') list = list.filter((h) => h.buyPerSqm * p.targetSqm < 5000);
-    else if (priceBracket === '5to10b') list = list.filter((h) => { const tot = h.buyPerSqm * p.targetSqm; return tot >= 5000 && tot <= 10000; });
-    else if (priceBracket === '10to20b') list = list.filter((h) => { const tot = h.buyPerSqm * p.targetSqm; return tot > 10000 && tot <= 20000; });
-    else if (priceBracket === 'luxury') list = list.filter((h) => h.buyPerSqm * p.targetSqm > 20000);
+    const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
+    if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
+    else if (priceBracket === '5to10b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot >= 1000 && tot <= 2000 : tot >= 5000 && tot <= 10000; });
+    else if (priceBracket === '10to20b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot > 2000 && tot <= 4000 : tot > 10000 && tot <= 20000; });
+    else if (priceBracket === 'luxury') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : dealSqm(h) * p.targetSqm > 20000);
     const q = homeQuery.trim();
     if (!q) return list.slice(0, 6);
     return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q)).slice(0, 8);
-  }, [p.evaluatedNeighborhoods, homeQuery, priceBracket, p.targetSqm]);
+  }, [p.evaluatedNeighborhoods, dealPriceByHoodId, homeQuery, priceBracket, p.mode, p.targetSqm]);
   const bargainsCount = p.evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0);
   const budgetDisplay = p.mode === 'buy'
     ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} م.ت`)
@@ -166,21 +172,12 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         <div role="group" aria-label={isEn ? 'Price brackets' : 'بازه قیمتی خرید'} className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
           {[
             { id: 'all' as const, label: isEn ? 'All Budgets' : 'همه قیمت‌ها' },
-            { id: 'under5b' as const, label: isEn ? '< 5B' : 'زیر ۵ میلیارد' },
-            { id: '5to10b' as const, label: isEn ? '5B – 10B' : '۵ تا ۱۰ میلیارد' },
-            { id: '10to20b' as const, label: isEn ? '10B – 20B' : '۱۰ تا ۲۰ میلیارد' },
-            { id: 'luxury' as const, label: isEn ? 'Luxury (20B+)' : 'لوکس (۲۰+ میلیارد)' },
+            { id: 'under5b' as const, label: p.mode === 'rent' ? (isEn ? '< 1B Rahn' : 'زیر ۱ م.ت') : (isEn ? '< 5B' : 'زیر ۵ میلیارد') },
+            { id: '5to10b' as const, label: p.mode === 'rent' ? (isEn ? '1B – 2B Rahn' : '۱ تا ۲ م.ت') : (isEn ? '5B – 10B' : '۵ تا ۱۰ میلیارد') },
+            { id: '10to20b' as const, label: p.mode === 'rent' ? (isEn ? '2B – 4B Rahn' : '۲ تا ۴ م.ت') : (isEn ? '10B – 20B' : '۱۰ تا ۲۰ میلیارد') },
+            { id: 'luxury' as const, label: p.mode === 'rent' ? (isEn ? 'Luxury (4B+)' : 'لوکس (۴+ م.ت)') : (isEn ? 'Luxury (20B+)' : 'لوکس (۲۰+ میلیارد)') },
           ].map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              onClick={() => setPriceBracket(b.id)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                priceBracket === b.id
-                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'
-              }`}
-            >
+            <button key={b.id} type="button" onClick={() => setPriceBracket(b.id)} className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'}`}>
               {b.label}
             </button>
           ))}
@@ -194,7 +191,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {featuredHoods.map((hood) => {
               const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-              const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+              const unitDeal = convertPricePerSqmToUnit(dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm, areaUnit);
               const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore });
               const isWithinBudget = hood.status === 'green';
               const isSelected = p.selectedHood.id === hood.id;

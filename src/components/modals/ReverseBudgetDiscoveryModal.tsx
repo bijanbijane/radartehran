@@ -21,7 +21,7 @@ export interface HoodDiscoverySummary {
   nameFa: string;
   districtNumber: number;
   zoneLabel?: string;
-  avgPricePerSqmMillion: number;
+  avgPricePerSqmMillion: number; rahn80m?: number;
   overallScore?: number;
   bargains?: ReadonlyArray<BargainListing>;
 }
@@ -34,6 +34,8 @@ interface ReverseBudgetDiscoveryModalProps {
   initialBudgetMillion?: number;
   initialAreaSqm?: number;
   initialMaxAgeYears?: number;
+  useLoanBooster?: boolean;
+  deductTenantRahnInBuy?: boolean;
 }
 
 const BUDGET_PRESETS_MILLION = [
@@ -44,13 +46,8 @@ const BUDGET_PRESETS_MILLION = [
 ] as const;
 
 export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalProps> = ({
-  isOpen,
-  onClose,
-  neighborhoods,
-  onSelectNeighborhood,
-  initialBudgetMillion,
-  initialAreaSqm,
-  initialMaxAgeYears,
+  isOpen, onClose, neighborhoods, onSelectNeighborhood,
+  initialBudgetMillion, initialAreaSqm, initialMaxAgeYears, useLoanBooster = false, deductTenantRahnInBuy = false,
 }) => {
   const dialogRef = useDialogFocus(isOpen, onClose);
   const [areaUnit] = useAreaUnit();
@@ -73,7 +70,9 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
 
   const rankedMatches = useMemo(() => {
     if (!isOpen || totalBudgetMillion <= 0) return [];
-    const targetSqmPrice = totalBudgetMillion / Math.max(35, desiredAreaSqm);
+    const effectiveBudgetMillion = totalBudgetMillion + (useLoanBooster ? 1200 : 0);
+    const targetSqmPrice = effectiveBudgetMillion / Math.max(35, desiredAreaSqm);
+    const rentAgeMult = maxBuildingAgeYears <= 5 ? 1.0 : maxBuildingAgeYears <= 15 ? 0.9 : 0.8;
 
     return neighborhoods
       .map((hood) => {
@@ -81,10 +80,13 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
         const effectiveSqmPrice = Math.round(hood.avgPricePerSqmMillion * ageFactor.multiplier);
         const samples = buildNeighborhoodListingSamples({ id: numId, name: hood.nameFa, buyPerSqm: effectiveSqmPrice, bargains: hood.bargains });
         const estimatedDealSqmPrice = aggregateNeighborhoodMarketMetrics(numId, hood.nameFa, effectiveSqmPrice, samples).estimatedDealPricePerSqm;
-        const estimatedTotal = Math.round(effectiveSqmPrice * desiredAreaSqm);
-        const dealTotal = Math.round(estimatedDealSqmPrice * desiredAreaSqm);
-        const ratio = estimatedTotal / totalBudgetMillion;
-        const isDealWithinBudget = dealTotal <= totalBudgetMillion;
+        const rawTotal = Math.round(effectiveSqmPrice * desiredAreaSqm);
+        const rawDealTotal = Math.round(estimatedDealSqmPrice * desiredAreaSqm);
+        const rahnDeduct = deductTenantRahnInBuy && hood.rahn80m ? Math.round(hood.rahn80m * (desiredAreaSqm / 80) * rentAgeMult) : 0;
+        const estimatedTotal = deductTenantRahnInBuy ? Math.max(500, Math.round(rawTotal * 0.9) - rahnDeduct) : rawTotal;
+        const dealTotal = deductTenantRahnInBuy ? Math.max(500, Math.round(rawDealTotal * 0.9) - rahnDeduct) : rawDealTotal;
+        const ratio = estimatedTotal / effectiveBudgetMillion;
+        const isDealWithinBudget = dealTotal <= effectiveBudgetMillion;
         const status: 'AFFORDABLE' | 'STRETCH' | 'OUT_OF_REACH' =
           ratio <= 1.0 ? 'AFFORDABLE' : (ratio <= 1.12 || isDealWithinBudget) ? 'STRETCH' : 'OUT_OF_REACH';
 
@@ -94,7 +96,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
           estimatedDealSqmPrice,
           estimatedTotalMillion: estimatedTotal,
           isDealWithinBudget,
-          targetDiffRatio: Math.abs(1 - effectiveSqmPrice / targetSqmPrice),
+          targetDiffRatio: Math.abs(1 - estimatedTotal / Math.max(1, effectiveBudgetMillion)),
           status,
         };
       })
@@ -106,7 +108,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
         return a.targetDiffRatio - b.targetDiffRatio;
       })
       .slice(0, 12);
-  }, [isOpen, totalBudgetMillion, desiredAreaSqm, neighborhoods, ageFactor.multiplier]);
+  }, [isOpen, totalBudgetMillion, desiredAreaSqm, maxBuildingAgeYears, neighborhoods, ageFactor.multiplier, useLoanBooster, deductTenantRahnInBuy]);
 
   if (!isOpen) return null;
   const fmt = new Intl.NumberFormat(isEn ? 'en-US' : 'fa-IR');
@@ -164,7 +166,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                {budgetCheck.verbalPersianText} ({formatMillionTomanAsIntlCurrency(totalBudgetMillion, intlCurrency, radarLocale)})
+                {budgetCheck.verbalPersianText} ({formatMillionTomanAsIntlCurrency(totalBudgetMillion, intlCurrency, radarLocale)}){useLoanBooster ? ' + ۱.۲ میلیارد وام' : ''}{deductTenantRahnInBuy ? ' · با کسر رهن و تنفس سند' : ''}
               </span>
               <div className="flex items-center gap-1">
                 {BUDGET_PRESETS_MILLION.map((preset) => (

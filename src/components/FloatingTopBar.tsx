@@ -60,7 +60,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من' }, { id:
                 <button type="button" aria-label="بستن تنظیمات بودجه" onClick={() => setMobileFilterOpen(false)} className="w-7 h-7 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer"><X className="w-3.5 h-3.5 stroke-[2]" /></button>
               </div>
             </div>
-            <ModeSwitcherSegmented mode={mode} setMode={setMode} deposit={deposit} monthlyRent={monthlyRent} buyTotalBudget={buyTotalBudget} />
+            <ModeSwitcherSegmented mode={mode} setMode={setMode} deposit={deposit} monthlyRent={monthlyRent} buyTotalBudget={useLoanBooster ? buyTotalBudget + 1200 : buyTotalBudget} />
             <div className="space-y-3 apple-grouped-card bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-xl p-3.5">
               {mode === 'rent' ? ( <>
                   <div>

@@ -26,9 +26,8 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
   const [userCustomAskingSqm, setUserCustomAskingSqm] = useState<number>(0);
   const [copiedPlaybook, setCopiedPlaybook] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (initialTargetSqm && initialTargetSqm > 0) setTargetSqm(initialTargetSqm);
-  }, [initialTargetSqm]);
+  useEffect(() => { if (initialTargetSqm && initialTargetSqm > 0) setTargetSqm(initialTargetSqm); }, [initialTargetSqm]);
+  useEffect(() => { setUserCustomAskingSqm(0); }, [hoodId, cityKey]);
 
   const resolvedHood = useMemo(() => resolveNeighborhood(cityKey, hoodId, hoodName, hood), [cityKey, hoodId, hoodName, hood]);
   const aggMetrics = useMemo(

@@ -160,6 +160,8 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
       communityStageClaims: result.communityStageClaims,
       disputedClaims: result.disputedClaims,
       totalMatchedCount: result.totalMatchedCount,
+      crowdVerifiedDealMedianPerSqm: result.crowdVerifiedDealMedianPerSqm ?? null,
+      crowdPriceObservationCount: result.crowdPriceObservationCount ?? 0,
     });
   });
 

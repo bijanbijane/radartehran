@@ -166,7 +166,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           <button
             type="button"
             data-testid="snap-breakeven-alt-return-btn"
-            onClick={() => setAlternativeReturnPct(Math.round(analysis.breakEvenAlternativeReturnPct))}
+            onClick={() => setAlternativeReturnPct(analysis.breakEvenAlternativeReturnPct)}
             className="px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 cursor-pointer"
           >
             نرخ سربه‌سر دقیق: ٪{toPersianNum(analysis.breakEvenAlternativeReturnPct)} (اعمال)
@@ -176,6 +176,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             aria-label="نرخ بازده جایگزین"
             min={25}
             max={65}
+            step={0.1}
             value={alternativeReturnPct}
             onChange={(e) => setAlternativeReturnPct(Number(e.target.value))}
             className="w-32 accent-indigo-600 h-1.5 cursor-pointer"

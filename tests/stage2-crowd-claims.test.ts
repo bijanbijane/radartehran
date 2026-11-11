@@ -219,7 +219,7 @@ async function runTests(): Promise<void> {
       assert.equal(promotedClaim.weightedConsensusScore, 3.3);
       assert.ok(promotedClaim.promotedToReferenceAtIso);
 
-      // 3.5 Verify GET /api/v1/claims/hood/:hoodId with streetName filter
+      // 3.5 Verify GET /api/v1/claims/hood/:hoodId with streetName filter & crowdVerifiedDealMedianPerSqm
       const hoodGet = await requestJson(
         baseUrl,
         'GET',
@@ -231,6 +231,8 @@ async function runTests(): Promise<void> {
       assert.equal(verifiedList.length, 1);
       assert.equal(communityList.length, 0);
       assert.equal(verifiedList[0].claimId, createdClaim.claimId);
+      assert.equal(hoodGet.data.crowdVerifiedDealMedianPerSqm, 128);
+      assert.equal(hoodGet.data.crowdPriceObservationCount, 1);
 
       // 3.6 Verify GET /api/v1/contributors/:uid rewards (+25 reputationPoints and +0.05 trustWeight)
       const contribGet = await requestJson(baseUrl, 'GET', '/api/v1/contributors/author_ali');
@@ -244,7 +246,7 @@ async function runTests(): Promise<void> {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
     passed++;
-    console.log('  ✅ 3. Express API routes, street filtering, auto-promotion to VERIFIED_REFERENCE, and +25/+0.05 contributor rewards');
+    console.log('  ✅ 3. Express API routes, street filtering, auto-promotion to VERIFIED_REFERENCE, crowd deal median calibration, and +25/+0.05 contributor rewards');
   }
 
   console.log(`\n🎉 ALL ${passed} STAGE 2.1 CROWD CLAIMS TESTS PASSED!\n`);

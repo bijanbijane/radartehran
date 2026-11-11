@@ -5,7 +5,7 @@ import { toPersianNum } from '../../data/neighborhoods';
 import type { FeatureFlags, CityId } from '../../types/models';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { FAST_SALE_FACTOR } from '../../data/hedonicPricingEngine';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { InspectorDrawerSkeleton } from '../NeighborhoodLoadingSkeletons';
 
@@ -20,6 +20,7 @@ export interface ProductViewRouterProps {
   primaryView: PrimaryViewId;
   ui: any;
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
+  nationwideEvaluatedNeighborhoods?: EvaluatedNeighborhood[];
   allNeighborhoods?: Neighborhood[];
   selectedHood: EvaluatedNeighborhood;
   handleSelectNeighborhood: (h: EvaluatedNeighborhood) => void;
@@ -52,7 +53,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const isEn = radarLocale === 'en';
   const { comparisonArc, showMetroLines, showTrafficZones } = useMapAdvancedOverlayState();
   const hasActiveArc = Boolean(comparisonArc.active && comparisonArc.hoodA && comparisonArc.hoodB && comparisonArc.hoodA.id !== comparisonArc.hoodB.id);
-  const activeDealUnit = convertPricePerSqmToUnit(Math.round(selectedHood.buyPerSqm * FAST_SALE_FACTOR), areaUnit);
+  const activeDealUnit = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit);
   const activeDealFx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(activeDealUnit, intlCurrency, radarLocale)}` : '';
 
   const mapAxisBar = (
@@ -250,15 +251,16 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         currentUser={p.currentUser} onGoogleSignIn={p.crudActions.handleSaveUserPreferences} onSignOut={p.onSignOut}
         isVerifiedAdmin={p.isVerifiedAdmin} onOpenAdminModal={() => ui.setShowAdminModal(true)}
         favoriteHoodIds={p.favoriteHoodIds} onToggleFavorite={p.toggleFavoriteHood}
-        evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood}
+        evaluatedNeighborhoods={evaluatedNeighborhoods} nationwideEvaluatedNeighborhoods={p.nationwideEvaluatedNeighborhoods}
+        activeCity={p.activeCity} selectedHood={selectedHood}
         onSelectNeighborhood={(h) => handleSelectNeighborhood(h)}
         onOpenInspector={(h) => { handleSelectNeighborhood(h); ui.setMobileSheetOpen(true); }}
         onOpenShortlistMatrix={() => ui.setShowShortlistMatrixModal(true)}
-        onNavigateView={ui.setPrimaryView}
-        onOpenBuyerAlertModal={() => ui.setShowBuyerAlertModal(true)}
+        onNavigateView={ui.setPrimaryView} onOpenBuyerAlertModal={() => ui.setShowBuyerAlertModal(true)}
         visitedHomesCount={ui.visitedHomes.length} onOpenVisitedModal={() => ui.setShowVisitedModal(true)}
         mode={p.mode} deposit={p.deposit} monthlyRent={p.monthlyRent} buyTotalBudget={p.buyTotalBudget}
-        targetSqm={p.targetSqm} onOpenBudgetFilter={() => ui.setMobileFilterOpen(true)}
+        targetSqm={p.targetSqm} totalRahnEquivalent={p.totalRahnEquivalent} useLoanBooster={Boolean(ui.useLoanBooster)}
+        onOpenBudgetFilter={() => ui.setMobileFilterOpen(true)}
       />
     );
   } else if (primaryView === 'admin') {

@@ -135,11 +135,11 @@ export function RadarWorkspaceShell() {
     compareId1: ui.compareId1, setCompareId1: ui.setCompareId1, compareId2: ui.compareId2, setCompareId2: ui.setCompareId2,
     compHood1, compHood2, mode, setMode, deposit, setDeposit, monthlyRent, setMonthlyRent,
     buyTotalBudget, setBuyTotalBudget, targetSqm, setTargetSqm, workHubId, setWorkHubId, primaryView: ui.primaryView, setPrimaryView: ui.setPrimaryView, mapInstanceRef,
-    hasUrlBudgetParams: Boolean(initialUrlState.hasUrlBudgetParams),
+    hasUrlBudgetParams: Boolean(initialUrlState.hasUrlBudgetParams), useLoanBooster: ui.useLoanBooster, setUseLoanBooster: ui.setUseLoanBooster, deductTenantRahnInBuy, setDeductTenantRahnInBuy, buildingAgeSegment, setBuildingAgeSegment,
   });
 
   const crudActions = useRadarCrudActions({
-    currentUser, isVerifiedAdmin, activeCity: ui.activeCity, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId,
+    currentUser, isVerifiedAdmin, activeCity: ui.activeCity, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, useLoanBooster: ui.useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment,
     favoriteHoodIds, setFavoriteHoodIds, featureFlags, setFeatureFlags, neighborhoods, setNeighborhoods, evaluatedNeighborhoods,
     selectedHood, selectedHoodId: ui.selectedHoodId, setSelectedHoodId: ui.setSelectedHoodId, onSelectNeighborhood: handleSelectNeighborhood,
     setMobileSheetOpen: ui.setMobileSheetOpen, setActiveTab: ui.setActiveTab, setShowGoldPins: ui.setShowGoldPins, mapInstanceRef, allExpansionSeeds,
@@ -208,7 +208,7 @@ export function RadarWorkspaceShell() {
       {ui.primaryView !== 'map' && (
         <main className="relative z-10 w-full flex-1 overflow-hidden pointer-events-none flex justify-start">
           <ProductViewRouter
-            primaryView={ui.primaryView} ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} allNeighborhoods={neighborhoods}
+            primaryView={ui.primaryView} ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} nationwideEvaluatedNeighborhoods={nationwideEvaluatedNeighborhoods} allNeighborhoods={neighborhoods}
             selectedHood={selectedHood} handleSelectNeighborhood={handleSelectNeighborhood}
             favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood} mode={mode}
             setMode={setMode} targetSqm={targetSqm} totalRahnEquivalent={totalRahnEquivalent}
@@ -258,8 +258,8 @@ export function RadarWorkspaceShell() {
       />
       {showReverseBudgetModal && (<Suspense fallback={null}>
         <ReverseBudgetDiscoveryModal
-          isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)} initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm} initialMaxAgeYears={buildingAgeSegment === 'new' ? 5 : buildingAgeSegment === 'mid' ? 12 : 20}
-          neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm, overallScore: h.overallScore, bargains: h.bargains }))}
+          isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)} initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm} initialMaxAgeYears={buildingAgeSegment === 'new' ? 5 : buildingAgeSegment === 'mid' ? 12 : 20} useLoanBooster={ui.useLoanBooster} deductTenantRahnInBuy={deductTenantRahnInBuy}
+          neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm, rahn80m: h.rahn80m, overallScore: h.overallScore, bargains: h.bargains }))}
           onSelectNeighborhood={(id, budgetMillion, areaSqm, ageYears) => {
             const found = evaluatedNeighborhoods.find((h) => String(h.id) === id);
             if (typeof budgetMillion === 'number' && budgetMillion > 0) setBuyTotalBudget(budgetMillion);
@@ -271,7 +271,7 @@ export function RadarWorkspaceShell() {
         <AppModalsPortal
           ui={ui} mode={mode} setMode={setMode} totalRahnEquivalent={totalRahnEquivalent} maxAffordablePerSqm={maxAffordablePerSqm}
           smartSuggestedNeighborhoods={smartSuggestedNeighborhoods} handleSelectNeighborhood={handleSelectNeighborhood} targetSqm={targetSqm} setTargetSqm={setTargetSqm}
-          rentAgeMultiplier={rentAgeMultiplier} evaluatedNeighborhoods={evaluatedNeighborhoods} allNeighborhoods={neighborhoods}
+          rentAgeMultiplier={rentAgeMultiplier} evaluatedNeighborhoods={evaluatedNeighborhoods} nationwideEvaluatedNeighborhoods={nationwideEvaluatedNeighborhoods} allNeighborhoods={neighborhoods}
           targetBargainHood={targetBargainHood} liveBargainCheck={liveBargainCheck} featureFlags={featureFlags} compHood1={compHood1} compHood2={compHood2}
           buyTotalBudget={buyTotalBudget} setBuyTotalBudget={setBuyTotalBudget} favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood}
           selectedHood={selectedHood} marketReport={marketReport} bestIndicator={bestIndicator} totalLiveBargainsCount={totalLiveBargainsCount}

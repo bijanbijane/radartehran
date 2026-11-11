@@ -10,7 +10,7 @@ import type { FeatureFlags } from '../../types/models';
 import type { ExpansionModalType } from '../ExpansionModulesModal';
 import type { SuperModuleTabId } from '../FutureSuperModulesModal';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
-import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useAreaUnit, useExperienceMode, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
@@ -33,7 +33,7 @@ export interface ProductToolsViewProps {
 }
 
 export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
-  const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
+  const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale(), [experienceMode, setExperienceMode] = useExperienceMode();
   const isEn = radarLocale === 'en';
   const [toolQuery, setToolQuery] = useState<string>('');
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
@@ -43,6 +43,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
 
   const openDecisionTool = (tabId: Stage2ActiveTab) => {
     setActiveDecisionTab(tabId);
+    setExperienceMode('pro');
     setShowEmbeddedLab(true);
   };
 
@@ -111,14 +112,17 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
 
   const filteredCategories = useMemo(() => {
     const q = toolQuery.trim();
-    return toolCategories
+    const ordered = experienceMode === 'simple' && activeCat === 'all'
+      ? [...toolCategories.filter((c) => c.id !== 'decision'), ...toolCategories.filter((c) => c.id === 'decision')]
+      : toolCategories;
+    return ordered
       .filter((c) => activeCat === 'all' || c.id === activeCat)
       .map((c) => ({
         ...c,
         items: q ? c.items.filter((it) => matchesPersianSearch(it.title, q) || matchesPersianSearch(it.desc, q)) : c.items,
       }))
       .filter((c) => c.items.length > 0);
-  }, [toolCategories, activeCat, toolQuery]);
+  }, [toolCategories, activeCat, toolQuery, experienceMode]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6 animate-fadeIn" data-testid="product-tools-view">

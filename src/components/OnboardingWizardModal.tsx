@@ -233,9 +233,8 @@ export function OnboardingWizardModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {rankedGreenNeighborhoods.slice(0, 4).map((hood, idx) => {
                       const effectiveRahn = Math.round(hood.rahn80m * (targetSqm / 80) * rentAgeMultiplier);
-                      const effectiveBuySqm = Math.round(hood.buyPerSqm * buyAgeMultiplier);
-                      const uBuy = convertPricePerSqmToUnit(effectiveBuySqm, areaUnit);
-                      const uDeal = convertPricePerSqmToUnit(Math.round(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm * buyAgeMultiplier), areaUnit);
+                      const uBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
+                      const uDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
                       const explain = explainNeighborhoodRecommendation(hood, { mode, topReferenceScore: rankedGreenNeighborhoods[0]?.overallScore });
                       return (
                         <button key={hood.id} type="button" onClick={() => handleFinish(hood)} aria-label={isEn ? `Select ${hood.name}` : `انتخاب محله ${hood.name}`} className="p-2.5 rounded-xl text-start w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 transition cursor-pointer flex flex-col justify-between gap-1.5">
