@@ -95,9 +95,9 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
                 data-testid={`mobile-nav-${item.id}`}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => handleSelectView(item.id)}
-                className={`relative min-w-0 flex flex-col items-center justify-center gap-1 px-1 font-bold transition active:scale-95 cursor-pointer ${isActive ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
+                className={`relative min-w-0 flex flex-col items-center justify-center gap-1 px-1 font-bold transition active:scale-95 cursor-pointer ${isActive ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
               >
-                {isActive && <span className="absolute top-0 inset-x-2 h-0.5 rounded-b-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />}
+                {isActive && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-emerald-600 dark:bg-emerald-400 shadow-xs" aria-hidden="true" />}
                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="line-clamp-2 whitespace-normal text-center leading-3">{item.label}</span>
               </button>

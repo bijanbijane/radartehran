@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { PrimaryViewId, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
-import { AreaUnitToggle, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { AreaUnitToggle, ExperienceModeToggle, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { getProductNavigationItems } from './primaryNavigation';
 
 export interface ProductGlobalHeaderProps {
@@ -116,7 +116,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
         </div>
 
         {/* Primary View Tabs (Desktop / Tablet) */}
-        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden 2xl:flex flex-1 justify-center items-center gap-0.5 min-w-0">
+        <nav aria-label={isEn ? 'Primary Navigation' : 'بخش‌های اصلی پلتفرم'} className="hidden lg:flex flex-1 justify-center items-center gap-0.5 min-w-0">
           {navItems.map((item) => {
             const isActive = primaryView === item.id;
             const Icon = item.Icon;
@@ -140,7 +140,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           })}
         </nav>
 
-        <div className="hidden lg:block 2xl:hidden relative shrink-0">
+        <div className="hidden md:block lg:hidden relative shrink-0">
           <button
             type="button"
             aria-expanded={sectionsOpen}
@@ -250,8 +250,9 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             </button>
           )}
 
-          {/* Area Unit (m²/ft²), Language (FA/EN/AR/TR) & International Currency (IRT/USD/EUR/AED) */}
-          <div className="flex items-center">
+          {/* Experience Mode (Simple / Pro) + Area Unit (m²/ft²), Language & Currency */}
+          <div className="flex items-center gap-1">
+            <ExperienceModeToggle compact className="hidden sm:inline-flex" />
             <AreaUnitToggle compact showIntlControls className="flex-nowrap" />
           </div>
 

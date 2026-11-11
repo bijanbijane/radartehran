@@ -168,10 +168,14 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
 
       {/* Content Rendering: Empty State vs Grid vs List */}
       {filtered.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-          <div className="text-sm font-black text-slate-900 dark:text-white">{isEn ? 'No neighborhoods match your active filters' : 'هیچ محله‌ای با فیلترهای انتخابی یافت نشد'}</div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{isEn ? 'Try adjusting your search query, budget filter, map viewport, or district selection.' : 'عبارت جستجو، فیلتر وضعیت بودجه، کادر نقشه یا منطقه شهرداری را تغییر دهید.'}</p>
-          <button type="button" onClick={resetAllFilters} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">{isEn ? 'Reset All Filters' : 'پاک کردن فیلترها و نمایش همه محله‌ها'}</button>
+        <div data-testid="relax-filter-assistant" className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4">
+          <div className="text-base font-black text-slate-900 dark:text-white">{isEn ? 'No neighborhoods match your active filters' : 'محله‌ای با فیلترهای انتخابی شما یافت نشد'}</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto">با اعمال این تعدیل‌های هوشمند، گزینه‌های متناسب با توان مالی شما بازگشایی می‌شوند:</p>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <button type="button" onClick={() => setPriceBracket('all')} className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer">🔓 حذف سقف بازه قیمتی</button>
+            <button type="button" onClick={() => setZoneFilter('all')} className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 transition cursor-pointer">📍 کاوش در تمامی مناطق</button>
+            <button type="button" onClick={resetAllFilters} className="px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">🔄 پاک کردن همه فیلترها</button>
+          </div>
         </div>
       ) : layoutMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -185,17 +189,20 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
             const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
 
             return (
-              <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col justify-between ${isSelected ? 'border-emerald-600 dark:border-emerald-400 ring-1 ring-emerald-600 dark:ring-emerald-400 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}`}>
+              <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900/90 ring-1 transition-all flex flex-col justify-between ${isSelected ? 'ring-2 ring-emerald-600 dark:ring-emerald-400 shadow-md' : 'ring-slate-900/5 dark:ring-white/10 shadow-xs hover:shadow-sm hover:ring-slate-900/15 dark:hover:ring-white/20'}`}>
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
                       <div className="text-[11px] text-slate-400 font-medium">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)} از ۱۰ {isTiedTop && <span className="text-indigo-600 dark:text-indigo-400 font-bold">(≈ هم‌تراز ±۰.۳)</span>}</div>
                       <h3 className="text-base font-black text-slate-900 dark:text-white mt-0.5 flex items-center gap-1.5">
                         <span>محله {hood.name}</span>
+                        {topFilteredScore !== undefined && Math.abs(hood.overallScore - topFilteredScore) < 0.05 && (
+                          <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-black ring-1 ring-amber-500/25">فرصت برتر</span>
+                        )}
                         {isSelected && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">فعال روی نقشه</span>}
                       </h3>
                       <div className="mt-1 text-[11px] font-medium">
-                        {hood.status === 'green' ? <span className="text-emerald-600 dark:text-emerald-400">● همخوان با بودجه شما</span> : <span className="text-amber-600 dark:text-amber-400">● {toPersianNum(hood.diffPercent)}٪ بالاتر از بودجه</span>}
+                        {hood.status === 'green' ? <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />همخوان با بودجه شما</span> : <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{toPersianNum(hood.diffPercent)}٪ بالاتر از بودجه</span>}
                       </div>
                     </div>
                     <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={isFav ? `حذف ${hood.name} از منتخب‌ها` : `افزودن ${hood.name} به منتخب‌ها`} className={`p-1.5 rounded-lg border transition cursor-pointer ${isFav ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400' : 'border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>

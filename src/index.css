@@ -36,31 +36,31 @@
     --apple-radius-control: 9px;
     --apple-radius-group: 12px;
     --apple-radius-sheet: 18px;
-    --apple-shadow-toolbar: 0 8px 28px -4px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(60, 60, 67, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    --apple-shadow-sheet: 0 24px 56px -12px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(60, 60, 67, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.75);
-    --apple-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --apple-shadow-toolbar: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    --apple-shadow-sheet: 0 20px 45px -10px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.06);
+    --apple-shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.05);
   }
 
   [data-apple-theme='dark'] {
-    --apple-bg-grouped: #000000;
-    --apple-bg-window: #1c1c1e;
-    --apple-surface: #1c1c1e;
-    --apple-surface-secondary: #2c2c2e;
-    --apple-surface-elevated: rgba(28, 28, 30, 0.86);
-    --apple-inspector-bg: rgba(22, 22, 24, 0.92);
-    --apple-fill-tertiary: rgba(118, 118, 128, 0.28);
-    --apple-fill-quaternary: rgba(116, 116, 128, 0.18);
-    --apple-separator: rgba(84, 84, 88, 0.45);
-    --apple-border: rgba(255, 255, 255, 0.14);
-    --apple-text-primary: #f5f5f7;
-    --apple-text-secondary: #ebebf5;
-    --apple-text-tertiary: #98989d;
+    --apple-bg-grouped: #090d16;
+    --apple-bg-window: #0f172a;
+    --apple-surface: #0f172a;
+    --apple-surface-secondary: #1e293b;
+    --apple-surface-elevated: rgba(15, 23, 42, 0.88);
+    --apple-inspector-bg: rgba(11, 15, 23, 0.94);
+    --apple-fill-tertiary: rgba(148, 163, 184, 0.16);
+    --apple-fill-quaternary: rgba(148, 163, 184, 0.08);
+    --apple-separator: rgba(255, 255, 255, 0.08);
+    --apple-border: rgba(255, 255, 255, 0.12);
+    --apple-text-primary: #f8fafc;
+    --apple-text-secondary: #e2e8f0;
+    --apple-text-tertiary: #94a3b8;
     --apple-accent-blue: #0a84ff;
     --apple-accent-blue-hover: #409cff;
     --apple-accent-emerald: #30d158;
-    --apple-shadow-toolbar: 0 10px 32px -4px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255, 255, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    --apple-shadow-sheet: 0 28px 64px -12px rgba(0, 0, 0, 0.7), 0 0 0 0.5px rgba(255, 255, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    --apple-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --apple-shadow-toolbar: 0 10px 32px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --apple-shadow-sheet: 0 28px 64px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --apple-shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.07);
   }
 
   html,
@@ -127,11 +127,32 @@
   animation: iosItemFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Harmonic Map Canvas Tonal Integration */
+.leaflet-tile-pane {
+  filter: saturate(0.88) contrast(1.02);
+  transition: filter 0.3s ease;
+}
+[data-apple-theme='dark'] .leaflet-tile-pane {
+  filter: brightness(0.92) contrast(1.04) saturate(0.85);
+}
+
+@keyframes modalScaleEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 .apple-window-sheet {
   background-color: var(--apple-bg-grouped);
   border: 0.5px solid var(--apple-border);
   border-radius: var(--apple-radius-sheet);
   box-shadow: var(--apple-shadow-sheet);
+  animation: modalScaleEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .apple-grouped-card {
@@ -741,6 +762,39 @@ textarea:focus-visible,
   }
 }
 
+/* High-End Spatial Real Estate Sliders */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  transition: background 0.2s ease;
+}
+[data-apple-theme='dark'] input[type='range']::-webkit-slider-runnable-track {
+  background: #1e293b;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #059669;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(5, 150, 105, 0.2);
+  cursor: pointer;
+  margin-top: -6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(5, 150, 105, 0.25);
+}
+
 /* Desktop Viewport: position Leaflet zoom buttons neatly above the bottom-4 MapLegend bar */
 @media (min-width: 1024px) {
   .leaflet-bottom.leaflet-left {
@@ -781,3 +835,38 @@ textarea:focus-visible,
     width: 100% !important;
   }
 }
+
+/* CASPER Tabular Numeral & Financial Alignment */
+.tabular-nums,
+[data-tabular-num] {
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-feature-settings: "tnum" 1, "lnum" 1;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* CASPER Cyber-Obsidian Neon Spatial Glass & Kinetic Glow */
+@keyframes casperRadarPulse {
+  0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { transform: scale(1.05); opacity: 0.3; box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.casper-pulse-ring {
+  animation: casperRadarPulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.casper-neon-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.casper-holographic-badge {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.15), rgba(99, 102, 241, 0.15));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+}
+
+

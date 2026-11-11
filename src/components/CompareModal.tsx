@@ -69,7 +69,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
   };
   return (
     <div role="dialog" aria-modal="true" aria-label={compareCopy.modalTitle} onClick={onClose} className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-w-3xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
+      <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 text-slate-900 dark:text-slate-100 max-w-3xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl rounded-3xl">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5 mb-4">
           <div className="flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-xs shrink-0"><ArrowLeftRight className="w-4 h-4 stroke-[1.75]" /></span>
@@ -137,7 +137,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               </div>
             </div>
             <div className="space-y-2.5 mb-4 text-xs">
-              <div className="apple-grouped-card bg-amber-50/90 dark:bg-amber-950/25 border-amber-200/90 dark:border-amber-900/40 p-3.5 text-amber-950 dark:text-amber-200 flex items-start gap-2.5">
+              <div className="apple-grouped-card bg-amber-50/90 dark:bg-amber-950/25 ring-1 ring-amber-500/20 p-3.5 text-amber-950 dark:text-amber-200 flex items-start gap-2.5 shadow-xs">
                 <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="leading-relaxed">
                   <strong className="font-extrabold">مقایسه قدرت خرید واقعی شما: </strong>
@@ -152,22 +152,33 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                   وجود دارد (اختلاف متراژ: <strong className="tabular-nums">{formatAreaValue(summaryStats.diffSqm, areaUnit)}</strong> · اختلاف هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: <strong className="tabular-nums">{toPersianNum(summaryStats.uSpread)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(summaryStats.uSpread, intlCurrency, radarLocale)})` : ''}</strong>).
                 </div>
               </div>
-              <div className="apple-grouped-card dark:bg-slate-800/70 dark:border-slate-800 p-3 text-slate-900 dark:text-slate-100 space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 font-extrabold">
-                    <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>
-                      جمع‌بندی برنده مقایسه: محله {compHood1.name} در{' '}
-                      <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win1)} شاخص</span> و
-                      محله {compHood2.name} در{' '}
-                      <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win2)} شاخص</span>{' '}
-                      برتر است.
-                    </span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold">
-                    {summaryStats.win1 > summaryStats.win2 ? `برتری کلی با ${compHood1.name}` : summaryStats.win2 > summaryStats.win1 ? `برتری کلی با ${compHood2.name}` : 'رقابت کاملاً برابر'}
-                  </span>
-                </div>
+              <div className="apple-grouped-card dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 p-3.5 text-slate-900 dark:text-slate-100 space-y-2.5 shadow-xs">
+                {(() => {
+                  const p1 = compHood1.buyPerSqm, p2 = compHood2.buyPerSqm;
+                  const priceRatio = Math.max(p1, p2) / Math.max(1, Math.min(p1, p2));
+                  const isPeerMismatch = priceRatio >= 1.4;
+                  return (
+                    <div className="space-y-2">
+                      {isPeerMismatch && (
+                        <div data-testid="compare-peer-mismatch-banner" className="p-2.5 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/40 ring-1 ring-indigo-500/25 text-[11px] text-indigo-950 dark:text-indigo-200 flex items-center justify-between shadow-2xs">
+                          <span>⚖️ هشدار رده اقتصادی: اختلاف پایه قیمت این دو محله بیش از ۴۰٪ است؛ مقایسه بر اساس ارزش ریالی امکانات انجام شده است.</span>
+                          <span className="font-extrabold tabular-nums">نسبت: {toPersianNum(priceRatio.toFixed(1))} برابر</span>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 font-extrabold">
+                          <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>
+                            نبرد تن‌به‌تن: محله {compHood1.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win1)} شاخص</span> و محله {compHood2.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win2)} شاخص</span> برتر است.
+                          </span>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold">
+                          {summaryStats.win1 > summaryStats.win2 ? `برتری کلی با ${compHood1.name}` : summaryStats.win2 > summaryStats.win1 ? `برتری کلی با ${compHood2.name}` : 'رقابت کاملاً برابر'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {explain1 && explain2 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-700 text-[10.5px] text-slate-600 dark:text-slate-300">
                     <div><strong className="text-slate-900 dark:text-white">{compHood1.name} ({explain1.budgetFitSemanticsLabelFa}):</strong> {explain1.tradeOffSummaryFa}{explain1.nonCompensatoryWarningsFa[0] ? ` · ⚠️ ${explain1.nonCompensatoryWarningsFa[0]}` : ''}</div>

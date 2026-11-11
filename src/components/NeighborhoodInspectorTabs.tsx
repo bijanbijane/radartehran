@@ -3,7 +3,7 @@ import React from 'react'; import { AlertTriangle, Award, Bell, Bookmark, Buildi
 ); const NeighborhoodBargainsAndVotesTabs = React.lazy(() => import('./NeighborhoodBargainsAndVotesTabs').then((m) => ({ default: m.NeighborhoodBargainsAndVotesTabs }))
 ); const ResidentReviewsTabLazy = React.lazy(() => import('./inspector/ResidentReviewsTab').then((m) => ({ default: m.ResidentReviewsTab }))); export type InspectorTabId = 'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote' | 'osm_places'; export interface NeighborhoodInspectorTabsProps { activeTab: InspectorTabId; selectedHood: EvaluatedNeighborhood; activeCity: CityId; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; buildingAgeSegment: 'new' | 'mid' | 'older'; workHubId: string; selectedWorkHub: WorkHub; workHubs: WorkHub[]; onSelectWorkHubId: (hubId: string) => void; onChangeTargetSqm: (sqm: number) => void; onChangeBuildingAgeSegment: (seg: 'new' | 'mid' | 'older') => void; useLoanBooster: boolean; onToggleLoanBooster: () => void;
   deductTenantRahnInBuy: boolean; onToggleDeductTenantRahn: () => void; effectiveBuyBudget: number; buyTotalBudget?: number; deposit?: number; monthlyRent?: number; totalRahnEquivalent: number; localAnalysis: { budgetVerdict: string }; directMetroCommuteInfo: { hasDirectLine: boolean; badgeText: string }; deepInsight: NeighborhoodDeepInsight; rentVsBuyVerdict: RentVsBuyVerdict;
-  marketReport: BubbleReport; hoodCustomDeposit: number; setHoodCustomDeposit: (v: number) => void; calculatedHoodMonthlyRent: number; setShowHedonicModal: (v: boolean, params?: { sqm?: number; buildYear?: number; renovationStatus?: any; floor?: number }) => void; setTradeUpCurrentHoodId: (id: number) => void; setShowTradeUpModal: (v: boolean) => void; setBargainHoodId: (id: number) => void;
+  marketReport: BubbleReport; hoodCustomDeposit: number; setHoodCustomDeposit: (v: number) => void; calculatedHoodMonthlyRent: number; setShowHedonicModal: (v: boolean, params?: { sqm?: number; buildYear?: number; renovationStatus?: any; floor?: number; streetTier?: 'luxury' | 'balanced' | 'economic' | 'economy'; streetMultiplier?: number }) => void; setTradeUpCurrentHoodId: (id: number) => void; setShowTradeUpModal: (v: boolean) => void; setBargainHoodId: (id: number) => void;
   setAgencyModalTab: (t: 'submit_bargain' | 'reserve_sponsor') => void; setShowAgencyModal: (v: boolean) => void; setAlertHoodId: (id: number) => void; setAlertSubmitMsg: (msg: string) => void; setShowBuyerAlertModal: (v: boolean) => void; featureFlags: FeatureFlags; callingSponsorHoodId: number | null; revealedSponsorPhoneHoodId: number | null; onTrackSponsorCall: (hood: Neighborhood, sponsor: { name: string; phone: string }) => void; setNewVisitAddress: (v: string) => void; setNewVisitPrice: (v: number) => void;
   setShowVisitedModal: (v: boolean) => void; hoodLandmarks: LocalLandmark[]; onFocusLandmarkOnMap: (lm: LocalLandmark) => void; voteAir: number; setVoteAir: (v: number) => void; votePower: number; setVotePower: (v: number) => void;
   voteInternet: number; setVoteInternet: (v: number) => void; voteMetro: number; setVoteMetro: (v: number) => void; voteSecurity: number; setVoteSecurity: (v: number) => void; voteFlat: number; setVoteFlat: (v: number) => void;
@@ -15,26 +15,39 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
     onFocusLandmarkOnMap, voteAir, setVoteAir, votePower, setVotePower, voteInternet, setVoteInternet, voteMetro, setVoteMetro, voteSecurity, setVoteSecurity, voteFlat,
     setVoteFlat, voteComment, setVoteComment, verifyingGeo, onResidentVote, voteStatus, cloudVotes,
   } = props;
-  const [areaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const isEn = radarLocale === 'en';
+  const [areaUnit] = useAreaUnit(), [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency(), isEn = radarLocale === 'en';
   const cityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
-  const hoodTotal80mMillions = Math.round(selectedHood.buyPerSqm * 80);
-  const monthlyRent80mMillions = Math.max(1, Math.round(selectedHood.rahn80m * 0.03));
-  void hoodTotal80mMillions; void monthlyRent80mMillions;
+  const hoodTotal80mMillions = Math.round(selectedHood.buyPerSqm * 80), monthlyRent80mMillions = Math.max(1, Math.round(selectedHood.rahn80m * 0.03)); void hoodTotal80mMillions; void monthlyRent80mMillions;
   const scaledFullRahn = Math.max(50, Math.round(selectedHood.rahn80m * (targetSqm / 80) * rentAgeMultiplier));
   const effectiveMonthlyHousingCost = Math.max(calculatedHoodMonthlyRent, Math.round((scaledFullRahn * 0.015) * 10) / 10);
   const minHouseholdIncomeMillion = Math.max(25, Math.round(effectiveMonthlyHousingCost / 0.35));
   const fxTag = (millionVal: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(millionVal, intlCurrency, radarLocale)})` : '');
   if (activeTab === 'scorecard') {
+    const dealSqm = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm;
+    const realDealTotalM = Math.round(dealSqm * targetSqm), deedHoldbackM = Math.round(realDealTotalM * 0.1), rahnDeductM = deductTenantRahnInBuy ? scaledFullRahn : 0, netLoanM = useLoanBooster ? 910 : 0;
+    const minSigningCashM = Math.max(Math.round(realDealTotalM * 0.55), realDealTotalM - deedHoldbackM - rahnDeductM - netLoanM);
     return (
       <div className="space-y-3.5 text-xs">
-        <BudgetBridgeAdvisorCard
-          selectedHood={selectedHood} mode={mode} targetSqm={targetSqm}
-          onChangeTargetSqm={onChangeTargetSqm} buildingAgeSegment={buildingAgeSegment}
-          onChangeBuildingAgeSegment={onChangeBuildingAgeSegment} useLoanBooster={useLoanBooster}
-          onToggleLoanBooster={onToggleLoanBooster} deductTenantRahnInBuy={deductTenantRahnInBuy}
-          onToggleDeductTenantRahn={onToggleDeductTenantRahn}
-          effectiveBuyBudget={effectiveBuyBudget} totalRahnEquivalent={totalRahnEquivalent}
-        />
+        <div className="p-2.5 rounded-xl bg-gradient-to-l from-indigo-50/90 to-emerald-50/90 dark:from-indigo-950/40 dark:to-emerald-950/40 border border-indigo-200/60 dark:border-indigo-800/40 flex items-center justify-between gap-2 shadow-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="p-1 rounded-lg bg-indigo-600 text-white shrink-0"><Sparkles className="w-3.5 h-3.5" /></span>
+            <div className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-200">سنتز ارزش کسپر: <strong className="text-indigo-700 dark:text-indigo-300">نسبت کیفیت به قیمت {toPersianNum(selectedHood.overallScore)}/۱۰</strong> (متری {toPersianNum(selectedHood.buyPerSqm)} م)</div>
+          </div>
+          <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600/15 text-emerald-800 dark:text-emerald-300">{selectedHood.overallScore >= 8 ? 'مازاد رفاه بالا' : 'تعادل بازار'}</span>
+        </div>
+        <BudgetBridgeAdvisorCard selectedHood={selectedHood} mode={mode} targetSqm={targetSqm} onChangeTargetSqm={onChangeTargetSqm} buildingAgeSegment={buildingAgeSegment} onChangeBuildingAgeSegment={onChangeBuildingAgeSegment} useLoanBooster={useLoanBooster} onToggleLoanBooster={onToggleLoanBooster} deductTenantRahnInBuy={deductTenantRahnInBuy} onToggleDeductTenantRahn={onToggleDeductTenantRahn} effectiveBuyBudget={effectiveBuyBudget} totalRahnEquivalent={totalRahnEquivalent} />
+        <div className="apple-grouped-card dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 shadow-xs p-3.5 space-y-2.5" data-testid="smart-payment-structurer-card">
+          <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2">
+            <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5"><Calculator className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /><span>مهندسی پرداخت ۴ مرحله‌ای پای قرارداد ({formatAreaShort(targetSqm, areaUnit)})</span></span>
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">ثمن معامله v6.4: {toPersianNum((realDealTotalM / 1000).toFixed(2))} میلیارد</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px] tabular-nums">
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۱. نقد پای امضا (کف ۵۵٪):</span><strong className="text-slate-900 dark:text-white font-black text-xs">{toPersianNum((minSigningCashM / 1000).toFixed(2))} میلیارد</strong></div>
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۲. رهن مستأجر در تحویل:</span><strong className="text-emerald-700 dark:text-emerald-400 font-black text-xs">{toPersianNum(scaledFullRahn)} م {deductTenantRahnInBuy ? '(فعال)' : '(قابل کسر)'}</strong></div>
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۳. خالص وام پس از کسر اوراق:</span><strong className="text-amber-700 dark:text-amber-400 font-black text-xs">{useLoanBooster ? '۹۱۰ م (قسط ~۳۹م)' : '۹۱۰ م (کسر ۲۹۰م اوراق)'}</strong></div>
+            <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۴. تنفس تنظیم سند (۱۰٪):</span><strong className="text-indigo-700 dark:text-indigo-400 font-black text-xs">{toPersianNum(deedHoldbackM)} میلیون</strong></div>
+          </div>
+        </div>
         <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 divide-y divide-slate-200/70 dark:divide-slate-800 overflow-hidden">
           {[
             { label: isEn ? 'Air Quality & Green Space' : 'کیفیت هوا و فضای سبز', val: selectedHood?.air ?? 7, icon: Wind, badgeBg: '#059669' },
@@ -45,62 +58,36 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
             { label: isEn ? 'Flat Terrain (Walkability)' : 'همواری گذرها (بدون شیب)', val: selectedHood?.flatTerrain ?? 8, icon: Mountain, badgeBg: '#0d9488' },
           ].map((item, idx) => {
             const IconComponent = item.icon;
-            const barColor = item.val >= 7.8 ? 'bg-emerald-500' : item.val >= 6.2 ? 'bg-amber-500' : 'bg-rose-500';
+            const barColor = item.val >= 7.8 ? 'bg-gradient-to-l from-emerald-500 to-teal-400' : item.val >= 6.2 ? 'bg-gradient-to-l from-amber-500 to-yellow-400' : 'bg-gradient-to-l from-rose-500 to-pink-500';
             return (
               <div key={idx} className="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
                 <span className="text-slate-800 dark:text-slate-200 flex items-center gap-2.5 font-semibold min-w-0">
-                  <span className="ios-squircle-icon" style={{ backgroundColor: item.badgeBg }}>
-                    <IconComponent className="w-3.5 h-3.5 stroke-[2]" />
-                  </span>
+                  <span className="ios-squircle-icon shadow-xs" style={{ backgroundColor: item.badgeBg }}><IconComponent className="w-3.5 h-3.5 stroke-[2]" /></span>
                   <span className="truncate">{item.label}</span>
                 </span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-16 h-1.5 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.min(100, (item.val || 0) * 10)}%` }} />
-                  </div>
-                  <span className="font-extrabold text-slate-900 dark:text-white tabular-nums w-9 text-left">{toPersianNum(item.val)}/۱۰</span>
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="w-20 h-2 bg-slate-200/70 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 ring-1 ring-slate-900/5 dark:ring-white/5"><div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.min(100, (item.val || 0) * 10)}%` }} /></div>
+                  <span className="font-black text-xs text-slate-900 dark:text-white tabular-nums w-9 text-left">{toPersianNum(item.val)}/۱۰</span>
                 </div>
               </div>
             );
           })}
         </div>
-        <CommuteHubsMatrixCard
-          selectedHood={selectedHood} workHubs={workHubs} activeCity={activeCity}
-          selectedWorkHubId={workHubId} onSelectWorkHubId={onSelectWorkHubId}
-        />
+        <CommuteHubsMatrixCard selectedHood={selectedHood} workHubs={workHubs} activeCity={activeCity} selectedWorkHubId={workHubId} onSelectWorkHubId={onSelectWorkHubId} />
         <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 leading-relaxed">
           <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-2">
-            <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Clock className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>الگوی ترافیک ساعتی، فصلی و گلوگاه‌ها (برآورد تحلیلی)</span>
-            </span>
-            <span className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums shrink-0">
-              {toPersianNum(selectedHood?.trafficInfo?.trafficScore ?? 6.5)} / ۱۰
-            </span>
+            <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5"><Clock className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" /><span>الگوی ترافیک ساعتی، فصلی و گلوگاه‌ها (برآورد تحلیلی)</span></span>
+            <span className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums shrink-0">{toPersianNum(selectedHood?.trafficInfo?.trafficScore ?? 6.5)} / ۱۰</span>
           </div>
           <div className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] px-3 py-2">
             <span className="text-slate-500 dark:text-slate-400">وضعیت معمول ترافیک:</span>
-            <strong className="font-bold text-slate-800 dark:text-slate-200">
-              {(selectedHood?.trafficInfo?.liveStatus || 'ترافیک نیمه‌سنگین در شریان‌های اصلی').replace(/^[🟢🟡🔴🟠⚪]+\s*/, '')}
-            </strong>
+            <strong className="font-bold text-slate-800 dark:text-slate-200">{(selectedHood?.trafficInfo?.liveStatus || 'ترافیک نیمه‌سنگین در شریان‌های اصلی').replace(/^[🟢🟡🔴🟠⚪]+\s*/, '')}</strong>
           </div>
-          <div>
-            <span className="font-bold text-slate-800 dark:text-slate-200">ساعات اوج شلوغی متداول: </span>
-            <span className="text-slate-600 dark:text-slate-400">{selectedHood?.trafficInfo?.peakHours || 'ساعت ۱۷:۳۰ تا ۲۰:۳۰ شب (پیک مراجعت و خرید شبانه)'}</span>
-          </div>
-          <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
-            <span className="font-bold text-slate-800 dark:text-slate-200">تحلیل فصلی پاییز و زمستان: </span>
-            <span className="text-slate-600 dark:text-slate-400">{selectedHood?.trafficInfo?.seasonalAnalysis || 'در نیمه دوم سال با بازگشایی مدارس و تاریکی زودهنگام ساعت ۱۷، پیک ترافیک عصرگاهی تا ساعت ۲۰:۳۰ امتداد می‌یابد.'}</span>
-          </div>
+          <div><span className="font-bold text-slate-800 dark:text-slate-200">ساعات اوج شلوغی متداول: </span><span className="text-slate-600 dark:text-slate-400">{selectedHood?.trafficInfo?.peakHours || 'ساعت ۱۷:۳۰ تا ۲۰:۳۰ شب (پیک مراجعت و خرید شبانه)'}</span></div>
+          <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800"><span className="font-bold text-slate-800 dark:text-slate-200">تحلیل فصلی پاییز و زمستان: </span><span className="text-slate-600 dark:text-slate-400">{selectedHood?.trafficInfo?.seasonalAnalysis || 'در نیمه دوم سال با بازگشایی مدارس و تاریکی زودهنگام ساعت ۱۷، پیک ترافیک عصرگاهی تا ساعت ۲۰:۳۰ امتداد می‌یابد.'}</span></div>
           <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
             <div className="font-bold text-slate-800 dark:text-slate-200 mb-1.5">گلوگاه‌های ترافیکی {selectedHood?.name}:</div>
-            <div className="flex flex-wrap gap-1.5">
-              {String(selectedHood?.trafficInfo?.bottlenecks || 'تقاطع‌ها و میادین اصلی محله')
-                .split('،').filter((b) => b && b.trim())
-                .map((b: string, i: number) => (
-                  <span key={i} className="px-2.5 py-1 rounded-[8px] bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-[11px]">{b.trim()}</span>
-                ))}
-            </div>
+            <div className="flex flex-wrap gap-1.5">{String(selectedHood?.trafficInfo?.bottlenecks || 'تقاطع‌ها و میادین اصلی محله').split('،').filter((b) => b && b.trim()).map((b: string, i: number) => (<span key={i} className="px-2.5 py-1 rounded-[8px] bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-[11px]">{b.trim()}</span>))}</div>
           </div>
         </div>
         <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2 leading-relaxed">
@@ -110,10 +97,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
         </div>
         {workHubId && workHubId !== 'none' && (
           <div className={`p-3 rounded-[12px] border text-xs flex items-center justify-between gap-2 ${directMetroCommuteInfo.hasDirectLine ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' : 'apple-grouped-card dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300'}`}>
-            <div className="flex items-center gap-2">
-              <TrainFront className={`w-4 h-4 shrink-0 stroke-[1.75] ${directMetroCommuteInfo.hasDirectLine ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
-              <span className="font-bold">{directMetroCommuteInfo.badgeText}</span>
-            </div>
+            <div className="flex items-center gap-2"><TrainFront className={`w-4 h-4 shrink-0 stroke-[1.75] ${directMetroCommuteInfo.hasDirectLine ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} /><span className="font-bold">{directMetroCommuteInfo.badgeText}</span></div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 tabular-nums">{selectedHood.distKm != null ? `${toPersianNum(selectedHood.distKm.toFixed(1))} کیلومتر${areaUnit === 'sqft' ? ` (${toPersianNum((selectedHood.distKm * 0.621371).toFixed(1))} mi)` : ''} تا ` : 'تا '}{selectedWorkHub.name}</span>
           </div>
         )}
@@ -125,13 +109,16 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
           <div className="space-y-2">
             {deepInsight.microHoods.map((tier, idx) => (
               <div key={idx} className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800 rounded-[10px] p-2.5 text-xs space-y-1">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-1">
                   <span className={`font-bold ${tier.tier === 'luxury' ? 'text-amber-700 dark:text-amber-400' : tier.tier === 'balanced' ? 'text-slate-900 dark:text-white' : 'text-emerald-700 dark:text-emerald-400'}`}>{tier.label}</span>
                   <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[10.5px] font-extrabold tabular-nums">
                     {tier.priceMultiplier > 1 ? `+${toPersianNum(Math.round((tier.priceMultiplier - 1) * 100))}٪` : tier.priceMultiplier < 1 ? `-${toPersianNum(Math.round((1 - tier.priceMultiplier) * 100))}٪` : 'مبنای محله'} · {mode === 'rent' ? `رهن (${formatAreaShort(80, areaUnit)}) ~${toPersianNum(Math.round(selectedHood.rahn80m * tier.priceMultiplier))} م${fxTag(Math.round(selectedHood.rahn80m * tier.priceMultiplier))}` : `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ~${toPersianNum(convertPricePerSqmToUnit(Math.round(selectedHood.buyPerSqm * tier.priceMultiplier), areaUnit))} م${fxTag(convertPricePerSqmToUnit(Math.round(selectedHood.buyPerSqm * tier.priceMultiplier), areaUnit))}`}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">{tier.streets}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">{tier.streets}</p>
+                  <button type="button" data-testid={`micro-hood-hedonic-btn-${tier.tier}`} onClick={() => setShowHedonicModal(true, { sqm: targetSqm, streetTier: tier.tier, streetMultiplier: tier.priceMultiplier, renovationStatus: tier.tier === 'luxury' ? 'luxury_renovated' : tier.tier === 'balanced' ? 'standard' : 'needs_renovation', floor: tier.tier === 'luxury' ? 4 : tier.tier === 'balanced' ? 2 : 1 })} className="shrink-0 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer">کارشناسی پهنه ↗</button>
+                </div>
               </div>
             ))}
           </div>

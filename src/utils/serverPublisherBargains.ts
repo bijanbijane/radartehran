@@ -252,8 +252,10 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' }); return; }
     const ownListings = Array.from(serverPublishedBargains.values()).filter((b) => b.ownerUid === auth.uid);
     const firestoreLeads = await reconcileUserBuyerAlertsInFirestore(auth.uid, 'export', req.headers.authorization);
-    const seenAlertKeys = new Set(firestoreLeads.map((l) => `${l.id || ''}_${l.hoodId}`));
-    const ownBuyerLeads = [...firestoreLeads, ...serverSideBuyerLeads.filter((l) => l.submittedByUid === auth.uid).filter((l) => !seenAlertKeys.has(`${l.id || ''}_${l.hoodId}`))];
+    const seenAlertKeys = new Set(firestoreLeads.flatMap((l) => [`${l.id || ''}_${l.hoodId}`, `${l.hoodId}_${l.dealType || ''}_${l.maxBudgetText || ''}`]));
+    const ownBuyerLeads = [...firestoreLeads, ...serverSideBuyerLeads.filter((l) => l.submittedByUid === auth.uid).filter((l) => !seenAlertKeys.has(`${l.id || ''}_${l.hoodId}`) && !seenAlertKeys.has(`${l.hoodId}_${l.dealType || ''}_${l.maxBudgetText || ''}`))];
+    for (const fl of firestoreLeads) { if (!serverSideBuyerLeads.some((m) => m.submittedByUid === auth.uid && m.hoodId === fl.hoodId && m.dealType === fl.dealType)) serverSideBuyerLeads.unshift(fl); }
+    if (serverSideBuyerLeads.length > 200) serverSideBuyerLeads.length = 200;
     const ownCorrections = serverDataCorrections.filter((c) => c.reporterUid === auth.uid);
     const envelope = buildUserDataPortabilityExport({ ownerUid: auth.uid, publishedListings: ownListings, savedAlerts: ownBuyerLeads });
     res.status(200).json({ status: 'ok', exportData: { ...envelope, buyerLeads: ownBuyerLeads, dataCorrections: ownCorrections } });

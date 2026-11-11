@@ -37,6 +37,8 @@ export interface HedonicInlineParams {
   buildYear?: number;
   renovationStatus?: HedonicRenovationStatus;
   floor?: number;
+  streetTier?: 'luxury' | 'balanced' | 'economic' | 'economy';
+  streetMultiplier?: number;
 }
 
 export interface HedonicInlineWidgetProps {

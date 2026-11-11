@@ -2,7 +2,7 @@ import { Neighborhood, EvaluatedNeighborhood, toPersianNum } from './neighborhoo
 export { computeQualityMultiplier, type QualityMultiplierSpecs } from './realMarketPriceAggregator';
 export type HedonicRenovationStatus = 'luxury_renovated' | 'renovated' | 'standard' | 'needs_renovation'; export const FAST_SALE_FACTOR = 0.88; export interface HedonicRenovationOption { id: HedonicRenovationStatus; label: string; shortLabel: string; baseImpactPercent: number; ageOffsetFactor: number; description: string; }
 export const HEDONIC_RENOVATION_OPTIONS: HedonicRenovationOption[] = [ { id: 'luxury_renovated', label: 'بازسازی کامل لوکس / متریال برند', shortLabel: 'فول بازسازی لوکس', baseImpactPercent: 8.5, ageOffsetFactor: 0.45, description: 'نوسازی کامل تاسیسات، کابینت، کف و مشاعات با متریال درجه یک؛ جبران ۴۵٪ استهلاک سنی بنا.', }, { id: 'renovated', label: 'بازسازی‌شده تمیز و به‌روز', shortLabel: 'بازسازی‌شده', baseImpactPercent: 4.5, ageOffsetFactor: 0.25, description: 'بازسازی نقاشی، کابینت و سرویس‌ها بدون هزینه تعمیرات بدو ورود؛ جبران ۲۵٪ استهلاک سنی.', }, { id: 'standard', label: 'سالم و قابل سکونت (فابریک)', shortLabel: 'سالم و معمولی', baseImpactPercent: 0, ageOffsetFactor: 0, description: 'وضعیت استاندارد و متعارف متناسب با سال ساخت بدون بازسازی اساسی.', }, { id: 'needs_renovation', label: 'نیازمند بازسازی اساسی / فرسوده', shortLabel: 'نیازمند بازسازی', baseImpactPercent: -9.5, ageOffsetFactor: 0, description: 'نیازمند تعویض لوله‌کشی، کابینت، کف و سرویس‌ها؛ کسر هزینه بازسازی از قیمت پایه.', }, ];
-export interface HedonicInputParams { neighborhood: Neighborhood | EvaluatedNeighborhood; sqm: number; buildYear: number; renovationStatus: HedonicRenovationStatus; floor: number; totalFloors?: number; hasElevator?: boolean; hasParking?: boolean; hasStorage?: boolean; parkingAdjustmentPercent?: number; sellerAskingTotalMillion?: number; currentJalaliYear?: number; }
+export interface HedonicInputParams { neighborhood: Neighborhood | EvaluatedNeighborhood; sqm: number; buildYear: number; renovationStatus: HedonicRenovationStatus; floor: number; totalFloors?: number; hasElevator?: boolean; hasParking?: boolean; hasStorage?: boolean; parkingAdjustmentPercent?: number; sellerAskingTotalMillion?: number; currentJalaliYear?: number; streetTier?: 'luxury' | 'balanced' | 'economic' | 'economy'; streetMultiplier?: number; }
 export interface HedonicFactorImpact { id: 'age' | 'renovation' | 'floor' | 'sqm' | 'amenities'; label: string; valueLabel: string; impactPercent: number; impactPerSqmMillion: number; impactTotalMillion: number; explanation: string; }
 export interface HedonicValuationResult {
   isValid: boolean; validationStatus: 'VALID' | 'INVALID_INPUT'; validationErrors: string[];
@@ -58,14 +58,19 @@ export function calculateHedonicValuation(params: HedonicInputParams): HedonicVa
   const buildingAge = Math.max(0, currentYear - safeBuildYear); const safeFloor = clampNumber(params.floor, -1, 30, 3);
   const safeTotalFloors = clampNumber(params.totalFloors ?? Math.max(5, safeFloor), 1, 40, Math.max(5, safeFloor)); const hasElevator = params.hasElevator ?? true;
   const hasParking = params.hasParking ?? true; const hasStorage = params.hasStorage ?? true;
-  const hoodBasePerSqm = Math.max(15, Number(params.neighborhood?.baseBuyPerSqm ?? params.neighborhood?.buyPerSqm) || 120); const hoodBaseRahn80m = Math.max(100, Number(params.neighborhood?.rahn80m) || 1200);
+  const streetMult = typeof params.streetMultiplier === 'number' && Number.isFinite(params.streetMultiplier) && params.streetMultiplier > 0.5 && params.streetMultiplier < 1.6 ? params.streetMultiplier : params.streetTier === 'luxury' ? 1.12 : params.streetTier === 'economic' || params.streetTier === 'economy' ? 0.88 : 1.0;
+  const hoodBasePerSqm = Math.max(15, Math.round((Number(params.neighborhood?.baseBuyPerSqm ?? params.neighborhood?.buyPerSqm) || 120) * streetMult * 10) / 10); const hoodBaseRahn80m = Math.max(100, Math.round((Number(params.neighborhood?.rahn80m) || 1200) * streetMult));
   let rawAgeImpactPercent = 0;
   if (buildingAge === 0) rawAgeImpactPercent = 6.5;
   else if (buildingAge === 1) rawAgeImpactPercent = 4.5;
   else if (buildingAge <= 4) rawAgeImpactPercent = 2.0 - (buildingAge - 2) * 0.8;
   else if (buildingAge <= 10) rawAgeImpactPercent = -(buildingAge - 4) * 1.1;
   else if (buildingAge <= 20) rawAgeImpactPercent = -6.6 - (buildingAge - 10) * 1.25;
-  else rawAgeImpactPercent = Math.max(-26.0, -19.1 - (buildingAge - 20) * 0.7);
+  else {
+    const isLowRiseOld = safeTotalFloors <= 4 && buildingAge >= 20;
+    const maxOldDepreciation = isLowRiseOld ? -18.5 : -26.0;
+    rawAgeImpactPercent = Math.max(maxOldDepreciation, -19.1 - (buildingAge - 20) * 0.7);
+  }
   let effectiveRenovationPercent = renoOption.baseImpactPercent;
   if (buildingAge <= 2 && (params.renovationStatus === 'renovated' || params.renovationStatus === 'luxury_renovated')) {
     effectiveRenovationPercent = params.renovationStatus === 'luxury_renovated' ? 3.5 : 1.0;
