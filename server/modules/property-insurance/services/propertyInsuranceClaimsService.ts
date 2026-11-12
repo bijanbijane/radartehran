@@ -994,8 +994,6 @@ export function createPropertyInsuranceClaimsOperations(
                 approvedSettlementAmount: input.approvedSettlementAmount,
                 rejectedAmount: input.rejectedAmount,
                 applicableCoverageLimit: effectiveCoverageLimit,
-                contractualDeductibleMethod: matchingCov ? matchingCov.deductibleMethod : null,
-                contractualDeductibleValue: matchingCov ? matchingCov.deductibleValue : null,
               });
 
               const settlementId = `insset_${randomUUID().replace(/-/g, '').slice(0, 16)}`;

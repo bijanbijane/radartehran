@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { getProductNavigationItems } from '../src/components/navigation/primaryNavigation';
 
 const locales = ['fa', 'en', 'ar', 'tr'] as const;
-const expectedPrimaryIds = ['map', 'discover', 'intelligence', 'tools', 'home', 'userspace'];
+const expectedPrimaryIds = ['home', 'discover', 'map', 'intelligence', 'tools', 'userspace'];
 
 for (const locale of locales) {
   const items = getProductNavigationItems(locale);

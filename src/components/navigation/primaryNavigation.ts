@@ -18,6 +18,8 @@ export interface ProductNavigationItem {
   Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
   description?: string;
   badge?: string;
+  /** Administrative entries require verified admin before navigation. */
+  protected?: boolean;
 }
 
 export function getProductNavigationItems(locale: RadarLocale): ProductNavigationItem[] {
@@ -71,6 +73,7 @@ export function getProductNavigationItems(locale: RadarLocale): ProductNavigatio
       group: 'administrative',
       label: copy.admin,
       Icon: ShieldAlert,
+      protected: true,
       description: locale === 'en' ? 'System Monitoring & Security' : 'مدیریت و پایش سیستم',
     },
   ];
