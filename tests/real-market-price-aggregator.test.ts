@@ -12,9 +12,19 @@ import {
   aggregateNeighborhoodMarketMetrics,
   aggregateMarketMetricsForHood,
   buildNeighborhoodListingSamples,
+  formatNeighborhoodPriceTruthFa,
+  TEHRAN_DATED_REFERENCE_PRICES,
   applySpatialGrowthFallback,
   verifyPricingEngineIntegrity,
 } from '../src/data/realMarketPriceAggregator';
+import {
+  buildBudgetFitVerdict,
+  formatBudgetVerdictShareText,
+  parseTehranPublicPath,
+  seoForDatedHood,
+  seoFromPublicPath,
+  tehranSitemapEntries,
+} from '../src/data/neighborhoodListingSamples';
 import { INITIAL_NEIGHBORHOODS } from '../src/data/neighborhoods';
 
 console.log('🧪 Running Iran-Native Hedonic Real Market Price Aggregator Test Suite (v6.4 + WS-A1-R)...\n');
@@ -281,11 +291,16 @@ assert.ok(aggFrozen.unclampedAveragePerSqm > aggFrozen.hedonicAdjustedPerSqm, 'U
 // 9. WS-A1-R Section 8.3: Cross-View Sample Consistency & Product Language Verification
 const punakHood = INITIAL_NEIGHBORHOODS.find((h) => h.id === 5)!;
 const punakSamples = buildNeighborhoodListingSamples(punakHood);
-assert.equal(punakSamples.length, 1, 'Punak seed catalog exposes one buy listing when no live-divar scrape');
+assert.equal(punakSamples.length, 0, 'Punak seed catalog is excluded from market samples when no live-divar row exists');
 const punakAgg = aggregateNeighborhoodMarketMetrics(punakHood.id, punakHood.name, punakHood.buyPerSqm, punakSamples);
 const punakUiAgg = aggregateMarketMetricsForHood(punakHood);
 assert.equal(punakUiAgg.observedSampleCount, punakAgg.observedSampleCount, 'aggregateMarketMetricsForHood matches canonical sample path observedSampleCount');
-assert.equal(punakAgg.observedSampleCount, punakSamples.length, 'Punak UI path observed count follows builder length');
+assert.equal(punakAgg.observedSampleCount, 0, 'Catalog bargains do not inflate observedSampleCount');
+assert.equal(punakAgg.evidenceIndexScore, 0, 'Catalog bargains do not raise the coverage index');
+assert.equal(punakAgg.estimatedDealPricePerSqm, punakHood.buyPerSqm, 'With zero live samples the shown price is the reference baseline');
+assert.equal(punakAgg.askToDealRatio, 1, 'Zero live samples do not apply a fake negotiation haircut');
+assert.equal(aggCold.estimatedDealPricePerSqm, 150, 'Empty sample set keeps the reference price');
+assert.equal(aggCold.askToDealRatio, 1, 'Empty sample set askToDealRatio is 1');
 
 const punakLiveFixture = {
   ...punakHood,
@@ -300,6 +315,23 @@ assert.equal(liveAgg.observedSampleCount, liveSamples.length, 'Live sample path 
 assert.equal(liveAgg.eligibleObservedCount, liveSamples.length, 'Live sample path eligibleObservedCount tracks builder length');
 assert.equal(liveAgg.observedIqrLowPerSqm, null, 'Punak (<3 samples) has null observedIqrLowPerSqm');
 assert.equal(liveAgg.hasSufficientIqrEvidence, false, 'Punak (<3 samples) hasSufficientIqrEvidence is false');
+
+assert.equal(TEHRAN_DATED_REFERENCE_PRICES.length, 20, 'Dated Tehran reference covers twenty neighborhoods');
+for (const row of TEHRAN_DATED_REFERENCE_PRICES) {
+  const seed = INITIAL_NEIGHBORHOODS.find((h) => h.id === row.hoodId);
+  assert.ok(seed, `Reference row ${row.hoodId} exists in the seed`);
+  assert.equal(seed?.buyPerSqm, row.millionTomanPerSqm, `${row.nameFa} reference matches seed buyPerSqm`);
+  assert.equal(row.asOfJalali, '۱۴۰۵/۰۸', `${row.nameFa} carries Aban 1405 date`);
+  assert.match(row.sourceFa, /آمار رسمی معاملات نیست/);
+}
+const punakTruth = formatNeighborhoodPriceTruthFa(5, 0);
+assert.match(punakTruth, /مرجع داخلی/);
+assert.match(punakTruth, /به‌روزرسانی ۱۴۰۵\/۰۸/);
+assert.match(punakTruth, /۰ آگهی زنده/);
+assert.match(punakTruth, /۰ معامله ثبت‌شده/);
+const undatedTruth = formatNeighborhoodPriceTruthFa(999, 0);
+assert.match(undatedTruth, /بدون تاریخ به‌روزرسانی/);
+assert.equal(fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/epistemicDecisionEngine.ts'), 'utf8').includes('تخمین قیمت قطعی معامله'), false, 'Epistemic dossier must not claim a definitive closing price');
 
 const piSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductIntelligenceView.tsx'), 'utf-8');
 const cmSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf-8');
@@ -328,5 +360,19 @@ assert.ok(spatialGrowth > 11 && spatialGrowth < 15, `Spatial growth fallback int
 // 10. Full 15-case self-verification check
 const selfCheck = verifyPricingEngineIntegrity();
 assert.equal(selfCheck.passed, true, `Self-verification failed: ${selfCheck.failures.join('; ')}`);
+
+const verdict = buildBudgetFitVerdict(INITIAL_NEIGHBORHOODS.map((hood) => ({ id: hood.id, rahn80m: hood.rahn80m })), 'buy', 32000, 80);
+assert.equal(verdict.length, 3);
+assert.equal(verdict[0]?.nameFa, 'پونک');
+assert.equal(verdict[0]?.fit, 'fits');
+assert.ok(formatBudgetVerdictShareText(verdict, 'buy', 32000, 80).includes('۰ معامله ثبت‌شده'));
+assert.equal(parseTehranPublicPath('/tehran/punak')?.kind, 'hood');
+assert.equal(parseTehranPublicPath('/tehran/punak-vs-sadeghie')?.kind, 'compare');
+assert.equal(seoForDatedHood(5)?.path, '/tehran/punak');
+assert.ok(seoForDatedHood(5)?.title.includes('قیمت خرید خانه در پونک'));
+assert.equal(seoForDatedHood(5)?.description.includes('فایل زیر قیمت'), false);
+assert.equal(seoFromPublicPath('/tehran/punak')?.title, seoForDatedHood(5)?.title);
+assert.equal(tehranSitemapEntries('https://radartehran.ir').length, 24);
+assert.equal(tehranSitemapEntries('https://radartehran.ir').some((row) => row.loc.includes('?hood=')), false);
 
 console.log('✅ All Persian NLP & Real Market Price Aggregator v6.4 + WS-A1-R tests passed successfully!');

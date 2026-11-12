@@ -129,7 +129,7 @@ export function classifyHousingCycleRegime(
     guidance = {
       firstTimeBuyerActionFa: 'بهترین فرصت برای چانه‌زنی تهاجمی (۸ تا ۱۵ درصد زیر قیمت پیشنهادی) با فروشندگانی که نیاز مبرم به نقدینگی دارند.',
       tradeUpUpgraderActionFa: 'جابه‌جایی نیازمند حوصله برای فروش واحد فعلی است؛ مبایعه‌نامه مشروط به تسویه مرحله‌ای تنظیم کنید.',
-      investorPreservationActionFa: 'انباشت تدریجی نقدینگی و شکار فایل‌های زیر قیمت قطعی کارشناسی (v6.4).',
+      investorPreservationActionFa: 'انباشت تدریجی نقدینگی و بررسی فایل‌ها نسبت به سناریوی کارشناسی (v6.4)، نه معامله ثبت‌شده.',
     };
   } else {
     regimeId = 'ACCUMULATION_RECOVERY';

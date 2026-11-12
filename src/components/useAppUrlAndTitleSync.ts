@@ -12,6 +12,7 @@ import {
   setStoredRadarLocale,
 } from '../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import { parseTehranPublicPath, seoForDatedCompare, seoForDatedHood } from '../data/neighborhoodListingSamples';
 
 export interface UseAppUrlAndTitleSyncParams {
   activeCity: CityId;
@@ -76,10 +77,24 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
 
     const applyUrlParams = (flyMap: boolean) => {
       const search = window.location.search;
-      if (!search) {
+      const publicPath = parseTehranPublicPath(window.location.pathname);
+      if (!search && !publicPath) {
         if (flyMap && setPrimaryView) setPrimaryView('map');
         return;
       }
+      if (publicPath?.kind === 'hood') {
+        setActiveCity('tehran');
+        setSelectedHoodId(publicPath.hoodId);
+        if (setPrimaryView) setPrimaryView('home');
+      } else if (publicPath?.kind === 'compare') {
+        setActiveCity('tehran');
+        setCompareId1(publicPath.leftId);
+        setCompareId2(publicPath.rightId);
+        setSelectedHoodId(publicPath.leftId);
+        setShowCompareModal(true);
+        if (setPrimaryView) setPrimaryView('home');
+      }
+      if (!search) return;
 
       const intlParams = parseUrlIntlParams(search);
       if (intlParams.lang) setStoredRadarLocale(intlParams.lang);
@@ -189,7 +204,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       };
       const updateSeoHead = (title: string, desc: string, canonicalQuery: string, jsonLdObj: Record<string, unknown>) => {
         document.title = title;
-        const canonicalHref = `https://radartehran.ir/${canonicalQuery}`;
+        const canonicalHref = canonicalQuery.startsWith('/') ? `https://radartehran.ir${canonicalQuery}` : `https://radartehran.ir/${canonicalQuery}`;
         const canonicalEl = document.getElementById('canonical-url-tag') as HTMLLinkElement | null;
         if (canonicalEl) canonicalEl.href = canonicalHref;
         setMetaContent('meta[name="description"]', desc);
@@ -202,11 +217,12 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         if (ldEl) ldEl.textContent = JSON.stringify(jsonLdObj);
       };
       if (showCompareModal && compHood1 && compHood2) {
+        const datedCompare = activeCity === 'tehran' ? seoForDatedCompare(compHood1.id, compHood2.id) : null;
         const unitP1 = convertPricePerSqmToUnit(compHood1.buyPerSqm, areaUnit);
         const intlTag = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitP1, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)})` : '';
-        const title = `مقایسه محله ${compHood1.name} و ${compHood2.name}${intlTag} | قیمت مسکن و کیفیت زندگی | رادار ${cityNameFa}`;
-        const desc = `مقایسه تحلیلی محله ${compHood1.name} (متری ${compHood1.buyPerSqm} م، رهن ${compHood1.rahn80m} م) با محله ${compHood2.name} (متری ${compHood2.buyPerSqm} م، رهن ${compHood2.rahn80m} م) در رادار ${cityNameFa}.`;
-        const canonicalQuery = `?${cityPrefix}compare=${compHood1.id}-${compHood2.id}`;
+        const title = datedCompare?.title ?? `مقایسه محله ${compHood1.name} و ${compHood2.name}${intlTag} | قیمت مسکن و کیفیت زندگی | رادار ${cityNameFa}`;
+        const desc = datedCompare?.description ?? `مقایسه تحلیلی محله ${compHood1.name} (متری ${compHood1.buyPerSqm} م، رهن ${compHood1.rahn80m} م) با محله ${compHood2.name} (متری ${compHood2.buyPerSqm} م، رهن ${compHood2.rahn80m} م) در رادار ${cityNameFa}.`;
+        const canonicalQuery = datedCompare?.path ?? `?${cityPrefix}compare=${compHood1.id}-${compHood2.id}`;
         updateSeoHead(title, desc, canonicalQuery, {
           '@context': 'https://schema.org', '@type': 'ItemList', name: title, description: desc,
           itemListElement: [
@@ -214,24 +230,27 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
             { '@type': 'Place', position: 2, name: compHood2.name, geo: { '@type': 'GeoCoordinates', latitude: compHood2.lat, longitude: compHood2.lng } },
           ],
         });
-        const nextSearch = `${canonicalQuery}${budgetSuffix}`;
-        if (window.location.search !== nextSearch && typeof window.history?.replaceState === 'function') {
-          window.history.replaceState(null, '', `${pathname}${nextSearch}`);
+        const extra = budgetSuffix.replace(/^&/, '');
+        const nextUrl = datedCompare ? `${datedCompare.path}${extra ? `?${extra}` : ''}` : `${pathname}${canonicalQuery}${budgetSuffix}`;
+        if (`${window.location.pathname}${window.location.search}` !== nextUrl && typeof window.history?.replaceState === 'function') {
+          window.history.replaceState(null, '', nextUrl);
         }
       } else if (selectedHood) {
+        const datedHood = activeCity === 'tehran' ? seoForDatedHood(selectedHood.id) : null;
         const unitBuy = convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit);
         const intlTag = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)})` : '';
-        const title = `قیمت مسکن، اجاره و کارنامه محله ${selectedHood.name}${intlTag} | رادار ${cityNameFa}`;
-        const desc = `برآورد قیمت خرید آپارتمان در محله ${selectedHood.name} (${selectedHood.zone}): متری ${selectedHood.buyPerSqm} میلیون تومان | رهن کامل ۸۰ متری: ${selectedHood.rahn80m} میلیون تومان | ترافیک، هوا و مترو.`;
-        const canonicalQuery = `?${cityPrefix}hood=${selectedHood.id}`;
+        const title = datedHood?.title ?? `قیمت مسکن، اجاره و کارنامه محله ${selectedHood.name}${intlTag} | رادار ${cityNameFa}`;
+        const desc = datedHood?.description ?? `برآورد قیمت خرید آپارتمان در محله ${selectedHood.name} (${selectedHood.zone}): متری ${selectedHood.buyPerSqm} میلیون تومان | رهن کامل ۸۰ متری: ${selectedHood.rahn80m} میلیون تومان | ترافیک، هوا و مترو.`;
+        const canonicalQuery = datedHood?.path ?? `?${cityPrefix}hood=${selectedHood.id}`;
         updateSeoHead(title, desc, canonicalQuery, {
           '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`,
-          description: desc, url: `https://radartehran.ir/${canonicalQuery}`,
+          description: desc, url: canonicalQuery.startsWith('/') ? `https://radartehran.ir${canonicalQuery}` : `https://radartehran.ir/${canonicalQuery}`,
           geo: { '@type': 'GeoCoordinates', latitude: selectedHood.lat, longitude: selectedHood.lng },
         });
-        const nextSearch = `${canonicalQuery}${budgetSuffix}`;
-        if (window.location.search !== nextSearch && typeof window.history?.replaceState === 'function') {
-          window.history.replaceState(null, '', `${pathname}${nextSearch}`);
+        const extra = budgetSuffix.replace(/^&/, '');
+        const nextUrl = datedHood ? `${datedHood.path}${extra ? `?${extra}` : ''}` : `${pathname}${canonicalQuery}${budgetSuffix}`;
+        if (`${window.location.pathname}${window.location.search}` !== nextUrl && typeof window.history?.replaceState === 'function') {
+          window.history.replaceState(null, '', nextUrl);
         }
       }
     } catch {

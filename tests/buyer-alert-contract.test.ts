@@ -693,7 +693,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op150EnterpriseModalSrc.includes('convertPricePerSqmToUnit((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) / 1_000_000, areaUnit)') &&
       op150AdminOverviewSrc.includes('fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))') &&
       op150AdminOverviewSrc.includes('رهن کامل {formatAreaShort(80, areaUnit)} (میلیون){fxTag(adminEditRahn80m)}:') &&
-      op150ShareModalSrc.includes('شکار امروز (${formatAreaShort(hood.bargains[0].sqm, areaUnit)}): ${hood.bargains[0].priceText}'),
+      op150ShareModalSrc.includes('formatNeighborhoodPriceTruthFa(hood.id, 0)'),
     'EnterpriseAssetFundAndMarketIntelligenceModal, AdminOverviewAndModerationTabs, and ShareModal must expose full OP-150 area unit and international currency equivalence'
   );
   const op151AdminAiSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminCloudAiCommerceCenter.tsx'), 'utf-8');
@@ -1164,7 +1164,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
     op185ProvinceCtrlSrc.includes("· معامله v6.4: {toPersianNum(unitDeal)} م") &&
       op185ProvinceDirCtrlSrc.includes("· معامله v6.4: {toPersianNum(unitDeal)} م") &&
       op185HeatmapLazySrc.includes("🤝 معامله v6.4: <strong>${toPersianNum(unitDeal)} میلیون تومان</strong>") &&
-      op185MapLodSrc.includes("· معامله v6.4: <strong>${toPersianNum(unitDealPrice)} میلیون${safeDealFx}</strong>") &&
+      op185MapLodSrc.includes('formatNeighborhoodPriceTruthFa(hood.id') &&
       op185MapLodSrc.includes("`${unitLbl} ${toPersianNum(uClusterBuy)}م (معامله v6.4: ${toPersianNum(uClusterDeal)}م)`") &&
       op185AdminOverviewSrc.includes("(معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, (n as any).baseBuyPerSqm ?? n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م)") &&
       op185AdminMonetizationSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م"),

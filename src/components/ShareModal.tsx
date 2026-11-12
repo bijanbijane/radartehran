@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, Check, Copy, Download, Image as ImageIcon, Loader2, Share2, X } from 'lucide-react';
 import { BubbleReport, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples, formatNeighborhoodPriceTruthFa } from '../data/realMarketPriceAggregator';
 import { type AreaUnit, convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, type IntlCurrencyCode, type RadarLocale } from '../utils/areaUnit';
 import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { clampNumber, recordDiagnosticEvent, sanitizeInput } from '../utils/security';
@@ -63,9 +63,8 @@ async function generateStoryImage(
   ctx.fillText(`رهن کامل (${formatAreaShort(80, areaUnit)})`, 747, 790);
   ctx.fillStyle = '#34d399'; ctx.font = intlCurrency !== 'IRT' ? '800 36px "Vazirmatn"' : '900 52px "Vazirmatn"';
   ctx.fillText(`${toPersianNum(hood.rahn80m)} م${storyRahnFx}`, 747, 875);
-  if (hood.bargains?.[0]) {
-    ctx.fillText(`شکار امروز (${formatAreaShort(hood.bargains[0].sqm, areaUnit)}): ${hood.bargains[0].priceText}`, 540, 980);
-  }
+  ctx.fillStyle = '#fde68a'; ctx.font = '700 28px "Vazirmatn", "Tahoma", sans-serif';
+  ctx.fillText(formatNeighborhoodPriceTruthFa(hood.id, 0), 540, 1020);
   const dataUrl = canvas.toDataURL('image/png', 0.95);
   const downloadLink = document.createElement('a'); downloadLink.href = dataUrl;
   downloadLink.download = `tehran-radar-story-${hood.id}-${hood.name}.png`;
@@ -176,6 +175,7 @@ export function ShareModal({
             </div>
           </div>
 
+          <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-200">{formatNeighborhoodPriceTruthFa(selectedHood.id, 0)}</p>
           <div className="space-y-2 text-xs bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 rounded-xl p-3">
             <div className="flex items-center justify-between">
               <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Market Status:' : 'وضعیت بازار:'}</span>

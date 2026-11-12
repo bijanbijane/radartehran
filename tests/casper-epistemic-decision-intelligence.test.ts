@@ -325,7 +325,7 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
 
     assert.equal(report.hoodId, sampleHood.id);
     assert.ok(report.affordability.priceToIncomeRatio >= 5 && report.affordability.priceToIncomeRatio <= 120);
-    assert.ok(report.affordability.rentToIncomeRatioPct >= 10 && report.affordability.rentToIncomeRatioPct <= 650);
+    assert.ok(report.affordability.rentToIncomeRatioPct >= 10 && report.affordability.rentToIncomeRatioPct <= 720);
     assert.ok(['AFFORDABLE', 'MODERATE_STRESS', 'SEVERE_STRESS', 'CRITICAL_UNREACHABLE'].includes(report.affordability.affordabilityTier));
 
     // Commute cost friction

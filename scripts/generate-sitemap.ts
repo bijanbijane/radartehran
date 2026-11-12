@@ -1,15 +1,14 @@
 /**
  * @file scripts/generate-sitemap.ts
  * @description Generates public/sitemap.xml and public/robots.txt for Tehran & Iran Multi-City Housing Radar.
- * Indexes all cities, neighborhoods, and comparative valuation pages with canonical URLs.
+ * Indexes the dated Tehran neighborhood pages and the few comparisons that have a public path.
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { INITIAL_NEIGHBORHOODS } from '../src/data/neighborhoods';
-import { MULTI_CITY_CONFIGS, CityId } from '../src/data/multiCityData';
+import { pathToFileURL } from 'node:url';
+import { tehranSitemapEntries } from '../src/data/neighborhoodListingSamples';
 
 const BASE_URL = 'https://radartehran.ir';
-const VALID_CITIES: CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'];
 
 function escapeXml(unsafe: string): string {
   return String(unsafe)
@@ -21,55 +20,7 @@ function escapeXml(unsafe: string): string {
 }
 
 export function generateSitemapContent(baseUrl: string = BASE_URL, todayIso: string = new Date().toISOString().split('T')[0]): string {
-  const urls: Array<{ loc: string; lastmod: string; changefreq: string; priority: string }> = [];
-
-  // 1. Root / Homepage
-  urls.push({
-    loc: `${baseUrl}/`,
-    lastmod: todayIso,
-    changefreq: 'hourly',
-    priority: '1.0',
-  });
-
-  // 2. City Hubs & Neighborhoods
-  for (const cityId of VALID_CITIES) {
-    const isTehran = cityId === 'tehran';
-    const cityCfg = MULTI_CITY_CONFIGS[cityId];
-    const hoods = isTehran ? INITIAL_NEIGHBORHOODS : cityCfg?.neighborhoods || [];
-
-    // City hub
-    urls.push({
-      loc: `${baseUrl}/?city=${cityId}`,
-      lastmod: todayIso,
-      changefreq: 'daily',
-      priority: isTehran ? '0.95' : '0.90',
-    });
-
-    // Neighborhoods in city
-    for (const hood of hoods) {
-      const cityQuery = isTehran ? '' : `city=${cityId}&`;
-      urls.push({
-        loc: `${baseUrl}/?${cityQuery}hood=${hood.id}`,
-        lastmod: todayIso,
-        changefreq: 'daily',
-        priority: '0.85',
-      });
-    }
-
-    // Key pairwise neighborhood comparisons (top pairs for high-density indexing)
-    const sampleLimit = Math.min(hoods.length, 12);
-    for (let i = 0; i < sampleLimit; i++) {
-      for (let j = i + 1; j < sampleLimit; j++) {
-        const cityQuery = isTehran ? '' : `city=${cityId}&`;
-        urls.push({
-          loc: `${baseUrl}/?${cityQuery}compare=${hoods[i].id}-${hoods[j].id}`,
-          lastmod: todayIso,
-          changefreq: 'weekly',
-          priority: '0.75',
-        });
-      }
-    }
-  }
+  const urls = tehranSitemapEntries(baseUrl).map((entry) => ({ ...entry, lastmod: todayIso }));
 
   const entriesXml = urls
     .map(
@@ -119,6 +70,6 @@ export function writeSitemapAndRobots(targetDir: string = path.resolve(process.c
 }
 
 // Execute when invoked directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   writeSitemapAndRobots();
 }

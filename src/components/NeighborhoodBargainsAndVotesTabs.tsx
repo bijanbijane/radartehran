@@ -1,5 +1,5 @@
 import React, { useState } from 'react'; import { Award, Bell, Bookmark, Compass, MapPin, Phone, PlusCircle, Sparkles, ThumbsUp } from 'lucide-react'; import { EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, isSponsorActive, toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { ListingMediaGallery } from './ListingMediaGallery'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
-import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateMarketMetricsForHood, computeQualityMultiplier, extractListingSpecsFromText, type PriceSourceType } from '../data/realMarketPriceAggregator';
+import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateMarketMetricsForHood, computeQualityMultiplier, extractListingSpecsFromText, isLiveDivarBargainId, type PriceSourceType } from '../data/realMarketPriceAggregator';
 import { dealFairTotalLabelFa } from '../utils/epistemicUiLabels';
 import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { getCurrentJalaliYear } from '../data/hedonicPricingEngine';
 export interface NeighborhoodBargainsAndVotesTabsProps {
@@ -121,6 +121,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
           </div>
         ))}
         {(selectedHood?.bargains || []).map((b) => {
+            const isLiveListing = isLiveDivarBargainId(b.id);
             const discountFactor = Math.max(0.4, 1 - (Number(b.discountPercent) || 12) / 100);
             const baseBuy = selectedHood.baseBuyPerSqm ?? selectedHood.buyPerSqm;
             const estMillion = b.type === 'خرید' ? Math.round(baseBuy * b.sqm * discountFactor) : Math.round(selectedHood.rahn80m * (b.sqm / 80) * discountFactor);
@@ -136,7 +137,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
                 <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 hover:border-emerald-500/50 p-3.5 space-y-2 transition">
                   <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                     <span>نوع معامله: <strong className="text-slate-800 dark:text-slate-200">{b.type}</strong> · {formatAreaValue(b.sqm, areaUnit)}</span>
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold tabular-nums">{toPersianNum(b.discountPercent)}٪ زیر قیمت</span>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold tabular-nums">{isLiveListing ? `${toPersianNum(b.discountPercent)}٪ زیر قیمت` : 'نمونه آموزشی'}</span>
                   </div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">{b.title}</h4>
                   <div className="text-xs text-slate-500 dark:text-slate-400">محدوده: <span className="text-slate-700 dark:text-slate-300">{b.street}</span></div>
@@ -147,7 +148,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
                     ) : (
                       <div className="text-[11px] text-slate-600 dark:text-slate-400 tabular-nums">نرخ معادل رهن ({formatAreaShort(80, areaUnit)}): <strong className="text-slate-800 dark:text-slate-200">{toPersianNum(estRahn80)} میلیون{fxRahn80}</strong></div>
                     )}
-                    <div className="text-emerald-700 dark:text-emerald-400 font-semibold">سود خریدار: {b.buyerProfitText}{fxProfit}</div>
+                    {isLiveListing ? <div className="text-emerald-700 dark:text-emerald-400 font-semibold">سود خریدار: {b.buyerProfitText}{fxProfit}</div> : <div className="text-amber-800 dark:text-amber-200 font-semibold">نمونه آموزشی؛ آگهی زنده نیست و اختلاف قیمت محاسبه نشده است.</div>}
                   </div>
                   <ListingMediaGallery listing={b} estimatedMillionToman={estMillion} />
                   <button type="button" onClick={() => { setNewVisitAddress(`${b.type === 'اجاره' ? '[رهن/اجاره] ' : ''}واحد ${formatAreaValue(b.sqm, areaUnit)} - ${b.street}`); setNewVisitPrice(estMillion); setShowVisitedModal(true); }} className="w-full py-1.5 px-2 rounded-[8px] bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer">

@@ -266,7 +266,9 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
     assert.match(sitemapRes.headers.get('content-type') || '', /application\/xml/);
     const sitemapXml = await sitemapRes.text();
     assert.match(sitemapXml, /<urlset/);
-    assert.match(sitemapXml, /https:\/\/radartehran\.ir\/\?hood=1/);
+    assert.match(sitemapXml, /https:\/\/radartehran\.ir\/tehran\/zaferanieh/);
+    assert.match(sitemapXml, /https:\/\/radartehran\.ir\/tehran\/punak-vs-sadeghie/);
+    assert.equal(sitemapXml.includes('?hood='), false);
 
     const robotsRes = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/robots.txt'),

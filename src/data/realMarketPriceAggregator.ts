@@ -42,7 +42,12 @@ export interface AggregatedMarketMetrics {
 export {
   buildIllustrativeSeedListingSamples,
   buildNeighborhoodListingSamples,
+  formatNeighborhoodPriceTruthFa,
+  isLiveDivarBargainId,
+  lookupTehranReferencePrice,
+  TEHRAN_DATED_REFERENCE_PRICES,
   type NeighborhoodListingSource,
+  type TehranReferencePriceRow,
 } from './neighborhoodListingSamples';
 const WORD_INT_MAP: ReadonlyArray<[string, number]> = [['دوازده', 12], ['یازده', 11], ['چهار', 4], ['ده', 10], ['نه', 9], ['هشت', 8], ['هفت', 7], ['شش', 6], ['پنج', 5], ['سه', 3], ['دو', 2], ['یک', 1]];
 const WORD_HUNDRED_MAP: ReadonlyArray<[string, number]> = [['چهارصد', 400], ['پانصد', 500], ['ششصد', 600], ['هفتصد', 700], ['هشتصد', 800], ['نهصد', 900], ['دویست', 200], ['سیصد', 300], ['صد', 100]];
@@ -256,7 +261,7 @@ export function aggregateNeighborhoodMarketMetrics(
   const dayAnchorPrice = Math.round(clampNumber(rawAveragePerSqm, anchor * (1 - clampBand), anchor * (1 + clampBand), anchor) * 10) / 10;
   const isAnchorClamped = Math.abs(unclampedAveragePerSqm - dayAnchorPrice) > 0.05;
   const isStagnantRegime = !isBootstrapped && eligibleObservedCount < 10 && (((q3Obs ?? baseHoodPerSqm) - (q1Obs ?? baseHoodPerSqm)) / Math.max(1, baseHoodPerSqm) >= 0.16 || rawAveragePerSqm >= baseHoodPerSqm * 1.12);
-  const marketRegime: AggregatedMarketMetrics['marketRegime'] = isBootstrapped ? 'BALANCED' : eligibleObservedCount >= 10 ? 'HOT' : isStagnantRegime ? 'FROZEN' : 'BALANCED', askToDealRatio = marketRegime === 'HOT' ? 0.975 : marketRegime === 'BALANCED' ? 0.93 : 0.90, dealPerSqm = Math.round(dayAnchorPrice * askToDealRatio * 10) / 10;
+  const marketRegime: AggregatedMarketMetrics['marketRegime'] = isBootstrapped ? 'BALANCED' : eligibleObservedCount >= 10 ? 'HOT' : isStagnantRegime ? 'FROZEN' : 'BALANCED', askToDealRatio = eligibleObservedCount === 0 ? 1 : marketRegime === 'HOT' ? 0.975 : marketRegime === 'BALANCED' ? 0.93 : 0.90, dealPerSqm = eligibleObservedCount === 0 ? baseHoodPerSqm : Math.round(dayAnchorPrice * askToDealRatio * 10) / 10;
   const provenance: MarketDataProvenance = eligibleObservedCount === 0 ? 'REFERENCE_BASELINE' : isBootstrapped ? 'HEURISTIC_ESTIMATE' : 'OBSERVED_SECONDARY', evidenceQuality: EvidenceQualityState = eligibleObservedCount === 0 ? 'INSUFFICIENT_OBSERVATIONS' : isBootstrapped ? 'LIMITED_OBSERVATIONS' : eligibleObservedCount < 10 ? 'MODERATE_OBSERVATIONS' : 'ADEQUATE_OBSERVATIONS';
   const evidenceSufficiency: EvidenceSufficiencyLevel = eligibleObservedCount === 0 ? 'NONE' : isBootstrapped ? 'INSUFFICIENT' : eligibleObservedCount < 10 ? 'MODERATE' : 'SUFFICIENT', coverageState: SampleCoverageState = eligibleObservedCount === 0 ? 'BOOTSTRAPPED_BASELINE' : isBootstrapped ? 'SPARSE_1_TO_2' : eligibleObservedCount < 10 ? 'MODERATE_3_TO_9' : 'SUFFICIENT_10_PLUS';
   const epistemicStatus: EpistemicDataStatus = eligibleObservedCount === 0 ? 'ESTIMATED' : isBootstrapped ? 'ESTIMATED' : 'OBSERVED', dataMode = eligibleObservedCount === 0 ? 'ILLUSTRATIVE_BOOTSTRAP' : isBootstrapped ? 'LIMITED_OBSERVED_BLEND' : 'OBSERVED_MARKET';

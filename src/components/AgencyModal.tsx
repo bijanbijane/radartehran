@@ -221,7 +221,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                     </span>
                   </span>
                   <strong className="tabular-nums">
-                    سود خریدار: {toPersianNum(liveBargainCheck.buyerProfitMillion)} میلیون تومان{showIntl ? ` (${formatMillionTomanAsIntlCurrency(liveBargainCheck.buyerProfitMillion, currency, locale)})` : ''}
+                    اختلاف با مرجع داخلی: {toPersianNum(liveBargainCheck.buyerProfitMillion)} میلیون تومان{showIntl ? ` (${formatMillionTomanAsIntlCurrency(liveBargainCheck.buyerProfitMillion, currency, locale)})` : ''}
                   </strong>
                 </div>
               ) : liveBargainCheck.discountPercent > 60 ? (

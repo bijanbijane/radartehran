@@ -1,5 +1,6 @@
-import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS, toPersianNum } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, CityId, getAllMultiCityNeighborhoods, getValidatedCityConfig, resolveCityIdForNeighborhood, } from '../data/multiCityData'; import { validateCityParam } from './security';
-import { getValidatedServerConfig, buildOpenApiSpecification } from './serverConfigValidator'; import { resolveCanonicalBaseUrl } from './serverDeliveryAndAbuseGuard'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; const VALID_CITY_IDS: readonly CityId[] = ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz']; const toPersianDigits = toPersianNum;
+import type { Express, Request, Response } from 'express'; import { toPersianNum } from '../data/neighborhoods'; import { getAllMultiCityNeighborhoods, getValidatedCityConfig, resolveCityIdForNeighborhood, } from '../data/multiCityData'; import { validateCityParam } from './security';
+import { seoForDatedCompare, seoForDatedHood, seoFromPublicPath, tehranSitemapEntries } from '../data/neighborhoodListingSamples';
+import { getValidatedServerConfig, buildOpenApiSpecification } from './serverConfigValidator'; import { resolveCanonicalBaseUrl } from './serverDeliveryAndAbuseGuard'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; const toPersianDigits = toPersianNum;
 /**
  * Task 431: Resolves the canonical public base URL strictly from validated server configuration (`APP_URL`),
  * never from untrusted Host or X-Forwarded-Host headers.
@@ -72,6 +73,11 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
       }
       return updated;
     };
+    const pathCard = seoFromPublicPath(typeof req.path === 'string' ? req.path : '');
+    if (pathCard) {
+      const canonicalUrl = `${baseUrl}${pathCard.path}`;
+      return applyMetaSwap(pathCard.title, pathCard.description, canonicalUrl, { '@context': 'https://schema.org', '@type': 'WebPage', name: pathCard.title, description: pathCard.description, url: canonicalUrl });
+    }
     if (/^\d{1,4}-\d{1,4}$/.test(compareParam)) {
       const [id1, id2] = compareParam.split('-').map((x) => Number(x.trim()));
       const h1 = allHoods.find((h) => h.id === id1);
@@ -79,9 +85,10 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
       if (h1 && h2 && h1.id !== h2.id) {
         const resolvedCity = resolveCityIdForNeighborhood(h1.id) || cityParam || 'tehran';
         const cityPrefix = resolvedCity !== 'tehran' ? `city=${resolvedCity}&` : '';
-        const canonicalUrl = `${baseUrl}/?${cityPrefix}compare=${h1.id}-${h2.id}`;
-        const title = `مقایسه محله ${h1.name} و ${h2.name} | قیمت مسکن، رهن و کیفیت زندگی | رادار تهران`;
-        const desc = `مقایسه تحلیلی محله ${h1.name} (متری ${toPersianDigits(h1.buyPerSqm)} م، رهن ${toPersianDigits(h1.rahn80m)} م) با محله ${h2.name} (متری ${toPersianDigits(h2.buyPerSqm)} م، رهن ${toPersianDigits(h2.rahn80m)} م) به همراه نمودار روند و ترافیک.`;
+        const dated = resolvedCity === 'tehran' ? seoForDatedCompare(h1.id, h2.id) : null;
+        const canonicalUrl = dated ? `${baseUrl}${dated.path}` : `${baseUrl}/?${cityPrefix}compare=${h1.id}-${h2.id}`;
+        const title = dated?.title ?? `مقایسه محله ${h1.name} و ${h2.name} | قیمت مسکن، رهن و کیفیت زندگی | رادار تهران`;
+        const desc = dated?.description ?? `مقایسه تحلیلی محله ${h1.name} (متری ${toPersianDigits(h1.buyPerSqm)} م، رهن ${toPersianDigits(h1.rahn80m)} م) با محله ${h2.name} (متری ${toPersianDigits(h2.buyPerSqm)} م، رهن ${toPersianDigits(h2.rahn80m)} م) به همراه نمودار روند و ترافیک.`;
         return applyMetaSwap(title, desc, canonicalUrl, {
           '@context': 'https://schema.org',
           '@type': 'ItemList',
@@ -109,9 +116,10 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
       if (h) {
         const resolvedCity = resolveCityIdForNeighborhood(h.id) || cityParam || 'tehran';
         const cityPrefix = resolvedCity !== 'tehran' ? `city=${resolvedCity}&` : '';
-        const canonicalUrl = `${baseUrl}/?${cityPrefix}hood=${h.id}`;
-        const title = `قیمت مسکن، رهن و کارنامه محله ${h.name} (${h.zone}) | رادار تهران`;
-        const desc = `برآورد قیمت خرید آپارتمان در ${h.name}: متری ${toPersianDigits(h.buyPerSqm)} میلیون تومان | رهن کامل ۸۰ متری: ${toPersianDigits(h.rahn80m)} میلیون تومان | بررسی ترافیک، هوا، مدارس و فایل‌های زیر قیمت ${h.name}.`;
+        const dated = resolvedCity === 'tehran' ? seoForDatedHood(h.id) : null;
+        const canonicalUrl = dated ? `${baseUrl}${dated.path}` : `${baseUrl}/?${cityPrefix}hood=${h.id}`;
+        const title = dated?.title ?? `قیمت مسکن، رهن و کارنامه محله ${h.name} (${h.zone}) | رادار تهران`;
+        const desc = dated?.description ?? `برآورد قیمت خرید آپارتمان در ${h.name}: متری ${toPersianDigits(h.buyPerSqm)} میلیون تومان | رهن کامل ۸۰ متری: ${toPersianDigits(h.rahn80m)} میلیون تومان | بررسی ترافیک، هوا و مدارس ${h.name}.`;
         return applyMetaSwap(title, desc, canonicalUrl, {
           '@context': 'https://schema.org',
           '@type': 'Place',
@@ -129,7 +137,7 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
     if (cityParam && cityParam !== 'tehran') {
       const cityCfg = getValidatedCityConfig(cityParam);
       const title = `رادار مسکن و اجاره ${cityCfg.nameFa} | نقشه قیمت و کیفیت زندگی محله‌ها`;
-      const desc = `بررسی قیمت خرید، رهن و اجاره، کیفیت هوا، ترافیک و فایل‌های زیر قیمت در ${toPersianDigits(cityCfg.neighborhoods.length)} محله شاخص ${cityCfg.nameFa}.`;
+      const desc = `بررسی قیمت خرید، رهن و اجاره، کیفیت هوا و ترافیک در ${toPersianDigits(cityCfg.neighborhoods.length)} محله شاخص ${cityCfg.nameFa}.`;
       return applyMetaSwap(title, desc, `${baseUrl}/?city=${cityParam}`, {
         '@context': 'https://schema.org',
         '@type': 'Place',
@@ -186,35 +194,7 @@ const registeredSeoApps = new WeakSet<Express>(); export function registerSeoAnd
     try {
       const baseUrl = resolveBaseUrl(req);
       const todayIso = new Date().toISOString().split('T')[0];
-      const urls: { loc: string; priority: string; changefreq: string }[] = [
-        { loc: `${baseUrl}/`, priority: '1.0', changefreq: 'hourly' },
-      ];
-      for (const cId of VALID_CITY_IDS) {
-        urls.push({
-          loc: `${baseUrl}/?city=${cId}`,
-          priority: cId === 'tehran' ? '0.95' : '0.9',
-          changefreq: 'hourly',
-        });
-        const cityList =
-          cId === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[cId]?.neighborhoods || [];
-        const cityPrefix = cId !== 'tehran' ? `city=${cId}&` : '';
-        for (const hood of cityList) {
-          urls.push({
-            loc: `${baseUrl}/?${cityPrefix}hood=${hood.id}`,
-            priority: '0.9',
-            changefreq: 'daily',
-          });
-        }
-        for (let i = 0; i < cityList.length; i++) {
-          for (let j = i + 1; j < cityList.length; j++) {
-            urls.push({
-              loc: `${baseUrl}/?${cityPrefix}compare=${cityList[i].id}-${cityList[j].id}`,
-              priority: '0.8',
-              changefreq: 'weekly',
-            });
-          }
-        }
-      }
+      const urls = tehranSitemapEntries(baseUrl);
       const xmlItems = urls
         .map(
           (u) => `  <url>

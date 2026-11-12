@@ -10,6 +10,7 @@ import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../ma
 import { matchesPersianSearch } from '../../utils/security';
 import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_ASKING_MEDIAN_TODAY_FA } from '../../utils/epistemicUiLabels';
 import { ListingVerdictHero } from '../listing/ListingVerdictHero';
+import { BudgetFitVerdict } from '../listing/BudgetFitVerdict';
 
 export interface ProductHomeViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
@@ -89,6 +90,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             </div>
           </div>
         </div>
+        <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={p.activeCity} />
         <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={p.activeCity || 'tehran'} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
 
         {/* 2. Unified Interactive Search & Budget Action Bar */}
