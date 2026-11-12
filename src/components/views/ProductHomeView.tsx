@@ -1,18 +1,15 @@
-/** @file src/components/views/ProductHomeView.tsx — Architectural Luxury Minimal Home View (< 275 lines) [RULE-01] */
 import React, { useState, useMemo } from 'react';
 import { Map as MapIcon, ArrowUpRight, Search, SlidersHorizontal, ChevronLeft, Scale, X } from 'lucide-react';
-import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import type { FeatureFlags } from '../../types/models';
+import type { CityId, FeatureFlags } from '../../types/models';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
 import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_ASKING_MEDIAN_TODAY_FA } from '../../utils/epistemicUiLabels';
 import { ListingVerdictHero } from '../listing/ListingVerdictHero';
-import type { CityId } from '../../types/models';
 
 export interface ProductHomeViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
@@ -92,13 +89,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             </div>
           </div>
         </div>
-        <ListingVerdictHero
-          evaluatedNeighborhoods={p.evaluatedNeighborhoods}
-          cityKey={p.activeCity || 'tehran'}
-          defaultHoodName={p.selectedHood?.name}
-          initialListingText={p.initialListingVerdictText}
-          onOpenFullModal={p.onOpenListingVerifier}
-        />
+        <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={p.activeCity || 'tehran'} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
 
         {/* 2. Unified Interactive Search & Budget Action Bar */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-4 shadow-xs space-y-3">
