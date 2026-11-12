@@ -56,7 +56,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
     <>
       <div
         id="radar-mobile-more-menu"
-        role="menu"
+        role="region"
         aria-label={isEn ? 'More sections' : 'بخش‌های بیشتر'}
         aria-hidden={!moreOpen}
         onKeyDown={(event) => {
@@ -72,7 +72,6 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
             <button
               key={item.id}
               type="button"
-              role="menuitem"
               aria-current={isActive ? 'page' : undefined}
               onClick={() => handleSelectView(item.id)}
               className={`min-h-12 flex flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-semibold transition cursor-pointer touch-manipulation ${isActive ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'text-slate-600 [@media(hover:hover)]:hover:bg-slate-100 dark:text-slate-300 dark:[@media(hover:hover)]:hover:bg-slate-800'}`}

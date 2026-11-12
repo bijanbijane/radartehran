@@ -137,3 +137,45 @@ export const AreaUnitToggle: React.FC<AreaUnitToggleProps> = ({
     </div>
   );
 };
+
+interface ExperienceModeToggleProps {
+  compact?: boolean;
+  className?: string;
+}
+
+export const ExperienceModeToggle: React.FC<ExperienceModeToggleProps> = ({ compact = false, className = '' }) => {
+  const [mode, setMode] = useExperienceMode();
+  return (
+    <div
+      role="group"
+      aria-label="حالت تجربه کاربری Simple یا Pro"
+      className={`inline-flex items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80 select-none ${className}`}
+      dir="ltr"
+    >
+      <button
+        type="button"
+        onClick={() => setMode('simple')}
+        aria-pressed={mode === 'simple'}
+        className={`font-bold transition-all rounded-lg ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
+          mode === 'simple'
+            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+        }`}
+      >
+        Simple
+      </button>
+      <button
+        type="button"
+        onClick={() => setMode('pro')}
+        aria-pressed={mode === 'pro'}
+        className={`font-bold transition-all rounded-lg ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
+          mode === 'pro'
+            ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+        }`}
+      >
+        Pro
+      </button>
+    </div>
+  );
+};
