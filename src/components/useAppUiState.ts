@@ -6,6 +6,7 @@ import type { ExpansionModalType } from './ExpansionModulesModal';
 import type { SuperModuleTabId } from './FutureSuperModulesModal';
 import type { ListingMediaObject } from '../utils/objectStorage';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../utils/areaUnit';
+import { readHomeVerdictPrefillFromUrl, resolvePrimaryViewFromUrl } from '../utils/listingVerdictDeepLink';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 export function useAppUiState(initialUrlState: any) {
@@ -39,13 +40,8 @@ export function useAppUiState(initialUrlState: any) {
   const [callingSponsorHoodId, setCallingSponsorHoodId] = useState<number | null>(null);
 
   const [selectedHoodId, setSelectedHoodId] = useState<number>(initialUrlState.initialHoodId);
-  const [primaryView, setPrimaryView] = useState<PrimaryViewId>(() => {
-    if (typeof window !== 'undefined') {
-      const v = new URLSearchParams(window.location.search).get('view');
-      if (v === 'home' || v === 'discover' || v === 'intelligence' || v === 'tools' || v === 'userspace' || v === 'map' || v === 'admin') return v as PrimaryViewId;
-    }
-    return 'map';
-  });
+  const [primaryView, setPrimaryView] = useState<PrimaryViewId>(() => resolvePrimaryViewFromUrl() ?? 'map');
+  const [homeVerdictPrefill, setHomeVerdictPrefill] = useState<string>(() => readHomeVerdictPrefillFromUrl());
   const [activeTab, setActiveTab] = useState<'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote' | 'osm_places'>('scorecard');
   const [showGoldPins, setShowGoldPins] = useState<boolean>(false);
   const [showLandmarkPins, setShowLandmarkPins] = useState<boolean>(false);
@@ -92,6 +88,7 @@ export function useAppUiState(initialUrlState: any) {
   const [showSuperModulesModal, setShowSuperModulesModal] = useState<boolean>(false);
   const [superModuleInitialTab, setSuperModuleInitialTab] = useState<SuperModuleTabId>('valuation');
   const [showHedonicModal, setShowHedonicModal] = useState<boolean>(false);
+  const [showListingVerifierModal, setShowListingVerifierModal] = useState<boolean>(false);
   const [hedonicInitialParams, setHedonicInitialParams] = useState<
     { sqm?: number; buildYear?: number; renovationStatus?: any; floor?: number } | undefined
   >(undefined);
@@ -255,6 +252,8 @@ export function useAppUiState(initialUrlState: any) {
     showPriceTrendModal, setShowPriceTrendModal,
     expansionModalType, setExpansionModalType, showSuperModulesModal, setShowSuperModulesModal,
     superModuleInitialTab, setSuperModuleInitialTab, showHedonicModal, setShowHedonicModal,
+    showListingVerifierModal, setShowListingVerifierModal,
+    homeVerdictPrefill, setHomeVerdictPrefill,
     hedonicInitialParams, setHedonicInitialParams,
     voteAir, setVoteAir, votePower, setVotePower, voteInternet, setVoteInternet,
     voteMetro, setVoteMetro, voteSecurity, setVoteSecurity, voteFlat, setVoteFlat,

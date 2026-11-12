@@ -33,7 +33,10 @@ test('diagnoseListingDeal flags bubble prices and generates discount script', ()
   const result = diagnoseListingDeal(parsed, 'tehran', 3);
 
   assert.equal(result.parsed.askingPricePerSqm, 750);
-  assert.ok(result.fairDealPricePerSqm > 0);
+  assert.ok(result.referenceBenchmarkPerSqm > 0);
+  assert.ok(result.fairDealPricePerSqm === result.referenceBenchmarkPerSqm);
+  assert.ok(['LIVE_ASKING_MEDIAN', 'HEURISTIC_V64', 'UNAVAILABLE'].includes(result.benchmarkKind));
+  assert.ok(result.benchmarkLabelFa.length > 4);
   assert.ok(result.bubbleGapPct > 0);
   assert.ok(result.totalBubbleMillion > 0);
   assert.ok(result.recommendedDiscountMillion > 0);

@@ -6,6 +6,16 @@
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
+import type { LiveComparableListing } from './divarComparableListings';
+import type { MarketDataProvenance } from './freeLiveMarketScraper';
+import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_REFERENCE_BASELINE_FA } from './epistemicUiLabels';
+import { detectHoodNameFromListingText } from './listingHoodFromText';
+
+export {
+  consumeVerificationQuota,
+  FREE_QUOTA_MAX,
+  getRemainingVerificationQuota,
+} from './listingVerifierQuota';
 
 export type TitleDeedCategory = 'PERSONAL_SINGLE' | 'COOPERATIVE_ENDOWMENT' | 'UNDIVIDED_SHARE' | 'PROMISES_OF_SALE' | 'UNKNOWN';
 export type RedFlagSeverity = 'CRITICAL' | 'WARNING' | 'OPPORTUNITY' | 'INFO';
@@ -31,11 +41,26 @@ export interface ListingParsedData {
   detectedHoodName?: string;
 }
 
+export type ListingBenchmarkKind = 'LIVE_ASKING_MEDIAN' | 'HEURISTIC_V64' | 'UNAVAILABLE';
+
+export interface ListingLiveContext {
+  medianPerSqm: number | null;
+  comparables: LiveComparableListing[];
+  insufficientSample: boolean;
+  provenance: MarketDataProvenance;
+}
+
 export interface ListingDiagnosisResult {
   parsed: ListingParsedData;
   hoodId: number;
   hoodName: string;
+  /** @deprecated use referenceBenchmarkPerSqm */
   fairDealPricePerSqm: number;
+  referenceBenchmarkPerSqm: number;
+  benchmarkKind: ListingBenchmarkKind;
+  benchmarkLabelFa: string;
+  comparables: LiveComparableListing[];
+  insufficientLiveSample: boolean;
   bubbleGapPct: number;
   totalBubbleMillion: number;
   recommendedDiscountMillion: number;
@@ -47,33 +72,6 @@ export interface ListingDiagnosisResult {
     openingOfferMillion: number;
     closingMeetingTactic: string;
   };
-}
-
-const STORAGE_QUOTA_KEY = 'radar_listing_verifier_quota_v1';
-export const FREE_QUOTA_MAX = 3;
-
-export function getRemainingVerificationQuota(): number {
-  if (typeof window === 'undefined') return FREE_QUOTA_MAX;
-  try {
-    const raw = localStorage.getItem(STORAGE_QUOTA_KEY);
-    if (!raw) return FREE_QUOTA_MAX;
-    const used = parseInt(raw, 10);
-    return Math.max(0, FREE_QUOTA_MAX - (Number.isFinite(used) ? used : 0));
-  } catch {
-    return FREE_QUOTA_MAX;
-  }
-}
-
-export function consumeVerificationQuota(): number {
-  if (typeof window === 'undefined') return FREE_QUOTA_MAX;
-  try {
-    const remaining = getRemainingVerificationQuota();
-    const nextUsed = FREE_QUOTA_MAX - Math.max(0, remaining - 1);
-    localStorage.setItem(STORAGE_QUOTA_KEY, String(nextUsed));
-    return Math.max(0, remaining - 1);
-  } catch {
-    return 0;
-  }
 }
 
 export function parseListingNarrativeText(rawText: string, defaultHood?: string): ListingParsedData {
@@ -150,20 +148,35 @@ export function parseListingNarrativeText(rawText: string, defaultHood?: string)
     hasParking,
     hasStorage,
     deedCategory,
-    detectedHoodName: defaultHood,
+    detectedHoodName: detectHoodNameFromListingText(text) ?? defaultHood,
   };
 }
 
 export function diagnoseListingDeal(
   parsed: ListingParsedData,
   cityKey = 'tehran',
-  targetHoodId?: number
+  targetHoodId?: number,
+  liveContext?: ListingLiveContext,
 ): ListingDiagnosisResult {
   const cityCfg = MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
   const allHoods = cityCfg?.neighborhoods || INITIAL_NEIGHBORHOODS;
   const hood = allHoods.find((h) => h.id === targetHoodId) || allHoods.find((h) => h.name === parsed.detectedHoodName) || allHoods[0];
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood));
-  const fairDealPricePerSqm = agg.estimatedDealPricePerSqm || Math.round(hood.buyPerSqm * 0.88);
+  const heuristicV64 = agg.estimatedDealPricePerSqm || Math.round(hood.buyPerSqm * 0.93);
+  let referenceBenchmarkPerSqm = heuristicV64;
+  let benchmarkKind: ListingBenchmarkKind = 'HEURISTIC_V64';
+  let benchmarkLabelFa = LABEL_HEURISTIC_NEGOTIATION_V64_FA;
+  const insufficientLiveSample = liveContext?.insufficientSample ?? true;
+  if (liveContext && !liveContext.insufficientSample && liveContext.medianPerSqm !== null) {
+    referenceBenchmarkPerSqm = liveContext.medianPerSqm;
+    benchmarkKind = 'LIVE_ASKING_MEDIAN';
+    benchmarkLabelFa = 'میانهٔ آگهی‌های مشابه امروز';
+  } else if (insufficientLiveSample) {
+    benchmarkKind = 'UNAVAILABLE';
+    benchmarkLabelFa = LABEL_REFERENCE_BASELINE_FA;
+    referenceBenchmarkPerSqm = hood.buyPerSqm;
+  }
+  const fairDealPricePerSqm = referenceBenchmarkPerSqm;
 
   const effectiveAskPerSqm = parsed.askingPricePerSqm > 0 ? parsed.askingPricePerSqm : hood.buyPerSqm;
   const effectiveAskTotal = parsed.askingPriceTotalMillion > 0 ? parsed.askingPriceTotalMillion : Math.round(effectiveAskPerSqm * parsed.areaSqm);
@@ -253,6 +266,11 @@ export function diagnoseListingDeal(
     hoodId: hood.id,
     hoodName: hood.name,
     fairDealPricePerSqm,
+    referenceBenchmarkPerSqm,
+    benchmarkKind,
+    benchmarkLabelFa,
+    comparables: liveContext?.comparables ?? [],
+    insufficientLiveSample,
     bubbleGapPct,
     totalBubbleMillion,
     recommendedDiscountMillion,
@@ -267,7 +285,7 @@ export function diagnoseListingDeal(
         'علت فروش و انگیزه مالک چیست و تا چه مبلغی برای نشست قطعی راه می‌آید؟',
       ],
       openingOfferMillion: openingOffer,
-      closingMeetingTactic: `در جلسه اعلام کنید: «با بررسی معاملات ثبت‌شده اخیر در ${hood.name} و ارزیابی عینی امکانات، پیشنهاد ما ${toPersianDigits(openingOffer)} م.ت نقدی بدون معطلی وام است.»`,
+      closingMeetingTactic: `در جلسه اعلام کنید: «با مقایسهٔ آگهی‌های مشابه امروز در ${hood.name} و ارزیابی عینی امکانات، پیشنهاد ما ${toPersianDigits(openingOffer)} م.ت نقدی بدون معطلی وام است.»`,
     },
   };
 }

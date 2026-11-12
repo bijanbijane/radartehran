@@ -1,4 +1,5 @@
 import { clampNumber } from '../utils/security'; import { formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { getDisplayDealLabelFa, isDealPriceDisplayableAsFact } from '../utils/epistemicUiLabels';
 export interface DetectedListingSignals { hasLegalRisk: boolean; hasTenantLag: boolean; isRenovated: boolean; isUrbanRenewal: boolean; }
 export type PriceSourceType = 'EXPLICIT_TOTAL' | 'EXPLICIT_PER_SQM' | 'NET_CASH' | 'STANDALONE' | 'NONE';
 export interface QualityMultiplierSpecs {
@@ -32,6 +33,37 @@ export interface AggregatedMarketMetrics {
   spreadAdjustedDealPerSqm: number; estimatedDealPricePerSqm: number; iqrLowPerSqm: number; iqrHighPerSqm: number;
   marketRegime: 'HOT' | 'BALANCED' | 'FROZEN'; askToDealRatio: number; preIqrBargainsCount: number;
   autoBargainIds: string[]; autoBargains: AutoBargainSample[]; dayAnchorPrice: number; intlEquivText?: string;
+  /** Median from observed listing samples only (not heuristic deal price). */
+  askingMedianFromObserved: number | null;
+  /** @deprecated UI label — never implies registered transaction when verifiedTransactionCount is 0. */
+  displayDealLabelFa: string;
+  isDealPriceDisplayableAsFact: boolean;
+}
+export interface NeighborhoodListingSource { id: number; name: string; buyPerSqm: number; bargains?: ReadonlyArray<{ id: string; sqm: number; title: string; discountPercent?: number; price?: number }> | null; }
+/** Illustrative seed bargains — must not be treated as observed market data. */
+export function buildIllustrativeSeedListingSamples(hood?: NeighborhoodListingSource | null): Array<{ id: string; sqm: number; askingTotalMillion: number; description: string }> {
+  if (!hood || !Array.isArray(hood.bargains) || hood.bargains.length === 0) return [];
+  const baseBuy = clampNumber(hood.buyPerSqm, 10, 2000, 120);
+  return hood.bargains.map((b) => ({
+    id: `illus-${b.id}`,
+    sqm: b.sqm,
+    askingTotalMillion: Math.round(b.sqm * baseBuy * (1 - (b.discountPercent || 10) / 100)),
+    description: `[نمونهٔ نمایشی] ${b.sqm} متر ${b.title}`,
+  }));
+}
+
+/** Returns only verified live samples; seed bargains are excluded from aggregation (CASPER epistemic integrity). */
+export function buildNeighborhoodListingSamples(hood?: NeighborhoodListingSource | null): Array<{ id: string; sqm: number; askingTotalMillion: number; description: string }> {
+  if (!hood || !Array.isArray(hood.bargains) || hood.bargains.length === 0) return [];
+  const live = hood.bargains.filter((b) => typeof b.id === 'string' && b.id.startsWith('live-divar-'));
+  if (live.length === 0) return [];
+  const baseBuy = clampNumber(hood.buyPerSqm, 10, 2000, 120);
+  return live.map((b) => ({
+    id: b.id,
+    sqm: b.sqm,
+    askingTotalMillion: Math.round(b.sqm * baseBuy * (1 - (b.discountPercent || 10) / 100)),
+    description: `${b.sqm} متر ${b.title}`,
+  }));
 }
 export interface NeighborhoodListingSource { id: number; name: string; buyPerSqm: number; bargains?: ReadonlyArray<{ id: string; sqm: number; title: string; discountPercent?: number; price?: number }> | null; }
 export function buildNeighborhoodListingSamples(hood?: NeighborhoodListingSource | null): Array<{ id: string; sqm: number; askingTotalMillion: number; description: string }> {
@@ -206,19 +238,8 @@ export function computeQualityMultiplier(specs: QualityMultiplierSpecs): number 
   if (specs.detectedSignals?.hasTenantLag || specs.hasTenant) multiplier *= 0.96;
   return Math.round(clampNumber(multiplier, 0.68, 1.32, 1.0) * 1000) / 1000;
 }
-export function seededRandom(seed: number): () => number {
-  let state = (seed ^ 0x9e3779b9) >>> 0;
-  return () => { state = (state + 0x6d2b79f5) >>> 0; let t = Math.imul(state ^ (state >>> 15), 1 | state); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-export function applySpatialGrowthFallback(targetHood: { id: number; lat: number; lng: number; buyPerSqm: number }, allHoods: ReadonlyArray<{ id: number; lat: number; lng: number; buyPerSqm: number; growthPct?: number }>): number {
-  let weightedSum = 0, weightTotal = 0;
-  for (const h of allHoods) {
-    if (h.id === targetHood.id || typeof h.growthPct !== 'number') continue;
-    const distKm = Math.hypot((targetHood.lat - h.lat) * 111, (targetHood.lng - h.lng) * 90); if (distKm > 12) continue;
-    const w = 1 / Math.pow(Math.max(0.3, distKm), 2); weightedSum += h.growthPct * w; weightTotal += w;
-  }
-  return weightTotal > 0 ? Math.round((weightedSum / weightTotal) * 100) / 100 : 0;
-}
+export { applySpatialGrowthFallback, seededRandom } from './pricingEngineSpatialUtils';
+export { verifyPricingEngineIntegrity } from './pricingEngineIntegrityChecks';
 export function aggregateNeighborhoodMarketMetrics(
   hoodId: number, hoodName: string, baseHoodPerSqm: number,
   samples: Array<{ id?: string; sqm?: number; askingTotalMillion: number; description: string; yearOrAge?: number }>, previousDayAnchorPrice?: number
@@ -256,7 +277,11 @@ export function aggregateNeighborhoodMarketMetrics(
   const observedMedianPerSqm = obsSorted.length > 0 ? Math.round(((obsSorted.length % 2 === 1 ? obsSorted[Math.floor(obsSorted.length / 2)] : (obsSorted[obsSorted.length / 2 - 1] + obsSorted[obsSorted.length / 2]) / 2)) * 10) / 10 : null;
   const hasSufficientIqrEvidence = trimmed.length >= 3 && q1Obs !== null && q3Obs !== null, observedIqrLowPerSqm = hasSufficientIqrEvidence ? Math.round(q1Obs * 10) / 10 : null, observedIqrHighPerSqm = hasSufficientIqrEvidence ? Math.round(q3Obs * 10) / 10 : null;
   const rawAveragePerSqm = observedMeanPerSqm === null ? baseHoodPerSqm : isBootstrapped ? Math.round(((observedMeanPerSqm * 0.5 + baseHoodPerSqm * 0.5)) * 10) / 10 : observedMeanPerSqm;
-  const unclampedAveragePerSqm = rawAveragePerSqm, anchor = previousDayAnchorPrice && previousDayAnchorPrice > 10 ? previousDayAnchorPrice : baseHoodPerSqm, dayAnchorPrice = Math.round(clampNumber(rawAveragePerSqm, anchor * 0.97, anchor * 1.03, anchor) * 10) / 10, isAnchorClamped = Math.abs(unclampedAveragePerSqm - dayAnchorPrice) > 0.05;
+  const unclampedAveragePerSqm = rawAveragePerSqm;
+  const anchor = previousDayAnchorPrice && previousDayAnchorPrice > 10 ? previousDayAnchorPrice : baseHoodPerSqm;
+  const clampBand = eligibleObservedCount >= 8 ? 0.1 : 0.03;
+  const dayAnchorPrice = Math.round(clampNumber(rawAveragePerSqm, anchor * (1 - clampBand), anchor * (1 + clampBand), anchor) * 10) / 10;
+  const isAnchorClamped = Math.abs(unclampedAveragePerSqm - dayAnchorPrice) > 0.05;
   const isStagnantRegime = !isBootstrapped && eligibleObservedCount < 10 && (((q3Obs ?? baseHoodPerSqm) - (q1Obs ?? baseHoodPerSqm)) / Math.max(1, baseHoodPerSqm) >= 0.16 || rawAveragePerSqm >= baseHoodPerSqm * 1.12);
   const marketRegime: AggregatedMarketMetrics['marketRegime'] = isBootstrapped ? 'BALANCED' : eligibleObservedCount >= 10 ? 'HOT' : isStagnantRegime ? 'FROZEN' : 'BALANCED', askToDealRatio = marketRegime === 'HOT' ? 0.975 : marketRegime === 'BALANCED' ? 0.93 : 0.90, dealPerSqm = Math.round(dayAnchorPrice * askToDealRatio * 10) / 10;
   const provenance: MarketDataProvenance = eligibleObservedCount === 0 ? 'REFERENCE_BASELINE' : isBootstrapped ? 'HEURISTIC_ESTIMATE' : 'OBSERVED_SECONDARY', evidenceQuality: EvidenceQualityState = eligibleObservedCount === 0 ? 'INSUFFICIENT_OBSERVATIONS' : isBootstrapped ? 'LIMITED_OBSERVATIONS' : eligibleObservedCount < 10 ? 'MODERATE_OBSERVATIONS' : 'ADEQUATE_OBSERVATIONS';
@@ -270,18 +295,9 @@ export function aggregateNeighborhoodMarketMetrics(
     calibratedConfidencePct: null, hasSufficientIqrEvidence, observedMeanPerSqm, observedMedianPerSqm, observedIqrLowPerSqm, observedIqrHighPerSqm, isAnchorClamped, unclampedAveragePerSqm, isBootstrapped, rawAveragePerSqm, hedonicAdjustedPerSqm: dayAnchorPrice, askingPricePerSqm: dayAnchorPrice,
     spreadAdjustedDealPerSqm: dealPerSqm, estimatedDealPricePerSqm: dealPerSqm, iqrLowPerSqm: observedIqrLowPerSqm ?? 0, iqrHighPerSqm: observedIqrHighPerSqm ?? 0, marketRegime, askToDealRatio, preIqrBargainsCount: autoBargainIds.length, autoBargainIds, autoBargains, dayAnchorPrice,
     intlEquivText: formatMillionTomanAsIntlCurrency(dayAnchorPrice, 'USD'),
+    askingMedianFromObserved: observedMedianPerSqm,
+    displayDealLabelFa: getDisplayDealLabelFa(0),
+    isDealPriceDisplayableAsFact: isDealPriceDisplayableAsFact(0),
   };
 }
 export const aggregateNeighborhoodLivePrice = aggregateNeighborhoodMarketMetrics;
-export function verifyPricingEngineIntegrity(): { passed: boolean; failures: string[] } {
-  const failures: string[] = [], check = (cond: boolean, msg: string) => { if (!cond) failures.push(msg); };
-  const c3 = extractListingSpecsFromText('قیمت ۱۰ میلیارد و ۱۰۰ متر بنا', 100), c14 = extractListingSpecsFromText('بدون پارکینگ آسانسور دارد', 100);
-  check(parseIranianPriceToMillionToman('۱۱ و نیم میلیارد', 100, 115).totalMillion === 11500 && parseIranianPriceToMillionToman('۱۲ میلیارد و پانصد', 100, 125).totalMillion === 12500, 'Case 1-2: Word fold failed');
-  check(c3.totalMillion === 10000 && c3.sqm === 100 && extractListingSpecsFromText('قیمت کل ۶.۵ میلیارد، ۸۰۰ میلیون رهن مستاجر کسر شده است', 100).totalMillion === 7300, 'Case 3-4: Total/Rahn failed');
-  check(parseIranianPriceToMillionToman('۱۲.۵۰۰.۰۰۰.۰۰۰ تومان', 100, 125).totalMillion === 12500 && extractListingSpecsFromText('قیمت هر متر: ۶۵٬۰۰۰٬۰۰۰ تومان', 65).perSqmMillion === 65, 'Case 5-6: Separator/PerSqm failed');
-  check(extractListingSpecsFromText('۵ طبقه ۲ واحدی، طبقه چهارم', 100).floor === 4 && extractListingSpecsFromText('طبقه ۲ واحد جنوبی', 100).floor === 2, 'Case 7-8: Floor extraction failed');
-  check(extractListingSpecsFromText('ساختمان ۵ طبقه، طبقه آخر', 100).floor === 5 && extractListingSpecsFromText('طبقه همکف', 100).floor === 0, 'Case 9-10: Top/ground floor failed');
-  check(extractListingSpecsFromText('در زمینی به مساحت ۳۰۰ متر، واحد ۹۵ متری', 100).sqm === 95 && !hasAffirmativeMatch('معاوضه با خودرو ندارم', /معاوضه/) && !hasAffirmativeMatch('بدون هیچ گونه اصلاحی', /اصلاحی/), 'Case 11-13: Area/Negation failed');
-  check(c14.hasParking === false && c14.hasElevator === true && extractListingSpecsFromText('صفر تا صد بازسازی شده', 100).detectedSignals.isRenovated === true && normalizePersianText('صفر تا صد بازسازی شده').includes('صفر تا صد'), 'Case 14-15: Sub-clause/Idiom failed');
-  return { passed: failures.length === 0, failures };
-}
