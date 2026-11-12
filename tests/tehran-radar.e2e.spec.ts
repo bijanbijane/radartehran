@@ -94,6 +94,15 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await expect(adminDialog).toBeHidden();
     await mobileNav.getByRole('button', { name: 'خانه' }).click();
     await expect(page.locator('[data-testid="product-home-view"]')).toBeVisible();
+    const listingHero = page.locator('[data-testid="listing-verdict-hero"]');
+    await expect(listingHero).toBeVisible();
+    await expect(listingHero.getByLabel('متن یا لینک آگهی')).toBeVisible();
+    const panelBox = await page.locator('[data-testid="product-home-view"]').evaluate((el) => {
+      const panel = el.closest('.overflow-y-auto');
+      if (!panel) return { marginTop: -1 };
+      return { marginTop: parseFloat(getComputedStyle(panel).marginTop) || 0 };
+    });
+    expect(panelBox.marginTop).toBeLessThan(80);
     await mobileNav.getByRole('button', { name: 'نقشه' }).click();
 
     // Verify mobile inspector sheet handle has accessible role and label

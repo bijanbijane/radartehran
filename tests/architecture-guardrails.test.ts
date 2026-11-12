@@ -268,9 +268,9 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
       if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !staticDatasets.has(`${relDir}/${entry}`)) allNonDatasetFiles.push(`${relDir}/${entry}`);
     }
   }
-  assert.equal(allNonDatasetFiles.length, 266, `Expected 266 non-dataset source files, got ${allNonDatasetFiles.length}`);
+  assert.equal(allNonDatasetFiles.length, 267, `Expected 267 non-dataset source files, got ${allNonDatasetFiles.length}`);
   const all242RepoFiles = [...allNonDatasetFiles, ...staticDatasets];
-  assert.equal(all242RepoFiles.length, 275, `Expected 275 total repository source files, got ${all242RepoFiles.length}`);
+  assert.equal(all242RepoFiles.length, 276, `Expected 276 total repository source files, got ${all242RepoFiles.length}`);
   for (const rel of all242RepoFiles) {
     const srcText = fs.readFileSync(path.join(rootDir, rel), 'utf8');
     const lc = srcText.split(/\r?\n/).length;
@@ -310,6 +310,10 @@ verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 li
   }
   const routerSrc = fs.readFileSync(path.join(rootDir, 'src/components/views/ProductViewRouter.tsx'), 'utf8');
   assert.ok(routerSrc.includes('تغییر سریع محله فعال روی نقشه') && routerSrc.includes('showMetroLines') && routerSrc.includes('showTrafficZones'), 'ProductViewRouter.tsx must expose active neighborhood switcher and Metro/Traffic GIS toggles');
+  assert.ok(routerSrc.includes('homeContentFirst') && routerSrc.includes('resolveProductViewRouterShellClasses'), 'ProductViewRouter must use content-first home shell on mobile');
+  const homeSrc = fs.readFileSync(path.join(rootDir, 'src/components/views/ProductHomeView.tsx'), 'utf8');
+  assert.ok(homeSrc.includes('<ListingVerdictHero'), 'ProductHomeView must mount ListingVerdictHero');
+  assert.ok(fs.existsSync(path.join(rootDir, 'src/components/listing/ListingVerdictHero.tsx')), 'ListingVerdictHero module must exist');
   for (const viewRel of [
     'src/components/views/ProductDiscoverView.tsx',
     'src/components/views/ProductIntelligenceView.tsx',

@@ -1,13 +1,12 @@
-/** @file src/components/views/ProductViewRouter.tsx — View Router for تهران رادار (< 250 lines) [RULE-01] */
 import React from 'react';
-import type { EvaluatedNeighborhood, Neighborhood, MapTileServerId } from '../../data/neighborhoods';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type EvaluatedNeighborhood, type Neighborhood, type MapTileServerId } from '../../data/neighborhoods';
 import type { FeatureFlags, CityId } from '../../types/models';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { InspectorDrawerSkeleton } from '../NeighborhoodLoadingSkeletons';
+import { resolveProductViewRouterShellClasses } from '../../utils/productViewRouterShellClasses';
 
 const ProductHomeView = React.lazy(() => import('./ProductHomeView').then((m) => ({ default: m.ProductHomeView })));
 const ProductDiscoverView = React.lazy(() => import('./ProductDiscoverView').then((m) => ({ default: m.ProductDiscoverView })));
@@ -204,9 +203,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         onOpenReverseBudget={() => p.setShowReverseBudgetModal(true)} onOpenHedonic={() => ui.setShowHedonicModal(true)}
         onOpenCompare={() => ui.setShowCompareModal(true)} onOpenSmartSuggest={() => ui.setShowSmartSuggestModal(true)}
         onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}
-        onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)}
-        initialListingVerdictText={ui.homeVerdictPrefill}
-        activeCity={p.activeCity}
+        onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)} initialListingVerdictText={ui.homeVerdictPrefill} activeCity={p.activeCity}
         mode={p.mode} setMode={p.setMode} targetSqm={p.targetSqm} totalRahnEquivalent={p.totalRahnEquivalent}
         buyTotalBudget={p.buyTotalBudget} counts={p.counts} featureFlags={p.featureFlags}
       />
@@ -280,12 +277,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   }
 
   if (!content) return null;
-  const splitShell = splitMapMode
-    ? homeContentFirst
-      ? 'max-lg:mt-0 max-lg:h-full max-lg:rounded-none max-lg:border-t-0 max-lg:bg-[#F8F9FA] dark:max-lg:bg-slate-950 max-lg:backdrop-blur-none lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 lg:bg-[#F8F9FA]/95 dark:lg:bg-slate-950/95 lg:backdrop-blur-xl w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]'
-      : 'mt-[136px] h-[calc(100%-136px)] rounded-t-3xl border-t lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]'
-    : 'h-full w-full lg:w-[calc(100%-220px)]';
-  const shellBg = homeContentFirst && splitMapMode ? '' : 'bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl';
+  const { shellBg, splitShell } = resolveProductViewRouterShellClasses(splitMapMode, homeContentFirst);
   return (
     <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 ${shellBg} lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitShell}`}>
       {mapAxisBar}
