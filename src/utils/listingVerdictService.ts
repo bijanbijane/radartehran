@@ -7,7 +7,7 @@ import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../data/multiCityData';
 import type { CityId } from '../types/models';
 import { compactPersianSearchKey } from './persianSearchAndPersonalWorkspace';
-import { fetchDivarComparableListings } from './divarComparableListings';
+import { buildDivarComparableProvenance, fetchDivarComparableListings } from './divarComparableListings';
 import { diagnoseListingDeal, parseListingNarrativeText, type ListingDiagnosisResult } from './listingVerifierEngine';
 
 const DISCLAIMER_FA =
@@ -93,12 +93,7 @@ export async function buildListingVerdict(req: ListingVerdictRequest): Promise<L
       comparables: [],
       medianPerSqm: null,
       insufficientSample: true,
-      provenance: {
-        sourceId: 'seed_fallback',
-        fetchedAtIso: new Date().toISOString(),
-        normalizationVersion: '2026.2',
-        qualityStatus: 'cached_or_fallback',
-      },
+      provenance: buildDivarComparableProvenance('upstream_error', new Date().toISOString()),
     };
   }
 

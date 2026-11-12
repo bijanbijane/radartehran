@@ -7,8 +7,7 @@
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
-import type { LiveComparableListing } from './divarComparableListings';
-import type { MarketDataProvenance } from './freeLiveMarketScraper';
+import type { DivarComparableProvenance, LiveComparableListing } from './divarComparableListings';
 import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_REFERENCE_BASELINE_FA } from './epistemicUiLabels';
 import { detectHoodNameFromListingText } from './listingHoodFromText';
 
@@ -48,7 +47,7 @@ export interface ListingLiveContext {
   medianPerSqm: number | null;
   comparables: LiveComparableListing[];
   insufficientSample: boolean;
-  provenance: MarketDataProvenance;
+  provenance: DivarComparableProvenance;
 }
 
 export interface ListingDiagnosisResult {
