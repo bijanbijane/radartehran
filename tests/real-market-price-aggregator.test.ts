@@ -344,6 +344,10 @@ assert.ok(tbSrc.includes('buildNeighborhoodListingSamples(selectedHood)'), 'Neig
 assert.ok(cmSrc.includes('EpistemicMarketDisclaimer'), 'CompareModal surfaces epistemic disclaimer');
 assert.ok(piSrc.includes('EpistemicMarketDisclaimer'), 'ProductIntelligenceView surfaces epistemic disclaimer');
 assert.ok(tbSrc.includes('EpistemicMarketDisclaimer'), 'NeighborhoodInspectorTabs surfaces epistemic disclaimer');
+const discoverSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductDiscoverView.tsx'), 'utf-8');
+assert.ok(discoverSrc.includes('DiscoverSelectedHoodEpistemicBanner'), 'ProductDiscoverView surfaces epistemic disclaimer for selected hood');
+assert.ok(fs.readFileSync(path.join(process.cwd(), 'src/components/views/DiscoverSelectedHoodEpistemicBanner.tsx'), 'utf8').includes('EpistemicMarketDisclaimer'), 'Discover epistemic banner module');
+assert.ok(fs.readFileSync(path.join(process.cwd(), 'src/components/useDealPriceByHoodIdMap.ts'), 'utf8').includes('buildNeighborhoodListingSamples(hood)'), 'useDealPriceByHoodIdMap centralizes canonical samples');
 assert.ok(!piSrc.includes('تخمین قیمت قطعی معاملات'), 'ProductIntelligenceView does not claim definitive closing transaction estimates');
 assert.ok(!piSrc.includes('همگرایی قیمت اعلامی با نرخ معامله'), 'ProductIntelligenceView does not claim convergence with closing transaction rates');
 assert.ok(!piSrc.includes('جایگاه معامله قطعی'), 'ProductIntelligenceView does not claim definitive transaction percentile position');
@@ -365,7 +369,9 @@ const verdict = buildBudgetFitVerdict(INITIAL_NEIGHBORHOODS.map((hood) => ({ id:
 assert.equal(verdict.length, 3);
 assert.equal(verdict[0]?.nameFa, 'پونک');
 assert.equal(verdict[0]?.fit, 'fits');
-assert.ok(formatBudgetVerdictShareText(verdict, 'buy', 32000, 80).includes('۰ معامله ثبت‌شده'));
+const shareText = formatBudgetVerdictShareText(verdict, 'buy', 32000, 80);
+assert.ok(shareText.includes('۰ معامله ثبت‌شده'));
+assert.ok(shareText.includes('https://radartehran.ir/tehran/punak'));
 assert.equal(parseTehranPublicPath('/tehran/punak')?.kind, 'hood');
 assert.equal(parseTehranPublicPath('/tehran/punak-vs-sadeghie')?.kind, 'compare');
 assert.equal(seoForDatedHood(5)?.path, '/tehran/punak');

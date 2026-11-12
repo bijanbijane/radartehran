@@ -63,8 +63,11 @@ async function generateStoryImage(
   ctx.fillText(`رهن کامل (${formatAreaShort(80, areaUnit)})`, 747, 790);
   ctx.fillStyle = '#34d399'; ctx.font = intlCurrency !== 'IRT' ? '800 36px "Vazirmatn"' : '900 52px "Vazirmatn"';
   ctx.fillText(`${toPersianNum(hood.rahn80m)} م${storyRahnFx}`, 747, 875);
+  const truth = formatNeighborhoodPriceTruthFa(hood.id, 0);
+  const truthCut = truth.lastIndexOf(' · ');
   ctx.fillStyle = '#fde68a'; ctx.font = '700 28px "Vazirmatn", "Tahoma", sans-serif';
-  ctx.fillText(formatNeighborhoodPriceTruthFa(hood.id, 0), 540, 1020);
+  ctx.fillText(truthCut > 0 ? truth.slice(0, truthCut) : truth, 540, 1000);
+  if (truthCut > 0) ctx.fillText(truth.slice(truthCut + 3), 540, 1048);
   const dataUrl = canvas.toDataURL('image/png', 0.95);
   const downloadLink = document.createElement('a'); downloadLink.href = dataUrl;
   downloadLink.download = `tehran-radar-story-${hood.id}-${hood.name}.png`;

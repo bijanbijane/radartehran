@@ -4,8 +4,9 @@ import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoo
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { matchesPersianSearch } from '../../utils/security';
-import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
+import { useDealPriceByHoodIdMap } from '../useDealPriceByHoodIdMap';
+import { DiscoverSelectedHoodEpistemicBanner } from './DiscoverSelectedHoodEpistemicBanner';
 import { isCoordInsideStoredViewport, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { CasperInstantVerdictCard } from '../casper/CasperInstantVerdictCard';
 export interface ProductDiscoverViewProps {
@@ -28,11 +29,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
     const inside = p.evaluatedNeighborhoods.filter((h) => isCoordInsideStoredViewport(h.lat, h.lng, viewportBounds));
     return inside.length > 0 ? inside : p.evaluatedNeighborhoods;
   }, [p.evaluatedNeighborhoods, viewportBounds]);
-  const dealPriceByHoodId = useMemo(() => {
-    const m = new Map<number, number>();
-    p.evaluatedNeighborhoods.forEach((hood) => m.set(hood.id, aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm));
-    return m;
-  }, [p.evaluatedNeighborhoods]);
+  const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
 
   const filtered = useMemo(() => {
     let list = filterRankingByViewport ? inViewportHoods : p.evaluatedNeighborhoods;
@@ -82,6 +79,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             ارزیابی تحلیلی {toPersianNum(filtered.length)} محله بر پایه کیفیت زندگی، تناسب با بودجه و سناریوی معامله (مدل v6.4 — غیرثبتی)
           </p>
+          <DiscoverSelectedHoodEpistemicBanner hood={p.selectedHood} />
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button type="button" aria-pressed={filterRankingByViewport} onClick={() => updateMapAdvancedOverlayState({ filterRankingByViewport: !filterRankingByViewport })} className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer whitespace-nowrap ${filterRankingByViewport ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100'}`} title="نمایش فقط محله‌های واقع در کادر فعلی نقشه زنده">

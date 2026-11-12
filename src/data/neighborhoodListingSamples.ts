@@ -204,8 +204,13 @@ export function buildBudgetFitVerdict(
   return ranked.slice(0, 3).map(({ ratio: _ratio, rank: _rank, ...line }) => line);
 }
 
+export function budgetVerdictShareUrl(lines: readonly { hoodId: number }[]): string {
+  const path = lines[0] ? tehranPublicPathForHood(lines[0].hoodId) : null;
+  return path ? `https://radartehran.ir${path}` : 'https://radartehran.ir';
+}
+
 export function formatBudgetVerdictShareText(lines: readonly BudgetFitLine[], mode: 'buy' | 'rent', budgetMillion: number, targetSqm: number): string {
   const head = `با بودجه ${faDigits(Math.round(budgetMillion))} میلیون برای ${mode === 'rent' ? 'رهن' : 'خرید'}، حدود ${faDigits(Math.round(targetSqm || 80))} متر:`;
   const body = lines.map((line, index) => `${faDigits(index + 1)}. ${line.nameFa}: ${line.fitLabelFa}. ${line.referenceLabelFa}. ${line.truthFa}`).join('\n');
-  return `${head}\n${body}\n${HONEST_ASKING_SENTENCE_FA}`;
+  return `${head}\n${body}\n${HONEST_ASKING_SENTENCE_FA}\n${budgetVerdictShareUrl(lines)}`;
 }

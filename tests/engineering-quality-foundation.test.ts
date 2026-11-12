@@ -2260,6 +2260,10 @@ async function runSuite(): Promise<void> {
       const src = readComp(`src/components${key.startsWith('Product') ? '/views/' : '/'}${key}`);
       assert.ok(src.includes('EpistemicMarketDisclaimer'), `${key} must render EpistemicMarketDisclaimer for deal pricing context`);
     }
+    const discoverSrc = readComp('src/components/views/ProductDiscoverView.tsx');
+    const discoverBannerSrc = readComp('src/components/views/DiscoverSelectedHoodEpistemicBanner.tsx');
+    assert.ok(discoverSrc.includes('DiscoverSelectedHoodEpistemicBanner'), 'ProductDiscoverView must mount epistemic banner for deal pricing');
+    assert.ok(discoverBannerSrc.includes('EpistemicMarketDisclaimer'), 'DiscoverSelectedHoodEpistemicBanner must render EpistemicMarketDisclaimer');
     const emptySampleCalls: string[] = [];
     const scanAgg = (dir: string) => {
       for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {

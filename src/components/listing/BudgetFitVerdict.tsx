@@ -7,6 +7,7 @@ import {
   buildBudgetFitVerdict,
   formatBudgetVerdictShareText,
 } from '../../data/neighborhoodListingSamples';
+import { downloadBudgetVerdictCard, renderBudgetVerdictCard } from './BudgetVerdictCardImage';
 
 export interface BudgetFitVerdictProps {
   neighborhoods: ReadonlyArray<{ id: number; rahn80m: number }>;
@@ -25,12 +26,18 @@ export function BudgetFitVerdict(p: BudgetFitVerdictProps): React.ReactElement |
   if (p.city && p.city !== 'tehran') return null;
   const shareText = formatBudgetVerdictShareText(lines, p.mode, p.budgetMillion, p.targetSqm);
   const sendCard = async () => {
+    const blob = await renderBudgetVerdictCard({ lines, mode: p.mode, budgetMillion: p.budgetMillion, targetSqm: p.targetSqm });
+    const file = new File([blob], 'radar-tehran-verdict.png', { type: 'image/png' });
+    const payload = { title: 'رادار تهران', text: shareText, files: [file] };
     try {
-      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-        await navigator.share({ title: 'رادار تهران', text: shareText });
+      if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare(payload)) {
+        await navigator.share(payload);
         return;
       }
-    } catch { /* clipboard fallback when share is dismissed or unavailable */ }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+    }
+    downloadBudgetVerdictCard(blob);
     try {
       await navigator.clipboard.writeText(shareText);
       setCopied(true);
@@ -56,7 +63,7 @@ export function BudgetFitVerdict(p: BudgetFitVerdictProps): React.ReactElement |
       </ul>
       <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{HONEST_ASKING_SENTENCE_FA}</p>
       <button type="button" onClick={() => { void sendCard(); }} className="px-3 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold cursor-pointer">
-        {copied ? 'متن کارت کپی شد' : 'کارت را بفرست'}
+        {copied ? 'کارت ذخیره شد' : 'کارت را بفرست'}
       </button>
     </section>
   );

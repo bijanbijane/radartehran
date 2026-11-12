@@ -1082,11 +1082,11 @@ function runDomainRegressionTests(): void {
   const reverseBudgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/modals/ReverseBudgetDiscoveryModal.tsx'), 'utf-8');
   assert(
     '42. WS-CASPER-06 unifies buildNeighborhoodListingSamples & explainNeighborhoodRecommendation across ProductDiscoverView, ProductHomeView, ProductUserSpaceView, and enforces AFFORDABLE-first ranking in ReverseBudgetDiscoveryModal',
-    discoverViewSrc.includes('const dealPriceByHoodId = useMemo(') &&
-      discoverViewSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+    discoverViewSrc.includes('useDealPriceByHoodIdMap(p.evaluatedNeighborhoods)') &&
+      discoverViewSrc.includes('DiscoverSelectedHoodEpistemicBanner') &&
       discoverViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore })') &&
       !discoverViewSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, [])') &&
-      homeViewSrc.includes('buildNeighborhoodListingSamples(hood)') &&
+      homeViewSrc.includes('useDealPriceByHoodIdMap(p.evaluatedNeighborhoods)') &&
       homeViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore })') &&
       !homeViewSrc.includes('داده‌های ثبت‌شده معاملات قطعی') &&
       !homeViewSrc.includes('verified transaction benchmarks') &&

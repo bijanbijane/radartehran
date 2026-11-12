@@ -268,9 +268,9 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
       if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !staticDatasets.has(`${relDir}/${entry}`)) allNonDatasetFiles.push(`${relDir}/${entry}`);
     }
   }
-  assert.equal(allNonDatasetFiles.length, 267, `Expected 267 non-dataset source files, got ${allNonDatasetFiles.length}`);
+  assert.equal(allNonDatasetFiles.length, 268, `Expected 268 non-dataset source files, got ${allNonDatasetFiles.length}`);
   const all242RepoFiles = [...allNonDatasetFiles, ...staticDatasets];
-  assert.equal(all242RepoFiles.length, 276, `Expected 276 total repository source files, got ${all242RepoFiles.length}`);
+  assert.equal(all242RepoFiles.length, 277, `Expected 277 total repository source files, got ${all242RepoFiles.length}`);
   for (const rel of all242RepoFiles) {
     const srcText = fs.readFileSync(path.join(rootDir, rel), 'utf8');
     const lc = srcText.split(/\r?\n/).length;
@@ -323,11 +323,14 @@ verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 li
   ]) {
     const viewSrc = fs.readFileSync(path.join(rootDir, viewRel), 'utf8');
     assert.ok(
-      (viewSrc.includes('FAST_SALE_FACTOR') || viewSrc.includes('estimatedDealPricePerSqm')) &&
+      (viewSrc.includes('FAST_SALE_FACTOR') ||
+        viewSrc.includes('estimatedDealPricePerSqm') ||
+        viewSrc.includes('useDealPriceByHoodIdMap')) &&
         (viewSrc.includes('معامله v6.4') ||
           viewSrc.includes('سناریو v6.4') ||
           viewSrc.includes('displayDealLabelFa') ||
-          viewSrc.includes('EpistemicMarketDisclaimer')),
+          viewSrc.includes('EpistemicMarketDisclaimer') ||
+          viewSrc.includes('DiscoverSelectedHoodEpistemicBanner')),
       `Expected ${viewRel} to display v6.4 negotiation scenario pricing (epistemic labels)`,
     );
   }

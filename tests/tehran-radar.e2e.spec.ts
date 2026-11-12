@@ -97,6 +97,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     const listingHero = page.locator('[data-testid="listing-verdict-hero"]');
     await expect(listingHero).toBeVisible();
     await expect(listingHero.getByLabel('متن یا لینک آگهی')).toBeVisible();
+    await expect(page.locator('[data-testid="budget-fit-verdict"]')).toBeVisible();
     const panelBox = await page.locator('[data-testid="product-home-view"]').evaluate((el) => {
       const panel = el.closest('.overflow-y-auto');
       if (!panel) return { marginTop: -1 };

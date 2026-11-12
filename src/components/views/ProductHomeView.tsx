@@ -4,8 +4,8 @@ import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoo
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import type { CityId, FeatureFlags } from '../../types/models';
-import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
+import { useDealPriceByHoodIdMap } from '../useDealPriceByHoodIdMap';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
 import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_ASKING_MEDIAN_TODAY_FA } from '../../utils/epistemicUiLabels';
@@ -32,11 +32,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const [homeQuery, setHomeQuery] = useState<string>('');
   const { comparisonArc } = useMapAdvancedOverlayState();
   const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
-  const dealPriceByHoodId = useMemo(() => {
-    const m = new Map<number, number>();
-    p.evaluatedNeighborhoods.forEach((hood) => m.set(hood.id, aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm));
-    return m;
-  }, [p.evaluatedNeighborhoods]);
+  const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
   const featuredHoods = useMemo(() => {
     let list = p.evaluatedNeighborhoods;
     const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
