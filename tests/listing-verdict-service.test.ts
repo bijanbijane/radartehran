@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { buildHoodMismatchWarningFa, buildListingVerdict } from '../src/utils/listingVerdictService.js';
 import { parseListingNarrativeText } from '../src/utils/listingVerifierEngine.js';
 
@@ -43,4 +45,13 @@ test('buildListingVerdict returns ok with disclaimer for aligned hood', async ()
   if (result.status !== 'ok') return;
   assert.ok(result.disclaimerFa.includes('آگهی'));
   assert.equal(result.hoodMismatchWarningFa, null);
+});
+
+test('InstantListingVerifierModal and ListingVerdictHero share buildListingVerdict service path', () => {
+  const root = path.join(process.cwd(), 'src/components');
+  const modalSrc = fs.readFileSync(path.join(root, 'modals/InstantListingVerifierModal.tsx'), 'utf8');
+  const heroSrc = fs.readFileSync(path.join(root, 'listing/ListingVerdictHero.tsx'), 'utf8');
+  assert.ok(modalSrc.includes('buildListingVerdict'), 'modal must use unified listing verdict service');
+  assert.ok(heroSrc.includes('buildListingVerdict'), 'hero must use unified listing verdict service');
+  assert.equal(modalSrc.includes('diagnoseListingDeal(parsed'), false, 'modal must not bypass live sample path');
 });

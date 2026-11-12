@@ -9,13 +9,12 @@ import {
   Copy, Check, X, PhoneCall, ChevronRight, Zap
 } from 'lucide-react';
 import {
-  parseListingNarrativeText,
-  diagnoseListingDeal,
   getRemainingVerificationQuota,
   consumeVerificationQuota,
   FREE_QUOTA_MAX,
   type ListingDiagnosisResult,
 } from '../../utils/listingVerifierEngine';
+import { buildListingVerdict } from '../../utils/listingVerdictService';
 import { toPersianNum as toPersianDigits, INITIAL_NEIGHBORHOODS, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 
 export interface InstantListingVerifierModalProps {
@@ -23,6 +22,7 @@ export interface InstantListingVerifierModalProps {
   onClose: () => void;
   cityKey?: string;
   initialHoodName?: string;
+  initialListingText?: string;
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
 }
 
@@ -30,30 +30,55 @@ const SAMPLE_TEXT_SAADAT = `سعادت آباد صرافها شمالی ۹۵ م�
 const SAMPLE_TEXT_PUNAK = `پونک سردار جنگل ۸۲ متر طبقه ۳ بدون آسانسور خوش نقشه پارکینگ مزاحم قیمت ۱۲ میلیارد و ۶۰۰ میلیون تومن مالک پول لازم`;
 
 export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalProps> = ({
-  isOpen, onClose, cityKey = 'tehran', initialHoodName = 'پونک', evaluatedNeighborhoods = [],
+  isOpen, onClose, cityKey = 'tehran', initialHoodName = 'پونک', initialListingText = '', evaluatedNeighborhoods = [],
 }) => {
   const [inputText, setInputText] = useState<string>('');
   const [selectedHoodName, setSelectedHoodName] = useState<string>(initialHoodName);
   const [quotaRemaining, setQuotaRemaining] = useState<number>(FREE_QUOTA_MAX);
   const [diagnosis, setDiagnosis] = useState<ListingDiagnosisResult | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [hoodMismatchWarningFa, setHoodMismatchWarningFa] = useState<string | null>(null);
+  const [disclaimerFa, setDisclaimerFa] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setQuotaRemaining(getRemainingVerificationQuota());
-      if (!inputText && initialHoodName) setSelectedHoodName(initialHoodName);
+      if (initialHoodName) setSelectedHoodName(initialHoodName);
+      if (initialListingText) setInputText(initialListingText);
     }
-  }, [isOpen, initialHoodName]);
+  }, [isOpen, initialHoodName, initialListingText]);
 
   if (!isOpen) return null;
 
-  const handleScan = () => {
-    if (!inputText.trim()) return;
-    const parsed = parseListingNarrativeText(inputText, selectedHoodName);
-    const targetHood = evaluatedNeighborhoods.find((h) => h.name === selectedHoodName) || INITIAL_NEIGHBORHOODS.find((h) => h.name === selectedHoodName);
-    const result = diagnoseListingDeal(parsed, cityKey, targetHood?.id);
-    setDiagnosis(result);
-    setQuotaRemaining(consumeVerificationQuota());
+  const handleScan = async () => {
+    if (!inputText.trim() || scanning) return;
+    setScanning(true);
+    setScanError(null);
+    setHoodMismatchWarningFa(null);
+    setDisclaimerFa(null);
+    setDiagnosis(null);
+    try {
+      const result = await buildListingVerdict({
+        city: cityKey,
+        hoodName: selectedHoodName,
+        listingText: inputText,
+        mode: 'buy',
+      });
+      if (result.status === 'error') {
+        setScanError(result.messageFa);
+        return;
+      }
+      setDiagnosis(result.diagnosis);
+      setHoodMismatchWarningFa(result.hoodMismatchWarningFa);
+      setDisclaimerFa(result.disclaimerFa);
+      setQuotaRemaining(consumeVerificationQuota());
+    } catch {
+      setScanError('بررسی آگهی انجام نشد. اتصال یا دادهٔ زنده را دوباره امتحان کنید.');
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleCopyReport = () => {
@@ -140,17 +165,23 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
 
           <button
             type="button"
-            onClick={handleScan}
-            disabled={!inputText.trim()}
+            onClick={() => void handleScan()}
+            disabled={!inputText.trim() || scanning}
             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-700 hover:to-indigo-700 text-white font-extrabold flex items-center justify-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50 transition"
           >
             <Sparkles className="w-4 h-4" />
-            <span>اسکن فوری آگهی و سنجش حباب قیمت</span>
+            <span>{scanning ? 'در حال خواندن آگهی و نمونه‌های زنده…' : 'اسکن فوری آگهی و سنجش حباب قیمت'}</span>
           </button>
+          {scanError && <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">{scanError}</p>}
 
           {/* Diagnostic Result */}
           {diagnosis && (
             <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              {hoodMismatchWarningFa && (
+                <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-2">
+                  {hoodMismatchWarningFa}
+                </p>
+              )}
               {/* Verdict Banner */}
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
                 diagnosis.dealVerdict === 'FAIR_OPPORTUNITY'
@@ -171,7 +202,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
               {/* 3 Metric Cards */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">کف معامله منصفانه:</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">کف سناریوی مذاکره (غیرثبتی):</span>
                   <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs">
                     {toPersianDigits(diagnosis.fairDealPricePerSqm)} م/متر
                   </span>
@@ -221,6 +252,9 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                   {diagnosis.negotiationScript.closingMeetingTactic}
                 </div>
               </div>
+              {disclaimerFa && (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{disclaimerFa}</p>
+              )}
             </div>
           )}
         </div>

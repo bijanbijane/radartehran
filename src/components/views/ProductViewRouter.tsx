@@ -48,6 +48,7 @@ export interface ProductViewRouterProps {
 
 export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const { primaryView, ui, evaluatedNeighborhoods, selectedHood, handleSelectNeighborhood } = p;
+  const homeContentFirst = primaryView === 'home';
   const [splitMapMode, setSplitMapMode] = React.useState<boolean>(true);
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
@@ -121,7 +122,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
           </button>
         </div>
       </div>
-      <div className="max-w-6xl mx-auto flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar pt-0.5 text-[11px]">
+      <div className={`max-w-6xl mx-auto items-center justify-between gap-1.5 overflow-x-auto no-scrollbar pt-0.5 text-[11px] ${homeContentFirst ? 'hidden lg:flex' : 'flex'}`}>
         <div role="group" aria-label={isEn ? 'Map lens' : 'لنز نمایش نقشه'} className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg shrink-0">
           {[
             { id: 'budget' as const, label: isEn ? 'Budget Lens' : 'لنز بودجه' },
@@ -203,6 +204,9 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         onOpenReverseBudget={() => p.setShowReverseBudgetModal(true)} onOpenHedonic={() => ui.setShowHedonicModal(true)}
         onOpenCompare={() => ui.setShowCompareModal(true)} onOpenSmartSuggest={() => ui.setShowSmartSuggestModal(true)}
         onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}
+        onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)}
+        initialListingVerdictText={ui.homeVerdictPrefill}
+        activeCity={p.activeCity}
         mode={p.mode} setMode={p.setMode} targetSqm={p.targetSqm} totalRahnEquivalent={p.totalRahnEquivalent}
         buyTotalBudget={p.buyTotalBudget} counts={p.counts} featureFlags={p.featureFlags}
       />
@@ -276,8 +280,14 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   }
 
   if (!content) return null;
+  const splitShell = splitMapMode
+    ? homeContentFirst
+      ? 'max-lg:mt-0 max-lg:h-full max-lg:rounded-none max-lg:border-t-0 max-lg:bg-[#F8F9FA] dark:max-lg:bg-slate-950 max-lg:backdrop-blur-none lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 lg:bg-[#F8F9FA]/95 dark:lg:bg-slate-950/95 lg:backdrop-blur-xl w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]'
+      : 'mt-[136px] h-[calc(100%-136px)] rounded-t-3xl border-t lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]'
+    : 'h-full w-full lg:w-[calc(100%-220px)]';
+  const shellBg = homeContentFirst && splitMapMode ? '' : 'bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl';
   return (
-    <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitMapMode ? 'mt-[136px] h-[calc(100%-136px)] rounded-t-3xl border-t lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0 w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%]' : 'h-full w-full lg:w-[calc(100%-220px)]'}`}>
+    <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 ${shellBg} lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitShell}`}>
       {mapAxisBar}
       <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>
         {content}

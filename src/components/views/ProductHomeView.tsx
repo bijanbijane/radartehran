@@ -10,6 +10,9 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
+import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_ASKING_MEDIAN_TODAY_FA } from '../../utils/epistemicUiLabels';
+import { ListingVerdictHero } from '../listing/ListingVerdictHero';
+import type { CityId } from '../../types/models';
 
 export interface ProductHomeViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
@@ -17,6 +20,9 @@ export interface ProductHomeViewProps {
   onNavigateView: (view: PrimaryViewId) => void; onOpenBudgetFilter: () => void;
   onOpenReverseBudget: () => void; onOpenHedonic: () => void; onOpenCompare: () => void;
   onOpenSmartSuggest: () => void; onOpenSuperModule: (tab: any) => void;
+  onOpenListingVerifier?: () => void;
+  initialListingVerdictText?: string;
+  activeCity?: CityId;
   mode: 'rent' | 'buy'; setMode: (m: 'rent' | 'buy') => void; targetSqm: number;
   totalRahnEquivalent: number; buyTotalBudget: number; counts: { green: number; yellow: number; red: number };
   featureFlags: FeatureFlags;
@@ -55,7 +61,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const pillars = [
     { id: 'map' as const, num: isEn ? '01' : '۰۱', title: isEn ? 'Interactive GIS Map Atlas' : 'اطلس مکانی و نقشه زنده GIS', sub: isEn ? 'Layered map of metro lines, traffic zones, and live neighborhood price heatmap' : 'محور اصلی رادار: نقشه لایه‌ای معابر، مترو، طرح ترافیک و هیت‌مپ قیمت', act: () => p.onNavigateView('map'), meta: isEn ? 'Primary Spatial Canvas' : 'محور اصلی سامانه' },
     { id: 'discover' as const, num: isEn ? '02' : '۰۲', title: isEn ? 'Neighborhood Explorer' : 'کشف محله‌ها', sub: isEn ? 'Filter neighborhoods by budget, air quality, metro access, and commute hubs' : 'بررسی محلات با فیلتر بودجه، ترافیک، کیفیت هوا و قطب‌های اداری', act: () => p.onNavigateView('discover'), meta: isEn ? `${p.counts.green} Within Budget` : `${toPersianNum(p.counts.green)} محله متناسب` },
-    { id: 'intelligence' as const, num: isEn ? '03' : '۰۳', title: isEn ? 'Market Pulse & Intelligence' : 'نبض و هوش بازار', sub: isEn ? 'Bubble detection, v6.4 negotiation scenarios, and undervalued areas' : 'حباب‌سنجی، سناریوی فرضی مذاکره v6.4 و فرصت‌های خرید', act: () => p.onNavigateView('intelligence'), meta: isEn ? `${bargainsCount} Under-Market Deals` : `${toPersianNum(bargainsCount)} فایل زیر قیمت منصفانه` },
+    { id: 'intelligence' as const, num: isEn ? '03' : '۰۳', title: isEn ? 'Market Pulse & Intelligence' : 'نبض و هوش بازار', sub: isEn ? `Bubble detection, ${LABEL_ASKING_MEDIAN_TODAY_FA}, and undervalued areas` : `حباب‌سنجی، ${LABEL_ASKING_MEDIAN_TODAY_FA} و ${LABEL_HEURISTIC_NEGOTIATION_V64_FA}`, act: () => p.onNavigateView('intelligence'), meta: isEn ? `${bargainsCount} Under-Market Deals` : `${toPersianNum(bargainsCount)} فایل زیر قیمت منصفانه` },
     { id: 'tools' as const, num: isEn ? '04' : '۰۴', title: isEn ? 'Real Estate Calculators' : 'جعبه‌ابزار معاملاتی', sub: isEn ? 'Hedonic valuation, mortgage simulator, 1405 tax, commission, and legal audit' : 'ارزش‌گذاری هدونیک، وام مسکن، مالیات ۱۴۰۵، ارث، کمیسیون و چک‌لیست بازدید', act: () => p.onNavigateView('tools'), meta: isEn ? '22 Specialized Tools' : '۲۲ ابزار تخصصی و نظریه تصمیم' },
   ];
 
@@ -86,6 +92,13 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             </div>
           </div>
         </div>
+        <ListingVerdictHero
+          evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+          cityKey={p.activeCity || 'tehran'}
+          defaultHoodName={p.selectedHood?.name}
+          initialListingText={p.initialListingVerdictText}
+          onOpenFullModal={p.onOpenListingVerifier}
+        />
 
         {/* 2. Unified Interactive Search & Budget Action Bar */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-4 shadow-xs space-y-3">

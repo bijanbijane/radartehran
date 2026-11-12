@@ -168,7 +168,11 @@ export function RadarWorkspaceShell() {
       <ProductGlobalHeader
         primaryView={ui.primaryView} onSelectPrimaryView={(v) => { ui.setMobileSheetOpen(false); ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown(false); ui.setPrimaryView(v); }} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
         appleTheme={appleTheme} onToggleAppleTheme={toggleAppleTheme} onOpenBudgetFilter={() => { ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); ui.setMobileFilterOpen((p) => !p); }}
-        onOpenReverseBudget={() => { ui.setMobileFilterOpen(false); ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); setShowReverseBudgetModal(true); }} onOpenSearch={() => { ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }} onOpenSecurityAdmin={isVerifiedAdmin ? () => { ui.setPrimaryView('admin'); ui.setMobileSheetOpen(false); } : undefined} searchQuery={ui.searchQuery}
+        onOpenReverseBudget={() => { ui.setMobileFilterOpen(false); ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); setShowReverseBudgetModal(true); }}
+        onOpenSearch={() => { ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }}
+        onOpenSecurityAdmin={isVerifiedAdmin ? () => { ui.setPrimaryView('admin'); ui.setMobileSheetOpen(false); } : undefined}
+        onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)}
+        searchQuery={ui.searchQuery}
       />
       <div role="region" aria-label="نقشه تعاملی محله‌ها" className="fixed inset-0 top-16 z-0">
         <div ref={mapContainerRef} className="w-full h-full bg-[#E5E5EA]" />
