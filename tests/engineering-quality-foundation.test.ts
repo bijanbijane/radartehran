@@ -2260,6 +2260,22 @@ async function runSuite(): Promise<void> {
       const src = readComp(`src/components${key.startsWith('Product') ? '/views/' : '/'}${key}`);
       assert.ok(src.includes('EpistemicMarketDisclaimer'), `${key} must render EpistemicMarketDisclaimer for deal pricing context`);
     }
+    const emptySampleCalls: string[] = [];
+    const scanAgg = (dir: string) => {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, ent.name);
+        if (ent.isDirectory()) scanAgg(p);
+        else if (ent.name.endsWith('.tsx') || ent.name.endsWith('.ts')) {
+          const rel = path.relative(process.cwd(), p);
+          const src = fs.readFileSync(p, 'utf8');
+          if (/aggregateNeighborhoodMarketMetrics\([^)]*,\s*\[\]/.test(src)) {
+            emptySampleCalls.push(rel);
+          }
+        }
+      }
+    };
+    scanAgg(path.join(process.cwd(), 'src/components'));
+    assert.equal(emptySampleCalls.length, 0, `UI must not call aggregateNeighborhoodMarketMetrics with [] samples:\n${emptySampleCalls.join('\n')}`);
   });
 
   console.log(`\n🎉 ALL ${passed} ENGINEERING QUALITY & CONTRACT FOUNDATION TESTS PASSED!\n`);
