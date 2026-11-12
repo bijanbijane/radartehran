@@ -281,10 +281,11 @@ assert.ok(aggFrozen.unclampedAveragePerSqm > aggFrozen.hedonicAdjustedPerSqm, 'U
 // 9. WS-A1-R Section 8.3: Cross-View Sample Consistency & Product Language Verification
 const punakHood = INITIAL_NEIGHBORHOODS.find((h) => h.id === 5)!;
 const punakSamples = buildNeighborhoodListingSamples(punakHood);
-assert.equal(punakSamples.length, 0, 'Seed catalog bargains are excluded until live-divar ids exist');
+assert.equal(punakSamples.length, 1, 'Punak seed catalog exposes one buy listing when no live-divar scrape');
 const punakAgg = aggregateNeighborhoodMarketMetrics(punakHood.id, punakHood.name, punakHood.buyPerSqm, punakSamples);
 const punakUiAgg = aggregateMarketMetricsForHood(punakHood);
 assert.equal(punakUiAgg.observedSampleCount, punakAgg.observedSampleCount, 'aggregateMarketMetricsForHood matches canonical sample path observedSampleCount');
+assert.equal(punakAgg.observedSampleCount, punakSamples.length, 'Punak UI path observed count follows builder length');
 
 const punakLiveFixture = {
   ...punakHood,

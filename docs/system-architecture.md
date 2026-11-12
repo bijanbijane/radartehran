@@ -94,7 +94,7 @@ Database ID: `ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a` (Project: `gen-lan
 
 Neighborhood deal/spread numbers shown in map-adjacent UI (Compare, Inspector market tab, Intelligence, Bargains) must share one sampling path:
 
-- **Canonical samples**: `buildNeighborhoodListingSamples(hood)` inside `src/data/realMarketPriceAggregator.ts` (live `hood.bargains` when present).
+- **Canonical samples**: `buildNeighborhoodListingSamples(hood)` in `src/data/neighborhoodListingSamples.ts` — prefers `live-divar-*` scrape rows; else buy-type seed catalog bargains (tagged `[آگهی کاتالوگ محله]`).
 - **UI entry point**: `aggregateHoodMarketForUi` / `aggregateMarketMetricsForHood` in `src/data/aggregateHoodMarketForUi.ts` — UI must not call `aggregateNeighborhoodMarketMetrics(..., [])`.
 - **Labels**: `displayDealLabelFa`, `isDealPriceDisplayableAsFact`, and `FORBIDDEN_DEAL_FACT_LABELS` in `src/utils/epistemicUiLabels.ts` (forbidden: implying verified closing price without `verifiedTransactionCount > 0`).
 - **Banner**: `EpistemicMarketDisclaimer` when deal price is heuristic or lacks verified transactions.
