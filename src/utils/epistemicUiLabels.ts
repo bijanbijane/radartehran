@@ -70,6 +70,23 @@ function formatFetchedAtFa(iso: string): string {
   }
 }
 
+export function dealSpreadRowLabelFa(areaUnit: 'sqm' | 'sqft'): string {
+  return `${LABEL_HEURISTIC_NEGOTIATION_V64_FA} (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`;
+}
+
+export function dealSpreadRowLabelEn(areaUnit: 'sqm' | 'sqft'): string {
+  return `Hypothetical negotiation (v6.4 · not registry) (${areaUnit === 'sqft' ? 'ft²' : 'm²'})`;
+}
+
+export function dealFairTotalLabelFa(): string {
+  return 'سناریوی فرضی پای مذاکره (غیرثبتی)';
+}
+
+/** Replace forbidden «معامله v6.4» inline hints in lists. */
+export function inlineHeuristicDealHintFa(): string {
+  return LABEL_HEURISTIC_V64_SHORT_FA;
+}
+
 export function buildDivarPostUrl(token: string): string {
   const safe = (token || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 48);
   return safe ? `https://divar.ir/v/${safe}` : 'https://divar.ir/';

@@ -165,7 +165,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
             <strong className="font-black text-emerald-700 dark:text-emerald-300 block">محله {p.selectedHood.name} {p.selectedHood.zone ? `· ${p.selectedHood.zone}` : ''}</strong>
           )}
           <div className="flex items-center justify-between text-[11px] tabular-nums pt-0.5">
-            <span className="text-slate-600 dark:text-slate-300">اعلامی: <strong>{toPersianNum(unitBuy)} م</strong> · معامله v6.4: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(unitDeal)} م{dealFx}</strong></span>
+            <span className="text-slate-600 dark:text-slate-300">اعلامی: <strong>{toPersianNum(unitBuy)} م</strong> · سناریو v6.4 (غیرثبتی): <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(unitDeal)} م{dealFx}</strong></span>
             <button type="button" onClick={p.onOpenCompare} className="text-[10.5px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">مقایسه دو محله</button>
           </div>
         </div>

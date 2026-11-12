@@ -55,7 +55,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const pillars = [
     { id: 'map' as const, num: isEn ? '01' : '۰۱', title: isEn ? 'Interactive GIS Map Atlas' : 'اطلس مکانی و نقشه زنده GIS', sub: isEn ? 'Layered map of metro lines, traffic zones, and live neighborhood price heatmap' : 'محور اصلی رادار: نقشه لایه‌ای معابر، مترو، طرح ترافیک و هیت‌مپ قیمت', act: () => p.onNavigateView('map'), meta: isEn ? 'Primary Spatial Canvas' : 'محور اصلی سامانه' },
     { id: 'discover' as const, num: isEn ? '02' : '۰۲', title: isEn ? 'Neighborhood Explorer' : 'کشف محله‌ها', sub: isEn ? 'Filter neighborhoods by budget, air quality, metro access, and commute hubs' : 'بررسی محلات با فیلتر بودجه، ترافیک، کیفیت هوا و قطب‌های اداری', act: () => p.onNavigateView('discover'), meta: isEn ? `${p.counts.green} Within Budget` : `${toPersianNum(p.counts.green)} محله متناسب` },
-    { id: 'intelligence' as const, num: isEn ? '03' : '۰۳', title: isEn ? 'Market Pulse & Intelligence' : 'نبض و هوش بازار', sub: isEn ? 'Bubble detection, v6.4 estimated closing prices, and undervalued areas' : 'حباب‌سنجی، قیمت قطعی پای معامله v6.4 و فرصت‌های خرید', act: () => p.onNavigateView('intelligence'), meta: isEn ? `${bargainsCount} Under-Market Deals` : `${toPersianNum(bargainsCount)} فایل زیر قیمت منصفانه` },
+    { id: 'intelligence' as const, num: isEn ? '03' : '۰۳', title: isEn ? 'Market Pulse & Intelligence' : 'نبض و هوش بازار', sub: isEn ? 'Bubble detection, v6.4 negotiation scenarios, and undervalued areas' : 'حباب‌سنجی، سناریوی فرضی مذاکره v6.4 و فرصت‌های خرید', act: () => p.onNavigateView('intelligence'), meta: isEn ? `${bargainsCount} Under-Market Deals` : `${toPersianNum(bargainsCount)} فایل زیر قیمت منصفانه` },
     { id: 'tools' as const, num: isEn ? '04' : '۰۴', title: isEn ? 'Real Estate Calculators' : 'جعبه‌ابزار معاملاتی', sub: isEn ? 'Hedonic valuation, mortgage simulator, 1405 tax, commission, and legal audit' : 'ارزش‌گذاری هدونیک، وام مسکن، مالیات ۱۴۰۵، ارث، کمیسیون و چک‌لیست بازدید', act: () => p.onNavigateView('tools'), meta: isEn ? '22 Specialized Tools' : '۲۲ ابزار تخصصی و نظریه تصمیم' },
   ];
 
@@ -212,7 +212,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                     <h3 className="text-lg font-black text-slate-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">محله {hood.name}</h3>
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
                       <div className="flex items-baseline justify-between text-xs">
-                        <span className="text-slate-500">{p.mode === 'buy' ? 'اعلامی / معامله v6.4:' : `رهن کامل (${formatAreaShort(80, areaUnit)}):`}</span>
+                        <span className="text-slate-500">{p.mode === 'buy' ? 'اعلامی / سناریو v6.4 (غیرثبتی):' : `رهن کامل (${formatAreaShort(80, areaUnit)}):`}</span>
                         <span className="text-base font-black text-slate-900 dark:text-white tabular-nums">
                           {p.mode === 'buy' ? (
                             <>{toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span></>
@@ -221,7 +221,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                         </span>
                       </div>
                       <div className="flex items-baseline justify-between text-xs text-slate-500 tabular-nums">
-                        <span>{p.mode === 'buy' ? `رهن کامل (${formatAreaShort(80, areaUnit)}): ${toPersianNum(hood.rahn80m)} م.ت` : `معامله v6.4: متری ${toPersianNum(unitDeal)} م.ت`}</span>
+                        <span>{p.mode === 'buy' ? `رهن کامل (${formatAreaShort(80, areaUnit)}): ${toPersianNum(hood.rahn80m)} م.ت` : `سناریو v6.4 (غیرثبتی): متری ${toPersianNum(unitDeal)} م.ت`}</span>
                         <span>هوا: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(hood.air)}/۱۰</strong></span>
                       </div>
                     </div>

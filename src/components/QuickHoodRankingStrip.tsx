@@ -80,13 +80,13 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
     const unitDeal = Number(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit).toFixed(1));
     const priceTag = mode === 'rent'
       ? `رهن (${formatAreaShort(80, areaUnit)}) ${toPersianNum(hood.rahn80m)} م · اجاره ${toPersianNum(Math.round(hood.rahn80m * 0.03))} م${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(hood.rahn80m, intlCurrency, radarLocale)})` : ''}`
-      : `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ${toPersianNum(unitBuy)} م (معامله v6.4: ${toPersianNum(unitDeal)} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((hood.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)})` : ''}`;
+      : `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ${toPersianNum(unitBuy)} م (سناریو v6.4 (غیرثبتی): ${toPersianNum(unitDeal)} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((hood.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)})` : ''}`;
     if (criterion === 'nearest_work_hub' && hood.distKm !== null) return `فاصله ${toPersianNum(hood.distKm)} کم${areaUnit === 'sqft' ? ` (${toPersianNum((hood.distKm * 0.621371).toFixed(1))} mi)` : ''} · ${priceTag}`;
     if (criterion === 'clean_air') return `هوا ${toPersianNum(hood.air)}/۱۰ · ${priceTag}`;
     if (criterion === 'best_metro') return `مترو ${toPersianNum(hood.metro)}/۱۰ · ${priceTag}`;
     if (criterion === 'undervalued') {
       const g = hood.marketReport?.hoodGrowth6mPercent ?? 12;
-      return `رشد ۶م ${g > 0 ? '+' : ''}${toPersianNum(g)}٪ · ${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(unitBuy)}م (معامله: ${toPersianNum(unitDeal)} م)${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)})` : ''}`;
+      return `رشد ۶م ${g > 0 ? '+' : ''}${toPersianNum(g)}٪ · ${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(unitBuy)}م (سناریو مذاکره: ${toPersianNum(unitDeal)} م)${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)})` : ''}`;
     }
     return priceTag;
   };
@@ -135,7 +135,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
             const fx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(mode === 'rent' ? h.rahn80m : uBuy, intlCurrency, radarLocale)}` : '';
             return (
               <option key={h.id} value={h.id}>
-                {toPersianNum(i + 1)}. {h.name} — {h.zone} ({mode === 'rent' ? `رهن ${formatAreaShort(80, areaUnit)} ${toPersianNum(h.rahn80m)} م` : `${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(uBuy)} م · معامله: ${toPersianNum(uDeal)} م`}{fx})
+                {toPersianNum(i + 1)}. {h.name} — {h.zone} ({mode === 'rent' ? `رهن ${formatAreaShort(80, areaUnit)} ${toPersianNum(h.rahn80m)} م` : `${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(uBuy)} م · سناریو مذاکره: ${toPersianNum(uDeal)} م`}{fx})
               </option>
             );
           })}

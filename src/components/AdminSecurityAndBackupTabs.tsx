@@ -248,7 +248,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
             <div className="font-extrabold text-slate-900 dark:text-slate-100">خلاصه موجودیت‌های فعلی آماده پشتیبان‌گیری ({formatAreaShort(80, areaUnit)}):</div>
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
-                کل محله‌ها: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum(neighborhoods.length)} محله</strong> ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(avgUnitBuy)} م · معیار {formatAreaShort(80, areaUnit)} · معامله v6.4: {toPersianNum(avgUnitDeal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(avgUnitBuy, intlCurrency, locale)}` : ''})
+                کل محله‌ها: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum(neighborhoods.length)} محله</strong> ({formatAreaUnitLabel(areaUnit)}: {toPersianNum(avgUnitBuy)} م · معیار {formatAreaShort(80, areaUnit)} · سناریو v6.4 (غیرثبتی): {toPersianNum(avgUnitDeal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(avgUnitBuy, intlCurrency, locale)}` : ''})
               </div>
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">فایل‌های شکار طلایی: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(totalLiveBargainsCount)} فایل</strong></div>
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">درخواست‌های CRM املاک: <strong className="text-slate-900 dark:text-slate-100">{toPersianNum((sponsorRequests || []).length)} مورد</strong></div>

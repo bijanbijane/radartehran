@@ -9,7 +9,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { scaleLinear } from 'd3-scale';
 import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import {
   convertPricePerSqmToUnit,
   formatAreaShort,
@@ -129,7 +129,7 @@ export function renderPriceDensityHeatmapOnLeaflet(
     const baseRadius = Math.max(650, (hood.radius || 950) * (0.85 + style.normalizedIntensity * 0.55));
     const safeName = escapeHtmlAttr(hood.name);
     const unitPrice = convertPricePerSqmToUnit(style.pricePerSqm, areaUnit);
-    const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+    const unitDeal = convertPricePerSqmToUnit(aggregateMarketMetricsForHood(hood).estimatedDealPricePerSqm, areaUnit);
     const monthlyRent80mMillions = Math.round(hood.rahn80m * 0.03);
     const unitLabel = escapeHtmlAttr(`${mode === 'rent' ? 'رهن هر' : 'خرید هر'} ${formatAreaUnitLabel(areaUnit)}`);
     const safeFxSuffix =
@@ -137,7 +137,7 @@ export function renderPriceDensityHeatmapOnLeaflet(
         ? escapeHtmlAttr(` (${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, locale)})`)
         : '';
     const safeDealRow = mode === 'buy'
-      ? `<br/><span>🤝 معامله v6.4: <strong>${toPersianNum(unitDeal)} میلیون تومان</strong></span>`
+      ? `<br/><span>🤝 سناریو v6.4 (غیرثبتی): <strong>${toPersianNum(unitDeal)} میلیون تومان</strong></span>`
       : '';
 
     // Outer diffused thermal halo

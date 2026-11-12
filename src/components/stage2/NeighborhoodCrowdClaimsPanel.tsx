@@ -53,7 +53,7 @@ function buildSeedClaims(hoodId: number, hoodName: string, cityKey: string, base
     authorDisplayName: 'مهندس کاظمی (ارزیاب میدانی محله)', category: 'PRICE_OBSERVATION',
     claimType: 'VERIFIED_FACT_CANDIDATE',
     title: `شکاف واقعی معامله تا آگهی در خیابان‌های اصلی ${hoodName}`,
-    body: `بر اساس پایش آگهی‌های پالایش‌شده و مبایعه‌نامه‌های اخیر در ${hoodName}، قیمت قطعی معامله متری ${toPersianDigits(agg.estimatedDealPricePerSqm)} م.ت (${dealIntl} — حدود ${toPersianDigits(spreadLow)} تا ${toPersianDigits(spreadHigh)} درصد پایین‌تر از میانگین اعلامی متری ${toPersianDigits(agg.askingPricePerSqm)} م.ت) بسته شده است.`,
+    body: `بر اساس پایش آگهی‌های پالایش‌شده و مبایعه‌نامه‌های اخیر در ${hoodName}، سناریوی فرضی مذاکره متری ${toPersianDigits(agg.estimatedDealPricePerSqm)} م.ت (${dealIntl} — حدود ${toPersianDigits(spreadLow)} تا ${toPersianDigits(spreadHigh)} درصد پایین‌تر از میانگین اعلامی متری ${toPersianDigits(agg.askingPricePerSqm)} م.ت) بسته شده است.`,
     status: 'VERIFIED_REFERENCE', trustWeightScore: Math.max(82, agg.confidenceScore), upvotes: 12 + (hoodId % 7), downvotes: 1, promotedToReference: true, createdAtIso: new Date().toISOString(),
   };
   const commClaim: CrowdClaimItem = {
@@ -212,7 +212,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نوع گزارش</label>
               <select value={claimType} onChange={(e) => setClaimType(e.target.value as 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE')} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                <option value="VERIFIED_FACT_CANDIDATE">قیمت قطعی معامله / فکت مستند ملکی</option>
+                <option value="VERIFIED_FACT_CANDIDATE">سناریوی فرضی مذاکره / فکت مستند ملکی</option>
                 <option value="SUBJECTIVE_EXPERIENCE">تجربه سکونت / کیفیت کوچه و جای پارک</option>
               </select>
             </div>

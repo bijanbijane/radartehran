@@ -7,7 +7,7 @@
 import React, { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import { parseNaturalPersianHousingQuery } from '../utils/aiModelRegistryAndGateway';
 import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
@@ -125,7 +125,7 @@ export function SmartNaturalSearchMatchesSection({
                 <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
                   {mode === 'rent'
                     ? `رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م (اجاره: ${toPersianNum(monthlyRent80mMillions)} م)${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(n.rahn80m, intlCurrency, locale)})` : ''}`
-                    : `${areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م (معامله v6.4: ${toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit), intlCurrency, locale)})` : ''}`}
+                    : `${areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م (سناریو v6.4 (غیرثبتی): ${toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(n).estimatedDealPricePerSqm, areaUnit))} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit), intlCurrency, locale)})` : ''}`}
                 </span>
               </div>
             </button>

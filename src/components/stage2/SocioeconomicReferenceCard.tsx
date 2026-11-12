@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TrendingUp, Users, Compass, Building2, BookOpen, ArrowLeftRight, Layers, ShieldCheck } from 'lucide-react';
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
-import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { aggregateMarketMetricsForHood } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface SocioeconomicRollupView {
@@ -56,7 +56,7 @@ function buildFallbackRollup(
   const cityConfig = MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
   const allHoods = cityConfig?.neighborhoods || INITIAL_NEIGHBORHOODS;
   const resolvedHood = hood ?? allHoods.find((h) => h.id === hoodId) ?? allHoods[0] ?? INITIAL_NEIGHBORHOODS[0];
-  const agg = aggregateNeighborhoodMarketMetrics(hoodId, hoodName, ask, buildNeighborhoodListingSamples({ ...resolvedHood, buyPerSqm: ask }));
+  const agg = aggregateMarketMetricsForHood({ ...resolvedHood, id: hoodId, name: hoodName, buyPerSqm: ask }, ask);
   const fair = agg.estimatedDealPricePerSqm;
   const years = Math.round(((fair * 85) / 456) * 10) / 10;
   const burden = Math.min(95, Math.max(18, Math.round((years / 22) * 100)));
@@ -96,7 +96,7 @@ function buildFallbackRollup(
     ],
     epistemicConfidence: agg.confidenceScore,
     academicCitationTag: `RADAR-SE-${cityKey.toUpperCase()}-H${hoodId}`,
-    policySummary: `محله ${hoodName} با میانگین قیمت قطعی معامله ${toPersianDigits(fair)} م.ت/متر (${formatMillionTomanAsIntlCurrency(fair, intlCurrency, 'fa')})، نیازمند حدود ${toPersianDigits(years)} سال پس‌انداز کامل خانوار برای خرید واحد ۸۵ متری است.`,
+    policySummary: `محله ${hoodName} با میانگین سناریوی فرضی مذاکره ${toPersianDigits(fair)} م.ت/متر (${formatMillionTomanAsIntlCurrency(fair, intlCurrency, 'fa')})، نیازمند حدود ${toPersianDigits(years)} سال پس‌انداز کامل خانوار برای خرید واحد ۸۵ متری است.`,
     provenanceSource: 'LOCAL_BASELINE',
   };
 }
@@ -199,7 +199,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">کف قیمت معامله قطعی:</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">کف سناریوی مذاکره (غیرثبتی):</span>
             <span className="font-extrabold text-slate-800 dark:text-slate-100">{toPersianDigits(rollup.estimatedFairDealMillionToman)} م.ت/متر</span>
           </div>
           <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/40">

@@ -135,7 +135,7 @@ export function BudgetBridgeAdvisorCard({
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300">
               {rawAffordableSqm >= 35 ? (
-                <>با بودجه فعلی می‌توانید در {selectedHood.name} واحد <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatAreaShort(affordableSqm, areaUnit)}</strong>{mode === 'buy' ? <> (با تخمین قطعی معامله: <strong className="text-teal-700 font-black">{formatAreaShort(dealAffordableSqm, areaUnit)}</strong>)</> : null} تهیه کنید.</>
+                <>با بودجه فعلی می‌توانید در {selectedHood.name} واحد <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatAreaShort(affordableSqm, areaUnit)}</strong>{mode === 'buy' ? <> (با سناریوی فرضی مذاکره (غیرثبتی): <strong className="text-teal-700 font-black">{formatAreaShort(dealAffordableSqm, areaUnit)}</strong>)</> : null} تهیه کنید.</>
               ) : (
                 <>بودجه فعلی برای حداقل متراژ مسکونی استاندارد ({formatAreaShort(35, areaUnit)}) در این محله کافی نیست؛ از اهرم‌های زیر کمک بگیرید.</>
               )}

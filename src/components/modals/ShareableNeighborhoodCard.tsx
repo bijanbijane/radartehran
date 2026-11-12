@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { formatMillionToVerbalPersian, formatJalaliMonthYear } from '../../utils/persianFinancials';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { aggregateNeighborhoodMarketMetrics } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood, aggregateMarketMetricsForScalars } from '../../data/realMarketPriceAggregator';
 
 export interface ShareableCardProps {
   hoodNameFa: string;
@@ -54,7 +54,7 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
       const fmt = new Intl.NumberFormat('fa-IR');
       const unitAsk = convertPricePerSqmToUnit(avgPricePerSqmMillion, areaUnit);
       const unitDeal = convertPricePerSqmToUnit(
-        aggregateNeighborhoodMarketMetrics(districtNumber || 1, hoodNameFa, avgPricePerSqmMillion, []).estimatedDealPricePerSqm,
+        aggregateMarketMetricsForScalars(districtNumber || 1, hoodNameFa, avgPricePerSqmMillion).estimatedDealPricePerSqm,
         areaUnit
       );
 
@@ -78,7 +78,7 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
 
       ctx.fillStyle = '#10b981';
       ctx.font = 'bold 64px Vazirmatn, Tahoma, sans-serif';
-      ctx.fillText(`${fmt.format(unitAsk)} میلیون تومان (معامله v6.4: ${fmt.format(unitDeal)} م)`, 910, 560);
+      ctx.fillText(`${fmt.format(unitAsk)} میلیون تومان (سناریو v6.4 (غیرثبتی): ${fmt.format(unitDeal)} م)`, 910, 560);
 
       ctx.fillStyle = '#e2e8f0';
       ctx.font = '34px Vazirmatn, Tahoma, sans-serif';

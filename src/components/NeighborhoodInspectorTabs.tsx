@@ -39,7 +39,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
         <div className="apple-grouped-card dark:bg-slate-900 ring-1 ring-slate-900/5 dark:ring-white/10 shadow-xs p-3.5 space-y-2.5" data-testid="smart-payment-structurer-card">
           <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2">
             <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5"><Calculator className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /><span>مهندسی پرداخت ۴ مرحله‌ای پای قرارداد ({formatAreaShort(targetSqm, areaUnit)})</span></span>
-            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">ثمن معامله v6.4: {toPersianNum((realDealTotalM / 1000).toFixed(2))} میلیارد</span>
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">ثمن سناریو v6.4 (غیرثبتی): {toPersianNum((realDealTotalM / 1000).toFixed(2))} میلیارد</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px] tabular-nums">
             <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 ring-1 ring-slate-900/5 dark:ring-white/5"><span className="text-slate-500 dark:text-slate-400 block text-[10px]">۱. نقد پای امضا (کف ۵۵٪):</span><strong className="text-slate-900 dark:text-white font-black text-xs">{toPersianNum((minSigningCashM / 1000).toFixed(2))} میلیارد</strong></div>

@@ -65,7 +65,7 @@ export function SearchDropdownMenu({
     const unitBuy = Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1));
     const hoodSamples = buildNeighborhoodListingSamples({ id: n.id ?? 1, name: n.name ?? '', buyPerSqm: n.buyPerSqm });
     const unitDeal = Number(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id ?? 1, n.name ?? '', n.buyPerSqm, hoodSamples).estimatedDealPricePerSqm, areaUnit).toFixed(1));
-    return `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ${toPersianNum(unitBuy)} م (معامله v6.4: ${toPersianNum(unitDeal)} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)} · کل: ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, radarLocale)})` : ''}${distTag}`;
+    return `${areaUnit === 'sqft' ? 'هر ft²' : 'متری'} ${toPersianNum(unitBuy)} م (سناریو v6.4 (غیرثبتی): ${toPersianNum(unitDeal)} م) · کل ${formatAreaShort(80, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)} · کل: ${formatMillionTomanAsIntlCurrency(n.buyPerSqm * 80, intlCurrency, radarLocale)})` : ''}${distTag}`;
   };
   useEffect(() => { setHighlightedIndex(0); }, [searchQuery]);
   const allNationwideHoods = useMemo(() => getAllMultiCityNeighborhoods(), []);

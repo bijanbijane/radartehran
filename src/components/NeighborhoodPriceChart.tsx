@@ -133,7 +133,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
               </div>
             </div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tabular-nums">
-              معامله v6.4: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(uDealCur)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealCur, intlCurrency, radarLocale)})` : ''}</strong> · کل ۸۰م: {toPersianNum(hoodTotal80m)} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م · بازده اجاره: {toPersianNum((((selectedHood.rahn80m * 0.36) / Math.max(1, selectedHood.buyPerSqm * 80)) * 100).toFixed(1))}٪
+              سناریو v6.4 (غیرثبتی): <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(uDealCur)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDealCur, intlCurrency, radarLocale)})` : ''}</strong> · کل ۸۰م: {toPersianNum(hoodTotal80m)} میلیارد · اجاره: {toPersianNum(monthlyRent80mMillions)} م · بازده اجاره: {toPersianNum((((selectedHood.rahn80m * 0.36) / Math.max(1, selectedHood.buyPerSqm * 80)) * 100).toFixed(1))}٪
             </span>
           </div>
           <div dir="ltr" className={`w-full min-w-[240px] ${compact ? 'h-[185px]' : 'h-[215px]'}`}>
@@ -164,7 +164,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
                         </div>
                         <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-extrabold">
                           <span>{isEn ? `Buy / ${areaUnit === 'sqft' ? 'ft²' : 'm²'}:` : `خرید هر ${areaUnit === 'sqft' ? 'ft²' : 'متر مربع'}:`}</span>
-                          <span className="tabular-nums">{toPersianNum(uBuyVal)} م (معامله: {toPersianNum(uDealPoint)} م){fxBuy}</span>
+                          <span className="tabular-nums">{toPersianNum(uBuyVal)} م (سناریو مذاکره: {toPersianNum(uDealPoint)} م){fxBuy}</span>
                         </div>
                         <div className="flex items-center justify-between gap-3 text-slate-700 dark:text-slate-300 text-[10.5px]">
                           <span>{isEn ? '80m² Total:' : 'کل واحد (۸۰م):'}</span>

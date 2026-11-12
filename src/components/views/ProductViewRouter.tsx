@@ -77,7 +77,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
             ))}
           </select>
           <span className="hidden md:inline text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
-            معامله v6.4: {toPersianNum(activeDealUnit)} م{activeDealFx}
+            سناریو v6.4 (غیرثبتی): {toPersianNum(activeDealUnit)} م{activeDealFx}
           </span>
           <button
             type="button"

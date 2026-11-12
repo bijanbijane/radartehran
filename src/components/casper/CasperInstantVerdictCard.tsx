@@ -143,7 +143,7 @@ export function CasperInstantVerdictCard({
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              واحد {toPersianNum(area)} متری · {toPersianNum(agg.validSampleCount)} معامله قطعی · بتای ارزی {toPersianNum(fx.betaSensitivity)}
+              واحد {toPersianNum(area)} متری · {toPersianNum(agg.observedSampleCount)} آگهی زنده در مدل · بتای ارزی {toPersianNum(fx.betaSensitivity)}
             </p>
           </div>
         </div>
@@ -185,7 +185,7 @@ export function CasperInstantVerdictCard({
         {/* Deal Price with Deed/FX Adjustment */}
         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">کف معامله قطعی (تعدیل روز)</span>
+            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">کف سناریوی مذاکره (تعدیل روز · غیرثبتی)</span>
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2">

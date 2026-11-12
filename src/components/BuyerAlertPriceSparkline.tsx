@@ -20,7 +20,7 @@ import {
   getNeighborhoodMarketReport,
   toPersianNum,
 } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import {
   convertPricePerSqmToUnit,
   formatAreaShort,
@@ -164,14 +164,14 @@ export function BuyerAlertPriceSparkline({
   const uDealEnd =
     dealType === 'خرید'
       ? convertPricePerSqmToUnit(
-          aggregateNeighborhoodMarketMetrics(neighborhood.id, neighborhood.name, series.endMillion, []).estimatedDealPricePerSqm,
+          aggregateMarketMetricsForHood({ ...neighborhood, buyPerSqm: series.endMillion }, series.endMillion).estimatedDealPricePerSqm,
           areaUnit
         )
       : 0;
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 shrink-0" title={`روند ۶ ماهه ${neighborhood.name}: ${fmtVal(series.startMillion)} ${unitSuffix}${fmtFx(series.startMillion)} ← ${fmtVal(series.endMillion)} ${unitSuffix}${fmtFx(series.endMillion)}${dealType === 'خرید' ? ` (معامله v6.4: ${toPersianNum(uDealEnd)} ${unitSuffix})` : ''}`}>
+      <div className="flex items-center gap-2 shrink-0" title={`روند ۶ ماهه ${neighborhood.name}: ${fmtVal(series.startMillion)} ${unitSuffix}${fmtFx(series.startMillion)} ← ${fmtVal(series.endMillion)} ${unitSuffix}${fmtFx(series.endMillion)}${dealType === 'خرید' ? ` (سناریو v6.4 (غیرثبتی): ${toPersianNum(uDealEnd)} ${unitSuffix})` : ''}`}>
         <div dir="ltr" className="w-20 h-7">
           <ResponsiveContainer width="100%" height="100%" minWidth={72}>
             <AreaChart data={series.points} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
@@ -211,7 +211,7 @@ export function BuyerAlertPriceSparkline({
           <span>
             {fmtVal(series.startMillion)} {unitSuffix}{fmtFx(series.startMillion)} ←{' '}
             <strong className="text-slate-900 dark:text-slate-100">{fmtVal(series.endMillion)} {unitSuffix}</strong>
-            {fmtFx(series.endMillion)}{dealType === 'خرید' ? ` (معامله v6.4: ${toPersianNum(uDealEnd)} ${unitSuffix})` : ''}
+            {fmtFx(series.endMillion)}{dealType === 'خرید' ? ` (سناریو v6.4 (غیرثبتی): ${toPersianNum(uDealEnd)} ${unitSuffix})` : ''}
           </span>
           <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">
             ({series.growth6mPercent >= 0 ? `+${toPersianNum(series.growth6mPercent)}` : toPersianNum(series.growth6mPercent)}٪ · {series.endMillion >= series.startMillion ? '+' : '-'}{fmtVal(Math.abs(series.endMillion - series.startMillion))} {unitSuffix}{fmtFx(Math.abs(series.endMillion - series.startMillion))})

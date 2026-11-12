@@ -140,7 +140,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
               موتور تصمیم‌یار معرفتی، پارتو، سرایت فضایی و هوش اجتماعی ({resolvedHoodName})
             </h3>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              ارزش قطعی معامله (v6.4): متری {toPersianNum(liveAgg.estimatedDealPricePerSqm)} م.ت ({formatMillionTomanAsIntlCurrency(liveAgg.estimatedDealPricePerSqm, intlCurrency, 'fa')}) · منشأ: {provenanceTitleFa} · شکارهای زیر قیمت: {toPersianNum(liveAgg.autoBargains.length)} مورد
+              سناریوی مذاکره (v6.4 · غیرثبتی): متری {toPersianNum(liveAgg.estimatedDealPricePerSqm)} م.ت ({formatMillionTomanAsIntlCurrency(liveAgg.estimatedDealPricePerSqm, intlCurrency, 'fa')}) · منشأ: {provenanceTitleFa} · شکارهای زیر قیمت: {toPersianNum(liveAgg.autoBargains.length)} مورد
             </p>
           </div>
         </div>

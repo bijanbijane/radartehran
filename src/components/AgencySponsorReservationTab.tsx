@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'; import { CreditCard, Phone, Receipt } from 'lucide-react'; import { Neighborhood, getHoodMonthlySponsorTariff, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, createExecutionTimer, isValidAgencyPhone, sanitizeInput, } from '../utils/security'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import React, { useMemo, useState } from 'react'; import { CreditCard, Phone, Receipt } from 'lucide-react'; import { Neighborhood, getHoodMonthlySponsorTariff, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, createExecutionTimer, isValidAgencyPhone, sanitizeInput, } from '../utils/security'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 export interface AgencySponsorReservationTabProps { safeNeighborhoods: Neighborhood[]; targetBargainHood: Neighborhood; sponsorHoodId: number; setSponsorHoodId: React.Dispatch<React.SetStateAction<number>>;
   sponsorAgencyName: string; setSponsorAgencyName: React.Dispatch<React.SetStateAction<string>>; sponsorPhone: string; setSponsorPhone: React.Dispatch<React.SetStateAction<string>>; sponsorSpecialty: string; setSponsorSpecialty: React.Dispatch<React.SetStateAction<string>>; sponsorExpYears: number;
   setSponsorExpYears: React.Dispatch<React.SetStateAction<number>>; sponsorSubmitMsg: string; onReserveSponsor: (e: React.FormEvent) => void; enableSponsorBilling?: boolean; sponsorPlanMonths?: 1 | 3; setSponsorPlanMonths?: React.Dispatch<React.SetStateAction<1 | 3>>; sponsorTrackingCode?: string;
@@ -85,7 +85,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
             >
               {safeNeighborhoods.map((n) => (
                 <option key={n.id} value={n.id}>
-                  محله {n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد) — تعرفه: {toPersianNum(getHoodMonthlySponsorTariff(n))}{' '}
+                  محله {n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(n).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد) — تعرفه: {toPersianNum(getHoodMonthlySponsorTariff(n))}{' '}
                   میلیون/ماه{showIntl ? ` (${formatMillionTomanAsIntlCurrency(getHoodMonthlySponsorTariff(n), currency, locale)})` : ''}
                 </option>
               ))}
@@ -271,7 +271,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
               onClick={() => setSponsorHoodId(n.id)}
               className="w-full text-right grid grid-cols-3 items-center py-2 px-3 border-b border-slate-100 dark:border-slate-800 last:border-none hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
             >
-              <div className="font-bold text-slate-900 dark:text-slate-100">{n.name} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 tabular-nums">({formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد) · معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م</span></div>
+              <div className="font-bold text-slate-900 dark:text-slate-100">{n.name} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 tabular-nums">({formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد) · سناریو مذاکره: {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(n).estimatedDealPricePerSqm, areaUnit))} م</span></div>
               <div className="text-slate-500 dark:text-slate-400 truncate">
                 {active ? n.sponsor?.name : 'تابلوی کارشناس رسمی محله آزاد است'}
               </div>

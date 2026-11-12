@@ -9,7 +9,7 @@ import { BarChart3, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { BubbleReport, EvaluatedNeighborhood, Neighborhood, toPersianNum } from '../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle } from '../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
@@ -82,7 +82,7 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
   const firstUnitPrice = convertPricePerSqmToUnit(chartData[0]?.price || 0, areaUnit);
   const latestRawPrice = chartData[chartData.length - 1]?.price || selectedHood?.buyPerSqm || 0;
   const latestUnitPrice = convertPricePerSqmToUnit(latestRawPrice, areaUnit);
-  const latestDealUnitPrice = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, hoodName, latestRawPrice, []).estimatedDealPricePerSqm, areaUnit);
+  const latestDealUnitPrice = convertPricePerSqmToUnit(aggregateMarketMetricsForHood({ ...selectedHood, name: hoodName, buyPerSqm: latestRawPrice }, latestRawPrice).estimatedDealPricePerSqm, areaUnit);
   const totalPriceDelta6m = Math.round((latestUnitPrice - firstUnitPrice) * 10) / 10;
 
   return (
@@ -170,7 +170,7 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
                 const point = payload[0]?.payload as MonthlyPriceBarPoint | undefined;
                 if (!point) return null;
                 const unitPriceVal = convertPricePerSqmToUnit(point.price, areaUnit);
-                const unitDealVal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, hoodName, point.price, []).estimatedDealPricePerSqm, areaUnit);
+                const unitDealVal = convertPricePerSqmToUnit(aggregateMarketMetricsForHood({ ...selectedHood, name: hoodName, buyPerSqm: point.price }, point.price).estimatedDealPricePerSqm, areaUnit);
                 const total80Buy = Math.round(point.price * 80);
                 const unitChangeVal = convertPricePerSqmToUnit(point.changeAmount, areaUnit);
                 const unitCityVal = convertPricePerSqmToUnit(point.cityAvg, areaUnit);
@@ -191,7 +191,7 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
                     <div className="flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-400 font-extrabold">
                       <span>{isEn ? `Price / ${unitLabel}:` : `قیمت هر ${unitLabel}:`}</span>
                       <span className="tabular-nums">
-                        {toPersianNum(unitPriceVal)} م (معامله v6.4: {toPersianNum(unitDealVal)} م)
+                        {toPersianNum(unitPriceVal)} م (سناریو v6.4 (غیرثبتی): {toPersianNum(unitDealVal)} م)
                         {intlCurrency !== 'IRT' && ` (${formatMillionTomanAsIntlCurrency(unitPriceVal, intlCurrency, radarLocale)})`}
                       </span>
                     </div>
@@ -240,9 +240,9 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
           </strong>
         </div>
         <div className="border-x border-slate-200/60 dark:border-slate-700">
-          <span className="text-slate-400 dark:text-slate-400 block text-[10px]">{isEn ? 'Latest / Deal v6.4' : 'آخرین / معامله v6.4'} ({unitLabel})</span>
+          <span className="text-slate-400 dark:text-slate-400 block text-[10px]">{isEn ? 'Latest / Deal v6.4' : 'آخرین / سناریو v6.4 (غیرثبتی)'} ({unitLabel})</span>
           <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">
-            {toPersianNum(latestUnitPrice)} م (معامله v6.4: {toPersianNum(latestDealUnitPrice)} م)
+            {toPersianNum(latestUnitPrice)} م (سناریو v6.4 (غیرثبتی): {toPersianNum(latestDealUnitPrice)} م)
             {intlCurrency !== 'IRT' && <span className="block text-[9.5px] font-bold" dir="ltr">{formatMillionTomanAsIntlCurrency(latestDealUnitPrice, intlCurrency, radarLocale)}</span>}
           </strong>
         </div>

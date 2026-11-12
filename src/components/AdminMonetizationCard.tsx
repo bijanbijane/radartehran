@@ -17,7 +17,7 @@ import {
   isSponsorActive,
   toPersianNum,
 } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 
@@ -195,7 +195,7 @@ export function AdminMonetizationCard({
                   className="py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-bold text-slate-900 dark:text-slate-100">{n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد): · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{n.name} ({areaUnit === 'sqft' ? 'ft²' : 'متری'} {toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((n.buyPerSqm * 80) / 1000).toFixed(1))} میلیارد): · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(n).estimatedDealPricePerSqm, areaUnit))} م</span>
                     <span className="text-slate-600 dark:text-slate-300 truncate">
                       {active ? n.sponsor?.name : 'تابلو آزاد / منقضی'}
                     </span>

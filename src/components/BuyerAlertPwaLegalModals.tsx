@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Bell, CheckCircle2, ShieldAlert, Smartphone, X } from 'lucide-react';
 import { Neighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import { isValidIranianMobile, sanitizeInput } from '../utils/security';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
@@ -126,10 +126,10 @@ export function BuyerAlertPwaLegalModals({
                     >
                       {safeNeighborhoods.map((n) => {
                         const unitVal = convertPricePerSqmToUnit(n.buyPerSqm, areaUnit);
-                        const uDealVal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+                        const uDealVal = convertPricePerSqmToUnit(aggregateMarketMetricsForHood(n).estimatedDealPricePerSqm, areaUnit);
                         return (
                           <option key={n.id} value={n.id}>
-                            محله {n.name} ({n.zone}) — {toPersianNum(unitVal)} م/{unitLabel} (معامله v6.4: {toPersianNum(uDealVal)} م){intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitVal, intlCurrency, radarLocale)})` : ''} · {alertDealType === 'اجاره' ? `رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م · اجاره: ${toPersianNum(Math.round(n.rahn80m * 0.03))} م` : `کل ${formatAreaShort(85, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 85) / 1000).toFixed(1))} میلیارد`}
+                            محله {n.name} ({n.zone}) — {toPersianNum(unitVal)} م/{unitLabel} (سناریو v6.4 (غیرثبتی): {toPersianNum(uDealVal)} م){intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitVal, intlCurrency, radarLocale)})` : ''} · {alertDealType === 'اجاره' ? `رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(n.rahn80m)} م · اجاره: ${toPersianNum(Math.round(n.rahn80m * 0.03))} م` : `کل ${formatAreaShort(85, areaUnit)}: ${toPersianNum(((n.buyPerSqm * 85) / 1000).toFixed(1))} میلیارد`}
                           </option>
                         );
                       })}

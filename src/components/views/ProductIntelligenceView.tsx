@@ -166,7 +166,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
         <div className="space-y-1.5 pt-1 tabular-nums">
           <div className="flex justify-between items-center text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
             <span>کف آماری محله ({toPersianNum(uIqrLow)} م)</span>
-            <span className="text-emerald-700 dark:text-emerald-300 font-bold">جایگاه برآورد معامله v6.4: صدک {toPersianNum(uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50)}٪ دامنه</span>
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold">جایگاه برآورد سناریو v6.4 (غیرثبتی): صدک {toPersianNum(uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50)}٪ دامنه</span>
             <span>سقف آماری محله ({toPersianNum(uIqrHigh)} م)</span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden relative">
@@ -259,7 +259,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
                 <div className="text-left shrink-0 tabular-nums flex items-center gap-2">
                   <div>
                     <div className="text-xs font-black text-slate-900 dark:text-white">{toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> م</div>
-                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">معامله v6.4 · امتیاز {toPersianNum(hood.overallScore)}/۱۰</div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">سناریو v6.4 (غیرثبتی) · امتیاز {toPersianNum(hood.overallScore)}/۱۰</div>
                   </div>
                   {!isSelected && (
                     <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border text-[10px] font-bold cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}>

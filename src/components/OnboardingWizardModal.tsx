@@ -250,7 +250,7 @@ export function OnboardingWizardModal({
                             </div>
                           </div>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                            {mode === 'buy' ? `متری ${toPersianNum(uBuy)} م (معامله v6.4: ${toPersianNum(uDeal)} م)${showIntl ? ` (${formatMillionTomanAsIntlCurrency(uBuy, currency, locale)})` : ''}` : `رهن: ${toPersianNum(effectiveRahn)} م`}
+                            {mode === 'buy' ? `متری ${toPersianNum(uBuy)} م (سناریو v6.4 (غیرثبتی): ${toPersianNum(uDeal)} م)${showIntl ? ` (${formatMillionTomanAsIntlCurrency(uBuy, currency, locale)})` : ''}` : `رهن: ${toPersianNum(effectiveRahn)} م`}
                           </span>
                           <span className="text-[10px] text-slate-600 dark:text-slate-300 line-clamp-1">{explain.tradeOffSummaryFa}</span>
                         </button>

@@ -250,7 +250,7 @@ export function NationwideProvinceModal({
                                 onClose();
                               }}
                               className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700/80 hover:bg-emerald-600 dark:hover:bg-emerald-600 hover:text-white text-slate-700 dark:text-slate-200 text-[10px] font-bold transition cursor-pointer flex items-center gap-1 tabular-nums"
-                              title={`${h.name} (${h.zone}) — ${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(uPrice)} میلیون${fxTip} (معامله: ${toPersianNum(uDeal)} م) · واحد ${formatAreaShort(80, areaUnit)}: ${toPersianNum((total80m / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(total80m, intlCurrency, radarLocale)})` : ''} · رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(h.rahn80m)} میلیون${rahnFxTip} (اجاره: ${toPersianNum(Math.round(h.rahn80m * 0.03))} م)`}
+                              title={`${h.name} (${h.zone}) — ${areaUnit === 'sqft' ? 'ft²' : 'متری'} ${toPersianNum(uPrice)} میلیون${fxTip} (سناریو مذاکره: ${toPersianNum(uDeal)} م) · واحد ${formatAreaShort(80, areaUnit)}: ${toPersianNum((total80m / 1000).toFixed(1))} میلیارد${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(total80m, intlCurrency, radarLocale)})` : ''} · رهن ${formatAreaShort(80, areaUnit)}: ${toPersianNum(h.rahn80m)} میلیون${rahnFxTip} (اجاره: ${toPersianNum(Math.round(h.rahn80m * 0.03))} م)`}
                             >
                               <span>{h.name}</span>
                               <span className="opacity-70 text-[9px]">({toPersianNum(uPrice)} {areaUnit === 'sqft' ? 'م/ft²' : 'م'}{fxTip})</span>

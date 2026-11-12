@@ -130,7 +130,7 @@ export function BuyingPowerSummaryCard({
 
       <div className="pt-1 border-t border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between text-[10.5px] text-teal-900 dark:text-teal-200 tabular-nums">
         <span>
-          با تخمین قیمت قطعی معامله ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
+          با سناریوی فرضی مذاکره (غیرثبتی) ({areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}
           {toPersianNum(dealUnitRate)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(dealUnitRate, intlCurrency, radarLocale)}` : ''}):
         </span>
         <strong className="font-black text-teal-700 dark:text-teal-400">{formatAreaValue(affordableDealSqmInHood, areaUnit)}</strong>

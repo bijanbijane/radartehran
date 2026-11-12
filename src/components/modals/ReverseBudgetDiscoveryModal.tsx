@@ -256,7 +256,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                       </span>
                     </div>
                     <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                      {isEn ? `Asking: ${fmt.format(uAsk)}M${uLabel}` : `${uLabel}${fmt.format(uAsk)} م`} · <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{isEn ? `Deal v6.4: ${fmt.format(uDeal)}M` : `معامله v6.4: ${fmt.format(uDeal)} م`}</span> · {isEn ? `Unit Total: ${fmt.format(hood.estimatedTotalMillion)}M` : `کل واحد: ${formatMillionToVerbalPersian(hood.estimatedTotalMillion)}`}
+                      {isEn ? `Asking: ${fmt.format(uAsk)}M${uLabel}` : `${uLabel}${fmt.format(uAsk)} م`} · <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{isEn ? `Deal v6.4: ${fmt.format(uDeal)}M` : `سناریو v6.4 (غیرثبتی): ${fmt.format(uDeal)} م`}</span> · {isEn ? `Unit Total: ${fmt.format(hood.estimatedTotalMillion)}M` : `کل واحد: ${formatMillionToVerbalPersian(hood.estimatedTotalMillion)}`}
                     </div>
                   </div>
                   <button

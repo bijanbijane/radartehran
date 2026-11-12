@@ -246,7 +246,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
 
                   <div className="py-3 my-3 border-y border-slate-100 dark:border-slate-800 grid grid-cols-2 text-xs tabular-nums">
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">اعلامی / معامله v6.4:</span>
+                      <span className="text-[10px] text-slate-400 block font-medium">اعلامی / سناریو v6.4 (غیرثبتی):</span>
                       <strong className="text-slate-900 dark:text-white font-black text-sm">
                         {toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}
                       </strong>

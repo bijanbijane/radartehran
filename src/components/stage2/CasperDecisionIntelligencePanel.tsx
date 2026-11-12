@@ -125,7 +125,7 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
             <span>تنظیم مفروضات سناریو و اولویت تصمیم‌گیری کاربر</span>
           </div>
           <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400 tabular-nums">
-            معامله v6.4: متری {report.dealBaselinePerSqmMillion.toLocaleString('fa-IR')} م‌ت | ضریب خروج فوری: {report.fastSaleFactorUsed}
+            سناریو v6.4 (غیرثبتی): متری {report.dealBaselinePerSqmMillion.toLocaleString('fa-IR')} م‌ت | ضریب خروج فوری: {report.fastSaleFactorUsed}
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2.5">

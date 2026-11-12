@@ -160,7 +160,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           <div className="flex items-center gap-2 min-w-0 max-w-full">
             <span className="text-slate-400 text-[11px] shrink-0">{isEn ? 'Sort by:' : 'ترتیب نمایش:'}</span>
             <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as 'score' | 'price_asc' | 'price_desc' | 'rahn_asc' | 'air')} className="max-w-[210px] sm:max-w-none truncate px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
-              <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option><option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت معامله v6.4'}</option><option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option><option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option><option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
+              <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option><option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت سناریو v6.4 (غیرثبتی)'}</option><option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option><option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option><option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
             </select>
           </div>
         </div>
@@ -272,7 +272,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 tabular-nums">
                   <div>
-                    <span className="text-[10px] text-slate-400 block">اعلامی / معامله v6.4:</span>
+                    <span className="text-[10px] text-slate-400 block">اعلامی / سناریو v6.4 (غیرثبتی):</span>
                     <span className="font-black text-slate-900 dark:text-white">{toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> م</span>
                   </div>
                   <div>

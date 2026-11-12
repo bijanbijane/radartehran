@@ -1,5 +1,7 @@
 import React, { useState } from 'react'; import { Award, Bell, Bookmark, Compass, MapPin, Phone, PlusCircle, Sparkles, ThumbsUp } from 'lucide-react'; import { EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, isSponsorActive, toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { ListingMediaGallery } from './ListingMediaGallery'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
-import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples, computeQualityMultiplier, extractListingSpecsFromText, type PriceSourceType } from '../data/realMarketPriceAggregator'; import { getCurrentJalaliYear } from '../data/hedonicPricingEngine';
+import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateMarketMetricsForHood, computeQualityMultiplier, extractListingSpecsFromText, type PriceSourceType } from '../data/realMarketPriceAggregator';
+import { dealFairTotalLabelFa } from '../utils/epistemicUiLabels';
+import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { getCurrentJalaliYear } from '../data/hedonicPricingEngine';
 export interface NeighborhoodBargainsAndVotesTabsProps {
   activeTab: 'bargains' | 'vote'; selectedHood: EvaluatedNeighborhood; activeCity: CityId; mode: 'rent' | 'buy'; targetSqm: number; buyTotalBudget?: number;
   deposit?: number; monthlyRent?: number; featureFlags: FeatureFlags; setBargainHoodId: (id: number) => void; setAgencyModalTab: (t: 'submit_bargain' | 'reserve_sponsor') => void; setShowAgencyModal: (v: boolean) => void; setAlertHoodId: (id: number) => void;
@@ -24,7 +26,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
     setAnParking(ext.hasParking); setAnElevator(ext.hasElevator); setAnStorage(ext.hasStorage); setAnAskingMillion(ext.totalMillion); setAnPriceSourceType(ext.priceSourceType); setAnSignals(ext.detectedSignals);
   };
   if (activeTab === 'bargains') {
-    const agg = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood));
+    const agg = aggregateMarketMetricsForHood(selectedHood);
     const hoodTotal80mMillions = selectedHood.buyPerSqm * 80; const estMonthlyRent80 = Math.round(selectedHood.rahn80m * 0.03);
     const qMult = computeQualityMultiplier({ age: anAge ?? 5, floor: anFloor ?? 2, totalFloors: anTotalFloors ?? 5, hasParking: anParking, hasElevator: anElevator, hasStorage: anStorage, detectedSignals: anSignals, hoodBasePerSqm: agg.askingPricePerSqm });
     const fairAskTotal = Math.round(agg.askingPricePerSqm * qMult * Math.max(25, anSqm));
@@ -60,9 +62,10 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
               {anSignals.isUrbanRenewal && <span className="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-[10px] font-bold">بافت فرسوده/قدرالسهم (+۱۰٪ ارزش زمین)</span>}
             </div>
           )}
+          <EpistemicMarketDisclaimer metrics={agg} className="mb-1" />
           <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-[10px] p-2.5 space-y-1.5 tabular-nums">
             <div className="flex items-center justify-between"><span className="text-slate-500 dark:text-slate-400">ارزش عادلانه تابلو:</span><strong className="text-slate-900 dark:text-slate-100 font-black">{toPersianNum((fairAskTotal / 1000).toFixed(2))} میلیارد تومان ({toPersianNum(fairAskTotal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairAskTotal, intlCurrency, radarLocale)}` : ''})</strong></div>
-            <div className="flex items-center justify-between"><span className="text-emerald-700 dark:text-emerald-400 font-semibold">تخمین قیمت قطعی پای معامله:</span><strong className="text-emerald-700 dark:text-emerald-400 font-black">{toPersianNum((fairDealTotal / 1000).toFixed(2))} میلیارد تومان ({toPersianNum(fairDealTotal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairDealTotal, intlCurrency, radarLocale)}` : ''})</strong></div>
+            <div className="flex items-center justify-between"><span className="text-emerald-700 dark:text-emerald-400 font-semibold">{dealFairTotalLabelFa()}:</span><strong className="text-emerald-700 dark:text-emerald-400 font-black">{toPersianNum((fairDealTotal / 1000).toFixed(2))} میلیارد تومان ({toPersianNum(fairDealTotal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairDealTotal, intlCurrency, radarLocale)}` : ''})</strong></div>
             {effectiveAskingTotal <= 0 ? (
               <div className="text-[10.5px] text-amber-700 dark:text-amber-300 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800 rounded-lg px-2 py-1 font-medium">قیمت در متن یافت نشد (توافقی) — قیمت پیشنهادی فروشنده را وارد کنید تا درصد حباب/شکار محاسبه شود</div>
             ) : (

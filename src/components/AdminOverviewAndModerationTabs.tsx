@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Download, Edit3, KeyRound, Sparkles, Trash2 } from 'lucide-react';
 import { BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood, aggregateMarketMetricsForScalars } from '../data/realMarketPriceAggregator';
 import { FeatureFlags } from '../types/models';
 import { clampNumber } from '../utils/security';
 import { AdminMonetizationCard } from './AdminMonetizationCard';
@@ -237,13 +237,13 @@ export function AdminOverviewAndModerationTabs(
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
           >
             {neighborhoods.map((n) => (
-              <option key={n.id} value={n.id}>محله {n.name} ({n.zone}) — {toPersianNum(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} {areaUnit === 'sqft' ? 'م/ft²' : 'م'} (معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, (n as any).baseBuyPerSqm ?? n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م){fxTag(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((((n as any).baseBuyPerSqm ?? n.buyPerSqm) * 80) / 1000).toFixed(1))} میلیارد</option>
+              <option key={n.id} value={n.id}>محله {n.name} ({n.zone}) — {toPersianNum(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} {areaUnit === 'sqft' ? 'م/ft²' : 'م'} (سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, (n as any).baseBuyPerSqm ?? n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م){fxTag(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((((n as any).baseBuyPerSqm ?? n.buyPerSqm) * 80) / 1000).toFixed(1))} میلیارد</option>
             ))}
           </select>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-600 dark:text-slate-300 mb-1">میانگین هر متر خرید (میلیون · معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(adminEditHoodId, 'تهران', adminEditBuySqm, []).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد){areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(adminEditBuySqm, 'sqft'))} م/ft²` : ''}{fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))}:</label>
+            <label className="block text-slate-600 dark:text-slate-300 mb-1">میانگین هر متر خرید (میلیون · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForScalars(adminEditHoodId, "تهران", adminEditBuySqm).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد){areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(adminEditBuySqm, 'sqft'))} م/ft²` : ''}{fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))}:</label>
             <input type="number" aria-label="میانگین هر متر خرید محله" min={10} max={5000} value={adminEditBuySqm} onChange={(e) => setAdminEditBuySqm(clampNumber(e.target.value, 10, 5000, 130))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums" />
           </div>
           <div>

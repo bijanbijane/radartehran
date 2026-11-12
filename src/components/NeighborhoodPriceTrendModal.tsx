@@ -109,7 +109,7 @@ export function NeighborhoodPriceTrendModal({
                 </span>
               </div>
               <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.endBuy, areaUnit).toFixed(1)))} <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{isEn ? 'M IRT' : 'میلیون تومان'}</span></div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">12M: {toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.startBuy, areaUnit).toFixed(1)))} م · قطعی معامله v6.4: {toPersianNum(Number(convertPricePerSqmToUnit(liveDealAgg.estimatedDealPricePerSqm, areaUnit).toFixed(1)))} م</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">12M: {toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.startBuy, areaUnit).toFixed(1)))} م · قطعی سناریو v6.4 (غیرثبتی): {toPersianNum(Number(convertPricePerSqmToUnit(liveDealAgg.estimatedDealPricePerSqm, areaUnit).toFixed(1)))} م</div>
             </div>
 
             <div className="bg-sky-50/70 dark:bg-sky-950/25 border border-sky-200/80 dark:border-sky-900/40 rounded-xl p-3 space-y-1">

@@ -243,7 +243,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                     </span>
                   </div>
                   <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 mt-1">
-                    معامله v6.4: متری {toPersianNum(cand.estimatedDealPriceSqm)} م‌ت ({cand.dealPriceIntlText})
+                    سناریو v6.4 (غیرثبتی): متری {toPersianNum(cand.estimatedDealPriceSqm)} م‌ت ({cand.dealPriceIntlText})
                   </div>
                   <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                     {cand.rationaleFa}

@@ -192,7 +192,7 @@ export function SmartSuggestModal({
                             : `رهن ${formatAreaValue(safeTargetSqm, areaUnit, true)}: ${toPersianNum(scaledRahn)} میلیون · اجاره ماهانه: ${toPersianNum(Math.round(scaledRahn * 0.03))} م`)
                         : (isEn
                             ? `Ask: ${toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))}M · Deal v6.4: ${toPersianNum(uDeal)}M/${areaUnit === 'sqft' ? 'ft²' : 'm²'}`
-                            : `${areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · معامله v6.4: ${toPersianNum(uDeal)} م`)}
+                            : `${areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit))} م · سناریو v6.4 (غیرثبتی): ${toPersianNum(uDeal)} م`)}
                     </div>
                     <div className="flex items-center gap-2">
                       {index > 0 && topSuggestedHood && (

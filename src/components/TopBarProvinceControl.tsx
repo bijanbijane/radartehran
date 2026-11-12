@@ -12,7 +12,7 @@ import {
 } from '../data/iranProvincesDirectory';
 import { CityId, MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData';
 import { Neighborhood, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
 import {
   convertPricePerSqmToUnit,
   formatAreaShort,
@@ -122,11 +122,11 @@ export function TopBarProvinceAndCityDirectoryControl({
                 </option>
                 {provHoods.map((h) => {
                   const unitBuy = convertPricePerSqmToUnit(h.buyPerSqm, areaUnit);
-                  const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(h.id, h.name, h.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit);
+                  const unitDeal = convertPricePerSqmToUnit(aggregateMarketMetricsForHood(h).estimatedDealPricePerSqm, areaUnit);
                   const monthlyRent80mMillions = Math.round(h.rahn80m * 0.03);
                   return (
                     <option key={h.id} value={`hood:${h.id}`}>
-                      {h.name} — {h.zone} ({areaUnitShort} {toPersianNum(unitBuy)} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م اجاره · معامله v6.4: {toPersianNum(unitDeal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, locale)}` : ''})
+                      {h.name} — {h.zone} ({areaUnitShort} {toPersianNum(unitBuy)} م · {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م اجاره · سناریو v6.4 (غیرثبتی): {toPersianNum(unitDeal)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, locale)}` : ''})
                     </option>
                   );
                 })}

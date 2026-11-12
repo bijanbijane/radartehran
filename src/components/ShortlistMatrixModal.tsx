@@ -179,7 +179,7 @@ export function ShortlistMatrixModal({
                 </tr>
                 <tr>
                   <td className={`p-3 font-bold text-slate-700 dark:text-slate-300 sticky ${isEn ? 'left-0 text-left border-r' : 'right-0 text-right border-l'} bg-white dark:bg-slate-900 z-10 border-slate-200/80 dark:border-slate-800`}>
-                    {isEn ? `Estimated Deal v6.4 (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `تخمین قیمت قطعی معامله v6.4 (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`}
+                    {isEn ? `Estimated Deal v6.4 (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `سناریوی فرضی مذاکره v6.4 (غیرثبتی) (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`}
                   </td>
                   {shortlistedHoods.map((hood) => {
                     const dealSqm = dealPerSqmById.get(hood.id) ?? hood.buyPerSqm;

@@ -167,7 +167,7 @@ export function ShareModal({
             <div className="bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 p-2.5 rounded-xl">
               <div className="text-slate-500 dark:text-slate-400 text-[11px]">{formatUnitBuyPriceTitle(areaUnit)}:</div>
               <div className="font-extrabold text-slate-900 dark:text-white text-sm mt-0.5 tabular-nums">{toPersianNum(convertPricePerSqmToUnit(safeBuy, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(safeBuy, areaUnit), intlCurrency, locale)})` : ''}</div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, safeBuy, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م</div>
             </div>
             <div className="bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 p-2.5 rounded-xl">
               <div className="text-slate-500 dark:text-slate-400 text-[11px]">{isEn ? 'Full Deposit (80m²):' : `رهن کامل ${formatAreaShort(80, areaUnit)}:`}</div>

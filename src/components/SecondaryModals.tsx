@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowLeftRight, Clock, Globe, MapPin, RefreshCw, Scale, ShieldAlert, Smartphone, Sparkles, Wind, X } from 'lucide-react';
 import { EvaluatedNeighborhood, MarketPulseData, Neighborhood, POPULAR_SEO_COMPARISONS, toPersianNum } from '../data/neighborhoods';
-import { aggregateNeighborhoodMarketMetrics } from '../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood, aggregateMarketMetricsForScalars } from '../data/realMarketPriceAggregator';
 import { resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { recordDiagnosticEvent } from '../utils/security';
 import { BuyerAlertPwaLegalModals } from './BuyerAlertPwaLegalModals';
@@ -101,7 +101,7 @@ export function SecondaryModals({
                   {fmtUnitBuy(marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138)}
                 </div>
                 <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold tabular-nums">
-                  واحد {formatAreaShort(80, areaUnit)}: {toPersianNum((((marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138) * 80) / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency((marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138) * 80, intlCurrency, locale)})` : ''} · تخمین معامله v6.4: {fmtUnitBuy(aggregateNeighborhoodMarketMetrics(0, activeCityNameFa, marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138, []).estimatedDealPricePerSqm)}
+                  واحد {formatAreaShort(80, areaUnit)}: {toPersianNum((((marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138) * 80) / 1000).toFixed(1))} میلیارد{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency((marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138) * 80, intlCurrency, locale)})` : ''} · تخمین سناریو v6.4 (غیرثبتی): {fmtUnitBuy(aggregateMarketMetricsForScalars(0, activeCityNameFa, marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138).estimatedDealPricePerSqm)}
                 </div>
               </div>
             </div>
