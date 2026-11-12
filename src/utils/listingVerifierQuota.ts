@@ -1,3 +1,4 @@
+/** OP-DEC-001 parity: formatMillionTomanAsIntlCurrency (see areaUnit). */
 const STORAGE_QUOTA_KEY = 'radar_listing_verifier_quota_v1';
 export const FREE_QUOTA_MAX = 3;
 

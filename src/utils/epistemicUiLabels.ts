@@ -1,6 +1,7 @@
 /**
  * @file src/utils/epistemicUiLabels.ts
  * Canonical Persian/English UI labels for price epistemology (CASPER / RMEP — no false transaction certainty).
+ * OP-DEC-001 parity: formatMillionTomanAsIntlCurrency (see areaUnit).
  */
 
 import type { MarketDataProvenance } from '../data/realMarketPriceAggregator';

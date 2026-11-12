@@ -65,12 +65,6 @@ export function buildNeighborhoodListingSamples(hood?: NeighborhoodListingSource
     description: `${b.sqm} متر ${b.title}`,
   }));
 }
-export interface NeighborhoodListingSource { id: number; name: string; buyPerSqm: number; bargains?: ReadonlyArray<{ id: string; sqm: number; title: string; discountPercent?: number; price?: number }> | null; }
-export function buildNeighborhoodListingSamples(hood?: NeighborhoodListingSource | null): Array<{ id: string; sqm: number; askingTotalMillion: number; description: string }> {
-  if (!hood || !Array.isArray(hood.bargains) || hood.bargains.length === 0) return [];
-  const baseBuy = clampNumber(hood.buyPerSqm, 10, 2000, 120);
-  return hood.bargains.map((b) => ({ id: b.id, sqm: b.sqm, askingTotalMillion: Math.round(b.sqm * baseBuy * (1 - (b.discountPercent || 10) / 100)), description: `${b.sqm} متر ${b.title}` }));
-}
 const WORD_INT_MAP: ReadonlyArray<[string, number]> = [['دوازده', 12], ['یازده', 11], ['چهار', 4], ['ده', 10], ['نه', 9], ['هشت', 8], ['هفت', 7], ['شش', 6], ['پنج', 5], ['سه', 3], ['دو', 2], ['یک', 1]];
 const WORD_HUNDRED_MAP: ReadonlyArray<[string, number]> = [['چهارصد', 400], ['پانصد', 500], ['ششصد', 600], ['هفتصد', 700], ['هشتصد', 800], ['نهصد', 900], ['دویست', 200], ['سیصد', 300], ['صد', 100]];
 export function normalizePersianText(raw: string): string {

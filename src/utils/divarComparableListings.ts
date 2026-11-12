@@ -1,6 +1,7 @@
 /**
  * @file src/utils/divarComparableListings.ts
  * Live Divar comparable listings with explicit epistemic status (no silent seed fallback).
+ * OP-DEC-001 parity: formatMillionTomanAsIntlCurrency (see areaUnit).
  */
 
 import type { CityId } from '../types/models';

@@ -1,3 +1,4 @@
+/** OP-DEC-001 parity: formatMillionTomanAsIntlCurrency (see areaUnit). */
 import type { PrimaryViewId } from './areaUnit';
 
 export function readHomeVerdictPrefillFromUrl(): string {

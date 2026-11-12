@@ -1,3 +1,4 @@
+/** OP-DEC-001 parity: formatMillionTomanAsIntlCurrency (see areaUnit). */
 import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods';
 import { compactPersianSearchKey } from './persianSearchAndPersonalWorkspace';
 

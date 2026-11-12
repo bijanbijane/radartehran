@@ -1,6 +1,7 @@
 /**
  * @file src/utils/listingVerifierEngine.ts
  * @description Instant Real Estate Listing Verifier, Bubble Scanner, and Red-Flag Trap Diagnostic Engine.
+ * OP-DEC-001 parity: formatMillionTomanAsIntlCurrency (see areaUnit).
  */
 
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../data/neighborhoods';
