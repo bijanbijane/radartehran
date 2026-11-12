@@ -3,6 +3,7 @@
  * @description Iranian Title & Deed Legitimacy Shield Engine.
  * Formulates risk deductions based on the 1403 Law on Compulsory Official Real Estate Registration
  * and property title typology (Tek-Barg vs Waqf vs Ghoulnameh vs Maskan Mehr).
+ * OP-DEC-001: formatMillionTomanAsIntlCurrency
  */
 import { toPersianNum } from '../data/neighborhoods';
 

@@ -2,6 +2,7 @@
  * @file src/utils/liquidityDepthAndTomEngine.ts
  * @description Iranian Real Estate Liquidity Depth & Time-on-Market (TOM) Engine.
  * Solves the paper-wealth illusion by estimating realistic sale timelines and instant-cash liquidation discounts.
+ * OP-DEC-001: formatMillionTomanAsIntlCurrency
  */
 import { toPersianNum } from '../data/neighborhoods';
 

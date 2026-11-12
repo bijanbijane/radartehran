@@ -30,3 +30,8 @@
   - `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `ADMIN_API_SECRET`, `OBJECT_STORAGE_ACCESS_KEY`, `OBJECT_STORAGE_SECRET_KEY`, and `CASPER_HUB_TOKEN` are never exposed in `/api/admin/runtime-config` responses, encrypted backup envelopes (`scrubSecretsFromBackupObject`), or `.runtime-config.json`.
   - `/api/admin/casper-hub/*` routes enforce admin RBAC (`verifyAdminAuth`), rate limiting (`30 req/min` with `Retry-After: 60`), SHA-256 token-digest identity binding (`CASPER-03`), `redirect: "manual"`, SSRF host validation, and prompt-injection/token-redaction shields.
   - Buyer contact leads are not persisted to `.cache-data.json`.
+
+## 2.1 Epistemic Trust & User-Facing Price Claims
+- **No false transaction facts**: UI copy under `src/components/**` must not use forbidden deal-fact phrases (`FORBIDDEN_DEAL_FACT_LABELS` in `src/utils/epistemicUiLabels.ts`) unless negated in context (e.g. «مشاهده آگهی ≠ نرخ قطعی معامله»).
+- **Consistent evidence**: High-traffic views (Compare, Inspector, Intelligence) must aggregate with live listing samples and show `EpistemicMarketDisclaimer` when `isDealPriceDisplayableAsFact` is false.
+- **Regression**: `tests/engineering-quality-foundation.test.ts` scans components for forbidden labels; `tests/real-market-price-aggregator.test.ts` asserts zero-sample paths do not fabricate listings or present verified deal facts.

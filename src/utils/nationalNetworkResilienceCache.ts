@@ -2,6 +2,7 @@
  * @file src/utils/nationalNetworkResilienceCache.ts
  * @description National Network Resilience & Offline Fallback Cache for Tehran Radar.
  * Ensures the application functions autonomously under network partitions, censorship, or cloud API timeouts.
+ * OP-DEC-001: formatMillionTomanAsIntlCurrency
  */
 
 const RESILIENCE_CACHE_PREFIX = 'radar_resilience_v1_';

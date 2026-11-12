@@ -135,7 +135,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
         <div className="border-r border-slate-200/70 dark:border-slate-800 pr-2">
           <div className="text-[10.5px] text-slate-500 dark:text-slate-400">قیمت تخمینی ({areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})</div>
           <div className="font-black text-slate-900 dark:text-white text-xs mt-0.5">
-            {toPersianNum(projectedUnitPrice)} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">م (قطعی معامله: {toPersianNum(projectedDealUnitPrice)} م)</span>
+            {toPersianNum(projectedUnitPrice)} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">م (سناریوی v6.4: {toPersianNum(projectedDealUnitPrice)} م)</span>
             {intlCurrency !== 'IRT' && (
               <span className="mr-1 text-[9.5px] font-bold text-emerald-700 dark:text-emerald-400" dir="ltr">
                 ({formatMillionTomanAsIntlCurrency(projectedUnitPrice, intlCurrency, radarLocale)})

@@ -5,6 +5,7 @@ import { toPersianNum } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useExperienceMode, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
+import { EpistemicMarketDisclaimer } from '../EpistemicMarketDisclaimer';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
@@ -108,7 +109,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
 
         <button type="button" onClick={p.onOpenPriceTrend} className="p-5 rounded-2xl text-start bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 flex flex-col justify-between cursor-pointer transition group">
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
-            <span>{isEn ? '04 · v6.4 Closing Discount' : '۰۴ · شکاف تخفیف قطعی v6.4'}</span>
+            <span>{isEn ? '04 · v6.4 Negotiation Spread' : '۰۴ · شکاف سناریوی مذاکره v6.4'}</span>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 group-hover:underline">{isEn ? 'Trend ↗' : 'تحلیل روند ↗'}</span>
           </div>
           <div className="my-3"><span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">-{toPersianNum(Math.max(1, Math.round((1 - selectedAgg.askToDealRatio) * 100)))}٪</span><span className="text-xs text-slate-400 mx-1.5">{isEn ? 'closing spread' : 'تخفیف جلسه معامله'}</span></div>
@@ -120,6 +121,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
 
       {/* Selected Neighborhood Deep Analysis + Provenance */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-5">
+        <EpistemicMarketDisclaimer metrics={selectedAgg} />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
             <div className="text-[11px] text-slate-400 font-semibold">{isEn ? 'Price Structure & Statistical Provenance of Active Map Neighborhood' : 'کالبدشکافی ساختار قیمتی محله انتخابی روی نقشه'}</div>
@@ -149,7 +151,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           </div>
           <div className="p-4 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20">
             <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block mb-0.5">برآورد مدل (Model Estimate v6.4)</span>
-            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-bold">تخمین قطعی پای معامله (v6.4):</span>
+            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-bold">{selectedAgg.displayDealLabelFa} (v6.4):</span>
             <strong className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-1.5 block">{toPersianNum(uDeal)} <span className="text-xs font-normal text-emerald-600/70">م.ت / {areaUnit === 'sqft' ? 'ft²' : 'متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(uDeal, intlCurrency, radarLocale)})` : ''}</span></strong>
           </div>
           <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/30 dark:bg-indigo-950/20">

@@ -10,6 +10,7 @@ import {
   parseIranianPriceToMillionToman,
   computeQualityMultiplier,
   aggregateNeighborhoodMarketMetrics,
+  aggregateMarketMetricsForHood,
   buildNeighborhoodListingSamples,
   applySpatialGrowthFallback,
   verifyPricingEngineIntegrity,
@@ -112,6 +113,7 @@ assert.equal(aggCold.evidenceSufficiency, 'NONE', 'Zero samples marked as NONE e
 assert.equal(aggCold.evidenceIndexScore, 0, 'Zero observed samples yields 0 evidence index score');
 assert.equal(aggCold.confidenceScore, 0, 'Zero observed samples yields 0 confidenceScore (never 74)');
 assert.equal(aggCold.autoBargains.length, 0, 'Zero observed samples never fabricates synthetic bargains');
+assert.equal(aggCold.isDealPriceDisplayableAsFact, false, 'Zero samples must not display deal price as verified transaction fact');
 
 // Case 8.1.2: 1 observed sample
 const aggOne = aggregateNeighborhoodMarketMetrics(1, 'سعادت‌آباد', 150, [
@@ -279,13 +281,24 @@ assert.ok(aggFrozen.unclampedAveragePerSqm > aggFrozen.hedonicAdjustedPerSqm, 'U
 // 9. WS-A1-R Section 8.3: Cross-View Sample Consistency & Product Language Verification
 const punakHood = INITIAL_NEIGHBORHOODS.find((h) => h.id === 5)!;
 const punakSamples = buildNeighborhoodListingSamples(punakHood);
-assert.equal(punakSamples.length, 2, 'Punak canonical sample builder extracts 2 listings');
+assert.equal(punakSamples.length, 0, 'Seed catalog bargains are excluded until live-divar ids exist');
 const punakAgg = aggregateNeighborhoodMarketMetrics(punakHood.id, punakHood.name, punakHood.buyPerSqm, punakSamples);
-assert.equal(punakAgg.observedSampleCount, 2, 'Punak observedSampleCount is 2 across all views');
-assert.equal(punakAgg.eligibleObservedCount, 2, 'Punak eligibleObservedCount is 2 across all views');
-assert.equal(punakAgg.evidenceIndexScore, 52, 'Punak evidenceIndexScore is 52 across all views');
-assert.equal(punakAgg.observedIqrLowPerSqm, null, 'Punak (<3 samples) has null observedIqrLowPerSqm');
-assert.equal(punakAgg.hasSufficientIqrEvidence, false, 'Punak (<3 samples) hasSufficientIqrEvidence is false');
+const punakUiAgg = aggregateMarketMetricsForHood(punakHood);
+assert.equal(punakUiAgg.observedSampleCount, punakAgg.observedSampleCount, 'aggregateMarketMetricsForHood matches canonical sample path observedSampleCount');
+
+const punakLiveFixture = {
+  ...punakHood,
+  bargains: [
+    ...(punakHood.bargains || []).map((b) => ({ ...b, id: `live-divar-${b.id}` })),
+  ],
+};
+const liveSamples = buildNeighborhoodListingSamples(punakLiveFixture);
+assert.ok(liveSamples.length >= 2, 'live-divar prefixed bargains feed the canonical sample builder');
+const liveAgg = aggregateNeighborhoodMarketMetrics(punakHood.id, punakHood.name, punakHood.buyPerSqm, liveSamples);
+assert.equal(liveAgg.observedSampleCount, liveSamples.length, 'Live sample path observedSampleCount tracks builder length');
+assert.equal(liveAgg.eligibleObservedCount, liveSamples.length, 'Live sample path eligibleObservedCount tracks builder length');
+assert.equal(liveAgg.observedIqrLowPerSqm, null, 'Punak (<3 samples) has null observedIqrLowPerSqm');
+assert.equal(liveAgg.hasSufficientIqrEvidence, false, 'Punak (<3 samples) hasSufficientIqrEvidence is false');
 
 const piSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductIntelligenceView.tsx'), 'utf-8');
 const cmSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf-8');
@@ -295,6 +308,9 @@ assert.ok(piSrc.includes('buildNeighborhoodListingSamples(p.selectedHood)'), 'Pr
 assert.ok(cmSrc.includes('buildNeighborhoodListingSamples(compHood1)') && cmSrc.includes('buildNeighborhoodListingSamples(compHood2)'), 'CompareModal uses canonical buildNeighborhoodListingSamples');
 assert.ok(drSrc.includes('buildNeighborhoodListingSamples(selectedHood)'), 'NeighborhoodInspectorDrawer uses canonical buildNeighborhoodListingSamples');
 assert.ok(tbSrc.includes('buildNeighborhoodListingSamples(selectedHood)'), 'NeighborhoodInspectorTabs uses canonical buildNeighborhoodListingSamples');
+assert.ok(cmSrc.includes('EpistemicMarketDisclaimer'), 'CompareModal surfaces epistemic disclaimer');
+assert.ok(piSrc.includes('EpistemicMarketDisclaimer'), 'ProductIntelligenceView surfaces epistemic disclaimer');
+assert.ok(tbSrc.includes('EpistemicMarketDisclaimer'), 'NeighborhoodInspectorTabs surfaces epistemic disclaimer');
 assert.ok(!piSrc.includes('تخمین قیمت قطعی معاملات'), 'ProductIntelligenceView does not claim definitive closing transaction estimates');
 assert.ok(!piSrc.includes('همگرایی قیمت اعلامی با نرخ معامله'), 'ProductIntelligenceView does not claim convergence with closing transaction rates');
 assert.ok(!piSrc.includes('جایگاه معامله قطعی'), 'ProductIntelligenceView does not claim definitive transaction percentile position');

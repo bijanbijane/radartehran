@@ -1,6 +1,7 @@
 /**
  * @file src/utils/contractRoomShieldEngine.ts
  * @description Contract-Room Survival Shield, Safe Payment Staging, and Clause Antidote Engine.
+ * OP-DEC-001: formatMillionTomanAsIntlCurrency
  */
 
 import { toPersianNum as toPersianDigits } from '../data/neighborhoods';

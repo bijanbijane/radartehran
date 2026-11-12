@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react'; import { AlertCircle, ArrowLeftRight, Award, Check, Copy, MapPin, Printer, RefreshCw, Sparkles, X } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { clampNumber, recordDiagnosticEvent, validateNeighborhoodId } from '../utils/security'; import { useDialogFocus } from './useDialogFocus'; import { getMapAdvancedOverlayState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from './mapAdvancedLayers'; import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit'; import { explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods'; export interface CompareModalProps { open: boolean; onClose: () => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
+import React, { useEffect, useMemo, useState } from 'react'; import { AlertCircle, ArrowLeftRight, Award, Check, Copy, MapPin, Printer, RefreshCw, Sparkles, X } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
+import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { clampNumber, recordDiagnosticEvent, validateNeighborhoodId } from '../utils/security'; import { useDialogFocus } from './useDialogFocus'; import { getMapAdvancedOverlayState, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from './mapAdvancedLayers'; import { AreaUnitToggle, useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency, formatUnitBuyPriceTitle, getRadarCompareCopy } from '../utils/areaUnit'; import { explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods'; export interface CompareModalProps { open: boolean; onClose: () => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
   compareId1: number; setCompareId1: React.Dispatch<React.SetStateAction<number>>; compareId2: number; setCompareId2: React.Dispatch<React.SetStateAction<number>>; compHood1: EvaluatedNeighborhood; compHood2: EvaluatedNeighborhood; mode?: 'rent' | 'buy'; buyTotalBudget?: number; totalRahnEquivalent?: number; rentAgeMultiplier?: number; deductTenantRahnInBuy?: boolean; onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void; } interface ComparisonMetricRow { label: string; v1: string; v2: string; win: 0 | 1 | 2; }
 export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1, setCompareId1, compareId2, setCompareId2, compHood1, compHood2, mode = 'buy', buyTotalBudget = 8500, totalRahnEquivalent = 1500, rentAgeMultiplier = 1, deductTenantRahnInBuy = false, onSelectNeighborhood, }: CompareModalProps): React.ReactElement | null { const dialogRef = useDialogFocus(open, onClose); const overlayState = useMapAdvancedOverlayState(); const [areaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const isEn = radarLocale === 'en'; const compareCopy = getRadarCompareCopy(radarLocale);
   const [copied, setCopied] = useState(false);
@@ -29,7 +30,17 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
         { label: 'همواری گذرها', v1: `${toPersianNum(compHood1.flatTerrain)} / ۱۰`, v2: `${toPersianNum(compHood2.flatTerrain)} / ۱۰`, win: compHood1.flatTerrain === compHood2.flatTerrain ? 0 : compHood1.flatTerrain > compHood2.flatTerrain ? 1 : 2 },
         { label: 'امتیاز کل کیفیت زندگی (میانگین هم‌وزن ۶ سنجه · بازه ±۰.۳ هم‌تراز)', v1: `${toPersianNum(compHood1.overallScore)} / ۱۰${scoreTieBand ? ' (≈ هم‌تراز)' : ''}`, v2: `${toPersianNum(compHood2.overallScore)} / ۱۰${scoreTieBand ? ' (≈ هم‌تراز)' : ''}`, win: scoreTieBand ? 0 : compHood1.overallScore > compHood2.overallScore ? 1 : 2 },
       ]; } catch { recordDiagnosticEvent('CompareModal', 'Fallback triggered while building rows', 'fallback'); return []; }
-  }, [compHood1, compHood2, rentAgeMultiplier, areaUnit, intlCurrency, radarLocale, isEn]); const summaryStats = useMemo(() => { if (!compHood1 || !compHood2) return { win1: 0, win2: 0, sqm1: 0, sqm2: 0, diffSqm: 0, uSpread: 0 }; const win1 = rows.filter((r) => r.win === 1).length;
+  }, [compHood1, compHood2, rentAgeMultiplier, areaUnit, intlCurrency, radarLocale, isEn]);
+  const compareEpistemicAggs = useMemo(() => {
+    if (!compHood1 || !compHood2) return null;
+    const buy1 = clampNumber(compHood1.buyPerSqm, 10, 2000, 100);
+    const buy2 = clampNumber(compHood2.buyPerSqm, 10, 2000, 100);
+    return {
+      hoodA: aggregateNeighborhoodMarketMetrics(compHood1.id, compHood1.name, buy1, buildNeighborhoodListingSamples(compHood1)),
+      hoodB: aggregateNeighborhoodMarketMetrics(compHood2.id, compHood2.name, buy2, buildNeighborhoodListingSamples(compHood2)),
+    };
+  }, [compHood1, compHood2]);
+  const summaryStats = useMemo(() => { if (!compHood1 || !compHood2) return { win1: 0, win2: 0, sqm1: 0, sqm2: 0, diffSqm: 0, uSpread: 0 }; const win1 = rows.filter((r) => r.win === 1).length;
     const win2 = rows.filter((r) => r.win === 2).length; const calcSqm = (h: EvaluatedNeighborhood) => {
       if (mode === 'buy') { const netCashPerSqm = deductTenantRahnInBuy ? Math.max(10, h.buyPerSqm * 0.9 - (h.rahn80m / 80) * rentAgeMultiplier) : Math.max(1, h.buyPerSqm);
         return Math.max(0, Math.round(buyTotalBudget / netCashPerSqm)); }
@@ -136,6 +147,12 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                 </select>
               </div>
             </div>
+            {compareEpistemicAggs && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                <EpistemicMarketDisclaimer metrics={compareEpistemicAggs.hoodA} />
+                <EpistemicMarketDisclaimer metrics={compareEpistemicAggs.hoodB} />
+              </div>
+            )}
             <div className="space-y-2.5 mb-4 text-xs">
               <div className="apple-grouped-card bg-amber-50/90 dark:bg-amber-950/25 ring-1 ring-amber-500/20 p-3.5 text-amber-950 dark:text-amber-200 flex items-start gap-2.5 shadow-xs">
                 <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />

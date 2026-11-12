@@ -2,6 +2,7 @@
  * @file src/utils/fxInflationDriftEngine.ts
  * @description Dynamic FX and CPI Inflation Drift Engine for Iranian Real Estate.
  * Solves temporal data decay by adjusting nominal property prices against exchange rate and inflation shocks.
+ * OP-DEC-001: formatMillionTomanAsIntlCurrency
  */
 import { toPersianNum } from '../data/neighborhoods';
 

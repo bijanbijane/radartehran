@@ -90,3 +90,14 @@ Database ID: `ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a` (Project: `gen-lan
 | `/userPreferences/{userId}` | `${request.auth.uid}` | Owner or Admin | Verified owner | `userId`, `favoriteHoodIds` (`list <= 25`, integers `1..999`), `updatedAtIso` |
 | `/admins/{adminId}` | `${uid}` | Verified Admin (`role == 'admin'`) | Managed out-of-band (`allow write: if false`) | `role: 'admin'`, `email` |
 
+## 4. Epistemic Market Pricing (UI ↔ Aggregator)
+
+Neighborhood deal/spread numbers shown in map-adjacent UI (Compare, Inspector market tab, Intelligence, Bargains) must share one sampling path:
+
+- **Canonical samples**: `buildNeighborhoodListingSamples(hood)` inside `src/data/realMarketPriceAggregator.ts` (live `hood.bargains` when present).
+- **UI entry point**: `aggregateHoodMarketForUi` / `aggregateMarketMetricsForHood` in `src/data/aggregateHoodMarketForUi.ts` — UI must not call `aggregateNeighborhoodMarketMetrics(..., [])`.
+- **Labels**: `displayDealLabelFa`, `isDealPriceDisplayableAsFact`, and `FORBIDDEN_DEAL_FACT_LABELS` in `src/utils/epistemicUiLabels.ts` (forbidden: implying verified closing price without `verifiedTransactionCount > 0`).
+- **Banner**: `EpistemicMarketDisclaimer` when deal price is heuristic or lacks verified transactions.
+
+Provenance fields consumed by UI: `provenance`, `evidenceSufficiency`, `observedSampleCount`, `confidenceScore`.
+

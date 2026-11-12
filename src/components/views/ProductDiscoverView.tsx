@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ArrowLeftRight, Heart, LayoutGrid, List, ArrowUpRight, Scale, X } from 'lucide-react';
-import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
-import { toPersianNum } from '../../data/neighborhoods';
+import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { matchesPersianSearch } from '../../utils/security';
@@ -9,15 +8,11 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { isCoordInsideStoredViewport, updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { CasperInstantVerdictCard } from '../casper/CasperInstantVerdictCard';
-
 export interface ProductDiscoverViewProps {
-  evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
-  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; favoriteHoodIds: number[];
-  onToggleFavorite: (id: number) => void; onOpenInspector: (hood: EvaluatedNeighborhood) => void;
-  onOpenCompare: (id1: number, id2: number) => void; onNavigateView: (view: PrimaryViewId) => void;
-  mode: 'rent' | 'buy'; onChangeMode?: (m: 'rent' | 'buy') => void; targetSqm: number;
+  evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
+  favoriteHoodIds: number[]; onToggleFavorite: (id: number) => void; onOpenInspector: (hood: EvaluatedNeighborhood) => void; onOpenCompare: (id1: number, id2: number) => void;
+  onNavigateView: (view: PrimaryViewId) => void; mode: 'rent' | 'buy'; onChangeMode?: (m: 'rent' | 'buy') => void; targetSqm: number;
 }
-
 export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';

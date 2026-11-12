@@ -166,7 +166,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                         const rawBench = (targetBargainHood as { baseBuyPerSqm?: number }).baseBuyPerSqm ?? targetBargainHood.buyPerSqm;
                         const uBench = Number(convertPricePerSqmToUnit(rawBench, areaUnit).toFixed(1));
                         const uDealBench = Number(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(targetBargainHood.id, targetBargainHood.name, rawBench, buildNeighborhoodListingSamples({ ...targetBargainHood, buyPerSqm: rawBench })).estimatedDealPricePerSqm, areaUnit).toFixed(1));
-                        return `قیمت پیشنهادی هر متر (میانگین ${areaUnit === 'sqft' ? 'ft²' : 'متر'} ${targetBargainHood.name}: ${toPersianNum(uBench)} میلیون · قطعی معامله: ${toPersianNum(uDealBench)} م${showIntl ? ` · ${formatMillionTomanAsIntlCurrency(uBench, currency, locale)}` : ''}):`;
+                        return `قیمت پیشنهادی هر متر (میانگین ${areaUnit === 'sqft' ? 'ft²' : 'متر'} ${targetBargainHood.name}: ${toPersianNum(uBench)} میلیون · سناریوی مذاکره: ${toPersianNum(uDealBench)} م${showIntl ? ` · ${formatMillionTomanAsIntlCurrency(uBench, currency, locale)}` : ''}):`;
                       })()
                     : (() => {
                         const scaledRahn = Math.round(targetBargainHood.rahn80m * (Math.max(25, bargainSqm) / 80));

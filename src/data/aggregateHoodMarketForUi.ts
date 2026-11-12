@@ -1,10 +1,6 @@
 /** UI entry: always uses live listing samples when hood.bargains allows. OP-DEC-001: formatMillionTomanAsIntlCurrency */
-import {
-  aggregateNeighborhoodMarketMetrics,
-  buildNeighborhoodListingSamples,
-  type AggregatedMarketMetrics,
-  type NeighborhoodListingSource,
-} from './realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, type AggregatedMarketMetrics } from './realMarketPriceAggregator';
+import { buildNeighborhoodListingSamples, type NeighborhoodListingSource } from './neighborhoodListingSamples';
 import { LABEL_ADS_NOT_TRANSACTIONS_FA, LABEL_HEURISTIC_NEGOTIATION_V64_FA } from '../utils/epistemicUiLabels';
 
 export interface HoodMarketUiBundle {

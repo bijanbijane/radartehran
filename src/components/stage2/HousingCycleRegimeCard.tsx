@@ -172,7 +172,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
           <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5">
             {toPersianNum(cycle.askingToDealSpreadPct)}٪
           </div>
-          <div className="text-[9px] text-slate-400">حاشیه تخفیف قطعی پای میز</div>
+          <div className="text-[9px] text-slate-400">حاشیه تخفیف سناریوی مذاکره (غیرثبتی)</div>
         </div>
       </div>
 

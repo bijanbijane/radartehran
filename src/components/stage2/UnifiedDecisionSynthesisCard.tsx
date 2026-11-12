@@ -147,7 +147,7 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
           <span className="text-[10px] text-slate-400 tabular-nums">متری {toPersianNum(report.askingPricePerSqm)} م</span>
         </div>
         <div className="p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40">
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">ارزش قطعی مدل (v6.4):</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">ارزش سناریوی مدل (v6.4 · غیرثبتی):</span>
           <strong className="text-base font-black text-indigo-700 dark:text-indigo-300 tabular-nums block">{toPersianNum(Math.round(report.fairPricePerSqm * report.targetSqm))} م.ت</strong>
           <span className="text-[10px] text-slate-400 tabular-nums">متری {toPersianNum(report.fairPricePerSqm)} م{fxTag(report.fairPricePerSqm)}</span>
         </div>
@@ -237,7 +237,7 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
       <div className="p-2.5 rounded-lg bg-indigo-50/30 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-2">
         <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong>رهنمود مهندسی کسپر:</strong> تصمیم‌گیری عقلانی در مسکن حاصل برهم‌کنش ریاضی ارزش قطعی معامله (v6.4)، نقدشوندگی، تقارن اطلاعاتی و رژیم تورم کلان است. با کلیک روی هر یک از ۶ ضلع بالا، وارد میز کار تخصصی همان مدل شوید.
+          <strong>رهنمود مهندسی کسپر:</strong> تصمیم‌گیری عقلانی در مسکن حاصل برهم‌کنش ریاضی سناریوی فرضی مذاکره (v6.4 · غیرثبتی)، نقدشوندگی، تقارن اطلاعاتی و رژیم تورم کلان است. با کلیک روی هر یک از ۶ ضلع بالا، وارد میز کار تخصصی همان مدل شوید.
         </p>
       </div>
     </div>

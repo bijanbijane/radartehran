@@ -2217,6 +2217,51 @@ async function runSuite(): Promise<void> {
     assert.equal(superValSrc.includes('aria-label="آسانسور در کارشناسی تفصیلی"') && superValSrc.includes('aria-label="انباری سندی در کارشناسی تفصیلی"'), true, 'SuperModulesValuationAndFakeTabs checkboxes must have aria-labels');
   });
 
+  await verify('Epistemic UI guard: components avoid FORBIDDEN_DEAL_FACT_LABELS in user-facing copy', () => {
+    const readComp = (rel: string) => fs.readFileSync(path.resolve(process.cwd(), rel), 'utf8');
+    const forbidden = ['قیمت قطعی', 'معامله قطعی', 'تخمین قطعی معامله'] as const;
+    const allowIfLineIncludes = [
+      '≠ نرخ قطعی',
+      'عدم‌قطعیت',
+      'عدم قطعیت',
+      'قطعی ۲ ساعته',
+      'انتقال قطعی سند',
+      'در صورت قطعی',
+      'موتور تصمیم‌گیری قطعی',
+      'تعارض‌های شناسایی‌شده قطعی',
+      'معاملات قطعی اخیر',
+      'ظرفیت UPS قطعی برق',
+      'کد رهگیری قطعی',
+      'ارزش‌گذاری قطعی هدانیک',
+      'موتور قطعی هدانیک',
+      'توضیح متنی خروجی موتور قطعی',
+    ];
+    const root = path.join(process.cwd(), 'src/components');
+    const violations: string[] = [];
+    const walk = (dir: string) => {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, ent.name);
+        if (ent.isDirectory()) walk(p);
+        else if (ent.name.endsWith('.tsx')) {
+          const rel = path.relative(process.cwd(), p);
+          const lines = fs.readFileSync(p, 'utf8').split(/\r?\n/);
+          lines.forEach((line, idx) => {
+            if (allowIfLineIncludes.some((token) => line.includes(token))) return;
+            for (const label of forbidden) {
+              if (line.includes(label)) violations.push(`${rel}:${idx + 1} contains "${label}"`);
+            }
+          });
+        }
+      }
+    };
+    walk(root);
+    assert.equal(violations.length, 0, `Forbidden deal-fact labels in UI:\n${violations.join('\n')}`);
+    for (const key of ['CompareModal.tsx', 'ProductIntelligenceView.tsx', 'NeighborhoodInspectorTabs.tsx']) {
+      const src = readComp(`src/components${key.startsWith('Product') ? '/views/' : '/'}${key}`);
+      assert.ok(src.includes('EpistemicMarketDisclaimer'), `${key} must render EpistemicMarketDisclaimer for deal pricing context`);
+    }
+  });
+
   console.log(`\n🎉 ALL ${passed} ENGINEERING QUALITY & CONTRACT FOUNDATION TESTS PASSED!\n`);
 }
 

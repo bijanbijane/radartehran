@@ -1,4 +1,4 @@
-/** Compact epistemic banner when deal price is heuristic / no verified transactions. */
+/** Compact epistemic banner when deal price is heuristic / no verified transactions. OP-DEC-001: formatMillionTomanAsIntlCurrency */
 import type { AggregatedMarketMetrics } from '../data/realMarketPriceAggregator';
 import { LABEL_ADS_NOT_TRANSACTIONS_FA, LABEL_HEURISTIC_NEGOTIATION_V64_FA } from '../utils/epistemicUiLabels';
 import { toPersianNum } from '../data/neighborhoods';
