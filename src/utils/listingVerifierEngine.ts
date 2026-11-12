@@ -8,7 +8,7 @@ import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborho
 import { MULTI_CITY_CONFIGS } from '../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import type { DivarComparableProvenance, LiveComparableListing } from './divarComparableListings';
-import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_REFERENCE_BASELINE_FA } from './epistemicUiLabels';
+import { LABEL_HEURISTIC_NEGOTIATION_V64_FA } from './epistemicUiLabels';
 import { detectHoodNameFromListingText } from './listingHoodFromText';
 
 export {
@@ -64,7 +64,7 @@ export interface ListingDiagnosisResult {
   bubbleGapPct: number;
   totalBubbleMillion: number;
   recommendedDiscountMillion: number;
-  dealVerdict: 'FAIR_OPPORTUNITY' | 'NEGOTIATION_REQUIRED' | 'HEAVY_BUBBLE' | 'SUSPICIOUS_BAIT';
+  dealVerdict: 'FAIR_OPPORTUNITY' | 'NEGOTIATION_REQUIRED' | 'HEAVY_BUBBLE' | 'SUSPICIOUS_BAIT' | 'EVIDENCE_UNAVAILABLE';
   verdictLabelFa: string;
   redFlags: ListingRedFlag[];
   negotiationScript: {
@@ -173,21 +173,21 @@ export function diagnoseListingDeal(
     benchmarkLabelFa = 'میانهٔ آگهی‌های مشابه امروز';
   } else if (insufficientLiveSample) {
     benchmarkKind = 'UNAVAILABLE';
-    benchmarkLabelFa = LABEL_REFERENCE_BASELINE_FA;
+    benchmarkLabelFa = 'مرجع داخلی، آبان ۱۴۰۵';
     referenceBenchmarkPerSqm = hood.buyPerSqm;
   }
   const fairDealPricePerSqm = referenceBenchmarkPerSqm;
+  const evidenceMissing = benchmarkKind === 'UNAVAILABLE';
 
   const effectiveAskPerSqm = parsed.askingPricePerSqm > 0 ? parsed.askingPricePerSqm : hood.buyPerSqm;
   const effectiveAskTotal = parsed.askingPriceTotalMillion > 0 ? parsed.askingPriceTotalMillion : Math.round(effectiveAskPerSqm * parsed.areaSqm);
 
-  const bubbleGapPct = Math.round(((effectiveAskPerSqm - fairDealPricePerSqm) / Math.max(1, fairDealPricePerSqm)) * 100);
-  const totalBubbleMillion = Math.max(0, Math.round((effectiveAskPerSqm - fairDealPricePerSqm) * parsed.areaSqm));
-  const recommendedDiscountMillion = Math.max(Math.round(effectiveAskTotal * 0.05), totalBubbleMillion);
+  const bubbleGapPct = evidenceMissing ? 0 : Math.round(((effectiveAskPerSqm - fairDealPricePerSqm) / Math.max(1, fairDealPricePerSqm)) * 100);
+  const totalBubbleMillion = evidenceMissing ? 0 : Math.max(0, Math.round((effectiveAskPerSqm - fairDealPricePerSqm) * parsed.areaSqm));
+  const recommendedDiscountMillion = evidenceMissing ? 0 : Math.max(Math.round(effectiveAskTotal * 0.05), totalBubbleMillion);
 
   const redFlags: ListingRedFlag[] = [];
 
-  // Red Flag 1: High floor walk-up
   if (parsed.floor >= 3 && parsed.hasElevator === false) {
     redFlags.push({
       id: 'rf_no_elevator',
@@ -205,7 +205,6 @@ export function diagnoseListingDeal(
     });
   }
 
-  // Red Flag 2: Missing parking in larger units
   if (parsed.areaSqm >= 70 && parsed.hasParking === false) {
     const parkingVal = Math.round(Math.min(900, Math.max(350, fairDealPricePriceScale(hood.buyPerSqm))));
     redFlags.push({
@@ -217,7 +216,6 @@ export function diagnoseListingDeal(
     });
   }
 
-  // Red Flag 3: Title deed vulnerabilities
   if (parsed.deedCategory === 'COOPERATIVE_ENDOWMENT') {
     redFlags.push({
       id: 'rf_endowment',
@@ -235,8 +233,7 @@ export function diagnoseListingDeal(
     });
   }
 
-  // Red Flag 4: Suspicious price bait
-  if (bubbleGapPct <= -22) {
+  if (!evidenceMissing && bubbleGapPct <= -22) {
     redFlags.push({
       id: 'rf_bait_price',
       severity: 'WARNING',
@@ -248,7 +245,10 @@ export function diagnoseListingDeal(
   let dealVerdict: ListingDiagnosisResult['dealVerdict'] = 'NEGOTIATION_REQUIRED';
   let verdictLabelFa = 'نیازمند چانه‌زنی و اصلاح ثمن معامله';
 
-  if (bubbleGapPct > 15) {
+  if (evidenceMissing) {
+    dealVerdict = 'EVIDENCE_UNAVAILABLE';
+    verdictLabelFa = 'میانهٔ امروز موجود نیست؛ جدول داخلی محله معیار معامله نیست.';
+  } else if (bubbleGapPct > 15) {
     dealVerdict = 'HEAVY_BUBBLE';
     verdictLabelFa = `حباب سنگین (+${toPersianDigits(bubbleGapPct)}٪ بالاتر از کف منصفانه)`;
   } else if (bubbleGapPct <= -5 && redFlags.filter((r) => r.severity === 'CRITICAL').length === 0) {
@@ -259,7 +259,7 @@ export function diagnoseListingDeal(
     verdictLabelFa = 'مشکوک به قیمت فیک و طعمه آگهی';
   }
 
-  const openingOffer = Math.max(Math.round(effectiveAskTotal * 0.8), effectiveAskTotal - recommendedDiscountMillion);
+  const openingOffer = evidenceMissing ? 0 : Math.max(Math.round(effectiveAskTotal * 0.8), effectiveAskTotal - recommendedDiscountMillion);
 
   return {
     parsed,
@@ -285,7 +285,7 @@ export function diagnoseListingDeal(
         'علت فروش و انگیزه مالک چیست و تا چه مبلغی برای نشست قطعی راه می‌آید؟',
       ],
       openingOfferMillion: openingOffer,
-      closingMeetingTactic: `در جلسه اعلام کنید: «با مقایسهٔ آگهی‌های مشابه امروز در ${hood.name} و ارزیابی عینی امکانات، پیشنهاد ما ${toPersianDigits(openingOffer)} م.ت نقدی بدون معطلی وام است.»`,
+      closingMeetingTactic: evidenceMissing ? 'تا میانهٔ آگهی‌های مشابه امروز در دست نباشد، پیشنهاد قیمت ندهید.' : `در جلسه اعلام کنید: «با مقایسهٔ آگهی‌های مشابه امروز در ${hood.name} و ارزیابی عینی امکانات، پیشنهاد ما ${toPersianDigits(openingOffer)} م.ت نقدی بدون معطلی وام است.»`,
     },
   };
 }

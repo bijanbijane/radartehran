@@ -35,7 +35,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
   const featuredHoods = useMemo(() => {
     let list = p.evaluatedNeighborhoods;
-    const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
+    const dealSqm = (h: EvaluatedNeighborhood) => h.buyPerSqm;
     if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
     else if (priceBracket === '5to10b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot >= 1000 && tot <= 2000 : tot >= 5000 && tot <= 10000; });
     else if (priceBracket === '10to20b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot > 2000 && tot <= 4000 : tot > 10000 && tot <= 20000; });
@@ -214,16 +214,14 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                     <h3 className="text-lg font-black text-slate-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">محله {hood.name}</h3>
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
                       <div className="flex items-baseline justify-between text-xs">
-                        <span className="text-slate-500">{p.mode === 'buy' ? 'اعلامی / سناریو v6.4 (غیرثبتی):' : `رهن کامل (${formatAreaShort(80, areaUnit)}):`}</span>
+                        <span className="text-slate-500">{p.mode === 'buy' ? 'مرجع داخلی، آبان ۱۴۰۵:' : `رهن کامل (${formatAreaShort(80, areaUnit)}):`}</span>
                         <span className="text-base font-black text-slate-900 dark:text-white tabular-nums">
-                          {p.mode === 'buy' ? (
-                            <>{toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span></>
-                          ) : toPersianNum(hood.rahn80m)}{' '}
+                          {p.mode === 'buy' ? toPersianNum(unitBuy) : toPersianNum(hood.rahn80m)}{' '}
                           <span className="text-xs font-semibold text-slate-500">م.ت</span>
                         </span>
                       </div>
-                      <div className="flex items-baseline justify-between text-xs text-slate-500 tabular-nums">
-                        <span>{p.mode === 'buy' ? `رهن کامل (${formatAreaShort(80, areaUnit)}): ${toPersianNum(hood.rahn80m)} م.ت` : `سناریو v6.4 (غیرثبتی): متری ${toPersianNum(unitDeal)} م.ت`}</span>
+                      <div className="flex items-baseline justify-between text-[11px] text-slate-500 tabular-nums">
+                        <span>{p.mode === 'buy' ? `سناریو v6.4 (غیرثبتی): متری ${toPersianNum(unitDeal)} · رهن ${toPersianNum(hood.rahn80m)}` : `سناریو v6.4 (غیرثبتی): متری ${toPersianNum(unitDeal)}`}</span>
                         <span>هوا: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(hood.air)}/۱۰</strong></span>
                       </div>
                     </div>

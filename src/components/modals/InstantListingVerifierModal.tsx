@@ -202,21 +202,21 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
               {/* 3 Metric Cards */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">کف سناریوی مذاکره (غیرثبتی):</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'مرجع داخلی، آبان ۱۴۰۵:' : 'کف سناریوی مذاکره (غیرثبتی):'}</span>
                   <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs">
                     {toPersianDigits(diagnosis.fairDealPricePerSqm)} م/متر
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">حباب ثمن کل:</span>
-                  <span className={`font-extrabold text-xs ${diagnosis.totalBubbleMillion > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                    {diagnosis.totalBubbleMillion > 0 ? `+${toPersianDigits(diagnosis.totalBubbleMillion)} م` : 'بدون حباب'}
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'شکاف با میانهٔ امروز:' : 'حباب ثمن کل:'}</span>
+                  <span className={`font-extrabold text-xs ${diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'text-slate-500' : diagnosis.totalBubbleMillion > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'موجود نیست' : diagnosis.totalBubbleMillion > 0 ? `+${toPersianDigits(diagnosis.totalBubbleMillion)} م` : 'بدون حباب'}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 block">پیشنهاد نشست:</span>
                   <span className="font-extrabold text-indigo-700 dark:text-indigo-300 text-xs">
-                    {toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت
+                    {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'نداریم' : `${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت`}
                   </span>
                 </div>
               </div>

@@ -148,7 +148,7 @@ export function ListingVerdictHero({
               ))}
             </ul>
           ) : d.insufficientLiveSample ? (
-            <p className="text-amber-700 dark:text-amber-400">نمونهٔ زندهٔ کافی برای میانهٔ دقیق نیست؛ مرجع داخلی نمایش داده شد.</p>
+            <p className="text-amber-700 dark:text-amber-400">مرجع داخلی، آبان ۱۴۰۵: متری {toPersianNum(d.referenceBenchmarkPerSqm)} میلیون. این عدد معیار معامله نیست.</p>
           ) : null}
           <p className="text-[10px] text-slate-500">{verdict.disclaimerFa || LABEL_ADS_NOT_TRANSACTIONS_FA}</p>
         </div>

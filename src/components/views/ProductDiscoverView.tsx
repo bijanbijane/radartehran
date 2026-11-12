@@ -34,7 +34,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
   const filtered = useMemo(() => {
     let list = filterRankingByViewport ? inViewportHoods : p.evaluatedNeighborhoods;
     if (statusFilter !== 'all') list = list.filter((h) => h.status === statusFilter);
-    const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
+    const dealSqm = (h: EvaluatedNeighborhood) => h.buyPerSqm;
     if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
     else if (priceBracket === '5to10b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? val >= 1000 && val <= 2000 : val >= 5000 && val <= 10000; });
     else if (priceBracket === '10to20b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? val > 2000 && val <= 4000 : val > 10000 && val <= 20000; });
@@ -153,7 +153,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           <div className="flex items-center gap-2 min-w-0 max-w-full">
             <span className="text-slate-400 text-[11px] shrink-0">{isEn ? 'Sort by:' : 'ترتیب نمایش:'}</span>
             <select aria-label={isEn ? 'Sort neighborhoods' : 'ترتیب نمایش محله‌ها'} value={sortBy} onChange={(e) => setSortBy(e.target.value as 'score' | 'price_asc' | 'price_desc' | 'rahn_asc' | 'air')} className="max-w-[210px] sm:max-w-none truncate px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none">
-              <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option><option value="price_asc">{isEn ? 'Lowest v6.4 Deal Price' : 'کمترین قیمت سناریو v6.4 (غیرثبتی)'}</option><option value="price_desc">{isEn ? 'Highest Asking Price' : 'بیشترین ارزش پایه'}</option><option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option><option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
+              <option value="score">{isEn ? 'Highest Livability Score' : 'بالاترین امتیاز کیفیت سکونت'}</option><option value="price_asc">{isEn ? 'Lowest internal reference' : 'کمترین مرجع داخلی'}</option><option value="price_desc">{isEn ? 'Highest internal reference' : 'بیشترین مرجع داخلی'}</option><option value="rahn_asc">{isEn ? 'Lowest 80m² Deposit' : 'کمترین رهن کامل ۸۰ متر'}</option><option value="air">{isEn ? 'Best Air Quality' : 'بهترین کیفیت هوا و آرامش'}</option>
             </select>
           </div>
         </div>
@@ -205,13 +205,11 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
 
                   <div className="my-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-3 tabular-nums">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                        <span>اعلامی / معامله:</span>
-                        {unitBuy > unitDeal && <span className="text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded">~{toPersianNum(Math.max(1, Math.round(((unitBuy - unitDeal) / unitBuy) * 100)))}٪ تخفیف</span>}
-                      </div>
+                      <div className="text-[10px] text-slate-400 font-medium">مرجع داخلی، آبان ۱۴۰۵</div>
                       <strong className="text-sm font-black text-slate-900 dark:text-white mt-0.5 block">
-                        {toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> <span className="text-[10px] font-normal text-slate-400">م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}</span>
+                        {toPersianNum(unitBuy)} <span className="text-[10px] font-normal text-slate-400">م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, radarLocale)}` : ''}</span>
                       </strong>
+                      <span className="text-[10px] text-slate-500 block">سناریو v6.4 (غیرثبتی): {toPersianNum(unitDeal)}</span>
                     </div>
                     <div className="border-r border-slate-100 dark:border-slate-800 pr-3">
                       <span className="text-[10px] text-slate-400 block font-medium">رهن ۸۰ متر:</span>
@@ -265,8 +263,9 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 tabular-nums">
                   <div>
-                    <span className="text-[10px] text-slate-400 block">اعلامی / سناریو v6.4 (غیرثبتی):</span>
-                    <span className="font-black text-slate-900 dark:text-white">{toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> م</span>
+                    <span className="text-[10px] text-slate-400 block">مرجع داخلی، آبان ۱۴۰۵</span>
+                    <span className="font-black text-slate-900 dark:text-white">{toPersianNum(unitBuy)} م</span>
+                    <span className="text-[10px] text-slate-500 block">سناریو v6.4 (غیرثبتی): {toPersianNum(unitDeal)}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block">رهن ۸۰متر:</span>

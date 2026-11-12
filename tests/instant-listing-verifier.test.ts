@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { buildDivarComparableProvenance } from '../src/utils/divarComparableListings.js';
 import {
   parseListingNarrativeText,
   diagnoseListingDeal,
@@ -30,7 +31,12 @@ test('parseListingNarrativeText extracts key Iranian real-estate fields', () => 
 test('diagnoseListingDeal flags bubble prices and generates discount script', () => {
   // Saadat Abad (ID 3 in Tehran has buyPerSqm 620). Asking 75 billion for 100m is 750M/sqm (bubble)
   const parsed = parseListingNarrativeText('آپارتمان ۱۰۰ متری در سعادت آباد قیمت ۷۵ میلیارد تومان', 'سعادت‌آباد');
-  const result = diagnoseListingDeal(parsed, 'tehran', 3);
+  const result = diagnoseListingDeal(parsed, 'tehran', 3, {
+    medianPerSqm: 200,
+    comparables: [],
+    insufficientSample: false,
+    provenance: buildDivarComparableProvenance('verified_live', '2026-11-12T00:00:00.000Z'),
+  });
 
   assert.equal(result.parsed.askingPricePerSqm, 750);
   assert.ok(result.referenceBenchmarkPerSqm > 0);
@@ -43,6 +49,18 @@ test('diagnoseListingDeal flags bubble prices and generates discount script', ()
   assert.ok(['NEGOTIATION_REQUIRED', 'HEAVY_BUBBLE'].includes(result.dealVerdict));
   assert.ok(result.negotiationScript.closingMeetingTactic.length > 10);
   assert.ok(result.negotiationScript.firstCallQuestions.length >= 4);
+});
+
+test('diagnoseListingDeal withholds bubble verdict when today median is missing', () => {
+  const parsed = parseListingNarrativeText('آپارتمان ۱۰۰ متری در سعادت آباد قیمت ۷۵ میلیارد تومان', 'سعادت‌آباد');
+  const result = diagnoseListingDeal(parsed, 'tehran', 3);
+  assert.equal(result.benchmarkKind, 'UNAVAILABLE');
+  assert.equal(result.dealVerdict, 'EVIDENCE_UNAVAILABLE');
+  assert.equal(result.bubbleGapPct, 0);
+  assert.equal(result.recommendedDiscountMillion, 0);
+  assert.equal(result.verdictLabelFa, 'میانهٔ امروز موجود نیست؛ جدول داخلی محله معیار معامله نیست.');
+  assert.equal(result.benchmarkLabelFa, 'مرجع داخلی، آبان ۱۴۰۵');
+  assert.equal(result.negotiationScript.openingOfferMillion, 0);
 });
 
 test('diagnoseListingDeal identifies walk-up red flag and parking penalty', () => {
