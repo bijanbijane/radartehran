@@ -43,6 +43,7 @@ export interface AdminOverviewAndModerationTabsProps {
   onAdminChangePassword: (e: React.FormEvent) => void;
   onExtendSponsor30Days?: (hoodId: number) => void;
   onReleaseHoodSponsor?: (hoodId: number) => void;
+  isVerifiedAdmin?: boolean;
 }
 
 export function AdminOverviewAndModerationTabs(
@@ -56,7 +57,7 @@ export function AdminOverviewAndModerationTabs(
     adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg,
     onAdminQuickPriceSave, deepSyncing, onDeepWebSync, newAdminPassword,
     setNewAdminPassword, adminPassChangeMsg, onAdminChangePassword,
-    onExtendSponsor30Days, onReleaseHoodSponsor,
+    onExtendSponsor30Days, onReleaseHoodSponsor, isVerifiedAdmin,
   } = props;
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
@@ -83,6 +84,7 @@ export function AdminOverviewAndModerationTabs(
           neighborhoods={neighborhoods}
           onExtendSponsor30Days={onExtendSponsor30Days}
           onReleaseHoodSponsor={onReleaseHoodSponsor}
+          isVerifiedAdmin={isVerifiedAdmin}
         />
         {(sponsorRequests || []).length === 0 ? (
           <div className="text-center py-6 text-slate-400">درخواستی در لیست CRM ثبت نشده است.</div>
@@ -242,18 +244,13 @@ export function AdminOverviewAndModerationTabs(
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
           >
             {neighborhoods.map((n) => (
-              <option key={n.id} value={n.id}>محله {n.name} ({n.zone}) — {toPersianNum(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} {areaUnit === 'sqft' ? 'م/ft²' : 'م'} (سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(
-                n.id,
-                n.name,
-                (n as any).baseBuyPerSqm ?? n.buyPerSqm,
-                buildNeighborhoodListingSamples(n),
-              ).estimatedDealPricePerSqm, areaUnit))} م){fxTag(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((((n as any).baseBuyPerSqm ?? n.buyPerSqm) * 80) / 1000).toFixed(1))} میلیارد</option>
+              <option key={n.id} value={n.id}>محله {n.name} ({n.zone}) — {toPersianNum(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} {areaUnit === 'sqft' ? 'م/ft²' : 'م'} (سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, (n as any).baseBuyPerSqm ?? n.buyPerSqm, buildNeighborhoodListingSamples(n)).estimatedDealPricePerSqm, areaUnit))} م){fxTag(convertPricePerSqmToUnit((n as any).baseBuyPerSqm ?? n.buyPerSqm, areaUnit))} · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((((n as any).baseBuyPerSqm ?? n.buyPerSqm) * 80) / 1000).toFixed(1))} میلیارد</option>
             ))}
           </select>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-600 dark:text-slate-300 mb-1">میانگین هر متر خرید (میلیون · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForScalars(adminEditHoodId, "تهران", adminEditBuySqm).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد){areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(adminEditBuySqm, 'sqft'))} م/ft²` : ''}{fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))}:</label>
+            <label className="block text-slate-600 dark:text-slate-300 mb-1">میانگین هر متر خرید (میلیون · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForScalars(adminEditHoodId, neighborhoods.find((n) => n.id === adminEditHoodId)?.name || 'تهران', adminEditBuySqm).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد){areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(adminEditBuySqm, 'sqft'))} م/ft²` : ''}{fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))}:</label>
             <input type="number" aria-label="میانگین هر متر خرید محله" min={10} max={5000} value={adminEditBuySqm} onChange={(e) => setAdminEditBuySqm(clampNumber(e.target.value, 10, 5000, 130))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums" />
           </div>
           <div>
@@ -283,11 +280,12 @@ export function AdminOverviewAndModerationTabs(
         <form onSubmit={onAdminChangePassword} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-2.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
             <KeyRound className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
-            <span>تغییر رمز عبور پنل مدیریت</span>
+            <span>قفل موقت نشست فعلی پنل مدیریت (در حافظه مرورگر)</span>
           </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">احراز هویت اصلی از طریق Google Auth انجام می‌شود؛ این رمز صرفاً برای قفل صفحه‌نمایش در همین نشست فعال است و روی سرور ذخیره نمی‌شود.</p>
           <div className="flex gap-2">
-            <input type="password" aria-label="رمز عبور جدید پنل مدیریت" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} placeholder="رمز عبور جدید..." className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100" />
-            <button type="submit" className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold cursor-pointer">تغییر رمز</button>
+            <input type="password" aria-label="رمز قفل نشست فعلی پنل مدیریت" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} placeholder="رمز قفل نشست (حداقل ۴ کاراکتر)..." className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100" />
+            <button type="submit" className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold cursor-pointer">تنظیم قفل</button>
           </div>
           {adminPassChangeMsg && <div className="text-emerald-700 dark:text-emerald-400 font-semibold">{adminPassChangeMsg}</div>}
         </form>

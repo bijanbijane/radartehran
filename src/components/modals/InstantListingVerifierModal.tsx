@@ -91,7 +91,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm" dir="rtl">
-      <div className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div role="dialog" aria-modal="true" aria-label="آنتی‌ویروس و کارشناسی فوری آگهی مسکن" className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850">
           <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
+          <button type="button" aria-label="بستن" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -127,9 +127,10 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                   onChange={(e) => setSelectedHoodName(e.target.value)}
                   className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-bold"
                 >
-                  {(evaluatedNeighborhoods.length > 0 ? evaluatedNeighborhoods : INITIAL_NEIGHBORHOODS).slice(0, 30).map((h) => (
-                    <option key={h.id} value={h.name}>{h.name}</option>
-                  ))}
+                  {(() => {
+                    const list = evaluatedNeighborhoods.length > 0 ? evaluatedNeighborhoods : INITIAL_NEIGHBORHOODS;
+                    return list.map((h) => <option key={h.id} value={h.name}>{h.name}</option>);
+                  })()}
                 </select>
               </div>
             </div>
@@ -183,18 +184,18 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 </p>
               )}
               {/* Verdict Banner */}
-              <div className={`p-3 rounded-xl border flex items-center justify-between ${
+              <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between gap-2 ${
                 diagnosis.dealVerdict === 'FAIR_OPPORTUNITY'
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
-                  : diagnosis.dealVerdict === 'HEAVY_BUBBLE'
+                  : (diagnosis.dealVerdict === 'HEAVY_BUBBLE' || diagnosis.dealVerdict === 'SUSPICIOUS_BAIT')
                     ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
                     : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
               }`}>
-                <div>
+                <div className="min-w-0">
                   <span className="text-[10px] block opacity-80">حکم کارشناسی سلامت معامله:</span>
                   <span className="font-extrabold text-sm">{diagnosis.verdictLabelFa}</span>
                 </div>
-                <span className="text-[11px] font-bold px-2 py-1 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-current">
+                <span className="shrink-0 text-[11px] font-bold px-2 py-1 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-current">
                   {toPersianDigits(diagnosis.parsed.areaSqm)} متری در {diagnosis.hoodName}
                 </span>
               </div>

@@ -90,6 +90,7 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('POST', '/api/bargains/validate-financials', SP, 'VERIFIED_USER', 30, 'general', true, 'Bargain financial validation'),
   route('POST', '/api/admin/bargains/approve', SP, 'ADMIN', 30, 'general', true, 'Admin bargain approval'),
   route('POST', '/api/contract-check', UT, 'PUBLIC', 20, 'ai', true, 'Legal rule engine and contract analysis'),
+  route('POST', '/api/listing-verdict/comparables', UT, 'PUBLIC', 40, 'general', true, 'Live Divar comparable apartment search proxy'),
   route('GET', '/api/telegram-digest', UT, 'PUBLIC', 30, 'general', true, 'Telegram digest preview'),
   route('POST', '/api/send-telegram', UT, 'ADMIN', 10, 'sync', true, 'Admin Telegram broadcast'),
   route('GET', '/api/admin/buyer-alerts', UT, 'ADMIN', 30, 'general', true, 'Admin buyer-alert list'),

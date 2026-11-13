@@ -71,7 +71,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
               <input
                 type="number" aria-label="شناسه محله اول MCP"
                 min={1}
-                max={80}
+                max={999}
                 value={hoodId}
                 onChange={(e) => setHoodId(Number(e.target.value) || 1)}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
@@ -124,7 +124,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                 <input
                   type="number" aria-label="شناسه محله دوم MCP"
                   min={1}
-                  max={80}
+                  max={999}
                   value={secondHoodId}
                   onChange={(e) => setSecondHoodId(Number(e.target.value) || 2)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"

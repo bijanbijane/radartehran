@@ -1353,10 +1353,10 @@ function runDomainRegressionTests(): void {
   const casperHubRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubRoutes.ts'), 'utf-8');
   const propInsStateMachineSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/property-insurance/coverage/policyAndClaimStateMachineEngine.ts'), 'utf-8');
   assert(
-    '54. WS-CASPER-18 enforces server-side CASPER HUB client (account-scoped .bijanbijane-1.workers.dev SSRF guard, redirect: error, Bearer token auth, UUIDv5 Idempotency-Key header on /v1/notes), mounts /api/casper-hub/* in serverUtilityRoutes, and verifies policyAndClaimStateMachineEngine fail-closed settlement parity',
+    '54. WS-CASPER-18 enforces server-side CASPER HUB client (account-scoped .bijanbijane-1.workers.dev SSRF guard, redirect: manual, Bearer token auth, UUIDv5 Idempotency-Key header on /v1/notes), mounts /api/casper-hub/* in serverUtilityRoutes, and verifies policyAndClaimStateMachineEngine fail-closed settlement parity',
     casperHubClientSrc.includes("export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev';") &&
       casperHubClientSrc.includes("host.endsWith('.bijanbijane-1.workers.dev')") &&
-      casperHubClientSrc.includes("redirect: 'error'") &&
+      casperHubClientSrc.includes("redirect: 'manual'") &&
       casperHubClientSrc.includes('Authorization: `Bearer ${token}`') &&
       casperHubClientSrc.includes("'Idempotency-Key': resolvedKey") &&
       casperHubRoutesSrc.includes("app.get('/api/casper-hub/whoami'") &&
@@ -1409,7 +1409,7 @@ function runDomainRegressionTests(): void {
       updatedMonitorCardSrc.includes('bootJson?.data?.relevant_notes ?? bootJson?.data?.notes') &&
       updatedMonitorCardSrc.includes('setRecentNotes') &&
       updatedMonitorCardSrc.includes('CasperHubNoteRecord') &&
-      casperHubClientSrc.includes('this.readCache.delete(k)') &&
+      casperHubClientSrc.includes('this.readCache.delete(cacheKey)') &&
       p17UrbanAffSrc.includes("rawHubs.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null)") &&
       p17UrbanCardSrc.includes("raw.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null)") &&
       updatedMonitorCardSrc.split(/\r?\n/).length <= 290,

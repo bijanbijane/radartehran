@@ -7,6 +7,10 @@ export function parsePersistedDeepOverrides(raw: unknown): Partial<Record<CityId
   return result; } export let serverSideBuyerLeads: BuyerAlertLeadItem[] = []; export let serverAuditLogs: ServerAuditLogEntry[] = []; export let liveMacroRates = { gold18kToman: 6850000, usdToman: 92500, updatedAtIso: new Date().toISOString() }; export let lastPulseUpdatedMs = 0; export let lastPulseUpdatedMsByCity: Partial<Record<CityId, number>> = {}, lastAirQualityFetchMs: Partial<Record<CityId, number>> = {}; export let lastAirQualityFetchSucceeded: Partial<Record<CityId, boolean>> = {}, airQualityStationSuccessCount: Partial<Record<CityId, number>> = {};
 export let airQualityLastOkByCity: Partial<Record<CityId, boolean>> = {}, airQualityLastSuccessMsByCity: Partial<Record<CityId, number>> = {}; export let openMeteoLastOk = true; export let isBackgroundSyncRunning = false; type MarketPulseFlightKind = "regular" | "deep"; interface MarketPulseFlight { kind: MarketPulseFlightKind; promise: Promise<MarketPulseData>; }
 const marketPulseFlights = new Map<CityId, MarketPulseFlight>(); function updateBackgroundSyncFlag(): void { isBackgroundSyncRunning = marketPulseFlights.size > 0; }
+export interface PublisherPersistenceHooks { exportState: () => { bargains: unknown[]; corrections: unknown[] }; importState: (raw: { bargains?: unknown[]; corrections?: unknown[] }) => void; }
+let publisherPersistenceHooks: PublisherPersistenceHooks | null = null; let pendingPublisherHydrate: { bargains?: unknown[]; corrections?: unknown[] } | null = null;
+export function registerPublisherPersistenceHooks(hooks: PublisherPersistenceHooks): void { publisherPersistenceHooks = hooks; if (pendingPublisherHydrate) { hooks.importState(pendingPublisherHydrate); pendingPublisherHydrate = null; } }
+const deepScrapeCursorByCity: Partial<Record<CityId, number>> = {};
 export const CITY_AIR_STATIONS: Record<CityId, Record<string, ZoneAirReading>> = { tehran: { north: { region: "شمال", stationName: "ایستگاه اقدسیه / تجریش", lat: 35.802, lng: 51.456, aqi: 34, pm25: 4.8, status: "پاک و ایدهآل (سبز)" }, west: { region: "غرب", stationName: "ایستگاه پونک / ستاری", lat: 35.762, lng: 51.331, aqi: 89, pm25: 46.0, status: "سالم / قابل قبول (زرد)" }, center: { region: "مرکز", stationName: "ایستگاه شریف / فاطمی", lat: 35.706, lng: 51.351, aqi: 89, pm25: 46.0, status: "سالم / قابل قبول (زرد)" }, east: { region: "شرق", stationName: "ایستگاه پیروزی / تهرانپارس", lat: 35.695, lng: 51.491, aqi: 68, pm25: 41.6, status: "سالم / قابل قبول (زرد)" }, south: { region: "جنوب", stationName: "ایستگاه شهرری / نازیآباد", lat: 35.595, lng: 51.431, aqi: 68, pm25: 41.6, status: "سالم / قابل قبول (زرد)" }, }, karaj: { north: { region: "شمال کرج", stationName: "ایستگاه عظیمیه / طالقانی", lat: 35.844, lng: 51.006, aqi: 78, pm25: 24.0, status: "سالم (قابل قبول)" }, west: { region: "غرب کرج", stationName: "ایستگاه مهرشهر / گلشهر", lat: 35.805, lng: 50.919, aqi: 84, pm25: 26.5, status: "سالم (قابل قبول)" }, center: { region: "مرکز و جنوب", stationName: "ایستگاه جهانشهر / فردیس", lat: 35.778, lng: 50.986, aqi: 95, pm25: 31.2, status: "سالم (قابل قبول)" }, }, mashhad: {
     west: { region: "غرب مشهد", stationName: "ایستگاه سجاد / وکیلآباد", lat: 36.326, lng: 59.522, aqi: 82, pm25: 25.4, status: "سالم (قابل قبول)" }, north: { region: "شمال غرب", stationName: "ایستگاه الهیه / قاسمآباد", lat: 36.366, lng: 59.491, aqi: 88, pm25: 27.8, status: "سالم (قابل قبول)" }, center: { region: "مرکز مشهد", stationName: "ایستگاه احمدآباد / کوهسنگی", lat: 36.286, lng: 59.565, aqi: 98, pm25: 32.5, status: "سالم (قابل قبول)" }, }, isfahan: {
     south: { region: "جنوب زایندهرود", stationName: "ایستگاه مرداویج / جلفا", lat: 32.627, lng: 51.661, aqi: 94, pm25: 30.8, status: "سالم (قابل قبول)" }, north: { region: "شمال اصفهان", stationName: "ایستگاه خانه اصفهان", lat: 32.712, lng: 51.644, aqi: 102, pm25: 35.1, status: "ناسالم برای گروههای حساس" }, sepahan: { region: "جنوب سیتیسنتر", stationName: "ایستگاه سپاهانشهر", lat: 32.559, lng: 51.674, aqi: 86, pm25: 27.2, status: "سالم (قابل قبول)" }, }, shiraz: {
@@ -25,6 +29,7 @@ export function loadDiskPersistedCache(): void { try { if (!fs.existsSync(DISK_C
     if (rawCityTimestamps && typeof rawCityTimestamps === "object" && !Array.isArray(rawCityTimestamps)) { const nextTimestamps: Partial<Record<CityId, number>> = {}; for (const cityId of Object.keys(MULTI_CITY_CONFIGS) as CityId[]) { const value = (rawCityTimestamps as Record<string, unknown>)[cityId];
         if (typeof value === "number" && Number.isFinite(value) && value > 0 && value <= Date.now() + 60_000) nextTimestamps[cityId] = value; }
       lastPulseUpdatedMsByCity = nextTimestamps; }
+    if (Array.isArray(parsed.publishedBargains) || Array.isArray(parsed.dataCorrections)) { const rawPub = { bargains: Array.isArray(parsed.publishedBargains) ? parsed.publishedBargains : undefined, corrections: Array.isArray(parsed.dataCorrections) ? parsed.dataCorrections : undefined }; if (publisherPersistenceHooks) publisherPersistenceHooks.importState(rawPub); else pendingPublisherHydrate = rawPub; }
     if (Array.isArray(parsed.buyerLeads)) saveDiskPersistedCache();
   } catch { /* ignore */ }
 }
@@ -33,7 +38,8 @@ async function flushDiskCache(): Promise<void> {
   const currentTask = diskWriteMutexChain.catch(() => {}).then(async () => {
     if (!diskCacheDirty) return;
     diskCacheDirty = false;
-    const payload = { savedAtIso: new Date().toISOString(), lastPulseUpdatedMs, lastPulseUpdatedMsByCity, deepSyncedOverrides, liveMacroRates, latestZoneAirQuality: CITY_AIR_STATIONS.tehran, cityAirStations: CITY_AIR_STATIONS, serverAuditLogs: serverAuditLogs.slice(0, 200) };
+    const pubState = publisherPersistenceHooks?.exportState();
+    const payload = { savedAtIso: new Date().toISOString(), lastPulseUpdatedMs, lastPulseUpdatedMsByCity, deepSyncedOverrides, liveMacroRates, latestZoneAirQuality: CITY_AIR_STATIONS.tehran, cityAirStations: CITY_AIR_STATIONS, serverAuditLogs: serverAuditLogs.slice(0, 200), ...(pubState ? { publishedBargains: pubState.bargains, dataCorrections: pubState.corrections } : {}) };
     const tmp = `${DISK_CACHE_FILE}.tmp.${process.pid}.${Date.now()}`;
     try {
       await fs.promises.writeFile(tmp, JSON.stringify(payload, null, 2), { encoding: "utf-8", mode: 0o600 });
@@ -120,18 +126,15 @@ export async function performGeminiDeepMarketSearch(cityId: CityId = "tehran"): 
   const cfg = getValidatedServerConfig();
   const sources: GroundingSourceLink[] = [];
   if (!cfg.geminiConfigured || !cfg.geminiApiKey) {
-    const hoods = getCityNeighborhoods(cityId);
-    const nowIso = new Date().toISOString();
-    let divarDataUsed = false;
-    for (const h of hoods.slice(0, 6)) {
-      const scraped = await fetchFreeDivarNeighborhoodStats(cityId, h.name, h.buyPerSqm);
-      if (scraped.medianBuyPerSqm) {
-        divarDataUsed = true;
-        setDeepSyncedOverride(cityId, h.id, {
-          buyPerSqm: scraped.medianBuyPerSqm, rahn80m: Math.round((scraped.medianBuyPerSqm / Math.max(1, h.buyPerSqm)) * h.rahn80m),
-          liveBargains: scraped.bargains.length > 0 ? scraped.bargains : undefined, updatedAtIso: nowIso,
-        });
-      }
+    const hoods = getCityNeighborhoods(cityId); const nowIso = new Date().toISOString(); let divarDataUsed = false;
+    const batchSize = Math.min(12, hoods.length); const cursor = hoods.length > 0 ? (deepScrapeCursorByCity[cityId] ?? 0) % hoods.length : 0;
+    const batch = Array.from({ length: batchSize }, (_, i) => hoods[(cursor + i) % hoods.length]);
+    if (hoods.length > 0) deepScrapeCursorByCity[cityId] = (cursor + batchSize) % hoods.length;
+    for (let i = 0; i < batch.length; i += 4) {
+      await Promise.all(batch.slice(i, i + 4).map(async (h) => {
+        const scraped = await fetchFreeDivarNeighborhoodStats(cityId, h.name, h.buyPerSqm, h.id);
+        if (scraped.medianBuyPerSqm) { divarDataUsed = true; setDeepSyncedOverride(cityId, h.id, { buyPerSqm: scraped.medianBuyPerSqm, rahn80m: Math.round((scraped.medianBuyPerSqm / Math.max(1, h.buyPerSqm)) * h.rahn80m), liveBargains: scraped.bargains.length > 0 ? scraped.bargains : undefined, updatedAtIso: nowIso }); }
+      }));
     }
     if (divarDataUsed) sources.push({ title: "آگهیهای بررسیشدهٔ Divar؛ نمونهٔ محدود، نه شاخص رسمی بازار", uri: "https://divar.ir/" });
     return { usedGemini: false, sources };

@@ -29,6 +29,14 @@ export function sponsorFromNeighborhoodOverride(data: Record<string, unknown>, n
   };
 }
 
+export function chunkHoodIdsForInQuery(ids: readonly number[], maxPerChunk = 30): number[][] {
+  const unique = Array.from(new Set(ids.filter((id) => Number.isInteger(id) && id >= PUBLIC_SPONSOR_HOOD_MIN && id <= PUBLIC_SPONSOR_HOOD_MAX)));
+  const size = Math.max(1, Math.min(30, maxPerChunk));
+  const chunks: number[][] = [];
+  for (let i = 0; i < unique.length; i += size) chunks.push(unique.slice(i, i + size));
+  return chunks.length > 0 ? chunks : [[5]];
+}
+
 export function publicSponsorCollectionLabel(): string {
   return `${PUBLIC_SPONSOR_COLLECTION}:${formatMillionTomanAsIntlCurrency(PUBLIC_SPONSOR_HOOD_MAX, 'USD', 'en')}`;
 }

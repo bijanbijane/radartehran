@@ -1,4 +1,4 @@
-import React from 'react'; import { signInWithPopup, type User as FirebaseUser } from 'firebase/auth'; import { collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch } from 'firebase/firestore'; import { auth, db, googleProvider, OperationType, handleFirestoreError } from '../firebase'; import { BargainListing, BubbleReport, BuyerAlertLeadItem, calcDistanceKm, EvaluatedNeighborhood, getHoodMonthlySponsorTariff, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { cleanIranianMobile, FeatureFlags, isValidIranianMobile, sanitizeInput } from '../utils/security'; import { classifyPropertyDuplicateCandidate, sanitizeSafeTelHref } from '../utils/marketDataIntegrity'; import { acquireSafeTehranLocation } from '../utils/geolocationGuard'; import { detectBrowserEnvironment } from '../utils/inAppBrowserGuard'; import type { ListingMediaObject } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { persistHoodOverrideToCloud, useRadarAdminActions } from './useRadarAdminActions'; export interface UseRadarCrudActionsParams { currentUser: FirebaseUser | null; isVerifiedAdmin: boolean; activeCity: CityId; mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number;
+import React from 'react'; import { signInWithPopup, type User as FirebaseUser } from 'firebase/auth'; import { collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch } from 'firebase/firestore'; import { auth, db, googleProvider, OperationType, handleFirestoreError } from '../firebase'; import { BargainListing, BubbleReport, BuyerAlertLeadItem, calcDistanceKm, EvaluatedNeighborhood, getHoodMonthlySponsorTariff, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { cleanIranianMobile, FeatureFlags, isValidIranianMobile, recordDiagnosticEvent, sanitizeInput } from '../utils/security'; import { classifyPropertyDuplicateCandidate, sanitizeSafeTelHref } from '../utils/marketDataIntegrity'; import { acquireSafeCityLocation } from '../utils/geolocationGuard'; import { detectBrowserEnvironment } from '../utils/inAppBrowserGuard'; import type { ListingMediaObject } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { persistHoodOverrideToCloud, useRadarAdminActions } from './useRadarAdminActions'; export interface UseRadarCrudActionsParams { currentUser: FirebaseUser | null; isVerifiedAdmin: boolean; activeCity: CityId; mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number;
   targetSqm: number; workHubId: string; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood; selectedHoodId: number; setSelectedHoodId: React.Dispatch<React.SetStateAction<number>>; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; setMobileSheetOpen: React.Dispatch<React.SetStateAction<boolean>>; setActiveTab: React.Dispatch<React.SetStateAction<'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote' | 'osm_places'>>; setShowGoldPins: React.Dispatch<React.SetStateAction<boolean>>; mapInstanceRef: React.MutableRefObject<any>; allExpansionSeeds: Neighborhood[]; bargainHoodId: number; bargainType: 'خرید' | 'اجاره'; bargainSqm: number; bargainTitle: string; setBargainTitle: React.Dispatch<React.SetStateAction<string>>; bargainStreet: string; setBargainStreet: React.Dispatch<React.SetStateAction<string>>; bargainProposedPrice: number; bargainUploadedMedia: ListingMediaObject[]; setBargainUploadedMedia: React.Dispatch<React.SetStateAction<ListingMediaObject[]>>; setBargainSubmitMsg: React.Dispatch<React.SetStateAction<{ type: 'error' | 'success'; text: string } | null>>;
   targetBargainHood: EvaluatedNeighborhood | Neighborhood; liveBargainCheck: { maxAllowedFor10Percent: number; discountPercent: number; isEligible: boolean; buyerProfitMillion: number }; sponsorHoodId: number; sponsorAgencyName: string; sponsorPhone: string; sponsorSpecialty: string; sponsorExpYears: number; sponsorPlanMonths: 1 | 3; sponsorTrackingCode: string; setSponsorTrackingCode: React.Dispatch<React.SetStateAction<string>>; setSponsorSubmitMsg: React.Dispatch<React.SetStateAction<string>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; alertHoodId: number; alertFullName: string; setAlertFullName: React.Dispatch<React.SetStateAction<string>>; alertPhone: string; setAlertPhone: React.Dispatch<React.SetStateAction<string>>; alertDealType: 'خرید' | 'اجاره'; alertMaxBudget: string; setAlertSubmitMsg: React.Dispatch<React.SetStateAction<string>>;
   buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>;
@@ -58,20 +58,25 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       status: initialSponsorStatus, createdAtFa: new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }),
     };
     if (!p.currentUser || !p.currentUser.emailVerified) { p.setSponsorSubmitMsg('ثبت درخواست اسپانسر نیازمند ورود با حساب کاربری تأییدشده است.'); return; }
-    const reqDocId = `${p.currentUser.uid}_${Date.now()}`;
+    let reqDocId = `${p.currentUser.uid}_${Date.now()}`; let persistedOnServer = false;
     try {
-      await setDoc(doc(db, 'sponsorRequests', reqDocId), {
-        hoodId: targetHood.id, hoodName: targetHood.name.slice(0, 80),
-        agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec,
-        experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths,
-        totalPayableMillion, trackingCode: cleanTracking,
-        ...(p.isVerifiedAdmin ? { expiresAtIso } : {}),
-        status: initialSponsorStatus, createdAt: serverTimestamp(),
-      });
-    } catch (err) {
-      p.setSponsorSubmitMsg('ثبت درخواست اسپانسر در پایگاه داده انجام نشد.');
-      try { handleFirestoreError(err, OperationType.WRITE, `sponsorRequests/${reqDocId}`); } catch { /* local */ }
-      return;
+      const idToken = await p.currentUser.getIdToken();
+      const apiRes = await fetch('/api/sponsors/reserve', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ hoodId: targetHood.id, hoodName: targetHood.name, city: p.activeCity, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, planMonths: activePlanMonths }), cache: 'no-store' });
+      const apiJson = (await apiRes.json().catch(() => null)) as { status?: string; message?: string; request?: { id?: string; monthlyTariffMillion?: number; totalPayableMillion?: number; trackingCode?: string } } | null;
+      if (apiRes.status === 400 || apiRes.status === 409) { p.setSponsorSubmitMsg(apiJson?.message || 'اطلاعات درخواست اسپانسر نامعتبر است.'); return; }
+      if (apiRes.ok && apiJson?.status === 'ok' && apiJson.request) {
+        persistedOnServer = true; if (apiJson.request.id) reqDocId = apiJson.request.id; if (typeof apiJson.request.monthlyTariffMillion === 'number') newCrmItem.monthlyTariffMillion = apiJson.request.monthlyTariffMillion; if (typeof apiJson.request.totalPayableMillion === 'number') newCrmItem.totalPayableMillion = apiJson.request.totalPayableMillion; if (apiJson.request.trackingCode) newCrmItem.trackingCode = apiJson.request.trackingCode; newCrmItem.id = `cloud-${reqDocId}`;
+        if (p.isVerifiedAdmin) { await updateDoc(doc(db, 'sponsorRequests', reqDocId), { status: 'approved', expiresAtIso }).catch(() => { recordDiagnosticEvent('Sponsor', `Admin auto-approve updateDoc deferred for ${reqDocId}`, 'fallback'); }); }
+      }
+    } catch { /* fallback to Firestore SDK */ }
+    if (!persistedOnServer) {
+      try {
+        await setDoc(doc(db, 'sponsorRequests', reqDocId), { hoodId: targetHood.id, hoodName: targetHood.name.slice(0, 80), agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths, totalPayableMillion, trackingCode: cleanTracking, ...(p.isVerifiedAdmin ? { expiresAtIso } : {}), status: initialSponsorStatus, createdAt: serverTimestamp() });
+      } catch (err) {
+        p.setSponsorSubmitMsg('ثبت درخواست اسپانسر در پایگاه داده انجام نشد.');
+        try { handleFirestoreError(err, OperationType.WRITE, `sponsorRequests/${reqDocId}`); } catch { /* local */ }
+        return;
+      }
     }
     p.setSponsorRequests((prev) => [newCrmItem, ...(prev || [])]);
     if (initialSponsorStatus === 'approved') {
@@ -214,9 +219,9 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     if (useGeolocation && navigator.geolocation) {
       p.setVerifyingGeo(true);
       p.setVoteStatus({ type: 'info', text: 'در حال بررسی موقعیت مکانی مرورگر برای تایید حضور در محله...' });
-      void acquireSafeTehranLocation(7000).then((geoRes) => {
+      void acquireSafeCityLocation(p.activeCity, 7000).then((geoRes) => {
         p.setVerifyingGeo(false);
-        if (geoRes.status !== 'SUCCESS_INSIDE_TEHRAN') { submitVoteData(false, `${geoRes.persianMessage} رای شما به صورت عادی ثبت شد.`); return; }
+        if (geoRes.status !== 'SUCCESS_INSIDE_TEHRAN' && geoRes.status !== 'SUCCESS_INSIDE_CITY') { submitVoteData(false, `${geoRes.persianMessage} رای شما به صورت عادی ثبت شد.`); return; }
         const dist = calcDistanceKm(geoRes.coordinates.lat, geoRes.coordinates.lng, p.selectedHood.lat, p.selectedHood.lng);
         const isInside = dist !== null && dist <= 4.5;
         submitVoteData(isInside, isInside
@@ -228,8 +233,8 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     }
   };
   const handleLocateNearestHood = () => {
-    void acquireSafeTehranLocation(6000).then((geoRes) => {
-      if (geoRes.status !== 'SUCCESS_INSIDE_TEHRAN') { p.setLastSyncNotice(geoRes.persianMessage); return; }
+    void acquireSafeCityLocation(p.activeCity, 6000).then((geoRes) => {
+      if (geoRes.status !== 'SUCCESS_INSIDE_TEHRAN' && geoRes.status !== 'SUCCESS_INSIDE_CITY') { p.setLastSyncNotice(geoRes.persianMessage); return; }
       let bestHood = p.evaluatedNeighborhoods[0], minDist = Infinity;
       for (const h of p.evaluatedNeighborhoods) {
         const d = calcDistanceKm(geoRes.coordinates.lat, geoRes.coordinates.lng, h.lat, h.lng);

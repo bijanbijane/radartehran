@@ -1,11 +1,18 @@
 import { CasperHubClient, getCasperHubConfigStatus } from './casperHubClient';
+import { CASPER_AGENT_ID } from './casperHubTypes';
 
 export * from './casperHubClient';
 export * from './casperHubRoutes';
 export {
+  CASPER_AGENT_ID,
+  CASPER_AGENT_ROADMAP_ID,
+  CasperHubClientError,
+  redactSensitiveText,
   redactSensitiveTokenText,
+  buildDeterministicNoteIdempotencyKey,
   registerRuntimeHubTokenForRedaction,
   assertCasper02Identity,
+  resolveCasperHubConfig,
 } from './casperHubTypes';
 export type {
   CasperHubAgentIdentity,
@@ -31,7 +38,7 @@ export function getCasperHubStatus(env: Record<string, string | undefined> = pro
   const tokenConfigured = Boolean(token);
   return {
     ...getCasperHubConfigStatus(env),
-    agentId: env?.EXPECTED_AGENT_ID || 'CASPER-02',
+    agentId: env?.EXPECTED_AGENT_ID || CASPER_AGENT_ID,
     connectionState: tokenConfigured ? 'CONFIGURED_READY_TO_VERIFY' : 'UNCONFIGURED_AWAITING_SECRET',
   };
 }

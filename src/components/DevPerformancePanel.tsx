@@ -7,7 +7,6 @@ import { formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 
 function isDevEnvironment(): boolean {
   if (typeof window === 'undefined') return false;
-  if (import.meta.env.DEV) return true;
   try {
     const search = window.location.search || '';
     if (search.includes('perf=1') || search.includes('dev=1')) return true;
@@ -97,7 +96,7 @@ export const DevPerformancePanel: React.FC = () => {
   const filterBadge = getBudgetBadge(filterMetrics.latestDurationMs);
 
   return (
-    <aside aria-label="داشبورد پایش پرفورمنس توسعه" className="fixed bottom-16 lg:bottom-4 left-4 z-[99999] font-sans antialiased text-slate-100">
+    <aside aria-label="داشبورد پایش پرفورمنس توسعه" className="hidden lg:block fixed bottom-16 lg:bottom-4 left-4 z-[99999] font-sans antialiased text-slate-100">
       {!isOpen ? (
         <button
           type="button" onClick={() => setIsOpen(true)} title="باز کردن داشبورد پایش پرفورمنس رندر و فیلتر (ویژه محیط توسعه)"

@@ -22,8 +22,46 @@ import {
   getStoredRadarLocale,
 } from '../utils/areaUnit';
 import type { AppUiState } from './useAppUiState';
+import { mergeEffectiveBargains } from '../utils/marketDataIntegrity';
 
 export const activeCloudOverrideHoodIds = new Set<number>();
+
+function applyPulseSnapshots(
+  prev: Neighborhood[],
+  snapshotMap: Map<number, { liveBuyPerSqm?: number; liveRahn80m?: number; liveAirScore?: number; liveBargains?: Neighborhood['bargains'] }>,
+  customIds: Set<number>,
+  forceRefresh: boolean,
+): Neighborhood[] {
+  let changed = false;
+  const next = prev.map((base) => {
+    const snapshot = snapshotMap.get(base.id);
+    if (!snapshot) return base;
+    const nextAir =
+      typeof snapshot.liveAirScore === 'number' && Number.isFinite(snapshot.liveAirScore) && snapshot.liveAirScore >= 0 && snapshot.liveAirScore <= 10
+        ? snapshot.liveAirScore
+        : base.air;
+    const incomingLive = Array.isArray(snapshot.liveBargains) && snapshot.liveBargains.length > 0 ? snapshot.liveBargains : undefined;
+    const nextBargains = incomingLive ? mergeEffectiveBargains(base.bargains, incomingLive, base.id) : base.bargains;
+    const prevSig = (base.bargains || []).map((b) => b.id).join(',');
+    const nextSig = (nextBargains || []).map((b) => b.id).join(',');
+    const bargainsChanged = prevSig !== nextSig;
+    if (activeCloudOverrideHoodIds.has(base.id) || (customIds.has(base.id) && !forceRefresh)) {
+      if (nextAir === base.air && !bargainsChanged) return base;
+      changed = true;
+      return { ...base, air: nextAir, bargains: nextBargains };
+    }
+    const buyVal = typeof snapshot.liveBuyPerSqm === 'number' && Number.isFinite(snapshot.liveBuyPerSqm) ? snapshot.liveBuyPerSqm : NaN;
+    const rahnVal = Number(snapshot.liveRahn80m);
+    const hasBuyDelta = typeof snapshot.liveBuyPerSqm === 'number' && Number.isFinite(buyVal) && buyVal > 0 && Math.abs(snapshot.liveBuyPerSqm - base.buyPerSqm) > 0.01;
+    const hasRahnDelta = Number.isFinite(rahnVal) && rahnVal > 0 && Math.abs(rahnVal - base.rahn80m) > 0.01;
+    const nextBuy = hasBuyDelta ? buyVal : base.buyPerSqm;
+    const nextRahn = hasRahnDelta ? rahnVal : base.rahn80m;
+    if (nextBuy === base.buyPerSqm && nextRahn === base.rahn80m && nextAir === base.air && !bargainsChanged) return base;
+    changed = true;
+    return { ...base, buyPerSqm: nextBuy, rahn80m: nextRahn, air: nextAir, bargains: nextBargains };
+  });
+  return changed ? next : prev;
+}
 
 export interface UseMarketPulseSyncParams {
   ui: AppUiState;
@@ -74,29 +112,7 @@ export function useMarketPulseSync({
                 }
               }
             } catch { /* ignore */ }
-            setNeighborhoods((prev) => {
-              let changed = false;
-              const next = prev.map((base) => {
-                const snapshot = snapshotMap.get(base.id);
-                if (!snapshot) return base;
-                const nextAir =
-                  Number.isFinite(snapshot.liveAirScore) && snapshot.liveAirScore >= 0 && snapshot.liveAirScore <= 10
-                    ? snapshot.liveAirScore
-                    : base.air;
-                if (activeCloudOverrideHoodIds.has(base.id) || (customIds.has(base.id) && !forceRefresh)) {
-                  if (nextAir === base.air) return base;
-                  changed = true;
-                  return { ...base, air: nextAir };
-                }
-                const hasLivePriceDelta = (Number.isFinite(snapshot.liveBuyPerSqm) && Math.abs(snapshot.liveBuyPerSqm - base.buyPerSqm) > 0.01) || (Number.isFinite(snapshot.liveRahn80m) && Math.abs(snapshot.liveRahn80m - base.rahn80m) > 0.01);
-                const nextBuy = hasLivePriceDelta && Number.isFinite(snapshot.liveBuyPerSqm) && snapshot.liveBuyPerSqm > 0 ? snapshot.liveBuyPerSqm : base.buyPerSqm;
-                const nextRahn = hasLivePriceDelta && Number.isFinite(snapshot.liveRahn80m) && snapshot.liveRahn80m > 0 ? snapshot.liveRahn80m : base.rahn80m;
-                if (nextBuy === base.buyPerSqm && nextRahn === base.rahn80m && nextAir === base.air) return base;
-                changed = true;
-                return { ...base, buyPerSqm: nextBuy, rahn80m: nextRahn, air: nextAir };
-              });
-              return changed ? next : prev;
-            });
+            setNeighborhoods((prev) => applyPulseSnapshots(prev, snapshotMap, customIds, forceRefresh));
           }
           if (forceRefresh) {
             const areaUnit = getStoredAreaUnit(); const intlCurrency = getStoredIntlCurrency(); const unitLabel = formatAreaUnitLabel(areaUnit);
@@ -121,15 +137,19 @@ export function useMarketPulseSync({
         const result = await res.json();
         const pulseData = result.pulse || result;
         if (pulseData?.status === 'ok') ui.setMarketPulse(pulseData);
-        if (Array.isArray(result.hoodPriceUpdates) && result.hoodPriceUpdates.length > 0) {
-          setNeighborhoods((prev) =>
-            prev.map((hood) => {
-              const live = result.hoodPriceUpdates.find((u: any) => u.id === hood.id);
-              if (!live) return hood;
-              if (activeCloudOverrideHoodIds.has(hood.id)) return { ...hood, air: live.airScore || hood.air };
-              return { ...hood, buyPerSqm: live.buyPerSqm || hood.buyPerSqm, rahn80m: live.rahn80m || hood.rahn80m, air: live.airScore || hood.air };
-            })
+        if (Array.isArray(pulseData?.hoodLiveSnapshots) && pulseData.hoodLiveSnapshots.length > 0) {
+          const snapshotMap = new Map<number, { liveBuyPerSqm?: number; liveRahn80m?: number; liveAirScore?: number; liveBargains?: Neighborhood['bargains'] }>(
+            pulseData.hoodLiveSnapshots.map((s: any) => [Number(s.id), s]),
           );
+          setNeighborhoods((prev) => applyPulseSnapshots(prev, snapshotMap, activeCloudOverrideHoodIds, true));
+        } else if (Array.isArray(result.hoodPriceUpdates) && result.hoodPriceUpdates.length > 0) {
+          const fallbackMap = new Map<number, { liveBuyPerSqm?: number; liveRahn80m?: number; liveAirScore?: number; liveBargains?: Neighborhood['bargains'] }>(
+            result.hoodPriceUpdates.map((u: any) => [
+              Number(u.id),
+              { liveBuyPerSqm: u.buyPerSqm, liveRahn80m: u.rahn80m, liveAirScore: u.airScore, liveBargains: u.liveBargains },
+            ]),
+          );
+          setNeighborhoods((prev) => applyPulseSnapshots(prev, fallbackMap, activeCloudOverrideHoodIds, true));
         }
         const sourceSummary = Array.isArray(result.sourcesReached)
           ? result.sourcesReached.join(' + ')

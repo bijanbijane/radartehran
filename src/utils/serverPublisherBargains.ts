@@ -1,9 +1,16 @@
-import type { Express, Request, Response, NextFunction } from 'express'; import { isValidFirestoreDocId, isValidIranMobilePhone, sanitizeInput, validateCityParam } from './security'; import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization, } from './serverAdminAndTelegramSecurity'; import { pushAuditLog, saveDiskPersistedCache, serverSideBuyerLeads } from './serverMarketPulseEngine'; import { checkAccountQuota, checkRateLimit, getClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; import { validateListingStateTransition, appendListingPriceHistory, type ListingLifecycleState, type ListingPriceHistoryEntry, } from './listingLifecycleAndPlatformSecurity'; import { normalizeOrGenerateCorrelationId, buildCanonicalApiErrorResponse, buildUserDataPortabilityExport, createAccountDeletionPlan, resolveListingContactDisclosure, globalBackendLifecycle, reconcileUserBuyerAlertsInFirestore, } from './identityLifecycleAndBackendGovernance'; import { validateDataCorrectionSubmission } from './buyerAlertsAndCommunityTrust'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { formatAreaShort, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface ServerPublishedBargainRecord { id: string; ownerUid: string; cityId: string; hoodId: number; hoodName: string; title: string; street: string;
+import type { Express, Request, Response, NextFunction } from 'express'; import { isValidFirestoreDocId, isValidIranMobilePhone, sanitizeInput, validateCityParam } from './security'; import { verifyAdminApiAuthorization, verifyFirebaseUserAuthorization, } from './serverAdminAndTelegramSecurity'; import { pushAuditLog, registerPublisherPersistenceHooks, saveDiskPersistedCache, serverSideBuyerLeads } from './serverMarketPulseEngine'; import { checkAccountQuota, checkRateLimit, getClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; import { validateListingStateTransition, appendListingPriceHistory, type ListingLifecycleState, type ListingPriceHistoryEntry, } from './listingLifecycleAndPlatformSecurity'; import { normalizeOrGenerateCorrelationId, buildCanonicalApiErrorResponse, buildUserDataPortabilityExport, resolveListingContactDisclosure, globalBackendLifecycle, reconcileUserBuyerAlertsInFirestore, } from './identityLifecycleAndBackendGovernance'; import { executeDurableAccountDeletion } from './accountDeletionExecutor'; import { validateDataCorrectionSubmission } from './buyerAlertsAndCommunityTrust'; import { ensureBucketLoaded, objectStoreIndex, persistObjectStoreIndexNow } from './serverObjectStorageHelpers'; import { formatAreaShort, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export interface ServerPublishedBargainRecord { id: string; ownerUid: string; cityId: string; hoodId: number; hoodName: string; title: string; street: string;
   sqm: number; displayAreaText?: string; dealType: 'خرید' | 'اجاره'; priceMillions: number; priceText: string; priceIntlText?: string; discountPercent: number; buyerProfitText: string; lifecycleState: ListingLifecycleState; contactPhone?: string; contactVisibility: 'publicly_visible' | 'reveal_on_action' | 'authorized_only' | 'not_available'; priceHistory: ListingPriceHistoryEntry[]; createdAtIso: string;
   updatedAtIso: string; expiresAtIso: string; } export interface ServerDataCorrectionRecord { id: string; cityId: string; neighborhoodId: number;
   neighborhoodName: string; category: string; currentDisplayedValue: string; proposedCorrectedValue: string; evidenceNote: string; reporterUid: string | null; status: 'pending_review' | 'approved' | 'rejected'; createdAtIso: string; reviewedAtIso: string | null; }
 export const serverPublishedBargains = new Map<string, ServerPublishedBargainRecord>(); export const serverDataCorrections: ServerDataCorrectionRecord[] = [];
 const MAX_PUBLISHED_BARGAINS_TOTAL = 500; const MAX_PUBLISHED_BARGAINS_PER_OWNER = 25;
+registerPublisherPersistenceHooks({
+  exportState: () => ({ bargains: Array.from(serverPublishedBargains.values()).slice(0, MAX_PUBLISHED_BARGAINS_TOTAL).map((b) => ({ ...b, contactPhone: undefined, contactVisibility: 'not_available' })), corrections: serverDataCorrections.slice(0, 200) }),
+  importState: ({ bargains, corrections }) => {
+    if (Array.isArray(bargains)) { for (const raw of bargains) { if (raw && typeof raw === 'object' && typeof (raw as ServerPublishedBargainRecord).id === 'string' && typeof (raw as ServerPublishedBargainRecord).ownerUid === 'string') { const rec = raw as ServerPublishedBargainRecord; if (!serverPublishedBargains.has(rec.id)) serverPublishedBargains.set(rec.id, { ...rec, contactPhone: undefined, contactVisibility: rec.contactVisibility === 'not_available' ? 'not_available' : 'not_available' }); } } }
+    if (Array.isArray(corrections)) { for (const raw of corrections) { if (raw && typeof raw === 'object' && typeof (raw as ServerDataCorrectionRecord).id === 'string' && !serverDataCorrections.some((c) => c.id === (raw as ServerDataCorrectionRecord).id)) serverDataCorrections.push(raw as ServerDataCorrectionRecord); } if (serverDataCorrections.length > 200) serverDataCorrections.length = 200; }
+  },
+});
 const safeAsync = (fn: (req: Request, res: Response) => Promise<void>) => (req: Request, res: Response) => {
   void fn(req, res).catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' }); });
 };
@@ -84,6 +91,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
       createdAtIso: existing?.createdAtIso || nowIso, updatedAtIso: nowIso, expiresAtIso: expiresIso,
     };
     serverPublishedBargains.set(rawId, record);
+    saveDiskPersistedCache();
     pushAuditLog('INFO', `ثبت/همگام‌سازی آگهی شکار #${rawId} در سرور Express انجام شد.`);
     res.status(200).json({ status: 'ok', item: record });
   }));
@@ -150,6 +158,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     }
     existing.updatedAtIso = new Date().toISOString();
     serverPublishedBargains.set(id, existing);
+    saveDiskPersistedCache();
     res.status(200).json({ status: 'ok', item: existing });
   }));
   app.delete('/api/my-bargains/:id', safeAsync(async (req: Request, res: Response) => {
@@ -175,6 +184,7 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
       return;
     }
     serverPublishedBargains.delete(id);
+    saveDiskPersistedCache();
     await ensureBucketLoaded();
     let mediaMutated = false;
     for (const obj of objectStoreIndex) { if (obj.bargainId === id) { obj.deletionState = 'pending_delete'; mediaMutated = true; } }
@@ -264,21 +274,12 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     res.setHeader('Cache-Control', 'private, no-store');
     const auth = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: 'AUTH_REQUIRED' }); return; }
-    if (req.body?.confirmDelete !== true) {
-      res.status(400).json({ status: 'error', code: 'EXPLICIT_CONFIRMATION_REQUIRED', message: 'تأیید صریح حذف حساب کاربری الزامی است.' });
-      return;
-    }
+    if (req.body?.confirmDelete !== true) { res.status(400).json({ status: 'error', code: 'EXPLICIT_CONFIRMATION_REQUIRED', message: 'تأیید صریح حذف حساب کاربری الزامی است.' }); return; }
     await reconcileUserBuyerAlertsInFirestore(auth.uid, 'delete', req.headers.authorization);
-    for (const [id, rec] of serverPublishedBargains.entries()) { if (rec.ownerUid === auth.uid) serverPublishedBargains.delete(id); }
     for (let i = serverSideBuyerLeads.length - 1; i >= 0; i--) { if (serverSideBuyerLeads[i].submittedByUid === auth.uid) serverSideBuyerLeads.splice(i, 1); }
-    for (let i = serverDataCorrections.length - 1; i >= 0; i--) { if (serverDataCorrections[i].reporterUid === auth.uid) serverDataCorrections.splice(i, 1); }
-    saveDiskPersistedCache();
-    await ensureBucketLoaded();
-    let mediaMutated = false;
-    for (const obj of objectStoreIndex) { if (obj.ownerUid === auth.uid) { obj.deletionState = 'pending_delete'; mediaMutated = true; } }
-    if (mediaMutated) await persistObjectStoreIndexNow().catch(() => {});
-    const plan = createAccountDeletionPlan().map((step) => ({ ...step, completed: true }));
-    pushAuditLog('INFO', 'درخواست حذف کامل حساب کاربری و پاکسازی آگهی‌های وابسته اجرا شد.');
-    res.status(200).json({ status: 'ok', steps: plan });
+    const ownedBargainIdsHint = Array.isArray(req.body?.ownedBargainIds) ? req.body.ownedBargainIds.filter((id: unknown): id is string => typeof id === 'string').slice(0, 50) : undefined;
+    const deletionResult = await executeDurableAccountDeletion({ uid: auth.uid, rawAuthHeaderOrToken: req.headers.authorization, ownedBargainIdsHint, serverPublishedBargains, serverSideBuyerLeads, serverDataCorrections, saveDiskPersistedCache, objectStoreIndex, persistObjectStoreIndexNow });
+    pushAuditLog('INFO', `درخواست حذف حساب کاربری اجرا شد (${deletionResult.status}؛ رسانه حذف‌شده: ${deletionResult.deletedMediaCount}).`);
+    res.status(200).json(deletionResult);
   }));
 }

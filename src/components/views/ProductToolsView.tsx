@@ -135,7 +135,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
             {isEn ? 'Real Estate Transaction Toolkit' : 'جعبه‌ابزار هوشمند معاملات مسکن'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            مجموعه ۲۲ ابزار کارشناسی قیمت، شبیه‌ساز مالی، راهنمای چانه‌زنی و بررسی حقوقی معاملات ملک در ۴ گام
+            مجموعه ۲۴ ابزار کارشناسی قیمت، شبیه‌ساز مالی، راهنمای چانه‌زنی و بررسی حقوقی معاملات ملک در ۴ گام
           </p>
         </div>
         <div className="p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs space-y-2 min-w-[260px]">
@@ -196,9 +196,9 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         </div>
         <div className="flex items-center gap-1 overflow-x-auto text-xs">
           {[
-            { id: 'all' as const, label: isEn ? 'All (22)' : 'همه ابزارها (۲۲)' },
-            { id: 'financial' as const, label: isEn ? 'Financial (5)' : 'مالی و قیمت (۵)' },
-            { id: 'legal' as const, label: isEn ? 'Legal (4)' : 'حقوقی و بازدید (۴)' },
+            { id: 'all' as const, label: isEn ? 'All (24)' : 'همه ابزارها (۲۴)' },
+            { id: 'financial' as const, label: isEn ? 'Financial (6)' : 'مالی و قیمت (۶)' },
+            { id: 'legal' as const, label: isEn ? 'Legal (5)' : 'حقوقی و بازدید (۵)' },
             { id: 'decision' as const, label: isEn ? 'Deal & Risk Lab (9)' : 'تصمیم‌یار و چانه‌زنی (۹)' },
             { id: 'urban' as const, label: isEn ? 'Urban & Swap (4)' : 'ساخت و تهاتر (۴)' },
           ].map((tab) => (

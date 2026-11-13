@@ -125,7 +125,7 @@ async function runBrowserSmokeSuite(): Promise<void> {
       !karajTitle.includes('عظیمیه') ||
       !karajUrl.includes('city=karaj') ||
       !mashhadUrl.includes('city=mashhad') ||
-      (!saadatUrl.includes('hood=3') && !saadatUrl.includes('hood=83')) ||
+      (!saadatUrl.includes('hood=3') && !saadatUrl.includes('hood=83') && !saadatUrl.includes('/tehran/saadat-abad')) ||
       !saadatTitle.includes('سعادت')
     ) {
       throw new Error(
@@ -391,6 +391,10 @@ async function runBrowserSmokeSuite(): Promise<void> {
       localStorage.setItem('tehran_radar_feature_flags_v1', '{bad_flags');
     });
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('[data-testid="global-nav-map"], input[aria-label="جست‌وجوی محله"]', { timeout: 10000 });
+    if ((await page.locator('input[aria-label="جست‌وجوی محله"]').count()) === 0) {
+      await page.locator('[data-testid="global-nav-map"]').click();
+    }
     await page.waitForSelector('input[aria-label="جست‌وجوی محله"]', { timeout: 10000 });
     await page.waitForTimeout(500);
 

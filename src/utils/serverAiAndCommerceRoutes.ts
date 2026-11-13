@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam } from './security'; import { verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { pushAuditLog } from './serverMarketPulseEngine'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { evaluateCloudflareRuntimePortability } from './cloudflarePortabilityAndCapabilities'; import { OFFICIAL_AI_MODEL_REGISTRY, MANDATORY_AI_SIMULATION_BANNER, globalAiRoutingManager, buildCloudflareAiGatewayEndpoint, parseNaturalPersianHousingQuery, type RadarAiWorkflowId, } from './aiModelRegistryAndGateway'; import { RADAR_COMMERCIAL_PRODUCTS, REFERENCE_EXCHANGE_RATE, AUTHORIZED_MCP_TOOL_DESCRIPTORS, auditDatasetCommercialEligibility, buildX402PaymentChallenge, verifyX402PaymentHeaders, globalMonetizationLedger,
+import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam } from './security'; import { getValidatedServerConfig, verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { pushAuditLog } from './serverMarketPulseEngine'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { evaluateCloudflareRuntimePortability } from './cloudflarePortabilityAndCapabilities'; import { OFFICIAL_AI_MODEL_REGISTRY, MANDATORY_AI_SIMULATION_BANNER, globalAiRoutingManager, buildCloudflareAiGatewayEndpoint, parseNaturalPersianHousingQuery, type RadarAiWorkflowId, } from './aiModelRegistryAndGateway'; import { runLiveGeminiGatewayInference } from './serverAiGatewayLive'; import { RADAR_COMMERCIAL_PRODUCTS, REFERENCE_EXCHANGE_RATE, AUTHORIZED_MCP_TOOL_DESCRIPTORS, auditDatasetCommercialEligibility, buildX402PaymentChallenge, verifyX402PaymentHeaders, globalMonetizationLedger,
   executeAuthorizedMcpTool, } from './dataCommerceMcpAndMonetization'; import { readAndReconcileExecutionState } from './rmepExecutionStateEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; const registeredAiCommerceApps = new WeakSet<Express>(); export function registerAiAndCommerceRoutes( app: Express, deps: { checkRateLimit: (ip: string, bucket: RateBucketType, max: number, windowMs: number) => boolean; getClientIp: (req: Request) => string; }
 ): void { if (registeredAiCommerceApps.has(app)) return; registeredAiCommerceApps.add(app); const { checkRateLimit, getClientIp } = deps; app.get('/api/admin/rmep-status', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined> ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error',
         code: auth.reason, message: 'مشاهده وضعیت اجرای مهندسی RMEP-001 نیازمند احراز هویت مدیر سیستم است.', }); return; } const rmep = readAndReconcileExecutionState();
@@ -196,30 +196,72 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
     }
   });
   app.post(['/api/ai/gateway/infer', '/api/v1/ai/gateway/infer'], (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    const ip = getClientIp(req);
-    if (!checkRateLimit(ip, 'ai', 20, 10 * 60 * 1000)) {
-      res.status(429).json({ status: 'error', code: 'AI_GATEWAY_RATE_LIMIT' });
-      return;
-    }
-    const rawWorkflow = sanitizeInput(req.body?.workflow || 'intelligent_search', 60) as RadarAiWorkflowId;
-    const prompt = sanitizeInput(req.body?.prompt || req.body?.query || '', 600);
-    const routing = globalAiRoutingManager.getCurrentConfig();
-    const validWorkflow: RadarAiWorkflowId =
-      rawWorkflow in routing.routes ? rawWorkflow : 'intelligent_search';
-    const targetModelId = routing.routes[validWorkflow];
-    const parsed = parseNaturalPersianHousingQuery(prompt || 'آپارتمان در منطقه ۵ تهران', {
-      isLiveModelVerified: false,
-      modelId: targetModelId,
-    });
-    res.status(200).json({
-      status: 'ok',
-      workflow: validWorkflow,
-      routedModelId: targetModelId,
-      resolvedEngineId: parsed.resolvedModelId,
-      isSimulated: parsed.isSimulated,
-      simulationBanner: MANDATORY_AI_SIMULATION_BANNER,
-      structuredOutput: parsed,
+    void (async () => {
+      res.setHeader('Cache-Control', 'no-store');
+      const ip = getClientIp(req);
+      if (!checkRateLimit(ip, 'ai', 20, 10 * 60 * 1000)) {
+        res.status(429).json({ status: 'error', code: 'AI_GATEWAY_RATE_LIMIT' });
+        return;
+      }
+      const rawWorkflow = sanitizeInput(req.body?.workflow || 'intelligent_search', 60) as RadarAiWorkflowId;
+      const prompt = sanitizeInput(req.body?.prompt || req.body?.query || '', 600);
+      const routing = globalAiRoutingManager.getCurrentConfig();
+      const validWorkflow: RadarAiWorkflowId =
+        rawWorkflow in routing.routes ? rawWorkflow : 'intelligent_search';
+      const targetModelId = routing.routes[validWorkflow];
+      const effectivePrompt = prompt || 'آپارتمان در منطقه ۵ تهران';
+      const parsed = parseNaturalPersianHousingQuery(effectivePrompt, {
+        isLiveModelVerified: false,
+        modelId: targetModelId,
+      });
+      const cfg = getValidatedServerConfig(process.env);
+      const shouldTryLive =
+        Boolean(cfg.geminiApiKey) &&
+        req.body?.forceSimulate !== true &&
+        targetModelId !== 'local-deterministic-rule-engine-v1';
+
+      if (shouldTryLive && cfg.geminiApiKey) {
+        const liveRes = await runLiveGeminiGatewayInference({
+          workflow: validWorkflow,
+          prompt: effectivePrompt,
+          routedModelId: targetModelId,
+          apiKey: cfg.geminiApiKey,
+          envModel: cfg.geminiModel,
+        });
+        if (liveRes.ok) {
+          res.status(200).json({
+            status: 'ok',
+            workflow: validWorkflow,
+            routedModelId: targetModelId,
+            resolvedEngineId: liveRes.modelUsed,
+            isSimulated: false,
+            isLiveModelVerified: true,
+            simulationBanner: null,
+            liveSummaryFa: liveRes.liveSummaryFa,
+            structuredOutput: {
+              ...parsed,
+              ...liveRes.structuredPatch,
+              isSimulated: false,
+              simulationBanner: null,
+              resolvedModelId: liveRes.modelUsed,
+            },
+          });
+          return;
+        }
+      }
+
+      res.status(200).json({
+        status: 'ok',
+        workflow: validWorkflow,
+        routedModelId: targetModelId,
+        resolvedEngineId: parsed.resolvedModelId,
+        isSimulated: parsed.isSimulated,
+        isLiveModelVerified: false,
+        simulationBanner: MANDATORY_AI_SIMULATION_BANNER,
+        structuredOutput: parsed,
+      });
+    })().catch(() => {
+      if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR' });
     });
   });
   app.get('/api/v1/commerce/neighborhood-dossier/:hoodId', (req: Request, res: Response) => {

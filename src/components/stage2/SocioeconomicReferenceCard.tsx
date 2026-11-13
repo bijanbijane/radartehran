@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TrendingUp, Users, Compass, Building2, BookOpen, ArrowLeftRight, Layers, ShieldCheck } from 'lucide-react';
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
-import { aggregateMarketMetricsForHood } from '../../data/realMarketPriceAggregator';
+import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
 
 export interface SocioeconomicRollupView {
@@ -56,7 +56,7 @@ function buildFallbackRollup(
   const cityConfig = MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
   const allHoods = cityConfig?.neighborhoods || INITIAL_NEIGHBORHOODS;
   const resolvedHood = hood ?? allHoods.find((h) => h.id === hoodId) ?? allHoods[0] ?? INITIAL_NEIGHBORHOODS[0];
-  const agg = aggregateMarketMetricsForHood({ ...resolvedHood, id: hoodId, name: hoodName, buyPerSqm: ask }, ask);
+  const agg = aggregateNeighborhoodMarketMetrics(hoodId, hoodName, ask, buildNeighborhoodListingSamples(resolvedHood));
   const fair = agg.estimatedDealPricePerSqm;
   const years = Math.round(((fair * 85) / 456) * 10) / 10;
   const burden = Math.min(95, Math.max(18, Math.round((years / 22) * 100)));

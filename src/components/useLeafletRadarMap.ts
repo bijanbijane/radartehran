@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'; import { EvaluatedNeighborhood, getNeighborhoodLandmarks, isSponsorActive, LocalLandmark, MapTileServerId, toPersianNum, WorkHub, } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { AuthoritativeBoundaryRecord, clientGeoJsonLruCache, fetchAuthoritativeCityBoundaries, getZoomAdaptivePolygonStyle, renderNeighborhoodGeoJSONOnLeaflet, } from '../utils/neighborhoodBoundaries'; import { planViewportBoundaryFetchBatch, resolveGeoLazyLoadingPolicy } from '../utils/geojsonViewportLazyEngine'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr, FeatureFlags } from '../utils/security'; import { ensureLeafletLoaded } from '../utils/leafletLoader'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { buildD3PriceDensityScale, D3PriceDensityScaleResult, isNeighborhoodInLeafletViewport, renderPriceDensityHeatmapOnLeaflet, } from './priceHeatmapAndViewportLazy'; import { buildZoomAdaptivePillIconConfig, renderAdvancedSpatialOverlaysOnLeaflet, updateMapAdvancedOverlayState, useMapAdvancedOverlayState, } from './mapAdvancedLayers';
+import React, { useEffect, useRef, useState } from 'react'; import { EvaluatedNeighborhood, getNeighborhoodLandmarks, isSponsorActive, LocalLandmark, MapTileServerId, toPersianNum, WorkHub, } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { AuthoritativeBoundaryRecord, clientGeoJsonLruCache, fetchAuthoritativeCityBoundaries, getZoomAdaptivePolygonStyle, renderNeighborhoodGeoJSONOnLeaflet, } from '../utils/neighborhoodBoundaries'; import { planViewportBoundaryFetchBatch, resolveGeoLazyLoadingPolicy } from '../utils/geojsonViewportLazyEngine'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr, FeatureFlags, recordDiagnosticEvent } from '../utils/security'; import { ensureLeafletLoaded, retryLeafletLoad } from '../utils/leafletLoader'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { buildD3PriceDensityScale, D3PriceDensityScaleResult, isNeighborhoodInLeafletViewport, renderPriceDensityHeatmapOnLeaflet, } from './priceHeatmapAndViewportLazy'; import { buildZoomAdaptivePillIconConfig, renderAdvancedSpatialOverlaysOnLeaflet, updateMapAdvancedOverlayState, useMapAdvancedOverlayState, } from './mapAdvancedLayers';
 import { createLeafletBaseTileController, type BaseTileControllerInstance } from './mapBaseTileController'; import { buildNeighborhoodRichTooltipHtml, renderGoldBargainPinOnLeaflet } from './mapZoomLodAndDeclutter'; import { createExecutionTimer } from '../utils/diagnostics'; declare global { interface Window { L: any; } }
 export interface UseLeafletRadarMapParams { activeCity: CityId; mapTileStyle: MapTileServerId; setMapTileStyle: React.Dispatch<React.SetStateAction<MapTileServerId>>; deferredMapNeighborhoods: EvaluatedNeighborhood[]; selectedHoodId: number; selectedHood: EvaluatedNeighborhood; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; selectedWorkHub: WorkHub; statusFilter: 'all' | 'green' | 'yellow' | 'red'; mapLens: 'budget' | 'bubble' | 'air' | 'traffic' | 'heatmap'; showGoldPins: boolean; showLandmarkPins: boolean; hoodLandmarks: LocalLandmark[]; featureFlags: FeatureFlags; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; onOpenModalQuick: (hoodId: number, action: 'anatomy' | 'hedonic' | 'bargains' | 'compare' | 'share') => void; }
 function getLensPalette( hood: EvaluatedNeighborhood, mapLens: 'budget' | 'bubble' | 'air' | 'traffic' | 'heatmap', d3PriceScale?: D3PriceDensityScaleResult
@@ -86,15 +86,26 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) { const { a
       document.addEventListener('click', handleMapActionClick);
       removeDocClickListener = () => { if (moveDebounce) clearTimeout(moveDebounce); document.removeEventListener('click', handleMapActionClick); };
     };
-    if (window.L) initMap();
-    else {
-      ensureLeafletLoaded().then(() => initMap()).catch(() => {
-        retryTimer = setInterval(() => { if (window.L) { initMap(); if (retryTimer) clearInterval(retryTimer); } }, 150);
-      });
-    }
+    let unmounted = false;
+    const attemptLeafletInit = (attempt: number) => {
+      if (unmounted) return;
+      if (window.L) { initMap(); return; }
+      (attempt === 0 ? ensureLeafletLoaded() : retryLeafletLoad())
+        .then(() => { if (!unmounted) initMap(); })
+        .catch((err) => {
+          if (unmounted) return;
+          if (attempt < 3) {
+            retryTimer = setTimeout(() => attemptLeafletInit(attempt + 1), 400 * Math.pow(2, attempt));
+          } else {
+            recordDiagnosticEvent('LeafletRadarMap', `Leaflet load exhausted after ${attempt + 1} bounded attempts (${err instanceof Error ? err.message : 'timeout'})`, 'fallback');
+          }
+        });
+    };
+    attemptLeafletInit(0);
     return () => {
+      unmounted = true;
       window.removeEventListener('pageshow', handlePageShow);
-      if (retryTimer) clearInterval(retryTimer);
+      if (retryTimer) clearTimeout(retryTimer);
       if (removeDocClickListener) removeDocClickListener();
       tileLayerRef.current?.destroy(); tileLayerRef.current = null;
       if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }

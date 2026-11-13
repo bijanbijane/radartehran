@@ -108,9 +108,9 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
         </button>
 
         <button type="button" onClick={p.onOpenPriceTrend} className="p-5 rounded-2xl text-start bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 flex flex-col justify-between cursor-pointer transition group">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+          <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-400">
             <span>{isEn ? '04 · v6.4 Negotiation Spread' : '۰۴ · شکاف سناریوی مذاکره v6.4'}</span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 group-hover:underline">{isEn ? 'Trend ↗' : 'تحلیل روند ↗'}</span>
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 group-hover:underline whitespace-nowrap shrink-0">{isEn ? 'Trend ↗' : 'تحلیل روند ↗'}</span>
           </div>
           <div className="my-3"><span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">-{toPersianNum(Math.max(1, Math.round((1 - selectedAgg.askToDealRatio) * 100)))}٪</span><span className="text-xs text-slate-400 mx-1.5">{isEn ? 'closing spread' : 'تخفیف جلسه معامله'}</span></div>
           <div className="text-[11px] text-slate-500 font-medium truncate">
@@ -162,20 +162,27 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
             <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">دامنه عدم‌قطعیت (Statistical IQR)</span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">بازه معتبر آماری محله (IQR):</span>
-            <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">{toPersianNum(uIqrLow)} تا {toPersianNum(uIqrHigh)} <span className="text-xs font-normal text-slate-400">م.ت</span></strong>
+            <strong className="text-xl font-black text-slate-900 dark:text-white mt-1.5 block">
+              {selectedAgg.validSampleCount > 0 && uIqrHigh > 0 ? <>{toPersianNum(uIqrLow)} تا {toPersianNum(uIqrHigh)} <span className="text-xs font-normal text-slate-400">م.ت</span></> : <span className="text-sm text-amber-700 dark:text-amber-300">نامعلوم (۰ نمونه زنده)</span>}
+            </strong>
           </div>
         </div>
-        <div className="space-y-1.5 pt-1 tabular-nums">
-          <div className="flex justify-between items-center text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
-            <span>کف آماری محله ({toPersianNum(uIqrLow)} م)</span>
-            <span className="text-emerald-700 dark:text-emerald-300 font-bold">جایگاه برآورد سناریو v6.4 (غیرثبتی): صدک {toPersianNum(uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50)}٪ دامنه</span>
-            <span>سقف آماری محله ({toPersianNum(uIqrHigh)} م)</span>
+        {selectedAgg.validSampleCount > 0 && uIqrHigh > 0 ? (
+          <div className="space-y-1.5 pt-1 tabular-nums">
+            <div className="flex justify-between items-center text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
+              <span>کف آماری محله ({toPersianNum(uIqrLow)} م)</span>
+              <span className="text-emerald-700 dark:text-emerald-300 font-bold">جایگاه برآورد سناریو v6.4 (غیرثبتی): صدک {toPersianNum(uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50)}٪ دامنه</span>
+              <span>سقف آماری محله ({toPersianNum(uIqrHigh)} م)</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden relative">
+              <div className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-300" style={{ width: `${uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50}%` }} />
+            </div>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden relative">
-            <div className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-300" style={{ width: `${uIqrHigh > uIqrLow ? Math.min(100, Math.max(0, Math.round(((uDeal - uIqrLow) / (uIqrHigh - uIqrLow)) * 100))) : 50}%` }} />
+        ) : (
+          <div className="p-2.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300">
+            بازه آماری معتبر (IQR) برای این محله هنوز ثبت نشده است (۰ نمونه زنده) — مقادیر فوق بر پایه مرجع داخلی و مدل سناریویی است و به‌عنوان آمار قطعی معاملات تلقی نمی‌شود.
           </div>
-        </div>
-
+        )}
         <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div><span className="font-bold text-slate-900 dark:text-white">جمع‌بندی تحلیلی و تفکیک معرفتی (CASPER): </span>{p.selectedHood.marketReport?.summary || 'تحلیل الگوی قیمت‌گذاری و نسبت قیمت به رهن در محدوده تعادلی ارزیابی می‌شود.'}</div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
@@ -183,57 +190,26 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             <span>پالایش موتور ضدتقلب: حذف {toPersianNum(selectedAgg.rejectedFraudCount)} آگهی پرت/طعمه</span>
           </div>
         </div>
-
         <div data-testid="intelligence-experience-mode-bar" className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span className="font-bold text-slate-800 dark:text-slate-100">
-              {experienceMode === 'simple'
-                ? 'حالت ساده (خلاصه کاربردی خریدار و مستأجر فعال است)'
-                : 'حالت حرفه‌ای (۱۲ آزمایشگاه اقتصادسنجی، نظریه بازی‌ها و راستی‌آزمایی جمعی فعال است)'}
-            </span>
+            <span className="font-bold text-slate-800 dark:text-slate-100">{experienceMode === 'simple' ? 'حالت ساده (خلاصه کاربردی خریدار و مستأجر فعال است)' : 'حالت حرفه‌ای (۱۲ آزمایشگاه اقتصادسنجی، نظریه بازی‌ها و راستی‌آزمایی جمعی فعال است)'}</span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              data-testid="intelligence-open-crowd-claims-btn"
-              onClick={() => { setStage2Tab('CROWD_CLAIMS'); setExperienceMode('pro'); }}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition"
-            >
-              ثبت / مشاهده قیمت واقعی قولنامه‌ها (راستی‌آزمایی مردمی)
-            </button>
-            <button
-              type="button"
-              onClick={() => setExperienceMode(experienceMode === 'pro' ? 'simple' : 'pro')}
-              className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold cursor-pointer hover:bg-slate-100 transition"
-            >
-              {experienceMode === 'pro' ? 'بازگشت به حالت ساده' : 'ورود به حالت حرفه‌ای (۱۲ آزمایشگاه CASPER)'}
-            </button>
+            <button type="button" data-testid="intelligence-open-crowd-claims-btn" onClick={() => { setStage2Tab('CROWD_CLAIMS'); setExperienceMode('pro'); }} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition">ثبت / مشاهده قیمت واقعی قولنامه‌ها (راستی‌آزمایی مردمی)</button>
+            <button type="button" onClick={() => setExperienceMode(experienceMode === 'pro' ? 'simple' : 'pro')} className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold cursor-pointer hover:bg-slate-100 transition">{experienceMode === 'pro' ? 'بازگشت به حالت ساده' : 'ورود به حالت حرفه‌ای (۱۲ آزمایشگاه CASPER)'}</button>
           </div>
         </div>
-
         {experienceMode === 'pro' && (
-          <Stage2MasterWidget
-            hoodId={p.selectedHood.id} hoodName={p.selectedHood.name} cityKey={p.activeCity}
-            basePriceSqm={p.selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={p.selectedHood} initialTab={stage2Tab}
-            onTabChange={(t) => setStage2Tab(t)}
-            onSelectCompareHood={(targetName) => { const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName); if (match) p.onSelectNeighborhood(match); }}
-          />
+          <Stage2MasterWidget hoodId={p.selectedHood.id} hoodName={p.selectedHood.name} cityKey={p.activeCity} basePriceSqm={p.selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={p.selectedHood} initialTab={stage2Tab} onTabChange={(t) => setStage2Tab(t)} onSelectCompareHood={(targetName) => { const match = p.evaluatedNeighborhoods.find((h) => h.name === targetName); if (match) p.onSelectNeighborhood(match); }} />
         )}
       </div>
-
       {/* Filtered Market Segment Section */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
             <Flame className="w-4 h-4 text-amber-500" />
-            <span>
-              {activeSegment === 'undervalued'
-                ? 'محله‌های دارای فرصت زیر قیمت واقعی (Undervalued)'
-                : activeSegment === 'balanced'
-                  ? 'محله‌های در محدوده تعادل قیمتی (Balanced)'
-                  : 'محله‌های دارای حباب مثبت و نیازمند چانه‌زنی بالا'}
-            </span>
+            <span>{activeSegment === 'undervalued' ? 'محله‌های دارای فرصت زیر قیمت واقعی (Undervalued)' : activeSegment === 'balanced' ? 'محله‌های در محدوده تعادل قیمتی (Balanced)' : 'محله‌های دارای حباب مثبت و نیازمند چانه‌زنی بالا'}</span>
           </h3>
           <div className="relative w-full sm:w-64">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -241,36 +217,23 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             {segQuery && <button type="button" aria-label="پاک کردن فیلتر دسته" onClick={() => setSegQuery('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
           </div>
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {activeList.slice(0, 10).map((hood) => {
-            const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-            const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
-            const isSelected = hood.id === p.selectedHood.id;
-            const isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
-
+            const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit), unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
+            const isSelected = hood.id === p.selectedHood.id, isArcActive = comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
             return (
               <div key={hood.id} className={`p-4 rounded-xl bg-white dark:bg-slate-900 border transition flex items-center justify-between ${isSelected ? 'border-emerald-600 dark:border-emerald-400 ring-1 ring-emerald-600 dark:ring-emerald-400' : 'border-slate-200 dark:border-slate-800 hover:border-slate-900 dark:hover:border-white'}`}>
                 <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
-                  <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-                    <span>محله {hood.name}</span>
-                    {isSelected && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">فعال روی نقشه</span>}
-                  </div>
+                  <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5"><span>محله {hood.name}</span>{isSelected && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">فعال روی نقشه</span>}</div>
                   <div className="text-[11px] text-slate-400 mt-0.5">{hood.zone} · رهن: {toPersianNum(hood.rahn80m)} م.ت</div>
                 </div>
                 <div className="text-left shrink-0 tabular-nums flex items-center gap-2">
                   <div>
-                    <div className="text-xs font-black text-slate-900 dark:text-white">{toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> م</div>
+                    <div className="text-xs font-black text-slate-900 dark:text-white">{toPersianNum(unitBuy)}{unitBuy !== unitDeal && <span className="text-emerald-600 dark:text-emerald-400"> ({toPersianNum(unitDeal)})</span>} م</div>
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">سناریو v6.4 (غیرثبتی) · امتیاز {toPersianNum(hood.overallScore)}/۱۰</div>
                   </div>
-                  {!isSelected && (
-                    <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border text-[10px] font-bold cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}>
-                      <Scale className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                    کارنامه ↗
-                  </button>
+                  {!isSelected && <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } }); }} title={`ترسیم کمان مقایسه زنده با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-1.5 rounded-lg border text-[10px] font-bold cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}><Scale className="w-3.5 h-3.5" /></button>}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer">کارنامه ↗</button>
                 </div>
               </div>
             );

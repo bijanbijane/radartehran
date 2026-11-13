@@ -22,6 +22,7 @@ export interface ProductGlobalHeaderProps {
   onOpenSearch?: () => void;
   onOpenSecurityAdmin?: () => void;
   searchQuery?: string;
+  activePlaceLabelFa?: string;
 }
 
 const CITIES: { id: CityId; labelFa: string; labelEn: string }[] = [
@@ -45,6 +46,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   onOpenSearch,
   onOpenSecurityAdmin,
   searchQuery,
+  activePlaceLabelFa,
 }) => {
   const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
   const isEn = radarLocale === 'en';
@@ -52,7 +54,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   const fxSampleHint = intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(100, intlCurrency, radarLocale) : '';
   const activeCityName = isEn
     ? (CITIES.find((c) => c.id === activeCity)?.labelEn || 'Tehran')
-    : (MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران');
+    : (activePlaceLabelFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران');
 
   const navigationItems = getProductNavigationItems(radarLocale);
   const navItems = navigationItems.filter((item) => item.group === 'primary');
@@ -77,7 +79,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               <span className="font-black text-xs sm:text-sm tracking-tight text-slate-900 dark:text-white whitespace-nowrap block">
                 {isEn ? 'Tehran Radar' : 'رادار املاک'}
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden 2xl:block whitespace-nowrap">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden xl:block whitespace-nowrap">
                 {isEn ? `${activeCityName} Spatial Atlas` : `اطلس مکانی ${activeCityName}`}
               </span>
             </div>
@@ -253,7 +255,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           {/* Experience Mode (Simple / Pro) + Area Unit (m²/ft²), Language & Currency */}
           <div className="flex items-center gap-1">
             <ExperienceModeToggle compact className="hidden sm:inline-flex" />
-            <AreaUnitToggle compact showIntlControls className="flex-nowrap" />
+            <AreaUnitToggle compact showIntlControls hideAreaUnitOnMobile className="flex-nowrap" />
           </div>
 
           {/* Theme Switcher */}

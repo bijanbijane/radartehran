@@ -10,6 +10,14 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
   setSponsorTrackingCode,
 }: AgencySponsorReservationTabProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(); const [currency] = useIntlCurrency(); const [locale] = useRadarLocale(); const showIntl = currency !== 'IRT'; const [localPhoneError, setLocalPhoneError] = useState<string>('');
+  const [discountRevision, setDiscountRevision] = useState<number>(0);
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const bump = () => setDiscountRevision((r) => r + 1);
+    window.addEventListener('radar:monetization-discount', bump);
+    window.addEventListener('storage', bump);
+    return () => { window.removeEventListener('radar:monetization-discount', bump); window.removeEventListener('storage', bump); };
+  }, []);
   const selectedSponsorHood = useMemo(() => {
     return (
       safeNeighborhoods.find((n) => n.id === sponsorHoodId) ||
@@ -45,7 +53,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
         finalPayableMillion: 5,
       };
     }
-  }, [selectedSponsorHood, sponsorPlanMonths]);
+  }, [selectedSponsorHood, sponsorPlanMonths, discountRevision]);
   const phoneIsValid = useMemo(() => {
     if (!sponsorPhone.trim()) return true;
     return isValidAgencyPhone(sponsorPhone);

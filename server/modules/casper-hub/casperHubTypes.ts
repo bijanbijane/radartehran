@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import { sanitizeInput } from '../../../src/utils/security';
 
 export const CASPER_AGENT_ID = 'CASPER-04' as const;
+export const CASPER_AGENT_ROADMAP_ID = 'rm-casper-04' as const;
 export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev' as const;
 export const ALLOWED_CASPER_HUB_HOST = 'casper-hub-api.bijanbijane-1.workers.dev' as const;
 export const MAX_HUB_RESPONSE_BYTES = 512 * 1024;
@@ -98,9 +99,9 @@ export function redactSensitiveTokenText(text: string, extraToken?: string, maxL
   return redactSensitiveText(text, extraToken).slice(0, maxLength);
 }
 
-function canonicalizeUnicode(v: unknown): string {
+export function canonicalizeUnicode(v: unknown): string {
   if (typeof v !== 'string') return '';
-  return v.normalize('NFC').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[٠-٩]/g, (c) => String.fromCharCode(c.charCodeAt(0) + (0x06f0 - 0x0660))).trim();
+  return stripBidiAndControl(v).normalize('NFC').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[٠-٩]/g, (c) => String.fromCharCode(c.charCodeAt(0) + (0x06f0 - 0x0660))).trim();
 }
 
 export function deriveDeterministicNoteIdempotencyKey(payload: any, seed?: string): string {
@@ -137,6 +138,18 @@ export class CasperHubClientError extends Error {
     this.code = code;
     this.httpStatus = httpStatus;
   }
+}
+
+export function resolveCasperHubConfig(env: Record<string, string | undefined> = process.env): CasperHubResolvedConfig {
+  const raw = env?.CASPER_HUB_URL?.trim();
+  if (raw) {
+    let parsed: URL;
+    try { parsed = new URL(raw); } catch { throw new CasperHubClientError('CASPER_HUB_URL_INVALID', 'Invalid CASPER_HUB_URL', 400); }
+    if (parsed.protocol !== 'https:' || parsed.hostname.toLowerCase() !== ALLOWED_CASPER_HUB_HOST || parsed.port || parsed.username || parsed.password || parsed.search || parsed.hash) {
+      throw new CasperHubClientError('CASPER_HUB_URL_INVALID', 'Untrusted CASPER_HUB_URL host or scheme', 400);
+    }
+  }
+  return { agentId: CASPER_AGENT_ID, baseUrl: DEFAULT_CASPER_HUB_URL, tokenConfigured: Boolean(env?.CASPER_HUB_TOKEN?.trim()) };
 }
 
 /**

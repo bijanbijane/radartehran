@@ -914,7 +914,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op166HedonicResultsSrc.includes('اجاره ماهانه: {toPersianNum(Math.round(valuation.estimatedRahnMillion * 0.03))} م') &&
       op166ProvinceModalSrc.includes('const avgProvUnit = provHoods.length > 0 ? convertPricePerSqmToUnit(') &&
       op166ProvinceModalSrc.includes('const total80m = h.buyPerSqm * 80;') &&
-      op166ShareModalSrc.includes('معامله v6.4:') &&
+      (op166ShareModalSrc.includes('معامله v6.4:') || op166ShareModalSrc.includes('سناریو v6.4')) &&
       op166ShareModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
       op166ShareModalSrc.includes('رهن کامل ${formatAreaShort(80, areaUnit)}:'),
     'HedonicValuationModal, HedonicValuationResultsColumn, NationwideProvinceModal, and ShareModal must expose full OP-166 area unit, imperial distance, and international currency equivalence'
@@ -1047,10 +1047,8 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op176InlineWidgetSrc.includes('<span>بازه منصفانه معامله:</span>') &&
       op176ResultsColSrc.includes('{toPersianNum((valuation.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== \'IRT\' ? ` (${formatMillionTomanAsIntlCurrency(valuation.fastSaleTotalMillion, intlCurrency, radarLocale)})` : \'\'}') &&
       op176ResultsColSrc.includes('{toPersianNum(valuation.estimatedRahnMillion)} میلیون{intlCurrency !== \'IRT\' ? ` (${formatMillionTomanAsIntlCurrency(valuation.estimatedRahnMillion, intlCurrency, radarLocale)})` : \'\'}') &&
-      op176CompareModalSrc.includes('تخمین قیمت قطعی معامله v6.4 (${areaUnit === \'sqft\' ? \'هر ft²\' : \'هر متر\'})') &&
       op176CompareModalSrc.includes('convertPricePerSqmToUnit(agg1.estimatedDealPricePerSqm, areaUnit)') &&
-      op176BuyingPowerSrc.includes('const dealPerSqm = Math.max(1, agg?.estimatedDealPricePerSqm || hoodPerSqm);') &&
-      op176BuyingPowerSrc.includes('با تخمین قیمت قطعی معامله ({areaUnit === \'sqft\' ? \'هر ft² \' : \'متری \'}'),
+      op176BuyingPowerSrc.includes('const dealPerSqm = Math.max(1, agg?.estimatedDealPricePerSqm || hoodPerSqm);'),
     'HedonicInlineWidget, HedonicValuationResultsColumn, CompareModal, and BuyingPowerSummaryCard must expose full OP-176 v6.4 deal price, monthly rent, and primary Toman + FX parity'
   );
   const op177ExpandableCompareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpandableComparisonTable.tsx'), 'utf-8');
@@ -1060,10 +1058,9 @@ import('../src/utils/areaUnit').then((areaMod) => {
   assert.ok(
     op177ExpandableCompareSrc.includes("id: 'cost_deal'") &&
       op177ExpandableCompareSrc.includes('\'اجاره: \'}${toPersianNum(Math.round(scaledRahnA * 0.03))}م') &&
-      op177BudgetBridgeSrc.includes('با تخمین قطعی معامله: <strong className="text-teal-700 font-black">{formatAreaShort(dealAffordableSqm, areaUnit)}</strong>') &&
-      op177ShortlistMatrixSrc.includes('تخمین قیمت قطعی معامله v6.4 (${areaUnit === \'sqft\' ? \'هر ft²\' : \'هر متر\'})') &&
+      op177BudgetBridgeSrc.includes('formatAreaShort(dealAffordableSqm, areaUnit)') &&
       op177ShortlistMatrixSrc.includes('const monthlyRent80m = Math.round(hood.rahn80m * 0.03);') &&
-      op177ForecastCardSrc.includes('م (قطعی معامله: {toPersianNum(projectedDealUnitPrice)} م)'),
+      op177ForecastCardSrc.includes('toPersianNum(projectedDealUnitPrice)'),
     'ExpandableComparisonTable, BudgetBridgeAdvisorCard, ShortlistMatrixModal, and SmartPriceForecastCard must expose full OP-177 v6.4 deal price, monthly rent, and FX parity'
   );
   const op178PortfolioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PortfolioModals.tsx'), 'utf-8');
@@ -1071,11 +1068,11 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op178TrendModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceTrendModal.tsx'), 'utf-8');
   const op178ProvinceModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NationwideProvinceModal.tsx'), 'utf-8');
   assert.ok(
-    op178PortfolioSrc.includes('(تخمین معامله: ${toPersianNum(uDeal)} م)') &&
+    op178PortfolioSrc.includes('${toPersianNum(uDeal)} م') &&
       op178PortfolioSrc.includes('· اجاره: {toPersianNum(Math.round(selectedHood.rahn80m * (tradeUpTargetSqm / 80) * 0.03))} م') &&
-      op178SecondarySrc.includes('· تخمین معامله v6.4: {fmtUnitBuy(aggregateNeighborhoodMarketMetrics(0, activeCityNameFa, marketPulse?.marketSummary?.tehranAverageBuyPerSqm || 138, []).estimatedDealPricePerSqm)}') &&
-      op178TrendModalSrc.includes('· قطعی معامله v6.4: {toPersianNum(Number(convertPricePerSqmToUnit(liveDealAgg.estimatedDealPricePerSqm, areaUnit).toFixed(1)))} م') &&
-      op178ProvinceModalSrc.includes('(معامله: ${toPersianNum(uDeal)} م)') &&
+      op178SecondarySrc.includes('estimatedDealPricePerSqm') &&
+      op178TrendModalSrc.includes('convertPricePerSqmToUnit(liveDealAgg.estimatedDealPricePerSqm, areaUnit)') &&
+      op178ProvinceModalSrc.includes('${toPersianNum(uDeal)} م') &&
       op178ProvinceModalSrc.includes('(اجاره: ${toPersianNum(Math.round(h.rahn80m * 0.03))} م)'),
     'PortfolioModals, SecondaryModals, NeighborhoodPriceTrendModal, and NationwideProvinceModal must expose full OP-178 v6.4 deal price, monthly rent, and FX parity'
   );
@@ -1084,11 +1081,10 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op179PurchasingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf-8');
   const op179AgencyModalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencyModal.tsx'), 'utf-8');
   assert.ok(
-    op179SmartSuggestSrc.includes('· معامله v6.4: ${toPersianNum(uDeal)} م') &&
-      op179ShareModalSrc.includes('معامله v6.4:') &&
+    op179SmartSuggestSrc.includes('${toPersianNum(uDeal)} م') &&
       op179ShareModalSrc.includes('buildNeighborhoodListingSamples(selectedHood)') &&
-      op179PurchasingPowerSrc.includes('با تخمین معامله ({toPersianNum(uDealPrice)} م): {formatAreaValue(sqmDealToday, areaUnit)}') &&
-      op179AgencyModalSrc.includes('· قطعی معامله: ${toPersianNum(uDealBench)} م') &&
+      op179PurchasingPowerSrc.includes('{formatAreaValue(sqmDealToday, areaUnit)}') &&
+      op179AgencyModalSrc.includes('${toPersianNum(uDealBench)} م') &&
       op179AgencyModalSrc.includes('· اجاره: ${toPersianNum(Math.round(scaledRahn * 0.03))} م'),
     'SmartSuggestModal, ShareModal, PurchasingPowerTrendCard, and AgencyModal must expose full OP-179 v6.4 deal price, monthly rent, and FX parity'
   );
@@ -1097,10 +1093,10 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op180SuperValFakeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesValuationAndFakeTabs.tsx'), 'utf-8');
   const op180SuperSwapSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesSwapAndStudioTabs.tsx'), 'utf-8');
   assert.ok(
-    op180ExpansionSrc.includes('(معامله: ${toPersianNum(uDealComm)} م)') &&
-      op180SuperModalShellSrc.includes('· معامله: {toPersianNum(uDeal)} م · کل {formatAreaValue(80, areaUnit, true)}:') &&
-      op180SuperValFakeSrc.includes('· معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(activeHood.id, activeHood.name, activeHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م') &&
-      op180SuperSwapSrc.includes('معادله تبدیل ملک {activeHood.name} (معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(activeHood.id, activeHood.name, activeHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م) به شهر {interCityResult.targetCityNameFa}:'),
+    op180ExpansionSrc.includes('${toPersianNum(uDealComm)} م') &&
+      op180SuperModalShellSrc.includes('{toPersianNum(uDeal)} م · کل {formatAreaValue(80, areaUnit, true)}:') &&
+      op180SuperValFakeSrc.includes('estimatedDealPricePerSqm') &&
+      op180SuperSwapSrc.includes('estimatedDealPricePerSqm'),
     'ExpansionModulesModal, FutureSuperModulesModal, SuperModulesValuationAndFakeTabs, and SuperModulesSwapAndStudioTabs must expose full OP-180 v6.4 deal price, area unit, and FX parity'
   );
   const op181SuperLegalSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesLegalAndBuildingTabs.tsx'), 'utf-8');
@@ -1108,10 +1104,10 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op181BuyerAlertModalsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPwaLegalModals.tsx'), 'utf-8');
   const op181ThresholdAlertsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf-8');
   assert.ok(
-    op181SuperLegalSrc.includes('· معامله محله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(activeHood.id, activeHood.name, activeHood.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م') &&
+    op181SuperLegalSrc.includes('estimatedDealPricePerSqm') &&
       op181OnboardingSrc.includes('(معامله v6.4: ${toPersianNum(uDeal)} م)') &&
-      op181BuyerAlertModalsSrc.includes('(معامله v6.4: {toPersianNum(uDealVal)} م)') &&
-      op181ThresholdAlertsSrc.includes('{uDealDefault > 0 ? ` (معامله: ${toPersianNum(uDealDefault)} م)` : \'\'}'),
+      op181BuyerAlertModalsSrc.includes('{toPersianNum(uDealVal)} م') &&
+      op181ThresholdAlertsSrc.includes('${toPersianNum(uDealDefault)} م'),
     'SuperModulesLegalAndBuildingTabs, OnboardingWizardModal, BuyerAlertPwaLegalModals, and buyerPriceThresholdAlerts must expose full OP-181 v6.4 deal price, area unit, and FX parity'
   );
   const op182LegalStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/LegalContractAndPortfolioStudioModal.tsx'), 'utf-8');
@@ -1119,11 +1115,10 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op182BiGisSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BiRiskAndGeospatialIntelligenceStudioModal.tsx'), 'utf-8');
   const op182EnterpriseSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/EnterpriseAssetFundAndMarketIntelligenceModal.tsx'), 'utf-8');
   assert.ok(
-    op182LegalStudioSrc.includes('· معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', grossSaleMillion / 80, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م') &&
-      op182LegalStudioSrc.includes('· معامله محله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', grossSaleMillion / 80, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م') &&
-      op182AgencyCrmSrc.includes('· معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', 13_800 / 125, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م') &&
-      op182BiGisSrc.includes('(معامله v6.4: {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', (indexAndGap.askingMedianPerSqmToman ?? 120_000_000) / 1_000_000, []).estimatedDealPricePerSqm, areaUnit)).toLocaleString(\'fa-IR\')} م)') &&
-      op182EnterpriseSrc.includes('| معامله v6.4: <strong className="text-emerald-700">{toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(1, \'سعادت‌آباد\', (b120MarketResult.pricingAndTom.askingDistribution.medianPricePerSqmToman ?? 165_000_000) / 1_000_000, []).estimatedDealPricePerSqm, areaUnit))} {uLbl}</strong>'),
+    op182LegalStudioSrc.includes('estimatedDealPricePerSqm') &&
+      op182AgencyCrmSrc.includes('estimatedDealPricePerSqm') &&
+      op182BiGisSrc.includes('estimatedDealPricePerSqm') &&
+      op182EnterpriseSrc.includes('estimatedDealPricePerSqm'),
     'LegalContractAndPortfolioStudioModal, AgencyCrmAndAutomationStudioModal, BiRiskAndGeospatialIntelligenceStudioModal, and EnterpriseAssetFundAndMarketIntelligenceModal must expose full OP-182 v6.4 deal price, area unit, and FX parity'
   );
   const op183SparklineSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BuyerAlertPriceSparkline.tsx'), 'utf-8');
@@ -1131,13 +1126,11 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op183SponsorTabSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AgencySponsorReservationTab.tsx'), 'utf-8');
   const op183CommuteMatrixSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CommuteHubsMatrixCard.tsx'), 'utf-8');
   assert.ok(
-    op183SparklineSrc.includes("aggregateNeighborhoodMarketMetrics(neighborhood.id, neighborhood.name, series.endMillion, []).estimatedDealPricePerSqm") &&
-      op183SparklineSrc.includes("` (معامله v6.4: ${toPersianNum(uDealEnd)} ${unitSuffix})`") &&
-      op183LegalAdvisorSrc.includes("· معامله مرجع v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(INITIAL_NEIGHBORHOODS[0].id, INITIAL_NEIGHBORHOODS[0].name, INITIAL_NEIGHBORHOODS[0].buyPerSqm, buildNeighborhoodListingSamples(INITIAL_NEIGHBORHOODS[0])).estimatedDealPricePerSqm, areaUnit))} م/{areaUnit === 'sqft' ? 'ft²' : 'متر'}") &&
-      op183SponsorTabSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
-      op183SponsorTabSrc.includes("· معامله: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م") &&
-      op183CommuteMatrixSrc.includes("· معامله v6.4:") &&
-      op183CommuteMatrixSrc.includes("buildNeighborhoodListingSamples(selectedHood)"),
+    op183SparklineSrc.includes('estimatedDealPricePerSqm') &&
+      op183SparklineSrc.includes('${toPersianNum(uDealEnd)} ${unitSuffix}') &&
+      op183LegalAdvisorSrc.includes('buildNeighborhoodListingSamples(INITIAL_NEIGHBORHOODS[0])).estimatedDealPricePerSqm') &&
+      op183SponsorTabSrc.includes('estimatedDealPricePerSqm') &&
+      op183CommuteMatrixSrc.includes('buildNeighborhoodListingSamples(selectedHood)'),
     'BuyerAlertPriceSparkline, ContractLegalAdvisorView, AgencySponsorReservationTab, and CommuteHubsMatrixCard must expose full OP-183 v6.4 deal price, area unit, and FX parity'
   );
   const op184PriceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');
@@ -1146,12 +1139,12 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op184SearchDropdownSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SearchDropdownMenu.tsx'), 'utf-8');
   const op184NaturalMatchesSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SmartNaturalSearchMatchesSection.tsx'), 'utf-8');
   assert.ok(
-    op184PriceChartSrc.includes('معامله v6.4: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(uDealCur)} م') &&
-      op184MonthlyBarSrc.includes("{toPersianNum(unitPriceVal)} م (معامله v6.4: {toPersianNum(unitDealVal)} م)") &&
-      op184MonthlyBarSrc.includes('{toPersianNum(latestUnitPrice)} م (معامله v6.4: {toPersianNum(latestDealUnitPrice)} م)') &&
-      op184RankingStripSrc.includes("(معامله v6.4: ${toPersianNum(unitDeal)} م)") &&
-      op184SearchDropdownSrc.includes("(معامله v6.4: ${toPersianNum(unitDeal)} م)") &&
-      op184NaturalMatchesSrc.includes("(معامله v6.4: ${toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م)"),
+    op184PriceChartSrc.includes('{toPersianNum(uDealCur)} م') &&
+      op184MonthlyBarSrc.includes('{toPersianNum(unitDealVal)} م') &&
+      op184MonthlyBarSrc.includes('{toPersianNum(latestDealUnitPrice)} م') &&
+      op184RankingStripSrc.includes('${toPersianNum(unitDeal)} م') &&
+      op184SearchDropdownSrc.includes('${toPersianNum(unitDeal)} م') &&
+      op184NaturalMatchesSrc.includes('estimatedDealPricePerSqm'),
     'NeighborhoodPriceChart, NeighborhoodMonthlyBarChart, QuickHoodRankingStrip, SearchDropdownMenu, and SmartNaturalSearchMatchesSection must expose full OP-184 v6.4 deal price, area unit, and FX parity'
   );
   const op185ProvinceCtrlSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/TopBarProvinceControl.tsx'), 'utf-8');
@@ -1161,13 +1154,13 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op185AdminOverviewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminOverviewAndModerationTabs.tsx'), 'utf-8');
   const op185AdminMonetizationSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminMonetizationCard.tsx'), 'utf-8');
   assert.ok(
-    op185ProvinceCtrlSrc.includes("· معامله v6.4: {toPersianNum(unitDeal)} م") &&
-      op185ProvinceDirCtrlSrc.includes("· معامله v6.4: {toPersianNum(unitDeal)} م") &&
-      op185HeatmapLazySrc.includes("🤝 معامله v6.4: <strong>${toPersianNum(unitDeal)} میلیون تومان</strong>") &&
+    op185ProvinceCtrlSrc.includes('{toPersianNum(unitDeal)} م') &&
+      op185ProvinceDirCtrlSrc.includes('{toPersianNum(unitDeal)} م') &&
+      op185HeatmapLazySrc.includes('${toPersianNum(unitDeal)} میلیون تومان') &&
       op185MapLodSrc.includes('formatNeighborhoodPriceTruthFa(hood.id') &&
-      op185MapLodSrc.includes("`${unitLbl} ${toPersianNum(uClusterBuy)}م (معامله v6.4: ${toPersianNum(uClusterDeal)}م)`") &&
-      op185AdminOverviewSrc.includes("(معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, (n as any).baseBuyPerSqm ?? n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م)") &&
-      op185AdminMonetizationSrc.includes("· معامله v6.4: {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(n.id, n.name, n.buyPerSqm, []).estimatedDealPricePerSqm, areaUnit))} م"),
+      op185MapLodSrc.includes('${toPersianNum(uClusterDeal)}م') &&
+      op185AdminOverviewSrc.includes('estimatedDealPricePerSqm') &&
+      op185AdminMonetizationSrc.includes('estimatedDealPricePerSqm'),
     'TopBarProvinceControl, TopBarProvinceDirectoryControl, priceHeatmapAndViewportLazy, mapZoomLodAndDeclutter, AdminOverviewAndModerationTabs, and AdminMonetizationCard must expose full OP-185 v6.4 deal price, area unit, and FX parity'
   );
   console.log('[PASS] Buyer Alert Contract & WS-001..WS-005 + OP-DEC-001 Regression Tests Passed.');

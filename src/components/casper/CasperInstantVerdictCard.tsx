@@ -4,17 +4,24 @@
  * Delivers immediate fair deal price discovery, buy/hold signal, deed legitimacy, liquidity depth, and spatial arbitrage.
  */
 import React, { useMemo, useState, useEffect } from 'react';
-import { Sparkles, ArrowRightLeft, ShieldCheck, FileCheck, MessageSquareText, Clock, FileWarning } from 'lucide-react';
+import { Sparkles, ShieldCheck, FileCheck, MessageSquareText, Clock, FileWarning } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { evaluateCasperNeighborhoodDecision } from '../../cells/socioeconomic-intelligence/casperDecisionEngine';
 import { CasperNegotiationPlaybookModal } from './CasperNegotiationPlaybookModal';
 import { CasperCertifiedDossierModal } from './CasperCertifiedDossierModal';
-import { evaluateDeedImpact, type IranianDeedType, IRANIAN_DEED_SPECS } from '../../utils/deedLegitimacyShieldEngine';
+import { evaluateDeedImpact, type IranianDeedType } from '../../utils/deedLegitimacyShieldEngine';
 import { computeLiquidityDepthAndTom } from '../../utils/liquidityDepthAndTomEngine';
 import { computeInflationAdjustedPrice } from '../../utils/fxInflationDriftEngine';
 import { saveDossierToResilienceCache } from '../../utils/nationalNetworkResilienceCache';
 import { useIntlCurrency } from '../AreaUnitToggle';
+
+const VERDICT_THEMES = {
+  OPTIMAL_BUY: { badge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800', icon: 'bg-emerald-600/10 border-emerald-600/20 text-emerald-600 dark:text-emerald-400' },
+  NEGOTIATE_HARD: { badge: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800', icon: 'bg-indigo-600/10 border-indigo-600/20 text-indigo-600 dark:text-indigo-400' },
+  CAUTIOUS_HOLD: { badge: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: 'bg-amber-600/10 border-amber-600/20 text-amber-600 dark:text-amber-400' },
+  HIGH_RISK_AVOID: { badge: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800', icon: 'bg-rose-600/10 border-rose-600/20 text-rose-600 dark:text-rose-400' },
+} as const;
 
 export interface CasperInstantVerdictCardProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
@@ -24,104 +31,48 @@ export interface CasperInstantVerdictCardProps {
   onOpenInspector: (hood: EvaluatedNeighborhood) => void;
 }
 
-export function CasperInstantVerdictCard({
-  evaluatedNeighborhoods,
-  selectedHood,
-  onSelectNeighborhood,
-  targetSqm,
-  onOpenInspector,
-}: CasperInstantVerdictCardProps): React.ReactElement {
+export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInstantVerdictCardProps): React.ReactElement {
   const [intlCurrency] = useIntlCurrency();
   const [priority, setPriority] = useState<'investment' | 'family' | 'liquidity'>('investment');
   const [deedType, setDeedType] = useState<IranianDeedType>('TEK_BARG_OFFICIAL');
   const [showPlaybook, setShowPlaybook] = useState(false);
   const [showDossier, setShowDossier] = useState(false);
-
   const area = targetSqm > 0 ? targetSqm : 80;
+  const agg = useMemo(() => aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)), [selectedHood]);
 
-  const agg = useMemo(() => {
-    return aggregateNeighborhoodMarketMetrics(
-      selectedHood.id,
-      selectedHood.name,
-      selectedHood.buyPerSqm,
-      buildNeighborhoodListingSamples(selectedHood),
-    );
-  }, [selectedHood]);
+  const calibratedDealBaseSqm = agg.eligibleObservedCount === 0 ? Math.round(agg.askingPricePerSqm * 0.93) : agg.estimatedDealPricePerSqm;
+  const deed = useMemo(() => evaluateDeedImpact(calibratedDealBaseSqm, deedType), [calibratedDealBaseSqm, deedType]);
+  const fx = useMemo(() => computeInflationAdjustedPrice({ basePriceSqm: deed.discountedPriceSqm, dataAgeDays: agg.eligibleObservedCount > 0 ? 7 : 0, cityZone: selectedHood.zone }), [deed.discountedPriceSqm, agg.eligibleObservedCount, selectedHood.zone]);
+  const negotiationFloorSqm = Math.min(agg.askingPricePerSqm, fx.adjustedCurrentPriceSqm);
+  const liquidity = useMemo(() => computeLiquidityDepthAndTom({ basePriceSqm: negotiationFloorSqm, unitAreaSqm: area, zone: selectedHood.zone, hasElevator: selectedHood.security >= 7, floor: 2, isBargainPrice: selectedHood.status === 'green' }), [negotiationFloorSqm, area, selectedHood]);
 
-  // 1. Deed Evaluation & 1403 Law Discount
-  const deed = useMemo(() => evaluateDeedImpact(agg.estimatedDealPricePerSqm, deedType), [agg.estimatedDealPricePerSqm, deedType]);
-
-  // 2. Inflation / FX Drift Adjustment
-  const fx = useMemo(() => computeInflationAdjustedPrice({ basePriceSqm: deed.discountedPriceSqm, dataAgeDays: 14, cityZone: selectedHood.zone }), [deed.discountedPriceSqm, selectedHood.zone]);
-
-  // 3. Liquidity Depth & Days on Market
-  const liquidity = useMemo(() => computeLiquidityDepthAndTom({
-    basePriceSqm: fx.adjustedCurrentPriceSqm,
-    unitAreaSqm: area,
-    zone: selectedHood.zone,
-    hasElevator: selectedHood.security >= 7,
-    floor: 2,
-    isBargainPrice: selectedHood.status === 'green',
-  }), [fx.adjustedCurrentPriceSqm, area, selectedHood]);
-
-  const weights = useMemo(() => {
-    if (priority === 'investment') return { priceWeight: 40, commuteWeight: 15, environmentWeight: 15, liquidityWeight: 20, safetyWeight: 10 };
-    if (priority === 'family') return { priceWeight: 20, commuteWeight: 20, environmentWeight: 30, liquidityWeight: 10, safetyWeight: 20 };
-    return { priceWeight: 30, commuteWeight: 25, environmentWeight: 10, liquidityWeight: 25, safetyWeight: 10 };
-  }, [priority]);
+  const weights = useMemo(() => (
+    priority === 'investment' ? { priceWeight: 40, commuteWeight: 15, environmentWeight: 15, liquidityWeight: 20, safetyWeight: 10 }
+      : priority === 'family' ? { priceWeight: 20, commuteWeight: 20, environmentWeight: 30, liquidityWeight: 10, safetyWeight: 20 }
+        : { priceWeight: 30, commuteWeight: 25, environmentWeight: 10, liquidityWeight: 25, safetyWeight: 10 }
+  ), [priority]);
 
   const decision = useMemo(() => {
     const status = selectedHood.status === 'green' ? 'undervalued' : selectedHood.status === 'red' ? 'bubble' : 'balanced';
-    return evaluateCasperNeighborhoodDecision(
-      {
-        hoodId: selectedHood.id,
-        hoodName: selectedHood.name,
-        askingPricePerSqm: agg.askingPricePerSqm,
-        estimatedDealPricePerSqm: fx.adjustedCurrentPriceSqm,
-        iqrLowPerSqm: agg.iqrLowPerSqm,
-        iqrHighPerSqm: agg.iqrHighPerSqm,
-        validSampleCount: agg.validSampleCount,
-        rejectedFraudCount: agg.rejectedFraudCount,
-        confidenceScore: agg.confidenceScore,
-        marketStatus: status,
-        marketRegime: agg.marketRegime,
-        overallScore: selectedHood.overallScore,
-        transitScore: selectedHood.metro,
-        safetyScore: selectedHood.security,
-        rahn80m: selectedHood.rahn80m,
-        targetSqm: area,
-        intlCurrency,
-      },
-      weights,
-    );
-  }, [selectedHood, agg, fx.adjustedCurrentPriceSqm, area, intlCurrency, weights]);
+    return evaluateCasperNeighborhoodDecision({
+      hoodId: selectedHood.id, hoodName: selectedHood.name, askingPricePerSqm: agg.askingPricePerSqm, estimatedDealPricePerSqm: negotiationFloorSqm,
+      iqrLowPerSqm: agg.iqrLowPerSqm, iqrHighPerSqm: agg.iqrHighPerSqm, validSampleCount: agg.validSampleCount, rejectedFraudCount: agg.rejectedFraudCount,
+      confidenceScore: agg.confidenceScore, marketStatus: status, marketRegime: agg.marketRegime, overallScore: selectedHood.overallScore,
+      transitScore: selectedHood.metro, safetyScore: selectedHood.security, liquidityScore: liquidity.liquidityScore, rahn80m: selectedHood.rahn80m,
+      targetSqm: area, intlCurrency,
+    }, weights);
+  }, [selectedHood, agg, negotiationFloorSqm, liquidity.liquidityScore, area, intlCurrency, weights]);
 
-  // Auto-save to resilient offline cache
   useEffect(() => {
-    saveDossierToResilienceCache({
-      hoodId: selectedHood.id,
-      hoodName: selectedHood.name,
-      cachedAtIso: new Date().toISOString(),
-      dealPricePerSqm: fx.adjustedCurrentPriceSqm,
-      askingPricePerSqm: agg.askingPricePerSqm,
-      verdictTitleFa: decision.verdictTitleFa,
-      deedDiscountPct: deed.discountPct,
-      liquidityDays: liquidity.estimatedDaysToLiquidate,
-    });
-  }, [selectedHood, fx.adjustedCurrentPriceSqm, agg.askingPricePerSqm, decision.verdictTitleFa, deed.discountPct, liquidity.estimatedDaysToLiquidate]);
+    saveDossierToResilienceCache({ hoodId: selectedHood.id, hoodName: selectedHood.name, cachedAtIso: new Date().toISOString(), dealPricePerSqm: negotiationFloorSqm, askingPricePerSqm: agg.askingPricePerSqm, verdictTitleFa: decision.verdictTitleFa, deedDiscountPct: deed.discountPct, liquidityDays: liquidity.estimatedDaysToLiquidate });
+  }, [selectedHood, negotiationFloorSqm, agg.askingPricePerSqm, decision.verdictTitleFa, deed.discountPct, liquidity.estimatedDaysToLiquidate]);
 
-  const arbitrageHood = useMemo(() => {
-    const peers = evaluatedNeighborhoods.filter(
-      (h) => h.id !== selectedHood.id && h.buyPerSqm <= selectedHood.buyPerSqm * 0.95 && h.overallScore >= selectedHood.overallScore - 0.5,
-    );
-    if (peers.length === 0) return null;
-    return peers.sort((a, b) => b.overallScore - a.overallScore)[0];
-  }, [evaluatedNeighborhoods, selectedHood]);
+  const { badge: verdictBadgeTheme, icon: verdictIconTheme } = VERDICT_THEMES[decision.decisionVerdict];
 
   const askingTotalBillion = ((agg.askingPricePerSqm * area) / 1000).toFixed(2);
-  const dealTotalBillion = ((fx.adjustedCurrentPriceSqm * area) / 1000).toFixed(2);
+  const dealTotalBillion = ((negotiationFloorSqm * area) / 1000).toFixed(2);
   const fireSaleTotalBillion = ((liquidity.fireSaleCashPriceSqm * area) / 1000).toFixed(2);
-  const bubblePct = Math.round(Math.max(0, ((agg.askingPricePerSqm - fx.adjustedCurrentPriceSqm) / fx.adjustedCurrentPriceSqm) * 100));
+  const bubblePct = Math.round(Math.max(0, ((agg.askingPricePerSqm - negotiationFloorSqm) / Math.max(1, negotiationFloorSqm)) * 100));
 
   return (
     <div
@@ -132,18 +83,22 @@ export function CasperInstantVerdictCard({
       {/* Top Banner: Verdict & Priorities */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-600/10 border border-emerald-600/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${verdictIconTheme}`}>
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-black text-slate-900 dark:text-white">حکم آنی کسپر برای {selectedHood.name}</span>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md border bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+              <span
+                data-testid="casper-verdict-badge"
+                data-verdict={decision.decisionVerdict}
+                className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${verdictBadgeTheme}`}
+              >
                 {decision.verdictTitleFa}
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              واحد {toPersianNum(area)} متری · {toPersianNum(agg.observedSampleCount)} آگهی زنده در مدل · بتای ارزی {toPersianNum(fx.betaSensitivity)}
+              واحد {toPersianNum(area)} متری · {agg.observedSampleCount > 0 ? `${toPersianNum(agg.observedSampleCount)} آگهی زنده در مدل` : 'فاقد آگهی زنده (مدل پایه)'} · بتای ارزی {toPersianNum(fx.betaSensitivity)}
             </p>
           </div>
         </div>
@@ -193,7 +148,7 @@ export function CasperInstantVerdictCard({
             <span className="text-xs text-slate-500 dark:text-slate-400">میلیارد تومان</span>
           </div>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-            متری {toPersianNum(fx.adjustedCurrentPriceSqm)} م {deed.discountPct > 0 ? `(کسر ${toPersianNum(deed.discountPct)}٪ سند)` : ''}
+            متری {toPersianNum(negotiationFloorSqm)} م {deed.discountPct > 0 ? `(کسر ${toPersianNum(deed.discountPct)}٪ سند)` : ''}
           </span>
         </div>
 
@@ -233,7 +188,7 @@ export function CasperInstantVerdictCard({
       {/* Bottom Action Strip: Advice & Modals Triggers */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-          💡 <span className="text-slate-900 dark:text-white font-bold">توصیه عملیاتی کسپر:</span> {decision.verdictSummaryFa}
+          💡 <span className="text-slate-900 dark:text-white font-bold">توصیه عملیاتی کسپر:</span> {toPersianNum(decision.verdictSummaryFa)}
         </p>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
           <button
@@ -261,9 +216,9 @@ export function CasperInstantVerdictCard({
         onClose={() => setShowPlaybook(false)}
         hoodName={selectedHood.name}
         askingPricePerSqm={agg.askingPricePerSqm}
-        dealPricePerSqm={fx.adjustedCurrentPriceSqm}
+        dealPricePerSqm={negotiationFloorSqm}
         targetOfferPerSqm={decision.targetOfferPerSqm}
-        walkAwayPricePerSqm={Math.round(fx.adjustedCurrentPriceSqm * 1.05)}
+        walkAwayPricePerSqm={Math.min(agg.askingPricePerSqm, Math.round(negotiationFloorSqm * 1.04))}
         targetSqm={area}
         intlCurrency={intlCurrency}
       />
@@ -275,7 +230,7 @@ export function CasperInstantVerdictCard({
         hoodName={selectedHood.name}
         zone={selectedHood.zone}
         askingPricePerSqm={agg.askingPricePerSqm}
-        dealPricePerSqm={fx.adjustedCurrentPriceSqm}
+        dealPricePerSqm={negotiationFloorSqm}
         targetSqm={area}
         deedType={deedType}
       />

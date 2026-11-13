@@ -235,6 +235,27 @@ export function findProvinceForHood(hoodId: number): IranProvinceConfig | undefi
   if (hoodId >= 442 && hoodId <= 445) return ALL_31_IRAN_PROVINCES[30];
   return undefined;
 }
+export const DIVAR_CITY_ID_BY_PROVINCE: Record<string, string> = {
+  tehran: '1', alborz: '2', khorasan_razavi: '3', isfahan: '4', east_azerbaijan: '5',
+  fars: '6', khuzestan: '7', qom: '8', kermanshah: '9', west_azerbaijan: '10',
+  sistan_baluchestan: '11', gilan: '12', kerman: '13', hamedan: '14', markazi: '15',
+  yazd: '16', ardabil: '17', hormozgan: '18', qazvin: '19', zanjan: '20',
+  golestan: '21', mazandaran: '22', bushehr: '25', lorestan: '27', kurdistan: '28',
+  ilam: '32', south_khorasan: '34', semnan: '35', chaharmahal: '36', kohgiluyeh: '38',
+  north_khorasan: '39',
+};
+export function resolveDivarCityId(city: CityId | string = 'tehran', hoodId?: number): string {
+  if (typeof hoodId === 'number' && hoodId >= 1) {
+    const prov = findProvinceForHood(hoodId);
+    if (prov && DIVAR_CITY_ID_BY_PROVINCE[prov.id]) return DIVAR_CITY_ID_BY_PROVINCE[prov.id];
+  }
+  if (DIVAR_CITY_ID_BY_PROVINCE[city]) return DIVAR_CITY_ID_BY_PROVINCE[city];
+  if (city === 'karaj') return '2';
+  if (city === 'mashhad') return '3';
+  if (city === 'isfahan') return '4';
+  if (city === 'shiraz') return '6';
+  return '1';
+}
 export function formatProvinceDirectoryIntlSummary(referenceMillion = 9500, unit: AreaUnit = 'sqm', currency: IntlCurrencyCode = 'USD'): { displayAreaUnitLabel: string; referenceValuationIntlText: string } {
   return { displayAreaUnitLabel: formatAreaUnitLabel(unit), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(referenceMillion, currency) };
 }

@@ -12,6 +12,7 @@ import {
 import { toPersianNum, type Neighborhood, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import { computeLiquidityDepthAndTom } from '../../utils/liquidityDepthAndTomEngine';
 
 export interface CasperDecisionMatrixCardProps {
   hoodId: number;
@@ -68,31 +69,19 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
   const totalWeightSum =
     weights.priceWeight + weights.commuteWeight + weights.environmentWeight + weights.liquidityWeight + weights.safetyWeight || 1;
 
+  const liquidityAssessment = useMemo(
+    () => computeLiquidityDepthAndTom({ basePriceSqm: agg.estimatedDealPricePerSqm, unitAreaSqm: targetSqm, zone: hood?.zone ?? 'تهران', hasElevator: (hood?.security ?? 7) >= 7, floor: 2, isBargainPrice: evalHood?.status === 'green' }),
+    [agg.estimatedDealPricePerSqm, targetSqm, hood?.zone, hood?.security, evalHood?.status],
+  );
   const evaluation = useMemo(
-    () =>
-      evaluateCasperNeighborhoodDecision(
-        {
-          hoodId,
-          hoodName,
-          askingPricePerSqm: agg.askingPricePerSqm,
-          estimatedDealPricePerSqm: agg.estimatedDealPricePerSqm,
-          iqrLowPerSqm: agg.iqrLowPerSqm,
-          iqrHighPerSqm: agg.iqrHighPerSqm,
-          validSampleCount: agg.validSampleCount,
-          rejectedFraudCount: agg.rejectedFraudCount,
-          confidenceScore: agg.confidenceScore,
-          marketStatus: effectiveStatus,
-          marketRegime: agg.marketRegime,
-          overallScore: effectiveOverall,
-          transitScore: effectiveTransit,
-          safetyScore: effectiveSafety,
-          rahn80m: effectiveRahn80m,
-          targetSqm,
-          intlCurrency,
-        },
-        weights,
-      ),
-    [hoodId, hoodName, agg, effectiveStatus, effectiveOverall, effectiveTransit, effectiveSafety, effectiveRahn80m, targetSqm, intlCurrency, weights],
+    () => evaluateCasperNeighborhoodDecision({
+      hoodId, hoodName, askingPricePerSqm: agg.askingPricePerSqm, estimatedDealPricePerSqm: agg.estimatedDealPricePerSqm,
+      iqrLowPerSqm: agg.iqrLowPerSqm, iqrHighPerSqm: agg.iqrHighPerSqm, validSampleCount: agg.validSampleCount,
+      rejectedFraudCount: agg.rejectedFraudCount, confidenceScore: agg.confidenceScore, marketStatus: effectiveStatus,
+      marketRegime: agg.marketRegime, overallScore: effectiveOverall, transitScore: effectiveTransit,
+      safetyScore: effectiveSafety, liquidityScore: liquidityAssessment.liquidityScore, rahn80m: effectiveRahn80m, targetSqm, intlCurrency,
+    }, weights),
+    [hoodId, hoodName, agg, effectiveStatus, effectiveOverall, effectiveTransit, effectiveSafety, liquidityAssessment.liquidityScore, effectiveRahn80m, targetSqm, intlCurrency, weights],
   );
 
   const applyPreset = (preset: 'balanced' | 'investor' | 'family' | 'commuter') => {

@@ -927,6 +927,10 @@ export function createPropertyInsuranceClaimsOperations(
 
               assertValidClaimStateTransition(claim.status, 'SETTLEMENT_PENDING');
 
+              const policy = await tx.get<InsurancePolicyRecord>(
+                PROPERTY_INSURANCE_COLLECTIONS.POLICIES,
+                claim.policyId,
+              );
               const verifiedLoss = claim.latestDecisionSummary.verifiedEligibleLossAmount ?? 0;
               const allCoverages = await tx.query<PolicyCoverageRecord>(
                 PROPERTY_INSURANCE_COLLECTIONS.COVERAGES,
@@ -988,12 +992,21 @@ export function createPropertyInsuranceClaimsOperations(
                 }
               }
 
+              const dedMethod = matchingCov?.deductibleMethod ?? policy?.financialStructure?.defaultDeductibleMethod;
+              const dedValue = matchingCov?.deductibleValue ?? policy?.financialStructure?.defaultDeductibleValue ?? 0;
+              const rawContractualMinimum =
+                dedMethod === 'PERCENTAGE_OF_LOSS'
+                  ? Math.round((verifiedLoss * Math.max(0, dedValue)) / 100)
+                  : Math.max(0, dedValue);
+              const contractualMinimumDeductible = Math.min(verifiedLoss, rawContractualMinimum);
+
               const { partiallyApprovedFlag } = validateSettlementCalculations({
                 verifiedEligibleLossAmount: verifiedLoss,
                 deductibleAppliedAmount: input.deductibleAppliedAmount,
                 approvedSettlementAmount: input.approvedSettlementAmount,
                 rejectedAmount: input.rejectedAmount,
                 applicableCoverageLimit: effectiveCoverageLimit,
+                contractualMinimumDeductible,
               });
 
               const settlementId = `insset_${randomUUID().replace(/-/g, '').slice(0, 16)}`;

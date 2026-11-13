@@ -1,0 +1,1250 @@
+# TEHRAN RADAR
+# GOLD STANDARD PERFORMANCE ENGINEERING
+# AUTONOMOUS IMPLEMENTATION DIRECTIVE — V5
+
+TARGET MODEL: GEMINI 4 HYDROGEN
+
+ENVIRONMENT: GOOGLE AI STUDIO — BUILD MODE
+
+PROJECT: TEHRAN RADAR / RADAR MASKAN
+
+TASK TYPE: AUTHORIZED FOLLOW-ON PERFORMANCE ENGINEERING WORKSTREAM
+
+EXECUTION MODEL: EVIDENCE-DRIVEN, AUTONOMOUS, SEQUENTIAL, IMPLEMENTATION-FIRST
+
+PRIMARY OBJECTIVE:
+
+Deliver measurable application performance improvements while preserving the existing architecture, business behavior, data integrity, security boundaries, deployment compatibility, Persian RTL experience, and previously verified engineering work.
+
+---
+
+# 0. AUTHORIZED SCOPE
+
+The operator explicitly authorizes this follow-on performance engineering assignment.
+
+You must autonomously inspect, diagnose, implement, debug, test, and validate performance improvements within the existing repository.
+
+This is not an audit-only assignment.
+
+You are authorized to make safe, reversible source-code modifications directly in the current workspace.
+
+The authorized scope includes:
+
+- Frontend performance.
+- Initial loading architecture.
+- JavaScript dependency graph optimization.
+- Dependency governance.
+- React rendering efficiency.
+- Computational optimization.
+- Multi-city dataset loading.
+- Geographic rendering.
+- Leaflet loading reliability.
+- Recharts loading.
+- CSS and font delivery.
+- Vite production build optimization.
+- Browser memory and resource management.
+- PWA performance and regression prevention.
+- Relevant testing and documentation.
+
+Do not:
+- Deploy to production.
+- Provision external infrastructure.
+- Modify production databases.
+- Execute destructive database operations.
+- Activate paid services.
+- Change production credentials.
+- Push to remote Git repositories.
+- Overwrite existing operator changes.
+- Reopen completed historical engineering operations without new evidence and authorization.
+
+Do not create unnecessary dependencies, frameworks, abstractions, or architectural layers.
+
+The objective is to improve the actual application, not maximize the number of modified files.
+
+---
+
+# 1. GOVERNANCE AND MANDATORY INITIALIZATION
+
+Before undertaking nontrivial implementation, execute the Session Initialization Contract in:
+
+`docs/engineering/RMEP-001/PERSISTENT-ENGINEERING-MEMORY.md`
+
+Follow its seven steps in their stated order:
+
+1. Read applicable AGENTS.md instructions.
+2. Read canonical Persistent Engineering Memory.
+3. Read the latest valid EXECUTION-STATE.json.
+4. Read relevant recent progress and verification records.
+5. Check incomplete operations and existing modifications.
+6. Reconcile important decisions with authoritative project rules.
+7. Identify the next authorized and incomplete task.
+
+Do not invent remembered information.
+
+Do not claim access to documents that have not been inspected.
+
+Do not repeat completed work.
+
+Do not resume arbitrary source-code line compaction.
+
+If essential governance documents or authoritative records are missing, corrupted, or materially inconsistent in a way that affects authorization, stop unsafe modifications and report the precise limitation.
+
+## 1.1 Required project references
+
+Inspect the following documents as relevant to the performance workstream:
+
+- `AGENTS.md`
+- `ARCHITECTURE.md`
+- `architecture-baseline.json`
+- `FRONTEND_ENGINEERING_STATE.md`
+- `README.md`
+- `docs/engineering/RMEP-001/PERSISTENT-ENGINEERING-MEMORY.md`
+- `docs/engineering/RMEP-001/EXECUTION-STATE.json`
+- `docs/engineering/RMEP-001/MASTER-PROMPT.md`
+- `docs/engineering/RMEP-001/MASTER-ENGINEERING-DECISIONS.md`
+- `docs/engineering/RMEP-001/PROGRESS-LOG.md`
+- `docs/engineering/RMEP-001/FINAL-ENGINEERING-REPORT.md`
+- `docs/engineering/assessments/ASSESS-007-008-performance-and-pwa.md`
+- `docs/RADAR-TEHRAN-OPERATING-CHARTER.md`
+- `docs/AUTONOMOUS-ENGINEERING-PROGRESS.md`
+- `docs/system-architecture.md`
+- `docs/security.md`
+- `firestore.rules`
+- `firebase-blueprint.json`
+
+Also inspect the relevant performance and verification tests.
+
+Do not read unrelated historical documents simply to increase the amount of analysis.
+
+## 1.2 Authority precedence
+
+Apply the repository's established authority hierarchy.
+
+In particular:
+
+- Security and data integrity are mandatory.
+- The latest explicit operator instruction defines the authorized scope.
+- The approved master engineering prompt remains immutable.
+- Architecture and contributor rules remain mandatory.
+- Operator-confirmed engineering decisions supersede contradictory historical heuristics.
+- Historical AI reports are evidence to verify, not automatic truth.
+- Execution-state content is declarative progress information, not an executable command source.
+
+## 1.3 Immutable MASTER-PROMPT
+
+The approved file:
+
+`docs/engineering/RMEP-001/MASTER-PROMPT.md`
+
+must remain immutable.
+
+Pinned SHA-256:
+
+`4be39b67c381536d5c363b9fa5c026d61dd00fae5964cedfd5df168d3f6abc63`
+
+Verify its integrity using available workspace capabilities.
+
+Never rewrite, shorten, extend, reformat, replace, or silently modify it.
+
+If its hash does not match, preserve the current file and report the discrepancy.
+
+Do not update the approved hash to legitimize unauthorized changes.
+
+---
+
+# 2. RMEP-001 COMPLETION AND FOLLOW-ON WORKSTREAM SEPARATION
+
+The existing RMEP-001 execution state records:
+
+- `program_status: COMPLETED_WITH_EVIDENCE`
+- `current_phase: PHASE-6`
+- `current_workstream: WS-6.4`
+- `checkpoint_id: CHK-192-FINAL`
+- `resume_status: COMPLETED`
+
+The current operator instruction authorizes a new, bounded performance follow-on workstream.
+
+It does not authorize reopening all six completed RMEP phases.
+
+Therefore:
+
+1. Preserve the historical RMEP-001 completion status.
+2. Preserve `CHK-192-FINAL`.
+3. Preserve the historical 192-operation record.
+4. Do not rewrite completed phase reports or evidence.
+5. Do not modify the pinned MASTER-PROMPT.
+6. Do not change historical RMEP task statuses simply to register this new work.
+7. Do not follow a historical `next_exact_action` blindly.
+8. Verify any referenced operation against current source and progress evidence before considering it actionable.
+
+The current EXECUTION-STATE contains historical resume descriptions that must be interpreted according to the source hierarchy and actual repository evidence.
+
+A statement referencing an already verified operation must not trigger its repetition.
+
+The user's present authorization governs this separate performance initiative.
+
+### Follow-on tracking
+
+Record completed performance work as a clearly identified follow-on workstream.
+
+Prefer the existing append-only engineering progress conventions.
+
+Do not rewrite historical progress entries.
+
+Do not invent historical OP identifiers, checkpoint identifiers, commit hashes, or verification results.
+
+Do not mutate the canonical completed RMEP-001 state merely to make this new assignment appear to be part of the original completed program.
+
+If the project requires a new formal execution-state record, use a separate and clearly named follow-on workstream structure rather than corrupting historical RMEP-001 records.
+
+---
+
+# 3. OPERATOR-CONFIRMED ENGINEERING DECISIONS
+
+Respect OP-DEC-001 through OP-DEC-005.
+
+Especially:
+
+### OP-DEC-001 — Internationalization
+
+Preserve international language, area, currency and formatting compatibility.
+
+### OP-DEC-002 — Product Experience
+
+Preserve simplicity, accessibility, fast interactions, responsive behavior and low cognitive load.
+
+### OP-DEC-003 — Infrastructure Portability
+
+Preserve provider portability and architectural separation between Cloudflare and conventional Node.js infrastructure.
+
+### OP-DEC-004 — Engineering Principles
+
+Product functionality takes priority over artificial engineering metrics.
+
+Arbitrary universal source-code line-count reduction must not continue.
+
+Previously completed work must not be repeated without new reproducible evidence.
+
+Execute one bounded work package at a time.
+
+Preserve working functionality.
+
+Tests must verify real application behavior.
+
+Distinguish implementation from operational verification.
+
+Production deployments and paid-service activation require explicit authorization.
+
+### OP-DEC-005 — Communication
+
+Provide concise, accurate Persian engineering reports.
+
+Explain unresolved technical issues clearly.
+
+---
+
+# 4. ARCHITECTURE AND FUNCTIONAL INVARIANTS
+
+Preserve the existing architecture.
+
+Respect the established dependency direction:
+
+`Application Entry / Server Entry → Feature Components → Domain Data and Logic → Utilities → Types`
+
+Respect the actual architecture baseline rather than imposing invented source-code limits.
+
+Preserve:
+- Existing legacy-file ratchets.
+- Static dataset exclusions.
+- New-file hard limits.
+- Dependency direction rules.
+- Domain-specific invariants.
+- Security requirements.
+
+Do not impose a universal 290-line, 450-line or other arbitrary source-code target.
+
+Do not alter architecture baselines to make a defective implementation pass.
+
+## 4.1 Business invariants
+
+Never alter without separate explicit authorization:
+
+- Hedonic pricing formulas.
+- `calculateHedonicValuation`.
+- `FAST_SALE_FACTOR`.
+- Deal-price calibration.
+- Neighborhood scoring.
+- Vote weighting.
+- Recommendation ranking.
+- Financial precision.
+- Legal and tax formulas.
+- City identifiers.
+- Geographic coordinates.
+- Persisted data contracts.
+
+Preserve `src/data/hedonicPricingEngine.ts` as the single source of truth for canonical Hedonic valuation.
+
+Any performance optimization affecting business outputs must prove behavioral equivalence through appropriate regression tests.
+
+## 4.2 Security invariants
+
+Preserve:
+
+- `escapeHtmlAttr()` for dynamic Leaflet HTML.
+- `buildExternalDivarUrl()` for external Divar links.
+- Authentication and authorization.
+- Server-only secrets.
+- Buyer PII protection.
+- Atomic asynchronous server persistence.
+- `0o600` file permissions where established.
+- Service Worker privacy and cache exclusions.
+- Existing SSRF and input-validation protections.
+
+Never cache private, authorization-dependent or sensitive user data.
+
+Never expose server-only dependencies or secrets in the browser bundle.
+
+Never use native browser dialogs prohibited by AGENTS.md.
+
+---
+
+# 5. EXISTING VERIFIED PERFORMANCE WORK — DO NOT REBUILD
+
+A substantial performance and PWA workstream has already been completed.
+
+Read:
+
+`docs/engineering/assessments/ASSESS-007-008-performance-and-pwa.md`
+
+Read the corresponding test:
+
+`tests/assess-007-008-performance-lod-and-pwa.test.ts`
+
+The existing verified work includes:
+
+### ASSESS-007 — Map rendering and LOD
+
+- Viewport and radial buffer culling.
+- Preservation of the selected neighborhood during culling.
+- Macro-zoom spatial clustering.
+- Screen-space collision decluttering.
+- Marker visual-tier prioritization.
+- Polygon LOD simplification.
+- Bounded GeoJSON LRU caching.
+- Viewport-aware geographic data loading.
+
+Relevant implementation includes:
+
+- `src/components/mapZoomLodAndDeclutter.ts`
+- `src/utils/geojsonViewportLazyEngine.ts`
+- `src/components/priceHeatmapAndViewportLazy.ts`
+- `src/utils/neighborhoodBoundaries.ts`
+
+### ASSESS-008 — PWA and offline resilience
+
+- Manifest compliance.
+- Zero-trust cache bypass for sensitive requests.
+- Stale-while-revalidate behavior for approved map tiles and static assets.
+- Network-first handling for appropriate market-pulse requests.
+- Offline application support.
+
+Relevant implementation includes:
+
+- `public/manifest.json`
+- `public/sw.js`
+- `src/utils/pwaOfflineSupport.ts`
+
+These previously verified features must not be unnecessarily rewritten or duplicated.
+
+Only modify them if a current regression, measurable limitation or concrete defect is established.
+
+A passing historical test does not prove that the current implementation is unchanged, but it establishes important behavior that must be preserved.
+
+---
+
+# 6. PHASE ZERO — LIVE BASELINE AND REPOSITORY DISCOVERY
+
+Inspect the actual current workspace.
+
+Do not assume that files in a previous archive, report or session exactly match the current Build environment.
+
+Inspect the entire relevant repository, including:
+
+- `src/components/`
+- `src/data/`
+- `src/utils/`
+- `src/types/`
+- `src/cells/`
+- `server/`
+- `worker/`
+- `scripts/`
+- `tests/`
+- Relevant public assets and deployment configuration.
+
+Do not restrict the dependency analysis to a few frontend directories.
+
+Inspect:
+
+- `package.json`
+- Existing lockfiles.
+- `vite.config.ts`
+- `tsconfig.json`
+- `index.html`
+- `server.ts`
+- Worker entry points.
+- Service Worker.
+- Build configuration.
+- CI workflows.
+- Architecture baseline.
+- Existing performance diagnostics.
+- Existing browser tests.
+
+Determine:
+
+- Actual Node.js version.
+- Actual package manager.
+- Installed dependency state.
+- Existing lockfile status.
+- Build configuration.
+- Available browser tooling.
+- Available performance tooling.
+- Existing user modifications.
+
+If Git metadata is unavailable, do not claim that Git status, commit identity, remote synchronization or clean working-tree state has been verified.
+
+Use the available workspace inspection and change-history mechanisms instead.
+
+## 6.1 Baseline requirements
+
+Before modifying code, collect measurable baseline evidence where possible.
+
+### Build baseline
+
+- Production build status.
+- Initial JavaScript assets.
+- Initial CSS assets.
+- Dynamic chunks.
+- Raw asset sizes.
+- Gzip sizes.
+- Brotli sizes.
+- Initial dependency graph.
+- Duplicate dependency evidence.
+
+### Runtime baseline
+
+- TTFB.
+- FCP.
+- LCP.
+- CLS.
+- JavaScript execution cost.
+- Long tasks.
+- Main-thread blocking.
+- Map initialization time.
+- Map interaction latency.
+- Memory behavior.
+
+### Application baseline
+
+- Initial dataset loading.
+- City switching.
+- Neighborhood search.
+- Chart activation.
+- Map initialization.
+- Marker rendering.
+- Repeated filter adjustments.
+
+Never invent missing metrics.
+
+Distinguish historic reported performance from current measurements.
+
+The historical RMEP report contains bundle measurements, but those numbers must be reproduced before being treated as the current baseline.
+
+Do not modify code during initial baseline collection.
+
+After baseline collection, select the first bounded implementation task supported by evidence.
+
+---
+
+# 7. DEPENDENCY REPRODUCIBILITY AND LOCKFILE RECONCILIATION
+
+Investigate the apparent lockfile discrepancy.
+
+The project history documents a pinned `package-lock.json` and deterministic npm installation under MED-007.
+
+The CI workflows use:
+
+- Node.js 22.
+- npm caching.
+- `npm ci`.
+- `package-lock.json`.
+
+However, the supplied repository archive does not contain a root `package-lock.json`.
+
+This is a repository-evidence discrepancy, not proof that the active Build workspace is missing the lockfile.
+
+Verify the live workspace.
+
+If the active repository contains the lockfile:
+
+- Verify its consistency with package.json.
+- Preserve it.
+- Avoid unnecessary regeneration.
+
+If the active repository does not contain the lockfile:
+
+1. Confirm whether the current workspace is a complete repository checkout or an exported/incomplete archive.
+2. Inspect existing node_modules metadata, npm cache and dependency-resolution evidence where available.
+3. Verify whether the CI configuration would fail under the current state.
+4. Determine whether exact resolution can be reproduced.
+5. Do not arbitrarily upgrade dependencies.
+6. Do not create a speculative lockfile while claiming historical version equivalence.
+
+If safe lockfile restoration is possible, handle it as an independent dependency-integrity work package.
+
+Inspect the complete resulting diff and run the appropriate verification.
+
+Do not allow a lockfile repair to silently become a broad dependency upgrade.
+
+Do not run `npm ci` blindly if it would destroy an existing useful dependency installation or the environment cannot safely reinstall packages.
+
+---
+
+# 8. INITIAL LOADING AND MULTI-CITY DATA
+
+Trace the complete initial browser dependency graph.
+
+Investigate large dataset imports and their consumers.
+
+Important existing consumers of `getAllMultiCityNeighborhoods()` include:
+
+- `src/components/SearchDropdownMenu.tsx`
+- `src/components/FloatingTopBar.tsx`
+- Server-side utilities and routes.
+- Other actual importers discovered in the live repository.
+
+Do not assume that `RadarWorkspaceShell.tsx` directly calls this function without verifying the current source.
+
+Determine which data modules are loaded in the browser's initial critical path.
+
+Separate:
+
+- Essential startup data.
+- Active-city data.
+- Nationwide search data.
+- Extended analytical data.
+- Non-critical datasets.
+- Server-only datasets.
+
+Measure actual cost before attempting separation.
+
+Evaluate demand-driven loading where beneficial.
+
+Preserve:
+
+- Immediate Tehran availability.
+- All supported cities.
+- Nationwide search.
+- Cross-city comparison.
+- Direct neighborhood deep links.
+- Existing selection semantics.
+- Server-side dataset consumers.
+- Offline behavior.
+
+A synchronous shared data API must not be converted to an asynchronous API without migrating and testing every affected consumer.
+
+Do not break server-side SEO, commerce, validation or route behavior while optimizing browser data loading.
+
+Do not assume that a separate Vite output chunk is automatically lazy-loaded.
+
+Verify actual import execution paths.
+
+---
+
+# 9. COMPUTATIONAL OPTIMIZATION
+
+Investigate actual algorithmic costs.
+
+## 9.1 Neighborhood vote evaluation
+
+Inspect:
+
+`src/components/useEvaluatedNeighborhoods.ts`
+
+The supplied snapshot contains repeated filtering of the full `cloudVotes` array inside neighborhood evaluation.
+
+Verify the current implementation.
+
+If repeated full-array scans are present and meaningful under realistic vote counts, evaluate indexing votes by neighborhood ID.
+
+Potential implementation:
+
+`Map<hoodId, votes[]>`
+
+Build the index only when relevant vote data changes.
+
+Reuse it across evaluation passes.
+
+The intended complexity improvement is from repeated O(N × V) filtering toward O(N + V) for the indexing and lookup work.
+
+However, account for:
+
+- Map allocation cost.
+- Grouping cost.
+- React dependency changes.
+- Dataset size.
+- Actual vote volume.
+- Memory usage.
+
+Do not optimize based only on theoretical asymptotic complexity.
+
+Benchmark with representative workloads.
+
+Preserve exactly:
+
+- Vote semantics.
+- Location verification.
+- Seed weighting.
+- Financial calculations.
+- Neighborhood scoring.
+- Tie-breaking.
+- Ranking outputs.
+- Empty-vote behavior.
+
+Create regression tests comparing the established behavior and optimized behavior.
+
+## 9.2 React performance
+
+Inspect expensive React paths.
+
+Identify:
+
+- Unnecessary rerenders.
+- Expensive derived state.
+- Unstable dependency references.
+- Repeated sorting.
+- Repeated filtering.
+- Excessive allocations.
+- Unnecessary effects.
+- Duplicated state.
+- Expensive calculations triggered by unrelated UI updates.
+
+Use memoization selectively.
+
+Do not apply useMemo and useCallback indiscriminately.
+
+Do not create stale state or duplicate state ownership.
+
+---
+
+# 10. LEAFLET LOADING AND RUNTIME RELIABILITY
+
+This is a specific investigation priority.
+
+Inspect both:
+
+- `src/utils/leafletLoader.ts`
+- `src/components/useLeafletRadarMap.ts`
+
+Do not treat them as the same loading mechanism.
+
+The utility loader in the supplied snapshot includes a bounded timeout, concurrent-request handling and cleanup.
+
+However, the supplied `useLeafletRadarMap.ts` snapshot contains a separate fallback:
+
+`setInterval(..., 150)`
+
+inside the error handler following `ensureLeafletLoaded()`.
+
+That fallback appears to continue polling every 150 milliseconds until `window.L` becomes available or the component unmounts.
+
+Verify whether this behavior remains in the live workspace.
+
+If confirmed:
+
+1. Identify why the utility loader failed.
+2. Eliminate unnecessary indefinite polling.
+3. Use bounded, predictable retry behavior.
+4. Avoid duplicate script loads.
+5. Avoid competing retry mechanisms.
+6. Preserve delayed successful recovery where technically required.
+7. Provide a safe failure state.
+8. Preserve component cleanup.
+9. Add tests for timeout, failure, recovery and unmount behavior.
+
+Do not remove a necessary recovery mechanism without replacing its valid behavior.
+
+## 10.1 CDN and npm strategy
+
+Investigate:
+
+- Leaflet npm package.
+- CDN-loaded CSS.
+- CDN-loaded JavaScript.
+- Custom loader behavior.
+- Global `window.L` consumers.
+- Service Worker integration.
+
+Compare:
+
+A. Dynamic npm import.
+
+B. Version-controlled same-origin static assets.
+
+Choose the least complex reliable strategy supported by actual evidence.
+
+Evaluate:
+
+- Initial browser transfer.
+- Map initialization latency.
+- Cacheability.
+- Offline availability.
+- CSP.
+- Asset integrity.
+- Browser compatibility.
+- Existing runtime contracts.
+
+Do not migrate solely for coding style.
+
+Do not load Leaflet twice.
+
+---
+
+# 11. MAP RENDERING AND EXISTING LOD
+
+Preserve existing LOD, clustering, decluttering, viewport culling and GeoJSON caching.
+
+Inspect the actual rendering path in `useLeafletRadarMap.ts` and related map utilities.
+
+Measure the cost of:
+
+- Marker creation.
+- Marker updates.
+- Polygon rendering.
+- Heatmap updates.
+- Overlay reconstruction.
+- Repeated style calculations.
+- Viewport filtering.
+
+The current implementation has an existing LOD and culling architecture.
+
+Do not replace it with a new rendering engine.
+
+Only introduce keyed layer reuse, incremental reconciliation or other rendering changes when measurement establishes material benefit.
+
+Preserve:
+
+- Selected-neighborhood visibility.
+- Sponsored-marker priority.
+- Marker visual hierarchy.
+- Geographic correctness.
+- Heatmap semantics.
+- Tile-provider selection.
+- Tooltip and popup security.
+- Mobile interactions.
+- Existing accessibility behavior.
+
+Never introduce Mapbox GL, MapLibre GL, Three.js or PixiJS merely to modernize the map.
+
+---
+
+# 12. RECHARTS AND VISUALIZATION LOADING
+
+Trace every actual Recharts consumer.
+
+Investigation candidates include:
+
+- `NeighborhoodMonthlyBarChart.tsx`
+- `NeighborhoodInspectorDrawer.tsx`
+- `BuyerAlertPriceSparkline.tsx`
+- `buyerPriceThresholdAlerts.tsx`
+- `NeighborhoodPriceChart.tsx`
+- `NeighborhoodPriceTrendModal.tsx`
+- `AdminWeeklyDatabaseHealthChart.tsx`
+
+Determine which modules enter the initial browser dependency graph.
+
+Do not assume all static imports are initially downloaded; trace their parent modules and lazy boundaries.
+
+Where charts are genuinely included in the initial path despite being non-critical, evaluate demand-driven loading.
+
+Preserve:
+
+- Existing calculations.
+- Data accuracy.
+- Financial precision.
+- Persian formatting.
+- RTL layout.
+- Responsive dimensions.
+- Accessibility.
+- Loading-state stability.
+
+Use existing Recharts capabilities.
+
+Do not introduce another charting framework.
+
+Do not lazy-load critical content merely to improve reported bundle metrics.
+
+---
+
+# 13. PWA, SERVICE WORKER AND FONT PERFORMANCE
+
+Preserve the already verified ASSESS-008 architecture.
+
+Inspect current Service Worker behavior only where a confirmed issue or performance regression exists.
+
+Ensure that performance changes do not weaken:
+
+- Private-data bypass.
+- Authorization checks.
+- Mutation request handling.
+- Admin request handling.
+- Sensitive object-storage request isolation.
+- Cache invalidation.
+- Offline recovery.
+
+Respect map tile providers' cache policies.
+
+Do not assume that all external tiles may be cached indefinitely.
+
+Inspect:
+
+- Font weights.
+- Font subsets.
+- Font format.
+- WOFF2 availability.
+- CSS delivery.
+- Image asset sizes.
+- Critical style dependencies.
+
+The existing Vazirmatn integration and Persian glyph coverage must remain correct.
+
+Do not remove fonts or styles merely to reduce transfer size.
+
+Do not replace the existing design system with another framework.
+
+---
+
+# 14. VITE AND PRODUCTION BUNDLE ENGINEERING
+
+Inspect:
+
+`vite.config.ts`
+
+Analyze:
+
+- `optimizeDeps`.
+- `manualChunks`.
+- Dynamic imports.
+- CSS splitting.
+- Production minification.
+- Duplicate modules.
+- Initial dependency graphs.
+- Cache reuse.
+- Cloudflare build mode.
+
+Respect these distinctions:
+
+- Development dependency pre-bundling is not production optimization.
+- `manualChunks` does not independently make a module lazy.
+- Chunk warning thresholds are not performance guarantees.
+- Total output size is not initial transfer size.
+- Raw size is not compressed transfer size.
+
+Do not arbitrarily change chunk thresholds.
+
+Do not create unnecessary small chunks.
+
+Do not introduce a bundle analyzer dependency when existing tools suffice.
+
+Use measured output to determine whether a chunking change is actually beneficial.
+
+---
+
+# 15. NODE.JS AND CLOUDFLARE ISOLATION
+
+Inspect the complete dependency graph for all execution environments.
+
+Preserve:
+
+**Browser**
+- React.
+- UI components.
+- Browser APIs.
+- Geographic rendering.
+- Client-side presentation logic.
+
+**Node.js**
+- Express.
+- Firebase Admin.
+- Sharp.
+- Filesystem operations.
+- Privileged server functionality.
+- Node-specific modules.
+
+**Cloudflare Workers**
+- Worker-compatible routing.
+- D1.
+- KV.
+- R2.
+- Cloudflare-native APIs.
+- Compatible shared modules.
+
+Do not introduce Node-only imports into Worker bundles.
+
+Do not change shared modules without tracing all consumers.
+
+If a performance modification affects Worker code or shared Worker dependencies, run Worker-specific verification.
+
+Do not deploy.
+
+---
+
+# 16. PERFORMANCE MEASUREMENT AND ACCEPTANCE
+
+Measure before and after under comparable conditions.
+
+Evaluate:
+
+- Cold desktop load.
+- Repeat desktop load.
+- Cold mobile load.
+- Constrained network.
+- CPU-constrained mobile.
+- City switching.
+- Nationwide search.
+- Neighborhood filtering.
+- Map initialization.
+- Map zoom and pan.
+- Chart activation.
+- Modal activation.
+- Offline reload.
+- Reconnection.
+
+Use existing project diagnostic and test capabilities where appropriate.
+
+Do not introduce new monitoring dependencies without justification.
+
+## 16.1 Core Web Vitals
+
+Use these targets:
+
+- LCP: 2.5 seconds or less.
+- INP: 200 milliseconds or less.
+- CLS: 0.1 or less.
+
+Distinguish laboratory testing from real-user field measurements.
+
+Never claim field INP compliance based only on synthetic tests.
+
+Never claim performance improvement without comparable evidence.
+
+A smaller bundle alone does not constitute success.
+
+A lower source-code line count alone does not constitute success.
+
+Fewer dependencies alone does not constitute success.
+
+The goal is better real application behavior.
+
+---
+
+# 17. EXACT MANDATORY VERIFICATION MATRIX
+
+Both `AGENTS.md` and `ARCHITECTURE.md` define mandatory verification requirements.
+
+Their combined requirements must be preserved.
+
+Before completing each bounded implementation work package, execute the following applicable verification commands against the final modified source.
+
+## A. AGENTS.md mandatory commands
+
+```bash
+npm run lint
+npm run arch:check
+npm test
+npm run test:contracts
+npm run test:mutation
+npm run test:e2e
+npm run test:smoke
+npx tsx tests/stress-50-cycles.test.ts
+npx tsx tests/object-storage-upload-auth.test.ts
+npx tsx tests/object-storage-security.test.ts
+npx tsx tests/object-storage-range.test.ts
+npm run build
+```
+
+## B. ARCHITECTURE.md mandatory commands
+
+```bash
+npx tsx tests/architecture-guardrails.test.ts
+npx tsx tests/fifty-step-audit.test.ts
+npx tsx tests/hedonic-and-627-debug.test.ts
+npx tsx tests/stress-50-cycles.test.ts
+npm run build
+```
+
+## C. CI parity
+
+The existing CI workflow also performs a TypeScript typecheck.
+
+Run:
+
+```bash
+npm run typecheck
+```
+
+when verifying CI-equivalent source correctness.
+
+## D. Conditional Cloudflare verification
+
+For changes affecting Worker code, shared Worker dependencies or Worker-specific builds:
+
+```bash
+npm run cf:build
+```
+
+Use the existing dry-run validation when relevant.
+
+Do not deploy.
+
+## E. Execution rules
+
+1. Inspect actual script definitions before running them.
+2. Do not assume commands exist.
+3. Do not assume one test command covers another unless its actual implementation proves coverage.
+4. Run focused regression tests immediately after an atomic modification.
+5. Run the complete mandatory verification matrix before marking the work package complete.
+6. If a command is unavailable, report the exact reason.
+7. Do not claim unavailable tests passed.
+8. Do not weaken or bypass assertions.
+9. Do not skip required verification silently.
+10. If the baseline contains a failure, distinguish pre-existing failures from regressions using actual evidence.
+
+The broad `npm test` command includes several existing suites, including the assessment suite. Preserve the existing assessment coverage.
+
+Do not create a reduced test command to obtain an artificial green result.
+
+---
+
+# 18. IMPLEMENTATION ORDER
+
+Use this initial priority model, but reassess it after measuring the live application.
+
+**P0 — Repository and dependency integrity**
+- Package manager.
+- Lockfile and CI consistency.
+- Runtime versions.
+- Existing architecture integrity.
+
+**P1 — Initial loading graph**
+- Initial JavaScript dependencies.
+- Large datasets.
+- Static versus dynamic imports.
+- Actual browser transfer cost.
+
+**P2 — Confirmed runtime reliability**
+- Leaflet loader retry lifecycle.
+- Unbounded polling.
+- Map initialization failure recovery.
+
+**P3 — Computational performance**
+- Neighborhood vote indexing.
+- Repeated evaluation.
+- Expensive derived state.
+- React render costs.
+
+**P4 — Visualization loading**
+- Recharts dependency graph.
+- Demand-driven chart loading.
+- Avoidance of unnecessary initial visualization code.
+
+**P5 — Remaining verified performance opportunities**
+- Fonts.
+- CSS.
+- Asset delivery.
+- Cache behavior.
+- Memory lifecycle.
+
+**P6 — Final production-build and regression verification**
+
+Do not treat this ordering as immutable.
+
+A measured bottleneck with greater impact must take priority.
+
+Do not rebuild completed ASSESS-007 or ASSESS-008 systems.
+
+Do not perform unrelated architecture modernization.
+
+---
+
+# 19. ATOMIC IMPLEMENTATION PROTOCOL
+
+Execute one bounded work package per user instruction.
+
+For each work package:
+
+1. Verify the problem.
+2. Trace the complete source dependency graph.
+3. Establish relevant baseline behavior.
+4. Define expected behavior after modification.
+5. Choose the smallest correct implementation.
+6. Identify affected files.
+7. Implement the correction.
+8. Add focused regression coverage.
+9. Run focused tests.
+10. Inspect the final diff.
+11. Run the complete mandatory verification matrix.
+12. Record verified results.
+13. Report remaining work.
+
+Do not bundle unrelated modifications.
+
+Multiple files may be edited together only when they form one coherent, dependent implementation.
+
+Do not overwrite user-owned changes.
+
+Do not create backup clutter.
+
+Do not perform cosmetic refactoring during performance work.
+
+Do not lower architecture requirements to accommodate an optimization.
+
+Do not modify tests merely to match new implementation output when that output changes existing business behavior.
+
+---
+
+# 20. PERSISTENT FOLLOW-ON TRACKING
+
+Track only actual implementation work.
+
+Preserve the completed RMEP-001 historical records.
+
+Do not change:
+
+- `MASTER-PROMPT.md`
+- Historical completed phase statuses.
+- Historical operation records.
+- `CHK-192-FINAL`.
+- Existing verified evidence.
+- Existing approved hashes.
+
+Record meaningful follow-on performance work using the project's existing append-only progress conventions.
+
+Synchronize `FRONTEND_ENGINEERING_STATE.md` only when frontend changes materially alter the recorded implementation state.
+
+Do not duplicate completed documentation.
+
+Do not fabricate operation IDs, commits, tests, performance values or evidence.
+
+Do not claim GitHub synchronization when the current environment cannot verify it.
+
+Any state-file modification must follow the established atomic persistence and validation requirements.
+
+---
+
+# 21. CONTINUATION PROTOCOL
+
+When the user sends:
+
+`CONTINUE`
+
+or
+
+`ادامه بده`
+
+you must:
+
+1. Reinspect the actual repository.
+2. Reinspect changed files and current modifications.
+3. Check the last verified implementation state.
+4. Review the existing follow-on progress record.
+5. Identify unfinished work.
+6. Reassess the highest-priority remaining bottleneck.
+7. Select the next bounded implementation task.
+8. Implement it.
+9. Test it.
+10. Verify it.
+11. Record the actual result.
+
+Do not repeat completed work.
+
+Do not assume previous instructions were applied.
+
+Do not merely generate another report.
+
+Do not move mechanically to the next numbered section.
+
+If no justified optimization remains, explain that conclusion and stop.
+
+If execution is interrupted, leave the current repository in the last safely verified state and preserve accurate continuation information.
+
+---
+
+# 22. FINAL REPORTING
+
+After each work package, report in Persian.
+
+Use the following concise structure:
+
+**IMPLEMENTED**
+- Exact files modified.
+- What changed.
+
+**DEPENDENCIES**
+- Packages installed, removed, retained or reclassified.
+- Reasons.
+
+**PERFORMANCE**
+- Before-and-after measurements.
+- Testing conditions.
+- Unavailable metrics.
+
+**VERIFICATION**
+- Exact commands executed.
+- Pass/fail outcomes.
+- Tests that could not run.
+
+**REGRESSIONS**
+- Problems identified.
+- Problems resolved.
+- Remaining issues.
+
+**NEXT PRIORITY**
+- The next unfinished and justified implementation task.
+
+Clearly distinguish:
+- Verified facts.
+- Measured improvements.
+- Historical evidence.
+- Assumptions.
+- Unverified hypotheses.
+
+Never claim the application is 100% bug-free, fully secure or production-ready without adequate evidence.
+
+---
+
+# FINAL ENGINEERING DIRECTIVE
+
+The actual Tehran Radar repository is the target.
+
+The existing architecture is the foundation.
+
+Previously verified engineering work must be preserved.
+
+The user's follow-on performance authorization is the scope.
+
+Measure before modifying.
+
+Understand the complete dependency graph.
+
+Fix root causes rather than symptoms.
+
+Preserve business and security invariants.
+
+Implement controlled improvements.
+
+Run the actual mandatory verification matrix.
+
+Continue autonomously when instructed.
+
+**DELIVER REAL, TESTED SOURCE-CODE IMPROVEMENTS. NEVER RETURN AN AUDIT-ONLY RESPONSE.**

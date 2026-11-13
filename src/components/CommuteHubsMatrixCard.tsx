@@ -65,28 +65,61 @@ export function CommuteHubsMatrixCard({
 
   if (hubMetrics.length === 0) return null;
 
+  const sortedHubs = [...hubMetrics].sort((a, b) => (a.id === selectedWorkHubId ? -1 : b.id === selectedWorkHubId ? 1 : a.distKm - b.distKm));
+  const primaryHubs = sortedHubs.slice(0, 2);
+  const extraHubs = sortedHubs.slice(2);
+  const renderHubBtn = (hub: (typeof hubMetrics)[number]) => {
+    const isSelected = selectedWorkHubId === hub.id;
+    return (
+      <button
+        key={hub.id}
+        type="button"
+        onClick={() => onSelectWorkHubId(isSelected ? 'none' : hub.id)}
+        aria-label={`انتخاب مرکز اشتغال ${hub.name}`}
+        className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex flex-col gap-1.5 ${
+          isSelected
+            ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-2xs'
+            : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-1">
+          <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1 truncate">
+            <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
+            <span className="truncate">{hub.name}</span>
+          </span>
+          <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
+            {toPersianNum(hub.distKm)} کیلومتر{areaUnit === 'sqft' ? ` (${toPersianNum((hub.distKm * 0.621371).toFixed(1))} mi)` : ''}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-slate-400 tabular-nums pt-1 border-t border-slate-200/60 dark:border-slate-800">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+            <span>صبح: {toPersianNum(hub.morningMin)} دقیقه</span>
+          </span>
+          <span className="font-semibold text-rose-700 dark:text-rose-400">۸ شب: {toPersianNum(hub.eveningMin)} دقیقه</span>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
         <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
           <Navigation className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span>ماتریس فاصله، مترو و زمان تردد به قطب‌های کاری</span>
+          <span>فاصله، مترو و زمان تردد به قطب‌های کاری</span>
         </div>
         <div className="flex items-center gap-2">
           {(() => {
             const monthlyRent80mMillions = Math.max(1, Math.round(selectedHood.rahn80m * 0.03));
             return (
-              <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+              <span className="sr-only">
                 هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م.ت{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''} · اجاره {formatAreaShort(80, areaUnit)}: {toPersianNum(monthlyRent80mMillions)} م · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit))} م.ت
               </span>
             );
           })()}
           {selectedWorkHubId !== 'none' && (
-            <button
-              type="button"
-              onClick={() => onSelectWorkHubId('none')}
-              className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 cursor-pointer transition"
-            >
+            <button type="button" onClick={() => onSelectWorkHubId('none')} className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 cursor-pointer transition">
               حذف خط مسیر
             </button>
           )}
@@ -122,9 +155,7 @@ export function CommuteHubsMatrixCard({
             <div className="flex flex-wrap items-center gap-1">
               <button
                 type="button"
-                onClick={() =>
-                  updateMapAdvancedOverlayState({ showMetroLines: !overlayState.showMetroLines })
-                }
+                onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !overlayState.showMetroLines })}
                 aria-label={overlayState.showMetroLines ? 'مخفی‌سازی خطوط مترو در نقشه' : 'نمایش خطوط مترو روی نقشه'}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                   overlayState.showMetroLines
@@ -136,9 +167,7 @@ export function CommuteHubsMatrixCard({
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  updateMapAdvancedOverlayState({ showTrafficZones: !overlayState.showTrafficZones })
-                }
+                onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !overlayState.showTrafficZones })}
                 aria-label={overlayState.showTrafficZones ? 'مخفی‌سازی محدوده طرح ترافیک در نقشه' : 'نمایش محدوده طرح ترافیک روی نقشه'}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                   overlayState.showTrafficZones
@@ -151,11 +180,7 @@ export function CommuteHubsMatrixCard({
               {selectedWorkHubId !== 'none' && (
                 <button
                   type="button"
-                  onClick={() =>
-                    updateMapAdvancedOverlayState({
-                      showCommuteIsochrones: !overlayState.showCommuteIsochrones,
-                    })
-                  }
+                  onClick={() => updateMapAdvancedOverlayState({ showCommuteIsochrones: !overlayState.showCommuteIsochrones })}
                   aria-label={overlayState.showCommuteIsochrones ? 'مخفی‌سازی حلقه‌های تردد زمانی در نقشه' : 'نمایش حلقه‌های تردد زمانی روی نقشه'}
                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                     overlayState.showCommuteIsochrones
@@ -172,47 +197,19 @@ export function CommuteHubsMatrixCard({
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {hubMetrics.map((hub) => {
-          const isSelected = selectedWorkHubId === hub.id;
-          return (
-            <button
-              key={hub.id}
-              type="button"
-              onClick={() => onSelectWorkHubId(isSelected ? 'none' : hub.id)}
-              aria-label={`انتخاب مرکز اشتغال ${hub.name}`}
-              className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex flex-col gap-1.5 ${
-                isSelected
-                  ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-2xs'
-                  : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-1">
-                <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1 truncate">
-                  <MapPin
-                    className={`w-3.5 h-3.5 shrink-0 ${
-                      isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
-                    }`}
-                  />
-                  <span className="truncate">{hub.name}</span>
-                </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
-                  {toPersianNum(hub.distKm)} کیلومتر{areaUnit === 'sqft' ? ` (${toPersianNum((hub.distKm * 0.621371).toFixed(1))} mi)` : ''}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-slate-400 tabular-nums pt-1 border-t border-slate-200/60 dark:border-slate-800">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                  <span>صبح: {toPersianNum(hub.morningMin)} دقیقه</span>
-                </span>
-                <span className="font-semibold text-rose-700 dark:text-rose-400">
-                  ۸ شب: {toPersianNum(hub.eveningMin)} دقیقه
-                </span>
-              </div>
-            </button>
-          );
-        })}
+        {primaryHubs.map(renderHubBtn)}
       </div>
+      {extraHubs.length > 0 && (
+        <details className="group pt-0.5">
+          <summary className="cursor-pointer list-none text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center justify-between py-1 px-1">
+            <span>سایر قطب‌های کاری ({toPersianNum(extraHubs.length)} مرکز دیگر)</span>
+            <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+            {extraHubs.map(renderHubBtn)}
+          </div>
+        </details>
+      )}
     </div>
   );
 }

@@ -36,6 +36,8 @@ Copy `.env.example` to `.env` (or configure in your hosting environment). All se
 | `R2_SIGNING_SECRET` | Optional | Empty | **Secret** | Worker HMAC-SHA256 secret for presigned R2 media URLs (`worker/storage/r2StorageAdapter.ts`). |
 | `CASPER_HUB_URL` | Optional | `https://casper-hub-api.bijanbijane-1.workers.dev` | Public | Server-side base URL for the shared CASPER HUB coordination service (`server/modules/casper-hub`). |
 | `CASPER_HUB_TOKEN` | Optional | Empty | **Secret** | Dedicated server-only Bearer credential for authenticating `CASPER-02` with CASPER HUB. Never exposed to the browser or persisted to disk. |
+| `BACKUP_ENCRYPTION_KEY` | Optional | Empty | **Secret** | Symmetric key for encrypted AES-256-GCM admin full-backup exports (`/api/admin/encrypted-backup/*`). |
+| `VITE_FIREBASE_APP_CHECK_SITE_KEY` | Optional | Empty | Public | Browser reCAPTCHA Enterprise site key enabling client-side Firebase App Check initialization (`src/utils/clientAppCheck.ts`). |
 
 ---
 

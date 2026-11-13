@@ -27,6 +27,7 @@ export interface AdminMonetizationCardProps {
   neighborhoods: Neighborhood[];
   onExtendSponsor30Days?: (hoodId: number) => void;
   onReleaseHoodSponsor?: (hoodId: number) => void;
+  isVerifiedAdmin?: boolean;
 }
 
 export function AdminMonetizationCard({
@@ -35,6 +36,7 @@ export function AdminMonetizationCard({
   neighborhoods,
   onExtendSponsor30Days,
   onReleaseHoodSponsor,
+  isVerifiedAdmin,
 }: AdminMonetizationCardProps): React.ReactElement {
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
@@ -56,6 +58,7 @@ export function AdminMonetizationCard({
       try {
         if (typeof window !== 'undefined') {
           localStorage.setItem('tehran_radar_campaign_discount_v1', String(disc));
+          window.dispatchEvent(new CustomEvent('radar:monetization-discount', { detail: disc }));
         }
       } catch {
         // Ignore storage error
@@ -73,13 +76,15 @@ export function AdminMonetizationCard({
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem('tehran_radar_campaign_discount_v1', String(clamped));
+        window.dispatchEvent(new CustomEvent('radar:monetization-discount', { detail: clamped }));
       }
     } catch {
       // Ignore storage error
     }
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    const canWriteCloud = isVerifiedAdmin ?? isAuthorizedAdminUser(auth.currentUser, false);
     syncTimerRef.current = setTimeout(() => {
-      if (isAuthorizedAdminUser(auth.currentUser, true)) {
+      if (canWriteCloud) {
         // Persist via doc(db, 'appConfig', 'monetization') in repository
         void saveMonetizationDiscount(clamped).catch((err) => {
           try {
@@ -188,7 +193,7 @@ export function AdminMonetizationCard({
           <div className="max-h-36 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 pr-1">
             {neighborhoods.map((n) => {
               const active = isSponsorActive(n.sponsor, enableSponsorBilling);
-              const discountedTariff = getHoodMonthlySponsorTariff(n);
+              const discountedTariff = getHoodMonthlySponsorTariff(n, campaignDiscountPercent);
               return (
                 <div
                   key={n.id}

@@ -57,7 +57,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const activeDealFx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(activeDealUnit, intlCurrency, radarLocale)}` : '';
 
   const mapAxisBar = (
-    <div className="sticky top-0 z-20 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-1.5 space-y-1">
+    <div className={`${homeContentFirst ? 'hidden lg:block ' : ''}sticky top-0 z-20 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-1.5 space-y-1`}>
       <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-1.5 text-xs">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">

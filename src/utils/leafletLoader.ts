@@ -21,7 +21,7 @@ type MapLibraryListener = (state: MapLibraryState, errorReason?: string) => void
 
 const DEFAULT_LEAFLET_TIMEOUT_MS = 8000;
 const DEFAULT_LEAFLET_SCRIPT_SRC =
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 
 let currentLibraryState: MapLibraryState = 'idle';
 let lastFailureReason: string | undefined;

@@ -99,7 +99,7 @@ export function synthesizeExecutiveDecisionReport(
   const resolvedHoodName = hood.name || hoodName;
   const fairPrice = basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm;
   const hoodBaselineAsk = hood.buyPerSqm || fairPrice;
-  const askingPrice = customAskingPriceSqm ?? Math.round(fairPrice * 1.085);
+  const askingPrice = customAskingPriceSqm ?? hoodBaselineAsk;
   const yieldBoost = Math.max(0.85, Math.min(1.18, hoodBaselineAsk / Math.max(1, fairPrice)));
   const rahn80m = Math.round((fairPrice / Math.max(1, hood.buyPerSqm)) * (hood.rahn80m || Math.round(hood.buyPerSqm * 80 * 0.18)) * yieldBoost);
 
@@ -127,8 +127,8 @@ export function synthesizeExecutiveDecisionReport(
   // 5. Data Provenance & Epistemic Confidence Pillar + Empirical IQR Volatility for Monte Carlo
   const agg = aggregateNeighborhoodMarketMetrics(hood.id, hood.name || hoodName, hoodBaselineAsk, buildNeighborhoodListingSamples(hood));
   const epistemicOutlierPenalty = Math.max(0, spreadPct - 18) * 0.35;
-  const baseEvidenceScore = agg.eligibleObservedCount === 0 ? 48 : agg.evidenceIndexScore;
-  const confidenceScore = Math.round(Math.min(100, Math.max(35, baseEvidenceScore + 8 - epistemicOutlierPenalty)));
+  const baseEvidenceScore = agg.eligibleObservedCount === 0 ? 28 : agg.evidenceIndexScore;
+  const confidenceScore = Math.round(Math.min(100, Math.max(10, baseEvidenceScore - epistemicOutlierPenalty)));
   const dataProvenanceLabelFa =
     agg.dataMode === 'OBSERVED_MARKET'
       ? `داده مشاهده‌شده میدانی (${toPersianNum(agg.eligibleObservedCount)} آگهی معتبر)`
@@ -179,7 +179,8 @@ export function synthesizeExecutiveDecisionReport(
   const rawReadiness = pillars.reduce((acc, p) => acc + (p.score * p.weightPct) / 100, 0);
   const severeOverpricePenalty = spreadPct > 25 ? (spreadPct - 25) * 0.45 : 0;
   const rawScore = Math.round(Math.max(5, Math.min(100, rawReadiness - severeOverpricePenalty)));
-  const readinessScore = nonCompensatoryVetoTriggered ? Math.min(38, rawScore) : rawScore;
+  const epistemicScoreCap = agg.eligibleObservedCount === 0 ? 72 : 100;
+  const readinessScore = nonCompensatoryVetoTriggered ? Math.min(38, rawScore) : Math.min(epistemicScoreCap, rawScore);
 
   let verdictId: DealExecutionVerdictId;
   let verdictTitleFa: string;
@@ -200,7 +201,9 @@ export function synthesizeExecutiveDecisionReport(
     verdictId = 'AGGRESSIVE_NEGOTIATION';
     verdictTitleFa = 'آبی · ورود مشروط به چانه‌زنی تهاجمی و اخذ تخفیف پای نشست';
     verdictBadgeColor = 'indigo';
-    executiveDirectiveFa = 'فاصله قیمت پیشنهادی با ارزش قطعی مدل v6.4 نیازمند تعدیل در جلسه نشست است؛ تنها با پذیرش تخفیف پای قرارداد و رعایت خط قرمز قیمت وارد معامله شوید.';
+    executiveDirectiveFa =
+      (agg.eligibleObservedCount === 0 ? 'فاقد آگهی زنده در حافظه؛ پس از استعلام میدانی، ' : '') +
+      'فاصله قیمت پیشنهادی با ارزش قطعی مدل v6.4 نیازمند تعدیل در جلسه نشست است؛ تنها با پذیرش تخفیف پای قرارداد و رعایت خط قرمز قیمت وارد معامله شوید.';
   } else if (readinessScore >= 42) {
     verdictId = 'STRATEGIC_PATIENCE';
     verdictTitleFa = 'زرد · صبر راهبردی، حفظ اختیار تعویق و انباشت نقدینگی';

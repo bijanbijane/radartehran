@@ -68,7 +68,10 @@ export default defineConfig(({ mode }) => {
               if (id.includes('firebase')) {
                 return 'vendor-firebase-auth';
               }
-              if (id.includes('recharts') || id.includes('d3-')) {
+              if (id.includes('d3-')) {
+                return 'vendor-d3';
+              }
+              if (id.includes('recharts') || id.includes('victory-vendor')) {
                 return 'vendor-charts';
               }
               if (id.includes('lucide-react')) {
@@ -89,9 +92,6 @@ export default defineConfig(({ mode }) => {
             ) {
               return 'data-iran-provinces';
             }
-            if (id.includes('src/cells/')) {
-              return 'engine-decision-cells';
-            }
             if (
               id.includes('src/data/tehranExtendedInsights') ||
               id.includes('src/data/provincialExtendedInsights') ||
@@ -103,12 +103,14 @@ export default defineConfig(({ mode }) => {
             if (
               id.includes('src/data/neighborhoods') ||
               id.includes('src/data/multiCityData') ||
-              id.includes('src/data/neighborhoodInsights')
+              id.includes('src/data/neighborhoodInsights') ||
+              id.includes('src/data/realMarketPriceAggregator') ||
+              id.includes('src/data/hedonicPricingEngine')
             ) {
               return 'data-neighborhoods';
             }
-            if (id.includes('src/components/modals/')) {
-              return 'ui-modals';
+            if (id.includes('src/cells/')) {
+              return 'engine-decision-cells';
             }
             return undefined;
           },

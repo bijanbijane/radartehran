@@ -1147,7 +1147,7 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
       capturedRequests.push({ url, init });
       return new Response(
-        JSON.stringify({ authenticated: true, agent_id: 'CASPER-01', database: 'connected' }),
+        JSON.stringify({ authenticated: true, agent_id: 'CASPER-04', database: 'connected' }),
         { status: 200, headers: { 'content-type': 'application/json' } },
       );
     };
@@ -1163,9 +1163,9 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
     const whoamiRes = await configuredClient.getWhoAmI<{ authenticated: boolean; agent_id: string }>();
     assert.equal(whoamiRes.ok, true);
     assert.equal(whoamiRes.status, 200);
-    assert.equal(whoamiRes.data?.agent_id, 'CASPER-01');
+    assert.equal(whoamiRes.data?.agent_id, 'CASPER-04');
     assert.equal(capturedRequests[0].url, 'https://casper-hub-api.bijanbijane-1.workers.dev/v1/whoami');
-    assert.equal(capturedRequests[0].init?.redirect, 'error', 'Must disable HTTP redirects to prevent Bearer token leakage');
+    assert.equal(capturedRequests[0].init?.redirect, 'manual', 'Must disable HTTP redirects (manual guard) to prevent Bearer token leakage');
     assert.equal(
       (capturedRequests[0].init?.headers as Record<string, string>)?.Authorization,
       'Bearer test-secret-token-never-log',

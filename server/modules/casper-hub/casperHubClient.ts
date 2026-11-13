@@ -8,6 +8,8 @@
 
 import { createHash } from 'node:crypto';
 import { detectPromptInjection } from '../../../src/utils/security';
+import { CASPER_AGENT_ID, analyzeCasperHubEpistemicState, canonicalizeUnicode as canonicalizeUnicodeText, parseSafeHubJsonAST, redactSensitiveText } from './casperHubTypes';
+export { analyzeCasperHubEpistemicState };
 
 export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev';
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -17,12 +19,12 @@ const SECRET_LEAK_REGEX =
 const VALID_NOTE_SCOPES = new Set(['global', 'roadmap', 'task']);
 const VALID_NOTE_TYPES = new Set(['checkpoint', 'finding', 'blocker', 'handoff', 'observation', 'verification']);
 
-export interface CasperHubConfigStatus { readonly configured: boolean; readonly hubUrl: string; readonly tokenConfigured: boolean; }
+export interface CasperHubConfigStatus { readonly configured: boolean; readonly hubUrl: string; readonly tokenConfigured: boolean; readonly agentId: typeof CASPER_AGENT_ID; }
 export interface CasperHubChangesQuery { readonly after?: number | string; readonly limit?: number; }
 export interface CasperHubNotePayload { readonly [key: string]: unknown; }
 export interface CasperHubResponse<T = unknown> {
   readonly ok: boolean; readonly status: number; readonly data: T | null;
-  readonly errorCode?: string; readonly errorMessage?: string;
+  readonly errorCode?: string; readonly errorMessage?: string; readonly error?: string;
 }
 export interface CasperHubNoteValidationResult {
   readonly valid: boolean; readonly errorCode?: string; readonly errorMessage?: string;
@@ -34,60 +36,13 @@ export interface CasperHubEpistemicTelemetry {
   readonly criticalNotesCount: number; readonly activeBlockersCount: number;
 }
 
-function canonicalizeUnicodeText(value: unknown): string {
-  if (typeof value !== 'string') return '';
-  return value.normalize('NFC').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[٠-٩]/g, (c) => String.fromCharCode(c.charCodeAt(0) + (0x06f0 - 0x0660))).trim();
-}
 
-function computeShannonEntropyBits(counts: Map<string, number>, total: number): number {
-  if (total <= 1 || counts.size <= 1) return 0;
-  let entropy = 0;
-  for (const c of counts.values()) {
-    if (c > 0) { const p = c / total; entropy -= p * Math.log2(p); }
-  }
-  return Math.round(entropy * 1000) / 1000;
-}
 
-export function analyzeCasperHubEpistemicState(payload: Record<string, unknown> | null | undefined): CasperHubEpistemicTelemetry {
-  const feed = Array.isArray(payload?.change_feed) ? (payload.change_feed as Array<Record<string, unknown>>) : [];
-  const notes = Array.isArray(payload?.notes) ? (payload.notes as Array<Record<string, unknown>>) : [];
-  const seqs = feed.map((item) => Number(item?.seq)).filter((n) => Number.isFinite(n) && n >= 0);
-  let isMonotonic = true, sequenceGapCount = 0;
-  for (let i = 1; i < seqs.length; i++) {
-    if (seqs[i] <= seqs[i - 1]) isMonotonic = false;
-    else if (seqs[i] - seqs[i - 1] > 1) sequenceGapCount += seqs[i] - seqs[i - 1] - 1;
-  }
-  const minSeq = seqs.length > 0 ? Math.min(...seqs) : 0;
-  const maxSeq = seqs.length > 0 ? Math.max(...seqs) : 0;
-  const cursorObj = payload?.sync_cursor as Record<string, unknown> | undefined;
-  const lastSeq = Number(cursorObj?.last_seq ?? maxSeq);
-  const syncCursorLag = Number.isFinite(lastSeq) ? Math.max(0, maxSeq - lastSeq) : 0;
-  const agentCounts = new Map<string, number>(), typeCounts = new Map<string, number>();
-  let criticalNotesCount = 0, activeBlockersCount = 0;
-  for (const n of notes) {
-    const agent = canonicalizeUnicodeText(n?.author_agent) || 'UNKNOWN';
-    const nType = canonicalizeUnicodeText(n?.note_type) || 'checkpoint';
-    agentCounts.set(agent, (agentCounts.get(agent) ?? 0) + 1);
-    typeCounts.set(nType, (typeCounts.get(nType) ?? 0) + 1);
-    if (normalizeNoteImportance(n?.importance) >= 4) criticalNotesCount++;
-    if (nType === 'blocker') activeBlockersCount++;
-  }
-  return {
-    minSeq, maxSeq, isMonotonic, sequenceGapCount, syncCursorLag,
-    agentContributionEntropyBits: computeShannonEntropyBits(agentCounts, notes.length),
-    noteTypeEntropyBits: computeShannonEntropyBits(typeCounts, notes.length),
-    criticalNotesCount, activeBlockersCount,
-  };
+function containsSecretTokenVariant(serialized: string, secretToken?: string | null): boolean {
+  if (!secretToken || secretToken.length < 6) return false;
+  const enc = encodeURIComponent(secretToken), b64 = Buffer.from(secretToken, 'utf8').toString('base64'), esc = secretToken.replace(/\//g, '\\/');
+  return [secretToken, enc, b64, esc].some((s) => s.length >= 6 && serialized.includes(s));
 }
-
-function redactSensitiveText(input: string, secretToken?: string | null): string {
-  let out = input
-    .replace(/\bBearer\s+\S+/gi, 'Bearer [REDACTED]')
-    .replace(/\b(token|secret|authorization)\s*[:=]\s*\S+/gi, '$1=[REDACTED]');
-  if (secretToken && secretToken.length >= 6) out = out.split(secretToken).join('[REDACTED_HUB_TOKEN]');
-  return out.slice(0, 240);
-}
-
 function isTrustedCasperHubHost(hostname: string): boolean {
   const host = hostname.trim().toLowerCase();
   if (!host || host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false;
@@ -116,7 +71,7 @@ function resolveCasperHubToken(env: Record<string, string | undefined> = process
 export function getCasperHubConfigStatus(env: Record<string, string | undefined> = process.env): CasperHubConfigStatus {
   const hubUrl = resolveCasperHubBaseUrl(env);
   const token = resolveCasperHubToken(env);
-  return { configured: Boolean(token), hubUrl, tokenConfigured: Boolean(token) };
+  return { configured: Boolean(token), hubUrl, tokenConfigured: Boolean(token), agentId: CASPER_AGENT_ID };
 }
 
 function normalizeNoteImportance(raw: unknown): number {
@@ -172,115 +127,76 @@ export function deriveDeterministicNoteIdempotencyKey(notePayload: CasperHubNote
 export function validateCasperHubNotePayload(notePayload: CasperHubNotePayload, secretToken?: string | null): CasperHubNoteValidationResult {
   const title = typeof notePayload?.title === 'string' ? notePayload.title.trim() : '';
   const summary = typeof notePayload?.summary === 'string' ? notePayload.summary.trim() : '';
-  if (!title || title.length > 240 || !summary || summary.length > 4_000) {
-    return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload requires non-empty title (<=240 chars) and summary (<=4000 chars).' };
-  }
+  if (!title || title.length > 240 || !summary || summary.length > 4_000) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload requires non-empty title (<=240 chars) and summary (<=4000 chars).' };
   const scope = typeof notePayload.note_scope === 'string' ? notePayload.note_scope.trim().toLowerCase() : 'global';
   if (!VALID_NOTE_SCOPES.has(scope)) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Invalid note_scope.' };
   if (scope === 'roadmap' && (typeof notePayload.roadmap_id !== 'string' || !notePayload.roadmap_id.trim())) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'roadmap_id is required when note_scope is roadmap.' };
   if (scope === 'task' && (typeof notePayload.task_id !== 'string' || !notePayload.task_id.trim())) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'task_id is required when note_scope is task.' };
-  if (typeof notePayload.detail_ref === 'string' && /^(javascript|data|vbscript):/i.test(notePayload.detail_ref.trim())) {
-    return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'detail_ref contains forbidden unsafe URI scheme.' };
-  }
+  const claimedAgent = (notePayload as any)?.agent_id ?? (notePayload as any)?.author_agent_id ?? (notePayload as any)?.metadata?.agent_id;
+  if (typeof claimedAgent === 'string' && claimedAgent.trim() && !['CASPER-04', 'CASPER-03'].includes(claimedAgent.trim().toUpperCase())) return { valid: false, errorCode: 'CASPER_AGENT_IDENTITY_MISMATCH', errorMessage: 'Outbound note payload agent_id mismatch.' };
+  if (typeof notePayload.detail_ref === 'string' && /^(javascript|data|vbscript):/i.test(notePayload.detail_ref.trim())) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'detail_ref contains forbidden unsafe URI scheme.' };
   const serialized = JSON.stringify(notePayload ?? {});
   if (serialized.length > 16_384) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload exceeds 16KB safety bound.' };
-  if (SECRET_LEAK_REGEX.test(serialized) || (secretToken && secretToken.length >= 6 && serialized.includes(secretToken))) {
-    return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload rejected: contains credential or secret token pattern.' };
-  }
+  if (SECRET_LEAK_REGEX.test(serialized) || containsSecretTokenVariant(serialized, secretToken)) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload rejected: contains credential or secret token pattern.' };
   const tagStrings = Array.isArray(notePayload.tags) ? notePayload.tags.filter((t): t is string => typeof t === 'string') : [];
-  const textFields = [title, summary, notePayload.detail_ref, ...tagStrings].filter((v): v is string => typeof v === 'string');
+  const textFields = [title, summary, notePayload.detail_ref, notePayload.roadmap_id, notePayload.task_id, ...tagStrings].filter((v): v is string => typeof v === 'string');
   for (const field of textFields) {
-    if (detectPromptInjection(field).blocked) {
-      return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload rejected: cross-agent prompt injection pattern detected.' };
-    }
+    if (field.length > 128 && (field === notePayload.roadmap_id || field === notePayload.task_id)) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'ID field exceeds 128 chars.' };
+    if (detectPromptInjection(field).blocked) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload rejected: cross-agent prompt injection pattern detected.' };
   }
   return { valid: true };
 }
-
 export class CasperHubClient {
   private readonly env: Record<string, string | undefined>;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly readCache = new Map<string, { exp: number; val: CasperHubResponse<unknown> }>();
-
-  constructor(options?: { env?: Record<string, string | undefined>; fetchImpl?: typeof fetch; timeoutMs?: number }) {
-    this.env = options?.env ?? process.env;
-    this.fetchImpl = options?.fetchImpl ?? fetch;
-    this.timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  }
-
+  constructor(options?: { env?: Record<string, string | undefined>; fetchImpl?: typeof fetch; timeoutMs?: number }) { this.env = options?.env ?? process.env; this.fetchImpl = options?.fetchImpl ?? fetch; this.timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS; }
   public getStatus(): CasperHubConfigStatus { return getCasperHubConfigStatus(this.env); }
   public clearCache(): void { this.readCache.clear(); }
-
-  private async request<T = unknown>(
-    pathAndQuery: string,
-    init: { method: 'GET' | 'POST'; body?: Record<string, unknown>; extraHeaders?: Record<string, string> },
-  ): Promise<CasperHubResponse<T>> {
+  private async request<T = unknown>(pathAndQuery: string, init: { method: 'GET' | 'POST'; body?: Record<string, unknown>; extraHeaders?: Record<string, string> }): Promise<CasperHubResponse<T>> {
     const token = resolveCasperHubToken(this.env);
-    if (!token) {
-      return { ok: false, status: 503, data: null, errorCode: 'CASPER_HUB_TOKEN_NOT_CONFIGURED', errorMessage: 'CASPER_HUB_TOKEN is not configured in the server environment.' };
-    }
+    if (!token) return { ok: false, status: 503, data: null, errorCode: 'CASPER_HUB_TOKEN_NOT_CONFIGURED', errorMessage: 'CASPER_HUB_TOKEN is not configured in the server environment.' };
     const baseUrl = resolveCasperHubBaseUrl(this.env);
-    const normalizedPath = pathAndQuery.startsWith('/') ? pathAndQuery : `/${pathAndQuery}`;
-    if (init.method === 'GET') {
-      const cached = this.readCache.get(normalizedPath);
-      if (cached && Date.now() < cached.exp) return cached.val as CasperHubResponse<T>;
-      if (cached) this.readCache.delete(normalizedPath);
-    }
-    const targetUrl = `${baseUrl}${normalizedPath}`;
+    const k = pathAndQuery.startsWith('/') ? pathAndQuery : `/${pathAndQuery}`;
+    const cacheKey = `${createHash('sha256').update(token).digest('hex').slice(0, 12)}:${k}`;
+    if (init.method === 'GET') { const cached = this.readCache.get(cacheKey); if (cached && Date.now() < cached.exp) return cached.val as CasperHubResponse<T>; if (cached) this.readCache.delete(cacheKey); }
+    const targetUrl = `${baseUrl}${k}`;
     const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: 'application/json', ...(init.extraHeaders ?? {}) };
     let serializedBody: string | undefined;
     if (init.method === 'POST') { headers['Content-Type'] = 'application/json'; serializedBody = JSON.stringify(init.body ?? {}); }
     try {
-      const response = await this.fetchImpl(targetUrl, {
-        method: init.method, headers, body: serializedBody, redirect: 'error', signal: AbortSignal.timeout(this.timeoutMs),
-      });
-      const contentType = response.headers.get('content-type') || '';
-      const isJson = contentType.toLowerCase().includes('application/json');
-      const parsedBody = isJson
-        ? ((await response.json().catch(() => null)) as T | null)
-        : ((await response.text().catch(() => null)) as unknown as T | null);
-      if (!response.ok) {
-        return { ok: false, status: response.status, data: parsedBody, errorCode: `CASPER_HUB_HTTP_${response.status}`, errorMessage: `CASPER HUB returned HTTP ${response.status}.` };
-      }
+      const response = await this.fetchImpl(targetUrl, { method: init.method, headers, body: serializedBody, redirect: 'manual', signal: AbortSignal.timeout(this.timeoutMs) });
+      if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) return { ok: false, status: response.status || 302, data: null, errorCode: 'CASPER_HUB_REDIRECT_BLOCKED', errorMessage: 'Upstream redirect blocked (SSRF guard).' };
+      const isJson = (response.headers.get('content-type') || '').toLowerCase().includes('application/json');
+      const rawText = await response.text().catch(() => '');
+      const parsedBody = isJson ? (parseSafeHubJsonAST(rawText, token) as T) : (redactSensitiveText(rawText, token).slice(0, 240) as unknown as T);
+      if (!response.ok) { const msg = redactSensitiveText(typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody || `HTTP ${response.status}`), token).slice(0, 240); return { ok: false, status: response.status, data: parsedBody, errorCode: `CASPER_HUB_HTTP_${response.status}`, errorMessage: msg, error: msg }; }
+      const rawAgent = (parsedBody as any)?.agent_id ?? (parsedBody as any)?.agent?.agent_id;
+      if (typeof rawAgent === 'string' && rawAgent.trim() && !['CASPER-04', 'CASPER-03'].includes(rawAgent.trim().toUpperCase())) return { ok: false, status: 403, data: null, errorCode: 'CASPER_AGENT_IDENTITY_MISMATCH', errorMessage: `Agent identity mismatch: ${rawAgent}` };
       const successRes: CasperHubResponse<T> = { ok: true, status: response.status, data: parsedBody };
-      if (init.method === 'GET') {
-        if (this.readCache.size >= 50) { const oldest = this.readCache.keys().next().value; if (oldest) this.readCache.delete(oldest); }
-        this.readCache.set(normalizedPath, { exp: Date.now() + 10_000, val: successRes });
-      }
+      if (init.method === 'GET') { if (this.readCache.size >= 50) { const oldest = this.readCache.keys().next().value; if (oldest) this.readCache.delete(oldest); } this.readCache.set(cacheKey, { exp: Date.now() + 10_000, val: successRes }); }
       return successRes;
     } catch (err: unknown) {
-      const rawMessage = err instanceof Error ? err.message : 'Unknown network error';
-      return { ok: false, status: 502, data: null, errorCode: 'CASPER_HUB_REQUEST_FAILED', errorMessage: redactSensitiveText(rawMessage, token) };
+      const msg = redactSensitiveText(err instanceof Error ? err.message : 'Unknown network error', token).slice(0, 240);
+      return { ok: false, status: 502, data: null, errorCode: 'CASPER_HUB_REQUEST_FAILED', errorMessage: msg, error: msg };
     }
   }
-
   public async getWhoAmI<T = unknown>(): Promise<CasperHubResponse<T>> { return this.request<T>('/v1/whoami', { method: 'GET' }); }
   public async getBootstrap<T = unknown>(): Promise<CasperHubResponse<T>> { return this.request<T>('/v1/bootstrap', { method: 'GET' }); }
   public async getChanges<T = unknown>(query?: CasperHubChangesQuery): Promise<CasperHubResponse<T>> {
-    const rawAfter = query?.after ?? 0;
-    const afterParam = typeof rawAfter === 'number' && Number.isFinite(rawAfter) && rawAfter >= 0
-      ? String(Math.trunc(rawAfter))
-      : typeof rawAfter === 'string' && /^\d+$/.test(rawAfter.trim()) ? rawAfter.trim() : '0';
-    const rawLimit = Number(query?.limit ?? 50);
-    const limitParam = Number.isFinite(rawLimit) ? Math.max(1, Math.min(200, Math.trunc(rawLimit))) : 50;
-    const searchParams = new URLSearchParams({ after: afterParam, limit: String(limitParam) });
-    return this.request<T>(`/v1/changes?${searchParams.toString()}`, { method: 'GET' });
+    const rawAfter = query?.after ?? 0; const afterParam = typeof rawAfter === 'number' && Number.isFinite(rawAfter) && rawAfter >= 0 ? String(Math.trunc(rawAfter)) : typeof rawAfter === 'string' && /^\d+$/.test(rawAfter.trim()) ? rawAfter.trim() : '0';
+    const rawLimit = Number(query?.limit ?? 50); const limitParam = Number.isFinite(rawLimit) ? Math.max(1, Math.min(200, Math.trunc(rawLimit))) : 50;
+    return this.request<T>(`/v1/changes?${new URLSearchParams({ after: afterParam, limit: String(limitParam) }).toString()}`, { method: 'GET' });
   }
   public async postNote<T = unknown>(notePayload: CasperHubNotePayload, options?: { idempotencyKey?: string }): Promise<CasperHubResponse<T>> {
-    const token = resolveCasperHubToken(this.env);
-    const validation = validateCasperHubNotePayload(notePayload, token);
-    if (!validation.valid) {
-      return { ok: false, status: 422, data: null, errorCode: validation.errorCode, errorMessage: validation.errorMessage };
-    }
+    const token = resolveCasperHubToken(this.env); const validation = validateCasperHubNotePayload(notePayload, token);
+    if (!validation.valid) return { ok: false, status: 422, data: null, errorCode: validation.errorCode, errorMessage: validation.errorMessage };
     const normalizedPayload = normalizeCasperHubNotePayload(notePayload);
-    const explicitKey = options?.idempotencyKey ?? (typeof notePayload.idempotency_key === 'string' ? notePayload.idempotency_key : '') ?? '';
+    const rawKey = options?.idempotencyKey ?? (typeof notePayload.idempotency_key === 'string' ? notePayload.idempotency_key : '') ?? '';
+    const explicitKey = rawKey.replace(/[\r\n\x00-\x1F\x7F]/g, '').trim();
     const resolvedKey = deriveDeterministicNoteIdempotencyKey(normalizedPayload, explicitKey);
-    const postRes = await this.request<T>('/v1/notes', {
-      method: 'POST',
-      body: { ...normalizedPayload, idempotency_key: resolvedKey },
-      extraHeaders: { 'Idempotency-Key': resolvedKey },
-    });
+    const postRes = await this.request<T>('/v1/notes', { method: 'POST', body: { ...normalizedPayload, idempotency_key: resolvedKey }, extraHeaders: { 'Idempotency-Key': resolvedKey } });
     if (postRes.ok) this.readCache.clear();
     return postRes;
   }

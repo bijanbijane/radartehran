@@ -36,7 +36,9 @@ export function ListingVerdictHero({
     if (defaultHoodName) setHoodName(defaultHoodName);
   }, [defaultHoodName]);
 
-  const hoodOptions = evaluatedNeighborhoods.slice(0, 40);
+  const slicedHoods = evaluatedNeighborhoods.slice(0, 40);
+  const selectedMatch = evaluatedNeighborhoods.find((h) => h.name === hoodName);
+  const hoodOptions = selectedMatch && !slicedHoods.some((h) => h.id === selectedMatch.id) ? [selectedMatch, ...slicedHoods] : slicedHoods;
 
   const runVerdict = async () => {
     if (!text.trim()) return;

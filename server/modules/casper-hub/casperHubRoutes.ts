@@ -175,9 +175,10 @@ export function registerCasperHubRoutes(app: Express, options?: CasperHubRoutesO
       return;
     }
 
-    const headerIdempotencyKey =
+    const rawHeaderIdem =
       (typeof req.headers['idempotency-key'] === 'string' ? req.headers['idempotency-key'] : '') ||
       (typeof req.headers['x-idempotency-key'] === 'string' ? req.headers['x-idempotency-key'] : '');
+    const headerIdempotencyKey = rawHeaderIdem.replace(/[\r\n\x00-\x1F\x7F]/g, '').trim();
     const rawAgent = typeof rawBody.author_agent === 'string' ? rawBody.author_agent.trim() : typeof req.headers['x-casper-agent-id'] === 'string' ? req.headers['x-casper-agent-id'].trim() : '';
     const resolvedAuthorAgent = /^CASPER-0[1-9]$/.test(rawAgent) ? rawAgent : 'CASPER-05';
 

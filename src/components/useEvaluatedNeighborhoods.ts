@@ -99,27 +99,41 @@ export function explainNeighborhoodRecommendation(
     strongestDimensionLabelFa: `${strongest.label} (${strongest.val}/10)`, weakestDimensionLabelFa: `${weakest.label} (${weakest.val}/10)`,
   };
 }
+const EMPTY_RESIDENT_VOTES: ResidentVoteDoc[] = [];
+export function indexResidentVotesByHoodId(votes: ResidentVoteDoc[]): Map<number, ResidentVoteDoc[]> {
+  const map = new Map<number, ResidentVoteDoc[]>();
+  for (const v of votes) {
+    const bucket = map.get(v.hoodId);
+    if (bucket) bucket.push(v); else map.set(v.hoodId, [v]);
+  }
+  return map;
+}
 export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParams) {
   const {
-    activeCity, activeCitySeedList, neighborhoods,
-    cloudBargainsByHood = {}, cloudSponsorsByHood = {}, cloudVotes,
-    mode, deposit, monthlyRent, buyTotalBudget, targetSqm, useLoanBooster,
-    deductTenantRahnInBuy, buildingAgeSegment, buyAgeMultiplier: explicitBuyAgeMult,
-    rentAgeMultiplier, selectedWorkHub, statusFilter, deferredSearchQuery = '',
+    activeCity, activeCitySeedList, neighborhoods, cloudBargainsByHood = {}, cloudSponsorsByHood = {}, cloudVotes,
+    mode, deposit, monthlyRent, buyTotalBudget, targetSqm, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment,
+    buyAgeMultiplier: explicitBuyAgeMult, rentAgeMultiplier, selectedWorkHub, statusFilter, deferredSearchQuery = '',
     onlyOutsideTrafficZone, onlyHighMetro, suggestSortBy, suggestPriority = 'balanced',
   } = params;
   const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale();
   const buyAgeMultiplier = explicitBuyAgeMult ?? (buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.88 : 0.76);
+  const votesByHoodId = useMemo(() => indexResidentVotesByHoodId(cloudVotes), [cloudVotes]);
   const activeCityNeighborhoods = useMemo(() => {
-    if (activeCity === 'tehran' && !activeCitySeedList) return neighborhoods.filter((n) => n.id < 100 || (n.id >= 500 && n.id <= 599));
-    const seedList = activeCitySeedList || MULTI_CITY_CONFIGS[activeCity].neighborhoods;
-    return seedList.map((seed) => {
-      const base = neighborhoods.find((n) => n.id === seed.id) || seed;
+    const mergeWithCloud = (base: Neighborhood) => {
       const cloudList = cloudBargainsByHood[base.id] || [];
       const mergedBargains = [...cloudList, ...(base.bargains || []).filter((b) => !cloudList.some((cb) => cb.id === b.id))];
       return { ...base, bargains: mergedBargains, sponsor: cloudSponsorsByHood[base.id] || base.sponsor };
-    });
+    };
+    if (activeCity === 'tehran' && !activeCitySeedList) {
+      return neighborhoods.filter((n) => n.id < 100 || (n.id >= 500 && n.id <= 599)).map(mergeWithCloud);
+    }
+    const seedList = activeCitySeedList || MULTI_CITY_CONFIGS[activeCity].neighborhoods;
+    return seedList.map((seed) => mergeWithCloud(neighborhoods.find((n) => n.id === seed.id) || seed));
   }, [activeCity, activeCitySeedList, neighborhoods, cloudBargainsByHood, cloudSponsorsByHood]);
+  const cityMedianRahn80m = useMemo(() => {
+    const vals = activeCityNeighborhoods.map((n) => n.rahn80m).filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
+    return vals.length === 0 ? 1200 : vals[Math.floor(vals.length / 2)];
+  }, [activeCityNeighborhoods]);
   const totalRahnEquivalent = useMemo(() => {
     const base = deposit + Math.round((monthlyRent * 100) / 3);
     return useLoanBooster ? base + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterRahnMillion : base;
@@ -128,18 +142,14 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     const safeSqm = Math.max(25, Number(targetSqm) || 75);
     const effectiveBuy = useLoanBooster ? buyTotalBudget + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterBuyMillion : buyTotalBudget;
     if (!deductTenantRahnInBuy) return Math.round(effectiveBuy / safeSqm);
-    const scaleFactor = safeSqm / 80;
-    const refRahn = 1200 * scaleFactor * (rentAgeMultiplier || 1);
-    const rawTotal = effectiveBuy + refRahn;
-    const effectivePower = Math.round(rawTotal / 0.9);
-    return Math.round(effectivePower / safeSqm);
-  }, [buyTotalBudget, targetSqm, useLoanBooster, deductTenantRahnInBuy, rentAgeMultiplier]);
+    const refRahn = cityMedianRahn80m * (safeSqm / 80) * (rentAgeMultiplier || 1);
+    return Math.round(Math.round((effectiveBuy + refRahn) / 0.9) / safeSqm);
+  }, [buyTotalBudget, targetSqm, useLoanBooster, deductTenantRahnInBuy, rentAgeMultiplier, cityMedianRahn80m]);
   const maxAffordablePerUnit = convertPricePerSqmToUnit(maxAffordablePerSqm, areaUnit);
   const maxAffordableIntlText = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(maxAffordablePerUnit, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)}` : '';
   const extraGreenWithLoan = useMemo(() => {
     const timer = createExecutionTimer('Filter', 'extraGreenWithLoanCalculation');
-    const safeSqm = Math.max(25, Number(targetSqm) || 75);
-    const scaleFactor = safeSqm / 80;
+    const safeSqm = Math.max(25, Number(targetSqm) || 75); const scaleFactor = safeSqm / 80;
     const baseRahn = deposit + Math.round((monthlyRent * 100) / 3);
     const boostedRahn = baseRahn + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterRahnMillion;
     let extra = 0;
@@ -157,14 +167,11 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
     return extra;
   }, [activeCityNeighborhoods, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, buyAgeMultiplier, rentAgeMultiplier, deductTenantRahnInBuy]);
   const evaluateList = useMemo(() => {
-    const safeSqm = Math.max(25, Number(targetSqm) || 75);
-    const scaleFactor = safeSqm / 80;
-    const effectiveTotalBuyBudget = useLoanBooster
-      ? buyTotalBudget + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterBuyMillion
-      : buyTotalBudget;
+    const safeSqm = Math.max(25, Number(targetSqm) || 75); const scaleFactor = safeSqm / 80;
+    const effectiveTotalBuyBudget = useLoanBooster ? buyTotalBudget + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterBuyMillion : buyTotalBudget;
     return (list: Neighborhood[]): EvaluatedNeighborhood[] =>
       list.map((n) => {
-        const hoodVotes = cloudVotes.filter((v) => v.hoodId === n.id);
+        const hoodVotes = votesByHoodId.get(n.id) ?? EMPTY_RESIDENT_VOTES;
         let { air, powerWater, internet, metro, security, flatTerrain } = n;
         let votesCount = n.votesCount || 12;
         if (hoodVotes.length > 0) {
@@ -172,19 +179,14 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
           let sumAir = n.air * totalW, sumPower = n.powerWater * totalW, sumNet = n.internet * totalW;
           let sumMetro = n.metro * totalW, sumSec = n.security * totalW, sumFlat = n.flatTerrain * totalW;
           for (const v of hoodVotes) {
-            const w = v.locationVerified
-              ? EVALUATED_RECOMMENDATION_WEIGHTS.locationVerifiedVoteWeight
-              : EVALUATED_RECOMMENDATION_WEIGHTS.unverifiedVoteWeight;
+            const w = v.locationVerified ? EVALUATED_RECOMMENDATION_WEIGHTS.locationVerifiedVoteWeight : EVALUATED_RECOMMENDATION_WEIGHTS.unverifiedVoteWeight;
             totalW += w;
             sumAir += v.air * w; sumPower += v.powerWater * w; sumNet += v.internet * w;
             sumMetro += v.metro * w; sumSec += v.security * w; sumFlat += v.flatTerrain * w;
           }
-          air = Math.round((sumAir / totalW) * 10) / 10;
-          powerWater = Math.round((sumPower / totalW) * 10) / 10;
-          internet = Math.round((sumNet / totalW) * 10) / 10;
-          metro = Math.round((sumMetro / totalW) * 10) / 10;
-          security = Math.round((sumSec / totalW) * 10) / 10;
-          flatTerrain = Math.round((sumFlat / totalW) * 10) / 10;
+          air = Math.round((sumAir / totalW) * 10) / 10; powerWater = Math.round((sumPower / totalW) * 10) / 10;
+          internet = Math.round((sumNet / totalW) * 10) / 10; metro = Math.round((sumMetro / totalW) * 10) / 10;
+          security = Math.round((sumSec / totalW) * 10) / 10; flatTerrain = Math.round((sumFlat / totalW) * 10) / 10;
           votesCount = (n.votesCount || 12) + hoodVotes.length;
         }
         const overallScore = calcOverallScore({ air, powerWater, internet, metro, security, flatTerrain });
@@ -193,28 +195,22 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
         const totalUnitBuyPrice = effectiveBuyPerSqm * safeSqm;
         const deedHoldback = Math.round(totalUnitBuyPrice * EVALUATED_RECOMMENDATION_WEIGHTS.deedHoldbackRatio);
         const netRequiredBuyCash = deductTenantRahnInBuy ? Math.max(500, totalUnitBuyPrice - scaledRahnTarget - deedHoldback) : totalUnitBuyPrice;
-        const ratio = mode === 'rent'
-          ? scaledRahnTarget / Math.max(1, totalRahnEquivalent)
-          : netRequiredBuyCash / Math.max(1, effectiveTotalBuyBudget);
+        const ratio = mode === 'rent' ? scaledRahnTarget / Math.max(1, totalRahnEquivalent) : netRequiredBuyCash / Math.max(1, effectiveTotalBuyBudget);
         const status: HousingStatus = ratio <= 1.0 ? 'green' : ratio <= 1.15 ? 'yellow' : 'red';
         const diffPercent = Math.round((ratio - 1) * 100);
         const distKm = selectedWorkHub.lat ? calcDistanceKm(n.lat, n.lng, selectedWorkHub.lat, selectedWorkHub.lng) : null;
         const cloudList = cloudBargainsByHood[n.id] || [];
         const mergedBargains = [...cloudList, ...(n.bargains || []).filter((b) => !cloudList.some((cb) => cb.id === b.id))];
         return {
-          ...n,
-          baseBuyPerSqm: n.buyPerSqm,
-          buyPerSqm: effectiveBuyPerSqm,
+          ...n, baseBuyPerSqm: n.buyPerSqm, buyPerSqm: effectiveBuyPerSqm,
           air, powerWater, internet, metro, security, flatTerrain, votesCount,
-          bargains: mergedBargains,
-          sponsor: cloudSponsorsByHood[n.id] || n.sponsor,
+          bargains: mergedBargains, sponsor: cloudSponsorsByHood[n.id] || n.sponsor,
           overallScore, status, diffPercent, distKm,
-          marketReport: getNeighborhoodMarketReport(n),
-          trafficInfo: getNeighborhoodTrafficInfo(n),
+          marketReport: getNeighborhoodMarketReport(n), trafficInfo: getNeighborhoodTrafficInfo(n),
         };
       });
   }, [
-    cloudVotes, cloudBargainsByHood, cloudSponsorsByHood,
+    votesByHoodId, cloudBargainsByHood, cloudSponsorsByHood,
     mode, totalRahnEquivalent, buyTotalBudget, useLoanBooster, selectedWorkHub,
     targetSqm, buyAgeMultiplier, rentAgeMultiplier, deductTenantRahnInBuy,
   ]);

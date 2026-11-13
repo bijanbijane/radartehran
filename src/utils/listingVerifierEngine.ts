@@ -82,23 +82,23 @@ export function parseListingNarrativeText(rawText: string, defaultHood?: string)
   const areaMatch = text.match(/(?:متراژ|مساحت|زیربنا)?\s*(\d{2,3})\s*(?:متر|متری|مترمربع|م\b)/);
   if (areaMatch) area = Math.max(30, Math.min(600, parseInt(areaMatch[1], 10)));
 
-  // 2. Price extraction (total or per sqm)
+  // 2. Price extraction (check explicit per-sqm patterns before generic million matches)
   let totalMillion = 0;
-  const compositeBillionMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:میلیارد|ملیارد)(?:\s*(?:و\s*)?(\d{1,4})\s*(?:میلیون|ملیون))?/);
-  const millionMatch = text.match(/(\d{3,6})\s*(?:میلیون|ملیون|م\.ت)/);
   const perSqmBillionMatch = text.match(/(?:متری|هر متر)\s*(\d+(?:[.,]\d+)?)\s*(?:میلیارد|ملیارد)/);
   const perSqmMillionMatch = text.match(/(?:متری|هر متر)\s*(\d{2,4})\s*(?:میلیون|ملیون)/);
+  const compositeBillionMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:میلیارد|ملیارد)(?:\s*(?:و\s*)?(\d{1,4})\s*(?:میلیون|ملیون))?/);
+  const millionMatch = text.match(/(\d{3,6})\s*(?:میلیون|ملیون|م\.ت)/);
 
-  if (compositeBillionMatch) {
+  if (perSqmBillionMatch) {
+    totalMillion = Math.round(parseFloat(perSqmBillionMatch[1].replace(',', '.')) * 1000 * area);
+  } else if (perSqmMillionMatch) {
+    totalMillion = Math.round(parseInt(perSqmMillionMatch[1], 10) * area);
+  } else if (compositeBillionMatch) {
     const bil = parseFloat(compositeBillionMatch[1].replace(',', '.'));
     const mil = compositeBillionMatch[2] ? parseInt(compositeBillionMatch[2], 10) : 0;
     totalMillion = Math.round(bil * 1000 + mil);
   } else if (millionMatch) {
     totalMillion = parseInt(millionMatch[1], 10);
-  } else if (perSqmMillionMatch) {
-    totalMillion = Math.round(parseInt(perSqmMillionMatch[1], 10) * area);
-  } else if (perSqmBillionMatch) {
-    totalMillion = Math.round(parseFloat(perSqmBillionMatch[1].replace(',', '.')) * 1000 * area);
   }
 
   // 3. Building age extraction
@@ -251,12 +251,12 @@ export function diagnoseListingDeal(
   } else if (bubbleGapPct > 15) {
     dealVerdict = 'HEAVY_BUBBLE';
     verdictLabelFa = `حباب سنگین (+${toPersianDigits(bubbleGapPct)}٪ بالاتر از کف منصفانه)`;
-  } else if (bubbleGapPct <= -5 && redFlags.filter((r) => r.severity === 'CRITICAL').length === 0) {
-    dealVerdict = 'FAIR_OPPORTUNITY';
-    verdictLabelFa = 'قیمت مناسب و فرصت خرید منصفانه';
   } else if (bubbleGapPct <= -22) {
     dealVerdict = 'SUSPICIOUS_BAIT';
     verdictLabelFa = 'مشکوک به قیمت فیک و طعمه آگهی';
+  } else if (bubbleGapPct <= -5 && redFlags.filter((r) => r.severity === 'CRITICAL').length === 0) {
+    dealVerdict = 'FAIR_OPPORTUNITY';
+    verdictLabelFa = 'قیمت مناسب و فرصت خرید منصفانه';
   }
 
   const openingOffer = evidenceMissing ? 0 : Math.max(Math.round(effectiveAskTotal * 0.8), effectiveAskTotal - recommendedDiscountMillion);

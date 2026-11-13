@@ -1,5 +1,5 @@
 import React, { useState } from 'react'; import { Award, Bell, Bookmark, Compass, MapPin, Phone, PlusCircle, Sparkles, ThumbsUp } from 'lucide-react'; import { EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, isSponsorActive, toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { ListingMediaGallery } from './ListingMediaGallery'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
-import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateMarketMetricsForHood, computeQualityMultiplier, extractListingSpecsFromText, isLiveDivarBargainId, type PriceSourceType } from '../data/realMarketPriceAggregator';
+import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples, computeQualityMultiplier, extractListingSpecsFromText, isLiveDivarBargainId, type PriceSourceType } from '../data/realMarketPriceAggregator';
 import { dealFairTotalLabelFa } from '../utils/epistemicUiLabels';
 import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { getCurrentJalaliYear } from '../data/hedonicPricingEngine';
 export interface NeighborhoodBargainsAndVotesTabsProps {
@@ -26,7 +26,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
     setAnParking(ext.hasParking); setAnElevator(ext.hasElevator); setAnStorage(ext.hasStorage); setAnAskingMillion(ext.totalMillion); setAnPriceSourceType(ext.priceSourceType); setAnSignals(ext.detectedSignals);
   };
   if (activeTab === 'bargains') {
-    const agg = aggregateMarketMetricsForHood(selectedHood);
+    const agg = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood));
     const hoodTotal80mMillions = selectedHood.buyPerSqm * 80; const estMonthlyRent80 = Math.round(selectedHood.rahn80m * 0.03);
     const qMult = computeQualityMultiplier({ age: anAge ?? 5, floor: anFloor ?? 2, totalFloors: anTotalFloors ?? 5, hasParking: anParking, hasElevator: anElevator, hasStorage: anStorage, detectedSignals: anSignals, hoodBasePerSqm: agg.askingPricePerSqm });
     const fairAskTotal = Math.round(agg.askingPricePerSqm * qMult * Math.max(25, anSqm));

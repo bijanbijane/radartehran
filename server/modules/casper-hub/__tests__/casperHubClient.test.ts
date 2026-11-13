@@ -1,7 +1,7 @@
 /**
  * @file server/modules/casper-hub/__tests__/casperHubClient.test.ts
  * @description Comprehensive unit and adversarial security contract tests for the
- * CASPER-02 server-side CASPER HUB client (`server/modules/casper-hub`).
+ * CASPER-04 server-side CASPER HUB client (`server/modules/casper-hub`).
  */
 
 import { describe, it } from 'node:test';
@@ -14,8 +14,8 @@ import {
   resolveCasperHubBaseUrl, resolveCasperHubConfig,
 } from '../index';
 
-describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', () => {
-  const testToken = 'casper02_unit_test_secret_token_xyz987';
+describe('CASPER-04 Server-Side HUB Client & Adversarial Security Guardrails', () => {
+  const testToken = 'casper04_unit_test_secret_token_xyz987';
   const validEnv = {
     CASPER_HUB_URL: 'https://casper-hub-api.bijanbijane-1.workers.dev/',
     CASPER_HUB_TOKEN: testToken,
@@ -51,7 +51,7 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
     assert.equal(configured.tokenConfigured, true);
     assert.equal(configured.hubUrl, DEFAULT_CASPER_HUB_URL);
     assert.equal(JSON.stringify(configured).includes(testToken), false);
-    assert.equal(CASPER_AGENT_ID, 'CASPER-02');
+    assert.equal(CASPER_AGENT_ID, 'CASPER-04');
   });
 
   it('fails closed with 503 CASPER_HUB_TOKEN_NOT_CONFIGURED when token is missing', async () => {
@@ -62,7 +62,7 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
     assert.equal(res.errorCode, 'CASPER_HUB_TOKEN_NOT_CONFIGURED');
   });
 
-  it('authenticates with redirect:error, normalizes note payloads, and enforces deterministic UUIDv5 Idempotency-Key', async () => {
+  it('authenticates with redirect:manual, normalizes note payloads, and enforces deterministic UUIDv5 Idempotency-Key', async () => {
     const calls: Array<{ url: string; method: string; headers: Record<string, string>; redirect?: RequestRedirect; body?: string }> = [];
 
     const mockFetch: typeof fetch = async (input, init) => {
@@ -73,12 +73,12 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
       calls.push({ url, method, headers, redirect: init?.redirect, body });
 
       if (url.endsWith('/v1/whoami')) {
-        return new Response(JSON.stringify({ authenticated: true, agent_id: 'CASPER-02', status: 'active' }), { status: 200, headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify({ authenticated: true, agent_id: 'CASPER-04', status: 'active' }), { status: 200, headers: { 'content-type': 'application/json' } });
       }
       if (url.endsWith('/v1/bootstrap')) {
         return new Response(JSON.stringify({
           hub: { service: 'casper-hub-api', version: '2.0.0' },
-          agent: { agent_id: 'CASPER-02', status: 'active' },
+          agent: { agent_id: 'CASPER-04', status: 'active' },
           roadmaps: [], relevant_notes: [], assigned_tasks: [], sync_cursor: { latest_event_id: 22 },
         }), { status: 200, headers: { 'content-type': 'application/json' } });
       }
@@ -89,7 +89,7 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
         const parsedBody = JSON.parse(body ?? '{}') as Record<string, unknown>;
         return new Response(JSON.stringify({
           created: true,
-          note: { note_id: 'NOTE-TEST-01', author_agent_id: 'CASPER-02', title: parsedBody.title, summary: parsedBody.summary, importance: parsedBody.importance },
+          note: { note_id: 'NOTE-TEST-01', author_agent_id: 'CASPER-04', title: parsedBody.title, summary: parsedBody.summary, importance: parsedBody.importance },
         }), { status: 201, headers: { 'content-type': 'application/json' } });
       }
       return new Response('Not Found', { status: 404 });
@@ -98,11 +98,11 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
     const client = new CasperHubClient({ env: validEnv, fetchImpl: mockFetch });
     const whoamiRes = await client.getWhoAmI<{ agent_id: string }>();
     assert.equal(whoamiRes.ok, true);
-    assert.equal(whoamiRes.data?.agent_id, 'CASPER-02');
+    assert.equal(whoamiRes.data?.agent_id, 'CASPER-04');
 
     const bootstrapRes = await client.getBootstrap<{ agent?: { agent_id: string } }>();
     assert.equal(bootstrapRes.ok, true);
-    assert.equal(bootstrapRes.data?.agent?.agent_id, 'CASPER-02');
+    assert.equal(bootstrapRes.data?.agent?.agent_id, 'CASPER-04');
 
     const changesRes = await client.getChanges({ after: 5, limit: 25 });
     assert.equal(changesRes.ok, true);
@@ -110,13 +110,13 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
     const longPersianSummary = 'گزارش تحلیلی و فنی جامع کَسپر بدون برش ناقص در مرز پانصد کاراکتر. '.repeat(10);
     assert.equal(longPersianSummary.length > 600, true);
 
-    await client.postNote({ title: 'تست واحد CASPER-02', summary: longPersianSummary, note_type: 'decision', importance: 99 });
-    await client.postNote({ title: 'تست واحد CASPER-02', summary: longPersianSummary, note_type: 'decision', importance: 99 });
+    await client.postNote({ title: 'تست واحد CASPER-04', summary: longPersianSummary, note_type: 'decision', importance: 99 });
+    await client.postNote({ title: 'تست واحد CASPER-04', summary: longPersianSummary, note_type: 'decision', importance: 99 });
 
     assert.equal(calls.length, 5);
     for (const call of calls) {
       assert.equal(call.headers.Authorization, `Bearer ${testToken}`);
-      assert.equal(call.redirect, 'error');
+      assert.equal(call.redirect, 'manual');
     }
 
     assert.equal(calls[3].headers['Idempotency-Key'], calls[4].headers['Idempotency-Key']);
@@ -251,7 +251,7 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
         if (authHeader.includes('rotated_secret_token_999')) {
           return new Response(`Upstream error echoing ${encodeURIComponent(mutableEnv.CASPER_HUB_TOKEN ?? '')}`, { status: 502, headers: { 'content-type': 'text/plain' } });
         }
-        return new Response(JSON.stringify({ authenticated: true, agent_id: 'CASPER-02' }), { status: 200, headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify({ authenticated: true, agent_id: 'CASPER-04' }), { status: 200, headers: { 'content-type': 'application/json' } });
       },
     });
 
@@ -263,13 +263,13 @@ describe('CASPER-02 Server-Side HUB Client & Adversarial Security Guardrails', (
     const afterRotate = await rotatingClient.getWhoAmI();
     assert.equal(fetchCount, 2);
     assert.equal(afterRotate.ok, false);
-    assert.equal(String(afterRotate.data).includes('rotated_secret_token_999'), false);
+    assert.equal(String(afterRotate.error).includes('rotated_secret_token_999'), false);
 
     const telemetry = analyzeCasperHubEpistemicState({
       events: [{ event_seq: 10 }, { event_seq: 11 }, { event_seq: 14 }],
       relevant_notes: [
         { author_agent_id: 'CASPER-01', note_type: 'finding', importance: 4 },
-        { author_agent_id: 'CASPER-02', note_type: 'blocker', importance: 5 },
+        { author_agent_id: 'CASPER-04', note_type: 'blocker', importance: 5 },
       ],
       sync_cursor: { latest_event_id: 11 },
     });

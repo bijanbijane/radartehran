@@ -55,7 +55,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
         const bootJson = await bootRes.json();
         if (isMountedRef.current) {
           if (bootJson?.telemetry) setTelemetry(bootJson.telemetry);
-          const rawNotes = bootJson?.data?.notes ?? bootJson?.notes;
+          const rawNotes = bootJson?.data?.relevant_notes ?? bootJson?.data?.notes ?? bootJson?.notes;
           if (Array.isArray(rawNotes)) setRecentNotes(rawNotes.slice(-3).reverse());
         }
       } else if (whoRes.ok && isMountedRef.current) {

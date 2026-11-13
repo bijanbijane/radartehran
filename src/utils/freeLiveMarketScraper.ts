@@ -5,7 +5,7 @@
  * Enforces strict response size/type contracts, explicit field mapping without object spreading, * numeric range validation, HTML/script neutralization, and provenance tracking.
  */
 
-import type { BargainListing, CityId } from '../types/models'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './areaUnit'; import { clampNumber, sanitizeInput } from './security';
+import type { BargainListing, CityId } from '../types/models'; import { resolveDivarCityId } from '../data/iranProvincesDirectory'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './areaUnit'; import { clampNumber, sanitizeInput } from './security';
 
 export type MarketDataSourceId = | 'tgju_public_html'
   | 'divar_public_search'
@@ -23,13 +23,13 @@ const MAX_UPSTREAM_TEXT_BYTES = 350 * 1024; const MAX_UPSTREAM_JSON_BYTES = 256 
 const FAKE_OR_PRESALE_REGEX = /پیش[\s]*فروش|اسکلت|قولنامه|وکالتی|قدرالسهم|کلنگی|معاوضه|رهن و اجاره/i;
 
 async function readBoundedResponseText(res: Response, maxBytes: number): Promise<string | null> { const contentLen = Number(res.headers.get('content-length') || '0'); if (Number.isFinite(contentLen) && contentLen > maxBytes) return null; const text = await res.text();
-  if (Buffer.byteLength(text, 'utf-8') > maxBytes) return null; return text; }
+  if (new TextEncoder().encode(text).length > maxBytes) return null; return text; }
 
 /**
  * Tasks 566, 567 & 568: Validate and normalize a single upstream Divar widget item.
  */
 export function validateUpstreamDivarWidgetItem(
-  rawWidget: unknown, seedBuyPerSqm: number,
+  rawWidget: unknown, seedBuyPerSqm?: number | null,
 ): { title: string; sqm: number; perSqmMillion: number; token: string } | null {
   if (!rawWidget || typeof rawWidget !== 'object' || Array.isArray(rawWidget)) return null;
   const w = rawWidget as Record<string, unknown>;
@@ -60,7 +60,9 @@ export function validateUpstreamDivarWidgetItem(
   }
 
   const perSqmMillion = Math.round((totalToman / 1_000_000 / sqm) * 10) / 10;
-  if (!Number.isFinite(perSqmMillion) || perSqmMillion < seedBuyPerSqm * 0.55 || perSqmMillion > seedBuyPerSqm * 1.65) {
+  const hasSeed = typeof seedBuyPerSqm === 'number' && Number.isFinite(seedBuyPerSqm) && seedBuyPerSqm >= 10;
+  if (!Number.isFinite(perSqmMillion) || perSqmMillion < 10 || perSqmMillion > 2500) return null;
+  if (hasSeed && (perSqmMillion < seedBuyPerSqm * 0.55 || perSqmMillion > seedBuyPerSqm * 1.65)) {
     return null;
   }
 
@@ -142,6 +144,7 @@ export async function fetchFreeDivarNeighborhoodStats(
   city: CityId,
   hoodName: string,
   seedBuyPerSqm: number,
+  hoodId?: number,
 ): Promise<FreeScrapedHoodData> {
   const emptyFallback = (): FreeScrapedHoodData => ({
     medianBuyPerSqm: null,
@@ -166,7 +169,7 @@ export async function fetchFreeDivarNeighborhoodStats(
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
       },
       body: JSON.stringify({
-        city_ids: [city === 'tehran' ? '1' : city === 'karaj' ? '2' : city === 'mashhad' ? '3' : city === 'isfahan' ? '4' : '6'],
+        city_ids: [resolveDivarCityId(city, hoodId)],
         search_data: {
           form_data: { data: { category: { str: { value: 'apartment-sell' } } } },
           server_payload: {

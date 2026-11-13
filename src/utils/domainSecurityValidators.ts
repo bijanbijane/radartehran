@@ -80,12 +80,12 @@ export function sanitizeSponsorRecord(
   };
   if (candidate.planMonths === 1 || candidate.planMonths === 3) out.planMonths = candidate.planMonths;
   else if (base.planMonths) out.planMonths = base.planMonths;
-  if (typeof candidate.monthlyTariffMillion === 'number' && Number.isFinite(candidate.monthlyTariffMillion) && candidate.monthlyTariffMillion >= 1 && candidate.monthlyTariffMillion <= 500) {
+  if (typeof candidate.monthlyTariffMillion === 'number' && Number.isFinite(candidate.monthlyTariffMillion) && candidate.monthlyTariffMillion >= 0 && candidate.monthlyTariffMillion <= 500) {
     out.monthlyTariffMillion = candidate.monthlyTariffMillion;
   } else if (base.monthlyTariffMillion !== undefined) {
     out.monthlyTariffMillion = base.monthlyTariffMillion;
   }
-  if (typeof candidate.totalPayableMillion === 'number' && Number.isFinite(candidate.totalPayableMillion) && candidate.totalPayableMillion >= 1 && candidate.totalPayableMillion <= 1500) {
+  if (typeof candidate.totalPayableMillion === 'number' && Number.isFinite(candidate.totalPayableMillion) && candidate.totalPayableMillion >= 0 && candidate.totalPayableMillion <= 1500) {
     out.totalPayableMillion = candidate.totalPayableMillion;
   } else if (base.totalPayableMillion !== undefined) {
     out.totalPayableMillion = base.totalPayableMillion;
@@ -143,7 +143,8 @@ export function computeCanonicalSponsorPricing(
   monthlyTariffMillion: number,
   rawPlanMonths: unknown,
 ): { planMonths: 1 | 3; monthlyTariffMillion: number; totalPayableMillion: number; durationDays: 30 | 90 } {
-  const safeMonthly = Math.min(25, Math.max(5, Math.round(Number(monthlyTariffMillion) || 5)));
+  const rawNum = Number(monthlyTariffMillion);
+  const safeMonthly = Number.isFinite(rawNum) && rawNum >= 0 ? Math.min(25, Math.round(rawNum * 10) / 10) : 5;
   const planMonths: 1 | 3 = rawPlanMonths === 3 || rawPlanMonths === '3' ? 3 : 1;
   const rawTotal = safeMonthly * planMonths;
   const totalPayableMillion = planMonths === 3 ? Math.round(rawTotal * 0.8 * 10) / 10 : safeMonthly;

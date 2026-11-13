@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
+import { findProvinceForHood } from '../data/iranProvincesDirectory';
 import { FloatingTopBar } from './FloatingTopBar';
 import { NeighborhoodInspectorDrawer } from './NeighborhoodInspectorDrawer';
 import { useLeafletRadarMap } from './useLeafletRadarMap';
@@ -172,7 +173,7 @@ export function RadarWorkspaceShell() {
         onOpenSearch={() => { ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }}
         onOpenSecurityAdmin={isVerifiedAdmin ? () => { ui.setPrimaryView('admin'); ui.setMobileSheetOpen(false); } : undefined}
         onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)}
-        searchQuery={ui.searchQuery}
+        searchQuery={ui.searchQuery} activePlaceLabelFa={findProvinceForHood(ui.selectedHoodId)?.capitalFa}
       />
       <div role="region" aria-label="نقشه تعاملی محله‌ها" className="fixed inset-0 top-16 z-0">
         <div ref={mapContainerRef} className="w-full h-full bg-[#E5E5EA]" />

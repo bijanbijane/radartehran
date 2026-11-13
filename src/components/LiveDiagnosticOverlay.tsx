@@ -173,7 +173,7 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
   const failedCount = testResults.filter((r) => r.status === 'FAIL').length;
   if (isDismissed && errors.length === 0) {
     return (
-      <button type="button" onClick={() => { setIsDismissed(false); try { localStorage.setItem('radar_hide_dev_overlay', 'false'); } catch {} }} className="fixed bottom-16 lg:bottom-3 left-3 z-[95] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer" title="دیباگر سیستم" aria-label="دیباگر سیستم">
+      <button type="button" onClick={() => { setIsDismissed(false); try { localStorage.setItem('radar_hide_dev_overlay', 'false'); } catch {} }} className="hidden lg:flex fixed bottom-16 lg:bottom-3 left-3 z-[95] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer" title="دیباگر سیستم" aria-label="دیباگر سیستم">
         <Bug className="w-3 h-3" />
       </button>
     );

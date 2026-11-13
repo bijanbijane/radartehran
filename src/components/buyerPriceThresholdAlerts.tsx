@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'; import { BellRing, CheckCircle2, MapPin, Plus, Trash2, X, ArrowUpLeft } from 'lucide-react'; import { EvaluatedNeighborhood, Neighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { clampNumber } from '../utils/security'; import { extractVerifiedBargainPriceInDealUnit } from '../utils/buyerAlertsAndCommunityTrust'; import { BuyerAlertPriceSparkline } from './BuyerAlertPriceSparkline'; export const PRICE_THRESHOLD_STORAGE_KEY = 'tehran_radar_price_threshold_alerts_v1'; export const DISMISSED_MATCHES_STORAGE_KEY = 'tehran_radar_dismissed_threshold_matches_v1'; export interface PriceThresholdSubscription { id: string; hoodId: number; hoodName: string; dealType: 'خرید' | 'اجاره'; maxThresholdMillion: number; createdAtIso: string; } export interface PriceThresholdMatchItem { matchKey: string; subscription: PriceThresholdSubscription; neighborhood: Neighborhood | EvaluatedNeighborhood; matchedSource: 'bargain_listing' | 'neighborhood_avg'; observedMillion: number; bargainTitle?: string; discountPercent: number; }
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; import { BellRing, CheckCircle2, MapPin, Plus, Trash2, X, ArrowUpLeft } from 'lucide-react'; import { EvaluatedNeighborhood, Neighborhood, toPersianNum } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { clampNumber } from '../utils/security'; import { extractVerifiedBargainPriceInDealUnit } from '../utils/buyerAlertsAndCommunityTrust'; const BuyerAlertPriceSparkline = React.lazy(() => import('./BuyerAlertPriceSparkline').then((m) => ({ default: m.BuyerAlertPriceSparkline }))); export const PRICE_THRESHOLD_STORAGE_KEY = 'tehran_radar_price_threshold_alerts_v1'; export const DISMISSED_MATCHES_STORAGE_KEY = 'tehran_radar_dismissed_threshold_matches_v1'; export interface PriceThresholdSubscription { id: string; hoodId: number; hoodName: string; dealType: 'خرید' | 'اجاره'; maxThresholdMillion: number; createdAtIso: string; } export interface PriceThresholdMatchItem { matchKey: string; subscription: PriceThresholdSubscription; neighborhood: Neighborhood | EvaluatedNeighborhood; matchedSource: 'bargain_listing' | 'neighborhood_avg'; observedMillion: number; bargainTitle?: string; discountPercent: number; }
 export function loadPriceThresholdSubscriptions(): PriceThresholdSubscription[] { if (typeof window === 'undefined' || !window.localStorage) return []; try { const raw = window.localStorage.getItem(PRICE_THRESHOLD_STORAGE_KEY); if (!raw) return []; const parsed = JSON.parse(raw); if (!Array.isArray(parsed)) return []; return parsed.filter( (item): item is PriceThresholdSubscription => Boolean(item) && typeof item.id === 'string' && typeof item.hoodId === 'number' && typeof item.hoodName === 'string' && (item.dealType === 'خرید' || item.dealType === 'اجاره') &&
         typeof item.maxThresholdMillion === 'number' && Number.isFinite(item.maxThresholdMillion) && item.maxThresholdMillion > 0
     ).slice(0, 30); } catch { return []; } } export function savePriceThresholdSubscriptions(list: PriceThresholdSubscription[]): void { if (typeof window === 'undefined' || !window.localStorage) return; try { window.localStorage.setItem(PRICE_THRESHOLD_STORAGE_KEY, JSON.stringify(list.slice(0, 30))); }
@@ -151,7 +151,7 @@ export function BuyerPriceThresholdManagerSection({
         </div>
       </div>
       {currentHood && (
-        <BuyerAlertPriceSparkline neighborhood={currentHood} dealType={dealType} maxThresholdMillion={thresholdInput} />
+        <React.Suspense fallback={<div className="h-14 rounded-lg bg-slate-100/70 dark:bg-slate-800/70 animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline neighborhood={currentHood} dealType={dealType} maxThresholdMillion={thresholdInput} /></React.Suspense>
       )}
       {justSavedNotice && (
         <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
@@ -187,9 +187,9 @@ export function BuyerPriceThresholdManagerSection({
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {subHood && (
-                    <BuyerAlertPriceSparkline
+                    <React.Suspense fallback={<div className="w-24 h-8 rounded bg-slate-100/70 dark:bg-slate-800/70 animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline
                       neighborhood={subHood} dealType={sub.dealType} maxThresholdMillion={sub.maxThresholdMillion} observedMillion={match?.observedMillion} compact
-                    />
+                    /></React.Suspense>
                   )}
                   <button
                     type="button" onClick={() => onRemoveSubscription(sub.id)} title="حذف اشتراک سقف قیمت"
@@ -255,8 +255,8 @@ export function PersistentPriceThresholdMatchBanner({
           ? `فایل زیر قیمت «${topMatch.bargainTitle}» (${toPersianNum(topMatch.discountPercent)}٪ زیر میانگین) در آستانه قیمت انتخابی شما قرار دارد.`
           : `میانگین فعلی محله ${topMatch.subscription.hoodName} در محدوده سقف قیمت ثبت‌شده شما قرار دارد.`}
       </p>
-      <BuyerAlertPriceSparkline
-        neighborhood={topMatch.neighborhood} dealType={topMatch.subscription.dealType} maxThresholdMillion={topMatch.subscription.maxThresholdMillion} observedMillion={topMatch.observedMillion} />
+      <React.Suspense fallback={<div className="h-14 rounded-lg bg-slate-100/70 dark:bg-slate-800/70 animate-pulse" aria-busy="true" />}><BuyerAlertPriceSparkline
+        neighborhood={topMatch.neighborhood} dealType={topMatch.subscription.dealType} maxThresholdMillion={topMatch.subscription.maxThresholdMillion} observedMillion={topMatch.observedMillion} /></React.Suspense>
       <div className="flex items-center justify-between gap-2 pt-1">
         <button
           type="button"

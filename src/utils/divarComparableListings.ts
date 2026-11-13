@@ -5,6 +5,7 @@
  */
 
 import type { CityId } from '../types/models';
+import { resolveDivarCityId } from '../data/iranProvincesDirectory';
 import { buildDivarPostUrl } from './epistemicUiLabels';
 import { validateUpstreamDivarWidgetItem } from './freeLiveMarketScraper';
 import { sanitizeInput } from './security';
@@ -58,14 +59,6 @@ export interface DivarComparableSearchResult {
 
 const MAX_UPSTREAM_JSON_BYTES = 256 * 1024;
 
-function cityIdForDivar(city: CityId): string {
-  if (city === 'tehran') return '1';
-  if (city === 'karaj') return '2';
-  if (city === 'mashhad') return '3';
-  if (city === 'isfahan') return '4';
-  return '6';
-}
-
 function medianOfSorted(sorted: number[]): number | null {
   if (sorted.length === 0) return null;
   const mid = Math.floor(sorted.length / 2);
@@ -76,7 +69,7 @@ async function readBoundedResponseText(res: Response, maxBytes: number): Promise
   const contentLen = Number(res.headers.get('content-length') || '0');
   if (Number.isFinite(contentLen) && contentLen > maxBytes) return null;
   const text = await res.text();
-  if (Buffer.byteLength(text, 'utf-8') > maxBytes) return null;
+  if (new TextEncoder().encode(text).length > maxBytes) return null;
   return text;
 }
 
@@ -96,7 +89,7 @@ function emptyResult(hoodName: string, city: CityId): DivarComparableSearchResul
 export async function fetchDivarComparableListings(
   city: CityId,
   hoodName: string,
-  opts?: { seedBuyPerSqm?: number; targetSqm?: number; sqmTolerancePct?: number },
+  opts?: { hoodId?: number; seedBuyPerSqm?: number; targetSqm?: number; sqmTolerancePct?: number },
 ): Promise<DivarComparableSearchResult> {
   const safeHoodName = sanitizeInput(hoodName, 60).replace(/[<>]/g, '');
   if (!safeHoodName) return emptyResult(hoodName, city);
@@ -104,6 +97,29 @@ export async function fetchDivarComparableListings(
   const seed = opts?.seedBuyPerSqm;
   const targetSqm = opts?.targetSqm;
   const tol = opts?.sqmTolerancePct ?? 0.15;
+
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    try {
+      const proxyRes = await fetch('/api/listing-verdict/comparables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          city,
+          hoodName: safeHoodName,
+          hoodId: opts?.hoodId,
+          seedBuyPerSqm: seed,
+          targetSqm,
+          sqmTolerancePct: tol,
+        }),
+        signal: AbortSignal.timeout(9000),
+      });
+      if (!proxyRes.ok) return emptyResult(safeHoodName, city);
+      const payload = (await proxyRes.json()) as DivarComparableSearchResult;
+      return payload && Array.isArray(payload.comparables) ? payload : emptyResult(safeHoodName, city);
+    } catch {
+      return emptyResult(safeHoodName, city);
+    }
+  }
 
   try {
     const res = await fetch('https://api.divar.ir/v8/postlist/w/search', {
@@ -114,7 +130,7 @@ export async function fetchDivarComparableListings(
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
       },
       body: JSON.stringify({
-        city_ids: [cityIdForDivar(city)],
+        city_ids: [resolveDivarCityId(city, opts?.hoodId)],
         search_data: {
           form_data: { data: { category: { str: { value: 'apartment-sell' } } } },
           server_payload: {
@@ -139,23 +155,19 @@ export async function fetchDivarComparableListings(
     const fetchedAtIso = new Date().toISOString();
     let rejectedMalformedCount = 0;
 
-    const comparables: LiveComparableListing[] = [];
+    const strictMatches: LiveComparableListing[] = [];
+    const fallbackMatches: LiveComparableListing[] = [];
     for (const w of widgets) {
-      const normalized = validateUpstreamDivarWidgetItem(w, null);
+      const normalized = validateUpstreamDivarWidgetItem(w, seed ?? null);
       if (!normalized) {
         rejectedMalformedCount++;
         continue;
-      }
-      if (targetSqm && targetSqm > 0) {
-        const lo = targetSqm * (1 - tol);
-        const hi = targetSqm * (1 + tol);
-        if (normalized.sqm < lo || normalized.sqm > hi) continue;
       }
       let seedBandAnomaly = false;
       if (Number.isFinite(seed) && seed! > 0) {
         seedBandAnomaly = normalized.perSqmMillion < seed! * 0.55 || normalized.perSqmMillion > seed! * 1.65;
       }
-      comparables.push({
+      const item: LiveComparableListing = {
         token: normalized.token,
         title: normalized.title,
         sqm: normalized.sqm,
@@ -164,10 +176,20 @@ export async function fetchDivarComparableListings(
         divarUrl: buildDivarPostUrl(normalized.token),
         fetchedAtIso,
         seedBandAnomaly,
-      });
-      if (comparables.length >= MAX_COMPARABLE_LISTINGS) break;
+      };
+      const inStrictBand = !targetSqm || targetSqm <= 0 || (normalized.sqm >= targetSqm * (1 - tol) && normalized.sqm <= targetSqm * (1 + tol));
+      if (inStrictBand) strictMatches.push(item);
+      else fallbackMatches.push(item);
     }
 
+    if (strictMatches.length < MIN_COMPARABLE_LISTINGS && fallbackMatches.length > 0 && targetSqm && targetSqm > 0) {
+      fallbackMatches.sort((a, b) => Math.abs(a.sqm - targetSqm) - Math.abs(b.sqm - targetSqm));
+      for (const extra of fallbackMatches) {
+        strictMatches.push(extra);
+        if (strictMatches.length >= MIN_COMPARABLE_LISTINGS) break;
+      }
+    }
+    const comparables = strictMatches.slice(0, MAX_COMPARABLE_LISTINGS);
     const insufficientSample = comparables.length < MIN_COMPARABLE_LISTINGS;
     const sorted = comparables.map((c) => c.perSqmMillion).sort((a, b) => a - b);
     const medianPerSqm = insufficientSample ? null : medianOfSorted(sorted);

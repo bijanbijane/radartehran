@@ -13,6 +13,7 @@ import {
 } from '../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { parseTehranPublicPath, seoForDatedCompare, seoForDatedHood } from '../data/neighborhoodListingSamples';
+import { findProvinceForHood } from '../data/iranProvincesDirectory';
 
 export interface UseAppUrlAndTitleSyncParams {
   activeCity: CityId;
@@ -189,7 +190,8 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         docEl.lang = locale;
         docEl.dir = locale === 'en' || locale === 'tr' ? 'ltr' : 'rtl';
       }
-      const cityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
+      const activeProvinceFa = findProvinceForHood(showCompareModal ? (compHood1?.id ?? -1) : (selectedHood?.id ?? -1))?.capitalFa;
+      const cityNameFa = activeProvinceFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
       const cityPrefix = activeCity !== 'tehran' ? `city=${activeCity}&` : '';
       const keepBudget = hasUrlBudgetParams || window.location.search.includes('dep=') || window.location.search.includes('buy=');
       const hubPart = workHubId && workHubId !== 'none' ? `&hub=${encodeURIComponent(workHubId)}` : '';
@@ -197,7 +199,6 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       const viewSuffix = primaryView && primaryView !== 'map' ? `&view=${primaryView}` : '';
       const leveragePart = `${useLoanBooster ? '&loan=1' : ''}${deductTenantRahnInBuy ? '&rahnDeduct=1' : ''}${buildingAgeSegment && buildingAgeSegment !== 'new' ? `&age=${buildingAgeSegment}` : ''}`;
       const budgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}${leveragePart}` : `${hubPart}${leveragePart}`) + intlSuffix + viewSuffix;
-      const pathname = window.location.pathname || '/';
       const setMetaContent = (selector: string, content: string) => {
         const el = document.querySelector<HTMLMetaElement>(selector);
         if (el) el.setAttribute('content', content);
@@ -231,7 +232,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           ],
         });
         const extra = budgetSuffix.replace(/^&/, '');
-        const nextUrl = datedCompare ? `${datedCompare.path}${extra ? `?${extra}` : ''}` : `${pathname}${canonicalQuery}${budgetSuffix}`;
+        const nextUrl = datedCompare ? `${datedCompare.path}${extra ? `?${extra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
         if (`${window.location.pathname}${window.location.search}` !== nextUrl && typeof window.history?.replaceState === 'function') {
           window.history.replaceState(null, '', nextUrl);
         }
@@ -248,7 +249,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           geo: { '@type': 'GeoCoordinates', latitude: selectedHood.lat, longitude: selectedHood.lng },
         });
         const extra = budgetSuffix.replace(/^&/, '');
-        const nextUrl = datedHood ? `${datedHood.path}${extra ? `?${extra}` : ''}` : `${pathname}${canonicalQuery}${budgetSuffix}`;
+        const nextUrl = datedHood ? `${datedHood.path}${extra ? `?${extra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
         if (`${window.location.pathname}${window.location.search}` !== nextUrl && typeof window.history?.replaceState === 'function') {
           window.history.replaceState(null, '', nextUrl);
         }

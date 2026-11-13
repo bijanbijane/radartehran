@@ -7,7 +7,8 @@ export function isCoordInsideStoredViewport(lat: number, lng: number, bounds: Ma
 export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighborhood; zoom: number; isSelected: boolean; hasSponsor: boolean; isDarkMap: boolean; pillBg: string; priceLabel: string; }): { html: string; iconSize: [number, number]; iconAnchor: [number, number] } {
   const { hood, zoom, isSelected, hasSponsor, isDarkMap, pillBg, priceLabel } = params; const areaUnit = getStoredAreaUnit();
   const conciseHoodName = isSelected || zoom >= 13 ? hood.name : hood.name.replace(/\s*\([^)]*\)/g, '').trim();
-  const concisePriceLabel = isSelected || zoom >= 13 ? priceLabel : priceLabel.replace(/\s*\|\s*معامله:.*$/, '').replace(/\s*رهن$/, '').trim();
+  const normalizedPrice = priceLabel.replace('متر مربع (m²)', isSelected ? 'متری' : '').replace('فوت مربع (ft²)', 'ft²').trim();
+  const concisePriceLabel = isSelected || zoom >= 13 ? normalizedPrice : normalizedPrice.replace(/\s*\|\s*معامله:.*$/, '').replace(/\s*رهن$/, '').trim();
   const safeHoodName = escapeHtmlAttr(conciseHoodName); const safePriceLabel = escapeHtmlAttr(concisePriceLabel); const safeSponsorName = escapeHtmlAttr(hood.sponsor?.name || ''); const sponsorStar = hasSponsor && (isSelected || zoom >= 13)
     ? `<span title="دارای کارشناس رسمی محله: ${safeSponsorName}" style="color:#fbbf24;margin-left:3px;font-size:11px;">★</span>`
     : ''; const borderRule = isSelected

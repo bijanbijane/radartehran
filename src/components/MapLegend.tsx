@@ -29,7 +29,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
               ? 'امتیاز ترافیک کمتر از ۶'
               : 'بیش از ۱۵٪ بالاتر از بودجه واردشده', dotClass: 'bg-rose-500', activeClass: 'bg-rose-50 dark:bg-rose-950/60 border-rose-500 dark:border-rose-500 text-rose-900 dark:text-rose-200', count: counts.red, Icon: XCircle, }, ]; return ( <section
       aria-label="راهنمای علائم و رنگ‌های نقشه (Legend)"
-      className={`fixed bottom-[192px] lg:bottom-14 left-3 lg:left-4 z-30 flex-col items-end pointer-events-none ${hideOnMobileSheet ? 'hidden lg:flex' : 'flex'}`}
+      className={`fixed bottom-[180px] lg:bottom-14 left-3 lg:left-4 z-30 flex-col items-end pointer-events-none ${hideOnMobileSheet ? 'hidden lg:flex' : 'flex'}`}
     > {open && (
         <div role="region" aria-label="جزئیات راهنمای نقشه و فیلتر رنگ‌ها" className="mb-2 w-72 sm:w-80 apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl p-3 space-y-2.5 text-xs pointer-events-auto shadow-2xl">
           <div className="flex items-center justify-between px-1 pb-1.5 border-b border-slate-200/70 dark:border-slate-800"> <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5" title={`${areaUnitLabel} · ${referenceIntlSample}`}>

@@ -27,7 +27,8 @@ import {
   classifyServiceWorkerRequestStrategy,
 } from '../src/utils/pwaOfflineSupport';
 import { getAllMultiCityNeighborhoods } from '../src/data/multiCityData';
-import { EvaluatedNeighborhood } from '../src/data/neighborhoods';
+import { EvaluatedNeighborhood, ResidentVoteDoc } from '../src/data/neighborhoods';
+import { indexResidentVotesByHoodId } from '../src/components/useEvaluatedNeighborhoods';
 
 console.log('--- Starting ASSESS-007 & ASSESS-008: LOD Culling & PWA Offline Resilience Audit ---');
 
@@ -309,4 +310,80 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   console.log('✓ 4. ASSESS-008: PWA manifest compliance & Service Worker security/caching rules verified');
 }
 
-console.log('--- ALL ASSESS-007 & ASSESS-008 PERFORMANCE & PWA TESTS PASSED ---');
+// ============================================================================
+// 5. WS-PERF-V5-01: Critical-Path Chart/Cell De-Bloating, Bounded Leaflet Retry & O(N+V) Vote Indexing
+// ============================================================================
+{
+  const drawerSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
+  const thresholdAlertsSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf-8');
+  const leafletMapHookSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/useLeafletRadarMap.ts'), 'utf-8');
+  const leafletLoaderSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/leafletLoader.ts'), 'utf-8');
+  const viteConfigSrc = fs.readFileSync(path.resolve(process.cwd(), 'vite.config.ts'), 'utf-8');
+
+  assert.ok(
+    drawerSrc.includes("const NeighborhoodMonthlyBarChart = React.lazy(() => import('./NeighborhoodMonthlyBarChart')"),
+    'NeighborhoodInspectorDrawer must lazy-load NeighborhoodMonthlyBarChart on demand'
+  );
+  assert.ok(
+    thresholdAlertsSrc.includes("const BuyerAlertPriceSparkline = React.lazy(() => import('./BuyerAlertPriceSparkline')"),
+    'buyerPriceThresholdAlerts must lazy-load BuyerAlertPriceSparkline on demand'
+  );
+  assert.ok(
+    !leafletMapHookSrc.includes('setInterval(') && leafletMapHookSrc.includes('retryLeafletLoad()'),
+    'useLeafletRadarMap must use bounded retryLeafletLoad() recovery without unbounded setInterval polling'
+  );
+  assert.ok(
+    leafletLoaderSrc.includes("'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'"),
+    'leafletLoader default script URL must match index.html canonical unpkg Leaflet 1.9.4 URL'
+  );
+  assert.ok(
+    viteConfigSrc.includes("return 'vendor-d3';") && viteConfigSrc.includes("return 'vendor-charts';"),
+    'vite.config.ts must separate vendor-d3 from vendor-charts so thermal map scales do not preload Recharts'
+  );
+
+  const distIndexHtmlPath = path.resolve(process.cwd(), 'dist/index.html');
+  if (fs.existsSync(distIndexHtmlPath)) {
+    const distHtml = fs.readFileSync(distIndexHtmlPath, 'utf-8');
+    assert.ok(
+      !distHtml.includes('vendor-charts-'),
+      'dist/index.html must NOT preload vendor-charts (Recharts) on the initial critical path'
+    );
+    assert.ok(
+      !distHtml.includes('engine-decision-cells-'),
+      'dist/index.html must NOT preload engine-decision-cells on the initial critical path'
+    );
+  }
+
+  // Verify O(N + V) indexResidentVotesByHoodId behavioral equivalence against O(N * V) filter
+  const syntheticVotes: ResidentVoteDoc[] = Array.from({ length: 2400 }, (_, idx) => {
+    const targetHood = allHoods[idx % allHoods.length];
+    return {
+      id: `vote-${idx}`,
+      hoodId: targetHood.id,
+      hoodName: targetHood.name,
+      userId: `user-${idx % 100}`,
+      userDisplayName: `کاربر ${idx % 100}`,
+      air: 6 + (idx % 4),
+      powerWater: 7 + (idx % 3),
+      internet: 6 + (idx % 4),
+      metro: 5 + (idx % 5),
+      security: 7 + (idx % 3),
+      flatTerrain: 6 + (idx % 4),
+      comment: `Sample vote ${idx}`,
+      createdAt: '1404/08/01',
+      locationVerified: idx % 2 === 0,
+    };
+  });
+
+  const indexedMap = indexResidentVotesByHoodId(syntheticVotes);
+  for (const hood of allHoods) {
+    const expected = syntheticVotes.filter((v) => v.hoodId === hood.id);
+    const actual = indexedMap.get(hood.id) ?? [];
+    assert.equal(actual.length, expected.length, `Vote count mismatch for hood ${hood.id}`);
+    assert.deepEqual(actual, expected, `Vote ordering/content mismatch for hood ${hood.id}`);
+  }
+
+  console.log('✓ 5. WS-PERF-V5-01: Critical-path bundle de-bloating, bounded Leaflet retry & O(N+V) vote indexing verified');
+}
+
+console.log('--- ALL ASSESS-007, ASSESS-008 & WS-PERF-V5-01 PERFORMANCE & PWA TESTS PASSED ---');

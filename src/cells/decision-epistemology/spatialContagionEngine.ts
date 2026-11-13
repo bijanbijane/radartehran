@@ -76,7 +76,7 @@ export function computeAkerlofLemonIndex(
   basePriceSqm: number,
   hood?: Neighborhood,
 ): AkerlofLemonAssessment {
-  const samples = hood ? buildNeighborhoodListingSamples({ ...hood, buyPerSqm: basePriceSqm > 0 ? basePriceSqm : hood.buyPerSqm }) : [];
+  const samples = hood ? (basePriceSqm > 0 && basePriceSqm !== hood.buyPerSqm ? buildNeighborhoodListingSamples({ ...hood, buyPerSqm: basePriceSqm }) : buildNeighborhoodListingSamples(hood)) : [];
   const agg = aggregateNeighborhoodMarketMetrics(hoodId, hoodName, basePriceSqm, samples);
   const medianDeal = Math.max(10, agg.estimatedDealPricePerSqm);
   const iqrLow = agg.iqrLowPerSqm > 0 ? agg.iqrLowPerSqm : Math.round(medianDeal * 0.94);

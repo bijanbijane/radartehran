@@ -103,3 +103,21 @@ test('quota management properly decrements and limits free evaluations', () => {
   const rem4 = consumeVerificationQuota();
   assert.equal(rem4, 0);
 });
+
+test('diagnoseListingDeal prioritizes SUSPICIOUS_BAIT over FAIR_OPPORTUNITY at <= -22% gap', () => {
+  // 140M/sqm vs 200M/sqm live median = -30% gap, clean deed/elevator/parking
+  const parsed = parseListingNarrativeText(
+    'سعادت آباد ۱۰۰ متری طبقه ۲ با آسانسور و پارکینگ سندی و انباری سند تک برگ شخصی قیمت کل ۱۴ میلیارد تومان',
+    'سعادت‌آباد',
+  );
+  const result = diagnoseListingDeal(parsed, 'tehran', 3, {
+    medianPerSqm: 200,
+    comparables: [],
+    insufficientSample: false,
+    provenance: buildDivarComparableProvenance('verified_live', '2026-11-12T00:00:00.000Z'),
+  });
+  assert.equal(result.bubbleGapPct, -30);
+  assert.equal(result.dealVerdict, 'SUSPICIOUS_BAIT');
+  assert.ok(result.redFlags.some((r) => r.id === 'rf_bait_price'));
+});
+

@@ -3,7 +3,7 @@ import {
   User, Heart, Shield, LogIn, LogOut,
   MapPin, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Scale, Download, Trash2
 } from 'lucide-react';
-import type { User as FirebaseUser } from 'firebase/auth';
+import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, toPersianNum } from '../../data/neighborhoods';
 import { type CityId, MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../../data/multiCityData';
@@ -84,6 +84,14 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
       if (res.ok) {
         const keys: readonly string[] = Array.isArray(data?.clearClientLocalStorageKeys) ? data.clearClientLocalStorageKeys : CLIENT_STORAGE_KEYS_FALLBACK;
         try { keys.forEach((k) => window.localStorage.removeItem(k)); } catch { /* ignore */ }
+        if (data?.requiresClientAuthDeletion && p.currentUser) {
+          try { await deleteUser(p.currentUser); } catch (authErr: unknown) {
+            const errCode = (authErr as { code?: string })?.code || '';
+            setConfirmDeleteOpen(false);
+            setPrivacyNotice(errCode === 'auth/requires-recent-login' ? 'داده‌های سرور پاکسازی شدند، اما برای حذف نهایی حساب فایربیس/گوگل به‌دلیل قدیمی‌بودن نشست فعلی، لطفاً یک‌بار خارج شده و دوباره وارد شوید و سپس دکمه حذف را بزنید.' : 'داده‌های سرور پاکسازی شدند، اما حذف خودکار حساب احراز هویت در مرورگر کامل نشد. لطفاً پس از ورود مجدد دوباره امتحان کنید.');
+            return;
+          }
+        }
         setConfirmDeleteOpen(false); p.onSignOut();
       } else { setPrivacyNotice(data?.message || 'حذف حساب کاربری انجام نشد.'); }
     } catch { setPrivacyNotice('خطا در اجرای درخواست حذف حساب کاربری.'); } finally { setBusyAction(null); }
@@ -246,9 +254,9 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
 
                   <div className="py-3 my-3 border-y border-slate-100 dark:border-slate-800 grid grid-cols-2 text-xs tabular-nums">
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">اعلامی / سناریو v6.4 (غیرثبتی):</span>
+                      <span className="text-[10px] text-slate-400 block font-medium">{unitBuy === unitDeal ? 'سناریو v6.4 (غیرثبتی):' : 'اعلامی / سناریو v6.4 (غیرثبتی):'}</span>
                       <strong className="text-slate-900 dark:text-white font-black text-sm">
-                        {toPersianNum(unitBuy)} <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span> م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}
+                        {toPersianNum(unitBuy)} {unitBuy !== unitDeal && <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span>} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}
                       </strong>
                     </div>
                     <div className="border-r border-slate-100 dark:border-slate-800 pr-3">

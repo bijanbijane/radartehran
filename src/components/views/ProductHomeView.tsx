@@ -35,7 +35,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
   const featuredHoods = useMemo(() => {
     let list = p.evaluatedNeighborhoods;
-    const dealSqm = (h: EvaluatedNeighborhood) => h.buyPerSqm;
+    const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
     if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
     else if (priceBracket === '5to10b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot >= 1000 && tot <= 2000 : tot >= 5000 && tot <= 10000; });
     else if (priceBracket === '10to20b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot > 2000 && tot <= 4000 : tot > 10000 && tot <= 20000; });
@@ -86,7 +86,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             </div>
           </div>
         </div>
-        <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={p.activeCity} />
+        <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={p.activeCity} selectedHoodId={p.selectedHood?.id} />
         <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={p.activeCity || 'tehran'} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
 
         {/* 2. Unified Interactive Search & Budget Action Bar */}

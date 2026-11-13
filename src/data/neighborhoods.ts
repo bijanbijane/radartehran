@@ -117,9 +117,9 @@ export const PERSIAN_6_MONTHS = buildDynamicPersian6Months(); const HOOD_6M_GROW
     summary = `تغییرات ۶ ماهه قیمت در محله ${hood.name} (${toPersianNum(hoodGrowth6mPercent)}٪) هم‌راستا با میانگین شهر ${cityMeta.nameFa} (${toPersianNum(tehranGrowth6mPercent)}٪) حرکت کرده و نسبت قیمت به رهن (${toPersianNum(prRatio)}) در محدوده تعادلی بازار قرار دارد.`;
   }
   return { status, badgeText, hoodGrowth6mPercent, tehranGrowth6mPercent, prRatio, summary, trendData, }; }
-export function getHoodMonthlySponsorTariff(hood: Neighborhood): number { const basePrice = hood.baseBuyPerSqm ?? hood.buyPerSqm; let baseTariff = 5; if (basePrice >= 190) baseTariff = 14; else if (basePrice >= 140) baseTariff = 10; else if (basePrice >= 100) baseTariff = 7.5; if (typeof window !== 'undefined') { try { const disc = Number(localStorage.getItem('tehran_radar_campaign_discount_v1')); if (!Number.isNaN(disc) && disc > 0 && disc <= 100) { return Math.round(baseTariff * (1 - disc / 100) * 10) / 10; }
-    } catch { /* ignore */ }
-  }
+export function getHoodMonthlySponsorTariff(hood: Neighborhood, campaignDiscountPercent?: number): number { const basePrice = hood.baseBuyPerSqm ?? hood.buyPerSqm; let baseTariff = 5; if (basePrice >= 190) baseTariff = 14; else if (basePrice >= 140) baseTariff = 10; else if (basePrice >= 100) baseTariff = 7.5; let disc = typeof campaignDiscountPercent === 'number' && !Number.isNaN(campaignDiscountPercent) ? campaignDiscountPercent : 0;
+  if (campaignDiscountPercent === undefined && typeof window !== 'undefined') { try { disc = Number(localStorage.getItem('tehran_radar_campaign_discount_v1')); } catch { disc = 0; } }
+  if (!Number.isNaN(disc) && disc > 0 && disc <= 100) { return Math.round(baseTariff * (1 - disc / 100) * 10) / 10; }
   return baseTariff; }
 export const TRAFFIC_SPEC_BY_HOOD: Record<
   number, { trafficScore: number; peakHours: string; seasonalAnalysis: string; bottlenecks: string; }

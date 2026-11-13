@@ -223,7 +223,7 @@ export async function processClaimVoteAndPromotion(input: ProcessClaimVoteInput)
   let promotedToVerifiedReference = false, demotedFromVerifiedReference = false;
   const hasSupportingEvidence = Array.isArray(claim.evidenceMediaObjectIds) && claim.evidenceMediaObjectIds.length > 0;
   const hasEstablishedVoter = Object.values(claim.votesByUid).some((v) => v.direction === 'UP' && !v.shadowBannedAtVote && v.voterTrustWeightAtVote > 1.0);
-  const meetsSybilGuard = upCount >= 3 && (hasSupportingEvidence || hasEstablishedVoter || upCount >= 4);
+  const meetsSybilGuard = upCount >= 2 && (hasSupportingEvidence || hasEstablishedVoter || upCount >= 4);
 
   if (
     claim.epistemicState !== 'VERIFIED_REFERENCE' && !claim.promotedToReferenceAtIso &&
@@ -271,9 +271,13 @@ export function queryNeighborhoodCrowdClaims(hoodId: number, streetNameFilter?: 
   }
   verifiedReferenceClaims.sort((a, b) => b.weightedConsensusScore - a.weightedConsensusScore);
   communityStageClaims.sort((a, b) => b.createdAtIso.localeCompare(a.createdAtIso));
+  const verifiedPrices = verifiedReferenceClaims.map((c) => c.estimatedPriceSqm).filter((p): p is number => typeof p === 'number' && Number.isFinite(p) && p > 0).sort((a, b) => a - b);
+  const mid = Math.floor(verifiedPrices.length / 2);
+  const crowdVerifiedDealMedianPerSqm = verifiedPrices.length === 0 ? null : verifiedPrices.length % 2 === 1 ? verifiedPrices[mid] : Number(((verifiedPrices[mid - 1] + verifiedPrices[mid]) / 2).toFixed(2));
   return {
     hoodId, streetNameFilterNormalized: normalizedFilter, verifiedReferenceClaims, communityStageClaims, disputedClaims,
     totalMatchedCount: verifiedReferenceClaims.length + communityStageClaims.length + disputedClaims.length,
+    crowdVerifiedDealMedianPerSqm, crowdPriceObservationCount: verifiedPrices.length,
   };
 }
 

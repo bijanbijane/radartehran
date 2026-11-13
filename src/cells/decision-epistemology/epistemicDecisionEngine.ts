@@ -66,26 +66,31 @@ export function computeConfidenceScoreDecomposition(input: {
   validSampleCount: number; rejectedFraudCount: number; askingPricePerSqm: number;
   iqrLowPerSqm: number; iqrHighPerSqm: number; recencyDays?: number;
 }): ConfidenceScoreDecomposition {
-  const validCount = Math.max(1, Math.trunc(input.validSampleCount || 1));
+  const rawValidCount = Math.max(0, Math.trunc(input.validSampleCount || 0));
   const fraudCount = Math.max(0, Math.trunc(input.rejectedFraudCount || 0));
   const median = Math.max(1, Number(input.askingPricePerSqm) || 100);
   const iqrSpreadRatio = Math.max(0.02, (input.iqrHighPerSqm - input.iqrLowPerSqm) / median);
   const recencyDays = clampNumber(input.recencyDays ?? 3, 0, 90, 3);
-
-  const sampleSufficiencyPoints = Math.min(35, Math.round(12 + Math.log2(validCount + 1) * 5.2));
+  if (rawValidCount === 0) {
+    return {
+      totalConfidencePct: 0, marginOfErrorPct: 12.5, sampleSufficiencyPoints: 0, maxSampleSufficiencyPoints: 35,
+      iqrConsistencyPoints: 0, maxIqrConsistencyPoints: 30, fraudFilterPoints: fraudCount > 0 ? 12 : 0, maxFraudFilterPoints: 20,
+      temporalFreshnessPoints: 0, maxTemporalFreshnessPoints: 14,
+      formulaText: 'C = S_sample(35) + S_iqr(30) + S_filter(20) + S_freshness(14)',
+      statisticalMeaningFa: 'هنوز آگهی زنده دیوار در حافظه مدل برای این محله ثبت نشده است؛ اتکا به نرخ پایه کارشناسی با حاشیه عدم‌قطعیت ±۱۲٫۵٪ است.',
+      epistemicWarningFa: 'خروجی مدل جایگزین کارشناسی حضوری، بررسی سند ثبتی و رؤیت فیزیکی بنا نیست.',
+    };
+  }
+  const sampleSufficiencyPoints = Math.min(35, Math.round(12 + Math.log2(rawValidCount + 1) * 5.2));
   const iqrConsistencyPoints = Math.round(clampNumber(30 * (1 - Math.min(0.45, iqrSpreadRatio) / 0.55), 10, 30, 24));
-  const totalObserved = validCount + fraudCount;
+  const totalObserved = rawValidCount + fraudCount;
   const noiseRatio = totalObserved > 0 ? fraudCount / totalObserved : 0;
   const fraudFilterPoints = Math.round(clampNumber(20 * (1 - noiseRatio * 0.65), 8, 20, 17));
   const temporalFreshnessPoints = Math.round(clampNumber(14 * Math.pow(0.5, recencyDays / 30), 4, 14, 13));
-
   const totalConfidencePct = clampNumber(
     sampleSufficiencyPoints + iqrConsistencyPoints + fraudFilterPoints + temporalFreshnessPoints, 35, 99, 85,
   );
-  const marginOfErrorPct = Number(
-    clampNumber((iqrSpreadRatio * 50) / Math.sqrt(Math.max(1, validCount)), 1.2, 12.5, 3.5).toFixed(1),
-  );
-
+  const marginOfErrorPct = Number(clampNumber((iqrSpreadRatio * 50) / Math.sqrt(rawValidCount), 1.2, 12.5, 3.5).toFixed(1));
   return {
     totalConfidencePct, marginOfErrorPct, sampleSufficiencyPoints, maxSampleSufficiencyPoints: 35,
     iqrConsistencyPoints, maxIqrConsistencyPoints: 30, fraudFilterPoints, maxFraudFilterPoints: 20,
@@ -169,11 +174,11 @@ export function buildNeighborhoodEpistemicDossier(input: {
     iqrLowPerSqm: rawAgg.iqrLowPerSqm > 0 ? Math.max(12, Math.round(rawAgg.iqrLowPerSqm * pScale)) : 0,
     iqrHighPerSqm: rawAgg.iqrHighPerSqm > 0 ? Math.max(18, Math.round(rawAgg.iqrHighPerSqm * pScale)) : 0,
   };
-  const resolvedValidCount = Math.max(1, agg.validSampleCount || samples.length || 1);
+  const observedCount = agg.validSampleCount;
   const resolvedIqrLow = agg.iqrLowPerSqm > 0 ? agg.iqrLowPerSqm : Math.round(agg.estimatedDealPricePerSqm * 0.94);
   const resolvedIqrHigh = agg.iqrHighPerSqm > resolvedIqrLow ? agg.iqrHighPerSqm : Math.round(agg.askingPricePerSqm * 1.05);
   const decomp = computeConfidenceScoreDecomposition({
-    validSampleCount: resolvedValidCount, rejectedFraudCount: agg.rejectedFraudCount,
+    validSampleCount: observedCount, rejectedFraudCount: agg.rejectedFraudCount,
     askingPricePerSqm: agg.askingPricePerSqm, iqrLowPerSqm: resolvedIqrLow, iqrHighPerSqm: resolvedIqrHigh, recencyDays: 2,
   });
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
@@ -184,9 +189,12 @@ export function buildNeighborhoodEpistemicDossier(input: {
     askingPricePerSqm: agg.askingPricePerSqm, estimatedDealPricePerSqm: agg.estimatedDealPricePerSqm,
     iqrLowPerSqm: resolvedIqrLow, rahn80m, marketRegime: agg.marketRegime, intlCurrency,
   });
+  const observedLayerSummaryFa = observedCount > 0
+    ? `${toPersianNum(observedCount)} نمونه پالایش‌شده در دامنه ${toPersianNum(resolvedIqrLow)} تا ${toPersianNum(resolvedIqrHigh)} م.ت/متر`
+    : `فاقد آگهی زنده دیوار در حافظه · بازه تخمینی مدل پایه: ${toPersianNum(resolvedIqrLow)} تا ${toPersianNum(resolvedIqrHigh)} م.ت/متر`;
 
   const provenanceLayers: EpistemicProvenanceLayerEntry[] = [
-    { layerId: 'OBSERVED_DATA', order: 1, titleFa: '۱. داده مشاهده‌شده (Observed Data)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${toPersianNum(resolvedValidCount)} نمونه پالایش‌شده در دامنه ${toPersianNum(resolvedIqrLow)} تا ${toPersianNum(resolvedIqrHigh)} م.ت/متر`, sourceFa: 'پایش آگهی‌های عمومی و مشاهدات بازار محله', verificationMethodFa: 'فیلتر آماری دامنه بین‌چارکی (IQR) و میانه انحراف مطلق (MAD)', confidencePct: decomp.totalConfidencePct, limitationFa: 'مبتنی بر نمونه قابل مشاهده بازار است و معاملات خصوصی غیررسانه‌ای را شامل نمی‌شود.', statusTone: 'emerald' },
+    { layerId: 'OBSERVED_DATA', order: 1, titleFa: '۱. داده مشاهده‌شده (Observed Data)', epistemicClass: observedCount > 0 ? 'EVIDENCE' : 'ASSUMPTION', currentValueSummaryFa: observedLayerSummaryFa, sourceFa: 'پایش آگهی‌های عمومی و مشاهدات بازار محله', verificationMethodFa: 'فیلتر آماری دامنه بین‌چارکی (IQR) و میانه انحراف مطلق (MAD)', confidencePct: observedCount > 0 ? decomp.totalConfidencePct : 0, limitationFa: 'مبتنی بر نمونه قابل مشاهده بازار است و معاملات خصوصی غیررسانه‌ای را شامل نمی‌شود.', statusTone: observedCount >= 3 ? 'emerald' : 'amber' },
     { layerId: 'ADVERTISER_CLAIM', order: 2, titleFa: '۲. ادعای آگهی‌دهنده (Advertiser Claim)', epistemicClass: 'HYPOTHESIS', currentValueSummaryFa: `میانه قیمت پیشنهادی (تابلو): متری ${toPersianNum(agg.askingPricePerSqm)} م.ت`, sourceFa: 'اظهار اولیه فروشندگان و مشاوران در آگهی‌ها', verificationMethodFa: 'مقایسه با توزیع هدانیک محله و تشخیص کلیدواژه‌های تبلیغاتی', confidencePct: 62, limitationFa: 'قیمت پیشنهادی دارای لنگر ذهنی (Anchoring) فروشنده است و معامله ثبت‌شده نیست.', statusTone: 'amber' },
     { layerId: 'VERIFIED_DATA', order: 3, titleFa: '۳. داده تأییدشده (Verified Data)', epistemicClass: 'FACT', currentValueSummaryFa: `مختصات جغرافیایی، مرز محله و ضوابط پایه شهری ${hoodName}`, sourceFa: 'لایه مرجع مکانی GIS و گزارش‌های دارای اجماع وزنی (VERIFIED_REFERENCE)', verificationMethodFa: 'کنترل هندسی چندضلعی محله و حد نصاب اجماع کارشناسی (≥ ۳.۰)', confidencePct: 96, limitationFa: 'وضعیت ثبتی و پایان‌کار هر پلاک باید جداگانه در دفتر اسناد رسمی استعلام شود.', statusTone: 'emerald' },
     { layerId: 'USER_PROVIDED_DATA', order: 4, titleFa: '۴. داده ارائه‌شده توسط کاربر (User-Provided)', epistemicClass: 'EVIDENCE', currentValueSummaryFa: `${toPersianNum(votesCount)} امتیاز و تجربه زیسته ساکنان درباره آرامش، پارک و زیرساخت`, sourceFa: 'مشارکت مستقیم شهروندان و ساکنان محله در رادار', verificationMethodFa: 'وزن‌دهی شهرت مشارکت‌کننده و اعتبارسنجی موقعیت مکانی (Geolocation)', confidencePct: 78, limitationFa: 'بازتاب ادراک ذهنی مشارکت‌کنندگان است و ممکن است بین کوچه‌ها متفاوت باشد.', statusTone: 'blue' },

@@ -249,7 +249,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                 onDeepWebSync={onDeepWebSync} newAdminPassword={newAdminPassword}
                 setNewAdminPassword={setNewAdminPassword} adminPassChangeMsg={adminPassChangeMsg}
                 onAdminChangePassword={onAdminChangePassword} onExtendSponsor30Days={onExtendSponsor30Days}
-                onReleaseHoodSponsor={onReleaseHoodSponsor}
+                onReleaseHoodSponsor={onReleaseHoodSponsor} isVerifiedAdmin={isVerifiedAdmin}
               />
             )}
             {onSelectMapTileStyle && mapTileStyle && (adminTab === 'security' || adminTab === 'backup') && (

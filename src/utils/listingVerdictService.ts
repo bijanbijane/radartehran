@@ -4,7 +4,7 @@
  */
 
 import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods';
-import { MULTI_CITY_CONFIGS } from '../data/multiCityData';
+import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import type { CityId } from '../types/models';
 import { compactPersianSearchKey } from './persianSearchAndPersonalWorkspace';
 import { buildDivarComparableProvenance, fetchDivarComparableListings } from './divarComparableListings';
@@ -51,16 +51,17 @@ export function buildHoodMismatchWarningFa(
   return `نام محله در متن آگهی (${detectedHoodName}) با محلهٔ انتخاب‌شده (${selectedHoodName}) هم‌خوان نیست؛ قبل از قیمت‌گذاری، محله را تصحیح کنید.`;
 }
 
-function resolveHoodId(city: string, hoodName: string): number | undefined {
+function resolveHood(city: string, hoodName: string) {
   const cfg = MULTI_CITY_CONFIGS[city as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran;
-  const hoods = cfg?.neighborhoods || INITIAL_NEIGHBORHOODS;
+  const primaryList = city === 'tehran' ? INITIAL_NEIGHBORHOODS : cfg?.neighborhoods || INITIAL_NEIGHBORHOODS;
+  const allList = [...primaryList, ...getAllMultiCityNeighborhoods()];
   const key = normalizeHoodKey(hoodName);
-  const exact = hoods.find((h) => normalizeHoodKey(h.name) === key);
-  if (exact) return exact.id;
-  return hoods.find((h) => {
+  const exact = allList.find((h) => normalizeHoodKey(h.name) === key);
+  if (exact) return exact;
+  return allList.find((h) => {
     const hk = normalizeHoodKey(h.name);
     return hk.includes(key) || key.includes(hk);
-  })?.id;
+  });
 }
 
 export async function buildListingVerdict(req: ListingVerdictRequest): Promise<ListingVerdictResult> {
@@ -68,20 +69,24 @@ export async function buildListingVerdict(req: ListingVerdictRequest): Promise<L
   if (text.length < 12) {
     return { status: 'error', code: 'INVALID_INPUT', messageFa: 'متن آگهی برای تحلیل کافی نیست.' };
   }
-  const hoodId = resolveHoodId(req.city, req.hoodName);
-  if (hoodId === undefined) {
+  const hood = resolveHood(req.city, req.hoodName);
+  if (!hood) {
     return { status: 'error', code: 'HOOD_NOT_FOUND', messageFa: 'محلهٔ انتخاب‌شده در دیتابیس رادار یافت نشد.' };
   }
-
-  const parsed = parseListingNarrativeText(text, req.hoodName);
-  const hoodMismatchWarningFa = buildHoodMismatchWarningFa(parsed.detectedHoodName, req.hoodName);
+  const resolvedCity = resolveCityIdForNeighborhood(hood.id);
+  const parsed = parseListingNarrativeText(text, hood.name);
+  const hoodMismatchWarningFa = buildHoodMismatchWarningFa(parsed.detectedHoodName, hood.name);
 
   let liveContext: Parameters<typeof diagnoseListingDeal>[3];
   try {
-    const cityId = (['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'] as const).includes(req.city as CityId)
-      ? (req.city as CityId)
+    const cityId: CityId = (['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'] as const).includes(resolvedCity)
+      ? resolvedCity
       : 'tehran';
-    const sample = await fetchDivarComparableListings(cityId, req.hoodName, { targetSqm: parsed.areaSqm });
+    const sample = await fetchDivarComparableListings(cityId, hood.name, {
+      hoodId: hood.id,
+      seedBuyPerSqm: hood.buyPerSqm,
+      targetSqm: parsed.areaSqm,
+    });
     liveContext = {
       comparables: sample.comparables,
       medianPerSqm: sample.medianPerSqm,
@@ -97,7 +102,7 @@ export async function buildListingVerdict(req: ListingVerdictRequest): Promise<L
     };
   }
 
-  const diagnosis = diagnoseListingDeal(parsed, req.city, hoodId, liveContext);
+  const diagnosis = diagnoseListingDeal(parsed, resolvedCity, hood.id, liveContext);
 
   return {
     status: 'ok',

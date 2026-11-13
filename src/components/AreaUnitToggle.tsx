@@ -42,6 +42,7 @@ export function useExperienceMode(): [RadarExperienceMode, (next: RadarExperienc
 interface AreaUnitToggleProps {
   compact?: boolean;
   showIntlControls?: boolean;
+  hideAreaUnitOnMobile?: boolean;
   className?: string;
 }
 
@@ -55,19 +56,21 @@ const LOCALE_OPTIONS: Array<{ id: RadarLocale; label: string; title: string }> =
 export const AreaUnitToggle: React.FC<AreaUnitToggleProps> = ({
   compact = false,
   showIntlControls = false,
+  hideAreaUnitOnMobile = false,
   className = '',
 }) => {
   const [unit, setUnit] = useAreaUnit();
   const [locale, setLocale] = useRadarLocale();
   const [currency, setCurrency] = useIntlCurrency();
   const referenceSampleText = formatMillionTomanAsIntlCurrency(6500, currency, locale);
+  const displayClass = className.includes('hidden') ? '' : 'inline-flex';
 
   return (
-    <div className={`inline-flex flex-wrap items-center gap-0.5 sm:gap-1 select-none ${className}`} dir="ltr">
+    <div className={`${displayClass} flex-wrap items-center gap-0.5 sm:gap-1 select-none ${className}`} dir="ltr">
       <div
         role="group"
         aria-label="تغییر واحد مساحت بین متر مربع و فوت مربع (Switch Area Unit m² / ft²)"
-        className="inline-flex items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80"
+        className={`${hideAreaUnitOnMobile ? 'sm:inline-flex max-sm:hidden' : 'inline-flex'} items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80`}
       >
         <button
           type="button"
@@ -125,12 +128,12 @@ export const AreaUnitToggle: React.FC<AreaUnitToggleProps> = ({
             title={`واحد ارز مرجع بین‌المللی (IRT / USD / EUR / AED) — ${referenceSampleText}`}
             value={currency}
             onChange={(e) => setCurrency(e.target.value as IntlCurrencyCode)}
-            className={`inline-block rounded-xl bg-slate-100/90 dark:bg-slate-800/90 ${compact ? 'px-1 sm:px-1.5 py-0.5 sm:py-1 text-[9.5px] sm:text-[10.5px] max-w-[52px] sm:max-w-none' : 'px-1.5 py-1 text-[10.5px]'} font-bold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer focus:outline-none`}
+            className={`inline-block rounded-xl bg-slate-100/90 dark:bg-slate-800/90 ${compact ? 'px-1 sm:px-1.5 py-0.5 sm:py-1 text-[9.5px] sm:text-[10.5px]' : 'px-1.5 py-1 text-[10.5px]'} font-bold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer focus:outline-none`}
           >
-            <option value="IRT">IRT (تومان)</option>
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="AED">AED (درهم)</option>
+            <option value="IRT">{compact ? 'IRT' : 'IRT (تومان)'}</option>
+            <option value="USD">{compact ? 'USD' : 'USD ($)'}</option>
+            <option value="EUR">{compact ? 'EUR' : 'EUR (€)'}</option>
+            <option value="AED">{compact ? 'AED' : 'AED (درهم)'}</option>
           </select>
         </>
       )}
@@ -145,11 +148,12 @@ interface ExperienceModeToggleProps {
 
 export const ExperienceModeToggle: React.FC<ExperienceModeToggleProps> = ({ compact = false, className = '' }) => {
   const [mode, setMode] = useExperienceMode();
+  const displayClass = className.includes('hidden') ? '' : 'inline-flex';
   return (
     <div
       role="group"
       aria-label="حالت تجربه کاربری Simple یا Pro"
-      className={`inline-flex items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80 select-none ${className}`}
+      className={`${displayClass} items-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 p-0.5 border border-slate-200/80 dark:border-slate-700/80 select-none ${className}`}
       dir="ltr"
     >
       <button

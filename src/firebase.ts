@@ -2,7 +2,7 @@
  * @fileoverview Layer 1 & Layer 4: Firebase SDK Initialization, Long-Polling Resilience, * Connection Health Verification, and Structured Firestore Security Error Handler.
  */
 import { initializeApp, FirebaseApp } from 'firebase/app'; import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth'; import { getFirestore, initializeFirestore, setLogLevel, doc, getDocFromServer,
-  Firestore, } from 'firebase/firestore'; import firebaseConfig from '../firebase-applet-config.json'; import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security';
+  Firestore, } from 'firebase/firestore'; import firebaseConfig from '../firebase-applet-config.json'; import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security'; import { initClientAppCheckIfConfigured } from './utils/clientAppCheck';
 // Suppress noisy internal WebChannel 10s timeout logs on high-latency/proxy networks
 try { setLogLevel('silent'); } catch {
   // Ignore if setLogLevel is unavailable in test environments
@@ -11,6 +11,7 @@ try { setLogLevel('silent'); } catch {
  * Initialized Firebase App singleton configured from `firebase-applet-config.json`.
  */
 const app: FirebaseApp = initializeApp(firebaseConfig);
+initClientAppCheckIfConfigured(app);
 /**
  * Initialized Firestore database instance bound to `firebaseConfig.firestoreDatabaseId`
  * with automatic long-polling detection for restricted proxy/iframe environments.

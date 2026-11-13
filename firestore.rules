@@ -369,7 +369,7 @@ service cloud.firestore {
     // Collection: /bargains/{bargainId}
     match /bargains/{bargainId} {
       allow get: if isValidId(bargainId);
-      allow list: if existing().hoodId is number && existing().hoodId >= 1 && existing().hoodId <= 999;
+      allow list: if existing().hoodId >= 1 && existing().hoodId <= 999;
       allow create: if isVerifiedUser() &&
         isValidId(bargainId) &&
         isValidBargainSubmission(incoming()) &&
@@ -470,7 +470,7 @@ service cloud.firestore {
           !('totalPayableMillion' in incoming()) ||
           !('planMonths' in incoming()) ||
           (incoming().planMonths == 1 && incoming().totalPayableMillion == incoming().monthlyTariffMillion) ||
-          (incoming().planMonths == 3 && incoming().totalPayableMillion * 10 == incoming().monthlyTariffMillion * 24) ||
+          (incoming().planMonths == 3 && incoming().totalPayableMillion * 10 >= incoming().monthlyTariffMillion * 24 - 1 && incoming().totalPayableMillion * 10 <= incoming().monthlyTariffMillion * 24 + 1) ||
           isAdmin()
         ) &&
         incoming().createdAt == request.time;
@@ -624,7 +624,7 @@ service cloud.firestore {
     // Collection: /neighborhoodOverrides/{hoodId} (Public Read, Admin Write)
     match /neighborhoodOverrides/{hoodId} {
       allow get: if true;
-      allow list: if existing().hoodId is number && existing().hoodId >= 1 && existing().hoodId <= 999;
+      allow list: if existing().hoodId >= 1 && existing().hoodId <= 999;
       allow create, update: if isAdmin() && isValidNeighborhoodOverride(hoodId);
       allow delete: if isAdmin() && hoodId.matches('^(hood_)?([1-9][0-9]{0,2})$');
     }

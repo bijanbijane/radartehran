@@ -159,10 +159,8 @@ export function OnboardingWizardModal({
                       <input type="number" aria-label={isEn ? 'Cash budget' : 'بودجه نقدی خرید'} min={500} max={150000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(clampNumber(Number(e.target.value), 500, 150000, 10500))} className="w-28 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {[5000, 10000, 20000].map((preset) => (
-                        <button key={preset} type="button" onClick={() => setBuyTotalBudget(preset)} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
-                          {toPersianNum(preset / 1000)}B {showIntl && `(${formatMillionTomanAsIntlCurrency(preset, currency, locale)})`}
-                        </button>
+                      {[2500, 3500, 5000, 10000, 20000].map((preset) => (
+                        <button key={preset} type="button" onClick={() => setBuyTotalBudget(preset)} className={`text-[10px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition ${buyTotalBudget === preset ? 'bg-emerald-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'}`}>{preset >= 1000 ? `${toPersianNum(preset / 1000)}B` : `${toPersianNum(preset)}M`} {showIntl && `(${formatMillionTomanAsIntlCurrency(preset, currency, locale)})`}</button>
                       ))}
                     </div>
                     <input type="range" aria-label={isEn ? 'Cash budget slider' : 'اسلایدر بودجه نقدی خرید'} min={500} max={150000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
@@ -249,9 +247,7 @@ export function OnboardingWizardModal({
                               </span>
                             </div>
                           </div>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                            {mode === 'buy' ? `متری ${toPersianNum(uBuy)} م (سناریو v6.4 (غیرثبتی): ${toPersianNum(uDeal)} م)${showIntl ? ` (${formatMillionTomanAsIntlCurrency(uBuy, currency, locale)})` : ''}` : `رهن: ${toPersianNum(effectiveRahn)} م`}
-                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{mode === 'buy' ? `متری ${toPersianNum(uBuy)} م (معامله v6.4: ${toPersianNum(uDeal)} م)${showIntl ? ` (${formatMillionTomanAsIntlCurrency(uBuy, currency, locale)})` : ''}` : `رهن: ${toPersianNum(effectiveRahn)} م`}</span>
                           <span className="text-[10px] text-slate-600 dark:text-slate-300 line-clamp-1">{explain.tradeOffSummaryFa}</span>
                         </button>
                       );

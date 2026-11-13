@@ -34,7 +34,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
   const filtered = useMemo(() => {
     let list = filterRankingByViewport ? inViewportHoods : p.evaluatedNeighborhoods;
     if (statusFilter !== 'all') list = list.filter((h) => h.status === statusFilter);
-    const dealSqm = (h: EvaluatedNeighborhood) => h.buyPerSqm;
+    const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
     if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
     else if (priceBracket === '5to10b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? val >= 1000 && val <= 2000 : val >= 5000 && val <= 10000; });
     else if (priceBracket === '10to20b') list = list.filter((h) => { const val = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? val > 2000 && val <= 4000 : val > 10000 && val <= 20000; });

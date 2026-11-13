@@ -54,6 +54,7 @@ export interface CasperNeighborhoodDecisionInput {
   overallScore?: number;     // 0..10
   transitScore?: number;     // 0..10
   safetyScore?: number;      // 0..10
+  liquidityScore?: number;   // 1..10 intrinsic market liquidity score
   rahn80m?: number;          // Million Toman for 80m²
   targetSqm?: number;
   intlCurrency?: IntlCurrencyCode;
@@ -104,11 +105,12 @@ export function evaluateCasperNeighborhoodDecision(
 ): CasperDecisionEvaluation {
   const ask = Math.max(1, input.askingPricePerSqm);
   const deal = Math.max(1, input.estimatedDealPricePerSqm);
-  const iqrLow = Math.max(1, Math.min(input.iqrLowPerSqm, deal));
-  const iqrHigh = Math.max(deal, input.iqrHighPerSqm);
   const samples = Math.max(0, Math.round(input.validSampleCount));
+  const hasObservedIqr = samples > 0 && input.iqrLowPerSqm > 0 && input.iqrHighPerSqm > 0;
+  const iqrLow = hasObservedIqr ? Math.max(1, Math.min(input.iqrLowPerSqm, deal)) : Math.max(1, Math.round(deal * 0.94));
+  const iqrHigh = hasObservedIqr ? Math.max(deal, input.iqrHighPerSqm) : Math.max(deal + 1, Math.round(ask * 1.04));
   const rejected = Math.max(0, Math.round(input.rejectedFraudCount));
-  const confidence = clamp(Math.round(input.confidenceScore), 25, 99);
+  const confidence = samples === 0 && input.confidenceScore <= 0 ? 0 : clamp(Math.round(input.confidenceScore), 0, 99);
   const areaSqm = clamp(Math.round(input.targetSqm ?? 80), 35, 500);
   const currency = input.intlCurrency ?? 'USD';
 
@@ -131,9 +133,9 @@ export function evaluateCasperNeighborhoodDecision(
       id: 'observed',
       titleFa: '۱. داده مشاهده‌شده (پالایش آماری IQR)',
       status: samples >= 12 ? 'VERIFIED_OBSERVATION' : 'LOW_SAMPLE_CAUTION',
-      badgeTextFa: samples >= 12 ? 'مشاهده مستقیم پالایش‌شده' : 'نمونه محدود · احتیاط آماری',
-      primaryMetricFa: `${samples} نمونه معتبر · بازه ${iqrLow} تا ${iqrHigh} م.ت`,
-      secondaryDetailFa: `حذف ${rejected} آگهی پرت/طعمه توسط فیلتر ضدتقلب`,
+      badgeTextFa: samples >= 12 ? 'مشاهده مستقیم پالایش‌شده' : samples === 0 ? 'فاقد آگهی زنده · اتکا به مدل پایه' : 'نمونه محدود · احتیاط آماری',
+      primaryMetricFa: samples === 0 ? `فاقد آگهی زنده دیوار در مدل · بازه برآوردی پایه ${iqrLow} تا ${iqrHigh} م.ت` : `${samples} نمونه معتبر · بازه ${iqrLow} تا ${iqrHigh} م.ت`,
+      secondaryDetailFa: samples === 0 ? `اتکا به نرخ پایه کالیبره‌شده محله (${deal} م.ت) تا ثبت آگهی زنده (${rejected} مورد ردشده)` : `حذف ${rejected} آگهی پرت/طعمه توسط فیلتر ضدتقلب`,
     },
     {
       id: 'claim',
@@ -200,7 +202,14 @@ export function evaluateCasperNeighborhoodDecision(
   const priceUtility = Math.round(clamp(72 + statusBonus - (anchoringPremiumPct - 6) * 1.1, 25, 98));
   const commuteUtility = Math.round(clamp(((input.transitScore ?? (input.overallScore ?? 7.0)) * 10), 30, 98));
   const environmentUtility = Math.round(clamp(baseOverall, 35, 96));
-  const liquidityUtility = Math.round(clamp(confidence * 0.65 + clamp(annualRentalYieldPct * 5.2, 15, 35), 35, 98));
+  const regimeLiquidityBonus = input.marketRegime === 'HOT' ? 16 : input.marketRegime === 'FROZEN' ? -8 : 8;
+  const tierLiquidityBase = deal <= 160 ? 56 : deal <= 350 ? 50 : deal <= 550 ? 44 : 38;
+  const intrinsicLiquidity = clamp(tierLiquidityBase + regimeLiquidityBonus + clamp(annualRentalYieldPct * 4.5, 10, 30), 35, 96);
+  const liquidityUtility = Math.round(
+    typeof input.liquidityScore === 'number' && Number.isFinite(input.liquidityScore)
+      ? clamp(input.liquidityScore * 10, 35, 98)
+      : intrinsicLiquidity,
+  );
   const safetyUtility = Math.round(clamp(((input.safetyScore ?? (input.overallScore ?? 7.2)) * 10), 35, 98));
 
   const wPrice = Math.max(0, weights.priceWeight);
@@ -220,7 +229,8 @@ export function evaluateCasperNeighborhoodDecision(
   if (priceUtility < 40) vetoReasonsFa.push('حباب قیمتی شدید یا شکاف غیرمنطقی قیمت اعلامی (امتیاز قیمت زیر حد نصاب ۴۰)');
   const nonCompensatoryVetoTriggered = vetoReasonsFa.length > 0;
 
-  const uncertaintyPenalty = Math.round(Math.max(0, (uncertaintyMarginPct - 8) * 0.6) + (input.marketStatus === 'bubble' ? 6 : 0));
+  const epistemicUncertaintyAdj = samples === 0 ? 5 : samples < 5 ? 2 : 0;
+  const uncertaintyPenalty = Math.round(Math.max(0, (uncertaintyMarginPct - 8) * 0.6) + (input.marketStatus === 'bubble' ? 6 : 0) + epistemicUncertaintyAdj);
   const rawRiskAdjusted = clamp(expectedUtilityScore - uncertaintyPenalty - vetoReasonsFa.length * 14, 15, 98);
   const riskAdjustedUtilityScore = nonCompensatoryVetoTriggered ? Math.min(58, rawRiskAdjusted) : rawRiskAdjusted;
 
