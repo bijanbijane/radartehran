@@ -11,6 +11,8 @@ import { matchesPersianSearch } from '../../utils/security';
 import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_ASKING_MEDIAN_TODAY_FA } from '../../utils/epistemicUiLabels';
 import { ListingVerdictHero } from '../listing/ListingVerdictHero';
 import { BudgetFitVerdict } from '../listing/BudgetFitVerdict';
+import { computePaginationSlice } from '../../utils/productViewRouterShellClasses';
+import { RadarPaginationBar } from '../common/RadarPaginationBar';
 
 export interface ProductHomeViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
@@ -32,8 +34,9 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const [homeQuery, setHomeQuery] = useState<string>('');
   const { comparisonArc } = useMapAdvancedOverlayState();
   const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
+  const [homePage, setHomePage] = useState<number>(1), [homePageSize, setHomePageSize] = useState<number>(6);
   const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
-  const featuredHoods = useMemo(() => {
+  const filteredFeaturedPool = useMemo(() => {
     let list = p.evaluatedNeighborhoods;
     const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
     if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
@@ -41,16 +44,18 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
     else if (priceBracket === '10to20b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot > 2000 && tot <= 4000 : tot > 10000 && tot <= 20000; });
     else if (priceBracket === 'luxury') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : dealSqm(h) * p.targetSqm > 20000);
     const q = homeQuery.trim();
-    if (!q) return list.slice(0, 6);
-    return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q)).slice(0, 8);
+    if (!q) return list;
+    return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q));
   }, [p.evaluatedNeighborhoods, dealPriceByHoodId, homeQuery, priceBracket, p.mode, p.targetSqm]);
+  const homePaginationSlice = useMemo(() => computePaginationSlice(filteredFeaturedPool, homePage, homePageSize), [filteredFeaturedPool, homePage, homePageSize]);
+  const featuredHoods = homePaginationSlice.items;
   const bargainsCount = p.evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0);
   const budgetDisplay = p.mode === 'buy'
     ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} م.ت`)
     : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : `${toPersianNum(p.totalRahnEquivalent)} م.ت رهن کامل`);
   const fxBudget = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent, intlCurrency, radarLocale)})` : '';
 
-  const topFeaturedScore = featuredHoods.length > 0 ? Math.max(...featuredHoods.map((h) => h.overallScore)) : undefined;
+  const topFeaturedScore = filteredFeaturedPool.length > 0 ? Math.max(...filteredFeaturedPool.map((h) => h.overallScore)) : undefined;
 
   const pillars = [
     { id: 'map' as const, num: isEn ? '01' : '۰۱', title: isEn ? 'Interactive GIS Map Atlas' : 'اطلس مکانی و نقشه زنده GIS', sub: isEn ? 'Layered map of metro lines, traffic zones, and live neighborhood price heatmap' : 'محور اصلی رادار: نقشه لایه‌ای معابر، مترو، طرح ترافیک و هیت‌مپ قیمت', act: () => p.onNavigateView('map'), meta: isEn ? 'Primary Spatial Canvas' : 'محور اصلی سامانه' },
@@ -65,19 +70,13 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
       <section className="space-y-5">
         <div className="space-y-2 border-b border-slate-200/80 dark:border-slate-800 pb-5">
           <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-emerald-700 dark:text-emerald-400">
-            <span>{isEn ? 'Housing Intelligence Platform' : 'سامانه تحلیلی رادار مسکن'}</span>
-            <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Verified, Transparent, Objective' : 'هوشمند، شفاف، بی‌طرف'}</span>
+            <span>{isEn ? 'Housing Intelligence Platform' : 'سامانه تحلیلی رادار مسکن'}</span><span aria-hidden="true">·</span><span>{isEn ? 'Verified, Transparent, Objective' : 'هوشمند، شفاف، بی‌طرف'}</span>
           </div>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-950 dark:text-white leading-tight">
-                {isEn ? 'Neighborhood Valuation & Livability Intelligence' : 'کالبدشکافی ارزش و کیفیت سکونت در محلات'}
-              </h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-950 dark:text-white leading-tight">{isEn ? 'Neighborhood Valuation & Livability Intelligence' : 'کالبدشکافی ارزش و کیفیت سکونت در محلات'}</h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 font-medium max-w-2xl leading-relaxed">
-                {isEn
-                  ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on statistical listing models, urban livability scores, and your budget.`
-                  : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه الگوهای آماری مظنه‌ها، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
+                {isEn ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on statistical listing models, urban livability scores, and your budget.` : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه الگوهای آماری مظنه‌ها، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
               </p>
             </div>
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/80 shrink-0 self-start md:self-end">
@@ -88,31 +87,12 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         </div>
         <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={p.activeCity} selectedHoodId={p.selectedHood?.id} />
         <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={p.activeCity || 'tehran'} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
-
-        {/* 2. Unified Interactive Search & Budget Action Bar */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-4 shadow-xs space-y-3">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             <div className="flex-1 flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700 rounded-xl px-3 py-2">
               <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                value={homeQuery}
-                onChange={(e) => setHomeQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && featuredHoods.length > 0) {
-                    p.onSelectNeighborhood(featuredHoods[0]);
-                    p.onOpenInspector?.(featuredHoods[0]);
-                  }
-                }}
-                placeholder={isEn ? 'Type neighborhood or district name to filter...' : 'جستجو و فیلتر فوری نام محله یا منطقه شهرداری...'}
-                aria-label={isEn ? 'Filter neighborhoods on homepage' : 'جستجو و فیلتر محله در صفحه اصلی'}
-                className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
-              />
-              {homeQuery && (
-                <button type="button" aria-label="پاک کردن جستجو" onClick={() => setHomeQuery('')} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+              <input type="text" value={homeQuery} onChange={(e) => { setHomeQuery(e.target.value); setHomePage(1); }} onKeyDown={(e) => { if (e.key === 'Enter' && featuredHoods.length > 0) { p.onSelectNeighborhood(featuredHoods[0]); p.onOpenInspector?.(featuredHoods[0]); } }} placeholder={isEn ? 'Type neighborhood or district name to filter...' : 'جستجو و فیلتر فوری نام محله یا منطقه شهرداری...'} aria-label={isEn ? 'Filter neighborhoods on homepage' : 'جستجو و فیلتر محله در صفحه اصلی'} className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none" />
+              {homeQuery && (<button type="button" aria-label="پاک کردن جستجو" onClick={() => { setHomeQuery(''); setHomePage(1); }} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>)}
             </div>
             <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 md:border-r border-slate-100 dark:border-slate-800 md:pr-4">
               <div className="text-start md:text-end text-xs">
@@ -160,15 +140,15 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         </div>
       </section>
 
-      {/* 4. Featured Neighborhoods — Architectural Editorial Cards */}
+      {/* 4. Featured Neighborhoods — Architectural Editorial Cards with Pagination */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">{homeQuery.trim() ? `نتایج جستجو (${toPersianNum(featuredHoods.length)})` : (isEn ? 'Featured Neighborhoods' : 'محله‌های شاخص و برگزیده')}</h2>
+            <h2 className="text-xl font-black text-slate-950 dark:text-white">{homeQuery.trim() ? `نتایج جستجو (${toPersianNum(filteredFeaturedPool.length)})` : (isEn ? 'Featured Neighborhoods' : 'محله‌های شاخص و برگزیده')}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{isEn ? 'Selecting any card centers the live map on that neighborhood' : 'کلیک روی هر کارت، نقشه زنده را روی همان محله متمرکز می‌کند'}</p>
           </div>
           <button type="button" onClick={() => p.onNavigateView('discover')} className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
-            <span>{isEn ? 'All Neighborhoods' : 'همه محله‌ها'}</span><ChevronLeft className="w-4 h-4" />
+            <span>{isEn ? 'Advanced Explorer' : 'کاشف پیشرفته محله‌ها'}</span><ChevronLeft className="w-4 h-4" />
           </button>
         </div>
         <div role="group" aria-label={isEn ? 'Price brackets' : 'بازه قیمتی خرید'} className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
@@ -179,7 +159,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             { id: '10to20b' as const, label: p.mode === 'rent' ? (isEn ? '2B – 4B Rahn' : '۲ تا ۴ م.ت') : (isEn ? '10B – 20B' : '۱۰ تا ۲۰ میلیارد') },
             { id: 'luxury' as const, label: p.mode === 'rent' ? (isEn ? 'Luxury (4B+)' : 'لوکس (۴+ م.ت)') : (isEn ? 'Luxury (20B+)' : 'لوکس (۲۰+ میلیارد)') },
           ].map((b) => (
-            <button key={b.id} type="button" onClick={() => setPriceBracket(b.id)} className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'}`}>
+            <button key={b.id} type="button" onClick={() => { setPriceBracket(b.id); setHomePage(1); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'}`}>
               {b.label}
             </button>
           ))}
@@ -187,7 +167,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         {featuredHoods.length === 0 ? (
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
             <div className="text-sm font-bold text-slate-900 dark:text-white">محله‌ای با عبارت «{homeQuery}» یافت نشد</div>
-            <button type="button" onClick={() => setHomeQuery('')} className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold cursor-pointer">نمایش محله‌های برگزیده</button>
+            <button type="button" onClick={() => { setHomeQuery(''); setPriceBracket('all'); setHomePage(1); }} className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold cursor-pointer">نمایش محله‌های برگزیده</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -195,6 +175,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
               const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
               const unitDeal = convertPricePerSqmToUnit(dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm, areaUnit);
               const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore });
+              void explain;
               const isWithinBudget = hood.status === 'green';
               const isSelected = p.selectedHood.id === hood.id;
               const isArcActive = comparisonArc.active &&
@@ -259,6 +240,14 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             })}
           </div>
         )}
+        <RadarPaginationBar
+          slice={homePaginationSlice}
+          onPageChange={setHomePage}
+          onPageSizeChange={(size) => { setHomePageSize(size); setHomePage(1); }}
+          pageSizeOptions={[6, 12, 0]}
+          isEn={isEn}
+          compact
+        />
       </section>
 
       {/* 5. Minimalist Bargain Callout */}

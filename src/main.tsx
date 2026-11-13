@@ -117,40 +117,28 @@ declare global {
   }
 }
 const KNOWN_MANUAL_CHUNKS = [
-  'vendor-firebase-firestore',
-  'vendor-firebase-auth',
-  'vendor-charts',
-  'vendor-icons',
-  'vendor-react',
-  'data-neighborhoods',
+  'vendor-firebase-firestore', 'vendor-firebase-auth', 'vendor-d3', 'vendor-charts',
+  'vendor-icons', 'vendor-react', 'data-iran-provinces', 'data-extended-insights',
+  'data-neighborhoods', 'engine-decision-cells', 'ui-modals',
 ] as const;
 function detectManualChunkGroup(urlOrMessage: string): string | null {
   const normalized = String(urlOrMessage || '');
   for (const chunkName of KNOWN_MANUAL_CHUNKS) {
-    if (normalized.includes(chunkName)) {
-      return chunkName;
-    }
+    if (normalized.includes(chunkName)) return chunkName;
   }
   if (normalized.includes('@firebase/firestore') || normalized.includes('firebase/firestore')) {
     return 'vendor-firebase-firestore';
   }
-  if (normalized.includes('firebase')) {
-    return 'vendor-firebase-auth';
+  if (normalized.includes('firebase')) return 'vendor-firebase-auth';
+  if (normalized.includes('d3-')) return 'vendor-d3';
+  if (normalized.includes('recharts')) return 'vendor-charts';
+  if (normalized.includes('lucide-react')) return 'vendor-icons';
+  if (normalized.includes('react-dom') || normalized.includes('/react')) return 'vendor-react';
+  if (normalized.includes('iranProvincesData')) return 'data-iran-provinces';
+  if (normalized.includes('tehranExtendedInsights') || normalized.includes('neighborhoodInsights')) {
+    return 'data-extended-insights';
   }
-  if (normalized.includes('recharts') || normalized.includes('d3-')) {
-    return 'vendor-charts';
-  }
-  if (normalized.includes('lucide-react')) {
-    return 'vendor-icons';
-  }
-  if (normalized.includes('react-dom') || normalized.includes('/react')) {
-    return 'vendor-react';
-  }
-  if (
-    normalized.includes('neighborhoods') ||
-    normalized.includes('multiCityData') ||
-    normalized.includes('neighborhoodInsights')
-  ) {
+  if (normalized.includes('neighborhoods') || normalized.includes('multiCityData')) {
     return 'data-neighborhoods';
   }
   return null;

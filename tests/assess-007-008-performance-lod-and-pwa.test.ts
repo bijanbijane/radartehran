@@ -28,7 +28,11 @@ import {
 } from '../src/utils/pwaOfflineSupport';
 import { getAllMultiCityNeighborhoods } from '../src/data/multiCityData';
 import { EvaluatedNeighborhood, ResidentVoteDoc } from '../src/data/neighborhoods';
-import { indexResidentVotesByHoodId } from '../src/components/useEvaluatedNeighborhoods';
+import { computePaginationSlice, buildPageNumberWindow } from '../src/utils/productViewRouterShellClasses';
+import {
+  indexResidentVotesByHoodId,
+  precomputeNeighborhoodStaticReports,
+} from '../src/components/useEvaluatedNeighborhoods';
 
 console.log('--- Starting ASSESS-007 & ASSESS-008: LOD Culling & PWA Offline Resilience Audit ---');
 
@@ -311,7 +315,8 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
 }
 
 // ============================================================================
-// 5. WS-PERF-V5-01: Critical-Path Chart/Cell De-Bloating, Bounded Leaflet Retry & O(N+V) Vote Indexing
+// 5. WS-PERF-V5-01 & WS-PERF-V5-02: Critical-Path De-Bloating, Bounded Leaflet Retry,
+//    O(N+V) Vote Indexing, Precomputed Static Reports & Chunk Diagnostic Alignment
 // ============================================================================
 {
   const drawerSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
@@ -319,6 +324,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   const leafletMapHookSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/useLeafletRadarMap.ts'), 'utf-8');
   const leafletLoaderSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/leafletLoader.ts'), 'utf-8');
   const viteConfigSrc = fs.readFileSync(path.resolve(process.cwd(), 'vite.config.ts'), 'utf-8');
+  const mainSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/main.tsx'), 'utf-8');
 
   assert.ok(
     drawerSrc.includes("const NeighborhoodMonthlyBarChart = React.lazy(() => import('./NeighborhoodMonthlyBarChart')"),
@@ -340,6 +346,35 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     viteConfigSrc.includes("return 'vendor-d3';") && viteConfigSrc.includes("return 'vendor-charts';"),
     'vite.config.ts must separate vendor-d3 from vendor-charts so thermal map scales do not preload Recharts'
   );
+  assert.ok(
+    mainSrc.includes("'vendor-d3'") && mainSrc.includes("if (normalized.includes('d3-')) return 'vendor-d3';"),
+    'src/main.tsx chunk diagnostic detector must attribute d3- modules to vendor-d3 instead of vendor-charts'
+  );
+
+  // Verify precomputeNeighborhoodStaticReports attaches marketReport, trafficInfo, and merges cloud bargains
+  const rawSeed = getAllMultiCityNeighborhoods()[0];
+  const precomputed = precomputeNeighborhoodStaticReports(
+    rawSeed,
+    {
+      [rawSeed.id]: [
+        {
+          id: 'cloud-bargain-test-1',
+          type: 'خرید' as const,
+          title: 'واحد تست ابری',
+          sqm: 85,
+          priceText: `${rawSeed.buyPerSqm * 80} میلیون`,
+          buyerProfitText: '۱۲۰ میلیون زیر قیمت',
+          street: 'خیابان اصلی',
+          discountPercent: 8,
+          updatedAtIso: '2026-11-13T10:00:00.000Z',
+        },
+      ],
+    },
+    {}
+  );
+  assert.ok(precomputed.marketReport && typeof precomputed.marketReport.prRatio === 'number', 'precomputeNeighborhoodStaticReports must pre-populate marketReport');
+  assert.ok(precomputed.trafficInfo && typeof precomputed.trafficInfo.trafficScore === 'number', 'precomputeNeighborhoodStaticReports must pre-populate trafficInfo');
+  assert.ok(precomputed.bargains?.some((b) => b.id === 'cloud-bargain-test-1'), 'precomputeNeighborhoodStaticReports must merge cloud bargains');
 
   const distIndexHtmlPath = path.resolve(process.cwd(), 'dist/index.html');
   if (fs.existsSync(distIndexHtmlPath)) {
@@ -383,7 +418,58 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     assert.deepEqual(actual, expected, `Vote ordering/content mismatch for hood ${hood.id}`);
   }
 
-  console.log('✓ 5. WS-PERF-V5-01: Critical-path bundle de-bloating, bounded Leaflet retry & O(N+V) vote indexing verified');
+  console.log('✓ 5. WS-PERF-V5-01 & WS-PERF-V5-02: Critical-path de-bloating, bounded Leaflet retry, O(N+V) vote indexing & precomputed static reports verified');
 }
 
-console.log('--- ALL ASSESS-007, ASSESS-008 & WS-PERF-V5-01 PERFORMANCE & PWA TESTS PASSED ---');
+// ============================================================================
+// 6. WS-LAYOUT-PAGINATION-SURGERY: Pagination Engine & Desktop Split-Screen Geometry
+// ============================================================================
+{
+  const items52 = Array.from({ length: 52 }, (_, i) => i + 1);
+  const page1 = computePaginationSlice(items52, 1, 12);
+  assert.equal(page1.totalPages, 5, '52 neighborhoods at 12 per page must yield 5 pages');
+  assert.equal(page1.items.length, 12, 'Page 1 must contain 12 items');
+  assert.equal(page1.startIndex, 1);
+  assert.equal(page1.endIndex, 12);
+  assert.equal(page1.hasPrev, false);
+  assert.equal(page1.hasNext, true);
+
+  const page5 = computePaginationSlice(items52, 99, 12);
+  assert.equal(page5.currentPage, 5, 'Out-of-bounds requestedPage must clamp to totalPages');
+  assert.equal(page5.items.length, 4, 'Page 5 of 52 must contain remaining 4 items');
+  assert.equal(page5.startIndex, 49);
+  assert.equal(page5.endIndex, 52);
+  assert.equal(page5.hasPrev, true);
+  assert.equal(page5.hasNext, false);
+
+  const showAll = computePaginationSlice(items52, 2, 0);
+  assert.equal(showAll.totalPages, 1, 'pageSize=0 (Show All) must return 1 page');
+  assert.equal(showAll.items.length, 52, 'pageSize=0 must return all 52 items');
+  assert.equal(showAll.currentPage, 1);
+
+  const emptySlice = computePaginationSlice([], 1, 12);
+  assert.equal(emptySlice.totalItems, 0);
+  assert.equal(emptySlice.startIndex, 0);
+  assert.equal(emptySlice.endIndex, 0);
+
+  const win = buildPageNumberWindow(5, 10, 5);
+  assert.ok(win.includes('ellipsis') && win[0] === 1 && win[win.length - 1] === 10, 'buildPageNumberWindow must include first, last, and ellipsis for large page counts');
+
+  const discoverSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/views/ProductDiscoverView.tsx'), 'utf-8');
+  const homeSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/views/ProductHomeView.tsx'), 'utf-8');
+  const bargainsSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/NeighborhoodBargainsAndVotesTabs.tsx'), 'utf-8');
+  const drawerSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
+
+  assert.ok(discoverSrc.includes('RadarPaginationBar') && discoverSrc.includes('computePaginationSlice'), 'ProductDiscoverView must paginate neighborhood cards');
+  assert.ok(homeSrc.includes('RadarPaginationBar') && homeSrc.includes('computePaginationSlice'), 'ProductHomeView must paginate featured neighborhoods');
+  assert.ok(bargainsSrc.includes('RadarPaginationBar') && bargainsSrc.includes('computePaginationSlice'), 'NeighborhoodBargainsAndVotesTabs must paginate bargains and votes');
+  assert.ok(
+    drawerSrc.includes("isOverlayOnSecondaryView ? 'lg:top-[76px] lg:left-4 lg:right-auto' : 'lg:top-[132px] lg:right-4 lg:left-auto'"),
+    'NeighborhoodInspectorDrawer must dock to left-4 on desktop when secondary views occupy the right RTL panel'
+  );
+
+  console.log('✓ 6. WS-LAYOUT-PAGINATION-SURGERY: Pagination engine, discover/home/bargains pagination & RTL split-screen docking verified');
+}
+
+console.log('--- ALL ASSESS-007, ASSESS-008, WS-PERF-V5-01, WS-PERF-V5-02 & WS-LAYOUT-PAGINATION TESTS PASSED ---');
+

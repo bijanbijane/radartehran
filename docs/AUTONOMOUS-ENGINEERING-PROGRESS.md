@@ -708,4 +708,27 @@
       - **Optimization 3 — `O(N + V)` Resident Vote Pre-Indexing (`src/components/useEvaluatedNeighborhoods.ts`)**:
         - Exported `indexResidentVotesByHoodId` and pre-indexed `cloudVotes` via `useMemo` into `Map<number, ResidentVoteDoc[]>`, replacing repeated `cloudVotes.filter((v) => v.hoodId === n.id)` scans across active-city and nationwide evaluation passes with `O(1)` bucket lookups while preserving 100% mathematical equivalence.
     - **Transitioned `WS-PERF-V5-01`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+51. **`[2026-11-13T08:43:00-08:00] GOLD_STANDARD_PERFORMANCE_ENGINEERING_PACKAGE_2_AND_SELF_DEBUGGING_COMPLETED (WS-PERF-V5-02)`**:
+    - **Workstream Executed (`WS-PERF-V5-02`: Precomputed Static Neighborhood Reports Memoization, `vendor-d3` Chunk Diagnostic Parity, and OP-217 State-Machine Self-Healing)**:
+      - **Risk Level**: `R1` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Optimization 1 — Precomputed Static Market & Traffic Reports Memoization (`src/components/useEvaluatedNeighborhoods.ts`, 279 lines `<= 290`)**:
+        - Exported `precomputeNeighborhoodStaticReports` and memoized `mergedNationwideNeighborhoods` and `activeCityNeighborhoods` over `[neighborhoods, cloudBargainsByHood, cloudSponsorsByHood]`, pre-populating `marketReport` (`getNeighborhoodMarketReport`) and `trafficInfo` (`getNeighborhoodTrafficInfo`) along with merged cloud bargains and sponsors.
+        - Eliminated redundant `getNeighborhoodMarketReport(n)` and `getNeighborhoodTrafficInfo(n)` recomputation across 258+ neighborhood evaluations on every budget slider drag, loan toggle, target area change, or work-hub selection (`n.marketReport ?? getNeighborhoodMarketReport(n)`).
+      - **Optimization 2 — Vite Manual Chunk Diagnostic Parity (`src/main.tsx`, 272 lines `<= 290`)**:
+        - Aligned `KNOWN_MANUAL_CHUNKS` and `detectManualChunkGroup` in `src/main.tsx` with `vite.config.ts` so `d3-` modules are accurately attributed to `'vendor-d3'` (instead of `'vendor-charts'`) and added `'data-iran-provinces'`, `'data-extended-insights'`, and `'engine-decision-cells'`.
+      - **Self-Healing 3 — Property Insurance State Machine & Claim Adjudication Engine (`server/modules/property-insurance/coverage/policyAndClaimStateMachineEngine.ts`, 290 lines `<= 290`)**:
+        - Restored and unified `policyAndClaimStateMachineEngine.ts` after external file deletion, preserving both `transitionPolicyState` / `adjudicatePropertyClaim` and `evaluatePolicyCoverageStatusWithLimitations` / `validateSettlementCalculations` with full waiting-period and explicit-coverage precedence.
+    - **Transitioned `WS-PERF-V5-02`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
+52. **`[2026-11-13T09:20:00-08:00] SPATIAL_LAYOUT_AND_PAGINATION_SURGERY_COMPLETED (WS-LAYOUT-PAGINATION-SURGERY)`**:
+    - **Workstream Executed (`WS-LAYOUT-PAGINATION-SURGERY`: Deterministic Pagination Engine, Accessible RTL/LTR Pagination Bar, Desktop Split-Screen RTL Collision Elimination, and Single-Tier Map Axis Consolidation)**:
+      - **Risk Level**: `R1` | **Batches Used**: `1 / 3` | **Corrective Iterations**: `0 / 2`.
+      - **Surgery 1 — Pure Pagination Engine & Accessible Pagination Bar (`src/utils/paginationEngine.ts`, `src/components/common/RadarPaginationBar.tsx`)**:
+        - Created `computePaginationSlice` and `buildPageNumberWindow` in `src/utils/paginationEngine.ts` with deterministic range calculation, out-of-bounds clamping, ellipsis page windowing, and `pageSize = 0` ("Show All") support.
+        - Created `RadarPaginationBar.tsx` with RTL/LTR chevron orientation, Persian/Latin numeral formatting, range summary (`نمایش ۱ تا ۱۲ از ۵۲ محله`), and page-size selector (`12` / `24` / `All` or `6` / `12` / `All`).
+      - **Surgery 2 — Multi-View Pagination Integration (`src/components/views/ProductDiscoverView.tsx`, `src/components/views/ProductHomeView.tsx`, `src/components/NeighborhoodBargainsAndVotesTabs.tsx`)**:
+        - Wired `computePaginationSlice` and `RadarPaginationBar` into `ProductDiscoverView.tsx` (12 per page default across grid and list modes with auto-reset on filter/sort changes), `ProductHomeView.tsx` (6 per page default on featured neighborhoods), and `NeighborhoodBargainsAndVotesTabs.tsx` (4 per page on neighborhood bargains and resident votes).
+      - **Surgery 3 — Desktop RTL Split-Screen Collision Fix & Axis Bar Consolidation (`src/components/NeighborhoodInspectorDrawer.tsx`, `src/components/views/ProductViewRouter.tsx`)**:
+        - Docked `NeighborhoodInspectorDrawer` on the left companion map zone (`lg:top-[76px] lg:left-4 lg:right-auto` with `data-desktop-dock="left-companion"`) whenever `isOverlayOnSecondaryView` is true (`primaryView !== 'map'`), eliminating the right-side collision with `ProductViewRouter` in RTL desktop mode, and restricted the backdrop overlay to `lg:hidden`.
+        - Consolidated the two-row `mapAxisBar` in `ProductViewRouter.tsx` into a single-tier responsive contextual bar to eliminate triple-header vertical bloat.
+    - **Transitioned `WS-LAYOUT-PAGINATION-SURGERY`**: `DISCOVERED → TRIAGED → READY → IN_PROGRESS → VERIFYING → VERIFIED`.
 

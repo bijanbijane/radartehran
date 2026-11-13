@@ -59,10 +59,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const mapAxisBar = (
     <div className={`${homeContentFirst ? 'hidden lg:block ' : ''}sticky top-0 z-20 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-1.5 space-y-1`}>
       <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-1.5 text-xs">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
-            {isEn ? 'Live Map Axis:' : 'محور نقشه زنده:'}
-          </span>
+        <div className="flex items-center gap-1.5 min-w-0">
           <select
             aria-label="تغییر سریع محله فعال روی نقشه"
             value={selectedHood.id}
@@ -70,13 +67,13 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
               const found = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value));
               if (found) handleSelectNeighborhood(found);
             }}
-            className="font-black text-slate-900 dark:text-white bg-slate-100/90 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[155px] sm:max-w-[210px] truncate"
+            className="font-black text-slate-900 dark:text-white bg-slate-100/90 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-emerald-600 cursor-pointer max-w-[145px] sm:max-w-[190px] truncate"
           >
             {evaluatedNeighborhoods.map((h) => (
               <option key={h.id} value={h.id}>{isEn ? `${h.name} (${h.overallScore}/10)` : `محله ${h.name} (${h.overallScore}/۱۰)`}</option>
             ))}
           </select>
-          <span className="hidden md:inline text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+          <span className="hidden xl:inline text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap">
             سناریو v6.4 (غیرثبتی): {toPersianNum(activeDealUnit)} م{activeDealFx}
           </span>
           <button
@@ -86,8 +83,45 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
           >
             {isEn ? 'Scorecard ↗' : 'کارنامه محله ↗'}
           </button>
+          <div role="group" aria-label={isEn ? 'Map lens' : 'لنز نمایش نقشه'} className="hidden md:flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg shrink-0 text-[10.5px]">
+            {[
+              { id: 'budget' as const, label: isEn ? 'Budget' : 'بودجه' },
+              { id: 'heatmap' as const, label: isEn ? 'Heatmap' : 'هیت‌مپ' },
+              { id: 'bubble' as const, label: isEn ? 'Bubble' : 'حباب' },
+              { id: 'air' as const, label: isEn ? 'Air' : 'هوا' },
+              { id: 'traffic' as const, label: isEn ? 'Traffic' : 'ترافیک' },
+            ].map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                aria-pressed={ui.mapLens === l.id}
+                onClick={() => ui.setMapLens(l.id)}
+                className={`px-1.5 py-0.5 rounded-md font-bold transition cursor-pointer whitespace-nowrap ${ui.mapLens === l.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          <div role="group" aria-label={isEn ? 'Map overlays' : 'لایه‌های روی نقشه'} className="flex items-center gap-1 shrink-0 lg:hidden text-[10.5px]">
+            <button
+              type="button"
+              aria-pressed={showMetroLines}
+              onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !showMetroLines })}
+              className={`px-1.5 py-0.5 rounded-md border font-bold transition cursor-pointer whitespace-nowrap ${showMetroLines ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+            >
+              {isEn ? '🚇 Metro' : '🚇 مترو'}
+            </button>
+            <button
+              type="button"
+              aria-pressed={showTrafficZones}
+              onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !showTrafficZones })}
+              className={`px-1.5 py-0.5 rounded-md border font-bold transition cursor-pointer whitespace-nowrap ${showTrafficZones ? 'bg-rose-600 text-white border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+            >
+              {isEn ? '🚦 Traffic' : '🚦 طرح'}
+            </button>
+          </div>
           <div role="group" aria-label={isEn ? 'Deal Mode' : 'نوع معامله'} className="hidden sm:inline-flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/70 dark:border-slate-700">
             <button
               type="button"
@@ -108,55 +142,16 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
             type="button"
             data-testid="toggle-split-map-btn"
             onClick={() => setSplitMapMode((s) => !s)}
-            className="hidden lg:flex px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold items-center gap-1 transition cursor-pointer whitespace-nowrap"
+            className="hidden lg:flex px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold items-center gap-1 transition cursor-pointer whitespace-nowrap"
           >
             <span>{splitMapMode ? (isEn ? 'Expand Panel' : 'نمای عریض پنل') : (isEn ? 'Split Map' : 'کنار نقشه زنده')}</span>
           </button>
           <button
             type="button"
             onClick={() => ui.setPrimaryView('map')}
-            className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-900 dark:bg-emerald-600 hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 transition cursor-pointer shadow-xs whitespace-nowrap"
+            className="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-emerald-600 hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 transition cursor-pointer shadow-xs whitespace-nowrap"
           >
             <span>{isEn ? 'Full Map' : 'نقشه کامل'}</span>
-          </button>
-        </div>
-      </div>
-      <div className={`max-w-6xl mx-auto items-center justify-between gap-1.5 overflow-x-auto no-scrollbar pt-0.5 text-[11px] ${homeContentFirst ? 'hidden lg:flex' : 'flex'}`}>
-        <div role="group" aria-label={isEn ? 'Map lens' : 'لنز نمایش نقشه'} className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg shrink-0">
-          {[
-            { id: 'budget' as const, label: isEn ? 'Budget Lens' : 'لنز بودجه' },
-            { id: 'heatmap' as const, label: isEn ? 'Price Heatmap' : 'هیت‌مپ قیمت' },
-            { id: 'bubble' as const, label: isEn ? 'Bubble Lens' : 'حباب قیمت' },
-            { id: 'air' as const, label: isEn ? 'Air Quality' : 'کیفیت هوا' },
-            { id: 'traffic' as const, label: isEn ? 'Traffic Score' : 'امتیاز ترافیک' },
-          ].map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              aria-pressed={ui.mapLens === l.id}
-              onClick={() => ui.setMapLens(l.id)}
-              className={`px-2 py-0.5 rounded-md font-bold transition cursor-pointer whitespace-nowrap ${ui.mapLens === l.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-        <div role="group" aria-label={isEn ? 'Map overlays' : 'لایه‌های روی نقشه'} className="flex items-center gap-1 shrink-0 lg:hidden">
-          <button
-            type="button"
-            aria-pressed={showMetroLines}
-            onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !showMetroLines })}
-            className={`px-2 py-0.5 rounded-md border font-bold transition cursor-pointer whitespace-nowrap ${showMetroLines ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-          >
-            {isEn ? '🚇 Metro Lines' : '🚇 خطوط مترو'}
-          </button>
-          <button
-            type="button"
-            aria-pressed={showTrafficZones}
-            onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !showTrafficZones })}
-            className={`px-2 py-0.5 rounded-md border font-bold transition cursor-pointer whitespace-nowrap ${showTrafficZones ? 'bg-rose-600 text-white border-transparent' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
-          >
-            {isEn ? '🚦 Traffic Zone' : '🚦 طرح ترافیک'}
           </button>
         </div>
       </div>

@@ -102,11 +102,19 @@ export function explainNeighborhoodRecommendation(
 const EMPTY_RESIDENT_VOTES: ResidentVoteDoc[] = [];
 export function indexResidentVotesByHoodId(votes: ResidentVoteDoc[]): Map<number, ResidentVoteDoc[]> {
   const map = new Map<number, ResidentVoteDoc[]>();
-  for (const v of votes) {
-    const bucket = map.get(v.hoodId);
-    if (bucket) bucket.push(v); else map.set(v.hoodId, [v]);
-  }
+  for (const v of votes) { const b = map.get(v.hoodId); if (b) b.push(v); else map.set(v.hoodId, [v]); }
   return map;
+}
+export type PrecomputedNeighborhood = Neighborhood & Pick<EvaluatedNeighborhood, 'marketReport' | 'trafficInfo'>;
+export function precomputeNeighborhoodStaticReports(
+  base: Neighborhood,
+  cloudBargainsByHood: Record<number, BargainListing[]> = {},
+  cloudSponsorsByHood: Record<number, NeighborhoodSponsor> = {},
+): PrecomputedNeighborhood {
+  const cloudList = cloudBargainsByHood[base.id] || [];
+  const mergedBargains = cloudList.length > 0 ? [...cloudList, ...(base.bargains || []).filter((b) => !cloudList.some((cb) => cb.id === b.id))] : (base.bargains || []);
+  const merged: Neighborhood = { ...base, bargains: mergedBargains, sponsor: cloudSponsorsByHood[base.id] || base.sponsor };
+  return { ...merged, marketReport: getNeighborhoodMarketReport(merged), trafficInfo: getNeighborhoodTrafficInfo(merged) };
 }
 export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParams) {
   const {
@@ -118,18 +126,13 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
   const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale();
   const buyAgeMultiplier = explicitBuyAgeMult ?? (buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.88 : 0.76);
   const votesByHoodId = useMemo(() => indexResidentVotesByHoodId(cloudVotes), [cloudVotes]);
+  const mergedNationwideNeighborhoods = useMemo(() => neighborhoods.map((n) => precomputeNeighborhoodStaticReports(n, cloudBargainsByHood, cloudSponsorsByHood)), [neighborhoods, cloudBargainsByHood, cloudSponsorsByHood]);
   const activeCityNeighborhoods = useMemo(() => {
-    const mergeWithCloud = (base: Neighborhood) => {
-      const cloudList = cloudBargainsByHood[base.id] || [];
-      const mergedBargains = [...cloudList, ...(base.bargains || []).filter((b) => !cloudList.some((cb) => cb.id === b.id))];
-      return { ...base, bargains: mergedBargains, sponsor: cloudSponsorsByHood[base.id] || base.sponsor };
-    };
-    if (activeCity === 'tehran' && !activeCitySeedList) {
-      return neighborhoods.filter((n) => n.id < 100 || (n.id >= 500 && n.id <= 599)).map(mergeWithCloud);
-    }
+    if (activeCity === 'tehran' && !activeCitySeedList) return mergedNationwideNeighborhoods.filter((n) => n.id < 100 || (n.id >= 500 && n.id <= 599));
+    const byId = new Map<number, PrecomputedNeighborhood>(mergedNationwideNeighborhoods.map((n) => [n.id, n]));
     const seedList = activeCitySeedList || MULTI_CITY_CONFIGS[activeCity].neighborhoods;
-    return seedList.map((seed) => mergeWithCloud(neighborhoods.find((n) => n.id === seed.id) || seed));
-  }, [activeCity, activeCitySeedList, neighborhoods, cloudBargainsByHood, cloudSponsorsByHood]);
+    return seedList.map((seed) => byId.get(seed.id) ?? precomputeNeighborhoodStaticReports(seed, cloudBargainsByHood, cloudSponsorsByHood));
+  }, [activeCity, activeCitySeedList, mergedNationwideNeighborhoods, cloudBargainsByHood, cloudSponsorsByHood]);
   const cityMedianRahn80m = useMemo(() => {
     const vals = activeCityNeighborhoods.map((n) => n.rahn80m).filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
     return vals.length === 0 ? 1200 : vals[Math.floor(vals.length / 2)];
@@ -169,7 +172,7 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
   const evaluateList = useMemo(() => {
     const safeSqm = Math.max(25, Number(targetSqm) || 75); const scaleFactor = safeSqm / 80;
     const effectiveTotalBuyBudget = useLoanBooster ? buyTotalBudget + EVALUATED_RECOMMENDATION_WEIGHTS.loanBoosterBuyMillion : buyTotalBudget;
-    return (list: Neighborhood[]): EvaluatedNeighborhood[] =>
+    return (list: Array<Neighborhood & Partial<Pick<EvaluatedNeighborhood, 'marketReport' | 'trafficInfo'>>>): EvaluatedNeighborhood[] =>
       list.map((n) => {
         const hoodVotes = votesByHoodId.get(n.id) ?? EMPTY_RESIDENT_VOTES;
         let { air, powerWater, internet, metro, security, flatTerrain } = n;
@@ -199,19 +202,16 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
         const status: HousingStatus = ratio <= 1.0 ? 'green' : ratio <= 1.15 ? 'yellow' : 'red';
         const diffPercent = Math.round((ratio - 1) * 100);
         const distKm = selectedWorkHub.lat ? calcDistanceKm(n.lat, n.lng, selectedWorkHub.lat, selectedWorkHub.lng) : null;
-        const cloudList = cloudBargainsByHood[n.id] || [];
-        const mergedBargains = [...cloudList, ...(n.bargains || []).filter((b) => !cloudList.some((cb) => cb.id === b.id))];
         return {
           ...n, baseBuyPerSqm: n.buyPerSqm, buyPerSqm: effectiveBuyPerSqm,
           air, powerWater, internet, metro, security, flatTerrain, votesCount,
-          bargains: mergedBargains, sponsor: cloudSponsorsByHood[n.id] || n.sponsor,
           overallScore, status, diffPercent, distKm,
-          marketReport: getNeighborhoodMarketReport(n), trafficInfo: getNeighborhoodTrafficInfo(n),
+          marketReport: n.marketReport ?? getNeighborhoodMarketReport(n),
+          trafficInfo: n.trafficInfo ?? getNeighborhoodTrafficInfo(n),
         };
       });
   }, [
-    votesByHoodId, cloudBargainsByHood, cloudSponsorsByHood,
-    mode, totalRahnEquivalent, buyTotalBudget, useLoanBooster, selectedWorkHub,
+    votesByHoodId, mode, totalRahnEquivalent, buyTotalBudget, useLoanBooster, selectedWorkHub,
     targetSqm, buyAgeMultiplier, rentAgeMultiplier, deductTenantRahnInBuy,
   ]);
   const evaluatedNeighborhoods = useMemo<EvaluatedNeighborhood[]>(() => {
@@ -222,10 +222,10 @@ export function useEvaluatedNeighborhoods(params: UseEvaluatedNeighborhoodsParam
   }, [evaluateList, activeCityNeighborhoods]);
   const nationwideEvaluatedNeighborhoods = useMemo<EvaluatedNeighborhood[]>(() => {
     const timer = createExecutionTimer('Filter', 'evaluateNationwideNeighborhoods');
-    const res = evaluateList(neighborhoods);
+    const res = evaluateList(mergedNationwideNeighborhoods);
     timer('success');
     return res;
-  }, [evaluateList, neighborhoods]);
+  }, [evaluateList, mergedNationwideNeighborhoods]);
   const filteredNeighborhoods = useMemo(() => {
     const timer = createExecutionTimer('Filter', 'filterCityNeighborhoods');
     const q = deferredSearchQuery.trim();

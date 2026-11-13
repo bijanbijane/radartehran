@@ -1,7 +1,9 @@
-import React, { useState } from 'react'; import { Award, Bell, Bookmark, Compass, MapPin, Phone, PlusCircle, Sparkles, ThumbsUp } from 'lucide-react'; import { EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, isSponsorActive, toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { ListingMediaGallery } from './ListingMediaGallery'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
+import React, { useState, useMemo } from 'react'; import { Award, Bell, Bookmark, Compass, MapPin, Phone, PlusCircle, Sparkles, ThumbsUp } from 'lucide-react'; import { EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, isSponsorActive, toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { ListingMediaGallery } from './ListingMediaGallery'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples, computeQualityMultiplier, extractListingSpecsFromText, isLiveDivarBargainId, type PriceSourceType } from '../data/realMarketPriceAggregator';
 import { dealFairTotalLabelFa } from '../utils/epistemicUiLabels';
 import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { getCurrentJalaliYear } from '../data/hedonicPricingEngine';
+import { computePaginationSlice } from '../utils/productViewRouterShellClasses'; import { RadarPaginationBar } from './common/RadarPaginationBar';
+
 export interface NeighborhoodBargainsAndVotesTabsProps {
   activeTab: 'bargains' | 'vote'; selectedHood: EvaluatedNeighborhood; activeCity: CityId; mode: 'rent' | 'buy'; targetSqm: number; buyTotalBudget?: number;
   deposit?: number; monthlyRent?: number; featureFlags: FeatureFlags; setBargainHoodId: (id: number) => void; setAgencyModalTab: (t: 'submit_bargain' | 'reserve_sponsor') => void; setShowAgencyModal: (v: boolean) => void; setAlertHoodId: (id: number) => void;
@@ -19,6 +21,10 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
   const [anParking, setAnParking] = useState(true); const [anElevator, setAnElevator] = useState(true); const [anStorage, setAnStorage] = useState(true); const [anAskingMillion, setAnAskingMillion] = useState(0);
   const [anPriceSourceType, setAnPriceSourceType] = useState<PriceSourceType>('NONE');
   const [anSignals, setAnSignals] = useState({ hasLegalRisk: false, hasTenantLag: false, isRenovated: false, isUrbanRenewal: false });
+  const [bargainsPage, setBargainsPage] = useState(1); const [votesPage, setVotesPage] = useState(1);
+  const bargainsSlice = useMemo(() => computePaginationSlice(selectedHood?.bargains || [], bargainsPage, 4), [selectedHood?.bargains, bargainsPage]);
+  const hoodVotes = useMemo(() => cloudVotes.filter((v) => v.hoodId === selectedHood.id), [cloudVotes, selectedHood.id]);
+  const votesSlice = useMemo(() => computePaginationSlice(hoodVotes, votesPage, 4), [hoodVotes, votesPage]);
   const handlePasteAdText = (txt: string) => {
     setAdText(txt); if (!txt.trim()) return;
     const ext = extractListingSpecsFromText(txt, selectedHood.buyPerSqm);
@@ -28,6 +34,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
   if (activeTab === 'bargains') {
     const agg = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood));
     const hoodTotal80mMillions = selectedHood.buyPerSqm * 80; const estMonthlyRent80 = Math.round(selectedHood.rahn80m * 0.03);
+    void hoodTotal80mMillions; void estMonthlyRent80;
     const qMult = computeQualityMultiplier({ age: anAge ?? 5, floor: anFloor ?? 2, totalFloors: anTotalFloors ?? 5, hasParking: anParking, hasElevator: anElevator, hasStorage: anStorage, detectedSignals: anSignals, hoodBasePerSqm: agg.askingPricePerSqm });
     const fairAskTotal = Math.round(agg.askingPricePerSqm * qMult * Math.max(25, anSqm));
     const fairDealTotal = Math.round(agg.estimatedDealPricePerSqm * qMult * Math.max(25, anSqm));
@@ -120,7 +127,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
             <button type="button" onClick={() => handlePasteAdText(ab.description)} className="w-full py-1 px-2 rounded-md bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold text-[10.5px] transition cursor-pointer">ارسال به کارشناس هوشمند آگهی ↑</button>
           </div>
         ))}
-        {(selectedHood?.bargains || []).map((b) => {
+        {bargainsSlice.items.map((b) => {
             const isLiveListing = isLiveDivarBargainId(b.id);
             const discountFactor = Math.max(0.4, 1 - (Number(b.discountPercent) || 12) / 100);
             const baseBuy = selectedHood.baseBuyPerSqm ?? selectedHood.buyPerSqm;
@@ -158,6 +165,9 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
               </ViewportLazyRender>
             );
           })}
+        {bargainsSlice.totalPages > 1 && (
+          <RadarPaginationBar slice={bargainsSlice} onPageChange={setBargainsPage} itemLabelFa="فایل شکار" itemLabelEn="bargains" isEn={radarLocale === 'en'} compact />
+        )}
       </div>
     );
   }
@@ -205,15 +215,18 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
           <div className={`p-2.5 rounded-xl border leading-relaxed ${voteStatus.type === 'warning' ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300' : voteStatus.type === 'info' ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300' : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'}`}>{voteStatus.text}</div>
         )}
       </div>
-      {cloudVotes.filter((v) => v.hoodId === selectedHood.id).length > 0 && (
+      {hoodVotes.length > 0 && (
         <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 rounded-2xl p-3.5 space-y-2">
-          <div className="font-bold text-slate-800 dark:text-slate-200">آخرین نظرات ساکنان {selectedHood.name} ({toPersianNum(cloudVotes.filter((v) => v.hoodId === selectedHood.id).length)})</div>
-          {cloudVotes.filter((v) => v.hoodId === selectedHood.id).slice(0, 4).map((v) => (
+          <div className="font-bold text-slate-800 dark:text-slate-200">آخرین نظرات ساکنان {selectedHood.name} ({toPersianNum(hoodVotes.length)})</div>
+          {votesSlice.items.map((v) => (
             <div key={v.id} className="border-t border-slate-200/70 dark:border-slate-700 pt-2 text-xs">
               <div className="flex items-center justify-between text-slate-500 dark:text-slate-400"><span className="font-semibold text-slate-800 dark:text-slate-200">{v.userDisplayName}</span><span>امنیت: {toPersianNum(v.security)}/۱۰</span></div>
               <p className="text-slate-600 dark:text-slate-400 mt-1">{v.comment}</p>
             </div>
           ))}
+          {votesSlice.totalPages > 1 && (
+            <RadarPaginationBar slice={votesSlice} onPageChange={setVotesPage} itemLabelFa="نظر ساکنان" itemLabelEn="reviews" isEn={radarLocale === 'en'} compact />
+          )}
         </div>
       )}
     </div>

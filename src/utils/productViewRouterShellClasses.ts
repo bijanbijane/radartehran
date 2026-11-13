@@ -1,4 +1,4 @@
-/** @file Panel shell Tailwind classes for ProductViewRouter split-map companion layout. OP-DEC-001: formatMillionTomanAsIntlCurrency */
+/** @file Panel shell Tailwind classes, bottom-sheet gesture state, and deterministic pagination engine. OP-DEC-001: formatMillionTomanAsIntlCurrency */
 
 const SPLIT_WIDTH =
   'w-full lg:w-[60%] xl:w-[56%] 2xl:w-[52%] lg:mt-0 lg:h-full lg:rounded-none lg:border-t-0';
@@ -74,4 +74,88 @@ export function cycleNextSnapState(currentState: BottomSheetSnapState): BottomSh
   if (currentState === 'collapsed') return 'peek';
   if (currentState === 'peek') return 'expanded';
   return 'collapsed';
+}
+
+export interface PaginationSliceResult<T> {
+  items: T[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  startIndex: number;
+  endIndex: number;
+  pageNumbers: (number | 'ellipsis')[];
+  hasPrev: boolean;
+  hasNext: boolean;
+}
+
+export function buildPageNumberWindow(
+  currentPage: number,
+  totalPages: number,
+  maxVisibleButtons: number = 5,
+): (number | 'ellipsis')[] {
+  if (totalPages <= 1) return [1];
+  if (totalPages <= maxVisibleButtons + 2) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pages: (number | 'ellipsis')[] = [1];
+  const half = Math.floor(maxVisibleButtons / 2);
+  let start = Math.max(2, currentPage - half);
+  let end = Math.min(totalPages - 1, currentPage + half);
+
+  if (currentPage <= half + 2) {
+    start = 2;
+    end = Math.min(totalPages - 1, maxVisibleButtons);
+  } else if (currentPage >= totalPages - half - 1) {
+    start = Math.max(2, totalPages - maxVisibleButtons + 1);
+    end = totalPages - 1;
+  }
+
+  if (start > 2) pages.push('ellipsis');
+  for (let p = start; p <= end; p += 1) pages.push(p);
+  if (end < totalPages - 1) pages.push('ellipsis');
+  pages.push(totalPages);
+  return pages;
+}
+
+export function computePaginationSlice<T>(
+  items: readonly T[],
+  requestedPage: number,
+  pageSize: number,
+): PaginationSliceResult<T> {
+  const totalItems = items.length;
+  const effectivePageSize = pageSize <= 0 ? Math.max(1, totalItems) : Math.max(1, Math.floor(pageSize));
+  const totalPages = totalItems === 0 ? 1 : Math.ceil(totalItems / effectivePageSize);
+  const currentPage = Math.min(Math.max(1, Math.floor(requestedPage || 1)), totalPages);
+
+  if (totalItems === 0) {
+    return {
+      items: [],
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 0,
+      pageSize: effectivePageSize,
+      startIndex: 0,
+      endIndex: 0,
+      pageNumbers: [1],
+      hasPrev: false,
+      hasNext: false,
+    };
+  }
+
+  const offset = (currentPage - 1) * effectivePageSize;
+  const sliced = items.slice(offset, offset + effectivePageSize);
+  return {
+    items: sliced,
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize: pageSize <= 0 ? 0 : effectivePageSize,
+    startIndex: offset + 1,
+    endIndex: offset + sliced.length,
+    pageNumbers: buildPageNumberWindow(currentPage, totalPages),
+    hasPrev: currentPage > 1,
+    hasNext: currentPage < totalPages,
+  };
 }
