@@ -197,13 +197,36 @@ const TOP_BAR_COPY: Record<RadarLocale, RadarTopBarCopy> = {
 };
 export function getRadarTopBarCopy(locale: RadarLocale): RadarTopBarCopy { return TOP_BAR_COPY[locale] || TOP_BAR_COPY.fa; }
 
-export type PrimaryViewId = 'home' | 'discover' | 'intelligence' | 'tools' | 'userspace' | 'map' | 'admin';
-export interface RadarGlobalNavCopy { home: string; discover: string; intelligence: string; tools: string; userspace: string; map: string; searchPlaceholder: string; admin: string; }
+export type PrimaryViewId =
+  | 'home'
+  | 'discover'
+  | 'intelligence'
+  | 'properties'
+  | 'tools'
+  | 'userspace'
+  | 'services'
+  | 'knowledge'
+  | 'contributions'
+  | 'map'
+  | 'admin'
+  | 'not_found';
+export interface RadarGlobalNavCopy {
+  home: string;
+  discover: string;
+  intelligence: string;
+  properties: string;
+  tools: string;
+  more: string;
+  userspace: string;
+  map: string;
+  searchPlaceholder: string;
+  admin: string;
+}
 const GLOBAL_NAV_COPY: Record<RadarLocale, RadarGlobalNavCopy> = {
-  fa: { home: 'خانه', discover: 'کشف محله', intelligence: 'نبض بازار', tools: 'ابزارها', userspace: 'فضای من', map: 'نقشه', searchPlaceholder: 'جست‌وجوی محله، منطقه یا شهر...', admin: 'مدیریت و پایش' },
-  en: { home: 'Home', discover: 'Explore', intelligence: 'Market', tools: 'Tools', userspace: 'My Space', map: 'Map', searchPlaceholder: 'Search neighborhood, district or city...', admin: 'Admin' },
-  ar: { home: 'الرئيسية', discover: 'الأحياء', intelligence: 'السوق', tools: 'الأدوات', userspace: 'مساحتي', map: 'الخريطة', searchPlaceholder: 'ابحث عن الحي، المنطقة أو المدينة...', admin: 'الإدارة' },
-  tr: { home: 'Ana Sayfa', discover: 'Mahalleler', intelligence: 'Piyasa', tools: 'Araçlar', userspace: 'Alanım', map: 'Harita', searchPlaceholder: 'Mahalle, bölge veya şehir ara...', admin: 'Yönetim' },
+  fa: { home: 'خانه', discover: 'محله‌ها', intelligence: 'بازار', properties: 'املاک', tools: 'ابزارها', more: 'بیشتر', userspace: 'حساب کاربری', map: 'نقشه', searchPlaceholder: 'جست‌وجوی محله، ملک یا گزارش...', admin: 'مدیریت سیستم' },
+  en: { home: 'Home', discover: 'Areas', intelligence: 'Market', properties: 'Properties', tools: 'Tools', more: 'More', userspace: 'Account', map: 'Map', searchPlaceholder: 'Search neighborhood, property or report...', admin: 'Admin' },
+  ar: { home: 'الرئيسية', discover: 'الأحياء', intelligence: 'السوق', properties: 'العقارات', tools: 'الأدوات', more: 'المزيد', userspace: 'الحساب', map: 'الخريطة', searchPlaceholder: 'ابحث عن الحي أو العقار...', admin: 'الإدارة' },
+  tr: { home: 'Ana Sayfa', discover: 'Mahalleler', intelligence: 'Piyasa', properties: 'İlanlar', tools: 'Araçlar', more: 'Daha Fazla', userspace: 'Hesabım', map: 'Harita', searchPlaceholder: 'Mahalle, konut veya rapor ara...', admin: 'Yönetim' },
 };
 export function getRadarGlobalNavCopy(locale: RadarLocale): RadarGlobalNavCopy { return GLOBAL_NAV_COPY[locale] || GLOBAL_NAV_COPY.fa; }
 

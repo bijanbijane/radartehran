@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-  User, Heart, Shield, LogIn, LogOut,
-  MapPin, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Scale, Download, Trash2
-} from 'lucide-react';
+import { User, Heart, LogIn, LogOut, MapPin, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Scale, Download, Trash2 } from 'lucide-react';
 import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, toPersianNum } from '../../data/neighborhoods';
@@ -13,23 +10,20 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { SearchHistory } from '../SearchHistory';
-import { getProductNavigationItems } from '../navigation/primaryNavigation';
-
-const CLIENT_STORAGE_KEYS_FALLBACK = [
-  'tehran_housing_radar_v35_neighborhoods', 'tehran_radar_feature_flags_v35', 'tehran_radar_visited_homes_v1',
-  'tehran_radar_favorite_hoods_v1', 'tehran_radar_recent_searches_v1', 'tehran_radar_area_unit_v1', 'tehran_radar_intl_currency_v1',
-] as const;
-
+import { AccountSubSectionsPanel } from '../navigation/AccountSubSectionsPanel';
+import type { AccountSubTabId, ModuleSubTabId, SavedMapViewItem } from '../../navigation/registry/route.types';
+const CLIENT_STORAGE_KEYS_FALLBACK = ['tehran_housing_radar_v35_neighborhoods', 'tehran_radar_feature_flags_v35', 'tehran_radar_visited_homes_v1', 'tehran_radar_favorite_hoods_v1', 'tehran_radar_recent_searches_v1', 'tehran_radar_area_unit_v1', 'tehran_radar_intl_currency_v1'] as const;
 export interface ProductUserSpaceViewProps {
-  currentUser: FirebaseUser | null; onGoogleSignIn: () => void; onSignOut: () => void; isVerifiedAdmin: boolean;
-  onOpenAdminModal: () => void; favoriteHoodIds: number[]; onToggleFavorite: (id: number) => void;
+  currentUser: FirebaseUser | null; onGoogleSignIn: () => void; onSignOut: () => void;
+  favoriteHoodIds: number[]; onToggleFavorite: (id: number) => void;
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; nationwideEvaluatedNeighborhoods?: EvaluatedNeighborhood[];
-  activeCity?: CityId; selectedHood?: EvaluatedNeighborhood;
+  activeCity?: CityId; selectedHood?: EvaluatedNeighborhood; activeSubTab?: AccountSubTabId;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; onOpenInspector: (hood: EvaluatedNeighborhood) => void;
-  onOpenShortlistMatrix?: () => void; onNavigateView?: (view: PrimaryViewId) => void;
+  onOpenShortlistMatrix?: () => void; onNavigateView?: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
   onOpenBuyerAlertModal: () => void; visitedHomesCount: number; onOpenVisitedModal: () => void;
   mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number; targetSqm: number;
   totalRahnEquivalent?: number; useLoanBooster?: boolean; onOpenBudgetFilter: () => void;
+  onRestoreSavedView?: (view: SavedMapViewItem) => void;
 }
 export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
@@ -37,7 +31,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [privacyNotice, setPrivacyNotice] = useState<string | null>(null);
   const isEn = radarLocale === 'en';
-  const adminNavigationItem = getProductNavigationItems(radarLocale).find((item) => item.group === 'administrative');
+  const currentTab: AccountSubTabId = p.activeSubTab || 'overview';
   const { comparisonArc } = useMapAdvancedOverlayState();
   const effectiveBuyBudget = p.buyTotalBudget + (p.useLoanBooster ? 1200 : 0);
   const effectiveRahnPower = p.totalRahnEquivalent ?? (p.deposit + Math.round((p.monthlyRent * 100) / 3) + (p.useLoanBooster ? 400 : 0));
@@ -98,7 +92,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-6 space-y-7 animate-fadeIn" data-testid="product-userspace-view">
+    <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-7 animate-fadeIn" data-testid="product-userspace-view">
       <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -127,7 +121,6 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             ) : (
               <button type="button" onClick={p.onGoogleSignIn} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><LogIn className="w-3.5 h-3.5" /><span>{isEn ? 'Sign in with Google' : 'ورود با حساب گوگل'}</span></button>
             )}
-            <button type="button" aria-label={adminNavigationItem?.label} onClick={() => (p.isVerifiedAdmin && p.onNavigateView ? p.onNavigateView('admin') : p.onOpenAdminModal())} className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"><Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /><span>{adminNavigationItem?.label || (isEn ? 'Admin' : 'مدیریت')}</span></button>
           </div>
         </div>
         {confirmDeleteOpen && p.currentUser && (
@@ -142,7 +135,17 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         {privacyNotice && <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{privacyNotice}</p>}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {currentTab !== 'overview' && currentTab !== 'favorites' && (
+        <AccountSubSectionsPanel
+          activeSubTab={currentTab} currentUser={p.currentUser} evaluatedNeighborhoods={p.evaluatedNeighborhoods} mode={p.mode}
+          visitedHomesCount={p.visitedHomesCount} onOpenVisitedModal={p.onOpenVisitedModal} onOpenBuyerAlertModal={p.onOpenBuyerAlertModal}
+          onOpenBudgetFilter={p.onOpenBudgetFilter} onNavigateView={p.onNavigateView} onSelectNeighborhood={p.onSelectNeighborhood}
+          onRestoreSavedView={p.onRestoreSavedView} onExportAccountData={handleExportAccountData}
+          onRequestDeleteAccount={() => setConfirmDeleteOpen(true)} busyAction={busyAction}
+        />
+      )}
+
+      {currentTab === 'overview' && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Your Active Budget:' : 'مبنای بودجه شما:'}</span>
@@ -175,21 +178,14 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             <span className="text-[11px] text-slate-400 tabular-nums">{toPersianNum(favoriteHoods.length)} محله</span>
           )}
         </div>
-      </div>
+      </div>}
 
-      <SearchHistory
-        variant="chips" title="آخرین محله‌های جست‌وجوشده" evaluatedNeighborhoods={p.evaluatedNeighborhoods} mode={p.mode}
-        onSelectNeighborhood={(_name, matched) => { if (matched) { p.onSelectNeighborhood(matched); p.onNavigateView?.('map'); } }}
-        className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
-      />
+      {currentTab === 'overview' && <SearchHistory variant="chips" title="آخرین محله‌های جست‌وجوشده" evaluatedNeighborhoods={p.evaluatedNeighborhoods} mode={p.mode} onSelectNeighborhood={(_name, matched) => { if (matched) { p.onSelectNeighborhood(matched); p.onNavigateView?.('map'); } }} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />}
 
-      <div className="space-y-4">
+      {(currentTab === 'overview' || currentTab === 'favorites') && (<div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-              <span>{isEn ? `Saved Neighborhoods (${favoriteHoods.length})` : `محله‌های نشان‌شده شما (${toPersianNum(favoriteHoods.length)})`}</span>
-            </h2>
+            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2"><Heart className="w-4 h-4 text-rose-500 fill-rose-500" /><span>{isEn ? `Saved Neighborhoods (${favoriteHoods.length})` : `محله‌های نشان‌شده شما (${toPersianNum(favoriteHoods.length)})`}</span></h2>
             {avgShortlistScore && <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">میانگین امتیاز: {toPersianNum(avgShortlistScore)}/۱۰</span>}
           </div>
           <div className="flex items-center gap-2">
@@ -283,7 +279,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             })}
           </div>
         )}
-      </div>
+      </div>)}
     </div>
   );
 }

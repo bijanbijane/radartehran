@@ -49,26 +49,37 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     expect(uncaughtErrors).toEqual([]);
   });
 
-  test('2. Keyboard accessibility (Escape dialog dismissal) and unauthenticated Admin security boundary', async ({ page }) => {
+  test('2. Keyboard accessibility (Escape dialog dismissal) and NAV-011 isolated Admin security boundary', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('input[aria-label="جست‌وجوی محله"]')).toBeVisible();
 
-    // Open Tools popover, then open Admin modal via accessible button
+    // NAV-011: Verify zero Admin links or buttons exist anywhere in public header or Tools popover
+    await expect(page.locator('header button:has-text("مدیریت")')).toHaveCount(0);
     await page.locator('button[aria-expanded]:has-text("ابزارها")').click({ force: true });
-    await page.locator('button:has-text("مدیریت")').first().click({ force: true });
-    const adminDialog = page.locator('[role="dialog"][aria-label="پنل مدیریت سایت"]');
-    await expect(adminDialog).toBeVisible();
+    await expect(page.locator('button:has-text("مدیریت")')).toHaveCount(0);
 
-    // Verify unauthenticated user is blocked from unlocking Admin panel
-    await page.locator('button:has-text("بررسی مجوز و بازگشایی پنل مدیریت")').click();
-    await expect(adminDialog).toContainText('دسترسی غیرمجاز');
-
-    // Verify Escape key dismisses modal dialog (useDialogFocus keyboard contract)
+    // Open Smart Suggest modal and verify Escape key dismisses modal dialog
+    await page.locator('button:has-text("پیشنهاد هوشمند محله")').first().click({ force: true });
+    const suggestDialog = page.locator('[role="dialog"][aria-label="پیشنهاد هوشمند محله"]');
+    await expect(suggestDialog).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(adminDialog).toBeHidden();
+    await expect(suggestDialog).toBeHidden();
+
+    // Navigate directly to isolated Admin route and verify Zero-Trust boundary
+    await page.goto('/?view=admin', { waitUntil: 'domcontentloaded' });
+    const adminPage = page.locator('[data-testid="admin-monitoring-full-page"]');
+    await expect(adminPage).toBeVisible();
+    await expect(adminPage).toContainText('احراز هویت مدیر سیستم (Firebase Admin Auth)');
+
+    await page.locator('button:has-text("بررسی مجوز و بازگشایی پنل مدیریت")').click();
+    await expect(adminPage).toContainText('دسترسی غیرمجاز');
+
+    await page.locator('button:has-text("بازگشت به محیط عمومی")').click();
+    await expect(adminPage).toBeHidden();
+    await expect(page.locator('input[aria-label="جست‌وجوی محله"]')).toBeVisible();
   });
 
-  test('3. Mobile viewport (390x844) layout integrity, bottom navigation, and inspector sheet', async ({ page }) => {
+  test('3. Mobile viewport (390x844) layout integrity, 5-tab bottom navigation, and inspector sheet', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('input[aria-label="جست‌وجوی محله"]')).toBeVisible();
@@ -80,19 +91,16 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     expect(hasHorizontalOverflow).toBe(false);
 
     const mobileNav = page.getByRole('navigation', { name: 'نوار پیمایش موبایل' });
-    await expect(mobileNav.getByRole('button')).toHaveCount(7);
-    for (const destination of ['map', 'discover', 'intelligence', 'tools', 'home', 'userspace']) {
+    await expect(mobileNav.getByRole('button')).toHaveCount(5);
+    for (const destination of ['discover', 'intelligence', 'map', 'properties']) {
       await expect(mobileNav.locator(`[data-testid="mobile-nav-${destination}"]`)).toBeVisible();
     }
     await mobileNav.getByRole('button', { name: 'بیشتر' }).click({ force: true });
     const moreSections = page.getByRole('region', { name: 'بخش‌های بیشتر' });
     await expect(moreSections).toBeVisible();
-    await moreSections.getByRole('button', { name: 'مدیریت و پایش' }).click();
-    const adminDialog = page.locator('[role="dialog"][aria-label="پنل مدیریت سایت"]');
-    await expect(adminDialog).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(adminDialog).toBeHidden();
-    await mobileNav.getByRole('button', { name: 'خانه' }).click();
+    await expect(moreSections.getByRole('button', { name: 'مدیریت و پایش' })).toHaveCount(0);
+
+    await moreSections.getByRole('button', { name: /صفحه نخست رادار/ }).click();
     await expect(page.locator('[data-testid="product-home-view"]')).toBeVisible();
     const listingHero = page.locator('[data-testid="listing-verdict-hero"]');
     await expect(listingHero).toBeVisible();

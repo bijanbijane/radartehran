@@ -9,36 +9,36 @@
  */
 @layer base {
   :root {
-    --radar-bg-primary: #f2f2f7;
-    --radar-surface: #ffffff;
-    --radar-text-primary: #1c1c1e;
-    --radar-text-muted: #6c6c70;
-    --radar-border: rgba(60, 60, 67, 0.14);
-    --radar-brand-emerald: #007aff;
+    --radar-bg-primary: var(--color-canvas);
+    --radar-surface: var(--color-surface);
+    --radar-text-primary: var(--color-text-primary);
+    --radar-text-muted: var(--color-text-muted);
+    --radar-border: var(--color-border-subtle);
+    --radar-brand-emerald: var(--color-brand-primary);
 
-    /* Apple iOS 18 / macOS Sequoia System Settings Tokens (Light Mode Default) */
-    --apple-bg-grouped: #f2f2f7;
-    --apple-bg-window: #f5f5f7;
-    --apple-surface: #ffffff;
-    --apple-surface-secondary: #f2f2f7;
-    --apple-surface-elevated: rgba(246, 246, 249, 0.86);
-    --apple-inspector-bg: rgba(242, 242, 247, 0.94);
-    --apple-fill-tertiary: rgba(118, 118, 128, 0.14);
-    --apple-fill-quaternary: rgba(116, 116, 128, 0.08);
-    --apple-separator: rgba(60, 60, 67, 0.14);
-    --apple-border: rgba(60, 60, 67, 0.18);
-    --apple-text-primary: #1c1c1e;
-    --apple-text-secondary: #3a3a3c;
-    --apple-text-tertiary: #6c6c70;
-    --apple-accent-blue: #007aff;
-    --apple-accent-blue-hover: #0062cc;
-    --apple-accent-emerald: #34c759;
-    --apple-radius-control: 9px;
-    --apple-radius-group: 12px;
-    --apple-radius-sheet: 18px;
-    --apple-shadow-toolbar: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
-    --apple-shadow-sheet: 0 20px 45px -10px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.06);
-    --apple-shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    /* Light Mode Neutral & Brand Tokens aligned with RT-UI-COLOR-001 */
+    --apple-bg-grouped: var(--color-canvas);
+    --apple-bg-window: var(--color-surface-subtle);
+    --apple-surface: var(--color-surface);
+    --apple-surface-secondary: var(--color-surface-subtle);
+    --apple-surface-elevated: rgba(255, 255, 255, 0.9);
+    --apple-inspector-bg: rgba(246, 248, 246, 0.95);
+    --apple-fill-tertiary: rgba(24, 37, 34, 0.08);
+    --apple-fill-quaternary: rgba(24, 37, 34, 0.04);
+    --apple-separator: var(--color-border-subtle);
+    --apple-border: var(--color-border-strong);
+    --apple-text-primary: var(--color-text-primary);
+    --apple-text-secondary: var(--color-text-secondary);
+    --apple-text-tertiary: var(--color-text-muted);
+    --apple-accent-blue: var(--color-brand-primary);
+    --apple-accent-blue-hover: var(--color-brand-hover);
+    --apple-accent-emerald: #176b4c;
+    --apple-radius-control: var(--radius-input);
+    --apple-radius-group: var(--radius-card);
+    --apple-radius-sheet: var(--radius-dialog);
+    --apple-shadow-toolbar: var(--shadow-elevation-2);
+    --apple-shadow-sheet: var(--shadow-elevation-3);
+    --apple-shadow-card: var(--shadow-elevation-1);
   }
 
   [data-apple-theme='dark'] {
@@ -65,7 +65,10 @@
 
   html,
   body {
-    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-primary);
+    font-weight: var(--weight-regular);
+    font-size: var(--type-body);
+    line-height: var(--leading-body);
     background-color: var(--apple-bg-grouped);
     color: var(--apple-text-primary);
     margin: 0;
@@ -77,6 +80,31 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
+}
+
+/* RT-UI-TYPE-001 Functional, Editorial & Bidirectional Typography Classes */
+.ui-label { font-size: var(--type-body-small); font-weight: var(--weight-medium); line-height: var(--leading-ui); }
+.ui-input { font-size: var(--type-body); font-weight: var(--weight-regular); line-height: var(--leading-ui); }
+.data-value { font-size: var(--type-h2); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; line-height: 1.4; }
+.map-label { font-size: var(--type-micro); font-weight: var(--weight-medium); line-height: 1.5; }
+.caption { font-size: var(--type-caption); font-weight: var(--weight-regular); line-height: var(--leading-caption); }
+.editorial-prose { max-width: var(--measure-editorial); font-size: var(--type-body); line-height: var(--leading-body); }
+.code, .bidi-ltr-isolate { direction: ltr; unicode-bidi: isolate; font-family: var(--font-mono); }
+
+/* RT-UI-SPACING-001 Semantic Geometry Primitives */
+.property-card {
+  border: var(--border-width) solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+}
+.primary-button {
+  min-height: var(--height-button-md);
+  border-radius: var(--radius-button);
+  padding-inline: var(--space-4);
+}
+.map-context-panel {
+  width: var(--map-panel-width);
+  border-radius: var(--radius-lg);
 }
 
 /* Apple Settings Reusable Surface Primitives */
@@ -181,14 +209,14 @@
 }
 
 .apple-primary-btn {
-  background: linear-gradient(180deg, #148eff 0%, var(--apple-accent-blue) 100%);
+  background-color: var(--color-brand-primary);
   color: #ffffff !important;
-  border: 0.5px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(16, 59, 56, 0.25);
+  box-shadow: 0 1px 3px rgba(16, 59, 56, 0.2);
 }
 
 .apple-primary-btn:hover {
-  background: linear-gradient(180deg, #007aff 0%, var(--apple-accent-blue-hover) 100%);
+  background-color: var(--color-brand-hover);
 }
 
 /* iOS Settings Squircle Icon Badge */
@@ -704,7 +732,7 @@ select:focus-visible,
 textarea:focus-visible,
 [role='button']:focus-visible,
 [role='tab']:focus-visible {
-  outline: 2.5px solid rgba(5, 150, 105, 0.8);
+  outline: 2.5px solid var(--color-focus);
   outline-offset: 1.5px;
 }
 

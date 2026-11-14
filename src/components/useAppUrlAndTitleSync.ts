@@ -2,72 +2,41 @@ import { useEffect } from 'react';
 import type { EvaluatedNeighborhood, Neighborhood, CityId } from '../data/neighborhoods';
 import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
-import {
-  convertPricePerSqmToUnit,
-  formatAreaUnitLabel,
-  formatMillionTomanAsIntlCurrency,
-  parseUrlIntlParams,
-  setStoredAreaUnit,
-  setStoredIntlCurrency,
-  setStoredRadarLocale,
-} from '../utils/areaUnit';
+import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, parseUrlIntlParams, setStoredAreaUnit, setStoredIntlCurrency, setStoredRadarLocale } from '../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { parseTehranPublicPath, seoForDatedCompare, seoForDatedHood } from '../data/neighborhoodListingSamples';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
+import { buildCanonicalPathForDestination, normalizePathname, resolveRouteFromLocation, sanitizePublicNavigationQuery } from '../navigation/url/navigationUrlContract';
+import type { AdminSectionId, ModuleSubTabId, RouteDestinationId } from '../navigation/registry/route.types';
+import { matchesPersianSearch } from '../utils/security';
+import { updateSeoHeadMeta } from './navigation/urlSyncHelpers';
 
 export interface UseAppUrlAndTitleSyncParams {
-  activeCity: CityId;
-  setActiveCity: (c: CityId) => void;
-  selectedHood?: EvaluatedNeighborhood;
-  selectedHoodId: number;
-  setSelectedHoodId: (id: number) => void;
-  showCompareModal: boolean;
-  setShowCompareModal: (v: boolean) => void;
-  compareId1: number;
-  setCompareId1: (id: number) => void;
-  compareId2: number;
-  setCompareId2: (id: number) => void;
-  compHood1?: EvaluatedNeighborhood;
-  compHood2?: EvaluatedNeighborhood;
-  mode: 'rent' | 'buy';
-  setMode: (m: 'rent' | 'buy') => void;
-  deposit: number;
-  setDeposit: (d: number) => void;
-  monthlyRent: number;
-  setMonthlyRent: (r: number) => void;
-  buyTotalBudget: number;
-  setBuyTotalBudget: (b: number) => void;
-  targetSqm: number;
-  setTargetSqm: (s: number) => void;
-  workHubId?: string;
-  setWorkHubId?: (id: string) => void;
-  primaryView?: string;
-  setPrimaryView?: (v: any) => void;
-  mapInstanceRef: React.MutableRefObject<any>;
-  hasUrlBudgetParams: boolean;
-  useLoanBooster?: boolean;
-  setUseLoanBooster?: (v: boolean) => void;
-  deductTenantRahnInBuy?: boolean;
-  setDeductTenantRahnInBuy?: (v: boolean) => void;
-  buildingAgeSegment?: 'new' | 'mid' | 'older';
-  setBuildingAgeSegment?: (v: 'new' | 'mid' | 'older') => void;
+  activeCity: CityId; setActiveCity: (c: CityId) => void; selectedHood?: EvaluatedNeighborhood;
+  selectedHoodId: number; setSelectedHoodId: (id: number) => void; showCompareModal: boolean; setShowCompareModal: (v: boolean) => void;
+  compareId1: number; setCompareId1: (id: number) => void; compareId2: number; setCompareId2: (id: number) => void;
+  compHood1?: EvaluatedNeighborhood; compHood2?: EvaluatedNeighborhood; mode: 'rent' | 'buy'; setMode: (m: 'rent' | 'buy') => void;
+  deposit: number; setDeposit: (d: number) => void; monthlyRent: number; setMonthlyRent: (r: number) => void;
+  buyTotalBudget: number; setBuyTotalBudget: (b: number) => void; targetSqm: number; setTargetSqm: (s: number) => void;
+  workHubId?: string; setWorkHubId?: (id: string) => void; primaryView?: string; setPrimaryView?: (v: any) => void;
+  activeSubTab?: ModuleSubTabId; setActiveSubTab?: (s: ModuleSubTabId | undefined) => void; setAdminSection?: (s: AdminSectionId) => void;
+  mapInstanceRef: React.MutableRefObject<any>; hasUrlBudgetParams: boolean;
+  useLoanBooster?: boolean; setUseLoanBooster?: (v: boolean) => void; deductTenantRahnInBuy?: boolean; setDeductTenantRahnInBuy?: (v: boolean) => void;
+  buildingAgeSegment?: 'new' | 'mid' | 'older'; setBuildingAgeSegment?: (v: 'new' | 'mid' | 'older') => void;
 }
 
 function buildAllCityHoods(): { cityId: CityId; hood: Neighborhood }[] {
-  return getAllMultiCityNeighborhoods().map((hood) => ({
-    cityId: resolveCityIdForNeighborhood(hood.id),
-    hood,
-  }));
+  return getAllMultiCityNeighborhoods().map((hood) => ({ cityId: resolveCityIdForNeighborhood(hood.id), hood }));
 }
+
+let lastTrackedRouteKey = '';
 
 export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
   const {
-    activeCity, setActiveCity, selectedHood, setSelectedHoodId,
-    showCompareModal, setShowCompareModal, setCompareId1, setCompareId2,
-    compHood1, compHood2, mode, setMode, deposit, setDeposit,
-    monthlyRent, setMonthlyRent, buyTotalBudget, setBuyTotalBudget,
-    targetSqm, setTargetSqm, workHubId, setWorkHubId, primaryView, setPrimaryView, mapInstanceRef, hasUrlBudgetParams,
-    useLoanBooster, setUseLoanBooster, deductTenantRahnInBuy, setDeductTenantRahnInBuy, buildingAgeSegment, setBuildingAgeSegment,
+    activeCity, setActiveCity, selectedHood, setSelectedHoodId, showCompareModal, setShowCompareModal, setCompareId1, setCompareId2,
+    compHood1, compHood2, mode, setMode, deposit, setDeposit, monthlyRent, setMonthlyRent, buyTotalBudget, setBuyTotalBudget,
+    targetSqm, setTargetSqm, workHubId, setWorkHubId, primaryView, setPrimaryView, activeSubTab, setActiveSubTab, setAdminSection,
+    mapInstanceRef, hasUrlBudgetParams, useLoanBooster, setUseLoanBooster, deductTenantRahnInBuy, setDeductTenantRahnInBuy, buildingAgeSegment, setBuildingAgeSegment,
   } = p;
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
@@ -75,25 +44,28 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
 
   useEffect(() => {
     const allCityHoods = buildAllCityHoods();
-
     const applyUrlParams = (flyMap: boolean) => {
+      const pathname = window.location.pathname;
       const search = window.location.search;
-      const publicPath = parseTehranPublicPath(window.location.pathname);
-      if (!search && !publicPath) {
-        if (flyMap && setPrimaryView) setPrimaryView('map');
-        return;
-      }
+      const publicPath = parseTehranPublicPath(pathname);
+      const navLoc = resolveRouteFromLocation(pathname, search);
+
       if (publicPath?.kind === 'hood') {
-        setActiveCity('tehran');
-        setSelectedHoodId(publicPath.hoodId);
+        setActiveCity('tehran'); setSelectedHoodId(publicPath.hoodId);
         if (setPrimaryView) setPrimaryView('home');
       } else if (publicPath?.kind === 'compare') {
-        setActiveCity('tehran');
-        setCompareId1(publicPath.leftId);
-        setCompareId2(publicPath.rightId);
-        setSelectedHoodId(publicPath.leftId);
-        setShowCompareModal(true);
+        setActiveCity('tehran'); setCompareId1(publicPath.leftId); setCompareId2(publicPath.rightId);
+        setSelectedHoodId(publicPath.leftId); setShowCompareModal(true);
         if (setPrimaryView) setPrimaryView('home');
+      } else {
+        if (navLoc.areaSlug) {
+          const slugNorm = navLoc.areaSlug.replace(/-/g, ' ').trim();
+          const matchedHood = allCityHoods.find((e) => String(e.hood.id) === slugNorm || matchesPersianSearch(e.hood.name, slugNorm));
+          if (matchedHood) { setActiveCity(matchedHood.cityId); setSelectedHoodId(matchedHood.hood.id); }
+        }
+        if (setPrimaryView && (normalizePathname(pathname) !== '/' || search.includes('view=') || flyMap)) setPrimaryView(navLoc.viewId);
+        if (setActiveSubTab) setActiveSubTab(navLoc.subTab);
+        if (navLoc.viewId === 'admin' && setAdminSection && navLoc.subTab) setAdminSection(navLoc.subTab as AdminSectionId);
       }
       if (!search) return;
 
@@ -103,14 +75,6 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       if (intlParams.unit) setStoredAreaUnit(intlParams.unit);
 
       const params = new URLSearchParams(search);
-      const viewParam = params.get('view')?.trim();
-      if (setPrimaryView) {
-        if (viewParam && ['map', 'discover', 'intelligence', 'tools', 'home', 'userspace'].includes(viewParam)) {
-          setPrimaryView(viewParam);
-        } else if (flyMap) {
-          setPrimaryView('map');
-        }
-      }
       const cityParam = params.get('city')?.trim().toLowerCase() as CityId | undefined;
       const compareParam = params.get('compare');
       const hoodParam = params.get('hood');
@@ -120,12 +84,9 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         const cityCfg = MULTI_CITY_CONFIGS[cityParam];
         const list = cityParam === 'tehran' ? INITIAL_NEIGHBORHOODS : cityCfg?.neighborhoods || INITIAL_NEIGHBORHOODS;
         if (list.length > 0 && !hoodParam && !compareParam) {
-          setSelectedHoodId(list[0].id);
-          setCompareId1(list[0].id);
+          setSelectedHoodId(list[0].id); setCompareId1(list[0].id);
           if (list.length > 1) setCompareId2(list[1].id);
-          if (flyMap && mapInstanceRef.current && cityCfg) {
-            mapInstanceRef.current.flyTo(cityCfg.center, cityCfg.defaultZoom, { duration: 0.6 });
-          }
+          if (flyMap && mapInstanceRef.current && cityCfg) mapInstanceRef.current.flyTo(cityCfg.center, cityCfg.defaultZoom, { duration: 0.6 });
         }
       }
 
@@ -134,14 +95,9 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         const valid1 = allCityHoods.find((item) => item.hood.id === id1);
         const valid2 = allCityHoods.find((item) => item.hood.id === id2);
         if (valid1 && valid2) {
-          setActiveCity(valid1.cityId);
-          setCompareId1(valid1.hood.id);
-          setCompareId2(valid2.hood.id);
-          setSelectedHoodId(valid1.hood.id);
-          setShowCompareModal(true);
-          if (flyMap && mapInstanceRef.current) {
-            mapInstanceRef.current.flyTo([valid1.hood.lat, valid1.hood.lng], 13, { duration: 0.6 });
-          }
+          setActiveCity(valid1.cityId); setCompareId1(valid1.hood.id); setCompareId2(valid2.hood.id);
+          setSelectedHoodId(valid1.hood.id); setShowCompareModal(true);
+          if (flyMap && mapInstanceRef.current) mapInstanceRef.current.flyTo([valid1.hood.lat, valid1.hood.lng], 13, { duration: 0.6 });
           return;
         }
       }
@@ -149,11 +105,8 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       if (hoodParam) {
         const targetEntry = allCityHoods.find((item) => item.hood.id === Number(hoodParam.trim()));
         if (targetEntry) {
-          setActiveCity(targetEntry.cityId);
-          setSelectedHoodId(targetEntry.hood.id);
-          if (flyMap && mapInstanceRef.current) {
-            mapInstanceRef.current.flyTo([targetEntry.hood.lat, targetEntry.hood.lng], 13, { duration: 0.6 });
-          }
+          setActiveCity(targetEntry.cityId); setSelectedHoodId(targetEntry.hood.id);
+          if (flyMap && mapInstanceRef.current) mapInstanceRef.current.flyTo([targetEntry.hood.lat, targetEntry.hood.lng], 13, { duration: 0.6 });
         }
       }
 
@@ -186,10 +139,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
   useEffect(() => {
     try {
       const docEl = document.documentElement;
-      if (docEl) {
-        docEl.lang = locale;
-        docEl.dir = locale === 'en' || locale === 'tr' ? 'ltr' : 'rtl';
-      }
+      if (docEl) { docEl.lang = locale; docEl.dir = locale === 'en' || locale === 'tr' ? 'ltr' : 'rtl'; }
       const activeProvinceFa = findProvinceForHood(showCompareModal ? (compHood1?.id ?? -1) : (selectedHood?.id ?? -1))?.capitalFa;
       const cityNameFa = activeProvinceFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
       const cityPrefix = activeCity !== 'tehran' ? `city=${activeCity}&` : '';
@@ -199,24 +149,17 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       const viewSuffix = primaryView && primaryView !== 'map' ? `&view=${primaryView}` : '';
       const leveragePart = `${useLoanBooster ? '&loan=1' : ''}${deductTenantRahnInBuy ? '&rahnDeduct=1' : ''}${buildingAgeSegment && buildingAgeSegment !== 'new' ? `&age=${buildingAgeSegment}` : ''}`;
       const budgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}${leveragePart}` : `${hubPart}${leveragePart}`) + intlSuffix + viewSuffix;
-      const setMetaContent = (selector: string, content: string) => {
-        const el = document.querySelector<HTMLMetaElement>(selector);
-        if (el) el.setAttribute('content', content);
+
+      const routeKey = `${primaryView || 'map'}:${activeSubTab || ''}`;
+      const isRouteChange = lastTrackedRouteKey !== '' && lastTrackedRouteKey !== routeKey;
+      lastTrackedRouteKey = routeKey;
+
+      const commitHistoryUrl = (nextUrl: string) => {
+        if (`${window.location.pathname}${window.location.search}` === nextUrl) return;
+        if (isRouteChange && typeof window.history?.pushState === 'function') window.history.pushState(null, '', nextUrl);
+        else if (typeof window.history?.replaceState === 'function') window.history.replaceState(null, '', nextUrl);
       };
-      const updateSeoHead = (title: string, desc: string, canonicalQuery: string, jsonLdObj: Record<string, unknown>) => {
-        document.title = title;
-        const canonicalHref = canonicalQuery.startsWith('/') ? `https://radartehran.ir${canonicalQuery}` : `https://radartehran.ir/${canonicalQuery}`;
-        const canonicalEl = document.getElementById('canonical-url-tag') as HTMLLinkElement | null;
-        if (canonicalEl) canonicalEl.href = canonicalHref;
-        setMetaContent('meta[name="description"]', desc);
-        setMetaContent('meta[property="og:title"]', title);
-        setMetaContent('meta[property="og:description"]', desc);
-        setMetaContent('meta[property="og:url"]', canonicalHref);
-        setMetaContent('meta[name="twitter:title"]', title);
-        setMetaContent('meta[name="twitter:description"]', desc);
-        const ldEl = document.getElementById('seo-jsonld-schema');
-        if (ldEl) ldEl.textContent = JSON.stringify(jsonLdObj);
-      };
+
       if (showCompareModal && compHood1 && compHood2) {
         const datedCompare = activeCity === 'tehran' ? seoForDatedCompare(compHood1.id, compHood2.id) : null;
         const unitP1 = convertPricePerSqmToUnit(compHood1.buyPerSqm, areaUnit);
@@ -224,7 +167,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         const title = datedCompare?.title ?? `مقایسه محله ${compHood1.name} و ${compHood2.name}${intlTag} | قیمت مسکن و کیفیت زندگی | رادار ${cityNameFa}`;
         const desc = datedCompare?.description ?? `مقایسه تحلیلی محله ${compHood1.name} (متری ${compHood1.buyPerSqm} م، رهن ${compHood1.rahn80m} م) با محله ${compHood2.name} (متری ${compHood2.buyPerSqm} م، رهن ${compHood2.rahn80m} م) در رادار ${cityNameFa}.`;
         const canonicalQuery = datedCompare?.path ?? `?${cityPrefix}compare=${compHood1.id}-${compHood2.id}`;
-        updateSeoHead(title, desc, canonicalQuery, {
+        updateSeoHeadMeta(title, desc, canonicalQuery, {
           '@context': 'https://schema.org', '@type': 'ItemList', name: title, description: desc,
           itemListElement: [
             { '@type': 'Place', position: 1, name: compHood1.name, geo: { '@type': 'GeoCoordinates', latitude: compHood1.lat, longitude: compHood1.lng } },
@@ -233,29 +176,50 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         });
         const extra = budgetSuffix.replace(/^&/, '');
         const nextUrl = datedCompare ? `${datedCompare.path}${extra ? `?${extra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
-        if (`${window.location.pathname}${window.location.search}` !== nextUrl && typeof window.history?.replaceState === 'function') {
-          window.history.replaceState(null, '', nextUrl);
-        }
+        commitHistoryUrl(nextUrl);
       } else if (selectedHood) {
         const datedHood = activeCity === 'tehran' ? seoForDatedHood(selectedHood.id) : null;
         const unitBuy = convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit);
         const intlTag = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)})` : '';
         const title = datedHood?.title ?? `قیمت مسکن، اجاره و کارنامه محله ${selectedHood.name}${intlTag} | رادار ${cityNameFa}`;
         const desc = datedHood?.description ?? `برآورد قیمت خرید آپارتمان در محله ${selectedHood.name} (${selectedHood.zone}): متری ${selectedHood.buyPerSqm} میلیون تومان | رهن کامل ۸۰ متری: ${selectedHood.rahn80m} میلیون تومان | ترافیک، هوا و مترو.`;
+        const viewId = (primaryView || 'map') as RouteDestinationId;
+
+        if (viewId === 'not_found') {
+          updateSeoHeadMeta(`صفحه یافت نشد | رادار ${cityNameFa}`, desc, window.location.pathname || '/404', { '@context': 'https://schema.org', '@type': 'WebPage', name: '404' });
+          return;
+        }
+        if (viewId === 'admin') {
+          const adminPath = buildCanonicalPathForDestination('admin', activeSubTab);
+          updateSeoHeadMeta(`محیط مدیریت سیستم | رادار ${cityNameFa}`, 'پنل عملیاتی و امنیتی رادار تهران', adminPath, { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Admin Shell' });
+          commitHistoryUrl(adminPath);
+          return;
+        }
+        if (viewId !== 'map' && !datedHood && viewId !== 'home') {
+          const canonicalPath = buildCanonicalPathForDestination(viewId, activeSubTab);
+          const sp = new URLSearchParams();
+          if (activeCity !== 'tehran') sp.set('city', activeCity);
+          sp.set('hood', String(selectedHood.id));
+          if (keepBudget) { sp.set('mode', mode); sp.set('dep', String(deposit)); sp.set('rent', String(monthlyRent)); sp.set('buy', String(buyTotalBudget)); sp.set('sqm', String(targetSqm)); }
+          if (locale !== 'fa') sp.set('lang', locale);
+          if (intlCurrency !== 'IRT') sp.set('currency', intlCurrency);
+          if (areaUnit !== 'sqm') sp.set('unit', areaUnit);
+          const safeQuery = sanitizePublicNavigationQuery(sp).toString();
+          updateSeoHeadMeta(title, desc, canonicalPath, { '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`, description: desc });
+          commitHistoryUrl(safeQuery ? `${canonicalPath}?${safeQuery}` : canonicalPath);
+          return;
+        }
+
         const canonicalQuery = datedHood?.path ?? `?${cityPrefix}hood=${selectedHood.id}`;
-        updateSeoHead(title, desc, canonicalQuery, {
+        updateSeoHeadMeta(title, desc, canonicalQuery, {
           '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`,
           description: desc, url: canonicalQuery.startsWith('/') ? `https://radartehran.ir${canonicalQuery}` : `https://radartehran.ir/${canonicalQuery}`,
           geo: { '@type': 'GeoCoordinates', latitude: selectedHood.lat, longitude: selectedHood.lng },
         });
         const extra = budgetSuffix.replace(/^&/, '');
         const nextUrl = datedHood ? `${datedHood.path}${extra ? `?${extra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
-        if (`${window.location.pathname}${window.location.search}` !== nextUrl && typeof window.history?.replaceState === 'function') {
-          window.history.replaceState(null, '', nextUrl);
-        }
+        commitHistoryUrl(nextUrl);
       }
-    } catch {
-      // Ignore History API errors in restricted iframe contexts
-    }
-  }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, areaUnit, intlCurrency, locale, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment]);
+    } catch { /* Ignore History API errors in restricted iframe contexts */ }
+  }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, activeSubTab, areaUnit, intlCurrency, locale, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment]);
 }

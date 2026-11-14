@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, Trash2, MapPin, TrendingUp, Sparkles } from 'lucide-react';
+import { Clock, Trash2, MapPin, TrendingUp, Sparkles, Building2, SlidersHorizontal } from 'lucide-react';
 import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
 import type { CityId, Neighborhood } from '../types/models';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, getAllMultiCityNeighborhoods } from '../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { SmartNaturalSearchMatchesSection } from './SmartNaturalSearchMatchesSection';
 import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
-import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../utils/areaUnit';
 import { matchesPersianSearch } from '../utils/security';
 export {
   SearchHistory, getRecentSearches, recordRecentSearch, removeRecentSearch,
@@ -48,12 +48,13 @@ export interface SearchDropdownMenuProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; mode?: 'rent' | 'buy';
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
   onSwitchCity?: (cityId: CityId, targetHoodId?: number) => void;
+  onNavigateDestination?: (view: PrimaryViewId, subTab?: any) => void;
   setMobileSheetOpen: (v: boolean) => void; setSearchQuery: (q: string) => void; setShowSearchDropdown: (v: boolean) => void;
 }
 
 export function SearchDropdownMenu({
   searchQuery, searchMatches, crossCityMatches = [], evaluatedNeighborhoods, mode = 'buy',
-  onSelectNeighborhood, onSwitchCity, setMobileSheetOpen, setSearchQuery, setShowSearchDropdown,
+  onSelectNeighborhood, onSwitchCity, onNavigateDestination, setMobileSheetOpen, setSearchQuery, setShowSearchDropdown,
 }: SearchDropdownMenuProps): React.ReactElement {
   const [areaUnit] = useAreaUnit();
   const [radarLocale] = useRadarLocale();
@@ -69,6 +70,29 @@ export function SearchDropdownMenu({
   };
   useEffect(() => { setHighlightedIndex(0); }, [searchQuery]);
   const allNationwideHoods = useMemo(() => getAllMultiCityNeighborhoods(), []);
+  const propertyDealMatches = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return [];
+    const hits: { hood: EvaluatedNeighborhood; title: string; street: string; sqm: number }[] = [];
+    for (const h of evaluatedNeighborhoods) {
+      for (const b of h.bargains || []) {
+        if ((b.title && matchesPersianSearch(b.title, q)) || (b.street && matchesPersianSearch(b.street, q)) || matchesPersianSearch(h.name, q)) {
+          hits.push({ hood: h, title: b.title || `فایل زیر قیمت ${h.name}`, street: b.street || h.zone, sqm: b.sqm || 80 });
+        }
+      }
+    }
+    return hits.slice(0, 4);
+  }, [evaluatedNeighborhoods, searchQuery]);
+  const moduleQuickMatches = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return [];
+    const candidates: { id: string; label: string; view: PrimaryViewId; subTab?: string; keywords: string }[] = [
+      { id: 'market', label: 'تحلیل بازار، حباب قیمت و مقایسه کلان', view: 'intelligence', subTab: 'overview', keywords: 'بازار قیمت حباب تحلیل روند اجاره' },
+      { id: 'tools', label: 'ابزار ارزش‌گذاری هدونیک و محاسبه وام', view: 'tools', subTab: 'valuation', keywords: 'ارزش گذاری هدونیک محاسبه وام مالیات کمیسیون' },
+      { id: 'props', label: 'جست‌وجوی املاک و فایل‌های زیر قیمت', view: 'properties', subTab: 'all', keywords: 'ملک املاک فایل آگهی خرید اجاره' },
+    ];
+    return candidates.filter((c) => matchesPersianSearch(c.keywords, q) || matchesPersianSearch(c.label, q));
+  }, [searchQuery]);
   const trendingHoods = useMemo(() => getTrendingNeighborhoods(evaluatedNeighborhoods, searchMatches), [evaluatedNeighborhoods, searchMatches]);
   const handleSelectNeighborhood = (n: EvaluatedNeighborhood) => {
     recordRecentSearch(n.name); onSelectNeighborhood(n); setMobileSheetOpen(true); setSearchQuery(''); setShowSearchDropdown(false);
@@ -159,7 +183,7 @@ export function SearchDropdownMenu({
           {searchMatches.length > 0 && (
             <div>
               <div className="px-3 py-1 flex items-center justify-between text-[11px] font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800">
-                <span>نتایج جست‌وجو (↑↓ و Enter)</span>
+                <span>۱. محدوده‌های جغرافیایی و محله‌ها (↑↓ و Enter)</span>
                 <span className="text-[10px] text-slate-400 tabular-nums">{toPersianNum(searchMatches.length)} محله</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -188,10 +212,34 @@ export function SearchDropdownMenu({
               </div>
             </div>
           )}
-          {searchMatches.length === 0 && (
-            <div className="px-3.5 py-2.5 text-center text-xs text-slate-400">
-              محله‌ای با این نام در این شهر یافت نشد.
+          {propertyDealMatches.length > 0 && (
+            <div className="border-t border-slate-200/80 dark:border-slate-800">
+              <div className="px-3 py-1 flex items-center justify-between text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/30">
+                <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /><span>۲. املاک و فایل‌های شکار زیر قیمت</span></span>
+                <span className="text-[10px] tabular-nums">{toPersianNum(propertyDealMatches.length)} مورد</span>
+              </div>
+              {propertyDealMatches.map((m, i) => (
+                <button key={`deal-${m.hood.id}-${i}`} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onSelectNeighborhood(m.hood); if (onNavigateDestination) onNavigateDestination('properties', 'all'); setSearchQuery(''); setShowSearchDropdown(false); }} className="w-full text-right px-3.5 py-2 hover:bg-emerald-50/40 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer">
+                  <span className="font-bold text-slate-800 dark:text-slate-100 truncate">{m.title} ({m.hood.name})</span>
+                  <span className="text-[10.5px] text-slate-400 shrink-0">{m.street} · {formatAreaShort(m.sqm, areaUnit)}</span>
+                </button>
+              ))}
             </div>
+          )}
+          {moduleQuickMatches.length > 0 && onNavigateDestination && (
+            <div className="border-t border-slate-200/80 dark:border-slate-800">
+              <div className="px-3 py-1 text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/30 flex items-center gap-1">
+                <SlidersHorizontal className="w-3.5 h-3.5" /><span>۳. ابزارها و بخش‌های تحلیلی</span>
+              </div>
+              {moduleQuickMatches.map((mod) => (
+                <button key={mod.id} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onNavigateDestination(mod.view, mod.subTab); setSearchQuery(''); setShowSearchDropdown(false); }} className="w-full text-right px-3.5 py-2 hover:bg-indigo-50/40 dark:hover:bg-slate-800/70 transition text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer">
+                  {mod.label} ↗
+                </button>
+              ))}
+            </div>
+          )}
+          {searchMatches.length === 0 && (
+            <div className="px-3.5 py-2.5 text-center text-xs text-slate-400">محله‌ای با این نام در این شهر یافت نشد.</div>
           )}
           {crossCityMatches.length > 0 && (
             <div className="mt-1 border-t border-slate-200/80 dark:border-slate-800">
@@ -200,57 +248,44 @@ export function SearchDropdownMenu({
                 <span className="text-[10px] text-indigo-700 dark:text-indigo-400 font-bold tabular-nums">{toPersianNum(crossCityMatches.length)} محله</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {crossCityMatches.slice(0, 30).map((n) => { const targetCityId = resolveCityIdForNeighborhood(n.id); const cityName = MULTI_CITY_CONFIGS[targetCityId]?.nameFa || targetCityId; return ( <button
-                      key={`cross-${n.id}`}
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleSelectCrossCityNeighborhood(n)}
-                      className="w-full text-right px-3.5 py-2 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 transition flex items-center justify-between text-xs cursor-pointer group"
-                    >
+                {crossCityMatches.slice(0, 30).map((n) => {
+                  const targetCityId = resolveCityIdForNeighborhood(n.id);
+                  const cityName = MULTI_CITY_CONFIGS[targetCityId]?.nameFa || targetCityId;
+                  return (
+                    <button key={`cross-${n.id}`} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectCrossCityNeighborhood(n)} className="w-full text-right px-3.5 py-2 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/30 transition flex items-center justify-between text-xs cursor-pointer group">
                       <div className="flex items-center gap-1.5 truncate">
                         <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                         <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 truncate">{n.name}</span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">({n.zone})</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 text-[9.5px] font-bold">
-                          پرواز به {cityName} </span>
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">
-                          {formatHoodPriceMetric(n)} </span>
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 text-[9.5px] font-bold">پرواز به {cityName}</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold tabular-nums text-[11px]">{formatHoodPriceMetric(n)}</span>
                       </div>
                     </button>
-                  ); })} </div>
+                  );
+                })}
+              </div>
             </div>
-          )} {trendingHoods.length > 0 && ( <div className="mt-1 border-t border-slate-200/80 dark:border-slate-800">
+          )}
+          {trendingHoods.length > 0 && (
+            <div className="mt-1 border-t border-slate-200/80 dark:border-slate-800">
               <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border-b border-amber-100/70 dark:border-amber-900/50">
-                <span className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 stroke-[2]" />
-                  <span>محله‌های پرطرفدار و ترند</span>
-                </span>
+                <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 stroke-[2]" /><span>محله‌های پرطرفدار و ترند</span></span>
                 <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">پیشنهاد سریع</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {trendingHoods.map((n, idx) => ( <button
-                    key={`trending-${n.id}`}
-                    type="button"
-                    style={{ animationDelay: `${(idx + 1) * 45}ms` }}
-                    onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectNeighborhood(n)} className="w-full text-right px-3.5 py-2 hover:bg-amber-50/50 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group ios-stagger-item"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-3 h-3 text-amber-500 group-hover:text-amber-600 transition" />
-                      <span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition">{n.name}</span>
-                      <span className="text-[10px] text-slate-400">({n.zone})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-extrabold text-[10px] tabular-nums">
-                        {toPersianNum(n.overallScore)} / ۱۰
-                      </span>
-                      <span className="text-slate-600 dark:text-slate-400 font-bold tabular-nums text-[11px]">
-                        {formatHoodPriceMetric(n)} </span>
-                    </div>
+                {trendingHoods.map((n, idx) => (
+                  <button key={`trending-${n.id}`} type="button" style={{ animationDelay: `${(idx + 1) * 45}ms` }} onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectNeighborhood(n)} className="w-full text-right px-3.5 py-2 hover:bg-amber-50/50 dark:hover:bg-slate-800/70 transition flex items-center justify-between text-xs cursor-pointer group ios-stagger-item">
+                    <div className="flex items-center gap-2"><Sparkles className="w-3 h-3 text-amber-500 group-hover:text-amber-600 transition" /><span className="font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition">{n.name}</span><span className="text-[10px] text-slate-400">({n.zone})</span></div>
+                    <div className="flex items-center gap-2"><span className="px-1.5 py-0.5 rounded-[5px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-extrabold text-[10px] tabular-nums">{toPersianNum(n.overallScore)} / ۱۰</span><span className="text-slate-600 dark:text-slate-400 font-bold tabular-nums text-[11px]">{formatHoodPriceMetric(n)}</span></div>
                   </button>
-                ))} </div>
+                ))}
+              </div>
             </div>
-          )} </div>
-      )} </div>
-  ); }
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

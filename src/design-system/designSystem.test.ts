@@ -1,0 +1,210 @@
+/** @file src/design-system/designSystem.test.ts — Fast Node unit tests for RT-UI-VIS-001, RT-UI-COLOR-001, RT-UI-TYPE-001 & RT-UI-SPACING-001 */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  CONTROLLED_GEOMETRY_TOKENS,
+  DENSITY_PROFILES,
+  RADAR_VISUAL_DIRECTION,
+  SURFACE_HIERARCHY,
+  VISUAL_DIRECTION_ACCEPTANCE_CRITERIA,
+  resolveDensityProfileForView,
+} from './visualDirection';
+import {
+  BRAND_PALETTE,
+  CARTOGRAPHIC_PALETTE,
+  COLOR_CONTRAST_CHECKS,
+  COLOR_SYSTEM_ACCEPTANCE_CRITERIA,
+  DATA_VIZ_SERIES_PALETTE,
+  NEUTRAL_PALETTE,
+  PUBLIC_PAGE_COLOR_BALANCE_RATIO,
+  SEMANTIC_PALETTE,
+  computeHexContrastRatio,
+} from './colorSystem';
+import {
+  BODY_TYPE_SCALE_PX,
+  EDITORIAL_READING_MEASURE,
+  FONT_FAMILY_CANDIDATES,
+  FONT_WEIGHT_SYSTEM,
+  LINE_HEIGHT_TOKENS,
+  MAP_TYPOGRAPHY_LEVELS_PX,
+  MODULE_TYPOGRAPHY_MATRIX,
+  TYPE_SCALE_HEADINGS,
+  TYPOGRAPHY_ACCEPTANCE_CRITERIA,
+  TYPOGRAPHY_ROLES,
+  formatTechnicalBidiToken,
+  formatUnifiedAreaFa,
+  formatUnifiedPercentFa,
+  formatUnifiedPriceTomanFa,
+  toStandardPersianDigits,
+} from './typographySystem';
+import {
+  BAR_HEIGHTS_PX,
+  BASE_SPACING_UNIT_PX,
+  BORDER_RADIUS_SCALE_PX,
+  BORDER_SYSTEM_PX,
+  BUTTON_DIMENSIONS_PX,
+  CARD_PADDING_PX,
+  CONSOLIDATED_GEOMETRY_DECISIONS,
+  ELEVATION_LEVELS,
+  GEOMETRY_PROHIBITIONS,
+  ICON_DIMENSIONS_PX,
+  INPUT_DIMENSIONS_PX,
+  MAP_EXPLORER_GEOMETRY,
+  RESPONSIVE_GEOMETRY_MATRIX,
+  SEMANTIC_RADIUS_DEFAULTS_PX,
+  SPACING_GEOMETRY_ACCEPTANCE_CRITERIA,
+  SPACING_SCALE,
+  TABLE_AND_OVERLAY_GEOMETRY,
+  isSpacingValueOnGrid,
+} from './spacingGeometrySystem';
+
+test('RT-UI-VIS-001 enforces 4-layer surfaces, controlled geometry, 3 density profiles, and 15/15 acceptance checks', () => {
+  assert.equal(RADAR_VISUAL_DIRECTION.length, 5);
+  assert.deepEqual(SURFACE_HIERARCHY.map((s) => s.level), [0, 1, 2, 3]);
+  assert.equal(CONTROLLED_GEOMETRY_TOKENS.forbidUniformPillButtons, true);
+  assert.equal(CONTROLLED_GEOMETRY_TOKENS.cardRadiusPx, 12);
+  assert.equal(DENSITY_PROFILES.length, 3);
+  assert.equal(resolveDensityProfileForView('knowledge').id, 'low');
+  assert.equal(resolveDensityProfileForView('home').id, 'medium');
+  assert.equal(resolveDensityProfileForView('intelligence').id, 'high');
+  assert.equal(resolveDensityProfileForView('admin').id, 'high');
+  assert.equal(VISUAL_DIRECTION_ACCEPTANCE_CRITERIA.length, 15);
+});
+
+test('RT-UI-COLOR-001 enforces 4-layer semantic colors, cartographic separation, WCAG AA contrast >= 4.5:1, and 20/20 criteria', () => {
+  assert.equal(BRAND_PALETTE.brand800, '#176B63');
+  assert.equal(NEUTRAL_PALETTE.canvas, '#F6F8F6');
+  assert.equal(NEUTRAL_PALETTE.textPrimary, '#182522');
+  assert.equal(SEMANTIC_PALETTE.focusRing, '#2864DC');
+  assert.equal(
+    PUBLIC_PAGE_COLOR_BALANCE_RATIO.neutralPct +
+      PUBLIC_PAGE_COLOR_BALANCE_RATIO.brandAndAccentPct +
+      PUBLIC_PAGE_COLOR_BALANCE_RATIO.semanticAndDataPct,
+    100
+  );
+
+  assert.equal(CARTOGRAPHIC_PALETTE.priceIntensitySequential.length, 5);
+  assert.equal((CARTOGRAPHIC_PALETTE.priceIntensitySequential as readonly string[]).includes(BRAND_PALETTE.brand800), false);
+  assert.equal(DATA_VIZ_SERIES_PALETTE.length, 6);
+
+  for (const pair of COLOR_CONTRAST_CHECKS) {
+    const ratio = computeHexContrastRatio(pair.fg, pair.bg);
+    assert.ok(ratio >= pair.minRatio, `Contrast failure for ${pair.id}: got ${ratio}:1 < ${pair.minRatio}:1`);
+  }
+  assert.equal(COLOR_SYSTEM_ACCEPTANCE_CRITERIA.length, 20);
+});
+
+test('RT-UI-TYPE-001 enforces Vazirmatn UI baseline, 4-weight system, scales, bidi formatters, and 20/20 criteria', () => {
+  assert.equal(TYPOGRAPHY_ROLES.length, 3);
+  assert.equal(FONT_FAMILY_CANDIDATES.baseline.id, 'vazirmatn-ui');
+  assert.equal(FONT_FAMILY_CANDIDATES.comparison.id, 'estedad');
+  assert.equal(FONT_FAMILY_CANDIDATES.singlePrimaryFamilyPolicy, true);
+
+  assert.deepEqual(
+    [FONT_WEIGHT_SYSTEM.regular, FONT_WEIGHT_SYSTEM.medium, FONT_WEIGHT_SYSTEM.semibold, FONT_WEIGHT_SYSTEM.bold],
+    [400, 500, 600, 700]
+  );
+  assert.equal(TYPE_SCALE_HEADINGS.display.desktopPx, 40);
+  assert.equal(TYPE_SCALE_HEADINGS.h1.desktopPx, 30);
+  assert.equal(TYPE_SCALE_HEADINGS.h1.mobilePx, 24);
+  assert.equal(BODY_TYPE_SCALE_PX.bodyM, 16);
+  assert.equal(BODY_TYPE_SCALE_PX.criticalInfoMinimumPx, 13);
+  assert.equal(LINE_HEIGHT_TOKENS.body, 1.8);
+  assert.ok(EDITORIAL_READING_MEASURE.recommendedPx >= 650 && EDITORIAL_READING_MEASURE.recommendedPx <= 760);
+
+  assert.ok(MAP_TYPOGRAPHY_LEVELS_PX.neighborhoodName.min >= 12);
+  assert.equal(MODULE_TYPOGRAPHY_MATRIX.admin.headingPx[0], 20);
+
+  assert.equal(toStandardPersianDigits('RT-1405/08/23'), 'RT-۱۴۰۵/۰۸/۲۳');
+  assert.equal(formatUnifiedPriceTomanFa(125000000, 'per_sqm'), '۱۲۵٬۰۰۰٬۰۰۰\u00A0تومان به ازای هر مترمربع');
+  assert.equal(formatUnifiedAreaFa(95), '۹۵\u00A0مترمربع');
+  assert.equal(formatUnifiedPercentFa(12.5), '۱۲٫۵٪');
+  assert.deepEqual(formatTechnicalBidiToken('RT-48291'), { text: 'RT-48291', dir: 'ltr', isolate: true });
+  assert.equal(TYPOGRAPHY_ACCEPTANCE_CRITERIA.length, 20);
+});
+
+test('RT-UI-SPACING-001 enforces 4px spacing grid, 12px/8px radii, component heights, map explorer proportions, and 23/23 criteria', () => {
+  assert.equal(BASE_SPACING_UNIT_PX, 4);
+  for (const val of Object.values(SPACING_SCALE)) {
+    assert.equal(val % 4, 0);
+    assert.equal(isSpacingValueOnGrid(val), true);
+  }
+  assert.equal(isSpacingValueOnGrid(13), false);
+
+  assert.equal(SEMANTIC_RADIUS_DEFAULTS_PX.card, 12);
+  assert.equal(SEMANTIC_RADIUS_DEFAULTS_PX.input, 8);
+  assert.equal(SEMANTIC_RADIUS_DEFAULTS_PX.button, 8);
+  assert.equal(SEMANTIC_RADIUS_DEFAULTS_PX.dialog, 16);
+  assert.equal(SEMANTIC_RADIUS_DEFAULTS_PX.bottomSheetTop, 20);
+  assert.equal(BORDER_RADIUS_SCALE_PX.pill, 999);
+
+  assert.equal(BORDER_SYSTEM_PX.border1Subtle, 1);
+  assert.equal(ELEVATION_LEVELS.length, 4);
+  assert.equal(BUTTON_DIMENSIONS_PX.md, 40);
+  assert.equal(BUTTON_DIMENSIONS_PX.touchTargetMin, 44);
+  assert.equal(INPUT_DIMENSIONS_PX.standard, 44);
+  assert.equal(ICON_DIMENSIONS_PX.md, 20);
+  assert.equal(BAR_HEIGHTS_PX.headerPublic, 68);
+  assert.equal(BAR_HEIGHTS_PX.headerCompact, 56);
+  assert.equal(BAR_HEIGHTS_PX.mobileBottomNav, 64);
+  assert.equal(CARD_PADDING_PX.standard, 16);
+
+  assert.equal(MAP_EXPLORER_GEOMETRY.toolbarWidthPx, 48);
+  assert.equal(MAP_EXPLORER_GEOMETRY.panelWidthStandardPx, 352);
+  assert.equal(MAP_EXPLORER_GEOMETRY.panelWidthCompactPx, 312);
+  assert.equal(MAP_EXPLORER_GEOMETRY.bottomSheet.topRadiusPx, 20);
+  assert.equal(MAP_EXPLORER_GEOMETRY.bottomSheet.collapsedMinHeightPx, 72);
+  assert.deepEqual(TABLE_AND_OVERLAY_GEOMETRY.dialogWidthsPx.medium, [520, 640]);
+  assert.equal(RESPONSIVE_GEOMETRY_MATRIX.mobile.pagePaddingXPx, 16);
+  assert.equal(CONSOLIDATED_GEOMETRY_DECISIONS.mapPanelWidthPx, 352);
+
+  assert.equal(GEOMETRY_PROHIBITIONS.length, 20);
+  assert.equal(SPACING_GEOMETRY_ACCEPTANCE_CRITERIA.length, 23);
+});
+
+import {
+  BUTTON_INTERACTIVE_STATES,
+  BUTTON_SIZE_SPECS,
+  BUTTON_VARIANTS,
+  CARD_FAMILIES,
+  COMPONENT_ACCEPTANCE_CRITERIA,
+  COMPONENT_ARCHITECTURE_LAYERS,
+  COMPONENT_CATALOG,
+  DATA_CREDIBILITY_SPECS,
+  DESIGN_SYSTEM_FIVE_LAYERS,
+  DOMAIN_COMPONENTS_RTD,
+  GLOBAL_SEARCH_BOX_SPEC,
+  INPUT_STATES,
+  INPUT_TYPES,
+  MANDATORY_COMPONENT_SPEC_FIELDS,
+  MAP_COMPONENT_INVENTORY,
+  PAGE_BUTTON_ALLOCATION,
+  STAGE_12_DS_PHASES,
+  normalizeNumericFieldDigits,
+} from './componentSystem';
+
+test('RT-UI-COMP-001 & RT-UI-DS-IMPLEMENTATION-001 enforce 5-layer DS, 6 button variants, 10 input types, 7 card families, RTD01..RTD10, DS-01..DS-09, and 22/22 criteria', () => {
+  assert.equal(COMPONENT_ARCHITECTURE_LAYERS.length, 4);
+  assert.equal(DESIGN_SYSTEM_FIVE_LAYERS.length, 5);
+  assert.equal(STAGE_12_DS_PHASES.length, 9);
+  assert.equal(MANDATORY_COMPONENT_SPEC_FIELDS.length, 13);
+  assert.equal(COMPONENT_CATALOG.length, 11);
+
+  assert.equal(BUTTON_VARIANTS.length, 6);
+  assert.equal(BUTTON_INTERACTIVE_STATES.length, 6);
+  assert.equal(BUTTON_SIZE_SPECS.md.heightPx, 40);
+  assert.equal(BUTTON_SIZE_SPECS.lg.heightPx, 48);
+  assert.equal(PAGE_BUTTON_ALLOCATION.valuation.primary, 'محاسبه');
+
+  assert.equal(INPUT_TYPES.length, 10);
+  assert.equal(INPUT_STATES.length, 8);
+  assert.equal(GLOBAL_SEARCH_BOX_SPEC.heightPx, 44);
+  assert.equal(normalizeNumericFieldDigits('۱۲٬۵۰۰'), '12500');
+
+  assert.equal(CARD_FAMILIES.length, 7);
+  assert.equal(MAP_COMPONENT_INVENTORY.length, 15);
+  assert.deepEqual(Object.keys(DATA_CREDIBILITY_SPECS), ['verified', 'estimated', 'incomplete', 'stale']);
+  assert.equal(DOMAIN_COMPONENTS_RTD.length, 10);
+  assert.equal(COMPONENT_ACCEPTANCE_CRITERIA.length, 22);
+});
+

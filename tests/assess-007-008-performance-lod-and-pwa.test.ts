@@ -464,7 +464,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   assert.ok(homeSrc.includes('RadarPaginationBar') && homeSrc.includes('computePaginationSlice'), 'ProductHomeView must paginate featured neighborhoods');
   assert.ok(bargainsSrc.includes('RadarPaginationBar') && bargainsSrc.includes('computePaginationSlice'), 'NeighborhoodBargainsAndVotesTabs must paginate bargains and votes');
   assert.ok(
-    drawerSrc.includes("isOverlayOnSecondaryView ? 'lg:top-[76px] lg:left-4 lg:right-auto' : 'lg:top-[132px] lg:right-4 lg:left-auto'"),
+    drawerSrc.includes("isOverlayOnSecondaryView ? 'lg:top-[76px] lg:left-4 lg:right-auto' : 'lg:top-[124px] lg:right-4 lg:left-auto'"),
     'NeighborhoodInspectorDrawer must dock to left-4 on desktop when secondary views occupy the right RTL panel'
   );
 

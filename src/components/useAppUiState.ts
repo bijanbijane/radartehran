@@ -7,6 +7,8 @@ import type { SuperModuleTabId } from './FutureSuperModulesModal';
 import type { ListingMediaObject } from '../utils/objectStorage';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../utils/areaUnit';
 import { readHomeVerdictPrefillFromUrl, resolvePrimaryViewFromUrl } from '../utils/listingVerdictDeepLink';
+import { resolveRouteFromLocation } from '../navigation/url/navigationUrlContract';
+import type { AdminSectionId, ModuleSubTabId } from '../navigation/registry/route.types';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 export function useAppUiState(initialUrlState: any) {
@@ -41,6 +43,13 @@ export function useAppUiState(initialUrlState: any) {
 
   const [selectedHoodId, setSelectedHoodId] = useState<number>(initialUrlState.initialHoodId);
   const [primaryView, setPrimaryView] = useState<PrimaryViewId>(() => resolvePrimaryViewFromUrl() ?? 'map');
+  const [activeSubTab, setActiveSubTab] = useState<ModuleSubTabId | undefined>(() =>
+    typeof window !== 'undefined' ? resolveRouteFromLocation(window.location.pathname, window.location.search).subTab : undefined
+  );
+  const [adminSection, setAdminSection] = useState<AdminSectionId>(() => {
+    const sub = typeof window !== 'undefined' ? resolveRouteFromLocation(window.location.pathname, window.location.search).subTab : undefined;
+    return (sub && ['overview', 'content', 'data', 'users', 'operations', 'security'].includes(sub) ? sub : 'overview') as AdminSectionId;
+  });
   const [homeVerdictPrefill, setHomeVerdictPrefill] = useState<string>(() => readHomeVerdictPrefillFromUrl());
   const [activeTab, setActiveTab] = useState<'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote' | 'osm_places'>('scorecard');
   const [showGoldPins, setShowGoldPins] = useState<boolean>(false);
@@ -229,7 +238,7 @@ export function useAppUiState(initialUrlState: any) {
     tradeUpTargetAgeSegment, setTradeUpTargetAgeSegment,
     revealedSponsorPhoneHoodId, setRevealedSponsorPhoneHoodId,
     callingSponsorHoodId, setCallingSponsorHoodId,
-    selectedHoodId, setSelectedHoodId, primaryView, setPrimaryView, activeTab, setActiveTab,
+    selectedHoodId, setSelectedHoodId, primaryView, setPrimaryView, activeSubTab, setActiveSubTab, adminSection, setAdminSection, activeTab, setActiveTab,
     showGoldPins, setShowGoldPins, showLandmarkPins, setShowLandmarkPins,
     statusFilter, setStatusFilter, onlyOutsideTrafficZone, setOnlyOutsideTrafficZone,
     onlyHighMetro, setOnlyHighMetro, searchQuery, setSearchQuery,

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Calculator, Building2, Scale, ShieldAlert, Sparkles, FileCheck, Hammer,
   GraduationCap, ArrowLeftRight, ChevronRight, ArrowUpRight, ClipboardCheck, Coins, Share2, Search, X,
@@ -14,9 +14,11 @@ import { useAreaUnit, useExperienceMode, useIntlCurrency, useRadarLocale } from 
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
+import type { ToolsSubTabId } from '../../navigation/registry/route.types';
 
 const InstantListingVerifierModal = React.lazy(() => import('../modals/InstantListingVerifierModal').then((m) => ({ default: m.InstantListingVerifierModal })));
 const ContractRoomShieldModal = React.lazy(() => import('../modals/ContractRoomShieldModal').then((m) => ({ default: m.ContractRoomShieldModal })));
+const RadarUiLabPanel = React.lazy(() => import('./RadarUiLabPanel').then((m) => ({ default: m.RadarUiLabPanel })));
 
 export interface ProductToolsViewProps {
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
@@ -30,6 +32,7 @@ export interface ProductToolsViewProps {
   onOpenCompare: () => void;
   featureFlags: FeatureFlags;
   activeCity?: string;
+  activeSubTab?: ToolsSubTabId;
 }
 
 export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
@@ -37,15 +40,16 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const isEn = radarLocale === 'en';
   const [toolQuery, setToolQuery] = useState<string>('');
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
-  const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false);
+  const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false), [showUiLab, setShowUiLab] = useState<boolean>(false);
   const [activeDecisionTab, setActiveDecisionTab] = useState<Stage2ActiveTab>('DECISION_SYNTHESIS');
   const [showVerifierModal, setShowVerifierModal] = useState<boolean>(false), [showContractShieldModal, setShowContractShieldModal] = useState<boolean>(false);
+  useEffect(() => {
+    if (p.activeSubTab === 'valuation' || p.activeSubTab === 'calculators') setActiveCat('financial');
+    else if (p.activeSubTab === 'compare_props' || p.activeSubTab === 'compare_areas') setActiveCat('decision');
+    else setActiveCat('all');
+  }, [p.activeSubTab]);
 
-  const openDecisionTool = (tabId: Stage2ActiveTab) => {
-    setActiveDecisionTab(tabId);
-    setExperienceMode('pro');
-    setShowEmbeddedLab(true);
-  };
+  const openDecisionTool = (tabId: Stage2ActiveTab) => { setActiveDecisionTab(tabId); setExperienceMode('pro'); setShowEmbeddedLab(true); };
 
   const unitBuy = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit);
   const unitDeal = convertPricePerSqmToUnit(
@@ -202,13 +206,15 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
             { id: 'decision' as const, label: isEn ? 'Deal & Risk Lab (9)' : 'تصمیم‌یار و چانه‌زنی (۹)' },
             { id: 'urban' as const, label: isEn ? 'Urban & Swap (4)' : 'ساخت و تهاتر (۴)' },
           ].map((tab) => (
-            <button key={tab.id} type="button" onClick={() => setActiveCat(tab.id)} className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition cursor-pointer ${activeCat === tab.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
-              {tab.label}
-            </button>
+            <button key={tab.id} type="button" onClick={() => setActiveCat(tab.id)} className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition cursor-pointer ${activeCat === tab.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>{tab.label}</button>
           ))}
+          <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
+            Radar UI Lab
+          </button>
         </div>
       </div>
 
+      {showUiLab && <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} /></React.Suspense>}
       {showEmbeddedLab && (
         <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3">
           <div className="flex items-center justify-between">
@@ -216,26 +222,14 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
               <Compass className="w-4 h-4 text-indigo-600" />
               <span>پنل تعاملی تصمیم‌یار خرید، چانه‌زنی و ارزیابی ریسک بازار</span>
             </h3>
-            <button
-              type="button"
-              onClick={() => setShowEmbeddedLab(false)}
-              className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white px-2 py-1 rounded-md bg-white dark:bg-slate-800 border cursor-pointer"
-            >
+            <button type="button" onClick={() => setShowEmbeddedLab(false)} className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white px-2 py-1 rounded-md bg-white dark:bg-slate-800 border cursor-pointer">
               بستن پنل آزمایشگاه ✕
             </button>
           </div>
           <Stage2MasterWidget
-            hoodId={p.selectedHood.id}
-            hoodName={p.selectedHood.name}
-            basePriceSqm={p.selectedHood.buyPerSqm}
-            intlCurrency={intlCurrency}
-            hood={p.selectedHood}
-            initialTab={activeDecisionTab}
-            onTabChange={(tab) => setActiveDecisionTab(tab)}
-            onSelectCompareHood={(targetName) => {
-              const match = p.evaluatedNeighborhoods?.find((h) => h.name === targetName);
-              if (match) p.onSelectNeighborhood?.(match);
-            }}
+            hoodId={p.selectedHood.id} hoodName={p.selectedHood.name} basePriceSqm={p.selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={p.selectedHood}
+            initialTab={activeDecisionTab} onTabChange={(tab) => setActiveDecisionTab(tab)}
+            onSelectCompareHood={(targetName) => { const match = p.evaluatedNeighborhoods?.find((h) => h.name === targetName); if (match) p.onSelectNeighborhood?.(match); }}
           />
         </div>
       )}

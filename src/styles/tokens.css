@@ -13,15 +13,251 @@
   /* Dynamic Viewport Safe Area [RULE-05] */
   --app-height: 100dvh;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* RT-UI-VIS-001 Surface Hierarchy (Levels 0-3) & Controlled Soft Geometry */
+  --radar-surface-0: #f6f8f6;
+  --radar-surface-1: #f1f4f2;
+  --radar-surface-2: #ffffff;
+  --radar-surface-3: rgba(255, 255, 255, 0.96);
+  --radar-radius-control: 8px;
+  --radar-radius-card: 12px;
+  --radar-radius-panel: 16px;
+
+  /* RT-UI-COLOR-001 Layer 1: Brand (Deep Petroleum Green) */
+  --color-brand-primary: #176b63;
+  --color-brand-hover: #14534e;
+  --color-brand-pressed: #103b38;
+  --color-brand-accent: #1b7f74;
+  --color-brand-soft: #eaf3f0;
+  --color-brand-tint: #f1f8f6;
+
+  /* RT-UI-COLOR-001 Layer 2: Neutral Surfaces, Text & Borders */
+  --color-canvas: #f6f8f6;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f1f4f2;
+  --color-surface-sunken: #e9efec;
+  --color-text-primary: #182522;
+  --color-text-secondary: #34433e;
+  --color-text-muted: #586760;
+  --color-text-subdued: #64716b;
+  --color-border-subtle: #dce3df;
+  --color-border-strong: #c5d0ca;
+  --color-border-control: #7f8f86;
+
+  /* RT-UI-COLOR-001 Layer 3: Semantic & Focus */
+  --color-success: #176b4c;
+  --color-success-bg: #eaf5ee;
+  --color-warning: #875000;
+  --color-warning-bg: #fff4e5;
+  --color-danger: #a61b1b;
+  --color-danger-bg: #fdecec;
+  --color-info: #155e9a;
+  --color-info-bg: #eaf3fb;
+  --color-focus: #2864dc;
+
+  /* RT-UI-COLOR-001 Layer 4: Cartographic & Data Visualization */
+  --map-land: #f7f8f5;
+  --map-road-minor: #e5e9e5;
+  --map-road-major: #ccd5d0;
+  --map-water: #dce9ec;
+  --map-park: #dfeae0;
+  --map-boundary: #8a9891;
+  --map-selection: #176b63;
+  --map-price-1: #f1edf7;
+  --map-price-2: #d9cbe8;
+  --map-price-3: #b69bd1;
+  --map-price-4: #8b68b3;
+  --map-price-5: #5d3c80;
+  --chart-series-1: #176b63;
+  --chart-series-2: #3b6f91;
+  --chart-series-3: #8065a8;
+  --chart-series-4: #b7791f;
+  --chart-series-5: #a84f43;
+  --chart-series-6: #64716b;
+
+  /* RT-UI-DS-IMPLEMENTATION-001 (§12.2 & §12.5): Primitive Palette & Semantic Token Aliases */
+  --palette-brand-950: #103b38;
+  --palette-brand-900: #14534e;
+  --palette-brand-800: #176b63;
+  --palette-brand-700: #1b7f74;
+  --palette-brand-600: #279487;
+  --palette-brand-400: #70b9aa;
+  --palette-brand-200: #b8ded4;
+  --palette-brand-100: #dcefea;
+  --palette-brand-50: #f1f8f6;
+  --palette-neutral-950: #182522;
+  --palette-neutral-800: #34433e;
+  --palette-neutral-700: #586760;
+  --palette-neutral-600: #64716b;
+  --palette-neutral-300: #c5d0ca;
+  --palette-neutral-200: #dce3df;
+  --palette-neutral-100: #f1f4f2;
+  --palette-neutral-50: #f6f8f6;
+  --palette-white: #ffffff;
+
+  --color-bg-canvas: var(--palette-neutral-50);
+  --color-bg-surface: var(--palette-white);
+  --color-bg-subtle: var(--palette-neutral-100);
+  --color-text-muted: var(--palette-neutral-700);
+  --color-border-default: var(--palette-neutral-200);
+  --color-action-primary: var(--palette-brand-800);
+  --color-action-hover: var(--palette-brand-900);
+  --color-action-pressed: var(--palette-brand-950);
+  --color-action-soft: var(--palette-brand-50);
+
+  --font-family-primary: 'Vazirmatn', sans-serif;
+  --header-height: 68px;
+  --header-compact-height: 56px;
+  --secondary-nav-height: 48px;
+  --map-panel-width: 352px;
+  --map-panel-min-width: 280px;
+  --mobile-bottom-nav-height: 64px;
 }
 
-/* Tabular Numerals & RTL Number Isolation [RULE-10] */
-.radar-tabular-num {
+.dark,
+[data-apple-theme='dark'] {
+  --radar-surface-0: #020617;
+  --radar-surface-1: #0f172a;
+  --radar-surface-2: #0f172a;
+  --radar-surface-3: rgba(15, 23, 42, 0.96);
+  --color-brand-primary: #279487;
+  --color-brand-hover: #70b9aa;
+  --color-brand-pressed: #176b63;
+  --color-brand-soft: rgba(23, 107, 99, 0.25);
+  --color-canvas: #090d16;
+  --color-surface: #0f172a;
+  --color-surface-subtle: #1e293b;
+  --color-surface-sunken: #020617;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-text-subdued: #64748b;
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-border-control: rgba(255, 255, 255, 0.24);
+  --color-focus: #60a5fa;
+}
+
+:root {
+  /* RT-UI-TYPE-001: Typography System Tokens */
+  --font-primary: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --type-display: 2.5rem;
+  --type-h1: 1.875rem;
+  --type-h2: 1.5rem;
+  --type-h3: 1.25rem;
+  --type-h4: 1.125rem;
+  --type-h5: 1rem;
+  --type-h6: 0.875rem;
+  --type-body: 1rem;
+  --type-body-small: 0.875rem;
+  --type-caption: 0.8125rem;
+  --type-micro: 0.75rem;
+  --leading-display: 1.45;
+  --leading-heading: 1.5;
+  --leading-subheading: 1.55;
+  --leading-body: 1.8;
+  --leading-ui: 1.5;
+  --leading-caption: 1.6;
+  --measure-editorial: 740px;
+
+  /* RT-UI-SPACING-001: Spacing, Radius, Border, Elevation & Component Geometry */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-pill: 999px;
+  --radius-card: 12px;
+  --radius-input: 8px;
+  --radius-button: 8px;
+  --radius-dialog: 16px;
+  --radius-bottom-sheet: 20px;
+
+  --border-width: 1px;
+  --border-selected: 2px;
+  --border-focus: 3px;
+
+  --shadow-elevation-0: none;
+  --shadow-elevation-1: 0 1px 3px 0 rgba(16, 59, 56, 0.04), 0 0 0 1px rgba(24, 37, 34, 0.06);
+  --shadow-elevation-2: 0 10px 25px -5px rgba(16, 59, 56, 0.09), 0 0 0 1px rgba(24, 37, 34, 0.07);
+  --shadow-elevation-3: 0 22px 48px -12px rgba(16, 59, 56, 0.16), 0 0 0 1px rgba(24, 37, 34, 0.08);
+
+  --height-button-xs: 32px;
+  --height-button-sm: 36px;
+  --height-button-md: 40px;
+  --height-button-lg: 48px;
+  --height-input-compact: 36px;
+  --height-input-standard: 44px;
+  --height-input-touch: 48px;
+  --height-input-large: 52px;
+
+  --height-header: 68px;
+  --height-header-compact: 56px;
+  --height-secondary-nav: 48px;
+  --height-mobile-nav: 64px;
+
+  --icon-xs: 14px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+  --icon-2xl: 40px;
+
+  --map-toolbar-width: 48px;
+  --map-panel-width: 352px;
+  --map-panel-compact: 312px;
+
+  /* RT-UI-INTERACTION-001 Section 17: Motion & Interaction Timing Tokens */
+  --motion-fast: 120ms;
+  --motion-standard: 180ms;
+  --motion-panel: 220ms;
+  --motion-sheet: 260ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-enter: cubic-bezier(0, 0, 0.2, 1);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --type-display: 1.875rem;
+    --type-h1: 1.5rem;
+    --type-h2: 1.3125rem;
+    --type-h3: 1.125rem;
+    --type-h4: 1rem;
+  }
+}
+
+/* Tabular Numerals & RTL Number Isolation [RULE-10] & RT-UI-DS-IMPLEMENTATION-001 §12.10 */
+.radar-tabular-num,
+.property-code {
   direction: ltr;
   unicode-bidi: isolate;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
   display: inline-block;
+}
+
+.numeric-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* High-Contrast GIS Price Badges (WCAG 2.2 AA >= 4.5:1) [RULE-10] */

@@ -12,11 +12,15 @@ export function readHomeVerdictPrefillFromUrl(): string {
   }
 }
 
+import { resolveRouteFromLocation } from '../navigation/url/navigationUrlContract';
+
 export function resolvePrimaryViewFromUrl(): PrimaryViewId | null {
   if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
-  const v = params.get('view');
-  if (v === 'home' || v === 'discover' || v === 'intelligence' || v === 'tools' || v === 'userspace' || v === 'map' || v === 'admin') return v;
-  if (params.get('verdictText')) return 'home';
-  return null;
+  if (params.get('verdictText') && !params.get('view') && window.location.pathname === '/') {
+    return 'home';
+  }
+  const resolved = resolveRouteFromLocation(window.location.pathname, window.location.search);
+  if (window.location.pathname === '/' && !params.get('view')) return null;
+  return resolved.viewId as PrimaryViewId;
 }

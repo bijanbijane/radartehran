@@ -261,26 +261,31 @@ async function runBrowserSmokeSuite(): Promise<void> {
     });
 
     // =========================================================================
-    // 6. Admin UI Visibility & Unauthorized-User Security Behavior
+    // 6. Admin UI Visibility (NAV-011 Isolation) & Unauthorized-User Security Behavior
     // =========================================================================
-    await page.locator('button:has(span:text-is("مدیریت"))').first().click({ force: true });
-    await page.waitForSelector('[role="dialog"][aria-label="پنل مدیریت سایت"]', { timeout: 8000 });
+    const publicAdminBtnCount = await page.locator('button:has(span:text-is("مدیریت"))').count();
+    if (publicAdminBtnCount !== 0) {
+      throw new Error(`Workflow 6 NAV-011 violation: found ${publicAdminBtnCount} Admin button(s) inside public UI`);
+    }
+
+    await page.goto(`${baseUrl}/?view=admin`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await page.waitForSelector('[data-testid="admin-monitoring-full-page"]', { timeout: 8000 });
     await page.waitForTimeout(250);
 
-    const adminDialogTextBefore = await page
-      .locator('[role="dialog"][aria-label="پنل مدیریت سایت"]')
+    const adminPageTextBefore = await page
+      .locator('[data-testid="admin-monitoring-full-page"]')
       .innerText();
-    const containsHardcodedPass = adminDialogTextBefore.includes('admin1404');
-    const showsAuthGate = adminDialogTextBefore.includes('احراز هویت مدیر سیستم (Firebase Admin Auth)');
+    const containsHardcodedPass = adminPageTextBefore.includes('admin1404');
+    const showsAuthGate = adminPageTextBefore.includes('احراز هویت مدیر سیستم (Firebase Admin Auth)');
 
     // Attempt to click the unlock submit button as an unauthenticated user
     await page.locator('button:has-text("بررسی مجوز و بازگشایی پنل مدیریت")').click();
     await page.waitForTimeout(250);
 
-    const adminDialogTextAfter = await page
-      .locator('[role="dialog"][aria-label="پنل مدیریت سایت"]')
+    const adminPageTextAfter = await page
+      .locator('[data-testid="admin-monitoring-full-page"]')
       .innerText();
-    const blockedWithUnauthorizedError = adminDialogTextAfter.includes(
+    const blockedWithUnauthorizedError = adminPageTextAfter.includes(
       'دسترسی غیرمجاز: ورود به پنل مدیریت نیازمند احراز هویت با حساب رسمی ادمین (Google Auth) است.'
     );
     const crmTabVisibleToUnauthed = await page.locator('button:has-text("۱. حامیان")').isVisible();
@@ -295,8 +300,9 @@ async function runBrowserSmokeSuite(): Promise<void> {
       return { adminPass, hasUnmaskedMobile };
     });
 
-    await page.locator('button[aria-label="بستن پنل مدیریت"]').click();
-    await page.waitForTimeout(200);
+    await page.locator('button:has-text("بازگشت به محیط عمومی")').click();
+    await page.waitForSelector('input[aria-label="جست‌وجوی محله"]', { timeout: 8000 });
+    await page.waitForTimeout(250);
 
     if (
       containsHardcodedPass ||
@@ -313,9 +319,9 @@ async function runBrowserSmokeSuite(): Promise<void> {
     }
     results.push({
       id: 6,
-      workflow: 'Admin UI visibility and unauthorized-user behavior',
+      workflow: 'Admin UI visibility (NAV-011 isolated shell) and unauthorized-user behavior',
       status: 'PASS',
-      evidence: `Zero 'admin1404' in DOM/localStorage; unauthenticated unlock attempt blocked with explicit unauthorized error; CRM/Leads tabs hidden; sample leads masked`,
+      evidence: `Zero public Admin buttons (NAV-011); isolated /admin Zero-Trust gate blocked unauthenticated access cleanly; zero 'admin1404' or unmasked PII in localStorage`,
     });
 
     // =========================================================================

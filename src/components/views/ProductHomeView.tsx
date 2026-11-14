@@ -65,17 +65,17 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   ];
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-10 animate-fadeIn text-slate-900 dark:text-slate-100" data-testid="product-home-view">
+    <div className="w-full max-w-[1320px] mx-auto px-4 py-6 sm:py-8 space-y-10 animate-fadeIn text-slate-900 dark:text-slate-100" data-testid="product-home-view">
       {/* 1. Architectural Editorial Hero Header */}
       <section className="space-y-5">
         <div className="space-y-2 border-b border-slate-200/80 dark:border-slate-800 pb-5">
-          <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-emerald-700 dark:text-emerald-400">
+          <div className="flex items-center gap-2 text-[13px] font-semibold text-[#176B63] dark:text-emerald-400">
             <span>{isEn ? 'Housing Intelligence Platform' : 'سامانه تحلیلی رادار مسکن'}</span><span aria-hidden="true">·</span><span>{isEn ? 'Verified, Transparent, Objective' : 'هوشمند، شفاف، بی‌طرف'}</span>
           </div>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-950 dark:text-white leading-tight">{isEn ? 'Neighborhood Valuation & Livability Intelligence' : 'کالبدشکافی ارزش و کیفیت سکونت در محلات'}</h1>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 font-medium max-w-2xl leading-relaxed">
+              <h1 className="text-[28px] sm:text-[34px] lg:text-[38px] font-bold tracking-tight text-[#182522] dark:text-white leading-[1.45]">{isEn ? 'Neighborhood Valuation & Livability Intelligence' : 'کالبدشکافی ارزش و کیفیت سکونت در محلات'}</h1>
+              <p className="text-sm sm:text-base text-[#34433E] dark:text-slate-400 mt-2 font-normal max-w-[720px] leading-[1.75]">
                 {isEn ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on statistical listing models, urban livability scores, and your budget.` : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه الگوهای آماری مظنه‌ها، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
               </p>
             </div>
@@ -109,10 +109,10 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
           </div>
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
             <span className="text-[11px] font-bold text-slate-400 shrink-0">{isEn ? 'Quick Tools:' : 'میان‌برهای تحلیلی:'}</span>
-            <button type="button" onClick={p.onOpenReverseBudget} className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold hover:bg-emerald-100 transition shrink-0 cursor-pointer">{isEn ? 'Reverse Budget Finder' : '💡 کاشف معکوس بودجه'}</button>
-            <button type="button" onClick={p.onOpenHedonic} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Hedonic Valuation' : '💎 کارشناسی ارزش ملک'}</button>
-            <button type="button" onClick={p.onOpenCompare} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Compare 2 Areas' : '⚖️ مقایسه دو محله'}</button>
-            <button type="button" onClick={() => p.onOpenSuperModule('fake_detector')} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Fake Listing Detector' : '🕵️ مچ‌گیر آگهی فیک'}</button>
+            <button type="button" onClick={p.onOpenReverseBudget} className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold hover:bg-emerald-100 transition shrink-0 cursor-pointer">{isEn ? 'Reverse Budget Finder' : 'کاشف معکوس بودجه'}</button>
+            <button type="button" onClick={p.onOpenHedonic} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Hedonic Valuation' : 'کارشناسی ارزش ملک'}</button>
+            <button type="button" onClick={p.onOpenCompare} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Compare 2 Areas' : 'مقایسه دو محله'}</button>
+            <button type="button" onClick={() => p.onOpenSuperModule('fake_detector')} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Fake Listing Detector' : 'مچ‌گیر آگهی فیک'}</button>
           </div>
         </div>
       </section>

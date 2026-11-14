@@ -8,16 +8,16 @@ export function resolveProductViewRouterShellClasses(
   homeContentFirst: boolean,
 ): { shellBg: string; splitShell: string } {
   if (!splitMapMode) {
-    return { shellBg: 'bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl', splitShell: 'h-full w-full lg:w-[calc(100%-220px)]' };
+    return { shellBg: 'bg-[#F6F8F6]/95 dark:bg-slate-950/95 backdrop-blur-xl', splitShell: 'h-full w-full lg:w-[calc(100%-220px)]' };
   }
   if (homeContentFirst) {
     return {
       shellBg: '',
-      splitShell: `max-lg:mt-0 max-lg:h-full max-lg:rounded-none max-lg:border-t-0 max-lg:bg-[#F8F9FA] dark:max-lg:bg-slate-950 max-lg:backdrop-blur-none lg:bg-[#F8F9FA]/95 dark:lg:bg-slate-950/95 lg:backdrop-blur-xl ${SPLIT_WIDTH}`,
+      splitShell: `max-lg:mt-0 max-lg:h-full max-lg:rounded-none max-lg:border-t-0 max-lg:bg-[#F6F8F6] dark:max-lg:bg-slate-950 max-lg:backdrop-blur-none lg:bg-[#F6F8F6]/95 dark:lg:bg-slate-950/95 lg:backdrop-blur-xl ${SPLIT_WIDTH}`,
     };
   }
   return {
-    shellBg: 'bg-[#F8F9FA]/95 dark:bg-slate-950/95 backdrop-blur-xl',
+    shellBg: 'bg-[#F6F8F6]/95 dark:bg-slate-950/95 backdrop-blur-xl',
     splitShell: `max-lg:mt-0 max-lg:h-full max-lg:rounded-none max-lg:border-t-0 ${SPLIT_WIDTH}`,
   };
 }

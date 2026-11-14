@@ -9,6 +9,7 @@ import { EpistemicMarketDisclaimer } from '../EpistemicMarketDisclaimer';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
+import type { MarketSubTabId } from '../../navigation/registry/route.types';
 
 export interface ProductIntelligenceViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
@@ -16,6 +17,7 @@ export interface ProductIntelligenceViewProps {
   onOpenPriceTrend: () => void; onOpenPulseModal: () => void;
   onOpenInspector: (hood: EvaluatedNeighborhood) => void; onNavigateView?: (view: PrimaryViewId) => void;
   onSyncMapLens?: (lens: 'bubble' | 'heatmap' | 'budget') => void; activeCity: string;
+  activeSubTab?: MarketSubTabId; onChangeSubTab?: (tab: MarketSubTabId) => void;
 }
 
 export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.ReactElement {
@@ -40,9 +42,17 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
   const selectedAgg = useMemo(() => aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, buildNeighborhoodListingSamples(p.selectedHood)), [p.selectedHood]);
   const uAsking = convertPricePerSqmToUnit(selectedAgg.askingPricePerSqm, areaUnit), uDeal = convertPricePerSqmToUnit(selectedAgg.estimatedDealPricePerSqm, areaUnit);
   const uIqrLow = convertPricePerSqmToUnit(selectedAgg.iqrLowPerSqm, areaUnit), uIqrHigh = convertPricePerSqmToUnit(selectedAgg.iqrHighPerSqm, areaUnit);
+  const subHeadingMap: Record<MarketSubTabId, string> = {
+    overview: 'پایش آماری حباب، ارزیابی دامنه توافق معامله (مدل v6.4) و تفکیک فرصت‌های زیر ارزش ذاتی',
+    prices: `تحلیل نرخ خرید مسکن در محله ${p.selectedHood.name}: اعلامی ${toPersianNum(uAsking)}م و سناریو v6.4 ${toPersianNum(uDeal)}م`,
+    rent: `سنجش بازار رهن و اجاره: مرجع رهن ۸۰ متری در ${p.selectedHood.name} برابر ${toPersianNum(p.selectedHood.rahn80m)} میلیون تومان`,
+    supply: `پایش عرضه آگهی‌ها: ${toPersianNum(selectedAgg.validSampleCount)} نمونه معتبر (حذف ${toPersianNum(selectedAgg.rejectedFraudCount)} آگهی پرت)`,
+    compare: `مقایسه هم‌زمان بازار بین محله ${p.selectedHood.name} و رقبای هم‌تراز روی نقشه`,
+    reports: 'گزارش جامع چرخه مسکن، آزمایشگاه تصمیم‌گیری و پالس کلان شهر',
+  };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-7 animate-fadeIn" data-testid="product-intelligence-view">
+    <div className="w-full max-w-[1360px] mx-auto px-4 py-6 sm:py-8 space-y-7 animate-fadeIn" data-testid="product-intelligence-view">
       {/* Editorial Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
@@ -53,7 +63,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
             {isEn ? 'Housing Market Pulse & Intelligence' : 'نبض و هوش بازار مسکن'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            پایش آماری حباب، ارزیابی دامنه توافق معامله (مدل v6.4) و تفکیک فرصت‌های زیر ارزش ذاتی
+            {subHeadingMap[p.activeSubTab || 'overview']}
           </p>
         </div>
 
