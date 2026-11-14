@@ -10,6 +10,7 @@ import {
 } from '../../navigation/map/mapToolRailConfig';
 import type { SavedMapViewItem } from '../../navigation/registry/route.types';
 import type { RadarLocale } from '../../utils/areaUnit';
+import { MapSpatialToolsPopover } from '../../features/map/components/MapSpatialToolsPopover';
 
 export interface MapToolRailProps {
   visible: boolean;
@@ -41,6 +42,7 @@ const LENS_BUTTONS: { id: MapToolRailProps['mapLens']; labelFa: string; labelEn:
 export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
   const isEn = p.locale === 'en';
   const [openPanel, setOpenPanel] = useState<MapContextPanelId>(null);
+  const [showSpatialTools, setShowSpatialTools] = useState(false);
   const [savedViews, setSavedViews] = useState<SavedMapViewItem[]>(() => readSavedMapViews());
   const [customViewLabel, setCustomViewLabel] = useState('');
   const { showMetroLines, showTrafficZones, comparisonArc } = useMapAdvancedOverlayState();
@@ -86,7 +88,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
   };
 
   return (
-    <div data-testid="map-tool-rail" className="fixed left-3 top-[124px] z-20 flex flex-row-reverse items-start gap-2 pointer-events-none">
+    <div data-testid="map-tool-rail" className="fixed left-3 top-[152px] sm:top-[124px] z-20 flex flex-row-reverse items-start gap-2 pointer-events-none">
       {/* Vertical Map Tool Rail (48px width, 40px tools, 8px vertical gap) */}
       <div role="toolbar" aria-label={isEn ? 'Map Tools' : 'ابزارهای تعاملی نقشه'} className="pointer-events-auto w-12 flex flex-col items-center gap-2 apple-vibrancy-bar p-1 rounded-[12px] border border-slate-200/80 dark:border-slate-700/80 shadow-lg">
         <button type="button" onClick={() => setOpenPanel((c) => toggleMapContextPanel(c, 'layers'))} aria-expanded={openPanel === 'layers'} title={isEn ? 'Map Layers' : 'لایه‌های نقشه'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('layers')}`}>
@@ -167,8 +169,19 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
             <button type="button" onClick={() => { p.onOpenPriceTrendModal(); setOpenPanel(null); }} className="w-full py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold cursor-pointer">
               نمودار روند تاریخی قیمت
             </button>
+            <button type="button" data-testid="open-spatial-tools-btn" onClick={() => { setShowSpatialTools(true); setOpenPanel(null); }} className="w-full py-1.5 rounded-lg border border-[#176B63]/40 bg-[#F1F4F2] dark:bg-slate-800 text-[#176B63] dark:text-emerald-300 font-bold cursor-pointer">
+              ترسیم، اندازه‌گیری و راهنمای لایه
+            </button>
           </div>
         </div>
+      )}
+
+      {showSpatialTools && !openPanel && (
+        <MapSpatialToolsPopover
+          selectedHood={p.selectedHood}
+          evaluatedNeighborhoods={[p.selectedHood]}
+          onClose={() => setShowSpatialTools(false)}
+        />
       )}
 
       {openPanel === 'save_view' && (

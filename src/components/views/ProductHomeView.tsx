@@ -1,30 +1,52 @@
+/**
+ * @file src/components/views/ProductHomeView.tsx
+ * @description Stage 14 (RT-UI-HOME-001) Homepage Experience Specification (< 260 lines).
+ * Composes Hero + Map Preview, Quick Access, Market Snapshot, Curated Neighborhoods, Research, Services, Methodology & Footer.
+ */
 import React, { useState, useMemo } from 'react';
-import { Map as MapIcon, ArrowUpRight, Search, SlidersHorizontal, ChevronLeft, Scale, X } from 'lucide-react';
+import { SlidersHorizontal, ChevronLeft, Scale } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import type { CityId, FeatureFlags } from '../../types/models';
+import type { ModuleSubTabId } from '../../navigation/registry/route.types';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { useDealPriceByHoodIdMap } from '../useDealPriceByHoodIdMap';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { matchesPersianSearch } from '../../utils/security';
-import { LABEL_HEURISTIC_NEGOTIATION_V64_FA, LABEL_ASKING_MEDIAN_TODAY_FA } from '../../utils/epistemicUiLabels';
 import { ListingVerdictHero } from '../listing/ListingVerdictHero';
 import { BudgetFitVerdict } from '../listing/BudgetFitVerdict';
 import { computePaginationSlice } from '../../utils/productViewRouterShellClasses';
 import { RadarPaginationBar } from '../common/RadarPaginationBar';
+import { HomeHeroAndMapPreview } from '../../features/home/sections/HomeHeroAndMapPreview';
+import {
+  QuickAccessAndMarketSnapshotSection,
+  ResearchServicesAndMethodologySection,
+} from '../../features/home/sections/HomeMarketAndMethodologySections';
+import { selectCuratedHomeNeighborhoods } from '../../features/home/services/homeDataAdapter';
+import type { HomeNeighborhoodSelectionMode, HomeResilienceScenarioId } from '../../features/home/types/home.types';
 
 export interface ProductHomeViewProps {
-  evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood;
-  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; onOpenInspector?: (hood: EvaluatedNeighborhood) => void;
-  onNavigateView: (view: PrimaryViewId) => void; onOpenBudgetFilter: () => void;
-  onOpenReverseBudget: () => void; onOpenHedonic: () => void; onOpenCompare: () => void;
-  onOpenSmartSuggest: () => void; onOpenSuperModule: (tab: any) => void;
+  evaluatedNeighborhoods: EvaluatedNeighborhood[];
+  selectedHood: EvaluatedNeighborhood;
+  onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
+  onOpenInspector?: (hood: EvaluatedNeighborhood) => void;
+  onNavigateView: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
+  onOpenBudgetFilter: () => void;
+  onOpenReverseBudget: () => void;
+  onOpenHedonic: () => void;
+  onOpenCompare: () => void;
+  onOpenSmartSuggest: () => void;
+  onOpenSuperModule: (tab: any) => void;
   onOpenListingVerifier?: () => void;
   initialListingVerdictText?: string;
   activeCity?: CityId;
-  mode: 'rent' | 'buy'; setMode: (m: 'rent' | 'buy') => void; targetSqm: number;
-  totalRahnEquivalent: number; buyTotalBudget: number; counts: { green: number; yellow: number; red: number };
+  mode: 'rent' | 'buy';
+  setMode: (m: 'rent' | 'buy') => void;
+  targetSqm: number;
+  totalRahnEquivalent: number;
+  buyTotalBudget: number;
+  counts: { green: number; yellow: number; red: number };
   featureFlags: FeatureFlags;
 }
 
@@ -32,12 +54,15 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const [homeQuery, setHomeQuery] = useState<string>('');
+  const [selectionMode, setSelectionMode] = useState<HomeNeighborhoodSelectionMode>('editorial_curated');
+  const [resilienceScenario, setResilienceScenario] = useState<HomeResilienceScenarioId>('normal');
   const { comparisonArc } = useMapAdvancedOverlayState();
   const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
   const [homePage, setHomePage] = useState<number>(1), [homePageSize, setHomePageSize] = useState<number>(6);
   const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
+
   const filteredFeaturedPool = useMemo(() => {
-    let list = p.evaluatedNeighborhoods;
+    let list = selectCuratedHomeNeighborhoods(p.evaluatedNeighborhoods, selectionMode);
     const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
     if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
     else if (priceBracket === '5to10b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot >= 1000 && tot <= 2000 : tot >= 5000 && tot <= 10000; });
@@ -46,170 +71,140 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
     const q = homeQuery.trim();
     if (!q) return list;
     return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q));
-  }, [p.evaluatedNeighborhoods, dealPriceByHoodId, homeQuery, priceBracket, p.mode, p.targetSqm]);
+  }, [p.evaluatedNeighborhoods, dealPriceByHoodId, homeQuery, priceBracket, p.mode, p.targetSqm, selectionMode]);
+
   const homePaginationSlice = useMemo(() => computePaginationSlice(filteredFeaturedPool, homePage, homePageSize), [filteredFeaturedPool, homePage, homePageSize]);
   const featuredHoods = homePaginationSlice.items;
-  const bargainsCount = p.evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0);
   const budgetDisplay = p.mode === 'buy'
     ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} م.ت`)
     : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : `${toPersianNum(p.totalRahnEquivalent)} م.ت رهن کامل`);
   const fxBudget = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent, intlCurrency, radarLocale)})` : '';
-
   const topFeaturedScore = filteredFeaturedPool.length > 0 ? Math.max(...filteredFeaturedPool.map((h) => h.overallScore)) : undefined;
 
-  const pillars = [
-    { id: 'map' as const, num: isEn ? '01' : '۰۱', title: isEn ? 'Interactive GIS Map Atlas' : 'اطلس مکانی و نقشه زنده GIS', sub: isEn ? 'Layered map of metro lines, traffic zones, and live neighborhood price heatmap' : 'محور اصلی رادار: نقشه لایه‌ای معابر، مترو، طرح ترافیک و هیت‌مپ قیمت', act: () => p.onNavigateView('map'), meta: isEn ? 'Primary Spatial Canvas' : 'محور اصلی سامانه' },
-    { id: 'discover' as const, num: isEn ? '02' : '۰۲', title: isEn ? 'Neighborhood Explorer' : 'کشف محله‌ها', sub: isEn ? 'Filter neighborhoods by budget, air quality, metro access, and commute hubs' : 'بررسی محلات با فیلتر بودجه، ترافیک، کیفیت هوا و قطب‌های اداری', act: () => p.onNavigateView('discover'), meta: isEn ? `${p.counts.green} Within Budget` : `${toPersianNum(p.counts.green)} محله متناسب` },
-    { id: 'intelligence' as const, num: isEn ? '03' : '۰۳', title: isEn ? 'Market Pulse & Intelligence' : 'نبض و هوش بازار', sub: isEn ? `Bubble detection, ${LABEL_ASKING_MEDIAN_TODAY_FA}, and undervalued areas` : `حباب‌سنجی، ${LABEL_ASKING_MEDIAN_TODAY_FA} و ${LABEL_HEURISTIC_NEGOTIATION_V64_FA}`, act: () => p.onNavigateView('intelligence'), meta: isEn ? `${bargainsCount} Under-Market Deals` : `${toPersianNum(bargainsCount)} فایل زیر قیمت منصفانه` },
-    { id: 'tools' as const, num: isEn ? '04' : '۰۴', title: isEn ? 'Real Estate Calculators' : 'جعبه‌ابزار معاملاتی', sub: isEn ? 'Hedonic valuation, mortgage simulator, 1405 tax, commission, and legal audit' : 'ارزش‌گذاری هدونیک، وام مسکن، مالیات ۱۴۰۵، ارث، کمیسیون و چک‌لیست بازدید', act: () => p.onNavigateView('tools'), meta: isEn ? '22 Specialized Tools' : '۲۲ ابزار تخصصی و نظریه تصمیم' },
-  ];
-
   return (
-    <div className="w-full max-w-[1320px] mx-auto px-4 py-6 sm:py-8 space-y-10 animate-fadeIn text-slate-900 dark:text-slate-100" data-testid="product-home-view">
-      {/* 1. Architectural Editorial Hero Header */}
-      <section className="space-y-5">
-        <div className="space-y-2 border-b border-slate-200/80 dark:border-slate-800 pb-5">
-          <div className="flex items-center gap-2 text-[13px] font-semibold text-[#176B63] dark:text-emerald-400">
-            <span>{isEn ? 'Housing Intelligence Platform' : 'سامانه تحلیلی رادار مسکن'}</span><span aria-hidden="true">·</span><span>{isEn ? 'Verified, Transparent, Objective' : 'هوشمند، شفاف، بی‌طرف'}</span>
-          </div>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <h1 className="text-[28px] sm:text-[34px] lg:text-[38px] font-bold tracking-tight text-[#182522] dark:text-white leading-[1.45]">{isEn ? 'Neighborhood Valuation & Livability Intelligence' : 'کالبدشکافی ارزش و کیفیت سکونت در محلات'}</h1>
-              <p className="text-sm sm:text-base text-[#34433E] dark:text-slate-400 mt-2 font-normal max-w-[720px] leading-[1.75]">
-                {isEn ? `Analytical evaluation of ${p.evaluatedNeighborhoods.length} neighborhoods based on statistical listing models, urban livability scores, and your budget.` : `ارزیابی تحلیلی ${toPersianNum(p.evaluatedNeighborhoods.length)} محله بر پایه الگوهای آماری مظنه‌ها، شاخص‌های زیست‌شهری و انطباق با بودجه شما.`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/80 shrink-0 self-start md:self-end">
-              <button type="button" onClick={() => p.setMode('buy')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${p.mode === 'buy' ? 'bg-white dark:bg-slate-700 text-slate-950 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'}`}>{isEn ? 'Buy Property' : 'خرید و فروش'}</button>
-              <button type="button" onClick={() => p.setMode('rent')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${p.mode === 'rent' ? 'bg-white dark:bg-slate-700 text-slate-950 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'}`}>{isEn ? 'Rent / Deposit' : 'رهن و اجاره'}</button>
-            </div>
-          </div>
-        </div>
-        <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={p.activeCity} selectedHoodId={p.selectedHood?.id} />
-        <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={p.activeCity || 'tehran'} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 sm:p-4 shadow-xs space-y-3">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <div className="flex-1 flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700 rounded-xl px-3 py-2">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input type="text" value={homeQuery} onChange={(e) => { setHomeQuery(e.target.value); setHomePage(1); }} onKeyDown={(e) => { if (e.key === 'Enter' && featuredHoods.length > 0) { p.onSelectNeighborhood(featuredHoods[0]); p.onOpenInspector?.(featuredHoods[0]); } }} placeholder={isEn ? 'Type neighborhood or district name to filter...' : 'جستجو و فیلتر فوری نام محله یا منطقه شهرداری...'} aria-label={isEn ? 'Filter neighborhoods on homepage' : 'جستجو و فیلتر محله در صفحه اصلی'} className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none" />
-              {homeQuery && (<button type="button" aria-label="پاک کردن جستجو" onClick={() => { setHomeQuery(''); setHomePage(1); }} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>)}
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 md:border-r border-slate-100 dark:border-slate-800 md:pr-4">
-              <div className="text-start md:text-end text-xs">
-                <span className="text-slate-400 block text-[11px]">{isEn ? 'Your Active Budget:' : 'مبنای محاسباتی شما:'}</span>
-                <span className="font-extrabold text-slate-900 dark:text-slate-100 tabular-nums">{budgetDisplay}<span className="text-slate-500 font-normal">{fxBudget}</span></span>
-              </div>
-              <button type="button" onClick={p.onOpenBudgetFilter} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap">
-                <SlidersHorizontal className="w-3.5 h-3.5" /><span>{isEn ? 'Adjust Budget' : 'تغییر بودجه'}</span>
-              </button>
-              <button type="button" onClick={() => p.onNavigateView('map')} className="px-3 py-2 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:opacity-90 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap">
-                <MapIcon className="w-3.5 h-3.5" /><span>{isEn ? 'Full Map' : 'نقشه کامل'}</span>
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
-            <span className="text-[11px] font-bold text-slate-400 shrink-0">{isEn ? 'Quick Tools:' : 'میان‌برهای تحلیلی:'}</span>
-            <button type="button" onClick={p.onOpenReverseBudget} className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold hover:bg-emerald-100 transition shrink-0 cursor-pointer">{isEn ? 'Reverse Budget Finder' : 'کاشف معکوس بودجه'}</button>
-            <button type="button" onClick={p.onOpenHedonic} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Hedonic Valuation' : 'کارشناسی ارزش ملک'}</button>
-            <button type="button" onClick={p.onOpenCompare} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Compare 2 Areas' : 'مقایسه دو محله'}</button>
-            <button type="button" onClick={() => p.onOpenSuperModule('fake_detector')} className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition shrink-0 cursor-pointer">{isEn ? 'Fake Listing Detector' : 'مچ‌گیر آگهی فیک'}</button>
-          </div>
-        </div>
-      </section>
+    <div className="w-full max-w-[1280px] mx-auto px-4 py-6 sm:py-10 space-y-12 animate-fadeIn text-[#182522] dark:text-slate-100" data-testid="product-home-view">
+      {/* 02. بخش معرفی و جست‌وجوی اصلی (Hero + Global Search + Lightweight Spatial Map Preview) */}
+      <HomeHeroAndMapPreview
+        evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+        selectedHood={p.selectedHood}
+        activeCity={p.activeCity || 'tehran'}
+        mode={p.mode}
+        onSelectMode={p.setMode}
+        onSelectNeighborhood={p.onSelectNeighborhood}
+        onOpenInspector={p.onOpenInspector}
+        onNavigateView={p.onNavigateView}
+        resilienceScenario={resilienceScenario}
+      />
 
-      {/* 3. Four Core Editorial Pillars */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">{isEn ? 'Platform Analytical Modules' : 'بخش‌های تحلیلی پلتفرم'}</h2>
-          <span className="text-xs text-slate-500">{isEn ? `${p.counts.green} neighborhoods match your budget` : `${toPersianNum(p.counts.green)} محله کاملاً در محدوده توان مالی شما`}</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {pillars.map((item) => (
-            <button key={item.id} type="button" onClick={item.act} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 transition-all text-start flex flex-col justify-between group cursor-pointer shadow-xs">
-              <div>
-                <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-2.5">
-                  <span>{item.num}</span>
-                  <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition" />
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">{item.title}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{item.sub}</p>
-              </div>
-              <div className="pt-3.5 mt-3.5 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-400">{item.meta}</div>
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* 03 & 04. مسیرهای دسترسی سریع و نمای کلی بازار (Quick Access + Market Snapshot) */}
+      <QuickAccessAndMarketSnapshotSection
+        evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+        activeCity={p.activeCity || 'tehran'}
+        resilienceScenario={resilienceScenario}
+        onChangeResilienceScenario={setResilienceScenario}
+        onNavigateView={p.onNavigateView}
+        onOpenHedonic={p.onOpenHedonic}
+      />
 
-      {/* 4. Featured Neighborhoods — Architectural Editorial Cards with Pagination */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* 05. محله‌های منتخب — Featured Neighborhoods (Section 14.8) */}
+      <section aria-labelledby="home-featured-hoods-heading" data-testid="home-featured-neighborhoods-section" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 className="text-xl font-black text-slate-950 dark:text-white">{homeQuery.trim() ? `نتایج جستجو (${toPersianNum(filteredFeaturedPool.length)})` : (isEn ? 'Featured Neighborhoods' : 'محله‌های شاخص و برگزیده')}</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{isEn ? 'Selecting any card centers the live map on that neighborhood' : 'کلیک روی هر کارت، نقشه زنده را روی همان محله متمرکز می‌کند'}</p>
+            <h2 id="home-featured-hoods-heading" className="text-lg sm:text-xl font-extrabold text-[#182522] dark:text-white">
+              محله‌های تهران را دقیق‌تر بشناسید
+            </h2>
+            <p className="text-xs text-[#34433E] dark:text-slate-400 mt-0.5">
+              معرفی مستند محله‌ها بر پایه پوشش اطلاعاتی، کیفیت داده و تنوع جغرافیایی · بودجه فعال: <strong className="tabular-nums">{budgetDisplay}{fxBudget}</strong>
+            </p>
           </div>
-          <button type="button" onClick={() => p.onNavigateView('discover')} className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
-            <span>{isEn ? 'Advanced Explorer' : 'کاشف پیشرفته محله‌ها'}</span><ChevronLeft className="w-4 h-4" />
-          </button>
-        </div>
-        <div role="group" aria-label={isEn ? 'Price brackets' : 'بازه قیمتی خرید'} className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
-          {[
-            { id: 'all' as const, label: isEn ? 'All Budgets' : 'همه قیمت‌ها' },
-            { id: 'under5b' as const, label: p.mode === 'rent' ? (isEn ? '< 1B Rahn' : 'زیر ۱ م.ت') : (isEn ? '< 5B' : 'زیر ۵ میلیارد') },
-            { id: '5to10b' as const, label: p.mode === 'rent' ? (isEn ? '1B – 2B Rahn' : '۱ تا ۲ م.ت') : (isEn ? '5B – 10B' : '۵ تا ۱۰ میلیارد') },
-            { id: '10to20b' as const, label: p.mode === 'rent' ? (isEn ? '2B – 4B Rahn' : '۲ تا ۴ م.ت') : (isEn ? '10B – 20B' : '۱۰ تا ۲۰ میلیارد') },
-            { id: 'luxury' as const, label: p.mode === 'rent' ? (isEn ? 'Luxury (4B+)' : 'لوکس (۴+ م.ت)') : (isEn ? 'Luxury (20B+)' : 'لوکس (۲۰+ میلیارد)') },
-          ].map((b) => (
-            <button key={b.id} type="button" onClick={() => { setPriceBracket(b.id); setHomePage(1); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800'}`}>
-              {b.label}
+          <div className="flex flex-wrap items-center gap-2">
+            <div role="group" aria-label="روش انتخاب محله‌های منتخب" className="inline-flex items-center bg-[#F1F4F2] dark:bg-slate-800 p-0.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 text-[11px]">
+              {([
+                { id: 'editorial_curated', label: 'منتخب تحریریه‌ای' },
+                { id: 'data_completeness', label: 'کیفیت و پوشش داده' },
+                { id: 'budget_fit', label: 'انطباق با بودجه' },
+              ] as const).map((m) => (
+                <button key={m.id} type="button" onClick={() => { setSelectionMode(m.id); setHomePage(1); }} className={`px-2.5 py-1 rounded-[6px] font-bold transition cursor-pointer ${selectionMode === m.id ? 'bg-white dark:bg-slate-900 text-[#182522] dark:text-white shadow-2xs' : 'text-[#34433E] dark:text-slate-400'}`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={p.onOpenBudgetFilter} className="px-2.5 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
+              <SlidersHorizontal className="w-3.5 h-3.5" /><span>تنظیم بودجه</span>
             </button>
-          ))}
+            <button type="button" onClick={() => p.onNavigateView('discover')} className="text-xs font-bold text-[#176B63] dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
+              <span>همه محله‌ها</span><ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Price Bracket Filter + Local Filter Input */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div role="group" aria-label="بازه قیمتی خرید" className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+            {[
+              { id: 'all' as const, label: 'همه قیمت‌ها' },
+              { id: 'under5b' as const, label: p.mode === 'rent' ? 'زیر ۱ م.ت' : 'زیر ۵ میلیارد' },
+              { id: '5to10b' as const, label: p.mode === 'rent' ? '۱ تا ۲ م.ت' : '۵ تا ۱۰ میلیارد' },
+              { id: '10to20b' as const, label: p.mode === 'rent' ? '۲ تا ۴ م.ت' : '۱۰ تا ۲۰ میلیارد' },
+              { id: 'luxury' as const, label: p.mode === 'rent' ? 'لوکس (۴+ م.ت)' : 'لوکس (۲۰+ میلیارد)' },
+            ].map((b) => (
+              <button key={b.id} type="button" onClick={() => { setPriceBracket(b.id); setHomePage(1); }} className={`px-3 py-1 rounded-[8px] text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-[#176B63] text-white' : 'text-[#34433E] dark:text-slate-400 bg-[#F1F4F2] dark:bg-slate-800'}`}>
+                {b.label}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={homeQuery}
+            onChange={(e) => { setHomeQuery(e.target.value); setHomePage(1); }}
+            placeholder="فیلتر سریع نام محله..."
+            aria-label="فیلتر محله‌های منتخب"
+            className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-[#182522] dark:text-slate-100 focus:outline-none focus:border-[#176B63]"
+          />
+        </div>
+
         {featuredHoods.length === 0 ? (
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
-            <div className="text-sm font-bold text-slate-900 dark:text-white">محله‌ای با عبارت «{homeQuery}» یافت نشد</div>
-            <button type="button" onClick={() => { setHomeQuery(''); setPriceBracket('all'); setHomePage(1); }} className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold cursor-pointer">نمایش محله‌های برگزیده</button>
+          <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-center space-y-2">
+            <div className="text-sm font-bold text-[#182522] dark:text-white">محله‌ای با این فیلتر یافت نشد</div>
+            <button type="button" onClick={() => { setHomeQuery(''); setPriceBracket('all'); setHomePage(1); }} className="px-3 py-1.5 rounded-[8px] bg-[#176B63] text-white text-xs font-bold cursor-pointer">بازنشانی فیلتر محله‌ها</button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {featuredHoods.map((hood) => {
               const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
               const unitDeal = convertPricePerSqmToUnit(dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm, areaUnit);
               const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore });
               void explain;
-              const isWithinBudget = hood.status === 'green';
               const isSelected = p.selectedHood.id === hood.id;
               const isArcActive = comparisonArc.active &&
                 ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) ||
                  (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
+              const fabricLabel = hood.overallScore >= 8 ? 'بافت نوساز و برنامه‌ریزی‌شده' : hood.overallScore >= 6.5 ? 'بافت میانی و متعادل' : 'بافت در حال نوسازی';
 
               return (
-                <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col justify-between group shadow-xs hover:shadow-md ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'}`}>
+                <div key={hood.id} className={`p-4 rounded-[12px] bg-white dark:bg-slate-900 border transition flex flex-col justify-between group ${isSelected ? 'border-[#176B63] ring-1 ring-[#176B63]/30' : 'border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63]/60'}`}>
                   <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="truncate max-w-[180px]">{hood.zone}</span>
-                      <div className="flex items-center gap-1.5">
-                        {isSelected && <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">فعال روی نقشه</span>}
-                        <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{toPersianNum(hood.overallScore)} <span className="text-slate-400 font-normal">/ ۱۰</span></span>
-                      </div>
+                    <div className="flex items-center justify-between text-xs text-[#34433E] dark:text-slate-400">
+                      <span className="truncate">{hood.zone} · {fabricLabel}</span>
+                      <span className="font-mono font-bold text-[#182522] dark:text-slate-200 tabular-nums">{toPersianNum(hood.overallScore)}/۱۰</span>
                     </div>
-                    <h3 className="text-lg font-black text-slate-950 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">محله {hood.name}</h3>
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-                      <div className="flex items-baseline justify-between text-xs">
-                        <span className="text-slate-500">{p.mode === 'buy' ? 'مرجع داخلی، آبان ۱۴۰۵:' : `رهن کامل (${formatAreaShort(80, areaUnit)}):`}</span>
-                        <span className="text-base font-black text-slate-900 dark:text-white tabular-nums">
-                          {p.mode === 'buy' ? toPersianNum(unitBuy) : toPersianNum(hood.rahn80m)}{' '}
-                          <span className="text-xs font-semibold text-slate-500">م.ت</span>
-                        </span>
+                    <h3 className="text-base sm:text-lg font-extrabold text-[#182522] dark:text-white group-hover:text-[#176B63] dark:group-hover:text-emerald-400 transition">محله {hood.name}</h3>
+                    <p className="text-xs text-[#34433E] dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {hood.pros || `محدوده شهری در ${hood.zone} با دسترسی مترو ${toPersianNum(hood.metro)}/۱۰ و شاخص هوا ${toPersianNum(hood.air)}/۱۰.`}
+                    </p>
+                    <div className="pt-2.5 border-t border-[#DCE3DF]/70 dark:border-slate-800 space-y-1 text-xs tabular-nums">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">{p.mode === 'buy' ? 'قیمت پیشنهادی (آبان ۱۴۰۵):' : `رهن کامل (${formatAreaShort(80, areaUnit)}):`}</span>
+                        <strong className="text-[#182522] dark:text-white">{p.mode === 'buy' ? `${toPersianNum(unitBuy)} م.ت/متر` : `${toPersianNum(hood.rahn80m)} م.ت`}</strong>
                       </div>
-                      <div className="flex items-baseline justify-between text-[11px] text-slate-500 tabular-nums">
-                        <span>{p.mode === 'buy' ? `سناریو v6.4 (غیرثبتی): متری ${toPersianNum(unitDeal)} · رهن ${toPersianNum(hood.rahn80m)}` : `سناریو v6.4 (غیرثبتی): متری ${toPersianNum(unitDeal)}`}</span>
-                        <span>هوا: <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(hood.air)}/۱۰</strong></span>
+                      <div className="text-[11px] text-slate-500">
+                        سناریو v6.4 (غیرثبتی): متری {toPersianNum(unitDeal)} م.ت
                       </div>
                     </div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className={isWithinBudget ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-500 dark:text-slate-400 font-medium'}>
-                      {isWithinBudget ? 'متناسب با بودجه تعریف‌شده' : `${toPersianNum(hood.diffPercent)}٪ بالاتر از بودجه`}
+                  <div className="mt-3 pt-2.5 border-t border-[#DCE3DF]/70 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <span className={hood.status === 'green' ? 'text-[#176B63] dark:text-emerald-400 font-bold' : 'text-slate-500'}>
+                      {hood.status === 'green' ? 'در محدوده بودجه' : `${toPersianNum(hood.diffPercent)}٪ بالاتر از بودجه`}
                     </span>
                     <div className="flex items-center gap-1.5">
                       {!isSelected && (
@@ -217,22 +212,17 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            updateMapAdvancedOverlayState({
-                              comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood },
-                            });
+                            updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } });
                           }}
-                          title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`}
                           aria-label={`کمان مقایسه ${hood.name} روی نقشه`}
-                          className={`p-1.5 rounded-lg border transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}
+                          className={`p-1.5 rounded-[6px] border transition cursor-pointer ${isArcActive ? 'bg-[#176B63] text-white border-[#176B63]' : 'border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-300'}`}
                         >
                           <Scale className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      {p.onOpenInspector ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector?.(hood); }} className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold cursor-pointer">کارنامه تحلیلی ←</button>
-                      ) : (
-                        <span className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition font-medium">تمرکز روی نقشه ←</span>
-                      )}
+                      <button type="button" onClick={(e) => { e.stopPropagation(); if (p.onOpenInspector) p.onOpenInspector(hood); else p.onSelectNeighborhood(hood); }} className="font-bold text-[#176B63] dark:text-emerald-400 hover:underline cursor-pointer">
+                        شناسنامه محله ←
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -240,27 +230,24 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
             })}
           </div>
         )}
-        <RadarPaginationBar
-          slice={homePaginationSlice}
-          onPageChange={setHomePage}
-          onPageSizeChange={(size) => { setHomePageSize(size); setHomePage(1); }}
-          pageSizeOptions={[6, 12, 0]}
-          isEn={isEn}
-          compact
-        />
+        <RadarPaginationBar slice={homePaginationSlice} onPageChange={setHomePage} onPageSizeChange={(size) => { setHomePageSize(size); setHomePage(1); }} pageSizeOptions={[6, 12, 0]} isEn={isEn} compact />
       </section>
 
-      {/* 5. Minimalist Bargain Callout */}
-      <section className="p-6 rounded-2xl bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h4 className="text-sm font-black text-slate-950 dark:text-white">شناسایی {toPersianNum(bargainsCount)} فرصت زیر قیمت بازار در معاملات جاری</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">واحدهای دارای انحراف منفی معنادار نسبت به میانگین معاملاتی، با فیلتر آگهی‌های فیک و قیمت طعمه.</p>
-        </div>
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button type="button" onClick={p.onOpenSmartSuggest} className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 transition cursor-pointer">پیشنهادهای هوشمند</button>
-          <button type="button" onClick={() => p.onNavigateView('discover')} className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 text-xs font-bold transition cursor-pointer">مشاهده در کاشف محله</button>
-        </div>
+      {/* بودجه‌سنج و راستی‌آزمایی آگهی (ابزارهای تحلیلی متصل به سرویس‌های اصلی) */}
+      <section aria-label="ابزارهای تطابق بودجه و بررسی آگهی" className="space-y-4">
+        <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={p.activeCity} selectedHoodId={p.selectedHood?.id} />
+        <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={p.activeCity || 'tehran'} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
       </section>
+
+      {/* 06, 07, 08, 09. گزارش‌ها، املاک و خدمات، روش‌شناسی داده و فوتر */}
+      <ResearchServicesAndMethodologySection
+        evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+        activeCity={p.activeCity || 'tehran'}
+        resilienceScenario={resilienceScenario}
+        onChangeResilienceScenario={setResilienceScenario}
+        onNavigateView={p.onNavigateView}
+        onOpenHedonic={p.onOpenHedonic}
+      />
     </div>
   );
 }

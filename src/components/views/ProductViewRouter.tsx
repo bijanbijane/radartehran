@@ -174,7 +174,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
     content = (
       <ProductHomeView
         evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood} onSelectNeighborhood={handleSelectNeighborhood}
-        onOpenInspector={(h) => { handleSelectNeighborhood(h); ui.setMobileSheetOpen(true); }} onNavigateView={(v) => navigateTo(v)}
+        onOpenInspector={(h) => { handleSelectNeighborhood(h); ui.setMobileSheetOpen(true); }} onNavigateView={navigateTo}
         onOpenBudgetFilter={() => ui.setMobileFilterOpen(true)} onOpenReverseBudget={() => p.setShowReverseBudgetModal(true)}
         onOpenHedonic={() => ui.setShowHedonicModal(true)} onOpenCompare={() => ui.setShowCompareModal(true)} onOpenSmartSuggest={() => ui.setShowSmartSuggestModal(true)}
         onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}
