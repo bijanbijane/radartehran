@@ -20,6 +20,11 @@ import {
   rollbackAllControlledFlags,
   toggleRolloutFlagSafe,
 } from '../../interaction-system/validationEngines';
+import { STAGE_12_DS_PHASES } from '../../design-system/componentSystem';
+import { HOME_ACCEPTANCE_CHECKLIST_18 } from '../../features/home/services/homeDataAdapter';
+import { MAP_IMPLEMENTATION_PACKAGES_19 } from '../../features/map/services/mapExperienceEngine';
+import { STAGE_16_ACCEPTANCE_CHECKLIST_25 } from '../../features/map/services/layerManagementRegistry';
+import { STAGE_17_ACCEPTANCE_CHECKLIST_30 } from '../../features/neighborhoods/services/neighborhoodProfileEngine';
 
 const INITIAL_QA_ISSUES: DesignQaIssue[] = [
   {
@@ -93,9 +98,7 @@ export const ValidationAndImplementLabTab: React.FC = () => {
           <span
             data-testid="design-freeze-gate-badge"
             className={`text-[11.5px] font-bold px-2.5 py-1 rounded-[6px] ${
-              gateStatus.allowed
-                ? 'bg-[#EAF5EE] text-[#176B4C]'
-                : 'bg-[#FDECEC] text-[#A61B1B]'
+              gateStatus.allowed ? 'bg-[#EAF5EE] text-[#176B4C]' : 'bg-[#FDECEC] text-[#A61B1B]'
             }`}
           >
             {gateStatus.statusLabelFa}
@@ -220,6 +223,19 @@ export const ValidationAndImplementLabTab: React.FC = () => {
               />
             </label>
           ))}
+        </div>
+      </RadarCard>
+
+      <RadarCard padding="standard" elevated data-testid="stages-1-to-17-audit-matrix">
+        <h3 className="text-[15px] font-bold text-[#182522] dark:text-white mb-2.5">
+          ۵. ماتریس ممیزی و پذیرش مراحل ۱ تا ۱۷ (End-to-End Stage 1–17 Verification)
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11.5px] tabular-nums">
+          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۲–۱۳ (DS): {STAGE_12_DS_PHASES.length}/۹ فاز</div>
+          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۴ (Home): {HOME_ACCEPTANCE_CHECKLIST_18.length}/۱۸ معیار</div>
+          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۵ (Map): {MAP_IMPLEMENTATION_PACKAGES_19.length}/۱۹ بسته</div>
+          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۶ (Layers): {STAGE_16_ACCEPTANCE_CHECKLIST_25.length}/۲۵ معیار</div>
+          <div className="p-2.5 rounded-[8px] bg-[#EAF5EE] text-[#176B4C] font-bold">مرحله ۱۷ (Hood): {STAGE_17_ACCEPTANCE_CHECKLIST_30.length}/۳۰ معیار</div>
         </div>
       </RadarCard>
     </div>
