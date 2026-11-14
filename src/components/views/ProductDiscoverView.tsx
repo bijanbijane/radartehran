@@ -11,6 +11,8 @@ import { isCoordInsideStoredViewport, updateMapAdvancedOverlayState, useMapAdvan
 import { CasperInstantVerdictCard } from '../casper/CasperInstantVerdictCard';
 import { computePaginationSlice } from '../../utils/productViewRouterShellClasses';
 import { RadarPaginationBar } from '../common/RadarPaginationBar';
+import { GlobalSearchWorkspace } from '../../features/search/components/GlobalSearchWorkspace';
+import { PublicDataProvenanceCard } from '../../features/data-governance/components/PublicDataProvenanceCard';
 
 export interface ProductDiscoverViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
@@ -84,7 +86,11 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
           </div>
         </div>
       </div>
+
+      <GlobalSearchWorkspace />
+      <PublicDataProvenanceCard entityId="saadat-abad" entityNameFa={p.selectedHood.name} sampleCount={Math.max(28, (p.selectedHood.bargains?.length || 2) * 14)} />
       <CasperInstantVerdictCard evaluatedNeighborhoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} onSelectNeighborhood={p.onSelectNeighborhood} targetSqm={p.targetSqm} onOpenInspector={p.onOpenInspector} />
+
       <div ref={resultsTopRef} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 space-y-3.5">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
@@ -142,7 +148,6 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         </div>
       </div>
 
-      {/* Content Rendering: Empty State vs Paginated Grid vs Paginated List */}
       {filtered.length === 0 ? (
         <div data-testid="relax-filter-assistant" className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4">
           <div className="text-base font-black text-slate-900 dark:text-white">{isEn ? 'No neighborhoods match your active filters' : 'محله‌ای با فیلترهای انتخابی شما یافت نشد'}</div>
@@ -265,14 +270,7 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         </div>
       )}
 
-      {/* Smart Pagination Control Bar */}
-      <RadarPaginationBar
-        slice={paginationSlice}
-        onPageChange={handlePageChange}
-        onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-        pageSizeOptions={[12, 24, 0]}
-        isEn={isEn}
-      />
+      <RadarPaginationBar slice={paginationSlice} onPageChange={handlePageChange} onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }} pageSizeOptions={[12, 24, 0]} isEn={isEn} />
     </div>
   );
 }

@@ -52,7 +52,8 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
 
       if (publicPath?.kind === 'hood') {
         setActiveCity('tehran'); setSelectedHoodId(publicPath.hoodId);
-        if (setPrimaryView) setPrimaryView('home');
+        if (setPrimaryView) setPrimaryView(navLoc.viewId || 'home');
+        if (setActiveSubTab && navLoc.subTab) setActiveSubTab(navLoc.subTab);
       } else if (publicPath?.kind === 'compare') {
         setActiveCity('tehran'); setCompareId1(publicPath.leftId); setCompareId2(publicPath.rightId);
         setSelectedHoodId(publicPath.leftId); setShowCompareModal(true);

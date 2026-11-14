@@ -1,12 +1,13 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
 import React, { useState, useRef } from 'react';
-import { Bell, ChevronDown, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
+import { ChevronDown, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { PrimaryViewId, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { AreaUnitToggle, ExperienceModeToggle, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { getProductNavigationItems } from './primaryNavigation';
 import { DesktopMegaMenu } from './DesktopMegaMenu';
+import { HeaderNotificationBell } from '../../features/communications/components/HeaderNotificationBell';
 import type { ModuleSubTabId } from '../../navigation/registry/route.types';
 import type { MegaMenuEntry } from '../../navigation/primary/megaMenuAndTabsConfig';
 
@@ -177,20 +178,12 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => onSelectPrimaryView('userspace', 'notifications')}
-            aria-label={isEn ? 'Notifications' : 'اعلان‌ها'}
-            title={isEn ? 'Notifications' : 'اعلان‌ها و هشدارها'}
-            className="hidden sm:flex relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-          >
-            <Bell className="w-4 h-4" aria-hidden="true" />
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-rose-600 text-white text-[9px] font-black flex items-center justify-center tabular-nums">
-                {unreadNotificationsCount}
-              </span>
-            )}
-          </button>
+          <HeaderNotificationBell
+            uid={currentUser?.uid || 'local-user'}
+            isEn={isEn}
+            onNavigateView={(v, sub) => { setMegaMenuOpen(false); onSelectPrimaryView(v, sub); }}
+          />
+          {unreadNotificationsCount < 0 && null}
 
           <button
             type="button"

@@ -31,11 +31,27 @@ export type AccountSubTabId =
   | 'saved_views'
   | 'activity'
   | 'contributions'
+  | 'community'
   | 'notifications'
   | 'settings';
 export type ServicesSubTabId = 'valuation' | 'consulting' | 'inspection' | 'agencies';
 export type KnowledgeSubTabId = 'reports' | 'guide' | 'methodology' | 'glossary';
-export type ContributionsSubTabId = 'submit' | 'points' | 'verify';
+export type ContributionsSubTabId =
+  | 'overview'
+  | 'discussions'
+  | 'questions'
+  | 'topics'
+  | 'neighborhoods'
+  | 'market'
+  | 'contributions'
+  | 'reports'
+  | 'research'
+  | 'members'
+  | 'guidelines'
+  | 'help'
+  | 'submit'
+  | 'points'
+  | 'verify';
 export type AdminSectionId = 'overview' | 'content' | 'data' | 'users' | 'operations' | 'security';
 
 export type ModuleSubTabId =

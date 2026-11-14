@@ -17,6 +17,7 @@ const VIEW_ALIASES: Record<string, RouteDestinationId> = {
   services: 'services',
   knowledge: 'knowledge',
   contributions: 'contributions',
+  community: 'contributions',
   admin: 'admin',
   not_found: 'not_found',
 };
@@ -40,6 +41,11 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
 
   // Legacy SEO Tehran routes (/tehran/{slug} & /tehran/compare/...) are handled by parseTehranPublicPath
   if (normPath.startsWith('/tehran/')) {
+    const queryView = params.get('view')?.trim().toLowerCase();
+    if (queryView && VIEW_ALIASES[queryView]) {
+      const subParam = params.get('tab')?.trim() as ModuleSubTabId | undefined;
+      return { viewId: VIEW_ALIASES[queryView], subTab: subParam, isUnknownPath: false, isLegacyTehranPath: true };
+    }
     return { viewId: 'home', isUnknownPath: false, isLegacyTehranPath: true };
   }
 
@@ -51,10 +57,15 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
     }
   }
 
+  // Dynamic /community/members/:username member profile route (§25.2)
+  if (normPath.startsWith('/community/members/')) {
+    return { viewId: 'contributions', subTab: 'members', isUnknownPath: false, isLegacyTehranPath: false };
+  }
+
   // Exact registry path or alias match
   const matched = REGISTRY.find((r) => r.path === normPath || (r.aliases && r.aliases.includes(normPath)));
   if (matched) {
-    // Allow explicit sub-path tab resolution on /services/*, /knowledge/*, /contributions/*
+    // Allow explicit sub-path tab resolution on /services/*, /knowledge/*, /contributions/*, /community/*
     const segments = normPath.split('/').filter(Boolean);
     let resolvedSub = matched.subTab;
     if (segments.length >= 2 && (matched.viewId === 'services' || matched.viewId === 'knowledge' || matched.viewId === 'contributions')) {

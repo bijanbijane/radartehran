@@ -1,0 +1,287 @@
+/**
+ * RT-UI-ANALYTICS-001 | Data Platform, Analytics & Research Intelligence Engine
+ * Official Metric Registry, Semantic Layer, IQR Distribution & Percentile Engine,
+ * SCD Type 2 Place Dimension, Pipeline Idempotency & Reproducible Research Workspace
+ */
+
+import {
+  AnalyticalIngestionPayload,
+  DataPipelineRecord,
+  DimPlaceScd2Record,
+  DistributionSummaryStats,
+  MetricSnapshotResponse,
+  OfficialMetricDefinition,
+  PeriodComparisonResult,
+  PredictiveModelRegistryEntry,
+  ReproducibleAnalysisDefinition,
+} from '../models/analytics.types';
+import { SampleSufficiencyStatus } from '../../data-governance/models/dataGovernance.types';
+
+export const OFFICIAL_METRIC_REGISTRY: OfficialMetricDefinition[] = [
+  {
+    id: 'met-1', metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
+    displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
+    definitionFa: 'میانه (صدک ۵۰) قیمت پیشنهادی هر مترمربع در آگهی‌های فعال و غیرتکراری پس از حذف داده‌های پرت IQR.',
+    domain: 'MARKET_ANALYTICS', financialConcept: 'ASKING_PRICE', formulaFa: 'Median(TrimmedIQR(AskingPricePerSqm))',
+    grain: 'PLACE_X_MONTH_X_PROPERTY_TYPE', unit: 'MILLION_TOMAN_PER_SQM', currency: 'TOMAN',
+    filtersFa: ['آگهی فعال', 'حذف تکراری با Hash ملک یکتا', 'حذف پرت خارج از 1.5*IQR'],
+    sourcePolicyFa: 'فقط آگهی‌های دارای متراژ و قیمت معتبر در لایه Silver/Gold',
+    minSampleThreshold: 15, methodologyVersion: '2.1', updateFrequencyFa: 'روزانه',
+    limitationsFa: ['نشان‌دهنده قیمت پیشنهادی فروشنده است و معادل قیمت قطعی معامله ثبتی نیست.'],
+    owner: 'Market Metric Owner', status: 'ACTIVE',
+  },
+  {
+    id: 'met-2', metricCode: 'MARKET.ACTIVE_LISTING_COUNT',
+    displayNameFa: 'تعداد آگهی فعال و ملک یکتا',
+    definitionFa: 'تعداد آگهی‌های دارای وضعیت فعال و مجاز در زمان Snapshot با تفکیک ملک یکتا.',
+    domain: 'MARKET_ANALYTICS', financialConcept: 'SUPPLY_VOLUME', formulaFa: 'Count(Distinct ActiveListingId)',
+    grain: 'PLACE_X_MONTH_X_PROPERTY_TYPE', unit: 'LISTING_COUNT',
+    filtersFa: ['وضعیت فعال', 'غیرتکراری', 'انتشار عمومی مجاز'], sourcePolicyFa: 'Listing Domain Snapshot',
+    minSampleThreshold: 5, methodologyVersion: '1.2', updateFrequencyFa: 'روزانه',
+    limitationsFa: ['نشان‌دهنده حجم عرضه قابل مشاهده است، نه تقاضای خرید بازار.'],
+    owner: 'Market Metric Owner', status: 'ACTIVE',
+  },
+  {
+    id: 'met-3', metricCode: 'MARKET.PRICE_REDUCTION_RATE',
+    displayNameFa: 'نرخ آگهی‌های دارای کاهش قیمت معتبر',
+    definitionFa: 'نسبت آگهی‌های دارای کاهش قیمت واقعی مالک به کل آگهی‌های واجد تاریخچه قابل مقایسه.',
+    domain: 'MARKET_ANALYTICS', financialConcept: 'ASKING_PRICE',
+    formulaFa: '(ListingsWithValidPriceReduction / EligibleListingsWithComparableHistory) * 100',
+    grain: 'PLACE_X_MONTH_X_PROPERTY_TYPE', unit: 'PERCENT',
+    numeratorFa: 'آگهی‌های دارای کاهش قیمت معتبر مالک',
+    denominatorFa: 'آگهی‌های واجد تاریخچه قیمت قابل مقایسه در همان دوره',
+    filtersFa: ['حذف بازنشرهای ساختگی', 'ثبات واحد پول و متراژ'],
+    sourcePolicyFa: 'FactPriceObservation + FactListingSnapshot',
+    minSampleThreshold: 15, methodologyVersion: '1.1', updateFrequencyFa: 'هفتگی',
+    limitationsFa: ['آگهی‌های فاقد سابقه قیمت در مخرج کسر قرار نمی‌گیرند.'],
+    owner: 'Market Metric Owner', status: 'ACTIVE',
+  },
+  {
+    id: 'met-4', metricCode: 'VALUATION.HEDONIC_ESTIMATE_PER_SQM',
+    displayNameFa: 'برآورد ارزش هدونیک هر مترمربع (سناریو معامله v6.4)',
+    definitionFa: 'خروجی مدل هدونیک رادار بر اساس مشخصات ملک و ضریب تعدیل محله (مستقل از قیمت پیشنهادی آگهی).',
+    domain: 'VALUATION_ANALYTICS', financialConcept: 'VALUATION_ESTIMATE',
+    formulaFa: 'HedonicValuation(BasePrice, Age, Floor, Amenities)',
+    grain: 'VALUATION_RUN_EVENT', unit: 'MILLION_TOMAN_PER_SQM', currency: 'TOMAN',
+    filtersFa: ['ورودی کامل مشخصات کالبدی'], sourcePolicyFa: 'Hedonic Pricing Engine v1405.1',
+    minSampleThreshold: 10, methodologyVersion: '1405.1', updateFrequencyFa: 'لحظه‌ای / دوره‌ای',
+    limitationsFa: ['برآورد آماری است و سند معامله یا کارشناسی رسمی دادگستری محسوب نمی‌شود.'],
+    owner: 'Valuation Metric Owner', status: 'ACTIVE',
+  },
+];
+
+export const SCD2_PLACE_DIMENSIONS: DimPlaceScd2Record[] = [
+  {
+    placeKey: 'pk-saadat-v1', canonicalPlaceId: 'saadat-abad',
+    placeNameFa: 'سعادت‌آباد (مرز قدیم پیش از الحاق پهنه شمالی)', districtNumber: 2,
+    boundaryVersion: 'v1.0-1403', areaSqKm: 6.8, validFrom: '2024-03-20T00:00:00Z',
+    validTo: '2025-03-20T23:59:59Z', isCurrent: false, version: 1,
+  },
+  {
+    placeKey: 'pk-saadat-v2', canonicalPlaceId: 'saadat-abad', placeNameFa: 'سعادت‌آباد',
+    districtNumber: 2, boundaryVersion: 'v2.0-1405', areaSqKm: 7.15,
+    validFrom: '2025-03-21T00:00:00Z', isCurrent: true, version: 2,
+  },
+  {
+    placeKey: 'pk-punak-v1', canonicalPlaceId: 'punak', placeNameFa: 'پونک',
+    districtNumber: 5, boundaryVersion: 'v2.0-1405', areaSqKm: 5.9,
+    validFrom: '2025-03-21T00:00:00Z', isCurrent: true, version: 1,
+  },
+];
+
+export function computePercentile(sortedValues: number[], percentile0To100: number): number {
+  if (sortedValues.length === 0) return 0;
+  if (sortedValues.length === 1) return sortedValues[0];
+  const idx = (percentile0To100 / 100) * (sortedValues.length - 1);
+  const lower = Math.floor(idx);
+  const upper = Math.ceil(idx);
+  if (lower === upper) return Number(sortedValues[lower].toFixed(2));
+  const weight = idx - lower;
+  return Number((sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight).toFixed(2));
+}
+
+export function computeDistributionStats(
+  rawValues: number[],
+  uniqueEntityCount = rawValues.length,
+  trimOutliers = true
+): DistributionSummaryStats {
+  const valid = rawValues.filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
+  if (valid.length === 0) {
+    return {
+      count: 0, uniqueEntityCount: 0, mean: 0, median: 0, p10: 0, p25: 0, p75: 0, p90: 0, iqr: 0,
+      trimmedOutlierCount: 0, sufficiencyStatus: 'INSUFFICIENT',
+    };
+  }
+
+  const rawQ1 = computePercentile(valid, 25);
+  const rawQ3 = computePercentile(valid, 75);
+  const rawIqr = rawQ3 - rawQ1;
+
+  let working = valid;
+  let trimmedOutlierCount = 0;
+  if (trimOutliers && valid.length >= 6 && rawIqr > 0) {
+    const lowFence = rawQ1 - 1.5 * rawIqr;
+    const highFence = rawQ3 + 1.5 * rawIqr;
+    const filtered = valid.filter((v) => v >= lowFence && v <= highFence);
+    if (filtered.length >= 3) {
+      trimmedOutlierCount = valid.length - filtered.length;
+      working = filtered;
+    }
+  }
+
+  const sum = working.reduce((acc, v) => acc + v, 0);
+  const mean = Number((sum / working.length).toFixed(2));
+  const median = computePercentile(working, 50);
+  const p10 = computePercentile(working, 10);
+  const p25 = computePercentile(working, 25);
+  const p75 = computePercentile(working, 75);
+  const p90 = computePercentile(working, 90);
+  const iqr = Number((p75 - p25).toFixed(2));
+
+  let sufficiencyStatus: SampleSufficiencyStatus = 'STRONG';
+  if (uniqueEntityCount < 5) sufficiencyStatus = 'INSUFFICIENT';
+  else if (uniqueEntityCount < 25) sufficiencyStatus = 'LIMITED';
+  else if (uniqueEntityCount < 60) sufficiencyStatus = 'ADEQUATE';
+
+  return { count: working.length, uniqueEntityCount, mean, median, p10, p25, p75, p90, iqr, trimmedOutlierCount, sufficiencyStatus };
+}
+
+export function computeSafePeriodComparison(params: {
+  currentPeriodLabelFa: string; previousPeriodLabelFa: string; currentValue: number; previousValue: number;
+  currentSampleCount: number; previousSampleCount: number; currentBoundaryVersion: string; previousBoundaryVersion: string;
+  compositionChangedSignificantly?: boolean;
+}): PeriodComparisonResult {
+  const boundaryVersionConsistent = params.currentBoundaryVersion === params.previousBoundaryVersion;
+  if (!Number.isFinite(params.previousValue) || params.previousValue <= 0) {
+    return {
+      currentPeriodLabelFa: params.currentPeriodLabelFa, previousPeriodLabelFa: params.previousPeriodLabelFa,
+      currentValue: params.currentValue, previousValue: params.previousValue, changePercent: null, computable: false,
+      nonComputableReasonFa: 'مقدار دوره پایه صفر یا ناموجود است؛ درصد تغییر قابل محاسبه نیست.',
+      currentSampleCount: params.currentSampleCount, previousSampleCount: params.previousSampleCount, boundaryVersionConsistent,
+    };
+  }
+
+  const changePercent = Number((((params.currentValue - params.previousValue) / params.previousValue) * 100).toFixed(2));
+  const warnings: string[] = [];
+  if (!boundaryVersionConsistent) warnings.push(`نسخه مرز محله بین دو دوره تغییر کرده است (${params.previousBoundaryVersion} ← ${params.currentBoundaryVersion}).`);
+  if (params.compositionChangedSignificantly) warnings.push('ترکیب سن بنا و متراژ نمونه‌ها بین دو دوره تغییر محسوسی داشته است.');
+
+  return {
+    currentPeriodLabelFa: params.currentPeriodLabelFa, previousPeriodLabelFa: params.previousPeriodLabelFa,
+    currentValue: params.currentValue, previousValue: params.previousValue, changePercent, computable: true,
+    currentSampleCount: params.currentSampleCount, previousSampleCount: params.previousSampleCount,
+    boundaryVersionConsistent, compositionShiftWarningFa: warnings.length > 0 ? warnings.join(' ') : undefined,
+  };
+}
+
+export class AnalyticsPlatformEngine {
+  private processedIdempotencyKeys: Set<string> = new Set(['idem-boot-1']);
+  private quarantinedPayloads: Array<{ payload: Partial<AnalyticalIngestionPayload>; reasonFa: string }> = [];
+  private pipelines: DataPipelineRecord[] = [
+    {
+      id: 'pipe-mkt-gold-1', pipelineCode: 'PIPELINE.MARKET.SNAPSHOT_DAILY',
+      titleFa: 'ساخت Snapshot روزانه قیمت پیشنهادی و عرضه (Silver → Gold)',
+      sourceSystem: 'ListingOperationalOutbox', targetLayer: 'GOLD', targetDataset: 'FactMarketMetric',
+      scheduleFa: 'روزانه ۰۲:۰۰ بامداد (Incremental)', priority: 'HIGH', status: 'SUCCEEDED',
+      recordsProcessed: 4820, failedRecords: 14, computeDurationMs: 1420, estimatedCostUnits: 12, actualCostUnits: 11.4,
+      lastRunAt: '2026-04-12T02:00:00Z',
+    },
+    {
+      id: 'pipe-geo-silver-2', pipelineCode: 'PIPELINE.GEO.NEIGHBORHOOD_PROFILE',
+      titleFa: 'تجمیع مکانی شاخص‌های کالبدی و دسترسی محلات (Bronze → Silver)',
+      sourceSystem: 'TehranGISRegistry', targetLayer: 'SILVER', targetDataset: 'FactNeighborhoodMetric',
+      scheduleFa: 'هفتگی', priority: 'NORMAL', status: 'SUCCEEDED',
+      recordsProcessed: 354, failedRecords: 0, computeDurationMs: 680, estimatedCostUnits: 5, actualCostUnits: 4.8,
+      lastRunAt: '2026-04-11T04:00:00Z',
+    },
+  ];
+
+  private savedAnalyses: ReproducibleAnalysisDefinition[] = [
+    {
+      analysisId: 'ana-rep-1405-01',
+      titleFa: 'بررسی شکاف قیمت پیشنهادی و معامله سناریویی در مناطق ۲ و ۵ تهران',
+      researchQuestionFa: 'آیا شکاف قیمت پیشنهادی و معامله در آپارتمان‌های ۲خوابه سعادت‌آباد و پونک از الگوی یکسانی پیروی می‌کند؟',
+      ownerId: 'researcher-urban-1', datasetVersions: ['mkt-snapshot-2026-04-12'],
+      metricCodes: ['MARKET.MEDIAN.ASKING_PRICE_PER_SQM', 'VALUATION.HEDONIC_ESTIMATE_PER_SQM'],
+      methodologyVersions: ['2.1', '1405.1'],
+      geographicScope: { placeIds: ['saadat-abad', 'punak'], boundaryVersion: 'v2.0-1405' },
+      timeRange: { from: '2026-03-01', to: '2026-04-12', labelFa: 'بهار ۱۴۰۵' },
+      createdAt: '2026-04-12T08:00:00Z',
+      outputSummaryFa: 'میانه قیمت پیشنهادی در سعادت‌آباد ۱۴۲.۰ و در پونک ۹۸.۵ میلیون تومان/مترمربع با شکاف میانگین ۶.۱٪ نسبت به سناریوی معامله است.',
+      reproducibleHash: 'sha256:ana-1405-verified-8841',
+    },
+  ];
+
+  private modelRegistry: PredictiveModelRegistryEntry[] = [
+    {
+      modelId: 'mdl-hedonic-v1405', modelNameFa: 'موتور هدونیک برآورد بازه ارزش مسکن تهران',
+      analysisType: 'DIAGNOSTIC', version: '1405.1', trainingDatasetVersion: 'gold-hedonic-ref-1405-q1',
+      mapePercent: 6.4, uncertaintyBandPercent: 8.5, dataDriftStatus: 'STABLE', conceptDriftStatus: 'STABLE',
+      knownLimitationsFa: ['در املاک لوکس بالای ۳۵۰ مترمربع یا کلنگی دارای قدرالسهم ویژه، بازه عدم‌قطعیت به ۱۲٪ می‌رسد.'],
+      approvedUseCasesFa: ['برآورد بازه اولیه تصمیم‌گیری خریدار و فروشنده در کنار نمونه‌های مقایسه‌ای'],
+      requiresHumanReview: true, status: 'ACTIVE', deployedAt: '2026-03-21T00:00:00Z',
+    },
+  ];
+
+  public ingestAnalyticalEvent(payload: Partial<AnalyticalIngestionPayload>): {
+    status: 'ACCEPTED' | 'DUPLICATE_SKIPPED' | 'QUARANTINED'; reasonFa: string;
+  } {
+    if (!payload.idempotencyKey || !payload.sourceSystem || !payload.schemaVersion || !payload.occurredAt) {
+      this.quarantinedPayloads.push({ payload, reasonFa: 'نقص فیلدهای اجباری قرارداد Ingestion یا عدم تطابق Schema' });
+      return { status: 'QUARANTINED', reasonFa: 'ورودی به دلیل نقص Schema به مسیر قرنطینه منتقل شد.' };
+    }
+    if (this.processedIdempotencyKeys.has(payload.idempotencyKey)) {
+      return { status: 'DUPLICATE_SKIPPED', reasonFa: 'رویداد با کلید یکتای قبلی پردازش شده است (جلوگیری از شمارش مضاعف).' };
+    }
+    this.processedIdempotencyKeys.add(payload.idempotencyKey);
+    return { status: 'ACCEPTED', reasonFa: 'رویداد در لایه Landing/Bronze ثبت شد.' };
+  }
+
+  public getMetricSnapshotForPlace(placeId: string, baseBuyPerSqm = 142): MetricSnapshotResponse {
+    const placeDim = SCD2_PLACE_DIMENSIONS.find((d) => d.canonicalPlaceId === placeId && d.isCurrent) || SCD2_PLACE_DIMENSIONS[1];
+    const syntheticSamples = [
+      baseBuyPerSqm * 0.88, baseBuyPerSqm * 0.92, baseBuyPerSqm * 0.96, baseBuyPerSqm * 0.99,
+      baseBuyPerSqm, baseBuyPerSqm * 1.02, baseBuyPerSqm * 1.05, baseBuyPerSqm * 1.09, baseBuyPerSqm * 1.14, baseBuyPerSqm * 1.85,
+    ];
+    const dist = computeDistributionStats(syntheticSamples, 48, true);
+
+    return {
+      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM', displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
+      financialConcept: 'ASKING_PRICE', value: dist.median, distribution: dist, unit: 'MILLION_TOMAN_PER_SQM',
+      period: { from: '2026-03-21', to: '2026-04-12', labelFa: 'بهار ۱۴۰۵ (۳۰ روز اخیر)' },
+      geography: { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion },
+      methodologyVersion: '2.1', dataSnapshotId: 'mkt-snapshot-2026-04-12', qualityStatus: 'VERIFIED',
+      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: '2026-04-12T06:05:00Z',
+      limitationsFa: [
+        'محاسبه بر پایه قیمت‌های پیشنهادی آگهی‌هاست و معادل قیمت قطعی معاملات ثبتی نیست.',
+        `${dist.trimmedOutlierCount} داده پرت خارج از بازه 1.5×IQR پالایش شده است.`,
+      ],
+    };
+  }
+
+  public canExportDatasetSlice(params: {
+    sampleCount: number; datasetClassification: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED'; callerRole: 'PUBLIC_USER' | 'RESEARCHER' | 'ADMIN';
+  }): { allowed: boolean; reasonFa: string } {
+    if (params.sampleCount < 5) {
+      return { allowed: false, reasonFa: 'به دلیل حفاظت از حریم خصوصی و خطر شناسایی فردی در نمونه‌های کوچک (کمتر از ۵ رکورد)، خروجی گرفتن مجاز نیست.' };
+    }
+    if (params.datasetClassification === 'RESTRICTED' && params.callerRole !== 'ADMIN') {
+      return { allowed: false, reasonFa: 'دسترسی و Export مجموعه‌داده محدود فقط برای نقش مجاز امکان‌پذیر است.' };
+    }
+    if (params.datasetClassification === 'INTERNAL' && params.callerRole === 'PUBLIC_USER') {
+      return { allowed: false, reasonFa: 'مجموعه‌داده داخلی برای کاربر عمومی قابل دانلود نیست.' };
+    }
+    return { allowed: true, reasonFa: 'مجاز برای دریافت خروجی تجمیعی' };
+  }
+
+  public getOverviewBundle(placeId = 'saadat-abad', baseBuyPerSqm = 142) {
+    return {
+      metricsRegistry: OFFICIAL_METRIC_REGISTRY, placeDimensionsScd2: SCD2_PLACE_DIMENSIONS,
+      activeSnapshot: this.getMetricSnapshotForPlace(placeId, baseBuyPerSqm),
+      pipelines: this.pipelines, savedAnalyses: this.savedAnalyses, modelRegistry: this.modelRegistry,
+      quarantinedCount: this.quarantinedPayloads.length,
+    };
+  }
+}
+
+export const defaultAnalyticsPlatformEngine = new AnalyticsPlatformEngine();

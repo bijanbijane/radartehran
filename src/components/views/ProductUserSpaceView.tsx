@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { User, Heart, LogIn, LogOut, MapPin, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Scale, Download, Trash2 } from 'lucide-react';
+import { User, LogIn, LogOut, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Download, Trash2 } from 'lucide-react';
 import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, toPersianNum } from '../../data/neighborhoods';
-import { type CityId, MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../../data/multiCityData';
-import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
+import { type CityId, getAllMultiCityNeighborhoods } from '../../data/multiCityData';
+import { formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
-import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
-import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { SearchHistory } from '../SearchHistory';
 import { AccountSubSectionsPanel } from '../navigation/AccountSubSectionsPanel';
 import type { AccountSubTabId, ModuleSubTabId, SavedMapViewItem } from '../../navigation/registry/route.types';
+import { loadAccountWorkspaceSnapshot, removeSavedPropertyById } from '../../features/account/services/accountWorkspaceService';
+import { AccountOverviewDashboard } from '../../features/account/components/AccountOverviewDashboard';
+import { AccountSavedItemsPanel } from '../../features/account/components/AccountSavedItemsPanel';
+import { AccountFavoriteNeighborhoodsSection } from '../../features/account/components/AccountFavoriteNeighborhoodsSection';
+import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 const CLIENT_STORAGE_KEYS_FALLBACK = ['tehran_housing_radar_v35_neighborhoods', 'tehran_radar_feature_flags_v35', 'tehran_radar_visited_homes_v1', 'tehran_radar_favorite_hoods_v1', 'tehran_radar_recent_searches_v1', 'tehran_radar_area_unit_v1', 'tehran_radar_intl_currency_v1'] as const;
 export interface ProductUserSpaceViewProps {
   currentUser: FirebaseUser | null; onGoogleSignIn: () => void; onSignOut: () => void;
@@ -30,9 +33,17 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const [busyAction, setBusyAction] = useState<'export' | 'delete' | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [privacyNotice, setPrivacyNotice] = useState<string | null>(null);
+  const [workspaceTick, setWorkspaceTick] = useState(0);
+  void workspaceTick;
   const isEn = radarLocale === 'en';
   const currentTab: AccountSubTabId = p.activeSubTab || 'overview';
-  const { comparisonArc } = useMapAdvancedOverlayState();
+  const workspaceSnapshot = loadAccountWorkspaceSnapshot({
+    callerUid: p.currentUser?.uid || 'local-user',
+    displayName: p.currentUser?.displayName,
+    visitedHomesCount: p.visitedHomesCount,
+  });
+  const refHood = p.selectedHood || p.evaluatedNeighborhoods[0];
+  const refDealSqm = refHood ? aggregateNeighborhoodMarketMetrics(refHood.id, refHood.name, refHood.buyPerSqm, buildNeighborhoodListingSamples(refHood)).estimatedDealPricePerSqm : 0;
   const effectiveBuyBudget = p.buyTotalBudget + (p.useLoanBooster ? 1200 : 0);
   const effectiveRahnPower = p.totalRahnEquivalent ?? (p.deposit + Math.round((p.monthlyRent * 100) / 3) + (p.useLoanBooster ? 400 : 0));
   const allMultiCityHoods = getAllMultiCityNeighborhoods();
@@ -46,6 +57,8 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
     return { ...raw, baseBuyPerSqm: raw.buyPerSqm, overallScore: Math.round(((raw.air + raw.powerWater + raw.internet + raw.metro + raw.security + raw.flatTerrain) / 6) * 10) / 10, status: ratio <= 1.0 ? ('green' as const) : ratio <= 1.15 ? ('yellow' as const) : ('red' as const), diffPercent: Math.round((ratio - 1) * 100), distKm: null, trafficInfo: getNeighborhoodTrafficInfo(raw), marketReport: getNeighborhoodMarketReport(raw) } satisfies EvaluatedNeighborhood;
   }).filter((h): h is EvaluatedNeighborhood => Boolean(h));
   const topFavScore = favoriteHoods.length > 0 ? Math.max(...favoriteHoods.map((h) => h.overallScore)) : undefined;
+  const favExplainById = new Map(favoriteHoods.map((hood) => [hood.id, explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFavScore })]));
+  const favDealSqmById = new Map(favoriteHoods.map((hood) => [hood.id, aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm]));
   const budgetFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? effectiveBuyBudget : effectiveRahnPower, intlCurrency, radarLocale)})` : '';
   const avgShortlistScore = favoriteHoods.length > 0 ? (favoriteHoods.reduce((acc, h) => acc + h.overallScore, 0) / favoriteHoods.length).toFixed(1) : null;
 
@@ -180,106 +193,77 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         </div>
       </div>}
 
+      {currentTab === 'overview' && (
+        <AccountOverviewDashboard
+          snapshot={workspaceSnapshot}
+          favoriteHoodsCount={favoriteHoods.length}
+          visitedHomesCount={p.visitedHomesCount}
+          onNavigateView={p.onNavigateView}
+          onSwitchAccountTab={(tab) => p.onNavigateView?.('userspace', tab)}
+        />
+      )}
+
       {currentTab === 'overview' && <SearchHistory variant="chips" title="آخرین محله‌های جست‌وجوشده" evaluatedNeighborhoods={p.evaluatedNeighborhoods} mode={p.mode} onSelectNeighborhood={(_name, matched) => { if (matched) { p.onSelectNeighborhood(matched); p.onNavigateView?.('map'); } }} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />}
 
-      {(currentTab === 'overview' || currentTab === 'favorites') && (<div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2"><Heart className="w-4 h-4 text-rose-500 fill-rose-500" /><span>{isEn ? `Saved Neighborhoods (${favoriteHoods.length})` : `محله‌های نشان‌شده شما (${toPersianNum(favoriteHoods.length)})`}</span></h2>
-            {avgShortlistScore && <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">میانگین امتیاز: {toPersianNum(avgShortlistScore)}/۱۰</span>}
-          </div>
-          <div className="flex items-center gap-2">
-            {favoriteHoods.length >= 2 && p.onOpenShortlistMatrix && (
-              <button type="button" onClick={p.onOpenShortlistMatrix} className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer">
-                <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600" /><span>{isEn ? 'Shortlist Decision Matrix' : 'ماتریس مقایسه منتخب‌ها'}</span>
-              </button>
-            )}
-            <span className="text-xs text-slate-400 hidden sm:inline">{isEn ? 'Click any card to center live map' : 'کلیک روی هر کارت، نقشه زنده را متمرکز می‌کند'}</span>
-          </div>
-        </div>
+      {currentTab === 'favorites' && (
+        <AccountSavedItemsPanel
+          modeTab="properties_only"
+          savedProperties={workspaceSnapshot.savedProperties}
+          savedSearches={workspaceSnapshot.savedSearches}
+          savedMapViews={workspaceSnapshot.savedMapViews}
+          savedMarketAnalyses={workspaceSnapshot.savedMarketAnalyses}
+          evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+          dealMode={p.mode}
+          onRemoveSavedProperty={(id) => { removeSavedPropertyById(id); setWorkspaceTick((t) => t + 1); }}
+          onCreateSearchWatchlist={() => {}}
+          onChangeSearchCadence={() => {}}
+          onDeleteSearchWatchlist={() => {}}
+          onDeleteSavedMapView={() => {}}
+          onDeleteSavedMarketAnalysis={() => {}}
+          onOpenBudgetFilter={p.onOpenBudgetFilter}
+          onSelectNeighborhood={p.onSelectNeighborhood}
+          onNavigateView={p.onNavigateView}
+        />
+      )}
 
-        {favoriteHoods.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4">
-            <Heart className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto" />
-            <div className="space-y-1">
-              <p className="text-xs text-slate-700 dark:text-slate-300 font-bold">{isEn ? 'No saved neighborhoods in your shortlist yet.' : 'هنوز هیچ محله‌ای را به لیست منتخب‌های خود اضافه نکرده‌اید.'}</p>
-              <p className="text-[11px] text-slate-400">{isEn ? 'Bookmark neighborhoods to unlock the multi-criteria comparison matrix and track v6.4 closing prices.' : 'با نشان کردن محله‌ها، ماتریس مقایسه تحلیلی فعال می‌شود و تغییرات قیمت را رصد خواهید کرد.'}</p>
+      {(currentTab === 'overview' || currentTab === 'favorites') && (
+        <>
+          {refHood && (
+            <div className="text-[11px] text-slate-500 px-1 tabular-nums">
+              محله مرجع فعال ({refHood.name}): برآورد سناریو v6.4 (غیرثبتی) هر متر {toPersianNum(refDealSqm)} میلیون تومان
             </div>
-            {p.evaluatedNeighborhoods.filter((h) => h.status === 'green').length > 0 && (
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                <span className="text-[11px] font-bold text-slate-400 block mb-2">{isEn ? 'Quick picks matching your budget:' : 'پیشنهاد سریع متناسب با بودجه شما:'}</span>
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                  {p.evaluatedNeighborhoods.filter((h) => h.status === 'green').slice(0, 3).map((h) => (
-                    <button key={h.id} type="button" onClick={() => p.onToggleFavorite(h.id)} className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"><span>+ {h.name}</span></button>
-                  ))}
+          )}
+          <AccountFavoriteNeighborhoodsSection
+            favoriteHoods={favoriteHoods}
+            evaluatedNeighborhoods={p.evaluatedNeighborhoods}
+            selectedHood={p.selectedHood}
+            activeCity={p.activeCity}
+            mode={p.mode}
+            isEn={isEn}
+            areaUnit={areaUnit}
+            intlCurrency={intlCurrency}
+            radarLocale={radarLocale}
+            avgShortlistScore={avgShortlistScore}
+            topFavScore={topFavScore}
+            explainByHoodId={favExplainById}
+            dealSqmByHoodId={favDealSqmById}
+            renderCardHeader={(hood, isSelected, isOtherCity, cityLabel, explain) => (
+              <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-black text-slate-900 dark:text-white text-sm">{isOtherCity ? `${cityLabel} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
+                  {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">فعال روی نقشه</span>}
                 </div>
+                <span className="text-[11px] text-slate-400">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-600 dark:text-amber-400">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>
               </div>
             )}
-            {p.onNavigateView && (
-              <div className="flex items-center justify-center gap-2 pt-1">
-                <button type="button" onClick={() => p.onNavigateView?.('discover')} className="px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">{isEn ? 'Explore Neighborhoods' : 'کشف و فیلتر محله‌ها'}</button>
-                <button type="button" onClick={() => p.onNavigateView?.('map')} className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer">{isEn ? 'Open Live Map' : 'کاوش روی نقشه زنده'}</button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {favoriteHoods.map((hood) => {
-              const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-              const unitDeal = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm, areaUnit);
-              const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFavScore });
-              const isSelected = p.selectedHood?.id === hood.id;
-              const favCityId = resolveCityIdForNeighborhood(hood.id);
-              const isOtherCity = Boolean(p.activeCity && favCityId !== p.activeCity);
-              const isArcActive = p.selectedHood && comparisonArc.active && ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) || (comparisonArc.hoodB?.id === p.selectedHood.id && comparisonArc.hoodA?.id === hood.id));
-
-              return (
-                <div key={hood.id} className={`p-5 rounded-2xl bg-white dark:bg-slate-900 border transition flex flex-col justify-between ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'}`}>
-                  <div className="flex items-start justify-between">
-                    <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="font-black text-slate-900 dark:text-white text-sm">{isOtherCity ? `${MULTI_CITY_CONFIGS[favCityId]?.nameFa || ''} · محله ${hood.name}` : `محله ${hood.name}`}</h3>
-                        {isSelected && <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">فعال روی نقشه</span>}
-                      </div>
-                      <span className="text-[11px] text-slate-400">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-600 dark:text-amber-400">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>
-                    </div>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); p.onToggleFavorite(hood.id); }} aria-label={`حذف ${hood.name} از منتخب‌ها`} className="text-rose-500 hover:text-rose-600 p-1 cursor-pointer">
-                      <Heart className="w-4 h-4 fill-rose-500" />
-                    </button>
-                  </div>
-
-                  <div className="py-3 my-3 border-y border-slate-100 dark:border-slate-800 grid grid-cols-2 text-xs tabular-nums">
-                    <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">{unitBuy === unitDeal ? 'سناریو v6.4 (غیرثبتی):' : 'اعلامی / سناریو v6.4 (غیرثبتی):'}</span>
-                      <strong className="text-slate-900 dark:text-white font-black text-sm">
-                        {toPersianNum(unitBuy)} {unitBuy !== unitDeal && <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span>} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}
-                      </strong>
-                    </div>
-                    <div className="border-r border-slate-100 dark:border-slate-800 pr-3">
-                      <span className="text-[10px] text-slate-400 block font-medium">رهن ۸۰ متر:</span>
-                      <strong className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{toPersianNum(hood.rahn80m)} م.ت</strong>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={(e) => { e.stopPropagation(); p.onOpenInspector(hood); }} aria-label={`مشاهده کارنامه ${hood.name}`} className="flex-1 py-2 rounded-xl bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-bold transition cursor-pointer">مشاهده کارنامه محله</button>
-                    {!isSelected && p.selectedHood && (
-                      <button type="button" onClick={(e) => { e.stopPropagation(); updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood!, hoodB: hood } }); }} title={`ترسیم کمان مقایسه با ${p.selectedHood.name} روی نقشه`} aria-label={`کمان مقایسه ${hood.name} روی نقشه`} className={`p-2 rounded-xl border text-xs transition cursor-pointer ${isArcActive ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50'}`}>
-                        <Scale className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {p.onNavigateView && (
-                      <button type="button" onClick={(e) => { e.stopPropagation(); p.onSelectNeighborhood(hood); p.onNavigateView?.('map'); }} aria-label={`نمایش ${hood.name} روی نقشه`} className="px-2.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition cursor-pointer flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" /><span>نقشه کامل</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>)}
+            onToggleFavorite={p.onToggleFavorite}
+            onSelectNeighborhood={p.onSelectNeighborhood}
+            onOpenInspector={p.onOpenInspector}
+            onOpenShortlistMatrix={p.onOpenShortlistMatrix}
+            onNavigateView={(v) => p.onNavigateView?.(v)}
+          />
+        </>
+      )}
     </div>
   );
 }

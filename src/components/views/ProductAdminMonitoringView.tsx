@@ -11,6 +11,14 @@ import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { ADMIN_SIDEBAR_SECTIONS } from '../../navigation/registry/admin.routes';
 import type { AdminSectionId } from '../../navigation/registry/route.types';
 import { DEFAULT_UI_ROLLOUT_FLAGS } from '../../interaction-system/contracts/validationAndImplementContract';
+import { AdminServiceModerationCard } from '../../features/services/components/AdminServiceModerationCard';
+import { AdminOperationsOverviewCard } from '../../features/admin/components/AdminOperationsOverviewCard';
+import { AdminGovernanceModerationWorkspace } from '../../features/admin/components/AdminGovernanceModerationWorkspace';
+import { AdminDataAndModelCenter } from '../../features/admin/components/AdminDataAndModelCenter';
+import { AdminSecurityAndAuditCenter } from '../../features/admin/components/AdminSecurityAndAuditCenter';
+import { AdminCommunicationsPanel } from '../../features/admin/components/AdminCommunicationsPanel';
+import { loadActiveGovernanceRole, saveActiveGovernanceRole } from '../../features/admin/services/adminGovernanceService';
+import type { AdminGovernanceRole } from '../../features/admin/types/admin.types';
 
 export interface ProductAdminMonitoringViewProps {
   ui: any;
@@ -43,6 +51,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   const { ui, crudActions } = p;
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const [localSection, setLocalSection] = useState<AdminSectionId>(p.activeSection || 'overview');
+  const [governanceRole, setGovernanceRole] = useState<AdminGovernanceRole>(() => loadActiveGovernanceRole());
   const currentSection = p.activeSection || localSection;
 
   const fetchSystemHealth = async () => {
@@ -151,6 +160,20 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             <span className="text-[10.5px] font-mono text-slate-400">{activeMeta.requiredPermission}</span>
           </div>
 
+          {currentSection === 'overview' && (
+            <AdminOperationsOverviewCard
+              isVerifiedAdmin={p.isVerifiedAdmin}
+              activeRole={governanceRole}
+              onChangeRole={(role) => setGovernanceRole(saveActiveGovernanceRole(role))}
+              sponsorRequestsCount={(ui.sponsorRequests || []).length}
+              liveBargainsCount={p.totalLiveBargainsCount}
+              onJumpSection={(secId) => {
+                const match = ADMIN_SIDEBAR_SECTIONS.find((s) => s.id === secId);
+                if (match) handleSelectSection(match);
+              }}
+            />
+          )}
+
           {(currentSection === 'overview' || currentSection === 'operations') && (
             <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -169,52 +192,64 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             </div>
           )}
 
+          {currentSection === 'content' && (
+            <AdminGovernanceModerationWorkspace
+              section="content"
+              isVerifiedAdmin={p.isVerifiedAdmin}
+              activeRole={governanceRole}
+            />
+          )}
+
+          {currentSection === 'data' && (
+            <AdminDataAndModelCenter
+              neighborhoods={mergedNeighborhoods}
+              activeCity={p.activeCity}
+              isVerifiedAdmin={p.isVerifiedAdmin}
+              activeRole={governanceRole}
+            />
+          )}
+
+          {currentSection === 'users' && (
+            <>
+              <AdminServiceModerationCard isVerifiedAdmin={p.isVerifiedAdmin} />
+              <AdminGovernanceModerationWorkspace
+                section="users"
+                isVerifiedAdmin={p.isVerifiedAdmin}
+                activeRole={governanceRole}
+              />
+            </>
+          )}
+
+          {currentSection === 'operations' && (
+            <AdminCommunicationsPanel isVerifiedAdmin={p.isVerifiedAdmin} />
+          )}
+
+          {(currentSection === 'operations' || currentSection === 'security') && (
+            <AdminSecurityAndAuditCenter section={currentSection} isVerifiedAdmin={p.isVerifiedAdmin} activeRole={governanceRole} />
+          )}
+
           <AdminModal
-            open={true}
-            asPageView={true}
-            onClose={p.onBackToMap}
-            adminUnlocked={ui.adminUnlocked}
-            setAdminUnlocked={ui.setAdminUnlocked}
-            adminPassInput={ui.adminPassInput}
-            setAdminPassInput={ui.setAdminPassInput}
-            adminPassError={ui.adminPassError}
-            onAdminLogin={crudActions.handleAdminLogin}
-            adminTab={ui.adminTab}
-            setAdminTab={ui.setAdminTab}
-            sponsorRequests={ui.sponsorRequests}
-            buyerLeads={ui.buyerLeads}
-            totalLiveBargainsCount={p.totalLiveBargainsCount}
-            neighborhoods={mergedNeighborhoods}
-            activeCity={p.activeCity}
-            onAdminApproveSponsor={crudActions.handleAdminApproveSponsor}
-            onAdminDeleteSponsorRequest={crudActions.handleAdminDeleteSponsorRequest}
+            open={true} asPageView={true} onClose={p.onBackToMap}
+            adminUnlocked={ui.adminUnlocked} setAdminUnlocked={ui.setAdminUnlocked}
+            adminPassInput={ui.adminPassInput} setAdminPassInput={ui.setAdminPassInput}
+            adminPassError={ui.adminPassError} onAdminLogin={crudActions.handleAdminLogin}
+            adminTab={ui.adminTab} setAdminTab={ui.setAdminTab}
+            sponsorRequests={ui.sponsorRequests} buyerLeads={ui.buyerLeads}
+            totalLiveBargainsCount={p.totalLiveBargainsCount} neighborhoods={mergedNeighborhoods} activeCity={p.activeCity}
+            onAdminApproveSponsor={crudActions.handleAdminApproveSponsor} onAdminDeleteSponsorRequest={crudActions.handleAdminDeleteSponsorRequest}
             onDownloadBuyerLeadsCsv={crudActions.handleDownloadBuyerLeadsCsv}
-            onAdminDeleteBargain={crudActions.handleAdminDeleteBargain}
-            onAdminApproveBargain={crudActions.handleAdminApproveBargain}
-            adminEditHoodId={ui.adminEditHoodId}
-            setAdminEditHoodId={ui.setAdminEditHoodId}
-            adminEditBuySqm={ui.adminEditBuySqm}
-            setAdminEditBuySqm={ui.setAdminEditBuySqm}
-            adminEditRahn80m={ui.adminEditRahn80m}
-            setAdminEditRahn80m={ui.setAdminEditRahn80m}
-            adminPriceSavedMsg={ui.adminPriceSavedMsg}
-            onAdminQuickPriceSave={crudActions.handleAdminQuickPriceSave}
-            deepSyncing={ui.deepSyncing}
-            onDeepWebSync={p.handleDeepWebSync}
-            newAdminPassword={ui.newAdminPassword}
-            setNewAdminPassword={ui.setNewAdminPassword}
-            adminPassChangeMsg={ui.adminPassChangeMsg}
-            onAdminChangePassword={crudActions.handleAdminChangePassword}
-            systemHealth={ui.systemHealth}
-            loadingSystemHealth={ui.loadingSystemHealth}
-            onRefreshSystemHealth={fetchSystemHealth}
-            featureFlags={p.featureFlags}
-            onToggleFeatureFlag={crudActions.handleToggleFeatureFlag}
-            onDownloadFullBackupJson={crudActions.handleDownloadFullBackupJson}
-            onRestoreFullBackupJson={crudActions.handleRestoreFullBackupJson}
-            backupStatusMsg={ui.backupStatusMsg}
-            isVerifiedAdmin={p.isVerifiedAdmin}
-            currentUserEmail={p.currentUser?.email || null}
+            onAdminDeleteBargain={crudActions.handleAdminDeleteBargain} onAdminApproveBargain={crudActions.handleAdminApproveBargain}
+            adminEditHoodId={ui.adminEditHoodId} setAdminEditHoodId={ui.setAdminEditHoodId}
+            adminEditBuySqm={ui.adminEditBuySqm} setAdminEditBuySqm={ui.setAdminEditBuySqm}
+            adminEditRahn80m={ui.adminEditRahn80m} setAdminEditRahn80m={ui.setAdminEditRahn80m}
+            adminPriceSavedMsg={ui.adminPriceSavedMsg} onAdminQuickPriceSave={crudActions.handleAdminQuickPriceSave}
+            deepSyncing={ui.deepSyncing} onDeepWebSync={p.handleDeepWebSync}
+            newAdminPassword={ui.newAdminPassword} setNewAdminPassword={ui.setNewAdminPassword}
+            adminPassChangeMsg={ui.adminPassChangeMsg} onAdminChangePassword={crudActions.handleAdminChangePassword}
+            systemHealth={ui.systemHealth} loadingSystemHealth={ui.loadingSystemHealth} onRefreshSystemHealth={fetchSystemHealth}
+            featureFlags={p.featureFlags} onToggleFeatureFlag={crudActions.handleToggleFeatureFlag}
+            onDownloadFullBackupJson={crudActions.handleDownloadFullBackupJson} onRestoreFullBackupJson={crudActions.handleRestoreFullBackupJson}
+            backupStatusMsg={ui.backupStatusMsg} isVerifiedAdmin={p.isVerifiedAdmin} currentUserEmail={p.currentUser?.email || null}
             onGoogleSignIn={() => {
               ui.setAdminPassError('');
               signInWithPopup(auth, googleProvider).catch((err) =>
@@ -223,16 +258,13 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
                     ? 'پنجره ورود گوگل توسط مرورگر مسدود شد؛ لطفاً مسدودکننده پاپ‌آپ را غیرفعال کنید.'
                     : err?.code === 'auth/popup-closed-by-user'
                       ? 'پنجره ورود گوگل بسته شد.'
-                      : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.'
-                )
+                      : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.',
+                ),
               );
             }}
-            onExtendSponsor30Days={crudActions.handleExtendSponsor30Days}
-            onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
-            mapTileStyle={p.mapTileStyle}
-            onSelectMapTileStyle={p.setMapTileStyle}
-            onRetryNeshan={triggerManualNeshanRetry}
-            isFallbackActive={readPersistedFallbackCircuit()}
+            onExtendSponsor30Days={crudActions.handleExtendSponsor30Days} onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
+            mapTileStyle={p.mapTileStyle} onSelectMapTileStyle={p.setMapTileStyle}
+            onRetryNeshan={triggerManualNeshanRetry} isFallbackActive={readPersistedFallbackCircuit()}
           />
         </section>
       </div>

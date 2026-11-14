@@ -19,6 +19,7 @@ import type { ToolsSubTabId } from '../../navigation/registry/route.types';
 const InstantListingVerifierModal = React.lazy(() => import('../modals/InstantListingVerifierModal').then((m) => ({ default: m.InstantListingVerifierModal })));
 const ContractRoomShieldModal = React.lazy(() => import('../modals/ContractRoomShieldModal').then((m) => ({ default: m.ContractRoomShieldModal })));
 const RadarUiLabPanel = React.lazy(() => import('./RadarUiLabPanel').then((m) => ({ default: m.RadarUiLabPanel })));
+const ValuationWorkspacePage = React.lazy(() => import('../../features/valuation/pages/ValuationWorkspacePage').then((m) => ({ default: m.ValuationWorkspacePage })));
 
 export interface ProductToolsViewProps {
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
@@ -41,10 +42,12 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
   const [toolQuery, setToolQuery] = useState<string>('');
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
   const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false), [showUiLab, setShowUiLab] = useState<boolean>(false);
+  const [showValuationWorkspace, setShowValuationWorkspace] = useState<boolean>(p.activeSubTab === 'valuation');
   const [activeDecisionTab, setActiveDecisionTab] = useState<Stage2ActiveTab>('DECISION_SYNTHESIS');
   const [showVerifierModal, setShowVerifierModal] = useState<boolean>(false), [showContractShieldModal, setShowContractShieldModal] = useState<boolean>(false);
   useEffect(() => {
-    if (p.activeSubTab === 'valuation' || p.activeSubTab === 'calculators') setActiveCat('financial');
+    if (p.activeSubTab === 'valuation') { setActiveCat('financial'); setShowValuationWorkspace(true); }
+    else if (p.activeSubTab === 'calculators') setActiveCat('financial');
     else if (p.activeSubTab === 'compare_props' || p.activeSubTab === 'compare_areas') setActiveCat('decision');
     else setActiveCat('all');
   }, [p.activeSubTab]);
@@ -208,12 +211,16 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           ].map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveCat(tab.id)} className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition cursor-pointer ${activeCat === tab.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>{tab.label}</button>
           ))}
+          <button type="button" data-testid="toggle-valuation-workspace-btn" onClick={() => setShowValuationWorkspace((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showValuationWorkspace ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
+            میز کار ارزش‌گذاری
+          </button>
           <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
             Radar UI Lab
           </button>
         </div>
       </div>
 
+      {showValuationWorkspace && p.evaluatedNeighborhoods && p.onSelectNeighborhood && <React.Suspense fallback={null}><ValuationWorkspacePage evaluatedNeighborhoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} onSelectNeighborhood={p.onSelectNeighborhood} onOpenModalCalculator={p.onOpenHedonic} /></React.Suspense>}
       {showUiLab && <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} /></React.Suspense>}
       {showEmbeddedLab && (
         <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3">
