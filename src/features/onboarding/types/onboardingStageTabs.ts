@@ -1,5 +1,29 @@
 /** @file src/features/onboarding/types/onboardingStageTabs.ts — Stage Tabs Registry for Help Center */
 export type OnboardingHelpStageTabId =
+  | 'rt_fe_arch_001'
+  | 'rt_fe_ia_002'
+  | 'rt_fe_shell_003'
+  | 'rt_fe_ds_004'
+  | 'rt_fe_sc_005'
+  | 'rt_fe_layout_006'
+  | 'rt_fe_ia_nav_007'
+  | 'rt_fe_vds_008'
+  | 'rt_fe_ids_009'
+  | 'rt_fe_ia_011'
+  | 'rt_fe_fda_012'
+  | 'rt_fe_fpa_013'
+  | 'rt_fe_feat_013'
+  | 'rt_fe_nav_014'
+  | 'rt_fe_page_015'
+  | 'rt_fe_int_016'
+  | 'rt_fe_form_017'
+  | 'rt_fe_search_018'
+  | 'rt_fe_results_019'
+  | 'rt_fe_vis_020'
+  | 'rt_fe_entity_021'
+  | 'rt_fe_engagement_022'
+  | 'rt_fe_notification_023'
+  | 'rt_fe_account_024'
   | 'stage32'
   | 'stage33'
   | 'stage34'
@@ -57,6 +81,30 @@ export const ONBOARDING_STAGE_TABS: ReadonlyArray<{
   testId: string;
   labelFa: string;
 }> = [
+  { id: 'rt_fe_arch_001', testId: 'switch-rt-fe-arch-001-tab', labelFa: 'نقشه راه ۱/۲۸: معماری ماژولار (RT-FE-ARCH-001)' },
+  { id: 'rt_fe_ia_002', testId: 'switch-rt-fe-ia-002-tab', labelFa: 'نقشه راه ۲/۲۸: معماری اطلاعات، مسیریابی و Cloudflare (RT-FE-IA-002)' },
+  { id: 'rt_fe_shell_003', testId: 'switch-rt-fe-shell-003-tab', labelFa: 'نقشه راه ۳/۲۸: پوسته اصلی، Layoutها و ناوبری (RT-FE-SHELL-003)' },
+  { id: 'rt_fe_ds_004', testId: 'switch-rt-fe-ds-004-tab', labelFa: 'نقشه راه ۴/۲۸: سیستم طراحی بصری و توکن‌ها (RT-FE-DESIGN-SYSTEM-004)' },
+  { id: 'rt_fe_sc_005', testId: 'switch-rt-fe-sc-005-tab', labelFa: 'نقشه راه ۵/۲۸: کتابخانه کامپوننت‌های مشترک (RT-FE-SHARED-COMPONENTS-005)' },
+  { id: 'rt_fe_layout_006', testId: 'switch-rt-fe-layout-006-tab', labelFa: 'نقشه راه ۶/۲۸: سیستم Layout، Page Shell و الگوهای فضایی (RT-FE-LAYOUT-006)' },
+  { id: 'rt_fe_ia_nav_007', testId: 'switch-rt-fe-ia-nav-007-tab', labelFa: 'نقشه راه ۷/۲۸: معماری اطلاعات، موجودیت‌ها و نقشه سایت (RT-FE-IA-007)' },
+  { id: 'rt_fe_vds_008', testId: 'switch-rt-fe-vds-008-tab', labelFa: 'نقشه راه ۸/۲۸: سیستم طراحی بصری، تراکم و زبان نقشه/نمودار (RT-FE-VDS-008)' },
+  { id: 'rt_fe_ids_009', testId: 'switch-rt-fe-ids-009-tab', labelFa: 'نقشه راه ۹/۲۸: نظام تعامل و رفتار رابط کاربری (RT-FE-IDS-009)' },
+  { id: 'rt_fe_ia_011', testId: 'switch-rt-fe-ia-011-tab', labelFa: 'نقشه راه ۱۰ و ۱۱/۲۸: الگوهای صفحات و معماری محتوا (RT-FE-IA-011)' },
+  { id: 'rt_fe_fda_012', testId: 'switch-rt-fe-fda-012-tab', labelFa: 'نقشه راه ۱۲/۲۸: معماری داده فرانت‌اند و مدیریت وضعیت (RT-FE-DATA-012)' },
+  { id: 'rt_fe_fpa_013', testId: 'switch-rt-fe-fpa-013-tab', labelFa: 'نقشه راه ۱۳/۲۸: معماری عملکرد و بهینه‌سازی فرانت‌اند (RT-FE-FPA-013)' },
+  { id: 'rt_fe_feat_013', testId: 'switch-rt-fe-feat-013-tab', labelFa: 'نقشه راه ۱۳ب/۲۸: نظام ماژول‌بندی و قابلیت‌ها (RT-FE-FEATURE-013)' },
+  { id: 'rt_fe_nav_014', testId: 'switch-rt-fe-nav-014-tab', labelFa: 'نقشه راه ۱۴/۲۸: نظام ناوبری، کشف و فضای کاری (RT-FE-NAV-014)' },
+  { id: 'rt_fe_page_015', testId: 'switch-rt-fe-page-015-tab', labelFa: 'نقشه راه ۱۵/۲۸: ترکیب صفحات، Layoutها و نواحی محتوایی (RT-FE-PAGE-015)' },
+  { id: 'rt_fe_int_016', testId: 'switch-rt-fe-int-016-tab', labelFa: 'نقشه راه ۱۶/۲۸: الگوهای تعامل، رفتار کنترل‌ها و ریزتعامل (RT-FE-INT-016)' },
+  { id: 'rt_fe_form_017', testId: 'switch-rt-fe-form-017-tab', labelFa: 'نقشه راه ۱۷/۲۸: نظام فرم‌ها، اعتبارسنجی و گردش‌کار (RT-FE-FORM-017)' },
+  { id: 'rt_fe_search_018', testId: 'switch-rt-fe-search-018-tab', labelFa: 'نقشه راه ۱۸/۲۸: جست‌وجو، فیلترگذاری و Query Builder (RT-FE-SEARCH-018)' },
+  { id: 'rt_fe_results_019', testId: 'switch-rt-fe-results-019-tab', labelFa: 'نقشه راه ۱۹/۲۸: نمایش نتایج، جدول‌ها و مقایسه (RT-FE-RESULTS-019)' },
+  { id: 'rt_fe_vis_020', testId: 'switch-rt-fe-vis-020-tab', labelFa: 'نقشه راه ۲۰/۲۸: بصری‌سازی داده، نمودارها و داشبوردها (RT-FE-VIS-020)' },
+  { id: 'rt_fe_entity_021', testId: 'switch-rt-fe-entity-021-tab', labelFa: 'نقشه راه ۲۱/۲۸: صفحات جزئیات موجودیت، ملک، ساختمان و محله (RT-FE-ENTITY-DETAIL-021)' },
+  { id: 'rt_fe_engagement_022', testId: 'switch-rt-fe-engagement-022-tab', labelFa: 'نقشه راه ۲۲/۲۸: علاقه‌مندی‌ها، دنبال‌کردن، مجموعه‌ها و پایش تغییرات (RT-FE-ENGAGEMENT-022)' },
+  { id: 'rt_fe_notification_023', testId: 'switch-rt-fe-notification-023-tab', labelFa: 'نقشه راه ۲۳/۲۸: مرکز اعلان‌ها، ارتباطات چندکاناله و ترجیحات (RT-FE-NOTIFICATION-023)' },
+  { id: 'rt_fe_account_024', testId: 'switch-rt-fe-account-024-tab', labelFa: 'نقشه راه ۲۴/۲۸: حساب کاربری، پروفایل، هویت دیجیتال و اطلاعات شخصی (RT-FE-USER-ACCOUNT-024)' },
   { id: 'stage32', testId: 'switch-stage-32-tab', labelFa: 'مرحله ۳۲: راهنما و ورود' },
   { id: 'stage33', testId: 'switch-stage-33-tab', labelFa: 'مرحله ۳۳: واکنش‌گرایی' },
   { id: 'stage34', testId: 'switch-stage-34-tab', labelFa: 'مرحله ۳۴: دسترس‌پذیری (AA)' },
