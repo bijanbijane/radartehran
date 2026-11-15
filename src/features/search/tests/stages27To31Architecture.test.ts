@@ -229,9 +229,10 @@ test('Stage 31 (RT-UI-PERSONALIZATION-001): Saved Items IDOR Guard, Undo, Displa
   assert.equal(pers.listSavedItems('usr-current').items.length, beforeCount);
 
   assert.equal(formatValueWithNumberPreference('prop-saadat-105', 'fa', true), 'prop-saadat-105');
-  const rialDisplay = formatPriceByUserPreference(14900, { currencyUnit: 'rial', numberFormat: 'en' });
-  assert.equal(rialDisplay.canonicalPriceMillionToman, 14900);
-  assert.equal(rialDisplay.displayAmount, '149,000');
+  const tomanDisplay = formatPriceByUserPreference(14900, { currencyUnit: 'toman', numberFormat: 'en' });
+  assert.equal(tomanDisplay.canonicalPriceMillionToman, 14900);
+  assert.equal(tomanDisplay.displayAmount, '14,900');
+  assert.equal(tomanDisplay.unitLabelFa, 'میلیون تومان');
 
   const afterKarajView = pers.recordTransientMapCityView('usr-current', 'karaj');
   assert.equal(afterKarajView.map.defaultCityId, 'tehran');

@@ -76,12 +76,12 @@ const d18 = getAuthoritativeDistrictBenchmark(18);
 assert.equal(d18.avgPricePerSqmMillion, 44.5);
 assert.equal(d18.monthlyTransactions, 84);
 
-// 6. Multi-Currency Summary Formatter (OP-DEC-001)
+// 6. Toman-Only & Persian-Only Summary Formatter (no USD / $ leak)
 const summaryFa = formatDistrictBenchmarkSummary(1, 'IRT', 'fa');
 assert.ok(summaryFa.includes('منطقه 1') || summaryFa.includes('منطقه ۱'));
 assert.ok(summaryFa.includes('179.8') || summaryFa.includes('۱۷۹'));
 
 const summaryUsd = formatDistrictBenchmarkSummary(1, 'USD', 'en');
-assert.ok(summaryUsd.includes('$'));
+assert.ok(summaryUsd.includes('تومان') && !summaryUsd.includes('$'));
 
 console.log('[PASS] All Project Black Box Reconnaissance Connectors Tests Passed Successfully.');

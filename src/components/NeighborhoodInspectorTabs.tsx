@@ -100,7 +100,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
         {workHubId && workHubId !== 'none' && (
           <div className={`p-3 rounded-[12px] border text-xs flex items-center justify-between gap-2 ${directMetroCommuteInfo.hasDirectLine ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' : 'apple-grouped-card dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300'}`}>
             <div className="flex items-center gap-2"><TrainFront className={`w-4 h-4 shrink-0 stroke-[1.75] ${directMetroCommuteInfo.hasDirectLine ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} /><span className="font-bold">{directMetroCommuteInfo.badgeText}</span></div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 tabular-nums">{selectedHood.distKm != null ? `${toPersianNum(selectedHood.distKm.toFixed(1))} کیلومتر${areaUnit === 'sqft' ? ` (${toPersianNum((selectedHood.distKm * 0.621371).toFixed(1))} mi)` : ''} تا ` : 'تا '}{selectedWorkHub.name}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 tabular-nums">{selectedHood.distKm != null ? `${toPersianNum(selectedHood.distKm.toFixed(1))} کیلومتر تا ` : 'تا '}{selectedWorkHub.name}</span>
           </div>
         )}
         <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5">

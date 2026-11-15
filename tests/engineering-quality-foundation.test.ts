@@ -117,23 +117,20 @@ async function runSuite(): Promise<void> {
     assert.equal(detailed.fairPerSqm, newUnit.hedonicPerSqm, 'Detailed valuation must delegate to single source of truth');
   });
 
-  // 2. Area Unit & International Currency Numeric Boundaries
-  await verify('Area unit (m²/ft²) and international currency (IRT/USD/EUR/AED) conversions preserve mathematical invariants', () => {
+  // 2. Metric Area (m²-only) & Toman-Only Currency Boundaries
+  await verify('Area unit stays locked to metric m² and currency stays locked to Persian Toman', () => {
     const sqm = 100;
-    const sqft = convertAreaFromSqm(sqm, 'sqft');
-    assert.equal(sqft, 1076);
-    const roundTripSqm = sqftToSqm(sqft);
-    assert.ok(Math.abs(roundTripSqm - sqm) <= 1, `Expected round-trip sqm near 100, got ${roundTripSqm}`);
+    assert.equal(convertAreaFromSqm(sqm, 'sqft'), 100);
+    assert.equal(sqftToSqm(100), 100);
 
     const buyPerSqm = 120; // 120M Toman per m²
-    const buyPerSqft = convertPricePerSqmToUnit(buyPerSqm, 'sqft');
-    assert.ok(buyPerSqft < buyPerSqm && buyPerSqft > 10, `Expected per-sqft price ~11.1M, got ${buyPerSqft}`);
+    assert.equal(convertPricePerSqmToUnit(buyPerSqm, 'sqft'), 120);
 
-    assert.equal(formatMillionTomanAsIntlCurrency(0, 'USD', 'en'), '$0');
-    assert.equal(formatMillionTomanAsIntlCurrency(-50, 'USD', 'en'), '$0');
-    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'USD', 'en').startsWith('$'), 'USD format must start with $');
-    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'EUR', 'en').startsWith('€'), 'EUR format must start with €');
-    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'AED', 'en').includes('AED'), 'AED format must include AED');
+    assert.equal(formatMillionTomanAsIntlCurrency(0, 'USD', 'en'), '۰ میلیون تومان');
+    assert.equal(formatMillionTomanAsIntlCurrency(-50, 'USD', 'en'), '۰ میلیون تومان');
+    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'USD', 'en').includes('میلیارد تومان'), 'Output must remain strictly Toman');
+    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'EUR', 'en').includes('میلیارد تومان'), 'Output must remain strictly Toman');
+    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'AED', 'en').includes('میلیارد تومان'), 'Output must remain strictly Toman');
   });
 
   // 3. Negative, XSS, & External URL Whitelisting Boundaries
@@ -778,7 +775,7 @@ async function runSuite(): Promise<void> {
     );
     assert.equal(delRes.errorCode, 'ELIGIBILITY_CHECK_FAILED', 'deleteStoredObjectSafely must catch isBargainEligibleForDeletion errors');
     assert.equal(delRes.retryable, true);
-    assert.equal(delRes.displayAreaUnitLabel?.includes('ft²'), true, 'deleteStoredObjectSafely must forward options to makeResult');
+    assert.equal(delRes.displayAreaUnitLabel?.includes('m²'), true, 'deleteStoredObjectSafely must expose metric m² area unit label');
 
     const { calculatePropertyTaxes, generateBuildingChargeBill, calculateMovingCost } = await import('../src/data/legalAndBuildingLogic');
     const tax12 = calculatePropertyTaxes({ monthlyRentMillion: 10, rahnMillion: 500, sqm: 100, city: 'tehran', vacantMonths: 12, officialTaxableRentalBaseMillion: 100 });

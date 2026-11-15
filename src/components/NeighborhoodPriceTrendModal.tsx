@@ -27,12 +27,12 @@ export function NeighborhoodPriceTrendModal({
   const dialogRef = useDialogFocus(open, onClose);
   const [ctxAreaUnit] = useAreaUnit(); const [radarLocale] = useRadarLocale(); const [ctxIntlCurrency] = useIntlCurrency();
   const areaUnit: AreaUnit = propAreaUnit ?? ctxAreaUnit; const intlCurrency: IntlCurrencyCode = propIntlCurrency ?? ctxIntlCurrency;
-  const isEn = radarLocale === 'en';
+  const isEn = false;
   const [chartMode, setChartMode] = useState<PriceTrendChartMode>('dual_buy_rent');
   const [customSqm, setCustomSqm] = useState<number>(targetSqm || 80);
   const [showDataTable, setShowDataTable] = useState<boolean>(false);
   const effectiveSqm = Math.max(35, Math.min(350, customSqm || targetSqm || 80));
-  const effectiveAreaLabel = areaUnit === 'sqft' ? `${toPersianNum(Math.round(convertAreaFromSqm(effectiveSqm, 'sqft')))} sqft` : `${toPersianNum(effectiveSqm)} ${isEn ? 'sqm' : 'متری'}`;
+  const effectiveAreaLabel = `${toPersianNum(effectiveSqm)} متری`;
   const cityNameFa = (activeCity && MULTI_CITY_CONFIGS[activeCity]?.nameFa) || 'تهران';
   const liveDealAgg = useMemo(() => aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)), [selectedHood]);
   const baseSeries12m = useMemo(() => buildRealistic12MonthBuyAndRentTrend(selectedHood, marketReport), [selectedHood, marketReport]);
@@ -165,8 +165,8 @@ export function NeighborhoodPriceTrendModal({
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
             <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 font-bold">
-              <div className="flex items-center gap-1 text-slate-800 dark:text-white"><TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>{selectedHood.name} — 12 Month Historical Trend</span></div>
-              <span className="text-[10px] text-slate-400">{isEn ? 'Hover on points for details' : 'نشانگر را روی نقاط ببرید'}</span>
+              <div className="flex items-center gap-1 text-slate-800 dark:text-white"><TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>روند تاریخی ۱۲ ماهه قیمت — {selectedHood.name}</span></div>
+              <span className="text-[10px] text-slate-400">نشانگر را روی نقاط ببرید</span>
             </div>
             <div dir="ltr" className="w-full h-[270px] min-w-[260px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -181,10 +181,10 @@ export function NeighborhoodPriceTrendModal({
                     if (!pt) return null;
                     const uBuy = Number(convertPricePerSqmToUnit(pt.buyPerSqm, areaUnit).toFixed(1));
                     return (
-                      <div dir={isEn ? 'ltr' : 'rtl'} className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs shadow-xl space-y-1 tabular-nums">
+                      <div dir="rtl" className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs shadow-xl space-y-1 tabular-nums">
                         <div className="font-extrabold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-1 flex justify-between gap-2"><span>{label}</span><span className="text-slate-400">{selectedHood.name}</span></div>
-                        <div className="text-emerald-700 dark:text-emerald-400 font-bold">خرید: {toPersianNum(uBuy)} M</div>
-                        <div className="text-sky-700 dark:text-sky-400 font-bold">رهن: {toPersianNum(pt.scaledRahn)} M</div>
+                        <div className="text-emerald-700 dark:text-emerald-400 font-bold">خرید: {toPersianNum(uBuy)} میلیون تومان</div>
+                        <div className="text-sky-700 dark:text-sky-400 font-bold">رهن: {toPersianNum(pt.scaledRahn)} میلیون تومان</div>
                       </div>
                     );
                   }} />
@@ -204,8 +204,8 @@ export function NeighborhoodPriceTrendModal({
                   )}
                   {chartMode === 'rent_rahn_detail' && (
                     <>
-                      <Line yAxisId="left" type="monotone" dataKey="scaledRahn" name="Deposit" stroke="#0284c7" strokeWidth={3} dot={{ r: 3, fill: '#0284c7' }} />
-                      <Line yAxisId="right" type="monotone" dataKey="scaledMonthlyRent" name="Monthly Rent" stroke="#7c3aed" strokeWidth={2.5} strokeDasharray="5 3" dot={{ r: 3, fill: '#7c3aed' }} />
+                      <Line yAxisId="left" type="monotone" dataKey="scaledRahn" name="رهن کامل (میلیون تومان)" stroke="#0284c7" strokeWidth={3} dot={{ r: 3, fill: '#0284c7' }} />
+                      <Line yAxisId="right" type="monotone" dataKey="scaledMonthlyRent" name="اجاره ماهانه (میلیون تومان)" stroke="#7c3aed" strokeWidth={2.5} strokeDasharray="5 3" dot={{ r: 3, fill: '#7c3aed' }} />
                     </>
                   )}
                 </LineChart>

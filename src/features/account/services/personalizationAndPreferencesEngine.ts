@@ -38,7 +38,7 @@ export interface UserDisplayPreferences {
   theme: 'light' | 'dark' | 'system';
   numberFormat: 'fa' | 'en';
   areaUnit: 'sqm';
-  currencyUnit: 'toman' | 'rial';
+  currencyUnit: 'toman';
   density: 'comfortable' | 'standard' | 'compact';
 }
 
@@ -93,12 +93,10 @@ export function formatPriceByUserPreference(
   canonicalPriceMillionToman: number,
   prefs: Pick<UserDisplayPreferences, 'currencyUnit' | 'numberFormat'>
 ): { displayAmount: string; unitLabelFa: string; canonicalPriceMillionToman: number } {
-  const isRial = prefs.currencyUnit === 'rial';
-  const rawDisplayNumeric = isRial ? canonicalPriceMillionToman * 10 : canonicalPriceMillionToman;
-  const formatted = formatValueWithNumberPreference(rawDisplayNumeric.toLocaleString('en-US'), prefs.numberFormat);
+  const formatted = formatValueWithNumberPreference(canonicalPriceMillionToman.toLocaleString('en-US'), prefs.numberFormat);
   return {
     displayAmount: formatted,
-    unitLabelFa: isRial ? 'میلیون ریال' : 'میلیون تومان',
+    unitLabelFa: 'میلیون تومان',
     canonicalPriceMillionToman,
   };
 }

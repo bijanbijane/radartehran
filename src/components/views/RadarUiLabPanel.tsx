@@ -6,10 +6,11 @@ import { RadarInputField, RadarEmptyStateCard } from '../common/RadarField';
 import { DataCredibilityBadge, DataProvenanceBar, RadarCard, RadarMetricCard } from '../common/RadarDataBadges';
 import { InteractionQaLabTab } from './InteractionQaLabTab';
 import { ValidationAndImplementLabTab } from './ValidationAndImplementLabTab';
+import { OnboardingAndResponsiveHelpCenter } from '../../features/onboarding/components/OnboardingAndResponsiveHelpCenter';
 
 export const RadarUiLabPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
-  const [activeLabTab, setActiveLabTab] = useState<'components' | 'interaction' | 'validation'>('components');
+  const [activeLabTab, setActiveLabTab] = useState<'components' | 'interaction' | 'validation' | 'onboarding'>('components');
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [areaSqm, setAreaSqm] = useState('95');
   const [budgetVal, setBudgetVal] = useState('12500');
@@ -33,15 +34,18 @@ export const RadarUiLabPanel: React.FC<{ onClose: () => void }> = ({ onClose }) 
               ? 'RT-UI-COMP-001 · Section 18'
               : activeLabTab === 'interaction'
                 ? 'RT-UI-INTERACTION-001 · Stage 9'
-                : 'RT-UI-VALIDATION-001 & RT-UI-IMPLEMENT-001 · Stages 10–11'}
+                : activeLabTab === 'validation'
+                  ? 'RT-UI-VALIDATION-001 & RT-UI-IMPLEMENT-001 · Stages 10–11'
+                  : 'RT-UI-ONBOARDING / RESPONSIVE / ACCESSIBILITY / MOTION · Stages 32–35'}
           </span>
           <h2 className="text-[20px] font-bold text-[#182522] dark:text-white">Radar UI & Interaction QA Lab</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div role="group" aria-label="بخش آزمایشگاه" className="inline-flex rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
+          <div role="group" aria-label="بخش آزمایشگاه" className="inline-flex flex-wrap rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
             <button type="button" onClick={() => setActiveLabTab('components')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'components' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>اجزای رابط (۸)</button>
             <button type="button" data-testid="switch-interaction-qa-tab" onClick={() => setActiveLabTab('interaction')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'interaction' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>تعاملات (۹)</button>
             <button type="button" data-testid="switch-validation-qa-tab" onClick={() => setActiveLabTab('validation')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'validation' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>اعتبارسنجی و پایلوت (۱۰–۱۱)</button>
+            <button type="button" data-testid="switch-onboarding-responsive-qa-tab" onClick={() => setActiveLabTab('onboarding')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'onboarding' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>ورود، واکنش‌گرایی، دسترس‌پذیری و حرکت (۳۲–۳۵)</button>
           </div>
           <div role="group" aria-label="نمای آزمایش" className="inline-flex rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
             <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1 rounded-[6px] text-[13px] font-semibold cursor-pointer ${viewportMode === 'desktop' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>دسکتاپ</button>
@@ -58,6 +62,8 @@ export const RadarUiLabPanel: React.FC<{ onClose: () => void }> = ({ onClose }) 
           <InteractionQaLabTab />
         ) : activeLabTab === 'validation' ? (
           <ValidationAndImplementLabTab />
+        ) : activeLabTab === 'onboarding' ? (
+          <OnboardingAndResponsiveHelpCenter />
         ) : (
           <>
         <RadarCard padding="standard" elevated>

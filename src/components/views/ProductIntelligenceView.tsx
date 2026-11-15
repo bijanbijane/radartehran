@@ -96,7 +96,7 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           </div>
           <button type="button" onClick={p.onOpenPriceTrend} className="px-3 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
             <TrendingUp className="w-3.5 h-3.5 text-[#176B63]" />
-            <span>نمودار کامل روند ({formatMillionTomanAsIntlCurrency(refAgg.estimatedDealPricePerSqm, 'USD')} · سناریو v6.4)</span>
+            <span>نمودار کامل روند ({formatMillionTomanAsIntlCurrency(refAgg.estimatedDealPricePerSqm, 'IRT')} · سناریو v6.4)</span>
           </button>
         </div>
       </div>

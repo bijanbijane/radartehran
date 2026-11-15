@@ -192,16 +192,15 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">واحد نمایش قیمت (فقط تبدیل ظاهری):</label>
+              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">واحد پول رسمی سامانه:</label>
               <select
                 aria-label="واحد نمایش قیمت"
                 data-testid="pref-select-currency-unit"
-                value={prefs.display.currencyUnit}
-                onChange={(e) => setPrefs(defaultPersonalizationEngine.updatePreferences(userId, { display: { currencyUnit: e.target.value as 'toman' | 'rial' } }))}
+                value="toman"
+                onChange={() => setPrefs(defaultPersonalizationEngine.updatePreferences(userId, { display: { currencyUnit: 'toman' } }))}
                 className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold"
               >
                 <option value="toman">تومان (میلیون تومان)</option>
-                <option value="rial">ریال (میلیون ریال · ×۱۰ نمایشی)</option>
               </select>
             </div>
             <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">

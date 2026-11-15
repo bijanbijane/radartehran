@@ -1,6 +1,6 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
 import React, { useState, useRef } from 'react';
-import { ChevronDown, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
+import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { PrimaryViewId, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
@@ -78,6 +78,13 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+      <a
+        id="radar-skip-to-main-link"
+        href="#radar-main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-4 focus:z-50 focus:px-3 focus:py-1.5 focus:rounded-lg focus:bg-[#176B63] focus:text-white focus:font-bold focus:text-xs"
+      >
+        {isEn ? 'Skip to main content' : 'رفتن به محتوای اصلی'}
+      </a>
       <div className={`w-full max-w-[1600px] mx-auto px-4 lg:px-8 flex items-center justify-between gap-2 ${primaryView === 'map' ? 'h-[56px]' : 'h-[56px] lg:h-[68px]'}`}>
         {/* Brand Logo (Home Destination) + Compact City Context */}
         <div className="flex items-center gap-2 shrink-0">
@@ -177,6 +184,17 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               <span className="hidden xl:inline max-w-[96px] truncate">{searchQuery?.trim() || (isEn ? 'Search...' : 'جست‌وجو...')}</span>
             </button>
           )}
+
+          <button
+            type="button"
+            data-testid="global-nav-help-center"
+            aria-label={isEn ? 'Help & Onboarding Center' : 'مرکز راهنما و آموزش استفاده'}
+            title={isEn ? 'Help & Onboarding (/help)' : 'مرکز راهنما و آموزش استفاده (/help)'}
+            onClick={() => { setMegaMenuOpen(false); onSelectPrimaryView('knowledge', 'guide'); }}
+            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+          >
+            <HelpCircle className="w-4 h-4" aria-hidden="true" />
+          </button>
 
           <HeaderNotificationBell
             uid={currentUser?.uid || 'local-user'}

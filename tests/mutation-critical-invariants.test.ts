@@ -65,23 +65,23 @@ const scenarios: MutantScenario<any>[] = [
   {
     id: 'MUT-04',
     targetModule: 'src/utils/areaUnit.ts',
-    description: 'Swap m²->ft² multiplication with division in convertAreaFromSqm',
+    description: 'Keep convertAreaFromSqm locked to metric m² (no ft² conversion leak)',
     realImpl: convertAreaFromSqm,
-    mutantImpl: (sqm: number, unit: 'sqm' | 'sqft') => (unit === 'sqft' ? Math.round(sqm / 10.7639) : sqm),
+    mutantImpl: (sqm: number, unit: 'sqm' | 'sqft') => (unit === 'sqft' ? Math.round(sqm * 10.7639) : sqm),
     oracle: (conv) => {
-      assert.equal(conv(100, 'sqft'), 1076);
+      assert.equal(conv(100, 'sqft'), 100);
       assert.equal(conv(100, 'sqm'), 100);
     },
   },
   {
     id: 'MUT-05',
     targetModule: 'src/utils/areaUnit.ts',
-    description: 'Omit negative-value clamping in formatMillionTomanAsIntlCurrency',
+    description: 'Omit negative-value clamping in formatMillionTomanAsIntlCurrency (Toman-only)',
     realImpl: formatMillionTomanAsIntlCurrency,
-    mutantImpl: (million: number) => `$-${Math.abs(million)}`,
+    mutantImpl: (million: number) => `-${Math.abs(million)} میلیون تومان`,
     oracle: (fmt) => {
-      assert.equal(fmt(-100, 'USD', 'en'), '$0');
-      assert.equal(fmt(0, 'USD', 'en'), '$0');
+      assert.equal(fmt(-100, 'USD', 'en'), '۰ میلیون تومان');
+      assert.equal(fmt(0, 'USD', 'en'), '۰ میلیون تومان');
     },
   },
   {

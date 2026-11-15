@@ -24,7 +24,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
         { label: 'کیفیت هوا و فضای سبز', v1: `${toPersianNum(compHood1.air)} / ۱۰`, v2: `${toPersianNum(compHood2.air)} / ۱۰`, win: compHood1.air === compHood2.air ? 0 : compHood1.air > compHood2.air ? 1 : 2 },
         { label: 'پایداری برق و فشار آب', v1: `${toPersianNum(compHood1.powerWater)} / ۱۰`, v2: `${toPersianNum(compHood2.powerWater)} / ۱۰`, win: compHood1.powerWater === compHood2.powerWater ? 0 : compHood1.powerWater > compHood2.powerWater ? 1 : 2 },
         { label: 'سرعت اینترنت و فیبر نوری', v1: `${toPersianNum(compHood1.internet)} / ۱۰`, v2: `${toPersianNum(compHood2.internet)} / ۱۰`, win: compHood1.internet === compHood2.internet ? 0 : compHood1.internet > compHood2.internet ? 1 : 2 },
-        { label: 'دسترسی به مترو و حمل‌ونقل', v1: `${toPersianNum(compHood1.metro)} / ۱۰${compHood1.distKm != null ? ` (${toPersianNum(compHood1.distKm.toFixed(1))} km${areaUnit === 'sqft' ? ` / ${toPersianNum((compHood1.distKm * 0.621371).toFixed(1))} mi` : ''})` : ''}`, v2: `${toPersianNum(compHood2.metro)} / ۱۰${compHood2.distKm != null ? ` (${toPersianNum(compHood2.distKm.toFixed(1))} km${areaUnit === 'sqft' ? ` / ${toPersianNum((compHood2.distKm * 0.621371).toFixed(1))} mi` : ''})` : ''}`, win: compHood1.metro === compHood2.metro ? 0 : compHood1.metro > compHood2.metro ? 1 : 2 },
+        { label: 'دسترسی به مترو و حمل‌ونقل', v1: `${toPersianNum(compHood1.metro)} / ۱۰${compHood1.distKm != null ? ` (${toPersianNum(compHood1.distKm.toFixed(1))} کیلومتر)` : ''}`, v2: `${toPersianNum(compHood2.metro)} / ۱۰${compHood2.distKm != null ? ` (${toPersianNum(compHood2.distKm.toFixed(1))} کیلومتر)` : ''}`, win: compHood1.metro === compHood2.metro ? 0 : compHood1.metro > compHood2.metro ? 1 : 2 },
         { label: 'امنیت و آرامش شبانه', v1: `${toPersianNum(compHood1.security)} / ۱۰`, v2: `${toPersianNum(compHood2.security)} / ۱۰`, win: compHood1.security === compHood2.security ? 0 : compHood1.security > compHood2.security ? 1 : 2 },
         { label: 'روانی ترافیک ساعت ۸ شب', v1: `${toPersianNum(tScore1)} / ۱۰`, v2: `${toPersianNum(tScore2)} / ۱۰`, win: tScore1 === tScore2 ? 0 : tScore1 > tScore2 ? 1 : 2 },
         { label: 'همواری گذرها', v1: `${toPersianNum(compHood1.flatTerrain)} / ۱۰`, v2: `${toPersianNum(compHood2.flatTerrain)} / ۱۰`, win: compHood1.flatTerrain === compHood2.flatTerrain ? 0 : compHood1.flatTerrain > compHood2.flatTerrain ? 1 : 2 },
@@ -71,7 +71,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
       const summaryText = `رادار مسکن: مقایسه ${compHood1.name} با ${compHood2.name}\n` +
         `• بودجه: ${toPersianNum(activeBudgetMillion)} م.ت\n` +
         `• متراژ قابل تامین: ${formatAreaValue(summaryStats.sqm1, areaUnit)} در برابر ${formatAreaValue(summaryStats.sqm2, areaUnit)} (اختلاف: ${formatAreaValue(summaryStats.diffSqm, areaUnit)})\n` +
-        `• قیمت ${areaUnit === 'sqft' ? 'هر ft²' : 'متری'}: ${toPersianNum(summaryStats.uSpread)} م.ت اختلاف\n` +
+        `• قیمت متری: ${toPersianNum(summaryStats.uSpread)} م.ت اختلاف\n` +
         `• جمع‌بندی: ${summaryStats.win1 > summaryStats.win2 ? `برتری با ${compHood1.name}` : summaryStats.win2 > summaryStats.win1 ? `برتری با ${compHood2.name}` : 'برابر'}`;
       await navigator.clipboard.writeText(summaryText);
       setCopied(true);

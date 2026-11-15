@@ -95,11 +95,11 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="text-[11px] text-slate-400">میانه قیمت پیشنهادی (آگهی)</div>
-                  <div className="mt-1 text-sm font-bold text-white">{Math.round(convertPricePerSqmToUnit((indexAndGap.askingMedianPerSqmToman ?? 0) / 1_000_000, areaUnit) * 1_000_000).toLocaleString('fa-IR')} تومان/{areaUnit === 'sqft' ? 'فوت‌مربع' : 'مترمربع'}{showIntl ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit((indexAndGap.askingMedianPerSqmToman ?? 0) / 1_000_000, areaUnit), currency, locale)})` : ''}</div>
+                  <div className="mt-1 text-sm font-bold text-white">{Math.round(convertPricePerSqmToUnit((indexAndGap.askingMedianPerSqmToman ?? 0) / 1_000_000, areaUnit) * 1_000_000).toLocaleString('fa-IR')} تومان/مترمربع</div>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="text-[11px] text-slate-400">میانه سناریوی فرضی مذاکره‌شده</div>
-                  <div className="mt-1 text-sm font-bold text-emerald-400">{Math.round(convertPricePerSqmToUnit((indexAndGap.transactionMedianPerSqmToman ?? 0) / 1_000_000, areaUnit) * 1_000_000).toLocaleString('fa-IR')} تومان/{areaUnit === 'sqft' ? 'فوت‌مربع' : 'مترمربع'} (سناریو v6.4 (غیرثبتی): {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(
+                  <div className="mt-1 text-sm font-bold text-emerald-400">{Math.round(convertPricePerSqmToUnit((indexAndGap.transactionMedianPerSqmToman ?? 0) / 1_000_000, areaUnit) * 1_000_000).toLocaleString('fa-IR')} تومان/مترمربع (سناریو v6.4 (غیرثبتی): {Math.round(convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(
                     1,
                     'سعادت‌آباد',
                     (indexAndGap.askingMedianPerSqmToman ?? 120_000_000) / 1_000_000,
@@ -130,7 +130,7 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                 {compValuation.estimatedRangeToman ? (
                   <div className="mt-3 space-y-2">
                     <div className="text-sm font-bold text-white">
-                      بازه برآوردی ارزش کل: {compValuation.estimatedRangeToman.lowToman.toLocaleString('fa-IR')} تا {compValuation.estimatedRangeToman.highToman.toLocaleString('fa-IR')} تومان{showIntl ? ` (${formatMillionTomanAsIntlCurrency(compValuation.estimatedRangeToman.lowToman / 1_000_000, currency, locale)} – ${formatMillionTomanAsIntlCurrency(compValuation.estimatedRangeToman.highToman / 1_000_000, currency, locale)})` : ''} · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {Math.round(convertPricePerSqmToUnit(compValuation.estimatedRangeToman.lowToman / 1_000_000 / Math.max(1, subjectAreaSqm), areaUnit)).toLocaleString('fa-IR')}–{Math.round(convertPricePerSqmToUnit(compValuation.estimatedRangeToman.highToman / 1_000_000 / Math.max(1, subjectAreaSqm), areaUnit)).toLocaleString('fa-IR')} م (اطمینان: {compValuation.confidenceLevel})
+                      بازه برآوردی ارزش کل: {compValuation.estimatedRangeToman.lowToman.toLocaleString('fa-IR')} تا {compValuation.estimatedRangeToman.highToman.toLocaleString('fa-IR')} تومان · هر متر: {Math.round(convertPricePerSqmToUnit(compValuation.estimatedRangeToman.lowToman / 1_000_000 / Math.max(1, subjectAreaSqm), areaUnit)).toLocaleString('fa-IR')}–{Math.round(convertPricePerSqmToUnit(compValuation.estimatedRangeToman.highToman / 1_000_000 / Math.max(1, subjectAreaSqm), areaUnit)).toLocaleString('fa-IR')} م (اطمینان: {compValuation.confidenceLevel})
                     </div>
                     <p className="text-[11px] text-amber-300">{compValuation.nonAppraisalDisclaimerFa}</p>
                   </div>
@@ -185,13 +185,13 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                   <h3 className="font-bold text-emerald-400">دسترسی شعاعی، ورودی مترو و حذف ایستگاه‌های غیرفعال (۱۳۰۳–۱۳۱۲)</h3>
                   <div className="flex gap-1.5">
                     {([500, 1000, 1500] as const).map((r) => (
-                      <button key={r} type="button" onClick={() => setRadiusMeters(r)} className={`rounded px-2.5 py-1 text-[11px] font-semibold ${radiusMeters === r ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}>شعاع {r} متر{areaUnit === 'sqft' ? ` (${Math.round(r * 3.28084)} ft)` : ''}</button>
+                      <button key={r} type="button" onClick={() => setRadiusMeters(r)} className={`rounded px-2.5 py-1 text-[11px] font-semibold ${radiusMeters === r ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}>شعاع {r} متر</button>
                     ))}
                   </div>
                 </div>
                 {metroAndPoi.nearestOperationalMetro && (
                   <div className="mt-2 text-[11px] text-slate-200">
-                    نزدیک‌ترین مترو فعال: <strong>{metroAndPoi.nearestOperationalMetro.nameFa}</strong> · خط مستقیم تا ورودی: {metroAndPoi.nearestOperationalMetro.straightLineMeters} متر{areaUnit === 'sqft' ? ` (${Math.round((metroAndPoi.nearestOperationalMetro.straightLineMeters ?? 0) * 3.28084)} ft)` : ''} · پیاده‌روی شبکه: {metroAndPoi.nearestOperationalMetro.verifiedWalkingRouteMeters} متر{areaUnit === 'sqft' ? ` (${Math.round((metroAndPoi.nearestOperationalMetro.verifiedWalkingRouteMeters ?? 0) * 3.28084)} ft)` : ''}
+                    نزدیک‌ترین مترو فعال: <strong>{metroAndPoi.nearestOperationalMetro.nameFa}</strong> · خط مستقیم تا ورودی: {metroAndPoi.nearestOperationalMetro.straightLineMeters} متر · پیاده‌روی شبکه: {metroAndPoi.nearestOperationalMetro.verifiedWalkingRouteMeters} متر
                   </div>
                 )} </div>
             </div>
@@ -245,7 +245,7 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                   <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
                     <div className="font-bold text-white">تراکم جمعیتی و بعد خانوار ({Object.keys(URBAN_INDICATOR_REGISTRY).length} شاخص ثبتی)</div>
                     <div className="mt-1 text-[11px] text-slate-300">
-                      تراکم: {demographicMetrics.densityPersonsPerHectare} نفر/هکتار{areaUnit === 'sqft' ? ` (${((demographicMetrics.densityPersonsPerHectare ?? 0) / 2.47105).toFixed(1)} نفر/Acre)` : ''} · نرخ رشد: {demographicMetrics.populationChangePercent !== null ? `${demographicMetrics.populationChangePercent}%` : 'متوقف به علت تغییر مرز'} · بار تکفل سنی: {demographicMetrics.ageDependencyRatioPercent}% · بعد خانوار: {demographicMetrics.meanHouseholdSize}
+                      تراکم: {demographicMetrics.densityPersonsPerHectare} نفر/هکتار · نرخ رشد: {demographicMetrics.populationChangePercent !== null ? `${demographicMetrics.populationChangePercent}%` : 'متوقف به علت تغییر مرز'} · بار تکفل سنی: {demographicMetrics.ageDependencyRatioPercent}% · بعد خانوار: {demographicMetrics.meanHouseholdSize}
                     </div>
                     {demographicMetrics.boundaryDiscontinuityWarningFa && (
                       <div className="mt-1 text-[10px] text-amber-400">{demographicMetrics.boundaryDiscontinuityWarningFa}</div>

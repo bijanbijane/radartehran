@@ -1063,8 +1063,8 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
     assert.equal(unsafeEval.decisionVerdict, 'HIGH_RISK_AVOID', 'Non-compensatory safety veto must prevent OPTIMAL_BUY');
   });
 
-  it('23. WS-CASPER-17: verifies Urban Affordability multi-currency Isochrone formatting, Hub vanak resolution, and Housing Cycle / Real Options hood & intlCurrency parity', () => {
-    // 1. Urban Affordability Isochrone with custom intlCurrency (EUR) and provided hood
+  it('23. WS-CASPER-17: verifies Urban Affordability Toman-only Isochrone formatting, Hub vanak resolution, and Housing Cycle / Real Options hood parity', () => {
+    // 1. Urban Affordability Isochrone with custom hood (enforces Toman-only even if EUR passed)
     const customHood = { ...INITIAL_NEIGHBORHOODS[0], buyPerSqm: 420 };
     const affReport = generateCasperUrbanAffordabilityReport(
       customHood.id,
@@ -1079,10 +1079,10 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
     assert.equal(affReport.commute.workHubId, 'vanak');
     assert.ok(affReport.basePriceSqm > 300 && affReport.basePriceSqm <= customHood.buyPerSqm);
     if (affReport.optimalIsochroneSubstitute) {
-      assert.ok(affReport.optimalIsochroneSubstitute.rationaleFa.includes('€'), 'Must format savings in requested EUR currency');
+      assert.ok(affReport.optimalIsochroneSubstitute.rationaleFa.includes('تومان'), 'Must format savings strictly in Persian Toman');
     }
 
-    // 2. Housing Cycle report with hood and intlCurrency
+    // 2. Housing Cycle report with hood (strictly Toman-only)
     const cycleReport = generateCasperHousingCycleReport(
       customHood.id,
       customHood.name,
@@ -1092,10 +1092,10 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       'EUR',
     );
     assert.equal(cycleReport.basePriceSqm, customHood.buyPerSqm);
-    assert.ok(cycleReport.basePriceIntlText && cycleReport.basePriceIntlText.includes('€'));
-    assert.ok(cycleReport.rahn80mIntlText && cycleReport.rahn80mIntlText.includes('€'));
+    assert.ok(cycleReport.basePriceIntlText && cycleReport.basePriceIntlText.includes('تومان'));
+    assert.ok(cycleReport.rahn80mIntlText && cycleReport.rahn80mIntlText.includes('تومان'));
 
-    // 3. Real Options liquidity report with hood and intlCurrency
+    // 3. Real Options liquidity report with hood (strictly Toman-only)
     const liqReport = generateCasperLiquidityReport(
       customHood.id,
       customHood.name,
@@ -1105,9 +1105,9 @@ describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto &
       'EUR',
     );
     assert.equal(liqReport.basePriceSqm, customHood.buyPerSqm);
-    assert.ok(liqReport.basePriceIntlText && liqReport.basePriceIntlText.includes('€'));
-    assert.ok(liqReport.valueOfWaitingIntlText && liqReport.valueOfWaitingIntlText.includes('€'));
-    assert.ok(liqReport.buyerReservationIntlText && liqReport.buyerReservationIntlText.includes('€'));
+    assert.ok(liqReport.basePriceIntlText && liqReport.basePriceIntlText.includes('تومان'));
+    assert.ok(liqReport.valueOfWaitingIntlText && liqReport.valueOfWaitingIntlText.includes('تومان'));
+    assert.ok(liqReport.buyerReservationIntlText && liqReport.buyerReservationIntlText.includes('تومان'));
   });
 
   it('24. WS-CASPER-18: verifies CASPER HUB SSRF/token-exfiltration defense, deterministic UUID v5 retry idempotency, prompt-injection & secret-leakage blocking, and Bearer auth', async () => {

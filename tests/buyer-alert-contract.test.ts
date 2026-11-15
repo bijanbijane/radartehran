@@ -148,27 +148,27 @@ assert.ok(
   'serverSeoAndSitemap injectDynamicSeoMeta must use getAllMultiCityNeighborhoods()'
 );
 
-// 7. OP-DEC-001 Internationalization & Currency Foundation Regression Tests
+// 7. OP-DEC-001 Persian-Only, RTL-Only, m²-Only & Toman-Only Regression Tests
 import('../src/utils/areaUnit').then((areaMod) => {
-  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['en-US', 'fa-IR']), 'en', 'Detects English from navigator languages');
-  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['ar-AE']), 'ar', 'Detects Arabic from navigator languages');
-  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['tr-TR']), 'tr', 'Detects Turkish from navigator languages');
-  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['fa-IR']), 'fa', 'Detects Persian from navigator languages');
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['en-US', 'fa-IR']), 'fa', 'Always locks locale to Persian');
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['ar-AE']), 'fa', 'Always locks locale to Persian');
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['tr-TR']), 'fa', 'Always locks locale to Persian');
+  assert.equal(areaMod.detectBrowserLocaleFromNavigator(['fa-IR']), 'fa', 'Always locks locale to Persian');
   assert.equal(areaMod.getRadarLocaleDirection('fa'), 'rtl', 'Persian is RTL');
-  assert.equal(areaMod.getRadarLocaleDirection('ar'), 'rtl', 'Arabic is RTL');
-  assert.equal(areaMod.getRadarLocaleDirection('en'), 'ltr', 'English is LTR');
-  assert.equal(areaMod.getRadarLocaleDirection('tr'), 'ltr', 'Turkish is LTR');
-  assert.ok(areaMod.formatMillionTomanAsIntlCurrency(6500, 'USD', 'en').startsWith('$100,000'), '6,500M Toman converts to $100,000 USD');
-  assert.equal(areaMod.getRadarTopBarCopy('en').toolsBtnLabel, 'Tools', 'English top-bar copy returns Tools');
+  assert.equal(areaMod.getRadarLocaleDirection('ar'), 'rtl', 'Direction always stays RTL');
+  assert.equal(areaMod.getRadarLocaleDirection('en'), 'rtl', 'Direction always stays RTL');
+  assert.equal(areaMod.getRadarLocaleDirection('tr'), 'rtl', 'Direction always stays RTL');
+  assert.ok(areaMod.formatMillionTomanAsIntlCurrency(6500, 'USD', 'en').includes('میلیارد تومان'), '6,500M Toman always formats in Persian Toman');
+  assert.equal(areaMod.getRadarTopBarCopy('en').toolsBtnLabel, 'ابزارها', 'Top-bar copy always returns Persian');
   assert.equal(areaMod.getRadarTopBarCopy('fa').toolsBtnLabel, 'ابزارها', 'Persian top-bar copy returns ابزارها');
-  assert.equal(areaMod.getRadarBottomNavCopy('en').mapLabel, 'Map', 'English bottom-nav copy returns Map');
-  assert.equal(areaMod.getRadarBottomNavCopy('tr').mapLabel, 'Harita', 'Turkish bottom-nav copy returns Harita');
-  assert.equal(areaMod.getRadarInspectorCopy('ar').marketTab, 'السوق والرسوم', 'Arabic inspector copy returns السوق والرسوم');
-  assert.equal(areaMod.getRadarInspectorCopy('en').scorecardTab, 'Scorecard & Traffic', 'English inspector copy returns Scorecard & Traffic');
-  assert.equal(areaMod.getRadarLegendCopy('en').legendBtnLabel, 'Map Legend', 'English legend copy returns Map Legend');
-  assert.equal(areaMod.getRadarLegendCopy('ar').legendBtnLabel, 'دليل الخريطة', 'Arabic legend copy returns دليل الخريطة');
-  assert.equal(areaMod.getRadarCompareCopy('en').swapBtnLabel, 'Swap', 'English compare copy returns Swap');
-  assert.equal(areaMod.getRadarCompareCopy('tr').swapBtnLabel, 'Değiştir', 'Turkish compare copy returns Değiştir');
+  assert.equal(areaMod.getRadarBottomNavCopy('en').mapLabel, 'نقشه', 'Bottom-nav copy always returns Persian');
+  assert.equal(areaMod.getRadarBottomNavCopy('tr').mapLabel, 'نقشه', 'Bottom-nav copy always returns Persian');
+  assert.equal(areaMod.getRadarInspectorCopy('ar').marketTab, 'بازار و نمودار', 'Inspector copy always returns Persian');
+  assert.equal(areaMod.getRadarInspectorCopy('en').scorecardTab, 'کارنامه', 'Inspector copy always returns Persian');
+  assert.equal(areaMod.getRadarLegendCopy('en').legendBtnLabel, 'راهنمای نقشه', 'Legend copy always returns Persian');
+  assert.equal(areaMod.getRadarLegendCopy('ar').legendBtnLabel, 'راهنمای نقشه', 'Legend copy always returns Persian');
+  assert.equal(areaMod.getRadarCompareCopy('en').swapBtnLabel, 'جابه‌جایی', 'Compare copy always returns Persian');
+  assert.equal(areaMod.getRadarCompareCopy('tr').swapBtnLabel, 'جابه‌جایی', 'Compare copy always returns Persian');
   const inspectorTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorTabs.tsx'), 'utf8');
   const budgetBridgeSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/BudgetBridgeAdvisorCard.tsx'), 'utf8');
   const purchasingPowerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/PurchasingPowerTrendCard.tsx'), 'utf8');
@@ -514,36 +514,35 @@ import('../src/utils/areaUnit').then((areaMod) => {
   }
   assert.deepEqual(
     areaMod.parseUrlIntlParams('?city=tehran&hood=5&lang=en&currency=usd&unit=sqft'),
-    { lang: 'en', currency: 'USD', unit: 'sqft' },
-    'parseUrlIntlParams must extract normalized lang, currency, and unit query parameters'
+    { lang: undefined, currency: undefined, unit: undefined },
+    'parseUrlIntlParams must ignore removed lang, currency, and unit query parameters'
   );
   assert.deepEqual(
     areaMod.parseUrlIntlParams('?lang=invalid&currency=gbp&unit=acres'),
     { lang: undefined, currency: undefined, unit: undefined },
-    'parseUrlIntlParams must reject unsupported lang, currency, and unit query parameters'
+    'parseUrlIntlParams must ignore unsupported lang, currency, and unit query parameters'
   );
   assert.equal(
     areaMod.resolveInitialRadarLocale({ urlLang: 'tr', savedLocale: 'fa', navigatorLanguages: ['en-US'], enableAutoBrowserDetect: true }),
-    'tr',
-    'resolveInitialRadarLocale must prioritize explicit URL lang parameter over savedLocale and browser language'
+    'fa',
+    'resolveInitialRadarLocale must always return Persian (fa)'
   );
   assert.equal(
     areaMod.resolveInitialRadarLocale({ savedLocale: 'ar', navigatorLanguages: ['en-US'], enableAutoBrowserDetect: true }),
-    'ar',
-    'resolveInitialRadarLocale must prioritize savedLocale when URL lang is absent'
+    'fa',
+    'resolveInitialRadarLocale must always return Persian (fa)'
   );
   assert.equal(
     areaMod.resolveInitialRadarLocale({ savedLocale: null, navigatorLanguages: ['en-GB', 'fa-IR'], enableAutoBrowserDetect: true }),
-    'en',
-    'resolveInitialRadarLocale must fall back to detectBrowserLocaleFromNavigator when enableAutoBrowserDetect is true'
+    'fa',
+    'resolveInitialRadarLocale must always return Persian (fa)'
   );
   assert.ok(
-    urlAndTitleSyncSrc.includes('parseUrlIntlParams(search)') &&
-      urlAndTitleSyncSrc.includes('intlSuffix') &&
-      !areaUnitToggleSrc.includes('hidden sm:inline-flex') &&
-      !areaUnitToggleSrc.includes('hidden md:inline-block') &&
+    urlAndTitleSyncSrc.includes("docEl.lang = 'fa'") &&
+      urlAndTitleSyncSrc.includes("docEl.dir = 'rtl'") &&
+      !areaUnitToggleSrc.includes('ft²') &&
       onboardingWizardSrc.includes('<AreaUnitToggle compact showIntlControls />'),
-    'useAppUrlAndTitleSync, AreaUnitToggle, and OnboardingWizardModal must expose URL deep-link intl sync and mobile-visible language/currency controls'
+    'useAppUrlAndTitleSync must lock lang=fa/dir=rtl and AreaUnitToggle must omit ft² controls'
   );
   const inspectorDrawerSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf8');
   const compareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/CompareModal.tsx'), 'utf8');
@@ -808,7 +807,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op159AgencyCrmSrc.includes('{formatAreaShort(125, areaUnit)}{showIntl ? ` · ${formatMillionTomanAsIntlCurrency(13_800, currency, locale)}` : \'\'}') &&
       op159AgencyCrmSrc.includes('(${formatMillionTomanAsIntlCurrency(136.5, currency, locale)} ← ${formatMillionTomanAsIntlCurrency(116, currency, locale)})') &&
       op159BiGisSrc.includes('NOI: {Math.round(investmentSim.annualNetOperatingIncomeToman / 1_000_000).toLocaleString(\'fa-IR\')} م') &&
-      op159BiGisSrc.includes('شعاع {r} متر{areaUnit === \'sqft\' ? ` (${Math.round(r * 3.28084)} ft)` : \'\'}'),
+      op159BiGisSrc.includes('شعاع {r} متر'),
     'ExpansionModulesModal, LegalContractAndPortfolioStudioModal, AgencyCrmAndAutomationStudioModal, and BiRiskAndGeospatialIntelligenceStudioModal must expose full OP-159 area unit and international currency equivalence'
   );
   const op160EnterpriseSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/EnterpriseAssetFundAndMarketIntelligenceModal.tsx'), 'utf-8');
@@ -817,9 +816,9 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const op160SwapStudioSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/SuperModulesSwapAndStudioTabs.tsx'), 'utf-8');
   assert.ok(
     op160EnterpriseSrc.includes('NAV هر واحد: <strong>{toPersianNum((b119FundResult.nav.navPerUnitToman ?? 0).toLocaleString())} ت{fxM((b119FundResult.nav.navPerUnitToman ?? 0) / 1_000_000)}</strong>') &&
-      op160EnterpriseSrc.includes('{areaUnit === \'sqft\' ? \'kWh/ft²\' : \'kWh/m²\'}') &&
+      op160EnterpriseSrc.includes('kWh/m²') &&
       op160EnterpriseSrc.includes('({formatAreaShort(142.5, areaUnit)})') &&
-      op160ValuationFakeSrc.includes('convertPricePerSqmToUnit(valuationResult.goldGramPricePerSqm, areaUnit)') &&
+      op160ValuationFakeSrc.includes("convertPricePerSqmToUnit(valuationResult.goldGramPricePerSqm, 'sqm')") &&
       op160ValuationFakeSrc.includes('formatMillionTomanAsIntlCurrency(negotiationResult.targetClosingPriceMillion, intlCurrency, locale)') &&
       op160ValuationFakeSrc.includes('formatMillionTomanAsIntlCurrency(depositInflationResult.realValue1YrMillion, intlCurrency, locale)') &&
       op160LegalBuildingSrc.includes('formatMillionTomanAsIntlCurrency(share.perPersonValueMillion, intlCurrency, locale)') &&
@@ -853,11 +852,11 @@ import('../src/utils/areaUnit').then((areaMod) => {
     op162BargainsSrc.includes('معیار {formatAreaShort(targetSqm, areaUnit)}:') &&
       op162BargainsSrc.includes('شعاع {toPersianNum(selectedHood.radius || 900)} متر') &&
       op162InspectorTabsSrc.includes('ارزش معیار واحد {formatAreaShort(targetSqm, areaUnit)}:') &&
-      op162InspectorTabsSrc.includes('(selectedHood.distKm * 0.621371).toFixed(1)') &&
+      op162InspectorTabsSrc.includes('selectedHood.distKm.toFixed(1)') &&
       op162ExpandableCompareSrc.includes('const diffTotalMillion = Math.abs(hoodA.buyPerSqm - hoodB.buyPerSqm) * targetSqm;') &&
       op162ExpandableCompareSrc.includes('hoodA.distKm.toFixed(1)') &&
       op162CompareModalSrc.includes('اختلاف متراژ: <strong className="tabular-nums">{formatAreaValue(summaryStats.diffSqm, areaUnit)}</strong>') &&
-      op162CompareModalSrc.includes('(compHood1.distKm * 0.621371).toFixed(1)'),
+      op162CompareModalSrc.includes('compHood1.distKm.toFixed(1)'),
     'NeighborhoodBargainsAndVotesTabs, NeighborhoodInspectorTabs, ExpandableComparisonTable, and CompareModal must expose full OP-162 area unit, imperial distance, and international currency equivalence'
   );
   const op163PriceChartSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodPriceChart.tsx'), 'utf-8');
@@ -985,8 +984,8 @@ import('../src/utils/areaUnit').then((areaMod) => {
       op171LegalStudioSrc.includes('تعداد دارایی‌های اظهارشده کاربر: {portfolioSummary.eligibleAssetCount} ملک (مجموع متراژ: {formatAreaShort(250, areaUnit)})') &&
       op171AgencyCrmSrc.includes('(هر ${areaUnit === \'sqft\' ? \'ft²\' : \'متر\'} واحد ${formatAreaShort(80, areaUnit)}:') &&
       op171AgencyCrmSrc.includes('(هر {areaUnit === \'sqft\' ? \'ft²\' : \'متر\'} {formatAreaShort(125, areaUnit)}:') &&
-      op171BiGisSrc.includes('خط مستقیم تا ورودی: {metroAndPoi.nearestOperationalMetro.straightLineMeters} متر{areaUnit === \'sqft\' ? ` (${Math.round((metroAndPoi.nearestOperationalMetro.straightLineMeters ?? 0) * 3.28084)} ft)` : \'\'}') &&
-      op171BiGisSrc.includes('تراکم: {demographicMetrics.densityPersonsPerHectare} نفر/هکتار{areaUnit === \'sqft\' ? ` (${((demographicMetrics.densityPersonsPerHectare ?? 0) / 2.47105).toFixed(1)} نفر/Acre)` : \'\'}') &&
+      op171BiGisSrc.includes('خط مستقیم تا ورودی: {metroAndPoi.nearestOperationalMetro.straightLineMeters} متر') &&
+      op171BiGisSrc.includes('تراکم: {demographicMetrics.densityPersonsPerHectare} نفر/هکتار') &&
       op171EnterpriseSrc.includes('| کل واحد {formatAreaShort(80, areaUnit)}: <strong>{toPersianNum((((b120MarketResult.pricingAndTom.confirmedTransactionDistribution.medianPricePerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت') &&
       op171EnterpriseSrc.includes('(کل {formatAreaShort(80, areaUnit)}: {toPersianNum((((b131DeliveryResult.costAndAudits.unitCostMetrics.costPerSqmToman ?? 0) * 80) / 1_000_000_000).toFixed(2))} میلیارد ت)'),
     'LegalContractAndPortfolioStudioModal, AgencyCrmAndAutomationStudioModal, BiRiskAndGeospatialIntelligenceStudioModal, and EnterpriseAssetFundAndMarketIntelligenceModal must expose full OP-171 area unit, imperial distance/density, and international currency equivalence'

@@ -77,8 +77,6 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
             <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
               <span>نرخ طلای ۱۸ عیار:</span>
               <input type="number" aria-label="نرخ طلای ۱۸ عیار" value={gold18kPriceToman} onChange={(e) => setGold18kPriceToman(clampNumber(e.target.value, 1000000, 30000000, GOLD_18K_TOMAN_PRICE))} className="w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 font-bold text-slate-800 dark:text-slate-100 tabular-nums" />
-              <span>نرخ دلار:</span>
-              <input type="number" aria-label="نرخ دلار" value={usdPriceToman} onChange={(e) => setUsdPriceToman(clampNumber(e.target.value, 30000, 300000, USD_TOMAN_PRICE))} className="w-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 font-bold text-slate-800 dark:text-slate-100 tabular-nums" />
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
@@ -119,12 +117,12 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
               <div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">معادل طلا ۱۸ عیار:</div>
                 <div className="text-xs font-black text-amber-700 dark:text-amber-400 mt-0.5 tabular-nums">{toPersianNum(valuationResult.goldGramPriceTotal.toLocaleString())} گرم طلا</div>
-                <div className="text-[9px] text-slate-400">{areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}{toPersianNum(convertPricePerSqmToUnit(valuationResult.goldGramPricePerSqm, areaUnit))} گرم</div>
+                <div className="text-[9px] text-slate-400">متری {toPersianNum(convertPricePerSqmToUnit(valuationResult.goldGramPricePerSqm, 'sqm'))} گرم</div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">معادل دلار:</div>
-                <div className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5 tabular-nums">${toPersianNum(valuationResult.usdPriceTotal.toLocaleString())}</div>
-                <div className="text-[9px] text-slate-400">{areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}${toPersianNum(convertPricePerSqmToUnit(valuationResult.usdPricePerSqm, areaUnit))}</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">ارزش هر متر مربع (تومان):</div>
+                <div className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5 tabular-nums">{toPersianNum(Math.round(valuationResult.fairPerSqm).toLocaleString('fa-IR'))} میلیون تومان</div>
+                <div className="text-[9px] text-slate-400">کل متراژ: {formatAreaValue(valSqm, 'sqm', true)}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">

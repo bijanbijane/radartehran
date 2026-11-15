@@ -1,0 +1,73 @@
+import type { ComparisonCriterionDef, ComparisonOptionItem } from './comparativeDecisionEngine';
+
+export const STAGE38_CRITERIA_DEFS: ComparisonCriterionDef[] = [
+  { id: 'asking_price_sqm', categoryFa: 'قیمت آگهی', labelFa: 'قیمت پیشنهادی هر مترمربع (آگهی)', higherIsBetter: false, explanationFa: 'قیمت اعلامی مالک در آگهی؛ معادل قیمت معامله قطعی نیست.' },
+  { id: 'estimated_value_sqm', categoryFa: 'ارزش‌گذاری مدل', labelFa: 'برآورد ارزش هر مترمربع (مدل هدونیک)', higherIsBetter: false, explanationFa: 'تخمین آماری سامانه همراه دامنه عدم‌قطعیت، مستقل از قیمت آگهی.' },
+  { id: 'area_sqm', categoryFa: 'مشخصات ملک', labelFa: 'متراژ مفید', higherIsBetter: true, explanationFa: 'مساحت ثبت‌شده واحد به مترمربع.' },
+  { id: 'building_age', categoryFa: 'ساختمان', labelFa: 'سن بنا', higherIsBetter: false, explanationFa: 'سال‌های گذشته از ساخت؛ در نبود سند قابل استناد «نامشخص» درج می‌شود.' },
+  { id: 'parking', categoryFa: 'امکانات', labelFa: 'پارکینگ سندی', higherIsBetter: null, explanationFa: 'وجود پارکینگ اختصاصی در مشخصات ثبت‌شده.' },
+  { id: 'transit_access', categoryFa: 'موقعیت و دسترسی', labelFa: 'دسترسی به حمل‌ونقل عمومی (امتیاز ۱۰)', higherIsBetter: true, explanationFa: 'شاخص فاصله تا ایستگاه‌های مترو و خطوط اصلی.' },
+];
+
+export const STAGE38_SAMPLE_PROPERTIES: ComparisonOptionItem[] = [
+  {
+    id: 'prop-saadat-1',
+    titleFa: 'واحد ۱۱۸ متری سعادت‌آباد (بلوار دریا)',
+    locationLabelFa: 'تهران · منطقه ۲ · سعادت‌آباد',
+    boundaryVersion: 'BOUNDARY-V3',
+    lat: 35.7782,
+    lng: 51.3741,
+    summaryPrimaryLabelFa: 'پیشنهادی ۱۹۲ م/متر · مدل ۱۸۰ م',
+    dataQualitySummaryFa: 'منبع بازار (آگهی) · تازگی جاری',
+    lastUpdatedFa: '۱۴ آبان ۱۴۰۵',
+    cells: {
+      asking_price_sqm: { rawValue: 192, displayValueFa: '۱۹۲ میلیون تومان', unitFa: 'م.ت / متر', priceSemanticKind: 'asking_price', trustStatus: 'unverified', sourceLabelFa: 'داده بازار (SRC-02) · قیمت پیشنهادی آگهی', updatedAtLabelFa: '۱۴ آبان ۱۴۰۵', sampleCount: 1, limitationNoteFa: 'قیمت آگهی هنوز به‌عنوان قیمت معامله قطعی تأیید نشده است.' },
+      estimated_value_sqm: { rawValue: 180, displayValueFa: '۱۸۰ میلیون تومان (بازه ۱۷۲–۱۸۸)', unitFa: 'م.ت / متر', priceSemanticKind: 'model_estimated_value', trustStatus: 'verified', sourceLabelFa: 'مدل ارزش‌گذاری هدونیک V6.4 (SRC-07)', updatedAtLabelFa: '۱۴ آبان ۱۴۰۵', sampleCount: 34, limitationNoteFa: 'برآورد آماری با حاشیه عدم‌قطعیت ±۴.۵٪' },
+      area_sqm: { rawValue: 118, displayValueFa: '۱۱۸ مترمربع', unitFa: 'مترمربع', priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'تطبیق سند و پلاک (SRC-01)', updatedAtLabelFa: '۱۲ آبان ۱۴۰۵', sampleCount: 1, limitationNoteFa: null },
+      building_age: { rawValue: 6, displayValueFa: '۶ سال', unitFa: 'سال', priceSemanticKind: 'not_price', trustStatus: 'conflicting', sourceLabelFa: 'تعارض منبع: آگهی (۵ سال) در برابر بازدید (۶ سال)', updatedAtLabelFa: '۱۲ آبان ۱۴۰۵', sampleCount: 2, limitationNoteFa: 'CON-01: دو منبع مقدار یکسانی گزارش نکرده‌اند.' },
+      parking: { rawValue: 'دارد', displayValueFa: 'دارد', unitFa: null, priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'مشخصات ثبت‌شده', updatedAtLabelFa: '۱۲ آبان ۱۴۰۵', sampleCount: 1, limitationNoteFa: null },
+      transit_access: { rawValue: 8.2, displayValueFa: '۸.۲ از ۱۰', unitFa: 'امتیاز', priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'شبکه معابر و مترو (SRC-08)', updatedAtLabelFa: '۱۰ آبان ۱۴۰۵', sampleCount: null, limitationNoteFa: null },
+    },
+    normalizedScores0To100: { asking_price_sqm: 72, estimated_value_sqm: 76, area_sqm: 88, building_age: 82, parking: 100, transit_access: 82 },
+  },
+  {
+    id: 'prop-punak-2',
+    titleFa: 'واحد ۹۶ متری پونک (سردار جنگل)',
+    locationLabelFa: 'تهران · منطقه ۵ · پونک',
+    boundaryVersion: 'BOUNDARY-V3',
+    lat: 35.7614,
+    lng: 51.3318,
+    summaryPrimaryLabelFa: 'پیشنهادی ۱۴۸ م/متر · مدل ۱۴۲ م',
+    dataQualitySummaryFa: 'منبع بازار · تازگی جاری',
+    lastUpdatedFa: '۱۳ آبان ۱۴۰۵',
+    cells: {
+      asking_price_sqm: { rawValue: 148, displayValueFa: '۱۴۸ میلیون تومان', unitFa: 'م.ت / متر', priceSemanticKind: 'asking_price', trustStatus: 'unverified', sourceLabelFa: 'داده بازار (SRC-02) · قیمت پیشنهادی آگهی', updatedAtLabelFa: '۱۳ آبان ۱۴۰۵', sampleCount: 1, limitationNoteFa: 'قیمت پیشنهادی بدون سابقه معامله قطعی.' },
+      estimated_value_sqm: { rawValue: 142, displayValueFa: '۱۴۲ میلیون تومان (بازه ۱۳۵–۱۴۹)', unitFa: 'م.ت / متر', priceSemanticKind: 'model_estimated_value', trustStatus: 'verified', sourceLabelFa: 'مدل ارزش‌گذاری هدونیک V6.4 (SRC-07)', updatedAtLabelFa: '۱۳ آبان ۱۴۰۵', sampleCount: 41, limitationNoteFa: null },
+      area_sqm: { rawValue: 96, displayValueFa: '۹۶ مترمربع', unitFa: 'مترمربع', priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'مشخصات آگهی بررسی‌شده', updatedAtLabelFa: '۱۳ آبان ۱۴۰۵', sampleCount: 1, limitationNoteFa: null },
+      building_age: { rawValue: 4, displayValueFa: '۴ سال', unitFa: 'سال', priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'پروانه ساخت شهرداری', updatedAtLabelFa: '۱۳ آبان ۱۴۰۵', sampleCount: 1, limitationNoteFa: null },
+      parking: { rawValue: 'دارد', displayValueFa: 'دارد', unitFa: null, priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'مشخصات ثبت‌شده', updatedAtLabelFa: '۱۳ آبان ۱۴۰۵', sampleCount: 1, limitationNoteFa: null },
+      transit_access: { rawValue: 7.5, displayValueFa: '۷.۵ از ۱۰', unitFa: 'امتیاز', priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'شبکه معابر و مترو (SRC-08)', updatedAtLabelFa: '۱۰ آبان ۱۴۰۵', sampleCount: null, limitationNoteFa: null },
+    },
+    normalizedScores0To100: { asking_price_sqm: 90, estimated_value_sqm: 88, area_sqm: 74, building_age: 90, parking: 100, transit_access: 75 },
+  },
+  {
+    id: 'prop-yousef-3',
+    titleFa: 'واحد ۱۰۵ متری یوسف‌آباد (اسدآبادی)',
+    locationLabelFa: 'تهران · منطقه ۶ · یوسف‌آباد',
+    boundaryVersion: 'BOUNDARY-V2',
+    lat: 35.7361,
+    lng: 51.4085,
+    summaryPrimaryLabelFa: 'پیشنهادی ۱۶۵ م/متر · داده قدیمی',
+    dataQualitySummaryFa: 'هشدار تازگی (قدیمی) + سن بنا نامشخص',
+    lastUpdatedFa: '۱۸ مهر ۱۴۰۵',
+    cells: {
+      asking_price_sqm: { rawValue: 165, displayValueFa: '۱۶۵ میلیون تومان', unitFa: 'م.ت / متر', priceSemanticKind: 'asking_price', trustStatus: 'stale', sourceLabelFa: 'آرشیو بازار (SRC-02) · قدیمی‌تر از ۲۱ روز', updatedAtLabelFa: '۱۸ مهر ۱۴۰۵', sampleCount: 1, limitationNoteFa: 'داده قیمت این گزینه قدیمی‌تر از سایر موارد است.' },
+      estimated_value_sqm: { rawValue: null, displayValueFa: 'اطلاعات ثبت نشده', unitFa: null, priceSemanticKind: 'model_estimated_value', trustStatus: 'unrecorded', sourceLabelFa: 'مدل ارزش‌گذاری V6.4', updatedAtLabelFa: '—', sampleCount: 0, limitationNoteFa: 'نبود داده با صفر جایگزین نشده است.' },
+      area_sqm: { rawValue: 105, displayValueFa: '۱۰۵ مترمربع', unitFa: 'مترمربع', priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'مشخصات ثبت‌شده', updatedAtLabelFa: '۱۸ مهر ۱۴۰۵', sampleCount: 1, limitationNoteFa: null },
+      building_age: { rawValue: null, displayValueFa: 'وضعیت مشخص نیست', unitFa: null, priceSemanticKind: 'not_price', trustStatus: 'unknown', sourceLabelFa: 'ثبت‌نشده توسط مالک', updatedAtLabelFa: '—', sampleCount: 0, limitationNoteFa: 'نیاز به استعلام سال ساخت پیش از تصمیم‌گیری.' },
+      parking: { rawValue: 'دارد', displayValueFa: 'دارد', unitFa: null, priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'مشخصات ثبت‌شده', updatedAtLabelFa: '۱۸ مهر ۱۴۰۵', sampleCount: 1, limitationNoteFa: null },
+      transit_access: { rawValue: 8.9, displayValueFa: '۸.۹ از ۱۰', unitFa: 'امتیاز', priceSemanticKind: 'not_price', trustStatus: 'verified', sourceLabelFa: 'شبکه معابر و مترو (SRC-08)', updatedAtLabelFa: '۱۰ آبان ۱۴۰۵', sampleCount: null, limitationNoteFa: null },
+    },
+    normalizedScores0To100: { asking_price_sqm: 81, estimated_value_sqm: null, area_sqm: 80, building_age: null, parking: 100, transit_access: 89 },
+  },
+];

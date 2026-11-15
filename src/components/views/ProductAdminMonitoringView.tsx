@@ -95,7 +95,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
     ? p.allNeighborhoods.map((n) => p.evaluatedNeighborhoods.find((ev) => ev.id === n.id) || n)
     : p.evaluatedNeighborhoods;
   const activeMeta = ADMIN_SIDEBAR_SECTIONS.find((s) => s.id === currentSection) || ADMIN_SIDEBAR_SECTIONS[0];
-  const sampleFx = formatMillionTomanAsIntlCurrency(100, 'USD', 'fa');
+  const sampleFx = formatMillionTomanAsIntlCurrency(100, 'IRT', 'fa');
 
   return (
     <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[#F6F8F6] dark:bg-slate-950 flex flex-col">

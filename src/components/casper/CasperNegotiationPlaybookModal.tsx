@@ -29,7 +29,7 @@ export function CasperNegotiationPlaybookModal({
   targetOfferPerSqm,
   walkAwayPricePerSqm,
   targetSqm,
-  intlCurrency = 'USD',
+  intlCurrency = 'IRT',
 }: CasperNegotiationPlaybookModalProps): React.ReactElement | null {
   const [copied, setCopied] = useState(false);
 

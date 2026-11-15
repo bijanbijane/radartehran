@@ -17,6 +17,7 @@ import {
 import { KnowledgeArticleReader } from '../components/KnowledgeArticleReader';
 import { KnowledgeGlossaryView } from '../components/KnowledgeGlossaryView';
 import { KnowledgeMethodologyView } from '../components/KnowledgeMethodologyView';
+import { OnboardingAndResponsiveHelpCenter } from '../../onboarding/components/OnboardingAndResponsiveHelpCenter';
 
 export interface KnowledgeCenterPageProps {
   activeSubTab?: KnowledgeSubTabId;
@@ -140,6 +141,12 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                 </div>
               ))}
             </div>
+          )}
+          {currentTab === 'guide' && (
+            <OnboardingAndResponsiveHelpCenter
+              evaluatedNeighborhoods={evaluatedNeighborhoods}
+              onNavigateView={onNavigateView}
+            />
           )}
           {currentTab === 'methodology' && (
             <KnowledgeMethodologyView

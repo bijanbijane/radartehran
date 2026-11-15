@@ -70,10 +70,10 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       }
       if (!search) return;
 
-      const intlParams = parseUrlIntlParams(search);
-      if (intlParams.lang) setStoredRadarLocale(intlParams.lang);
-      if (intlParams.currency) setStoredIntlCurrency(intlParams.currency);
-      if (intlParams.unit) setStoredAreaUnit(intlParams.unit);
+      void parseUrlIntlParams(search);
+      setStoredRadarLocale('fa');
+      setStoredIntlCurrency('IRT');
+      setStoredAreaUnit('sqm');
 
       const params = new URLSearchParams(search);
       const cityParam = params.get('city')?.trim().toLowerCase() as CityId | undefined;
@@ -140,13 +140,13 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
   useEffect(() => {
     try {
       const docEl = document.documentElement;
-      if (docEl) { docEl.lang = locale; docEl.dir = locale === 'en' || locale === 'tr' ? 'ltr' : 'rtl'; }
+      if (docEl) { docEl.lang = 'fa'; docEl.dir = 'rtl'; }
       const activeProvinceFa = findProvinceForHood(showCompareModal ? (compHood1?.id ?? -1) : (selectedHood?.id ?? -1))?.capitalFa;
       const cityNameFa = activeProvinceFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
       const cityPrefix = activeCity !== 'tehran' ? `city=${activeCity}&` : '';
       const keepBudget = hasUrlBudgetParams || window.location.search.includes('dep=') || window.location.search.includes('buy=');
       const hubPart = workHubId && workHubId !== 'none' ? `&hub=${encodeURIComponent(workHubId)}` : '';
-      const intlSuffix = `${locale !== 'fa' ? `&lang=${locale}` : ''}${intlCurrency !== 'IRT' ? `&currency=${intlCurrency}` : ''}${areaUnit !== 'sqm' ? `&unit=${areaUnit}` : ''}`;
+      const intlSuffix = '';
       const viewSuffix = primaryView && primaryView !== 'map' ? `&view=${primaryView}` : '';
       const leveragePart = `${useLoanBooster ? '&loan=1' : ''}${deductTenantRahnInBuy ? '&rahnDeduct=1' : ''}${buildingAgeSegment && buildingAgeSegment !== 'new' ? `&age=${buildingAgeSegment}` : ''}`;
       const budgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}${leveragePart}` : `${hubPart}${leveragePart}`) + intlSuffix + viewSuffix;
@@ -202,9 +202,6 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           if (activeCity !== 'tehran') sp.set('city', activeCity);
           sp.set('hood', String(selectedHood.id));
           if (keepBudget) { sp.set('mode', mode); sp.set('dep', String(deposit)); sp.set('rent', String(monthlyRent)); sp.set('buy', String(buyTotalBudget)); sp.set('sqm', String(targetSqm)); }
-          if (locale !== 'fa') sp.set('lang', locale);
-          if (intlCurrency !== 'IRT') sp.set('currency', intlCurrency);
-          if (areaUnit !== 'sqm') sp.set('unit', areaUnit);
           const safeQuery = sanitizePublicNavigationQuery(sp).toString();
           updateSeoHeadMeta(title, desc, canonicalPath, { '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`, description: desc });
           commitHistoryUrl(safeQuery ? `${canonicalPath}?${safeQuery}` : canonicalPath);

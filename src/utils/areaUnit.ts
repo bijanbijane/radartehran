@@ -54,32 +54,28 @@ export function toggleStoredExperienceMode(): RadarExperienceMode {
 }
 
 function readInitialAreaUnit(): AreaUnit {
+  currentMemoryAreaUnit = 'sqm';
   try {
-    const urlUnit = parseUrlIntlParams().unit;
-    if (urlUnit) { currentMemoryAreaUnit = urlUnit; return urlUnit; }
     if (typeof window !== 'undefined' && window.localStorage) {
-      const raw = window.localStorage.getItem(AREA_UNIT_STORAGE_KEY);
-      if (raw === 'sqm' || raw === 'sqft') { currentMemoryAreaUnit = raw; return raw; }
+      window.localStorage.setItem(AREA_UNIT_STORAGE_KEY, 'sqm');
     }
   } catch { /* Ignore storage access errors in restricted environments */ }
-  return currentMemoryAreaUnit;
+  return 'sqm';
 }
 
 export function getStoredAreaUnit(): AreaUnit { return readInitialAreaUnit(); }
 
-export function setStoredAreaUnit(next: AreaUnit): void {
-  const normalized: AreaUnit = next === 'sqft' ? 'sqft' : 'sqm';
-  currentMemoryAreaUnit = normalized;
+export function setStoredAreaUnit(_next: AreaUnit): void {
+  currentMemoryAreaUnit = 'sqm';
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(AREA_UNIT_STORAGE_KEY, normalized);
+    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(AREA_UNIT_STORAGE_KEY, 'sqm');
   } catch { /* Ignore storage errors */ }
   notifyAllListeners();
 }
 
 export function toggleStoredAreaUnit(): AreaUnit {
-  const next: AreaUnit = getStoredAreaUnit() === 'sqm' ? 'sqft' : 'sqm';
-  setStoredAreaUnit(next);
-  return next;
+  setStoredAreaUnit('sqm');
+  return 'sqm';
 }
 
 export function subscribeAreaUnit(listener: () => void): () => void {
@@ -87,115 +83,77 @@ export function subscribeAreaUnit(listener: () => void): () => void {
   return () => { listeners.delete(listener); };
 }
 
-export function detectBrowserLocaleFromNavigator(languages?: readonly string[]): RadarLocale {
-  const candidates = languages && languages.length > 0 ? languages
-    : typeof navigator !== 'undefined' ? (navigator.languages?.length ? navigator.languages : navigator.language ? [navigator.language] : ['fa']) : ['fa'];
-  for (const raw of candidates) {
-    const tag = String(raw || '').trim().toLowerCase();
-    if (tag.startsWith('fa') || tag.startsWith('pes') || tag.startsWith('prs')) return 'fa';
-    if (tag.startsWith('ar')) return 'ar';
-    if (tag.startsWith('tr')) return 'tr';
-    if (tag.startsWith('en')) return 'en';
-  }
+export function detectBrowserLocaleFromNavigator(_languages?: readonly string[]): RadarLocale {
   return 'fa';
 }
 
-export function getRadarLocaleDirection(locale: RadarLocale): 'rtl' | 'ltr' {
-  return locale === 'fa' || locale === 'ar' ? 'rtl' : 'ltr';
+export function getRadarLocaleDirection(_locale: RadarLocale): 'rtl' | 'ltr' {
+  return 'rtl';
 }
 
-export function parseUrlIntlParams(search?: string): { lang?: RadarLocale; currency?: IntlCurrencyCode; unit?: AreaUnit } {
-  const rawSearch = typeof search === 'string' ? search : typeof window !== 'undefined' ? window.location?.search || '' : '';
-  if (!rawSearch) return {};
-  const params = new URLSearchParams(rawSearch.startsWith('?') ? rawSearch : `?${rawSearch}`);
-  const rawLang = params.get('lang')?.trim().toLowerCase();
-  const rawCurrency = params.get('currency')?.trim().toUpperCase();
-  const rawUnit = params.get('unit')?.trim().toLowerCase();
-  return {
-    lang: rawLang === 'fa' || rawLang === 'en' || rawLang === 'ar' || rawLang === 'tr' ? rawLang : undefined,
-    currency: rawCurrency === 'IRT' || rawCurrency === 'USD' || rawCurrency === 'EUR' || rawCurrency === 'AED' ? rawCurrency : undefined,
-    unit: rawUnit === 'sqm' || rawUnit === 'sqft' ? rawUnit : undefined,
-  };
+export function parseUrlIntlParams(_search?: string): { lang?: RadarLocale; currency?: IntlCurrencyCode; unit?: AreaUnit } {
+  return { lang: undefined, currency: undefined, unit: undefined };
 }
 
-export function resolveInitialRadarLocale(options?: {
+export function resolveInitialRadarLocale(_options?: {
   savedLocale?: string | null; urlLang?: string | null; navigatorLanguages?: readonly string[]; enableAutoBrowserDetect?: boolean;
 }): RadarLocale {
-  const urlCandidate = options?.urlLang?.trim().toLowerCase();
-  if (urlCandidate === 'fa' || urlCandidate === 'en' || urlCandidate === 'ar' || urlCandidate === 'tr') return urlCandidate;
-  const savedCandidate = options?.savedLocale?.trim().toLowerCase();
-  if (savedCandidate === 'fa' || savedCandidate === 'en' || savedCandidate === 'ar' || savedCandidate === 'tr') return savedCandidate;
-  if (options?.enableAutoBrowserDetect) return detectBrowserLocaleFromNavigator(options.navigatorLanguages);
   return 'fa';
 }
 
 export function getStoredRadarLocale(): RadarLocale {
+  currentMemoryLocale = 'fa';
   try {
-    const urlLang = parseUrlIntlParams().lang;
-    if (urlLang) { currentMemoryLocale = urlLang; return urlLang; }
     if (typeof window !== 'undefined' && window.localStorage) {
-      const raw = window.localStorage.getItem(RADAR_LOCALE_STORAGE_KEY);
-      if (raw === 'fa' || raw === 'en' || raw === 'ar' || raw === 'tr') { currentMemoryLocale = raw; return raw; }
+      window.localStorage.setItem(RADAR_LOCALE_STORAGE_KEY, 'fa');
     }
   } catch { /* Ignore storage errors */ }
-  return currentMemoryLocale;
+  return 'fa';
 }
 
-export function setStoredRadarLocale(next: RadarLocale): void {
-  const valid: RadarLocale = next === 'en' || next === 'ar' || next === 'tr' ? next : 'fa';
-  currentMemoryLocale = valid;
+export function setStoredRadarLocale(_next: RadarLocale): void {
+  currentMemoryLocale = 'fa';
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_LOCALE_STORAGE_KEY, valid);
+    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_LOCALE_STORAGE_KEY, 'fa');
     if (typeof document !== 'undefined' && document.documentElement) {
-      document.documentElement.setAttribute('data-radar-locale', valid);
-      document.documentElement.lang = valid;
-      document.documentElement.dir = getRadarLocaleDirection(valid);
+      document.documentElement.setAttribute('data-radar-locale', 'fa');
+      document.documentElement.lang = 'fa';
+      document.documentElement.dir = 'rtl';
     }
   } catch { /* Ignore DOM/storage errors */ }
   notifyAllListeners();
 }
 
 export function getStoredIntlCurrency(): IntlCurrencyCode {
+  currentMemoryCurrency = 'IRT';
   try {
-    const urlCurrency = parseUrlIntlParams().currency;
-    if (urlCurrency) { currentMemoryCurrency = urlCurrency; return urlCurrency; }
     if (typeof window !== 'undefined' && window.localStorage) {
-      const raw = window.localStorage.getItem(RADAR_CURRENCY_STORAGE_KEY);
-      if (raw === 'IRT' || raw === 'USD' || raw === 'EUR' || raw === 'AED') { currentMemoryCurrency = raw; return raw; }
+      window.localStorage.setItem(RADAR_CURRENCY_STORAGE_KEY, 'IRT');
     }
   } catch { /* Ignore storage errors */ }
-  return currentMemoryCurrency;
+  return 'IRT';
 }
 
-export function setStoredIntlCurrency(next: IntlCurrencyCode): void {
-  const valid: IntlCurrencyCode = next === 'USD' || next === 'EUR' || next === 'AED' ? next : 'IRT';
-  currentMemoryCurrency = valid;
+export function setStoredIntlCurrency(_next: IntlCurrencyCode): void {
+  currentMemoryCurrency = 'IRT';
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_CURRENCY_STORAGE_KEY, valid);
+    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_CURRENCY_STORAGE_KEY, 'IRT');
   } catch { /* Ignore storage errors */ }
   notifyAllListeners();
 }
 
-export function formatMillionTomanAsIntlCurrency(millionToman: number, currency: IntlCurrencyCode = 'IRT', locale: RadarLocale = 'fa'): string {
+export function formatMillionTomanAsIntlCurrency(millionToman: number, _currency: IntlCurrencyCode = 'IRT', _locale: RadarLocale = 'fa'): string {
   const safeMillion = Number.isFinite(millionToman) ? Math.max(0, millionToman) : 0;
-  const numLocale = locale === 'fa' ? 'fa-IR' : locale === 'ar' ? 'ar-AE' : 'en-US';
-  if (currency === 'IRT') {
-    const billions = (safeMillion / 1000).toFixed(1);
-    return locale === 'fa' ? `${Number(billions).toLocaleString('fa-IR')} میلیارد تومان` : `${billions}B IRT`;
+  if (safeMillion < 1000) {
+    return `${Math.round(safeMillion).toLocaleString('fa-IR')} میلیون تومان`;
   }
-  const converted = Math.round(safeMillion / MILLION_TOMAN_PER_FX_UNIT[currency]);
-  const symbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'AED ';
-  return `${symbol}${converted.toLocaleString(numLocale)}`;
+  const billions = Number((safeMillion / 1000).toFixed(1));
+  return `${billions.toLocaleString('fa-IR')} میلیارد تومان`;
 }
 
 export interface RadarTopBarCopy { searchPlaceholder: string; filterBtnLabel: string; toolsBtnLabel: string; }
-const TOP_BAR_COPY: Record<RadarLocale, RadarTopBarCopy> = {
-  fa: { searchPlaceholder: 'جست‌وجوی شهر، استان یا محله...', filterBtnLabel: 'فیلتر بودجه و وام', toolsBtnLabel: 'ابزارها' },
-  en: { searchPlaceholder: 'Search city, province or neighborhood...', filterBtnLabel: 'Budget & Loan', toolsBtnLabel: 'Tools' },
-  ar: { searchPlaceholder: 'ابحث عن المدينة أو المحافظة أو الحي...', filterBtnLabel: 'الميزانية والقرض', toolsBtnLabel: 'الأدوات' },
-  tr: { searchPlaceholder: 'Şehir, eyalet veya mahalle ara...', filterBtnLabel: 'Bütçe ve Kredi', toolsBtnLabel: 'Araçlar' },
-};
-export function getRadarTopBarCopy(locale: RadarLocale): RadarTopBarCopy { return TOP_BAR_COPY[locale] || TOP_BAR_COPY.fa; }
+const TOP_BAR_COPY_FA: RadarTopBarCopy = { searchPlaceholder: 'جست‌وجوی شهر، استان یا محله...', filterBtnLabel: 'فیلتر بودجه و وام', toolsBtnLabel: 'ابزارها' };
+export function getRadarTopBarCopy(_locale: RadarLocale = 'fa'): RadarTopBarCopy { return TOP_BAR_COPY_FA; }
 
 export type PrimaryViewId =
   | 'home'
@@ -222,69 +180,55 @@ export interface RadarGlobalNavCopy {
   searchPlaceholder: string;
   admin: string;
 }
-const GLOBAL_NAV_COPY: Record<RadarLocale, RadarGlobalNavCopy> = {
-  fa: { home: 'خانه', discover: 'محله‌ها', intelligence: 'بازار', properties: 'املاک', tools: 'ابزارها', more: 'بیشتر', userspace: 'حساب کاربری', map: 'نقشه', searchPlaceholder: 'جست‌وجوی محله، ملک یا گزارش...', admin: 'مدیریت سیستم' },
-  en: { home: 'Home', discover: 'Areas', intelligence: 'Market', properties: 'Properties', tools: 'Tools', more: 'More', userspace: 'Account', map: 'Map', searchPlaceholder: 'Search neighborhood, property or report...', admin: 'Admin' },
-  ar: { home: 'الرئيسية', discover: 'الأحياء', intelligence: 'السوق', properties: 'العقارات', tools: 'الأدوات', more: 'المزيد', userspace: 'الحساب', map: 'الخريطة', searchPlaceholder: 'ابحث عن الحي أو العقار...', admin: 'الإدارة' },
-  tr: { home: 'Ana Sayfa', discover: 'Mahalleler', intelligence: 'Piyasa', properties: 'İlanlar', tools: 'Araçlar', more: 'Daha Fazla', userspace: 'Hesabım', map: 'Harita', searchPlaceholder: 'Mahalle, konut veya rapor ara...', admin: 'Yönetim' },
+const GLOBAL_NAV_COPY_FA: RadarGlobalNavCopy = {
+  home: 'خانه',
+  discover: 'محله‌ها',
+  intelligence: 'بازار',
+  properties: 'املاک',
+  tools: 'ابزارها',
+  more: 'بیشتر',
+  userspace: 'حساب کاربری',
+  map: 'نقشه',
+  searchPlaceholder: 'جست‌وجوی محله، ملک یا گزارش...',
+  admin: 'مدیریت سیستم',
 };
-export function getRadarGlobalNavCopy(locale: RadarLocale): RadarGlobalNavCopy { return GLOBAL_NAV_COPY[locale] || GLOBAL_NAV_COPY.fa; }
+export function getRadarGlobalNavCopy(_locale: RadarLocale = 'fa'): RadarGlobalNavCopy { return GLOBAL_NAV_COPY_FA; }
 
 export interface RadarBottomNavCopy { mapLabel: string; filterLabel: string; suggestLabel: string; compareLabel: string; toolsLabel: string; submitLabel: string; }
-const BOTTOM_NAV_COPY: Record<RadarLocale, RadarBottomNavCopy> = {
-  fa: { mapLabel: 'نقشه', filterLabel: 'فیلتر بودجه', suggestLabel: 'پیشنهادها', compareLabel: 'مقایسه', toolsLabel: 'ابزارها', submitLabel: 'ثبت ملک' },
-  en: { mapLabel: 'Map', filterLabel: 'Budget', suggestLabel: 'Suggest', compareLabel: 'Compare', toolsLabel: 'Tools', submitLabel: 'Submit' },
-  ar: { mapLabel: 'الخريطة', filterLabel: 'الميزانية', suggestLabel: 'مقترحات', compareLabel: 'مقارنة', toolsLabel: 'الأدوات', submitLabel: 'إضافة عقار' },
-  tr: { mapLabel: 'Harita', filterLabel: 'Bütçe', suggestLabel: 'Öneriler', compareLabel: 'Karşılaştır', toolsLabel: 'Araçlar', submitLabel: 'İlan Ekle' },
-};
-export function getRadarBottomNavCopy(locale: RadarLocale): RadarBottomNavCopy { return BOTTOM_NAV_COPY[locale] || BOTTOM_NAV_COPY.fa; }
+const BOTTOM_NAV_COPY_FA: RadarBottomNavCopy = { mapLabel: 'نقشه', filterLabel: 'فیلتر بودجه', suggestLabel: 'پیشنهادها', compareLabel: 'مقایسه', toolsLabel: 'ابزارها', submitLabel: 'ثبت ملک' };
+export function getRadarBottomNavCopy(_locale: RadarLocale = 'fa'): RadarBottomNavCopy { return BOTTOM_NAV_COPY_FA; }
 
 export interface RadarInspectorCopy { headerTitle: string; scorecardTab: string; marketTab: string; bargainsTabPrefix: string; reviewsTab: string; voteTab: string; hedonicCta: string; }
-const INSPECTOR_COPY: Record<RadarLocale, RadarInspectorCopy> = {
-  fa: { headerTitle: 'کارنامه و راهنمای محله', scorecardTab: 'کارنامه', marketTab: 'بازار و نمودار', bargainsTabPrefix: 'فایل‌های زیر قیمت', reviewsTab: 'نظرات ساکنان', voteTab: 'امکانات', hedonicCta: 'ماشین‌حساب هوشمند قیمت‌گذاری ملک (Hedonic)' },
-  en: { headerTitle: 'Neighborhood Scorecard', scorecardTab: 'Scorecard & Traffic', marketTab: 'Market & Charts', bargainsTabPrefix: 'Bargain Deals', reviewsTab: 'Resident Reviews', voteTab: 'Amenities & Votes', hedonicCta: 'Smart Hedonic Property Valuation' },
-  ar: { headerTitle: 'بطاقة تقييم ودليل الحي', scorecardTab: 'التقييم والمرور', marketTab: 'السوق والرسوم', bargainsTabPrefix: 'عقارات بسعر لقطة', reviewsTab: 'آراء السكان', voteTab: 'المرافق والتصويت', hedonicCta: 'حاسبة التقييم العقاري الذكية (Hedonic)' },
-  tr: { headerTitle: 'Mahalle Karnesi ve Rehberi', scorecardTab: 'Karne ve Trafik', marketTab: 'Piyasa ve Grafik', bargainsTabPrefix: 'Fırsat İlanları', reviewsTab: 'Sakin Yorumları', voteTab: 'Olanaklar ve Oy', hedonicCta: 'Akıllı Hedonik Konut Değerleme' },
-};
-export function getRadarInspectorCopy(locale: RadarLocale): RadarInspectorCopy { return INSPECTOR_COPY[locale] || INSPECTOR_COPY.fa; }
+const INSPECTOR_COPY_FA: RadarInspectorCopy = { headerTitle: 'کارنامه و راهنمای محله', scorecardTab: 'کارنامه', marketTab: 'بازار و نمودار', bargainsTabPrefix: 'فایل‌های زیر قیمت', reviewsTab: 'نظرات ساکنان', voteTab: 'امکانات', hedonicCta: 'ماشین‌حساب هوشمند قیمت‌گذاری ملک (Hedonic)' };
+export function getRadarInspectorCopy(_locale: RadarLocale = 'fa'): RadarInspectorCopy { return INSPECTOR_COPY_FA; }
 
 export interface RadarLegendCopy { legendBtnLabel: string; legendHeaderTitle: string; metroPillLabel: string; trafficPillLabel: string; greenTitle: string; yellowTitle: string; redTitle: string; }
-const LEGEND_COPY: Record<RadarLocale, RadarLegendCopy> = {
-  fa: { legendBtnLabel: 'راهنمای نقشه', legendHeaderTitle: 'راهنمای رنگ‌ها و لایه‌های نقشه', metroPillLabel: '🚇 مترو', trafficPillLabel: '🚦 طرح ترافیک', greenTitle: 'سبز (مناسب بودجه)', yellowTitle: 'زرد (مرزی / قابل مذاکره)', redTitle: 'قرمز (فراتر از بودجه)' },
-  en: { legendBtnLabel: 'Map Legend', legendHeaderTitle: 'Map Colors & GIS Layers', metroPillLabel: '🚇 Metro', trafficPillLabel: '🚦 Traffic Zone', greenTitle: 'Green (Within Budget)', yellowTitle: 'Yellow (Borderline / Negotiable)', redTitle: 'Red (Above Budget)' },
-  ar: { legendBtnLabel: 'دليل الخريطة', legendHeaderTitle: 'دليل الألوان وطبقات الخريطة', metroPillLabel: '🚇 المترو', trafficPillLabel: '🚦 نطاق المرور', greenTitle: 'أخضر (مناسب للميزانية)', yellowTitle: 'أصفر (حدودي / قابل للتفاوض)', redTitle: 'أحمر (أعلى من الميزانية)' },
-  tr: { legendBtnLabel: 'Harita Rehberi', legendHeaderTitle: 'Harita Renkleri ve Katmanlar', metroPillLabel: '🚇 Metro', trafficPillLabel: '🚦 Trafik Bölgesi', greenTitle: 'Yeşil (Bütçeye Uygun)', yellowTitle: 'Sarı (Sınırda / Pazarlık)', redTitle: 'Kırmızı (Bütçe Üstü)' },
-};
-export function getRadarLegendCopy(locale: RadarLocale): RadarLegendCopy { return LEGEND_COPY[locale] || LEGEND_COPY.fa; }
+const LEGEND_COPY_FA: RadarLegendCopy = { legendBtnLabel: 'راهنمای نقشه', legendHeaderTitle: 'راهنمای رنگ‌ها و لایه‌های نقشه', metroPillLabel: '🚇 مترو', trafficPillLabel: '🚦 طرح ترافیک', greenTitle: 'سبز (مناسب بودجه)', yellowTitle: 'زرد (مرزی / قابل مذاکره)', redTitle: 'قرمز (فراتر از بودجه)' };
+export function getRadarLegendCopy(_locale: RadarLocale = 'fa'): RadarLegendCopy { return LEGEND_COPY_FA; }
 
 export interface RadarCompareCopy { modalTitle: string; inlineTitle: string; metricHeader: string; swapBtnLabel: string; printBtnLabel: string; }
-const COMPARE_COPY: Record<RadarLocale, RadarCompareCopy> = {
-  fa: { modalTitle: 'مقایسه رخ‌به‌رخ دو محله', inlineTitle: 'مقایسه رودرروی محله‌ها', metricHeader: 'شاخص مقایسه', swapBtnLabel: 'جابه‌جایی', printBtnLabel: 'چاپ / PDF' },
-  en: { modalTitle: 'Head-to-Head Neighborhood Comparison', inlineTitle: 'Head-to-Head Comparison', metricHeader: 'Comparison Metric', swapBtnLabel: 'Swap', printBtnLabel: 'Print / PDF' },
-  ar: { modalTitle: 'مقارنة مباشرة بين حيين', inlineTitle: 'مقارنة الأحياء وجهاً لوجه', metricHeader: 'مؤشر المقارنة', swapBtnLabel: 'تبديل', printBtnLabel: 'طباعة / PDF' },
-  tr: { modalTitle: 'İki Mahalle Karşılaştırması', inlineTitle: 'Birebir Mahalle Karşılaştırma', metricHeader: 'Karşılaştırma Ölçütü', swapBtnLabel: 'Değiştir', printBtnLabel: 'Yazdır / PDF' },
-};
-export function getRadarCompareCopy(locale: RadarLocale): RadarCompareCopy { return COMPARE_COPY[locale] || COMPARE_COPY.fa; }
-export function sqmToSqft(sqm: number): number { return Math.round((Number.isFinite(sqm) ? Math.max(0, sqm) : 0) * SQM_TO_SQFT); }
-export function sqftToSqm(sqft: number): number { return Math.round((Number.isFinite(sqft) ? Math.max(0, sqft) : 0) / SQM_TO_SQFT); }
-export function convertAreaFromSqm(sqm: number, unit: AreaUnit): number {
+const COMPARE_COPY_FA: RadarCompareCopy = { modalTitle: 'مقایسه رخ‌به‌رخ دو محله', inlineTitle: 'مقایسه رودرروی محله‌ها', metricHeader: 'شاخص مقایسه', swapBtnLabel: 'جابه‌جایی', printBtnLabel: 'چاپ / PDF' };
+export function getRadarCompareCopy(_locale: RadarLocale = 'fa'): RadarCompareCopy { return COMPARE_COPY_FA; }
+export function sqmToSqft(sqm: number): number { return Math.round(Number.isFinite(sqm) ? Math.max(0, sqm) : 0); }
+export function sqftToSqm(sqft: number): number { return Math.round(Number.isFinite(sqft) ? Math.max(0, sqft) : 0); }
+export function convertAreaFromSqm(sqm: number, _unit: AreaUnit = 'sqm'): number {
   const safeSqm = Number.isFinite(sqm) ? Math.max(0, sqm) : 0;
-  return unit === 'sqft' ? sqmToSqft(safeSqm) : Math.round(safeSqm);
+  return Math.round(safeSqm);
 }
-export function convertPricePerSqmToUnit(pricePerSqmMillion: number, unit: AreaUnit): number {
+export function convertPricePerSqmToUnit(pricePerSqmMillion: number, _unit: AreaUnit = 'sqm'): number {
   const safePrice = Number.isFinite(pricePerSqmMillion) ? Math.max(0, pricePerSqmMillion) : 0;
-  return unit === 'sqft' ? Math.round((safePrice / SQM_TO_SQFT) * 100) / 100 : Math.round(safePrice * 10) / 10;
+  return Math.round(safePrice * 10) / 10;
 }
 export function formatAreaNumber(value: number, persianDigits = true): string {
   return (Number.isFinite(value) ? value : 0).toLocaleString(persianDigits ? 'fa-IR' : 'en-US');
 }
-export function formatAreaValue(sqm: number, unit: AreaUnit, persianDigits = true): string {
-  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, unit), persianDigits);
-  return unit === 'sqft' ? `${formatted} فوت مربع (ft²)` : `${formatted} متر مربع`;
+export function formatAreaValue(sqm: number, _unit: AreaUnit = 'sqm', persianDigits = true): string {
+  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, 'sqm'), persianDigits);
+  return `${formatted} متر مربع`;
 }
-export function formatAreaShort(sqm: number, unit: AreaUnit, persianDigits = true): string {
-  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, unit), persianDigits);
-  return unit === 'sqft' ? `${formatted} ft²` : `${formatted} متری`;
+export function formatAreaShort(sqm: number, _unit: AreaUnit = 'sqm', persianDigits = true): string {
+  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, 'sqm'), persianDigits);
+  return `${formatted} متری`;
 }
-export function formatAreaUnitLabel(unit: AreaUnit): string { return unit === 'sqft' ? 'فوت مربع (ft²)' : 'متر مربع (m²)'; }
-export function formatUnitBuyPriceTitle(unit: AreaUnit): string { return unit === 'sqft' ? 'میانگین خرید هر فوت مربع (ft²)' : 'میانگین خرید هر متر'; }
+export function formatAreaUnitLabel(_unit: AreaUnit = 'sqm'): string { return 'متر مربع (m²)'; }
+export function formatUnitBuyPriceTitle(_unit: AreaUnit = 'sqm'): string { return 'میانگین خرید هر متر'; }
