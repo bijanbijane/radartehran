@@ -100,7 +100,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
             مرکز تجربه ورود (۳۲)، واکنش‌گرایی (۳۳)، دسترس‌پذیری WCAG 2.2 AA (۳۴) و سیستم حرکت (۳۵)
           </h2>
         </div>
-        <div role="tablist" aria-label="انتخاب مرحله معماری رابط" className="flex flex-wrap gap-1.5">
+        <div role="tablist" aria-label="انتخاب مرحله معماری رابط" className="flex flex-wrap gap-1.5 w-full">
           {ONBOARDING_STAGE_TABS.map((t) => (
             <button
               key={t.id}
@@ -109,7 +109,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               aria-selected={stageTab === t.id}
               data-testid={t.testId}
               onClick={() => setStageTab(t.id)}
-              className={`px-3 py-2 min-h-[40px] rounded-[8px] font-bold cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-2 min-h-[40px] max-w-full rounded-[8px] font-bold cursor-pointer text-right whitespace-normal break-words ${
                 stageTab === t.id ? 'bg-[#176B63] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'
               }`}
             >

@@ -42,7 +42,15 @@ export type OnboardingHelpStageTabId =
   | 'stage72'
   | 'stage73'
   | 'stage74'
-  | 'stage75';
+  | 'stage75'
+  | 'stage77'
+  | 'stage78'
+  | 'stage79'
+  | 'stage80'
+  | 'stage81'
+  | 'stage82'
+  | 'stage83'
+  | 'stage84';
 
 export const ONBOARDING_STAGE_TABS: ReadonlyArray<{
   id: OnboardingHelpStageTabId;
@@ -92,4 +100,12 @@ export const ONBOARDING_STAGE_TABS: ReadonlyArray<{
   { id: 'stage73', testId: 'switch-stage-73-tab', labelFa: 'مرحله ۷۳: تحلیل جابه‌جایی جمعیت، مهاجرت درون‌شهری و پویایی سکونت' },
   { id: 'stage74', testId: 'switch-stage-74-tab', labelFa: 'مرحله ۷۴: تحلیل تقاضای مسکن، ظرفیت عرضه و تعادل بازار محله' },
   { id: 'stage75', testId: 'switch-stage-75-tab', labelFa: 'مرحله ۷۵: تحلیل چرخه عمر ساختمان، کیفیت سازه‌ای و ریسک فرسودگی' },
+  { id: 'stage77', testId: 'switch-stage-77-tab', labelFa: 'مرحله ۷۷: تحلیل عرضه مسکن استیجاری، بازار اجاره و فشار هزینه' },
+  { id: 'stage78', testId: 'switch-stage-78-tab', labelFa: 'مرحله ۷۸: تحلیل بازار خرید و فروش، نقدشوندگی و پویایی معاملات' },
+  { id: 'stage79', testId: 'switch-stage-79-tab', labelFa: 'مرحله ۷۹: تحلیل سرمایه‌گذاری ملکی، فرصت‌یابی مکانی و پروژه‌ها' },
+  { id: 'stage80', testId: 'switch-stage-80-tab', labelFa: 'مرحله ۸۰: تحلیل اقتصاد ساخت‌وساز، پایش هزینه‌ها و توسعه بنا' },
+  { id: 'stage81', testId: 'switch-stage-81-tab', labelFa: 'مرحله ۸۱: تحلیل بازار زمین شهری، مالکیت، کاربری و اقتصاد زمین' },
+  { id: 'stage82', testId: 'switch-stage-82-tab', labelFa: 'مرحله ۸۲: تحلیل توسعه شهری، بازآفرینی بافت‌ها و نوسازی محله‌ها' },
+  { id: 'stage83', testId: 'switch-stage-83-tab', labelFa: 'مرحله ۸۳: تحلیل سرمایه‌گذاری شهری، تأمین مالی و مشارکت PPP' },
+  { id: 'stage84', testId: 'switch-stage-84-tab', labelFa: 'مرحله ۸۴: تحلیل اقتصاد کلان شهری، چرخه‌ها و اثر بر بازار املاک' },
 ];

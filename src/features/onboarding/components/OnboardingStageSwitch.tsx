@@ -43,6 +43,14 @@ import { Stage72HousingAffordabilitySubpanel } from './Stage72HousingAffordabili
 import { Stage73PopulationMobilitySubpanel } from './Stage73PopulationMobilitySubpanel';
 import { Stage74MarketEquilibriumSubpanel } from './Stage74MarketEquilibriumSubpanel';
 import { Stage75BuildingLifecycleSubpanel } from './Stage75BuildingLifecycleSubpanel';
+import { Stage77RentalMarketSubpanel } from './Stage77RentalMarketSubpanel';
+import { Stage78SalesLiquiditySubpanel } from './Stage78SalesLiquiditySubpanel';
+import { Stage79InvestmentOpportunitySubpanel } from './Stage79InvestmentOpportunitySubpanel';
+import { Stage80ConstructionEconomicsSubpanel } from './Stage80ConstructionEconomicsSubpanel';
+import { Stage81UrbanLandMarketSubpanel } from './Stage81UrbanLandMarketSubpanel';
+import { Stage82UrbanRegenerationSubpanel } from './Stage82UrbanRegenerationSubpanel';
+import { Stage83UrbanInvestmentSubpanel } from './Stage83UrbanInvestmentSubpanel';
+import { Stage84UrbanMacroeconomicsSubpanel } from './Stage84UrbanMacroeconomicsSubpanel';
 
 export const OnboardingStageSwitch: React.FC<{
   stageTab: OnboardingHelpStageTabId;
@@ -112,5 +120,13 @@ export const OnboardingStageSwitch: React.FC<{
     {stageTab === 'stage73' && <Stage73PopulationMobilitySubpanel />}
     {stageTab === 'stage74' && <Stage74MarketEquilibriumSubpanel />}
     {stageTab === 'stage75' && <Stage75BuildingLifecycleSubpanel />}
+    {stageTab === 'stage77' && <Stage77RentalMarketSubpanel />}
+    {stageTab === 'stage78' && <Stage78SalesLiquiditySubpanel />}
+    {stageTab === 'stage79' && <Stage79InvestmentOpportunitySubpanel />}
+    {stageTab === 'stage80' && <Stage80ConstructionEconomicsSubpanel />}
+    {stageTab === 'stage81' && <Stage81UrbanLandMarketSubpanel />}
+    {stageTab === 'stage82' && <Stage82UrbanRegenerationSubpanel />}
+    {stageTab === 'stage83' && <Stage83UrbanInvestmentSubpanel />}
+    {stageTab === 'stage84' && <Stage84UrbanMacroeconomicsSubpanel />}
   </>
 );
