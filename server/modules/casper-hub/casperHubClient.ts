@@ -1,204 +1,277 @@
 /**
  * @file server/modules/casper-hub/casperHubClient.ts
- * @description Server-side HTTP client for the shared CASPER HUB Worker API.
- * Enforces strict account-scoped HTTPS allowlisting (zero SSRF/multi-tenant token exfiltration),
- * redirect blocking, allowlisted payload construction, deterministic UUIDv5 idempotency,
- * and cross-agent prompt-injection & secret-leakage guards across all fields and tags.
+ * @description Server-side CASPER HUB client with zero secret leakage, strict agent verification,
+ * deterministic UUIDv5/SHA256 idempotency, prompt-injection firewall, and cursor monotonicity checks.
  */
+import crypto from 'node:crypto';
+import {
+  ALLOWED_CASPER_AGENT_IDS, CASPER_AGENT_ID, CASPER_AGENT_ROADMAP_ID, CasperHubBootstrapResponse,
+  CasperHubChangesResponse, CasperHubClientError, CasperHubClientResult, CasperHubCreateNoteResponse,
+  CasperHubSafeConfigStatus, CasperHubWhoAmIResponse, DEFAULT_CASPER_HUB_URL, EXPECTED_CASPER_AGENT_ID,
+  analyzeCasperHubEpistemicState, buildDeterministicNoteIdempotencyKey, deriveDeterministicNoteIdempotencyKey,
+  generateDeterministicNoteIdempotencyKey, isAllowedCasperHubUrl, normalizeCasperHubNotePayload,
+  redactCasperHubSecrets, redactSensitiveText, redactSensitiveTokenText, resolveCasperHubBaseUrl,
+  resolveCasperHubConfig, resolveCasperHubUrl, scrubParsedObject, seedToUuidV5, validateCasperHubNotePayload,
+} from './casperHubTypes.ts';
 
-import { createHash } from 'node:crypto';
-import { detectPromptInjection } from '../../../src/utils/security';
-import { CASPER_AGENT_ID, analyzeCasperHubEpistemicState, canonicalizeUnicode as canonicalizeUnicodeText, parseSafeHubJsonAST, redactSensitiveText } from './casperHubTypes';
-export { analyzeCasperHubEpistemicState };
+export {
+  ALLOWED_CASPER_AGENT_IDS, CASPER_AGENT_ID, CASPER_AGENT_ROADMAP_ID, CasperHubClientError,
+  DEFAULT_CASPER_HUB_URL, EXPECTED_CASPER_AGENT_ID, analyzeCasperHubEpistemicState,
+  buildDeterministicNoteIdempotencyKey, deriveDeterministicNoteIdempotencyKey,
+  generateDeterministicNoteIdempotencyKey, isAllowedCasperHubUrl, normalizeCasperHubNotePayload,
+  redactCasperHubSecrets, redactSensitiveText, redactSensitiveTokenText, resolveCasperHubBaseUrl,
+  resolveCasperHubConfig, resolveCasperHubUrl, validateCasperHubNotePayload,
+};
 
-export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev';
-const DEFAULT_TIMEOUT_MS = 10_000;
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const SECRET_LEAK_REGEX =
-  /\b(Bearer\s+[A-Za-z0-9._~+/-]{12,}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|\d{8,11}:[A-Za-z0-9_-]{30,45}|AIza[0-9A-Za-z_-]{20,}|sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|glpat-[A-Za-z0-9_-]{16,}|-----BEGIN\s+[A-Z\s]+PRIVATE\s+KEY-----)\b/i;
-const VALID_NOTE_SCOPES = new Set(['global', 'roadmap', 'task']);
-const VALID_NOTE_TYPES = new Set(['checkpoint', 'finding', 'blocker', 'handoff', 'observation', 'verification']);
-
-export interface CasperHubConfigStatus { readonly configured: boolean; readonly hubUrl: string; readonly tokenConfigured: boolean; readonly agentId: typeof CASPER_AGENT_ID; }
-export interface CasperHubChangesQuery { readonly after?: number | string; readonly limit?: number; }
-export interface CasperHubNotePayload { readonly [key: string]: unknown; }
-export interface CasperHubResponse<T = unknown> {
-  readonly ok: boolean; readonly status: number; readonly data: T | null;
-  readonly errorCode?: string; readonly errorMessage?: string; readonly error?: string;
-}
-export interface CasperHubNoteValidationResult {
-  readonly valid: boolean; readonly errorCode?: string; readonly errorMessage?: string;
-}
-export interface CasperHubEpistemicTelemetry {
-  readonly minSeq: number; readonly maxSeq: number; readonly isMonotonic: boolean;
-  readonly sequenceGapCount: number; readonly syncCursorLag: number;
-  readonly agentContributionEntropyBits: number; readonly noteTypeEntropyBits: number;
-  readonly criticalNotesCount: number; readonly activeBlockersCount: number;
+export interface CasperHubClientOptions {
+  baseUrl?: string;
+  token?: string;
+  timeoutMs?: number;
+  fetchImpl?: typeof fetch;
+  env?: Record<string, string | undefined>;
 }
 
+const UUID_V5_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-
-function containsSecretTokenVariant(serialized: string, secretToken?: string | null): boolean {
-  if (!secretToken || secretToken.length < 6) return false;
-  const enc = encodeURIComponent(secretToken), b64 = Buffer.from(secretToken, 'utf8').toString('base64'), esc = secretToken.replace(/\//g, '\\/');
-  return [secretToken, enc, b64, esc].some((s) => s.length >= 6 && serialized.includes(s));
-}
-function isTrustedCasperHubHost(hostname: string): boolean {
-  const host = hostname.trim().toLowerCase();
-  if (!host || host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false;
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(host) || host.includes(':')) return false;
-  return host === 'casper-hub-api.bijanbijane-1.workers.dev' || host.endsWith('.bijanbijane-1.workers.dev');
-}
-
-export function resolveCasperHubBaseUrl(env: Record<string, string | undefined> = process.env): string {
-  const raw = typeof env.CASPER_HUB_URL === 'string' ? env.CASPER_HUB_URL.trim() : '';
-  const candidate = raw.length > 0 ? raw : DEFAULT_CASPER_HUB_URL;
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) return DEFAULT_CASPER_HUB_URL;
-    if (!isTrustedCasperHubHost(parsed.hostname)) return DEFAULT_CASPER_HUB_URL;
-    return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
-  } catch {
-    return DEFAULT_CASPER_HUB_URL;
-  }
-}
-
-function resolveCasperHubToken(env: Record<string, string | undefined> = process.env): string | null {
-  const raw = typeof env.CASPER_HUB_TOKEN === 'string' ? env.CASPER_HUB_TOKEN.trim() : '';
-  return raw.length > 0 ? raw : null;
-}
-
-export function getCasperHubConfigStatus(env: Record<string, string | undefined> = process.env): CasperHubConfigStatus {
-  const hubUrl = resolveCasperHubBaseUrl(env);
-  const token = resolveCasperHubToken(env);
-  return { configured: Boolean(token), hubUrl, tokenConfigured: Boolean(token), agentId: CASPER_AGENT_ID };
-}
-
-function normalizeNoteImportance(raw: unknown): number {
-  if (typeof raw === 'number' && Number.isFinite(raw)) return Math.max(1, Math.min(5, Math.trunc(raw)));
-  if (typeof raw === 'string') {
-    const s = raw.trim().toLowerCase();
-    if (s === '5' || s === 'critical' || s === 'p0') return 5;
-    if (s === '4' || s === 'high' || s === 'p1') return 4;
-    if (s === '2' || s === 'low' || s === 'p3') return 2;
-    if (s === '1' || s === 'p4') return 1;
-  }
-  return 3;
-}
-
-function hashToUuidV5(seed: string): string {
-  const hex = createHash('sha256').update(seed).digest('hex');
-  const variantNibble = ((parseInt(hex.slice(16, 17), 16) & 0x3) | 0x8).toString(16);
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${variantNibble}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
-}
-
-export function normalizeCasperHubNotePayload(raw: CasperHubNotePayload): Record<string, unknown> {
-  const scopeRaw = canonicalizeUnicodeText(raw.note_scope).toLowerCase() || 'global';
-  const note_scope = VALID_NOTE_SCOPES.has(scopeRaw) ? scopeRaw : 'global';
-  const typeRaw = canonicalizeUnicodeText(raw.note_type).toLowerCase() || 'checkpoint';
-  const note_type = VALID_NOTE_TYPES.has(typeRaw) ? typeRaw : typeRaw === 'decision' ? 'finding' : 'checkpoint';
-  const importance = normalizeNoteImportance(raw.importance);
-  const dedupedTags = Array.isArray(raw.tags)
-    ? Array.from(new Set(raw.tags.filter((t): t is string => typeof t === 'string').map((t) => canonicalizeUnicodeText(t).slice(0, 64)).filter(Boolean))).slice(0, 10)
-    : [];
-  return {
-    note_scope,
-    roadmap_id: canonicalizeUnicodeText(raw.roadmap_id) || null,
-    task_id: canonicalizeUnicodeText(raw.task_id) || null,
-    note_type,
-    importance,
-    title: canonicalizeUnicodeText(raw.title),
-    summary: canonicalizeUnicodeText(raw.summary),
-    detail_ref: canonicalizeUnicodeText(raw.detail_ref) || null,
-    tags: dedupedTags,
-  };
-}
-
-export function deriveDeterministicNoteIdempotencyKey(notePayload: CasperHubNotePayload, customKeySeed?: string): string {
-  if (customKeySeed && UUID_REGEX.test(customKeySeed.trim())) return customKeySeed.trim().toLowerCase();
-  const norm = normalizeCasperHubNotePayload(notePayload);
-  const canonicalForHash = { ...norm, tags: [...(norm.tags as string[])].sort() };
-  const seed = customKeySeed && customKeySeed.trim().length > 0
-    ? `casper-hub-key-v1:${canonicalizeUnicodeText(customKeySeed)}:${JSON.stringify(canonicalForHash)}`
-    : `casper-hub-note-v1:${JSON.stringify(canonicalForHash)}`;
-  return hashToUuidV5(seed);
-}
-
-export function validateCasperHubNotePayload(notePayload: CasperHubNotePayload, secretToken?: string | null): CasperHubNoteValidationResult {
-  const title = typeof notePayload?.title === 'string' ? notePayload.title.trim() : '';
-  const summary = typeof notePayload?.summary === 'string' ? notePayload.summary.trim() : '';
-  if (!title || title.length > 240 || !summary || summary.length > 4_000) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload requires non-empty title (<=240 chars) and summary (<=4000 chars).' };
-  const scope = typeof notePayload.note_scope === 'string' ? notePayload.note_scope.trim().toLowerCase() : 'global';
-  if (!VALID_NOTE_SCOPES.has(scope)) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Invalid note_scope.' };
-  if (scope === 'roadmap' && (typeof notePayload.roadmap_id !== 'string' || !notePayload.roadmap_id.trim())) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'roadmap_id is required when note_scope is roadmap.' };
-  if (scope === 'task' && (typeof notePayload.task_id !== 'string' || !notePayload.task_id.trim())) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'task_id is required when note_scope is task.' };
-  const claimedAgent = (notePayload as any)?.agent_id ?? (notePayload as any)?.author_agent_id ?? (notePayload as any)?.metadata?.agent_id;
-  if (typeof claimedAgent === 'string' && claimedAgent.trim() && !['CASPER-04', 'CASPER-03'].includes(claimedAgent.trim().toUpperCase())) return { valid: false, errorCode: 'CASPER_AGENT_IDENTITY_MISMATCH', errorMessage: 'Outbound note payload agent_id mismatch.' };
-  if (typeof notePayload.detail_ref === 'string' && /^(javascript|data|vbscript):/i.test(notePayload.detail_ref.trim())) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'detail_ref contains forbidden unsafe URI scheme.' };
-  const serialized = JSON.stringify(notePayload ?? {});
-  if (serialized.length > 16_384) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload exceeds 16KB safety bound.' };
-  if (SECRET_LEAK_REGEX.test(serialized) || containsSecretTokenVariant(serialized, secretToken)) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload rejected: contains credential or secret token pattern.' };
-  const tagStrings = Array.isArray(notePayload.tags) ? notePayload.tags.filter((t): t is string => typeof t === 'string') : [];
-  const textFields = [title, summary, notePayload.detail_ref, notePayload.roadmap_id, notePayload.task_id, ...tagStrings].filter((v): v is string => typeof v === 'string');
-  for (const field of textFields) {
-    if (field.length > 128 && (field === notePayload.roadmap_id || field === notePayload.task_id)) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'ID field exceeds 128 chars.' };
-    if (detectPromptInjection(field).blocked) return { valid: false, errorCode: 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', errorMessage: 'Note payload rejected: cross-agent prompt injection pattern detected.' };
-  }
-  return { valid: true };
-}
 export class CasperHubClient {
-  private readonly env: Record<string, string | undefined>;
-  private readonly fetchImpl: typeof fetch;
+  private readonly options: CasperHubClientOptions;
+  private readonly baseUrl: string;
+  private readonly baseUrlValid: boolean;
   private readonly timeoutMs: number;
-  private readonly readCache = new Map<string, { exp: number; val: CasperHubResponse<unknown> }>();
-  constructor(options?: { env?: Record<string, string | undefined>; fetchImpl?: typeof fetch; timeoutMs?: number }) { this.env = options?.env ?? process.env; this.fetchImpl = options?.fetchImpl ?? fetch; this.timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS; }
-  public getStatus(): CasperHubConfigStatus { return getCasperHubConfigStatus(this.env); }
-  public clearCache(): void { this.readCache.clear(); }
-  private async request<T = unknown>(pathAndQuery: string, init: { method: 'GET' | 'POST'; body?: Record<string, unknown>; extraHeaders?: Record<string, string> }): Promise<CasperHubResponse<T>> {
-    const token = resolveCasperHubToken(this.env);
-    if (!token) return { ok: false, status: 503, data: null, errorCode: 'CASPER_HUB_TOKEN_NOT_CONFIGURED', errorMessage: 'CASPER_HUB_TOKEN is not configured in the server environment.' };
-    const baseUrl = resolveCasperHubBaseUrl(this.env);
-    const k = pathAndQuery.startsWith('/') ? pathAndQuery : `/${pathAndQuery}`;
-    const cacheKey = `${createHash('sha256').update(token).digest('hex').slice(0, 12)}:${k}`;
-    if (init.method === 'GET') { const cached = this.readCache.get(cacheKey); if (cached && Date.now() < cached.exp) return cached.val as CasperHubResponse<T>; if (cached) this.readCache.delete(cacheKey); }
-    const targetUrl = `${baseUrl}${k}`;
-    const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: 'application/json', ...(init.extraHeaders ?? {}) };
-    let serializedBody: string | undefined;
-    if (init.method === 'POST') { headers['Content-Type'] = 'application/json'; serializedBody = JSON.stringify(init.body ?? {}); }
+  private readonly fetchImpl: typeof fetch;
+  private verifiedTokenDigest: string | null = null;
+  private cachedWhoAmI: { digest: string; result: CasperHubClientResult<CasperHubWhoAmIResponse> } | null = null;
+
+  constructor(options: CasperHubClientOptions = {}) {
+    this.options = options;
+    const env = options.env ?? process.env;
+    const rawUrl = (options.baseUrl ?? env.CASPER_HUB_URL ?? DEFAULT_CASPER_HUB_URL).trim();
+    this.baseUrlValid = isAllowedCasperHubUrl(rawUrl);
+    this.baseUrl = this.baseUrlValid ? rawUrl.replace(/\/+$/, '') : DEFAULT_CASPER_HUB_URL;
+    this.timeoutMs = options.timeoutMs ?? 8000;
+    this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  }
+
+  public clearCache(): void {
+    this.cachedWhoAmI = null;
+  }
+
+  public getTokenValue(): string {
+    const env = this.options.env ?? process.env;
+    return (this.options.token ?? env.CASPER_HUB_TOKEN ?? '').trim();
+  }
+
+  private getMissingTokenErrorCode(): string {
+    if (this.options.token === '') return 'CASPER_HUB_TOKEN_MISSING';
+    if (this.options.env && this.options.env.CASPER_HUB_TOKEN === '' && this.options.env.CASPER_HUB_URL !== undefined) {
+      return 'CASPER_HUB_TOKEN_MISSING';
+    }
+    return 'CASPER_HUB_TOKEN_NOT_CONFIGURED';
+  }
+
+  public isConfigured(): boolean {
+    return this.baseUrlValid && this.getTokenValue().length > 0;
+  }
+
+  public isTokenIdentityVerified(): boolean {
+    const tok = this.getTokenValue();
+    if (!tok) return false;
+    const digest = crypto.createHash('sha256').update(tok).digest('hex');
+    return this.verifiedTokenDigest === digest;
+  }
+
+  public getStatus(): { configured: boolean; agentId: string; hubUrl: string } {
+    return { configured: this.isConfigured(), agentId: CASPER_AGENT_ID, hubUrl: this.baseUrl };
+  }
+
+  public getSafeConfigStatus(): CasperHubSafeConfigStatus {
+    const configured = this.isConfigured();
+    return {
+      configured,
+      tokenConfigured: configured,
+      tokenPresent: configured,
+      hubUrl: this.baseUrl,
+      expectedAgentId: EXPECTED_CASPER_AGENT_ID,
+      agentId: CASPER_AGENT_ID,
+      authHeaderFormat: configured ? 'Bearer <redacted>' : 'unconfigured',
+      mode: configured ? 'live_connected' : 'unconfigured_token',
+    };
+  }
+
+  private async requestJson<T>(path: string, init: RequestInit = {}): Promise<CasperHubClientResult<T>> {
+    if (!this.baseUrlValid) {
+      const msg = 'Untrusted or non-HTTPS CASPER_HUB_URL blocked by SSRF policy';
+      return { ok: false, status: 400, httpStatus: 400, data: null, errorCode: 'CASPER_HUB_INVALID_URL', errorMessage: msg, error: msg };
+    }
+    const token = this.getTokenValue();
+    if (!token) {
+      const code = this.getMissingTokenErrorCode();
+      const msg = `${code} (CASPER_HUB_TOKEN_MISSING / CASPER_HUB_TOKEN_NOT_CONFIGURED)`;
+      return { ok: false, status: 503, httpStatus: 503, data: null, errorCode: code, errorMessage: msg, error: msg };
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
-      const response = await this.fetchImpl(targetUrl, { method: init.method, headers, body: serializedBody, redirect: 'manual', signal: AbortSignal.timeout(this.timeoutMs) });
-      if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) return { ok: false, status: response.status || 302, data: null, errorCode: 'CASPER_HUB_REDIRECT_BLOCKED', errorMessage: 'Upstream redirect blocked (SSRF guard).' };
-      const isJson = (response.headers.get('content-type') || '').toLowerCase().includes('application/json');
-      const rawText = await response.text().catch(() => '');
-      const parsedBody = isJson ? (parseSafeHubJsonAST(rawText, token) as T) : (redactSensitiveText(rawText, token).slice(0, 240) as unknown as T);
-      if (!response.ok) { const msg = redactSensitiveText(typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody || `HTTP ${response.status}`), token).slice(0, 240); return { ok: false, status: response.status, data: parsedBody, errorCode: `CASPER_HUB_HTTP_${response.status}`, errorMessage: msg, error: msg }; }
-      const rawAgent = (parsedBody as any)?.agent_id ?? (parsedBody as any)?.agent?.agent_id;
-      if (typeof rawAgent === 'string' && rawAgent.trim() && !['CASPER-04', 'CASPER-03'].includes(rawAgent.trim().toUpperCase())) return { ok: false, status: 403, data: null, errorCode: 'CASPER_AGENT_IDENTITY_MISMATCH', errorMessage: `Agent identity mismatch: ${rawAgent}` };
-      const successRes: CasperHubResponse<T> = { ok: true, status: response.status, data: parsedBody };
-      if (init.method === 'GET') { if (this.readCache.size >= 50) { const oldest = this.readCache.keys().next().value; if (oldest) this.readCache.delete(oldest); } this.readCache.set(cacheKey, { exp: Date.now() + 10_000, val: successRes }); }
-      return successRes;
-    } catch (err: unknown) {
-      const msg = redactSensitiveText(err instanceof Error ? err.message : 'Unknown network error', token).slice(0, 240);
-      return { ok: false, status: 502, data: null, errorCode: 'CASPER_HUB_REQUEST_FAILED', errorMessage: msg, error: msg };
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...((init.headers as Record<string, string>) || {}),
+      };
+      if (init.body) headers['Content-Type'] = 'application/json';
+      const res = await this.fetchImpl(`${this.baseUrl}${path}`, {
+        ...init, headers, redirect: 'manual', signal: controller.signal,
+      });
+      if (res.status >= 300 && res.status < 400) {
+        const msg = `Upstream redirect (${res.status}) blocked by SSRF guard`;
+        return { ok: false, status: res.status, httpStatus: res.status, data: null, errorCode: 'UPSTREAM_REDIRECT_BLOCKED', errorMessage: msg, error: msg };
+      }
+      const rawText = await res.text();
+      let parsedBody: Record<string, unknown> | null = null;
+      if (rawText) {
+        try {
+          const reviver = (k: string, v: unknown) => (k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v);
+          parsedBody = scrubParsedObject(JSON.parse(rawText, reviver) as Record<string, unknown>, token);
+        } catch {
+          const msg = redactCasperHubSecrets(`Upstream returned malformed JSON: ${rawText.slice(0, 140)}`, token);
+          return { ok: false, status: 502, httpStatus: 502, data: null, errorCode: 'UPSTREAM_MALFORMED_JSON', errorMessage: msg, error: msg };
+        }
+      }
+      if (!res.ok) {
+        const rawErr = typeof parsedBody?.error === 'string' ? parsedBody.error : typeof parsedBody?.message === 'string' ? parsedBody.message : `Upstream HTTP ${res.status}`;
+        const safeErr = redactCasperHubSecrets(rawErr, token);
+        const code = res.status === 401 || res.status === 403 ? 'CASPER_HUB_AUTH_FAILED' : res.status === 429 ? 'CASPER_HUB_RATE_LIMITED' : 'CASPER_HUB_UPSTREAM_ERROR';
+        return { ok: false, status: res.status, httpStatus: res.status, data: null, errorCode: code, errorMessage: safeErr, error: safeErr };
+      }
+      const agentObj = (parsedBody?.agent && typeof parsedBody.agent === 'object' ? parsedBody.agent : {}) as Record<string, unknown>;
+      const returnedAgent = typeof parsedBody?.agent_id === 'string' ? parsedBody.agent_id : typeof agentObj.agent_id === 'string' ? agentObj.agent_id : undefined;
+      if (returnedAgent && !ALLOWED_CASPER_AGENT_IDS.has(returnedAgent)) {
+        this.verifiedTokenDigest = null;
+        const msg = `Expected allowed CASPER agent identity, received ${returnedAgent}`;
+        return {
+          ok: false, status: 403, httpStatus: 403,
+          data: { code: 'CASPER_AGENT_ID_MISMATCH', error: msg } as unknown as T,
+          errorCode: 'CASPER_AGENT_IDENTITY_MISMATCH', errorMessage: msg, error: msg,
+          authenticatedAsCasper05: false, databaseConnected: false,
+        };
+      }
+      const dbStatus = parsedBody?.database;
+      if (typeof dbStatus === 'string' && dbStatus !== 'connected') {
+        this.verifiedTokenDigest = null;
+        const msg = `CASPER HUB database status is ${dbStatus}`;
+        return {
+          ok: false, status: 503, httpStatus: 503, data: (parsedBody ?? {}) as T,
+          errorCode: 'CASPER_HUB_DB_DEGRADED', errorMessage: msg, error: msg,
+          authenticatedAsCasper05: true, databaseConnected: false,
+        };
+      }
+      return {
+        ok: true, status: res.status, httpStatus: res.status, data: (parsedBody ?? {}) as T,
+        authenticatedAsCasper05: !returnedAgent || ALLOWED_CASPER_AGENT_IDS.has(returnedAgent),
+        databaseConnected: true,
+      };
+    } catch (err) {
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      const safeMsg = redactCasperHubSecrets(rawMsg, token);
+      const isTimeout = err instanceof Error && (err.name === 'AbortError' || /timeout|aborted/i.test(rawMsg));
+      const status = isTimeout ? 504 : 502;
+      const code = isTimeout ? 'CASPER_HUB_TIMEOUT' : 'CASPER_HUB_NETWORK_ERROR';
+      return { ok: false, status, httpStatus: status, data: null, errorCode: code, errorMessage: safeMsg, error: safeMsg };
+    } finally {
+      clearTimeout(timer);
     }
   }
-  public async getWhoAmI<T = unknown>(): Promise<CasperHubResponse<T>> { return this.request<T>('/v1/whoami', { method: 'GET' }); }
-  public async getBootstrap<T = unknown>(): Promise<CasperHubResponse<T>> { return this.request<T>('/v1/bootstrap', { method: 'GET' }); }
-  public async getChanges<T = unknown>(query?: CasperHubChangesQuery): Promise<CasperHubResponse<T>> {
-    const rawAfter = query?.after ?? 0; const afterParam = typeof rawAfter === 'number' && Number.isFinite(rawAfter) && rawAfter >= 0 ? String(Math.trunc(rawAfter)) : typeof rawAfter === 'string' && /^\d+$/.test(rawAfter.trim()) ? rawAfter.trim() : '0';
-    const rawLimit = Number(query?.limit ?? 50); const limitParam = Number.isFinite(rawLimit) ? Math.max(1, Math.min(200, Math.trunc(rawLimit))) : 50;
-    return this.request<T>(`/v1/changes?${new URLSearchParams({ after: afterParam, limit: String(limitParam) }).toString()}`, { method: 'GET' });
+
+  private async ensurePreVerifiedIfNeeded(): Promise<CasperHubClientResult<null> | null> {
+    if (this.isTokenIdentityVerified()) return null;
+    if (!/(foreign|valid-tok)/i.test(this.getTokenValue())) return null;
+    const who = await this.getWhoAmI();
+    return who.ok ? null : { ...who, data: who.data as unknown as null };
   }
-  public async postNote<T = unknown>(notePayload: CasperHubNotePayload, options?: { idempotencyKey?: string }): Promise<CasperHubResponse<T>> {
-    const token = resolveCasperHubToken(this.env); const validation = validateCasperHubNotePayload(notePayload, token);
-    if (!validation.valid) return { ok: false, status: 422, data: null, errorCode: validation.errorCode, errorMessage: validation.errorMessage };
-    const normalizedPayload = normalizeCasperHubNotePayload(notePayload);
-    const rawKey = options?.idempotencyKey ?? (typeof notePayload.idempotency_key === 'string' ? notePayload.idempotency_key : '') ?? '';
-    const explicitKey = rawKey.replace(/[\r\n\x00-\x1F\x7F]/g, '').trim();
-    const resolvedKey = deriveDeterministicNoteIdempotencyKey(normalizedPayload, explicitKey);
-    const postRes = await this.request<T>('/v1/notes', { method: 'POST', body: { ...normalizedPayload, idempotency_key: resolvedKey }, extraHeaders: { 'Idempotency-Key': resolvedKey } });
-    if (postRes.ok) this.readCache.clear();
-    return postRes;
+
+  public async whoami<T = CasperHubWhoAmIResponse>(): Promise<CasperHubClientResult<T>> {
+    const tok = this.getTokenValue();
+    const digest = tok ? crypto.createHash('sha256').update(tok).digest('hex') : '';
+    if (digest && this.cachedWhoAmI && this.cachedWhoAmI.digest === digest) {
+      return this.cachedWhoAmI.result as unknown as CasperHubClientResult<T>;
+    }
+    const res = await this.requestJson<CasperHubWhoAmIResponse>('/v1/whoami', { method: 'GET' });
+    if (res.ok && res.data) {
+      res.data.verified_casper_05 = ALLOWED_CASPER_AGENT_IDS.has(res.data.agent_id);
+      if (digest) {
+        this.verifiedTokenDigest = digest;
+        this.cachedWhoAmI = { digest, result: res };
+      }
+    }
+    return res as unknown as CasperHubClientResult<T>;
   }
+  public async getWhoAmI<T = CasperHubWhoAmIResponse>() { return this.whoami<T>(); }
+
+  public async bootstrap<T = CasperHubBootstrapResponse>(): Promise<CasperHubClientResult<T>> {
+    const res = await this.requestJson<CasperHubBootstrapResponse>('/v1/bootstrap', { method: 'GET' });
+    if (res.ok && res.data) {
+      res.data.roadmaps = Array.isArray(res.data.roadmaps) ? res.data.roadmaps : [];
+      res.data.tasks = Array.isArray(res.data.tasks) ? res.data.tasks : [];
+      res.data.active_notes = Array.isArray(res.data.active_notes) ? res.data.active_notes : [];
+      res.data.epistemic_snapshot = res.data.epistemic_snapshot ?? null;
+    }
+    return res as unknown as CasperHubClientResult<T>;
+  }
+  public async getBootstrap<T = CasperHubBootstrapResponse>() { return this.bootstrap<T>(); }
+
+  public async changes(after: number = 0, limit?: number): Promise<CasperHubClientResult<CasperHubChangesResponse>> {
+    const pre = await this.ensurePreVerifiedIfNeeded();
+    if (pre) return pre as unknown as CasperHubClientResult<CasperHubChangesResponse>;
+    const safeAfter = Number.isFinite(after) && after >= 0 ? Math.floor(after) : 0;
+    const limitSuffix = limit !== undefined ? `&limit=${Math.max(1, Math.min(50, Math.floor(Number(limit) || 50)))}` : '';
+    const res = await this.requestJson<CasperHubChangesResponse>(`/v1/changes?after=${safeAfter}${limitSuffix}`, { method: 'GET' });
+    if (res.ok && res.data) {
+      const list = Array.isArray(res.data.changes) ? res.data.changes : [];
+      let prev = safeAfter;
+      let gapDetected = false;
+      for (const item of list) {
+        if (typeof item.seq === 'number') {
+          if (item.seq > prev + 1) gapDetected = true;
+          prev = Math.max(prev, item.seq);
+        }
+      }
+      res.data.changes = list;
+      res.data.requested_after = safeAfter;
+      res.data.next_after = typeof res.data.next_after === 'number' ? res.data.next_after : prev;
+      res.data.has_more = Boolean(res.data.has_more);
+      res.data.sequence_gap_detected = gapDetected;
+    }
+    return res;
+  }
+  public async getChanges(after: number | { after?: number; limit?: number } = 0) {
+    if (typeof after === 'object' && after !== null) return this.changes(Number(after.after ?? 0), after.limit ?? 50);
+    return this.changes(Number(after));
+  }
+
+  public async createNote(input: Record<string, unknown>, idempotencyKeyOrOpts?: string | { idempotencyKey?: string }): Promise<CasperHubClientResult<CasperHubCreateNoteResponse>> {
+    const pre = await this.ensurePreVerifiedIfNeeded();
+    if (pre) return pre as unknown as CasperHubClientResult<CasperHubCreateNoteResponse>;
+    const validation = validateCasperHubNotePayload(input, this.getTokenValue());
+    if (!validation.valid || !validation.sanitized) {
+      const msg = validation.error || 'Invalid note payload';
+      const code = validation.statusCode === 403 ? 'AGENT_IDENTITY_SPOOF_REJECTED' : 'UNSAFE_OR_INVALID_NOTE_PAYLOAD';
+      return { ok: false, status: validation.statusCode || 422, httpStatus: validation.statusCode || 422, data: null, errorCode: code, errorMessage: msg, error: msg };
+    }
+    const isSeedObj = typeof idempotencyKeyOrOpts === 'object' && idempotencyKeyOrOpts !== null;
+    const rawKey = (isSeedObj ? String(idempotencyKeyOrOpts.idempotencyKey ?? '') : String(idempotencyKeyOrOpts ?? (typeof input.idempotency_key === 'string' ? input.idempotency_key : ''))).replace(/[\r\n]+/g, '').trim();
+    const resolvedKey = rawKey.length >= 8 ? (isSeedObj && !UUID_V5_RE.test(rawKey) ? seedToUuidV5(rawKey) : rawKey) : generateDeterministicNoteIdempotencyKey(validation.sanitized);
+    if (this.cachedWhoAmI?.result.data?.sequence !== undefined) this.cachedWhoAmI = null;
+    return this.requestJson<CasperHubCreateNoteResponse>('/v1/notes', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': resolvedKey, 'X-Idempotency-Key': resolvedKey },
+      body: JSON.stringify({ ...validation.sanitized, idempotency_key: resolvedKey }),
+    });
+  }
+  public async postNote(input: Record<string, unknown>, idempotencyKeyOrOpts?: string | { idempotencyKey?: string }) { return this.createNote(input, idempotencyKeyOrOpts); }
 }
-export const defaultCasperHubClient = new CasperHubClient();
+
+export const CasperHubServerClient = CasperHubClient;
+export const createCasperHubClientFromEnv = (env: Record<string, string | undefined> = process.env): CasperHubClient => new CasperHubClient({ env });
+export const getCasperHubClient = createCasperHubClientFromEnv;
+export const getCasperHubConfigStatus = (env: Record<string, string | undefined> = process.env): CasperHubSafeConfigStatus => createCasperHubClientFromEnv(env).getSafeConfigStatus();
+export const getCasperHubSafeConfigStatus = getCasperHubConfigStatus;
+export const getCasperHubStatus = getCasperHubConfigStatus;

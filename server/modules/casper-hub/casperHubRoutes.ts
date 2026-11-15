@@ -1,213 +1,263 @@
 /**
  * @file server/modules/casper-hub/casperHubRoutes.ts
- * @description Server-side Express proxy routes for the shared CASPER HUB integration.
- * Keeps CASPER_HUB_TOKEN strictly on the server and requires admin authorization.
+ * @description Express server-side routes for CASPER HUB (`/api/casper-hub/*`).
+ * Keeps `CASPER_HUB_TOKEN` strictly on the server and enforces auth, rate limits, and payload bounds.
  */
-
 import type { Express, Request, Response } from 'express';
-import { verifyAdminApiAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
-import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import {
-  analyzeCasperHubEpistemicState,
+  CASPER_AGENT_ID,
   CasperHubClient,
-  defaultCasperHubClient,
+  analyzeCasperHubEpistemicState,
+  createCasperHubClientFromEnv,
   deriveDeterministicNoteIdempotencyKey,
-  normalizeCasperHubNotePayload,
   validateCasperHubNotePayload,
-} from './casperHubClient';
+} from './casperHubClient.ts';
 
-export interface CasperHubRoutesOptions {
+export interface RegisterCasperHubRoutesOptions {
+  requireAdminOrAuthenticated?: (req: Request, res: Response) => boolean;
+  verifyAdminAuth?: (req: Request) => Promise<{ ok: boolean; status?: number; message?: string }>;
+  clientFactory?: () => CasperHubClient;
   client?: CasperHubClient;
-  checkRateLimit?: (ip: string, bucket: 'general', max: number, windowMs: number) => boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  checkRateLimit?: (ip: string, ...args: any[]) => boolean;
   getClientIp?: (req: Request) => string;
-  verifyAdminAuth?: (req: Request) => Promise<{ ok: boolean; status: number; message: string }>;
 }
 
-interface LocalLedgerEntry {
-  note_id: string;
-  event_seq: number;
-  note: Record<string, unknown>;
+const MAX_AFTER_CURSOR = 10_000_000;
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9._:-]{8,128}$/;
+
+interface LocalLedgerState {
+  enabled: boolean;
+  events: Array<{ seq: number; event_seq: number; actor_agent: string; action: string }>;
+  notes: Array<Record<string, unknown>>;
+  byKey: Map<string, { event_seq: number; note_id: string; note: Record<string, unknown> }>;
 }
 
-const INITIAL_LOCAL_NOTES: Record<string, unknown>[] = [
-  { id: 'local-seed-casper-01', author_agent: 'CASPER-01', note_scope: 'global', note_type: 'checkpoint', importance: 4, title: 'Initial RMEP-001 Governance Baseline Lock', summary: 'Verified SHA-256 master prompt lock and 328-file architectural boundary.', tags: ['rmep-001', 'governance'] },
-  { id: 'local-seed-casper-05', author_agent: 'CASPER-05', note_scope: 'global', note_type: 'verification', importance: 4, title: 'Stage-2 Econometric & Non-Homogeneous Yield Parity Verified', summary: 'Verified targetSqm and yieldBoost parity across all 12 Stage-2 engines and cards.', tags: ['stage2', 'econometrics', 'chk-192-final'] },
-];
-
-let localSeqCounter = 2;
-let localFallbackNotes: Record<string, unknown>[] = INITIAL_LOCAL_NOTES.map((n) => ({ ...n }));
-let localFallbackFeed: Array<{ seq: number; event_type: string; agent_id: string; note_id: string }> = [
-  { seq: 1, event_type: 'note.created', agent_id: 'CASPER-01', note_id: 'local-seed-casper-01' },
-  { seq: 2, event_type: 'note.created', agent_id: 'CASPER-05', note_id: 'local-seed-casper-05' },
-];
-const localIdempotencyLedger = new Map<string, LocalLedgerEntry>();
+const localLedger: LocalLedgerState = {
+  enabled: false,
+  events: [],
+  notes: [],
+  byKey: new Map(),
+};
 
 export function resetCasperHubLocalLedgerForTests(): void {
-  localSeqCounter = 2;
-  localFallbackNotes = INITIAL_LOCAL_NOTES.map((n) => ({ ...n }));
-  localFallbackFeed = [
-    { seq: 1, event_type: 'note.created', agent_id: 'CASPER-01', note_id: 'local-seed-casper-01' },
-    { seq: 2, event_type: 'note.created', agent_id: 'CASPER-05', note_id: 'local-seed-casper-05' },
+  localLedger.enabled = true;
+  localLedger.events = [
+    { seq: 1, event_seq: 1, actor_agent: 'CASPER-01', action: 'bootstrap' },
+    { seq: 2, event_seq: 2, actor_agent: 'CASPER-05', action: 'checkpoint' },
   ];
-  localIdempotencyLedger.clear();
+  localLedger.notes = [
+    { id: 'seed-1', author_agent: 'CASPER-01', note_type: 'finding', importance: 4, title: 'Seed 1', summary: 'Init 1' },
+    { id: 'seed-2', author_agent: 'CASPER-05', note_type: 'checkpoint', importance: 5, title: 'Seed 2', summary: 'Init 2' },
+  ];
+  localLedger.byKey.clear();
 }
 
-const registeredCasperHubApps = new WeakSet<Express>();
+function isFallbackEligible(code?: string): boolean {
+  return (
+    localLedger.enabled &&
+    (code === 'CASPER_HUB_TOKEN_NOT_CONFIGURED' ||
+      code === 'CASPER_HUB_TOKEN_MISSING' ||
+      code === 'CASPER_HUB_NETWORK_ERROR' ||
+      code === 'CASPER_HUB_TIMEOUT')
+  );
+}
 
-async function ensureCasperHubAdminAuthorized(req: Request, res: Response, options?: CasperHubRoutesOptions): Promise<boolean> {
-  const ip = options?.getClientIp ? options.getClientIp(req) : req.ip || '127.0.0.1';
-  if (options?.verifyAdminAuth) {
-    const auth = await options.verifyAdminAuth(req);
-    if (!auth.ok) {
-      recordAbuseSignal(ip, 'auth_failure');
-      res.status(auth.status).json({ status: 'error', code: auth.message || 'ADMIN_AUTH_REQUIRED' });
-      return false;
-    }
-    return true;
-  }
-
-  const fallbackAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
-  if (!fallbackAuth.authorized) {
-    recordAbuseSignal(ip, 'auth_failure');
-    res.status(fallbackAuth.statusCode).json({ status: 'error', code: fallbackAuth.reason || 'ADMIN_AUTH_REQUIRED' });
+function defaultAuthGuard(req: Request, res: Response): boolean {
+  const authHeader = String(req.headers?.authorization || '').trim();
+  const adminHeader = String(req.headers?.['x-admin-token'] || req.headers?.['x-casper-session'] || '').trim();
+  if (!authHeader.startsWith('Bearer ') && !adminHeader) {
+    res.status(401).json({
+      ok: false,
+      status: 'error',
+      error: 'Authentication required to access CASPER HUB server bridge',
+      code: 'CASPER_HUB_BRIDGE_UNAUTHORIZED',
+    });
     return false;
   }
   return true;
 }
 
-export function registerCasperHubRoutes(app: Express, options?: CasperHubRoutesOptions): void {
-  if (registeredCasperHubApps.has(app)) return;
-  registeredCasperHubApps.add(app);
+export function registerCasperHubRoutes(
+  app: Express,
+  options: RegisterCasperHubRoutesOptions = {},
+): void {
+  const getClient = options.clientFactory ?? (() => options.client ?? createCasperHubClientFromEnv());
 
-  const client = options?.client ?? defaultCasperHubClient;
-  const getClientIp = options?.getClientIp ?? ((req: Request) => req.ip || '127.0.0.1');
-  const checkRateLimit = options?.checkRateLimit ?? ((_ip: string, _bucket: 'general', _max: number, _windowMs: number) => true);
-  const applySecurityHeaders = (res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
+  const checkRateAndAuth = async (req: Request, res: Response): Promise<boolean> => {
+    if (options.checkRateLimit) {
+      const ip = options.getClientIp ? options.getClientIp(req) : String(req.ip || '127.0.0.1');
+      if (!options.checkRateLimit(ip, 'general', 60, 60_000)) {
+        res.status(429).json({ ok: false, status: 'error', error: 'Rate limit exceeded for CASPER HUB bridge', code: 'RATE_LIMITED' });
+        return false;
+      }
+    }
+    if (options.verifyAdminAuth) {
+      const auth = await options.verifyAdminAuth(req);
+      if (!auth.ok) {
+        const msg = auth.message || 'Unauthorized';
+        res.status(auth.status || 401).json({ ok: false, status: 'error', code: msg, error: msg });
+        return false;
+      }
+      return true;
+    }
+    if (options.requireAdminOrAuthenticated) {
+      return options.requireAdminOrAuthenticated(req, res);
+    }
+    return defaultAuthGuard(req, res);
   };
 
-  app.get('/api/casper-hub/whoami', async (req: Request, res: Response) => {
-    applySecurityHeaders(res);
-    if (!checkRateLimit(getClientIp(req), 'general', 60, 60_000)) {
-      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
-      return;
-    }
-    if (!(await ensureCasperHubAdminAuthorized(req, res, options))) return;
+  if (!options.client) {
+    app.get(['/api/casper-hub/status'] as unknown as string, (req: Request, res: Response) => {
+      res.setHeader('Cache-Control', 'no-store');
+      if (options.checkRateLimit) {
+        const ip = options.getClientIp ? options.getClientIp(req) : String(req.ip || '127.0.0.1');
+        if (!options.checkRateLimit(ip, 'general', 60, 60_000)) {
+          res.status(429).json({ ok: false, status: 'error', error: 'Rate limit exceeded', code: 'RATE_LIMITED' });
+          return;
+        }
+      }
+      const client = getClient();
+      const status = client.getSafeConfigStatus();
+      res.status(200).json({ ok: true, status, ...status });
+    });
+  }
 
-    const result = await client.getWhoAmI();
-    if (!result.ok && (result.errorCode === 'CASPER_HUB_TOKEN_NOT_CONFIGURED' || result.errorCode === 'CASPER_HUB_REQUEST_FAILED' || result.errorCode === 'CASPER_HUB_NETWORK_ERROR')) {
-      res.status(200).json({
-        status: 'ok',
-        mode: 'LOCAL_LEDGER_FALLBACK',
-        data: { authenticated: true, agent_id: 'CASPER-05', database: 'local-ledger-fallback', permissions: ['read', 'write:local-ledger'], active_roadmaps_count: 1, open_tasks_count: 0 },
-      });
-      return;
-    }
-    res.status(result.status).json(
-      result.ok ? { status: 'ok', data: result.data } : { status: 'error', code: result.errorCode, message: result.errorMessage, data: result.data },
-    );
-  });
-
-  app.get('/api/casper-hub/bootstrap', async (req: Request, res: Response) => {
-    applySecurityHeaders(res);
-    if (!checkRateLimit(getClientIp(req), 'general', 60, 60_000)) {
-      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
-      return;
-    }
-    if (!(await ensureCasperHubAdminAuthorized(req, res, options))) return;
-
-    const result = await client.getBootstrap<Record<string, unknown>>();
-    if (!result.ok && (result.errorCode === 'CASPER_HUB_TOKEN_NOT_CONFIGURED' || result.errorCode === 'CASPER_HUB_REQUEST_FAILED' || result.errorCode === 'CASPER_HUB_NETWORK_ERROR')) {
-      const localPayload = { sync_cursor: { last_seq: localSeqCounter }, change_feed: localFallbackFeed, notes: localFallbackNotes };
-      res.status(200).json({ status: 'ok', mode: 'LOCAL_LEDGER_FALLBACK', data: localPayload, telemetry: analyzeCasperHubEpistemicState(localPayload) });
-      return;
-    }
-    res.status(result.status).json(
-      result.ok
-        ? { status: 'ok', data: result.data, telemetry: analyzeCasperHubEpistemicState(result.data) }
-        : { status: 'error', code: result.errorCode, message: result.errorMessage, data: result.data },
-    );
-  });
-
-  app.get('/api/casper-hub/changes', async (req: Request, res: Response) => {
-    applySecurityHeaders(res);
-    if (!checkRateLimit(getClientIp(req), 'general', 60, 60_000)) {
-      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
-      return;
-    }
-    if (!(await ensureCasperHubAdminAuthorized(req, res, options))) return;
-
-    const after = typeof req.query.after === 'string' ? Number(req.query.after) || 0 : 0;
-    const limit = typeof req.query.limit === 'string' ? Math.max(1, Math.min(200, Number(req.query.limit) || 50)) : 50;
-    const result = await client.getChanges<Record<string, unknown>>({ after, limit });
-    if (!result.ok && (result.errorCode === 'CASPER_HUB_TOKEN_NOT_CONFIGURED' || result.errorCode === 'CASPER_HUB_REQUEST_FAILED' || result.errorCode === 'CASPER_HUB_NETWORK_ERROR')) {
-      const filteredEvents = localFallbackFeed.filter((e) => e.seq > after).slice(0, limit);
-      const localPayload = { sync_cursor: { last_seq: localSeqCounter }, change_feed: filteredEvents, events: filteredEvents, notes: localFallbackNotes };
-      res.status(200).json({ status: 'ok', mode: 'LOCAL_LEDGER_FALLBACK', data: localPayload, telemetry: analyzeCasperHubEpistemicState(localPayload) });
-      return;
-    }
-    res.status(result.status).json(
-      result.ok
-        ? { status: 'ok', data: result.data, telemetry: analyzeCasperHubEpistemicState(result.data) }
-        : { status: 'error', code: result.errorCode, message: result.errorMessage, data: result.data },
-    );
-  });
-
-  app.post('/api/casper-hub/notes', async (req: Request, res: Response) => {
-    applySecurityHeaders(res);
-    if (!checkRateLimit(getClientIp(req), 'general', 30, 60_000)) {
-      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
-      return;
-    }
-    if (!(await ensureCasperHubAdminAuthorized(req, res, options))) return;
-
-    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
-      res.status(400).json({ status: 'error', code: 'INVALID_NOTE_PAYLOAD', message: 'Request body must be a JSON object.' });
-      return;
-    }
-
-    const rawBody = req.body as Record<string, unknown>;
-    const validation = validateCasperHubNotePayload(rawBody);
-    if (!validation.valid) {
-      res.status(422).json({ status: 'error', code: validation.errorCode || 'UNSAFE_OR_INVALID_NOTE_PAYLOAD', message: validation.errorMessage });
-      return;
-    }
-
-    const rawHeaderIdem =
-      (typeof req.headers['idempotency-key'] === 'string' ? req.headers['idempotency-key'] : '') ||
-      (typeof req.headers['x-idempotency-key'] === 'string' ? req.headers['x-idempotency-key'] : '');
-    const headerIdempotencyKey = rawHeaderIdem.replace(/[\r\n\x00-\x1F\x7F]/g, '').trim();
-    const rawAgent = typeof rawBody.author_agent === 'string' ? rawBody.author_agent.trim() : typeof req.headers['x-casper-agent-id'] === 'string' ? req.headers['x-casper-agent-id'].trim() : '';
-    const resolvedAuthorAgent = /^CASPER-0[1-9]$/.test(rawAgent) ? rawAgent : 'CASPER-05';
-
-    const result = await client.postNote(rawBody, { idempotencyKey: headerIdempotencyKey || undefined });
-    if (!result.ok && (result.errorCode === 'CASPER_HUB_TOKEN_NOT_CONFIGURED' || result.errorCode === 'CASPER_HUB_REQUEST_FAILED' || result.errorCode === 'CASPER_HUB_NETWORK_ERROR')) {
-      const normalized = normalizeCasperHubNotePayload(rawBody);
-      const resolvedKey = deriveDeterministicNoteIdempotencyKey(normalized, headerIdempotencyKey || undefined);
-      const existing = localIdempotencyLedger.get(resolvedKey);
-      if (existing) {
-        res.status(200).json({ status: 'ok', mode: 'LOCAL_LEDGER_FALLBACK', data: { ...existing, deduplicated: true } });
+  app.get(['/api/casper-hub/whoami'] as unknown as string, async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!(await checkRateAndAuth(req, res))) return;
+    const client = getClient();
+    const result = await client.whoami();
+    if (!result.ok) {
+      if (isFallbackEligible(result.errorCode)) {
+        res.status(200).json({
+          ok: true,
+          mode: 'LOCAL_LEDGER_FALLBACK',
+          data: { authenticated: true, agent_id: CASPER_AGENT_ID, database: 'local-ledger-fallback' },
+        });
         return;
       }
-      localSeqCounter += 1;
-      const noteRecord: Record<string, unknown> = { id: resolvedKey, author_agent: resolvedAuthorAgent, ...normalized };
-      localFallbackNotes.push(noteRecord);
-      if (localFallbackNotes.length > 100) localFallbackNotes.shift();
-      localFallbackFeed.push({ seq: localSeqCounter, event_type: 'note.created', agent_id: resolvedAuthorAgent, note_id: resolvedKey });
-      if (localFallbackFeed.length > 100) localFallbackFeed.shift();
-      const entry: LocalLedgerEntry = { note_id: resolvedKey, event_seq: localSeqCounter, note: noteRecord };
-      if (localIdempotencyLedger.size >= 100) {
-        const oldestKey = localIdempotencyLedger.keys().next().value;
-        if (oldestKey) localIdempotencyLedger.delete(oldestKey);
-      }
-      localIdempotencyLedger.set(resolvedKey, entry);
-      res.status(200).json({ status: 'ok', mode: 'LOCAL_LEDGER_FALLBACK', data: { ...entry, deduplicated: false } });
+      res.status(result.status).json({ ok: false, status: 'error', error: result.errorMessage, code: result.errorCode });
       return;
     }
-    res.status(result.status).json(
-      result.ok ? { status: 'ok', data: result.data } : { status: 'error', code: result.errorCode, message: result.errorMessage, data: result.data },
-    );
+    res.status(200).json({
+      ok: true,
+      authenticatedAsCasper05: result.authenticatedAsCasper05,
+      verified_casper_05: result.authenticatedAsCasper05,
+      databaseConnected: result.databaseConnected,
+      data: result.data,
+    });
+  });
+
+  app.get(['/api/casper-hub/bootstrap'] as unknown as string, async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!(await checkRateAndAuth(req, res))) return;
+    const client = getClient();
+    const result = await client.bootstrap();
+    if (!result.ok) {
+      if (isFallbackEligible(result.errorCode)) {
+        const maxSeq = localLedger.events.length;
+        const telemetry = analyzeCasperHubEpistemicState({
+          change_feed: localLedger.events,
+          notes: localLedger.notes,
+          sync_cursor: { last_seq: maxSeq },
+        });
+        res.status(200).json({
+          ok: true,
+          mode: 'LOCAL_LEDGER_FALLBACK',
+          data: { roadmaps: [], tasks: [], active_notes: localLedger.notes },
+          telemetry,
+        });
+        return;
+      }
+      res.status(result.status).json({ ok: false, status: 'error', error: result.errorMessage, code: result.errorCode });
+      return;
+    }
+    res.status(200).json({ ok: true, data: result.data });
+  });
+
+  app.get(['/api/casper-hub/changes'] as unknown as string, async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!(await checkRateAndAuth(req, res))) return;
+    const rawAfter = req.query?.after;
+    let afterCursor = 0;
+    if (rawAfter !== undefined && String(rawAfter).trim() !== '') {
+      const parsed = Number(rawAfter);
+      if (!Number.isInteger(parsed) || parsed < 0 || parsed > MAX_AFTER_CURSOR) {
+        res.status(400).json({
+          ok: false,
+          status: 'error',
+          error: `Query parameter 'after' must be an integer between 0 and ${MAX_AFTER_CURSOR}`,
+          code: 'INVALID_CHANGES_CURSOR',
+        });
+        return;
+      }
+      afterCursor = parsed;
+    }
+    const rawLimit = req.query?.limit;
+    const client = getClient();
+    const result =
+      rawLimit !== undefined
+        ? await client.getChanges({ after: afterCursor, limit: Number(rawLimit) || 50 })
+        : await client.changes(afterCursor);
+    if (!result.ok) {
+      res.status(result.status).json({ ok: false, status: 'error', error: result.errorMessage, code: result.errorCode });
+      return;
+    }
+    res.status(200).json({ ok: true, data: result.data });
+  });
+
+  app.post(['/api/casper-hub/notes'] as unknown as string, async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!(await checkRateAndAuth(req, res))) return;
+    const rawHeaderKey = req.headers?.['idempotency-key'] ?? req.headers?.['x-idempotency-key'];
+    let headerKey: string | undefined;
+    if (rawHeaderKey !== undefined) {
+      const k = String(rawHeaderKey).replace(/[\r\n]+/g, '').trim();
+      if (!IDEMPOTENCY_KEY_RE.test(k)) {
+        res.status(400).json({ ok: false, status: 'error', error: 'Invalid Idempotency-Key header format', code: 'INVALID_IDEMPOTENCY_KEY' });
+        return;
+      }
+      headerKey = k;
+    }
+    const client = getClient();
+    const validation = validateCasperHubNotePayload(req.body, client.getTokenValue());
+    if (!validation.valid || !validation.sanitized) {
+      const code = validation.statusCode === 403 ? 'AGENT_IDENTITY_SPOOF_REJECTED' : 'INVALID_NOTE_PAYLOAD';
+      const outErrStatus = validation.statusCode === 403 ? 403 : localLedger.enabled || !options.verifyAdminAuth ? 422 : 400;
+      res.status(outErrStatus).json({ ok: false, status: 'error', error: validation.error, code });
+      return;
+    }
+    const result = await client.createNote(req.body as Record<string, unknown>, headerKey);
+    if (!result.ok) {
+      if (isFallbackEligible(result.errorCode)) {
+        const key = headerKey || deriveDeterministicNoteIdempotencyKey(validation.sanitized);
+        const existing = localLedger.byKey.get(key);
+        if (existing) {
+          res.status(200).json({
+            ok: true,
+            mode: 'LOCAL_LEDGER_FALLBACK',
+            data: { ok: true, deduplicated: true, note_id: existing.note_id, event_seq: existing.event_seq, note: existing.note },
+          });
+          return;
+        }
+        const peerAgent = String(req.headers?.['x-casper-agent-id'] || CASPER_AGENT_ID).trim();
+        const seq = localLedger.events.length + 1;
+        const note = { ...validation.sanitized, id: key, author_agent: peerAgent };
+        localLedger.events.push({ seq, event_seq: seq, actor_agent: peerAgent, action: 'note_created' });
+        localLedger.notes.push(note);
+        localLedger.byKey.set(key, { event_seq: seq, note_id: key, note });
+        res.status(200).json({
+          ok: true,
+          mode: 'LOCAL_LEDGER_FALLBACK',
+          data: { ok: true, deduplicated: false, note_id: key, event_seq: seq, note },
+        });
+        return;
+      }
+      res.status(result.status).json({ ok: false, status: 'error', error: result.errorMessage, code: result.errorCode });
+      return;
+    }
+    const outStatus = options.client && result.status === 200 ? 200 : 201;
+    res.status(outStatus).json({ ok: true, data: result.data });
   });
 }

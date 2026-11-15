@@ -154,7 +154,8 @@ export function summarizeNeighborhoodQoL(
     internet: Math.round((sums.internet / div) * 10) / 10, metro: Math.round((sums.metro / div) * 10) / 10,
     security: Math.round((sums.security / div) * 10) / 10, flatTerrain: Math.round((sums.flatTerrain / div) * 10) / 10,
   };
-  const fxText = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(hood.rahn80m, intlCurrency, locale)})` : '';
+  const currencySymbol = intlCurrency === 'USD' ? '$' : intlCurrency === 'EUR' ? '€' : intlCurrency === 'AED' ? 'AED ' : '';
+  const fxText = intlCurrency !== 'IRT' ? ` (${currencySymbol}${formatMillionTomanAsIntlCurrency(hood.rahn80m, intlCurrency, 'en')})` : '';
   const provenanceLabelFa =
     observedCount === 0
       ? `پروفایل مرجع محله (۰ نظر ثبت‌شده کاربر · ${seedCount.toLocaleString('fa-IR')} سناریوی نمونه پایه)`

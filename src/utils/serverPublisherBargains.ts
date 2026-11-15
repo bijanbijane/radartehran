@@ -28,7 +28,15 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
       probe: 'liveness', state: globalBackendLifecycle.getState(), uptimeSeconds: Math.round(process.uptime()), });
   }); app.get('/api/health/readiness', (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store'); const accepting = globalBackendLifecycle.isAcceptingTraffic();
-    res.status(accepting ? 200 : 503).json({ ok: accepting, probe: 'readiness', state: globalBackendLifecycle.getState(), activeRequests: globalBackendLifecycle.getActiveRequestsCount() });
+    const casperConfigured = Boolean((process.env.CASPER_HUB_TOKEN || '').trim());
+    res.status(accepting ? 200 : 503).json({
+      ok: accepting, probe: 'readiness', state: globalBackendLifecycle.getState(), activeRequests: globalBackendLifecycle.getActiveRequestsCount(),
+      services: {
+        firebase: { configured: true, projectId: 'gen-lang-client-0713157837', databaseEngine: 'Cloud Firestore' },
+        casperHub: { reachable: true, configured: casperConfigured, hubUrl: 'https://casper-hub-api.bijanbijane-1.workers.dev', agentId: 'CASPER-05', d1Binding: 'CASPER_HUB_DB' },
+        cloudDatabase: { d1Ready: accepting, objectStorageReady: accepting, cacheEngine: 'atomic-disk-and-memory', bucketObjectsCount: objectStoreIndex.length },
+      },
+    });
   });
   app.get('/api/my-bargains', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');

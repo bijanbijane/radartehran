@@ -126,14 +126,14 @@ export function evaluateCasperDecisionIntelligence(
 ): CasperDecisionIntelligenceReport {
   const targetAreaSqm = Math.max(35, Math.min(500, Math.round(rawInput?.targetAreaSqm ?? 85)));
   const areaUnit: AreaUnit = rawInput?.areaUnit === 'sqft' ? 'sqft' : 'sqm';
-  const displayAreaValue = Math.round(convertAreaFromSqm(targetAreaSqm, areaUnit));
-  const areaLabelFa = formatAreaUnitLabel(areaUnit);
+  const displayAreaValue = areaUnit === 'sqft' ? Math.round(targetAreaSqm * 10.7639) : Math.round(convertAreaFromSqm(targetAreaSqm, areaUnit));
+  const areaLabelFa = areaUnit === 'sqft' ? 'فوت مربع (ft²)' : formatAreaUnitLabel(areaUnit);
 
   const askingPerSqm = Math.max(10, Number(hood.buyPerSqm) || 100);
   const fallbackDealRatio = rawInput?.marketRegime === 'HOT' ? 0.975 : rawInput?.marketRegime === 'FROZEN' ? 0.90 : 0.93;
   const dealPerSqm =
     typeof rawInput?.canonicalDealPerSqmMillion === 'number' && rawInput.canonicalDealPerSqmMillion > 0
-      ? Math.round(rawInput.canonicalDealPerSqmMillion * 10) / 10
+      ? rawInput.canonicalDealPerSqmMillion
       : Math.round(askingPerSqm * fallbackDealRatio * 10) / 10;
 
   const empiricalSpreadPct = Math.max(1, Number((((askingPerSqm - dealPerSqm) / askingPerSqm) * 100).toFixed(1)));
@@ -155,7 +155,7 @@ export function evaluateCasperDecisionIntelligence(
   const negotiationSavingsMillion = Math.max(0, askingTotalMillion - scenarioTargetTotalMillion);
 
   const scaledRahnMillion = Math.round((Math.max(100, hood.rahn80m) / 80) * targetAreaSqm);
-  const impliedAnnualRentMillion = scaledRahnMillion * 0.24;
+  const impliedAnnualRentMillion = Math.min(scenarioTargetTotalMillion * 0.042, scaledRahnMillion * 0.16);
   const grossRentalYieldPct = Number(((impliedAnnualRentMillion / Math.max(1, scenarioTargetTotalMillion)) * 100).toFixed(2));
   const netAnnualCarryPct = Number((grossRentalYieldPct - ANNUAL_PHYSICAL_DEPRECIATION_PCT).toFixed(2));
 
@@ -205,10 +205,10 @@ export function evaluateCasperDecisionIntelligence(
   const annualCommuteHours = Math.round((traffic / 100) * 420);
 
   const biasAlerts: CasperCognitiveBiasAlert[] = [
-    { id: 'ANCHORING_TRAP', titleFa: 'خطای لنگراندازی روی قیمت پیشنهادی آگهی (Anchoring Bias)', severity: achievedDiscountPct < empiricalSpreadPct ? 'high' : 'medium', metricBadgeFa: `شکاف آگهی و معامله v6.4: ${empiricalSpreadPct.toFixed(1)}٪`, diagnosisFa: `فروشندگان در ${hood.name} میانگین متری ${askingPerSqm.toLocaleString('fa-IR')} م‌ت اعلام می‌کنند، اما نرخ معامله برآوردی v6.4 متری ${dealPerSqm.toLocaleString('fa-IR')} م‌ت است.`, debiasingActionFa: `مذاکره را از متری ${Math.round(dealPerSqm * 0.98).toLocaleString('fa-IR')} م‌ت آغاز کنید و قیمت آگهی را لنگر ارزش ذاتی قرار ندهید.`, financialImpactMillionToman: anchoringOverpayMillion, financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(anchoringOverpayMillion, intlCurrency) },
-    { id: 'MONEY_ILLUSION_TRAP', titleFa: 'توهم پولی، استهلاک بنا و بازده خالص اجاری (Money Illusion)', severity: netAnnualCarryPct < 3.0 ? 'high' : 'medium', metricBadgeFa: `بازده خالص پس از استهلاک: ${netAnnualCarryPct.toFixed(1)}٪`, diagnosisFa: `بازده ناخالص رهن (${grossRentalYieldPct.toFixed(1)}٪) پس از کسر ${ANNUAL_PHYSICAL_DEPRECIATION_PCT}٪ استهلاک سالانه کالبدی بنا به ${netAnnualCarryPct.toFixed(1)}٪ کاهش می‌یابد.`, debiasingActionFa: 'بازده اسمی ریالی را با تورم ارزی و هزینه بازسازی دوره‌ای ساختمان بسنجید.', financialImpactMillionToman: Math.round(impliedAnnualRentMillion), financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(Math.round(impliedAnnualRentMillion), intlCurrency) },
-    { id: 'ILLIQUIDITY_EXIT_TRAP', titleFa: `ریسک قفل‌شدگی سرمایه و کسر ${fastSaleHaircutPct}٪ فروش فوری (Illiquidity Trap)`, severity: liquidityScore < 68 ? 'high' : 'medium', metricBadgeFa: `ضریب خروج فوری: ${fastSaleFactorUsed} (-${fastSaleHaircutPct}٪)`, diagnosisFa: `طبق استاندارد موتور هدانیک رادار (FAST_SALE_FACTOR = ${fastSaleFactorUsed})، فروش اضطراری زیر ۳۰ روز نیازمند حدود ${fastSaleHaircutPct}٪ تخفیف نقدشوندگی است.`, debiasingActionFa: 'سرمایه مورد نیاز در افق کمتر از ۳ سال را وارد دارایی غیرنقدشونده ملکی نکنید.', financialImpactMillionToman: fastSaleHaircutMillion, financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(fastSaleHaircutMillion, intlCurrency) },
-    { id: 'COMMUTE_TIME_TAX_TRAP', titleFa: 'مالیات زمانی ترافیک و فرسایش شناختی روزانه (Time-Tax Bias)', severity: traffic > 72 || aqi > 95 ? 'high' : 'medium', metricBadgeFa: `ترافیک ${traffic}/۱۰۰ | هوا ${aqi} AQI`, diagnosisFa: `کم‌توجهی به ترافیک و آلودگی هوا در زمان بازدید، سالانه حدود ${annualCommuteHours.toLocaleString('fa-IR')} ساعت زمان مفید خانوار را مستهلک می‌کند.`, debiasingActionFa: 'پیش از عقد قرارداد، مسیر تردد را در ساعت اوج (۸ صبح و ۱۸ عصر) به‌صورت میدانی بیازمایید.', financialImpactMillionToman: Math.round(annualCommuteHours * 0.35), financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(Math.round(annualCommuteHours * 0.35), intlCurrency) },
+    { id: 'ANCHORING_TRAP', titleFa: 'خطای لنگراندازی روی قیمت پیشنهادی آگهی (Anchoring Bias)', severity: achievedDiscountPct < empiricalSpreadPct ? 'high' : 'medium', metricBadgeFa: `شکاف آگهی و معامله v6.4: ${empiricalSpreadPct.toFixed(1)}٪`, diagnosisFa: `فروشندگان در ${hood.name} میانگین متری ${askingPerSqm.toLocaleString('fa-IR')} م‌ت اعلام می‌کنند، اما نرخ معامله برآوردی v6.4 متری ${dealPerSqm.toLocaleString('fa-IR')} م‌ت است.`, debiasingActionFa: `مذاکره را از متری ${Math.round(dealPerSqm * 0.98).toLocaleString('fa-IR')} م‌ت آغاز کنید و قیمت آگهی را لنگر ارزش ذاتی قرار ندهید.`, financialImpactMillionToman: anchoringOverpayMillion, financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(anchoringOverpayMillion, intlCurrency, 'en') },
+    { id: 'MONEY_ILLUSION_TRAP', titleFa: 'توهم پولی، استهلاک بنا و بازده خالص اجاری (Money Illusion)', severity: netAnnualCarryPct < 3.0 ? 'high' : 'medium', metricBadgeFa: `بازده خالص پس از استهلاک: ${netAnnualCarryPct.toFixed(1)}٪`, diagnosisFa: `بازده ناخالص رهن (${grossRentalYieldPct.toFixed(1)}٪) پس از کسر ${ANNUAL_PHYSICAL_DEPRECIATION_PCT}٪ استهلاک سالانه کالبدی بنا به ${netAnnualCarryPct.toFixed(1)}٪ کاهش می‌یابد.`, debiasingActionFa: 'بازده اسمی ریالی را با تورم ارزی و هزینه بازسازی دوره‌ای ساختمان بسنجید.', financialImpactMillionToman: Math.round(impliedAnnualRentMillion), financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(Math.round(impliedAnnualRentMillion), intlCurrency, 'en') },
+    { id: 'ILLIQUIDITY_EXIT_TRAP', titleFa: `ریسک قفل‌شدگی سرمایه و کسر ${fastSaleHaircutPct}٪ فروش فوری (Illiquidity Trap)`, severity: liquidityScore < 68 ? 'high' : 'medium', metricBadgeFa: `ضریب خروج فوری: ${fastSaleFactorUsed} (-${fastSaleHaircutPct}٪)`, diagnosisFa: `طبق استاندارد موتور هدانیک رادار (FAST_SALE_FACTOR = ${fastSaleFactorUsed})، فروش اضطراری زیر ۳۰ روز نیازمند حدود ${fastSaleHaircutPct}٪ تخفیف نقدشوندگی است.`, debiasingActionFa: 'سرمایه مورد نیاز در افق کمتر از ۳ سال را وارد دارایی غیرنقدشونده ملکی نکنید.', financialImpactMillionToman: fastSaleHaircutMillion, financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(fastSaleHaircutMillion, intlCurrency, 'en') },
+    { id: 'COMMUTE_TIME_TAX_TRAP', titleFa: 'مالیات زمانی ترافیک و فرسایش شناختی روزانه (Time-Tax Bias)', severity: traffic > 72 || aqi > 95 ? 'high' : 'medium', metricBadgeFa: `ترافیک ${traffic}/۱۰۰ | هوا ${aqi} AQI`, diagnosisFa: `کم‌توجهی به ترافیک و آلودگی هوا در زمان بازدید، سالانه حدود ${annualCommuteHours.toLocaleString('fa-IR')} ساعت زمان مفید خانوار را مستهلک می‌کند.`, debiasingActionFa: 'پیش از عقد قرارداد، مسیر تردد را در ساعت اوج (۸ صبح و ۱۸ عصر) به‌صورت میدانی بیازمایید.', financialImpactMillionToman: Math.round(annualCommuteHours * 0.35), financialImpactIntlFormatted: formatMillionTomanAsIntlCurrency(Math.round(annualCommuteHours * 0.35), intlCurrency, 'en') },
   ];
 
   const emergencyFastExitMillion = Math.round(scenarioTargetTotalMillion * fastSaleFactorUsed);
@@ -217,9 +217,9 @@ export function evaluateCasperDecisionIntelligence(
   const horizonDeltaMillion = netRealCompoundedMillion - scenarioTargetTotalMillion;
 
   const counterfactuals: CasperCounterfactualScenario[] = [
-    { id: 'full_asking_no_negotiation', titleFa: 'سناریوی پادواقعی ۱: پذیرش قیمت آگهی بدون چانه‌زنی (۰٪ تخفیف)', assumptionChangeFa: `حذف تخفیف ${achievedDiscountPct.toFixed(1)}٪ و خرید با نرخ خام آگهی`, resultingTotalMillionToman: askingTotalMillion, resultingIntlFormatted: formatMillionTomanAsIntlCurrency(askingTotalMillion, intlCurrency), deltaMillionToman: askingTotalMillion - scenarioTargetTotalMillion, verdictShiftFa: `پرداخت اضافه معادل ${(askingTotalMillion - scenarioTargetTotalMillion).toLocaleString('fa-IR')} م‌ت نسبت به سقف ورود منطقی` },
-    { id: 'emergency_fast_exit', titleFa: `سناریوی پادواقعی ۲: خروج اضطراری با ضریب استاندارد هدانیک (${fastSaleFactorUsed})`, assumptionChangeFa: `فروش فوری زیر ۳۰ روز کاری با کسر ${fastSaleHaircutPct}٪ هزینه نقدشوندگی`, resultingTotalMillionToman: emergencyFastExitMillion, resultingIntlFormatted: formatMillionTomanAsIntlCurrency(emergencyFastExitMillion, intlCurrency), deltaMillionToman: emergencyFastExitMillion - scenarioTargetTotalMillion, verdictShiftFa: `زیان نقدشوندگی معادل ${fastSaleHaircutMillion.toLocaleString('fa-IR')} میلیون تومان در صورت خروج زودهنگام` },
-    { id: 'horizon_compounding', titleFa: `سناریوی پادواقعی ۳: نگهداری ${holdingHorizonYears} ساله پس از کسر اصطکاک معاملاتی و استهلاک`, assumptionChangeFa: `بازده خالص اجاری (${netAnnualCarryPct.toFixed(1)}٪/سال) منهای ${ROUND_TRIP_TRANSACTION_FRICTION_PCT}٪ هزینه ورود/خروج و کمیسیون`, resultingTotalMillionToman: netRealCompoundedMillion, resultingIntlFormatted: formatMillionTomanAsIntlCurrency(netRealCompoundedMillion, intlCurrency), deltaMillionToman: horizonDeltaMillion, verdictShiftFa: horizonDeltaMillion >= 0 ? `جبران کامل اصطکاک معاملاتی و ایجاد مازاد خالص +${horizonDeltaMillion.toLocaleString('fa-IR')} م‌ت` : `هشدار افق کوتاه‌مدت: در افق ${holdingHorizonYears} ساله هزینه‌های معاملاتی از بازده اجاره پیشی می‌گیرد (${horizonDeltaMillion.toLocaleString('fa-IR')} م‌ت)` },
+    { id: 'full_asking_no_negotiation', titleFa: 'سناریوی پادواقعی ۱: پذیرش قیمت آگهی بدون چانه‌زنی (۰٪ تخفیف)', assumptionChangeFa: `حذف تخفیف ${achievedDiscountPct.toFixed(1)}٪ و خرید با نرخ خام آگهی`, resultingTotalMillionToman: askingTotalMillion, resultingIntlFormatted: formatMillionTomanAsIntlCurrency(askingTotalMillion, intlCurrency, 'en'), deltaMillionToman: askingTotalMillion - scenarioTargetTotalMillion, verdictShiftFa: `پرداخت اضافه معادل ${(askingTotalMillion - scenarioTargetTotalMillion).toLocaleString('fa-IR')} م‌ت نسبت به سقف ورود منطقی` },
+    { id: 'emergency_fast_exit', titleFa: `سناریوی پادواقعی ۲: خروج اضطراری با ضریب استاندارد هدانیک (${fastSaleFactorUsed})`, assumptionChangeFa: `فروش فوری زیر ۳۰ روز کاری با کسر ${fastSaleHaircutPct}٪ هزینه نقدشوندگی`, resultingTotalMillionToman: emergencyFastExitMillion, resultingIntlFormatted: formatMillionTomanAsIntlCurrency(emergencyFastExitMillion, intlCurrency, 'en'), deltaMillionToman: emergencyFastExitMillion - scenarioTargetTotalMillion, verdictShiftFa: `زیان نقدشوندگی معادل ${fastSaleHaircutMillion.toLocaleString('fa-IR')} میلیون تومان در صورت خروج زودهنگام` },
+    { id: 'horizon_compounding', titleFa: `سناریوی پادواقعی ۳: نگهداری ${holdingHorizonYears} ساله پس از کسر اصطکاک معاملاتی و استهلاک`, assumptionChangeFa: `بازده خالص اجاری (${netAnnualCarryPct.toFixed(1)}٪/سال) منهای ${ROUND_TRIP_TRANSACTION_FRICTION_PCT}٪ هزینه ورود/خروج و کمیسیون`, resultingTotalMillionToman: netRealCompoundedMillion, resultingIntlFormatted: formatMillionTomanAsIntlCurrency(netRealCompoundedMillion, intlCurrency, 'en'), deltaMillionToman: horizonDeltaMillion, verdictShiftFa: horizonDeltaMillion >= 0 ? `جبران کامل اصطکاک معاملاتی و ایجاد مازاد خالص +${horizonDeltaMillion.toLocaleString('fa-IR')} م‌ت` : `هشدار افق کوتاه‌مدت: در افق ${holdingHorizonYears} ساله هزینه‌های معاملاتی از بازده اجاره پیشی می‌گیرد (${horizonDeltaMillion.toLocaleString('fa-IR')} م‌ت)` },
   ];
 
   const dealCiLow = Number((dealPerSqm * 0.965).toFixed(1));
@@ -240,14 +240,15 @@ export function evaluateCasperDecisionIntelligence(
     { code: 'UNKNOWN_DATA', labelFa: '۱۲. عدم قطعیت ساختاری (Unknown / Tail Risk)', metricNameFa: 'شوک‌های کلان ارزی، مقرراتی و ریسک طرف معامله', valueDisplayFa: 'غیرقابل پیش‌بینی قطعی با الگوریتم', sourceFa: 'عدم قطعیت ذاتی اقتصاد کلان و حقوق قراردادها', confidencePct: 30, marginOfErrorFa: 'عدم قطعیت ساختاری', statusTone: 'uncertain', explanationFa: 'ریسک تکانه ارزی، تغییر قوانین مالیاتی یا توقیف ثبتی فقط با استعلام رسمی دفترخانه پوشش می‌یابد.' },
   ];
 
+  const curSym = intlCurrency === 'EUR' ? '€' : intlCurrency === 'USD' ? '$' : intlCurrency === 'AED' ? 'AED ' : '';
   return {
     hoodId: hood.id, hoodNameFa: hood.name, zoneFa: hood.zone,
     epistemicReliabilityIndex: epistemicCertaintyScore, overallDecisionScore, decisionVerdictFa, decisionSummaryFa,
     askingPerSqmMillion: askingPerSqm, dealBaselinePerSqmMillion: dealPerSqm,
-    askingTotalMillion, askingTotalIntl: formatMillionTomanAsIntlCurrency(askingTotalMillion, intlCurrency),
-    dealBaselineTotalMillion, dealBaselineTotalIntl: formatMillionTomanAsIntlCurrency(dealBaselineTotalMillion, intlCurrency),
-    scenarioTargetTotalMillion, scenarioTargetTotalIntl: formatMillionTomanAsIntlCurrency(scenarioTargetTotalMillion, intlCurrency),
-    negotiationSavingsMillion, negotiationSavingsIntl: formatMillionTomanAsIntlCurrency(negotiationSavingsMillion, intlCurrency),
+    askingTotalMillion, askingTotalIntl: `${curSym}${formatMillionTomanAsIntlCurrency(askingTotalMillion, intlCurrency, 'en')}`,
+    dealBaselineTotalMillion, dealBaselineTotalIntl: `${curSym}${formatMillionTomanAsIntlCurrency(dealBaselineTotalMillion, intlCurrency, 'en')}`,
+    scenarioTargetTotalMillion, scenarioTargetTotalIntl: `${curSym}${formatMillionTomanAsIntlCurrency(scenarioTargetTotalMillion, intlCurrency, 'en')}`,
+    negotiationSavingsMillion, negotiationSavingsIntl: `${curSym}${formatMillionTomanAsIntlCurrency(negotiationSavingsMillion, intlCurrency, 'en')}`,
     grossRentalYieldPct, netAnnualCarryPct, roundTripFrictionPct: ROUND_TRIP_TRANSACTION_FRICTION_PCT,
     fastSaleFactorUsed, estimatedDaysToExit, criteriaScores, biasAlerts, counterfactuals, epistemicLedger,
   };

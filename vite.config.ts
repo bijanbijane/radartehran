@@ -112,6 +112,67 @@ export default defineConfig(({ mode }) => {
             if (id.includes('src/cells/')) {
               return 'engine-decision-cells';
             }
+            if (id.includes('src/features/onboarding/components/')) {
+              if (/Stage[34]\d/.test(id)) return 'onboarding-ui-34-49';
+              if (/Stage5\d/.test(id)) return 'onboarding-ui-50-59';
+              if (/Stage6\d/.test(id)) return 'onboarding-ui-60-69';
+              if (/Stage[78]\d/.test(id)) return 'onboarding-ui-70-84';
+              return 'onboarding-ui-core';
+            }
+            if (id.includes('src/features/onboarding/services/')) {
+              if (/stage[345]\d|[Cc]ompar|[Ww]orkspace|[Vv]erif|[Mm]arket|[Dd]ecision|[Gg]eospatial/.test(id)) {
+                return 'onboarding-svc-34-59';
+              }
+              if (/stage6\d|Stage6\d|urban[A-LN-Z]/.test(id)) {
+                return 'onboarding-svc-60-69';
+              }
+              if (/stage[78]\d|Stage[78]\d|urbanM/.test(id)) {
+                return 'onboarding-svc-70-84';
+              }
+              return 'onboarding-svc-core';
+            }
+            if (id.includes('src/features/properties/')) {
+              return 'feature-properties';
+            }
+            if (
+              id.includes('src/features/market/') ||
+              id.includes('src/features/valuation/') ||
+              id.includes('src/features/home/') ||
+              id.includes('src/features/admin/')
+            ) {
+              return 'feature-market-valuation';
+            }
+            if (
+              id.includes('src/features/community/') ||
+              id.includes('src/features/services/') ||
+              id.includes('src/features/communications/')
+            ) {
+              return 'feature-community-services';
+            }
+            if (
+              id.includes('src/features/account/') ||
+              id.includes('src/features/search/') ||
+              id.includes('src/features/knowledge/') ||
+              id.includes('src/features/data-governance/')
+            ) {
+              return 'feature-account-search';
+            }
+            if (
+              id.includes('src/components/stage2/') ||
+              id.includes('src/components/SuperModules') ||
+              id.includes('src/components/EnterpriseAssetFund') ||
+              id.includes('src/components/AgencyCrm')
+            ) {
+              return 'ui-stage2-supermodules';
+            }
+            if (
+              id.includes('src/components/inspector/') ||
+              id.includes('src/components/casper/') ||
+              id.includes('src/components/modals/') ||
+              id.includes('src/components/NeighborhoodInspector')
+            ) {
+              return 'ui-inspector-modals';
+            }
             return undefined;
           },
         },

@@ -225,8 +225,8 @@ export function detectEnvironmentConfigDrift(env: Record<string, string | undefi
   const drifts: string[] = []; const isProd = env.NODE_ENV === 'production';
   if (isProd && (env.FIRESTORE_EMULATOR_HOST || env.FIREBASE_AUTH_EMULATOR_HOST)) drifts.push('EMULATOR_LEAK_IN_PRODUCTION');
   if (isProd && env.APP_URL && !env.APP_URL.trim().startsWith('https://')) drifts.push('INSECURE_APP_URL_IN_PRODUCTION');
-  if (!isPlaceholderValue(env.CASPER_HUB_URL) && !env.CASPER_HUB_URL!.trim().startsWith('https://')) drifts.push('INSECURE_CASPER_HUB_URL');
-  if (!isPlaceholderValue(env.VITE_CASPER_HUB_TOKEN)) drifts.push('CLIENT_EXPOSED_CASPER_HUB_TOKEN');
+  if (!isPlaceholderValue(env.CASPER_HUB_URL) && !env.CASPER_HUB_URL!.trim().startsWith('https://')) drifts.push('INSECURE_CASPER_HUB_URL', 'UNTRUSTED_CASPER_HUB_URL_DRIFT');
+  if (!isPlaceholderValue(env.VITE_CASPER_HUB_TOKEN)) drifts.push('CLIENT_EXPOSED_CASPER_HUB_TOKEN', 'CASPER_HUB_TOKEN_EXPOSED_IN_VITE_ENV');
   if (clientConfig?.projectId && clientConfig.projectId !== EXPECTED_FIREBASE_PROJECT_ID) drifts.push('FIREBASE_PROJECT_ID_DRIFT');
   if (clientConfig?.firestoreDatabaseId && clientConfig.firestoreDatabaseId !== EXPECTED_FIRESTORE_DATABASE_ID) drifts.push('FIRESTORE_DATABASE_ID_DRIFT');
   if (!isPlaceholderValue(env.OBJECT_STORAGE_ACCESS_KEY) !== !isPlaceholderValue(env.OBJECT_STORAGE_SECRET_KEY)) drifts.push('PARTIAL_OBJECT_STORAGE_S3_CONFIG');
@@ -236,8 +236,8 @@ export function detectEnvironmentConfigDrift(env: Record<string, string | undefi
       const u = new URL(env.CASPER_HUB_URL!.trim());
       const host = u.hostname.toLowerCase();
       const trustedHost = host === 'casper-hub-api.bijanbijane-1.workers.dev' || (host.endsWith('.bijanbijane-1.workers.dev') && !host.includes(':'));
-      if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443') || u.search || u.hash || !trustedHost) drifts.push('INVALID_CASPER_HUB_URL');
-    } catch { drifts.push('INVALID_CASPER_HUB_URL'); }
+      if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443') || u.search || u.hash || !trustedHost) drifts.push('INVALID_CASPER_HUB_URL', 'UNTRUSTED_CASPER_HUB_URL_DRIFT');
+    } catch { drifts.push('INVALID_CASPER_HUB_URL', 'UNTRUSTED_CASPER_HUB_URL_DRIFT'); }
   }
   return { valid: drifts.length === 0, drifts };
 }

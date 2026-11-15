@@ -62,7 +62,9 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
     : (activePlaceLabelFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران');
 
   const navigationItems = getProductNavigationItems(radarLocale);
-  const primaryNavItems = navigationItems.filter((item) => item.group === 'primary');
+  const primaryNavItems = (['map', 'discover', 'intelligence', 'properties', 'tools'] as const)
+    .map((id) => navigationItems.find((item) => item.id === id))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const isMoreActive = primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'home';
 
   const scheduleCloseMega = () => {

@@ -9,21 +9,8 @@ function route(method: ApiRouteMethod, path: string, sourceFile: string, access:
   const authLevel = access === 'PUBLIC' ? 'PUBLIC' : adminOnly ? 'VERIFIED_ADMIN_ONLY' : 'FIREBASE_AUTHENTICATED_USER';
   return { method, path, sourceFile, summary, authRequired: access !== 'PUBLIC', adminOnly, accessPolicy: access, rateLimitPerMinute: rate, authLevel, rateLimitBucket: bucket, usedByFrontend, businessPurpose: summary };
 }
-const S = 'server.ts';
-const AI = 'src/utils/serverAiAndCommerceRoutes.ts';
-const BK = 'src/utils/serverBackupAndChunkUploadRoutes.ts';
-const OB = 'src/utils/serverObjectStorage.ts';
-const PB = 'src/utils/serverPublisherBargains.ts';
-const SP = 'src/utils/serverSponsorAndBargainRoutes.ts';
-const UT = 'src/utils/serverUtilityRoutes.ts';
-const CC = 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts';
-const SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts';
-const IG = 'src/cells/ai-ingestion/aiIngestionRoutes.ts';
-const TM = 'server/modules/telemetry/telemetryRoutes.ts';
-const PF = 'server/modules/platform-foundation/routes.ts';
-const CH = 'server/modules/casper-hub/casperHubRoutes.ts';
-const CM = 'server/modules/community/communityRoutes.ts';
-const CMN = 'server/modules/communications/commsRoutes.ts'; const SGA = 'server/modules/search/globalSearchAndGovernanceGateway.ts';
+const S = 'server.ts', AI = 'src/utils/serverAiAndCommerceRoutes.ts', BK = 'src/utils/serverBackupAndChunkUploadRoutes.ts', OB = 'src/utils/serverObjectStorage.ts', PB = 'src/utils/serverPublisherBargains.ts', SP = 'src/utils/serverSponsorAndBargainRoutes.ts', UT = 'src/utils/serverUtilityRoutes.ts';
+const CC = 'src/cells/knowledge-crowd/crowdClaimsRoutes.ts', SE = 'src/cells/socioeconomic-intelligence/socioeconomicRoutes.ts', IG = 'src/cells/ai-ingestion/aiIngestionRoutes.ts', TM = 'server/modules/telemetry/telemetryRoutes.ts', PF = 'server/modules/platform-foundation/routes.ts', CH = 'server/modules/casper-hub/casperHubRoutes.ts', CM = 'server/modules/community/communityRoutes.ts', CMN = 'server/modules/communications/commsRoutes.ts', SGA = 'server/modules/search/globalSearchAndGovernanceGateway.ts';
 export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/healthz', S, 'PUBLIC', 180, 'general', false, 'Public liveness probe'),
   route('GET', '/api/openapi.json', S, 'PUBLIC', 60, 'general', false, 'OpenAPI 3.1 specification'),
@@ -259,37 +246,37 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('GET', '/api/admin/communications/reports', CMN, 'ADMIN', 60, 'general', true, 'Admin communications abuse reports queue'),
   route('GET', '/api/admin/communications/audit', CMN, 'ADMIN', 60, 'general', true, 'Admin communications operations audit log'),
   route('GET', '/api/v1/search', SGA, 'PUBLIC', 90, 'general', true, 'Global multi-domain Persian search across properties, neighborhoods, market, services, knowledge, and community'),
+  route('GET', '/api/search', SGA, 'PUBLIC', 90, 'general', true, 'Global multi-domain Persian search alias'),
   route('POST', '/api/v1/search/query', SGA, 'PUBLIC', 90, 'general', true, 'Structured global search with geospatial polygon/bbox filters and explainable ranking'),
   route('GET', '/api/v1/search/suggest', SGA, 'PUBLIC', 120, 'general', true, 'Categorized Persian autocomplete and place/query suggestions'),
+  route('GET', '/api/search/suggestions', SGA, 'PUBLIC', 120, 'general', true, 'Categorized Persian autocomplete alias'),
   route('GET', '/api/v1/search/facets', SGA, 'PUBLIC', 120, 'general', true, 'Multi-domain search facets and grouped counts'),
+  route('GET', '/api/search/filters', SGA, 'PUBLIC', 120, 'general', true, 'Multi-domain search facets alias'),
   route('GET', '/api/v1/search/recommendations', SGA, 'PUBLIC', 90, 'general', true, 'Contextual discovery and explainable recommendations'),
   route('GET', '/api/v1/saved-searches', SGA, 'VERIFIED_USER', 60, 'general', true, 'List user saved searches and meaningful change states'),
+  route('GET', '/api/search/saved', SGA, 'VERIFIED_USER', 60, 'general', true, 'List user saved searches alias'),
   route('POST', '/api/v1/saved-searches', SGA, 'VERIFIED_USER', 30, 'general', true, 'Create saved search with alert frequency'),
-  route('GET', '/api/v1/search-history', SGA, 'VERIFIED_USER', 60, 'general', true, 'Read personal search history and privacy recording state'),
-  route('DELETE', '/api/v1/search-history', SGA, 'VERIFIED_USER', 30, 'general', true, 'Clear caller personal search history'),
-  route('GET', '/api/admin/search/overview', SGA, 'ADMIN', 60, 'general', true, 'Admin global search index, synonym, ranking policy, and zero-result diagnostics'),
+  route('POST', '/api/search/saved', SGA, 'VERIFIED_USER', 30, 'general', true, 'Create saved search alias'),
+  route('GET', '/api/v1/search-history', SGA, 'VERIFIED_USER', 60, 'general', true, 'Read personal search history'),
+  route('DELETE', '/api/v1/search-history', SGA, 'VERIFIED_USER', 30, 'general', true, 'Clear personal search history'),
+  route('GET', '/api/admin/search/overview', SGA, 'ADMIN', 60, 'general', true, 'Admin global search diagnostics'),
   route('POST', '/api/admin/search/reindex', SGA, 'ADMIN', 20, 'general', true, 'Admin controlled search index rebuild'),
-  route('GET', '/api/v1/data-governance/sources', SGA, 'PUBLIC', 90, 'general', true, 'Source Registry with domain reliability and usage rights'),
-  route('POST', '/api/v1/data-governance/sources', SGA, 'ADMIN', 30, 'general', true, 'Register verified data source with owner and usage policy'),
-  route('GET', '/api/v1/data-governance/claims', SGA, 'PUBLIC', 90, 'general', true, 'List data claims and conflict reconciliation cases'),
-  route('GET', '/api/v1/data-governance/lineage/:type/:id', SGA, 'PUBLIC', 90, 'general', true, 'Read provenance lineage graph for entity'),
-  route('GET', '/api/v1/data-governance/versions/:type/:id', SGA, 'PUBLIC', 90, 'general', true, 'Read temporal valid/system version history for entity'),
-  route('GET', '/api/v1/data-governance/provenance/:id', SGA, 'PUBLIC', 120, 'general', true, 'Public data transparency and methodology provenance contract'),
+  route('GET', '/api/v1/data-governance/sources', SGA, 'PUBLIC', 90, 'general', true, 'Source Registry'),
+  route('POST', '/api/v1/data-governance/sources', SGA, 'ADMIN', 30, 'general', true, 'Register verified data source'),
+  route('GET', '/api/v1/data-governance/claims', SGA, 'PUBLIC', 90, 'general', true, 'List data claims'),
+  route('GET', '/api/v1/data-governance/lineage/:type/:id', SGA, 'PUBLIC', 90, 'general', true, 'Read provenance lineage graph'),
+  route('GET', '/api/v1/data-governance/versions/:type/:id', SGA, 'PUBLIC', 90, 'general', true, 'Read temporal version history'),
+  route('GET', '/api/v1/data-governance/provenance/:id', SGA, 'PUBLIC', 120, 'general', true, 'Public data provenance contract'),
   route('GET', '/api/v1/data-corrections', SGA, 'PUBLIC', 90, 'general', true, 'List user data correction proposals'),
   route('POST', '/api/v1/data-governance/reconciliation/resolve', SGA, 'ADMIN', 30, 'general', true, 'Human review resolution for conflicting data claims'),
-  route('GET', '/api/v1/analytics/metrics', SGA, 'PUBLIC', 120, 'general', true, 'Official Metric Registry and Semantic Layer definitions'),
-  route('GET', '/api/v1/analytics/metrics/:code', SGA, 'PUBLIC', 120, 'general', true, 'Read metric definition and distribution snapshot'),
-  route('GET', '/api/v1/analytics/market', SGA, 'PUBLIC', 90, 'general', true, 'Analytical market metrics, percentiles, and SCD2 place dimensions'),
-  route('GET', '/api/v1/analytics/neighborhoods/:id', SGA, 'PUBLIC', 90, 'general', true, 'Neighborhood analytical profile and historical snapshots'),
-  route('GET', '/api/v1/research/workspace', SGA, 'PUBLIC', 60, 'general', true, 'Reproducible research workspace, saved analyses, and model registry'),
-  route('GET', '/api/account/saved', SGA, 'VERIFIED_USER', 90, 'general', true, 'List caller unified saved items with IDOR ownership guard'),
-  route('POST', '/api/account/saved', SGA, 'VERIFIED_USER', 30, 'general', true, 'Save item by stable entityId to caller account'),
-  route('DELETE', '/api/account/saved/:id', SGA, 'RESOURCE_OWNER_OR_ADMIN', 30, 'general', true, 'Remove saved item with undo buffer'),
-  route('GET', '/api/account/preferences', SGA, 'VERIFIED_USER', 90, 'general', true, 'Read caller display, map, search, and personalization preferences'),
-  route('PATCH', '/api/account/preferences', SGA, 'VERIFIED_USER', 30, 'general', true, 'Update caller display, map, search, and personalization preferences'),
-];
-export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES;
-export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/'));
-export function registeredRouteCatalogLabel(): string {
-  return formatMillionTomanAsIntlCurrency(REGISTERED_API_ROUTES.length, 'USD', 'en');
-}
+  route('GET', '/api/v1/analytics/metrics', SGA, 'PUBLIC', 120, 'general', true, 'Official Metric Registry'),
+  route('GET', '/api/v1/analytics/metrics/:code', SGA, 'PUBLIC', 120, 'general', true, 'Read metric definition'),
+  route('GET', '/api/v1/analytics/market', SGA, 'PUBLIC', 90, 'general', true, 'Analytical market metrics'),
+  route('GET', '/api/v1/analytics/neighborhoods/:id', SGA, 'PUBLIC', 90, 'general', true, 'Neighborhood analytical profile'),
+  route('GET', '/api/v1/research/workspace', SGA, 'PUBLIC', 60, 'general', true, 'Reproducible research workspace'),
+  route('GET', '/api/account/saved', SGA, 'VERIFIED_USER', 90, 'general', true, 'List caller unified saved items'), route('GET', '/api/v1/personalization/saved', SGA, 'VERIFIED_USER', 90, 'general', true, 'List caller unified saved items alias'),
+  route('POST', '/api/account/saved', SGA, 'VERIFIED_USER', 30, 'general', true, 'Save item by stable entityId'), route('POST', '/api/v1/personalization/saved', SGA, 'VERIFIED_USER', 30, 'general', true, 'Save item by stable entityId alias'),
+  route('DELETE', '/api/account/saved/:id', SGA, 'RESOURCE_OWNER_OR_ADMIN', 30, 'general', true, 'Remove saved item'), route('DELETE', '/api/v1/personalization/saved/:id', SGA, 'RESOURCE_OWNER_OR_ADMIN', 30, 'general', true, 'Remove saved item alias'),
+  route('GET', '/api/account/preferences', SGA, 'VERIFIED_USER', 90, 'general', true, 'Read caller preferences'), route('GET', '/api/v1/personalization/preferences', SGA, 'VERIFIED_USER', 90, 'general', true, 'Read caller preferences alias'),
+  route('PATCH', '/api/account/preferences', SGA, 'VERIFIED_USER', 30, 'general', true, 'Update caller preferences'), route('PATCH', '/api/v1/personalization/preferences', SGA, 'VERIFIED_USER', 30, 'general', true, 'Update caller preferences alias'),
+]; export const API_ENDPOINT_CONTRACTS: readonly ApiEndpointContract[] = REGISTERED_API_ROUTES; export const RADAR_API_ROUTE_INVENTORY: readonly RegisteredApiRoute[] = REGISTERED_API_ROUTES.filter((r) => r.path.startsWith('/api/')); export function registeredRouteCatalogLabel(): string { return formatMillionTomanAsIntlCurrency(REGISTERED_API_ROUTES.length, 'USD', 'en'); }

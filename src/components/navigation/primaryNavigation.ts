@@ -26,11 +26,11 @@ export function getProductNavigationItems(locale: RadarLocale): ProductNavigatio
 
   return [
     {
-      id: 'map',
+      id: 'home',
       group: 'primary',
-      label: copy.map,
-      Icon: Map,
-      description: locale === 'en' ? 'Interactive Spatial Atlas' : 'اطلس مکانی و نقشه تهران',
+      label: copy.home,
+      Icon: Home,
+      description: locale === 'en' ? 'Radar Home & Quick Insights' : 'خانه و چشم‌انداز سریع رادار',
     },
     {
       id: 'discover',
@@ -40,18 +40,18 @@ export function getProductNavigationItems(locale: RadarLocale): ProductNavigatio
       description: locale === 'en' ? 'Explore Neighborhoods' : 'کشف و کارنامه محله‌ها',
     },
     {
+      id: 'map',
+      group: 'primary',
+      label: copy.map,
+      Icon: Map,
+      description: locale === 'en' ? 'Interactive Spatial Atlas' : 'اطلس مکانی و نقشه تهران',
+    },
+    {
       id: 'intelligence',
       group: 'primary',
       label: copy.intelligence,
       Icon: TrendingUp,
       description: locale === 'en' ? 'Market Pulse & Price Metrics' : 'روند قیمت و نبض بازار',
-    },
-    {
-      id: 'properties',
-      group: 'primary',
-      label: copy.properties,
-      Icon: Building2,
-      description: locale === 'en' ? 'Verified Deals & Listings' : 'جست‌وجوی املاک و فایل‌های شکار',
     },
     {
       id: 'tools',
@@ -62,17 +62,17 @@ export function getProductNavigationItems(locale: RadarLocale): ProductNavigatio
     },
     {
       id: 'userspace',
-      group: 'account',
+      group: 'primary',
       label: copy.userspace,
       Icon: User,
       description: locale === 'en' ? 'Saved Searches & Account' : 'نشان‌شده‌ها و تنظیمات حساب',
     },
     {
-      id: 'home',
+      id: 'properties',
       group: 'account',
-      label: copy.home,
-      Icon: Home,
-      description: locale === 'en' ? 'Radar Home & Quick Insights' : 'خانه و چشم‌انداز سریع رادار',
+      label: copy.properties,
+      Icon: Building2,
+      description: locale === 'en' ? 'Verified Deals & Listings' : 'جست‌وجوی املاک و فایل‌های شکار',
     },
     {
       id: 'admin',
