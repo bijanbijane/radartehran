@@ -1,0 +1,106 @@
+/** @file src/features/onboarding/services/stage51GeospatialFixtures.ts — Stage 51 Fixtures */
+import type {
+  IntraNeighborhoodCellRecord,
+  SavedSpatialArtifactRecord,
+  SpatialDestinationAccessRecord,
+} from './geospatialIntelligenceTypes';
+
+export const INITIAL_STAGE51_DESTINATIONS: SpatialDestinationAccessRecord[] = [
+  {
+    destinationId: 'DST-51-01',
+    nameFa: 'بیمارستان عرفان (سعادت‌آباد)',
+    categoryFa: 'مراکز درمانی',
+    straightLineMeters: 620,
+    networkRouteMeters: 980,
+    estimatedTravelMinutes: 12,
+    travelModeFa: 'پیاده‌روی روی شبکه معابر',
+    sourceNameFa: 'لایه مراکز درمانی مرجع رادار (تأییدشده)',
+    updatedAtFa: '۱۴۰۵/۰۸/۱۰',
+    originPositionalAccuracy: 'دقیق (مختصات تاییدشده)',
+  },
+  {
+    destinationId: 'DST-51-02',
+    nameFa: 'ایستگاه مترو میدان کتاب',
+    categoryFa: 'ایستگاه‌های حمل‌ونقل',
+    straightLineMeters: 740,
+    networkRouteMeters: 1150,
+    estimatedTravelMinutes: 14,
+    travelModeFa: 'پیاده‌روی روی شبکه معابر',
+    sourceNameFa: 'شبکه حمل‌ونقل شهری تهران',
+    updatedAtFa: '۱۴۰۵/۰۸/۱۲',
+    originPositionalAccuracy: 'تقریبی (محدوده خیابان/بلوک)',
+  },
+  {
+    destinationId: 'DST-51-03',
+    nameFa: 'درمانگاه شبانه‌روزی شمال‌غرب (فاقد داده شبکه مسیر)',
+    categoryFa: 'مراکز درمانی',
+    straightLineMeters: 480,
+    networkRouteMeters: null,
+    estimatedTravelMinutes: null,
+    travelModeFa: 'صرفاً فاصله مستقیم هندسی',
+    sourceNameFa: 'لایه مشارکتی نیازمند تکمیل شبکه',
+    updatedAtFa: '۱۴۰۵/۰۷/۲۸',
+    originPositionalAccuracy: 'تقریبی (محدوده خیابان/بلوک)',
+  },
+];
+
+export const INITIAL_STAGE51_GRID_CELLS: IntraNeighborhoodCellRecord[] = [
+  {
+    cellId: 'CELL-N2-01',
+    labelFa: 'بلوک شمالی میدان کاج (سلول ۲۵۰×۲۵۰ متر)',
+    cellSizeMeters: 250,
+    observationCount: 38,
+    medianAskingPriceM: 224,
+    landUseReportedInListingsFa: 'مسکونی / موقعیت اداری در آگهی',
+    officialZoningLandUseFa: 'مسکونی R122 (پهنه طرح تفصیلی)',
+  },
+  {
+    cellId: 'CELL-N2-02',
+    labelFa: 'بلوک غربی بلوار دریا (کم‌نمونه — حفاظت حریم خصوصی)',
+    cellSizeMeters: 250,
+    observationCount: 2,
+    medianAskingPriceM: 245,
+    landUseReportedInListingsFa: 'تجاری اعلامی در آگهی',
+    officialZoningLandUseFa: 'مختلط مسکونی-خدماتی (نیازمند استعلام رسمی شهرداری)',
+  },
+  {
+    cellId: 'CELL-N2-03',
+    labelFa: 'حاشیه بوستان نهج‌البلاغه (فاقد مشاهده در دوره جاری)',
+    cellSizeMeters: 250,
+    observationCount: 0,
+    medianAskingPriceM: null,
+    landUseReportedInListingsFa: 'بدون آگهی ثبت‌شده',
+    officialZoningLandUseFa: 'فضای سبز و عمومی G111',
+  },
+];
+
+export const INITIAL_STAGE51_SAVED_ARTIFACTS: SavedSpatialArtifactRecord[] = [
+  {
+    artifactId: 'SPA-51-101',
+    saveKind: 'ذخیره تحلیل (پرسش، پارامترها، نسخه روش و خروجی)',
+    titleFa: 'تحلیل دسترسی ۱۵ دقیقه‌ای پیاده به مراکز درمانی و مترو در سعادت‌آباد',
+    methodNameFa: 'Isochrone Network Reachability + KDE Density',
+    methodVersion: 'v1.4',
+    geographicScopeFa: 'منطقه ۲ — سعادت‌آباد',
+    scaleFa: 'سطح محله',
+    parametersSummaryFa: 'آستانه زمان پیاده: ۱۵ دقیقه · شعاع پهنای باند تراکم: ۴۰۰ متر · اندازه سلول: ۲۵۰ متر',
+    positionalAccuracy: 'دقیق (مختصات تاییدشده)',
+    analyticalConfidenceFa: 'کافی',
+    createdAtFa: '۱۴۰۵/۰۸/۱۵ · ۱۶:۱۰',
+    isPrivateScope: true,
+  },
+  {
+    artifactId: 'MAP-51-102',
+    saveKind: 'ذخیره نقشه (نمای دید و لایه‌ها)',
+    titleFa: 'نمای نقشه لایه‌های کاربری و ایستگاه‌های حمل‌ونقل منطقه ۲',
+    methodNameFa: 'نمایش مکانی لایه‌ها (بدون اجرای الگوریتم آماری)',
+    methodVersion: 'v1.0',
+    geographicScopeFa: 'منطقه ۲ تهران',
+    scaleFa: 'سطح منطقه',
+    parametersSummaryFa: 'لایه‌های فعال: ایستگاه مترو، مراکز درمانی، مرز محله‌ها',
+    positionalAccuracy: 'تقریبی (محدوده خیابان/بلوک)',
+    analyticalConfidenceFa: 'محدود (نیازمند احتیاط)',
+    createdAtFa: '۱۴۰۵/۰۸/۱۴ · ۱۸:۰۰',
+    isPrivateScope: false,
+  },
+];

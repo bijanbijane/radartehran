@@ -15,6 +15,34 @@ import { Stage43ProMarketplaceSubpanel } from './Stage43ProMarketplaceSubpanel';
 import { Stage44TransactionSubpanel } from './Stage44TransactionSubpanel';
 import { Stage45DeliverySubpanel } from './Stage45DeliverySubpanel';
 import { Stage46QualitySubpanel } from './Stage46QualitySubpanel';
+import { Stage47ProfessionalKnowledgeSubpanel } from './Stage47ProfessionalKnowledgeSubpanel';
+import { Stage48DecisionToolsSubpanel } from './Stage48DecisionToolsSubpanel';
+import { Stage49MarketMonitoringSubpanel } from './Stage49MarketMonitoringSubpanel';
+import { Stage50MarketReportingSubpanel } from './Stage50MarketReportingSubpanel';
+import { Stage51GeospatialIntelligenceSubpanel } from './Stage51GeospatialIntelligenceSubpanel';
+import { Stage52UrbanDataAtlasSubpanel } from './Stage52UrbanDataAtlasSubpanel';
+import { Stage53UrbanProjectsSubpanel } from './Stage53UrbanProjectsSubpanel';
+import { Stage54BuiltEnvironmentSubpanel } from './Stage54BuiltEnvironmentSubpanel';
+import { Stage55UrbanRegulationSubpanel } from './Stage55UrbanRegulationSubpanel';
+import { Stage56UrbanInfrastructureSubpanel } from './Stage56UrbanInfrastructureSubpanel';
+import { Stage57UrbanEnvironmentSubpanel } from './Stage57UrbanEnvironmentSubpanel';
+import { Stage58UrbanRiskSubpanel } from './Stage58UrbanRiskSubpanel';
+import { Stage59UrbanDemographicsSubpanel } from './Stage59UrbanDemographicsSubpanel';
+import { Stage60UrbanEconomySubpanel } from './Stage60UrbanEconomySubpanel';
+import { Stage61UrbanLandUseSubpanel } from './Stage61UrbanLandUseSubpanel';
+import { Stage63UrbanPublicRealmSubpanel } from './Stage63UrbanPublicRealmSubpanel';
+import { Stage64UrbanMobilitySubpanel } from './Stage64UrbanMobilitySubpanel';
+import { Stage65UrbanRiskResilienceSubpanel } from './Stage65UrbanRiskResilienceSubpanel';
+import { Stage66EnvironmentalSustainabilitySubpanel } from './Stage66EnvironmentalSustainabilitySubpanel';
+import { Stage67DemographicSocialSubpanel } from './Stage67DemographicSocialSubpanel';
+import { Stage68EconomicIntelligenceSubpanel } from './Stage68EconomicIntelligenceSubpanel';
+import { Stage69LandUseFunctionalSubpanel } from './Stage69LandUseFunctionalSubpanel';
+import { Stage70DemographicIntelligenceSubpanel } from './Stage70DemographicIntelligenceSubpanel';
+import { Stage71SpatialEquitySubpanel } from './Stage71SpatialEquitySubpanel';
+import { Stage72HousingAffordabilitySubpanel } from './Stage72HousingAffordabilitySubpanel';
+import { Stage73PopulationMobilitySubpanel } from './Stage73PopulationMobilitySubpanel';
+import { Stage74MarketEquilibriumSubpanel } from './Stage74MarketEquilibriumSubpanel';
+import { Stage75BuildingLifecycleSubpanel } from './Stage75BuildingLifecycleSubpanel';
 
 export const OnboardingStageSwitch: React.FC<{
   stageTab: OnboardingHelpStageTabId;
@@ -56,5 +84,33 @@ export const OnboardingStageSwitch: React.FC<{
     {stageTab === 'stage44' && <Stage44TransactionSubpanel />}
     {stageTab === 'stage45' && <Stage45DeliverySubpanel />}
     {stageTab === 'stage46' && <Stage46QualitySubpanel />}
+    {stageTab === 'stage47' && <Stage47ProfessionalKnowledgeSubpanel />}
+    {stageTab === 'stage48' && <Stage48DecisionToolsSubpanel />}
+    {stageTab === 'stage49' && <Stage49MarketMonitoringSubpanel />}
+    {stageTab === 'stage50' && <Stage50MarketReportingSubpanel />}
+    {stageTab === 'stage51' && <Stage51GeospatialIntelligenceSubpanel />}
+    {stageTab === 'stage52' && <Stage52UrbanDataAtlasSubpanel />}
+    {stageTab === 'stage53' && <Stage53UrbanProjectsSubpanel />}
+    {stageTab === 'stage54' && <Stage54BuiltEnvironmentSubpanel />}
+    {stageTab === 'stage55' && <Stage55UrbanRegulationSubpanel />}
+    {stageTab === 'stage56' && <Stage56UrbanInfrastructureSubpanel />}
+    {stageTab === 'stage57' && <Stage57UrbanEnvironmentSubpanel />}
+    {stageTab === 'stage58' && <Stage58UrbanRiskSubpanel />}
+    {stageTab === 'stage59' && <Stage59UrbanDemographicsSubpanel />}
+    {stageTab === 'stage60' && <Stage60UrbanEconomySubpanel />}
+    {stageTab === 'stage61' && <Stage61UrbanLandUseSubpanel />}
+    {stageTab === 'stage63' && <Stage63UrbanPublicRealmSubpanel />}
+    {stageTab === 'stage64' && <Stage64UrbanMobilitySubpanel />}
+    {stageTab === 'stage65' && <Stage65UrbanRiskResilienceSubpanel />}
+    {stageTab === 'stage66' && <Stage66EnvironmentalSustainabilitySubpanel />}
+    {stageTab === 'stage67' && <Stage67DemographicSocialSubpanel />}
+    {stageTab === 'stage68' && <Stage68EconomicIntelligenceSubpanel />}
+    {stageTab === 'stage69' && <Stage69LandUseFunctionalSubpanel />}
+    {stageTab === 'stage70' && <Stage70DemographicIntelligenceSubpanel />}
+    {stageTab === 'stage71' && <Stage71SpatialEquitySubpanel />}
+    {stageTab === 'stage72' && <Stage72HousingAffordabilitySubpanel />}
+    {stageTab === 'stage73' && <Stage73PopulationMobilitySubpanel />}
+    {stageTab === 'stage74' && <Stage74MarketEquilibriumSubpanel />}
+    {stageTab === 'stage75' && <Stage75BuildingLifecycleSubpanel />}
   </>
 );

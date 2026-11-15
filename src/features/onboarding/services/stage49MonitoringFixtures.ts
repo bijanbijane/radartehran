@@ -1,0 +1,107 @@
+/** @file src/features/onboarding/services/stage49MonitoringFixtures.ts — Stage 49 Fixtures */
+import type {
+  AlertFeedbackReport,
+  MarketAlertItemRecord,
+  MarketMonitorRuleRecord,
+} from './marketMonitoringTypes';
+
+export const INITIAL_STAGE49_MONITORS: MarketMonitorRuleRecord[] = [
+  {
+    monitorId: 'MON-49-101',
+    titleFa: 'پایش کاهش قیمت ملک ذخیره‌شده — سعادت‌آباد، بلوار دریا (RT-PROP-0001)',
+    targetType: 'ملک مشخص',
+    scopeLabelFa: 'واحد ۱۲۰ متری سعادت‌آباد',
+    boundaryType: 'تک‌ملک',
+    baselineAskingPriceM: 22800,
+    thresholdPercent: 3,
+    thresholdAmountM: 500,
+    hysteresisDeactivatePercent: 1.5,
+    sensitivity: 'متعادل',
+    status: 'فعال',
+    createdAtFa: '۱۴۰۵/۰۸/۰۱',
+    lastCheckedAtFa: '۱۴۰۵/۰۸/۱۵ · ۱۴:۰۰',
+    lastSourceCheckStatus: 'بررسی موفق، با تغییر',
+    newAlertsCount: 1,
+  },
+  {
+    monitorId: 'MON-49-102',
+    titleFa: 'پایش جست‌وجوی ذخیره‌شده — آپارتمان ۲ تا ۳ خوابه در سعادت‌آباد زیر ۲۳ میلیارد',
+    targetType: 'جست‌وجوی ذخیره‌شده',
+    scopeLabelFa: 'سعادت‌آباد · حداقل ۹۵ متر · سقف ۲۳٬۰۰۰ م.ت',
+    boundaryType: 'فیلتر جست‌وجو',
+    thresholdPercent: 2,
+    hysteresisDeactivatePercent: 1,
+    sensitivity: 'متعادل',
+    status: 'فعال',
+    createdAtFa: '۱۴۰۵/۰۸/۰۵',
+    lastCheckedAtFa: '۱۴۰۵/۰۸/۱۵ · ۱۴:۰۰',
+    lastSourceCheckStatus: 'بررسی موفق، با تغییر',
+    newAlertsCount: 1,
+  },
+  {
+    monitorId: 'MON-49-103',
+    titleFa: 'پایش محدوده مکانی ترسیمی کاربر روی نقشه — شمال میدان کاج',
+    targetType: 'محدوده مکانی ترسیمی',
+    scopeLabelFa: 'چندضلعی ترسیمی کاربر (مساحت ~۱.۴ کیلومترمربع)',
+    boundaryType: 'محدوده ترسیمی کاربر',
+    polygonBounds: { minLat: 35.775, maxLat: 35.79, minLng: 51.365, maxLng: 51.385 },
+    hysteresisDeactivatePercent: 1,
+    sensitivity: 'محدود',
+    status: 'بدون داده جدید',
+    createdAtFa: '۱۴۰۵/۰۸/۱۰',
+    lastCheckedAtFa: '۱۴۰۵/۰۸/۱۵ · ۱۳:۳۰',
+    lastSourceCheckStatus: 'بررسی موفق، بدون تغییر',
+    newAlertsCount: 0,
+  },
+];
+
+export const INITIAL_STAGE49_ALERTS: MarketAlertItemRecord[] = [
+  {
+    eventId: 'EVT-49-9001',
+    alertId: 'ALT-EVT-49-9001',
+    monitorIds: ['MON-49-101', 'MON-49-102'],
+    eventTypeFa: 'کاهش قیمت آگهی',
+    epistemicKind: 'تغییر ثبت‌شده',
+    priceConcept: 'قیمت آگهی',
+    subjectTitleFa: 'ملک RT-PROP-0001 — سعادت‌آباد، بلوار دریا (۱۲۰ متر)',
+    previousValueFa: '۲۲٬۸۰۰ م.ت',
+    newValueFa: '۲۱٬۹۰۰ م.ت (-۳.۹٪)',
+    changeTimeFa: '۱۴۰۵/۰۸/۱۵ · ساعت ۱۰:۰۰',
+    observedTimeFa: '۱۴۰۵/۰۸/۱۵ · ساعت ۱۴:۰۰',
+    sourceNameFa: 'منبع آگهی ثبت‌شده در رادار',
+    dataQualityStatus: 'تأییدشده',
+    triggerRuleReasonFa:
+      'مبلغ درج‌شده در آگهی نسبت به آخرین مقدار مشاهده‌شده ۳.۹٪ کاهش یافته و از آستانه ۳٪ عبور کرده است (صرفاً قیمت آگهی؛ نه قیمت معامله).',
+    priority: 'مهم',
+    handlingStatus: 'جدید',
+  },
+  {
+    eventId: 'EVT-49-9002',
+    alertId: 'ALT-EVT-49-9002',
+    monitorIds: ['MON-49-102'],
+    eventTypeFa: 'عدم دسترسی به آگهی',
+    epistemicKind: 'وضعیت مشاهده‌شده',
+    priceConcept: 'قیمت آگهی',
+    subjectTitleFa: 'ملک RT-PROP-0044 — سعادت‌آباد، خیابان صراف‌ها (۱۱۰ متر)',
+    previousValueFa: 'فعال در منبع (۲۱٬۲۰۰ م.ت)',
+    newValueFa: 'دیگر قابل مشاهده نیست (عدم دسترسی)',
+    changeTimeFa: 'زمان دقیق تغییر نامشخص',
+    observedTimeFa: '۱۴۰۵/۰۸/۱۵ · ساعت ۱۳:۴۵',
+    sourceNameFa: 'پایشگر آگهی‌های منطقه ۲',
+    dataQualityStatus: 'تأییدشده',
+    triggerRuleReasonFa:
+      'آگهی در منبع دیگر قابل مشاهده نیست؛ عدم دسترسی به آگهی به‌تنهایی به معنی فروش قطعی ملک نیست.',
+    priority: 'اطلاعاتی',
+    handlingStatus: 'دیده‌شده',
+  },
+];
+
+export const INITIAL_STAGE49_FEEDBACKS: AlertFeedbackReport[] = [
+  {
+    feedbackId: 'FDB-MM-201',
+    alertId: 'ALT-EVT-49-9001',
+    errorTypeFa: 'تغییر قیمت اشتباه است',
+    descriptionFa: 'بررسی صحت مبلغ جدید درج‌شده در منبع',
+    status: 'در انتظار بررسی',
+  },
+];

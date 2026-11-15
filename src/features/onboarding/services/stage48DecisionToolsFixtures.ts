@@ -1,0 +1,172 @@
+/** @file src/features/onboarding/services/stage48DecisionToolsFixtures.ts — Stage 48 Fixtures */
+import type {
+  DecisionPropertyOption,
+  MaintenanceCostEntry,
+  ProjectActivityItem,
+  RenovationOperationRow,
+  SavedDecisionScenario,
+  ServiceOfferComparisonItem,
+} from './decisionSupportToolsTypes';
+
+export const INITIAL_STAGE48_PROPERTIES: DecisionPropertyOption[] = [
+  {
+    propertyId: 'prop-48-101',
+    titleFa: 'ملک الف — سعادت‌آباد، بلوار دریا (۱۲۰ متر)',
+    entrySource: 'radar_database',
+    originLabel: 'داده سامانه',
+    updatedAtFa: '۱۴۰۵/۰۸/۱۴',
+    areaSqm: 120,
+    ageYears: 8,
+    rooms: 3,
+    basePriceMillionToman: 22800,
+    estimatedLegalCostM: 210,
+    inspectionCostM: 18,
+    initialRepairEstimateM: 650,
+    movingCostM: 35,
+    completenessPercent: 95,
+  },
+  {
+    propertyId: 'prop-48-102',
+    titleFa: 'ملک ب — شهرک غرب، فاز ۴ (۱۰۵ متر — ثبت دستی کاربر)',
+    entrySource: 'manual_external',
+    originLabel: 'ورودی کاربر',
+    updatedAtFa: '۱۴۰۵/۰۸/۱۵',
+    areaSqm: 105,
+    ageYears: 4,
+    rooms: 2,
+    basePriceMillionToman: 21500,
+    estimatedLegalCostM: 195,
+    inspectionCostM: 18,
+    initialRepairEstimateM: null,
+    movingCostM: 30,
+    completenessPercent: 78,
+  },
+];
+
+export const STAGE48_SERVICE_OFFERS: ServiceOfferComparisonItem[] = [
+  {
+    offerId: 'off-48-1',
+    providerNameFa: 'پیشنهاد اول: گروه مهندسی پارسیان',
+    entrySource: 'marketplace',
+    coveredScopeFa: ['بازدید سازه و تأسیسات', 'تست رطوبت‌سنجی', 'گزارش تصویری استاندارد', 'جلسه توضیح حضوری'],
+    excludedScopeFa: ['آزمایش مغزه‌گیری بتن'],
+    deliverableTypeFa: 'گزارش فنی مستند + فایل نقشه نواقص + جلسه مشاوره',
+    basePriceM: 18.5,
+    extraCostsM: 1.5,
+    durationDays: 3,
+    verifiedCredentialCount: 3,
+  },
+  {
+    offerId: 'off-48-2',
+    providerNameFa: 'پیشنهاد دوم: دفتر کارشناسی البرز',
+    entrySource: 'request_bid',
+    coveredScopeFa: ['بازدید ظاهری ساختمان', 'ارائه گزارش خلاصه'],
+    excludedScopeFa: ['تست فشار تأسیسات', 'جلسه توضیح', 'بررسی مشاعات بام'],
+    deliverableTypeFa: 'فایل PDF خلاصه بازدید',
+    basePriceM: 11.0,
+    extraCostsM: 0,
+    durationDays: 2,
+    verifiedCredentialCount: 2,
+  },
+  {
+    offerId: 'off-48-3',
+    providerNameFa: 'پیشنهاد سوم: مجری خارجی (ورودی دستی کاربر)',
+    entrySource: 'manual_external',
+    coveredScopeFa: ['بازدید اولیه', 'برآورد هزینه تعمیرات', 'گزارش تأسیسات'],
+    excludedScopeFa: ['کنترل اسناد پایان کار'],
+    deliverableTypeFa: 'گزارش برآورد تعمیرات',
+    basePriceM: 15.0,
+    extraCostsM: 2.0,
+    durationDays: 4,
+    verifiedCredentialCount: 1,
+  },
+];
+
+export const INITIAL_STAGE48_RENOVATION_OPS: RenovationOperationRow[] = [
+  {
+    rowId: 'ren-1',
+    categoryFa: 'تأسیسات مکانیکی',
+    titleFa: 'تعویض لوله‌کشی پنج‌لایه و عایق رطوبتی دو سرویس',
+    unitFa: 'مترمربع',
+    quantity: 18,
+    unitPriceM: 3.5,
+    laborCostM: 28,
+    equipmentCostM: 4,
+    transportCostM: 3,
+    otherCostM: 2,
+    priceSourceStatus: 'ثبت‌شده از پیشنهاد واقعی',
+    priceDateFa: '۱۴۰۵/۰۸/۱۲',
+  },
+  {
+    rowId: 'ren-2',
+    categoryFa: 'معماری داخلی',
+    titleFa: 'کف‌سازی سرامیک پرسلان و قرنیز سالن و اتاق‌ها',
+    unitFa: 'مترمربع',
+    quantity: 95,
+    unitPriceM: 1.8,
+    laborCostM: 45,
+    equipmentCostM: 3,
+    transportCostM: 6,
+    otherCostM: 4,
+    priceSourceStatus: 'دریافت‌شده از منبع بازار',
+    priceDateFa: '۱۴۰۵/۰۸/۱۰',
+  },
+];
+
+export const INITIAL_STAGE48_ACTIVITIES: ProjectActivityItem[] = [
+  {
+    activityId: 'act-1',
+    titleFa: 'عملیات لوله‌کشی و تست فشار تأسیسات توکار',
+    assigneeFa: 'تیم تأسیسات مکانیکی',
+    durationDays: 6,
+    prerequisiteIds: [],
+    plannedStartDay: 1,
+    status: 'آغازشده',
+  },
+  {
+    activityId: 'act-2',
+    titleFa: 'نصب تجهیزات، شیرآلات و سرامیک نهایی',
+    assigneeFa: 'تیم نصاب و کاشی‌کار',
+    durationDays: 5,
+    prerequisiteIds: ['act-1'],
+    plannedStartDay: 4,
+    status: 'آغازشده',
+  },
+];
+
+export const INITIAL_STAGE48_MAINTENANCE_COSTS: MaintenanceCostEntry[] = [
+  {
+    entryId: 'mnt-1',
+    titleFa: 'سرویس سالانه آسانسور و تعویض کفشک‌ها',
+    categoryFa: 'آسانسور',
+    amountM: 14.5,
+    dateFa: '۱۴۰۵/۰۷/۱۵',
+    bucket: 'هزینه انجام‌شده',
+  },
+  {
+    entryId: 'mnt-2',
+    titleFa: 'عایق‌کاری مجدد بام پیش از بارندگی زمستان',
+    categoryFa: 'بام',
+    amountM: 32.0,
+    dateFa: '۱۴۰۵/۰۹/۰۱',
+    bucket: 'هزینه برنامه‌ریزی‌شده',
+  },
+  {
+    entryId: 'mnt-3',
+    titleFa: 'ذخیره احتیاطی خرابی پمپ‌های آبرسانی مشاعات',
+    categoryFa: 'هزینه پیش‌بینی‌نشده',
+    amountM: 18.0,
+    dateFa: '۱۴۰۵/۰۸/۰۱',
+    bucket: 'ذخیره پیشنهادی',
+  },
+];
+
+export const INITIAL_STAGE48_SCENARIO: SavedDecisionScenario = {
+  scenarioId: 'SCN-48-101',
+  nameFa: 'سناریوی بازسازی متوسط واحد ۱۲۰ متری سعادت‌آباد',
+  toolTypeFa: 'برآورد هزینه بازسازی',
+  methodVersion: 'v6.4-DT',
+  calculatedAtFa: '۱۴۰۵/۰۸/۱۴ · ۱۶:۲۰',
+  totalResultM: 361.9,
+  reservePercent: 10,
+};

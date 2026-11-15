@@ -1,0 +1,43 @@
+/** @file src/features/onboarding/services/stage61UrbanLandUseFixtures.ts — Stage 61 Deterministic Land Use Fixtures */
+import type { ParcelLandUseProfile } from './urbanLandUseTypes';
+
+export const INITIAL_STAGE61_PROFILES: ReadonlyArray<ParcelLandUseProfile> = [
+  {
+    zoneId: 'enghelab-mixed-parcel',
+    parcelNameFa: 'قطعه مختلط محدوده انقلاب (اختلاف سه‌لایه)',
+    referencePeriodFa: 'بهار ۱۴۰۵',
+    approvedUseFa: 'مسکونی با پیش‌بینی پهنه مختلط محور',
+    approvedStatus: 'مصوب با اصلاحیه',
+    registeredUseFa: 'دارای سابقه پروانه تجاری-مسکونی در پرونده دوره‌های پیشین',
+    hasRegisteredSourceConflict: true,
+    registeredConflictDetailFa: 'ثبت مسکونی در دفتر املاک قدیم و تجاری همکف در گواهی پایان‌کار میانی',
+    observedParcelUseFa: 'استفاده مختلط مشاهده‌شده',
+    buildingFloorsUseNoteFa: 'طبقه همکف تجاری + طبقات میانی اداری و دفاتر + طبقات بالا مسکونی (در حد داده‌های مستند)',
+    observationMethodFa: 'ترکیب گزارش میدانی تأییدشده و داده‌های عمومی کسب‌وکارها (جدا از ظاهر نما)',
+    reconciliationStatus: 'اختلاف مشاهده‌شده',
+    spatialMixVsDiversityNoteFa: 'اختلاط عمودی در یک ساختمان و اختلاط پراکنده در سطح بلوک؛ تنوع آماری معادل اختلاط بهینه نیست',
+    adjacentCompatibilityNoteFa: 'هم‌جواری تجاری و مسکونی نیازمند بررسی ساعت فعالیت، بار ترافیکی و حریم صوتی',
+    vacantKind: 'دارای کاربری فعال',
+    vacantConstraintsNoteFa: 'قطعه دارای بهره‌برداری فعال در طبقات متعدد است',
+    changeStatus: 'تغییر مستند اما تأییدنشده',
+  },
+  {
+    zoneId: 'south-vacant-underutilized-lot',
+    parcelNameFa: 'قطعه بایر و کم‌استفاده محور جنوب',
+    referencePeriodFa: 'بهار ۱۴۰۵',
+    approvedUseFa: 'پیشنهادی خدماتی و فضای سبز محلی',
+    approvedStatus: 'پیشنهادی',
+    registeredUseFa: 'سابقه کارگاهی ثبت‌شده قدیمی',
+    hasRegisteredSourceConflict: false,
+    registeredConflictDetailFa: '',
+    observedParcelUseFa: 'زمین فاقد استفاده شناسایی‌شده در بخش عمده قطعه (بخش محدود موقت)',
+    buildingFloorsUseNoteFa: 'قطعه زمین دارای سوله موقت با شدت استفاده پایین نسبت به ظرفیت مساحت',
+    observationMethodFa: 'تخمین ماشینی بر اساس تصویر هوایی (نیازمند تأیید میدانی)',
+    reconciliationStatus: 'نیازمند بررسی',
+    spatialMixVsDiversityNoteFa: 'اختلاط پایین و گسستگی میان قطعات انبارداری و مسکونی پیرامونی',
+    adjacentCompatibilityNoteFa: 'مجاورت کارگاهی و مسکونی در دسته «تعارض احتمالی بر اساس مدل» تا پیش از بررسی تخصصی',
+    vacantKind: 'زمین کم‌استفاده',
+    vacantConstraintsNoteFa: 'زمین خالی یا کم‌استفاده لزوماً قابل ساخت نیست (محدودیت احتمالی حریم، سابقه کارگاهی و ضوابط ۵۵/۵۸)',
+    changeStatus: 'تغییر ناشی از اصلاح طبقه‌بندی',
+  },
+];
