@@ -76,7 +76,7 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
       .map((h) => ({
         id: h.id, name: h.name, zone: h.zone, buyPerSqm: h.buyPerSqm, rahn80m: h.rahn80m, securityScore: h.security,
         displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
-        buyPerSqmIntlText: formatMillionTomanAsIntlCurrency(h.buyPerSqm, intlCurrency, 'en'),
+        buyPerSqmIntlText: formatMillionTomanAsIntlCurrency(h.buyPerSqm, intlCurrency, 'en', REFERENCE_EXCHANGE_RATE),
       }));
     res.status(200).json({ status: 'ok', structuredQuery: structured, matchedCount: matchedNeighborhoods.length, matchedNeighborhoods });
   });

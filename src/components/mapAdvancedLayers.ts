@@ -1,8 +1,62 @@
-import { useSyncExternalStore } from 'react'; import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum, WorkHub } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { escapeHtmlAttr } from '../utils/security'; import { detectClientLowBandwidthOrMobileMode, filterPointsInGeoBoundingBox, isGeometryIntersectingGeoBoundingBox, resolveGeoLazyLoadingPolicy, } from '../utils/geojsonViewportLazyEngine'; export interface MapViewportBoundsState { north: number; south: number; east: number; west: number; zoom: number; }
-export interface ComparisonArcPairState { active: boolean; isPinned: boolean; hoodA: EvaluatedNeighborhood | null; hoodB: EvaluatedNeighborhood | null; } export interface MapAdvancedOverlayStoreState { showMetroLines: boolean; showTrafficZones: boolean; showCommuteIsochrones: boolean; filterRankingByViewport: boolean; lowBandwidthGeoLazyMode: boolean; viewportBounds: MapViewportBoundsState | null; comparisonArc: ComparisonArcPairState; } let overlayState: MapAdvancedOverlayStoreState = { showMetroLines: false, showTrafficZones: false, showCommuteIsochrones: true, filterRankingByViewport: false, lowBandwidthGeoLazyMode: detectClientLowBandwidthOrMobileMode(), viewportBounds: null, comparisonArc: { active: false, isPinned: false, hoodA: null, hoodB: null }, }; const listeners = new Set<() => void>(); function emitChange() { listeners.forEach((listener) => listener()); }
-export function getMapAdvancedOverlayState(): MapAdvancedOverlayStoreState { return overlayState; } export function updateMapAdvancedOverlayState(partial: Partial<MapAdvancedOverlayStoreState>): void { overlayState = { ...overlayState, ...partial }; emitChange(); }
-export function useMapAdvancedOverlayState(): MapAdvancedOverlayStoreState { return useSyncExternalStore( (listener) => { listeners.add(listener); return () => listeners.delete(listener); }, getMapAdvancedOverlayState, getMapAdvancedOverlayState
-  ); }
+import { useSyncExternalStore } from 'react';
+import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum, WorkHub } from '../data/neighborhoods';
+import { CityId } from '../data/multiCityData';
+import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale, type AreaUnit, type IntlCurrencyCode, type RadarLocale } from '../utils/areaUnit'; void formatMillionTomanAsIntlCurrency;
+import { escapeHtmlAttr } from '../utils/security';
+import { detectClientLowBandwidthOrMobileMode, filterPointsInGeoBoundingBox, isGeometryIntersectingGeoBoundingBox, resolveGeoLazyLoadingPolicy } from '../utils/geojsonViewportLazyEngine';
+import {
+  buildComparisonArcGroup, buildRadialDistanceRingSpecs, reconcileCommuteIsochronesLayer,
+  reconcileMetroLinesLayer, reconcileNeighborhoodComparisonArcLayer, reconcileTrafficZonesLayer,
+  type MetroLineEntry, type TrafficZoneEntry,
+} from './map/advancedOverlayReconcilers';
+
+export interface MapViewportBoundsState { north: number; south: number; east: number; west: number; zoom: number; }
+export interface ComparisonArcPairState { active: boolean; isPinned: boolean; hoodA: EvaluatedNeighborhood | null; hoodB: EvaluatedNeighborhood | null; }
+export interface MapAdvancedOverlayStoreState { showMetroLines: boolean; showTrafficZones: boolean; showCommuteIsochrones: boolean; filterRankingByViewport: boolean; lowBandwidthGeoLazyMode: boolean; viewportBounds: MapViewportBoundsState | null; comparisonArc: ComparisonArcPairState; }
+let overlayState: MapAdvancedOverlayStoreState = { showMetroLines: false, showTrafficZones: false, showCommuteIsochrones: true, filterRankingByViewport: false, lowBandwidthGeoLazyMode: detectClientLowBandwidthOrMobileMode(), viewportBounds: null, comparisonArc: { active: false, isPinned: false, hoodA: null, hoodB: null } };
+const listeners = new Set<() => void>();
+function emitChange() { listeners.forEach((listener) => listener()); }
+const round5 = (n: number) => Math.round(n * 100000) / 100000;
+function areViewportBoundsEqual(a: MapViewportBoundsState | null, b: MapViewportBoundsState | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return round5(a.north) === round5(b.north) && round5(a.south) === round5(b.south) && round5(a.east) === round5(b.east) && round5(a.west) === round5(b.west) && a.zoom === b.zoom;
+}
+function areComparisonArcsEqual(a: ComparisonArcPairState, b: ComparisonArcPairState): boolean {
+  return a.active === b.active && a.isPinned === b.isPinned && (a.hoodA?.id ?? null) === (b.hoodA?.id ?? null) && (a.hoodB?.id ?? null) === (b.hoodB?.id ?? null);
+}
+export function getMapAdvancedOverlayState(): MapAdvancedOverlayStoreState { return overlayState; }
+export function updateMapAdvancedOverlayState(partial: Partial<MapAdvancedOverlayStoreState>): void {
+  const nextBounds = partial.viewportBounds !== undefined
+    ? (areViewportBoundsEqual(overlayState.viewportBounds, partial.viewportBounds)
+      ? overlayState.viewportBounds
+      : (partial.viewportBounds ? { north: round5(partial.viewportBounds.north), south: round5(partial.viewportBounds.south), east: round5(partial.viewportBounds.east), west: round5(partial.viewportBounds.west), zoom: partial.viewportBounds.zoom } : null))
+    : overlayState.viewportBounds;
+  const nextArc = partial.comparisonArc !== undefined
+    ? (areComparisonArcsEqual(overlayState.comparisonArc, partial.comparisonArc) ? overlayState.comparisonArc : partial.comparisonArc)
+    : overlayState.comparisonArc;
+  const nextState: MapAdvancedOverlayStoreState = {
+    showMetroLines: partial.showMetroLines ?? overlayState.showMetroLines,
+    showTrafficZones: partial.showTrafficZones ?? overlayState.showTrafficZones,
+    showCommuteIsochrones: partial.showCommuteIsochrones ?? overlayState.showCommuteIsochrones,
+    filterRankingByViewport: partial.filterRankingByViewport ?? overlayState.filterRankingByViewport,
+    lowBandwidthGeoLazyMode: partial.lowBandwidthGeoLazyMode ?? overlayState.lowBandwidthGeoLazyMode,
+    viewportBounds: nextBounds,
+    comparisonArc: nextArc,
+  };
+  if (
+    nextState.showMetroLines === overlayState.showMetroLines &&
+    nextState.showTrafficZones === overlayState.showTrafficZones &&
+    nextState.showCommuteIsochrones === overlayState.showCommuteIsochrones &&
+    nextState.filterRankingByViewport === overlayState.filterRankingByViewport &&
+    nextState.lowBandwidthGeoLazyMode === overlayState.lowBandwidthGeoLazyMode &&
+    nextState.viewportBounds === overlayState.viewportBounds &&
+    nextState.comparisonArc === overlayState.comparisonArc
+  ) return;
+  overlayState = nextState;
+  emitChange();
+}
+export function useMapAdvancedOverlayState(): MapAdvancedOverlayStoreState { return useSyncExternalStore((listener) => { listeners.add(listener); return () => listeners.delete(listener); }, getMapAdvancedOverlayState, getMapAdvancedOverlayState); }
 export function isCoordInsideStoredViewport(lat: number, lng: number, bounds: MapViewportBoundsState | null): boolean { if (!bounds) return true; return lat <= bounds.north && lat >= bounds.south && lng <= bounds.east && lng >= bounds.west; }
 export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighborhood; zoom: number; isSelected: boolean; hasSponsor: boolean; isDarkMap: boolean; pillBg: string; priceLabel: string; }): { html: string; iconSize: [number, number]; iconAnchor: [number, number] } {
   const { hood, zoom, isSelected, hasSponsor, isDarkMap, pillBg, priceLabel } = params; const areaUnit = getStoredAreaUnit();
@@ -26,7 +80,7 @@ export function buildZoomAdaptivePillIconConfig(params: { hood: EvaluatedNeighbo
       iconSize: [54, 22], iconAnchor: [27, 11], }; }
   if (zoom >= 14) { const growth6m = hood.marketReport?.hoodGrowth6mPercent ?? 12;
     const safeGrowth = escapeHtmlAttr(`${growth6m > 0 ? '+' : ''}${toPersianNum(growth6m)}٪`);
-    const safeMetro = escapeHtmlAttr(`🚇${toPersianNum(hood.metro)}`);
+    const safeMetro = escapeHtmlAttr(`مترو ${toPersianNum(hood.metro)}`);
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
         <span data-hood-pill="${hood.id}" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3.5px 10px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;color:#ffffff;background:${pillBg};border:${borderRule};box-shadow:${shadowRule};"> ${sponsorStar}<span>${safeHoodName}</span>
@@ -158,7 +212,7 @@ export function renderAdvancedSpatialOverlaysOnLeaflet(params: {
       const pollutionPoly = L.polygon(trafficZone.outer, {
         color: '#f59e0b', weight: 2, dashArray: '8, 6', fillColor: '#f59e0b', fillOpacity: 0.06,
       }).bindTooltip(
-        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;"><strong style="color:#d97706;">🟠 محدوده طرح کنترل آلودگی هوا (زوج و فرد سابق)</strong><br/><span>تردد رایگان تا ۲۰ روز در هر فصل با پلاک بومی</span></div>`,
+        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;"><strong style="color:#d97706;">محدوده طرح کنترل آلودگی هوا (زوج و فرد سابق)</strong><br/><span>تردد رایگان تا ۲۰ روز در هر فصل با پلاک بومی</span></div>`,
         { sticky: true, direction: 'top' }
       );
       group.addLayer(pollutionPoly);
@@ -168,7 +222,7 @@ export function renderAdvancedSpatialOverlaysOnLeaflet(params: {
       const coreTrafficPoly = L.polygon(trafficZone.core, {
         color: '#e11d48', weight: 2.2, dashArray: '5, 5', fillColor: '#f43f5e', fillOpacity: 0.11,
       }).bindTooltip(
-        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;"><strong style="color:#e11d48;">🔴 ${safeZoneTitle}</strong><br/><span>ساعت اعمال محدودیت: ۶:۳۰ صبح تا ۱۸:۰۰</span></div>`,
+        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;text-align:right;"><strong style="color:#e11d48;">${safeZoneTitle}</strong><br/><span>ساعت اعمال محدودیت: ۶:۳۰ صبح تا ۱۸:۰۰</span></div>`,
         { sticky: true, direction: 'top' }
       );
       group.addLayer(coreTrafficPoly);
@@ -182,7 +236,7 @@ export function renderAdvancedSpatialOverlaysOnLeaflet(params: {
       const poly = L.polyline(line.coords, {
         color: line.color, weight: 3.5, opacity: 0.85, lineJoin: 'round',
       }).bindTooltip(
-        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;">🚇 ${safeLineName}</div>`,
+        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:800;">${safeLineName}</div>`,
         { sticky: true, direction: 'top' }
       );
       group.addLayer(poly);
@@ -201,74 +255,27 @@ export function renderAdvancedSpatialOverlaysOnLeaflet(params: {
     });
   }
   if (st.showCommuteIsochrones && selectedWorkHub.lat !== null && selectedWorkHub.lng !== null) {
-    const safeHubName = escapeHtmlAttr(selectedWorkHub.name);
-    const rings: Array<{ radiusM: number; color: string; label: string; fillOp: number }> = [
-      { radiusM: 12500, color: '#f43f5e', label: '🔴 حلقه ۳۵ تا ۵۰ دقیقه تردد تا ' + safeHubName, fillOp: 0.03 },
-      { radiusM: 8200, color: '#f59e0b', label: '🟡 حلقه ۲۰ تا ۳۵ دقیقه تردد تا ' + safeHubName, fillOp: 0.045 },
-      { radiusM: 4300, color: '#10b981', label: '🟢 حلقه طلایی زیر ۲۰ دقیقه تردد تا ' + safeHubName, fillOp: 0.07 },
-    ];
-    rings.forEach((r) => {
+    buildRadialDistanceRingSpecs(selectedWorkHub).forEach((r) => {
       const ringCircle = L.circle([selectedWorkHub.lat, selectedWorkHub.lng], {
-        radius: r.radiusM,
-        color: r.color,
-        weight: 1.4,
-        dashArray: '4, 6',
-        fillColor: r.color,
-        fillOpacity: r.fillOp,
-      }).bindTooltip(
-        `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:700;">${r.label}</div>`,
-        { sticky: true, direction: 'top' }
-      );
+        radius: r.radiusM, color: r.color, weight: 1.4, dashArray: '4, 6', fillColor: r.color, fillOpacity: r.fillOp,
+      }).bindTooltip(`<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:11px;font-weight:700;">${r.label}</div>`, { sticky: true, direction: 'top' });
       group.addLayer(ringCircle);
     });
   }
-  const { active, hoodA, hoodB } = st.comparisonArc;
-  if (active && hoodA && hoodB && hoodA.id !== hoodB.id) {
-    const midLat = (hoodA.lat + hoodB.lat) / 2;
-    const midLng = (hoodA.lng + hoodB.lng) / 2;
-    const dLat = hoodB.lat - hoodA.lat;
-    const dLng = hoodB.lng - hoodA.lng;
-    const ctrlLat = midLat + dLng * 0.18;
-    const ctrlLng = midLng - dLat * 0.18;
-    const arcPoints: [number, number][] = [];
-    for (let i = 0; i <= 16; i++) {
-      const t = i / 16;
-      const u = 1 - t;
-      const lat = u * u * hoodA.lat + 2 * u * t * ctrlLat + t * t * hoodB.lat;
-      const lng = u * u * hoodA.lng + 2 * u * t * ctrlLng + t * t * hoodB.lng;
-      arcPoints.push([lat, lng]);
-    }
-    const arcLine = L.polyline(arcPoints, {
-      color: '#6366f1',
-      weight: 3,
-      dashArray: '6, 5',
-      opacity: 0.92,
-    });
-    group.addLayer(arcLine);
-    const safeNameA = escapeHtmlAttr(hoodA.name); const safeNameB = escapeHtmlAttr(hoodB.name); const areaUnit = getStoredAreaUnit(); const intlCurrency = getStoredIntlCurrency(); const locale = getStoredRadarLocale(); const unitLabel = formatAreaUnitLabel(areaUnit);
-    let deltaText = '';
-    if (mode === 'rent') {
-      const safeSqm = Math.max(25, targetSqm || 75);
-      const rA = Math.round(hoodA.rahn80m * (safeSqm / 80) * rentAgeMultiplier);
-      const rB = Math.round(hoodB.rahn80m * (safeSqm / 80) * rentAgeMultiplier);
-      const diff = rB - rA; const fxSuffix = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(diff || rA), intlCurrency, locale)})` : '';
-      deltaText = diff === 0
-        ? `رهن برابر (${toPersianNum(rA)}م${fxSuffix})`
-        : diff > 0
-        ? `${safeNameB}: +${toPersianNum(diff)}م رهن بیشتر${fxSuffix}`
-        : `${safeNameB}: ${toPersianNum(Math.abs(diff))}م رهن ارزان‌تر${fxSuffix}`;
-    } else {
-      const uA = convertPricePerSqmToUnit(hoodA.buyPerSqm, areaUnit); const uB = convertPricePerSqmToUnit(hoodB.buyPerSqm, areaUnit); const diff = uB - uA; const dA = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hoodA.id, hoodA.name, hoodA.buyPerSqm, buildNeighborhoodListingSamples(hoodA)).estimatedDealPricePerSqm, areaUnit); const dB = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(hoodB.id, hoodB.name, hoodB.buyPerSqm, buildNeighborhoodListingSamples(hoodB)).estimatedDealPricePerSqm, areaUnit); const dealDiff = dB - dA; const fxSuffix = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(Math.abs(diff || uA), intlCurrency, locale)})` : '';
-      deltaText = diff === 0
-        ? `قیمت برابر (${unitLabel} ${toPersianNum(uA)}م · معامله v6.4: ${toPersianNum(dA)}م${fxSuffix})`
-        : diff > 0
-        ? `${safeNameB}: ${unitLabel} +${toPersianNum(diff)}م گران‌تر از ${safeNameA} (معامله v6.4: +${toPersianNum(dealDiff)}م)${fxSuffix}`
-        : `${safeNameB}: ${unitLabel} ${toPersianNum(Math.abs(diff))}م ارزان‌تر از ${safeNameA} (معامله v6.4: ${toPersianNum(Math.abs(dealDiff))}م)${fxSuffix}`;
-    }
-    const safeDeltaText = escapeHtmlAttr(deltaText);
-    const arcMidPoint = arcPoints[8] || [ctrlLat, ctrlLng]; const arcBadgeIcon = L.divIcon({ className: 'comparison-arc-badge',
-      html: `<div style="display:flex;justify-content:center;align-items:center;transform:translate(-50%,-50%);">
-        <span style="white-space:nowrap;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.5px;font-weight:800;color:#ffffff;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:1.5px solid #ffffff;box-shadow:0 4px 12px rgba(79,70,229,0.55);">
-          ⚖️ ${safeDeltaText} </span>
-      </div>`,
-      iconSize: [0, 0], }); const badgeMarker = L.marker(arcMidPoint, { icon: arcBadgeIcon, zIndexOffset: 950 }); group.addLayer(badgeMarker); } group.addTo(map); return group; }
+  const arcLayerGroup = buildComparisonArcGroup(L, mode, targetSqm, rentAgeMultiplier, getStoredAreaUnit(), getStoredIntlCurrency(), getStoredRadarLocale(), st.comparisonArc);
+  if (arcLayerGroup) group.addLayer(arcLayerGroup);
+  group.addTo(map);
+  return group;
+}
+export function renderTrafficZonesLayer(params: { L: any; map: any; groupRef: { current: any }; entriesMap: Map<string, TrafficZoneEntry>; activeCity: CityId; showTrafficZones: boolean; viewportBounds: MapViewportBoundsState | null }): void {
+  reconcileTrafficZonesLayer({ L: params.L, map: params.map, groupRef: params.groupRef, entriesMap: params.entriesMap, city: params.activeCity, showTrafficZones: params.showTrafficZones, viewportBounds: params.viewportBounds, trafficZone: CITY_TRAFFIC_ZONES[params.activeCity] });
+}
+export function renderMetroLinesLayer(params: { L: any; map: any; groupRef: { current: any }; entriesMap: Map<string, MetroLineEntry>; activeCity: CityId; showMetroLines: boolean; viewportBounds: MapViewportBoundsState | null; zoom: number; lowBandwidthMode: boolean }): void {
+  reconcileMetroLinesLayer({ L: params.L, map: params.map, groupRef: params.groupRef, entriesMap: params.entriesMap, city: params.activeCity, showMetroLines: params.showMetroLines, viewportBounds: params.viewportBounds, zoom: params.zoom, lowBandwidthMode: params.lowBandwidthMode, lines: CITY_METRO_LINES[params.activeCity] || [] });
+}
+export function renderCommuteIsochronesLayer(params: { L: any; map: any; groupRef: { current: any }; sigRef: { current: string | null }; showCommuteIsochrones: boolean; selectedWorkHub: WorkHub; activeCity: CityId }): void {
+  reconcileCommuteIsochronesLayer(params);
+}
+export function renderNeighborhoodComparisonArc(params: { L: any; map: any; groupRef: { current: any }; sigRef: { current: string | null }; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; areaUnit: AreaUnit; intlCurrency: IntlCurrencyCode; locale: RadarLocale; comparisonArc: ComparisonArcPairState }): void {
+  reconcileNeighborhoodComparisonArcLayer(params);
+}

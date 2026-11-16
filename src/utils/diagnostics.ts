@@ -22,28 +22,82 @@ export interface DiagnosticEventEntry {
   referenceValuationIntlText?: string;
 }
 
+export type MapLayerKind = 'polygons' | 'markers' | 'gold-pins' | 'heatmap' | 'work-route' | 'landmarks';
+
+export interface LayerOperationCounts {
+  created: number;
+  updated: number;
+  removed: number;
+  retained: number;
+}
+
+export interface MapLayerProfileEntry extends LayerOperationCounts {
+  id: string;
+  timestampMs: number;
+  layer: MapLayerKind;
+  durationMs: number;
+  reason: string;
+}
+
 const MAX_DIAGNOSTIC_EVENTS = 100;
+const MAX_MAP_LAYER_PROFILES = 60;
 const diagnosticEventRingBuffer: DiagnosticEventEntry[] = [];
+const mapLayerProfileRingBuffer: MapLayerProfileEntry[] = [];
 const SENSITIVE_DIAG_KEY_RE = /password|secret|token|apikey|api_key|authorization|cookie|privatekey|phone|mobile|nationalid/i;
 type DiagnosticSubscriber = (entry: DiagnosticEventEntry, snapshots: readonly DiagnosticEventEntry[]) => void;
 const diagnosticSubscribers = new Set<DiagnosticSubscriber>();
 
+function emitDiagnosticUpdate(entry: DiagnosticEventEntry): void {
+  const currentSnapshots = [...diagnosticEventRingBuffer];
+  const notify = () => {
+    for (const sub of diagnosticSubscribers) {
+      try { sub(entry, currentSnapshots); } catch { /* ignore subscriber failure */ }
+    }
+  };
+  if (typeof queueMicrotask === 'function') queueMicrotask(notify);
+  else setTimeout(notify, 0);
+}
+
 export function subscribeDiagnostics(subscriber: DiagnosticSubscriber): () => void {
   diagnosticSubscribers.add(subscriber);
-  return () => {
-    diagnosticSubscribers.delete(subscriber);
-  };
+  return () => { diagnosticSubscribers.delete(subscriber); };
+}
+
+export function recordMapLayerProfile(layer: MapLayerKind, counts: LayerOperationCounts, durationMs: number, reason: string): void {
+  try {
+    const entry: MapLayerProfileEntry = {
+      id: `mprof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestampMs: Date.now(),
+      layer,
+      created: Math.max(0, Math.round(counts.created)),
+      updated: Math.max(0, Math.round(counts.updated)),
+      removed: Math.max(0, Math.round(counts.removed)),
+      retained: Math.max(0, Math.round(counts.retained)),
+      durationMs: Number.isFinite(durationMs) ? Math.round(durationMs * 100) / 100 : 0,
+      reason: redactDiagnosticText(reason || 'reconcile').slice(0, 60),
+    };
+    mapLayerProfileRingBuffer.unshift(entry);
+    if (mapLayerProfileRingBuffer.length > MAX_MAP_LAYER_PROFILES) mapLayerProfileRingBuffer.length = MAX_MAP_LAYER_PROFILES;
+    emitDiagnosticUpdate({ id: entry.id, timestampMs: entry.timestampMs, scope: 'MapProfiler', action: `${layer}:${entry.reason}`, durationMs: entry.durationMs, outcome: 'success' });
+  } catch { /* never throw */ }
+}
+
+export function getMapLayerProfiles(): readonly MapLayerProfileEntry[] {
+  try { return [...mapLayerProfileRingBuffer]; } catch { return []; }
+}
+
+export function clearMapLayerProfiles(): void {
+  mapLayerProfileRingBuffer.length = 0;
 }
 
 export function clearDiagnosticEvents(): void {
   diagnosticEventRingBuffer.length = 0;
+  mapLayerProfileRingBuffer.length = 0;
   try {
     for (const sub of diagnosticSubscribers) {
       sub({ id: 'cleared', timestampMs: Date.now(), scope: 'Diagnostics', action: 'bufferCleared', outcome: 'success' }, []);
     }
-  } catch {
-    /* never throw */
-  }
+  } catch { /* never throw */ }
 }
 
 export interface PerformanceMetricSummary {

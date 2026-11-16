@@ -24,6 +24,7 @@ export interface RadarBottomNavProps {
   onFlyToHood: () => void;
   onOpenOnboarding?: () => void;
   onOpenVisitedLog?: () => void;
+  onCloseFloatingPanels?: () => void;
 }
 
 export function RadarBottomNav(p: RadarBottomNavProps) {
@@ -44,6 +45,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
   const handleSelectView = (view: PrimaryViewId) => {
     setMoreOpen(false);
     p.setMobileSheetOpen(false);
+    p.onCloseFloatingPanels?.();
     p.setMobileFilterOpen(false);
     p.setShowToolsPopover(false);
     if (p.onSelectPrimaryView) p.onSelectPrimaryView(view);
@@ -92,6 +94,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
             aria-label={isEn ? 'More sections' : 'بخش‌های بیشتر'}
             onClick={() => {
               p.setMobileSheetOpen(false);
+              p.onCloseFloatingPanels?.();
               p.setMobileFilterOpen(false);
               p.setShowToolsPopover(false);
               setMoreOpen((open) => !open);

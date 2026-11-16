@@ -7,17 +7,9 @@ import React, { useState, useMemo, useEffect } from 'react'; import { ArrowLeftR
 } from 'lucide-react'; import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import type { FeatureFlags } from '../types/models';
 import { DeedType, ParkingType, GOLD_18K_TOMAN_PRICE, USD_TOMAN_PRICE, calculateDetailedValuation, } from '../data/superModulesLogic'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { useDialogFocus } from './useDialogFocus'; import { SuperModulesValuationAndFakeTabs } from './SuperModulesValuationAndFakeTabs'; import { SuperModulesLegalAndBuildingTabs } from './SuperModulesLegalAndBuildingTabs'; import { SuperModulesSwapAndStudioTabs } from './SuperModulesSwapAndStudioTabs';
+import { SUPER_MODULE_TABS_REGISTRY, type SuperModuleTabId } from '../navigation/registry/superModulesRegistry';
 
-export type SuperModuleTabId = | 'valuation'
-  | 'fake_detector'
-  | 'mortgage'
-  | 'tax_inheritance'
-  | 'tenant_rights'
-  | 'municipality'
-  | 'swap_suburb'
-  | 'visit_checklist'
-  | 'school_traffic'
-  | 'realtor_studio';
+export type { SuperModuleTabId };
 
 export interface FutureSuperModulesModalProps { open: boolean; onClose: () => void; initialTab?: SuperModuleTabId;
   selectedHood: EvaluatedNeighborhood; neighborhoods: EvaluatedNeighborhood[]; activeCity: CityId; featureFlags: FeatureFlags;
@@ -28,6 +20,19 @@ export interface FutureSuperModulesModalProps { open: boolean; onClose: () => vo
 }
 
 export const VISITED_APARTMENTS_STORAGE_KEY = 'tehran_radar_visited_homes_v1';
+
+const TAB_ICONS: Record<SuperModuleTabId, React.ElementType> = {
+  valuation: Calculator,
+  fake_detector: ShieldAlert,
+  mortgage: Building2,
+  tax_inheritance: Scale,
+  tenant_rights: FileCheck,
+  municipality: Hammer,
+  swap_suburb: ArrowLeftRight,
+  visit_checklist: ClipboardCheck,
+  school_traffic: GraduationCap,
+  realtor_studio: Sparkles,
+};
 
 export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
   const { open, onClose, initialTab = 'valuation', selectedHood, neighborhoods, activeCity, featureFlags, onSelectNeighborhood, onApplyCombinedBudget } = props;
@@ -52,34 +57,11 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
     return neighborhoods.find((n) => n.id === hoodId) || selectedHood || neighborhoods[0];
   }, [neighborhoods, hoodId, selectedHood]);
 
-  const allTabs: { id: SuperModuleTabId; label: string; icon: React.ElementType }[] = useMemo(() => [
-    { id: 'valuation', label: '💎 کارشناسی ارزش، قدرالسهم و طلا', icon: Calculator },
-    { id: 'fake_detector', label: '🕵️ مچ‌گیر آگهی، چانه‌زنی و مزایده', icon: ShieldAlert },
-    { id: 'mortgage', label: '🏦 خرید با رهن، وام و آربیتراژ طلا', icon: Building2 },
-    { id: 'tax_inheritance', label: '🏛️ مالیات، تقسیم ارث و مهریه‌یار', icon: Scale },
-    { id: 'tenant_rights', label: '⚖️ داور موجر/مستأجر، مدیر و ثنا', icon: FileCheck },
-    { id: 'municipality', label: '🔨 شهرداری، موقعیت اداری و لابی', icon: Hammer },
-    { id: 'swap_suburb', label: '🔄 تهاتر، چیتگر و مهاجرت کلانشهر', icon: ArrowLeftRight },
-    { id: 'visit_checklist', label: '📋 چک‌لیست بازدید، آب و نویز', icon: ClipboardCheck },
-    { id: 'school_traffic', label: '🎓 مدارس، مترو آینده و گسل', icon: GraduationCap },
-    { id: 'realtor_studio', label: '✨ استودیو املاک، اسباب‌کشی و سئو', icon: Sparkles },
-  ], []);
-
   const availableTabs = useMemo(() => {
-    return allTabs.filter((tab) => {
-      if (tab.id === 'valuation' && featureFlags.enableAiValuation === false) return false;
-      if (tab.id === 'fake_detector' && featureFlags.enableFakeAdDetector === false) return false;
-      if (tab.id === 'mortgage' && featureFlags.enableMortgageSimulator === false) return false;
-      if (tab.id === 'tax_inheritance' && featureFlags.enableTenantRights === false) return false;
-      if (tab.id === 'tenant_rights' && featureFlags.enableTenantRights === false) return false;
-      if (tab.id === 'municipality' && featureFlags.enableMunicipalityCalc === false) return false;
-      if (tab.id === 'swap_suburb' && featureFlags.enablePropertySwap === false) return false;
-      if (tab.id === 'visit_checklist' && featureFlags.enableVisitChecklist === false) return false;
-      if (tab.id === 'school_traffic' && featureFlags.enableSchoolRadar === false) return false;
-      if (tab.id === 'realtor_studio' && featureFlags.enableRealtorStudio === false) return false;
-      return true;
-    });
-  }, [allTabs, featureFlags]);
+    return SUPER_MODULE_TABS_REGISTRY
+      .filter((tab) => featureFlags[tab.flagKey] !== false)
+      .map((tab) => ({ ...tab, icon: TAB_ICONS[tab.id] }));
+  }, [featureFlags]);
 
   useEffect(() => {
     if (availableTabs.length > 0 && !availableTabs.some((t) => t.id === activeTab)) {

@@ -5,3 +5,5 @@
 export * from './casperHubTypes';
 export * from './casperHubClient';
 export * from './casperHubRoutes';
+export { DEFAULT_CASPER_HUB_URL } from './casperHubClient';
+

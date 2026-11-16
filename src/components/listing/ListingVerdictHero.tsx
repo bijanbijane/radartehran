@@ -6,6 +6,8 @@ import { toPersianNum } from '../../data/neighborhoods';
 import type { CityId } from '../../types/models';
 import { LABEL_ADS_NOT_TRANSACTIONS_FA } from '../../utils/epistemicUiLabels';
 import { buildListingVerdict, type ListingVerdictOk } from '../../utils/listingVerdictService';
+import { convertPricePerSqmToUnitRaw, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 
 export interface ListingVerdictHeroProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
@@ -22,6 +24,10 @@ export function ListingVerdictHero({
   initialListingText = '',
   onOpenFullModal,
 }: ListingVerdictHeroProps): React.ReactElement {
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
   const [text, setText] = useState(initialListingText);
   const [hoodName, setHoodName] = useState(defaultHoodName);
   const [loading, setLoading] = useState(false);
@@ -65,6 +71,10 @@ export function ListingVerdictHero({
   };
 
   const d = verdict?.diagnosis;
+  const fxTag = (m: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(m, intlCurrency, radarLocale)})` : '');
+  const uSuffix = areaUnit === 'sqft' ? 'م/ft²' : 'م/م';
+  const unitAsk = d ? Math.round(convertPricePerSqmToUnitRaw(d.parsed.askingPricePerSqm, areaUnit) * 10) / 10 : 0;
+  const unitRef = d ? Math.round(convertPricePerSqmToUnitRaw(d.referenceBenchmarkPerSqm, areaUnit) * 10) / 10 : 0;
 
   return (
     <section
@@ -134,23 +144,26 @@ export function ListingVerdictHero({
           )}
           <p className="font-bold text-slate-800 dark:text-slate-100">{d.verdictLabelFa}</p>
           <p>
-            آگهی: متری {toPersianNum(d.parsed.askingPricePerSqm)} م · جمع {toPersianNum(d.parsed.askingPriceTotalMillion)} م
+            آگهی ({formatAreaShort(d.parsed.areaSqm, areaUnit)}): {toPersianNum(unitAsk)} {uSuffix}{fxTag(unitAsk)} · جمع {toPersianNum(d.parsed.askingPriceTotalMillion)} م{fxTag(d.parsed.askingPriceTotalMillion)}
             {' · '}
-            مرجع: {d.benchmarkLabelFa} ({toPersianNum(d.referenceBenchmarkPerSqm)} م/م)
+            مرجع: {d.benchmarkLabelFa} ({toPersianNum(unitRef)} {uSuffix})
           </p>
           {d.comparables.length > 0 ? (
             <ul className="max-h-36 overflow-y-auto space-y-1">
-              {d.comparables.slice(0, 8).map((c) => (
-                <li key={c.token || c.title} className="flex justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1">
-                  <span className="truncate">{c.title.slice(0, 48)} · {toPersianNum(c.sqm)}م · {toPersianNum(c.perSqmMillion)} م/م</span>
-                  <a href={c.divarUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-emerald-700 font-bold flex items-center gap-0.5">
-                    دیوار <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-              ))}
+              {d.comparables.slice(0, 8).map((c) => {
+                const cUnit = Math.round(convertPricePerSqmToUnitRaw(c.perSqmMillion, areaUnit) * 10) / 10;
+                return (
+                  <li key={c.token || c.title} className="flex justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1">
+                    <span className="truncate">{c.title.slice(0, 48)} · {formatAreaShort(c.sqm, areaUnit)} · {toPersianNum(cUnit)} {uSuffix}</span>
+                    <a href={c.divarUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-emerald-700 font-bold flex items-center gap-0.5">
+                      دیوار <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           ) : d.insufficientLiveSample ? (
-            <p className="text-amber-700 dark:text-amber-400">مرجع داخلی، آبان ۱۴۰۵: متری {toPersianNum(d.referenceBenchmarkPerSqm)} میلیون. این عدد معیار معامله نیست.</p>
+            <p className="text-amber-700 dark:text-amber-400">{d.benchmarkLabelFa}: {toPersianNum(unitRef)} {uSuffix}{fxTag(unitRef)}. این عدد معیار معامله نیست.</p>
           ) : null}
           <p className="text-[10px] text-slate-500">{verdict.disclaimerFa || LABEL_ADS_NOT_TRANSACTIONS_FA}</p>
         </div>

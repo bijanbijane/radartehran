@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { Briefcase, CheckCircle2, Download, Info, Laptop, Lock, ShieldCheck, Trash2, UserCheck } from 'lucide-react';
-import type {
-  AccountPrivacyPreferences,
-  AccountProfileSettings,
-  ActiveWorkspaceMode,
-  DataRequestRecord,
-  UserRoleCapability,
-  UserSessionDevice,
+import {
+  DATA_REQUEST_STATUS_LABELS,
+  type AccountPrivacyPreferences,
+  type AccountProfileSettings,
+  type ActiveWorkspaceMode,
+  type DataRequestRecord,
+  type UserRoleCapability,
+  type UserSessionDevice,
 } from '../types/account.types';
 import { SystemHealthDashboardCard } from './SystemHealthDashboardCard';
 
@@ -228,7 +229,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
             {p.dataRequests.slice(0, 3).map((dr) => (
               <div key={dr.id} className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between gap-2">
                 <span>{dr.kind === 'export' ? 'درخواست خروجی داده' : 'درخواست حذف حساب'} · {dr.retentionNotesFa}</span>
-                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-bold shrink-0">{dr.status}</span>
+                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-bold shrink-0">{DATA_REQUEST_STATUS_LABELS[dr.status] || dr.status}</span>
               </div>
             ))}
           </div>

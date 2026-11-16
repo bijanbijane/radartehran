@@ -6,10 +6,12 @@
 import React, { useState, useMemo } from 'react';
 import { SlidersHorizontal, ChevronLeft, Scale } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
-import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
 import type { CityId, FeatureFlags } from '../../types/models';
 import type { ModuleSubTabId } from '../../navigation/registry/route.types';
+import { MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 import { useDealPriceByHoodIdMap } from '../useDealPriceByHoodIdMap';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
@@ -25,6 +27,12 @@ import {
 } from '../../features/home/sections/HomeMarketAndMethodologySections';
 import { selectCuratedHomeNeighborhoods } from '../../features/home/services/homeDataAdapter';
 import type { HomeNeighborhoodSelectionMode, HomeResilienceScenarioId } from '../../features/home/types/home.types';
+import {
+  getNeighborhoodPricePresentation,
+  getPriceBracketOptions,
+  matchesFinancialBracket,
+  type PriceBracketId,
+} from '../../features/neighborhoods/services/neighborhoodPricePresentation';
 
 export interface ProductHomeViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
@@ -52,22 +60,22 @@ export interface ProductHomeViewProps {
 
 export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
+  const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
   const [homeQuery, setHomeQuery] = useState<string>('');
   const [selectionMode, setSelectionMode] = useState<HomeNeighborhoodSelectionMode>('editorial_curated');
   const [resilienceScenario, setResilienceScenario] = useState<HomeResilienceScenarioId>('normal');
   const { comparisonArc } = useMapAdvancedOverlayState();
-  const [priceBracket, setPriceBracket] = useState<'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury'>('all');
+  const activeCity = p.activeCity || 'tehran';
+  const [priceBracket, setPriceBracket] = useState<PriceBracketId>('all');
   const [homePage, setHomePage] = useState<number>(1), [homePageSize, setHomePageSize] = useState<number>(6);
   const dealPriceByHoodId = useDealPriceByHoodIdMap(p.evaluatedNeighborhoods);
 
   const filteredFeaturedPool = useMemo(() => {
     let list = selectCuratedHomeNeighborhoods(p.evaluatedNeighborhoods, selectionMode);
-    const dealSqm = (h: EvaluatedNeighborhood) => dealPriceByHoodId.get(h.id) ?? h.buyPerSqm;
-    if (priceBracket === 'under5b') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) < 1000 : dealSqm(h) * p.targetSqm < 5000);
-    else if (priceBracket === '5to10b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot >= 1000 && tot <= 2000 : tot >= 5000 && tot <= 10000; });
-    else if (priceBracket === '10to20b') list = list.filter((h) => { const tot = p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) : dealSqm(h) * p.targetSqm; return p.mode === 'rent' ? tot > 2000 && tot <= 4000 : tot > 10000 && tot <= 20000; });
-    else if (priceBracket === 'luxury') list = list.filter((h) => p.mode === 'rent' ? h.rahn80m * (p.targetSqm / 80) > 4000 : dealSqm(h) * p.targetSqm > 20000);
+    if (priceBracket !== 'all') {
+      list = list.filter((h) => matchesFinancialBracket(h, p.mode, p.targetSqm, dealPriceByHoodId.get(h.id) ?? h.buyPerSqm, priceBracket));
+    }
     const q = homeQuery.trim();
     if (!q) return list;
     return list.filter((h) => matchesPersianSearch(h.name, q) || matchesPersianSearch(h.zone, q));
@@ -76,10 +84,11 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const homePaginationSlice = useMemo(() => computePaginationSlice(filteredFeaturedPool, homePage, homePageSize), [filteredFeaturedPool, homePage, homePageSize]);
   const featuredHoods = homePaginationSlice.items;
   const budgetDisplay = p.mode === 'buy'
-    ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} م.ت`)
-    : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : `${toPersianNum(p.totalRahnEquivalent)} م.ت رهن کامل`);
-  const fxBudget = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent, intlCurrency, radarLocale)})` : '';
+    ? (isEn ? `${p.buyTotalBudget.toLocaleString('en-US')}M IRT` : `${toPersianNum(p.buyTotalBudget)} میلیون تومان`)
+    : (isEn ? `${p.totalRahnEquivalent.toLocaleString('en-US')}M Deposit` : `${toPersianNum(p.totalRahnEquivalent)} میلیون تومان رهن کامل`);
+  const fxBudget = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent, intlCurrency, radarLocale, rateState.snapshot)})` : '';
   const topFeaturedScore = filteredFeaturedPool.length > 0 ? Math.max(...filteredFeaturedPool.map((h) => h.overallScore)) : undefined;
+  const activeCityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
 
   return (
     <div className="w-full max-w-[1280px] mx-auto px-4 py-6 sm:py-10 space-y-12 animate-fadeIn text-[#182522] dark:text-slate-100" data-testid="product-home-view">
@@ -87,7 +96,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
       <HomeHeroAndMapPreview
         evaluatedNeighborhoods={p.evaluatedNeighborhoods}
         selectedHood={p.selectedHood}
-        activeCity={p.activeCity || 'tehran'}
+        activeCity={activeCity}
         mode={p.mode}
         onSelectMode={p.setMode}
         onSelectNeighborhood={p.onSelectNeighborhood}
@@ -99,7 +108,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
       {/* 03 & 04. مسیرهای دسترسی سریع و نمای کلی بازار (Quick Access + Market Snapshot) */}
       <QuickAccessAndMarketSnapshotSection
         evaluatedNeighborhoods={p.evaluatedNeighborhoods}
-        activeCity={p.activeCity || 'tehran'}
+        activeCity={activeCity}
         resilienceScenario={resilienceScenario}
         onChangeResilienceScenario={setResilienceScenario}
         onNavigateView={p.onNavigateView}
@@ -111,7 +120,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <h2 id="home-featured-hoods-heading" className="text-lg sm:text-xl font-extrabold text-[#182522] dark:text-white">
-              محله‌های تهران را دقیق‌تر بشناسید
+              محله‌های {activeCityNameFa} را دقیق‌تر بشناسید
             </h2>
             <p className="text-xs text-[#34433E] dark:text-slate-400 mt-0.5">
               معرفی مستند محله‌ها بر پایه پوشش اطلاعاتی، کیفیت داده و تنوع جغرافیایی · بودجه فعال: <strong className="tabular-nums">{budgetDisplay}{fxBudget}</strong>
@@ -140,14 +149,8 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
 
         {/* Price Bracket Filter + Local Filter Input */}
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div role="group" aria-label="بازه قیمتی خرید" className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-            {[
-              { id: 'all' as const, label: 'همه قیمت‌ها' },
-              { id: 'under5b' as const, label: p.mode === 'rent' ? 'زیر ۱ م.ت' : 'زیر ۵ میلیارد' },
-              { id: '5to10b' as const, label: p.mode === 'rent' ? '۱ تا ۲ م.ت' : '۵ تا ۱۰ میلیارد' },
-              { id: '10to20b' as const, label: p.mode === 'rent' ? '۲ تا ۴ م.ت' : '۱۰ تا ۲۰ میلیارد' },
-              { id: 'luxury' as const, label: p.mode === 'rent' ? 'لوکس (۴+ م.ت)' : 'لوکس (۲۰+ میلیارد)' },
-            ].map((b) => (
+          <div role="group" aria-label={p.mode === 'rent' ? 'بازه رهن کامل' : 'بازه قیمت کل خرید'} className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+            {getPriceBracketOptions(p.mode, isEn).map((b) => (
               <button key={b.id} type="button" onClick={() => { setPriceBracket(b.id); setHomePage(1); }} className={`px-3 py-1 rounded-[8px] text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-[#176B63] text-white' : 'text-[#34433E] dark:text-slate-400 bg-[#F1F4F2] dark:bg-slate-800'}`}>
                 {b.label}
               </button>
@@ -171,10 +174,9 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {featuredHoods.map((hood) => {
-              const unitBuy = convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit);
-              const unitDeal = convertPricePerSqmToUnit(dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm, areaUnit);
+              const dealPerSqm = dealPriceByHoodId.get(hood.id) ?? hood.buyPerSqm;
+              const pres = getNeighborhoodPricePresentation({ hood, cityId: activeCity, dealPerSqm, targetSqm: p.targetSqm, areaUnit, intlCurrency, exchangeRateRef: rateState.snapshot });
               const explain = explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore });
-              void explain;
               const isSelected = p.selectedHood.id === hood.id;
               const isArcActive = comparisonArc.active &&
                 ((comparisonArc.hoodA?.id === p.selectedHood.id && comparisonArc.hoodB?.id === hood.id) ||
@@ -192,14 +194,19 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                     <p className="text-xs text-[#34433E] dark:text-slate-400 line-clamp-2 leading-relaxed">
                       {hood.pros || `محدوده شهری در ${hood.zone} با دسترسی مترو ${toPersianNum(hood.metro)}/۱۰ و شاخص هوا ${toPersianNum(hood.air)}/۱۰.`}
                     </p>
+                    <p className={`mt-1 text-[11px] truncate ${explain.nonCompensatoryWarningsFa[0] ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-[#176B63] dark:text-emerald-400 font-semibold'}`}>
+                      {explain.nonCompensatoryWarningsFa[0] || explain.primaryReasonFa}
+                    </p>
                     <div className="pt-2.5 border-t border-[#DCE3DF]/70 dark:border-slate-800 space-y-1 text-xs tabular-nums">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">{p.mode === 'buy' ? 'قیمت پیشنهادی (آبان ۱۴۰۵):' : `رهن کامل (${formatAreaShort(80, areaUnit)}):`}</span>
-                        <strong className="text-[#182522] dark:text-white">{p.mode === 'buy' ? `${toPersianNum(unitBuy)} م.ت/متر` : `${toPersianNum(hood.rahn80m)} م.ت`}</strong>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500">{p.mode === 'buy' ? `${pres.buyReferenceLabelFa}:` : `${pres.rahnAreaLabelFa}:`}</span>
+                        <strong className="text-[#182522] dark:text-white">{p.mode === 'buy' ? pres.buyValueWithUnitFa : pres.rahnValueWithUnitFa}</strong>
                       </div>
-                      <div className="text-[11px] text-slate-500">
-                        سناریو v6.4 (غیرثبتی): متری {toPersianNum(unitDeal)} م.ت
+                      <div className="flex justify-between gap-2 text-[11px] text-slate-500">
+                        <span>{p.mode === 'buy' ? `${pres.rahnAreaLabelFa}:` : `${pres.buyReferenceLabelFa}:`}</span>
+                        <span>{p.mode === 'buy' ? pres.rahnValueWithUnitFa : pres.buyValueWithUnitFa}</span>
                       </div>
+                      <div className="text-[11px] text-slate-500" title="سناریو v6.4 (برآورد غیرثبتی)">{pres.dealScenarioLineFa}</div>
                     </div>
                   </div>
                   <div className="mt-3 pt-2.5 border-t border-[#DCE3DF]/70 dark:border-slate-800 flex items-center justify-between text-xs">
@@ -235,14 +242,14 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
 
       {/* بودجه‌سنج و راستی‌آزمایی آگهی (ابزارهای تحلیلی متصل به سرویس‌های اصلی) */}
       <section aria-label="ابزارهای تطابق بودجه و بررسی آگهی" className="space-y-4">
-        <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={p.activeCity} selectedHoodId={p.selectedHood?.id} />
-        <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={p.activeCity || 'tehran'} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
+        <BudgetFitVerdict neighborhoods={p.evaluatedNeighborhoods} mode={p.mode} budgetMillion={p.mode === 'buy' ? p.buyTotalBudget : p.totalRahnEquivalent} targetSqm={p.targetSqm} city={activeCity} selectedHoodId={p.selectedHood?.id} />
+        <ListingVerdictHero evaluatedNeighborhoods={p.evaluatedNeighborhoods} cityKey={activeCity} defaultHoodName={p.selectedHood?.name} initialListingText={p.initialListingVerdictText} onOpenFullModal={p.onOpenListingVerifier} />
       </section>
 
       {/* 06, 07, 08, 09. گزارش‌ها، املاک و خدمات، روش‌شناسی داده و فوتر */}
       <ResearchServicesAndMethodologySection
         evaluatedNeighborhoods={p.evaluatedNeighborhoods}
-        activeCity={p.activeCity || 'tehran'}
+        activeCity={activeCity}
         resilienceScenario={resilienceScenario}
         onChangeResilienceScenario={setResilienceScenario}
         onNavigateView={p.onNavigateView}

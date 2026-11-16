@@ -61,20 +61,24 @@ export function calcDistanceKm( lat1: number | null, lon1: number | null, lat2: 
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2); return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10; }
-export interface LocalLandmark { name: string; category: 'مترو و حمل‌ونقل' | 'پارک و فضای سبز' | 'مرکز خرید و رفاهی' | 'درمانی و بیمارستان'; latOffset: number; lngOffset: number; desc: string; }
+export interface LocalLandmark { id: string; name: string; category: 'مترو و حمل‌ونقل' | 'پارک و فضای سبز' | 'مرکز خرید و رفاهی' | 'درمانی و بیمارستان'; latOffset: number; lngOffset: number; desc: string; }
 export function getNeighborhoodLandmarks(hood: Neighborhood): LocalLandmark[] { return [
     {
+      id: `lm-transit-${hood.id}`,
       name: `ایستگاه حمل‌ونقل و دسترسی اصلی ${hood.name}`,
       category: 'مترو و حمل‌ونقل', latOffset: 0.0022, lngOffset: 0.0025, desc:
         hood.metro >= 8
           ? 'دسترسی مستقیم به ایستگاه مترو و خطوط بی‌آرتی با فاصله کمتر از ۱۰ دقیقه پیاده‌روی'
           : 'ایستگاه تاکسی و اتوبوس خطی به سمت مترو و بزرگراه‌های اصلی', }, {
+      id: `lm-park-${hood.id}`,
       name: `بوستان و فضای سبز مرکزی ${hood.name}`,
       category: 'پارک و فضای سبز', latOffset: -0.0025, lngOffset: 0.0018,
       desc: `مسیر پیاده‌روی، فضای سبز خانوادگی و امکانات ورزشی محلی (امتیاز هوا: ${toPersianNum(hood.air)} از ۱۰)`,
     }, {
+      id: `lm-shopping-${hood.id}`,
       name: `مرکز خرید و بازار روز ${hood.name}`,
       category: 'مرکز خرید و رفاهی', latOffset: 0.0015, lngOffset: -0.003, desc: 'مجتمع تجاری، هایپرمارکت و فروشگاه‌های زنجیره‌ای تامین مایحتاج روزانه', }, {
+      id: `lm-medical-${hood.id}`,
       name: `مرکز درمانی و داروخانه شبانه‌روزی ${hood.name}`,
       category: 'درمانی و بیمارستان', latOffset: -0.002, lngOffset: -0.0022, desc: 'کلینیک تخصصی و داروخانه شبانه‌روزی فعال در محدوده محله', }, ]; }
 export function generateLocalNeighborhoodAnalysis( hood: Neighborhood, mode: 'rent' | 'buy', userBudget: number, targetSqm: number, distKm: number | null, workHubName: string
@@ -93,7 +97,7 @@ export function generateLocalNeighborhoodAnalysis( hood: Neighborhood, mode: 're
   }
   const commuteVerdict =
     distKm !== null
-      ? `فاصله هوایی محله ${hood.name} تا ${workHubName} حدود ${toPersianNum(distKm)} کیلومتر است. با توجه به امتیاز حمل‌ونقل عمومی (${toPersianNum(hood.metro)} از ۱۰)، زمان تردد روزانه شما ${distKm <= 7 ? 'بسیار کوتاه و ایده‌آل' : distKm <= 13 ? 'متوسط و منطقی' : 'نسبتاً طولانی (پیشنهاد استفاده از مترو)'} خواهد بود.`
+      ? `فاصله مستقیم محله ${hood.name} تا ${workHubName} حدود ${toPersianNum(distKm)} کیلومتر است. با توجه به امتیاز حمل‌ونقل عمومی (${toPersianNum(hood.metro)} از ۱۰)، زمان تردد روزانه شما ${distKm <= 7 ? 'بسیار کوتاه و ایده‌آل' : distKm <= 13 ? 'متوسط و منطقی' : 'نسبتاً طولانی (پیشنهاد استفاده از مترو)'} خواهد بود.`
       : 'با انتخاب منطقه محل کار در نوار بالایی، فاصله دقیق و وضعیت تردد روزانه شما به صورت خودکار محاسبه می‌شود.'; return { annualYieldPercent, prRatio, budgetVerdict, commuteVerdict,
     negotiationTip: `در مذاکرات فعلی محله ${hood.name}، واحدهای دارای پارکینگ سندی در فرعی‌های دنج تا ۵٪ بالاتر از میانگین و واحدهای بدون آسانسور یا طبقه اول تا ۱۵٪ زیر میانگین محله معامله می‌شوند.`,
   }; }

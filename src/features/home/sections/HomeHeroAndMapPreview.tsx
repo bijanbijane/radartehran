@@ -5,6 +5,7 @@
 import React, { useState, useMemo } from 'react';
 import { Map as MapIcon, Search, Layers, ArrowLeft, X, Compass } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import { MULTI_CITY_CONFIGS } from '../../../data/multiCityData';
 import type { CityId } from '../../../types/models';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
 import type { ModuleSubTabId } from '../../../navigation/registry/route.types';
@@ -28,6 +29,11 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
   const [searchInput, setSearchInput] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [previewLayer, setPreviewLayer] = useState<'price' | 'budget' | 'air'>('price');
+  const activeCityNameFa = MULTI_CITY_CONFIGS[p.activeCity]?.nameFa || 'تهران';
+  const searchExampleNames = p.evaluatedNeighborhoods.slice(0, 2).map((h) => h.name);
+  const searchPlaceholder = searchExampleNames.length >= 2
+    ? `مثلاً: محله ${searchExampleNames[0]} یا ${searchExampleNames[1]}...`
+    : `جست‌وجوی محله در ${activeCityNameFa}...`;
 
   const categorizedResults = useMemo(
     () => executeCategorizedHomeSearch(searchInput, p.evaluatedNeighborhoods, p.activeCity),
@@ -96,7 +102,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
               نقشه، اطلاعات محله‌ها، داده‌های بازار و املاک را کنار هم بررسی کنید.
             </p>
             <p className="text-xs sm:text-sm text-[#34433E] dark:text-slate-400 leading-[1.75]">
-              رادار تهران بستری برای شناخت مکانی و تحلیلی بازار املاک و اطلاعات شهری است.
+              رادار {activeCityNameFa} بستری برای شناخت مکانی و تحلیلی بازار املاک و اطلاعات شهری است.
             </p>
           </div>
 
@@ -109,7 +115,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
               <input
                 id="home-global-search-input" data-testid="home-global-search-input" type="text"
                 value={searchInput} onChange={(e) => { setSearchInput(e.target.value); setActiveIndex(0); }} onKeyDown={handleSearchKeyDown}
-                placeholder="مثلاً: محله ونک، منطقه ۵، خیابان پاسداران..."
+                placeholder={searchPlaceholder}
                 aria-label="جست‌وجوی سراسری محله، منطقه، خیابان یا گزارش"
                 className="w-full bg-transparent text-xs sm:text-sm text-[#182522] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
               />
@@ -211,7 +217,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
 
                 {previewPins.map(({ hood, xPct, yPct }) => {
                   const isCurrent = hood.id === p.selectedHood.id;
-                  const metricText = previewLayer === 'price' ? `${toPersianNum(hood.buyPerSqm)} م` : previewLayer === 'budget' ? (hood.status === 'green' ? 'در بودجه' : 'فراتر') : `هوا ${toPersianNum(hood.air)}`;
+                  const metricText = previewLayer === 'price' ? `${toPersianNum(hood.buyPerSqm)} م/متر` : previewLayer === 'budget' ? (hood.status === 'green' ? 'در بودجه' : 'فراتر') : `هوا ${toPersianNum(hood.air)}`;
                   return (
                     <button
                       key={hood.id} type="button" style={{ left: `${xPct}%`, top: `${yPct}%` }}
@@ -228,10 +234,10 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
 
               <div className="relative z-10 flex items-center justify-between gap-2 bg-white/95 dark:bg-slate-900/95 px-3 py-2 rounded-[8px] border border-[#DCE3DF] dark:border-slate-800 text-xs">
                 <div className="text-[#34433E] dark:text-slate-300 truncate">
-                  کانون فعلی: <strong className="text-[#182522] dark:text-white">محله {p.selectedHood.name}</strong> · متری {toPersianNum(p.selectedHood.buyPerSqm)} م.ت
+                  کانون فعلی: <strong className="text-[#182522] dark:text-white">محله {p.selectedHood.name}</strong> · {toPersianNum(p.selectedHood.buyPerSqm)} میلیون تومان / مترمربع
                 </div>
                 <button type="button" onClick={() => p.onNavigateView('map')} className="text-[#176B63] dark:text-emerald-400 font-bold flex items-center gap-1 hover:underline shrink-0 cursor-pointer">
-                  <span>باز کردن نقشه اصلی (/explore/map)</span> <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>باز کردن نقشه اصلی</span> <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>

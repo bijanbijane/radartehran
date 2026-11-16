@@ -1,5 +1,20 @@
 /** Canonical listing samples and the dated Tehran reference table. OP-DEC-001: formatMillionTomanAsIntlCurrency */
 import { clampNumber } from '../utils/security';
+import {
+  parseListingPriceInput,
+  type ListingPriceInput,
+  type ParsedRentPrice,
+  type ParsedSalePrice,
+  type PriceSourceType,
+} from './parsers/listingPriceParser';
+
+export {
+  parseListingPriceInput,
+  type ListingPriceInput,
+  type ParsedRentPrice,
+  type ParsedSalePrice,
+  type PriceSourceType,
+};
 
 export interface NeighborhoodListingSource {
   id: number;
@@ -9,10 +24,27 @@ export interface NeighborhoodListingSource {
     id: string;
     sqm: number;
     title: string;
+    priceText?: string;
     discountPercent?: number;
     price?: number;
     type?: 'خرید' | 'اجاره';
+    createdAtIso?: string;
+    street?: string;
   }> | null;
+}
+
+export interface NeighborhoodMarketSample {
+  id: string;
+  sqm: number;
+  askingTotalMillion: number;
+  perSqmMillion?: number | null;
+  depositMillion?: number | null;
+  monthlyRentMillion?: number | null;
+  transactionType: 'sale' | 'rent';
+  priceSourceType: string;
+  description: string;
+  createdAtIso?: string;
+  street?: string;
 }
 
 export interface TehranReferencePriceRow {
@@ -56,13 +88,32 @@ export function lookupTehranReferencePrice(hoodId: number): TehranReferencePrice
   return TEHRAN_DATED_REFERENCE_PRICES.find((row) => row.hoodId === hoodId);
 }
 
+export function lookupMatchingDatedReferencePrice(
+  cityId: string,
+  hoodId: number,
+  displayedPricePerSqm?: number,
+): TehranReferencePriceRow | undefined {
+  if (cityId !== 'tehran') return undefined;
+  const row = lookupTehranReferencePrice(hoodId);
+  if (!row) return undefined;
+  if (displayedPricePerSqm !== undefined && row.millionTomanPerSqm !== displayedPricePerSqm) return undefined;
+  return row;
+}
+
 function faDigits(n: number): string {
   return String(Math.max(0, Math.floor(n))).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)] ?? d);
 }
 
 /** Map bubble and inspector: internal reference, date or none, live ads, zero registered deals. */
-export function formatNeighborhoodPriceTruthFa(hoodId: number, liveListingCount: number): string {
-  const row = lookupTehranReferencePrice(hoodId);
+export function formatNeighborhoodPriceTruthFa(
+  hoodId: number,
+  liveListingCount: number,
+  cityId?: string,
+  displayedPricePerSqm?: number,
+): string {
+  const row = cityId !== undefined || displayedPricePerSqm !== undefined
+    ? lookupMatchingDatedReferencePrice(cityId ?? 'tehran', hoodId, displayedPricePerSqm)
+    : lookupTehranReferencePrice(hoodId);
   const when = row ? `به‌روزرسانی ${row.asOfJalali}` : 'بدون تاریخ به‌روزرسانی';
   return `مرجع داخلی · ${when} · ${faDigits(liveListingCount)} آگهی زنده · ۰ معامله ثبت‌شده`;
 }
@@ -74,34 +125,95 @@ export function isLiveDivarBargainId(id: unknown): boolean {
 /** Illustrative seed bargains — must not be treated as observed market data. */
 export function buildIllustrativeSeedListingSamples(
   hood?: NeighborhoodListingSource | null,
-): Array<{ id: string; sqm: number; askingTotalMillion: number; description: string }> {
+  transactionType: 'sale' | 'rent' = 'sale',
+): NeighborhoodMarketSample[] {
   if (!hood || !Array.isArray(hood.bargains) || hood.bargains.length === 0) return [];
   const baseBuy = clampNumber(hood.buyPerSqm, 10, 2000, 120);
-  return hood.bargains.map((b) => ({
-    id: `illus-${b.id}`,
-    sqm: b.sqm,
-    askingTotalMillion: Math.round(b.sqm * baseBuy * (1 - (b.discountPercent || 10) / 100)),
-    description: `[نمونهٔ نمایشی] ${b.sqm} متر ${b.title}`,
-  }));
+  const filtered = hood.bargains.filter((b) =>
+    !isLiveDivarBargainId(b.id) && (transactionType === 'rent' ? b.type === 'اجاره' : b.type !== 'اجاره'),
+  );
+  return filtered.map((b) => {
+    const parsed = parseListingPriceInput({ priceText: b.priceText, explicitTotalMillion: b.price, sqm: b.sqm, transactionType });
+    const fallbackTotal = Math.round(b.sqm * baseBuy * (1 - (b.discountPercent || 10) / 100));
+    const askingTotalMillion =
+      transactionType === 'sale'
+        ? Math.round((parsed as ParsedSalePrice).totalMillion ?? fallbackTotal)
+        : Math.round((parsed as ParsedRentPrice).depositMillion ?? fallbackTotal);
+    return {
+      id: `illus-${b.id}`,
+      sqm: b.sqm,
+      askingTotalMillion,
+      perSqmMillion: transactionType === 'sale' ? ((parsed as ParsedSalePrice).perSqmMillion ?? Math.round((askingTotalMillion / Math.max(20, b.sqm)) * 10) / 10) : null,
+      depositMillion: transactionType === 'rent' ? (parsed as ParsedRentPrice).depositMillion : null,
+      monthlyRentMillion: transactionType === 'rent' ? (parsed as ParsedRentPrice).monthlyRentMillion : null,
+      transactionType,
+      priceSourceType: 'ILLUSTRATIVE_SEED',
+      description: `[نمونهٔ نمایشی] ${b.sqm} متر ${b.title}`,
+      createdAtIso: b.createdAtIso,
+      street: b.street,
+    };
+  });
 }
 
 /**
- * Market samples are only live `live-divar-*` rows.
+ * Market samples are only live `live-divar-*` rows with real extracted prices.
  * Seed catalog bargains stay out of the mean, IQR, and coverage index.
  */
 export function buildNeighborhoodListingSamples(
   hood?: NeighborhoodListingSource | null,
-): Array<{ id: string; sqm: number; askingTotalMillion: number; description: string }> {
+  transactionType: 'sale' | 'rent' = 'sale',
+): NeighborhoodMarketSample[] {
   if (!hood || !Array.isArray(hood.bargains) || hood.bargains.length === 0) return [];
-  const live = hood.bargains.filter((b) => isLiveDivarBargainId(b.id));
+  const live = hood.bargains.filter(
+    (b) => isLiveDivarBargainId(b.id) && (transactionType === 'rent' ? b.type === 'اجاره' : b.type !== 'اجاره'),
+  );
   if (live.length === 0) return [];
-  const baseBuy = clampNumber(hood.buyPerSqm, 10, 2000, 120);
-  return live.map((b) => ({
-    id: b.id,
-    sqm: b.sqm,
-    askingTotalMillion: Math.round(b.sqm * baseBuy * (1 - (b.discountPercent || 10) / 100)),
-    description: `${b.sqm} متر ${b.title}`,
-  }));
+  const out: NeighborhoodMarketSample[] = [];
+  for (const b of live) {
+    if (!(typeof b.sqm === 'number' && Number.isFinite(b.sqm) && b.sqm > 0)) continue;
+    const parsed = parseListingPriceInput({
+      priceText: b.priceText,
+      explicitTotalMillion: b.price,
+      sqm: b.sqm,
+      transactionType,
+    });
+    if (transactionType === 'sale') {
+      const sale = parsed as ParsedSalePrice;
+      if ((sale.priceSourceType === 'EXPLICIT_PER_SQM' || sale.priceSourceType === 'EXPLICIT_TOTAL') && sale.totalMillion !== null && sale.totalMillion > 0) {
+        out.push({
+          id: b.id,
+          sqm: b.sqm,
+          askingTotalMillion: Math.round(sale.totalMillion),
+          perSqmMillion: sale.perSqmMillion,
+          depositMillion: null,
+          monthlyRentMillion: null,
+          transactionType: 'sale',
+          priceSourceType: sale.priceSourceType,
+          description: `${b.sqm} متر ${b.title}`,
+          createdAtIso: b.createdAtIso,
+          street: b.street,
+        });
+      }
+    } else {
+      const rent = parsed as ParsedRentPrice;
+      if ((rent.priceSourceType === 'FULL_DEPOSIT' || rent.priceSourceType === 'EXPLICIT_RENT') && (rent.depositMillion !== null || rent.monthlyRentMillion !== null)) {
+        out.push({
+          id: b.id,
+          sqm: b.sqm,
+          askingTotalMillion: Math.round(rent.depositMillion ?? 0),
+          perSqmMillion: null,
+          depositMillion: rent.depositMillion,
+          monthlyRentMillion: rent.monthlyRentMillion,
+          transactionType: 'rent',
+          priceSourceType: rent.priceSourceType,
+          description: `${b.sqm} متر ${b.title}`,
+          createdAtIso: b.createdAtIso,
+          street: b.street,
+        });
+      }
+    }
+  }
+  return out;
 }
 
 const PUBLIC_HOODS: ReadonlyArray<readonly [number, string]> = [
@@ -117,7 +229,7 @@ const PUBLIC_COMPARES: ReadonlyArray<readonly [string, number, number]> = [
   ['vanak-vs-yousef-abad', 10, 8],
 ];
 
-export const HONEST_ASKING_SENTENCE_FA = 'این عدد آگهی میانگین داخلی است، معامله ثبت‌شده نیست، تاریخ به‌روزرسانی آبان ۱۴۰۵ است.';
+export const HONEST_ASKING_SENTENCE_FA = 'این ارقام مرجع داخلی یا برآورد هستند و معادل معامله ثبت‌شده نیستند؛ تاریخ هر مرجع فقط در صورت ثبت صریح برای همان داده نمایش داده می‌شود.';
 
 export interface PublicSeoCard { path: string; title: string; description: string }
 export type BudgetFitKind = 'fits' | 'tight' | 'over';
@@ -165,7 +277,7 @@ export function seoForDatedHood(hoodId: number): PublicSeoCard | null {
   const row = lookupTehranReferencePrice(hoodId);
   const path = tehranPublicPathForHood(hoodId);
   if (!row || !path) return null;
-  return seoCard(path, `قیمت خرید خانه در ${row.nameFa} | مرجع داخلی آبان ۱۴۰۵ | رادار تهران`, `متری ${faDigits(row.millionTomanPerSqm)} میلیون تومان.`);
+  return seoCard(path, `قیمت خرید خانه در ${row.nameFa} | مرجع داخلی ${row.asOfJalali} | رادار تهران`, `متری ${faDigits(row.millionTomanPerSqm)} میلیون تومان (تاریخ مرجع ${row.asOfJalali}).`);
 }
 
 export function seoForDatedCompare(leftId: number, rightId: number): PublicSeoCard | null {
@@ -173,7 +285,12 @@ export function seoForDatedCompare(leftId: number, rightId: number): PublicSeoCa
   const left = lookupTehranReferencePrice(leftId);
   const right = lookupTehranReferencePrice(rightId);
   if (!path || !left || !right) return null;
-  return seoCard(path, `قیمت خانه ${left.nameFa} یا ${right.nameFa} | مرجع داخلی آبان ۱۴۰۵ | رادار تهران`, `${left.nameFa} متری ${faDigits(left.millionTomanPerSqm)} و ${right.nameFa} متری ${faDigits(right.millionTomanPerSqm)} میلیون تومان.`);
+  const sameDate = left.asOfJalali === right.asOfJalali;
+  const titleDate = sameDate ? ` | مرجع داخلی ${left.asOfJalali}` : '';
+  const detail = sameDate
+    ? `${left.nameFa} متری ${faDigits(left.millionTomanPerSqm)} و ${right.nameFa} متری ${faDigits(right.millionTomanPerSqm)} میلیون تومان (تاریخ مرجع ${left.asOfJalali}).`
+    : `${left.nameFa} متری ${faDigits(left.millionTomanPerSqm)} (${left.asOfJalali}) و ${right.nameFa} متری ${faDigits(right.millionTomanPerSqm)} میلیون تومان (${right.asOfJalali}).`;
+  return seoCard(path, `قیمت خانه ${left.nameFa} یا ${right.nameFa}${titleDate} | رادار تهران`, detail);
 }
 
 export function seoFromPublicPath(pathname: string): PublicSeoCard | null {
@@ -209,8 +326,15 @@ export function budgetVerdictShareUrl(lines: readonly { hoodId: number }[]): str
   return path ? `https://radartehran.ir${path}` : 'https://radartehran.ir';
 }
 
-export function formatBudgetVerdictShareText(lines: readonly BudgetFitLine[], mode: 'buy' | 'rent', budgetMillion: number, targetSqm: number): string {
-  const head = `با بودجه ${faDigits(Math.round(budgetMillion))} میلیون برای ${mode === 'rent' ? 'رهن' : 'خرید'}، حدود ${faDigits(Math.round(targetSqm || 80))} متر:`;
+export function formatBudgetVerdictShareText(
+  lines: readonly BudgetFitLine[],
+  mode: 'buy' | 'rent',
+  budgetMillion: number,
+  targetSqm: number,
+  placeFa?: string,
+): string {
+  const scope = placeFa ? ` در ${placeFa}` : '';
+  const head = `با بودجه ${faDigits(Math.round(budgetMillion))} میلیون تومان برای ${mode === 'rent' ? 'رهن کامل' : 'خرید'}${scope}، حدود ${faDigits(Math.round(targetSqm || 80))} متر:`;
   const body = lines.map((line, index) => `${faDigits(index + 1)}. ${line.nameFa}: ${line.fitLabelFa}. ${line.referenceLabelFa}. ${line.truthFa}`).join('\n');
   return `${head}\n${body}\n${HONEST_ASKING_SENTENCE_FA}\n${budgetVerdictShareUrl(lines)}`;
 }

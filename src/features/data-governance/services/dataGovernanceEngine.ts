@@ -108,6 +108,12 @@ export class DataGovernanceEngine {
   }
 
   private seedInitialClaimsLineageAndConflicts(): void {
+    this.claims.set('claim-saadat-median-ask', {
+      id: 'claim-saadat-median-ask', entityType: 'MARKET_INDICATOR', entityId: 'saadat-abad', attribute: 'medianAskingPricePerSqm',
+      value: 142, unit: 'MILLION_TOMAN_PER_SQM', sourceId: 'src-first-party-listings', sourceType: 'FIRST_PARTY',
+      evidenceRefs: ['ev-101'], observedAt: '2026-04-12T06:00:00Z', validFrom: '2026-04-01T00:00:00Z',
+      recordedAt: '2026-04-12T06:05:00Z', verificationStatus: 'VERIFIED', confidenceLevel: 'HIGH', createdBy: 'ingestion-worker',
+    });
     this.evidences.set('ev-101', {
       id: 'ev-101', evidenceType: 'DATASET', sourceId: 'src-first-party-listings',
       storageRef: 'vault://snapshots/saadat-abad-1405-08.json', contentHash: 'sha256:9f86d081884c7d659a2feaa0c55ad015',
@@ -225,9 +231,26 @@ export class DataGovernanceEngine {
 
   public getSources(): DataSourceRecord[] { return Array.from(this.sources.values()); }
   public getClaims(): DataClaimRecord[] { return Array.from(this.claims.values()); }
+  public getEvidences(): EvidenceRecord[] { return Array.from(this.evidences.values()); }
   public getReconciliationCases(): ReconciliationCase[] { return Array.from(this.reconciliationCases.values()); }
   public getEntityVersions(entityId?: string): EntityVersionRecord[] { return entityId ? this.entityVersions.filter((v) => v.entityId === entityId) : this.entityVersions; }
-  public getLineageForEntity(entityId: string): ProvenanceEdge[] { return this.lineageEdges.filter((e) => e.childId === entityId || e.parentId.includes('saadat') || e.childId.includes('mkt-snapshot')); }
+  public getLineageForEntity(entityId: string | null | undefined): ProvenanceEdge[] {
+    if (!entityId) return [];
+    const connectedNodes = new Set<string>([entityId]);
+    const collected: ProvenanceEdge[] = [];
+    let added = true;
+    while (added) {
+      added = false;
+      for (const edge of this.lineageEdges) {
+        if (connectedNodes.has(edge.childId) && !collected.includes(edge)) {
+          collected.push(edge);
+          connectedNodes.add(edge.parentId);
+          added = true;
+        }
+      }
+    }
+    return collected.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
   public getMethodologies(): MethodologyRecord[] { return Array.from(this.methodologies.values()); }
   public getCorrectionProposals(): DataCorrectionProposal[] { return Array.from(this.correctionProposals.values()); }
   public getAuditLogs() { return this.auditLogs; }

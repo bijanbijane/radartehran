@@ -240,15 +240,14 @@ export function evaluateCasperDecisionIntelligence(
     { code: 'UNKNOWN_DATA', labelFa: '۱۲. عدم قطعیت ساختاری (Unknown / Tail Risk)', metricNameFa: 'شوک‌های کلان ارزی، مقرراتی و ریسک طرف معامله', valueDisplayFa: 'غیرقابل پیش‌بینی قطعی با الگوریتم', sourceFa: 'عدم قطعیت ذاتی اقتصاد کلان و حقوق قراردادها', confidencePct: 30, marginOfErrorFa: 'عدم قطعیت ساختاری', statusTone: 'uncertain', explanationFa: 'ریسک تکانه ارزی، تغییر قوانین مالیاتی یا توقیف ثبتی فقط با استعلام رسمی دفترخانه پوشش می‌یابد.' },
   ];
 
-  const curSym = intlCurrency === 'EUR' ? '€' : intlCurrency === 'USD' ? '$' : intlCurrency === 'AED' ? 'AED ' : '';
   return {
     hoodId: hood.id, hoodNameFa: hood.name, zoneFa: hood.zone,
     epistemicReliabilityIndex: epistemicCertaintyScore, overallDecisionScore, decisionVerdictFa, decisionSummaryFa,
     askingPerSqmMillion: askingPerSqm, dealBaselinePerSqmMillion: dealPerSqm,
-    askingTotalMillion, askingTotalIntl: `${curSym}${formatMillionTomanAsIntlCurrency(askingTotalMillion, intlCurrency, 'en')}`,
-    dealBaselineTotalMillion, dealBaselineTotalIntl: `${curSym}${formatMillionTomanAsIntlCurrency(dealBaselineTotalMillion, intlCurrency, 'en')}`,
-    scenarioTargetTotalMillion, scenarioTargetTotalIntl: `${curSym}${formatMillionTomanAsIntlCurrency(scenarioTargetTotalMillion, intlCurrency, 'en')}`,
-    negotiationSavingsMillion, negotiationSavingsIntl: `${curSym}${formatMillionTomanAsIntlCurrency(negotiationSavingsMillion, intlCurrency, 'en')}`,
+    askingTotalMillion, askingTotalIntl: formatMillionTomanAsIntlCurrency(askingTotalMillion, intlCurrency, 'en'),
+    dealBaselineTotalMillion, dealBaselineTotalIntl: formatMillionTomanAsIntlCurrency(dealBaselineTotalMillion, intlCurrency, 'en'),
+    scenarioTargetTotalMillion, scenarioTargetTotalIntl: formatMillionTomanAsIntlCurrency(scenarioTargetTotalMillion, intlCurrency, 'en'),
+    negotiationSavingsMillion, negotiationSavingsIntl: formatMillionTomanAsIntlCurrency(negotiationSavingsMillion, intlCurrency, 'en'),
     grossRentalYieldPct, netAnnualCarryPct, roundTripFrictionPct: ROUND_TRIP_TRANSACTION_FRICTION_PCT,
     fastSaleFactorUsed, estimatedDaysToExit, criteriaScores, biasAlerts, counterfactuals, epistemicLedger,
   };

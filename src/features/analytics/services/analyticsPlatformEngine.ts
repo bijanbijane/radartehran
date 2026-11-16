@@ -7,87 +7,16 @@
 import {
   AnalyticalIngestionPayload,
   DataPipelineRecord,
-  DimPlaceScd2Record,
   DistributionSummaryStats,
   MetricSnapshotResponse,
-  OfficialMetricDefinition,
   PeriodComparisonResult,
   PredictiveModelRegistryEntry,
   ReproducibleAnalysisDefinition,
 } from '../models/analytics.types';
 import { SampleSufficiencyStatus } from '../../data-governance/models/dataGovernance.types';
+import { OFFICIAL_METRIC_REGISTRY, SCD2_PLACE_DIMENSIONS } from './analyticsRegistrySeeds';
 
-export const OFFICIAL_METRIC_REGISTRY: OfficialMetricDefinition[] = [
-  {
-    id: 'met-1', metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
-    displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
-    definitionFa: 'میانه (صدک ۵۰) قیمت پیشنهادی هر مترمربع در آگهی‌های فعال و غیرتکراری پس از حذف داده‌های پرت IQR.',
-    domain: 'MARKET_ANALYTICS', financialConcept: 'ASKING_PRICE', formulaFa: 'Median(TrimmedIQR(AskingPricePerSqm))',
-    grain: 'PLACE_X_MONTH_X_PROPERTY_TYPE', unit: 'MILLION_TOMAN_PER_SQM', currency: 'TOMAN',
-    filtersFa: ['آگهی فعال', 'حذف تکراری با Hash ملک یکتا', 'حذف پرت خارج از 1.5*IQR'],
-    sourcePolicyFa: 'فقط آگهی‌های دارای متراژ و قیمت معتبر در لایه Silver/Gold',
-    minSampleThreshold: 15, methodologyVersion: '2.1', updateFrequencyFa: 'روزانه',
-    limitationsFa: ['نشان‌دهنده قیمت پیشنهادی فروشنده است و معادل قیمت قطعی معامله ثبتی نیست.'],
-    owner: 'Market Metric Owner', status: 'ACTIVE',
-  },
-  {
-    id: 'met-2', metricCode: 'MARKET.ACTIVE_LISTING_COUNT',
-    displayNameFa: 'تعداد آگهی فعال و ملک یکتا',
-    definitionFa: 'تعداد آگهی‌های دارای وضعیت فعال و مجاز در زمان Snapshot با تفکیک ملک یکتا.',
-    domain: 'MARKET_ANALYTICS', financialConcept: 'SUPPLY_VOLUME', formulaFa: 'Count(Distinct ActiveListingId)',
-    grain: 'PLACE_X_MONTH_X_PROPERTY_TYPE', unit: 'LISTING_COUNT',
-    filtersFa: ['وضعیت فعال', 'غیرتکراری', 'انتشار عمومی مجاز'], sourcePolicyFa: 'Listing Domain Snapshot',
-    minSampleThreshold: 5, methodologyVersion: '1.2', updateFrequencyFa: 'روزانه',
-    limitationsFa: ['نشان‌دهنده حجم عرضه قابل مشاهده است، نه تقاضای خرید بازار.'],
-    owner: 'Market Metric Owner', status: 'ACTIVE',
-  },
-  {
-    id: 'met-3', metricCode: 'MARKET.PRICE_REDUCTION_RATE',
-    displayNameFa: 'نرخ آگهی‌های دارای کاهش قیمت معتبر',
-    definitionFa: 'نسبت آگهی‌های دارای کاهش قیمت واقعی مالک به کل آگهی‌های واجد تاریخچه قابل مقایسه.',
-    domain: 'MARKET_ANALYTICS', financialConcept: 'ASKING_PRICE',
-    formulaFa: '(ListingsWithValidPriceReduction / EligibleListingsWithComparableHistory) * 100',
-    grain: 'PLACE_X_MONTH_X_PROPERTY_TYPE', unit: 'PERCENT',
-    numeratorFa: 'آگهی‌های دارای کاهش قیمت معتبر مالک',
-    denominatorFa: 'آگهی‌های واجد تاریخچه قیمت قابل مقایسه در همان دوره',
-    filtersFa: ['حذف بازنشرهای ساختگی', 'ثبات واحد پول و متراژ'],
-    sourcePolicyFa: 'FactPriceObservation + FactListingSnapshot',
-    minSampleThreshold: 15, methodologyVersion: '1.1', updateFrequencyFa: 'هفتگی',
-    limitationsFa: ['آگهی‌های فاقد سابقه قیمت در مخرج کسر قرار نمی‌گیرند.'],
-    owner: 'Market Metric Owner', status: 'ACTIVE',
-  },
-  {
-    id: 'met-4', metricCode: 'VALUATION.HEDONIC_ESTIMATE_PER_SQM',
-    displayNameFa: 'برآورد ارزش هدونیک هر مترمربع (سناریو معامله v6.4)',
-    definitionFa: 'خروجی مدل هدونیک رادار بر اساس مشخصات ملک و ضریب تعدیل محله (مستقل از قیمت پیشنهادی آگهی).',
-    domain: 'VALUATION_ANALYTICS', financialConcept: 'VALUATION_ESTIMATE',
-    formulaFa: 'HedonicValuation(BasePrice, Age, Floor, Amenities)',
-    grain: 'VALUATION_RUN_EVENT', unit: 'MILLION_TOMAN_PER_SQM', currency: 'TOMAN',
-    filtersFa: ['ورودی کامل مشخصات کالبدی'], sourcePolicyFa: 'Hedonic Pricing Engine v1405.1',
-    minSampleThreshold: 10, methodologyVersion: '1405.1', updateFrequencyFa: 'لحظه‌ای / دوره‌ای',
-    limitationsFa: ['برآورد آماری است و سند معامله یا کارشناسی رسمی دادگستری محسوب نمی‌شود.'],
-    owner: 'Valuation Metric Owner', status: 'ACTIVE',
-  },
-];
-
-export const SCD2_PLACE_DIMENSIONS: DimPlaceScd2Record[] = [
-  {
-    placeKey: 'pk-saadat-v1', canonicalPlaceId: 'saadat-abad',
-    placeNameFa: 'سعادت‌آباد (مرز قدیم پیش از الحاق پهنه شمالی)', districtNumber: 2,
-    boundaryVersion: 'v1.0-1403', areaSqKm: 6.8, validFrom: '2024-03-20T00:00:00Z',
-    validTo: '2025-03-20T23:59:59Z', isCurrent: false, version: 1,
-  },
-  {
-    placeKey: 'pk-saadat-v2', canonicalPlaceId: 'saadat-abad', placeNameFa: 'سعادت‌آباد',
-    districtNumber: 2, boundaryVersion: 'v2.0-1405', areaSqKm: 7.15,
-    validFrom: '2025-03-21T00:00:00Z', isCurrent: true, version: 2,
-  },
-  {
-    placeKey: 'pk-punak-v1', canonicalPlaceId: 'punak', placeNameFa: 'پونک',
-    districtNumber: 5, boundaryVersion: 'v2.0-1405', areaSqKm: 5.9,
-    validFrom: '2025-03-21T00:00:00Z', isCurrent: true, version: 1,
-  },
-];
+export { OFFICIAL_METRIC_REGISTRY, SCD2_PLACE_DIMENSIONS };
 
 export function computePercentile(sortedValues: number[], percentile0To100: number): number {
   if (sortedValues.length === 0) return 0;
@@ -237,25 +166,83 @@ export class AnalyticsPlatformEngine {
     return { status: 'ACCEPTED', reasonFa: 'رویداد در لایه Landing/Bronze ثبت شد.' };
   }
 
-  public getMetricSnapshotForPlace(placeId: string, baseBuyPerSqm = 142): MetricSnapshotResponse {
-    const placeDim = SCD2_PLACE_DIMENSIONS.find((d) => d.canonicalPlaceId === placeId && d.isCurrent) || SCD2_PLACE_DIMENSIONS[1];
-    const syntheticSamples = [
-      baseBuyPerSqm * 0.88, baseBuyPerSqm * 0.92, baseBuyPerSqm * 0.96, baseBuyPerSqm * 0.99,
-      baseBuyPerSqm, baseBuyPerSqm * 1.02, baseBuyPerSqm * 1.05, baseBuyPerSqm * 1.09, baseBuyPerSqm * 1.14, baseBuyPerSqm * 1.85,
-    ];
-    const dist = computeDistributionStats(syntheticSamples, 48, true);
+  public getMetricSnapshotForPlace(
+    placeId: string | null,
+    _baseBuyPerSqm = 142,
+    observedValues?: number[],
+  ): MetricSnapshotResponse {
+    const placeDim = placeId ? SCD2_PLACE_DIMENSIONS.find((d) => d.canonicalPlaceId === placeId && d.isCurrent) : undefined;
+    const validObserved = Array.isArray(observedValues) ? observedValues.filter((v) => Number.isFinite(v) && v > 0) : [];
+    if (!placeDim || validObserved.length === 0) {
+      return {
+        metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
+        displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
+        financialConcept: 'ASKING_PRICE',
+        value: null,
+        distribution: undefined,
+        unit: 'MILLION_TOMAN_PER_SQM',
+        period: { from: '', to: '', labelFa: 'ثبت نشده' },
+        geography: placeDim
+          ? { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion }
+          : { placeId: placeId || '', placeNameFa: 'ثبت نشده', boundaryVersion: 'ثبت نشده' },
+        methodologyVersion: placeDim ? '2.1' : 'NONE',
+        dataSnapshotId: 'UNAVAILABLE',
+        qualityStatus: 'UNVERIFIED',
+        sufficiencyStatus: 'NOT_ASSESSED',
+        lastUpdatedAt: '',
+        dataOrigin: 'UNAVAILABLE',
+        limitationsFa: [
+          placeDim
+            ? 'داده تحلیلی معتبر (آگهی زنده تاییدشده) برای محاسبه توزیع این محله هنوز ثبت نشده است.'
+            : 'برای این محله هنوز اسنپ‌شات آماری و پروفایل مرز SCD2 در سکوی داده ثبت نشده است.',
+        ],
+      };
+    }
 
+    const dist = computeDistributionStats(validObserved, validObserved.length, true);
     return {
-      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM', displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
-      financialConcept: 'ASKING_PRICE', value: dist.median, distribution: dist, unit: 'MILLION_TOMAN_PER_SQM',
-      period: { from: '2026-03-21', to: '2026-04-12', labelFa: 'بهار ۱۴۰۵ (۳۰ روز اخیر)' },
+      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
+      displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
+      financialConcept: 'ASKING_PRICE',
+      value: dist.median,
+      distribution: dist,
+      unit: 'MILLION_TOMAN_PER_SQM',
+      period: { from: '', to: '', labelFa: 'نمونه‌های زنده محلی' },
       geography: { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion },
-      methodologyVersion: '2.1', dataSnapshotId: 'mkt-snapshot-2026-04-12', qualityStatus: 'VERIFIED',
-      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: '2026-04-12T06:05:00Z',
+      methodologyVersion: '2.1',
+      dataSnapshotId: `live-${placeDim.canonicalPlaceId}`,
+      qualityStatus: 'SUPPORTED',
+      sufficiencyStatus: dist.sufficiencyStatus,
+      lastUpdatedAt: '',
+      dataOrigin: 'OBSERVED',
       limitationsFa: [
-        'محاسبه بر پایه قیمت‌های پیشنهادی آگهی‌هاست و معادل قیمت قطعی معاملات ثبتی نیست.',
+        'محاسبه بر پایه قیمت‌های پیشنهادی آگهی‌های زنده محلی است و معادل قیمت قطعی معامله نیست.',
         `${dist.trimmedOutlierCount} داده پرت خارج از بازه 1.5×IQR پالایش شده است.`,
       ],
+    };
+  }
+
+  public createDemoSimulatedSnapshot(placeId: string, baseBuyPerSqm = 142): MetricSnapshotResponse {
+    const placeDim = SCD2_PLACE_DIMENSIONS.find((d) => d.canonicalPlaceId === placeId && d.isCurrent);
+    if (!placeDim) return this.getMetricSnapshotForPlace(null);
+    const values = [0.88, 0.92, 0.96, 0.99, 1, 1.02, 1.05, 1.09, 1.14].map((f) => baseBuyPerSqm * f);
+    const dist = computeDistributionStats(values, values.length, true);
+    return {
+      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
+      displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع (نمونه شبیه‌سازی)',
+      financialConcept: 'ASKING_PRICE',
+      value: dist.median,
+      distribution: dist,
+      unit: 'MILLION_TOMAN_PER_SQM',
+      period: { from: '', to: '', labelFa: 'شبیه‌سازی آزمایشی (فاقد مشاهده واقعی)' },
+      geography: { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion },
+      methodologyVersion: '2.1',
+      dataSnapshotId: `sim-${placeDim.canonicalPlaceId}-demo`,
+      qualityStatus: 'ESTIMATED',
+      sufficiencyStatus: dist.sufficiencyStatus,
+      lastUpdatedAt: '',
+      dataOrigin: 'SIMULATED',
+      limitationsFa: ['توزیع شبیه‌سازی آزمایشی پیرامون مرجع داخلی است و بیانگر داده واقعی بازار نیست.'],
     };
   }
 
@@ -274,11 +261,14 @@ export class AnalyticsPlatformEngine {
     return { allowed: true, reasonFa: 'مجاز برای دریافت خروجی تجمیعی' };
   }
 
-  public getOverviewBundle(placeId = 'saadat-abad', baseBuyPerSqm = 142) {
+  public getOverviewBundle(placeId: string | null = null, baseBuyPerSqm = 142, observedValues?: number[]) {
+    const filteredAnalyses = placeId
+      ? this.savedAnalyses.filter((ana) => ana.geographicScope.placeIds.includes(placeId))
+      : [];
     return {
       metricsRegistry: OFFICIAL_METRIC_REGISTRY, placeDimensionsScd2: SCD2_PLACE_DIMENSIONS,
-      activeSnapshot: this.getMetricSnapshotForPlace(placeId, baseBuyPerSqm),
-      pipelines: this.pipelines, savedAnalyses: this.savedAnalyses, modelRegistry: this.modelRegistry,
+      activeSnapshot: this.getMetricSnapshotForPlace(placeId, baseBuyPerSqm, observedValues),
+      pipelines: this.pipelines, savedAnalyses: filteredAnalyses, modelRegistry: this.modelRegistry,
       quarantinedCount: this.quarantinedPayloads.length,
     };
   }

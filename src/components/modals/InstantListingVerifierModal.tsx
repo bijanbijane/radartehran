@@ -16,6 +16,9 @@ import {
 } from '../../utils/listingVerifierEngine';
 import { buildListingVerdict } from '../../utils/listingVerdictService';
 import { toPersianNum as toPersianDigits, INITIAL_NEIGHBORHOODS, type EvaluatedNeighborhood } from '../../data/neighborhoods';
+import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
+import { convertPricePerSqmToUnitRaw, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 
 export interface InstantListingVerifierModalProps {
   isOpen: boolean;
@@ -32,6 +35,11 @@ const SAMPLE_TEXT_PUNAK = `پونک سردار جنگل ۸۲ متر طبقه ۳ 
 export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalProps> = ({
   isOpen, onClose, cityKey = 'tehran', initialHoodName = 'پونک', initialListingText = '', evaluatedNeighborhoods = [],
 }) => {
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
+  const cityNameFa = MULTI_CITY_CONFIGS[cityKey as CityId]?.nameFa || 'تهران';
   const [inputText, setInputText] = useState<string>('');
   const [selectedHoodName, setSelectedHoodName] = useState<string>(initialHoodName);
   const [quotaRemaining, setQuotaRemaining] = useState<number>(FREE_QUOTA_MAX);
@@ -46,9 +54,10 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
     if (isOpen) {
       setQuotaRemaining(getRemainingVerificationQuota());
       if (initialHoodName) setSelectedHoodName(initialHoodName);
+      else if (evaluatedNeighborhoods.length > 0) setSelectedHoodName(evaluatedNeighborhoods[0].name);
       if (initialListingText) setInputText(initialListingText);
     }
-  }, [isOpen, initialHoodName, initialListingText]);
+  }, [isOpen, initialHoodName, initialListingText, evaluatedNeighborhoods]);
 
   if (!isOpen) return null;
 
@@ -83,7 +92,9 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
 
   const handleCopyReport = () => {
     if (!diagnosis) return;
-    const text = `گزارش کارشناسی رادار تهران (${diagnosis.hoodName}):\nوضعیت قیمت: ${diagnosis.verdictLabelFa}\nکف قیمت منصفانه: متری ${toPersianDigits(diagnosis.fairDealPricePerSqm)} م.ت\nسقف حباب شناسایی‌شده: ${toPersianDigits(diagnosis.totalBubbleMillion)} م.ت\nپیشنهاد خرید در نشست: ${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت\nتله‌های شناسایی‌شده: ${diagnosis.redFlags.map((r) => r.title).join(' • ') || 'موردی یافت نشد.'}`;
+    const unitDeal = Math.round(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit) * 10) / 10;
+    const uSuffix = areaUnit === 'sqft' ? 'م/ft²' : 'م.ت';
+    const text = `گزارش کارشناسی رادار ${cityNameFa} (${diagnosis.hoodName}):\nوضعیت قیمت: ${diagnosis.verdictLabelFa}\nمبنای مرجع: ${toPersianDigits(unitDeal)} ${uSuffix}\nسقف حباب شناسایی‌شده: ${toPersianDigits(diagnosis.totalBubbleMillion)} م.ت\nپیشنهاد خرید در نشست: ${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت\nتله‌های شناسایی‌شده: ${diagnosis.redFlags.map((r) => r.title).join(' • ') || 'موردی یافت نشد.'}`;
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -140,28 +151,29 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
               rows={3}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="مثال: سعادت آباد ۹۵ متر ۲ خواب طبقه ۴ بدون آسانسور متری ۲۰۰ میلیون..."
+              placeholder={`مثال (${cityNameFa}): ۹۵ متر ۲ خواب طبقه ۴ بدون آسانسور متری ۱۴۰ میلیون...`}
               className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-rose-500 text-xs"
             />
 
-            {/* Quick Sample Buttons */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] text-slate-400">تست سریع با نمونه:</span>
-              <button
-                type="button"
-                onClick={() => { setInputText(SAMPLE_TEXT_SAADAT); setSelectedHoodName('سعادت‌آباد'); }}
-                className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
-              >
-                نمونه ۱ (سعادت‌آباد)
-              </button>
-              <button
-                type="button"
-                onClick={() => { setInputText(SAMPLE_TEXT_PUNAK); setSelectedHoodName('پونک'); }}
-                className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
-              >
-                نمونه ۲ (پونک - بدون آسانسور)
-              </button>
-            </div>
+            {cityKey === 'tehran' && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] text-slate-400">تست سریع با نمونه:</span>
+                <button
+                  type="button"
+                  onClick={() => { setInputText(SAMPLE_TEXT_SAADAT); setSelectedHoodName('سعادت‌آباد'); }}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                >
+                  نمونه ۱ (سعادت‌آباد)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setInputText(SAMPLE_TEXT_PUNAK); setSelectedHoodName('پونک'); }}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
+                >
+                  نمونه ۲ (پونک - بدون آسانسور)
+                </button>
+              </div>
+            )}
           </div>
 
           <button
@@ -196,16 +208,16 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                   <span className="font-extrabold text-sm">{diagnosis.verdictLabelFa}</span>
                 </div>
                 <span className="shrink-0 text-[11px] font-bold px-2 py-1 rounded-lg bg-white/70 dark:bg-slate-900/70 border border-current">
-                  {toPersianDigits(diagnosis.parsed.areaSqm)} متری در {diagnosis.hoodName}
+                  {formatAreaShort(diagnosis.parsed.areaSqm, areaUnit)} در {diagnosis.hoodName}
                 </span>
               </div>
 
               {/* 3 Metric Cards */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'مرجع داخلی، آبان ۱۴۰۵:' : 'کف سناریوی مذاکره (غیرثبتی):'}</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? `${diagnosis.benchmarkLabelFa}:` : 'کف سناریوی مذاکره (غیرثبتی):'}</span>
                   <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs">
-                    {toPersianDigits(diagnosis.fairDealPricePerSqm)} م/متر
+                    {toPersianDigits(Math.round(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit) * 10) / 10)} {areaUnit === 'sqft' ? 'م/ft²' : 'م/متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
@@ -217,7 +229,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 block">پیشنهاد نشست:</span>
                   <span className="font-extrabold text-indigo-700 dark:text-indigo-300 text-xs">
-                    {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'نداریم' : `${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت`}
+                    {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'نداریم' : `${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(diagnosis.negotiationScript.openingOfferMillion, intlCurrency, radarLocale)})` : ''}`}
                   </span>
                 </div>
               </div>

@@ -2,9 +2,10 @@
 import React from 'react';
 import { Home, Map as MapIcon } from 'lucide-react';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
-import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
+import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../data/multiCityData';
+import { convertPricePerSqmToUnitRaw, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import type { ContributionsSubTabId, KnowledgeSubTabId, ModuleSubTabId } from '../../navigation/registry/route.types';
-import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import type { SuperModuleTabId } from '../FutureSuperModulesModal';
 import type { ExpansionModalType } from '../ExpansionModulesModal';
 import { ServicesMarketplacePage } from '../../features/services/pages/ServicesMarketplacePage';
@@ -14,6 +15,7 @@ import { CommunityHubPage } from '../../features/community/pages/CommunityHubPag
 export interface ProductSecondaryHubViewProps {
   viewKind: 'services' | 'knowledge' | 'contributions' | 'not_found';
   activeSubTab?: KnowledgeSubTabId | ContributionsSubTabId;
+  activeCity?: CityId;
   selectedHood: EvaluatedNeighborhood;
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
   onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void;
@@ -32,7 +34,10 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
   const [radarLocale] = useRadarLocale();
-  const unitPrice = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit);
+  useExchangeRateSnapshot();
+  const cityId = p.activeCity || resolveCityIdForNeighborhood(p.selectedHood.id);
+  const cityNameFa = MULTI_CITY_CONFIGS[cityId]?.nameFa || 'تهران';
+  const unitPrice = Math.round(convertPricePerSqmToUnitRaw(p.selectedHood.buyPerSqm, areaUnit) * 10) / 10;
   const fxSample = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, radarLocale)})` : '';
 
   if (p.viewKind === 'not_found') {
@@ -43,7 +48,7 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
         </div>
         <h1 className="text-2xl font-black text-slate-900 dark:text-white">مسیر یا صفحه درخواستی یافت نشد</h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-          نشانی واردشده در ساختار فعلی رادار تهران تعریف نشده یا جابه‌جا شده است. می‌توانید به نقشه تعاملی، صفحه نخست یا لیست محله‌ها بازگردید.
+          نشانی واردشده در ساختار فعلی رادار {cityNameFa} تعریف نشده یا جابه‌جا شده است. می‌توانید به نقشه تعاملی، صفحه نخست یا لیست محله‌ها بازگردید.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
           <button type="button" onClick={() => p.onNavigateView('map')} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">

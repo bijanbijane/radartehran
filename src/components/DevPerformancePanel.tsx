@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   subscribeDiagnostics, clearDiagnosticEvents, getDiagnosticSnapshots,
-  getDiagnosticPerformanceMetrics, createExecutionTimer, DiagnosticEventEntry,
+  getDiagnosticPerformanceMetrics, createExecutionTimer, getMapLayerProfiles,
+  type DiagnosticEventEntry, type MapLayerProfileEntry,
 } from '../utils/diagnostics';
-import { formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; void formatMillionTomanAsIntlCurrency;
 
 function isDevEnvironment(): boolean {
   if (typeof window === 'undefined') return false;
@@ -29,6 +30,7 @@ export const DevPerformancePanel: React.FC = () => {
   const [copied, setCopied] = useState<boolean>(false);
   const [benchmarking, setBenchmarking] = useState<boolean>(false);
   const [events, setEvents] = useState<readonly DiagnosticEventEntry[]>([]);
+  const [layerProfiles, setLayerProfiles] = useState<readonly MapLayerProfileEntry[]>([]);
 
   const refreshRafRef = React.useRef<number | null>(null);
   const refreshData = useCallback(() => {
@@ -36,6 +38,7 @@ export const DevPerformancePanel: React.FC = () => {
     refreshRafRef.current = requestAnimationFrame(() => {
       refreshRafRef.current = null;
       setEvents(getDiagnosticSnapshots());
+      setLayerProfiles(getMapLayerProfiles());
     });
   }, []);
 
@@ -69,12 +72,19 @@ export const DevPerformancePanel: React.FC = () => {
 
   const handleCopyReport = useCallback(() => {
     try {
-      const report = { timestamp: new Date().toISOString(), mapMetrics, filterMetrics, overallMetrics, recentEvents: events.slice(0, 20) };
+      const report = {
+        timestamp: new Date().toISOString(),
+        mapMetrics,
+        filterMetrics,
+        overallMetrics,
+        mapLayerProfiles: layerProfiles.slice(0, 20),
+        recentEvents: events.slice(0, 20),
+      };
       navigator.clipboard?.writeText(JSON.stringify(report, null, 2));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { /* ignore */ }
-  }, [mapMetrics, filterMetrics, overallMetrics, events]);
+  }, [mapMetrics, filterMetrics, overallMetrics, layerProfiles, events]);
 
   const handleRunMicroBenchmark = useCallback(() => {
     setBenchmarking(true);
@@ -185,15 +195,32 @@ export const DevPerformancePanel: React.FC = () => {
                         <span>{meta.latestMs}ms (میانگین {meta.avgMs}ms | {meta.count} بار)</span>
                       </div>
                       <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${meta.avgMs <= 16.6 ? 'bg-emerald-400' : meta.avgMs <= 50 ? 'bg-amber-400' : 'bg-rose-500'}`}
-                          style={{ width: `${percent}%` }}
-                        />
+                        <div className={`h-full transition-all duration-300 ${meta.avgMs <= 16.6 ? 'bg-emerald-400' : meta.avgMs <= 50 ? 'bg-amber-400' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
+            </section>
+
+            <section aria-label="عملکرد موتور نقشه (Diff)" className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/50 text-[10px] space-y-1.5">
+              <div className="flex justify-between items-center text-slate-300 font-bold text-[11px]">
+                <span>عملکرد موتور نقشه (Diff)</span>
+                <span className="text-slate-400 font-mono">{layerProfiles.length}/60 لایه</span>
+              </div>
+              {layerProfiles.length === 0 ? (
+                <div className="text-slate-500 py-1">هنوز عملیات تطبیق لایه‌ای ثبت نشده است.</div>
+              ) : (
+                <div className="max-h-28 overflow-y-auto border border-slate-800 rounded-lg bg-slate-950/60 font-mono divide-y divide-slate-800/70">
+                  {layerProfiles.slice(0, 12).map((p) => (
+                    <div key={p.id} className="grid grid-cols-[76px_1fr_44px] items-center gap-1.5 px-2 py-1 text-slate-300">
+                      <span className="text-sky-300 font-bold truncate">{p.layer}</span>
+                      <span className="truncate text-[9.5px]">+{p.created} / ~{p.updated} / -{p.removed} / ={p.retained} · <span className="text-slate-400">{p.reason}</span></span>
+                      <span className="text-left text-emerald-300">{p.durationMs}ms</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="space-y-2">

@@ -55,7 +55,7 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
     <div
       role="dialog" aria-label="ابزارهای ترسیم، اندازه‌گیری و کاتالوگ لایه‌ها (RT-UI-MAP-001 & RT-UI-LAYERS-001)"
       data-testid="map-spatial-tools-popover"
-      className="pointer-events-auto w-80 sm:w-88 rounded-2xl border border-[#DCE3DF] dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3.5 space-y-3 text-xs max-h-[78vh] overflow-y-auto"
+      className="pointer-events-auto w-80 sm:w-88 max-w-[calc(100vw-4.5rem)] rounded-2xl border border-[#DCE3DF] dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3.5 space-y-3 text-xs max-h-[calc(100dvh-10rem)] overflow-y-auto"
     >
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
         <div role="tablist" aria-label="تب‌های ابزار مکانی و کاتالوگ لایه" className="flex items-center gap-1">

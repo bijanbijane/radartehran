@@ -55,8 +55,8 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           {mapLens === 'heatmap' && (
             <div className="apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-2.5 space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 dark:text-slate-200">
-                <span>🔥 طیف چگالی قیمت هر {areaUnitLabel} (d3-scale)</span>
-                <span className="text-[10px] text-purple-700 dark:text-purple-400 font-extrabold">هیت‌مپ فعال</span>
+                <span>{radarLocale === 'en' ? `Price Density / ${areaUnitLabel}` : `طیف چگالی قیمت هر ${areaUnitLabel} (d3-scale)`}</span>
+                <span className="text-[10px] text-purple-700 dark:text-purple-400 font-extrabold">{radarLocale === 'en' ? 'Heatmap Active' : 'هیت‌مپ فعال'}</span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-gradient-to-l from-emerald-500 via-amber-500 to-purple-600" aria-hidden="true" />
               <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
@@ -73,10 +73,10 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
             </div>
             <div className="grid grid-cols-2 gap-1">
               <button type="button" aria-pressed={overlayState.showCommuteIsochrones} onClick={() => updateMapAdvancedOverlayState({ showCommuteIsochrones: !overlayState.showCommuteIsochrones })} className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-bold border transition cursor-pointer text-center ${overlayState.showCommuteIsochrones ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                ⏱️ حلقه تردد
+                {legendCopy.commuteRingsLabel}
               </button>
               <button type="button" aria-pressed={overlayState.lowBandwidthGeoLazyMode} onClick={() => updateMapAdvancedOverlayState({ lowBandwidthGeoLazyMode: !overlayState.lowBandwidthGeoLazyMode })} title="کاهش رئوس GeoJSON و بارگذاری تنبل محدود به کادر دید برای موبایل و اینترنت ضعیف" className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-bold border transition cursor-pointer text-center ${overlayState.lowBandwidthGeoLazyMode ? 'bg-amber-600 text-white border-amber-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                ⚡ سبک‌ساز GeoJSON
+                {radarLocale === 'en' ? 'Lightweight GeoJSON' : 'سبک‌ساز GeoJSON'}
               </button>
             </div>
           </div>
@@ -114,7 +114,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
               <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white shrink-0">
                 <Navigation className="w-3 h-3" />
               </span>
-              <span>خط‌چین و ۳ حلقه ایزوکرون (۲۰/۳۵/۵۰ دقیقه · ۳ تا ۱۲ کم{areaUnit === 'sqft' ? ' / ۱.۹ تا ۷.۵ مایل' : ''}) تا محل کار</span>
+              <span>{radarLocale === 'en' ? `${legendCopy.directConnectionLabel} · Radial rings: 4.3 / 8.2 / 12.5 km` : `${legendCopy.directConnectionLabel} · حلقه‌های شعاعی ۴٫۳ / ۸٫۲ / ۱۲٫۵ کیلومتر تا محل کار`}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-800 text-white shrink-0">
@@ -139,7 +139,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           overlayState.comparisonArc.hoodA &&
           overlayState.comparisonArc.hoodB && (
             <button type="button" onClick={() => updateMapAdvancedOverlayState({ comparisonArc: { active: false, isPinned: false, hoodA: null, hoodB: null } })} title="حذف کمان مقایسه دو محله از روی نقشه" className="px-2.5 py-2 rounded-xl text-[11px] font-bold bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500 shadow-xs transition cursor-pointer flex items-center gap-1">
-              <span>⚖️ {overlayState.comparisonArc.hoodA.name} ⇄ {overlayState.comparisonArc.hoodB.name}</span>
+              <span>{overlayState.comparisonArc.hoodA.name} ⇄ {overlayState.comparisonArc.hoodB.name}</span>
               <span className="text-indigo-200 font-black">×</span>
             </button>
           )}

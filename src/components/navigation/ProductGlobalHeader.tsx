@@ -1,10 +1,11 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
-import React, { useState, useRef } from 'react';
-import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, SlidersHorizontal, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { PrimaryViewId, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { AreaUnitToggle, ExperienceModeToggle, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
 import { getProductNavigationItems } from './primaryNavigation';
 import { DesktopMegaMenu } from './DesktopMegaMenu';
 import { HeaderNotificationBell } from '../../features/communications/components/HeaderNotificationBell';
@@ -24,7 +25,6 @@ export interface ProductGlobalHeaderProps {
   searchQuery?: string;
   activePlaceLabelFa?: string;
   currentUser?: FirebaseUser | null;
-  unreadNotificationsCount?: number;
 }
 
 const CITIES: { id: CityId; labelFa: string; labelEn: string }[] = [
@@ -35,48 +35,50 @@ const CITIES: { id: CityId; labelFa: string; labelEn: string }[] = [
   { id: 'isfahan', labelFa: 'اصفهان', labelEn: 'Isfahan' },
 ];
 
+const BRAND_BY_CITY: Record<CityId, { fa: string; en: string }> = {
+  tehran: { fa: 'رادار تهران', en: 'Tehran Radar' },
+  karaj: { fa: 'رادار کرج', en: 'Karaj Radar' },
+  mashhad: { fa: 'رادار مشهد', en: 'Mashhad Radar' },
+  isfahan: { fa: 'رادار اصفهان', en: 'Isfahan Radar' },
+  shiraz: { fa: 'رادار شیراز', en: 'Shiraz Radar' },
+};
+
 export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
-  primaryView,
-  activeSubTab,
-  onSelectPrimaryView,
-  activeCity,
-  onSwitchCity,
-  appleTheme,
-  onToggleAppleTheme,
-  onOpenSearch,
-  onMegaMenuAction,
-  searchQuery,
-  activePlaceLabelFa,
-  currentUser,
-  unreadNotificationsCount = 0,
+  primaryView, activeSubTab, onSelectPrimaryView, activeCity, onSwitchCity, appleTheme,
+  onToggleAppleTheme, onOpenSearch, onMegaMenuAction, searchQuery, activePlaceLabelFa, currentUser,
 }) => {
   const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
+  const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [mobileDisplayOpen, setMobileDisplayOpen] = useState(false);
+  const megaMenuPinnedRef = useRef(false);
   const hoverCloseTimer = useRef<number | null>(null);
+  const moreButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const fxSampleHint = intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(100, intlCurrency, radarLocale) : '';
-  const activeCityName = isEn
-    ? (CITIES.find((c) => c.id === activeCity)?.labelEn || 'Tehran')
-    : (activePlaceLabelFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران');
-
+  const fxSampleHint = intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(100, intlCurrency, radarLocale, rateState.snapshot) : '';
+  const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
+  const cityBrand = { fa: `رادار ${cityCfg.nameFa}`, en: BRAND_BY_CITY[activeCity]?.en || 'Tehran Radar' };
+  const activeCityName = isEn ? (CITIES.find((c) => c.id === activeCity)?.labelEn || 'Tehran') : (activePlaceLabelFa || cityCfg.nameFa || 'تهران');
   const navigationItems = getProductNavigationItems(radarLocale);
   const primaryNavItems = (['map', 'discover', 'intelligence', 'properties', 'tools'] as const)
     .map((id) => navigationItems.find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const isMoreActive = primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'home';
 
-  const scheduleCloseMega = () => {
-    if (hoverCloseTimer.current) window.clearTimeout(hoverCloseTimer.current);
-    hoverCloseTimer.current = window.setTimeout(() => setMegaMenuOpen(false), 160);
-  };
-  const cancelCloseMega = () => {
-    if (hoverCloseTimer.current) {
+  const cancelCloseMega = useCallback(() => {
+    if (hoverCloseTimer.current !== null) {
       window.clearTimeout(hoverCloseTimer.current);
       hoverCloseTimer.current = null;
     }
-  };
+  }, []);
+  const closeMegaMenu = useCallback(() => { cancelCloseMega(); megaMenuPinnedRef.current = false; setMegaMenuOpen(false); }, [cancelCloseMega]);
+  const scheduleCloseMega = useCallback(() => {
+    cancelCloseMega();
+    if (megaMenuPinnedRef.current) return;
+    hoverCloseTimer.current = window.setTimeout(() => { hoverCloseTimer.current = null; if (!megaMenuPinnedRef.current) setMegaMenuOpen(false); }, 160);
+  }, [cancelCloseMega]);
+  useEffect(() => () => { cancelCloseMega(); }, [cancelCloseMega]);
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
@@ -87,23 +89,22 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
       >
         {isEn ? 'Skip to main content' : 'رفتن به محتوای اصلی'}
       </a>
-      <div className={`w-full max-w-[1600px] mx-auto px-4 lg:px-8 flex items-center justify-between gap-2 ${primaryView === 'map' ? 'h-[56px]' : 'h-[56px] lg:h-[68px]'}`}>
-        {/* Brand Logo (Home Destination) + Compact City Context */}
-        <div className="flex items-center gap-2 shrink-0">
+      <div className={`w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 flex items-center justify-between gap-2 ${primaryView === 'map' ? 'h-[56px]' : 'h-[56px] lg:h-[68px]'}`}>
+        <div className="flex items-center gap-2 shrink-0 min-w-0">
           <button
             type="button"
             data-testid="global-nav-home"
             aria-current={primaryView === 'home' ? 'page' : undefined}
-            onClick={() => { setMegaMenuOpen(false); onSelectPrimaryView('home'); }}
-            title={fxSampleHint ? `100M IRT ≈ ${fxSampleHint}` : isEn ? 'Tehran Radar Home' : 'صفحه نخست رادار تهران'}
+            onClick={() => { closeMegaMenu(); onSelectPrimaryView('home'); }}
+            title={fxSampleHint ? `۱۰۰ م.ت ≈ ${fxSampleHint}` : isEn ? `${cityBrand.en} Home` : `صفحه نخست ${cityBrand.fa}`}
             className="flex items-center gap-2 group text-start focus-visible:outline-2 focus-visible:outline-emerald-600 rounded-lg cursor-pointer"
           >
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition ${primaryView === 'home' ? 'bg-emerald-600 text-white' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 group-hover:bg-emerald-700'}`}>
               <MapIcon className="w-4 h-4 stroke-[2.2]" aria-hidden="true" />
             </div>
-            <div className="hidden min-[400px]:block">
+            <div className="hidden min-[380px]:block">
               <span className="font-black text-xs sm:text-sm tracking-tight text-slate-900 dark:text-white whitespace-nowrap block">
-                {isEn ? 'Tehran Radar' : 'رادار تهران'}
+                {isEn ? cityBrand.en : cityBrand.fa}
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden xl:block whitespace-nowrap">
                 {isEn ? `${activeCityName} Spatial Atlas` : `هوش مکانی ${activeCityName}`}
@@ -130,8 +131,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           </div>
         </div>
 
-        {/* Strictly max 6 visible Primary Nav Destinations (Map, Areas, Market, Properties, Tools + Mega Menu More) */}
-        <nav aria-label={isEn ? 'Primary Navigation' : 'ناوبری اصلی پلتفرم'} className="hidden lg:flex flex-1 justify-center items-center gap-1 min-w-0">
+        <nav aria-label={isEn ? 'Primary Navigation' : 'ناوبری اصلی پلتفرم'} className="hidden lg:flex flex-1 justify-center items-center gap-0.5 xl:gap-1 min-w-0">
           {primaryNavItems.map((item) => {
             const isActive = primaryView === item.id;
             const Icon = item.Icon;
@@ -141,8 +141,8 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                 type="button"
                 data-testid={`global-nav-${item.id}`}
                 aria-current={isActive ? 'page' : undefined}
-                onClick={() => { setMegaMenuOpen(false); onSelectPrimaryView(item.id); }}
-                className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+                onClick={() => { closeMegaMenu(); onSelectPrimaryView(item.id); }}
+                className={`relative flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
                   isActive
                     ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 shadow-2xs'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60'
@@ -154,14 +154,19 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             );
           })}
           <button
+            ref={moreButtonRef}
             type="button"
             data-testid="global-nav-more"
             aria-expanded={megaMenuOpen}
             aria-controls="desktop-mega-menu-panel"
             onMouseEnter={() => { cancelCloseMega(); setMegaMenuOpen(true); }}
             onMouseLeave={scheduleCloseMega}
-            onClick={() => { cancelCloseMega(); setMegaMenuOpen((prev) => !prev); }}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+            onClick={() => {
+              cancelCloseMega();
+              if (!megaMenuOpen || !megaMenuPinnedRef.current) { megaMenuPinnedRef.current = true; setMegaMenuOpen(true); }
+              else closeMegaMenu();
+            }}
+            className={`flex items-center gap-1 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
               megaMenuOpen || isMoreActive
                 ? 'text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60'
@@ -172,7 +177,6 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           </button>
         </nav>
 
-        {/* Global Search + Account + Theme Utility End Cluster (Zero Admin buttons in public chrome) */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 relative">
           {onOpenSearch && (
             <button
@@ -180,37 +184,28 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               onClick={onOpenSearch}
               aria-label={isEn ? 'Search platform' : 'جست‌وجوی سراسری'}
               title={isEn ? 'Search (/)' : 'جست‌وجوی سراسری (/)'}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
             >
               <Search className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-              <span className="hidden xl:inline max-w-[96px] truncate">{searchQuery?.trim() || (isEn ? 'Search...' : 'جست‌وجو...')}</span>
+              <span className="hidden 2xl:inline max-w-[90px] truncate">{searchQuery?.trim() || (isEn ? 'Search...' : 'جست‌وجو...')}</span>
             </button>
           )}
-
           <button
             type="button"
             data-testid="global-nav-help-center"
             aria-label={isEn ? 'Help & Onboarding Center' : 'مرکز راهنما و آموزش استفاده'}
             title={isEn ? 'Help & Onboarding (/help)' : 'مرکز راهنما و آموزش استفاده (/help)'}
-            onClick={() => { setMegaMenuOpen(false); onSelectPrimaryView('knowledge', 'guide'); }}
-            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            onClick={() => { closeMegaMenu(); onSelectPrimaryView('knowledge', 'guide'); }}
+            className="hidden sm:inline-flex p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <HelpCircle className="w-4 h-4" aria-hidden="true" />
           </button>
-
-          <HeaderNotificationBell
-            uid={currentUser?.uid || 'local-user'}
-            isEn={isEn}
-            onNavigateView={(v, sub) => { setMegaMenuOpen(false); onSelectPrimaryView(v, sub); }}
-          />
-          {unreadNotificationsCount < 0 && null}
-
+          <HeaderNotificationBell uid={currentUser?.uid || 'local-user'} isEn={isEn} onNavigateView={(v, sub) => { closeMegaMenu(); onSelectPrimaryView(v, sub); }} />
           <button
             type="button"
             data-testid="global-nav-userspace"
             aria-current={primaryView === 'userspace' ? 'page' : undefined}
-            onClick={() => { setMegaMenuOpen(false); onSelectPrimaryView('userspace', 'overview'); }}
-            onContextMenu={(e) => { e.preventDefault(); setAccountMenuOpen((o) => !o); }}
+            onClick={() => { closeMegaMenu(); onSelectPrimaryView('userspace', 'overview'); }}
             className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
               primaryView === 'userspace'
                 ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
@@ -218,42 +213,55 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             }`}
           >
             <User className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <span className="hidden md:inline max-w-[90px] truncate">
-              {currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}
-            </span>
+            <span className="hidden xl:inline max-w-[84px] truncate">{currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}</span>
           </button>
 
-          <div className="hidden 2xl:flex items-center gap-1">
-            <ExperienceModeToggle compact />
-            <AreaUnitToggle compact showIntlControls hideAreaUnitOnMobile className="flex-nowrap" />
+          <div className="hidden md:flex items-center gap-1">
+            <div className="hidden 2xl:inline-flex"><ExperienceModeToggle compact /></div>
+            <AreaUnitToggle compact showIntlControls className="flex-nowrap" />
           </div>
 
           <button
             type="button"
+            data-testid="mobile-unit-currency-btn"
+            aria-expanded={mobileDisplayOpen}
+            aria-label={isEn ? 'Area unit and currency settings' : 'تنظیم واحد مساحت و ارز'}
+            onClick={() => setMobileDisplayOpen((prev) => !prev)}
+            className="md:hidden inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[10.5px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>{isEn ? 'Unit/FX' : 'واحد/ارز'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={onToggleAppleTheme}
-            aria-label={appleTheme === 'dark' ? (isEn ? 'Light Mode' : 'حالت روز') : (isEn ? 'Dark Mode' : 'حالت شب')}
-            title={appleTheme === 'dark' ? (isEn ? 'Light Mode' : 'حالت روز') : (isEn ? 'Dark Mode' : 'حالت شب')}
+            aria-label={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')}
+            title={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')}
             data-testid="theme-toggle-btn"
             className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             {appleTheme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
           </button>
-          {accountMenuOpen && (
-            <div role="menu" className="hidden" />
+
+          {mobileDisplayOpen && (
+            <div role="dialog" aria-label={isEn ? 'Unit, currency & mode settings' : 'تنظیمات واحد، ارز و حالت تجربه'} className="md:hidden absolute left-0 top-12 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-3 space-y-2.5 z-50 text-xs">
+              <div className="font-black text-slate-800 dark:text-white">{isEn ? 'Display Unit & Currency' : 'تنظیم واحد نمایش و ارز'}</div>
+              <AreaUnitToggle compact showIntlControls />
+              <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500">{isEn ? 'View Mode:' : 'حالت نمایش:'}</span>
+                <ExperienceModeToggle compact />
+              </div>
+            </div>
           )}
         </div>
       </div>
 
       <DesktopMegaMenu
-        open={megaMenuOpen}
-        onClose={() => setMegaMenuOpen(false)}
-        onMouseEnterMenu={cancelCloseMega}
-        onMouseLeaveMenu={scheduleCloseMega}
-        locale={radarLocale}
-        activeView={primaryView}
-        activeSubTab={activeSubTab}
-        onSelectDestination={onSelectPrimaryView}
-        onTriggerAction={(actionId) => onMegaMenuAction?.(actionId)}
+        open={megaMenuOpen} onClose={closeMegaMenu} onMouseEnterMenu={cancelCloseMega} onMouseLeaveMenu={scheduleCloseMega}
+        triggerRef={moreButtonRef} topOffsetClass={primaryView === 'map' ? 'top-[56px]' : 'top-[56px] lg:top-[68px]'}
+        locale={radarLocale} activeView={primaryView} activeSubTab={activeSubTab}
+        onSelectDestination={onSelectPrimaryView} onTriggerAction={(actionId) => onMegaMenuAction?.(actionId)}
       />
     </header>
   );

@@ -68,8 +68,16 @@ export function RadarWorkspaceShell() {
   const { selectedHood, compHood1, compHood2, hoodLandmarks, targetBargainHood, liveBargainCheck, totalLiveBargainsCount, calculatedHoodMonthlyRent, localAnalysis, marketReport, bestIndicator, deepInsight, directMetroCommuteInfo, rentVsBuyVerdict, tradeUpResults } = useAppPersistenceAndDerivedState({
     ui, neighborhoods, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, favoriteHoodIds, featureFlags, isVerifiedAdmin, mode, targetSqm, rentAgeMultiplier, totalRahnEquivalent, maxAffordablePerSqm, selectedWorkHub, workHubId,
   });
-
+  const closeFloatingMapPanels = (except?: 'search' | 'filter' | 'tools' | 'legend' | 'rail' | 'spatial') => {
+    if (except !== 'search') ui.setShowSearchDropdown(false);
+    if (except !== 'filter') ui.setMobileFilterOpen(false);
+    if (except !== 'tools') ui.setShowToolsPopover(false);
+    if (except !== 'legend') ui.setShowMapLegendPopover(false);
+    if (except !== 'rail') ui.setMapRailPanel(null);
+    if (except !== 'spatial') ui.setShowSpatialTools(false);
+  };
   const handleSwitchCity = (cityId: CityId, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => {
+    closeFloatingMapPanels();
     activeCityRef.current = cityId; ui.setActiveCity(cityId); setWorkHubId('none');
     const cfg = MULTI_CITY_CONFIGS[cityId];
     const firstId = targetHoodId ?? (cityId === 'tehran' ? 5 : cfg.neighborhoods[0]?.id || 101);
@@ -77,31 +85,25 @@ export function RadarWorkspaceShell() {
     ui.setSelectedHoodId(firstId); ui.setCompareId1(firstId); ui.setCompareId2(secondId); ui.setBargainHoodId(firstId); ui.setSponsorHoodId(firstId); ui.setAlertHoodId(firstId);
     if (mapInstanceRef.current) { try { mapInstanceRef.current.flyTo(targetCenter || cfg.center, targetZoom || cfg.defaultZoom, { duration: 0.9 }); } catch { /* ignore */ } }
   };
-
   const handleSelectNeighborhood = (hood: EvaluatedNeighborhood) => {
     const ownerCity = resolveCityIdForNeighborhood(hood.id);
     if (ownerCity !== activeCityRef.current) { activeCityRef.current = ownerCity; ui.setActiveCity(ownerCity); setWorkHubId('none'); }
     ui.setSelectedHoodId(hood.id); ui.setBargainHoodId(hood.id); ui.setSponsorHoodId(hood.id); ui.setAlertHoodId(hood.id);
-    ui.setVoteStatus(null); ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); ui.setMobileFilterOpen(false);
+    ui.setVoteStatus(null); closeFloatingMapPanels();
     if (mapInstanceRef.current && typeof hood.lat === 'number' && !Number.isNaN(hood.lat)) {
       const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
       const [latOffset, lngOffset] = [!isDesktop && ui.primaryView !== 'map' ? -0.022 : 0, isDesktop ? (ui.primaryView !== 'map' ? 0.032 : 0.014) : 0];
       try { mapInstanceRef.current.flyTo([hood.lat + latOffset, hood.lng + lngOffset], 13, { duration: 0.7 }); } catch { /* ignore */ }
     }
   };
-
   const toggleFavoriteHood = (id: number) => setFavoriteHoodIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
-
   const handleRestoreSavedView = (saved: SavedMapViewItem) => {
-    ui.setMapLens(saved.lens);
-    setMode(saved.mode);
+    closeFloatingMapPanels(); ui.setMapLens(saved.lens); setMode(saved.mode);
     const found = nationwideEvaluatedNeighborhoods.find((h) => h.id === saved.hoodId) || evaluatedNeighborhoods.find((h) => h.id === saved.hoodId);
     if (found) handleSelectNeighborhood(found);
     else if (saved.cityId in MULTI_CITY_CONFIGS) handleSwitchCity(saved.cityId as CityId, saved.hoodId);
-    ui.setPrimaryView('map');
-    ui.setActiveSubTab(undefined);
+    ui.setPrimaryView('map'); ui.setActiveSubTab(undefined);
   };
-
   const { mapContainerRef, mapInstanceRef, handleFocusLandmarkOnMap, isMapLoaded } = useLeafletRadarMap({
     activeCity: ui.activeCity, mapTileStyle, setMapTileStyle,
     deferredMapNeighborhoods: nationwideFilteredNeighborhoods, selectedHoodId: ui.selectedHoodId, selectedHood,
@@ -109,6 +111,7 @@ export function RadarWorkspaceShell() {
     showGoldPins: ui.showGoldPins, showLandmarkPins: ui.showLandmarkPins, hoodLandmarks, featureFlags,
     onSelectNeighborhood: handleSelectNeighborhood,
     onOpenModalQuick: (hoodId, action) => {
+      closeFloatingMapPanels();
       const found = nationwideEvaluatedNeighborhoods.find((n) => n.id === hoodId) || evaluatedNeighborhoods.find((n) => n.id === hoodId);
       if (found) handleSelectNeighborhood(found);
       if (action === 'anatomy') { ui.setActiveTab('scorecard'); ui.setMobileSheetOpen(true); anatomyTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
@@ -120,9 +123,10 @@ export function RadarWorkspaceShell() {
   });
 
   useEffect(() => {
-    if (mapInstanceRef.current) setTimeout(() => mapInstanceRef.current?.invalidateSize(), 60);
+    if (!mapInstanceRef.current) return undefined;
+    const timerId = setTimeout(() => mapInstanceRef.current?.invalidateSize(), 60);
+    return () => clearTimeout(timerId);
   }, [ui.primaryView]);
-
   useAppUrlAndTitleSync({
     activeCity: ui.activeCity, setActiveCity: ui.setActiveCity, selectedHood, selectedHoodId: ui.selectedHoodId,
     setSelectedHoodId: ui.setSelectedHoodId, showCompareModal: ui.showCompareModal, setShowCompareModal: ui.setShowCompareModal,
@@ -164,9 +168,9 @@ export function RadarWorkspaceShell() {
       {ui.primaryView !== 'admin' && (
         <ProductGlobalHeader
           primaryView={ui.primaryView} activeSubTab={ui.activeSubTab} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
-          onSelectPrimaryView={(v, sub) => { ui.setMobileSheetOpen(false); ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown(false); ui.setActiveSubTab(sub); ui.setPrimaryView(v); }}
+          onSelectPrimaryView={(v, sub) => { ui.setMobileSheetOpen(false); closeFloatingMapPanels(); ui.setActiveSubTab(sub); ui.setPrimaryView(v); }}
           appleTheme={appleTheme} onToggleAppleTheme={toggleAppleTheme} searchQuery={ui.searchQuery}
-          onOpenSearch={() => { ui.setMobileFilterOpen(false); ui.setShowToolsPopover(false); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }}
+          onOpenSearch={() => { closeFloatingMapPanels('search'); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }}
           onMegaMenuAction={(act) => {
             if (act === 'visited') ui.setShowVisitedModal(true); else if (act === 'onboarding') ui.setShowOnboardingModal(true);
             else if (act === 'seo') ui.setShowSeoDrawer(true); else if (act === 'listing_verifier') ui.setShowListingVerifierModal(true);
@@ -190,7 +194,7 @@ export function RadarWorkspaceShell() {
         primaryView={ui.primaryView} activeCity={ui.activeCity} featureFlags={featureFlags} onSwitchCity={handleSwitchCity} searchQuery={ui.searchQuery} setSearchQuery={ui.setSearchQuery}
         showSearchDropdown={ui.showSearchDropdown} setShowSearchDropdown={ui.setShowSearchDropdown} evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood}
         selectedHoodId={ui.selectedHoodId} onSelectNeighborhood={handleSelectNeighborhood} setMobileSheetOpen={ui.setMobileSheetOpen} onLocateNearestHood={crudActions.handleLocateNearestHood}
-        mobileFilterOpen={ui.mobileFilterOpen} setMobileFilterOpen={ui.setMobileFilterOpen} showToolsPopover={ui.showToolsPopover} setShowToolsPopover={ui.setShowToolsPopover}
+        mobileFilterOpen={ui.mobileFilterOpen} setMobileFilterOpen={ui.setMobileFilterOpen} showToolsPopover={ui.showToolsPopover} setShowToolsPopover={ui.setShowToolsPopover} onBeforeOpenFloatingPanel={(panel) => closeFloatingMapPanels(panel)}
         counts={counts} setShowOnboardingModal={ui.setShowOnboardingModal} mode={mode} setMode={setMode} deposit={deposit} setDeposit={setDeposit} monthlyRent={monthlyRent} setMonthlyRent={setMonthlyRent}
         buyTotalBudget={buyTotalBudget} setBuyTotalBudget={setBuyTotalBudget} targetSqm={targetSqm} setTargetSqm={setTargetSqm} buildingAgeSegment={buildingAgeSegment} setBuildingAgeSegment={setBuildingAgeSegment}
         deductTenantRahnInBuy={deductTenantRahnInBuy} setDeductTenantRahnInBuy={setDeductTenantRahnInBuy} useLoanBooster={ui.useLoanBooster} setUseLoanBooster={ui.setUseLoanBooster}
@@ -206,11 +210,12 @@ export function RadarWorkspaceShell() {
         showMapLegendPopover={ui.showMapLegendPopover} setShowMapLegendPopover={ui.setShowMapLegendPopover} mobileSheetOpen={ui.mobileSheetOpen} lastSyncNotice={ui.lastSyncNotice}
         setShowNationwideProvinceModal={ui.setShowNationwideProvinceModal} connectionStatus={connectionStatus} onOpenReverseBudgetModal={() => setShowReverseBudgetModal(true)}
         onFlyToCityCenter={() => { const cfg = MULTI_CITY_CONFIGS[ui.activeCity]; if (mapInstanceRef.current) mapInstanceRef.current.flyTo(cfg.center, cfg.defaultZoom, { duration: 0.7 }); }}
-        onNavigateView={(v, sub) => { ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); ui.setActiveSubTab(sub); ui.setPrimaryView(v); }} />
+        onNavigateView={(v, sub) => { ui.setShowSearchDropdown(false); ui.setShowToolsPopover(false); closeFloatingMapPanels(); ui.setActiveSubTab(sub); ui.setPrimaryView(v); }} />
       <MapToolRail
-        visible={ui.primaryView === 'map'} locale={radarLocale} activeCity={ui.activeCity} selectedHood={selectedHood} mapLens={ui.mapLens} setMapLens={ui.setMapLens}
+        visible={ui.primaryView === 'map'} locale={radarLocale} activeCity={ui.activeCity} selectedHood={selectedHood} evaluatedNeighborhoods={evaluatedNeighborhoods} targetSqm={targetSqm} mapLens={ui.mapLens} setMapLens={ui.setMapLens}
         mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} mode={mode} hasFilterApplied={ui.statusFilter !== 'all' || ui.onlyOutsideTrafficZone || ui.onlyHighMetro}
-        onToggleFilterPopover={() => { ui.setMobileFilterOpen((p) => !p); ui.setShowToolsPopover(false); }} onLocateNearestHood={crudActions.handleLocateNearestHood}
+        openPanel={ui.mapRailPanel} onChangeOpenPanel={ui.setMapRailPanel} showSpatialTools={ui.showSpatialTools} onChangeShowSpatialTools={ui.setShowSpatialTools}
+        onCloseCompetingPanels={() => closeFloatingMapPanels('rail')} onToggleFilterPopover={() => { closeFloatingMapPanels('filter'); ui.setMobileFilterOpen((p) => !p); }} onLocateNearestHood={crudActions.handleLocateNearestHood}
         onOpenCompareModal={() => ui.setShowCompareModal(true)} onOpenPriceTrendModal={() => ui.setShowPriceTrendModal(true)} onOpenInspectorDrawer={() => ui.setMobileSheetOpen(true)} onRestoreSavedView={handleRestoreSavedView} />
       {ui.primaryView !== 'map' && (
         <main className="relative z-10 w-full flex-1 overflow-hidden pointer-events-none flex justify-start">
@@ -252,6 +257,7 @@ export function RadarWorkspaceShell() {
         primaryView={ui.primaryView} onSelectPrimaryView={(v) => { ui.setShowSearchDropdown(false); ui.setPrimaryView(v); }} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
         appleTheme={appleTheme} onToggleAppleTheme={toggleAppleTheme} mobileSheetOpen={ui.mobileSheetOpen} setMobileSheetOpen={ui.setMobileSheetOpen}
         mobileFilterOpen={ui.mobileFilterOpen} setMobileFilterOpen={ui.setMobileFilterOpen} showToolsPopover={ui.showToolsPopover} setShowToolsPopover={ui.setShowToolsPopover}
+        onCloseFloatingPanels={() => closeFloatingMapPanels()}
         onFlyToHood={() => { if (mapInstanceRef.current && selectedHood) mapInstanceRef.current.flyTo([selectedHood.lat, selectedHood.lng], 12.5, { duration: 0.5 }); }}
         onOpenOnboarding={() => ui.setShowOnboardingModal(true)} onOpenVisitedLog={() => ui.setShowVisitedModal(true)}
       />

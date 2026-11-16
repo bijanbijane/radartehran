@@ -3,10 +3,12 @@
  * @description Interactive Contract-Room Shield and Live Negotiation Defense Assistant.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, ShieldCheck, Scale, AlertTriangle, Copy, Check, FileText, Clock, HelpCircle } from 'lucide-react';
 import { toPersianNum as toPersianDigits } from '../../data/neighborhoods';
 import { calculateContractShield, STAGING_PROFILES, type StagingProfileId } from '../../utils/contractRoomShieldEngine';
+import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 
 interface ContractRoomShieldModalProps {
   isOpen: boolean;
@@ -19,8 +21,15 @@ export function ContractRoomShieldModal({ isOpen, onClose, initialTotalMillion =
   const [profileId, setProfileId] = useState<StagingProfileId>('READY_DEED_STANDARD');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'staging' | 'clauses' | 'counterTactics'>('staging');
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
+  const fxTag = (m: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(m, intlCurrency, radarLocale)})` : '');
 
   const shieldData = useMemo(() => calculateContractShield(totalMillion, profileId), [totalMillion, profileId]);
+  useEffect(() => {
+    if (isOpen) setTotalMillion(initialTotalMillion);
+  }, [isOpen, initialTotalMillion]);
 
   if (!isOpen) return null;
 
@@ -54,7 +63,7 @@ export function ContractRoomShieldModal({ isOpen, onClose, initialTotalMillion =
 
         {/* Price & Profile Bar */}
         <div className="p-4 bg-slate-950/60 border-b border-slate-800/80 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <label htmlFor="total-price-input" className="text-xs text-slate-300 whitespace-nowrap font-medium">مبلغ کل معامله:</label>
             <div className="relative flex-1 sm:w-48">
               <input
@@ -66,6 +75,11 @@ export function ContractRoomShieldModal({ isOpen, onClose, initialTotalMillion =
               />
               <span className="absolute left-2.5 top-2 text-[10px] text-slate-400">م.ت</span>
             </div>
+            {intlCurrency !== 'IRT' && (
+              <span className="text-[11px] text-emerald-300 font-semibold tabular-nums">
+                {formatMillionTomanAsIntlCurrency(totalMillion, intlCurrency, radarLocale)}
+              </span>
+            )}
             <div className="flex gap-1">
               {[8000, 15000, 25000].map((preset) => (
                 <button key={preset} onClick={() => setTotalMillion(preset)} className="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition-colors">
@@ -145,8 +159,8 @@ export function ContractRoomShieldModal({ isOpen, onClose, initialTotalMillion =
                         <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-mono">گام {toPersianDigits(idx + 1)}</span>
                       </div>
                       <h4 className="text-sm font-bold text-white mb-2">{st.stageName}</h4>
-                      <div className="text-lg font-black text-amber-300 mb-2">
-                        {toPersianDigits(st.amountMillionToman.toLocaleString())} <span className="text-xs font-normal text-slate-300">م.ت</span>
+                      <div className="text-lg font-black text-amber-300 mb-2 tabular-nums">
+                        {toPersianDigits(st.amountMillionToman.toLocaleString())} <span className="text-xs font-normal text-slate-300">میلیون تومان{fxTag(st.amountMillionToman)}</span>
                       </div>
                       <div className="text-[11px] text-slate-300 leading-relaxed bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 mb-2">
                         <strong className="text-emerald-400 block mb-1">موعد:</strong> {st.dueMilestone}
@@ -167,7 +181,7 @@ export function ContractRoomShieldModal({ isOpen, onClose, initialTotalMillion =
                     <span>وجه التزام تأخیر متقارن روزانه (پیشنهاد رادار):</span>
                   </div>
                   <p className="text-xs text-slate-300 mt-1">
-                    روزانه <strong className="text-white font-bold">{toPersianDigits(shieldData.symmetricDailyPenaltyMillion)} میلیون تومان</strong> به ازای هر روز تأخیر طرفین در تخلیه یا محضر.
+                    روزانه <strong className="text-white font-bold">{toPersianDigits(shieldData.symmetricDailyPenaltyMillion)} میلیون تومان{fxTag(shieldData.symmetricDailyPenaltyMillion)}</strong> به ازای هر روز تأخیر طرفین در تخلیه یا محضر.
                   </p>
                 </div>
                 <button

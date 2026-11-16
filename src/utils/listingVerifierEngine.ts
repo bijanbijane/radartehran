@@ -173,7 +173,7 @@ export function diagnoseListingDeal(
     benchmarkLabelFa = 'میانهٔ آگهی‌های مشابه امروز';
   } else if (insufficientLiveSample) {
     benchmarkKind = 'UNAVAILABLE';
-    benchmarkLabelFa = 'مرجع داخلی، آبان ۱۴۰۵';
+    benchmarkLabelFa = cityKey === 'tehran' ? 'مرجع داخلی، آبان ۱۴۰۵' : 'مرجع داخلی بدون تاریخ به‌روزرسانی';
     referenceBenchmarkPerSqm = hood.buyPerSqm;
   }
   const fairDealPricePerSqm = referenceBenchmarkPerSqm;

@@ -1,6 +1,7 @@
 /** @file src/components/views/ProductPropertiesView.tsx — Real Estate Listings, Split Map Toggle (RT-L06) & Property Detail View (RT-L07 / RT-UI-PROPERTY-001) */
 import React from 'react';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
+import type { CityId } from '../../types/models';
 import type { PrimaryViewId } from '../../utils/areaUnit';
 import type { PropertiesSubTabId } from '../../navigation/registry/route.types';
 import { PropertyExplorerPage } from '../../features/properties/pages/PropertyExplorerPage';
@@ -8,6 +9,7 @@ import { PropertyExplorerPage } from '../../features/properties/pages/PropertyEx
 export interface ProductPropertiesViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
+  activeCity?: CityId;
   activeSubTab?: PropertiesSubTabId;
   onChangeSubTab?: (tab: PropertiesSubTabId) => void;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
@@ -45,6 +47,7 @@ export function ProductPropertiesView(p: ProductPropertiesViewProps): React.Reac
       <PropertyExplorerPage
         evaluatedNeighborhoods={p.evaluatedNeighborhoods}
         selectedHood={p.selectedHood}
+        activeCity={p.activeCity}
         activeSubTab={p.activeSubTab}
         onChangeSubTab={p.onChangeSubTab}
         onSelectNeighborhood={p.onSelectNeighborhood}

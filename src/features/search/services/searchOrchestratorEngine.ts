@@ -3,6 +3,7 @@
  * Explainable Ranking, Facets, Zero-Result Assistant & Versioned Index Engine
  */
 
+import { MULTI_CITY_CONFIGS } from '../../../data/multiCityData';
 import {
   SearchBoundingBox,
   SearchDocument,
@@ -19,8 +20,8 @@ import {
   SearchSynonymRecord,
   ZeroResultSuggestion,
 } from '../models/search.types';
-import { DEFAULT_RANKING_POLICIES, INITIAL_SEARCH_DOCUMENTS, sanitizeDocumentLocationForCaller } from './searchDomainAdapters';
-import { buildSearchPlan, INITIAL_SYNONYM_REGISTRY, PLACE_HIERARCHY_REGISTRY } from './searchNormalizerAndPlanner';
+import { ALL_CITY_SEARCH_DOCUMENTS, DEFAULT_RANKING_POLICIES, sanitizeDocumentLocationForCaller } from './searchDomainAdapters';
+import { buildSearchPlan, getPlaceHierarchyForCity, INITIAL_SYNONYM_REGISTRY } from './searchNormalizerAndPlanner';
 
 export interface SearchCallerContext {
   userId?: string;
@@ -81,7 +82,7 @@ export class SearchIndexAndOrchestratorEngine {
   private indexJobs: SearchIndexJob[] = [];
   private zeroResultLogs: Array<{ query: string; scope: SearchScope; timestamp: string }> = [];
 
-  constructor(initialDocs: SearchDocument[] = INITIAL_SEARCH_DOCUMENTS) {
+  constructor(initialDocs: SearchDocument[] = ALL_CITY_SEARCH_DOCUMENTS) {
     initialDocs.forEach((doc) => this.documents.set(doc.id, { ...doc }));
     this.indexJobs.push({
       id: 'idx-job-boot-1', jobType: 'FULL_REINDEX', scope: 'ALL', status: 'COMPLETED',
@@ -125,7 +126,8 @@ export class SearchIndexAndOrchestratorEngine {
     const activeScope: SearchScope = params.scope || 'ALL';
     const sort: SearchSortOption = params.sort || 'RELEVANCE';
     const caller: SearchCallerContext = params.caller || { isAuthenticated: false };
-    const plan = buildSearchPlan(params.rawQuery, this.synonyms);
+    const activeCity = params.explicitFilters?.cityId;
+    const plan = buildSearchPlan(params.rawQuery, this.synonyms, activeCity);
     const appliedFilters: SearchFilterSet = { ...plan.autoAppliedFilters, ...(params.explicitFilters || {}) };
 
     const degradedSet = new Set<SearchScope>(params.degradedScopes || []);
@@ -172,13 +174,19 @@ export class SearchIndexAndOrchestratorEngine {
       requestId, plan, activeScope, appliedFilters, sort, totalCount: scoredItems.length, results: scoredItems,
       groupedCounts, facets,
       partialSourceFailure: degradedSet.size > 0
-        ? { degradedSources: Array.from(degradedSet), warningFa: `برخی منابع (${Array.from(degradedSet).join('، ')}) موقتاً با تاخیر پاسخ دادند؛ نتایج سایر بخش‌ها نمایش داده شده است.` }
+        ? { degradedSources: Array.from(degradedSet), warningFa: `بعضی منابع (${Array.from(degradedSet).join('، ')}) در دسترس نبودند؛ نتایج منابع دیگر نمایش داده شده است.` }
         : undefined,
       zeroResultAssistant, rankingPolicyVersion: policy.version, latencyMs: Math.max(1, Date.now() - startMs),
     };
   }
 
   private matchesStructuredAndGeoFilters(doc: SearchDocument, f: SearchFilterSet): boolean {
+    const isSpatialDoc =
+      doc.scope === 'NEIGHBORHOODS' || doc.scope === 'PROPERTIES' || doc.scope === 'LISTINGS' ||
+      doc.scope === 'MARKET' || doc.locationPrecision !== 'NONE' || Boolean(doc.cityId);
+    if (f.cityId && isSpatialDoc) {
+      if (!doc.cityId || doc.cityId !== f.cityId) return false;
+    }
     if (f.neighborhoodId && doc.neighborhoodId && doc.neighborhoodId !== f.neighborhoodId) return false;
     if (f.districtNumber && doc.districtNumber && doc.districtNumber !== f.districtNumber) return false;
     if (f.propertyType && doc.propertyType && doc.propertyType !== f.propertyType) return false;
@@ -210,7 +218,7 @@ export class SearchIndexAndOrchestratorEngine {
     if (filters.neighborhoodId && doc.neighborhoodId === filters.neighborhoodId) {
       entityScore = 1; explanationFa.push(`تطبیق دقیق محله (${doc.neighborhoodName})`);
     } else if (filters.districtNumber && doc.districtNumber === filters.districtNumber) {
-      entityScore = 0.85; explanationFa.push(`در منطقه ${doc.districtNumber} تهران`);
+      entityScore = 0.85; explanationFa.push(`در منطقه ${doc.districtNumber}`);
     }
 
     if (filters.bedrooms && doc.bedrooms === filters.bedrooms) explanationFa.push(`مطابق تعداد اتاق (${doc.bedrooms}خوابه)`);
@@ -268,13 +276,25 @@ export class SearchIndexAndOrchestratorEngine {
   }
 
   private buildZeroResultAssistant(rawQuery: string, filters: SearchFilterSet): ZeroResultSuggestion {
+    const cityId = filters.cityId || 'tehran';
+    const cityPlaces = getPlaceHierarchyForCity(cityId);
+    const cityNameFa = MULTI_CITY_CONFIGS[cityId]?.nameFa || 'تهران';
+    const topHood = cityPlaces[0]?.canonicalName || 'مرکز شهر';
     return {
       reasonFa: filters.maxPriceMillionToman
         ? 'با سقف بودجه و فیلترهای فعلی موردی یافت نشد؛ افزایش سقف بودجه یا حذف یکی از فیلترها پیشنهاد می‌شود.'
-        : `برای عبارت «${rawQuery}» نتیجه مستقیمی یافت نشد؛ عبارت‌های مشابه یا محله‌های هم‌جوار را بررسی کنید.`,
+        : `برای عبارت «${rawQuery}» در ${cityNameFa} نتیجه مستقیمی یافت نشد؛ عبارت‌های مشابه یا محله‌های هم‌جوار را بررسی کنید.`,
       relaxedFilterLabelFa: filters.maxPriceMillionToman ? 'حذف محدودیت سقف بودجه' : 'نمایش همه حوزه‌های رادار',
-      suggestedQueries: ['آپارتمان دوخوابه در سعادت‌آباد', 'میانگین قیمت آپارتمان در منطقه ۵', 'کارشناس رسمی ارزیابی ملک'],
-      nearbyNeighborhoods: PLACE_HIERARCHY_REGISTRY.slice(0, 4).map((p) => ({ id: p.id, name: p.canonicalName, district: p.district })),
+      suggestedQueries: [
+        `آپارتمان دوخوابه در ${topHood}`,
+        `میانگین قیمت آپارتمان در ${cityNameFa}`,
+        'کارشناس رسمی ارزیابی ملک',
+      ],
+      nearbyNeighborhoods: cityPlaces.slice(0, 4).map((p) => ({
+        id: p.id,
+        name: p.canonicalName,
+        ...(p.district !== undefined ? { district: p.district } : {}),
+      })),
     };
   }
 

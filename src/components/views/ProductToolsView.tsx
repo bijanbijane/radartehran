@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Calculator, Building2, Scale, ShieldAlert, Sparkles, FileCheck, Hammer,
   GraduationCap, ArrowLeftRight, ChevronRight, ArrowUpRight, ClipboardCheck, Coins, Share2, Search, X,
@@ -9,8 +9,9 @@ import { toPersianNum } from '../../data/neighborhoods';
 import type { FeatureFlags } from '../../types/models';
 import type { ExpansionModalType } from '../ExpansionModulesModal';
 import type { SuperModuleTabId } from '../FutureSuperModulesModal';
-import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { convertPricePerSqmToUnit, convertPricePerSqmToUnitRaw, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { useAreaUnit, useExperienceMode, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
@@ -33,12 +34,15 @@ export interface ProductToolsViewProps {
   onOpenCompare: () => void;
   featureFlags: FeatureFlags;
   activeCity?: string;
+  targetSqm?: number;
   activeSubTab?: ToolsSubTabId;
 }
 
 export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
-  const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale(), [experienceMode, setExperienceMode] = useExperienceMode();
+  const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale(), [experienceMode] = useExperienceMode();
+  const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
+  const safeTargetSqm = Math.max(25, p.targetSqm || 80);
   const [toolQuery, setToolQuery] = useState<string>('');
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
   const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false), [showUiLab, setShowUiLab] = useState<boolean>(false);
@@ -52,19 +56,14 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
     else setActiveCat('all');
   }, [p.activeSubTab]);
 
-  const openDecisionTool = (tabId: Stage2ActiveTab) => { setActiveDecisionTab(tabId); setExperienceMode('pro'); setShowEmbeddedLab(true); };
+  const openDecisionTool = useCallback((tabId: Stage2ActiveTab) => { setActiveDecisionTab(tabId); setShowEmbeddedLab(true); }, []);
 
-  const unitBuy = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit);
-  const unitDeal = convertPricePerSqmToUnit(
-    aggregateNeighborhoodMarketMetrics(
-      p.selectedHood.id,
-      p.selectedHood.name,
-      p.selectedHood.buyPerSqm,
-      buildNeighborhoodListingSamples(p.selectedHood),
-    ).estimatedDealPricePerSqm,
-    areaUnit
-  );
-  const dealFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)})` : '';
+  const dealSqm = aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, buildNeighborhoodListingSamples(p.selectedHood)).estimatedDealPricePerSqm;
+  const unitBuy = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit), unitDeal = convertPricePerSqmToUnit(dealSqm, areaUnit);
+  const unitBuyRaw = convertPricePerSqmToUnitRaw(p.selectedHood.buyPerSqm, areaUnit), unitDealRaw = convertPricePerSqmToUnitRaw(dealSqm, areaUnit);
+  const areaSuffix = formatAreaUnitLabel(areaUnit);
+  const buyText = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(unitBuyRaw, intlCurrency, radarLocale, rateState.snapshot)} / ${areaSuffix}` : `${toPersianNum(unitBuy)} میلیون تومان / ${areaSuffix}`;
+  const dealText = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(unitDealRaw, intlCurrency, radarLocale, rateState.snapshot)} / ${areaSuffix}` : `${toPersianNum(unitDeal)} میلیون تومان / ${areaSuffix}`;
 
   const toolCategories = useMemo(() => [
     {
@@ -115,7 +114,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         { id: 'realtor_studio', title: 'استودیو هوش مصنوعی آگهی‌نویسی و استوری ملکی', desc: 'تولید متن جذاب و استاندارد برای دیوار و شیپور با فرمت استوری و بدون کلیشه‌های تکراری', icon: Share2, action: () => p.onOpenSuperModule('realtor_studio') },
       ],
     },
-  ], [isEn, p]);
+  ], [isEn, p.selectedHood.name, openDecisionTool, p.onOpenHedonic, p.onOpenReverseBudget, p.onOpenExpansionModal, p.onOpenSuperModule]);
 
   const filteredCategories = useMemo(() => {
     const q = toolQuery.trim();
@@ -171,9 +170,9 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           ) : (
             <strong className="font-black text-emerald-700 dark:text-emerald-300 block">محله {p.selectedHood.name} {p.selectedHood.zone ? `· ${p.selectedHood.zone}` : ''}</strong>
           )}
-          <div className="flex items-center justify-between text-[11px] tabular-nums pt-0.5">
-            <span className="text-slate-600 dark:text-slate-300">اعلامی: <strong>{toPersianNum(unitBuy)} م</strong> · سناریو v6.4 (غیرثبتی): <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(unitDeal)} م{dealFx}</strong></span>
-            <button type="button" onClick={p.onOpenCompare} className="text-[10.5px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">مقایسه دو محله</button>
+          <div className="flex items-center justify-between text-[11px] tabular-nums pt-0.5 gap-2">
+            <span className="text-slate-600 dark:text-slate-300">اعلامی: <strong>{buyText}</strong> · سناریو v6.4 (غیرثبتی): <strong className="text-emerald-700 dark:text-emerald-400">{dealText}</strong></span>
+            <button type="button" onClick={p.onOpenCompare} className="text-[10.5px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer shrink-0">مقایسه دو محله</button>
           </div>
         </div>
       </div>
@@ -214,14 +213,16 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           <button type="button" data-testid="toggle-valuation-workspace-btn" onClick={() => setShowValuationWorkspace((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showValuationWorkspace ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
             میز کار ارزش‌گذاری
           </button>
-          <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
-            Radar UI Lab
-          </button>
+          {import.meta.env.DEV && (
+            <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
+              Radar UI Lab
+            </button>
+          )}
         </div>
       </div>
 
       {showValuationWorkspace && p.evaluatedNeighborhoods && p.onSelectNeighborhood && <React.Suspense fallback={null}><ValuationWorkspacePage evaluatedNeighborhoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} onSelectNeighborhood={p.onSelectNeighborhood} onOpenModalCalculator={p.onOpenHedonic} /></React.Suspense>}
-      {showUiLab && <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} /></React.Suspense>}
+      {import.meta.env.DEV && showUiLab && <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} /></React.Suspense>}
       {showEmbeddedLab && (
         <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3">
           <div className="flex items-center justify-between">
@@ -244,7 +245,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       <div className="space-y-8">
         {filteredCategories.map((cat) => (
           <section key={cat.id} className="space-y-3.5">
-            <h2 className="text-xs font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wider">
+            <h2 className={`text-xs font-bold text-slate-400 flex items-center gap-2 ${isEn ? 'uppercase tracking-wider' : 'tracking-normal'}`}>
               <span>{cat.category}</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -277,7 +278,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       )}
       {showContractShieldModal && (
         <React.Suspense fallback={null}>
-          <ContractRoomShieldModal isOpen={showContractShieldModal} onClose={() => setShowContractShieldModal(false)} initialTotalMillion={p.selectedHood ? Math.round(p.selectedHood.buyPerSqm * 80) : 12000} />
+          <ContractRoomShieldModal key={`${p.selectedHood?.id}-${safeTargetSqm}`} isOpen={showContractShieldModal} onClose={() => setShowContractShieldModal(false)} initialTotalMillion={p.selectedHood ? Math.round(p.selectedHood.buyPerSqm * safeTargetSqm) : 12000} />
         </React.Suspense>
       )}
     </div>

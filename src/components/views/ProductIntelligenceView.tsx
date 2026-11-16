@@ -1,13 +1,16 @@
 import React from 'react';
 import { TrendingUp } from 'lucide-react';
 import type { EvaluatedNeighborhood, MarketPulseData } from '../../data/neighborhoods';
-import { formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
+import { convertPricePerSqmToUnitRaw, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { EpistemicMarketDisclaimer } from '../EpistemicMarketDisclaimer';
 import { MarketPage } from '../../features/market/pages/MarketPage';
 import type { MarketSubTabId } from '../../navigation/registry/route.types';
 import { PublicDataProvenanceCard } from '../../features/data-governance/components/PublicDataProvenanceCard';
 import { AnalyticsAndResearchWorkspace } from '../../features/analytics/components/AnalyticsAndResearchWorkspace';
+import { resolveAnalyticsPlaceId, resolveGovernanceEntityId } from '../../features/data-governance/services/placeIdentityMappers';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { toPersianNum } from '../../data/neighborhoods';
 
 export interface ProductIntelligenceViewProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
@@ -45,22 +48,33 @@ class MarketSectionErrorBoundary extends React.Component<{ children: React.React
 }
 
 export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.ReactElement {
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
+  const liveSamples = buildNeighborhoodListingSamples(p.selectedHood);
   const refAgg = aggregateNeighborhoodMarketMetrics(
     p.selectedHood.id,
     p.selectedHood.name,
     p.selectedHood.buyPerSqm,
-    buildNeighborhoodListingSamples(p.selectedHood),
+    liveSamples,
   );
   const quickSwitchHoods = p.evaluatedNeighborhoods.slice(0, 5);
+  const syntheticCount = Math.max(0, (p.selectedHood.bargains?.length || 0) - liveSamples.length);
+  const observedPerSqm = liveSamples.map((s) => Math.round((s.askingTotalMillion / Math.max(1, s.sqm)) * 10) / 10);
+  const unitDeal = Math.round(convertPricePerSqmToUnitRaw(refAgg.estimatedDealPricePerSqm, areaUnit) * 10) / 10;
 
   return (
     <MarketSectionErrorBoundary>
       <div className="w-full max-w-[1360px] mx-auto px-4 pt-5 space-y-4">
         <EpistemicMarketDisclaimer metrics={refAgg} />
         <PublicDataProvenanceCard
-          entityId="saadat-abad"
-          entityNameFa={p.selectedHood.name}
-          sampleCount={Math.max(32, refAgg.sampleCount * 8)}
+          entityId={resolveGovernanceEntityId(p.activeCity, p.selectedHood.id)}
+          neighborhoodNameFa={p.selectedHood.name}
+          sampleCount={refAgg.eligibleObservedCount}
+          uniqueEntityCount={null}
+          observedSampleCount={refAgg.observedSampleCount}
+          syntheticSampleCount={syntheticCount}
         />
       </div>
       <MarketPage
@@ -79,24 +93,31 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
       />
       <div className="w-full max-w-[1360px] mx-auto px-4 pb-6 space-y-4">
         <AnalyticsAndResearchWorkspace
-          activePlaceId="saadat-abad"
+          activePlaceId={resolveAnalyticsPlaceId(p.selectedHood.id, p.activeCity)}
           activePlaceNameFa={p.selectedHood.name}
           baseBuyPerSqm={p.selectedHood.buyPerSqm}
+          observedValues={observedPerSqm}
         />
         <div className="p-3 rounded-xl border border-[#DCE3DF] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-[#586760] dark:text-slate-400">دسترسی سریع محله:</span>
             {quickSwitchHoods.map((hood) => (
-              <div key={hood.id} className={`px-2 py-1 rounded-md border ${hood.id === p.selectedHood.id ? 'border-[#176B63] text-[#176B63] font-bold' : 'border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'}`}>
-                <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
-                  {hood.name}
-                </div>
-              </div>
+              <button
+                key={hood.id}
+                type="button"
+                onClick={() => p.onSelectNeighborhood(hood)}
+                className={`px-2 py-1 rounded-md border cursor-pointer ${hood.id === p.selectedHood.id ? 'border-[#176B63] text-[#176B63] font-bold' : 'border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'}`}
+              >
+                {hood.name}
+              </button>
             ))}
           </div>
           <button type="button" onClick={p.onOpenPriceTrend} className="px-3 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
             <TrendingUp className="w-3.5 h-3.5 text-[#176B63]" />
-            <span>نمودار کامل روند ({formatMillionTomanAsIntlCurrency(refAgg.estimatedDealPricePerSqm, 'IRT')} · سناریو v6.4)</span>
+            <span>
+              نمودار کامل روند ({toPersianNum(unitDeal)} م/{areaUnit === 'sqft' ? 'ft²' : 'م'}
+              {intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''} · سناریو v6.4)
+            </span>
           </button>
         </div>
       </div>

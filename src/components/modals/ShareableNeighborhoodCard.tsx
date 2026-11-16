@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { formatMillionToVerbalPersian, formatJalaliMonthYear } from '../../utils/persianFinancials';
-import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
-import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood, aggregateMarketMetricsForScalars } from '../../data/realMarketPriceAggregator';
+import { convertPricePerSqmToUnitRaw, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { aggregateMarketMetricsForScalars } from '../../data/realMarketPriceAggregator';
 
 export interface ShareableCardProps {
   hoodNameFa: string;
@@ -10,6 +10,7 @@ export interface ShareableCardProps {
   avgPricePerSqmMillion: number;
   benchmark100SqmTotalMillion: number;
   monthlyChangePercent: number;
+  cityNameFa?: string;
 }
 
 export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
@@ -18,11 +19,13 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
   avgPricePerSqmMillion,
   benchmark100SqmTotalMillion,
   monthlyChangePercent,
+  cityNameFa = 'مسکن',
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
   const [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
 
   const handleExportPng = async () => {
     setIsExporting(true);
@@ -37,14 +40,12 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Dark Executive Background
       const grad = ctx.createLinearGradient(0, 0, 1080, 1350);
       grad.addColorStop(0, '#0f172a');
       grad.addColorStop(1, '#020617');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1080, 1350);
 
-      // Emerald Accent Frame
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 6;
       ctx.strokeRect(48, 48, 984, 1254);
@@ -52,23 +53,22 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
       ctx.direction = 'rtl';
       ctx.textAlign = 'right';
       const fmt = new Intl.NumberFormat('fa-IR');
-      const unitAsk = convertPricePerSqmToUnit(avgPricePerSqmMillion, areaUnit);
-      const unitDeal = convertPricePerSqmToUnit(
-        aggregateMarketMetricsForScalars(districtNumber || 1, hoodNameFa, avgPricePerSqmMillion).estimatedDealPricePerSqm,
-        areaUnit
-      );
+      const unitAsk = Math.round(convertPricePerSqmToUnitRaw(avgPricePerSqmMillion, areaUnit) * 10) / 10;
+      const unitDeal = Math.round(
+        convertPricePerSqmToUnitRaw(
+          aggregateMarketMetricsForScalars(districtNumber || 1, hoodNameFa, avgPricePerSqmMillion).estimatedDealPricePerSqm,
+          areaUnit,
+        ) * 10,
+      ) / 10;
 
-      // Header
       ctx.fillStyle = '#34d399';
       ctx.font = 'bold 38px Vazirmatn, Tahoma, sans-serif';
-      ctx.fillText('رادار هوشمند مسکن تهران | گزارش تحلیلی محله', 960, 150);
+      ctx.fillText(`رادار هوشمند ${cityNameFa} | گزارش تحلیلی محله`, 960, 150);
 
-      // Hood Name
       ctx.fillStyle = '#ffffff';
       ctx.font = 'extrabold 76px Vazirmatn, Tahoma, sans-serif';
       ctx.fillText(`محله ${hoodNameFa} (منطقه ${fmt.format(districtNumber)})`, 960, 280);
 
-      // Price Box
       ctx.fillStyle = '#1e293b';
       ctx.fillRect(96, 360, 888, 320);
 
@@ -88,7 +88,6 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
         640
       );
 
-      // Monthly Trend
       ctx.fillStyle = monthlyChangePercent >= 0 ? '#f59e0b' : '#38bdf8';
       ctx.font = 'bold 42px Vazirmatn, Tahoma, sans-serif';
       const sign = monthlyChangePercent > 0 ? '+' : '';
@@ -98,17 +97,16 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
         810
       );
 
-      // Footer
       ctx.fillStyle = '#64748b';
       ctx.font = '30px Vazirmatn, Tahoma, sans-serif';
-      ctx.fillText('استخراج‌شده از سامانه رادار تهران • بدون نیاز به ثبت‌نام', 960, 1220);
+      ctx.fillText(`استخراج‌شده از سامانه رادار ${cityNameFa} • بدون نیاز به ثبت‌نام`, 960, 1220);
 
       canvas.toBlob((blob) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `tehran-radar-${hoodNameFa}.png`;
+        link.download = `radar-${hoodNameFa}.png`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       }, 'image/png');

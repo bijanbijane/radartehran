@@ -204,17 +204,13 @@ export function getNeighborhoodBoundaryPolygon(
     Number((hood.lng + mx * degLngPerM).toFixed(5)),
   ]);
 }
-export function renderNeighborhoodGeoJSONOnLeaflet(
-  L: any,
-  map: any,
+export function resolveNeighborhoodGeoJsonForLod(
   hood: BoundaryNeighborhoodInput,
   allCityHoods: readonly BoundaryNeighborhoodInput[],
-  style: ZoomAdaptivePolygonStyle,
   osmOverrideCoords?: readonly (readonly [number, number])[] | null,
-  onClick?: () => void,
   lodOptions?: { zoom?: number; isSelected?: boolean; lowBandwidthMode?: boolean }
-): any {
-  const zoom = lodOptions?.zoom ?? (typeof map?.getZoom === 'function' ? map.getZoom() : 12);
+): { geometryKey: string; geoJsonFeature: NeighborhoodGeoJSONFeature; coords: [number, number][] } {
+  const zoom = lodOptions?.zoom ?? 12;
   const isSelected = Boolean(lodOptions?.isSelected);
   const lowBw = Boolean(lodOptions?.lowBandwidthMode);
   const lodBucket = isSelected ? 'sel' : lowBw ? `bw:${zoom <= 11 ? 'lo' : 'md'}` : zoom <= 10 ? 'z10' : zoom <= 12 ? 'z12' : 'zFull';
@@ -223,26 +219,23 @@ export function renderNeighborhoodGeoJSONOnLeaflet(
   if (!geoJsonFeature) {
     const rawCoords = getNeighborhoodBoundaryPolygon(hood, allCityHoods, osmOverrideCoords);
     const coords = simplifyPolygonRingForZoomLod(rawCoords, zoom, isSelected, lowBw);
-    const source =
-      Array.isArray(osmOverrideCoords) && osmOverrideCoords.length >= 4
-        ? 'osm_overpass_geojson'
-        : 'dynamic_voronoi_geojson';
+    const source = Array.isArray(osmOverrideCoords) && osmOverrideCoords.length >= 4 ? 'osm_overpass_geojson' : 'dynamic_voronoi_geojson';
     geoJsonFeature = latLngRingToGeoJSONFeature(hood, coords, source);
     clientGeoJsonLruCache.set(cacheKey, geoJsonFeature);
     clientGeoJsonLruCache.set(hood.id, geoJsonFeature);
+    return { geometryKey: cacheKey, geoJsonFeature, coords };
   }
-  const layer =
-    typeof L.geoJSON === 'function'
-      ? L.geoJSON(geoJsonFeature, { style: () => style }).addTo(map)
-      : L.polygon(
-          simplifyPolygonRingForZoomLod(
-            getNeighborhoodBoundaryPolygon(hood, allCityHoods, osmOverrideCoords),
-            zoom,
-            isSelected,
-            lowBw
-          ),
-          style
-        ).addTo(map);
+  const ring = geoJsonFeature.geometry.coordinates[0] || [];
+  return { geometryKey: cacheKey, geoJsonFeature, coords: ring.map(([lng, lat]) => [lat, lng]) };
+}
+export function renderNeighborhoodGeoJSONOnLeaflet(
+  L: any, map: any, hood: BoundaryNeighborhoodInput, allCityHoods: readonly BoundaryNeighborhoodInput[], style: ZoomAdaptivePolygonStyle,
+  osmOverrideCoords?: readonly (readonly [number, number])[] | null, onClick?: () => void,
+  lodOptions?: { zoom?: number; isSelected?: boolean; lowBandwidthMode?: boolean }
+): any {
+  const zoom = lodOptions?.zoom ?? (typeof map?.getZoom === 'function' ? map.getZoom() : 12);
+  const { geoJsonFeature, coords } = resolveNeighborhoodGeoJsonForLod(hood, allCityHoods, osmOverrideCoords, { ...lodOptions, zoom });
+  const layer = typeof L.geoJSON === 'function' ? L.geoJSON(geoJsonFeature, { style: () => style }).addTo(map) : L.polygon(coords, style).addTo(map);
   if (onClick && typeof layer.on === 'function') layer.on('click', onClick);
   return layer;
 }

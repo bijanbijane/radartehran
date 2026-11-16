@@ -1,9 +1,10 @@
 /**
  * RT-UI-SEARCH-001 | Persian Query Understanding, Normalization, Synonym & Intent Planner
  * Deterministic pipeline: Raw Query -> Validation -> Persian Normalization -> Tokenization
- * -> Typo/Synonym Expansion -> Entity Recognition -> Intent Detection -> Filter Extraction
+ * -> Typo/Synonym Expansion -> Multi-City Entity Recognition -> Intent Detection -> Filter Extraction
  */
 
+import { MULTI_CITY_CONFIGS, type CityId } from '../../../data/multiCityData';
 import {
   ExtractedSearchPlan,
   IntentConfidenceLevel,
@@ -15,6 +16,7 @@ import {
   SearchScope,
   SearchSortOption,
   SearchSynonymRecord,
+  SearchViewMode,
 } from '../models/search.types';
 
 export const MAX_SEARCH_QUERY_LENGTH = 200;
@@ -58,31 +60,25 @@ export const INITIAL_SYNONYM_REGISTRY: SearchSynonymRecord[] = [
 export interface CanonicalPlaceEntry {
   id: string;
   canonicalName: string;
-  district: number;
+  district?: number;
+  cityId?: CityId;
+  hoodNumericId?: number;
   aliases: string[];
   hierarchyPath: string[];
 }
 
 export const PLACE_HIERARCHY_REGISTRY: CanonicalPlaceEntry[] = [
-  { id: 'niavaran', canonicalName: 'نیاوران', district: 1, aliases: ['محله نیاوران', 'کاخ نیاوران'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۱', 'نیاوران'] },
-  { id: 'farmanieh', canonicalName: 'فرمانیه', district: 1, aliases: ['محله فرمانیه', 'اندرزگو'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۱', 'فرمانیه'] },
-  { id: 'saadat-abad', canonicalName: 'سعادت‌آباد', district: 2, aliases: ['سعادت آباد', 'سعادت اباد', 'محله سعادت‌آباد'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۲', 'سعادت‌آباد'] },
-  { id: 'shahrak-gharb', canonicalName: 'شهرک غرب', district: 2, aliases: ['شهرک قدس', 'محله شهرک غرب'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۲', 'شهرک غرب'] },
-  { id: 'marzdaran', canonicalName: 'مرزداران', district: 2, aliases: ['بلوار مرزداران', 'محله مرزداران'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۲', 'مرزداران'] },
-  { id: 'vanak', canonicalName: 'ونک', district: 3, aliases: ['میدان ونک', 'محله ونک', 'ملاصدرا'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۳', 'ونک'] },
-  { id: 'pasdaran', canonicalName: 'پاسداران', district: 3, aliases: ['خیابان پاسداران', 'دروس'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۳', 'پاسداران'] },
-  { id: 'tehranpars', canonicalName: 'تهران‌پارس', district: 4, aliases: ['تهرانپارس', 'تهران پارس', 'فلکه اول تهرانپارس'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۴', 'تهران‌پارس'] },
-  { id: 'punak', canonicalName: 'پونک', district: 5, aliases: ['محله پونک', 'اشرفی اصفهانی', 'جنت‌آباد'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۵', 'پونک'] },
-  { id: 'amir-abad', canonicalName: 'امیرآباد', district: 6, aliases: ['امیر آباد', 'کارگر شمالی', 'یوسف‌آباد'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۶', 'امیرآباد'] },
+  { id: 'niavaran', canonicalName: 'نیاوران', district: 1, cityId: 'tehran', hoodNumericId: 1, aliases: ['محله نیاوران', 'کاخ نیاوران'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۱', 'نیاوران'] },
+  { id: 'farmanieh', canonicalName: 'فرمانیه', district: 1, cityId: 'tehran', hoodNumericId: 2, aliases: ['محله فرمانیه', 'اندرزگو'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۱', 'فرمانیه'] },
+  { id: 'saadat-abad', canonicalName: 'سعادت‌آباد', district: 2, cityId: 'tehran', hoodNumericId: 5, aliases: ['سعادت آباد', 'سعادت اباد', 'محله سعادت‌آباد'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۲', 'سعادت‌آباد'] },
+  { id: 'shahrak-gharb', canonicalName: 'شهرک غرب', district: 2, cityId: 'tehran', hoodNumericId: 6, aliases: ['شهرک قدس', 'محله شهرک غرب'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۲', 'شهرک غرب'] },
+  { id: 'marzdaran', canonicalName: 'مرزداران', district: 2, cityId: 'tehran', hoodNumericId: 14, aliases: ['بلوار مرزداران', 'محله مرزداران'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۲', 'مرزداران'] },
+  { id: 'vanak', canonicalName: 'ونک', district: 3, cityId: 'tehran', hoodNumericId: 7, aliases: ['میدان ونک', 'محله ونک', 'ملاصدرا'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۳', 'ونک'] },
+  { id: 'pasdaran', canonicalName: 'پاسداران', district: 3, cityId: 'tehran', hoodNumericId: 4, aliases: ['خیابان پاسداران', 'دروس'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۳', 'پاسداران'] },
+  { id: 'tehranpars', canonicalName: 'تهران‌پارس', district: 4, cityId: 'tehran', hoodNumericId: 11, aliases: ['تهرانپارس', 'تهران پارس', 'فلکه اول تهرانپارس'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۴', 'تهران‌پارس'] },
+  { id: 'punak', canonicalName: 'پونک', district: 5, cityId: 'tehran', hoodNumericId: 13, aliases: ['محله پونک', 'اشرفی اصفهانی', 'جنت‌آباد'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۵', 'پونک'] },
+  { id: 'amir-abad', canonicalName: 'امیرآباد', district: 6, cityId: 'tehran', hoodNumericId: 9, aliases: ['امیر آباد', 'کارگر شمالی', 'یوسف‌آباد'], hierarchyPath: ['ایران', 'استان تهران', 'شهر تهران', 'منطقه ۶', 'امیرآباد'] },
 ];
-
-export function validateRawSearchQuery(rawQuery: unknown): { valid: boolean; errorCode?: SearchErrorCode; messageFa?: string } {
-  if (typeof rawQuery !== 'string') return { valid: false, errorCode: 'INVALID_QUERY', messageFa: 'عبارت جست‌وجو نامعتبر است.' };
-  if (rawQuery.length > MAX_SEARCH_QUERY_LENGTH) {
-    return { valid: false, errorCode: 'QUERY_TOO_LONG', messageFa: `طول عبارت جست‌وجو نباید بیش از ${MAX_SEARCH_QUERY_LENGTH} کاراکتر باشد.` };
-  }
-  return { valid: true };
-}
 
 export function normalizeDigitsToAscii(input: string): string {
   let out = input;
@@ -90,6 +86,59 @@ export function normalizeDigitsToAscii(input: string): string {
     out = out.replaceAll(PERSIAN_DIGITS[i], String(i)).replaceAll(ARABIC_DIGITS[i], String(i));
   }
   return out;
+}
+
+export function extractValidDistrictNumber(zoneText?: string): number | undefined {
+  if (!zoneText) return undefined;
+  const m = normalizeDigitsToAscii(zoneText).match(/منطقه\s*([0-9]{1,2})/);
+  if (!m) return undefined;
+  const d = Number(m[1]);
+  return Number.isInteger(d) && d >= 1 && d <= 22 ? d : undefined;
+}
+
+const CITY_PLACE_CACHE = new Map<CityId, CanonicalPlaceEntry[]>();
+
+export function getPlaceHierarchyForCity(cityId: CityId = 'tehran'): CanonicalPlaceEntry[] {
+  const cached = CITY_PLACE_CACHE.get(cityId);
+  if (cached) return cached;
+  const cfg = MULTI_CITY_CONFIGS[cityId] || MULTI_CITY_CONFIGS.tehran;
+  const entries: CanonicalPlaceEntry[] = [];
+  const seenNames = new Set<string>();
+
+  if (cityId === 'tehran') {
+    for (const p of PLACE_HIERARCHY_REGISTRY) {
+      entries.push(p);
+      seenNames.add(p.canonicalName);
+    }
+  }
+
+  for (const hood of cfg.neighborhoods) {
+    if (seenNames.has(hood.name)) continue;
+    seenNames.add(hood.name);
+    const district = extractValidDistrictNumber(hood.zone);
+    const id = cityId === 'tehran' ? `tehran-${hood.id}` : `${cityId}-${hood.id}`;
+    const hierarchyPath = ['ایران', `شهر ${cfg.nameFa}`, ...(district !== undefined ? [`منطقه ${district}`] : []), hood.name];
+    entries.push({
+      id,
+      canonicalName: hood.name,
+      ...(district !== undefined ? { district } : {}),
+      cityId,
+      hoodNumericId: hood.id,
+      aliases: [`محله ${hood.name}`, String(hood.id)],
+      hierarchyPath,
+    });
+  }
+
+  CITY_PLACE_CACHE.set(cityId, entries);
+  return entries;
+}
+
+export function validateRawSearchQuery(rawQuery: unknown): { valid: boolean; errorCode?: SearchErrorCode; messageFa?: string } {
+  if (typeof rawQuery !== 'string') return { valid: false, errorCode: 'INVALID_QUERY', messageFa: 'عبارت جست‌وجو نامعتبر است.' };
+  if (rawQuery.length > MAX_SEARCH_QUERY_LENGTH) {
+    return { valid: false, errorCode: 'QUERY_TOO_LONG', messageFa: `طول عبارت جست‌وجو نباید بیش از ${MAX_SEARCH_QUERY_LENGTH} کاراکتر باشد.` };
+  }
+  return { valid: true };
 }
 
 export function normalizePersianSearchQuery(
@@ -145,19 +194,21 @@ export function normalizePersianSearchQuery(
 
 export function buildSearchPlan(
   rawQuery: string,
-  synonymRegistry: SearchSynonymRecord[] = INITIAL_SYNONYM_REGISTRY
+  synonymRegistry: SearchSynonymRecord[] = INITIAL_SYNONYM_REGISTRY,
+  activeCity?: CityId
 ): ExtractedSearchPlan {
   const norm = normalizePersianSearchQuery(rawQuery, synonymRegistry);
   const q = norm.normalizedQuery;
   const recognizedEntities: RecognizedEntity[] = [];
-  const extractedFilters: SearchFilterSet = {};
+  const extractedFilters: SearchFilterSet = activeCity ? { cityId: activeCity } : {};
+  const cityPlaces = getPlaceHierarchyForCity(activeCity || 'tehran');
 
-  for (const place of PLACE_HIERARCHY_REGISTRY) {
-    if ([place.canonicalName, ...place.aliases].some((term) => q.includes(term))) {
+  for (const place of cityPlaces) {
+    if ([place.canonicalName, ...place.aliases].some((term) => term.length >= 2 && q.includes(term))) {
       recognizedEntities.push({ text: place.canonicalName, canonicalName: place.canonicalName, entityType: 'PLACE', entityId: place.id, confidence: 0.96 });
       extractedFilters.neighborhoodId = place.id;
       extractedFilters.neighborhoodName = place.canonicalName;
-      extractedFilters.districtNumber = place.district;
+      if (place.district !== undefined) extractedFilters.districtNumber = place.district;
       break;
     }
   }
@@ -223,7 +274,7 @@ export function buildSearchPlan(
   }
 
   const confidence: IntentConfidenceLevel = confidenceScore >= 0.85 ? 'HIGH' : confidenceScore >= 0.65 ? 'MEDIUM' : 'LOW';
-  const autoAppliedFilters: SearchFilterSet = confidence === 'HIGH' ? { ...extractedFilters } : {};
+  const autoAppliedFilters: SearchFilterSet = confidence === 'HIGH' ? { ...extractedFilters } : activeCity ? { cityId: activeCity } : {};
   const suggestedFilters: SearchFilterSet = confidence !== 'HIGH' ? { ...extractedFilters } : {};
   const targetScopes = resolveTargetScopesForIntent(primaryIntent);
 
@@ -245,11 +296,17 @@ function resolveTargetScopesForIntent(intent: SearchIntent): SearchScope[] {
   return ['ALL', 'PROPERTIES', 'NEIGHBORHOODS', 'MARKET', 'SERVICES', 'KNOWLEDGE', 'COMMUNITY'];
 }
 
-export function encodeSearchUrlState(params: { q?: string; scope?: SearchScope; sort?: SearchSortOption; filters?: SearchFilterSet }): string {
+export function encodeSearchUrlState(params: {
+  q?: string; scope?: SearchScope; sort?: SearchSortOption; viewMode?: SearchViewMode;
+  page?: number; pageSize?: number; filters?: SearchFilterSet;
+}): string {
   const sp = new URLSearchParams();
   if (params.q && params.q.trim()) sp.set('q', params.q.trim().slice(0, MAX_SEARCH_QUERY_LENGTH));
   if (params.scope && params.scope !== 'ALL') sp.set('scope', params.scope);
   if (params.sort && params.sort !== 'RELEVANCE') sp.set('sort', params.sort);
+  if (params.viewMode && params.viewMode !== 'LIST') sp.set('sview', params.viewMode);
+  if (params.page && params.page > 1) sp.set('spage', String(params.page));
+  if (params.pageSize && params.pageSize !== 12) sp.set('ssize', String(params.pageSize));
   const f = params.filters;
   if (f?.neighborhoodId) sp.set('hood', f.neighborhoodId);
   if (f?.districtNumber) sp.set('district', String(f.districtNumber));
@@ -257,10 +314,47 @@ export function encodeSearchUrlState(params: { q?: string; scope?: SearchScope; 
   if (f?.transactionType) sp.set('tx', f.transactionType);
   if (f?.bedrooms) sp.set('beds', String(f.bedrooms));
   if (f?.maxPriceMillionToman) sp.set('maxPrice', String(f.maxPriceMillionToman));
+  if (f?.boundingBox) {
+    const b = f.boundingBox;
+    sp.set('bbox', `${b.south.toFixed(4)},${b.west.toFixed(4)},${b.north.toFixed(4)},${b.east.toFixed(4)}`);
+  }
   return sp.toString();
 }
 
-export function decodeSearchUrlState(queryString: string): { q: string; scope: SearchScope; sort: SearchSortOption; filters: SearchFilterSet } {
+export function mergeSearchUrlStateIntoSearch(
+  currentSearch: string,
+  params: {
+    q?: string; scope?: SearchScope; sort?: SearchSortOption; viewMode?: SearchViewMode;
+    page?: number; pageSize?: number; filters?: SearchFilterSet;
+  }
+): string {
+  const sp = new URLSearchParams(currentSearch.startsWith('?') ? currentSearch.slice(1) : currentSearch);
+  const searchOwnedKeys = ['q', 'scope', 'sort', 'sview', 'spage', 'ssize', 'shood', 'district', 'ptype', 'tx', 'beds', 'maxPrice', 'bbox'];
+  for (const k of searchOwnedKeys) sp.delete(k);
+  if (params.q && params.q.trim()) sp.set('q', params.q.trim().slice(0, MAX_SEARCH_QUERY_LENGTH));
+  if (params.scope && params.scope !== 'ALL') sp.set('scope', params.scope);
+  if (params.sort && params.sort !== 'RELEVANCE') sp.set('sort', params.sort);
+  if (params.viewMode && params.viewMode !== 'LIST') sp.set('sview', params.viewMode);
+  if (params.page && params.page > 1) sp.set('spage', String(params.page));
+  if (params.pageSize && params.pageSize !== 12) sp.set('ssize', String(params.pageSize));
+  const f = params.filters;
+  if (f?.neighborhoodId) sp.set('shood', f.neighborhoodId);
+  if (f?.districtNumber) sp.set('district', String(f.districtNumber));
+  if (f?.propertyType) sp.set('ptype', f.propertyType);
+  if (f?.transactionType) sp.set('tx', f.transactionType);
+  if (f?.bedrooms) sp.set('beds', String(f.bedrooms));
+  if (f?.maxPriceMillionToman) sp.set('maxPrice', String(f.maxPriceMillionToman));
+  if (f?.boundingBox) {
+    const b = f.boundingBox;
+    sp.set('bbox', `${b.south.toFixed(4)},${b.west.toFixed(4)},${b.north.toFixed(4)},${b.east.toFixed(4)}`);
+  }
+  return sp.toString();
+}
+
+export function decodeSearchUrlState(queryString: string): {
+  q: string; scope: SearchScope; sort: SearchSortOption; viewMode: SearchViewMode;
+  page: number; pageSize: number; filters: SearchFilterSet;
+} {
   const sp = new URLSearchParams(queryString.startsWith('?') ? queryString.slice(1) : queryString);
   const rawQ = (sp.get('q') || '').slice(0, MAX_SEARCH_QUERY_LENGTH).replace(/[<>]/g, '');
   const validScopes: SearchScope[] = ['ALL', 'PROPERTIES', 'LISTINGS', 'NEIGHBORHOODS', 'MARKET', 'VALUATION', 'SERVICES', 'PROVIDERS', 'KNOWLEDGE', 'COMMUNITY', 'MAP', 'ACCOUNT'];
@@ -269,14 +363,31 @@ export function decodeSearchUrlState(queryString: string): { q: string; scope: S
   const validSorts: SearchSortOption[] = ['RELEVANCE', 'NEWEST', 'PRICE_ASC', 'PRICE_DESC', 'PRICE_PER_SQM_ASC', 'AREA_DESC', 'DISTANCE_ASC', 'POPULARITY_DESC', 'RATING_DESC', 'QUALITY_SCORE_DESC'];
   const rawSort = (sp.get('sort') || 'RELEVANCE') as SearchSortOption;
   const sort = validSorts.includes(rawSort) ? rawSort : 'RELEVANCE';
+  const rawView = (sp.get('sview') || 'LIST') as SearchViewMode;
+  const viewMode: SearchViewMode = rawView === 'MAP' || rawView === 'SPLIT' ? rawView : 'LIST';
+  const rawPage = Number(sp.get('spage'));
+  const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
+  const rawSize = Number(sp.get('ssize'));
+  const pageSize = rawSize === 24 || rawSize === 48 ? rawSize : 12;
   const filters: SearchFilterSet = {};
-  const hood = sp.get('hood');
-  if (hood && /^[a-z0-9-]+$/i.test(hood)) filters.neighborhoodId = hood;
+  const shood = sp.get('shood') || sp.get('hood');
+  if (shood && /^[a-z0-9-]+$/i.test(shood) && !/^\d+$/.test(shood)) filters.neighborhoodId = shood;
   const district = Number(sp.get('district'));
   if (Number.isInteger(district) && district >= 1 && district <= 22) filters.districtNumber = district;
+  const ptype = sp.get('ptype') as SearchFilterSet['propertyType'];
+  if (ptype && ['APARTMENT', 'VILLA', 'OFFICE', 'COMMERCIAL', 'OLD_HOUSE'].includes(ptype)) filters.propertyType = ptype;
+  const tx = sp.get('tx') as SearchFilterSet['transactionType'];
+  if (tx && ['BUY', 'RENT', 'FULL_MORTGAGE'].includes(tx)) filters.transactionType = tx;
   const beds = Number(sp.get('beds'));
   if (Number.isInteger(beds) && beds >= 1 && beds <= 6) filters.bedrooms = beds;
   const maxPrice = Number(sp.get('maxPrice'));
   if (Number.isFinite(maxPrice) && maxPrice > 0 && maxPrice <= 500_000) filters.maxPriceMillionToman = maxPrice;
-  return { q: rawQ, scope, sort, filters };
+  const bboxRaw = sp.get('bbox');
+  if (bboxRaw) {
+    const parts = bboxRaw.split(',').map(Number);
+    if (parts.length === 4 && parts.every(Number.isFinite) && parts[2] > parts[0] && parts[3] > parts[1]) {
+      filters.boundingBox = { south: parts[0], west: parts[1], north: parts[2], east: parts[3] };
+    }
+  }
+  return { q: rawQ, scope, sort, viewMode, page, pageSize, filters };
 }

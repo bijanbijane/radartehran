@@ -61,7 +61,10 @@ export interface NormalizedQueryResult {
   };
 }
 
+export type SearchCityId = 'tehran' | 'karaj' | 'mashhad' | 'isfahan' | 'shiraz';
+
 export interface SearchFilterSet {
+  cityId?: SearchCityId;
   transactionType?: 'BUY' | 'RENT' | 'FULL_MORTGAGE';
   propertyType?: 'APARTMENT' | 'VILLA' | 'OFFICE' | 'COMMERCIAL' | 'OLD_HOUSE';
   bedrooms?: number;
@@ -106,6 +109,7 @@ export interface SearchDocument {
   indexSchemaVersion: string;
   entityType: SearchEntityType;
   scope: SearchScope;
+  cityId?: SearchCityId;
   titleFa: string;
   subtitleFa: string;
   summaryFa: string;
@@ -157,7 +161,7 @@ export interface ZeroResultSuggestion {
   reasonFa: string;
   relaxedFilterLabelFa?: string;
   suggestedQueries: string[];
-  nearbyNeighborhoods: Array<{ id: string; name: string; district: number }>;
+  nearbyNeighborhoods: Array<{ id: string; name: string; district?: number }>;
 }
 
 export interface SearchExecutionResponse {
@@ -208,6 +212,8 @@ export interface SavedSearchRecord {
   alertFrequency: SavedSearchAlertFrequency;
   channels: Array<'IN_APP' | 'EMAIL' | 'SMS' | 'PUSH'>;
   status: 'ACTIVE' | 'PAUSED';
+  persistenceScope?: 'SESSION_LOCAL' | 'SERVER_SYNCED';
+  notificationStatus?: 'DISABLED' | 'LOCAL_REQUEST_PENDING' | 'CONFIRMED_BY_SERVICE';
   matchedCount: number;
   unreadChangesCount: number;
   lastCheckedAt: string;
@@ -236,6 +242,7 @@ export interface RecommendationCardItem {
   reasonFa: string;
   urlPath: string;
   metricBadgeFa?: string;
+  isDemoSample?: boolean;
 }
 
 export interface SearchSynonymRecord {

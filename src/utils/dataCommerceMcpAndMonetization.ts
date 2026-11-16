@@ -49,7 +49,7 @@ export function buildX402PaymentChallenge(
       exchangeRateRef: REFERENCE_EXCHANGE_RATE,
       messageFa: 'دسترسی به این وب‌سرویس تجاری نیازمند گواهی پرداخت معتبر (پروتکل x402) یا کلید اشتراک سازمانی است.',
       displayAreaUnitLabel: formatAreaUnitLabel(resolvedUnit),
-      referenceValuationIntlText: formatMillionTomanAsIntlCurrency(14500, resolvedCurrency),
+      referenceValuationIntlText: formatMillionTomanAsIntlCurrency(14500, resolvedCurrency, 'fa', REFERENCE_EXCHANGE_RATE),
     },
   };
 }

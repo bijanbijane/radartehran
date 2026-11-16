@@ -897,4 +897,46 @@ input[type='range']:active::-webkit-slider-thumb {
   box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
 }
 
+.work-hub-pin-label {
+  transform: translate(-50%, -50%);
+  background: #0284c7;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-family: Vazirmatn, Tahoma, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 15px rgba(2, 132, 199, 0.8);
+}
 
+.work-route-tooltip,
+.hood-landmark-tooltip {
+  font-family: Vazirmatn, Tahoma, sans-serif;
+  font-size: 11px;
+  text-align: right;
+  max-width: 220px;
+}
+
+.hood-landmark-pin-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translate(-50%, -50%);
+}
+
+.hood-landmark-pin-label {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-family: Vazirmatn, Tahoma, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}

@@ -1,5 +1,5 @@
 /** @file src/components/navigation/AccountSubSectionsPanel.tsx — Sub-section Views for Account Module (Stage 22) */
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import type { PrimaryViewId } from '../../utils/areaUnit';
@@ -42,33 +42,38 @@ export interface AccountSubSectionsPanelProps {
   onNavigateView?: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
   onRestoreSavedView?: (view: SavedMapViewItem) => void;
-  onExportAccountData: () => void;
+  onExportAccountData: () => Promise<boolean> | boolean;
   onRequestDeleteAccount: () => void;
   busyAction: 'export' | 'delete' | null;
+  dataRequestRevision?: number;
 }
 
 export const AccountSubSectionsPanel: React.FC<AccountSubSectionsPanelProps> = (p) => {
-  const [tick, setTick] = useState(0);
-  const refresh = () => setTick((x) => x + 1);
-  void tick;
+  const [snapshotRevision, setSnapshotRevision] = useState(0);
+  const refresh = () => setSnapshotRevision((x) => x + 1);
+  const guestExportRevokeTimerRef = useRef<number | null>(null);
+  useEffect(() => () => { if (guestExportRevokeTimerRef.current !== null) window.clearTimeout(guestExportRevokeTimerRef.current); }, []);
 
-  const snapshot = loadAccountWorkspaceSnapshot({
+  const snapshot = useMemo(() => loadAccountWorkspaceSnapshot({
     callerUid: p.currentUser?.uid || 'local-user',
     displayName: p.currentUser?.displayName,
     visitedHomesCount: p.visitedHomesCount,
-  });
+  }), [p.currentUser?.uid, p.currentUser?.displayName, p.visitedHomesCount, snapshotRevision, p.dataRequestRevision]);
 
   const handleGuestExport = () => {
-    const bundle = buildLocalWorkspaceExportBundle();
-    recordDataRequest('export', 'completed');
-    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `radar-workspace-local-export.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    refresh();
+    try {
+      const bundle = buildLocalWorkspaceExportBundle();
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `radar-workspace-local-export.json`;
+      a.click();
+      if (guestExportRevokeTimerRef.current !== null) window.clearTimeout(guestExportRevokeTimerRef.current);
+      guestExportRevokeTimerRef.current = window.setTimeout(() => { URL.revokeObjectURL(url); guestExportRevokeTimerRef.current = null; }, 1000);
+      recordDataRequest('export', 'completed');
+      refresh();
+    } catch { /* ignore export failure */ }
   };
 
   if (p.activeSubTab === 'profile' || p.activeSubTab === 'settings') {
@@ -84,9 +89,15 @@ export const AccountSubSectionsPanel: React.FC<AccountSubSectionsPanelProps> = (
         onSaveProfile={(patch) => { saveAccountProfile(patch, p.currentUser?.uid || 'local-user'); refresh(); }}
         onUpdatePrivacy={(patch) => { updatePrivacyPreferences(patch); refresh(); }}
         onRevokeSession={(id) => { revokeAuthorizedSession(id); refresh(); }}
-        onExportAccountData={() => { recordDataRequest('export', 'ready'); p.onExportAccountData(); refresh(); }}
+        onExportAccountData={async () => {
+          const ok = await p.onExportAccountData();
+          if (ok) {
+            recordDataRequest('export', 'completed');
+            refresh();
+          }
+        }}
         onExportLocalGuestBundle={handleGuestExport}
-        onRequestDeleteAccount={() => { recordDataRequest('delete', 'pending_verification'); p.onRequestDeleteAccount(); refresh(); }}
+        onRequestDeleteAccount={() => { p.onRequestDeleteAccount(); }}
       />
     );
   }

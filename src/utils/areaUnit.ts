@@ -1,7 +1,32 @@
+import {
+  getRadarBottomNavCopy,
+  getRadarCompareCopy,
+  getRadarGlobalNavCopy,
+  getRadarInspectorCopy,
+  getRadarLegendCopy,
+  getRadarTopBarCopy,
+  type RadarBottomNavCopy,
+  type RadarCompareCopy,
+  type RadarGlobalNavCopy,
+  type RadarInspectorCopy,
+  type RadarLegendCopy,
+  type RadarTopBarCopy,
+} from './i18n/radarCopies';
+
 export type AreaUnit = 'sqm' | 'sqft';
 export type RadarLocale = 'fa' | 'en' | 'ar' | 'tr';
 export type IntlCurrencyCode = 'IRT' | 'USD' | 'EUR' | 'AED';
 export type RadarExperienceMode = 'simple' | 'pro';
+export type PrimaryViewId =
+  | 'home' | 'discover' | 'intelligence' | 'properties' | 'tools'
+  | 'userspace' | 'services' | 'knowledge' | 'contributions' | 'map' | 'admin' | 'not_found';
+
+export interface RuntimeExchangeRateReference {
+  usdToTomanRate: number;
+  recordedAtIso?: string;
+  source?: string;
+  isStaleWarningFa?: string;
+}
 
 export const SQM_TO_SQFT = 10.7639104;
 export const AREA_UNIT_STORAGE_KEY = 'radar_area_unit_v1';
@@ -9,17 +34,18 @@ export const RADAR_LOCALE_STORAGE_KEY = 'radar_locale_v1';
 export const RADAR_CURRENCY_STORAGE_KEY = 'radar_intl_currency_v1';
 export const RADAR_EXPERIENCE_MODE_STORAGE_KEY = 'radar_experience_mode_v1';
 
-// Reference exchange rates (Million Toman per 1 unit of foreign currency) for international comparison
+/** @deprecated Legacy reference table; live UI display must use validated snapshot from /api/v1/commerce/catalog. */
 export const MILLION_TOMAN_PER_FX_UNIT: Record<Exclude<IntlCurrencyCode, 'IRT'>, number> = {
-  USD: 0.065, // 1 USD ≈ 65,000 Toman (0.065 Million Toman)
-  EUR: 0.070, // 1 EUR ≈ 70,000 Toman
-  AED: 0.0177, // 1 AED ≈ 17,700 Toman
+  USD: 0.0685,
+  EUR: 0.074,
+  AED: 0.0186,
 };
 
 let currentMemoryAreaUnit: AreaUnit = 'sqm';
-let currentMemoryLocale: RadarLocale = 'fa';
+let currentMemoryLocale: 'fa' | 'en' = 'fa';
 let currentMemoryCurrency: IntlCurrencyCode = 'IRT';
 let currentMemoryExperienceMode: RadarExperienceMode = 'simple';
+let runtimeExchangeRateSnapshot: RuntimeExchangeRateReference | null = null;
 const listeners = new Set<() => void>();
 
 function notifyAllListeners(): void {
@@ -28,13 +54,31 @@ function notifyAllListeners(): void {
   });
 }
 
+function normalizeSupportedLocale(raw?: string | null): 'fa' | 'en' | undefined {
+  if (!raw || typeof raw !== 'string') return undefined;
+  const code = raw.trim().toLowerCase();
+  if (code === 'en' || code.startsWith('en-')) return 'en';
+  if (code === 'fa' || code.startsWith('fa-')) return 'fa';
+  return undefined;
+}
+
+export function setRuntimeExchangeRateSnapshot(snapshot: RuntimeExchangeRateReference | null): void {
+  runtimeExchangeRateSnapshot =
+    snapshot && Number.isFinite(snapshot.usdToTomanRate) && snapshot.usdToTomanRate > 0 ? snapshot : null;
+  notifyAllListeners();
+}
+
+export function getRuntimeExchangeRateSnapshot(): RuntimeExchangeRateReference | null {
+  return runtimeExchangeRateSnapshot;
+}
+
 export function getStoredExperienceMode(): RadarExperienceMode {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const raw = window.localStorage.getItem(RADAR_EXPERIENCE_MODE_STORAGE_KEY);
       if (raw === 'simple' || raw === 'pro') { currentMemoryExperienceMode = raw; return raw; }
     }
-  } catch { /* Ignore storage errors */ }
+  } catch { /* Ignore */ }
   return currentMemoryExperienceMode;
 }
 
@@ -43,7 +87,7 @@ export function setStoredExperienceMode(next: RadarExperienceMode): void {
   currentMemoryExperienceMode = valid;
   try {
     if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_EXPERIENCE_MODE_STORAGE_KEY, valid);
-  } catch { /* Ignore storage errors */ }
+  } catch { /* Ignore */ }
   notifyAllListeners();
 }
 
@@ -53,29 +97,29 @@ export function toggleStoredExperienceMode(): RadarExperienceMode {
   return next;
 }
 
-function readInitialAreaUnit(): AreaUnit {
-  currentMemoryAreaUnit = 'sqm';
+export function getStoredAreaUnit(): AreaUnit {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(AREA_UNIT_STORAGE_KEY, 'sqm');
+      const raw = window.localStorage.getItem(AREA_UNIT_STORAGE_KEY);
+      if (raw === 'sqm' || raw === 'sqft') { currentMemoryAreaUnit = raw; return raw; }
     }
-  } catch { /* Ignore storage access errors in restricted environments */ }
-  return 'sqm';
+  } catch { /* Ignore */ }
+  return currentMemoryAreaUnit;
 }
 
-export function getStoredAreaUnit(): AreaUnit { return readInitialAreaUnit(); }
-
-export function setStoredAreaUnit(_next: AreaUnit): void {
-  currentMemoryAreaUnit = 'sqm';
+export function setStoredAreaUnit(next: AreaUnit): void {
+  const valid: AreaUnit = next === 'sqft' ? 'sqft' : 'sqm';
+  currentMemoryAreaUnit = valid;
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(AREA_UNIT_STORAGE_KEY, 'sqm');
-  } catch { /* Ignore storage errors */ }
+    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(AREA_UNIT_STORAGE_KEY, valid);
+  } catch { /* Ignore */ }
   notifyAllListeners();
 }
 
 export function toggleStoredAreaUnit(): AreaUnit {
-  setStoredAreaUnit('sqm');
-  return 'sqm';
+  const next: AreaUnit = getStoredAreaUnit() === 'sqft' ? 'sqm' : 'sqft';
+  setStoredAreaUnit(next);
+  return next;
 }
 
 export function subscribeAreaUnit(listener: () => void): () => void {
@@ -83,152 +127,166 @@ export function subscribeAreaUnit(listener: () => void): () => void {
   return () => { listeners.delete(listener); };
 }
 
-export function detectBrowserLocaleFromNavigator(_languages?: readonly string[]): RadarLocale {
+export function detectBrowserLocaleFromNavigator(languages?: readonly string[]): 'fa' | 'en' {
+  const list = languages ?? (typeof navigator !== 'undefined' && Array.isArray(navigator.languages) ? navigator.languages : undefined);
+  if (Array.isArray(list)) {
+    for (const lang of list) {
+      const matched = normalizeSupportedLocale(lang);
+      if (matched) return matched;
+    }
+  }
   return 'fa';
 }
 
-export function getRadarLocaleDirection(_locale: RadarLocale): 'rtl' | 'ltr' {
-  return 'rtl';
+export function getRadarLocaleDirection(locale: RadarLocale): 'rtl' | 'ltr' {
+  return locale === 'en' ? 'ltr' : 'rtl';
 }
 
-export function parseUrlIntlParams(_search?: string): { lang?: RadarLocale; currency?: IntlCurrencyCode; unit?: AreaUnit } {
-  return { lang: undefined, currency: undefined, unit: undefined };
+export function parseUrlIntlParams(search?: string): { lang?: 'fa' | 'en'; currency?: IntlCurrencyCode; unit?: AreaUnit } {
+  if (!search || typeof search !== 'string') return { lang: undefined, currency: undefined, unit: undefined };
+  try {
+    const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+    const lang = normalizeSupportedLocale(params.get('lang'));
+    const rawUnit = (params.get('unit') || '').trim().toLowerCase();
+    const rawCurrency = (params.get('currency') || '').trim().toUpperCase();
+    const unit: AreaUnit | undefined = rawUnit === 'sqm' || rawUnit === 'sqft' ? rawUnit : undefined;
+    const currency: IntlCurrencyCode | undefined = rawCurrency === 'IRT' || rawCurrency === 'USD' ? rawCurrency : undefined;
+    return { lang, currency, unit };
+  } catch {
+    return { lang: undefined, currency: undefined, unit: undefined };
+  }
 }
 
-export function resolveInitialRadarLocale(_options?: {
+export function resolveInitialRadarLocale(options?: {
   savedLocale?: string | null; urlLang?: string | null; navigatorLanguages?: readonly string[]; enableAutoBrowserDetect?: boolean;
-}): RadarLocale {
+}): 'fa' | 'en' {
+  const fromUrl = normalizeSupportedLocale(options?.urlLang);
+  if (fromUrl) return fromUrl;
+  const fromSaved = normalizeSupportedLocale(options?.savedLocale);
+  if (fromSaved) return fromSaved;
+  if (options?.enableAutoBrowserDetect) return detectBrowserLocaleFromNavigator(options.navigatorLanguages);
   return 'fa';
 }
 
-export function getStoredRadarLocale(): RadarLocale {
-  currentMemoryLocale = 'fa';
+export function getStoredRadarLocale(): 'fa' | 'en' {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(RADAR_LOCALE_STORAGE_KEY, 'fa');
+      const raw = normalizeSupportedLocale(window.localStorage.getItem(RADAR_LOCALE_STORAGE_KEY));
+      if (raw) { currentMemoryLocale = raw; return raw; }
     }
-  } catch { /* Ignore storage errors */ }
-  return 'fa';
+  } catch { /* Ignore */ }
+  return currentMemoryLocale;
 }
 
-export function setStoredRadarLocale(_next: RadarLocale): void {
-  currentMemoryLocale = 'fa';
+export function setStoredRadarLocale(next: RadarLocale): void {
+  const valid: 'fa' | 'en' = next === 'en' ? 'en' : 'fa';
+  currentMemoryLocale = valid;
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_LOCALE_STORAGE_KEY, 'fa');
+    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_LOCALE_STORAGE_KEY, valid);
     if (typeof document !== 'undefined' && document.documentElement) {
-      document.documentElement.setAttribute('data-radar-locale', 'fa');
-      document.documentElement.lang = 'fa';
-      document.documentElement.dir = 'rtl';
+      document.documentElement.setAttribute('data-radar-locale', valid);
+      document.documentElement.lang = valid;
+      document.documentElement.dir = getRadarLocaleDirection(valid);
     }
-  } catch { /* Ignore DOM/storage errors */ }
+  } catch { /* Ignore */ }
   notifyAllListeners();
 }
 
 export function getStoredIntlCurrency(): IntlCurrencyCode {
-  currentMemoryCurrency = 'IRT';
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(RADAR_CURRENCY_STORAGE_KEY, 'IRT');
+      const raw = window.localStorage.getItem(RADAR_CURRENCY_STORAGE_KEY);
+      if (raw === 'IRT' || raw === 'USD') { currentMemoryCurrency = raw; return raw; }
     }
-  } catch { /* Ignore storage errors */ }
-  return 'IRT';
+  } catch { /* Ignore */ }
+  return currentMemoryCurrency === 'USD' ? 'USD' : 'IRT';
 }
 
-export function setStoredIntlCurrency(_next: IntlCurrencyCode): void {
-  currentMemoryCurrency = 'IRT';
+export function setStoredIntlCurrency(next: IntlCurrencyCode): void {
+  const valid: IntlCurrencyCode = next === 'USD' ? 'USD' : 'IRT';
+  currentMemoryCurrency = valid;
   try {
-    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_CURRENCY_STORAGE_KEY, 'IRT');
-  } catch { /* Ignore storage errors */ }
+    if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_CURRENCY_STORAGE_KEY, valid);
+  } catch { /* Ignore */ }
   notifyAllListeners();
 }
 
-export function formatMillionTomanAsIntlCurrency(millionToman: number, _currency: IntlCurrencyCode = 'IRT', _locale: RadarLocale = 'fa'): string {
+export function formatMillionTomanAsIntlCurrency(
+  millionToman: number,
+  currency: IntlCurrencyCode = 'IRT',
+  locale: RadarLocale = 'fa',
+  exchangeRateRef?: RuntimeExchangeRateReference | null,
+): string {
   const safeMillion = Number.isFinite(millionToman) ? Math.max(0, millionToman) : 0;
+  const isEn = locale === 'en';
+  if (currency === 'EUR' || currency === 'AED') {
+    return isEn ? 'No valid reference rate recorded for this currency' : 'نرخ مرجع معتبر برای این ارز ثبت نشده است';
+  }
+  if (currency === 'USD') {
+    const rate = exchangeRateRef?.usdToTomanRate ?? runtimeExchangeRateSnapshot?.usdToTomanRate;
+    if (!rate || !Number.isFinite(rate) || rate <= 0) {
+      return isEn ? 'FX reference rate unavailable' : 'نرخ مرجع تبدیل ارز در دسترس نیست';
+    }
+    const usdValue = (safeMillion * 1_000_000) / rate;
+    const maxDigits = usdValue > 0 && usdValue < 1000 ? 2 : 0;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: usdValue > 0 && usdValue < 1000 ? 2 : 0,
+      maximumFractionDigits: maxDigits,
+    }).format(usdValue);
+  }
   if (safeMillion < 1000) {
-    return `${Math.round(safeMillion).toLocaleString('fa-IR')} میلیون تومان`;
+    return isEn ? `${Math.round(safeMillion).toLocaleString('en-US')}M Toman` : `${Math.round(safeMillion).toLocaleString('fa-IR')} میلیون تومان`;
   }
   const billions = Number((safeMillion / 1000).toFixed(1));
-  return `${billions.toLocaleString('fa-IR')} میلیارد تومان`;
+  return isEn ? `${billions.toLocaleString('en-US')}B Toman` : `${billions.toLocaleString('fa-IR')} میلیارد تومان`;
 }
 
-export interface RadarTopBarCopy { searchPlaceholder: string; filterBtnLabel: string; toolsBtnLabel: string; }
-const TOP_BAR_COPY_FA: RadarTopBarCopy = { searchPlaceholder: 'جست‌وجوی شهر، استان یا محله...', filterBtnLabel: 'فیلتر بودجه و وام', toolsBtnLabel: 'ابزارها' };
-export function getRadarTopBarCopy(_locale: RadarLocale = 'fa'): RadarTopBarCopy { return TOP_BAR_COPY_FA; }
+export { getRadarBottomNavCopy, getRadarCompareCopy, getRadarGlobalNavCopy, getRadarInspectorCopy, getRadarLegendCopy, getRadarTopBarCopy };
+export type { RadarBottomNavCopy, RadarCompareCopy, RadarGlobalNavCopy, RadarInspectorCopy, RadarLegendCopy, RadarTopBarCopy };
 
-export type PrimaryViewId =
-  | 'home'
-  | 'discover'
-  | 'intelligence'
-  | 'properties'
-  | 'tools'
-  | 'userspace'
-  | 'services'
-  | 'knowledge'
-  | 'contributions'
-  | 'map'
-  | 'admin'
-  | 'not_found';
-export interface RadarGlobalNavCopy {
-  home: string;
-  discover: string;
-  intelligence: string;
-  properties: string;
-  tools: string;
-  more: string;
-  userspace: string;
-  map: string;
-  searchPlaceholder: string;
-  admin: string;
-}
-const GLOBAL_NAV_COPY_FA: RadarGlobalNavCopy = {
-  home: 'خانه',
-  discover: 'محله‌ها',
-  intelligence: 'بازار',
-  properties: 'املاک',
-  tools: 'ابزارها',
-  more: 'بیشتر',
-  userspace: 'حساب کاربری',
-  map: 'نقشه',
-  searchPlaceholder: 'جست‌وجوی محله، ملک یا گزارش...',
-  admin: 'مدیریت سیستم',
-};
-export function getRadarGlobalNavCopy(_locale: RadarLocale = 'fa'): RadarGlobalNavCopy { return GLOBAL_NAV_COPY_FA; }
-
-export interface RadarBottomNavCopy { mapLabel: string; filterLabel: string; suggestLabel: string; compareLabel: string; toolsLabel: string; submitLabel: string; }
-const BOTTOM_NAV_COPY_FA: RadarBottomNavCopy = { mapLabel: 'نقشه', filterLabel: 'فیلتر بودجه', suggestLabel: 'پیشنهادها', compareLabel: 'مقایسه', toolsLabel: 'ابزارها', submitLabel: 'ثبت ملک' };
-export function getRadarBottomNavCopy(_locale: RadarLocale = 'fa'): RadarBottomNavCopy { return BOTTOM_NAV_COPY_FA; }
-
-export interface RadarInspectorCopy { headerTitle: string; scorecardTab: string; marketTab: string; bargainsTabPrefix: string; reviewsTab: string; voteTab: string; hedonicCta: string; }
-const INSPECTOR_COPY_FA: RadarInspectorCopy = { headerTitle: 'کارنامه و راهنمای محله', scorecardTab: 'کارنامه', marketTab: 'بازار و نمودار', bargainsTabPrefix: 'فایل‌های زیر قیمت', reviewsTab: 'نظرات ساکنان', voteTab: 'امکانات', hedonicCta: 'ماشین‌حساب هوشمند قیمت‌گذاری ملک (Hedonic)' };
-export function getRadarInspectorCopy(_locale: RadarLocale = 'fa'): RadarInspectorCopy { return INSPECTOR_COPY_FA; }
-
-export interface RadarLegendCopy { legendBtnLabel: string; legendHeaderTitle: string; metroPillLabel: string; trafficPillLabel: string; greenTitle: string; yellowTitle: string; redTitle: string; }
-const LEGEND_COPY_FA: RadarLegendCopy = { legendBtnLabel: 'راهنمای نقشه', legendHeaderTitle: 'راهنمای رنگ‌ها و لایه‌های نقشه', metroPillLabel: '🚇 مترو', trafficPillLabel: '🚦 طرح ترافیک', greenTitle: 'سبز (مناسب بودجه)', yellowTitle: 'زرد (مرزی / قابل مذاکره)', redTitle: 'قرمز (فراتر از بودجه)' };
-export function getRadarLegendCopy(_locale: RadarLocale = 'fa'): RadarLegendCopy { return LEGEND_COPY_FA; }
-
-export interface RadarCompareCopy { modalTitle: string; inlineTitle: string; metricHeader: string; swapBtnLabel: string; printBtnLabel: string; }
-const COMPARE_COPY_FA: RadarCompareCopy = { modalTitle: 'مقایسه رخ‌به‌رخ دو محله', inlineTitle: 'مقایسه رودرروی محله‌ها', metricHeader: 'شاخص مقایسه', swapBtnLabel: 'جابه‌جایی', printBtnLabel: 'چاپ / PDF' };
-export function getRadarCompareCopy(_locale: RadarLocale = 'fa'): RadarCompareCopy { return COMPARE_COPY_FA; }
-export function sqmToSqft(sqm: number): number { return Math.round(Number.isFinite(sqm) ? Math.max(0, sqm) : 0); }
-export function sqftToSqm(sqft: number): number { return Math.round(Number.isFinite(sqft) ? Math.max(0, sqft) : 0); }
-export function convertAreaFromSqm(sqm: number, _unit: AreaUnit = 'sqm'): number {
+export function sqmToSqft(sqm: number): number {
   const safeSqm = Number.isFinite(sqm) ? Math.max(0, sqm) : 0;
-  return Math.round(safeSqm);
+  return Number((safeSqm * SQM_TO_SQFT).toFixed(2));
 }
-export function convertPricePerSqmToUnit(pricePerSqmMillion: number, _unit: AreaUnit = 'sqm'): number {
+export function sqftToSqm(sqft: number): number {
+  const safeSqft = Number.isFinite(sqft) ? Math.max(0, sqft) : 0;
+  return Number((safeSqft / SQM_TO_SQFT).toFixed(2));
+}
+export function convertAreaFromSqm(sqm: number, unit: AreaUnit = 'sqm'): number {
+  const safeSqm = Number.isFinite(sqm) ? Math.max(0, sqm) : 0;
+  return unit === 'sqft' ? sqmToSqft(safeSqm) : Math.round(safeSqm);
+}
+export function convertPricePerSqmToUnitRaw(pricePerSqmMillion: number, unit: AreaUnit = 'sqm'): number {
   const safePrice = Number.isFinite(pricePerSqmMillion) ? Math.max(0, pricePerSqmMillion) : 0;
-  return Math.round(safePrice * 10) / 10;
+  return unit === 'sqft' ? safePrice / SQM_TO_SQFT : safePrice;
+}
+export function convertPricePerSqmToUnit(pricePerSqmMillion: number, unit: AreaUnit = 'sqm'): number {
+  return Math.round(convertPricePerSqmToUnitRaw(pricePerSqmMillion, unit) * 10) / 10;
 }
 export function formatAreaNumber(value: number, persianDigits = true): string {
   return (Number.isFinite(value) ? value : 0).toLocaleString(persianDigits ? 'fa-IR' : 'en-US');
 }
-export function formatAreaValue(sqm: number, _unit: AreaUnit = 'sqm', persianDigits = true): string {
-  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, 'sqm'), persianDigits);
-  return `${formatted} متر مربع`;
+export function formatAreaValue(sqm: number, unit: AreaUnit = 'sqm', persianDigits?: boolean): string {
+  const useFaDigits = persianDigits ?? getStoredRadarLocale() !== 'en';
+  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, unit), useFaDigits);
+  if (!useFaDigits) return unit === 'sqft' ? `${formatted} sq ft (ft²)` : `${formatted} sq m (m²)`;
+  return unit === 'sqft' ? `${formatted} فوت مربع (ft²)` : `${formatted} متر مربع`;
 }
-export function formatAreaShort(sqm: number, _unit: AreaUnit = 'sqm', persianDigits = true): string {
-  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, 'sqm'), persianDigits);
-  return `${formatted} متری`;
+export function formatAreaShort(sqm: number, unit: AreaUnit = 'sqm', persianDigits?: boolean): string {
+  const useFaDigits = persianDigits ?? getStoredRadarLocale() !== 'en';
+  const formatted = formatAreaNumber(convertAreaFromSqm(sqm, unit), useFaDigits);
+  if (!useFaDigits) return unit === 'sqft' ? `${formatted} ft²` : `${formatted} m²`;
+  return unit === 'sqft' ? `${formatted} ft²` : `${formatted} متری`;
 }
-export function formatAreaUnitLabel(_unit: AreaUnit = 'sqm'): string { return 'متر مربع (m²)'; }
-export function formatUnitBuyPriceTitle(_unit: AreaUnit = 'sqm'): string { return 'میانگین خرید هر متر'; }
+export function formatAreaUnitLabel(unit: AreaUnit = 'sqm', locale?: RadarLocale): string {
+  const isEn = (locale ?? getStoredRadarLocale()) === 'en';
+  if (isEn) return unit === 'sqft' ? 'Square Feet (ft²)' : 'Square Meters (m²)';
+  return unit === 'sqft' ? 'فوت مربع (ft²)' : 'متر مربع (m²)';
+}
+export function formatUnitBuyPriceTitle(unit: AreaUnit = 'sqm', locale?: RadarLocale): string {
+  const isEn = (locale ?? getStoredRadarLocale()) === 'en';
+  if (isEn) return unit === 'sqft' ? 'Avg Price / ft²' : 'Avg Price / m²';
+  return unit === 'sqft' ? 'میانگین خرید هر فوت مربع' : 'میانگین خرید هر متر';
+}

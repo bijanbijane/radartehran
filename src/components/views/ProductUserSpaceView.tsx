@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { User, LogIn, LogOut, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Download, Trash2 } from 'lucide-react';
 import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
@@ -10,7 +10,7 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { SearchHistory } from '../SearchHistory';
 import { AccountSubSectionsPanel } from '../navigation/AccountSubSectionsPanel';
 import type { AccountSubTabId, ModuleSubTabId, SavedMapViewItem } from '../../navigation/registry/route.types';
-import { loadAccountWorkspaceSnapshot, removeSavedPropertyById } from '../../features/account/services/accountWorkspaceService';
+import { loadAccountWorkspaceSnapshot, recordDataRequest, removeSavedPropertyById } from '../../features/account/services/accountWorkspaceService';
 import { AccountOverviewDashboard } from '../../features/account/components/AccountOverviewDashboard';
 import { AccountSavedItemsPanel } from '../../features/account/components/AccountSavedItemsPanel';
 import { AccountFavoriteNeighborhoodsSection } from '../../features/account/components/AccountFavoriteNeighborhoodsSection';
@@ -33,15 +33,16 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const [busyAction, setBusyAction] = useState<'export' | 'delete' | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [privacyNotice, setPrivacyNotice] = useState<string | null>(null);
-  const [workspaceTick, setWorkspaceTick] = useState(0);
-  void workspaceTick;
+  const [snapshotRevision, setSnapshotRevision] = useState(0);
+  const exportRevokeTimerRef = useRef<number | null>(null);
+  useEffect(() => () => { if (exportRevokeTimerRef.current !== null) window.clearTimeout(exportRevokeTimerRef.current); }, []);
   const isEn = radarLocale === 'en';
   const currentTab: AccountSubTabId = p.activeSubTab || 'overview';
-  const workspaceSnapshot = loadAccountWorkspaceSnapshot({
+  const workspaceSnapshot = useMemo(() => loadAccountWorkspaceSnapshot({
     callerUid: p.currentUser?.uid || 'local-user',
     displayName: p.currentUser?.displayName,
     visitedHomesCount: p.visitedHomesCount,
-  });
+  }), [p.currentUser?.uid, p.currentUser?.displayName, p.visitedHomesCount, snapshotRevision]);
   const refHood = p.selectedHood || p.evaluatedNeighborhoods[0];
   const refDealSqm = refHood ? aggregateNeighborhoodMarketMetrics(refHood.id, refHood.name, refHood.buyPerSqm, buildNeighborhoodListingSamples(refHood)).estimatedDealPricePerSqm : 0;
   const effectiveBuyBudget = p.buyTotalBudget + (p.useLoanBooster ? 1200 : 0);
@@ -62,8 +63,8 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const budgetFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? effectiveBuyBudget : effectiveRahnPower, intlCurrency, radarLocale)})` : '';
   const avgShortlistScore = favoriteHoods.length > 0 ? (favoriteHoods.reduce((acc, h) => acc + h.overallScore, 0) / favoriteHoods.length).toFixed(1) : null;
 
-  const handleExportAccountData = async () => {
-    if (!p.currentUser || busyAction) return;
+  const handleExportAccountData = async (): Promise<boolean> => {
+    if (!p.currentUser || busyAction) return false;
     setBusyAction('export'); setPrivacyNotice(null);
     try {
       const token = await p.currentUser.getIdToken();
@@ -73,9 +74,17 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         const blob = new Blob([JSON.stringify(data.exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `radar-account-export-${p.currentUser.uid.slice(0, 8)}.json`; a.click();
-        URL.revokeObjectURL(url); setPrivacyNotice('فایل JSON اطلاعات حساب شما آماده و دانلود شد.');
-      } else { setPrivacyNotice('خطا در دریافت خروجی اطلاعات حساب.'); }
-    } catch { setPrivacyNotice('ارتباط با سرور برای دریافت اطلاعات برقرار نشد.'); } finally { setBusyAction(null); }
+        if (exportRevokeTimerRef.current !== null) window.clearTimeout(exportRevokeTimerRef.current);
+        exportRevokeTimerRef.current = window.setTimeout(() => { URL.revokeObjectURL(url); exportRevokeTimerRef.current = null; }, 1000);
+        setPrivacyNotice('فایل JSON اطلاعات حساب شما آماده و دانلود شد.');
+        return true;
+      }
+      setPrivacyNotice('خطا در دریافت خروجی اطلاعات حساب.');
+      return false;
+    } catch {
+      setPrivacyNotice('ارتباط با سرور برای دریافت اطلاعات برقرار نشد.');
+      return false;
+    } finally { setBusyAction(null); }
   };
 
   const handleConfirmAccountDelete = async () => {
@@ -94,11 +103,15 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         if (data?.requiresClientAuthDeletion && p.currentUser) {
           try { await deleteUser(p.currentUser); } catch (authErr: unknown) {
             const errCode = (authErr as { code?: string })?.code || '';
+            recordDataRequest('delete', 'pending_verification');
+            setSnapshotRevision((r) => r + 1);
             setConfirmDeleteOpen(false);
             setPrivacyNotice(errCode === 'auth/requires-recent-login' ? 'داده‌های سرور پاکسازی شدند، اما برای حذف نهایی حساب فایربیس/گوگل به‌دلیل قدیمی‌بودن نشست فعلی، لطفاً یک‌بار خارج شده و دوباره وارد شوید و سپس دکمه حذف را بزنید.' : 'داده‌های سرور پاکسازی شدند، اما حذف خودکار حساب احراز هویت در مرورگر کامل نشد. لطفاً پس از ورود مجدد دوباره امتحان کنید.');
             return;
           }
         }
+        recordDataRequest('delete', 'completed');
+        setSnapshotRevision((r) => r + 1);
         setConfirmDeleteOpen(false); p.onSignOut();
       } else { setPrivacyNotice(data?.message || 'حذف حساب کاربری انجام نشد.'); }
     } catch { setPrivacyNotice('خطا در اجرای درخواست حذف حساب کاربری.'); } finally { setBusyAction(null); }
@@ -127,7 +140,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {p.currentUser ? (
               <>
-                <button type="button" onClick={handleExportAccountData} disabled={busyAction !== null} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Download className="w-3.5 h-3.5" /><span>دانلود اطلاعات حساب من</span></button>
+                <button type="button" onClick={async () => { const ok = await handleExportAccountData(); if (ok) { recordDataRequest('export', 'completed'); setSnapshotRevision((r) => r + 1); } }} disabled={busyAction !== null} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Download className="w-3.5 h-3.5" /><span>دانلود اطلاعات حساب من</span></button>
                 <button type="button" onClick={() => setConfirmDeleteOpen((v) => !v)} disabled={busyAction !== null} className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /><span>حذف کامل حساب کاربری</span></button>
                 <button type="button" onClick={p.onSignOut} className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><LogOut className="w-3.5 h-3.5" /><span>{isEn ? 'Sign Out' : 'خروج از حساب'}</span></button>
               </>
@@ -154,7 +167,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           visitedHomesCount={p.visitedHomesCount} onOpenVisitedModal={p.onOpenVisitedModal} onOpenBuyerAlertModal={p.onOpenBuyerAlertModal}
           onOpenBudgetFilter={p.onOpenBudgetFilter} onNavigateView={p.onNavigateView} onSelectNeighborhood={p.onSelectNeighborhood}
           onRestoreSavedView={p.onRestoreSavedView} onExportAccountData={handleExportAccountData}
-          onRequestDeleteAccount={() => setConfirmDeleteOpen(true)} busyAction={busyAction}
+          onRequestDeleteAccount={() => setConfirmDeleteOpen(true)} busyAction={busyAction} dataRequestRevision={snapshotRevision}
         />
       )}
 
@@ -214,7 +227,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           savedMarketAnalyses={workspaceSnapshot.savedMarketAnalyses}
           evaluatedNeighborhoods={p.evaluatedNeighborhoods}
           dealMode={p.mode}
-          onRemoveSavedProperty={(id) => { removeSavedPropertyById(id); setWorkspaceTick((t) => t + 1); }}
+          onRemoveSavedProperty={(id) => { removeSavedPropertyById(id); setSnapshotRevision((r) => r + 1); }}
           onCreateSearchWatchlist={() => {}}
           onChangeSearchCadence={() => {}}
           onDeleteSearchWatchlist={() => {}}

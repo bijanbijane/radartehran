@@ -1,8 +1,9 @@
 /** @file src/features/properties/pages/PropertyExplorerPage.tsx — Stage 19 Main Orchestrator */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { type EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import { resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
 import { type PrimaryViewId } from '../../../utils/areaUnit';
-import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
 import type { PropertiesSubTabId } from '../../../navigation/registry/route.types';
 import {
   commitPropertyFilterDraft,
@@ -37,6 +38,7 @@ import { MyListingsAndSavedView } from '../account/MyListingsAndSavedView';
 export interface PropertyExplorerPageProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
+  activeCity?: CityId;
   activeSubTab?: PropertiesSubTabId;
   onChangeSubTab?: (tab: PropertiesSubTabId) => void;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
@@ -50,7 +52,9 @@ export interface PropertyExplorerPageProps {
 
 export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => {
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
+  const resolvedCityId = p.activeCity || resolveCityIdForNeighborhood(p.selectedHood.id);
   const reqGuardRef = useRef(new StaleRequestGuard());
 
   const [sectionTab, setSectionTab] = useState<ExplorerSectionTab>('discover');
@@ -81,8 +85,8 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
   }, [p.activeSubTab]);
 
   const allRecords = useMemo(
-    () => buildPropertyListingRecords(p.evaluatedNeighborhoods, myListings),
-    [p.evaluatedNeighborhoods, myListings],
+    () => buildPropertyListingRecords(p.evaluatedNeighborhoods, myListings, resolvedCityId),
+    [p.evaluatedNeighborhoods, myListings, resolvedCityId],
   );
 
   const filteredRecords = useMemo(

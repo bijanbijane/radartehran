@@ -1,8 +1,9 @@
 import React from 'react';
 import { toPersianNum, type EvaluatedNeighborhood, type Neighborhood, type MapTileServerId } from '../../data/neighborhoods';
 import type { FeatureFlags, CityId } from '../../types/models';
-import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
+import { convertPricePerSqmToUnit, convertPricePerSqmToUnitRaw, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { InspectorDrawerSkeleton } from '../NeighborhoodLoadingSkeletons';
@@ -28,24 +29,17 @@ export interface ProductViewRouterProps {
   allNeighborhoods?: Neighborhood[];
   selectedHood: EvaluatedNeighborhood;
   handleSelectNeighborhood: (h: EvaluatedNeighborhood) => void;
-  favoriteHoodIds: number[];
-  toggleFavoriteHood: (id: number) => void;
-  mode: 'rent' | 'buy';
-  setMode: (m: 'rent' | 'buy') => void;
-  targetSqm: number;
-  totalRahnEquivalent: number;
-  buyTotalBudget: number;
-  deposit: number;
-  monthlyRent: number;
+  favoriteHoodIds: number[]; toggleFavoriteHood: (id: number) => void;
+  mode: 'rent' | 'buy'; setMode: (m: 'rent' | 'buy') => void;
+  targetSqm: number; totalRahnEquivalent: number; buyTotalBudget: number;
+  deposit: number; monthlyRent: number;
   counts: { green: number; yellow: number; red: number };
   featureFlags: FeatureFlags;
-  currentUser: any;
-  isVerifiedAdmin: boolean;
+  currentUser: any; isVerifiedAdmin: boolean;
   activeCity: CityId;
   crudActions: any;
   handleDeepWebSync?: () => void;
-  mapTileStyle?: MapTileServerId;
-  setMapTileStyle?: (s: MapTileServerId) => void;
+  mapTileStyle?: MapTileServerId; setMapTileStyle?: (s: MapTileServerId) => void;
   setShowReverseBudgetModal: (b: boolean) => void;
   onRestoreSavedView?: (v: SavedMapViewItem) => void;
   onSignOut: () => void;
@@ -56,11 +50,14 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const homeContentFirst = primaryView === 'home';
   const [splitMapMode, setSplitMapMode] = React.useState<boolean>(true);
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
+  const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
   const { comparisonArc, showMetroLines, showTrafficZones } = useMapAdvancedOverlayState();
   const hasActiveArc = Boolean(comparisonArc.active && comparisonArc.hoodA && comparisonArc.hoodB && comparisonArc.hoodA.id !== comparisonArc.hoodB.id);
-  const activeDealUnit = convertPricePerSqmToUnit(aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm, areaUnit);
-  const activeDealFx = intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(activeDealUnit, intlCurrency, radarLocale)}` : '';
+  const rawDealSqm = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm;
+  const activeDealUnit = convertPricePerSqmToUnit(rawDealSqm, areaUnit), activeDealRaw = convertPricePerSqmToUnitRaw(rawDealSqm, areaUnit);
+  const axisAreaSuffix = formatAreaUnitLabel(areaUnit);
+  const activeDealLabel = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(activeDealRaw, intlCurrency, radarLocale, rateState.snapshot)} / ${axisAreaSuffix}` : `${toPersianNum(activeDealUnit)} میلیون تومان / ${axisAreaSuffix}`;
   const secondaryTabs = resolveSecondaryTabsForView(primaryView);
   const effectiveSubTab = resolveEffectiveSubTab(primaryView, ui.activeSubTab);
   const navigateTo = (view: PrimaryViewId, subTab?: ModuleSubTabId) => {
@@ -86,7 +83,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
             ))}
           </select>
           <span className="hidden xl:inline text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap">
-            سناریو v6.4 (غیرثبتی): {toPersianNum(activeDealUnit)} م{activeDealFx}
+            سناریو v6.4 (غیرثبتی): {activeDealLabel}
           </span>
           <button
             type="button"
@@ -190,7 +187,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         favoriteHoodIds={p.favoriteHoodIds} onToggleFavorite={p.toggleFavoriteHood}
         onOpenInspector={(h) => { handleSelectNeighborhood(h); ui.setMobileSheetOpen(true); }}
         onOpenCompare={(id1, id2) => { ui.setCompareId1(id1); ui.setCompareId2(id2); ui.setShowCompareModal(true); }}
-        onNavigateView={(v) => navigateTo(v)} mode={p.mode} onChangeMode={p.setMode} targetSqm={p.targetSqm}
+        onNavigateView={(v) => navigateTo(v)} activeCity={p.activeCity} mode={p.mode} onChangeMode={p.setMode} targetSqm={p.targetSqm}
       />
     );
   } else if (primaryView === 'intelligence') {
@@ -210,7 +207,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         onChangeSubTab={(t) => ui.setActiveSubTab?.(t)} onSelectNeighborhood={handleSelectNeighborhood}
         onOpenInspector={(h) => { handleSelectNeighborhood(h); ui.setMobileSheetOpen(true); }}
         onOpenHedonicForProperty={(h, params) => { handleSelectNeighborhood(h); if (params) ui.setHedonicInitialParams(params); ui.setShowHedonicModal(true); }}
-        onNavigateView={(v) => navigateTo(v)} targetSqm={p.targetSqm}
+        onNavigateView={(v) => navigateTo(v)} activeCity={p.activeCity} targetSqm={p.targetSqm}
         splitMapMode={splitMapMode} onToggleSplitMap={() => setSplitMapMode((s) => !s)}
       />
     );
@@ -222,7 +219,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}
         onOpenExpansionModal={(t) => ui.setExpansionModalType(t)} onOpenReverseBudget={() => p.setShowReverseBudgetModal(true)}
         onOpenCompare={() => ui.setShowCompareModal(true)} featureFlags={p.featureFlags} activeCity={p.activeCity}
-        activeSubTab={effectiveSubTab as ToolsSubTabId}
+        targetSqm={p.targetSqm} activeSubTab={effectiveSubTab as ToolsSubTabId}
       />
     );
   } else if (primaryView === 'userspace') {
@@ -244,7 +241,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   } else if (primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'not_found') {
     content = (
       <ProductSecondaryHubView
-        viewKind={primaryView} activeSubTab={effectiveSubTab as KnowledgeSubTabId} selectedHood={selectedHood}
+        viewKind={primaryView} activeSubTab={effectiveSubTab as KnowledgeSubTabId} activeCity={p.activeCity} selectedHood={selectedHood}
         evaluatedNeighborhoods={evaluatedNeighborhoods} onSelectNeighborhood={handleSelectNeighborhood} onNavigateView={navigateTo}
         onOpenHedonic={() => ui.setShowHedonicModal(true)} onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)}
         onOpenExpansionModal={(t) => ui.setExpansionModalType(t)} onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}

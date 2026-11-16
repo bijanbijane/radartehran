@@ -148,9 +148,9 @@ export function getPeriodLabelFa(period: MarketPeriodId): string {
 export function getPeriodMonthCount(period: MarketPeriodId): number {
   switch (period) {
     case '30d':
-      return 3;
+      return 1;
     case '90d':
-      return 4;
+      return 3;
     case '180d':
       return 6;
     case '365d':

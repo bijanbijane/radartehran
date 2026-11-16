@@ -1,8 +1,8 @@
-import React from 'react'; import { AlertTriangle, Award, Bell, Bookmark, Building2, Calculator, Clock, Compass, MapPin, Mountain, Phone, PlusCircle, ShieldCheck, Sparkles, ThumbsUp, TrainFront, Wifi, Wind, Zap, } from 'lucide-react'; import { BubbleReport, EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, WorkHub, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import type { NeighborhoodDeepInsight, RentVsBuyVerdict, } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { CommuteHubsMatrixCard } from './CommuteHubsMatrixCard'; import { BudgetBridgeAdvisorCard } from './BudgetBridgeAdvisorCard'; import { PurchasingPowerTrendCard } from './PurchasingPowerTrendCard'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
+import React from 'react'; import { AlertTriangle, Award, Bell, Bookmark, Building2, Calculator, Clock, Compass, MapPin, Mountain, Phone, PlusCircle, ShieldCheck, Sparkles, ThumbsUp, TrainFront, Wifi, Wind, Zap, } from 'lucide-react'; import { BubbleReport, EvaluatedNeighborhood, LocalLandmark, Neighborhood, ResidentVoteDoc, WorkHub, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import type { NeighborhoodDeepInsight, RentVsBuyVerdict, } from '../data/neighborhoodInsights'; import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { buildExternalDivarUrl, type FeatureFlags } from '../utils/security'; import { CommuteHubsMatrixCard } from './CommuteHubsMatrixCard'; import { BudgetBridgeAdvisorCard } from './BudgetBridgeAdvisorCard'; import { PurchasingPowerTrendCard } from './PurchasingPowerTrendCard'; import { ViewportLazyRender } from './priceHeatmapAndViewportLazy'; import { useAreaUnit, useExchangeRateSnapshot, useRadarLocale, useIntlCurrency } from './AreaUnitToggle'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { EpistemicMarketDisclaimer } from './EpistemicMarketDisclaimer'; import { NeighborhoodIntelligenceProfilePanel } from '../features/neighborhoods/components/NeighborhoodIntelligenceProfilePanel'; const NeighborhoodPriceChartLazy = React.lazy(() =>
   import('./NeighborhoodPriceChart').then((m) => ({ default: m.NeighborhoodPriceChart })) ); const HedonicInlineWidget = React.lazy(() => import('./HedonicInlineWidget').then((m) => ({ default: m.HedonicInlineWidget }))
 ); const NeighborhoodBargainsAndVotesTabs = React.lazy(() => import('./NeighborhoodBargainsAndVotesTabs').then((m) => ({ default: m.NeighborhoodBargainsAndVotesTabs }))
-); const ResidentReviewsTabLazy = React.lazy(() => import('./inspector/ResidentReviewsTab').then((m) => ({ default: m.ResidentReviewsTab }))); export type InspectorTabId = 'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote' | 'osm_places'; export interface NeighborhoodInspectorTabsProps { activeTab: InspectorTabId; selectedHood: EvaluatedNeighborhood; activeCity: CityId; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; buildingAgeSegment: 'new' | 'mid' | 'older'; workHubId: string; selectedWorkHub: WorkHub; workHubs: WorkHub[]; onSelectWorkHubId: (hubId: string) => void; onChangeTargetSqm: (sqm: number) => void; onChangeBuildingAgeSegment: (seg: 'new' | 'older' | 'mid') => void; useLoanBooster: boolean; onToggleLoanBooster: () => void;
+); const ResidentReviewsTabLazy = React.lazy(() => import('./inspector/ResidentReviewsTab').then((m) => ({ default: m.ResidentReviewsTab }))); export type InspectorTabId = 'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote'; export interface NeighborhoodInspectorTabsProps { activeTab: InspectorTabId; selectedHood: EvaluatedNeighborhood; activeCity: CityId; mode: 'rent' | 'buy'; targetSqm: number; rentAgeMultiplier: number; buildingAgeSegment: 'new' | 'mid' | 'older'; workHubId: string; selectedWorkHub: WorkHub; workHubs: WorkHub[]; onSelectWorkHubId: (hubId: string) => void; onChangeTargetSqm: (sqm: number) => void; onChangeBuildingAgeSegment: (seg: 'new' | 'older' | 'mid') => void; useLoanBooster: boolean; onToggleLoanBooster: () => void;
   deductTenantRahnInBuy: boolean; onToggleDeductTenantRahn: () => void; effectiveBuyBudget: number; buyTotalBudget?: number; deposit?: number; monthlyRent?: number; totalRahnEquivalent: number; localAnalysis: { budgetVerdict: string }; directMetroCommuteInfo: { hasDirectLine: boolean; badgeText: string }; deepInsight: NeighborhoodDeepInsight; rentVsBuyVerdict: RentVsBuyVerdict;
   marketReport: BubbleReport; hoodCustomDeposit: number; setHoodCustomDeposit: (v: number) => void; calculatedHoodMonthlyRent: number; setShowHedonicModal: (v: boolean, params?: { sqm?: number; buildYear?: number; renovationStatus?: any; floor?: number; streetTier?: 'luxury' | 'balanced' | 'economic' | 'economy'; streetMultiplier?: number }) => void; setTradeUpCurrentHoodId: (id: number) => void; setShowTradeUpModal: (v: boolean) => void; setBargainHoodId: (id: number) => void;
   setAgencyModalTab: (t: 'submit_bargain' | 'reserve_sponsor') => void; setShowAgencyModal: (v: boolean) => void; setAlertHoodId: (id: number) => void; setAlertSubmitMsg: (msg: string) => void; setShowBuyerAlertModal: (v: boolean) => void; featureFlags: FeatureFlags; callingSponsorHoodId: number | null; revealedSponsorPhoneHoodId: number | null; onTrackSponsorCall: (hood: Neighborhood, sponsor: { name: string; phone: string }) => void; setNewVisitAddress: (v: string) => void; setNewVisitPrice: (v: number) => void;
@@ -16,20 +16,19 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
     onFocusLandmarkOnMap, voteAir, setVoteAir, votePower, setVotePower, voteInternet, setVoteInternet, voteMetro, setVoteMetro, voteSecurity, setVoteSecurity, voteFlat,
     setVoteFlat, voteComment, setVoteComment, verifyingGeo, onResidentVote, voteStatus, cloudVotes,
   } = props;
-  const [areaUnit] = useAreaUnit(), [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency(), isEn = radarLocale === 'en';
+  const [areaUnit] = useAreaUnit(), [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency(), rateState = useExchangeRateSnapshot(), isEn = radarLocale === 'en';
   const cityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
-  const hoodTotal80mMillions = Math.round(selectedHood.buyPerSqm * 80), monthlyRent80mMillions = Math.max(1, Math.round(selectedHood.rahn80m * 0.03)); void hoodTotal80mMillions; void monthlyRent80mMillions;
   const scaledFullRahn = Math.max(50, Math.round(selectedHood.rahn80m * (targetSqm / 80) * rentAgeMultiplier));
   const effectiveMonthlyHousingCost = Math.max(calculatedHoodMonthlyRent, Math.round((scaledFullRahn * 0.015) * 10) / 10);
   const minHouseholdIncomeMillion = Math.max(25, Math.round(effectiveMonthlyHousingCost / 0.35));
-  const fxTag = (millionVal: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(millionVal, intlCurrency, radarLocale)})` : '');
+  const fxTag = (millionVal: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(millionVal, intlCurrency, radarLocale, rateState.snapshot)})` : '');
   if (activeTab === 'scorecard') {
     const dealSqm = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm;
     const realDealTotalM = Math.round(dealSqm * targetSqm), deedHoldbackM = Math.round(realDealTotalM * 0.1), rahnDeductM = deductTenantRahnInBuy ? scaledFullRahn : 0, netLoanM = useLoanBooster ? 910 : 0;
     const minSigningCashM = Math.max(Math.round(realDealTotalM * 0.55), realDealTotalM - deedHoldbackM - rahnDeductM - netLoanM);
     return (
       <div className="space-y-3.5 text-xs">
-        <NeighborhoodIntelligenceProfilePanel hood={selectedHood} dealPricePerSqm={dealSqm} />
+        <NeighborhoodIntelligenceProfilePanel hood={selectedHood} dealPricePerSqm={dealSqm} cityId={activeCity} />
         <div className="p-2.5 rounded-xl bg-gradient-to-l from-indigo-50/90 to-emerald-50/90 dark:from-indigo-950/40 dark:to-emerald-950/40 border border-indigo-200/60 dark:border-indigo-800/40 flex flex-wrap items-center justify-between gap-2 shadow-xs">
           <div className="flex items-start gap-2 min-w-0 flex-1">
             <span className="p-1 rounded-lg bg-indigo-600 text-white shrink-0 mt-0.5"><Sparkles className="w-3.5 h-3.5" /></span>
@@ -100,7 +99,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
         {workHubId && workHubId !== 'none' && (
           <div className={`p-3 rounded-[12px] border text-xs flex items-center justify-between gap-2 ${directMetroCommuteInfo.hasDirectLine ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' : 'apple-grouped-card dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300'}`}>
             <div className="flex items-center gap-2"><TrainFront className={`w-4 h-4 shrink-0 stroke-[1.75] ${directMetroCommuteInfo.hasDirectLine ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} /><span className="font-bold">{directMetroCommuteInfo.badgeText}</span></div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 tabular-nums">{selectedHood.distKm != null ? `${toPersianNum(selectedHood.distKm.toFixed(1))} کیلومتر تا ` : 'تا '}{selectedWorkHub.name}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium shrink-0 tabular-nums">{selectedHood.distKm != null ? (isEn ? `Direct distance to ${selectedWorkHub.name}: ${selectedHood.distKm.toFixed(1)} km` : `فاصله مستقیم تا ${selectedWorkHub.name}: ${toPersianNum(selectedHood.distKm.toFixed(1))} کیلومتر`) : selectedWorkHub.name}</span>
           </div>
         )}
         <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5">
@@ -131,7 +130,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
             <div className="flex flex-wrap items-center gap-1">
               <span className="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold tabular-nums">پارک شبانه: {toPersianNum(deepInsight.nightParkingScore)} / ۱۰</span>
               <span className={`px-2 py-0.5 rounded-lg border text-[10.5px] font-bold ${deepInsight.winterSnowRisk === 'HIGH' ? 'bg-sky-50 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800' : deepInsight.winterSnowRisk === 'MEDIUM' ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'}`}>
-                {deepInsight.winterSnowRisk === 'HIGH' ? '❄️ شیب تند و برف‌گیر در زمستان' : deepInsight.winterSnowRisk === 'MEDIUM' ? '🌨️ شیب ملایم در روزهای برفی' : '☀️ معابر هموار بدون ریسک یخبندان'}
+                {deepInsight.winterSnowRisk === 'HIGH' ? 'شیب تند و برف‌گیر در زمستان' : deepInsight.winterSnowRisk === 'MEDIUM' ? 'شیب ملایم در روزهای برفی' : 'معابر هموار بدون ریسک یخبندان'}
               </span>
             </div>
           </div>
@@ -142,7 +141,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
           </div>
           <div className="space-y-1.5 text-slate-700 dark:text-slate-300 text-[11.5px] pt-1">
             {deepInsight.hiddenTraps.map((trap, idx) => (
-              <div key={idx} className="flex items-start gap-1.5 leading-relaxed"><span className="text-amber-500 mt-0.5 shrink-0">⚠️</span><span>{trap}</span></div>
+              <div key={idx} className="flex items-start gap-1.5 leading-relaxed"><AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" aria-hidden="true" /><span>{trap}</span></div>
             ))}
           </div>
           <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
@@ -196,7 +195,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
               <span className="text-emerald-800 dark:text-emerald-300 font-semibold text-[10px]">{regimeNote}</span>
             </div>
             <div className="text-[10px] text-slate-600 dark:text-slate-400 tabular-nums" data-testid="market-anchor-clamp-disclosure">
-              {agg.isAnchorClamped ? `⚖️ مهار نوسان روزانه (±۳٪ نسبت به لنگر محله) فعال است · میانگین خام پیش از مهار: ${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م` : `پایداری لنگر روزانه (±۳٪): منطبق با میانگین خام (${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م)`}
+              {agg.isAnchorClamped ? `مهار نوسان روزانه (±۳٪ نسبت به لنگر محله) فعال است · میانگین خام پیش از مهار: ${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م` : `پایداری لنگر روزانه (±۳٪): منطبق با میانگین خام (${toPersianNum(convertPricePerSqmToUnit(agg.unclampedAveragePerSqm, areaUnit))} م)`}
             </div>
             {agg.hasSufficientIqrEvidence && (
               <div className="relative h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" aria-hidden="true">
@@ -265,7 +264,6 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
       </React.Suspense>
     );
   }
-  const bargainsList = selectedHood.bargains || []; void (bargainsList.length === 0);
   return (
     <React.Suspense fallback={<div className="apple-grouped-card p-4 text-center text-xs text-slate-400">در حال بارگذاری تب...</div>}>
       <NeighborhoodBargainsAndVotesTabs

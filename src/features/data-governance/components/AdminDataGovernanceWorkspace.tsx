@@ -18,7 +18,9 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
   const [resolutionReason, setResolutionReason] = useState('تطبیق با سند پالایش‌شده و گواهی پایان کار');
   const [feedbackFa, setFeedbackFa] = useState<string | null>(null);
 
-  const analyticsBundle = defaultAnalyticsPlatformEngine.getOverviewBundle('saadat-abad', 142);
+  const analyticsBundle = defaultAnalyticsPlatformEngine.getOverviewBundle(null, 142);
+  const registeredEntityCount = new Set(versions.map((v) => v.entityId)).size;
+  const restrictedSourceCount = sources.filter((s) => s.usagePolicy.displayAllowed === false).length;
 
   const handleResolveConflict = (caseId: string, val: number) => {
     const res = defaultDataGovernanceEngine.resolveConflictCase({
@@ -105,11 +107,11 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
       {activeTab === 'OVERVIEW' && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="dgov-overview-kpis">
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-            <div className="text-[11px] text-slate-500">پوشش منشأ و منبع (Provenance)</div>
+            <div className="text-[11px] text-slate-500">موجودیت‌های دارای زنجیره منشأ (Provenance)</div>
             <strong className="text-base font-black text-emerald-700 dark:text-emerald-400 block mt-0.5 tabular-nums">
-              {toPersianNum('98.4')}٪
+              {toPersianNum(registeredEntityCount)} موجودیت ({toPersianNum(versions.length)} نسخه)
             </strong>
-            <span className="text-[10.5px] text-slate-500">تمامی شاخص‌های منتشرشده دارای Lineage</span>
+            <span className="text-[10.5px] text-slate-500">محاسبه از دفتر نسخه‌ها و زنجیره منشأ ثبت‌شده</span>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
             <div className="text-[11px] text-slate-500">منابع ثبت‌شده فعال و مجاز</div>
@@ -126,9 +128,9 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
             <span className="text-[10.5px] text-slate-500">حل خودکار برای متراژ/مرز/معامله ممنوع است</span>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-            <div className="text-[11px] text-slate-500">انطباق با مجوز استفاده (Rights)</div>
+            <div className="text-[11px] text-slate-500">منابع با محدودیت انتشار خام (Rights)</div>
             <strong className="text-base font-black text-emerald-700 dark:text-emerald-400 block mt-0.5 tabular-nums">
-              {toPersianNum(100)}٪
+              {toPersianNum(restrictedSourceCount)} از {toPersianNum(sources.length)} منبع
             </strong>
             <span className="text-[10.5px] text-slate-500">منع انتشار داده خام منابع تحلیلی محدود</span>
           </div>
@@ -245,9 +247,7 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
                   <GitMerge className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{v.entityId} · {v.attribute} (نسخه {toPersianNum(v.versionNumber)})</span>
                 </strong>
-                <div className="text-[11px] text-slate-500">
-                  مقدار: <strong>{toPersianNum(v.value)}</strong> · نسخه داده: {v.dataVersion} · نسخه روش: v{v.methodologyVersion} · تغییر: {v.changeType}
-                </div>
+                <div className="text-[11px] text-slate-500">مقدار: <strong>{toPersianNum(v.value)}</strong> · نسخه داده: {v.dataVersion} · نسخه روش: v{v.methodologyVersion} · تغییر: {v.changeType}</div>
               </div>
               <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{v.changeReasonFa}</span>
             </div>
@@ -257,38 +257,28 @@ export const AdminDataGovernanceWorkspace: React.FC = () => {
 
       {activeTab === 'PIPELINES' && (
         <div className="space-y-3" data-testid="dgov-analytics-pipelines">
+          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 font-bold flex items-center justify-between gap-2">
+            <span>داده‌های این بخش مربوط به رجیستری پایه است و برای نمایش ساختار Pipeline ارائه شده‌اند.</span>
+            <span className="px-2 py-0.5 rounded bg-amber-200/70 text-amber-950 text-[10px] shrink-0">داده نمونه آزمایشی</span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {analyticsBundle.pipelines.map((p) => (
               <div key={p.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1">
                 <div className="flex items-center justify-between">
-                  <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{p.titleFa}</span>
-                  </strong>
-                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10.5px]">
-                    {p.status} · لایه {p.targetLayer}
-                  </span>
+                  <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-emerald-600" /><span>{p.titleFa}</span></strong>
+                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10.5px]">{p.status} · لایه {p.targetLayer}</span>
                 </div>
-                <div className="text-[11px] text-slate-500 tabular-nums">
-                  رکورد پردازش‌شده: {toPersianNum(p.recordsProcessed)} · خطا: {toPersianNum(p.failedRecords)} · هزینه واقعی: {toPersianNum(p.actualCostUnits)} واحد
-                </div>
+                <div className="text-[11px] text-slate-500 tabular-nums">رکورد پردازش‌شده: {toPersianNum(p.recordsProcessed)} · خطا: {toPersianNum(p.failedRecords)} · هزینه: {toPersianNum(p.actualCostUnits)} واحد</div>
               </div>
             ))}
           </div>
           {analyticsBundle.modelRegistry.map((m) => (
             <div key={m.modelId} className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>رجیستری مدل تحلیلی: {m.modelNameFa} (v{toPersianNum(m.version)})</span>
-                </strong>
-                <div className="text-[11px] text-slate-600 dark:text-slate-300">
-                  خطای MAPE: {toPersianNum(m.mapePercent)}٪ · بازه عدم‌قطعیت: ±{toPersianNum(m.uncertaintyBandPercent)}٪ · وضعیت Drift: {m.dataDriftStatus}
-                </div>
+                <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-emerald-600" /><span>رجیستری مدل تحلیلی: {m.modelNameFa} (v{toPersianNum(m.version)})</span></strong>
+                <div className="text-[11px] text-slate-600 dark:text-slate-300">خطای MAPE: {toPersianNum(m.mapePercent)}٪ · عدم‌قطعیت: ±{toPersianNum(m.uncertaintyBandPercent)}٪ · Drift: {m.dataDriftStatus}</div>
               </div>
-              <span className="px-2 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-[10.5px] flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5" /> نیازمند نظارت انسانی (Human Review)
-              </span>
+              <span className="px-2 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-[10.5px] flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> نیازمند نظارت انسانی</span>
             </div>
           ))}
         </div>

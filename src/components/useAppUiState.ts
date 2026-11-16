@@ -9,6 +9,7 @@ import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntl
 import { readHomeVerdictPrefillFromUrl, resolvePrimaryViewFromUrl } from '../utils/listingVerdictDeepLink';
 import { resolveRouteFromLocation } from '../navigation/url/navigationUrlContract';
 import type { AdminSectionId, ModuleSubTabId } from '../navigation/registry/route.types';
+import type { MapContextPanelId } from '../navigation/map/mapToolRailConfig';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 export function useAppUiState(initialUrlState: any) {
@@ -51,7 +52,7 @@ export function useAppUiState(initialUrlState: any) {
     return (sub && ['overview', 'content', 'data', 'users', 'operations', 'security'].includes(sub) ? sub : 'overview') as AdminSectionId;
   });
   const [homeVerdictPrefill, setHomeVerdictPrefill] = useState<string>(() => readHomeVerdictPrefillFromUrl());
-  const [activeTab, setActiveTab] = useState<'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote' | 'osm_places'>('scorecard');
+  const [activeTab, setActiveTab] = useState<'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote'>('scorecard');
   const [showGoldPins, setShowGoldPins] = useState<boolean>(false);
   const [showLandmarkPins, setShowLandmarkPins] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'green' | 'yellow' | 'red'>('all');
@@ -204,7 +205,8 @@ export function useAppUiState(initialUrlState: any) {
   const [mobileSheetOpen, setMobileSheetOpen] = useState<boolean>(false);
   const [showMapLegendPopover, setShowMapLegendPopover] = useState<boolean>(false);
   const [showToolsPopover, setShowToolsPopover] = useState<boolean>(false);
-
+  const [mapRailPanel, setMapRailPanel] = useState<MapContextPanelId>(null);
+  const [showSpatialTools, setShowSpatialTools] = useState<boolean>(false);
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -216,6 +218,7 @@ export function useAppUiState(initialUrlState: any) {
       setShowVisitedModal(false); setShowTradeUpModal(false); setShowHedonicModal(false);
       setShowPriceTrendModal(false); setShowOnboardingModal(false); setExpansionModalType(null);
       setShowSearchDropdown(false); setShowToolsPopover(false); setShowMapLegendPopover(false); setMobileFilterOpen(false); setShowNationwideProvinceModal(false); setMobileSheetOpen(false);
+      setMapRailPanel(null); setShowSpatialTools(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -288,9 +291,9 @@ export function useAppUiState(initialUrlState: any) {
     showPwaModal, setShowPwaModal, showLegalModal, setShowLegalModal,
     showPulseModal, setShowPulseModal, mobileFilterOpen, setMobileFilterOpen,
     mobileSheetOpen, setMobileSheetOpen, showMapLegendPopover, setShowMapLegendPopover,
-    showToolsPopover, setShowToolsPopover, uiUnitContext,
+    showToolsPopover, setShowToolsPopover, mapRailPanel, setMapRailPanel,
+    showSpatialTools, setShowSpatialTools, uiUnitContext,
   };
 }
-
 export type AppUiState = ReturnType<typeof useAppUiState>;
 

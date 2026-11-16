@@ -305,7 +305,17 @@ assert.equal(aggCold.askToDealRatio, 1, 'Empty sample set askToDealRatio is 1');
 const punakLiveFixture = {
   ...punakHood,
   bargains: [
-    ...(punakHood.bargains || []).map((b) => ({ ...b, id: `live-divar-${b.id}` })),
+    ...(punakHood.bargains || []).filter((b) => b.type !== 'اجاره').map((b) => ({ ...b, id: `live-divar-${b.id}` })),
+    {
+      id: 'live-divar-pnk-sale-2',
+      title: '۸۵ متری ۲ خواب، میرزابابایی، پارکینگ و انباری سندی',
+      type: 'خرید' as const,
+      sqm: 85,
+      priceText: 'متری ۳۴۰ میلیون تومان (کل: ۲۸.۹ میلیارد)',
+      discountPercent: 15,
+      buyerProfitText: '۵.۱ میلیارد تومان زیر قیمت مرجع',
+      street: 'بلوار میرزابابایی',
+    },
   ],
 };
 const liveSamples = buildNeighborhoodListingSamples(punakLiveFixture);

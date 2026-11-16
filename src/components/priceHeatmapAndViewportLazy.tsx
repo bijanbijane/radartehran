@@ -137,7 +137,7 @@ export function renderPriceDensityHeatmapOnLeaflet(
         ? escapeHtmlAttr(` (${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, locale)})`)
         : '';
     const safeDealRow = mode === 'buy'
-      ? `<br/><span>🤝 سناریو v6.4 (غیرثبتی): <strong>${toPersianNum(unitDeal)} میلیون تومان</strong></span>`
+      ? `<br/><span>سناریو v6.4 (غیرثبتی): <strong>${toPersianNum(unitDeal)} میلیون تومان</strong></span>`
       : '';
 
     // Outer diffused thermal halo
@@ -161,7 +161,7 @@ export function renderPriceDensityHeatmapOnLeaflet(
 
     midCircle.bindTooltip(
       `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;font-size:11px;">
-        <strong>🔥 چگالی قیمت ${safeName}</strong><br/>
+        <strong>چگالی قیمت ${safeName}</strong><br/>
         <span>${unitLabel}: <strong>${toPersianNum(unitPrice)} میلیون تومان${safeFxSuffix}</strong></span>${safeDealRow}<br/>
         <span>رهن ${formatAreaShort(80, areaUnit)}: <strong>${toPersianNum(monthlyRent80mMillions)} م اجاره</strong></span><br/>
         <span style="font-size:10px;opacity:0.85;">شدت نسبی قیمت در شهر: ${toPersianNum(Math.round(style.normalizedIntensity * 100))}٪</span>

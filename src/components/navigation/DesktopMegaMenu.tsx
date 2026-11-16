@@ -10,6 +10,8 @@ export interface DesktopMegaMenuProps {
   onClose: () => void;
   onMouseEnterMenu?: () => void;
   onMouseLeaveMenu?: () => void;
+  triggerRef?: React.RefObject<HTMLButtonElement | null>;
+  topOffsetClass?: string;
   locale: RadarLocale;
   activeView: PrimaryViewId;
   activeSubTab?: ModuleSubTabId;
@@ -29,6 +31,8 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
   onClose,
   onMouseEnterMenu,
   onMouseLeaveMenu,
+  triggerRef,
+  topOffsetClass = 'top-[56px] lg:top-[68px]',
   locale,
   activeView,
   activeSubTab,
@@ -41,11 +45,15 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        triggerRef?.current?.focus();
+      }
     };
     const onMouseDown = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (panelRef.current && target && !panelRef.current.contains(target) && !target.closest('[data-testid="global-nav-more"]')) {
+      const target = e.target as Node | null;
+      const insideTrigger = Boolean(triggerRef?.current && target && triggerRef.current.contains(target));
+      if (panelRef.current && target && !panelRef.current.contains(target) && !insideTrigger) {
         onClose();
       }
     };
@@ -55,7 +63,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
       window.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('mousedown', onMouseDown);
     };
-  }, [open, onClose]);
+  }, [open, onClose, triggerRef]);
 
   if (!open) return null;
 
@@ -67,7 +75,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
       aria-label={isEn ? 'More platform modules' : 'سایر بخش‌ها و خدمات تخصصی'}
       onMouseEnter={onMouseEnterMenu}
       onMouseLeave={onMouseLeaveMenu}
-      className="fixed top-[66px] inset-x-4 max-w-5xl mx-auto z-50 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl p-4 sm:p-5 animate-fadeIn"
+      className={`fixed ${topOffsetClass} inset-x-4 max-w-5xl mx-auto z-50 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl p-4 sm:p-5 animate-fadeIn`}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {DESKTOP_MEGA_MENU_GROUPS.map((group) => {
@@ -104,7 +112,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
                           {isEn ? item.labelEn : item.labelFa}
                         </span>
                         {item.status === 'beta' && (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 shrink-0">
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 shrink-0">
                             {isEn ? 'Beta' : 'آزمایشی'}
                           </span>
                         )}

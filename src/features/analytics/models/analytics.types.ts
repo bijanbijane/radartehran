@@ -142,6 +142,7 @@ export interface MetricSnapshotResponse {
   qualityStatus: DataQualityStatus;
   sufficiencyStatus: SampleSufficiencyStatus;
   lastUpdatedAt: string;
+  dataOrigin?: 'OBSERVED' | 'SIMULATED' | 'UNAVAILABLE';
   limitationsFa: string[];
 }
 

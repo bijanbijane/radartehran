@@ -54,10 +54,15 @@ export interface AppliedMarketFilters extends MarketFilterDraft {
   appliedAtIso: string;
 }
 
+export type MarketScopeStatus = 'valid_with_data' | 'valid_empty' | 'invalid_scope';
+export type GeoPriceSourceKind = 'observed_listing' | 'internal_reference' | 'estimated_v64' | 'unavailable';
+
 export interface DataQualityAssessment {
   status: MarketIndicatorStatus;
   rawCount: number;
   validCount: number;
+  observedValidCount: number;
+  illustrativeCount: number;
   duplicateExcluded: number;
   outlierExcluded: number;
   missingRatePct: number;
@@ -92,6 +97,8 @@ export interface MarketReportItem {
   scopeLabelFa: string;
   periodLabelFa: string;
   publishedJalali: string;
+  generatedAtIso: string;
+  dataAsOfIso: string | null;
   status: MarketIndicatorStatus;
   summaryFa: string;
   keyTakeawaysFa: string[];
@@ -116,13 +123,14 @@ export interface GeoComparisonItem {
   hoodId: number;
   hoodName: string;
   zone: string;
-  askingPerSqmMillion: number;
-  estimatedDealPerSqmMillion: number;
+  askingPerSqmMillion: number | null;
+  estimatedDealPerSqmMillion: number | null;
   rahn80mMillion: number;
   monthlyRentEquivMillion: number;
   observedCount: number;
   status: MarketIndicatorStatus;
-  gapFromBasePct: number;
+  priceSourceKind: GeoPriceSourceKind;
+  gapFromBasePct: number | null;
   overallScore: number;
 }
 

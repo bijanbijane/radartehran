@@ -237,7 +237,8 @@ export interface DataCorrectionProposal {
 }
 
 export interface PublicProvenanceOutput {
-  entityId: string;
+  entityId: string | null;
+  provenanceStatus?: 'REGISTERED' | 'UNREGISTERED';
   titleFa: string;
   attribute: string;
   dataType: DataSourceType;
@@ -251,7 +252,7 @@ export interface PublicProvenanceOutput {
     sourceCount: number;
     independentEvidenceCount: number;
     sampleCount: number;
-    uniqueEntityCount: number;
+    uniqueEntityCount: number | null;
     observedAt: string;
     lastUpdatedAt: string;
     attributionFa: string[];

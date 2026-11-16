@@ -88,7 +88,7 @@ export function CommuteHubsMatrixCard({
             <span className="truncate">{hub.name}</span>
           </span>
           <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
-            {toPersianNum(hub.distKm)} کیلومتر{areaUnit === 'sqft' ? ` (${toPersianNum((hub.distKm * 0.621371).toFixed(1))} mi)` : ''}
+            {toPersianNum(hub.distKm)} {radarLocale === 'en' ? 'km' : 'کیلومتر'}
           </span>
         </div>
         <div className="flex items-center justify-between text-[10.5px] text-slate-600 dark:text-slate-400 tabular-nums pt-1 border-t border-slate-200/60 dark:border-slate-800">
@@ -134,7 +134,7 @@ export function CommuteHubsMatrixCard({
               <span className="truncate">{spatialReport.nearestMetroLineName}</span>
             </span>
             <span className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-black text-slate-800 dark:text-slate-200 tabular-nums">
-              ~{toPersianNum(spatialReport.nearestMetroDistKm)} کیلومتر{areaUnit === 'sqft' ? ` (${toPersianNum(Math.round(spatialReport.nearestMetroDistKm * 3280.84).toLocaleString('en-US'))} ft)` : ''} ({toPersianNum(spatialReport.walkingMinutesEstimate)} دقیقه پیاده)
+              ~{toPersianNum(spatialReport.nearestMetroDistKm)} {radarLocale === 'en' ? 'km' : 'کیلومتر'} ({toPersianNum(spatialReport.walkingMinutesEstimate)} {radarLocale === 'en' ? 'min walk' : 'دقیقه پیاده'})
             </span>
           </div>
 
@@ -163,7 +163,7 @@ export function CommuteHubsMatrixCard({
                     : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                 }`}
               >
-                🚇 خطوط مترو نقشه
+                {radarLocale === 'en' ? 'Metro Lines' : 'خطوط مترو نقشه'}
               </button>
               <button
                 type="button"
@@ -175,24 +175,29 @@ export function CommuteHubsMatrixCard({
                     : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                 }`}
               >
-                🚦 محدوده طرح ترافیک
+                {radarLocale === 'en' ? 'Traffic Zone' : 'محدوده طرح ترافیک'}
               </button>
               {selectedWorkHubId !== 'none' && (
                 <button
                   type="button"
                   onClick={() => updateMapAdvancedOverlayState({ showCommuteIsochrones: !overlayState.showCommuteIsochrones })}
-                  aria-label={overlayState.showCommuteIsochrones ? 'مخفی‌سازی حلقه‌های تردد زمانی در نقشه' : 'نمایش حلقه‌های تردد زمانی روی نقشه'}
+                  aria-label={overlayState.showCommuteIsochrones ? 'مخفی‌سازی محدوده‌های شعاعی محل کار' : 'نمایش محدوده‌های شعاعی محل کار'}
                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                     overlayState.showCommuteIsochrones
                       ? 'bg-emerald-600 text-white border-emerald-600'
                       : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  ⏱️ حلقه‌های تردد
+                  {radarLocale === 'en' ? 'Radial Work Hub Rings' : 'نمایش محدوده‌های شعاعی محل کار'}
                 </button>
               )}
             </div>
           </div>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            {radarLocale === 'en'
+              ? 'These rings show straight-line radial distance and do not represent actual travel time.'
+              : 'این محدوده‌ها فاصله مستقیم را نشان می‌دهند و بیانگر زمان واقعی سفر نیستند.'}
+          </p>
         </div>
       )}
 

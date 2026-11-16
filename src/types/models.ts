@@ -9,15 +9,11 @@ export interface WorkHub { id: string; name: string;
   lat: number | null; lng: number | null;
 }
 export interface LocalLandmark {
+  id: string;
   name: string;
   category:
-    | 'مترو و حمل‌ونقل'
-    | 'پارک و فضای سبز'
-    | 'مرکز خرید و رفاهی'
-    | 'درمانی و بیمارستان'
-    | 'مترو و تبادل'
-    | 'بوستان و تفریح'
-    | 'خرید و تجاری';
+    | 'مترو و حمل‌ونقل' | 'پارک و فضای سبز' | 'مرکز خرید و رفاهی' | 'درمانی و بیمارستان'
+    | 'مترو و تبادل' | 'بوستان و تفریح' | 'خرید و تجاری';
   desc: string;
   latOffset: number;
   lngOffset: number;
@@ -37,10 +33,20 @@ export interface BubbleReport {
   trendData: BubbleTrendPoint[];
   estimatedDealPricePerSqm?: number;
 }
+export interface CommuteRoutingTelemetry {
+  drivingDistanceKm: number | null;
+  walkingDistanceKm: number | null;
+  transitDistanceKm: number | null;
+  travelDurationMinutes: number | null;
+  calculatedAtIso: string | null;
+  routingSource: string | null;
+  roadNetworkVersion: string | null;
+}
 export interface EvaluatedNeighborhood extends Neighborhood {
   baseBuyPerSqm?: number;
   status: 'green' | 'yellow' | 'red';
   distKm: number | null;
+  commuteRouting?: CommuteRoutingTelemetry | null;
   overallScore: number;
   diffPercent: number;
   marketReport: BubbleReport;
@@ -209,42 +215,23 @@ export interface SystemHealthData {
   };
   apiConnectivity: {
     openMeteoStatus: 'OK' | 'FALLBACK';
-    airQualityByCity?: Record<
-      string,
-      {
-        status: 'OK' | 'FALLBACK';
-        lastSuccessMs: number | null;
-      }
-    >;
+    airQualityByCity?: Record<string, { status: 'OK' | 'FALLBACK'; lastSuccessMs: number | null }>;
     geminiConfigured: boolean;
     casperHubConfigured?: boolean;
   };
   securityMetrics: {
-    payloadLimit: string;
-    generalRateLimit: string;
-    heavySyncRateLimit: string;
-    activeTrackedIps: number;
-    totalBlockedRequests: number;
+    payloadLimit: string; generalRateLimit: string; heavySyncRateLimit: string;
+    activeTrackedIps: number; totalBlockedRequests: number;
   };
   recentLogs: ServerAuditLogEntry[];
 }
 /** Authenticated buyer alert submission record stored in memory and `/buyerAlerts`. */
 export interface BuyerAlertRequest {
-  id: string;
-  hoodId: number;
-  hoodName: string;
-  city: CityId;
-  fullName: string;
-  phone: string;
-  dealType: 'خرید' | 'اجاره' | 'رهن و اجاره';
-  maxBudgetText: string;
-  createdAtIso: string;
-  status: 'new' | 'contacted' | 'archived';
-  userId: string;
-  userEmail: string;
-  privacyConsent: boolean;
-  consentTimestampIso: string;
-  consentVersion: string;
+  id: string; hoodId: number; hoodName: string; city: CityId;
+  fullName: string; phone: string; dealType: 'خرید' | 'اجاره' | 'رهن و اجاره';
+  maxBudgetText: string; createdAtIso: string; status: 'new' | 'contacted' | 'archived';
+  userId: string; userEmail: string; privacyConsent: boolean;
+  consentTimestampIso: string; consentVersion: string;
 }
 /** Response payload from `POST /api/contract-check` (AI Legal Contract & Anti-Fraud Clause Analyzer). */
 export interface ContractCheckResponse {
@@ -252,17 +239,10 @@ export interface ContractCheckResponse {
   source: 'GEMINI_AI' | 'RULE_ENGINE' | 'gemini_ai' | 'local_rule_engine';
   analysisSource?: 'GEMINI_AI' | 'RULE_ENGINE' | 'CACHED_ANALYSIS';
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'کم‌ریسک' | 'نیازمند اصلاح' | 'خطرناک' | 'امن' | 'نیازمند احتیاط' | 'خطرناک و پرریسک';
-  riskScore?: number;
-  warnings?: string[];
-  legalCitation?: string;
-  summary?: string;
-  legalAdvice?: string;
-  traps?: string[];
-  detectedTraps?: string[];
-  penaltiesWarning?: string;
-  missingGuarantees?: string[];
-  safeRewrite: string;
-  fallbackReason?: string | null;
+  riskScore?: number; warnings?: string[]; legalCitation?: string; summary?: string;
+  legalAdvice?: string; traps?: string[]; detectedTraps?: string[];
+  penaltiesWarning?: string; missingGuarantees?: string[];
+  safeRewrite: string; fallbackReason?: string | null;
 }
 /** OP-DEC-001 & OP-DEC-002 Canonical Area Unit & International Reference Currency Telemetry Contracts (`formatAreaUnitLabel` / `formatMillionTomanAsIntlCurrency`). */
 export type AreaUnitCode = 'sqm' | 'sqft';
@@ -272,19 +252,14 @@ export interface IntlValuationMetadata {
   referenceValuationIntlText: string;
 }
 export interface FeatureFlags {
-  enableCommissionCalc: boolean;
-  enableMultiCity: boolean;
-  enableSponsorBilling: boolean;
-  enableAiContractCheck: boolean;
-  enableTelegramFeed: boolean;
-  enableAiValuation?: boolean;
-  enableFakeAdDetector?: boolean;
-  enableMortgageSimulator?: boolean;
-  enableTenantRights?: boolean;
-  enableMunicipalityCalc?: boolean;
-  enablePropertySwap?: boolean;
-  enableVisitChecklist?: boolean;
-  enableSchoolRadar?: boolean;
-  enableRealtorStudio?: boolean;
-  enableRenovationCalc?: boolean;
-  enableInvestmentSim?: boolean; enableSafetyRadar?: boolean; enableCommercialRadar?: boolean; enableSuburbRadar?: boolean; enablePreSaleRadar?: boolean; enableMovingPlanner?: boolean; enableFractionalInvest?: boolean; enableTrafficZoneCalc?: boolean; enableSeoContentGen?: boolean; } export * from './typeGuards';
+  enableCommissionCalc: boolean; enableMultiCity: boolean; enableSponsorBilling: boolean;
+  enableAiContractCheck: boolean; enableTelegramFeed: boolean;
+  enableAiValuation?: boolean; enableFakeAdDetector?: boolean; enableMortgageSimulator?: boolean;
+  enableTenantRights?: boolean; enableMunicipalityCalc?: boolean; enablePropertySwap?: boolean;
+  enableVisitChecklist?: boolean; enableSchoolRadar?: boolean; enableRealtorStudio?: boolean;
+  enableRenovationCalc?: boolean; enableInvestmentSim?: boolean; enableSafetyRadar?: boolean;
+  enableCommercialRadar?: boolean; enableSuburbRadar?: boolean; enablePreSaleRadar?: boolean;
+  enableMovingPlanner?: boolean; enableFractionalInvest?: boolean; enableTrafficZoneCalc?: boolean;
+  enableSeoContentGen?: boolean;
+}
+export * from './typeGuards';

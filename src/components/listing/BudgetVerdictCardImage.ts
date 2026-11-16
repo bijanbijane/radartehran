@@ -11,6 +11,7 @@ export interface BudgetVerdictCardInput {
   mode: 'buy' | 'rent';
   budgetMillion: number;
   targetSqm: number;
+  placeFa?: string;
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -46,7 +47,7 @@ export async function renderBudgetVerdictCard(input: BudgetVerdictCardInput): Pr
   ctx.direction = 'rtl';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  const title = formatBudgetVerdictShareText(input.lines, input.mode, input.budgetMillion, input.targetSqm).split('\n')[0] ?? '';
+  const title = formatBudgetVerdictShareText(input.lines, input.mode, input.budgetMillion, input.targetSqm, input.placeFa).split('\n')[0] ?? '';
   ctx.fillStyle = '#34d399';
   ctx.font = '700 34px "Vazirmatn", "Tahoma", sans-serif';
   const titleLines = wrapText(ctx, title, 920);

@@ -119,7 +119,7 @@ const tier3 = buildZoomAdaptivePillIconConfig({
   priceLabel: 'متری ۱۸۰م',
 });
 assert.deepEqual(tier3.iconSize, [165, 28], 'Tier 3 high-zoom pill should be 165x28 enriched');
-assert.ok(tier3.html.includes('🚇'), 'Tier 3 pill must include metro score badge');
+assert.ok(tier3.html.includes('مترو'), 'Tier 3 pill must include metro score badge');
 
 // 6d. Viewport bounding-box filter check
 const sampleBounds = { north: 35.82, south: 35.74, east: 51.42, west: 51.30, zoom: 13 };
@@ -178,7 +178,7 @@ renderAdvancedSpatialOverlaysOnLeaflet({
 assert.ok(addedLayers.some((l) => l.type === 'polygon'), 'Should render traffic/pollution zone polygons');
 assert.ok(addedLayers.some((l) => l.type === 'polyline' && l.coords.length === 17), 'Should render 17-point Bezier comparison arc');
 assert.equal(addedLayers.filter((l) => l.type === 'circle').length, 3, 'Should render 3 commute isochrone rings');
-assert.ok(addedLayers.some((l) => l.type === 'marker' && l.opts.icon.html.includes('⚖️')), 'Should render comparison delta badge');
+assert.ok(addedLayers.some((l) => l.type === 'marker' && l.opts.icon.html.includes('مقایسه:')), 'Should render comparison delta badge');
 
 console.log('[PASS] All Expandable Comparison & Spatial Map Layer unit tests passed.');
 

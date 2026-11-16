@@ -7,11 +7,11 @@ import {
   calculateTehranAgeFactor,
 } from '../../utils/persianFinancials';
 import { useDialogFocus } from '../useDialogFocus';
-import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import type { BargainListing } from '../../data/neighborhoods';
 import {
-  convertPricePerSqmToUnit,
+  convertPricePerSqmToUnitRaw,
   formatAreaShort,
   formatMillionTomanAsIntlCurrency,
 } from '../../utils/areaUnit';
@@ -53,6 +53,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
   const [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
   const { totalBudgetMillion, desiredAreaSqm, maxBuildingAgeYears, setBudgetFilter } = useComparisonFilter();
 
@@ -139,7 +140,6 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
             </h2>
           </div>
           <div className="flex items-center gap-1.5">
-            <AreaUnitToggle compact showIntlControls />
             <button
               type="button"
               onClick={onClose}
@@ -233,8 +233,8 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
             </div>
           ) : (
             rankedMatches.map((hood) => {
-              const uAsk = convertPricePerSqmToUnit(hood.effectiveSqmPrice, areaUnit);
-              const uDeal = convertPricePerSqmToUnit(hood.estimatedDealSqmPrice, areaUnit);
+              const uAsk = Math.round(convertPricePerSqmToUnitRaw(hood.effectiveSqmPrice, areaUnit) * 10) / 10;
+              const uDeal = Math.round(convertPricePerSqmToUnitRaw(hood.estimatedDealSqmPrice, areaUnit) * 10) / 10;
               const uLabel = areaUnit === 'sqft' ? (isEn ? '/ft²' : 'هر ft² ') : (isEn ? '/m²' : 'متری ');
               return (
                 <div

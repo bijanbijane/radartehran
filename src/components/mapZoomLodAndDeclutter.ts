@@ -1,4 +1,4 @@
-import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { aggregateMarketMetricsForHood, formatNeighborhoodPriceTruthFa, isLiveDivarBargainId } from '../data/realMarketPriceAggregator'; import { isNeighborhoodInLeafletViewport } from './priceHeatmapAndViewportLazy'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr } from '../utils/security'; export type MarkerVisualTier = 'dot' | 'compact_chip' | 'standard_pill' | 'detailed_pill'; export interface MacroCityCluster { clusterId: string; lat: number; lng: number; count: number; avgBuyPerSqm: number; avgRahn80m: number; primaryName: string; containsSelected: boolean; dominantStroke: string; dominantPillBg: string; sampleHood: EvaluatedNeighborhood; } export const STANDARD_VIEWPORT_BUFFER_PAD = 0.10; export function filterNeighborhoodsInViewportWithBuffer( map: any, neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, statusFilter: 'all' | 'green' | 'yellow' | 'red', padRatio: number = STANDARD_VIEWPORT_BUFFER_PAD, radialMarginKm: number = 3.5
+import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { aggregateMarketMetricsForHood, formatNeighborhoodPriceTruthFa, isLiveDivarBargainId } from '../data/realMarketPriceAggregator'; import { isNeighborhoodInLeafletViewport } from './priceHeatmapAndViewportLazy'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit'; import { buildExternalDivarUrl, escapeHtmlAttr } from '../utils/security'; import { buildNeighborhoodTooltipTrendSectionHtml } from './map/NeighborhoodTooltipMarketTrend'; export type MarkerVisualTier = 'dot' | 'compact_chip' | 'standard_pill' | 'detailed_pill'; export interface MacroCityCluster { clusterId: string; lat: number; lng: number; count: number; avgBuyPerSqm: number; avgRahn80m: number; primaryName: string; containsSelected: boolean; dominantStroke: string; dominantPillBg: string; sampleHood: EvaluatedNeighborhood; } export const STANDARD_VIEWPORT_BUFFER_PAD = 0.10; export function filterNeighborhoodsInViewportWithBuffer( map: any, neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, statusFilter: 'all' | 'green' | 'yellow' | 'red', padRatio: number = STANDARD_VIEWPORT_BUFFER_PAD, radialMarginKm: number = 3.5
 ): EvaluatedNeighborhood[] { let centerLat: number | null = null, centerLng: number | null = null, maxRadiusKm = 18; try { if (map && typeof map.getBounds === 'function') { const bounds = map.getBounds(); const center = typeof map.getCenter === 'function' ? map.getCenter() : bounds?.getCenter?.(); const ne = bounds?.getNorthEast?.(); if (center && Number.isFinite(center.lat) && Number.isFinite(center.lng)) { centerLat = center.lat; centerLng = center.lng; if (ne && Number.isFinite(ne.lat) && Number.isFinite(ne.lng)) { const cornerDist = calcDistanceKm(center.lat, center.lng, ne.lat, ne.lng); if (cornerDist !== null && cornerDist > 0) maxRadiusKm = cornerDist + radialMarginKm; } } }
   } catch { } return neighborhoods.filter((hood) => { if (statusFilter !== 'all' && hood.status !== statusFilter) return false; if (hood.id === selectedHoodId) return true; if (isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, padRatio)) return true; if (centerLat !== null && centerLng !== null) { const dist = calcDistanceKm(centerLat, centerLng, hood.lat, hood.lng); if (dist !== null && dist <= maxRadiusKm) return true; }
     return false; }); }
@@ -167,7 +167,7 @@ export function buildNeighborhoodLodDivIconConfig(params: {
   if (tier === 'detailed_pill') {
     const growth6m = hood.marketReport?.hoodGrowth6mPercent ?? 12;
     const safeGrowth = escapeHtmlAttr(`${growth6m > 0 ? '+' : ''}${toPersianNum(growth6m)}٪`);
-    const safeMetro = escapeHtmlAttr(`🚇${toPersianNum(hood.metro)}`);
+    const safeMetro = escapeHtmlAttr(`مترو ${toPersianNum(hood.metro)}`);
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
         <span data-hood-pill="${hood.id}" data-lod-tier="detailed" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.8px;font-weight:800;color:#ffffff;background:${pillBg}f0;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">
@@ -207,18 +207,18 @@ export function buildNeighborhoodRichTooltipHtml(params: {
       <span style="background:${scoreBg};color:${scoreColor};padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:800;">${toPersianNum(hood.overallScore)} / ۱۰</span>
     </div>
     <div style="font-size:11px;line-height:1.65;color:${bodyTextColor};">
-      <div>💰 میانگین خرید (${safeUnitLabel}): <strong>${toPersianNum(unitPrice)} میلیون${safeBuyFx}</strong> (کل: ${toPersianNum(total80mMillions)} میلیارد)</div>
+      <div>میانگین خرید (${safeUnitLabel}): <strong>${toPersianNum(unitPrice)} میلیون${safeBuyFx}</strong> (کل: ${toPersianNum(total80mMillions)} میلیارد)</div>
       <div>${escapeHtmlAttr(formatNeighborhoodPriceTruthFa(hood.id, (hood.bargains || []).filter((row) => isLiveDivarBargainId(row.id)).length))}</div>
-      <div>🏠 رهن کامل (${safeAreaShort}): <strong>${toPersianNum(scaledRahnPill)} میلیون${safeRahnFx}</strong> (اجاره: ${toPersianNum(monthlyRent80mMillions)} م)</div>
-      <div>🚦 ترافیک: <span>${safeTrafficStatus}</span></div>
+      <div>رهن کامل (${safeAreaShort}): <strong>${toPersianNum(scaledRahnPill)} میلیون${safeRahnFx}</strong> (اجاره: ${toPersianNum(monthlyRent80mMillions)} م)</div>
+      <div>ترافیک: <span>${safeTrafficStatus}</span></div>
     </div>
+    ${buildNeighborhoodTooltipTrendSectionHtml({ hood, mode, safeSqmPill, scaledRahnPill, isDarkMap })}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px;padding-top:6px;border-top:1px solid rgba(148,163,184,0.2);">
-      <button type="button" data-hood-id="${hood.id}" data-hood-action="anatomy" style="background:#059669;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">📊 کالبدشکافی</button>
-      <button type="button" data-hood-id="${hood.id}" data-hood-action="hedonic" style="background:#4f46e5;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🧮 قیمت‌گذاری ملک</button>
-      <button type="button" data-hood-id="${hood.id}" data-hood-action="bargains" style="background:#d97706;color:#020617;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">💎 فایل شکار (${toPersianNum((hood.bargains || []).length)})</button>
-      <a href="${divarUrl}" target="_blank" rel="noopener noreferrer" style="background:#334155;color:#f8fafc;text-decoration:none;text-align:center;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;">🔗 دیوار محله</a>
-    </div>
-  </div>`;
+      <button type="button" data-hood-id="${hood.id}" data-hood-action="anatomy" style="background:#059669;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">کالبدشکافی</button>
+      <button type="button" data-hood-id="${hood.id}" data-hood-action="hedonic" style="background:#4f46e5;color:#ffffff;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">قیمت‌گذاری ملک</button>
+      <button type="button" data-hood-id="${hood.id}" data-hood-action="bargains" style="background:#d97706;color:#020617;border:none;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:800;cursor:pointer;">فایل شکار (${toPersianNum((hood.bargains || []).length)})</button>
+      <a href="${divarUrl}" target="_blank" rel="noopener noreferrer" style="background:#334155;color:#f8fafc;text-decoration:none;text-align:center;border-radius:6px;padding:4px 6px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:700;">دیوار محله</a>
+    </div></div>`;
 }
 export function renderMacroClustersOnLeaflet(params: {
   L: any; map: any; clusters: MacroCityCluster[]; mode: 'rent' | 'buy';
@@ -246,7 +246,7 @@ export function renderMacroClustersOnLeaflet(params: {
     }).addTo(map);
     cMarker.bindTooltip(
       `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;font-size:11px;">
-        <strong>📍 محدوده ${safeClusterName} (${toPersianNum(cluster.count)} محله)</strong><br/>
+        <strong>محدوده ${safeClusterName} (${toPersianNum(cluster.count)} محله)</strong><br/>
         <span>میانگین قیمت: <strong>${safeAvgPrice}</strong></span><br/>
         <span style="font-size:10px;opacity:0.8;">کلیک برای بزرگ‌نمایی و مشاهده نقاط محلات</span>
       </div>`,
@@ -276,15 +276,15 @@ export function renderGoldBargainPinOnLeaflet(params: {
   const goldAccent = isDarkMap ? '#fde047' : '#b45309'; const titleColor = isDarkMap ? '#34d399' : '#047857'; const bodyTextColor = isDarkMap ? '#e2e8f0' : '#1e293b'; const goldIcon = L.divIcon({ className: 'gold-bargain-pin',
     html: `<div style="display:flex;justify-content:center;align-items:center;transform:translate(-50%,-50%);cursor:pointer;">
       <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10px;font-weight:900;color:#020617;background:linear-gradient(135deg,#fde047,#f59e0b);border:1.5px solid #ffffff;box-shadow:0 0 12px rgba(245,158,11,0.85);">
-        💎 -${toPersianNum(b.discountPercent)}٪ شکار
+        -${toPersianNum(b.discountPercent)}٪ شکار
       </span>
     </div>`,
     iconSize: [0, 0], }); const gPin = L.marker([hood.lat + 0.0045, hood.lng - 0.0045], { icon: goldIcon })
     .addTo(map)
     .bindTooltip(
       `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;color:${bodyTextColor};">
-        <strong style="color:${goldAccent};">💎 شکار روز محله ${safeHoodName}:</strong><br/>${safeBargainTitle}<br/>
+        <strong style="color:${goldAccent};">شکار روز محله ${safeHoodName}:</strong><br/>${safeBargainTitle}<br/>
         <span style="color:${titleColor};font-weight:bold;">${safeBargainPrice}</span><br/>
-        <span style="font-size:10px;color:${goldAccent};font-weight:700;">🔥 ${safeBargainProfit}</span>
+        <span style="font-size:10px;color:${goldAccent};font-weight:700;">سود خرید: ${safeBargainProfit}</span>
       </div>`,
       { direction: 'top' } ); gPin.on('click', () => onClickBargain(hood.id)); return gPin; }

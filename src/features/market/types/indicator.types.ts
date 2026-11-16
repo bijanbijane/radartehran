@@ -73,6 +73,10 @@ export interface PriceScatterPoint {
   perSqmMillion: number;
   fairPerSqmMillion: number;
   age: number;
+  rooms?: number | null;
+  propertySubType?: 'apartment' | 'villa' | 'penthouse' | 'shop' | 'office_unit' | 'land_plot';
+  transactionType?: 'sale' | 'rent';
+  createdAtIso?: string | null;
   isObserved: boolean;
   isOutlierBand: boolean;
 }
@@ -102,6 +106,7 @@ export interface RentRawBreakdown {
   convertedFullMonthlyMillion: number;
   conversionRateAnnual: number;
   conversionRatioPerMillion: number;
-  grossYieldPct: number;
+  grossYieldPct: number | null;
+  observedRentCount?: number;
   status: MarketIndicatorStatus;
 }

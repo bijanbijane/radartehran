@@ -10,25 +10,37 @@ import {
   type NeighborhoodInternalSectionId,
   type NeighborhoodMarketTabId,
 } from '../services/neighborhoodProfileEngine';
-import { formatMillionTomanAsIntlCurrency } from '../../../utils/areaUnit';
+import { convertPricePerSqmToUnitRaw, formatMillionTomanAsIntlCurrency } from '../../../utils/areaUnit';
+import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
 
 export interface NeighborhoodIntelligenceProfilePanelProps {
   hood: AnyNeighborhoodInput;
+  cityId?: string;
   allNeighborhoods?: readonly AnyNeighborhoodInput[];
   dealPricePerSqm?: number;
 }
 
 export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntelligenceProfilePanelProps> = ({
-  hood, allNeighborhoods = [], dealPricePerSqm,
+  hood, cityId = 'tehran', allNeighborhoods = [], dealPricePerSqm,
 }) => {
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [radarLocale] = useRadarLocale();
+  useExchangeRateSnapshot();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<NeighborhoodInternalSectionId>('overview');
   const [marketTab, setMarketTab] = useState<NeighborhoodMarketTabId>('sale');
   const [distanceMode, setDistanceMode] = useState<AccessibilityDistanceMode>('direct_distance');
 
   const profile = useMemo(
-    () => buildNeighborhoodIntelligenceProfile(hood, allNeighborhoods.length ? allNeighborhoods : [hood], 'tehran', dealPricePerSqm),
-    [hood, allNeighborhoods, dealPricePerSqm]
+    () => buildNeighborhoodIntelligenceProfile(
+      hood,
+      allNeighborhoods.length ? allNeighborhoods : [hood],
+      cityId,
+      dealPricePerSqm,
+      { areaUnit, intlCurrency, locale: radarLocale },
+    ),
+    [hood, allNeighborhoods, cityId, dealPricePerSqm, areaUnit, intlCurrency, radarLocale]
   );
 
   return (
@@ -93,7 +105,7 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
               <p className="leading-relaxed font-medium">{profile.content.summary}</p>
               <div className="flex flex-wrap gap-2 text-[11px]">
                 <span className="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5">مسیر استاندارد: <code dir="ltr">{profile.identity.canonicalPath}</code></span>
-                <span className="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5">مساحت مرز: {profile.boundary.areaKm2} کیلومترمربع</span>
+                <span className="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5">برآورد هندسی تقریبی مساحت محدوده (شعاع داخلی): {profile.boundary.areaKm2} کیلومترمربع</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 <div className="rounded-lg border border-emerald-200/70 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20 p-2">
@@ -133,7 +145,7 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
               <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-2.5 text-[11px] space-y-1">
                 <div className="font-bold text-slate-900 dark:text-white">تحلیل زبانه «{marketTab}» — تفکیک از ارزش‌گذاری ملک منفرد (Hedonic)</div>
                 <p className="text-slate-600 dark:text-slate-400">
-                  میانه پیشنهادی محله ({formatMillionTomanAsIntlCurrency(hood.buyPerSqm, 'IRT', 'fa')}) شاخص مکانی است و جایگزین ارزش‌گذاری هدونیک تک‌ملک نمی‌شود.
+                  شاخص پایه محله ({formatMillionTomanAsIntlCurrency(Math.round(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit) * 10) / 10, 'IRT', radarLocale)}{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit), intlCurrency, radarLocale)}` : ''} بر {areaUnit === 'sqft' ? 'ft²' : 'm²'}) معیار مکانی است و جایگزین ارزش‌گذاری هدونیک تک‌ملک نمی‌شود.
                 </p>
               </div>
             </div>
@@ -142,15 +154,21 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
           {activeSection === 'physical' && (
             <div className="space-y-2 text-xs">
               <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{profile.landUseDenominatorLabelFa}</div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {profile.landUseShares.map((item) => (
-                  <div key={item.id} className="rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-[11px]">
-                    <div className="font-bold text-slate-800 dark:text-slate-200">{item.labelFa}</div>
-                    <div className="text-sm font-black text-indigo-600 dark:text-indigo-400">{item.sharePercent}%</div>
-                    <div className="mt-0.5 flex items-center gap-1 text-[10px] text-slate-500"><Layers className="w-3 h-3" /><span>لایه: {item.layerId}</span></div>
-                  </div>
-                ))}
-              </div>
+              {profile.landUseShares.length === 0 ? (
+                <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-2.5 text-[11px] text-slate-500">
+                  داده رسمی تفکیک کاربری اراضی برای این محدوده ثبت نشده است.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {profile.landUseShares.map((item) => (
+                    <div key={item.id} className="rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-[11px]">
+                      <div className="font-bold text-slate-800 dark:text-slate-200">{item.labelFa}</div>
+                      <div className="text-sm font-black text-indigo-600 dark:text-indigo-400">{item.sharePercent}%</div>
+                      <div className="mt-0.5 flex items-center gap-1 text-[10px] text-slate-500"><Layers className="w-3 h-3" /><span>لایه: {item.layerId}</span></div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -163,15 +181,18 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
                 <button type="button" disabled title="گراف زمان سفر خودرویی لحظه‌ای در این نسخه فعال نیست" className="rounded px-2 py-0.5 font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed">مسیر خودرویی (غیرفعال — بدون گراف ترافیکی)</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {profile.amenities.map((am) => (
-                  <div key={am.categoryId} className="rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-[11px]">
-                    <div className="font-bold text-slate-900 dark:text-white">{am.categoryTitleFa}</div>
-                    <div className="text-slate-600 dark:text-slate-400 mt-0.5">
-                      فاصله ({distanceMode === 'direct_distance' ? 'مستقیم' : 'شبکه پیاده'}): <strong className="text-slate-900 dark:text-white">{distanceMode === 'direct_distance' ? am.nearestDirectMeters : am.walkingNetworkMeters ?? '—'} متر</strong>
+                {profile.amenities.map((am) => {
+                  const val = distanceMode === 'direct_distance' ? am.nearestDirectMeters : am.walkingNetworkMeters;
+                  return (
+                    <div key={am.categoryId} className="rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-[11px]">
+                      <div className="font-bold text-slate-900 dark:text-white">{am.categoryTitleFa}</div>
+                      <div className="text-slate-600 dark:text-slate-400 mt-0.5">
+                        فاصله ({distanceMode === 'direct_distance' ? 'مستقیم' : 'شبکه پیاده'}): <strong className="text-slate-900 dark:text-white">{val !== null ? `${val} متر` : '—'}</strong>
+                      </div>
+                      <div className="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">{am.coverageStatusFa}</div>
                     </div>
-                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">{am.coverageStatusFa}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -180,25 +201,30 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
             <div className="space-y-2 text-[11px] text-slate-700 dark:text-slate-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-2">
-                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-indigo-500" /> تفکیک محله‌های مجاور (مرز مشترک) و نزدیک (شعاع مکانی)</div>
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-indigo-500" /> همسایگی مکانی (فاصله ژئودزیک بدون چندضلعی رسمی)</div>
                   <div className="mt-1 space-y-1">
-                    {profile.adjacentNeighborhoods.map((rel) => (
-                      <div key={rel.id} className="flex items-center justify-between"><span>{rel.name}</span><span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">{rel.relationBadgeFa} ({rel.distanceKm} km)</span></div>
-                    ))}
-                    {profile.nearbyNeighborhoods.map((rel) => (
-                      <div key={rel.id} className="flex items-center justify-between"><span>{rel.name}</span><span className="text-[10px] text-slate-500 font-semibold">{rel.relationBadgeFa} ({rel.distanceKm} km)</span></div>
-                    ))}
+                    {profile.nearbyNeighborhoods.length === 0 ? (
+                      <div className="text-[10px] text-slate-500">محله مقایسه‌ای در شعاع مکانی یافت نشد.</div>
+                    ) : (
+                      profile.nearbyNeighborhoods.map((rel) => (
+                        <div key={rel.id} className="flex items-center justify-between"><span>{rel.name}</span><span className="text-[10px] text-slate-500 font-semibold">{rel.relationBadgeFa} ({rel.distanceKm} km)</span></div>
+                      ))
+                    )}
                   </div>
                 </div>
                 <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-2">
-                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> مشارکت محلی (تفکیک ۳گانه) و پیش‌نیاز مرحله ۱۸</div>
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> تاریخچه و مشارکت محلی ثبت‌شده</div>
                   <div className="mt-1 space-y-1">
-                    {profile.contributions.map((c) => (
-                      <div key={c.id} className="text-[10px]"><span className="font-bold text-indigo-600 dark:text-indigo-400">[{c.streamLabelFa} · {c.moderationStatus}]</span> {c.textFa}</div>
-                    ))}
+                    {profile.contributions.length === 0 ? (
+                      <div className="text-[10px] text-slate-500">مشارکت یا رویداد تاییدشده‌ای برای این محله ثبت نشده است.</div>
+                    ) : (
+                      profile.contributions.map((c) => (
+                        <div key={c.id} className="text-[10px]"><span className="font-bold text-indigo-600 dark:text-indigo-400">[{c.streamLabelFa} · {c.moderationStatus}]</span> {c.textFa}</div>
+                      ))
+                    )}
                     <div className="pt-1 text-[10px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      <span>۳۰ معیار پذیرش Stage 17 ({STAGE_17_ACCEPTANCE_CHECKLIST_30.length}/30) و ۲۰ سرفصل Stage 18 ({STAGE_18_MARKET_INTELLIGENCE_SPEC_20.length}/20) آماده است.</span>
+                      <span>۳۰ معیار پذیرش Stage 17 ({STAGE_17_ACCEPTANCE_CHECKLIST_30.length}/30) و ۲۰ سرفصل Stage 18 ({STAGE_18_MARKET_INTELLIGENCE_SPEC_20.length}/20)</span>
                     </div>
                   </div>
                 </div>

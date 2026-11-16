@@ -70,10 +70,10 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       }
       if (!search) return;
 
-      void parseUrlIntlParams(search);
-      setStoredRadarLocale('fa');
-      setStoredIntlCurrency('IRT');
-      setStoredAreaUnit('sqm');
+      const intlParams = parseUrlIntlParams(search);
+      if (intlParams.lang) setStoredRadarLocale(intlParams.lang);
+      if (intlParams.currency) setStoredIntlCurrency(intlParams.currency);
+      if (intlParams.unit) setStoredAreaUnit(intlParams.unit);
 
       const params = new URLSearchParams(search);
       const cityParam = params.get('city')?.trim().toLowerCase() as CityId | undefined;
@@ -140,7 +140,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
   useEffect(() => {
     try {
       const docEl = document.documentElement;
-      if (docEl) { docEl.lang = 'fa'; docEl.dir = 'rtl'; }
+      if (docEl) { docEl.lang = locale === 'en' ? 'en' : 'fa'; docEl.dir = locale === 'en' ? 'ltr' : 'rtl'; }
       const activeProvinceFa = findProvinceForHood(showCompareModal ? (compHood1?.id ?? -1) : (selectedHood?.id ?? -1))?.capitalFa;
       const cityNameFa = activeProvinceFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
       const cityPrefix = activeCity !== 'tehran' ? `city=${activeCity}&` : '';

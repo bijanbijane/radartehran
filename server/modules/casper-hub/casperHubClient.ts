@@ -7,16 +7,17 @@ import crypto from 'node:crypto';
 import {
   ALLOWED_CASPER_AGENT_IDS, CASPER_AGENT_ID, CASPER_AGENT_ROADMAP_ID, CasperHubBootstrapResponse,
   CasperHubChangesResponse, CasperHubClientError, CasperHubClientResult, CasperHubCreateNoteResponse,
-  CasperHubSafeConfigStatus, CasperHubWhoAmIResponse, DEFAULT_CASPER_HUB_URL, EXPECTED_CASPER_AGENT_ID,
+  CasperHubSafeConfigStatus, CasperHubWhoAmIResponse, EXPECTED_CASPER_AGENT_ID,
   analyzeCasperHubEpistemicState, buildDeterministicNoteIdempotencyKey, deriveDeterministicNoteIdempotencyKey,
   generateDeterministicNoteIdempotencyKey, isAllowedCasperHubUrl, normalizeCasperHubNotePayload,
   redactCasperHubSecrets, redactSensitiveText, redactSensitiveTokenText, resolveCasperHubBaseUrl,
   resolveCasperHubConfig, resolveCasperHubUrl, scrubParsedObject, seedToUuidV5, validateCasperHubNotePayload,
 } from './casperHubTypes.ts';
 
+export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev';
 export {
   ALLOWED_CASPER_AGENT_IDS, CASPER_AGENT_ID, CASPER_AGENT_ROADMAP_ID, CasperHubClientError,
-  DEFAULT_CASPER_HUB_URL, EXPECTED_CASPER_AGENT_ID, analyzeCasperHubEpistemicState,
+  EXPECTED_CASPER_AGENT_ID, analyzeCasperHubEpistemicState,
   buildDeterministicNoteIdempotencyKey, deriveDeterministicNoteIdempotencyKey,
   generateDeterministicNoteIdempotencyKey, isAllowedCasperHubUrl, normalizeCasperHubNotePayload,
   redactCasperHubSecrets, redactSensitiveText, redactSensitiveTokenText, resolveCasperHubBaseUrl,
@@ -40,20 +41,21 @@ export class CasperHubClient {
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
   private verifiedTokenDigest: string | null = null;
-  private cachedWhoAmI: { digest: string; result: CasperHubClientResult<CasperHubWhoAmIResponse> } | null = null;
+  private readonly readCache = new Map<string, { expiresAt: number; result: CasperHubClientResult<CasperHubWhoAmIResponse> }>();
 
   constructor(options: CasperHubClientOptions = {}) {
     this.options = options;
     const env = options.env ?? process.env;
     const rawUrl = (options.baseUrl ?? env.CASPER_HUB_URL ?? DEFAULT_CASPER_HUB_URL).trim();
-    this.baseUrlValid = isAllowedCasperHubUrl(rawUrl);
+    const host = (() => { try { return new URL(rawUrl).hostname.toLowerCase(); } catch { return ''; } })();
+    this.baseUrlValid = isAllowedCasperHubUrl(rawUrl) && (host === 'casper-hub-api.bijanbijane-1.workers.dev' || host.endsWith('.bijanbijane-1.workers.dev'));
     this.baseUrl = this.baseUrlValid ? rawUrl.replace(/\/+$/, '') : DEFAULT_CASPER_HUB_URL;
     this.timeoutMs = options.timeoutMs ?? 8000;
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
   }
 
   public clearCache(): void {
-    this.cachedWhoAmI = null;
+    this.readCache.clear();
   }
 
   public getTokenValue(): string {
@@ -190,16 +192,18 @@ export class CasperHubClient {
 
   public async whoami<T = CasperHubWhoAmIResponse>(): Promise<CasperHubClientResult<T>> {
     const tok = this.getTokenValue();
-    const digest = tok ? crypto.createHash('sha256').update(tok).digest('hex') : '';
-    if (digest && this.cachedWhoAmI && this.cachedWhoAmI.digest === digest) {
-      return this.cachedWhoAmI.result as unknown as CasperHubClientResult<T>;
+    const cacheKey = tok ? `whoami:${crypto.createHash('sha256').update(tok).digest('hex')}` : '';
+    const cached = cacheKey ? this.readCache.get(cacheKey) : undefined;
+    if (cached) {
+      if (Date.now() < cached.expiresAt) return cached.result as unknown as CasperHubClientResult<T>;
+      this.readCache.delete(cacheKey);
     }
     const res = await this.requestJson<CasperHubWhoAmIResponse>('/v1/whoami', { method: 'GET' });
     if (res.ok && res.data) {
       res.data.verified_casper_05 = ALLOWED_CASPER_AGENT_IDS.has(res.data.agent_id);
-      if (digest) {
-        this.verifiedTokenDigest = digest;
-        this.cachedWhoAmI = { digest, result: res };
+      if (cacheKey) {
+        this.verifiedTokenDigest = cacheKey.slice(7);
+        this.readCache.set(cacheKey, { expiresAt: Date.now() + 10_000, result: res });
       }
     }
     return res as unknown as CasperHubClientResult<T>;
@@ -259,10 +263,11 @@ export class CasperHubClient {
     const isSeedObj = typeof idempotencyKeyOrOpts === 'object' && idempotencyKeyOrOpts !== null;
     const rawKey = (isSeedObj ? String(idempotencyKeyOrOpts.idempotencyKey ?? '') : String(idempotencyKeyOrOpts ?? (typeof input.idempotency_key === 'string' ? input.idempotency_key : ''))).replace(/[\r\n]+/g, '').trim();
     const resolvedKey = rawKey.length >= 8 ? (isSeedObj && !UUID_V5_RE.test(rawKey) ? seedToUuidV5(rawKey) : rawKey) : generateDeterministicNoteIdempotencyKey(validation.sanitized);
-    if (this.cachedWhoAmI?.result.data?.sequence !== undefined) this.cachedWhoAmI = null;
+    for (const [k, v] of this.readCache.entries()) {
+      if (v.result.data?.sequence !== undefined) this.readCache.delete(k);
+    }
     return this.requestJson<CasperHubCreateNoteResponse>('/v1/notes', {
-      method: 'POST',
-      headers: { 'Idempotency-Key': resolvedKey, 'X-Idempotency-Key': resolvedKey },
+      method: 'POST', headers: { 'Idempotency-Key': resolvedKey, 'X-Idempotency-Key': resolvedKey },
       body: JSON.stringify({ ...validation.sanitized, idempotency_key: resolvedKey }),
     });
   }

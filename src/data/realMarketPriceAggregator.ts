@@ -44,6 +44,7 @@ export {
   buildNeighborhoodListingSamples,
   formatNeighborhoodPriceTruthFa,
   isLiveDivarBargainId,
+  lookupMatchingDatedReferencePrice,
   lookupTehranReferencePrice,
   TEHRAN_DATED_REFERENCE_PRICES,
   type NeighborhoodListingSource,

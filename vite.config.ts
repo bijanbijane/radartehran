@@ -134,10 +134,12 @@ export default defineConfig(({ mode }) => {
             if (id.includes('src/features/properties/')) {
               return 'feature-properties';
             }
+            if (id.includes('src/features/home/')) {
+              return 'feature-home';
+            }
             if (
               id.includes('src/features/market/') ||
               id.includes('src/features/valuation/') ||
-              id.includes('src/features/home/') ||
               id.includes('src/features/admin/')
             ) {
               return 'feature-market-valuation';

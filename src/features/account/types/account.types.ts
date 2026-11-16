@@ -99,6 +99,12 @@ export interface DataRequestRecord {
   createdAtIso: string;
 }
 
+export const DATA_REQUEST_STATUS_LABELS: Record<DataRequestRecord['status'], string> = {
+  ready: 'آماده اجرا',
+  pending_verification: 'منتظر تأیید هویت',
+  completed: 'تکمیل‌شده',
+};
+
 export interface AccountWorkspaceSnapshot {
   profile: AccountProfileSettings;
   privacy: AccountPrivacyPreferences;
