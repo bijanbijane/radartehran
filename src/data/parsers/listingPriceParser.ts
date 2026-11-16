@@ -1,4 +1,4 @@
-import { toEnglishDigits } from '../../utils/formatters';
+import { normalizeDigitsToEnglish as toEnglishDigits } from '../../utils/security';
 
 export type PriceSourceType = 'EXPLICIT_TOTAL' | 'EXPLICIT_PER_SQM' | 'UNAVAILABLE' | 'AMBIGUOUS';
 
