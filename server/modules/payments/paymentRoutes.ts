@@ -3,6 +3,7 @@
  * @description Express routing factory for payments, callbacks, refunds, and wallet operations.
  */
 
+import crypto from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
 import {
   buildErrorEnvelope,
@@ -15,37 +16,59 @@ import {
 import type { PaymentEngine } from './paymentEngine';
 import type { OriginatingBusinessModule, PaymentCurrency, PaymentPurpose } from './paymentTypes';
 
+export interface PaymentRouterSecurityOptions {
+  readonly webhookHmacSecret?: string;
+}
+
+export function computePaymentCallbackHmac(rawPayload: unknown, secret: string): string {
+  const serialized = typeof rawPayload === 'string' ? rawPayload : JSON.stringify(rawPayload ?? {});
+  return crypto.createHmac('sha256', secret).update(serialized, 'utf8').digest('hex');
+}
+
+export function verifyPaymentCallbackHmac(
+  req: Request,
+  secret: string | undefined,
+): { valid: boolean; reason?: string } {
+  if (!secret || secret.trim().length < 16) {
+    return { valid: false, reason: 'WEBHOOK_SECRET_NOT_CONFIGURED' };
+  }
+  const sigHeader = req.headers['x-payment-signature'] ?? req.headers['x-webhook-signature'];
+  const supplied = Array.isArray(sigHeader) ? sigHeader[0] : sigHeader;
+  if (!supplied || typeof supplied !== 'string') {
+    return { valid: false, reason: 'MISSING_WEBHOOK_SIGNATURE' };
+  }
+  const cleaned = supplied.replace(/^sha256=/i, '').trim();
+  const expected = computePaymentCallbackHmac(req.body, secret);
+  if (cleaned.length !== expected.length) {
+    return { valid: false, reason: 'INVALID_WEBHOOK_SIGNATURE' };
+  }
+  const matched = crypto.timingSafeEqual(Buffer.from(cleaned, 'utf8'), Buffer.from(expected, 'utf8'));
+  return matched ? { valid: true } : { valid: false, reason: 'INVALID_WEBHOOK_SIGNATURE' };
+}
+
 export function createPaymentRouter(
   engine: PaymentEngine,
-  tokenVerifier?: FirebaseTokenVerifierAdapter,
+  tokenVerifier?: FirebaseTokenVerifierAdapter | null,
+  securityOptions?: PaymentRouterSecurityOptions,
 ): Router {
   const router = Router();
+  const webhookSecret = securityOptions?.webhookHmacSecret ?? process.env.PAYMENT_WEBHOOK_SECRET;
 
   async function resolvePrincipal(req: Request) {
-    if (!tokenVerifier) {
-      const uid = (req.headers['x-test-uid'] as string) || (req.headers['x-user-id'] as string);
-      const role = (req.headers['x-test-role'] as string) || 'verified_user';
-      if (uid) {
-        return {
-          ok: true,
-          principal: {
-            uid,
-            email: `${uid}@example.com`,
-            emailVerified: true,
-            role: role as any,
-            authMode: 'firebase_id_token' as const,
-            claims: {},
-          },
-        };
-      }
-      return { ok: false, status: 401, failureCode: 'UNAUTHENTICATED' as CanonicalApiErrorCode, reason: 'احراز هویت الزامی است.' };
+    if (!tokenVerifier || typeof tokenVerifier.verifyIdToken !== 'function') {
+      return {
+        ok: false,
+        status: 503,
+        failureCode: 'INTERNAL_ERROR' as CanonicalApiErrorCode,
+        reason: 'سرویس احراز هویت پرداخت در دسترس نیست (Fail-Closed).',
+      };
     }
     const ext = await extractAuthenticatedPrincipal(req, tokenVerifier, { requireVerifiedEmail: true });
     return {
       ok: ext.ok,
       principal: ext.principal,
       status: ext.status ?? 401,
-      failureCode: 'UNAUTHENTICATED' as CanonicalApiErrorCode,
+      failureCode: (ext.status === 403 ? 'FORBIDDEN' : 'UNAUTHENTICATED') as CanonicalApiErrorCode,
       reason: ext.reason ?? 'احراز هویت الزامی است.',
     };
   }
@@ -100,9 +123,19 @@ export function createPaymentRouter(
     return res.json(buildSuccessEnvelope({ attempt: result.attempt, redirectUrl: result.redirectUrl }, cid));
   });
 
-  // 3. Provider Callback & Verification Webhook
+  // 3. Provider Callback & Verification Webhook (HMAC-SHA256 fail-closed)
   router.post('/:intentId/callback', async (req: Request, res: Response) => {
     const cid = resolveCorrelationId(req);
+    const sigCheck = verifyPaymentCallbackHmac(req, webhookSecret);
+    if (!sigCheck.valid) {
+      const status = sigCheck.reason === 'WEBHOOK_SECRET_NOT_CONFIGURED' ? 503 : 401;
+      return res.status(status).json(
+        buildErrorEnvelope('UNAUTHENTICATED', 'امضای دیجیتال وب‌هوک درگاه پرداخت معتبر نیست.', cid, {
+          reasonCode: sigCheck.reason,
+        }),
+      );
+    }
+
     const intentId = req.params.intentId;
     const providerRef = (req.body.providerTransactionReference as string) || (req.query.ref as string);
 

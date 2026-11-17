@@ -1,15 +1,20 @@
-/** @file src/features/account/components/AccountContributionsAndServicesPanel.tsx — My Listings & Service Requests/Proposals */
-import React from 'react';
-import { BookMarked, Briefcase, Building2, MessageSquarePlus, Trash2 } from 'lucide-react';
+/** @file src/features/account/components/AccountContributionsAndServicesPanel.tsx — My Listings, Service Requests & Account-Synced Knowledge Bookmarks */
+import React, { useEffect, useState } from 'react';
+import type { User } from 'firebase/auth';
+import { Archive, BookMarked, Briefcase, Building2, MessageSquarePlus, Trash2 } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
 import type { ModuleSubTabId } from '../../../navigation/registry/route.types';
 import type { PropertyListingRecord } from '../../properties/types/listing.types';
 import type { ServiceProposalRecord, ServiceRequestRecord } from '../../services/types/service.types';
+import { getMySavedKnowledge } from '../../knowledge/services/knowledgeApiClient';
 import { loadSavedKnowledgeIds } from '../../knowledge/data/knowledgeSourcesAndBriefs';
+import { KNOWLEDGE_PUBLICATIONS } from '../../knowledge/data/knowledgeCatalog';
+import type { SavedKnowledgeBookmarkItem } from '../../knowledge/types/knowledge.types';
 import { loadDataCorrectionProposals } from '../../community/services/communityTrustService';
 
 export interface AccountContributionsAndServicesPanelProps {
+  currentUser?: User | null;
   myListings: PropertyListingRecord[];
   serviceRequests: ServiceRequestRecord[];
   serviceProposals: ServiceProposalRecord[];
@@ -18,12 +23,45 @@ export interface AccountContributionsAndServicesPanelProps {
 }
 
 export const AccountContributionsAndServicesPanel: React.FC<AccountContributionsAndServicesPanelProps> = ({
+  currentUser,
   myListings,
   serviceRequests,
   serviceProposals,
   onRemoveMyListing,
   onNavigateView,
 }) => {
+  const [savedKnowledgeItems, setSavedKnowledgeItems] = useState<SavedKnowledgeBookmarkItem[]>(() => {
+    const scopedIds = loadSavedKnowledgeIds(currentUser?.uid);
+    return scopedIds.map((id) => {
+      const pub = KNOWLEDGE_PUBLICATIONS.find((p) => p.id === id);
+      const st = pub?.status ?? pub?.defaultPublicationStatus ?? 'published';
+      return {
+        publicationId: id,
+        slug: pub?.slug || id,
+        titleFa: pub?.titleFa || `گزارش پژوهشی (${id})`,
+        version: pub?.version || 'v1.0',
+        status: st,
+        freshnessStatus: pub?.freshnessStatus || 'current',
+        savedAtIso: new Date().toISOString(),
+        isArchivedOrRemoved: st === 'archived' || pub?.freshnessStatus === 'archived',
+      };
+    });
+  });
+
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setSavedKnowledgeItems([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    getMySavedKnowledge(currentUser, ctrl.signal).then((res) => {
+      if (!ctrl.signal.aborted && res.ok && res.data) {
+        setSavedKnowledgeItems(res.data.items);
+      }
+    });
+    return () => ctrl.abort();
+  }, [currentUser]);
+
   return (
     <div className="space-y-4 text-xs" data-testid="account-listings-and-services">
       {/* My Submitted Property Listings */}
@@ -109,18 +147,54 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
         </button>
       </div>
 
-      {/* Saved Knowledge Studies Shortcut */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <BookMarked className="w-4 h-4 text-emerald-600" />
-            <span>گزارش‌های ذخیره‌شده پایگاه دانش ({toPersianNum(loadSavedKnowledgeIds().length)} مطالعه)</span>
-          </h2>
-          <p className="text-slate-500 mt-1">دسترسی سریع به پژوهش‌ها و راهنماهای نشان‌شده در مرکز دانش رادار تهران.</p>
+      {/* Stage 85.5: Account-Linked Saved Knowledge Studies with Version & Archived Badges */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3" data-testid="account-saved-knowledge-section">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+              <BookMarked className="w-4 h-4 text-emerald-600" />
+              <span>گزارش‌های ذخیره‌شده پایگاه دانش ({toPersianNum(savedKnowledgeItems.length)} مطالعه)</span>
+            </h2>
+            <p className="text-slate-500 mt-1">
+              {currentUser?.uid
+                ? 'نشان‌شده‌های همگام‌شده با حساب کاربری شما در مرکز دانش رادار.'
+                : 'نشان‌شده‌های موقت نشست فعلی (برای ذخیره دائمی وارد حساب کاربری شوید).'}
+            </p>
+          </div>
+          <button type="button" onClick={() => onNavigateView?.('knowledge', 'reports')} className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold cursor-pointer">
+            مشاهده در پایگاه دانش
+          </button>
         </div>
-        <button type="button" onClick={() => onNavigateView?.('knowledge', 'reports')} className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold cursor-pointer">
-          مشاهده در پایگاه دانش
-        </button>
+
+        {savedKnowledgeItems.length > 0 && (
+          <div className="space-y-2 pt-1">
+            {savedKnowledgeItems.slice(0, 6).map((item) => (
+              <div key={item.publicationId} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-bold text-slate-900 dark:text-white truncate">{item.titleFa}</div>
+                  <div className="text-[10.5px] text-slate-500 flex items-center gap-2 mt-0.5">
+                    <span>نسخه: {item.version}</span>
+                    <span>·</span>
+                    <span>وضعیت: {item.status}</span>
+                    {item.isArchivedOrRemoved && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
+                        <Archive className="w-3 h-3" />
+                        <span>گزارش آرشیوشده / غیرفعال</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigateView?.('knowledge', 'reports')}
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold cursor-pointer"
+                >
+                  بازخوانی
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1077,6 +1077,7 @@ function runDomainRegressionTests(): void {
 
   // 42. WS-CASPER-06: Primary Workspace Views & ReverseBudgetDiscoveryModal Charter Alignment (Sample Unification, Epistemic Hero Truthfulness, Non-Compensatory Warnings & AFFORDABLE-First Ranking)
   const discoverViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductDiscoverView.tsx'), 'utf-8');
+  const discoverResultsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/discover/DiscoverNeighborhoodResults.tsx'), 'utf-8');
   const homeViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductHomeView.tsx'), 'utf-8');
   const userSpaceViewSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/views/ProductUserSpaceView.tsx'), 'utf-8');
   const reverseBudgetSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/modals/ReverseBudgetDiscoveryModal.tsx'), 'utf-8');
@@ -1084,7 +1085,7 @@ function runDomainRegressionTests(): void {
     '42. WS-CASPER-06 unifies buildNeighborhoodListingSamples & explainNeighborhoodRecommendation across ProductDiscoverView, ProductHomeView, ProductUserSpaceView, and enforces AFFORDABLE-first ranking in ReverseBudgetDiscoveryModal',
     discoverViewSrc.includes('useDealPriceByHoodIdMap(p.evaluatedNeighborhoods)') &&
       discoverViewSrc.includes('DiscoverSelectedHoodEpistemicBanner') &&
-      discoverViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFilteredScore })') &&
+      discoverResultsSrc.includes('explainNeighborhoodRecommendation(hood, { mode, topReferenceScore: topFilteredScore })') &&
       !discoverViewSrc.includes('aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, [])') &&
       homeViewSrc.includes('useDealPriceByHoodIdMap(p.evaluatedNeighborhoods)') &&
       homeViewSrc.includes('explainNeighborhoodRecommendation(hood, { mode: p.mode, topReferenceScore: topFeaturedScore })') &&
@@ -1190,7 +1191,7 @@ function runDomainRegressionTests(): void {
       !globalHeaderSrc.includes('بررسی بدون رمز') &&
       adminActionsSrc.includes('...(sponsorVal !== undefined ? { sponsor: sponsorVal } : {})') &&
       !adminActionsSrc.includes('.catch(() => {})') &&
-      discoverViewSrc.includes('dealPriceByHoodId.get(hood.id)'),
+      discoverResultsSrc.includes('dealPriceByHoodId.get(hood.id)'),
     'WS-CASPER-10 Zero-Trust RBAC and root-cause remediation assertion failed',
   );
 

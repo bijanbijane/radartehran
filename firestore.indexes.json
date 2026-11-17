@@ -90,6 +90,48 @@
         { "fieldPath": "transactionId", "order": "ASCENDING" },
         { "fieldPath": "createdAtIso", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "socialPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recordKind", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recordKind", "order": "ASCENDING" },
+        { "fieldPath": "neighborhoodId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recordKind", "order": "ASCENDING" },
+        { "fieldPath": "topicId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialComments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "postId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFollows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scope", "order": "ASCENDING" },
+        { "fieldPath": "targetId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

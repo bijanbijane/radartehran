@@ -1,6 +1,6 @@
-/** @file src/features/valuation/components/ValuationScenarioComparison.tsx — Non-Destructive What-If Scenario Explorer */
-import React, { useMemo, useState } from 'react';
-import { GitCompare } from 'lucide-react';
+/** @file src/features/valuation/components/ValuationScenarioComparison.tsx — Stage 95 Non-Mutating What-If Scenario Explorer */
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, GitCompare } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { HEDONIC_RENOVATION_OPTIONS, type HedonicRenovationStatus } from '../../../data/hedonicPricingEngine';
 import { evaluateWorkspaceValuation } from '../services/valuationWorkspaceService';
@@ -17,33 +17,46 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
   baseResult,
   hood,
 }) => {
-  const [altRenovation, setAltRenovation] = useState<HedonicRenovationStatus>(
-    baseInput.renovationStatus === 'needs_renovation' ? 'renovated' : 'luxury_renovated',
-  );
-  const [altParking, setAltParking] = useState<boolean>(!baseInput.hasParking ? true : baseInput.hasParking);
-  const [altFloorDelta, setAltFloorDelta] = useState<number>(1);
+  // Stage 95.1: Initialize scenario strictly from baseInput (no hidden auto-upgrades)
+  const [altRenovation, setAltRenovation] = useState<HedonicRenovationStatus>(baseInput.renovationStatus);
+  const [altParking, setAltParking] = useState<boolean>(baseInput.hasParking);
+  const [altFloorDelta, setAltFloorDelta] = useState<number>(0);
+
+  useEffect(() => {
+    setAltRenovation(baseInput.renovationStatus);
+    setAltParking(baseInput.hasParking);
+    setAltFloorDelta(0);
+  }, [baseInput.hoodId, baseInput.renovationStatus, baseInput.hasParking, baseInput.floor, baseInput.totalFloors]);
+
+  const rawHypotheticalFloor = baseInput.floor + altFloorDelta;
+  const isFloorOutOfBounds = rawHypotheticalFloor > baseInput.totalFloors || rawHypotheticalFloor < -2;
 
   const hypotheticalInput = useMemo<ValuationWorkspaceInput>(
     () => ({
       ...baseInput,
+      inputOrigins: { ...baseInput.inputOrigins },
       renovationStatus: altRenovation,
       hasParking: altParking,
-      floor: Math.min(baseInput.totalFloors, Math.max(1, baseInput.floor + altFloorDelta)),
+      floor: isFloorOutOfBounds ? baseInput.floor : rawHypotheticalFloor,
+      isHypotheticalScenario: true,
+      scenarioId: `whatif-${baseInput.hoodId}`,
     }),
-    [baseInput, altRenovation, altParking, altFloorDelta],
+    [baseInput, altRenovation, altParking, isFloorOutOfBounds, rawHypotheticalFloor],
   );
 
   const altResult = useMemo(
-    () => evaluateWorkspaceValuation(hypotheticalInput, hood),
-    [hypotheticalInput, hood],
+    () => evaluateWorkspaceValuation(hypotheticalInput, hood, baseResult.geographicScope.cityId),
+    [hypotheticalInput, hood, baseResult.geographicScope.cityId],
   );
 
   if (!baseResult.hedonic || !altResult.hedonic) return null;
 
-  const baseTotal = baseResult.hedonic.hedonicTotalMillion;
-  const altTotal = altResult.hedonic.hedonicTotalMillion;
-  const deltaBillion = ((altTotal - baseTotal) / 1000).toFixed(2);
-  const deltaPercent = baseTotal > 0 ? Number((((altTotal - baseTotal) / baseTotal) * 100).toFixed(1)) : 0;
+  const isRent = baseInput.purpose === 'rent';
+  const baseValue = isRent ? baseResult.hedonic.estimatedRahnMillion : baseResult.hedonic.hedonicTotalMillion;
+  const altValue = isRent ? altResult.hedonic.estimatedRahnMillion : altResult.hedonic.hedonicTotalMillion;
+  const deltaMillion = altValue - baseValue;
+  const deltaBillion = (deltaMillion / 1000).toFixed(2);
+  const deltaPercent = baseValue > 0 ? Number(((deltaMillion / baseValue) * 100).toFixed(1)) : 0;
 
   return (
     <div
@@ -94,19 +107,36 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
         </div>
       </div>
 
+      {isFloorOutOfBounds && (
+        <div
+          data-testid="valuation-whatif-floor-warning"
+          className="p-2 rounded-[8px] bg-[#FFF4E5] dark:bg-amber-950/30 border border-[#F4D3A1] text-[10.5px] font-bold text-[#875000] dark:text-amber-200 flex items-center gap-1.5"
+        >
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>
+            طبقه فرضی انتخاب‌شده ({toPersianNum(rawHypotheticalFloor)}) خارج از محدوده طبقات ساختمان ({toPersianNum(baseInput.totalFloors)} طبقه) است و بدون برش پنهان متوقف شد.
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#DCE3DF] dark:border-slate-800 tabular-nums text-center">
         <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
-          <span className="text-[10px] text-[#586760] block">سناریوی پایه واقعی</span>
-          <strong className="font-black text-[#182522] dark:text-white">{toPersianNum(baseResult.hedonic.hedonicTotalBillion)} م.ت</strong>
+          <span className="text-[10px] text-[#586760] block">سناریوی پایه (ورودی فعلی)</span>
+          <strong className="font-black text-[#182522] dark:text-white">
+            {isRent ? `${toPersianNum(baseValue)} م رهن` : `${toPersianNum(baseResult.hedonic.hedonicTotalBillion)} م.ت`}
+          </strong>
         </div>
         <div className="p-2 rounded-[8px] bg-[#EAF3F0] dark:bg-emerald-950/30">
           <span className="text-[10px] text-[#14534E] dark:text-emerald-300 block">سناریوی فرضی</span>
-          <strong className="font-black text-[#14534E] dark:text-emerald-300">{toPersianNum(altResult.hedonic.hedonicTotalBillion)} م.ت</strong>
+          <strong className="font-black text-[#14534E] dark:text-emerald-300">
+            {isRent ? `${toPersianNum(altValue)} م رهن` : `${toPersianNum(altResult.hedonic.hedonicTotalBillion)} م.ت`}
+          </strong>
         </div>
         <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
           <span className="text-[10px] text-[#586760] block">تفاوت فرضی</span>
           <strong className={`font-black ${deltaPercent >= 0 ? 'text-[#176B4C]' : 'text-[#B3261E]'}`}>
-            {deltaPercent > 0 ? '+' : ''}{toPersianNum(deltaBillion)} م.ت ({deltaPercent > 0 ? '+' : ''}{toPersianNum(deltaPercent)}٪)
+            {deltaPercent > 0 ? '+' : ''}
+            {isRent ? `${toPersianNum(deltaMillion)} م` : `${toPersianNum(deltaBillion)} م.ت`} ({deltaPercent > 0 ? '+' : ''}{toPersianNum(deltaPercent)}٪)
           </strong>
         </div>
       </div>

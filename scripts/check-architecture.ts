@@ -11,7 +11,7 @@ export interface ArchitectureBaselineConfig {
   schemaVersion: string;
   thresholds: { warningLines: number; reviewLines: number; maxLinesNewFile: number };
   datasetExclusions: Record<string, { category: string; maxLines: number; rationale: string }>;
-  trackedLegacyFiles: Record<string, { baselineLines: number; maxLines: number; targetLines: number; rationale: string }>;
+  trackedLegacyFiles: Record<string, { baselineLines: number; maxLines: number; targetLines: number; owner?: string; rationale: string }>;
 }
 
 export interface FileViolation {
@@ -33,31 +33,36 @@ export interface ArchitectureCheckResult {
 
 export interface VirtualFileOverride { relPath: string; content: string; }
 
-function collectSourceFiles(rootDir: string): string[] {
-  const results: string[] = [];
-  const topServer = path.join(rootDir, 'server.ts');
+const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', '__tests__']);
+
+export function collectSourceFiles(rootDir: string): string[] {
+  const seen = new Set<string>();
+  const resolvedRoot = path.resolve(rootDir);
+  const topServer = path.join(resolvedRoot, 'server.ts');
   if (fs.existsSync(topServer)) {
-    results.push('server.ts');
+    seen.add('server.ts');
   }
 
   const walk = (dirRel: string) => {
-    const absDir = path.join(rootDir, dirRel);
+    const absDir = path.resolve(resolvedRoot, dirRel);
+    if (!absDir.startsWith(resolvedRoot + path.sep) && absDir !== resolvedRoot) return;
     if (!fs.existsSync(absDir)) return;
     const entries = fs.readdirSync(absDir, { withFileTypes: true });
     for (const entry of entries) {
-      const rel = path.posix.join(dirRel.replace(/\\/g, '/'), entry.name);
       if (entry.isDirectory()) {
+        if (IGNORED_DIRS.has(entry.name)) continue;
+        const rel = path.posix.join(dirRel.replace(/\\/g, '/'), entry.name);
         walk(rel);
-      } else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name)) {
-        results.push(rel);
+      } else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name) && !/\.(test|spec)\.(ts|tsx)$/.test(entry.name)) {
+        const rel = path.posix.join(dirRel.replace(/\\/g, '/'), entry.name);
+        seen.add(rel);
       }
     }
   };
 
   walk('src');
-  walk('server/modules/telemetry');
-  walk('server/modules/casper-hub');
-  return results.sort();
+  walk('server/modules');
+  return Array.from(seen).sort();
 }
 
 function extractImports(content: string): string[] {
@@ -260,15 +265,21 @@ if (isMain) {
 
   if (result.warnings.length > 0) {
     console.log('\n--- ⚠️  Review Warnings (300–499 lines, allowed under 500 ceiling) ---');
-    for (const w of result.warnings) {
+    for (const w of result.warnings.slice(0, 25)) {
       console.log(`  [WARN] ${w.file} (${w.lines} lines): ${w.message}`);
+    }
+    if (result.warnings.length > 25) {
+      console.log(`  ... and ${result.warnings.length - 25} more files in 300–499 line range.`);
     }
   }
 
   if (result.legacyTracked.length > 0) {
-    console.log('\n--- 📌 Tracked Legacy Debt Register (Ratchet-Locked) ---');
-    for (const l of result.legacyTracked) {
+    console.log(`\n--- 📌 Tracked Legacy Debt Register (${result.legacyTracked.length} ratchet-locked files) ---`);
+    for (const l of result.legacyTracked.slice(0, 15)) {
       console.log(`  [LEGACY] ${l.file}: ${l.lines} lines (ceiling: ${l.limit})`);
+    }
+    if (result.legacyTracked.length > 15) {
+      console.log(`  ... and ${result.legacyTracked.length - 15} more tracked legacy files.`);
     }
   }
 

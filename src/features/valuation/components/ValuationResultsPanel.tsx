@@ -1,4 +1,4 @@
-/** @file src/features/valuation/components/ValuationResultsPanel.tsx — Transparent Valuation Results, 4 Quality Axes & Provenance */
+/** @file src/features/valuation/components/ValuationResultsPanel.tsx — Stages 90–94 Purpose-Separated Results, Parametric Sensitivity & Traceable Comparables */
 import React from 'react';
 import { AlertTriangle, BookmarkPlus, Check, Copy, Info, Layers, ShieldAlert } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
@@ -9,7 +9,12 @@ import {
   type IntlCurrencyCode,
   type RadarLocale,
 } from '../../../utils/areaUnit';
-import { VALUATION_PURPOSE_LABELS_FA, type ValuationPurpose, type ValuationWorkspaceResult } from '../types/valuation.types';
+import {
+  COMPARABLE_EVIDENCE_KIND_LABELS_FA,
+  VALUATION_PURPOSE_LABELS_FA,
+  type ValuationPurpose,
+  type ValuationWorkspaceResult,
+} from '../types/valuation.types';
 
 export interface ValuationResultsPanelProps {
   purpose: ValuationPurpose;
@@ -60,6 +65,8 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
 
   const h = result.hedonic;
   const perUnit = convertPricePerSqmToUnit(h.hedonicPerSqm, areaUnit);
+  const rentRes = result.purposeResult?.kind === 'rent' ? result.purposeResult : null;
+  const currentRes = result.purposeResult?.kind === 'current_value' ? result.purposeResult : null;
 
   return (
     <div className="space-y-4 text-xs" data-testid="valuation-results-panel">
@@ -76,49 +83,68 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
 
         <div className="flex flex-wrap items-baseline justify-between gap-3 tabular-nums">
           <div>
-            {purpose === 'rent' ? (
+            {rentRes ? (
               <>
-                <div className="text-3xl font-black text-[#182522] dark:text-white">
-                  {toPersianNum(h.estimatedRahnMillion)}{' '}
-                  <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیون تومان رهن کامل</span>
+                <div className="text-3xl font-black text-[#182522] dark:text-white" data-testid="valuation-primary-rent-output">
+                  {toPersianNum(rentRes.estimatedFullRahnMillion)}{' '}
+                  <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیون تومان (برآورد محدود رهن کامل)</span>
+                </div>
+                <div className="text-[11px] text-[#875000] dark:text-amber-300 font-bold mt-0.5">
+                  {rentRes.methodologyLimitationFa}
+                </div>
+              </>
+            ) : currentRes ? (
+              <>
+                <div className="text-3xl font-black text-[#182522] dark:text-white" data-testid="valuation-primary-current-output">
+                  {toPersianNum(h.hedonicTotalBillion)}{' '}
+                  <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیارد تومان (ارزش جاری فروش دارایی)</span>
                 </div>
                 <div className="text-[11px] text-[#48534F] dark:text-slate-400 mt-0.5">
-                  معادل برآورد ارزش فروش مرجع: {toPersianNum(h.hedonicTotalBillion)} میلیارد تومان ({toPersianNum(perUnit)} م/{unitLabel})
+                  {currentRes.definitionLabelFa} · تاریخ مرجع داده: {currentRes.referenceDateIso.slice(0, 10)} · هر {unitLabel}: {toPersianNum(perUnit)} میلیون تومان
                 </div>
               </>
             ) : (
               <>
-                <div className="text-3xl font-black text-[#182522] dark:text-white">
+                <div className="text-3xl font-black text-[#182522] dark:text-white" data-testid="valuation-primary-sale-output">
                   {toPersianNum(h.hedonicTotalBillion)}{' '}
                   <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیارد تومان</span>
                 </div>
                 <div className="text-[11px] text-[#48534F] dark:text-slate-400 mt-0.5">
-                  هر {unitLabel}: {toPersianNum(perUnit)} میلیون تومان
-                  {intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(h.hedonicTotalMillion, intlCurrency, radarLocale)}` : ''}
+                  هر {unitLabel}: {toPersianNum(perUnit)} میلیون تومان (ارز مرجع: تومان)
+                  {intlCurrency !== 'IRT' ? ` · معادل نمایشی (غیرثبتی): ${formatMillionTomanAsIntlCurrency(h.hedonicTotalMillion, intlCurrency, radarLocale)}` : ''}
                 </div>
               </>
             )}
           </div>
 
           <div className="text-left bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 rounded-[10px] px-3 py-2">
-            <div className="text-[10px] text-[#586760]">بازه عدم‌قطعیت مدل (±{toPersianNum(result.uncertainty.bandPercent)}٪)</div>
+            <div className="text-[10px] text-[#586760]">بازه حساسیت پارامتری مدل (±{toPersianNum(result.uncertainty.bandPercent)}٪)</div>
             <strong className="text-xs font-black text-[#182522] dark:text-white">
-              {toPersianNum((h.sensitivityRangeMillion.min / 1000).toFixed(2))} تا {toPersianNum((h.sensitivityRangeMillion.max / 1000).toFixed(2))} میلیارد
+              {rentRes
+                ? `${toPersianNum(rentRes.sensitivityRahnRangeMillion.min)} تا ${toPersianNum(rentRes.sensitivityRahnRangeMillion.max)} میلیون رهن`
+                : `${toPersianNum((h.sensitivityRangeMillion.min / 1000).toFixed(2))} تا ${toPersianNum((h.sensitivityRangeMillion.max / 1000).toFixed(2))} میلیارد`}
             </strong>
           </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-[#B8D7CE] dark:border-emerald-800/70 tabular-nums">
+          {purpose === 'sale' ? (
+            <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
+              <span className="text-[10.5px] text-[#586760] block">فروش فوری نقدی (-۱۲٪)</span>
+              <strong className="font-black text-[#875000] dark:text-amber-300">{toPersianNum((h.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد</strong>
+            </div>
+          ) : (
+            <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
+              <span className="text-[10.5px] text-[#586760] block">وضعیت تبدیل اجاره ماهانه</span>
+              <strong className="font-black text-[#586760] dark:text-slate-300">نیازمند نرخ توافقی طرفین</strong>
+            </div>
+          )}
           <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-            <span className="text-[10.5px] text-[#586760] block">فروش فوری نقدی (-۱۲٪)</span>
-            <strong className="font-black text-[#875000] dark:text-amber-300">{toPersianNum((h.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد</strong>
-          </div>
-          <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-            <span className="text-[10.5px] text-[#586760] block">رهن کامل برآوردی</span>
+            <span className="text-[10.5px] text-[#586760] block">رهن کامل شاخص محله</span>
             <strong className="font-black text-[#176B63] dark:text-emerald-400">{toPersianNum(h.estimatedRahnMillion)} میلیون</strong>
           </div>
           <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-            <span className="text-[10.5px] text-[#586760] block">سناریو v6.4 محله (غیرثبتی)</span>
+            <span className="text-[10.5px] text-[#586760] block">شاخص پایه محله (غیرفایل)</span>
             <strong className="font-black text-[#182522] dark:text-white">{toPersianNum(convertPricePerSqmToUnit(result.v64NeighborhoodDealPerSqm, areaUnit))} م/{unitLabel}</strong>
           </div>
         </div>
@@ -138,19 +164,19 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
       {/* 4 Separated Quality & Epistemic Axes */}
       <div className="grid grid-cols-2 gap-2 text-[11px] tabular-nums" data-testid="valuation-four-quality-axes">
         <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[#586760] block">۱. تکمیل ورودی ملک</span>
-          <strong className="font-black text-[#182522] dark:text-white">{toPersianNum(result.completenessPercent)}٪ تکمیل شده</strong>
+          <span className="text-[#586760] block">۱. کیفیت تکمیل ورودی ملک</span>
+          <strong className="font-black text-[#182522] dark:text-white">{toPersianNum(result.completenessPercent)}٪ وزن‌دهی منشأ</strong>
         </div>
         <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
           <span className="text-[#586760] block">۲. کفایت نمونه مقایسه</span>
           <strong className="font-black text-[#182522] dark:text-white">{result.sufficiency.labelFa}</strong>
         </div>
         <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[#586760] block">۳. عدم‌قطعیت مدل</span>
+          <span className="text-[#586760] block">۳. حساسیت پارامتری مدل</span>
           <strong className="font-black text-[#875000] dark:text-amber-300">{result.uncertainty.labelFa}</strong>
         </div>
         <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[#586760] block">۴. اعتبارسنجی مدل</span>
+          <span className="text-[#586760] block">۴. وضعیت اعتبارسنجی مدل</span>
           <strong className="font-black text-[#182522] dark:text-white">{result.validation.labelFa}</strong>
         </div>
       </div>
@@ -159,17 +185,17 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
       <div className="p-3.5 rounded-[12px] bg-[#FFF4E5]/70 dark:bg-amber-950/20 border border-[#F4D3A1] dark:border-amber-800 space-y-1.5 text-[11px] text-[#875000] dark:text-amber-200">
         <div className="font-black flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 shrink-0" />
-          <span>مرز کاربرد و شناسنامه محاسبه (تعداد معامله ثبتی: ۰ مورد)</span>
+          <span>مرز کاربرد و شناسنامه محاسبه (تعداد معاملات رسمی تأییدشده: {toPersianNum(result.sufficiency.verifiedTransactionCount)} مورد)</span>
         </div>
         <p className="leading-relaxed">
-          این خروجی <strong>قیمت قطعی معامله، کارشناسی رسمی دادگستری، استعلام حقوقی سند یا تایید فنی سازه نیست</strong>. {result.validation.explanationFa}
+          این خروجی <strong>قیمت قطعی معامله، کارشناسی رسمی دادگستری یا استعلام ثبتی نیست</strong>. {result.uncertainty.methodologyNoteFa}
         </p>
         <div className="text-[10px] opacity-80 font-mono" dir="ltr">
-          snapshot={result.snapshot.dataSnapshotId} · {result.snapshot.methodologyVersion} · {result.snapshot.calculatedAtIso.slice(0, 19)}Z
+          snapshot={result.snapshot.snapshotId} · city={result.snapshot.cityId} · dataset={result.snapshot.datasetVersion} · {result.snapshot.calculatedAtIso.slice(0, 19)}Z
         </div>
       </div>
 
-      {h.sellerPriceEvaluation && (
+      {purpose === 'sale' && h.sellerPriceEvaluation && (
         <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-1">
           <div className="font-black text-[#182522] dark:text-white flex items-center justify-between">
             <span>سنجش قیمت اعلامی فروشنده</span>
@@ -210,30 +236,53 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
         </div>
       </div>
 
-      {/* Comparable Properties Evidence */}
+      {/* Separated Comparable Properties vs Neighborhood Baseline */}
       <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
         <div className="flex items-center justify-between">
           <h3 className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-[#176B63]" />
-            <span>نمونه‌های مبنای ارزیابی (Comparable Evidence)</span>
+            <span>شواهد مقایسه‌ای ({toPersianNum(result.sufficiency.usableListingsCount)} آگهی کامل · {toPersianNum(result.sufficiency.verifiedTransactionCount)} معامله ثبتی)</span>
           </h3>
-          <span className="text-[10.5px] text-[#586760]">متمایز از «فایل‌های مشابه مرور»</span>
+          <span className="text-[10.5px] text-[#586760]">تفکیک فایل از شاخص پایه محله</span>
         </div>
-        <div className="space-y-2 tabular-nums">
-          {result.comparables.map((c) => (
-            <div key={c.id} className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/70 flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <div className="font-bold text-[#182522] dark:text-white truncate">{c.title}</div>
-                <div className="text-[10.5px] text-[#586760]">{c.street} · {c.similarityReason}</div>
-              </div>
-              <div className="text-left shrink-0">
-                <strong className="font-black text-[#176B63] dark:text-emerald-400">
-                  {toPersianNum(convertPricePerSqmToUnit(c.askPerSqmMillion, areaUnit))} م/{unitLabel}
-                </strong>
-                <div className="text-[10px] text-[#586760]">شباهت: {toPersianNum(c.similarityScore)}٪</div>
-              </div>
+
+        <div className="p-2.5 rounded-[8px] bg-[#EEF5FC]/70 dark:bg-sky-950/30 border border-[#BBD6F2] dark:border-sky-800 flex items-center justify-between gap-2 tabular-nums">
+          <div>
+            <div className="font-bold text-[#1D4E89] dark:text-sky-300">{result.neighborhoodBaselineEvidence.title}</div>
+            <div className="text-[10px] text-[#586760] dark:text-slate-400">
+              {COMPARABLE_EVIDENCE_KIND_LABELS_FA[result.neighborhoodBaselineEvidence.evidenceKind]} · {result.neighborhoodBaselineEvidence.observedAt}
             </div>
-          ))}
+          </div>
+          <strong className="font-black text-[#1D4E89] dark:text-sky-300 shrink-0">
+            {toPersianNum(convertPricePerSqmToUnit(result.neighborhoodBaselineEvidence.askPerSqmMillion, areaUnit))} م/{unitLabel}
+          </strong>
+        </div>
+
+        <div className="space-y-2 tabular-nums">
+          {result.comparables.length === 0 ? (
+            <div className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-[11px] text-[#586760]">
+              فایل دارای متراژ و قیمت مستقل در این محله ثبت نشده است؛ برآورد صرفاً بر شاخص مرجع محله بالا تکیه دارد.
+            </div>
+          ) : (
+            result.comparables.map((c) => (
+              <div key={c.id} className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/70 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-bold text-[#182522] dark:text-white truncate">
+                    {c.title} {c.sqm ? `(${toPersianNum(c.sqm)} متر)` : ''}
+                  </div>
+                  <div className="text-[10.5px] text-[#586760]">
+                    {COMPARABLE_EVIDENCE_KIND_LABELS_FA[c.evidenceKind]} · {c.street} · {c.similarityReason}
+                  </div>
+                </div>
+                <div className="text-left shrink-0">
+                  <strong className="font-black text-[#176B63] dark:text-emerald-400">
+                    {toPersianNum(convertPricePerSqmToUnit(c.askPerSqmMillion, areaUnit))} م/{unitLabel}
+                  </strong>
+                  <div className="text-[10px] text-[#586760]">شباهت: {toPersianNum(c.similarityScore)}٪</div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

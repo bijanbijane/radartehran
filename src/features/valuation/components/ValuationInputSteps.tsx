@@ -1,11 +1,11 @@
-/** @file src/features/valuation/components/ValuationInputSteps.tsx — Structured Inputs with Field-Level Origin & Location Precision */
+/** @file src/features/valuation/components/ValuationInputSteps.tsx — Stage 89 Structured Inputs with Field-Level Origin, Selective Ad Extraction & Validation */
 import React, { useState } from 'react';
-import { Building2, Sparkles, Wrench } from 'lucide-react';
+import { AlertCircle, Building2, Sparkles, Wrench } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { getNeighborhoodDeepInsight } from '../../../data/neighborhoodInsights';
 import { getCurrentJalaliYear, HEDONIC_RENOVATION_OPTIONS } from '../../../data/hedonicPricingEngine';
-import { extractListingSpecsFromText, parseIranianPriceToMillionToman } from '../../../data/realMarketPriceAggregator';
 import { clampNumber } from '../../../utils/security';
+import { extractValuationSpecsFromAdText } from '../services/valuationWorkspaceService';
 import {
   INPUT_ORIGIN_LABELS_FA,
   LOCATION_PRECISION_LABELS_FA,
@@ -13,6 +13,7 @@ import {
   VALUATION_PURPOSE_LABELS_FA,
   type InputOrigin,
   type StreetTierId,
+  type ValuationInputValidationResult,
   type ValuationLocationPrecision,
   type ValuationOriginField,
   type ValuationPropertyCategory,
@@ -22,6 +23,7 @@ import {
 
 export interface ValuationInputStepsProps {
   input: ValuationWorkspaceInput;
+  validation?: ValuationInputValidationResult;
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
   completenessPercent: number;
@@ -29,20 +31,23 @@ export interface ValuationInputStepsProps {
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
 }
 
-const OriginChip: React.FC<{ origin: InputOrigin }> = ({ origin }) => (
-  <span
-    className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold ${
-      origin === 'system_retrieved'
+const OriginChip: React.FC<{ origin: InputOrigin }> = ({ origin }) => {
+  const tone =
+    origin === 'user_provided' || origin === 'verified'
+      ? 'bg-[#EAF3F0] text-[#14534E] dark:bg-emerald-950/60 dark:text-emerald-300'
+      : origin === 'system_retrieved'
         ? 'bg-[#EEF5FC] text-[#1D4E89] dark:bg-sky-950/60 dark:text-sky-300'
-        : 'bg-[#F1F4F2] text-[#48534F] dark:bg-slate-800 dark:text-slate-300'
-    }`}
-  >
-    {INPUT_ORIGIN_LABELS_FA[origin]}
-  </span>
-);
+        : 'bg-[#FFF4E5] text-[#875000] dark:bg-amber-950/50 dark:text-amber-200';
+  return (
+    <span className={`text-[10px] px-1.5 py-0.5 rounded-[5px] font-bold ${tone}`}>
+      {INPUT_ORIGIN_LABELS_FA[origin]}
+    </span>
+  );
+};
 
 export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
   input,
+  validation,
   evaluatedNeighborhoods,
   selectedHood,
   completenessPercent,
@@ -65,35 +70,13 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
 
   const handleExtractAd = () => {
     if (!adText.trim()) return;
-    const specs = extractListingSpecsFromText(adText, selectedHood.buyPerSqm);
-    const extractedYear = clampNumber(currentYear - specs.buildingAge, 1370, currentYear, 1398);
-    const pMillion =
-      specs.totalMillion > 0
-        ? specs.totalMillion
-        : parseIranianPriceToMillionToman(adText, specs.sqm, selectedHood.buyPerSqm).totalMillion;
-
-    onChange({
-      sqm: clampNumber(specs.sqm, 35, 450, 85),
-      buildYear: extractedYear,
-      renovationStatus: specs.renovationStatus,
-      floor: clampNumber(specs.floor, -1, 25, 3),
-      totalFloors: Math.max(specs.totalFloors, specs.floor),
-      hasElevator: specs.hasElevator,
-      hasParking: specs.hasParking,
-      hasStorage: specs.hasStorage,
-      sellerAskingBillion: pMillion > 0 ? (pMillion / 1000).toFixed(2) : input.sellerAskingBillion,
-      inputOrigins: {
-        sqm: 'system_retrieved',
-        buildYear: 'system_retrieved',
-        floor: 'system_retrieved',
-        renovationStatus: 'system_retrieved',
-        amenities: 'system_retrieved',
-        sellerAsking: pMillion > 0 ? 'system_retrieved' : input.inputOrigins.sellerAsking,
-      },
-    });
-    setExtractMsg(`استخراج از آگهی (تأیید رسمی نشده): ${toPersianNum(specs.sqm)}م · ساخت ${toPersianNum(extractedYear)}`);
-    setTimeout(() => setExtractMsg(''), 3500);
+    const { patch, summaryFa } = extractValuationSpecsFromAdText(adText, input, selectedHood.buyPerSqm);
+    onChange(patch);
+    setExtractMsg(summaryFa);
+    setTimeout(() => setExtractMsg(''), 4200);
   };
+
+  const fieldErrors = validation?.fieldErrors || {};
 
   return (
     <div className="space-y-4 text-xs" data-testid="valuation-input-steps">
@@ -102,12 +85,17 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
         <div className="flex items-center justify-between">
           <span className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
             <Building2 className="w-4 h-4 text-[#176B63]" />
-            <span>۱. نوع ملک و محدوده پوشش مدل</span>
+            <span>۱. نوع ملک و هدف ارزش‌گذاری</span>
           </span>
           <span className="text-[11px] font-bold text-[#176B63] tabular-nums">
-            تکمیل ورودی: {toPersianNum(completenessPercent)}٪
+            کیفیت تکمیل ورودی: {toPersianNum(completenessPercent)}٪
           </span>
         </div>
+        {validation?.hasDefaultAssumptions && (
+          <div className="p-2 rounded-[8px] bg-[#FFF4E5]/70 dark:bg-amber-950/30 border border-[#F4D3A1] dark:border-amber-800 text-[10.5px] font-bold text-[#875000] dark:text-amber-200">
+            برخی ورودی‌ها هنوز روی «پیش‌فرض فرضی سیستم» قرار دارند. برای افزایش دقت و شفافیت، مقادیر واقعی واحد را وارد کنید.
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <select
             aria-label="کاربری ملک جهت ارزش‌گذاری"
@@ -191,7 +179,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
         <>
           <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/70 dark:bg-emerald-950/30 border border-[#B8D7CE] dark:border-emerald-800 space-y-2">
             <div className="flex items-center text-[11px] font-bold text-[#14534E] dark:text-emerald-300">
-              <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> استخراج خودکار از متن آگهی (منبع غیررسمی)</span>
+              <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> استخراج گزینشی از متن آگهی (فقط فیلدهای ذکرشده در متن)</span>
             </div>
             <div className="flex gap-2">
               <input
@@ -214,9 +202,12 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
           </div>
 
           <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3 tabular-nums">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-black text-[#182522] dark:text-white">۳. مشخصات فیزیکی واحد و ساختمان</span>
-              <OriginChip origin={input.inputOrigins.sqm} />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-black text-[#182522] dark:text-white">۳. مشخصات فیزیکی واحد (مبنای محاسبه: مترمربع m²)</span>
+              <div className="flex flex-wrap gap-1">
+                <OriginChip origin={input.inputOrigins.sqm} />
+                <OriginChip origin={input.inputOrigins.floor} />
+              </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
@@ -228,14 +219,20 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
                 <input type="number" min={1340} max={currentYear} value={input.buildYear} onChange={(e) => setFieldUser('buildYear', { buildYear: clampNumber(Number(e.target.value), 1340, currentYear, 1398) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
               </div>
               <div>
-                <label className="text-[11px] text-[#586760] block mb-1">طبقه واحد</label>
-                <input type="number" min={-1} max={40} value={input.floor} onChange={(e) => { const f = clampNumber(Number(e.target.value), -1, 40, 3); setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, f) }); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <label className="text-[11px] text-[#586760] block mb-1">طبقه واحد (همکف=۰)</label>
+                <input type="number" min={-2} max={60} value={input.floor} onChange={(e) => { const f = clampNumber(Number(e.target.value), -2, 60, 3); setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, Math.max(1, f)) }); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
               </div>
               <div>
                 <label className="text-[11px] text-[#586760] block mb-1">کل طبقات</label>
-                <input type="number" min={1} max={40} value={input.totalFloors} onChange={(e) => { const tf = clampNumber(Number(e.target.value), 1, 40, 5); setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) }); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <input type="number" min={1} max={60} value={input.totalFloors} onChange={(e) => { const tf = clampNumber(Number(e.target.value), 1, 60, 5); setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) }); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
               </div>
             </div>
+            {(fieldErrors.sqm || fieldErrors.buildYear || fieldErrors.floor || fieldErrors.totalFloors) && (
+              <div className="p-2 rounded-[8px] bg-rose-50 dark:bg-rose-950/30 border border-rose-200 text-rose-800 dark:text-rose-200 text-[10.5px] font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{fieldErrors.sqm || fieldErrors.buildYear || fieldErrors.floor || fieldErrors.totalFloors}</span>
+              </div>
+            )}
           </div>
 
           <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
@@ -244,7 +241,10 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
                 <Wrench className="w-4 h-4 text-[#176B63]" />
                 <span>۴. وضعیت نوسازی و امکانات سندی</span>
               </span>
-              <OriginChip origin={input.inputOrigins.renovationStatus} />
+              <div className="flex gap-1">
+                <OriginChip origin={input.inputOrigins.renovationStatus} />
+                <OriginChip origin={input.inputOrigins.amenities} />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {HEDONIC_RENOVATION_OPTIONS.map((opt) => (
@@ -261,15 +261,20 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             </div>
           </div>
 
-          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <label htmlFor="ws-asking-billion" className="font-black text-[#182522] dark:text-white block">
-                ۵. قیمت اعلامی فروشنده برای سنجش شکاف (اختیاری - میلیارد)
-              </label>
-              <OriginChip origin={input.inputOrigins.sellerAsking} />
+          {input.purpose === 'sale' && (
+            <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="ws-asking-billion" className="font-black text-[#182522] dark:text-white block">
+                  ۵. قیمت اعلامی فروشنده برای سنجش شکاف (اختیاری - میلیارد تومان)
+                </label>
+                <OriginChip origin={input.inputOrigins.sellerAsking} />
+              </div>
+              <input id="ws-asking-billion" type="text" inputMode="decimal" value={input.sellerAskingBillion} onChange={(e) => setFieldUser('sellerAsking', { sellerAskingBillion: e.target.value })} placeholder="در صورت داشتن قیمت آگهی، به میلیارد تومان وارد کنید (مثلاً ۱۰.۵)" className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold tabular-nums" />
+              {fieldErrors.sellerAsking && (
+                <div className="text-[10.5px] font-bold text-[#B3261E]">{fieldErrors.sellerAsking}</div>
+              )}
             </div>
-            <input id="ws-asking-billion" type="number" step="0.1" value={input.sellerAskingBillion} onChange={(e) => setFieldUser('sellerAsking', { sellerAskingBillion: e.target.value })} placeholder="در صورت داشتن قیمت آگهی، به میلیارد تومان وارد کنید" className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold tabular-nums" />
-          </div>
+          )}
         </>
       )}
     </div>

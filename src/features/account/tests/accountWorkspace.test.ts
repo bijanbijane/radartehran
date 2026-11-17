@@ -57,14 +57,41 @@ test('Stage 22 enforces ownership checks and aggregates valuations, searches, se
   assert.equal(assertAccountResourceOwner('uid-1', 'uid-2'), false);
   assert.equal(assertAccountResourceOwner('', 'uid-1'), false);
 
+  const valInput = createDefaultValuationInput(1, {}, 'tehran');
+  const nowIso = new Date().toISOString();
   persistSavedValuationReports([
     {
       id: 'val-test-1',
-      savedAtIso: new Date().toISOString(),
+      reportVersion: 2,
+      savedAtIso: nowIso,
+      createdAtIso: nowIso,
+      updatedAtIso: nowIso,
+      ownerUserId: 'uid-1',
+      storageScope: 'account_synced',
+      cityId: 'tehran',
+      neighborhoodId: 1,
       hoodName: 'پونک',
+      purpose: 'sale',
       modelVersion: 'Hedonic Rule Heuristic v1405.1',
       dataSnapshotId: 'snapshot-tehran-curated-1405',
-      input: createDefaultValuationInput(1),
+      snapshot: {
+        snapshotId: 'snap-tehran-h1-test',
+        dataSnapshotId: 'snapshot-tehran-curated-1405',
+        cityId: 'tehran',
+        neighborhoodId: 1,
+        canonicalNeighborhoodId: 'tehran:1',
+        datasetVersion: 'curated-tehran-1405.08',
+        modelId: 'RADAR_HEDONIC_V1',
+        modelVersion: 'Hedonic Rule Heuristic v1405.1',
+        methodologyVersion: 'hedonic_rule_1405_1',
+        dataAsOfIso: '2026-11-01T00:00:00.000Z',
+        calculatedAtIso: nowIso,
+        comparableIds: [],
+        sourceIds: ['src-hedonic-v64'],
+        inputFingerprint: 'tehran:1:test',
+      },
+      inputFingerprint: 'tehran:1:test',
+      input: valInput,
       hedonicTotalMillion: 12500,
       hedonicPerSqm: 147,
       fastSaleTotalMillion: 11000,

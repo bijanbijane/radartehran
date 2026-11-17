@@ -25,7 +25,13 @@ export class DisputeNegotiationEngine {
   constructor(
     private readonly store: DisputeRepository,
     private readonly emitEvent: (event: DisputeDomainEvent) => void,
-    private readonly transitionStatus: (actorUid: string, caseId: string, targetStatus: any, reasonFa: string) => Promise<any>,
+    private readonly transitionStatus: (
+      actorUid: string,
+      caseId: string,
+      targetStatus: any,
+      reasonFa: string,
+      isStaffOrMediator?: boolean,
+    ) => Promise<any>,
   ) {}
 
   public async createNegotiationProposal(
@@ -194,7 +200,7 @@ export class DisputeNegotiationEngine {
     await this.store.saveMediationSession(session);
 
     if (c.status !== 'MEDIATION') {
-      await this.transitionStatus(actorUid, caseId, 'MEDIATION', 'جلسه میانجی‌گری تعیین شد.');
+      await this.transitionStatus(actorUid, caseId, 'MEDIATION', 'جلسه میانجی‌گری تعیین شد.', true);
     }
 
     await this.store.appendTimelineEvent({

@@ -51,6 +51,10 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   });
 
   app.post('/api/v1/search/query', (req: Request, res: Response) => {
+    if (!checkLimit(getIp(req), 'v1-search-query', 90, 60_000)) {
+      res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های جست‌وجو بیش از حد مجاز است.' });
+      return;
+    }
     const body = req.body || {};
     const rawQuery = typeof body.q === 'string' ? body.q : '';
     const valid = validateRawSearchQuery(rawQuery);
@@ -67,6 +71,10 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   });
 
   app.get(['/api/v1/search/suggest', '/api/search/suggestions'], (req: Request, res: Response) => {
+    if (!checkLimit(getIp(req), 'v1-search-suggest', 120, 60_000)) {
+      res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های تکمیل خودکار بیش از حد مجاز است.' });
+      return;
+    }
     const q = typeof req.query.q === 'string' ? req.query.q : '';
     res.status(200).json({ suggestions: defaultSearchWorkspaceService.getAutocompleteSuggestions(q) });
   });

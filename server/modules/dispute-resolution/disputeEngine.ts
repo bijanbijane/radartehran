@@ -69,8 +69,8 @@ export class DisputeResolutionEngine {
     this.negotiationEngine = new DisputeNegotiationEngine(
       this.store,
       (ev) => this.emitEvent(ev),
-      (actorUid, caseId, targetStatus, reasonFa) =>
-        this.transitionCaseStatus(actorUid, caseId, targetStatus, reasonFa),
+      (actorUid, caseId, targetStatus, reasonFa, isStaffOrMediator = false) =>
+        this.transitionCaseStatus(actorUid, caseId, targetStatus, reasonFa, isStaffOrMediator),
     );
   }
 
@@ -313,9 +313,19 @@ export class DisputeResolutionEngine {
     caseId: string,
     targetStatus: CaseStatus,
     reasonFa: string,
+    isStaffOrMediator: boolean = false,
   ): Promise<DisputeCaseRecord> {
     const c = await this.store.getCaseById(caseId);
     if (!c) throw new Error('CASE_NOT_FOUND: پرونده یافت نشد.');
+
+    const isPartyOrAssigned =
+      c.claimantUid === actorUid ||
+      c.respondentUid === actorUid ||
+      c.assignedMediatorUid === actorUid ||
+      c.assignedCaseHandlerUid === actorUid;
+    if (!isPartyOrAssigned && !isStaffOrMediator) {
+      throw new Error('FORBIDDEN_CASE_TRANSITION: دسترسی تغییر وضعیت این پرونده وجود ندارد.');
+    }
 
     const check = validateDisputeTransition(c.status, targetStatus);
     if (!check.allowed) {
@@ -363,9 +373,18 @@ export class DisputeResolutionEngine {
     actorUid: string,
     caseId: string,
     params: { outcomeType: ResolutionOutcomeType; explanationFa: string; settlementAgreementId?: string },
+    isStaffOrMediator: boolean = false,
   ): Promise<DisputeCaseRecord> {
     const c = await this.store.getCaseById(caseId);
     if (!c) throw new Error('CASE_NOT_FOUND: پرونده یافت نشد.');
+
+    const isAuthorizedResolver =
+      isStaffOrMediator ||
+      c.assignedMediatorUid === actorUid ||
+      c.assignedCaseHandlerUid === actorUid;
+    if (!isAuthorizedResolver) {
+      throw new Error('FORBIDDEN_RESOLUTION: دسترسی ثبت نتیجه نهایی پرونده فقط برای میانجی‌گر یا ناظر مجاز است.');
+    }
 
     const nowIso = new Date().toISOString();
     const updated: DisputeCaseRecord = {

@@ -117,20 +117,23 @@ async function runSuite(): Promise<void> {
     assert.equal(detailed.fairPerSqm, newUnit.hedonicPerSqm, 'Detailed valuation must delegate to single source of truth');
   });
 
-  // 2. Metric Area (m²-only) & Toman-Only Currency Boundaries
-  await verify('Area unit stays locked to metric m² and currency stays locked to Persian Toman', () => {
+  // 2. Area Unit Conversion (m² <-> ft²) & Toman-Only Currency Boundaries
+  await verify('Area unit converts accurately between m² and ft² while currency stays locked to Persian Toman', () => {
     const sqm = 100;
-    assert.equal(convertAreaFromSqm(sqm, 'sqft'), 100);
-    assert.equal(sqftToSqm(100), 100);
+    assert.equal(convertAreaFromSqm(sqm, 'sqft'), 1076.39);
+    assert.equal(sqftToSqm(100), 9.29);
 
     const buyPerSqm = 120; // 120M Toman per m²
-    assert.equal(convertPricePerSqmToUnit(buyPerSqm, 'sqft'), 120);
+    assert.equal(convertPricePerSqmToUnit(buyPerSqm, 'sqft'), 11.1);
 
-    assert.equal(formatMillionTomanAsIntlCurrency(0, 'USD', 'en'), '۰ میلیون تومان');
-    assert.equal(formatMillionTomanAsIntlCurrency(-50, 'USD', 'en'), '۰ میلیون تومان');
-    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'USD', 'en').includes('میلیارد تومان'), 'Output must remain strictly Toman');
-    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'EUR', 'en').includes('میلیارد تومان'), 'Output must remain strictly Toman');
-    assert.ok(formatMillionTomanAsIntlCurrency(6000, 'AED', 'en').includes('میلیارد تومان'), 'Output must remain strictly Toman');
+    assert.equal(formatMillionTomanAsIntlCurrency(0, 'IRT', 'fa'), '۰ میلیون تومان');
+    assert.equal(formatMillionTomanAsIntlCurrency(-50, 'IRT', 'fa'), '۰ میلیون تومان');
+    assert.equal(formatMillionTomanAsIntlCurrency(6000, 'IRT', 'fa'), '۶ میلیارد تومان');
+    assert.equal(formatMillionTomanAsIntlCurrency(6000, 'IRT', 'en'), '6B Toman');
+    assert.equal(formatMillionTomanAsIntlCurrency(0, 'USD', 'en', null), 'FX reference rate unavailable');
+    assert.equal(formatMillionTomanAsIntlCurrency(6000, 'USD', 'en', { usdToTomanRate: 60000 }), '$100,000');
+    assert.equal(formatMillionTomanAsIntlCurrency(6000, 'EUR', 'en'), 'No valid reference rate recorded for this currency');
+    assert.equal(formatMillionTomanAsIntlCurrency(6000, 'AED', 'en'), 'No valid reference rate recorded for this currency');
   });
 
   // 3. Negative, XSS, & External URL Whitelisting Boundaries
@@ -367,8 +370,8 @@ async function runSuite(): Promise<void> {
     const bargainsTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/NeighborhoodBargainsAndVotesTabs.tsx'), 'utf8');
     const expandableCompareSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/ExpandableComparisonTable.tsx'), 'utf8');
 
-    assert.ok(inspectorDrawerSrc.includes('hoodTotal80mMillions') && inspectorDrawerSrc.includes('scaledMonthlyRentTarget'), 'NeighborhoodInspectorDrawer must format 80m²/861ft² benchmark and monthly rent');
-    assert.ok(inspectorTabsSrc.includes('hoodTotal80mMillions') && inspectorTabsSrc.includes('monthlyRent80mMillions'), 'NeighborhoodInspectorTabs must format 80m²/861ft² benchmark and monthly rent');
+    assert.ok(inspectorDrawerSrc.includes('formatAreaShort(80, areaUnit)') && inspectorDrawerSrc.includes('calculatedHoodMonthlyRent'), 'NeighborhoodInspectorDrawer must format 80m²/861ft² benchmark and monthly rent');
+    assert.ok(inspectorTabsSrc.includes('formatAreaShort(') && inspectorTabsSrc.includes('calculatedHoodMonthlyRent'), 'NeighborhoodInspectorTabs must format area unit and monthly rent');
     assert.ok(bargainsTabsSrc.includes('hoodTotal80mMillions') && bargainsTabsSrc.includes('estMonthlyRent80'), 'NeighborhoodBargainsAndVotesTabs must format 80m²/861ft² benchmark and monthly rent');
     assert.ok(expandableCompareSrc.includes('total80mA') && expandableCompareSrc.includes('diffRentMonthly'), 'ExpandableComparisonTable must format 80m²/861ft² benchmark and monthly rent');
 
@@ -775,7 +778,7 @@ async function runSuite(): Promise<void> {
     );
     assert.equal(delRes.errorCode, 'ELIGIBILITY_CHECK_FAILED', 'deleteStoredObjectSafely must catch isBargainEligibleForDeletion errors');
     assert.equal(delRes.retryable, true);
-    assert.equal(delRes.displayAreaUnitLabel?.includes('m²'), true, 'deleteStoredObjectSafely must expose metric m² area unit label');
+    assert.equal(delRes.displayAreaUnitLabel?.includes('ft²'), true, 'deleteStoredObjectSafely must expose requested ft² area unit label');
 
     const { calculatePropertyTaxes, generateBuildingChargeBill, calculateMovingCost } = await import('../src/data/legalAndBuildingLogic');
     const tax12 = calculatePropertyTaxes({ monthlyRentMillion: 10, rahnMillion: 500, sqm: 100, city: 'tehran', vacantMonths: 12, officialTaxableRentalBaseMillion: 100 });
@@ -2052,7 +2055,7 @@ async function runSuite(): Promise<void> {
     const topBarSrc = readComp('src/components/FloatingTopBar.tsx');
     assert.equal(topBarSrc.includes('aria-label="بودجه کل خرید"'), true, 'FloatingTopBar budget input must have aria-label');
     assert.equal(topBarSrc.includes('aria-label="اسلایدر بودجه کل خرید"'), true, 'FloatingTopBar budget slider must have aria-label');
-    assert.equal(topBarSrc.includes("با بودجه من کجای {MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟"), true, 'FloatingTopBar reverse budget button must use activeCity name instead of hardcoded تهران');
+    assert.equal(topBarSrc.includes("با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟"), true, 'FloatingTopBar reverse budget button must use activeCity name instead of hardcoded تهران');
 
     const navCtxSrc = readComp('src/context/RadarNavigationContext.tsx');
     assert.equal(navCtxSrc.includes('if (typeof window === \'undefined\' || !hasExplicitNavChangeRef.current) return;'), true, 'RadarNavigationContext must guard initial URL replaceState with hasExplicitNavChangeRef');
@@ -2075,7 +2078,7 @@ async function runSuite(): Promise<void> {
     const intelSrc = readComp('src/components/views/ProductIntelligenceView.tsx');
     assert.equal(/[\uAC00-\uD7AF]/.test(intelSrc), false, 'ProductIntelligenceView must not contain stray Korean Hangul characters');
     assert.equal(intelSrc.includes('<button type="button" onClick={p.onOpenPriceTrend}'), true, 'ProductIntelligenceView Metric Card 04 must be a semantic button');
-    assert.equal(intelSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer"'), true, 'ProductIntelligenceView neighborhood rows must be keyboard-accessible and handle click on inner role=button');
+    assert.equal(intelSrc.includes('type="button"') && intelSrc.includes('onClick={() => p.onSelectNeighborhood(hood)}'), true, 'ProductIntelligenceView neighborhood rows must be keyboard-accessible semantic buttons');
     assert.equal(intelSrc.includes('<div key={hood.id} onClick='), false, 'ProductIntelligenceView outer card wrapper must not intercept clicks');
 
     const discoverSrc = readComp('src/components/views/ProductDiscoverView.tsx');
@@ -2100,7 +2103,7 @@ async function runSuite(): Promise<void> {
     assert.equal(legalSrc.includes('aria-label="متن بند قرارداد جهت بررسی حقوقی"'), true, 'ContractLegalAdvisorView textarea must have aria-label');
 
     const drawerSrc = readComp('src/components/NeighborhoodInspectorDrawer.tsx');
-    assert.equal(drawerSrc.includes('role="button" tabIndex={0} onClick={() => { setMobileSheetOpen(true); setDesktopCollapsed(false); }}'), true, 'NeighborhoodInspectorDrawer collapsed summary must be keyboard-accessible as a sibling of the expand button');
+    assert.equal(drawerSrc.includes('<button type="button" onClick={() => { setMobileSheetOpen(true); setDesktopCollapsed(false); }}'), true, 'NeighborhoodInspectorDrawer collapsed summary must use an accessible semantic button');
     assert.equal(drawerSrc.includes('if (isOtherCity && onSwitchCity) onSwitchCity(favCityId, favHood.id);'), true, 'NeighborhoodInspectorDrawer cross-city favorite click must invoke onSwitchCity');
 
     const mapProviderSrc = readComp('src/components/AdminMapProviderConfigPanel.tsx');

@@ -33,14 +33,16 @@ Dependencies must flow strictly downward (`Entry/Shell` → `Feature Components`
 
 Enforced automatically by `npm run arch:check` (`scripts/check-architecture.ts` + `architecture-baseline.json`):
 
-- **New & Standard Code Files (`src/**/*.{ts,tsx}`, `server.ts`)**:
+- **Full Scope (`src/**/*.{ts,tsx}`, `server.ts`, `server/modules/**/*.{ts,tsx}`)**:
+  - `collectSourceFiles` recursively scans `server.ts`, `src/**`, and **all** subdirectories under `server/modules/**`, automatically excluding `node_modules`, `dist`, `.git`, `__tests__`, `*.test.*`, and `*.spec.*`.
   - Soft warning threshold (`thresholds.warningLines`): **300 lines**.
   - Review threshold (`thresholds.reviewLines`): **400 lines**.
-  - Hard ceiling (`thresholds.maxLinesNewFile`): **< 500 lines**. Any newly created or standard component/module reaching 500 lines fails `npm run arch:check` with `NEW_FILE_OVERSIZED`.
-- **Tracked Legacy Files & Universal Zero-Warning Ceiling (`architecture-baseline.json -> trackedLegacyFiles`)**:
-  - `src/App.tsx` has been decomposed down to **64 lines** (`< 100` LOC per ARGON-4 `[RULE-01]`) and ratcheted at `maxLines: 100` (`maxLines: 270` historical ceiling superseded by `maxLines: 100`). OP-DEC-004 stops universal line compaction: standard files stay under the **500-line** hard ceiling. The old universal `<= 290` claim is historical only.
+  - Hard ceiling (`thresholds.maxLinesNewFile`): **< 500 lines**. Any newly created or unregistered file reaching 500 lines fails `npm run arch:check` with `NEW_FILE_OVERSIZED`.
+- **Tracked Legacy Debt Register (`architecture-baseline.json -> trackedLegacyFiles`)**:
+  - `src/App.tsx` is decomposed down to **64 lines** (`maxLines: 100`, superseding historical `maxLines: 270`).
+  - Pre-existing backend modules `>= 500` lines (plus `server/modules/notifications/durableNotificationStore.ts` at 487 lines) are explicitly registered with exact `baselineLines`, `maxLines`, `owner`, and `rationale` under a strict **non-increasing ratchet** (`LEGACY_FILE_GREW` on any growth) without forced compaction of working modules.
 - **Static Domain Datasets (`architecture-baseline.json -> datasetExclusions`)**:
-  - Pure neighborhood/insight datasets (`src/data/neighborhoods.ts`, `src/data/neighborhoodInsights.ts`, `src/data/multiCityData.ts`, `src/data/tehranCityRemainingHoods.ts`, `src/data/tehranCountiesHoods.ts`, `src/data/tehranExtendedInsights.ts`, `src/data/iranNorthWestEastHoods.ts`, `src/data/iranCentralSouthHoods.ts`, `src/data/iranProvincesDirectory.ts`) are also compacted and ratcheted at `maxLines: 290` (`<= 290` lines across all 253 scanned repository files) while remaining strictly free of React/UI imports (`DATASET_IMPORTS_UI`).
+  - Pure neighborhood/insight datasets (`src/data/neighborhoods.ts`, `src/data/neighborhoodInsights.ts`, `src/data/multiCityData.ts`, `src/data/tehranCityRemainingHoods.ts`, `src/data/tehranCountiesHoods.ts`, `src/data/tehranExtendedInsights.ts`, `src/data/iranNorthWestEastHoods.ts`, `src/data/iranCentralSouthHoods.ts`, `src/data/iranProvincesDirectory.ts`) are ratcheted at `maxLines: 290` (`<= 290` lines) while remaining strictly free of React/UI imports (`DATASET_IMPORTS_UI`).
 
 ---
 

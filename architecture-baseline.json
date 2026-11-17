@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "thresholds": {
     "warningLines": 300,
     "reviewLines": 400,
@@ -58,6 +58,776 @@
       "maxLines": 100,
       "targetLines": 100,
       "rationale": "Root composition & provider shell; decomposed to 62 lines (< 100 LOC per ARGON-4 [RULE-01]) with layout extracted to src/components/RadarWorkspaceShell.tsx."
+    },
+    "server/modules/analytical-platform/index.ts": {
+      "baselineLines": 519,
+      "maxLines": 519,
+      "targetLines": 300,
+      "owner": "module:analytical-platform",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/backup-recovery/index.ts": {
+      "baselineLines": 695,
+      "maxLines": 695,
+      "targetLines": 300,
+      "owner": "module:backup-recovery",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/brokerage/organizationAgentMembershipAndTeamOps.ts": {
+      "baselineLines": 533,
+      "maxLines": 533,
+      "targetLines": 300,
+      "owner": "module:brokerage",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/brokerage/service.ts": {
+      "baselineLines": 604,
+      "maxLines": 604,
+      "targetLines": 300,
+      "owner": "module:brokerage",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/brokerage/types.ts": {
+      "baselineLines": 931,
+      "maxLines": 931,
+      "targetLines": 300,
+      "owner": "module:brokerage",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/brokerage/validation.ts": {
+      "baselineLines": 665,
+      "maxLines": 665,
+      "targetLines": 300,
+      "owner": "module:brokerage",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/building-operations/service.ts": {
+      "baselineLines": 965,
+      "maxLines": 965,
+      "targetLines": 300,
+      "owner": "module:building-operations",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/building-operations/types.ts": {
+      "baselineLines": 618,
+      "maxLines": 618,
+      "targetLines": 300,
+      "owner": "module:building-operations",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/building-operations/validation.ts": {
+      "baselineLines": 722,
+      "maxLines": 722,
+      "targetLines": 300,
+      "owner": "module:building-operations",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/caching-performance/index.ts": {
+      "baselineLines": 758,
+      "maxLines": 758,
+      "targetLines": 300,
+      "owner": "module:caching-performance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/community/communityRoutes.ts": {
+      "baselineLines": 525,
+      "maxLines": 525,
+      "targetLines": 300,
+      "owner": "module:community",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-experience/repository.ts": {
+      "baselineLines": 755,
+      "maxLines": 755,
+      "targetLines": 300,
+      "owner": "module:customer-experience",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-experience/routes.ts": {
+      "baselineLines": 775,
+      "maxLines": 775,
+      "targetLines": 300,
+      "owner": "module:customer-experience",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-experience/service.ts": {
+      "baselineLines": 3233,
+      "maxLines": 3233,
+      "targetLines": 300,
+      "owner": "module:customer-experience",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-experience/types.ts": {
+      "baselineLines": 659,
+      "maxLines": 659,
+      "targetLines": 300,
+      "owner": "module:customer-experience",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-experience/validation.ts": {
+      "baselineLines": 992,
+      "maxLines": 992,
+      "targetLines": 300,
+      "owner": "module:customer-experience",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-support/repository.ts": {
+      "baselineLines": 544,
+      "maxLines": 544,
+      "targetLines": 300,
+      "owner": "module:customer-support",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-support/routes.ts": {
+      "baselineLines": 517,
+      "maxLines": 517,
+      "targetLines": 300,
+      "owner": "module:customer-support",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-support/service.ts": {
+      "baselineLines": 2801,
+      "maxLines": 2801,
+      "targetLines": 300,
+      "owner": "module:customer-support",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-support/types.ts": {
+      "baselineLines": 581,
+      "maxLines": 581,
+      "targetLines": 300,
+      "owner": "module:customer-support",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/customer-support/validation.ts": {
+      "baselineLines": 557,
+      "maxLines": 557,
+      "targetLines": 300,
+      "owner": "module:customer-support",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/data-governance/resolutionAndQualityEngine.ts": {
+      "baselineLines": 604,
+      "maxLines": 604,
+      "targetLines": 300,
+      "owner": "module:data-governance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/data-governance/service.ts": {
+      "baselineLines": 732,
+      "maxLines": 732,
+      "targetLines": 300,
+      "owner": "module:data-governance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/data-ingestion/ingestionContracts.ts": {
+      "baselineLines": 630,
+      "maxLines": 630,
+      "targetLines": 300,
+      "owner": "module:data-ingestion",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/data-ingestion/pipelineAndDomainDelivery.ts": {
+      "baselineLines": 1028,
+      "maxLines": 1028,
+      "targetLines": 300,
+      "owner": "module:data-ingestion",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/distributed-processing/jobsOutboxAndWorkersEngine.ts": {
+      "baselineLines": 1189,
+      "maxLines": 1189,
+      "targetLines": 300,
+      "owner": "module:distributed-processing",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/distributed-processing/workflowsSagaAndSchedulerEngine.ts": {
+      "baselineLines": 718,
+      "maxLines": 718,
+      "targetLines": 300,
+      "owner": "module:distributed-processing",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/document-management/service.ts": {
+      "baselineLines": 832,
+      "maxLines": 832,
+      "targetLines": 300,
+      "owner": "module:document-management",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/enterprise-tenancy/isolationAndContextEngine.ts": {
+      "baselineLines": 977,
+      "maxLines": 977,
+      "targetLines": 300,
+      "owner": "module:enterprise-tenancy",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/enterprise-tenancy/tenancyEngine.ts": {
+      "baselineLines": 1699,
+      "maxLines": 1699,
+      "targetLines": 300,
+      "owner": "module:enterprise-tenancy",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/fraud-risk-intelligence/service.ts": {
+      "baselineLines": 872,
+      "maxLines": 872,
+      "targetLines": 300,
+      "owner": "module:fraud-risk-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/geospatial/service.ts": {
+      "baselineLines": 647,
+      "maxLines": 647,
+      "targetLines": 300,
+      "owner": "module:geospatial",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/infrastructure-security/index.ts": {
+      "baselineLines": 615,
+      "maxLines": 615,
+      "targetLines": 300,
+      "owner": "module:infrastructure-security",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/ingestion-intelligence-pipeline/connectors.ts": {
+      "baselineLines": 637,
+      "maxLines": 637,
+      "targetLines": 300,
+      "owner": "module:ingestion-intelligence-pipeline",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/ingestion-intelligence-pipeline/service.ts": {
+      "baselineLines": 676,
+      "maxLines": 676,
+      "targetLines": 300,
+      "owner": "module:ingestion-intelligence-pipeline",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/investment-intelligence/returns/yieldsCashflowsAndReturnsEngine.ts": {
+      "baselineLines": 814,
+      "maxLines": 814,
+      "targetLines": 300,
+      "owner": "module:investment-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/investment-intelligence/services/investmentIntelligenceService.ts": {
+      "baselineLines": 1523,
+      "maxLines": 1523,
+      "targetLines": 300,
+      "owner": "module:investment-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/knowledge/knowledgeStore.ts": {
+      "baselineLines": 612,
+      "maxLines": 612,
+      "targetLines": 300,
+      "owner": "module:knowledge",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/leads/leadEngine.ts": {
+      "baselineLines": 838,
+      "maxLines": 838,
+      "targetLines": 300,
+      "owner": "module:leads",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/market-intelligence/indicatorsAndTemporalEngine.ts": {
+      "baselineLines": 610,
+      "maxLines": 610,
+      "targetLines": 300,
+      "owner": "module:market-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/market-intelligence/segmentation/segmentationAndSupplyDemandEngine.ts": {
+      "baselineLines": 667,
+      "maxLines": 667,
+      "targetLines": 300,
+      "owner": "module:market-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/market-intelligence/service.ts": {
+      "baselineLines": 624,
+      "maxLines": 624,
+      "targetLines": 300,
+      "owner": "module:market-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/market-intelligence/services/marketIntelligenceService.ts": {
+      "baselineLines": 1264,
+      "maxLines": 1264,
+      "targetLines": 300,
+      "owner": "module:market-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/marketplace-billing/repository.ts": {
+      "baselineLines": 979,
+      "maxLines": 979,
+      "targetLines": 300,
+      "owner": "module:marketplace-billing",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/marketplace-billing/service.ts": {
+      "baselineLines": 3043,
+      "maxLines": 3043,
+      "targetLines": 300,
+      "owner": "module:marketplace-billing",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/marketplace-billing/types.ts": {
+      "baselineLines": 824,
+      "maxLines": 824,
+      "targetLines": 300,
+      "owner": "module:marketplace-billing",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/notification-orchestration/service.ts": {
+      "baselineLines": 1547,
+      "maxLines": 1547,
+      "targetLines": 300,
+      "owner": "module:notification-orchestration",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/notifications/durableNotificationStore.ts": {
+      "baselineLines": 487,
+      "maxLines": 487,
+      "targetLines": 300,
+      "owner": "module:notifications",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/payments/paymentEngine.ts": {
+      "baselineLines": 500,
+      "maxLines": 500,
+      "targetLines": 300,
+      "owner": "module:payments",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/platform-foundation/configAndContracts.ts": {
+      "baselineLines": 503,
+      "maxLines": 503,
+      "targetLines": 300,
+      "owner": "module:platform-foundation",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/platform-foundation/registriesAndPersistence.ts": {
+      "baselineLines": 1124,
+      "maxLines": 1124,
+      "targetLines": 300,
+      "owner": "module:platform-foundation",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/platform-foundation/seedCatalogs.ts": {
+      "baselineLines": 982,
+      "maxLines": 982,
+      "targetLines": 300,
+      "owner": "module:platform-foundation",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/platform-resilience/index.ts": {
+      "baselineLines": 599,
+      "maxLines": 599,
+      "targetLines": 300,
+      "owner": "module:platform-resilience",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/professional-verification/repositoryAndService.ts": {
+      "baselineLines": 680,
+      "maxLines": 680,
+      "targetLines": 300,
+      "owner": "module:professional-verification",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/professional-verification/workflowAndExpirationEngine.ts": {
+      "baselineLines": 687,
+      "maxLines": 687,
+      "targetLines": 300,
+      "owner": "module:professional-verification",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/assessmentAndChecklistService.ts": {
+      "baselineLines": 661,
+      "maxLines": 661,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/caseChecklistAndEvidenceService.ts": {
+      "baselineLines": 592,
+      "maxLines": 592,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/domainReviewsFindingsAndReportService.ts": {
+      "baselineLines": 532,
+      "maxLines": 532,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/findingsEvidenceAndReviewsService.ts": {
+      "baselineLines": 605,
+      "maxLines": 605,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/riskRemediationAndReportingService.ts": {
+      "baselineLines": 640,
+      "maxLines": 640,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/services/propertyDueDiligenceService.ts": {
+      "baselineLines": 1324,
+      "maxLines": 1324,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/store.ts": {
+      "baselineLines": 501,
+      "maxLines": 501,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-due-diligence/types.ts": {
+      "baselineLines": 584,
+      "maxLines": 584,
+      "targetLines": 300,
+      "owner": "module:property-due-diligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-financing/providerApplicationAndFinancingService.ts": {
+      "baselineLines": 562,
+      "maxLines": 562,
+      "targetLines": 300,
+      "owner": "module:property-financing",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-financing/types.ts": {
+      "baselineLines": 516,
+      "maxLines": 516,
+      "targetLines": 300,
+      "owner": "module:property-financing",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-insurance/InsurancePoliciesView.tsx": {
+      "baselineLines": 567,
+      "maxLines": 567,
+      "targetLines": 300,
+      "owner": "module:property-insurance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-insurance/services/propertyInsuranceClaimsService.ts": {
+      "baselineLines": 1337,
+      "maxLines": 1337,
+      "targetLines": 300,
+      "owner": "module:property-insurance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-insurance/services/propertyInsurancePolicyService.ts": {
+      "baselineLines": 1387,
+      "maxLines": 1387,
+      "targetLines": 300,
+      "owner": "module:property-insurance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-management/inspections/inspectionAndIncidentService.ts": {
+      "baselineLines": 613,
+      "maxLines": 613,
+      "targetLines": 300,
+      "owner": "module:property-management",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-management/maintenance/maintenanceService.ts": {
+      "baselineLines": 517,
+      "maxLines": 517,
+      "targetLines": 300,
+      "owner": "module:property-management",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-management/occupancy/occupancyAndHandoverService.ts": {
+      "baselineLines": 738,
+      "maxLines": 738,
+      "targetLines": 300,
+      "owner": "module:property-management",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-management/portfolios/portfolioAndAuthorizationService.ts": {
+      "baselineLines": 645,
+      "maxLines": 645,
+      "targetLines": 300,
+      "owner": "module:property-management",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-management/rent-schedules/obligationAndPaymentService.ts": {
+      "baselineLines": 638,
+      "maxLines": 638,
+      "targetLines": 300,
+      "owner": "module:property-management",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-management/rental-agreements/agreementAndLifecycleService.ts": {
+      "baselineLines": 805,
+      "maxLines": 805,
+      "targetLines": 300,
+      "owner": "module:property-management",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-registry/resolution/relationshipsAndResolutionEngine.ts": {
+      "baselineLines": 608,
+      "maxLines": 608,
+      "targetLines": 300,
+      "owner": "module:property-registry",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-registry/services/propertyRegistryCoreService.ts": {
+      "baselineLines": 1124,
+      "maxLines": 1124,
+      "targetLines": 300,
+      "owner": "module:property-registry",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-registry/services/propertyRegistryGraphAndIdentifiersService.ts": {
+      "baselineLines": 776,
+      "maxLines": 776,
+      "targetLines": 300,
+      "owner": "module:property-registry",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-registry/services/propertyRegistryLineageAndMergeService.ts": {
+      "baselineLines": 895,
+      "maxLines": 895,
+      "targetLines": 300,
+      "owner": "module:property-registry",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-services/propertyServicesEngine.ts": {
+      "baselineLines": 573,
+      "maxLines": 573,
+      "targetLines": 300,
+      "owner": "module:property-services",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-tax/authorityTaxRecordAndAssessmentService.ts": {
+      "baselineLines": 506,
+      "maxLines": 506,
+      "targetLines": 300,
+      "owner": "module:property-tax",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-tax/obligationBillPaymentAndDeadlineService.ts": {
+      "baselineLines": 533,
+      "maxLines": 533,
+      "targetLines": 300,
+      "owner": "module:property-tax",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/property-tax/types.ts": {
+      "baselineLines": 530,
+      "maxLines": 530,
+      "targetLines": 300,
+      "owner": "module:property-tax",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/real-estate-professionals/professionalEngine.ts": {
+      "baselineLines": 575,
+      "maxLines": 575,
+      "targetLines": 300,
+      "owner": "module:real-estate-professionals",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/real-estate-transactions/services/realEstateTransactionsService.ts": {
+      "baselineLines": 1618,
+      "maxLines": 1618,
+      "targetLines": 300,
+      "owner": "module:real-estate-transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/regulatory-compliance/canonicalHoldModels.ts": {
+      "baselineLines": 526,
+      "maxLines": 526,
+      "targetLines": 300,
+      "owner": "module:regulatory-compliance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/regulatory-compliance/canonicalLegalHoldService.ts": {
+      "baselineLines": 1018,
+      "maxLines": 1018,
+      "targetLines": 300,
+      "owner": "module:regulatory-compliance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/regulatory-compliance/canonicalRetentionAndDispositionService.ts": {
+      "baselineLines": 550,
+      "maxLines": 550,
+      "targetLines": 300,
+      "owner": "module:regulatory-compliance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/regulatory-compliance/canonicalRetentionPolicyAndEvaluationService.ts": {
+      "baselineLines": 730,
+      "maxLines": 730,
+      "targetLines": 300,
+      "owner": "module:regulatory-compliance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/regulatory-compliance/controlAssessmentAndEvidenceService.ts": {
+      "baselineLines": 540,
+      "maxLines": 540,
+      "targetLines": 300,
+      "owner": "module:regulatory-compliance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/regulatory-compliance/retentionPrecedenceAndDispositionService.ts": {
+      "baselineLines": 727,
+      "maxLines": 727,
+      "targetLines": 300,
+      "owner": "module:regulatory-compliance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/regulatory-compliance/types.ts": {
+      "baselineLines": 569,
+      "maxLines": 569,
+      "targetLines": 300,
+      "owner": "module:regulatory-compliance",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/search-intelligence/service.ts": {
+      "baselineLines": 1384,
+      "maxLines": 1384,
+      "targetLines": 300,
+      "owner": "module:search-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/tenancy/depositRenewalAdjustmentAndAmendmentOps.ts": {
+      "baselineLines": 591,
+      "maxLines": 591,
+      "targetLines": 300,
+      "owner": "module:tenancy",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/tenancy/propertyApplicationAndLeaseOps.ts": {
+      "baselineLines": 676,
+      "maxLines": 676,
+      "targetLines": 300,
+      "owner": "module:tenancy",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/tenancy/service.ts": {
+      "baselineLines": 1057,
+      "maxLines": 1057,
+      "targetLines": 300,
+      "owner": "module:tenancy",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/tenancy/validation.ts": {
+      "baselineLines": 699,
+      "maxLines": 699,
+      "targetLines": 300,
+      "owner": "module:tenancy",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/closingContractAndMilestoneOps.ts": {
+      "baselineLines": 625,
+      "maxLines": 625,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/ledger/obligationScheduleAndCommissionOps.ts": {
+      "baselineLines": 815,
+      "maxLines": 815,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/ledger/service.ts": {
+      "baselineLines": 1081,
+      "maxLines": 1081,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/ledger/settlementRefundAndDisputeOps.ts": {
+      "baselineLines": 941,
+      "maxLines": 941,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/ledger/validation.ts": {
+      "baselineLines": 569,
+      "maxLines": 569,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/offerAndNegotiationOps.ts": {
+      "baselineLines": 540,
+      "maxLines": 540,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/participantAndAdminOps.ts": {
+      "baselineLines": 532,
+      "maxLines": 532,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/transactions/service.ts": {
+      "baselineLines": 565,
+      "maxLines": 565,
+      "targetLines": 300,
+      "owner": "module:transactions",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/urban-intelligence/indicators/demographicAndEconomicEvaluators.ts": {
+      "baselineLines": 623,
+      "maxLines": 623,
+      "targetLines": 300,
+      "owner": "module:urban-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/urban-intelligence/indicators/facilitiesEnvironmentAndInfraEvaluators.ts": {
+      "baselineLines": 551,
+      "maxLines": 551,
+      "targetLines": 300,
+      "owner": "module:urban-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/urban-intelligence/services/urbanIntelligenceService.ts": {
+      "baselineLines": 1044,
+      "maxLines": 1044,
+      "targetLines": 300,
+      "owner": "module:urban-intelligence",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/valuation/evidenceAndComparableEngine.ts": {
+      "baselineLines": 542,
+      "maxLines": 542,
+      "targetLines": 300,
+      "owner": "module:valuation",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/valuation/hedonicPricingAndExplainEngine.ts": {
+      "baselineLines": 549,
+      "maxLines": 549,
+      "targetLines": 300,
+      "owner": "module:valuation",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+    },
+    "server/modules/valuation/service.ts": {
+      "baselineLines": 673,
+      "maxLines": 673,
+      "targetLines": 300,
+      "owner": "module:valuation",
+      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     }
   }
 }

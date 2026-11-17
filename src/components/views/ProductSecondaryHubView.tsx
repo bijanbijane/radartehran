@@ -16,6 +16,8 @@ export interface ProductSecondaryHubViewProps {
   viewKind: 'services' | 'knowledge' | 'contributions' | 'not_found';
   activeSubTab?: KnowledgeSubTabId | ContributionsSubTabId;
   activeCity?: CityId;
+  currentUser?: any;
+  isVerifiedAdmin?: boolean;
   selectedHood: EvaluatedNeighborhood;
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
   onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void;
@@ -84,6 +86,8 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
     return (
       <KnowledgeCenterPage
         activeSubTab={(p.activeSubTab as KnowledgeSubTabId) || 'reports'}
+        activeCity={cityId}
+        currentUser={p.currentUser}
         selectedHood={p.selectedHood}
         evaluatedNeighborhoods={p.evaluatedNeighborhoods}
         unitPrice={unitPrice}
@@ -99,6 +103,9 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
   return (
     <CommunityHubPage
       activeSubTab={p.activeSubTab as ContributionsSubTabId}
+      activeCity={cityId}
+      currentUser={p.currentUser}
+      isVerifiedAdmin={p.isVerifiedAdmin}
       selectedHood={p.selectedHood}
       evaluatedNeighborhoods={p.evaluatedNeighborhoods}
       onNavigateView={p.onNavigateView}

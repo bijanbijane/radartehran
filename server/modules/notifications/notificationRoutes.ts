@@ -10,6 +10,11 @@ import { defaultNotificationStore, type NotificationStore } from './notification
 import type { NotificationCategory, NotificationReadState } from './notificationTypes';
 import { validateNotificationPreferencesUpdate } from './notificationValidator';
 
+import {
+  verifyAdminApiAuthorization,
+  verifyFirebaseUserAuthorization,
+} from '../../../src/utils/serverAdminAndTelegramSecurity';
+
 export interface NotificationModuleOptions {
   store?: NotificationStore;
   deliveryEngine?: NotificationDeliveryEngine;
@@ -23,24 +28,26 @@ export interface NotificationModuleOptions {
 const registeredApps = new WeakSet<Express>();
 
 /**
- * Default fallback auth extractor for development / test environments:
- * Extracts verified uid from req.headers['x-user-uid'] or Bearer token header.
+ * Canonical fail-closed user verifier: validates single Firebase ID token only.
+ * Spoofable headers (x-user-uid, x-admin-role, x-admin-secret, Bearer user_*) are strictly rejected.
  */
-function defaultVerifyUserAuth(req: Request): string | null {
-  const headerUid = req.headers['x-user-uid'];
-  if (typeof headerUid === 'string' && headerUid.trim().length > 0) {
-    return headerUid.trim();
-  }
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.slice(7).trim();
-    if (token.startsWith('user_')) return token;
-  }
-  return null;
+async function defaultVerifyUserAuth(req: Request): Promise<string | null> {
+  const result = await verifyFirebaseUserAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+  );
+  return result.authorized && result.uid ? result.uid : null;
 }
 
-function defaultVerifyAdminAuth(req: Request): boolean {
-  return req.headers['x-admin-role'] === 'super_admin' || req.headers['x-admin-secret'] === 'admin_verified';
+/**
+ * Canonical fail-closed admin verifier: validates verified Firebase admin identity only.
+ */
+async function defaultVerifyAdminAuth(req: Request): Promise<boolean> {
+  const result = await verifyAdminApiAuthorization(
+    req.headers as Record<string, string | string[] | undefined>,
+    process.env,
+    { disallowStaticToken: true },
+  );
+  return result.authorized;
 }
 
 export function registerNotificationRoutes(app: Express, options?: NotificationModuleOptions): void {

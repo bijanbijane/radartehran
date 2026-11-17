@@ -1,67 +1,136 @@
-/** @file src/features/account/components/AccountCommunityPrivacyPanel.tsx — Stage 25 Private /account/community Settings & History */
-import React, { useState } from 'react';
-import { Eye, Lock, Scale, ShieldCheck } from 'lucide-react';
+/** @file src/features/account/components/AccountCommunityPrivacyPanel.tsx — Server-Backed /account/community Privacy Settings & Appeals */
+import React, { useEffect, useState } from 'react';
+import type { User } from 'firebase/auth';
+import { Eye, Lock, LogIn, Scale, ShieldCheck } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
 import type { ModuleSubTabId } from '../../../navigation/registry/route.types';
-import { loadDataCorrectionDraft } from '../../community/services/communityTrustService';
+import { COMMUNITY_AUTH_REQUIRED_FA, loadDataCorrectionDraft } from '../../community/services/communityTrustService';
 import {
-  loadCommunityTopics,
-  loadFollowedTopicIds,
-  loadModerationActions,
-  loadModerationAppeals,
-  loadMyCommunityPrivacyProfile,
-  loadReputationEvents,
-  submitModerationAppeal,
-  updateMyCommunityPrivacyProfile,
-} from '../../community/services/communityEngagementService';
+  getCommunityTopics,
+  getMyCommunityActivity,
+  submitCommunityAppeal,
+  updateCommunityPrivacySettings,
+} from '../../community/services/communityApiClient';
 import {
   REPUTATION_AXIS_LABELS_FA,
+  type CommunityProfile,
+  type CommunityTopicNode,
+  type DataCorrectionProposal,
+  type ModerationAppeal,
   type ProfileVisibilityLevel,
 } from '../../community/types/community.types';
 
 interface Props {
+  currentUser?: User | null;
   onNavigateView?: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
 }
 
-export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ onNavigateView }) => {
-  const [profile, setProfile] = useState(() => loadMyCommunityPrivacyProfile());
-  const [appeals, setAppeals] = useState(() => loadModerationAppeals());
+export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onNavigateView }) => {
+  const [profile, setProfile] = useState<CommunityProfile | null>(null);
+  const [topics, setTopics] = useState<CommunityTopicNode[]>([]);
+  const [myContributions, setMyContributions] = useState<DataCorrectionProposal[]>([]);
+  const [appeals, setAppeals] = useState<ModerationAppeal[]>([]);
   const [appealTargetId, setAppealTargetId] = useState('');
   const [appealReasonFa, setAppealReasonFa] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const followedTopics = loadFollowedTopicIds();
-  const topics = loadCommunityTopics();
-  const repEvents = loadReputationEvents();
-  const actions = loadModerationActions();
   const draftCorrection = loadDataCorrectionDraft();
 
-  const handleVisibilityChange = (visibility: ProfileVisibilityLevel) => {
-    setProfile(updateMyCommunityPrivacyProfile({ visibility }));
-    setFeedback('سطح نمایش نمایه عمومی جامعه به‌روزرسانی شد.');
-  };
-
-  const handleToggleDisplay = (key: 'showBadges' | 'showContributions' | 'showFollowedTopics') => {
-    setProfile(updateMyCommunityPrivacyProfile({ [key]: !profile[key] }));
-  };
-
-  const handleAppealSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = submitModerationAppeal({
-      moderationActionId: actions[0]?.id || 'mod-act-1',
-      targetId: appealTargetId || 'post-seed-1',
-      appellantUserId: profile.userId,
-      argumentFa: appealReasonFa,
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setProfile(null);
+      setMyContributions([]);
+      setAppeals([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    setLoading(true);
+    Promise.all([
+      getMyCommunityActivity(currentUser, ctrl.signal),
+      getCommunityTopics(currentUser, ctrl.signal),
+    ]).then(([actRes, topicsRes]) => {
+      if (ctrl.signal.aborted) return;
+      if (actRes.ok && actRes.data) {
+        setProfile(actRes.data.myProfile);
+        setMyContributions(actRes.data.myContributions);
+        setAppeals(actRes.data.myAppeals);
+      } else if (actRes.errorFa) {
+        setFeedback(actRes.errorFa);
+      }
+      if (topicsRes.ok && topicsRes.data) setTopics(topicsRes.data);
+      setLoading(false);
     });
-    if (res.ok) {
-      setAppeals(res.items);
+    return () => ctrl.abort();
+  }, [currentUser?.uid]);
+
+  if (!currentUser?.uid) {
+    return (
+      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs" data-testid="account-community-privacy-panel">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+              <Lock className="w-4 h-4 text-[#176B63]" />
+              <span>تنظیمات حریم خصوصی و فعالیت‌های جامعه من</span>
+            </h2>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              {COMMUNITY_AUTH_REQUIRED_FA}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigateView?.('userspace', 'overview')}
+            className="px-3.5 py-2 rounded-lg bg-[#176B63] text-white font-bold inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <LogIn className="w-3.5 h-3.5" /><span>ورود به حساب</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleVisibilityChange = async (visibility: ProfileVisibilityLevel) => {
+    const res = await updateCommunityPrivacySettings({ visibility }, currentUser);
+    if (res.ok && res.data) {
+      setProfile(res.data);
+      setFeedback('سطح نمایش نمایه عمومی جامعه در سرور به‌روزرسانی شد.');
+    } else {
+      setFeedback(res.errorFa || 'خطا در به‌روزرسانی تنظیمات حریم خصوصی');
+    }
+  };
+
+  const handleToggleDisplay = async (key: 'showBadges' | 'showContributions' | 'showFollowedTopics') => {
+    if (!profile) return;
+    const res = await updateCommunityPrivacySettings({ [key]: !profile[key] }, currentUser);
+    if (res.ok && res.data) {
+      setProfile(res.data);
+    } else if (res.errorFa) {
+      setFeedback(res.errorFa);
+    }
+  };
+
+  const handleAppealSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await submitCommunityAppeal(
+      {
+        moderationActionId: 'mod-act-latest',
+        targetId: appealTargetId || myContributions[0]?.id || 'post-review',
+        argumentFa: appealReasonFa,
+      },
+      currentUser,
+    );
+    if (res.ok && res.data) {
+      setAppeals((prev) => [res.data!, ...prev]);
       setAppealReasonFa('');
-      setFeedback('درخواست بازبینی و اعتراض شما برای تیم نظارت ثبت شد.');
+      setFeedback('درخواست بازبینی و اعتراض شما در سرور برای تیم نظارت ثبت شد.');
     } else {
       setFeedback(res.errorFa || 'خطا در ثبت درخواست');
     }
   };
+
+  const followedTopics = topics.filter((t) => t.isFollowedByMe);
+  const visibility = profile?.visibility ?? 'public';
 
   return (
     <div className="space-y-4 text-xs" data-testid="account-community-privacy-panel">
@@ -90,9 +159,10 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ onNavigateView }
             <button
               key={opt.id}
               type="button"
+              disabled={loading}
               onClick={() => handleVisibilityChange(opt.id)}
               className={`p-2.5 rounded-xl border text-start font-bold cursor-pointer transition ${
-                profile.visibility === opt.id
+                visibility === opt.id
                   ? 'border-[#176B63] bg-[#EAF3F0]/60 dark:bg-emerald-950/40 text-[#14534E] dark:text-emerald-200'
                   : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
               }`}
@@ -109,7 +179,13 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ onNavigateView }
             { key: 'showFollowedTopics', label: 'نمایش موضوعات دنبال‌شده' },
           ] as const).map((t) => (
             <label key={t.key} className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300 font-medium">
-              <input type="checkbox" checked={profile[t.key]} onChange={() => handleToggleDisplay(t.key)} className="accent-[#176B63]" />
+              <input
+                type="checkbox"
+                checked={profile ? profile[t.key] : true}
+                disabled={loading || !profile}
+                onChange={() => handleToggleDisplay(t.key)}
+                className="accent-[#176B63]"
+              />
               <span>{t.label}</span>
             </label>
           ))}
@@ -126,26 +202,25 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ onNavigateView }
         <section className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
           <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-[#176B63]" />
-            <span>تاریخچه تغییرات اعتبار ۵ محوری ({toPersianNum(repEvents.length)})</span>
+            <span>وضعیت اعتبار ۵ محوری و مشارکت‌های ثبت‌شده ({toPersianNum(myContributions.length)})</span>
           </h3>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {repEvents.map((ev) => (
-              <div key={ev.id} className="py-2 first:pt-0 last:pb-0 flex items-start justify-between gap-2">
-                <div>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">{ev.reasonFa}</div>
-                  <div className="text-[11px] text-slate-500">محور: {REPUTATION_AXIS_LABELS_FA[ev.axis]} · {ev.createdAtFa}</div>
+          {profile && (
+            <div className="grid grid-cols-2 gap-2">
+              {(['data', 'community', 'research', 'sources', 'professional'] as const).map((axis) => (
+                <div key={axis} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-600 dark:text-slate-300">{REPUTATION_AXIS_LABELS_FA[axis]}</span>
+                  <span className="font-black tabular-nums text-emerald-700 dark:text-emerald-300">{toPersianNum(profile.reputation[axis])}</span>
                 </div>
-                <span className="font-black tabular-nums text-emerald-700 dark:text-emerald-300">+{toPersianNum(ev.delta)}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
           {draftCorrection && (
             <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 text-[11px]">
               پیش‌نویس ذخیره‌شده اصلاح داده: «{String(draftCorrection.titleFa || 'بدون عنوان')}»
             </div>
           )}
           <div className="text-[11px] text-slate-500 pt-1">
-            موضوعات دنبال‌شده: {followedTopics.map((id) => topics.find((t) => t.id === id)?.titleFa || id).join(' · ') || 'موردی انتخاب نشده'}
+            موضوعات دنبال‌شده: {followedTopics.map((t) => t.titleFa).join(' · ') || 'موردی انتخاب نشده'}
           </div>
         </section>
 
@@ -155,7 +230,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ onNavigateView }
             <span>ثبت اعتراض و پیگیری تصمیمات نظارت</span>
           </h3>
           <form onSubmit={handleAppealSubmit} className="space-y-2">
-            <input type="text" aria-label="شناسه مطلب یا تصمیم نظارتی" value={appealTargetId} onChange={(e) => setAppealTargetId(e.target.value)} placeholder="شناسه مطلب (اختیاری، پیش‌فرض: آخرین اقدام نظارتی)" className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+            <input type="text" aria-label="شناسه مطلب یا تصمیم نظارتی" value={appealTargetId} onChange={(e) => setAppealTargetId(e.target.value)} placeholder="شناسه مطلب (اختیاری)" className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
             <textarea rows={2} aria-label="دلیل درخواست بازبینی" value={appealReasonFa} onChange={(e) => setAppealReasonFa(e.target.value)} placeholder="دلایل و شواهد خود را برای بازبینی تصمیم ناظر بنویسید..." className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
             <button type="submit" data-testid="submit-community-appeal-btn" className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
               ارسال درخواست بازبینی

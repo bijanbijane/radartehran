@@ -218,6 +218,153 @@
         "favoriteHoodIds",
         "updatedAt"
       ]
+    },
+    "SocialPost": {
+      "title": "SocialPost",
+      "description": "Stage 3 unified Firestore community post (discussion, question, data correction, or research proposal)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "recordKind": { "type": "string", "enum": ["discussion", "question", "correction", "research_proposal"] },
+        "ownerUserId": { "type": "string" },
+        "neighborhoodId": { "type": "number" },
+        "topicId": { "type": "string" },
+        "titleFa": { "type": "string", "maxLength": 160 },
+        "bodyFa": { "type": "string", "maxLength": 600 },
+        "status": { "type": "string" },
+        "moderationStatus": { "type": "string" },
+        "replyCount": { "type": "number" },
+        "followerCount": { "type": "number" },
+        "helpfulCount": { "type": "number" },
+        "isDeleted": { "type": "boolean" },
+        "createdAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "recordKind", "ownerUserId", "status", "createdAtIso"]
+    },
+    "SocialComment": {
+      "title": "SocialComment",
+      "description": "Stage 3 nested reply or Q&A answer linked to a SocialPost",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "postId": { "type": "string" },
+        "parentReplyId": { "type": "string" },
+        "depth": { "type": "number" },
+        "ownerUserId": { "type": "string" },
+        "bodyFa": { "type": "string", "maxLength": 600 },
+        "status": { "type": "string" },
+        "isDeleted": { "type": "boolean" },
+        "createdAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "postId", "ownerUserId", "bodyFa", "createdAtIso"]
+    },
+    "SocialReaction": {
+      "title": "SocialReaction",
+      "description": "Deduplicated user reaction per target content item ({targetId}__{uid})",
+      "type": "object",
+      "properties": {
+        "targetId": { "type": "string" },
+        "uid": { "type": "string" },
+        "reactionType": { "type": "string", "enum": ["helpful", "agree", "needs_source", "disagree"] },
+        "updatedAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["targetId", "uid", "reactionType", "updatedAtIso"]
+    },
+    "SocialFollow": {
+      "title": "SocialFollow",
+      "description": "Deduplicated follow relationship for topics, posts, or users",
+      "type": "object",
+      "properties": {
+        "scope": { "type": "string", "enum": ["topic", "post", "user"] },
+        "targetId": { "type": "string" },
+        "followerUid": { "type": "string" },
+        "createdAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["scope", "targetId", "followerUid", "createdAtIso"]
+    },
+    "SocialReport": {
+      "title": "SocialReport",
+      "description": "Confidential abuse report, appeal, or moderation action record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "recordKind": { "type": "string", "enum": ["report", "appeal", "moderation_action"] },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "reporterUserId": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "recordKind", "targetId", "status", "createdAtIso"]
+    },
+    "SocialProfile": {
+      "title": "SocialProfile",
+      "description": "Privacy-controlled public community reputation profile keyed by Firebase UID",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "displayNameFa": { "type": "string" },
+        "visibility": { "type": "string", "enum": ["public", "members_only", "private"] }
+      },
+      "required": ["userId", "username", "displayNameFa", "visibility"]
+    },
+    "SocialIdempotency": {
+      "title": "SocialIdempotency",
+      "description": "Server-side idempotency guard preventing duplicate social mutations",
+      "type": "object",
+      "properties": {
+        "scope": { "type": "string" },
+        "uid": { "type": "string" },
+        "targetId": { "type": "string" },
+        "payloadHash": { "type": "string" },
+        "createdAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["scope", "uid", "targetId", "payloadHash", "createdAtIso"]
+    },
+    "SocialModerationCase": {
+      "title": "SocialModerationCase",
+      "description": "Stage 5 moderation case aggregating abuse reports, claim lease locks, decisions, and appeal SoD state",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["discussion_post", "question", "comment", "user"] },
+        "targetId": { "type": "string" },
+        "status": { "type": "string", "enum": ["OPEN", "CLAIMED", "DECIDED", "ESCALATED", "APPEALED", "CLOSED"] },
+        "reportCount": { "type": "number" },
+        "claimedByUid": { "type": "string" },
+        "lastDecision": { "type": "string" },
+        "updatedAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "targetType", "targetId", "status", "reportCount", "updatedAtIso"]
+    },
+    "SocialModerationEvent": {
+      "title": "SocialModerationEvent",
+      "description": "Append-only Stage 5 moderation case audit event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "caseId": { "type": "string" },
+        "targetId": { "type": "string" },
+        "eventType": { "type": "string" },
+        "actorUid": { "type": "string" },
+        "createdAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "caseId", "targetId", "eventType", "actorUid", "createdAtIso"]
+    },
+    "SocialOutboxEvent": {
+      "title": "SocialOutboxEvent",
+      "description": "Stage 6 durable transactional outbox event for notification fanout and DLQ replay",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventType": { "type": "string" },
+        "schemaVersion": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "LEASED", "DELIVERED", "DEAD_LETTER"] },
+        "attemptCount": { "type": "number" },
+        "createdAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "eventType", "schemaVersion", "status", "attemptCount", "createdAtIso"]
     }
   },
   "firestore": {
@@ -256,6 +403,46 @@
     "/userPreferences/{userId}": {
       "schema": { "$ref": "#/entities/UserPreference" },
       "description": "Private user preferences and bookmarked neighborhoods"
+    },
+    "/socialPosts/{postId}": {
+      "schema": { "$ref": "#/entities/SocialPost" },
+      "description": "Unified Stage 3 social posts, questions, corrections, and research proposals"
+    },
+    "/socialComments/{commentId}": {
+      "schema": { "$ref": "#/entities/SocialComment" },
+      "description": "Nested replies and Q&A answers linked to socialPosts"
+    },
+    "/socialReactions/{reactionId}": {
+      "schema": { "$ref": "#/entities/SocialReaction" },
+      "description": "Deduplicated user reactions per target content item"
+    },
+    "/socialFollows/{followId}": {
+      "schema": { "$ref": "#/entities/SocialFollow" },
+      "description": "Topic, post, and member follow relationships"
+    },
+    "/socialReports/{reportId}": {
+      "schema": { "$ref": "#/entities/SocialReport" },
+      "description": "Confidential abuse reports, moderation actions, and appeals"
+    },
+    "/socialProfiles/{userId}": {
+      "schema": { "$ref": "#/entities/SocialProfile" },
+      "description": "Privacy-controlled social member profiles (zero raw PII)"
+    },
+    "/socialIdempotency/{keyId}": {
+      "schema": { "$ref": "#/entities/SocialIdempotency" },
+      "description": "Server-enforced mutation idempotency ledger"
+    },
+    "/socialModerationCases/{caseId}": {
+      "schema": { "$ref": "#/entities/SocialModerationCase" },
+      "description": "Stage 5 moderation cases with claim leases, decisions, and SoD audit"
+    },
+    "/socialModerationEvents/{eventId}": {
+      "schema": { "$ref": "#/entities/SocialModerationEvent" },
+      "description": "Immutable Stage 5 moderation event log"
+    },
+    "/socialOutbox/{outboxId}": {
+      "schema": { "$ref": "#/entities/SocialOutboxEvent" },
+      "description": "Stage 6 durable transactional outbox events for zero-PII notification dispatch"
     }
   }
 }

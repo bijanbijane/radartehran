@@ -1,14 +1,20 @@
-/** @file src/features/valuation/pages/ValuationWorkspacePage.tsx — Stage 20 Complete Structured Valuation Workspace */
-import React, { useMemo, useState } from 'react';
+/** @file src/features/valuation/pages/ValuationWorkspacePage.tsx — Stages 89–96 Multi-City Account-Scoped Valuation Workspace */
+import React, { useEffect, useMemo, useState } from 'react';
+import type { User } from 'firebase/auth';
 import { Calculator, RefreshCw } from 'lucide-react';
-import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
+import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
 import {
+  buildValuationSummaryCopyText,
   createDefaultValuationInput,
   createSavedValuationReport,
+  deleteValuationReport,
   evaluateWorkspaceValuation,
+  getMyValuationReports,
   loadSavedValuationReports,
   persistSavedValuationReports,
+  saveValuationReport,
 } from '../services/valuationWorkspaceService';
 import type { SavedValuationReport, ValuationWorkspaceInput } from '../types/valuation.types';
 import { ValuationInputSteps } from '../components/ValuationInputSteps';
@@ -19,6 +25,8 @@ import { SavedValuationsPanel } from '../components/SavedValuationsPanel';
 export interface ValuationWorkspacePageProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
+  activeCity?: CityId;
+  currentUser?: User | null;
   initialSqm?: number;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
   onOpenModalCalculator?: () => void;
@@ -27,26 +35,66 @@ export interface ValuationWorkspacePageProps {
 export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
   evaluatedNeighborhoods,
   selectedHood,
+  activeCity,
+  currentUser,
   initialSqm,
   onSelectNeighborhood,
   onOpenModalCalculator,
 }) => {
+  const resolvedCity: CityId = activeCity ?? resolveCityIdForNeighborhood(selectedHood.id);
+  const uid = currentUser?.uid ?? null;
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
-  const [savedReports, setSavedReports] = useState<SavedValuationReport[]>(() => loadSavedValuationReports());
+  const [savedReports, setSavedReports] = useState<SavedValuationReport[]>(() => loadSavedValuationReports(uid));
+  const [statusNoticeFa, setStatusNoticeFa] = useState<string>('');
+
   const [input, setInput] = useState<ValuationWorkspaceInput>(() => {
     if (typeof window !== 'undefined') {
       try {
         const reloadId = window.sessionStorage.getItem('radar_pending_valuation_reload_id');
         if (reloadId) {
           window.sessionStorage.removeItem('radar_pending_valuation_reload_id');
-          const matched = loadSavedValuationReports().find((r) => r.id === reloadId);
+          const matched = loadSavedValuationReports(uid).find((r) => r.id === reloadId);
           if (matched) return matched.input;
         }
       } catch { /* ignore */ }
     }
-    return createDefaultValuationInput(selectedHood.id, initialSqm ? { sqm: initialSqm } : {});
+    return createDefaultValuationInput(
+      selectedHood.id,
+      initialSqm ? { sqm: initialSqm, inputOrigins: { sqm: 'user_provided' } as ValuationWorkspaceInput['inputOrigins'] } : {},
+      resolvedCity,
+    );
   });
   const [copied, setCopied] = useState(false);
+
+  // Stage 94.3: Ensure selected neighborhood belongs to activeCity when city switches
+  useEffect(() => {
+    const inCurrentCity = evaluatedNeighborhoods.some((h) => h.id === input.hoodId);
+    if (!inCurrentCity && evaluatedNeighborhoods.length > 0) {
+      const fallbackHood = evaluatedNeighborhoods.find((h) => h.id === selectedHood.id) || evaluatedNeighborhoods[0];
+      setInput((prev) => ({
+        ...prev,
+        cityId: resolvedCity,
+        hoodId: fallbackHood.id,
+      }));
+    } else if (input.cityId !== resolvedCity) {
+      setInput((prev) => ({ ...prev, cityId: resolvedCity }));
+    }
+  }, [resolvedCity, evaluatedNeighborhoods, input.hoodId, input.cityId, selectedHood.id]);
+
+  // Stage 93.1 & 93.2: Reload scoped reports when user account changes
+  useEffect(() => {
+    const localScoped = loadSavedValuationReports(uid);
+    setSavedReports(localScoped);
+    if (!currentUser?.uid) return;
+    const ctrl = new AbortController();
+    getMyValuationReports(currentUser, ctrl.signal).then((res) => {
+      if (res.ok && res.items.length > 0) {
+        setSavedReports(res.items);
+        persistSavedValuationReports(res.items, uid);
+      }
+    });
+    return () => ctrl.abort();
+  }, [currentUser, uid]);
 
   const activeHood = useMemo(
     () => evaluatedNeighborhoods.find((h) => h.id === input.hoodId) || selectedHood,
@@ -54,43 +102,79 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
   );
 
   const result = useMemo(
-    () => evaluateWorkspaceValuation(input, activeHood),
-    [input, activeHood],
+    () => evaluateWorkspaceValuation(input, activeHood, resolvedCity),
+    [input, activeHood, resolvedCity],
   );
 
   const handlePatch = (patch: Partial<ValuationWorkspaceInput>) => {
     setInput((prev) => ({ ...prev, ...patch }));
   };
 
-  const handleSave = () => {
-    const snap = createSavedValuationReport(input, activeHood.name, result);
+  const handleSave = async () => {
+    const snap = createSavedValuationReport(input, activeHood.name, result, uid);
     if (!snap) return;
-    const next = [snap, ...savedReports].slice(0, 25);
+    if (currentUser?.uid) {
+      const apiRes = await saveValuationReport(snap, currentUser);
+      const finalItem: SavedValuationReport = apiRes.ok && apiRes.item
+        ? { ...apiRes.item, storageScope: 'account_synced' }
+        : { ...snap, storageScope: 'device_local' };
+      const next = [finalItem, ...savedReports.filter((r) => r.id !== finalItem.id)].slice(0, 25);
+      setSavedReports(next);
+      persistSavedValuationReports(next, uid);
+      setStatusNoticeFa(
+        apiRes.ok
+          ? 'گزارش ارزش‌گذاری در حساب کاربری شما ذخیره شد.'
+          : 'ارتباط با سرور برقرار نشد؛ گزارش به‌صورت محلی روی این دستگاه ذخیره شد.',
+      );
+    } else {
+      const localItem: SavedValuationReport = { ...snap, storageScope: 'device_local' };
+      const next = [localItem, ...savedReports.filter((r) => r.id !== localItem.id)].slice(0, 25);
+      setSavedReports(next);
+      persistSavedValuationReports(next, null);
+      setStatusNoticeFa('گزارش روی این دستگاه ذخیره شد (برای همگام‌سازی ابری وارد حساب شوید).');
+    }
+    setTimeout(() => setStatusNoticeFa(''), 3800);
+  };
+
+  const handleDeleteReport = async (id: string) => {
+    const target = savedReports.find((r) => r.id === id);
+    if (!target) return;
+    if (currentUser?.uid && target.storageScope === 'account_synced') {
+      const delRes = await deleteValuationReport(id, currentUser);
+      if (!delRes.ok) {
+        setStatusNoticeFa(delRes.errorFa || 'حذف گزارش از حساب کاربری انجام نشد؛ آیتم حفظ شد.');
+        setTimeout(() => setStatusNoticeFa(''), 3800);
+        return;
+      }
+    }
+    const next = savedReports.filter((r) => r.id !== id);
     setSavedReports(next);
-    persistSavedValuationReports(next);
+    persistSavedValuationReports(next, uid);
   };
 
   const handleCopy = () => {
-    if (!result.hedonic) return;
-    const h = result.hedonic;
-    const txt = [
-      `گزارش ارزش‌گذاری ساختاریافته ملک — محله ${h.hoodName}`,
-      `مدل: ${result.modelVersion} · متراژ: ${toPersianNum(h.sqm)} متر · ساخت ${toPersianNum(h.buildYear)}`,
-      `برآورد مدل (غیررسمی): ${toPersianNum(h.hedonicTotalBillion)} میلیارد تومان (متری ${toPersianNum(h.hedonicPerSqm)} م)`,
-      `بازه عدم‌قطعیت (±${toPersianNum(result.uncertainty.bandPercent)}٪): ${toPersianNum((h.sensitivityRangeMillion.min / 1000).toFixed(2))} تا ${toPersianNum((h.sensitivityRangeMillion.max / 1000).toFixed(2))} میلیارد`,
-      `فروش فوری (-۱۲٪): ${toPersianNum((h.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد`,
-      `تعداد معاملات رسمی ثبت‌شده: ۰ مورد · ${result.validation.labelFa}`,
-    ].join('\n');
+    const txt = buildValuationSummaryCopyText({
+      input,
+      result,
+      hoodName: activeHood.name,
+      areaUnit,
+      intlCurrency,
+    });
+    if (!txt) return;
     navigator.clipboard?.writeText(txt).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2200);
   };
 
+  const cityNameFa = MULTI_CITY_CONFIGS[resolvedCity]?.nameFa || 'تهران';
+
   return (
     <section className="space-y-4 animate-fadeIn" data-testid="valuation-workspace-page">
       <div className="p-4 sm:p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <span className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400">مرحله ۲۰ · ارزش‌گذاری ساختاریافته و شفاف (موتور هدونیک مرجع)</span>
+          <span className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400">
+            ارزش‌گذاری ساختاریافته و شفاف (موتور هدونیک مرجع · شهر {cityNameFa})
+          </span>
           <h2 className="text-lg sm:text-xl font-black text-[#182522] dark:text-white flex items-center gap-2 mt-0.5">
             <Calculator className="w-5 h-5 text-[#176B63]" />
             <span>میز کار ارزش‌گذاری ملک در {activeHood.name}</span>
@@ -99,7 +183,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <button
             type="button"
-            onClick={() => setInput(createDefaultValuationInput(selectedHood.id))}
+            onClick={() => setInput(createDefaultValuationInput(selectedHood.id, {}, resolvedCity))}
             className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#48534F] dark:text-slate-300 flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -117,10 +201,17 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
         </div>
       </div>
 
+      {statusNoticeFa && (
+        <div className="p-3 rounded-[10px] bg-[#EAF3F0] dark:bg-emerald-950/40 border border-[#B8D7CE] text-xs font-bold text-[#14534E] dark:text-emerald-200">
+          {statusNoticeFa}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <div className="lg:col-span-6 space-y-4">
           <ValuationInputSteps
             input={input}
+            validation={result.inputValidation}
             evaluatedNeighborhoods={evaluatedNeighborhoods}
             selectedHood={activeHood}
             completenessPercent={result.completenessPercent}
@@ -153,11 +244,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
           const found = evaluatedNeighborhoods.find((h) => h.id === rep.input.hoodId);
           if (found) onSelectNeighborhood(found);
         }}
-        onDeleteReport={(id) => {
-          const next = savedReports.filter((r) => r.id !== id);
-          setSavedReports(next);
-          persistSavedValuationReports(next);
-        }}
+        onDeleteReport={handleDeleteReport}
       />
     </section>
   );

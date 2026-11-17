@@ -53,8 +53,15 @@ export interface DataCorrectionProposal {
   status: DataCorrectionModerationStatus;
   appliedDataVersionId?: string | null;
   moderatorNoteFa?: string;
+  initialModeratorUid?: string;
   createdAtIso: string;
   createdAtFa: string;
+  updatedAtIso?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  source?: 'seed' | 'user';
+  schemaVersion?: number;
+  revision?: number;
 }
 
 export interface DiscussionRevision {
@@ -69,6 +76,7 @@ export interface CommunityReplyItem {
   id: string;
   parentReplyId?: string | null;
   depth?: 1 | 2;
+  ownerUserId?: string;
   authorProfile: CommunityTrustBadgeProfile;
   bodyFa: string;
   createdAtFa: string;
@@ -99,9 +107,16 @@ export interface CommunityDiscussionPost {
   reactionCounts?: ReactionCounts;
   reactionsByUser?: Record<string, ReactionType>;
   replies: CommunityReplyItem[];
+  replyCount?: number;
   status: DiscussionModerationStatus;
   createdAtIso: string;
   createdAtFa: string;
+  updatedAtIso?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  source?: 'seed' | 'user';
+  schemaVersion?: number;
+  revision?: number;
 }
 
 /** Structured Q&A (§25.6) */
@@ -124,6 +139,7 @@ export interface AnswerStatusMarkers {
 export interface CommunityAnswerItem {
   id: string;
   questionId: string;
+  ownerUserId?: string;
   authorProfile: CommunityTrustBadgeProfile;
   bodyFa: string;
   sourceReferenceFa?: string;
@@ -149,6 +165,12 @@ export interface CommunityQuestionItem {
   followerIds: string[];
   createdAtIso: string;
   createdAtFa: string;
+  updatedAtIso?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  source?: 'seed' | 'user';
+  schemaVersion?: number;
+  revision?: number;
 }
 
 /** 10 Moderation Abuse Categories (§25.14) */
@@ -176,16 +198,37 @@ export interface CommunityAbuseReport {
   status: ReportWorkflowStatus;
   moderatorActionNoteFa?: string;
   createdAtIso: string;
+  updatedAtIso?: string;
+  source?: 'seed' | 'user';
+  schemaVersion?: number;
+  revision?: number;
 }
 
 export interface ModerationActionRecord {
   id: string;
   targetType: CommunityAbuseReport['targetType'];
   targetId: string;
-  actionType: 'hide' | 'lock' | 'warn' | 'suspend_7d' | 'restore' | 'approve_data' | 'apply_data_version' | 'reject_data';
+  actionType:
+    | 'hide'
+    | 'lock'
+    | 'warn'
+    | 'suspend_7d'
+    | 'restore'
+    | 'initial_validation'
+    | 'under_review'
+    | 'needs_evidence'
+    | 'approve_data'
+    | 'apply_data_version'
+    | 'reject_data'
+    | 'resolve_report'
+    | 'dismiss_report';
   reasonFa: string;
   actorRole: string;
+  actorUid?: string;
   createdAtIso: string;
+  source?: 'seed' | 'user';
+  schemaVersion?: number;
+  revision?: number;
 }
 
 export interface ModerationAppeal {
@@ -196,7 +239,12 @@ export interface ModerationAppeal {
   argumentFa: string;
   status: 'submitted' | 'under_review' | 'upheld' | 'overturned';
   reviewerNoteFa?: string;
+  reviewerUid?: string;
   createdAtIso: string;
+  updatedAtIso?: string;
+  source?: 'seed' | 'user';
+  schemaVersion?: number;
+  revision?: number;
 }
 
 export interface ResearchTopicProposal {
@@ -204,12 +252,18 @@ export interface ResearchTopicProposal {
   titleFa: string;
   questionFa: string;
   neighborhoodNameFa: string;
+  ownerUserId?: string;
   authorProfile: CommunityTrustBadgeProfile;
   votesCount: number;
   voterIds: string[];
   linkedKnowledgeTab: 'reports' | 'methodology';
   status: 'open' | 'queued_for_research' | 'published';
   createdAtFa: string;
+  createdAtIso?: string;
+  updatedAtIso?: string;
+  source?: 'seed' | 'user';
+  schemaVersion?: number;
+  revision?: number;
 }
 
 export const DATA_CORRECTION_CATEGORY_LABELS_FA: Record<DataCorrectionCategory, string> = {
@@ -218,6 +272,20 @@ export const DATA_CORRECTION_CATEGORY_LABELS_FA: Record<DataCorrectionCategory, 
   price_anomaly: 'نابهنجاری قیمت و فایل ساختگی',
   map_boundary: 'مرز محله و اطلاعات مکانی',
   air_noise: 'کیفیت هوا و آلودگی صوتی',
+};
+
+export const DATA_CORRECTION_STATUS_LABELS_FA: Record<DataCorrectionModerationStatus, string> = {
+  draft: 'پیش‌نویس محلی',
+  submitted: 'ثبت‌شده',
+  initial_validation: 'اعتبارسنجی اولیه',
+  under_review: 'در حال بررسی ناظر داده',
+  needs_evidence: 'نیازمند مدرک تکمیلی',
+  approved: 'تأییدشده (در انتظار اعمال در نسخه داده)',
+  applied: 'اعمال‌شده در داده مرجع',
+  rejected: 'ردشده با توضیح ممیزی',
+  withdrawn: 'انصراف توسط ثبت‌کننده',
+  pending: 'ثبت‌شده',
+  verified: 'تأییدشده (در انتظار اعمال در نسخه داده)',
 };
 
 export const ABUSE_REASON_LABELS_FA: Record<CommunityAbuseReason, string> = {

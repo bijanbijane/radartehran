@@ -6,7 +6,7 @@
   - `isVerifiedUser()`: `isSignedIn() && request.auth.token.email_verified == true`
   - `hasDelegatedAdminRole()`: `isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)) && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'`
   - `isAdmin()`: `isVerifiedUser() && (request.auth.token.email == 'masirsalamatt@gmail.com' || request.auth.token.email == 'radio837isf@gmail.com' || request.auth.token.email == 'bijanbijane.1@gmail.com' || hasDelegatedAdminRole())`
-- **Collection Access Matrix**:
+- **Collection Access Matrix (Core + Social Stage 3–6)**:
   - `/admins/{adminId}`: Admin `get` and `list` (`existing().role == 'admin'`), and `allow create, update, delete: if false;` (managed out-of-band via Admin SDK/Console).
   - `/votes/{voteId}`: Admin or owner `get` and bounded `list` (`hoodId >= 1 && hoodId <= 999`), verified owner `create` with deterministic ID `request.auth.uid + '_hood_' + string(incoming().hoodId)` and `createdAt == request.time && lastUpdatedAt == request.time`, owner `update` enforcing 24-hour cooldown (`request.time >= existing().lastUpdatedAt + duration.value(24, 'h')`), and owner/admin `delete`.
   - `/bargains/{bargainId}` & `/bargainOwners/{bargainId}`: Public `get` and bounded `list` (`hoodId >= 1 && hoodId <= 999`) on `/bargains` without exposing `userId`; ownership is stored in private `/bargainOwners/{bargainId}` and verified atomically via `hasBargainOwnerInCurrentBatch(bargainId)` and `ownsBargain(bargainId)`. Supports bounded `objectStorageKeys` and `objectStorageObjectIds` (`<= 6` items).
@@ -15,6 +15,8 @@
   - `/neighborhoodOverrides/{hoodId}`: Public `get`. Public `list` requires `hoodId >= 1 && hoodId <= 999`. Admin-only `create`/`update`/`delete` for ids `1..999` (`<id>` or `hood_<id>`). The public sponsor card is `neighborhoodOverrides.sponsor` (`name`, `phone`, `specialty`, `experienceYears`, optional `expiresAtIso` and `planType`) validated by `isValidOverrideSponsor`. Optional `pros` and `cons` are strings of at most 400 characters. Price fields are `buyPerSqm` `10..5000` and `rahn80m` `50..100000`.
   - `/appConfig/{configId}`: Public `get` (`configId == 'featureFlags' || configId == 'monetization'`), `allow list: if false`, admin-only `create`/`update` with `isValidFeatureFlags()`, `allow delete: if false`.
   - `/userPreferences/{userId}`: Owner and admin `get`, admin-only `list`, owner `create`/`update` with validated `favoriteHoodIds` (at most 25 members, and every member is an integer from 1 to 999), and owner/admin `delete`.
+  - `/socialPosts/{postId}`, `/socialComments/{commentId}`, `/socialReactions/{reactionId}`, `/socialFollows/{followId}`, `/socialReports/{reportId}`, `/socialProfiles/{userId}`, `/socialIdempotency/{keyId}`: Least-privilege verified-owner rules and soft-delete visibility enforcement.
+  - `/socialModerationCases/{caseId}`, `/socialModerationEvents/{eventId}`, `/socialOutbox/{outboxId}`: Fail-closed `isAdmin() && isValidId(...)` access; `/socialModerationEvents` enforces append-only immutability (`allow update, delete: if false`).
   - `/{document=**}`: Explicit catch-all deny (`allow read, write: if false`).
 
 ## 2. Backend HTTP & API Security (`server.ts`, `src/utils/serverAdminAndTelegramSecurity.ts`)
@@ -29,6 +31,12 @@
 - **Secret & PII Protection**:
   - `GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `ADMIN_API_SECRET`, `OBJECT_STORAGE_ACCESS_KEY`, `OBJECT_STORAGE_SECRET_KEY`, and `CASPER_HUB_TOKEN` are never exposed in `/api/admin/runtime-config` responses, encrypted backup envelopes (`scrubSecretsFromBackupObject`), or `.runtime-config.json`.
   - `/api/admin/casper-hub/*` routes enforce admin RBAC (`verifyAdminAuth`), rate limiting (`30 req/min` with `Retry-After: 60`), SHA-256 token-digest identity binding (`CASPER-03`), `redirect: "manual"`, SSRF host validation, and prompt-injection/token-redaction shields.
+  - Client API helpers enforce Firebase Bearer ID Token identity (`Authorization: Bearer <idToken>`) with zero client-spoofable `x-verified-user-id` headers.
+  - **Stages 5–26 Hardening**:
+    - Trust & Safety (`/api/v1/trust-safety/*`) enforces claim leases, soft-delete propagation, and Separation of Duties (SoD) preventing initial moderators from adjudicating appeals on their own decisions.
+    - Governed Telemetry (`/api/v1/governance/telemetry/*`) scrubs mobile/email/IBAN/long numeric IDs (`scrubTelemetryPii`), hashes short-lived daily sessions, and suppresses rollups below `k >= 5`.
+    - AI Automation (`/api/v1/automation/*`) binds `A3..A5` human approvals via SHA-256 payload digests (`computePayloadDigest`) and provides an immediate fail-closed `Kill Switch`.
+    - Integration Gateway (`/api/v1/gateway/*`) extends `validateWebhookDestinationUrl` (SSRF block on private/loopback CIDRs), enforces TLS/redirect/MIME/size contracts, and never returns raw secret values.
   - Buyer contact leads are not persisted to `.cache-data.json`.
 
 ## 2.1 Epistemic Trust & User-Facing Price Claims
@@ -36,3 +44,4 @@
 - **Consistent evidence**: High-traffic views (Compare, Inspector, Intelligence) must aggregate with live listing samples and show `EpistemicMarketDisclaimer` when `isDealPriceDisplayableAsFact` is false.
 - **Regression**: `tests/engineering-quality-foundation.test.ts` scans components for forbidden labels; `tests/real-market-price-aggregator.test.ts` asserts zero-sample paths do not fabricate listings or present verified deal facts.
 - **Listing verdict (client)**: `ListingVerdictHero` and `InstantListingVerifierModal` must both call `buildListingVerdict` in `src/utils/listingVerdictService.ts` (live comparables + `disclaimerFa` + hood mismatch guard). Never call `diagnoseListingDeal` directly from UI. Covered by `tests/listing-verdict-service.test.ts`.
+

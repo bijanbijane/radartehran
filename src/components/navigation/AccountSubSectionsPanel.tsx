@@ -214,6 +214,7 @@ export const AccountSubSectionsPanel: React.FC<AccountSubSectionsPanelProps> = (
   if (p.activeSubTab === 'contributions') {
     return (
       <AccountContributionsAndServicesPanel
+        currentUser={p.currentUser}
         myListings={snapshot.myListings}
         serviceRequests={snapshot.serviceRequests}
         serviceProposals={snapshot.serviceProposals}
@@ -224,7 +225,7 @@ export const AccountSubSectionsPanel: React.FC<AccountSubSectionsPanelProps> = (
   }
 
   if (p.activeSubTab === 'community') {
-    return <AccountCommunityPrivacyPanel onNavigateView={p.onNavigateView} />;
+    return <AccountCommunityPrivacyPanel currentUser={p.currentUser} onNavigateView={p.onNavigateView} />;
   }
 
   if (p.activeSubTab === 'notifications') {

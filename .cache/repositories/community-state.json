@@ -1,0 +1,554 @@
+{
+  "discussions": [
+    {
+      "id": "post-seed-1",
+      "track": "social_discussion",
+      "neighborhoodId": 1,
+      "neighborhoodNameFa": "پونک",
+      "topicId": "topic-neighborhoods",
+      "tags": [
+        "فشار-آب",
+        "پارکینگ",
+        "پونک"
+      ],
+      "entityLink": {
+        "type": "neighborhood",
+        "id": "1",
+        "labelFa": "کارنامه محله پونک"
+      },
+      "pinned": true,
+      "followerIds": [
+        "user_resident_1"
+      ],
+      "revisionHistory": [],
+      "titleFa": "تجربه فشار آب و پارکینگ کوچه ۳۵ متری گلستان",
+      "bodyFa": "در ساعت‌های اوج عصر پیدا کردن جای پارک سخت است و ساختمان‌های بدون پمپ در طبقه چهارم افت فشار دارند؛ با این حال دسترسی محلی عالی است.",
+      "ownerUserId": "user_resident_1",
+      "authorProfile": {
+        "userId": "user_resident_1",
+        "username": "punak_steward",
+        "displayNameFa": "آرش کریمی (ساکن تأییدشده پونک)",
+        "identityStatus": "verified_phone",
+        "participationScore": 68,
+        "participationTierFa": "مشارکت‌کننده فعال",
+        "verifiedCredentialFa": null,
+        "reputation": {
+          "data": 68,
+          "community": 45,
+          "research": 22,
+          "sources": 18,
+          "professional": 0
+        }
+      },
+      "helpfulCount": 14,
+      "helpfulVoterIds": [],
+      "reactionCounts": {
+        "helpful": 14,
+        "agree": 6,
+        "needs_source": 1,
+        "disagree": 0
+      },
+      "reactionsByUser": {},
+      "replies": [
+        {
+          "id": "rep-seed-1",
+          "parentReplyId": null,
+          "depth": 1,
+          "authorProfile": {
+            "userId": "user_urbanist_1",
+            "username": "a_sharifi_urban",
+            "displayNameFa": "دکتر امین شریفی",
+            "identityStatus": "verified_phone",
+            "participationScore": 15,
+            "participationTierFa": "همکار محله",
+            "verifiedCredentialFa": "پژوهشگر شهرسازی و حمل‌ونقل شهری",
+            "reputation": {
+              "data": 19,
+              "community": 41,
+              "research": 75,
+              "sources": 84,
+              "professional": 88
+            }
+          },
+          "bodyFa": "برای ساختمان‌های بالای ۴ طبقه حتماً مخزن ذخیره و پمپ بی‌سر‌و‌صدا را در بازدید بررسی کنید.",
+          "createdAtFa": "۱۴۰۵/۰۱/۱۵",
+          "reactionCounts": {
+            "helpful": 5,
+            "agree": 2,
+            "needs_source": 0,
+            "disagree": 0
+          },
+          "reactionsByUser": {},
+          "status": "visible"
+        },
+        {
+          "id": "rep-seed-2",
+          "parentReplyId": "rep-seed-1",
+          "depth": 2,
+          "authorProfile": {
+            "userId": "user_resident_1",
+            "username": "punak_steward",
+            "displayNameFa": "آرش کریمی (ساکن تأییدشده پونک)",
+            "identityStatus": "verified_phone",
+            "participationScore": 68,
+            "participationTierFa": "مشارکت‌کننده فعال",
+            "verifiedCredentialFa": null,
+            "reputation": {
+              "data": 68,
+              "community": 45,
+              "research": 22,
+              "sources": 18,
+              "professional": 0
+            }
+          },
+          "bodyFa": "ممنون بابت یادآوری؛ در ساختمان‌های بعد از سال ۱۳۹۸ معمولاً مخزن ۱۰۰۰ لیتری نصب شده است.",
+          "createdAtFa": "۱۴۰۵/۰۱/۱۵",
+          "reactionCounts": {
+            "helpful": 2,
+            "agree": 1,
+            "needs_source": 0,
+            "disagree": 0
+          },
+          "reactionsByUser": {},
+          "status": "visible"
+        }
+      ],
+      "status": "published",
+      "createdAtIso": "2026-04-03T14:20:00.000Z",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۴"
+    },
+    {
+      "id": "post-seed-2",
+      "track": "expert_qa",
+      "neighborhoodId": 1,
+      "neighborhoodNameFa": "پونک",
+      "topicId": "topic-valuation",
+      "tags": [
+        "قدراسهم",
+        "تجمیع",
+        "بلوار-عدل"
+      ],
+      "entityLink": {
+        "type": "market",
+        "id": "tehran-z5",
+        "labelFa": "شاخص منطقه ۵"
+      },
+      "pinned": false,
+      "followerIds": [],
+      "revisionHistory": [],
+      "titleFa": "تفاوت قدرالسهم زمین در بلوک‌های شمالی و جنوبی بلوار عدل",
+      "bodyFa": "برای محاسبه ارزش تجمیع در قطعات ۲۵۰ متری بافت متوسط، نسبت سطح اشغال ۶۰ درصد و عرض گذر ۸ متری ملاک جواز نوسازی است.",
+      "ownerUserId": "user_expert_1",
+      "authorProfile": {
+        "userId": "user_expert_1",
+        "username": "m_kazemi_expert",
+        "displayNameFa": "مریم کاظمی (کارشناس رسمی دادگستری)",
+        "identityStatus": "verified_phone",
+        "participationScore": 24,
+        "participationTierFa": "همکار محله",
+        "verifiedCredentialFa": "کارشناس رسمی راه و ساختمان · کد ممیزی ۰۴۱۲",
+        "reputation": {
+          "data": 24,
+          "community": 54,
+          "research": 38,
+          "sources": 62,
+          "professional": 92
+        }
+      },
+      "helpfulCount": 19,
+      "helpfulVoterIds": [],
+      "reactionCounts": {
+        "helpful": 19,
+        "agree": 9,
+        "needs_source": 0,
+        "disagree": 0
+      },
+      "reactionsByUser": {},
+      "replies": [],
+      "status": "published",
+      "createdAtIso": "2026-04-04T16:10:00.000Z",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۵"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q-seed-1",
+      "titleFa": "در پهنه‌بندی R122 گذر ۸ متری، بیشینه طبقات مجاز با پارکینگ تأمین‌شده چند طبقه است؟",
+      "bodyFa": "قطعه ۲۴۰ متری شمالی در محله پونک داریم. می‌خواهیم بدانیم پیش از خرید، سقف طبقه مجاز و سطح اشغال قانونی بر اساس طرح تفصیلی چگونه محاسبه می‌شود.",
+      "neighborhoodId": 1,
+      "neighborhoodNameFa": "پونک",
+      "topicId": "topic-zoning-urban",
+      "tags": [
+        "R122",
+        "جواز-ساخت",
+        "پونک"
+      ],
+      "ownerUserId": "user_resident_1",
+      "authorProfile": {
+        "userId": "user_resident_1",
+        "username": "punak_steward",
+        "displayNameFa": "آرش کریمی",
+        "identityStatus": "verified_phone",
+        "participationScore": 68,
+        "participationTierFa": "مشارکت‌کننده فعال",
+        "verifiedCredentialFa": null
+      },
+      "status": "resolved",
+      "followerIds": [
+        "user_resident_1"
+      ],
+      "createdAtIso": "2026-04-03T10:00:00.000Z",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۴",
+      "answers": [
+        {
+          "id": "ans-seed-1",
+          "questionId": "q-seed-1",
+          "authorProfile": {
+            "userId": "user_expert_1",
+            "username": "m_kazemi_expert",
+            "displayNameFa": "مریم کاظمی",
+            "identityStatus": "verified_phone",
+            "participationScore": 24,
+            "participationTierFa": "همکار محله",
+            "verifiedCredentialFa": "کارشناس رسمی راه و ساختمان · کد ممیزی ۰۴۱۲"
+          },
+          "bodyFa": "در زیرپهنه R122 با عرض گذر ۸ متر و مساحت ۲۴۰ مترمربع، طبق ضابطه طرح تفصیلی تراکم پایه ۴ طبقه روی پیلوت با سطح اشغال حداکثر ۶۰ درصد است؛ اعطای طبقه پنجم منوط به مشوق‌های تجمیع و تأمین کامل پارکینگ خواهد بود.",
+          "sourceReferenceFa": "ضوابط طرح تفصیلی شهر تهران — جدول پهنه‌بندی R122 (ماده ۶)",
+          "markers": {
+            "isAskerSelected": true,
+            "hasCredibleSource": true,
+            "isExpertReviewed": true,
+            "isOfficiallyVerified": true
+          },
+          "reactionCounts": {
+            "helpful": 18,
+            "agree": 7,
+            "needs_source": 0,
+            "disagree": 0
+          },
+          "reactionsByUser": {},
+          "createdAtFa": "۱۴۰۵/۰۱/۱۴",
+          "status": "visible"
+        }
+      ]
+    },
+    {
+      "id": "q-seed-2",
+      "titleFa": "اگر فروشنده تا زمان تنظیم سند رسمی در دفترخانه پایان‌کار نگیرد، وجه التزام روزانه چگونه محاسبه می‌شود؟",
+      "bodyFa": "در مبایعه‌نامه قید شده فروشنده مکلف به ارائه پایان‌کار تا روز محضر است؛ آیا در صورت تأخیر بدون شرط صریح اسقاط کافه خیارات، خسارت روزانه قابل مطالبه است؟",
+      "neighborhoodId": 2,
+      "neighborhoodNameFa": "سعادت‌آباد",
+      "topicId": "topic-legal-contracts",
+      "tags": [
+        "مبایعه‌نامه",
+        "پایان‌کار",
+        "وجه-التزام"
+      ],
+      "ownerUserId": "user_resident_1",
+      "authorProfile": {
+        "userId": "user_resident_1",
+        "username": "punak_steward",
+        "displayNameFa": "آرش کریمی",
+        "identityStatus": "verified_phone",
+        "participationScore": 68,
+        "participationTierFa": "مشارکت‌کننده فعال",
+        "verifiedCredentialFa": null
+      },
+      "status": "open",
+      "followerIds": [],
+      "createdAtIso": "2026-04-06T08:30:00.000Z",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۷",
+      "answers": []
+    }
+  ],
+  "corrections": [
+    {
+      "id": "corr-seed-1",
+      "neighborhoodId": 1,
+      "neighborhoodNameFa": "پونک",
+      "category": "metro_transit",
+      "titleFa": "به‌روزرسانی فاصله پیاده تا خط بی‌آرتی اشرفی",
+      "currentValueFa": "امتیاز دسترسی حمل‌ونقل عمومی: ۷.۲ از ۱۰",
+      "evidenceSummaryFa": "ایستگاه جدید میدان پونک زمان دسترسی پیاده بخش شمالی را حدود ۵ دقیقه کاهش داده است.",
+      "suggestedValueFa": "امتیاز دسترسی پیاده حمل‌ونقل عمومی: ۸ از ۱۰",
+      "observedDateFa": "۱۴۰۵/۰۱/۱۲",
+      "evidenceAttachments": [
+        {
+          "id": "ev-1",
+          "fileName": "punak-brt-walk-map.png",
+          "kind": "image",
+          "observedDateFa": "۱۴۰۵/۰۱/۱۲",
+          "summaryFa": "نقشه مسیر پیاده از میدان پونک به خط ۱"
+        }
+      ],
+      "ownerUserId": "user_resident_1",
+      "authorProfile": {
+        "userId": "user_resident_1",
+        "username": "punak_steward",
+        "displayNameFa": "آرش کریمی (ساکن تأییدشده پونک)",
+        "identityStatus": "verified_phone",
+        "participationScore": 68,
+        "participationTierFa": "مشارکت‌کننده فعال",
+        "verifiedCredentialFa": null,
+        "reputation": {
+          "data": 68,
+          "community": 45,
+          "research": 22,
+          "sources": 18,
+          "professional": 0
+        }
+      },
+      "status": "applied",
+      "appliedDataVersionId": "canon-ver-2026.04.02",
+      "moderatorNoteFa": "با نقشه معابر و خطوط اتوبوسرانی منطقه ۵ تطبیق داده و در نسخه داده رسمی اعمال شد.",
+      "createdAtIso": "2026-04-02T09:15:00.000Z",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۳"
+    },
+    {
+      "id": "corr-seed-2",
+      "neighborhoodId": 3,
+      "neighborhoodNameFa": "جنت‌آباد",
+      "category": "price_anomaly",
+      "titleFa": "گزارش آگهی‌های تکرارشونده با قیمت مصنوعی پایین",
+      "currentValueFa": "متوسط قیمت اعلامی نمونه: ۲۱۵ میلیون تومان",
+      "evidenceSummaryFa": "سه فایل با عکس یکسان و متراژ ۹۵ متر زیر نرخ واقعی منطقه برای جذب تماس ثبت شده‌اند.",
+      "suggestedValueFa": "علامت‌گذاری جهت بررسی تحریریه مچ‌گیر قیمت",
+      "observedDateFa": "۱۴۰۵/۰۱/۱۶",
+      "evidenceAttachments": [
+        {
+          "id": "ev-2",
+          "fileName": "duplicate-listing-note.txt",
+          "kind": "field_note",
+          "observedDateFa": "۱۴۰۵/۰۱/۱۶",
+          "summaryFa": "شماره‌های متفاوت با تصویر تکراری در محدوده جنت‌آباد مرکزی"
+        }
+      ],
+      "ownerUserId": "user_resident_1",
+      "authorProfile": {
+        "userId": "user_resident_1",
+        "username": "punak_steward",
+        "displayNameFa": "آرش کریمی (ساکن تأییدشده پونک)",
+        "identityStatus": "verified_phone",
+        "participationScore": 68,
+        "participationTierFa": "مشارکت‌کننده فعال",
+        "verifiedCredentialFa": null,
+        "reputation": {
+          "data": 68,
+          "community": 45,
+          "research": 22,
+          "sources": 18,
+          "professional": 0
+        }
+      },
+      "status": "under_review",
+      "createdAtIso": "2026-04-05T11:30:00.000Z",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۶"
+    }
+  ],
+  "researchProposals": [
+    {
+      "id": "rprop-seed-1",
+      "titleFa": "اثر بازگشایی بزرگراه‌های جدید غرب بر فاصله قیمتی پونک و چیتگر",
+      "questionFa": "آیا کاهش زمان سفر خودرویی شکاف قیمت هر متر مربع بین منطقه ۵ و ۲۲ را در ۱۸ ماه گذشته کم کرده است؟",
+      "neighborhoodNameFa": "پونک و منطقه ۲۲",
+      "authorProfile": {
+        "userId": "user_resident_1",
+        "username": "punak_steward",
+        "displayNameFa": "آرش کریمی (ساکن تأییدشده پونک)",
+        "identityStatus": "verified_phone",
+        "participationScore": 68,
+        "participationTierFa": "مشارکت‌کننده فعال",
+        "verifiedCredentialFa": null,
+        "reputation": {
+          "data": 68,
+          "community": 45,
+          "research": 22,
+          "sources": 18,
+          "professional": 0
+        }
+      },
+      "votesCount": 27,
+      "voterIds": [],
+      "linkedKnowledgeTab": "reports",
+      "status": "queued_for_research",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۲"
+    },
+    {
+      "id": "rprop-seed-2",
+      "titleFa": "نسبت رهن کامل به قیمت کل در واحدهای ریزمتراژ مرکز تهران",
+      "questionFa": "ضریب تبدیل واقعی رهن به اجاره در آپارتمان‌های زیر ۶۰ متر چه تفاوتی با عرف بانکی دارد؟",
+      "neighborhoodNameFa": "تهران مرکزی",
+      "authorProfile": {
+        "userId": "user_urbanist_1",
+        "username": "a_sharifi_urban",
+        "displayNameFa": "دکتر امین شریفی",
+        "identityStatus": "verified_phone",
+        "participationScore": 15,
+        "participationTierFa": "همکار محله",
+        "verifiedCredentialFa": "پژوهشگر شهرسازی و حمل‌ونقل شهری",
+        "reputation": {
+          "data": 19,
+          "community": 41,
+          "research": 75,
+          "sources": 84,
+          "professional": 88
+        }
+      },
+      "votesCount": 18,
+      "voterIds": [],
+      "linkedKnowledgeTab": "methodology",
+      "status": "open",
+      "createdAtFa": "۱۴۰۵/۰۱/۱۵"
+    }
+  ],
+  "abuseReports": [],
+  "moderationActions": [
+    {
+      "id": "mod-act-1",
+      "targetType": "data_correction",
+      "targetId": "corr-seed-1",
+      "actionType": "apply_data_version",
+      "reasonFa": "تطبیق نقشه معابر و ثبت نسخه داده مکانی v2026.04",
+      "actorRole": "data_analyst",
+      "createdAtIso": "2026-04-02T13:10:00.000Z"
+    }
+  ],
+  "appeals": [],
+  "profiles": {
+    "punak_steward": {
+      "userId": "user_resident_1",
+      "username": "punak_steward",
+      "displayNameFa": "آرش کریمی",
+      "bioFa": "ساکن منطقه ۵ و پیگیر داده‌های حمل‌ونقل و زیست‌پذیری محله پونک و جنت‌آباد.",
+      "visibility": "public",
+      "showBadges": true,
+      "showContributions": true,
+      "showFollowedTopics": true,
+      "identityStatus": "verified_phone",
+      "reputation": {
+        "data": 68,
+        "community": 45,
+        "research": 22,
+        "sources": 18,
+        "professional": 0
+      },
+      "badges": [
+        {
+          "id": "bdg-1",
+          "code": "verified_identity",
+          "titleFa": "هویت تأییدشده",
+          "scopeFa": "احراز شماره حساب",
+          "authorityFa": "سیستم احراز هویت",
+          "criteriaFa": "تکمیل احراز هویت پایه",
+          "reviewedAtFa": "۱۴۰۴/۱۱/۲۰",
+          "expiresAtIso": "2027-02-10T00:00:00.000Z",
+          "status": "active"
+        },
+        {
+          "id": "bdg-2",
+          "code": "local_steward",
+          "titleFa": "همیار فعال داده‌های محله",
+          "scopeFa": "گزارش‌های مکانی منطقه ۵",
+          "authorityFa": "شورای ممیزی داده رادار",
+          "criteriaFa": "حداقل ۵ اصلاح داده تأییدشده با شواهد میدانی",
+          "reviewedAtFa": "۱۴۰۵/۰۱/۱۰",
+          "expiresAtIso": "2027-04-01T00:00:00.000Z",
+          "status": "active"
+        }
+      ],
+      "followedTopicIds": [
+        "topic-neighborhoods",
+        "topic-data-quality",
+        "topic-transit-infra"
+      ],
+      "memberSinceFa": "آذر ۱۴۰۴",
+      "recentPublicSummaryFa": [
+        "تأیید اصلاح فاصله ایستگاه بی‌آرتی پونک",
+        "ثبت گزارش آگهی‌های تکراری در جنت‌آباد"
+      ],
+      "verifiedCredentialFa": null
+    },
+    "m_kazemi_expert": {
+      "userId": "user_expert_1",
+      "username": "m_kazemi_expert",
+      "displayNameFa": "مریم کاظمی",
+      "bioFa": "کارشناس رسمی راه و ساختمان و تحلیلگر ضوابط شهرسازی و قدرالسهم زمین.",
+      "visibility": "public",
+      "showBadges": true,
+      "showContributions": true,
+      "showFollowedTopics": true,
+      "identityStatus": "verified_phone",
+      "reputation": {
+        "data": 24,
+        "community": 54,
+        "research": 38,
+        "sources": 62,
+        "professional": 92
+      },
+      "badges": [
+        {
+          "id": "bdg-3",
+          "code": "domain_specialist",
+          "titleFa": "کارشناس ممیزی‌شده حقوق و ساختمان",
+          "scopeFa": "پهنه R122 و قدرالسهم",
+          "authorityFa": "کمیسیون احراز صلاحیت تخصصی",
+          "criteriaFa": "تطبیق پروانه کارشناسی معتبر با مدت اعتبار ۱ ساله",
+          "reviewedAtFa": "۱۴۰۵/۰۱/۰۵",
+          "expiresAtIso": "2027-03-25T00:00:00.000Z",
+          "status": "active"
+        }
+      ],
+      "followedTopicIds": [
+        "topic-legal-contracts",
+        "topic-zoning-urban",
+        "topic-valuation"
+      ],
+      "memberSinceFa": "دی ۱۴۰۴",
+      "recentPublicSummaryFa": [
+        "پاسخ مستند به ضابطه قدرالسهم بلوار عدل",
+        "بررسی چک‌لیست تحویل سند تک‌برگ"
+      ],
+      "verifiedCredentialFa": "کارشناس رسمی راه و ساختمان · کد ممیزی ۰۴۱۲"
+    },
+    "a_sharifi_urban": {
+      "userId": "user_urbanist_1",
+      "username": "a_sharifi_urban",
+      "displayNameFa": "دکتر امین شریفی",
+      "bioFa": "پژوهشگر اقتصاد مسکن و حمل‌ونقل شهری؛ تمرکز بر نقد متدولوژی شاخص‌های قیمتی.",
+      "visibility": "public",
+      "showBadges": true,
+      "showContributions": true,
+      "showFollowedTopics": false,
+      "identityStatus": "verified_phone",
+      "reputation": {
+        "data": 19,
+        "community": 41,
+        "research": 75,
+        "sources": 84,
+        "professional": 88
+      },
+      "badges": [
+        {
+          "id": "bdg-4",
+          "code": "research_contributor",
+          "titleFa": "همکار پژوهش‌های شهری",
+          "scopeFa": "متدولوژی قیمت و رهن",
+          "authorityFa": "تحریریه پایگاه دانش رادار",
+          "criteriaFa": "انتشار حداقل ۲ نقد روشی ارجاع‌دار",
+          "reviewedAtFa": "۱۴۰۵/۰۱/۱۲",
+          "expiresAtIso": "2027-04-12T00:00:00.000Z",
+          "status": "active"
+        }
+      ],
+      "followedTopicIds": [
+        "topic-research-analytics",
+        "topic-tehran-market"
+      ],
+      "memberSinceFa": "بهمن ۱۴۰۴",
+      "recentPublicSummaryFa": [
+        "پیشنهاد پژوهش ضریب واقعی تبدیل رهن به اجاره"
+      ],
+      "verifiedCredentialFa": "پژوهشگر شهرسازی و حمل‌ونقل شهری"
+    }
+  }
+}

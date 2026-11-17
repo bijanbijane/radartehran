@@ -16,9 +16,9 @@ interface Props {
   selectedHood: EvaluatedNeighborhood;
   posts: CommunityDiscussionPost[];
   currentUserId: string;
-  onSubmitPost: (input: { titleFa: string; bodyFa: string; topicId: string }) => { ok: boolean; errorFa?: string };
-  onReplyPost: (postId: string, bodyFa: string, parentReplyId?: string | null) => { ok: boolean; errorFa?: string };
-  onEditPost: (postId: string, titleFa: string, bodyFa: string) => { ok: boolean; errorFa?: string };
+  onSubmitPost: (input: { titleFa: string; bodyFa: string; topicId: string }) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
+  onReplyPost: (postId: string, bodyFa: string, parentReplyId?: string | null) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
+  onEditPost: (postId: string, titleFa: string, bodyFa: string) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
   onToggleReaction: (postId: string, reaction: ReactionType) => void;
   onToggleFollow: (postId: string) => void;
   onReportAbuse: (postId: string, reason: CommunityAbuseReason, detailsFa: string) => void;
@@ -61,9 +61,9 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
     return [...visible].sort((a, b) => computeDiscussionMultiFactorRank(b, selectedHood.id) - computeDiscussionMultiFactorRank(a, selectedHood.id));
   }, [posts, sortMode, selectedHood.id]);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = onSubmitPost({ titleFa, bodyFa, topicId });
+    const res = await onSubmitPost({ titleFa, bodyFa, topicId });
     if (res.ok) {
       setTitleFa('');
       setBodyFa('');
@@ -151,7 +151,7 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-2 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900" />
                   <textarea rows={2} value={editBody} onChange={(e) => setEditBody(e.target.value)} className="w-full p-2 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900" />
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => { const res = onEditPost(post.id, editTitle, editBody); if (res.ok) setEditingId(null); else setFeedback({ ok: false, msg: res.errorFa || 'خطا' }); }} className="px-3 py-1 rounded bg-[#176B63] text-white font-bold cursor-pointer">ذخیره ویرایش با سابقه</button>
+                    <button type="button" onClick={async () => { const res = await onEditPost(post.id, editTitle, editBody); if (res.ok) setEditingId(null); else setFeedback({ ok: false, msg: res.errorFa || 'خطا' }); }} className="px-3 py-1 rounded bg-[#176B63] text-white font-bold cursor-pointer">ذخیره ویرایش با سابقه</button>
                     <button type="button" onClick={() => setEditingId(null)} className="px-3 py-1 rounded border border-[#DCE3DF] dark:border-slate-700 cursor-pointer">انصراف</button>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
               {!isLocked && (
                 <div className="flex gap-2 pt-1">
                   <input type="text" aria-label={`پاسخ به ${post.titleFa}`} value={replyDrafts[post.id] || ''} onChange={(e) => setReplyDrafts({ ...replyDrafts, [post.id]: e.target.value })} placeholder={parentTarget ? 'پاسخ سطح ۲ در ادامه نظر انتخاب‌شده...' : 'پاسخ یا تجربه تکمیلی خود را بنویسید...'} className="flex-1 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
-                  <button type="button" onClick={() => { const res = onReplyPost(post.id, replyDrafts[post.id] || '', parentTarget); if (res.ok) { setReplyDrafts({ ...replyDrafts, [post.id]: '' }); setReplyParentByPost({ ...replyParentByPost, [post.id]: null }); } else setFeedback({ ok: false, msg: res.errorFa || 'خطا' }); }} className="px-3.5 py-2 rounded-[8px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer whitespace-nowrap">
+                  <button type="button" onClick={async () => { const res = await onReplyPost(post.id, replyDrafts[post.id] || '', parentTarget); if (res.ok) { setReplyDrafts({ ...replyDrafts, [post.id]: '' }); setReplyParentByPost({ ...replyParentByPost, [post.id]: null }); } else setFeedback({ ok: false, msg: res.errorFa || 'خطا' }); }} className="px-3.5 py-2 rounded-[8px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer whitespace-nowrap">
                     ارسال پاسخ
                   </button>
                 </div>

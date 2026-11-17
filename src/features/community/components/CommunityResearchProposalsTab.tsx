@@ -11,7 +11,7 @@ interface Props {
   defaultHoodName: string;
   proposals: ResearchTopicProposal[];
   currentUserId: string;
-  onSubmitProposal: (input: { titleFa: string; questionFa: string; neighborhoodNameFa: string }) => { ok: boolean; errorFa?: string };
+  onSubmitProposal: (input: { titleFa: string; questionFa: string; neighborhoodNameFa: string }) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
   onVoteProposal: (proposalId: string) => void;
   onNavigateView: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
 }
@@ -29,9 +29,9 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
   const [hoodNameFa, setHoodNameFa] = useState(defaultHoodName);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = onSubmitProposal({ titleFa, questionFa, neighborhoodNameFa: hoodNameFa });
+    const res = await onSubmitProposal({ titleFa, questionFa, neighborhoodNameFa: hoodNameFa });
     if (res.ok) {
       setTitleFa('');
       setQuestionFa('');

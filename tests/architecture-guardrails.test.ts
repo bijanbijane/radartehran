@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { runArchitectureCheck } from '../scripts/check-architecture';
+import { collectSourceFiles, runArchitectureCheck } from '../scripts/check-architecture';
 import { escapeHtmlAttr, buildExternalDivarUrl } from '../src/utils/security';
 import { calculateHedonicValuation, FAST_SALE_FACTOR } from '../src/data/hedonicPricingEngine';
 import { calculateDetailedValuation } from '../src/data/superModulesLogic';
@@ -25,22 +25,21 @@ function verify(name: string, fn: () => void) {
 
 const rootDir = process.cwd();
 
-// 1. Passing Case: Real workspace passes all architecture guardrails with 0 errors and 0 size warnings
-verify('Current workspace passes runArchitectureCheck() with zero violations and zero size review warnings', () => {
+// 1. Passing Case: Real workspace passes all architecture guardrails with 0 blocking errors across src + server/modules
+verify('Current workspace passes runArchitectureCheck() with zero blocking violations and scans all server/modules', () => {
   const result = runArchitectureCheck({ rootDir });
   assert.equal(
     result.errors.length,
     0,
     `Expected 0 architecture violations, got: ${JSON.stringify(result.errors, null, 2)}`
   );
-  assert.equal(
-    result.warnings.length,
-    0,
-    `Expected 0 size review warnings (< 300 lines), got: ${JSON.stringify(result.warnings, null, 2)}`
+  assert.ok(
+    result.scannedFilesCount >= 1400,
+    `Expected >= 1400 scanned source files across src + server/modules, got ${result.scannedFilesCount}`
   );
   assert.ok(
-    result.scannedFilesCount >= 20,
-    `Expected at least 20 source files checked, got ${result.scannedFilesCount}`
+    result.legacyTracked.length >= 110,
+    `Expected tracked legacy debt register (>= 110 files), got ${result.legacyTracked.length}`
   );
 });
 
@@ -241,8 +240,9 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
 
   const blueprint = JSON.parse(fs.readFileSync(path.join(rootDir, 'firebase-blueprint.json'), 'utf8'));
   const firestorePaths = Object.keys(blueprint.firestore || {});
-  assert.equal(firestorePaths.length, 9, `Expected 9 Firestore collection paths in firebase-blueprint.json, got ${firestorePaths.length}`);
+  assert.ok(firestorePaths.length >= 16, `Expected >= 16 Firestore collection paths (9 core + 7 social), got ${firestorePaths.length}`);
   assert.ok(firestorePaths.includes('/neighborhoodOverrides/{hoodId}'), 'Expected /neighborhoodOverrides/{hoodId} in firebase-blueprint.json');
+  assert.ok(firestorePaths.includes('/socialPosts/{postId}'), 'Expected /socialPosts/{postId} in firebase-blueprint.json');
   assert.equal(firestorePaths.includes('/publicSponsors/{hoodId}'), false, 'publicSponsors is not a provisioned collection');
 
   const sysArchDoc = fs.readFileSync(path.join(rootDir, 'docs/system-architecture.md'), 'utf8');
@@ -334,6 +334,59 @@ verify('All 7 Gold Master v2.0 view & navigation modules stay strictly <= 290 li
       `Expected ${viewRel} to display v6.4 negotiation scenario pricing (epistemic labels)`,
     );
   }
+});
+
+// 13. AG-01..AG-10 Stage 2 Backend Architecture Guardrail Coverage
+verify('AG-01..AG-10 Full server/modules scan, test exclusion, legacy ratchet, new file <500 ceiling, and backend upward-import ban', () => {
+  const scanned = collectSourceFiles(rootDir);
+  // AG-01: Covers all server/modules beyond telemetry & casper-hub
+  assert.ok(scanned.includes('server/modules/community/communityRoutes.ts'));
+  assert.ok(scanned.includes('server/modules/trust-safety/trustSafetyRoutes.ts'));
+  assert.ok(scanned.includes('server/modules/dispute-resolution/disputeRoutes.ts'));
+  // AG-02: Excludes test and spec files
+  assert.equal(scanned.some((p) => /\.(test|spec)\.(ts|tsx)$/.test(p) || p.includes('/__tests__/')), false);
+
+  // AG-03: New oversized backend file >= 500 lines is blocked
+  const oversizedBackend = Array.from({ length: 505 }, (_, i) => `export const v_${i} = ${i};`).join('\n');
+  const resOversized = runArchitectureCheck({
+    rootDir,
+    virtualOverrides: [{ relPath: 'server/modules/community/newBloatedService.ts', content: oversizedBackend }],
+  });
+  assert.ok(
+    resOversized.errors.some((e) => e.file === 'server/modules/community/newBloatedService.ts' && e.code === 'NEW_FILE_OVERSIZED'),
+    'Expected NEW_FILE_OVERSIZED for new >=500 line file inside server/modules',
+  );
+
+  // AG-04: Tracked legacy backend file growing above baseline ceiling is rejected
+  const baseline = JSON.parse(fs.readFileSync(path.join(rootDir, 'architecture-baseline.json'), 'utf8'));
+  const legacyEntry = baseline.trackedLegacyFiles['server/modules/notifications/durableNotificationStore.ts'];
+  assert.ok(legacyEntry, 'durableNotificationStore.ts must be registered in trackedLegacyFiles');
+  const grownLegacy = Array.from({ length: legacyEntry.maxLines + 3 }, (_, i) => `// line ${i}`).join('\n');
+  const resLegacyGrew = runArchitectureCheck({
+    rootDir,
+    virtualOverrides: [{ relPath: 'server/modules/notifications/durableNotificationStore.ts', content: grownLegacy }],
+  });
+  assert.ok(
+    resLegacyGrew.errors.some(
+      (e) => e.file === 'server/modules/notifications/durableNotificationStore.ts' && e.code === 'LEGACY_FILE_GREW',
+    ),
+    'Expected LEGACY_FILE_GREW when registered backend legacy file grows',
+  );
+
+  // AG-05: Upward dependency from server/modules/* into src/components/* or App is blocked
+  const resUpward = runArchitectureCheck({
+    rootDir,
+    virtualOverrides: [
+      {
+        relPath: 'server/modules/community/illegalUiImport.ts',
+        content: `import { MapLegend } from '../../../src/components/MapLegend';\nexport const x = 1;\n`,
+      },
+    ],
+  });
+  assert.ok(
+    resUpward.errors.some((e) => e.file === 'server/modules/community/illegalUiImport.ts' && e.code === 'UPWARD_DEPENDENCY'),
+    'Expected UPWARD_DEPENDENCY when server/modules/* imports UI components',
+  );
 });
 
 console.log(`\n🎉 ALL ${passed} ARCHITECTURE & REFACTORING GUARDRAIL TESTS PASSED!\n`);

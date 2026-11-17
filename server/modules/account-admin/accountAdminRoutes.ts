@@ -5,7 +5,7 @@ import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../.
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { serverDataCorrections, serverPublishedBargains } from '../../../src/utils/serverPublisherBargains';
 import { saveDiskPersistedCache } from '../../../src/utils/serverMarketPulseEngine';
-import { communityServerStore } from '../community/communityStore';
+import { communityUnifiedRepository } from '../community/communityUnifiedRepository';
 import { serverCommsEngine } from '../communications/commsStore';
 import {
   appendServerAdminAuditLog,
@@ -193,7 +193,7 @@ export function registerAccountAdminRoutes(
       queues: {
         pendingUserListings,
         listingReports: serverDataCorrections.filter((c) => c.status === 'pending_review').length,
-        pendingProviders: communityServerStore.corrections.filter((c) => c.status === 'submitted').length,
+        pendingProviders: await communityUnifiedRepository.countPendingCorrections().catch(() => 0),
         openComplaints: state.disputes.filter((d) => d.status === 'submitted' || d.status === 'under_review').length,
         pendingSponsorRequests: 0,
         liveBargainsCount: liveBargains.filter((b) => b.lifecycleState === 'published').length,

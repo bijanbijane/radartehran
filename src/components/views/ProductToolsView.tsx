@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Calculator, Compass, ChevronRight, ArrowUpRight, FileCheck, Search, Sparkles, X,
 } from 'lucide-react';
+import type { User } from 'firebase/auth';
+import type { CityId } from '../../data/multiCityData';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
 import type { FeatureFlags } from '../../types/models';
@@ -40,6 +42,7 @@ export interface ProductToolsViewProps {
   onOpenCompare: () => void;
   featureFlags: FeatureFlags;
   activeCity?: string;
+  currentUser?: any;
   targetSqm?: number;
   activeSubTab?: ToolsSubTabId;
   isDevEnvironment?: boolean;
@@ -209,7 +212,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         </div>
       </div>
 
-      {showValuationWorkspace && evaluatedNeighborhoods && onSelectNeighborhood && <React.Suspense fallback={null}><ValuationWorkspacePage evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood} onSelectNeighborhood={onSelectNeighborhood} onOpenModalCalculator={onOpenHedonic} /></React.Suspense>}
+      {showValuationWorkspace && evaluatedNeighborhoods && onSelectNeighborhood && <React.Suspense fallback={null}><ValuationWorkspacePage evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood} activeCity={p.activeCity as CityId | undefined} currentUser={p.currentUser} onSelectNeighborhood={onSelectNeighborhood} onOpenModalCalculator={onOpenHedonic} /></React.Suspense>}
       {canAccessUiLab && showUiLab && <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} isDevEnvironment={isDevEnvironment} /></React.Suspense>}
       {showEmbeddedLab && (
         <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3" data-testid="decision-lab-panel">

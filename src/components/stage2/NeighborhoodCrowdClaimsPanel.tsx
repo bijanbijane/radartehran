@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles, AlertTriangle } from 'lucide-react';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles, AlertTriangle, Lock } from 'lucide-react';
+import { auth } from '../../firebase';
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import {
+  buildCrowdClaimRequestBody,
+  buildCrowdVoteRequestBody,
+  getCrowdAuthorizedHeaders,
+  resolveCrowdMutationHttpError,
+} from './crowdClaimsClientHelper';
 
 export interface CrowdClaimItem {
   id: string; hoodId: number; hoodName: string; cityKey: string;
@@ -82,8 +90,10 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [votedIds, setVotedIds] = useState<Record<string, 'UP' | 'DOWN'>>({});
-  const [sessionAuthorUid] = useState(() => `usr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`);
-  const [sessionVoterUid] = useState(() => `voter_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
+  const [authReady, setAuthReady] = useState<boolean>(() => Boolean(auth.currentUser));
+  const [submitting, setSubmitting] = useState(false);
+  const [votingClaimId, setVotingClaimId] = useState<string | null>(null);
 
   const [authorName, setAuthorName] = useState('');
   const [category, setCategory] = useState('ALLEY_LIVABILITY');
@@ -92,6 +102,20 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [body, setBody] = useState('');
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthReady(true);
+      if (!user) {
+        setShowForm(false);
+        setSubmitMessage(null);
+        setErrorMessage(null);
+        setVotedIds({});
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const fetchClaims = useCallback(async () => {
     setLoading(true);
@@ -129,53 +153,109 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
 
   useEffect(() => { fetchClaims(); }, [fetchClaims]);
 
+  const canMutate = authReady && Boolean(currentUser);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim()) return;
+    if (submitting || !title.trim() || !body.trim()) return;
     setSubmitMessage(null);
     setErrorMessage(null);
+    const authHeaders = await getCrowdAuthorizedHeaders(currentUser);
+    if (!authHeaders.ok) {
+      setErrorMessage('messageFa' in authHeaders ? authHeaders.messageFa : 'احراز هویت الزامی است.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const res = await fetch('/api/v1/claims', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hoodId, cityId: cityKey, authorUid: sessionAuthorUid,
-          authorDisplayName: authorName.trim() || 'شهروند رادار', category,
-          targetLevel: claimType === 'VERIFIED_FACT_CANDIDATE' ? 'STREET_SEGMENT' : 'HOOD',
-          streetName: title.trim(), narrativeText: body.trim(),
-          baseHoodPriceSqmOverride: basePriceSqm, intlCurrency,
-        }),
+        method: 'POST',
+        headers: authHeaders.headers,
+        body: JSON.stringify(
+          buildCrowdClaimRequestBody({
+            hoodId,
+            cityKey,
+            authorDisplayName: authorName,
+            category,
+            claimType,
+            streetName: title,
+            narrativeText: body,
+            basePriceSqm,
+            intlCurrency,
+          }),
+        ),
       });
       if (res.ok) {
         setTitle(''); setBody(''); setShowForm(false);
         setSubmitMessage('گزارش میدانی شما ثبت شد و در صف اعتبارسنجی معرفتی قرار گرفت (+۱۵ امتیاز).');
         await fetchClaims();
       } else {
-        const errData = await res.json().catch(() => ({}));
-        setErrorMessage(String(errData.message || errData.code || 'گزارش ارسالی شرایط اعتبارسنجی معرفتی (حداقل طول یا امنیت محتوا) را احراز نکرد.'));
+        const errData = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        setErrorMessage(resolveCrowdMutationHttpError(res.status, errData));
       }
     } catch {
       setErrorMessage('خطا در ارسال گزارش. لطفاً دوباره تلاش کنید.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleVote = async (claimId: string, vote: 'UP' | 'DOWN') => {
-    if (votedIds[claimId]) return;
-    setVotedIds((prev) => ({ ...prev, [claimId]: vote }));
-    const applyDelta = (list: CrowdClaimItem[]) =>
-      list.map((c) => c.id === claimId ? { ...c, upvotes: vote === 'UP' ? c.upvotes + 1 : c.upvotes, downvotes: vote === 'DOWN' ? c.downvotes + 1 : c.downvotes } : c);
-
-    if (claimId.startsWith('seed_')) {
-      setClaims(applyDelta);
-      setVerifiedRefs(applyDelta);
+    if (votedIds[claimId] || votingClaimId === claimId) return;
+    setErrorMessage(null);
+    const authHeaders = await getCrowdAuthorizedHeaders(currentUser);
+    if (!authHeaders.ok) {
+      setErrorMessage('messageFa' in authHeaders ? authHeaders.messageFa : 'احراز هویت الزامی است.');
       return;
     }
+
+    const applyDelta = (list: CrowdClaimItem[], delta: 1 | -1) =>
+      list.map((c) => c.id === claimId
+        ? {
+            ...c,
+            upvotes: vote === 'UP' ? Math.max(0, c.upvotes + delta) : c.upvotes,
+            downvotes: vote === 'DOWN' ? Math.max(0, c.downvotes + delta) : c.downvotes,
+          }
+        : c);
+
+    setVotedIds((prev) => ({ ...prev, [claimId]: vote }));
+    setClaims((prev) => applyDelta(prev, 1));
+    setVerifiedRefs((prev) => applyDelta(prev, 1));
+
+    if (claimId.startsWith('seed_')) return;
+
+    setVotingClaimId(claimId);
     try {
       const res = await fetch(`/api/v1/claims/${encodeURIComponent(claimId)}/vote`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voterUid: sessionVoterUid, direction: vote }),
+        method: 'POST',
+        headers: authHeaders.headers,
+        body: JSON.stringify(buildCrowdVoteRequestBody(vote)),
       });
-      if (res.ok) await fetchClaims();
-    } catch { /* ignore */ }
+      if (res.ok) {
+        await fetchClaims();
+      } else {
+        const errData = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        setVotedIds((prev) => {
+          const next = { ...prev };
+          delete next[claimId];
+          return next;
+        });
+        setClaims((prev) => applyDelta(prev, -1));
+        setVerifiedRefs((prev) => applyDelta(prev, -1));
+        setErrorMessage(resolveCrowdMutationHttpError(res.status, errData));
+      }
+    } catch {
+      setVotedIds((prev) => {
+        const next = { ...prev };
+        delete next[claimId];
+        return next;
+      });
+      setClaims((prev) => applyDelta(prev, -1));
+      setVerifiedRefs((prev) => applyDelta(prev, -1));
+      setErrorMessage('خطا در ثبت رأی. لطفاً دوباره تلاش کنید.');
+    } finally {
+      setVotingClaimId(null);
+    }
   };
 
   return (
@@ -188,17 +268,28 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
             <p className="text-xs text-slate-500 dark:text-slate-400">تفکیک «تاییدیه میدانی قابل راستی‌آزمایی» از «تجربه زیسته ساکنان» با امتیازدهی اعتبارسنجی</p>
           </div>
         </div>
-        <button type="button" onClick={() => setShowForm((v) => !v)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors">
+        <button
+          type="button"
+          disabled={!canMutate}
+          onClick={() => setShowForm((v) => !v)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold transition-colors"
+        >
           <MessageSquarePlus className="w-4 h-4" /><span>{showForm ? 'بستن فرم گزارش' : 'ثبت گزارش میدانی (+۱۵ امتیاز)'}</span>
         </button>
       </div>
+      {!canMutate && (
+        <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2">
+          <Lock className="w-4 h-4 shrink-0" />
+          <span>برای ثبت گزارش جدید یا رأی اعتبارسنجی، ابتدا با حساب کاربری معتبر وارد شوید. مشاهده گزارش‌های عمومی بدون ورود نیز فعال است.</span>
+        </div>
+      )}
       {submitMessage && (
         <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2"><CheckCircle2 className="w-4 h-4 shrink-0" /><span>{submitMessage}</span></div>
       )}
       {errorMessage && (
         <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2"><AlertTriangle className="w-4 h-4 shrink-0" /><span>{errorMessage}</span></div>
       )}
-      {showForm && (
+      {showForm && canMutate && (
         <form onSubmit={handleSubmit} className="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
@@ -225,7 +316,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">شرح دقیق و مستند</label>
             <textarea rows={2} required value={body} onChange={(e) => setBody(e.target.value)} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </div>
-          <div className="flex justify-end"><button type="submit" className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"><Send className="w-3.5 h-3.5" /><span>ثبت گزارش برای بررسی اهالی</span></button></div>
+          <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
         </form>
       )}
       {verifiedRefs.length > 0 && (
@@ -257,8 +348,8 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
                 <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 dark:text-slate-400">
                   <span>توسط: {c.authorDisplayName} • وزن اعتبار: {toPersianDigits(c.trustWeightScore)}٪</span>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => handleVote(c.id, 'UP')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 cursor-pointer"><ThumbsUp className="w-3 h-3" /><span>تایید ({toPersianDigits(c.upvotes)})</span></button>
-                    <button type="button" onClick={() => handleVote(c.id, 'DOWN')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-700 dark:text-rose-400 cursor-pointer"><ThumbsDown className="w-3 h-3" /><span>رد ({toPersianDigits(c.downvotes)})</span></button>
+                    <button type="button" disabled={!canMutate || Boolean(votedIds[c.id]) || votingClaimId === c.id} onClick={() => handleVote(c.id, 'UP')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 disabled:opacity-50 disabled:cursor-not-allowed text-emerald-700 dark:text-emerald-400 cursor-pointer"><ThumbsUp className="w-3 h-3" /><span>تایید ({toPersianDigits(c.upvotes)})</span></button>
+                    <button type="button" disabled={!canMutate || Boolean(votedIds[c.id]) || votingClaimId === c.id} onClick={() => handleVote(c.id, 'DOWN')} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 disabled:opacity-50 disabled:cursor-not-allowed text-rose-700 dark:text-rose-400 cursor-pointer"><ThumbsDown className="w-3 h-3" /><span>رد ({toPersianDigits(c.downvotes)})</span></button>
                   </div>
                 </div>
               </div>

@@ -89,6 +89,14 @@ Database ID: `ai-studio-e48df7a4-9535-4bf0-a948-61a6a0f37a6a` (Project: `gen-lan
 | `/appConfig/{configId}` | `'featureFlags'` or `'monetization'` | Public `get` (`list: false`) | Verified Admin only (`delete: false`) | Boolean feature flags (`isValidFeatureFlags`) or monetization settings |
 | `/userPreferences/{userId}` | `${request.auth.uid}` | Owner or Admin | Verified owner | `userId`, `favoriteHoodIds` (`list <= 25`, integers `1..999`), `updatedAtIso` |
 | `/admins/{adminId}` | `${uid}` | Verified Admin (`role == 'admin'`) | Managed out-of-band (`allow write: if false`) | `role: 'admin'`, `email` |
+| `/socialPosts/{postId}` & `/socialComments/{commentId}` | Generated Stage 3 ID (`isValidId`) | Public where visible & not soft-deleted; Admin/Author | Verified owner on create/edit; Admin for moderation | Unified discussions, Q&A, corrections, and research proposals (`titleFa <= 160`, `bodyFa <= 600`) |
+| `/socialReactions/{reactionId}`, `/socialFollows/{followId}`, `/socialProfiles/{userId}` | Owner-scoped / UID | Private reactions/follows; profile per `visibility` | Verified owner matching `request.auth.uid` | Zero raw PII; reactions & follows deduplicated server-side |
+| `/socialReports/{reportId}` & `/socialIdempotency/{keyId}` | Report / Key ID | Reporter `get` or Admin; Admin for idempotency | Verified reporter on submit (`status == 'submitted'`); Admin update | Confidential abuse reports, appeals, and mutation idempotency ledger |
+| `/socialModerationCases/{caseId}` | `case_{targetType}_{targetId}` | Admin only | Server / Verified Admin only (`isAdmin() && isValidId(caseId)`) | `targetType`, `targetId`, `status` (`OPEN..CLOSED`), `reportCount`, `claimedByUid`, `lastDecision` |
+| `/socialModerationEvents/{eventId}` | Generated event ID | Admin only | Append-only create (`allow update, delete: if false`) | `caseId`, `targetId`, `eventType`, `actorUid`, `createdAtIso` |
+| `/socialOutbox/{outboxId}` | Generated outbox ID | Admin only | Server / Verified Admin only (`isAdmin() && isValidId(outboxId)`) | `eventType`, `schemaVersion`, `status` (`PENDING..DEAD_LETTER`), `attemptCount`, zero PII |
+
+> **Wave-1 Platform Extensions (Stages 4–28)**: See [`docs/architecture/wave1-stages-4-to-28.md`](./architecture/wave1-stages-4-to-28.md) for the Modular Monolith implementation across Trust & Safety, Durable Outbox, Persian Social Search/Feed, Governed Telemetry, Resilience, Cost/Release Governance, Legal/Commercial Readiness, AI Orchestration, Integration Gateway Pilot, Data Exchange Lifecycle, and Market Intelligence.
 
 ## 4. Epistemic Market Pricing (UI ↔ Aggregator)
 

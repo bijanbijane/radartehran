@@ -1,16 +1,17 @@
-/** @file src/features/admin/components/AdminGovernanceModerationWorkspace.tsx — Content, Listing Reports & Service Complaints Moderation */
-import React, { useState } from 'react';
+/** @file src/features/admin/components/AdminGovernanceModerationWorkspace.tsx — Stage 81 & 86 Server-Authoritative Content, Knowledge & Service Moderation */
+import React, { useEffect, useState } from 'react';
+import type { User } from 'firebase/auth';
 import { CheckCircle2, FileWarning, MessageSquareWarning, ShieldAlert, XCircle } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import { loadListingReports, loadMyListings } from '../../properties/services/listingService';
 import { loadServiceComplaints } from '../../services/services/serviceWorkflowService';
+import { KNOWLEDGE_PUBLICATIONS } from '../../knowledge/services/knowledgeSearchService';
 import {
-  KNOWLEDGE_PUBLICATIONS,
-  loadKnowledgePublicationStatuses,
-  transitionKnowledgePublicationStatus,
-} from '../../knowledge/services/knowledgeSearchService';
+  getAdminKnowledgeGovernanceState,
+  transitionAdminKnowledgePublicationStatus,
+} from '../../knowledge/services/knowledgeApiClient';
+import type { KnowledgeEditorialRole, KnowledgePublicationStatus } from '../../knowledge/types/knowledge.types';
 import {
-  appendAdminAuditLog,
   assertAdminGovernancePermission,
   moderateUserPropertyListing,
   resolveServiceComplaint,
@@ -20,21 +21,40 @@ import { AdminCommunityModerationPanel } from './AdminCommunityModerationPanel';
 
 export interface AdminGovernanceModerationWorkspaceProps {
   section: 'content' | 'users';
+  currentUser?: User | null;
   isVerifiedAdmin: boolean;
   activeRole: AdminGovernanceRole;
 }
 
 export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerationWorkspaceProps> = ({
   section,
+  currentUser,
   isVerifiedAdmin,
   activeRole,
 }) => {
   const [listings, setListings] = useState(() => loadMyListings());
   const [reports] = useState(() => loadListingReports());
-  const [pubStatuses, setPubStatuses] = useState(() => loadKnowledgePublicationStatuses());
+  const [pubStatuses, setPubStatuses] = useState<Record<string, KnowledgePublicationStatus>>(() => {
+    const initial: Record<string, KnowledgePublicationStatus> = {};
+    for (const p of KNOWLEDGE_PUBLICATIONS) initial[p.id] = p.status ?? p.defaultPublicationStatus;
+    return initial;
+  });
+  const [editorialRole, setEditorialRole] = useState<KnowledgeEditorialRole>('release_manager');
+  const [busyPubId, setBusyPubId] = useState<string | null>(null);
   const [complaints, setComplaints] = useState(() => loadServiceComplaints());
   const [noteInput, setNoteInput] = useState('بررسی تخصصی مشخصات و تطبیق مدارک انجام شد.');
   const [feedbackFa, setFeedbackFa] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (section !== 'content') return;
+    const ctrl = new AbortController();
+    getAdminKnowledgeGovernanceState(currentUser, ctrl.signal).then((res) => {
+      if (!ctrl.signal.aborted && res.ok && res.data && Object.keys(res.data.statuses).length > 0) {
+        setPubStatuses(res.data.statuses);
+      }
+    });
+    return () => ctrl.abort();
+  }, [section, currentUser?.uid]);
 
   if (section === 'content') {
     const canModerate = assertAdminGovernancePermission({
@@ -55,6 +75,33 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
       setFeedbackFa(res.ok ? `وضعیت آگهی به «${nextStatus}» تغییر یافت و در لاگ ممیزی ثبت شد.` : res.errorFa || 'خطا');
     };
 
+    const handleKnowledgeTransition = async (pubId: string, toStatus: KnowledgePublicationStatus) => {
+      if (!canModerate.allowed) {
+        setFeedbackFa(canModerate.errorFa || 'عدم مجوز');
+        return;
+      }
+      setBusyPubId(pubId);
+      const res = await transitionAdminKnowledgePublicationStatus({
+        publicationId: pubId,
+        toStatus,
+        actorUserId: currentUser?.uid || `admin-${activeRole}`,
+        actorRole: editorialRole,
+        reasonFa: noteInput,
+        currentUser,
+      });
+      setBusyPubId(null);
+      if (!res.ok) {
+        setFeedbackFa(res.errorFa || 'تغییر وضعیت انتشار در سرور رد شد؛ وضعیت قبلی حفظ گردید.');
+        return;
+      }
+      if (res.data?.statuses) {
+        setPubStatuses(res.data.statuses);
+      } else {
+        setPubStatuses((prev) => ({ ...prev, [pubId]: toStatus }));
+      }
+      setFeedbackFa(`وضعیت گزارش «${pubId}» در سرور به «${toStatus}» تغییر یافت و در تاریخچه تصمیم ثبت شد.`);
+    };
+
     return (
       <div data-testid="admin-content-moderation-workspace" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -67,17 +114,35 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
           </span>
         </div>
 
-        <div>
-          <label htmlFor="admin-moderation-note" className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-            دلیل بررسی / یادداشت اجباری ممیز (ثبت در Audit Log):
-          </label>
-          <input
-            id="admin-moderation-note"
-            type="text"
-            value={noteInput}
-            onChange={(e) => setNoteInput(e.target.value)}
-            className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="sm:col-span-2">
+            <label htmlFor="admin-moderation-note" className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+              دلیل بررسی / یادداشت اجباری ممیز (حداقل ۵ نویسه):
+            </label>
+            <input
+              id="admin-moderation-note"
+              type="text"
+              value={noteInput}
+              onChange={(e) => setNoteInput(e.target.value)}
+              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+            />
+          </div>
+          <div>
+            <label htmlFor="admin-editorial-role" className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+              نقش تحریریه دانش:
+            </label>
+            <select
+              id="admin-editorial-role"
+              value={editorialRole}
+              onChange={(e) => setEditorialRole(e.target.value as KnowledgeEditorialRole)}
+              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
+            >
+              <option value="release_manager">مدیر انتشار (Release Manager)</option>
+              <option value="technical_reviewer">داور فنی (Technical Reviewer)</option>
+              <option value="editor">سردبیر (Editor)</option>
+              <option value="author">نویسنده پژوهشی (Author)</option>
+            </select>
+          </div>
         </div>
 
         {!canModerate.allowed && (
@@ -134,53 +199,34 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
         )}
 
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2" data-testid="admin-knowledge-publications-queue">
-          <strong className="font-black text-slate-800 dark:text-slate-100 block">وضعیت انتشار گزارش‌ها و پایگاه دانش ({toPersianNum(KNOWLEDGE_PUBLICATIONS.length)})</strong>
-          {KNOWLEDGE_PUBLICATIONS.slice(0, 4).map((pub) => {
-            const st = pubStatuses[pub.id] || pub.defaultPublicationStatus;
+          <strong className="font-black text-slate-800 dark:text-slate-100 block">
+            گردش‌کار تحریریه و وضعیت انتشار سرور پایگاه دانش ({toPersianNum(KNOWLEDGE_PUBLICATIONS.length)})
+          </strong>
+          {KNOWLEDGE_PUBLICATIONS.slice(0, 6).map((pub) => {
+            const st = pubStatuses[pub.id] || pub.status || pub.defaultPublicationStatus;
+            const isBusy = busyPubId === pub.id;
             return (
               <div key={pub.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-bold text-slate-900 dark:text-white truncate">{pub.titleFa}</div>
-                  <div className="text-[10.5px] text-slate-500">نسخه {pub.version} · وضعیت فعلی: <strong>{st}</strong></div>
+                  <div className="text-[10.5px] text-slate-500">
+                    نسخه {pub.version} · وضعیت سرور: <strong>{st}</strong> · داور فنی: {pub.technicalReviewer.nameFa}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!canModerate.allowed) { setFeedbackFa(canModerate.errorFa || 'عدم مجوز'); return; }
-                      setPubStatuses(transitionKnowledgePublicationStatus(pub.id, 'published'));
-                      appendAdminAuditLog({
-                        actorRole: activeRole,
-                        actorLabelFa: 'ممیز محتوا و دانش',
-                        actionCode: 'moderate_knowledge_pub',
-                        targetType: 'listing',
-                        targetId: pub.id,
-                        reasonFa: noteInput,
-                        severity: 'info',
-                      });
-                      setFeedbackFa(`انتشار «${pub.id}» به وضعیت published ثبت شد.`);
-                    }}
-                    className="px-2 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer"
+                    disabled={isBusy}
+                    onClick={() => handleKnowledgeTransition(pub.id, 'published')}
+                    className="px-2 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer disabled:opacity-50"
                   >
                     انتشار
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!canModerate.allowed) { setFeedbackFa(canModerate.errorFa || 'عدم مجوز'); return; }
-                      setPubStatuses(transitionKnowledgePublicationStatus(pub.id, 'archived'));
-                      appendAdminAuditLog({
-                        actorRole: activeRole,
-                        actorLabelFa: 'ممیز محتوا و دانش',
-                        actionCode: 'archive_knowledge_pub',
-                        targetType: 'listing',
-                        targetId: pub.id,
-                        reasonFa: noteInput,
-                        severity: 'warning',
-                      });
-                      setFeedbackFa(`گزارش «${pub.id}» به آرشیو منتقل شد.`);
-                    }}
-                    className="px-2 py-1 rounded-lg border border-slate-400 text-slate-700 dark:text-slate-200 font-bold cursor-pointer"
+                    disabled={isBusy}
+                    onClick={() => handleKnowledgeTransition(pub.id, 'archived')}
+                    className="px-2 py-1 rounded-lg border border-slate-400 text-slate-700 dark:text-slate-200 font-bold cursor-pointer disabled:opacity-50"
                   >
                     آرشیو
                   </button>
@@ -192,6 +238,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
 
         <AdminCommunityModerationPanel
           isVerifiedAdmin={isVerifiedAdmin}
+          currentUser={currentUser}
           activeRole={activeRole}
           canModerate={canModerate.allowed}
           moderatorNoteFa={noteInput}

@@ -115,13 +115,16 @@ import {
   togglePostReaction,
 } from '../services/communityEngagementService';
 import {
+  assertAuthenticatedCommunityWriter,
   findSimilarQuestionTitles,
   loadCommunityPosts,
   replyToCommunityPost,
+  resolveAuthenticatedCommunityUser,
   resolveReplyDepth,
   sanitizePublicProfile,
 } from '../services/communityTrustService';
 import { registerCommunityRoutes } from '../../../../server/modules/community/communityRoutes';
+import { resetCommunityServerStoreForTests } from '../../../../server/modules/community/communityStore';
 
 test('Stage 25 engagement: 4-reaction dedup, max-depth-2 replies, edit history, Q&A duplicate hints & zero-PII masking', () => {
   const author = buildUserTrustProfile({
@@ -206,7 +209,36 @@ test('Stage 25 engagement: 4-reaction dedup, max-depth-2 replies, edit history, 
   assert.equal(maskedPublic, null);
 });
 
-test('Stage 25 community Express routes enforce authentication on write/admin endpoints', async () => {
+test('Stage 73-80 identity isolation: rejects fake local UIDs, separates email vs phone verification, denies guest writes', () => {
+  const guest = resolveAuthenticatedCommunityUser(null);
+  assert.equal(guest.isAuthenticated, false);
+  assert.equal(guest.userId, '');
+  assert.equal(guest.identityStatus, 'unverified');
+
+  const fakeUser = resolveAuthenticatedCommunityUser({ uid: 'current_local_user', displayName: 'Fake' });
+  assert.equal(fakeUser.isAuthenticated, false);
+  assert.equal(fakeUser.userId, '');
+
+  assert.equal(assertAuthenticatedCommunityWriter('current_local_user').ok, false);
+  assert.equal(assertAuthenticatedCommunityWriter(null).ok, false);
+  assert.equal(assertAuthenticatedCommunityWriter({ uid: 'firebase_uid_42' }).ok, true);
+
+  const emailOnlyUser = resolveAuthenticatedCommunityUser({
+    uid: 'firebase_uid_email',
+    displayName: 'مریم پژوهشگر',
+    emailVerified: true,
+    phoneNumber: null,
+  });
+  assert.equal(emailOnlyUser.isAuthenticated, true);
+  assert.equal(emailOnlyUser.isEmailVerified, true);
+  assert.equal(emailOnlyUser.isPhoneVerified, false);
+  assert.equal(emailOnlyUser.identityStatus, 'verified_email');
+  assert.equal(emailOnlyUser.participationScore, 0);
+  assert.equal(emailOnlyUser.verifiedCredentialFa, null);
+});
+
+test('Stage 25 & 74-80 community Express routes enforce auth on all write/privacy/admin endpoints and serve public/member reads', async () => {
+  resetCommunityServerStoreForTests();
   const app = express();
   app.use(express.json());
   registerCommunityRoutes(app);
@@ -219,15 +251,36 @@ test('Stage 25 community Express routes enforce authentication on write/admin en
     assert.equal(pubRes.status, 200);
     const pubJson = await pubRes.json();
     assert.equal(pubJson.status, 'ok');
-    assert.ok(Array.isArray(pubJson.topics));
+    assert.equal(pubJson.topics.length, 14);
 
-    const writeUnauth = await fetch(`http://127.0.0.1:${port}/api/community/discussions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titleFa: 'تست غیرمجاز', bodyFa: 'متن تست طولانی' }),
-    });
-    assert.equal(writeUnauth.status, 401);
+    const membersRes = await fetch(`http://127.0.0.1:${port}/api/community/members?includeSeeds=false`);
+    assert.equal(membersRes.status, 200);
+    const membersJson = await membersRes.json();
+    assert.equal(Array.isArray(membersJson.items), true);
+    assert.equal(membersJson.items.length, 0);
+
+    const rpSeedRes = await fetch(`http://127.0.0.1:${port}/api/community/research-proposals?includeSeeds=false`);
+    assert.equal(rpSeedRes.status, 200);
+    const rpSeedJson = await rpSeedRes.json();
+    assert.equal(rpSeedJson.items.length, 0);
+
+    for (const [method, endpoint, body] of [
+      ['POST', '/api/community/discussions', { titleFa: 'تست غیرمجاز', bodyFa: 'متن تست طولانی' }],
+      ['PATCH', '/api/community/discussions/post-seed-1', { titleFa: 'عنوان جدید', bodyFa: 'متن ویرایش‌شده غیرمجاز' }],
+      ['POST', '/api/community/questions/q-seed-1/select-answer', { answerId: 'ans-seed-1' }],
+      ['POST', '/api/community/research-proposals', { titleFa: 'پیشنهاد پژوهش', questionFa: 'پرسش پژوهشی تست کافی' }],
+      ['POST', '/api/community/topics/topic-tehran-market/follow', {}],
+      ['PATCH', '/api/account/community/privacy', { privacy: { visibility: 'private' } }],
+    ] as const) {
+      const res = await fetch(`http://127.0.0.1:${port}${endpoint}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      assert.equal(res.status, 401, `${method} ${endpoint} should require auth`);
+    }
   } finally {
     await new Promise<void>((resolve) => srv.close(() => resolve()));
   }
 });
+

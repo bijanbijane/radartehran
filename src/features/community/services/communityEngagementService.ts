@@ -1,4 +1,4 @@
-/** @file src/features/community/services/communityEngagementService.ts — Stage 25 Q&A, Reactions, Topics, Profiles & Appeals Engine */
+/** @file src/features/community/services/communityEngagementService.ts — Stage 25 & 73–79 Q&A, Reactions, Topics, Profiles & Appeals Engine */
 import { sanitizeInput } from '../../../utils/security';
 import {
   COMMUNITY_MEMBER_PROFILES, COMMUNITY_SEED_QUESTIONS, COMMUNITY_TOPICS_REGISTRY,
@@ -8,27 +8,35 @@ import { readCommunityJson, writeCommunityJson } from '../data/communitySeedData
 import type {
   CommunityDiscussionPost, CommunityProfile, CommunityQuestionItem, CommunityTrustBadgeProfile,
   DiscussionModerationStatus, ModerationActionRecord, ModerationAppeal, ProfileVisibilityLevel,
-  ReactionCounts, ReactionType, ReputationEvent, TopicItem,
+  ReactionCounts, ReactionType, ReputationAxis, ReputationBreakdown, ReputationEvent, TopicItem,
 } from '../types/community.types';
 import {
-  assertCommunityOwner, loadCommunityAbuseReports, loadCommunityPosts, moderateCommunityPost,
-  sanitizePublicProfile, validateCommunityTextSafety,
+  assertCommunityOwner, COMMUNITY_AUTH_REQUIRED_FA, isRealAuthenticatedUid, loadCommunityAbuseReports,
+  loadCommunityPosts, moderateCommunityPost, sanitizePublicProfile, validateCommunityTextSafety,
 } from './communityTrustService';
 
 const QUESTIONS_KEY = 'radar_community_questions_v1';
-const FOLLOWED_TOPICS_KEY = 'radar_community_followed_topics_v1';
-const MY_PROFILE_KEY = 'radar_community_my_profile_v1';
+const FOLLOWED_TOPICS_KEY = 'radar_community_followed_topics_v2';
+const MY_PROFILE_KEY = 'radar_community_my_profile_v2';
 const MOD_ACTIONS_KEY = 'radar_community_mod_actions_v1';
 const APPEALS_KEY = 'radar_community_appeals_v1';
 const REP_EVENTS_KEY = 'radar_community_rep_events_v1';
 const DISCUSSIONS_KEY = 'radar_community_discussions_v1';
 const EMPTY_COUNTS: ReactionCounts = { helpful: 0, agree: 0, needs_source: 0, disagree: 0 };
 
-function applyBoundedReaction(
+export function applyBoundedReaction(
   countsRaw: ReactionCounts | undefined, byUserRaw: Record<string, ReactionType> | undefined, userId: string, reaction: ReactionType,
 ): { reactionCounts: ReactionCounts; reactionsByUser: Record<string, ReactionType> } {
-  const counts: ReactionCounts = { ...(countsRaw ?? EMPTY_COUNTS) };
+  const counts: ReactionCounts = {
+    helpful: Math.max(0, countsRaw?.helpful ?? 0),
+    agree: Math.max(0, countsRaw?.agree ?? 0),
+    needs_source: Math.max(0, countsRaw?.needs_source ?? 0),
+    disagree: Math.max(0, countsRaw?.disagree ?? 0),
+  };
   const byUser: Record<string, ReactionType> = { ...(byUserRaw ?? {}) };
+  if (!isRealAuthenticatedUid(userId)) {
+    return { reactionCounts: counts, reactionsByUser: byUser };
+  }
   const prev = byUser[userId];
   if (prev === reaction) {
     counts[reaction] = Math.max(0, (counts[reaction] ?? 0) - 1);
@@ -49,10 +57,14 @@ export function submitCommunityQuestion(params: {
   titleFa: string; bodyFa: string; neighborhoodId: number; neighborhoodNameFa: string;
   topicId: string; tags?: string[]; authorProfile: CommunityTrustBadgeProfile;
 }): { ok: boolean; items: CommunityQuestionItem[]; errorFa?: string } {
+  const current = loadCommunityQuestions();
+  if (!isRealAuthenticatedUid(params.authorProfile?.userId)) {
+    return { ok: false, items: current, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
+  }
   const safeTitle = sanitizeInput(params.titleFa, 140), safeBody = sanitizeInput(params.bodyFa, 500);
-  if (safeTitle.length < 8) return { ok: false, items: loadCommunityQuestions(), errorFa: 'عنوان پرسش باید حداقل ۸ کاراکتر واضح داشته باشد.' };
+  if (safeTitle.length < 8) return { ok: false, items: current, errorFa: 'عنوان پرسش باید حداقل ۸ کاراکتر واضح داشته باشد.' };
   const safety = validateCommunityTextSafety(safeBody);
-  if (!safety.ok) return { ok: false, items: loadCommunityQuestions(), errorFa: safety.errorFa };
+  if (!safety.ok) return { ok: false, items: current, errorFa: safety.errorFa };
   const nextItem: CommunityQuestionItem = {
     id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, titleFa: safeTitle, bodyFa: safeBody,
     neighborhoodId: params.neighborhoodId, neighborhoodNameFa: sanitizeInput(params.neighborhoodNameFa, 60),
@@ -61,7 +73,7 @@ export function submitCommunityQuestion(params: {
     ownerUserId: params.authorProfile.userId, authorProfile: params.authorProfile, status: 'open',
     answers: [], followerIds: [params.authorProfile.userId], createdAtIso: new Date().toISOString(), createdAtFa: 'امروز',
   };
-  const next = [nextItem, ...loadCommunityQuestions()];
+  const next = [nextItem, ...current];
   writeCommunityJson(QUESTIONS_KEY, next);
   return { ok: true, items: next };
 }
@@ -69,9 +81,12 @@ export function submitCommunityQuestion(params: {
 export function submitQuestionAnswer(params: {
   questionId: string; bodyFa: string; sourceReferenceFa?: string; authorProfile: CommunityTrustBadgeProfile;
 }): { ok: boolean; items: CommunityQuestionItem[]; errorFa?: string } {
+  const current = loadCommunityQuestions();
+  if (!isRealAuthenticatedUid(params.authorProfile?.userId)) {
+    return { ok: false, items: current, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
+  }
   const safeBody = sanitizeInput(params.bodyFa, 600);
   const safety = validateCommunityTextSafety(safeBody);
-  const current = loadCommunityQuestions();
   if (!safety.ok) return { ok: false, items: current, errorFa: safety.errorFa };
   const q = current.find((item) => item.id === params.questionId);
   if (!q) return { ok: false, items: current, errorFa: 'پرسش یافت نشد.' };
@@ -110,6 +125,7 @@ export function toggleAskerSelectedAnswer(questionId: string, answerId: string, 
 }
 
 export function togglePostReaction(postId: string, userId: string, reaction: ReactionType): CommunityDiscussionPost[] {
+  if (!isRealAuthenticatedUid(userId)) return loadCommunityPosts();
   const next = loadCommunityPosts().map((post) => {
     if (post.id !== postId) return post;
     const updated = applyBoundedReaction(post.reactionCounts, post.reactionsByUser, userId, reaction);
@@ -127,6 +143,7 @@ export function editCommunityPost(params: {
   postId: string; actorUserId: string; titleFa: string; bodyFa: string; reasonFa?: string;
 }): { ok: boolean; items: CommunityDiscussionPost[]; errorFa?: string } {
   const posts = loadCommunityPosts();
+  if (!isRealAuthenticatedUid(params.actorUserId)) return { ok: false, items: posts, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
   const target = posts.find((p) => p.id === params.postId);
   if (!target) return { ok: false, items: posts, errorFa: 'مطلب یافت نشد.' };
   const ownerCheck = assertCommunityOwner(params.actorUserId, target.ownerUserId, false);
@@ -150,7 +167,7 @@ export function updatePostGovernanceState(postId: string, patch: { pinned?: bool
   const next = loadCommunityPosts().map((p) => {
     if (p.id !== postId) return p;
     let followerIds = p.followerIds ?? [];
-    if (patch.toggleFollowUserId) {
+    if (patch.toggleFollowUserId && isRealAuthenticatedUid(patch.toggleFollowUserId)) {
       followerIds = followerIds.includes(patch.toggleFollowUserId) ? followerIds.filter((id) => id !== patch.toggleFollowUserId) : [...followerIds, patch.toggleFollowUserId];
     }
     return { ...p, pinned: patch.pinned ?? p.pinned, status: patch.status ?? p.status, followerIds };
@@ -160,45 +177,84 @@ export function updatePostGovernanceState(postId: string, patch: { pinned?: bool
 }
 
 export function loadCommunityTopics(): TopicItem[] { return COMMUNITY_TOPICS_REGISTRY; }
-export function loadFollowedTopicIds(): string[] { return readCommunityJson<string[]>(FOLLOWED_TOPICS_KEY, ['topic-neighborhoods', 'topic-data-quality']); }
-export function toggleFollowTopic(topicId: string): string[] {
-  const current = loadFollowedTopicIds();
+
+export function loadFollowedTopicIds(userId?: string | null): string[] {
+  if (!isRealAuthenticatedUid(userId)) return [];
+  return readCommunityJson<string[]>(`${FOLLOWED_TOPICS_KEY}:${userId.trim()}`, []);
+}
+
+export function toggleFollowTopic(topicId: string, userId?: string | null): string[] {
+  if (!isRealAuthenticatedUid(userId)) return [];
+  const cleanUid = userId.trim();
+  const key = `${FOLLOWED_TOPICS_KEY}:${cleanUid}`;
+  const current = readCommunityJson<string[]>(key, []);
   const next = current.includes(topicId) ? current.filter((id) => id !== topicId) : [...current, topicId];
-  writeCommunityJson(FOLLOWED_TOPICS_KEY, next);
+  writeCommunityJson(key, next);
   return next;
 }
 
-export function loadMyCommunityPrivacyProfile(): CommunityProfile {
-  return readCommunityJson<CommunityProfile>(MY_PROFILE_KEY, {
-    userId: 'current_local_user', username: 'active_neighbor', displayNameFa: 'کاربر فعال محله',
-    bioFa: 'عضو فعال جامعه رادار تهران و گزارشگر کیفیت محله.', visibility: 'public',
-    showBadges: true, showContributions: true, showFollowedTopics: true, identityStatus: 'verified_phone',
-    reputation: { data: 12, community: 8, research: 0, sources: 5, professional: 0 },
-    badges: [
-      { id: 'bdg-self', code: 'verified_identity', titleFa: 'هویت تأییدشده', scopeFa: 'احراز شماره پایه', authorityFa: 'احراز هویت رادار', criteriaFa: 'تأیید مالکیت حساب', reviewedAtFa: '۱۴۰۵/۰۱/۰۱', expiresAtIso: '2027-04-01T00:00:00.000Z', status: 'active' },
-    ],
-    followedTopicIds: loadFollowedTopicIds(), memberSinceFa: 'زمستان ۱۴۰۴',
-    recentPublicSummaryFa: ['مشارکت در پایش فاصله مترو و کیفیت زیست محله'], verifiedCredentialFa: null,
+export function loadMyCommunityPrivacyProfile(userId?: string | null, displayNameFa?: string): CommunityProfile | null {
+  if (!isRealAuthenticatedUid(userId)) return null;
+  const cleanUid = userId.trim();
+  return readCommunityJson<CommunityProfile>(`${MY_PROFILE_KEY}:${cleanUid}`, {
+    userId: cleanUid, username: `u_${cleanUid.slice(0, 8)}`, displayNameFa: sanitizeInput(displayNameFa || 'کاربر احرازشده رادار', 60),
+    bioFa: 'عضو جامعه رادار تهران.', visibility: 'public',
+    showBadges: true, showContributions: true, showFollowedTopics: true, identityStatus: 'authenticated',
+    reputation: { data: 0, community: 0, research: 0, sources: 0, professional: 0 },
+    badges: [],
+    followedTopicIds: loadFollowedTopicIds(cleanUid), memberSinceFa: '۱۴۰۵',
+    recentPublicSummaryFa: [], verifiedCredentialFa: null,
   });
 }
 
-export function updateMyCommunityPrivacyProfile(patch: Partial<Pick<CommunityProfile, 'visibility' | 'showBadges' | 'showContributions' | 'showFollowedTopics' | 'bioFa' | 'displayNameFa'>>): CommunityProfile {
-  const current = loadMyCommunityPrivacyProfile();
+export function updateMyCommunityPrivacyProfile(
+  patch: Partial<Pick<CommunityProfile, 'visibility' | 'showBadges' | 'showContributions' | 'showFollowedTopics' | 'bioFa' | 'displayNameFa'>>,
+  actorUserId?: string | null,
+  targetUserId?: string | null,
+): { ok: boolean; profile: CommunityProfile | null; errorFa?: string } {
+  if (!isRealAuthenticatedUid(actorUserId)) {
+    return { ok: false, profile: null, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
+  }
+  const cleanActor = actorUserId.trim();
+  if (targetUserId && targetUserId.trim() !== cleanActor) {
+    return { ok: false, profile: null, errorFa: 'تغییر تنظیمات حریم خصوصی سایر کاربران مجاز نیست.' };
+  }
+  const current = loadMyCommunityPrivacyProfile(cleanActor)!;
   const updated: CommunityProfile = {
     ...current, ...patch,
+    userId: cleanActor,
     bioFa: patch.bioFa !== undefined ? sanitizeInput(patch.bioFa, 220) : current.bioFa,
     displayNameFa: patch.displayNameFa !== undefined ? sanitizeInput(patch.displayNameFa, 60) || current.displayNameFa : current.displayNameFa,
     visibility: (patch.visibility as ProfileVisibilityLevel) || current.visibility,
   };
-  writeCommunityJson(MY_PROFILE_KEY, updated);
-  return updated;
+  writeCommunityJson(`${MY_PROFILE_KEY}:${cleanActor}`, updated);
+  return { ok: true, profile: updated };
 }
 
-export function loadPublicCommunityMembers(isViewerMember = true): CommunityProfile[] {
-  const mine = loadMyCommunityPrivacyProfile();
-  return [...COMMUNITY_MEMBER_PROFILES, mine]
-    .map((profile) => sanitizePublicProfile(profile, isViewerMember, profile.userId === 'current_local_user'))
+export function loadPublicCommunityMembers(isViewerMember = true, viewerUserId?: string | null): CommunityProfile[] {
+  const mine = isRealAuthenticatedUid(viewerUserId) ? loadMyCommunityPrivacyProfile(viewerUserId) : null;
+  const list = mine ? [...COMMUNITY_MEMBER_PROFILES, mine] : [...COMMUNITY_MEMBER_PROFILES];
+  return list
+    .map((profile) => sanitizePublicProfile(profile, isViewerMember, Boolean(viewerUserId && profile.userId === viewerUserId)))
     .filter((p): p is CommunityProfile => p !== null);
+}
+
+export function computeAuditedReputationBreakdown(events: readonly ReputationEvent[], userId: string): ReputationBreakdown {
+  const seenEventIds = new Set<string>();
+  const seenEntityAxis = new Set<string>();
+  const totals: ReputationBreakdown = { data: 0, community: 0, research: 0, sources: 0, professional: 0 };
+  for (const ev of events) {
+    if (ev.userId !== userId || !ev.id || seenEventIds.has(ev.id)) continue;
+    const dedupKey = `${ev.axis}:${ev.sourceEntityId}`;
+    if (ev.delta > 0 && seenEntityAxis.has(dedupKey)) continue;
+    seenEventIds.add(ev.id);
+    if (ev.delta > 0) seenEntityAxis.add(dedupKey);
+    const axis: ReputationAxis = ev.axis;
+    if (axis in totals) {
+      totals[axis] = Math.max(0, totals[axis] + Math.round(ev.delta));
+    }
+  }
+  return totals;
 }
 
 export function loadReputationEvents(): ReputationEvent[] { return readCommunityJson<ReputationEvent[]>(REP_EVENTS_KEY, SEED_REPUTATION_EVENTS); }
@@ -217,13 +273,15 @@ export function recordModerationAction(input: Omit<ModerationActionRecord, 'id' 
 export function loadModerationAppeals(): ModerationAppeal[] { return readCommunityJson<ModerationAppeal[]>(APPEALS_KEY, SEED_MODERATION_APPEALS); }
 
 export function submitModerationAppeal(params: { moderationActionId: string; targetId: string; appellantUserId: string; argumentFa: string }): { ok: boolean; items: ModerationAppeal[]; errorFa?: string } {
+  const current = loadModerationAppeals();
+  if (!isRealAuthenticatedUid(params.appellantUserId)) return { ok: false, items: current, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
   const safeArg = sanitizeInput(params.argumentFa, 320);
-  if (safeArg.length < 10) return { ok: false, items: loadModerationAppeals(), errorFa: 'متن درخواست بازبینی باید حداقل ۱۰ کاراکتر مستند داشته باشد.' };
+  if (safeArg.length < 10) return { ok: false, items: current, errorFa: 'متن درخواست بازبینی باید حداقل ۱۰ کاراکتر مستند داشته باشد.' };
   const nextItem: ModerationAppeal = {
     id: `apl-${Date.now()}`, moderationActionId: params.moderationActionId, targetId: params.targetId,
     appellantUserId: params.appellantUserId, argumentFa: safeArg, status: 'submitted', createdAtIso: new Date().toISOString(),
   };
-  const next = [nextItem, ...loadModerationAppeals()];
+  const next = [nextItem, ...current];
   writeCommunityJson(APPEALS_KEY, next);
   return { ok: true, items: next };
 }

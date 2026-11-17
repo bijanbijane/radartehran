@@ -34,8 +34,12 @@ function resolveNeighborhoodNameByProvenanceId(id: string): { nameFa: string; nu
 
 export function registerDataGovernanceRoutes(
   app: Express,
-  deps: { getIp: (req: Request) => string },
+  deps: {
+    getIp: (req: Request) => string;
+    checkRateLimit?: (ip: string, bucket: string, max: number, windowMs: number) => boolean;
+  },
 ): void {
+  const checkLimit = deps.checkRateLimit || (() => true);
   app.get('/api/v1/data-governance/sources', (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ sources: getServerDgovEngine().getSources() });
@@ -138,6 +142,11 @@ export function registerDataGovernanceRoutes(
 
   app.post('/api/v1/data-governance/corrections', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
+    const ip = deps.getIp(req);
+    if (!checkLimit(ip, 'lead', 20, 60_000)) {
+      res.status(429).json({ ok: false, errorFa: 'تعداد درخواست‌های اصلاح داده بیش از حد مجاز است.' });
+      return;
+    }
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     const entityId = sanitizeInput(String(req.body?.entityId || ''), 80).trim();
     const attribute = sanitizeInput(String(req.body?.attribute || 'market_median_asking_price_per_sqm'), 64);
@@ -149,14 +158,15 @@ export function registerDataGovernanceRoutes(
     }
     const cityId = validateCityParam(req.body?.cityId, 'tehran');
     void cityId;
+    const isVerified = Boolean(auth.authorized && auth.uid);
     const recorded = recordCorrectionProposalInDgov({
       entityId,
       attribute,
       currentValue: sanitizeInput(String(req.body?.currentValue ?? ''), 160),
       proposedValue,
       reasonFa,
-      proposerUserId: auth.authorized && auth.uid ? auth.uid : 'anonymous-reporter',
-      proposerVerifiedIdentity: Boolean(auth.authorized && auth.uid),
+      proposerUserId: isVerified && auth.uid ? auth.uid : 'public_unverified',
+      proposerVerifiedIdentity: isVerified,
     });
     res.status(201).json({ ok: true, proposal: recorded.proposal, trackingCode: recorded.trackingCode });
   });

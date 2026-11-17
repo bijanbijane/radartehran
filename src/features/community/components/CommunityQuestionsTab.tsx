@@ -10,9 +10,9 @@ interface Props {
   selectedHood: EvaluatedNeighborhood;
   questions: CommunityQuestionItem[];
   currentUserId: string;
-  onSubmitQuestion: (input: { titleFa: string; bodyFa: string; topicId: string }) => { ok: boolean; errorFa?: string };
-  onSubmitAnswer: (questionId: string, bodyFa: string, sourceReferenceFa?: string) => { ok: boolean; errorFa?: string };
-  onToggleAskerSelected: (questionId: string, answerId: string) => { ok: boolean; errorFa?: string };
+  onSubmitQuestion: (input: { titleFa: string; bodyFa: string; topicId: string }) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
+  onSubmitAnswer: (questionId: string, bodyFa: string, sourceReferenceFa?: string) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
+  onToggleAskerSelected: (questionId: string, answerId: string) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
   onSelectAuthor: (username: string) => void;
 }
 
@@ -54,9 +54,9 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
     [questions, statusFilter],
   );
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = onSubmitQuestion({ titleFa, bodyFa, topicId });
+    const res = await onSubmitQuestion({ titleFa, bodyFa, topicId });
     if (res.ok) {
       setTitleFa('');
       setBodyFa('');
@@ -201,8 +201,8 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    const res = onSubmitAnswer(q.id, draft.body, draft.source);
+                  onClick={async () => {
+                    const res = await onSubmitAnswer(q.id, draft.body, draft.source);
                     if (res.ok) setAnswerDrafts({ ...answerDrafts, [q.id]: { body: '', source: '' } });
                     else setFeedback({ ok: false, msg: res.errorFa || 'خطا' });
                   }}

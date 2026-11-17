@@ -1,11 +1,25 @@
-/** @file src/features/knowledge/pages/KnowledgeCenterPage.tsx — Stage 24 Knowledge Base, Research & Publications Center */
-import React, { useMemo, useState } from 'react';
-import { BookOpen, Info, Search } from 'lucide-react';
+/** @file src/features/knowledge/pages/KnowledgeCenterPage.tsx — Stages 81, 83 & 85 Server-Backed Knowledge Base, Research & Account Bookmarks */
+import React, { useEffect, useMemo, useState } from 'react';
+import type { User } from 'firebase/auth';
+import { BookOpen, Info, RefreshCw, Search } from 'lucide-react';
+import type { CityId } from '../../../data/multiCityData';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
 import type { KnowledgeSubTabId, ModuleSubTabId } from '../../../navigation/registry/route.types';
 import { KNOWLEDGE_PUBLICATIONS } from '../data/knowledgeCatalog';
-import { KNOWLEDGE_DATA_BRIEFS, loadSavedKnowledgeIds, toggleSavedKnowledgeId } from '../data/knowledgeSourcesAndBriefs';
+import {
+  KNOWLEDGE_DATA_BRIEFS,
+  cacheSavedKnowledgeIdsForUser,
+  loadSavedKnowledgeIds,
+  type KnowledgeDataBrief,
+} from '../data/knowledgeSourcesAndBriefs';
+import {
+  getKnowledgeDataBriefs,
+  getKnowledgePublications,
+  getMySavedKnowledge,
+  removeSavedKnowledgePublication,
+  saveKnowledgePublication,
+} from '../services/knowledgeApiClient';
 import { filterKnowledgePublications } from '../services/knowledgeSearchService';
 import {
   KNOWLEDGE_CONTENT_TYPE_LABELS_FA,
@@ -21,10 +35,12 @@ import { OnboardingAndResponsiveHelpCenter } from '../../onboarding/components/O
 
 export interface KnowledgeCenterPageProps {
   activeSubTab?: KnowledgeSubTabId;
+  activeCity?: CityId;
   selectedHood: EvaluatedNeighborhood;
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
   unitPrice: number;
   fxSample: string;
+  currentUser?: User | null;
   onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void;
   onNavigateView: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
   onOpenPulseModal: () => void;
@@ -40,10 +56,12 @@ const SUBTAB_LABELS: Array<{ id: KnowledgeSubTabId; labelFa: string }> = [
 
 export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
   activeSubTab = 'reports',
+  activeCity: _activeCity,
   selectedHood,
   evaluatedNeighborhoods = [],
   unitPrice,
   fxSample,
+  currentUser,
   onSelectNeighborhood,
   onNavigateView,
   onOpenPulseModal,
@@ -54,19 +72,114 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
   const [contentType, setContentType] = useState<KnowledgeContentType | 'all'>('all');
   const [freshness, setFreshness] = useState<KnowledgeFreshnessStatus | 'all'>('all');
   const [activePub, setActivePub] = useState<KnowledgePublication | null>(null);
-  const [savedIds, setSavedIds] = useState<string[]>(() => loadSavedKnowledgeIds());
+
+  const [serverPubs, setServerPubs] = useState<KnowledgePublication[]>(() => [...KNOWLEDGE_PUBLICATIONS]);
+  const [dataBriefs, setDataBriefs] = useState<KnowledgeDataBrief[]>(() => [...KNOWLEDGE_DATA_BRIEFS]);
+  const [catalogState, setCatalogState] = useState<'loading' | 'success' | 'empty' | 'error'>('success');
+  const [catalogErrorFa, setCatalogErrorFa] = useState<string | null>(null);
+  const [lastFetchedAtIso, setLastFetchedAtIso] = useState<string | null>(null);
+  const [serverUpdatedAtIso, setServerUpdatedAtIso] = useState<string | null>(null);
+
+  // Stage 85.3: Account-scoped bookmarks; cleared immediately on account change or logout
+  const [savedIds, setSavedIds] = useState<string[]>(() => loadSavedKnowledgeIds(currentUser?.uid));
+  const [bookmarkStatusUnknown, setBookmarkStatusUnknown] = useState(false);
+  const [savingPubId, setSavingPubId] = useState<string | null>(null);
+  const [bookmarkFeedbackFa, setBookmarkFeedbackFa] = useState<string | null>(null);
 
   const currentTab: KnowledgeSubTabId = activeSubTab || selectedTab;
 
+  // Stage 83.5: Fetch publications from server API with AbortController on filter change
+  useEffect(() => {
+    if (currentTab === 'glossary') return;
+    const controller = new AbortController();
+    setCatalogState('loading');
+    setCatalogErrorFa(null);
+
+    getKnowledgePublications({
+      subTab: currentTab,
+      query,
+      contentType,
+      freshness,
+      signal: controller.signal,
+    }).then((res) => {
+      if (controller.signal.aborted || res.errorFa === 'ABORTED') return;
+      if (!res.ok || !res.data) {
+        setCatalogErrorFa(res.errorFa || 'خطا در دریافت فهرست گزارش‌ها از سرور.');
+        setCatalogState('error');
+        return;
+      }
+      setServerPubs(res.data.items);
+      setLastFetchedAtIso(res.fetchedAtIso);
+      setServerUpdatedAtIso(res.serverUpdatedAtIso || null);
+      setCatalogState(res.data.items.length === 0 ? 'empty' : 'success');
+    });
+
+    return () => controller.abort();
+  }, [currentTab, query, contentType, freshness]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getKnowledgeDataBriefs(controller.signal).then((res) => {
+      if (!controller.signal.aborted && res.ok && res.data && res.data.length > 0) {
+        setDataBriefs(res.data);
+      }
+    });
+    return () => controller.abort();
+  }, []);
+
+  // Stage 85.3: Reset & re-fetch saved bookmarks whenever currentUser?.uid changes
+  useEffect(() => {
+    const uid = currentUser?.uid;
+    setSavedIds([]);
+    setBookmarkStatusUnknown(false);
+    setBookmarkFeedbackFa(null);
+    if (!uid || !currentUser) return;
+
+    const controller = new AbortController();
+    getMySavedKnowledge(currentUser, controller.signal).then((res) => {
+      if (controller.signal.aborted || res.errorFa === 'ABORTED') return;
+      if (!res.ok || !res.data) {
+        setBookmarkStatusUnknown(true);
+        return;
+      }
+      setSavedIds(res.data.savedIds);
+      cacheSavedKnowledgeIdsForUser(uid, res.data.savedIds);
+    });
+    return () => controller.abort();
+  }, [currentUser?.uid]);
+
+  const handleToggleSavePublication = async (publicationId: string) => {
+    setBookmarkFeedbackFa(null);
+    if (!currentUser || !currentUser.uid) {
+      setBookmarkFeedbackFa('برای ذخیره گزارش در حساب کاربری و همگام‌سازی بین دستگاه‌ها، ابتدا وارد حساب خود شوید.');
+      return;
+    }
+    if (savingPubId === publicationId) return;
+    setSavingPubId(publicationId);
+    const isCurrentlySaved = savedIds.includes(publicationId);
+    const res = isCurrentlySaved
+      ? await removeSavedKnowledgePublication(publicationId, currentUser)
+      : await saveKnowledgePublication(publicationId, currentUser);
+    setSavingPubId(null);
+
+    if (!res.ok || !res.data) {
+      setBookmarkFeedbackFa(res.errorFa || 'خطا در به‌روزرسانی فهرست علاقه‌مندی‌ها.');
+      return;
+    }
+    setBookmarkStatusUnknown(false);
+    setSavedIds(res.data.savedIds);
+    cacheSavedKnowledgeIdsForUser(currentUser.uid, res.data.savedIds);
+  };
+
   const visiblePublications = useMemo(
     () =>
-      filterKnowledgePublications(KNOWLEDGE_PUBLICATIONS, {
+      filterKnowledgePublications(serverPubs, {
         subTab: currentTab,
         query,
         contentType,
         freshness,
       }),
-    [currentTab, query, contentType, freshness],
+    [serverPubs, currentTab, query, contentType, freshness],
   );
 
   return (
@@ -104,21 +217,37 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
       </div>
 
       {/* Mandatory Epistemic Principle Banner */}
-      <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/60 dark:bg-emerald-950/20 border border-[#DCE3DF] dark:border-emerald-900 text-[11.5px] text-[#14534E] dark:text-emerald-200 flex items-start gap-2">
-        <Info className="w-4 h-4 shrink-0 mt-0.5" />
-        <p className="leading-relaxed">
-          در تمامی پژوهش‌های رادار، سه لایه <strong>«داده خام»</strong>، <strong>«شاخص محاسبه‌شده با نسخه فرمول»</strong> و <strong>«تفسیر پژوهشی نویسنده»</strong> به‌صورت تفکیک‌شده ارائه می‌شوند تا معیارهای عددی با تحلیل تحریریه مخلوط نگردند.
-        </p>
+      <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/60 dark:bg-emerald-950/20 border border-[#DCE3DF] dark:border-emerald-900 text-[11.5px] text-[#14534E] dark:text-emerald-200 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            در تمامی پژوهش‌های رادار، سه لایه <strong>«داده خام»</strong>، <strong>«شاخص محاسبه‌شده با نسخه فرمول»</strong> و <strong>«تفسیر پژوهشی نویسنده»</strong> به‌صورت تفکیک‌شده ارائه می‌شوند تا معیارهای عددی با تحلیل تحریریه مخلوط نگردند.
+          </p>
+        </div>
+        {(serverUpdatedAtIso || lastFetchedAtIso) && (
+          <span className="text-[10.5px] text-[#586760] shrink-0" dir="ltr">
+            Updated: {(serverUpdatedAtIso || lastFetchedAtIso || '').slice(0, 19).replace('T', ' ')}
+          </span>
+        )}
       </div>
+
+      {bookmarkFeedbackFa && (
+        <div className="p-2.5 rounded-[10px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold">
+          {bookmarkFeedbackFa}
+        </div>
+      )}
 
       {currentTab === 'glossary' ? (
         <KnowledgeGlossaryView externalQuery={query} onNavigateView={onNavigateView} />
       ) : activePub ? (
         <KnowledgeArticleReader
           publication={activePub}
+          currentUser={currentUser}
           evaluatedNeighborhoods={evaluatedNeighborhoods}
           isSaved={savedIds.includes(activePub.id)}
-          onToggleSave={(id) => setSavedIds(toggleSavedKnowledgeId(id))}
+          isSavingBookmark={savingPubId === activePub.id}
+          bookmarkStatusUnknown={bookmarkStatusUnknown}
+          onToggleSave={handleToggleSavePublication}
           onBack={() => setActivePub(null)}
           onSelectNeighborhood={onSelectNeighborhood}
           onNavigateView={onNavigateView}
@@ -127,26 +256,34 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
         <>
           {currentTab === 'reports' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" data-testid="knowledge-data-briefs">
-              {KNOWLEDGE_DATA_BRIEFS.map((b) => (
+              {dataBriefs.map((b) => (
                 <div key={b.briefId} className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 flex items-center justify-between gap-3">
                   <div className="space-y-0.5 min-w-0">
-                    <span className="text-[10.5px] font-bold text-[#176B63] dark:text-emerald-400">{b.titleFa} · {b.periodFa}</span>
+                    <span className="text-[10.5px] font-bold text-[#176B63] dark:text-emerald-400">
+                      {b.titleFa} · {b.periodFa} {b.calculationStatus === 'illustrative' ? '· (مثال آموزشی)' : ''}
+                    </span>
                     <div className="font-bold text-[#182522] dark:text-white truncate">{b.headlineFa}</div>
                     <div className="text-[10.5px] text-[#586760]">{b.geographyFa} · {b.limitationFa}</div>
                   </div>
                   <div className="text-end shrink-0">
                     <div className="text-base font-black text-[#176B63] dark:text-emerald-400 tabular-nums">{b.metricValueFa}</div>
-                    <button type="button" onClick={() => { const p = KNOWLEDGE_PUBLICATIONS.find((x) => x.id === b.linkedReportId); if (p) setActivePub(p); }} className="text-[11px] font-bold underline text-[#182522] dark:text-slate-200 cursor-pointer">گزارش کامل ←</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const p = serverPubs.find((x) => x.id === b.linkedReportId) || KNOWLEDGE_PUBLICATIONS.find((x) => x.id === b.linkedReportId);
+                        if (p && (p.status === 'published' || p.status === 'archived')) setActivePub(p);
+                      }}
+                      className="text-[11px] font-bold underline text-[#182522] dark:text-slate-200 cursor-pointer"
+                    >
+                      گزارش کامل ←
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
           {currentTab === 'guide' && (
-            <OnboardingAndResponsiveHelpCenter
-              evaluatedNeighborhoods={evaluatedNeighborhoods}
-              onNavigateView={onNavigateView}
-            />
+            <OnboardingAndResponsiveHelpCenter evaluatedNeighborhoods={evaluatedNeighborhoods} onNavigateView={onNavigateView} />
           )}
           {currentTab === 'methodology' && (
             <KnowledgeMethodologyView
@@ -187,16 +324,25 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
               onChange={(e) => setFreshness(e.target.value as KnowledgeFreshnessStatus | 'all')}
               className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
             >
-              <option value="all">همه وضعیت‌های زمانی</option>
+              <option value="all">گزارش‌های جاری و دوره‌ای</option>
               <option value="current">جاری (به‌روز)</option>
               <option value="periodic">دوره‌ای</option>
-              <option value="archived">آرشیوی</option>
+              <option value="archived">آرشیوی (مرجع تاریخی)</option>
             </select>
           </div>
 
+          {catalogErrorFa && (
+            <div className="p-3 rounded-[10px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-bold flex items-center justify-between">
+              <span>{catalogErrorFa}</span>
+              <RefreshCw className="w-4 h-4" />
+            </div>
+          )}
+
           {visiblePublications.length === 0 ? (
             <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-center space-y-2 text-xs">
-              <p className="font-bold text-[#182522] dark:text-white">مطلبی با فیلترهای انتخاب‌شده یافت نشد.</p>
+              <p className="font-bold text-[#182522] dark:text-white">
+                {catalogState === 'loading' ? 'در حال دریافت گزارش‌ها از سرور مرکز دانش...' : 'مطلبی با فیلترهای انتخاب‌شده یافت نشد.'}
+              </p>
               <button
                 type="button"
                 onClick={() => { setQuery(''); setContentType('all'); setFreshness('all'); }}

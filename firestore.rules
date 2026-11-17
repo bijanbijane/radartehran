@@ -628,5 +628,116 @@ service cloud.firestore {
       allow create, update: if isAdmin() && isValidNeighborhoodOverride(hoodId);
       allow delete: if isAdmin() && hoodId.matches('^(hood_)?([1-9][0-9]{0,2})$');
     }
+
+    // === Stage 3 Social Community Collections (Server-Mediated & Least-Privilege Client Rules) ===
+    function isValidSocialPost(data) {
+      return data.keys().hasAll(['id', 'recordKind', 'ownerUserId', 'status', 'createdAtIso']) &&
+        data.ownerUserId is string &&
+        data.ownerUserId == request.auth.uid &&
+        data.recordKind in ['discussion', 'question', 'correction', 'research_proposal'] &&
+        data.status is string && data.status.size() <= 40 &&
+        (!('titleFa' in data) || (data.titleFa is string && data.titleFa.size() <= 160)) &&
+        (!('bodyFa' in data) || (data.bodyFa is string && data.bodyFa.size() <= 600)) &&
+        (!('isDeleted' in data) || data.isDeleted == false);
+    }
+
+    match /socialPosts/{postId} {
+      allow get: if isValidId(postId) &&
+        (
+          isAdmin() ||
+          (isVerifiedUser() && existing().ownerUserId == request.auth.uid) ||
+          (existing().status != 'hidden' && existing().isDeleted != true)
+        );
+      allow list: if isAdmin() || (existing().status != 'hidden' && existing().isDeleted != true);
+      allow create: if isVerifiedUser() && isValidId(postId) && isValidSocialPost(incoming());
+      allow update: if isValidId(postId) &&
+        (
+          isAdmin() ||
+          (
+            isVerifiedUser() &&
+            existing().ownerUserId == request.auth.uid &&
+            incoming().ownerUserId == existing().ownerUserId &&
+            incoming().recordKind == existing().recordKind
+          )
+        );
+      allow delete: if isAdmin() && isValidId(postId);
+    }
+
+    match /socialComments/{commentId} {
+      allow get: if isValidId(commentId) &&
+        (isAdmin() || (existing().status != 'hidden' && existing().isDeleted != true));
+      allow list: if isAdmin() || (existing().status != 'hidden' && existing().isDeleted != true);
+      allow create: if isVerifiedUser() &&
+        isValidId(commentId) &&
+        incoming().keys().hasAll(['id', 'postId', 'ownerUserId', 'bodyFa']) &&
+        incoming().ownerUserId == request.auth.uid &&
+        incoming().bodyFa is string && incoming().bodyFa.size() >= 1 && incoming().bodyFa.size() <= 600;
+      allow update: if isAdmin() ||
+        (isVerifiedUser() && existing().ownerUserId == request.auth.uid && incoming().ownerUserId == existing().ownerUserId);
+      allow delete: if isAdmin() && isValidId(commentId);
+    }
+
+    match /socialReactions/{reactionId} {
+      allow get, list: if isVerifiedUser() && existing().uid == request.auth.uid;
+      allow create, update: if isVerifiedUser() &&
+        isValidId(reactionId) &&
+        incoming().keys().hasAll(['targetId', 'uid', 'reactionType']) &&
+        incoming().uid == request.auth.uid &&
+        incoming().reactionType in ['helpful', 'agree', 'needs_source', 'disagree'];
+      allow delete: if isVerifiedUser() && resource != null && existing().uid == request.auth.uid;
+    }
+
+    match /socialFollows/{followId} {
+      allow get, list: if isVerifiedUser() && existing().followerUid == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(followId) &&
+        incoming().keys().hasAll(['scope', 'targetId', 'followerUid']) &&
+        incoming().followerUid == request.auth.uid &&
+        incoming().scope in ['topic', 'post', 'user'];
+      allow update: if false;
+      allow delete: if isVerifiedUser() && resource != null && existing().followerUid == request.auth.uid;
+    }
+
+    match /socialReports/{reportId} {
+      allow get: if isValidId(reportId) &&
+        (isAdmin() || (isVerifiedUser() && resource != null && existing().reporterUserId == request.auth.uid));
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(reportId) &&
+        incoming().keys().hasAll(['id', 'recordKind', 'targetId', 'status']) &&
+        incoming().recordKind in ['report', 'appeal'] &&
+        incoming().reporterUserId == request.auth.uid &&
+        incoming().status == 'submitted';
+      allow update, delete: if isAdmin() && isValidId(reportId);
+    }
+
+    match /socialProfiles/{userId} {
+      allow get: if isValidId(userId) &&
+        (isAdmin() || (isSignedIn() && request.auth.uid == userId) || existing().visibility == 'public');
+      allow list: if isAdmin() || existing().visibility == 'public';
+      allow create, update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        incoming().userId == request.auth.uid &&
+        incoming().visibility in ['public', 'members_only', 'private'];
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    match /socialIdempotency/{keyId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+
+    match /socialModerationCases/{caseId} {
+      allow get, list, create, update, delete: if isAdmin() && isValidId(caseId);
+    }
+
+    match /socialModerationEvents/{eventId} {
+      allow get, list, create: if isAdmin() && isValidId(eventId);
+      allow update, delete: if false;
+    }
+
+    match /socialOutbox/{outboxId} {
+      allow get, list, create, update, delete: if isAdmin() && isValidId(outboxId);
+    }
   }
 }

@@ -324,6 +324,11 @@ async function runAllTests() {
       store,
       deliveryEngine,
       eventConsumer,
+      verifyUserAuth: (req) => {
+        const auth = req.headers.authorization;
+        return auth === 'Bearer tok_helen' ? 'user_helen' : null;
+      },
+      verifyAdminAuth: (req) => req.headers.authorization === 'Bearer tok_admin',
     });
 
     const server = http.createServer(app);
@@ -332,9 +337,13 @@ async function runAllTests() {
     const baseUrl = `http://127.0.0.1:${port}`;
 
     try {
-      // 1. Unauthenticated request to /api/v2/notifications -> 401
+      // 1. Unauthenticated & spoofed x-user-uid request to /api/v2/notifications -> 401
       const unauthRes = await fetch(`${baseUrl}/api/v2/notifications`);
       assert.equal(unauthRes.status, 401);
+      const spoofRes = await fetch(`${baseUrl}/api/v2/notifications`, {
+        headers: { 'x-user-uid': 'user_helen' },
+      });
+      assert.equal(spoofRes.status, 401, 'Spoofable x-user-uid header must be rejected');
 
       // 2. Authenticated request as user_helen
       // Seed a notification for Helen
@@ -351,7 +360,7 @@ async function runAllTests() {
       });
 
       const authRes = await fetch(`${baseUrl}/api/v2/notifications`, {
-        headers: { 'x-user-uid': 'user_helen' },
+        headers: { Authorization: 'Bearer tok_helen' },
       });
       assert.equal(authRes.status, 200);
       const authData = await authRes.json();
@@ -364,7 +373,7 @@ async function runAllTests() {
       // 3. Mark as read
       const markReadRes = await fetch(`${baseUrl}/api/v2/notifications/${notifId}/read`, {
         method: 'PATCH',
-        headers: { 'x-user-uid': 'user_helen' },
+        headers: { Authorization: 'Bearer tok_helen' },
       });
       assert.equal(markReadRes.status, 200);
       const markData = await markReadRes.json();
@@ -373,7 +382,7 @@ async function runAllTests() {
       // 4. Update preferences
       const prefRes = await fetch(`${baseUrl}/api/v2/notifications/preferences`, {
         method: 'PUT',
-        headers: { 'x-user-uid': 'user_helen', 'content-type': 'application/json' },
+        headers: { Authorization: 'Bearer tok_helen', 'content-type': 'application/json' },
         body: JSON.stringify({
           channels: { email: true, sms: false },
           emailAddress: 'helen@example.com',
@@ -384,10 +393,10 @@ async function runAllTests() {
       assert.equal(prefData.preferences.channels.email, true);
       assert.equal(prefData.preferences.emailAddress, 'helen@example.com');
 
-      // 5. Admin broadcast: non-admin gets 403
+      // 5. Admin broadcast: non-admin & spoofed header get 403
       const nonAdminBroadcast = await fetch(`${baseUrl}/api/v2/notifications/admin/broadcast`, {
         method: 'POST',
-        headers: { 'x-user-uid': 'user_helen', 'content-type': 'application/json' },
+        headers: { Authorization: 'Bearer tok_helen', 'x-admin-role': 'super_admin', 'content-type': 'application/json' },
         body: JSON.stringify({
           titleFa: 'پیام فوری',
           messageFa: 'بروزرسانی سرور',
@@ -396,11 +405,11 @@ async function runAllTests() {
       });
       assert.equal(nonAdminBroadcast.status, 403);
 
-      // 6. Admin broadcast with valid role -> 202
+      // 6. Admin broadcast with verified admin token -> 202
       const adminBroadcast = await fetch(`${baseUrl}/api/v2/notifications/admin/broadcast`, {
         method: 'POST',
         headers: {
-          'x-admin-role': 'super_admin',
+          Authorization: 'Bearer tok_admin',
           'content-type': 'application/json',
         },
         body: JSON.stringify({

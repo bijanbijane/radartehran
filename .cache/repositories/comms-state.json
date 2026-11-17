@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 2,
+  "outboxKeys": [],
+  "notifications": [],
+  "preferencesByUid": {},
+  "devices": [],
+  "deliveries": [],
+  "deadLetters": [],
+  "conversations": [],
+  "reports": [],
+  "audits": [],
+  "updatedAtIso": "2026-11-17T15:20:44.534Z"
+}

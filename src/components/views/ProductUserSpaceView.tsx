@@ -91,7 +91,6 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const favDealSqmById = new Map(favoriteHoods.map((hood) => [hood.id, aggregateNeighborhoodMarketMetrics(hood.id, hood.name, hood.buyPerSqm, buildNeighborhoodListingSamples(hood)).estimatedDealPricePerSqm]));
   const budgetFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? effectiveBuyBudget : effectiveRahnPower, intlCurrency, radarLocale)})` : '';
   const avgShortlistScore = favoriteHoods.length > 0 ? (favoriteHoods.reduce((acc, h) => acc + h.overallScore, 0) / favoriteHoods.length).toFixed(1) : null;
-
   const handleExportAccountData = async (includeLocalWorkspace = false): Promise<boolean> => {
     if (!p.currentUser || busyAction) return false;
     setBusyAction('export'); setPrivacyNotice(null); setDeleteLayers(null);
@@ -124,7 +123,6 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
       return true;
     } finally { setBusyAction(null); }
   };
-
   const handleConfirmAccountDelete = async () => {
     if (!p.currentUser || busyAction) return;
     setBusyAction('delete'); setPrivacyNotice(null); setDeleteLayers(null);
@@ -148,7 +146,6 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
       if (res.data.requiresSignOut) p.onSignOut();
     } finally { setBusyAction(null); }
   };
-
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-7 animate-fadeIn" data-testid="product-userspace-view">
       <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 shadow-xs">
@@ -199,7 +196,6 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         )}
         {privacyNotice && <p role={privacyNotice.kind === 'error' ? 'alert' : 'status'} className={`text-xs font-bold ${privacyNotice.kind === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{privacyNotice.text}</p>}
       </div>
-
       {currentTab !== 'overview' && currentTab !== 'favorites' && (
         <AccountSubSectionsPanel
           activeSubTab={currentTab} currentUser={p.currentUser} evaluatedNeighborhoods={p.evaluatedNeighborhoods} mode={p.mode}
@@ -209,7 +205,6 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           onRequestDeleteAccount={() => setConfirmDeleteOpen(true)} busyAction={busyAction} dataRequestRevision={dataRequestRevision}
         />
       )}
-
       {currentTab === 'overview' && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>

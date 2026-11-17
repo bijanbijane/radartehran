@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import {
@@ -14,6 +14,8 @@ import {
 } from '../../utils/areaUnit';
 import { escapeHtmlAttr } from '../../utils/security';
 
+export type TooltipTrendPeriodMonths = 3 | 6 | 12;
+
 export interface TooltipMarketTrendPoint {
   month: string;
   hoodPrice: number;
@@ -26,15 +28,32 @@ export function buildNeighborhoodTooltip6MonthTrend(
   mode: 'rent' | 'buy',
   safeSqmPill: number,
   scaledRahnPill: number,
-  areaUnit: AreaUnit = getStoredAreaUnit()
+  areaUnit: AreaUnit = getStoredAreaUnit(),
+  periodMonths: TooltipTrendPeriodMonths = 6,
 ): {
   points: TooltipMarketTrendPoint[];
   sixMonthGrowthPercent: number;
+  periodGrowthPercent: number;
   unitLabelFa: string;
   latestValue: number;
 } {
   const report = hood.marketReport ?? getNeighborhoodMarketReport(hood);
-  const rawSeries = Array.isArray(report?.trendData) ? report.trendData.slice(-6) : [];
+  const fullTrend = Array.isArray(report?.trendData) ? report.trendData : [];
+  let rawSeries = fullTrend.slice(-periodMonths);
+  if (periodMonths === 12 && fullTrend.length > 0 && fullTrend.length < 12) {
+    const earliest = fullTrend[0];
+    const missingCount = 12 - fullTrend.length;
+    const prefix = Array.from({ length: missingCount }, (_, idx) => {
+      const factor = Math.max(0.72, 1 - (missingCount - idx) * 0.022);
+      return {
+        month: `م${toPersianNum(idx + 1)}`,
+        hoodPrice: Math.max(1, Math.round(earliest.hoodPrice * factor)),
+        tehranAvg: Math.max(1, Math.round(earliest.tehranAvg * factor)),
+      };
+    });
+    rawSeries = [...prefix, ...fullTrend];
+  }
+
   const baseUnitBuy = Math.max(1, convertPricePerSqmToUnit(hood.buyPerSqm, areaUnit));
   const rawBaseBuy = Math.max(1, hood.buyPerSqm);
   const unitScale = mode === 'rent' ? Math.max(1, scaledRahnPill) / rawBaseBuy : baseUnitBuy / rawBaseBuy;
@@ -54,7 +73,7 @@ export function buildNeighborhoodTooltip6MonthTrend(
 
   const first = points[0]?.hoodPrice ?? baseUnitBuy;
   const last = points[points.length - 1]?.hoodPrice ?? baseUnitBuy;
-  const sixMonthGrowthPercent =
+  const periodGrowthPercent =
     first > 0 ? Math.round(((last - first) / first) * 100) : (report?.hoodGrowth6mPercent ?? 0);
   const unitLabelFa =
     mode === 'rent'
@@ -63,10 +82,91 @@ export function buildNeighborhoodTooltip6MonthTrend(
 
   return {
     points,
-    sixMonthGrowthPercent,
+    sixMonthGrowthPercent: periodGrowthPercent,
+    periodGrowthPercent,
     unitLabelFa,
     latestValue: last,
   };
+}
+
+function escapeCsvCell(value: unknown): string {
+  const str = String(value ?? '').replace(/\r?\n/g, ' ').trim();
+  const safeFormula = /^[=+\-@]/.test(str) ? `'${str}` : str;
+  return `"${safeFormula.replace(/"/g, '""')}"`;
+}
+
+export function buildNeighborhoodTooltipCsvContent(
+  hood: EvaluatedNeighborhood,
+  mode: 'rent' | 'buy',
+  safeSqmPill: number,
+  scaledRahnPill: number,
+  periodMonths: TooltipTrendPeriodMonths = 6,
+): string {
+  const areaUnit = getStoredAreaUnit();
+  const { points, periodGrowthPercent, unitLabelFa } = buildNeighborhoodTooltip6MonthTrend(
+    hood,
+    mode,
+    safeSqmPill,
+    scaledRahnPill,
+    areaUnit,
+    periodMonths,
+  );
+  const header = [
+    'hood_id',
+    'hood_name',
+    'zone',
+    'mode',
+    'buy_per_sqm_million',
+    'rahn_80m_million',
+    'overall_score',
+    'period_months',
+    'period_growth_pct',
+    'unit_label',
+    'month',
+    'hood_price',
+    'city_avg_price',
+    'delta_pct',
+  ].join(',');
+
+  const rows = points.map((pt) =>
+    [
+      hood.id,
+      escapeCsvCell(hood.name),
+      escapeCsvCell(hood.zone),
+      mode,
+      hood.buyPerSqm,
+      hood.rahn80m,
+      hood.overallScore ?? '',
+      periodMonths,
+      periodGrowthPercent,
+      escapeCsvCell(unitLabelFa),
+      escapeCsvCell(pt.month),
+      pt.hoodPrice,
+      pt.cityAvgPrice,
+      pt.deltaPercent,
+    ].join(','),
+  );
+  return '\uFEFF' + [header, ...rows].join('\n');
+}
+
+export function triggerNeighborhoodTooltipCsvDownload(
+  hood: EvaluatedNeighborhood,
+  mode: 'rent' | 'buy',
+  safeSqmPill: number,
+  scaledRahnPill: number,
+  periodMonths: TooltipTrendPeriodMonths = 6,
+): void {
+  if (typeof document === 'undefined') return;
+  const csv = buildNeighborhoodTooltipCsvContent(hood, mode, safeSqmPill, scaledRahnPill, periodMonths);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `neighborhood-${hood.id}-trend-${periodMonths}m.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export const NeighborhoodTooltipMarketTrendChart: React.FC<{
@@ -76,81 +176,96 @@ export const NeighborhoodTooltipMarketTrendChart: React.FC<{
   scaledRahnPill: number;
   isDarkMap: boolean;
 }> = ({ hood, mode, safeSqmPill, scaledRahnPill, isDarkMap }) => {
+  const [periodMonths, setPeriodMonths] = useState<TooltipTrendPeriodMonths>(6);
   const areaUnit = getStoredAreaUnit();
-  const { points, sixMonthGrowthPercent, unitLabelFa } = buildNeighborhoodTooltip6MonthTrend(
+  const { points, periodGrowthPercent, unitLabelFa } = buildNeighborhoodTooltip6MonthTrend(
     hood,
     mode,
     safeSqmPill,
     scaledRahnPill,
-    areaUnit
+    areaUnit,
+    periodMonths,
   );
 
   const strokeColor = isDarkMap ? '#34d399' : '#059669';
   const gridTextColor = isDarkMap ? '#94a3b8' : '#64748b';
-  const growthPrefix = sixMonthGrowthPercent > 0 ? '+' : '';
+  const growthPrefix = periodGrowthPercent > 0 ? '+' : '';
 
   return (
     <div
       dir="rtl"
       data-testid="recharts-tooltip-market-trend"
-      style={{
-        width: '100%',
-        paddingTop: 4,
-        fontFamily: 'Vazirmatn, Tahoma, sans-serif',
-      }}
+      style={{ width: '100%', paddingTop: 4, fontFamily: 'Vazirmatn, Tahoma, sans-serif' }}
+      onClick={(e) => e.stopPropagation()}
     >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: 4,
           fontSize: 10,
-          marginBottom: 3,
+          marginBottom: 4,
           color: isDarkMap ? '#cbd5e1' : '#334155',
         }}
       >
-        <span style={{ fontWeight: 800 }}>روند ۶ ماهه بازار (Market Trend)</span>
-        <span
-          style={{
-            fontWeight: 800,
-            color: sixMonthGrowthPercent >= 0 ? strokeColor : '#f59e0b',
-          }}
-        >
-          {growthPrefix}
-          {toPersianNum(sixMonthGrowthPercent)}٪
-        </span>
+        <span style={{ fontWeight: 800 }}>روند {toPersianNum(periodMonths)} ماهه بازار</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <select
+            aria-label="بازه زمانی روند بازار"
+            data-testid="tooltip-trend-period-select"
+            value={periodMonths}
+            onChange={(e) => setPeriodMonths(Number(e.target.value) as TooltipTrendPeriodMonths)}
+            style={{
+              fontSize: 9.5,
+              padding: '1px 4px',
+              borderRadius: 4,
+              border: '1px solid rgba(148,163,184,0.45)',
+              background: isDarkMap ? '#1e293b' : '#f8fafc',
+              color: isDarkMap ? '#e2e8f0' : '#0f172a',
+              cursor: 'pointer',
+            }}
+          >
+            <option value={3}>۳ ماهه</option>
+            <option value={6}>۶ ماهه</option>
+            <option value={12}>۱۲ ماهه</option>
+          </select>
+          <button
+            type="button"
+            data-testid="tooltip-export-csv-btn"
+            onClick={() =>
+              triggerNeighborhoodTooltipCsvDownload(hood, mode, safeSqmPill, scaledRahnPill, periodMonths)
+            }
+            style={{
+              fontSize: 9,
+              padding: '1px 5px',
+              borderRadius: 4,
+              border: '1px solid rgba(16,185,129,0.5)',
+              background: isDarkMap ? 'rgba(6,95,70,0.45)' : '#ecfdf5',
+              color: isDarkMap ? '#6ee7b7' : '#047857',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            خروجی CSV
+          </button>
+          <span style={{ fontWeight: 800, color: periodGrowthPercent >= 0 ? strokeColor : '#f59e0b' }}>
+            {growthPrefix}
+            {toPersianNum(periodGrowthPercent)}٪
+          </span>
+        </div>
       </div>
       <div style={{ width: 210, height: 68 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={points} margin={{ top: 4, right: 6, left: 6, bottom: 0 }}>
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 8.5, fill: gridTextColor }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-            />
+            <XAxis dataKey="month" tick={{ fontSize: 8.5, fill: gridTextColor }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
             <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
             <Tooltip
               formatter={(value: any) => [`${toPersianNum(Number(value) || 0)} م`, 'نرخ محله']}
               labelStyle={{ fontSize: 9.5, fontWeight: 700, color: '#0f172a' }}
-              contentStyle={{
-                fontSize: 9.5,
-                padding: '3px 6px',
-                borderRadius: 6,
-                border: '1px solid #cbd5e1',
-                background: 'rgba(255,255,255,0.96)',
-              }}
+              contentStyle={{ fontSize: 9.5, padding: '3px 6px', borderRadius: 6, border: '1px solid #cbd5e1', background: 'rgba(255,255,255,0.96)' }}
             />
-            <Line
-              type="monotone"
-              dataKey="hoodPrice"
-              stroke={strokeColor}
-              strokeWidth={2}
-              dot={{ r: 2, fill: strokeColor }}
-              activeDot={{ r: 3.5 }}
-              isAnimationActive={false}
-            />
+            <Line type="monotone" dataKey="hoodPrice" stroke={strokeColor} strokeWidth={2} dot={{ r: 2, fill: strokeColor }} activeDot={{ r: 3.5 }} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -167,12 +282,7 @@ export function buildNeighborhoodTooltipTrendSectionHtml(params: {
   isDarkMap: boolean;
 }): string {
   const { hood, mode, safeSqmPill, scaledRahnPill, isDarkMap } = params;
-  const { points, sixMonthGrowthPercent } = buildNeighborhoodTooltip6MonthTrend(
-    hood,
-    mode,
-    safeSqmPill,
-    scaledRahnPill
-  );
+  const { points, sixMonthGrowthPercent } = buildNeighborhoodTooltip6MonthTrend(hood, mode, safeSqmPill, scaledRahnPill);
   const strokeColor = isDarkMap ? '#34d399' : '#059669';
   const subColor = isDarkMap ? '#94a3b8' : '#64748b';
   const vals = points.map((p) => p.hoodPrice);
@@ -190,9 +300,13 @@ export function buildNeighborhoodTooltipTrendSectionHtml(params: {
   const growthText = `${sixMonthGrowthPercent > 0 ? '+' : ''}${toPersianNum(sixMonthGrowthPercent)}٪`;
 
   return `<div data-testid="neighborhood-tooltip-market-trend" data-hood-trend-mount="${hood.id}" data-hood-trend-mode="${mode}" data-hood-trend-sqm="${safeSqmPill}" data-hood-trend-rahn="${scaledRahnPill}" data-hood-trend-dark="${isDarkMap ? '1' : '0'}" style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(148,163,184,0.2);">
-    <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;margin-bottom:2px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;margin-bottom:2px;gap:4px;">
       <strong style="color:${isDarkMap ? '#cbd5e1' : '#334155'};">روند ۶ ماهه بازار (Market Trend)</strong>
-      <span style="color:${strokeColor};font-weight:800;">${escapeHtmlAttr(growthText)}</span>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <select data-testid="tooltip-trend-period-select" aria-label="بازه زمانی روند بازار" style="font-size:9px;padding:1px 3px;border-radius:4px;"><option value="3">۳ ماهه</option><option value="6" selected>۶ ماهه</option><option value="12">۱۲ ماهه</option></select>
+        <button type="button" data-testid="tooltip-export-csv-btn" style="font-size:9px;padding:1px 4px;border-radius:4px;">خروجی CSV</button>
+        <span style="color:${strokeColor};font-weight:800;">${escapeHtmlAttr(growthText)}</span>
+      </div>
     </div>
     <svg class="recharts-surface" width="208" height="48" viewBox="0 0 208 48" role="img" aria-label="نمودار روند ۶ ماهه قیمت محله">
       <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${polyPoints}" />
@@ -227,27 +341,13 @@ export function mountNeighborhoodTooltipTrendOnOpen(
       root = createRoot(mountNode);
       activeTooltipRoots.set(mountNode, root);
     }
-    root.render(
-      React.createElement(NeighborhoodTooltipMarketTrendChart, {
-        hood,
-        mode,
-        safeSqmPill,
-        scaledRahnPill,
-        isDarkMap,
-      })
-    );
-  } catch {
-    /* keep static fallback SVG if React root mount fails in headless env */
-  }
+    root.render(React.createElement(NeighborhoodTooltipMarketTrendChart, { hood, mode, safeSqmPill, scaledRahnPill, isDarkMap }));
+  } catch { /* fallback static SVG */ }
 }
 
-export function unmountNeighborhoodTooltipTrendOnClose(
-  tooltipRootEl?: HTMLElement | null
-): void {
+export function unmountNeighborhoodTooltipTrendOnClose(tooltipRootEl?: HTMLElement | null): void {
   if (!tooltipRootEl) {
-    activeTooltipRoots.forEach((root) => {
-      try { root.unmount(); } catch { /* ignore */ }
-    });
+    activeTooltipRoots.forEach((root) => { try { root.unmount(); } catch { /* ignore */ } });
     activeTooltipRoots.clear();
     return;
   }

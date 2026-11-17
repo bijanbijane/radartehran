@@ -219,7 +219,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}
         onOpenExpansionModal={(t) => ui.setExpansionModalType(t)} onOpenReverseBudget={() => p.setShowReverseBudgetModal(true)}
         onOpenCompare={() => ui.setShowCompareModal(true)} featureFlags={p.featureFlags} activeCity={p.activeCity}
-        targetSqm={p.targetSqm} activeSubTab={effectiveSubTab as ToolsSubTabId}
+        currentUser={p.currentUser} targetSqm={p.targetSqm} activeSubTab={effectiveSubTab as ToolsSubTabId}
       />
     );
   } else if (primaryView === 'userspace') {
@@ -241,7 +241,8 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   } else if (primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'not_found') {
     content = (
       <ProductSecondaryHubView
-        viewKind={primaryView} activeSubTab={effectiveSubTab as KnowledgeSubTabId} activeCity={p.activeCity} selectedHood={selectedHood}
+        viewKind={primaryView} activeSubTab={effectiveSubTab as KnowledgeSubTabId} activeCity={p.activeCity}
+        currentUser={p.currentUser} isVerifiedAdmin={p.isVerifiedAdmin} selectedHood={selectedHood}
         evaluatedNeighborhoods={evaluatedNeighborhoods} onSelectNeighborhood={handleSelectNeighborhood} onNavigateView={navigateTo}
         onOpenHedonic={() => ui.setShowHedonicModal(true)} onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)}
         onOpenExpansionModal={(t) => ui.setExpansionModalType(t)} onOpenSuperModule={(tab) => { ui.setSuperModuleInitialTab(tab); ui.setShowSuperModulesModal(true); }}

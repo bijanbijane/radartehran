@@ -297,11 +297,18 @@ async function runAllTests() {
     assert.equal(initRes.errorCode, 'GATEWAY_UNAVAILABLE');
   });
 
-  // Test 13: Express API routes integration
-  await verify('Express API router mounts intent, callback, refund, and wallet balance endpoints', async () => {
+  // Test 13: Express API routes integration (fail-closed verified tokens + HMAC callback)
+  await verify('Express API router mounts intent, callback, refund, and wallet balance endpoints safely', async () => {
     const app = express();
     app.use(express.json());
-    app.use('/api/payments', createPaymentRouter(engine));
+    const mockVerifier = {
+      async verifyIdToken(token: string) {
+        if (token === 'token_customer_pay_123456') return { uid: 'cust_express_pay', email: 'cust@example.com', email_verified: true };
+        if (token === 'token_wallet_w1_123456') return { uid: 'user_w_1', email: 'w1@example.com', email_verified: true };
+        throw new Error('INVALID_TOKEN');
+      },
+    };
+    app.use('/api/payments', createPaymentRouter(engine, mockVerifier, { webhookHmacSecret: 'test_hmac_secret_value_1234' }));
 
     const server = http.createServer(app);
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -309,12 +316,26 @@ async function runAllTests() {
     const baseUrl = `http://127.0.0.1:${port}/api/payments`;
 
     try {
-      // 1. POST /api/payments/intent
+      // Spoofed x-test-uid without Bearer token must be rejected
+      const spoofRes = await fetch(`${baseUrl}/intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-test-uid': 'cust_express_pay' },
+        body: JSON.stringify({
+          businessModule: 'SPONSORS',
+          businessObjectId: 'camp_express_1',
+          purpose: 'SPONSOR_CAMPAIGN_RESERVATION',
+          amount: 15000000,
+          currency: 'IRR',
+        }),
+      });
+      assert.equal(spoofRes.status, 401, 'Spoofable x-test-uid header must be rejected');
+
+      // 1. POST /api/payments/intent with verified Bearer token
       const postRes = await fetch(`${baseUrl}/intent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-test-uid': 'cust_express_pay',
+          Authorization: 'Bearer token_customer_pay_123456',
         },
         body: JSON.stringify({
           businessModule: 'SPONSORS',
@@ -327,11 +348,19 @@ async function runAllTests() {
       assert.equal(postRes.status, 201);
       const postJson = (await postRes.json()) as any;
       assert.ok(postJson.ok);
-      const newIntentId = postJson.data.intent.id;
+      assert.ok(postJson.data.intent.id);
 
-      // 2. GET /api/payments/wallet/balance
+      // 2. Unsigned payment callback must fail closed with 401
+      const badCb = await fetch(`${baseUrl}/${postJson.data.intent.id}/callback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerTransactionReference: 'ref_untrusted' }),
+      });
+      assert.equal(badCb.status, 401);
+
+      // 3. GET /api/payments/wallet/balance with verified Bearer token
       const balRes = await fetch(`${baseUrl}/wallet/balance?currency=IRR`, {
-        headers: { 'x-test-uid': 'user_w_1' },
+        headers: { Authorization: 'Bearer token_wallet_w1_123456' },
       });
       assert.equal(balRes.status, 200);
       const balJson = (await balRes.json()) as any;

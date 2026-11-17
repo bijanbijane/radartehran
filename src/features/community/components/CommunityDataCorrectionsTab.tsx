@@ -26,8 +26,8 @@ interface Props {
     evidenceSummaryFa: string;
     suggestedValueFa: string;
     observedDateFa?: string;
-  }) => { ok: boolean; errorFa?: string };
-  onWithdrawProposal: (proposalId: string) => { ok: boolean; errorFa?: string };
+  }) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
+  onWithdrawProposal: (proposalId: string) => Promise<{ ok: boolean; errorFa?: string }> | { ok: boolean; errorFa?: string };
   onSelectAuthor: (username: string) => void;
   onOpenAgencySubmit: () => void;
   onOpenListingVerifier: () => void;
@@ -76,10 +76,10 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
     }
   }, [hoodId, category, titleFa, currentValueFa, suggestedFa, observedDateFa, evidenceFa]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const chosen = hoodChoices.find((h) => h.id === hoodId) || selectedHood;
-    const res = onSubmitProposal({
+    const res = await onSubmitProposal({
       neighborhoodId: chosen.id,
       neighborhoodNameFa: chosen.name,
       category,

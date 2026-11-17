@@ -17,6 +17,7 @@ import { AdminGovernanceModerationWorkspace } from '../../features/admin/compone
 import { AdminDataAndModelCenter } from '../../features/admin/components/AdminDataAndModelCenter';
 import { AdminSecurityAndAuditCenter } from '../../features/admin/components/AdminSecurityAndAuditCenter';
 import { AdminCommunicationsPanel } from '../../features/admin/components/AdminCommunicationsPanel';
+import { AdminPlatformIntelligenceHub } from '../../features/admin/components/AdminPlatformIntelligenceHub';
 import { loadActiveGovernanceRole, saveActiveGovernanceRole } from '../../features/admin/services/adminGovernanceService';
 import type { AdminGovernanceRole } from '../../features/admin/types/admin.types';
 
@@ -195,6 +196,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
           {currentSection === 'content' && (
             <AdminGovernanceModerationWorkspace
               section="content"
+              currentUser={p.currentUser}
               isVerifiedAdmin={p.isVerifiedAdmin}
               activeRole={governanceRole}
             />
@@ -214,6 +216,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
               <AdminServiceModerationCard isVerifiedAdmin={p.isVerifiedAdmin} />
               <AdminGovernanceModerationWorkspace
                 section="users"
+                currentUser={p.currentUser}
                 isVerifiedAdmin={p.isVerifiedAdmin}
                 activeRole={governanceRole}
               />
@@ -222,6 +225,10 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
 
           {currentSection === 'operations' && (
             <AdminCommunicationsPanel isVerifiedAdmin={p.isVerifiedAdmin} />
+          )}
+
+          {(currentSection === 'overview' || currentSection === 'operations') && (
+            <AdminPlatformIntelligenceHub isVerifiedAdmin={p.isVerifiedAdmin} currentUser={p.currentUser} />
           )}
 
           {(currentSection === 'operations' || currentSection === 'security') && (

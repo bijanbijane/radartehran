@@ -234,7 +234,7 @@ export function loadDataRequests(callerUid?: string | null): DataRequestRecord[]
 function defaultRetentionNoteFa(kind: 'export' | 'delete', status: DataRequestStatus, scope?: AccountExportScope): string {
   if (kind === 'delete') {
     if (status === 'failed') return 'عملیات حذف حساب انجام نشد؛ هیچ تغییری روی وضعیت نهایی تکمیل ثبت نشده است.';
-    if (status === 'pending_verification') return 'پاکسازی سرور و داده محلی انجام شد، اما حذف کامل حساب احراز هویت نیازمند ورود مجدد است.';
+    if (status === 'pending_verification') return 'پاکسازی سرور و داده محلی انجام شد، اما حذف کامل حساب احراز هویت نیازمند ورود مجدد است (نگهداری لاگ‌های قانونی طبق مقررات).';
     return 'داده‌های شخصی، آگهی‌ها، منتخب‌ها و سوابق حساب پاکسازی شدند (لاگ‌های ممیزی قانونی مطابق مقررات ناشناس/نگهداری می‌شوند).';
   }
   if (status === 'failed') return 'تهیه یا دانلود خروجی اطلاعات به نتیجه نرسید.';
