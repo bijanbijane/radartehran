@@ -23,8 +23,24 @@ const FS_REST_ROOT = `https://firestore.googleapis.com/v1/projects/${EXPECTED_FI
 const FS_DOC_NAME_PREFIX = `projects/${EXPECTED_FIREBASE_PROJECT_ID}/databases/${EXPECTED_FIRESTORE_DATABASE_ID}/documents`;
 
 export const CLIENT_STORAGE_KEYS_TO_CLEAR = [
-  'tehran_housing_radar_v35_neighborhoods', 'tehran_radar_feature_flags_v35', 'tehran_radar_visited_homes_v1',
-  'tehran_radar_favorite_hoods_v1', 'tehran_radar_recent_searches_v1', 'tehran_radar_area_unit_v1', 'tehran_radar_intl_currency_v1',
+  'tehran_radar_visited_homes_v1',
+  'tehran_radar_favorite_hoods_v1',
+  'tehran_radar_recent_searches_v1',
+  'radar_account_profile_v1',
+  'radar_account_privacy_v1',
+  'radar_account_saved_searches_v1',
+  'radar_account_notif_channels_v1',
+  'radar_account_sessions_v1',
+  'radar_account_data_requests_v1',
+  'radar_account_read_notifications_v1',
+  'radar_saved_properties_v1',
+  'radar_my_listings_v1',
+  'radar_listing_submission_draft_v1',
+  'radar_listing_history_v1',
+  'radar_listing_reports_v1',
+  'radar_valuation_reports_v1',
+  'tehran_radar_saved_market_analyses_v1',
+  'tehran_radar_saved_map_views_v1',
 ] as const;
 
 export interface AccountDeletionExecutionInput {

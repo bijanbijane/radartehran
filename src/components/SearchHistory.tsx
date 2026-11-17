@@ -180,7 +180,7 @@ export function SearchHistory({
         <span className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5 text-slate-400 stroke-[2]" />
           <span>{title}</span>
-          <span className="px-1 py-0.2 rounded bg-slate-200/60 dark:bg-slate-700 text-[9.5px] font-bold tabular-nums">{toPersianNum(recentSearches.length)}</span>
+          <span className="px-1 py-0.5 rounded bg-slate-200/60 dark:bg-slate-700 text-[9.5px] font-bold tabular-nums">{toPersianNum(recentSearches.length)}</span>
         </span>
         {showClearAll && (
           <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.stopPropagation(); clearHistory(); }} className="flex items-center gap-1 text-[10.5px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer" aria-label="پاک کردن همه تاریخچه جست‌وجو">

@@ -1,14 +1,23 @@
-/** @file src/features/account/services/accountWorkspaceService.ts — Cross-Module Personal Workspace Aggregator, Privacy & Session Controls */
+/** @file src/features/account/services/accountWorkspaceService.ts — UID-Isolated Cross-Module Personal Workspace Aggregator, Privacy & Session Controls */
 import { readSavedMapViews, deleteSavedMapView } from '../../../navigation/map/mapToolRailConfig';
 import {
   loadMyListings,
   loadSavedProperties,
   loadUserListingHistory,
   saveMyListings,
+  saveSavedProperties,
 } from '../../properties/services/listingService';
 import { loadSavedValuationReports, persistSavedValuationReports } from '../../valuation/services/valuationWorkspaceService';
 import { loadSavedMarketAnalyses, persistSavedMarketAnalyses } from '../../market/state/marketUrlAdapter';
 import { loadServiceProposals, loadServiceRequests } from '../../services/services/serviceWorkflowService';
+import {
+  cleanupAccountLocalStorageForUid,
+  getActiveAccountScopeUid,
+  readScopedStorageJson,
+  resolveEffectiveUid,
+  setActiveAccountScopeUid,
+  writeScopedStorageJson,
+} from './accountStorageScope';
 import {
   loadAccountProfile,
   loadAuthorizedSessions,
@@ -16,8 +25,6 @@ import {
   loadNotificationChannels,
   loadPrivacyPreferences,
   loadSavedSearchWatchlists,
-  readAccountJson,
-  writeAccountJson,
 } from './accountSettingsStorageService';
 import type {
   AccountActionRequiredItem,
@@ -47,43 +54,51 @@ export {
   trackAccountEvent,
 } from './accountSettingsStorageService';
 
+export { cleanupAccountLocalStorageForUid, setActiveAccountScopeUid, getActiveAccountScopeUid, resolveEffectiveUid };
+
 export function assertAccountResourceOwner(ownerUid: string, callerUid: string): boolean {
   return Boolean(ownerUid && callerUid && ownerUid === callerUid);
 }
 
-export function markAccountNotificationRead(id: string): void {
-  const ids = new Set(readAccountJson<string[]>(ACCOUNT_NOTIF_READ_KEY, []));
+export function markAccountNotificationRead(id: string, uid?: string | null): void {
+  const scopeUid = resolveEffectiveUid(uid);
+  const ids = new Set(readScopedStorageJson<string[]>(ACCOUNT_NOTIF_READ_KEY, [], scopeUid));
   ids.add(id);
-  writeAccountJson(ACCOUNT_NOTIF_READ_KEY, Array.from(ids).slice(-120));
+  writeScopedStorageJson(ACCOUNT_NOTIF_READ_KEY, Array.from(ids).slice(-120), scopeUid);
 }
 
-export function markAllAccountNotificationsRead(allIds: string[]): void {
-  const ids = new Set(readAccountJson<string[]>(ACCOUNT_NOTIF_READ_KEY, []));
+export function markAllAccountNotificationsRead(allIds: string[], uid?: string | null): void {
+  const scopeUid = resolveEffectiveUid(uid);
+  const ids = new Set(readScopedStorageJson<string[]>(ACCOUNT_NOTIF_READ_KEY, [], scopeUid));
   allIds.forEach((id) => ids.add(id));
-  writeAccountJson(ACCOUNT_NOTIF_READ_KEY, Array.from(ids).slice(-120));
+  writeScopedStorageJson(ACCOUNT_NOTIF_READ_KEY, Array.from(ids).slice(-120), scopeUid);
 }
 
-export function removeSavedPropertyById(listingId: string) {
-  const next = loadSavedProperties().filter((x) => x.listingId !== listingId);
-  writeAccountJson('radar_saved_properties_v1', next);
+export function removeSavedPropertyById(listingId: string, uid?: string | null) {
+  const scopeUid = resolveEffectiveUid(uid);
+  const next = loadSavedProperties(scopeUid).filter((x) => x.listingId !== listingId);
+  saveSavedProperties(next, scopeUid);
   return next;
 }
 
-export function removeMyListingById(listingId: string) {
-  const next = loadMyListings().filter((x) => x.listing.listingId !== listingId);
-  saveMyListings(next);
+export function removeMyListingById(listingId: string, uid?: string | null) {
+  const scopeUid = resolveEffectiveUid(uid);
+  const next = loadMyListings(scopeUid).filter((x) => x.listing.listingId !== listingId);
+  saveMyListings(next, scopeUid);
   return next;
 }
 
-export function deleteSavedValuationById(reportId: string) {
-  const next = loadSavedValuationReports().filter((r) => r.id !== reportId);
-  persistSavedValuationReports(next);
+export function deleteSavedValuationById(reportId: string, uid?: string | null) {
+  const scopeUid = resolveEffectiveUid(uid);
+  const next = loadSavedValuationReports(scopeUid).filter((r) => r.id !== reportId);
+  persistSavedValuationReports(next, scopeUid);
   return next;
 }
 
-export function deleteSavedMarketAnalysisById(analysisId: string) {
-  const next = loadSavedMarketAnalyses().filter((a) => a.id !== analysisId);
-  persistSavedMarketAnalyses(next);
+export function deleteSavedMarketAnalysisById(analysisId: string, uid?: string | null) {
+  const scopeUid = resolveEffectiveUid(uid);
+  const next = loadSavedMarketAnalyses(scopeUid).filter((a) => a.id !== analysisId);
+  persistSavedMarketAnalyses(next, scopeUid);
   return next;
 }
 
@@ -133,26 +148,26 @@ export function deriveActionRequiredItems(params: {
 }
 
 export function loadAccountWorkspaceSnapshot(params?: {
-  callerUid?: string;
+  callerUid?: string | null;
   displayName?: string | null;
   visitedHomesCount?: number;
 }): AccountWorkspaceSnapshot {
-  const uid = params?.callerUid || 'local-user';
+  const uid = resolveEffectiveUid(params?.callerUid);
   const profile = loadAccountProfile(uid, params?.displayName || 'کاربر رادار تهران');
-  const privacy = loadPrivacyPreferences();
-  const notificationChannels = loadNotificationChannels();
-  const savedProperties = loadSavedProperties();
-  const myListings = loadMyListings();
-  const savedValuations = loadSavedValuationReports();
-  const savedMarketAnalyses = loadSavedMarketAnalyses();
-  const savedMapViews = readSavedMapViews();
-  const savedSearches = loadSavedSearchWatchlists();
-  const serviceRequests = loadServiceRequests();
-  const serviceProposals = loadServiceProposals();
-  const listingEvents = loadUserListingHistory();
-  const sessions = loadAuthorizedSessions();
-  const dataRequests = loadDataRequests();
-  const readIds = new Set(readAccountJson<string[]>(ACCOUNT_NOTIF_READ_KEY, []));
+  const privacy = loadPrivacyPreferences(uid);
+  const notificationChannels = loadNotificationChannels(uid);
+  const savedProperties = loadSavedProperties(uid);
+  const myListings = loadMyListings(uid);
+  const savedValuations = loadSavedValuationReports(uid);
+  const savedMarketAnalyses = loadSavedMarketAnalyses(uid);
+  const savedMapViews = readSavedMapViews(uid);
+  const savedSearches = loadSavedSearchWatchlists(uid);
+  const serviceRequests = loadServiceRequests(uid);
+  const serviceProposals = loadServiceProposals(undefined, uid);
+  const listingEvents = loadUserListingHistory(uid);
+  const sessions = loadAuthorizedSessions(uid);
+  const dataRequests = loadDataRequests(uid);
+  const readIds = new Set(readScopedStorageJson<string[]>(ACCOUNT_NOTIF_READ_KEY, [], uid));
 
   const notifications: AccountNotificationItem[] = [
     ...serviceProposals.map((p) => ({
@@ -245,21 +260,57 @@ export function loadAccountWorkspaceSnapshot(params?: {
   };
 }
 
-export function buildLocalWorkspaceExportBundle(): Record<string, unknown> {
-  const snap = loadAccountWorkspaceSnapshot();
+export function buildLocalWorkspaceExportBundle(uid?: string | null): Record<string, unknown> {
+  const scopeUid = resolveEffectiveUid(uid);
+  const snap = loadAccountWorkspaceSnapshot({ callerUid: scopeUid });
   return {
+    schemaVersion: '2.0.0',
     exportedAtIso: new Date().toISOString(),
     scope: 'local_workspace_snapshot',
-    profile: snap.profile,
-    privacy: snap.privacy,
-    notificationChannels: snap.notificationChannels,
-    savedProperties: snap.savedProperties,
-    myListingsCount: snap.myListings.length,
-    savedValuations: snap.savedValuations,
-    savedMarketAnalyses: snap.savedMarketAnalyses,
-    savedMapViews: snap.savedMapViews,
-    savedSearches: snap.savedSearches,
-    serviceRequests: snap.serviceRequests,
+    exportScope: 'local_workspace',
+    origin: 'local_workspace',
+    ownerUid: scopeUid,
+    includedSources: [
+      'local_profile',
+      'local_privacy_preferences',
+      'local_notification_channels',
+      'local_saved_properties',
+      'local_saved_valuations',
+      'local_saved_market_analyses',
+      'local_saved_map_views',
+      'local_saved_searches',
+      'local_service_requests',
+    ],
+    excludedSources: [
+      'server_account_firestore',
+      'server_bargains_and_sponsors',
+      'firebase_auth_identity',
+      'security_tokens_and_secrets',
+    ],
+    localWorkspaceData: {
+      profile: {
+        displayName: snap.profile.displayName,
+        preferredCityId: snap.profile.preferredCityId,
+        preferredPurpose: snap.profile.preferredPurpose,
+        activeRoles: snap.profile.activeRoles,
+        activeWorkspaceMode: snap.profile.activeWorkspaceMode,
+      },
+      privacy: snap.privacy,
+      notificationChannels: snap.notificationChannels,
+      savedProperties: snap.savedProperties,
+      myListingsCount: snap.myListings.length,
+      savedValuations: snap.savedValuations,
+      savedMarketAnalyses: snap.savedMarketAnalyses,
+      savedMapViews: snap.savedMapViews,
+      savedSearches: snap.savedSearches,
+      serviceRequests: snap.serviceRequests.map((r) => ({
+        id: r.id,
+        providerName: r.providerName,
+        neighborhoodName: r.neighborhoodName,
+        canonicalCategory: r.canonicalCategory,
+        status: r.status,
+        createdAtIso: r.createdAtIso,
+      })),
+    },
   };
 }
-

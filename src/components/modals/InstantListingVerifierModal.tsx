@@ -3,7 +3,7 @@
  * @description Instant Real Estate Listing Verifier, Bubble Scanner, and Red-Flag Trap Diagnostic Modal.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ShieldAlert, Sparkles, CheckCircle2, AlertTriangle, HelpCircle,
   Copy, Check, X, PhoneCall, ChevronRight, Zap
@@ -19,6 +19,7 @@ import { toPersianNum as toPersianDigits, INITIAL_NEIGHBORHOODS, type EvaluatedN
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { convertPricePerSqmToUnitRaw, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { useDialogFocus } from '../useDialogFocus';
 
 export interface InstantListingVerifierModalProps {
   isOpen: boolean;
@@ -38,7 +39,9 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
   const [radarLocale] = useRadarLocale();
-  useExchangeRateSnapshot();
+  const rateState = useExchangeRateSnapshot();
+  const dialogRef = useDialogFocus(isOpen, onClose);
+  const copyTimerRef = useRef<number | null>(null);
   const cityNameFa = MULTI_CITY_CONFIGS[cityKey as CityId]?.nameFa || 'تهران';
   const [inputText, setInputText] = useState<string>('');
   const [selectedHoodName, setSelectedHoodName] = useState<string>(initialHoodName);
@@ -58,6 +61,12 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
       if (initialListingText) setInputText(initialListingText);
     }
   }, [isOpen, initialHoodName, initialListingText, evaluatedNeighborhoods]);
+  useEffect(() => () => {
+    if (copyTimerRef.current !== null) {
+      window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = null;
+    }
+  }, []);
 
   if (!isOpen) return null;
 
@@ -95,14 +104,17 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
     const unitDeal = Math.round(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit) * 10) / 10;
     const uSuffix = areaUnit === 'sqft' ? 'م/ft²' : 'م.ت';
     const text = `گزارش کارشناسی رادار ${cityNameFa} (${diagnosis.hoodName}):\nوضعیت قیمت: ${diagnosis.verdictLabelFa}\nمبنای مرجع: ${toPersianDigits(unitDeal)} ${uSuffix}\nسقف حباب شناسایی‌شده: ${toPersianDigits(diagnosis.totalBubbleMillion)} م.ت\nپیشنهاد خرید در نشست: ${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت\nتله‌های شناسایی‌شده: ${diagnosis.redFlags.map((r) => r.title).join(' • ') || 'موردی یافت نشد.'}`;
-    navigator.clipboard?.writeText(text);
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => { copyTimerRef.current = null; setCopied(false); }, 2000);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm" dir="rtl">
-      <div role="dialog" aria-modal="true" aria-label="آنتی‌ویروس و کارشناسی فوری آگهی مسکن" className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="آنتی‌ویروس و کارشناسی فوری آگهی مسکن" className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850">
           <div className="flex items-center gap-2">
@@ -134,6 +146,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
               <div className="flex items-center gap-1 text-[10px]">
                 <span className="text-slate-400">محله مبنا:</span>
                 <select
+                  aria-label="انتخاب محله مبنا"
                   value={selectedHoodName}
                   onChange={(e) => setSelectedHoodName(e.target.value)}
                   className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-bold"
@@ -217,7 +230,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? `${diagnosis.benchmarkLabelFa}:` : 'کف سناریوی مذاکره (غیرثبتی):'}</span>
                   <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs">
-                    {toPersianDigits(Math.round(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit) * 10) / 10)} {areaUnit === 'sqft' ? 'م/ft²' : 'م/متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}
+                    {toPersianDigits(Math.round(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit) * 10) / 10)} {areaUnit === 'sqft' ? 'م/ft²' : 'م/متر'}{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(diagnosis.fairDealPricePerSqm, areaUnit), intlCurrency, radarLocale, rateState.snapshot)})` : ''}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
@@ -229,7 +242,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 block">پیشنهاد نشست:</span>
                   <span className="font-extrabold text-indigo-700 dark:text-indigo-300 text-xs">
-                    {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'نداریم' : `${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(diagnosis.negotiationScript.openingOfferMillion, intlCurrency, radarLocale)})` : ''}`}
+                    {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'نداریم' : `${toPersianDigits(diagnosis.negotiationScript.openingOfferMillion)} م.ت${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(diagnosis.negotiationScript.openingOfferMillion, intlCurrency, radarLocale, rateState.snapshot)})` : ''}`}
                   </span>
                 </div>
               </div>

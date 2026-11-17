@@ -1,3 +1,4 @@
+/** @file src/features/data-governance/services/qualitySufficiencyEvaluators.ts — Truthful Freshness & Multi-Dimensional Quality Evaluator */
 import {
   DataFreshnessStatus,
   DataQualityStatus,
@@ -6,9 +7,8 @@ import {
 } from '../models/dataGovernance.types';
 
 /**
- * §12.1–12.5 Data Freshness & Anti-Artificial-Renewal Evaluator:
- * Re-copying or re-syncing an old record updates `recordedAt`, but `observedAt`
- * determines actual freshness!
+ * Data Freshness & Anti-Artificial-Renewal Evaluator:
+ * Re-copying or re-syncing an old record updates `recordedAt`, while `observedAt` determines freshness.
  */
 export function evaluateDataFreshness(params: {
   observedAt: string;
@@ -16,12 +16,23 @@ export function evaluateDataFreshness(params: {
   referenceNowIso?: string;
   maxFreshDays?: number;
   maxAgingDays?: number;
-}): { freshnessStatus: DataFreshnessStatus; ageInDays: number; warningFa?: string } {
-  const nowMs = new Date(params.referenceNowIso || '2026-04-12T12:00:00Z').getTime();
+}): { freshnessStatus: DataFreshnessStatus; ageInDays: number; isFutureTimestamp?: boolean; warningFa?: string } {
+  const nowIso = params.referenceNowIso || new Date().toISOString();
+  const nowMs = new Date(nowIso).getTime();
   const observedMs = new Date(params.observedAt).getTime();
-  if (!Number.isFinite(observedMs)) {
-    return { freshnessStatus: 'UNKNOWN', ageInDays: -1, warningFa: 'زمان مشاهده (observedAt) نامشخص است.' };
+
+  if (!Number.isFinite(nowMs) || !Number.isFinite(observedMs)) {
+    return { freshnessStatus: 'UNKNOWN', ageInDays: -1, warningFa: 'زمان مشاهده (observedAt) نامعتبر یا نامشخص است.' };
   }
+  if (observedMs > nowMs + 60_000) {
+    return {
+      freshnessStatus: 'UNKNOWN',
+      ageInDays: -1,
+      isFutureTimestamp: true,
+      warningFa: 'زمان مشاهده (observedAt) در آینده ثبت شده و فاقد اعتبار است.',
+    };
+  }
+
   const ageInDays = Math.max(0, Math.floor((nowMs - observedMs) / (1000 * 60 * 60 * 24)));
   const freshLimit = params.maxFreshDays ?? 30;
   const agingLimit = params.maxAgingDays ?? 90;
@@ -38,19 +49,16 @@ export function evaluateDataFreshness(params: {
     return {
       freshnessStatus: 'STALE',
       ageInDays,
-      warningFa: `داده قدیمی است (${ageInDays} روز از زمان مشاهده گذشته؛ صرف همگام‌سازی مجدد در ${params.recordedAt.slice(0, 10)} تازگی واقعی ایجاد نمی‌کند).`,
+      warningFa: `داده قدیمی است (${ageInDays} روز از زمان مشاهده گذشته؛ ثبت مجدد در ${params.recordedAt.slice(0, 10) || '—'} تازگی ایجاد نمی‌کند).`,
     };
   }
   return {
     freshnessStatus: 'EXPIRED',
     ageInDays,
-    warningFa: `داده منقضی شده است (${ageInDays} روز از زمان مرجع گذشته است).`,
+    warningFa: `داده منقضی شده است (${ageInDays} روز از زمان مشاهده واقعی گذشته است).`,
   };
 }
 
-/**
- * §11.3–11.5 Sample Sufficiency & Multi-Dimensional Quality Assessment
- */
 export function evaluateMarketSampleSufficiency(params: {
   targetId: string;
   sampleCount: number;
@@ -60,10 +68,20 @@ export function evaluateMarketSampleSufficiency(params: {
   methodologyVersion?: string;
   observedAt: string;
   recordedAt: string;
+  referenceNowIso?: string;
+  verifiedEvidenceCount?: number;
+  hasCompletenessGaps?: boolean;
   hasUnitMismatch?: boolean;
   hasDuplicateIds?: boolean;
+  runId?: string;
 }): MultiDimensionalQualityAssessment {
-  const freshness = evaluateDataFreshness({ observedAt: params.observedAt, recordedAt: params.recordedAt });
+  const nowIso = params.referenceNowIso || new Date().toISOString();
+  const freshness = evaluateDataFreshness({
+    observedAt: params.observedAt,
+    recordedAt: params.recordedAt,
+    referenceNowIso: nowIso,
+  });
+
   let coverage: SampleSufficiencyStatus = 'STRONG';
   const limitationsFa: string[] = [];
 
@@ -81,20 +99,30 @@ export function evaluateMarketSampleSufficiency(params: {
   if (!params.hasMethodologyVersion) limitationsFa.push('نسخه روش محاسبه (Methodology Version) مشخص نشده است.');
   if (freshness.warningFa) limitationsFa.push(freshness.warningFa);
 
+  const verifiedCount = params.verifiedEvidenceCount ?? 0;
+  const completeness: MultiDimensionalQualityAssessment['completeness'] =
+    params.hasCompletenessGaps || params.sampleCount < 5 ? 'FAIL' : params.sampleCount < 15 ? 'WARN' : 'PASS';
+  const accuracyEvidence: MultiDimensionalQualityAssessment['accuracyEvidence'] = !params.hasSourceId
+    ? 'UNVERIFIED'
+    : verifiedCount > 0 && params.uniqueEntityCount >= 25
+      ? 'VERIFIED'
+      : 'SUPPORTED';
+
   let overallStatus: DataQualityStatus = 'VERIFIED';
-  if (params.hasUnitMismatch) overallStatus = 'REJECTED';
-  else if (!params.hasSourceId || !params.hasMethodologyVersion) overallStatus = 'UNVERIFIED';
+  if (params.hasUnitMismatch || freshness.isFutureTimestamp) overallStatus = 'REJECTED';
+  else if (!params.hasSourceId || !params.hasMethodologyVersion || freshness.freshnessStatus === 'UNKNOWN') overallStatus = 'UNVERIFIED';
   else if (coverage === 'INSUFFICIENT') overallStatus = 'INCOMPLETE';
   else if (freshness.freshnessStatus === 'STALE' || freshness.freshnessStatus === 'EXPIRED') overallStatus = 'STALE';
-  else if (coverage === 'LIMITED') overallStatus = 'ESTIMATED';
+  else if (coverage === 'LIMITED' || verifiedCount === 0) overallStatus = 'ESTIMATED';
 
+  const runSuffix = params.runId || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   return {
-    id: `qa-${params.targetId}`,
+    id: `qa-${params.targetId}-${runSuffix}`,
     targetType: 'DATASET',
     targetId: params.targetId,
-    completeness: params.sampleCount >= 5 ? 'PASS' : 'FAIL',
-    validity: params.hasUnitMismatch ? 'FAIL' : 'PASS',
-    accuracyEvidence: params.hasSourceId && params.uniqueEntityCount >= 25 ? 'VERIFIED' : 'SUPPORTED',
+    completeness,
+    validity: params.hasUnitMismatch || freshness.isFutureTimestamp ? 'FAIL' : 'PASS',
+    accuracyEvidence,
     consistency: params.hasUnitMismatch ? 'FAIL' : 'PASS',
     timeliness: freshness.freshnessStatus,
     uniqueness: params.hasDuplicateIds ? 'DUPLICATE_DETECTED' : 'UNIQUE',
@@ -104,7 +132,7 @@ export function evaluateMarketSampleSufficiency(params: {
     sampleCount: params.sampleCount,
     uniqueEntityCount: params.uniqueEntityCount,
     methodologyVersion: params.methodologyVersion || 'NONE',
-    assessedAt: new Date().toISOString(),
+    assessedAt: nowIso,
     assessedBy: 'quality-engine-v28',
     limitationsFa,
   };

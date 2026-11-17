@@ -71,7 +71,7 @@ test('Stage 22 enforces ownership checks and aggregates valuations, searches, se
       sensitivityMinMillion: 11800,
       sensitivityMaxMillion: 13200,
     },
-  ]);
+  ], 'uid-1');
 
   const req = submitServiceRequest({
     ownerUserId: 'uid-1',
@@ -106,9 +106,9 @@ test('Stage 22 enforces ownership checks and aggregates valuations, searches, se
     module: 'properties',
     filtersSnapshot: { hoodId: 1 },
     alertCadence: 'daily_digest',
-  });
+  }, 'uid-1');
   assert.equal(searches.length, 1);
-  const updatedCadence = toggleSavedSearchAlertCadence(searches[0].id, 'instant_important');
+  const updatedCadence = toggleSavedSearchAlertCadence(searches[0].id, 'instant_important', 'uid-1');
   assert.equal(updatedCadence[0].alertCadence, 'instant_important');
 
   const snap = loadAccountWorkspaceSnapshot({ callerUid: 'uid-1', displayName: 'مینا راد' });
@@ -121,11 +121,11 @@ test('Stage 22 enforces ownership checks and aggregates valuations, searches, se
   assert.ok(snap.activityTimeline.some((a) => a.kind === 'valuation'));
 
   const propNotif = snap.notifications.find((n) => n.category === 'service_proposal')!;
-  markAccountNotificationRead(propNotif.id);
+  markAccountNotificationRead(propNotif.id, 'uid-1');
   const afterRead = loadAccountWorkspaceSnapshot({ callerUid: 'uid-1' });
   assert.equal(afterRead.notifications.find((n) => n.id === propNotif.id)?.read, true);
 
-  assert.equal(deleteSavedSearchWatchlist(searches[0].id).length, 0);
+  assert.equal(deleteSavedSearchWatchlist(searches[0].id, 'uid-1').length, 0);
 });
 
 test('Stage 22 manages roles, workspace mode, channel separation, retention-aware data requests, and scrubs PII from telemetry', () => {
@@ -138,26 +138,27 @@ test('Stage 22 manages roles, workspace mode, channel separation, retention-awar
   assert.equal(savedProf.displayName, 'امیرحسین');
   assert.equal(loadAccountProfile('uid-2').activeWorkspaceMode, 'listings_owner');
 
-  const channels = updateNotificationChannels({ email: true, sms: false, marketingOptIn: false });
+  const channels = updateNotificationChannels({ email: true, sms: false, marketingOptIn: false }, 'uid-2');
   assert.equal(channels.email, true);
   assert.equal(channels.marketingOptIn, false);
-  assert.equal(loadNotificationChannels().securityAlertsMandatory, true);
+  assert.equal(loadNotificationChannels('uid-2').securityAlertsMandatory, true);
 
-  const priv = updatePrivacyPreferences({ sharePhoneOnlyAfterConsent: true, storeSearchHistoryLocally: false });
-  assert.equal(loadPrivacyPreferences().storeSearchHistoryLocally, false);
+  const priv = updatePrivacyPreferences({ sharePhoneOnlyAfterConsent: true, storeSearchHistoryLocally: false }, 'uid-2');
+  assert.equal(loadPrivacyPreferences('uid-2').storeSearchHistoryLocally, false);
   assert.equal(priv.sharePhoneOnlyAfterConsent, true);
 
-  recordDataRequest('delete', 'pending_verification');
-  const dataReqs = loadDataRequests();
+  recordDataRequest('delete', 'pending_verification', { uid: 'uid-2' });
+  const dataReqs = loadDataRequests('uid-2');
   assert.equal(dataReqs.length, 1);
   assert.ok(dataReqs[0].retentionNotesFa.includes('نگهداری'));
 
-  const sessions = loadAuthorizedSessions();
+  const sessions = loadAuthorizedSessions('uid-2');
   assert.equal(sessions.length, 1);
-  assert.equal(revokeAuthorizedSession(sessions[0].sessionId).length, 1);
+  assert.equal(revokeAuthorizedSession(sessions[0].sessionId, 'uid-2').length, 1);
 
-  const bundle = buildLocalWorkspaceExportBundle();
+  const bundle = buildLocalWorkspaceExportBundle('uid-2');
   assert.equal(bundle.scope, 'local_workspace_snapshot');
+  assert.equal(bundle.exportScope, 'local_workspace');
 
   trackAccountEvent('account_test_event', {
     phone: '09120001111',

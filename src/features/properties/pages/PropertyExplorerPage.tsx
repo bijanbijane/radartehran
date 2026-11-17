@@ -19,10 +19,12 @@ import {
   loadSavedProperties,
   loadUserListingHistory,
   saveMyListings,
+  saveSavedProperties,
   submitListingReport,
   toggleSavedProperty,
   type SavedPropertySnapshot,
 } from '../services/listingService';
+import { ACCOUNT_WORKSPACE_UPDATED_EVENT } from '../../account/services/accountStorageScope';
 import { optimisticUpdateListing } from '../moderation/ListingValidation';
 import { trackPropertyEvent } from '../state/propertyUrlAdapter';
 import type { PropertyListingRecord } from '../types/listing.types';
@@ -60,6 +62,14 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
   const [sectionTab, setSectionTab] = useState<ExplorerSectionTab>('discover');
   const [myListings, setMyListings] = useState<PropertyListingRecord[]>(() => loadMyListings());
   const [savedItems, setSavedItems] = useState<SavedPropertySnapshot[]>(() => loadSavedProperties());
+  useEffect(() => {
+    const syncScopedListings = () => {
+      setMyListings(loadMyListings());
+      setSavedItems(loadSavedProperties());
+    };
+    window.addEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, syncScopedListings);
+    return () => window.removeEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, syncScopedListings);
+  }, []);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -199,7 +209,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
             if ('listing' in target) setSavedItems(toggleSavedProperty(target));
             else {
               const filtered = savedItems.filter((x) => x.listingId !== target.listingId);
-              window.localStorage.setItem('radar_saved_properties_v1', JSON.stringify(filtered));
+              saveSavedProperties(filtered);
               setSavedItems(filtered);
             }
           }}

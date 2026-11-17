@@ -7,14 +7,22 @@ import { DataCredibilityBadge, DataProvenanceBar, RadarCard, RadarMetricCard } f
 import { InteractionQaLabTab } from './InteractionQaLabTab';
 import { ValidationAndImplementLabTab } from './ValidationAndImplementLabTab';
 import { OnboardingAndResponsiveHelpCenter } from '../../features/onboarding/components/OnboardingAndResponsiveHelpCenter';
+import { isRadarUiLabAvailable } from '../../features/tools/services/toolsCatalogEngine';
 
-export const RadarUiLabPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export interface RadarUiLabPanelProps {
+  onClose: () => void;
+  isDevEnvironment?: boolean;
+}
+
+export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDevEnvironment }) => {
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
   const [activeLabTab, setActiveLabTab] = useState<'components' | 'interaction' | 'validation' | 'onboarding'>('components');
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [areaSqm, setAreaSqm] = useState('95');
   const [budgetVal, setBudgetVal] = useState('12500');
   const [dealType, setDealType] = useState<'buy' | 'rent'>('buy');
+
+  if (!isRadarUiLabAvailable(isDevEnvironment)) return null;
 
   const areaNum = Number(areaSqm);
   const areaError = areaSqm.trim() && (!Number.isFinite(areaNum) || areaNum < 20 || areaNum > 1000)

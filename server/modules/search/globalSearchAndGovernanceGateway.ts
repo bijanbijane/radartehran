@@ -5,7 +5,6 @@
  * - Stage 29 (RT-UI-ANALYTICS-001): Data Platform, Metric Registry, Market/Neighborhood Analytics & Research Workspace
  * - Stage 31 (RT-UI-PERSONALIZATION-001): Personal Workspace, Saved Items & User Preferences
  */
-
 import type { Express, Request, Response } from 'express';
 import {
   defaultSearchEngine,
@@ -14,13 +13,14 @@ import {
 import { validateRawSearchQuery } from '../../../src/features/search/services/searchNormalizerAndPlanner';
 import { defaultSearchWorkspaceService } from '../../../src/features/search/services/searchWorkspaceService';
 import type { SearchScope, SearchSortOption } from '../../../src/features/search/models/search.types';
-import { defaultDataGovernanceEngine } from '../../../src/features/data-governance/services/dataGovernanceEngine';
-import { buildPublicProvenanceContract } from '../../../src/features/data-governance/services/claimsAndLineageService';
-import {
-  defaultAnalyticsPlatformEngine,
-  OFFICIAL_METRIC_REGISTRY,
-} from '../../../src/features/analytics/services/analyticsPlatformEngine';
 import { defaultPersonalizationEngine } from '../../../src/features/account/services/personalizationAndPreferencesEngine';
+import {
+  verifyAdminApiAuthorization,
+  verifyAuthenticatedUserHeader,
+} from '../../../src/utils/serverAdminAndTelegramSecurity';
+import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
+import { registerDataGovernanceRoutes } from '../data-governance/dgovRoutes';
+import { registerAnalyticsResearchRoutes } from '../analytics-research/analyticsRoutes';
 
 const registeredApps = new WeakSet<Express>();
 
@@ -37,7 +37,6 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   const getIp = deps?.getClientIp || ((req: Request) => req.ip || '127.0.0.1');
   const checkLimit = deps?.checkRateLimit || (() => true);
 
-  // STAGE 27 & 30: GLOBAL SEARCH, DISCOVERY & SAVED SEARCHES
   app.get(['/api/v1/search', '/api/search'], (req: Request, res: Response) => {
     if (!checkLimit(getIp(req), 'v1-search', 90, 60_000)) {
       res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های جست‌وجو بیش از حد مجاز است.' });
@@ -45,45 +44,26 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
     }
     const rawQuery = typeof req.query.q === 'string' ? req.query.q : '';
     const valid = validateRawSearchQuery(rawQuery);
-    if (!valid.valid) {
-      res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa });
-      return;
-    }
+    if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
     const scope = (typeof req.query.scope === 'string' ? req.query.scope : 'ALL') as SearchScope;
     const sort = (typeof req.query.sort === 'string' ? req.query.sort : 'RELEVANCE') as SearchSortOption;
-    const response = defaultSearchEngine.executeSearch({
-      rawQuery,
-      scope,
-      sort,
-      caller: { isAuthenticated: Boolean(req.headers.authorization) },
-    });
-    res.status(200).json(response);
+    res.status(200).json(defaultSearchEngine.executeSearch({ rawQuery, scope, sort, caller: { isAuthenticated: Boolean(req.headers.authorization) } }));
   });
 
   app.post('/api/v1/search/query', (req: Request, res: Response) => {
     const body = req.body || {};
     const rawQuery = typeof body.q === 'string' ? body.q : '';
     const valid = validateRawSearchQuery(rawQuery);
-    if (!valid.valid) {
-      res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa });
-      return;
-    }
+    if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
     if (body.filters?.polygon) {
       const geoValid = validateUserPolygonGeometry(body.filters.polygon);
-      if (!geoValid.valid) {
-        res.status(400).json({ errorCode: geoValid.errorCode, messageFa: geoValid.messageFa });
-        return;
-      }
+      if (!geoValid.valid) { res.status(400).json({ errorCode: geoValid.errorCode, messageFa: geoValid.messageFa }); return; }
     }
-    const response = defaultSearchEngine.executeSearch({
+    res.status(200).json(defaultSearchEngine.executeSearch({
       requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
-      rawQuery,
-      scope: body.scope || 'ALL',
-      explicitFilters: body.filters || {},
-      sort: body.sort || 'RELEVANCE',
+      rawQuery, scope: body.scope || 'ALL', explicitFilters: body.filters || {}, sort: body.sort || 'RELEVANCE',
       caller: { isAuthenticated: Boolean(req.headers.authorization) },
-    });
-    res.status(200).json(response);
+    }));
   });
 
   app.get(['/api/v1/search/suggest', '/api/search/suggestions'], (req: Request, res: Response) => {
@@ -105,136 +85,68 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
     });
   });
 
-  app.get(['/api/v1/saved-searches', '/api/search/saved'], (_req: Request, res: Response) => {
+  app.get(['/api/v1/saved-searches', '/api/search/saved'], async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
     res.status(200).json({ items: defaultSearchWorkspaceService.getSavedSearches() });
   });
 
-  app.post(['/api/v1/saved-searches', '/api/search/saved'], (req: Request, res: Response) => {
+  app.post(['/api/v1/saved-searches', '/api/search/saved'], async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
     const body = req.body || {};
     const created = defaultSearchWorkspaceService.createSavedSearch({
       titleFa: String(body.titleFa || body.query || 'جست‌وجوی ذخیره‌شده'),
-      query: String(body.query || ''),
-      scope: (body.scope || 'ALL') as SearchScope,
-      filters: body.filters || {},
-      alertFrequency: body.alertFrequency || 'OFF',
+      query: String(body.query || ''), scope: (body.scope || 'ALL') as SearchScope,
+      filters: body.filters || {}, alertFrequency: body.alertFrequency || 'OFF',
     });
     res.status(201).json({ item: created });
   });
 
-  app.get('/api/v1/search-history', (_req: Request, res: Response) => {
-    res.status(200).json({
-      items: defaultSearchWorkspaceService.getSearchHistory(),
-      privacy: defaultSearchWorkspaceService.getPrivacySettings(),
-    });
+  app.get('/api/v1/search-history', async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
+    res.status(200).json({ items: defaultSearchWorkspaceService.getSearchHistory(), privacy: defaultSearchWorkspaceService.getPrivacySettings() });
   });
 
-  app.delete('/api/v1/search-history', (_req: Request, res: Response) => {
+  app.delete('/api/v1/search-history', async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
     defaultSearchWorkspaceService.clearSearchHistory();
     res.status(200).json({ cleared: true });
   });
 
-  app.get('/api/admin/search/overview', (_req: Request, res: Response) => {
+  app.get('/api/admin/search/overview', async (req: Request, res: Response) => {
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized) { recordAbuseSignal(getIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     res.status(200).json(defaultSearchEngine.getAdminDiagnostics());
   });
 
-  app.post('/api/admin/search/reindex', (req: Request, res: Response) => {
+  app.post('/api/admin/search/reindex', async (req: Request, res: Response) => {
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     const scope = (req.body?.scope || 'ALL') as SearchScope;
     res.status(200).json({ job: defaultSearchEngine.triggerReindex(scope) });
   });
 
-  // STAGE 28: DATA GOVERNANCE, PROVENANCE, SOURCE REGISTRY & CLAIMS
-  app.get('/api/v1/data-governance/sources', (_req: Request, res: Response) => {
-    res.status(200).json({ sources: defaultDataGovernanceEngine.getSources() });
-  });
+  registerDataGovernanceRoutes(app, { getIp });
+  registerAnalyticsResearchRoutes(app, { getIp });
 
-  app.post('/api/v1/data-governance/sources', (req: Request, res: Response) => {
-    const result = defaultDataGovernanceEngine.registerSource(req.body || {});
-    res.status(result.ok ? 201 : 400).json(result);
-  });
-
-  app.get('/api/v1/data-governance/claims', (_req: Request, res: Response) => {
-    res.status(200).json({
-      claims: defaultDataGovernanceEngine.getClaims(),
-      reconciliationCases: defaultDataGovernanceEngine.getReconciliationCases(),
-    });
-  });
-
-  app.get('/api/v1/data-governance/lineage/:type/:id', (req: Request, res: Response) => {
-    res.status(200).json({ entityId: req.params.id, edges: defaultDataGovernanceEngine.getLineageForEntity(String(req.params.id)) });
-  });
-
-  app.get('/api/v1/data-governance/versions/:type/:id', (req: Request, res: Response) => {
-    res.status(200).json({ entityId: req.params.id, versions: defaultDataGovernanceEngine.getEntityVersions(String(req.params.id)) });
-  });
-
-  app.get('/api/v1/data-governance/provenance/:id', (req: Request, res: Response) => {
-    const id = String(req.params.id || 'saadat-abad');
-    res.status(200).json(buildPublicProvenanceContract({ entityId: id, neighborhoodNameFa: id === 'punak' ? 'پونک' : 'سعادت‌آباد', sampleCount: 124, uniqueEntityCount: 98 }));
-  });
-
-  app.get('/api/v1/data-corrections', (_req: Request, res: Response) => {
-    res.status(200).json({ proposals: defaultDataGovernanceEngine.getCorrectionProposals() });
-  });
-
-  app.post('/api/v1/data-governance/reconciliation/resolve', (req: Request, res: Response) => {
-    const body = req.body || {};
-    const out = defaultDataGovernanceEngine.resolveConflictCase({
-      caseId: String(body.caseId || ''),
-      reviewerId: String(body.reviewerId || 'reviewer-steward-1'),
-      resolutionValue: body.resolutionValue,
-      resolutionReasonFa: String(body.resolutionReasonFa || ''),
-      isAutomatedAttempt: Boolean(body.isAutomatedAttempt),
-    });
-    res.status(out.ok ? 200 : 400).json(out);
-  });
-
-  // STAGE 29: ANALYTICS PLATFORM, METRIC REGISTRY & RESEARCH WORKSPACE
-  app.get('/api/v1/analytics/metrics', (_req: Request, res: Response) => {
-    res.status(200).json({ metrics: OFFICIAL_METRIC_REGISTRY });
-  });
-
-  app.get('/api/v1/analytics/metrics/:code', (req: Request, res: Response) => {
-    const metric = OFFICIAL_METRIC_REGISTRY.find((m) => m.metricCode === req.params.code);
-    if (!metric) {
-      res.status(404).json({ errorFa: 'شاخص در Metric Registry یافت نشد.' });
-      return;
-    }
-    res.status(200).json({ metric, snapshot: defaultAnalyticsPlatformEngine.getMetricSnapshotForPlace('saadat-abad', 142) });
-  });
-
-  app.get('/api/v1/analytics/market', (req: Request, res: Response) => {
-    const placeId = typeof req.query.placeId === 'string' ? req.query.placeId : 'saadat-abad';
-    res.status(200).json(defaultAnalyticsPlatformEngine.getOverviewBundle(placeId, 142));
-  });
-
-  app.get('/api/v1/analytics/neighborhoods/:id', (req: Request, res: Response) => {
-    res.status(200).json(defaultAnalyticsPlatformEngine.getOverviewBundle(String(req.params.id || 'saadat-abad'), 142));
-  });
-
-  app.get('/api/v1/research/workspace', (_req: Request, res: Response) => {
-    const bundle = defaultAnalyticsPlatformEngine.getOverviewBundle('saadat-abad', 142);
-    res.status(200).json({
-      savedAnalyses: bundle.savedAnalyses,
-      modelRegistry: bundle.modelRegistry,
-      metricsRegistry: bundle.metricsRegistry,
-      placeDimensionsScd2: bundle.placeDimensionsScd2,
-    });
-  });
-
-  // STAGE 31: PERSONAL WORKSPACE, SAVED ITEMS & USER PREFERENCES
-  app.get(['/api/account/saved', '/api/v1/personalization/saved'], (req: Request, res: Response) => {
-    const callerUserId = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : 'usr-current';
-    const requestedOwner = typeof req.query.userId === 'string' ? req.query.userId : callerUserId;
-    const out = defaultPersonalizationEngine.listSavedItems(callerUserId, requestedOwner);
+  app.get(['/api/account/saved', '/api/v1/personalization/saved'], async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
+    const requestedOwner = typeof req.query.userId === 'string' ? req.query.userId : auth.uid;
+    const out = defaultPersonalizationEngine.listSavedItems(auth.uid, requestedOwner);
     res.status(out.ok ? 200 : 403).json(out);
   });
 
-  app.post(['/api/account/saved', '/api/v1/personalization/saved'], (req: Request, res: Response) => {
-    const callerUserId = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : 'usr-current';
+  app.post(['/api/account/saved', '/api/v1/personalization/saved'], async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
     const body = req.body || {};
-    const created = defaultPersonalizationEngine.saveItem(callerUserId, {
+    const created = defaultPersonalizationEngine.saveItem(auth.uid, {
       entityType: body.entityType || 'PROPERTY',
-      entityId: String(body.entityId || 'prop-saadat-105'),
+      entityId: String(body.entityId || ''),
       titleFa: String(body.titleFa || 'مورد ذخیره‌شده'),
       subtitleFa: String(body.subtitleFa || ''),
       cityId: String(body.cityId || 'tehran'),
@@ -243,18 +155,21 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
     res.status(201).json({ item: created });
   });
 
-  app.delete(['/api/account/saved/:id', '/api/v1/personalization/saved/:id'], (req: Request, res: Response) => {
-    const callerUserId = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : 'usr-current';
-    res.status(200).json(defaultPersonalizationEngine.removeSavedItemWithUndo(callerUserId, String(req.params.id)));
+  app.delete(['/api/account/saved/:id', '/api/v1/personalization/saved/:id'], async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
+    res.status(200).json(defaultPersonalizationEngine.removeSavedItemWithUndo(auth.uid, String(req.params.id)));
   });
 
-  app.get(['/api/account/preferences', '/api/v1/personalization/preferences'], (req: Request, res: Response) => {
-    const callerUserId = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : 'usr-current';
-    res.status(200).json(defaultPersonalizationEngine.getPreferences(callerUserId));
+  app.get(['/api/account/preferences', '/api/v1/personalization/preferences'], async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
+    res.status(200).json(defaultPersonalizationEngine.getPreferences(auth.uid));
   });
 
-  app.patch(['/api/account/preferences', '/api/v1/personalization/preferences'], (req: Request, res: Response) => {
-    const callerUserId = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : 'usr-current';
-    res.status(200).json(defaultPersonalizationEngine.updatePreferences(callerUserId, req.body || {}));
+  app.patch(['/api/account/preferences', '/api/v1/personalization/preferences'], async (req: Request, res: Response) => {
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
+    res.status(200).json(defaultPersonalizationEngine.updatePreferences(auth.uid, req.body || {}));
   });
 }

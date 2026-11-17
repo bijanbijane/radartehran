@@ -1,10 +1,8 @@
 /** @file src/features/valuation/services/valuationWorkspaceService.ts — Canonical Hedonic Wrapper, Quality Axes & Snapshots */
 import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { getNeighborhoodDeepInsight } from '../../../data/neighborhoodInsights';
-import {
-  calculateHedonicValuation,
-  getCurrentJalaliYear,
-} from '../../../data/hedonicPricingEngine';
+import { calculateHedonicValuation, getCurrentJalaliYear } from '../../../data/hedonicPricingEngine';
+import { readScopedStorageJson, writeScopedStorageJson } from '../../account/services/accountStorageScope';
 import { buildValuationComparables } from './valuationComparablesService';
 import type {
   FieldOriginMap,
@@ -151,21 +149,13 @@ export function evaluateWorkspaceValuation(
   };
 }
 
-export function loadSavedValuationReports(): SavedValuationReport[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(SAVED_VALUATIONS_KEY);
-    return raw ? (JSON.parse(raw) as SavedValuationReport[]) : [];
-  } catch {
-    return [];
-  }
+export function loadSavedValuationReports(uid?: string | null): SavedValuationReport[] {
+  const items = readScopedStorageJson<unknown[]>(SAVED_VALUATIONS_KEY, [], uid);
+  return Array.isArray(items) ? (items as SavedValuationReport[]) : [];
 }
 
-export function persistSavedValuationReports(reports: SavedValuationReport[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(SAVED_VALUATIONS_KEY, JSON.stringify(reports.slice(0, 25)));
-  } catch { /* ignore */ }
+export function persistSavedValuationReports(reports: SavedValuationReport[], uid?: string | null): void {
+  writeScopedStorageJson(SAVED_VALUATIONS_KEY, reports.slice(0, 25), uid);
 }
 
 export function createSavedValuationReport(

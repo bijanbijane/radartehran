@@ -1,6 +1,12 @@
-/** @file src/features/properties/services/listingService.ts — Saved Properties, Drafts, User Listings & Reports Store */
+/** @file src/features/properties/services/listingService.ts — UID-Scoped Saved Properties, Drafts, User Listings & Reports Store */
 import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../../data/realMarketPriceAggregator';
+import {
+  readScopedStorageJson,
+  removeScopedStorageKey,
+  resolveEffectiveUid,
+  writeScopedStorageJson,
+} from '../../account/services/accountStorageScope';
 import { normalizeDigitsToAscii } from '../filters/PropertyFilterDraft';
 import { sanitizeListingText } from '../moderation/ListingValidation';
 import type { PropertyListingRecord, ListingStatus } from '../types/listing.types';
@@ -24,31 +30,28 @@ export interface SavedPropertySnapshot {
   priceLabelSnapshot: string;
   savedAtIso: string;
   lastKnownStatus: ListingStatus;
+  ownerUserId?: string;
 }
 
-function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+export function loadSavedProperties(uid?: string | null): SavedPropertySnapshot[] {
+  return readScopedStorageJson<SavedPropertySnapshot[]>(
+    SAVED_PROPERTIES_KEY,
+    [],
+    uid,
+    (legacyParsed, scopeUid) =>
+      Array.isArray(legacyParsed)
+        ? (legacyParsed.filter((x) => x && (x as SavedPropertySnapshot).ownerUserId === scopeUid) as SavedPropertySnapshot[])
+        : null,
+  );
 }
 
-function writeJson<T>(key: string, val: T): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(val));
-  } catch { /* ignore quota failures */ }
+export function saveSavedProperties(items: SavedPropertySnapshot[], uid?: string | null): void {
+  writeScopedStorageJson(SAVED_PROPERTIES_KEY, items, uid);
 }
 
-export function loadSavedProperties(): SavedPropertySnapshot[] {
-  return readJson<SavedPropertySnapshot[]>(SAVED_PROPERTIES_KEY, []);
-}
-
-export function toggleSavedProperty(rec: PropertyListingRecord): SavedPropertySnapshot[] {
-  const existing = loadSavedProperties();
+export function toggleSavedProperty(rec: PropertyListingRecord, uid?: string | null): SavedPropertySnapshot[] {
+  const scopeUid = resolveEffectiveUid(uid);
+  const existing = loadSavedProperties(scopeUid);
   const exists = existing.some((x) => x.listingId === rec.listing.listingId);
   const next = exists
     ? existing.filter((x) => x.listingId !== rec.listing.listingId)
@@ -65,51 +68,64 @@ export function toggleSavedProperty(rec: PropertyListingRecord): SavedPropertySn
               : `${Math.round(rec.listing.price.depositMillion || 0).toLocaleString()} م رهن`,
           savedAtIso: new Date().toISOString(),
           lastKnownStatus: rec.listing.status,
+          ownerUserId: scopeUid,
         },
         ...existing,
       ].slice(0, 40);
-  writeJson(SAVED_PROPERTIES_KEY, next);
+  writeScopedStorageJson(SAVED_PROPERTIES_KEY, next, scopeUid);
   return next;
 }
 
-export function loadSubmissionDraft(): ListingSubmissionDraft | null {
-  return readJson<ListingSubmissionDraft | null>(SUBMISSION_DRAFT_KEY, null);
+export function loadSubmissionDraft(uid?: string | null): ListingSubmissionDraft | null {
+  return readScopedStorageJson<ListingSubmissionDraft | null>(SUBMISSION_DRAFT_KEY, null, uid);
 }
 
-export function saveSubmissionDraft(draft: ListingSubmissionDraft): ListingSubmissionDraft {
+export function saveSubmissionDraft(draft: ListingSubmissionDraft, uid?: string | null): ListingSubmissionDraft {
   const stamped = { ...draft, lastSavedAtIso: new Date().toISOString() };
-  writeJson(SUBMISSION_DRAFT_KEY, stamped);
+  writeScopedStorageJson(SUBMISSION_DRAFT_KEY, stamped, uid);
   return stamped;
 }
 
-export function clearSubmissionDraft(): void {
-  if (typeof window !== 'undefined') window.localStorage.removeItem(SUBMISSION_DRAFT_KEY);
+export function clearSubmissionDraft(uid?: string | null): void {
+  removeScopedStorageKey(SUBMISSION_DRAFT_KEY, uid);
 }
 
-export function loadMyListings(): PropertyListingRecord[] {
-  return readJson<PropertyListingRecord[]>(MY_LISTINGS_KEY, []);
+export function loadMyListings(uid?: string | null): PropertyListingRecord[] {
+  return readScopedStorageJson<PropertyListingRecord[]>(
+    MY_LISTINGS_KEY,
+    [],
+    uid,
+    (legacyParsed, scopeUid) =>
+      Array.isArray(legacyParsed)
+        ? (legacyParsed.filter(
+            (r) => r && (r as PropertyListingRecord).listing?.publisher?.id === scopeUid,
+          ) as PropertyListingRecord[])
+        : null,
+  );
 }
 
-export function saveMyListings(items: PropertyListingRecord[]): void {
-  writeJson(MY_LISTINGS_KEY, items);
+export function saveMyListings(items: PropertyListingRecord[], uid?: string | null): void {
+  writeScopedStorageJson(MY_LISTINGS_KEY, items, uid);
 }
 
-export function loadUserListingHistory(): ListingHistoryEvent[] {
-  return readJson<ListingHistoryEvent[]>(LISTING_HISTORY_KEY, []);
+export function loadUserListingHistory(uid?: string | null): ListingHistoryEvent[] {
+  return readScopedStorageJson<ListingHistoryEvent[]>(LISTING_HISTORY_KEY, [], uid);
 }
 
-export function appendUserListingHistory(event: ListingHistoryEvent): void {
-  const all = [event, ...loadUserListingHistory()].slice(0, 100);
-  writeJson(LISTING_HISTORY_KEY, all);
+export function appendUserListingHistory(event: ListingHistoryEvent, uid?: string | null): void {
+  const scopeUid = resolveEffectiveUid(uid);
+  const all = [event, ...loadUserListingHistory(scopeUid)].slice(0, 100);
+  writeScopedStorageJson(LISTING_HISTORY_KEY, all, scopeUid);
 }
 
-export function loadListingReports(): ListingReportRecord[] {
-  return readJson<ListingReportRecord[]>(LISTING_REPORTS_KEY, []);
+export function loadListingReports(uid?: string | null): ListingReportRecord[] {
+  return readScopedStorageJson<ListingReportRecord[]>(LISTING_REPORTS_KEY, [], uid);
 }
 
-export function submitListingReport(record: ListingReportRecord): ListingReportRecord[] {
-  const next = [record, ...loadListingReports()].slice(0, 50);
-  writeJson(LISTING_REPORTS_KEY, next);
+export function submitListingReport(record: ListingReportRecord, uid?: string | null): ListingReportRecord[] {
+  const scopeUid = resolveEffectiveUid(uid);
+  const next = [record, ...loadListingReports(scopeUid)].slice(0, 50);
+  writeScopedStorageJson(LISTING_REPORTS_KEY, next, scopeUid);
   return next;
 }
 
@@ -122,7 +138,9 @@ export function submitDraftAsPropertyListing(
   draft: ListingSubmissionDraft,
   hood: EvaluatedNeighborhood,
   dupAssessment: DuplicateMatchAssessment,
+  uid?: string | null,
 ): PropertyListingRecord {
+  const scopeUid = resolveEffectiveUid(uid);
   const nowIso = new Date().toISOString();
   const area = parseAsciiNum(draft.areaSqm);
   const isSale = draft.transactionType === 'sale' || draft.transactionType === 'presale';
@@ -144,7 +162,7 @@ export function submitDraftAsPropertyListing(
     buildNeighborhoodListingSamples(hood),
   );
   const status: ListingStatus = dupAssessment.actionPolicy === 'queue_manual_review' ? 'pending_review' : 'published';
-  const listingId = `user-${Date.now()}`;
+  const listingId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const propertyId = `prop-${listingId}`;
 
   const record: PropertyListingRecord = {
@@ -198,7 +216,7 @@ export function submitDraftAsPropertyListing(
         convertibleRent: draft.convertibleRent,
       },
       publisher: {
-        id: 'current-user',
+        id: scopeUid,
         displayName: sanitizeListingText(draft.publisherName, 60),
         role: draft.publisherRole,
         contactAuthorized: true,
@@ -228,15 +246,18 @@ export function submitDraftAsPropertyListing(
     },
   };
 
-  saveMyListings([record, ...loadMyListings()]);
-  appendUserListingHistory({
-    id: `hist-${Date.now()}`,
-    listingId,
-    kind: 'created',
-    atIso: nowIso,
-    summaryFa: status === 'pending_review' ? 'ثبت و ارسال به صف بازبینی (تشابه احتمالی)' : 'ثبت و انتشار در فهرست املاک',
-    verifiedFact: true,
-  });
-  clearSubmissionDraft();
+  saveMyListings([record, ...loadMyListings(scopeUid)], scopeUid);
+  appendUserListingHistory(
+    {
+      id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      listingId,
+      kind: 'created',
+      atIso: nowIso,
+      summaryFa: status === 'pending_review' ? 'ثبت و ارسال به صف بازبینی (تشابه احتمالی)' : 'ثبت و انتشار در فهرست املاک',
+      verifiedFact: true,
+    },
+    scopeUid,
+  );
+  clearSubmissionDraft(scopeUid);
   return record;
 }

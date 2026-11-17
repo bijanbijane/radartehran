@@ -200,7 +200,7 @@ export function SearchDropdownMenu({
                       <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#007AFF] dark:group-hover:text-emerald-400 transition">{n.name}</span>
                       <span className="text-[10px] text-slate-400">({n.zone})</span>
                       {searchQuery.trim() && !matchesPersianSearch(n.name, searchQuery.trim()) && (matchesPersianSearch(n.pros, searchQuery.trim()) || n.bargains?.some((b) => Boolean((b.street && matchesPersianSearch(b.street, searchQuery.trim())) || (b.title && matchesPersianSearch(b.title, searchQuery.trim()))))) && (
-                        <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[9.5px] font-bold">زیرمحله / خیابان</span>
+                        <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[9.5px] font-bold">زیرمحله / خیابان</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">

@@ -14,12 +14,19 @@ import {
 export interface HeaderNotificationBellProps {
   uid?: string;
   isEn?: boolean;
+  unreadNotificationsCount?: number;
   onNavigateView: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
+}
+
+export function normalizeUnreadNotificationCount(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 0;
+  return Math.floor(value);
 }
 
 export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
   uid = 'local-user',
   isEn = false,
+  unreadNotificationsCount,
   onNavigateView,
 }) => {
   const [open, setOpen] = useState(false);
@@ -51,7 +58,10 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
 
   const state = loadCommsWorkspaceState(uid);
   const activeNotifs = state.notifications.filter((n) => n.status !== 'DISMISSED' && n.status !== 'ARCHIVED');
-  const unreadCount = activeNotifs.filter((n) => n.status === 'UNREAD').length;
+  const rawUnread = unreadNotificationsCount !== undefined
+    ? unreadNotificationsCount
+    : activeNotifs.filter((n) => n.status === 'UNREAD').length;
+  const unreadCount = normalizeUnreadNotificationCount(rawUnread);
 
   const filtered = activeNotifs
     .filter((n) => {

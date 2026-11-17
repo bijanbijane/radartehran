@@ -1,9 +1,10 @@
-/** @file src/components/navigation/DesktopMegaMenu.tsx — Categorized Desktop Mega Menu (RT-UI-NAV-001 Section 4.1) */
-import React, { useEffect, useRef } from 'react';
+/** @file src/components/navigation/DesktopMegaMenu.tsx — Categorized Desktop Mega Menu (Stages 203, 205, 206, 207) */
+import React, { useEffect, useId, useRef } from 'react';
 import { Briefcase, BookOpen, MessageSquarePlus, Compass, Sparkles } from 'lucide-react';
 import { DESKTOP_MEGA_MENU_GROUPS, type MegaMenuEntry } from '../../navigation/primary/megaMenuAndTabsConfig';
 import type { ModuleSubTabId } from '../../navigation/registry/route.types';
 import type { PrimaryViewId, RadarLocale } from '../../utils/areaUnit';
+import { focusMainDestinationAfterMegaMenuClose } from './useMegaMenuLifecycle';
 
 export interface DesktopMegaMenuProps {
   open: boolean;
@@ -11,7 +12,7 @@ export interface DesktopMegaMenuProps {
   onMouseEnterMenu?: () => void;
   onMouseLeaveMenu?: () => void;
   triggerRef?: React.RefObject<HTMLButtonElement | null>;
-  topOffsetClass?: string;
+  panelId?: string;
   locale: RadarLocale;
   activeView: PrimaryViewId;
   activeSubTab?: ModuleSubTabId;
@@ -32,7 +33,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
   onMouseEnterMenu,
   onMouseLeaveMenu,
   triggerRef,
-  topOffsetClass = 'top-[56px] lg:top-[68px]',
+  panelId = 'desktop-mega-menu-panel',
   locale,
   activeView,
   activeSubTab,
@@ -40,12 +41,14 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
   onTriggerAction,
 }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const headingBaseId = useId();
   const isEn = locale === 'en';
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         onClose();
         triggerRef?.current?.focus();
       }
@@ -67,24 +70,33 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
 
   if (!open) return null;
 
+  const handleCloseViaButton = () => {
+    onClose();
+    triggerRef?.current?.focus();
+  };
+
   return (
     <div
       ref={panelRef}
-      id="desktop-mega-menu-panel"
+      id={panelId}
+      dir={isEn ? 'ltr' : 'rtl'}
       role="region"
       aria-label={isEn ? 'More platform modules' : 'سایر بخش‌ها و خدمات تخصصی'}
       onMouseEnter={onMouseEnterMenu}
       onMouseLeave={onMouseLeaveMenu}
-      className={`fixed ${topOffsetClass} inset-x-4 max-w-5xl mx-auto z-50 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl p-4 sm:p-5 animate-fadeIn`}
+      className="absolute top-full inset-x-4 max-w-5xl mx-auto z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl p-4 sm:p-5 animate-fadeIn"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {DESKTOP_MEGA_MENU_GROUPS.map((group) => {
           const GroupIcon = GROUP_ICONS[group.id];
+          const groupTitleId = `${headingBaseId}-${group.id}`;
           return (
-            <div key={group.id} className="space-y-2">
+            <section key={group.id} aria-labelledby={groupTitleId} className="space-y-2 min-w-0">
               <div className="flex items-center gap-1.5 px-2 pb-1.5 border-b border-slate-100 dark:border-slate-800 text-[11px] font-black text-slate-500 dark:text-slate-400">
                 <GroupIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
-                <span>{isEn ? group.titleEn : group.titleFa}</span>
+                <h3 id={groupTitleId} className="leading-snug">
+                  {isEn ? group.titleEn : group.titleFa}
+                </h3>
               </div>
               <div className="space-y-1">
                 {group.items.map((item) => {
@@ -93,10 +105,12 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
                     <button
                       key={item.id}
                       type="button"
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => {
                         onClose();
                         if (item.viewId) {
                           onSelectDestination(item.viewId as PrimaryViewId, item.subTab as ModuleSubTabId | undefined);
+                          focusMainDestinationAfterMegaMenuClose();
                         } else if (item.actionId) {
                           onTriggerAction(item.actionId);
                         }
@@ -107,14 +121,22 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
                           : 'hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="text-xs font-extrabold group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition truncate">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-xs font-extrabold leading-snug min-w-0 flex-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">
                           {isEn ? item.labelEn : item.labelFa}
                         </span>
                         {item.status === 'beta' && (
-                          <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 shrink-0">
-                            {isEn ? 'Beta' : 'آزمایشی'}
-                          </span>
+                          <>
+                            <span
+                              aria-hidden="true"
+                              className="text-[10px] leading-4 font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 shrink-0"
+                            >
+                              {isEn ? 'Beta' : 'آزمایشی'}
+                            </span>
+                            <span className="sr-only">
+                              {isEn ? ' — Beta feature' : ' — نسخه آزمایشی'}
+                            </span>
+                          </>
                         )}
                       </div>
                       <span className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2">
@@ -124,16 +146,24 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
                   );
                 })}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
-      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-          <span>{isEn ? 'All modules remain synced with your selected city, neighborhood, and active budget context.' : 'تمام بخش‌ها با شهر، محله فعال و بودجه تنظیم‌شده شما همگام می‌مانند.'}</span>
+      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+        <span className="flex items-center gap-1.5 min-w-0 flex-1">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+          <span className="leading-snug">
+            {isEn
+              ? 'All modules remain synced with your selected city, neighborhood, and active budget context.'
+              : 'تمام بخش‌ها با شهر، محله فعال و بودجه تنظیم‌شده شما همگام می‌مانند.'}
+          </span>
         </span>
-        <button type="button" onClick={onClose} className="px-2 py-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
+        <button
+          type="button"
+          onClick={handleCloseViaButton}
+          className="px-2.5 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-emerald-600"
+        >
           {isEn ? 'Close (Esc)' : 'بستن (Esc)'}
         </button>
       </div>

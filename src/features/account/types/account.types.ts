@@ -1,4 +1,4 @@
-/** @file src/features/account/types/account.types.ts — Stage 22 User Account & Personal Workspace Types */
+/** @file src/features/account/types/account.types.ts — User Account, Portability, Deletion & Workspace Types */
 import type { PrimaryViewId } from '../../../utils/areaUnit';
 import type { ModuleSubTabId, SavedMapViewItem } from '../../../navigation/registry/route.types';
 import type { SavedPropertySnapshot } from '../../properties/services/listingService';
@@ -9,6 +9,8 @@ import type { ServiceProposalRecord, ServiceRequestRecord } from '../../services
 
 export type UserRoleCapability = 'seeker' | 'owner' | 'advisor' | 'provider';
 export type ActiveWorkspaceMode = 'personal' | 'listings_owner' | 'service_provider';
+export type DataRequestStatus = 'ready' | 'pending_verification' | 'completed' | 'failed';
+export type AccountExportScope = 'local_workspace' | 'server_account' | 'combined_account_and_workspace';
 
 export interface AccountProfileSettings {
   ownerUserId: string;
@@ -93,19 +95,100 @@ export interface AccountActionRequiredItem {
 
 export interface DataRequestRecord {
   id: string;
+  ownerUserId?: string;
   kind: 'export' | 'delete';
-  status: 'ready' | 'pending_verification' | 'completed';
+  status: DataRequestStatus;
+  scope?: AccountExportScope;
+  errorCode?: string;
   retentionNotesFa: string;
   createdAtIso: string;
+  updatedAtIso?: string;
 }
 
-export const DATA_REQUEST_STATUS_LABELS: Record<DataRequestRecord['status'], string> = {
-  ready: 'آماده اجرا',
+export const DATA_REQUEST_STATUS_LABELS: Record<DataRequestStatus, string> = {
+  ready: 'آماده دانلود',
   pending_verification: 'منتظر تأیید هویت',
   completed: 'تکمیل‌شده',
+  failed: 'ناموفق',
 };
 
+export interface AccountExportSourceInfo {
+  sourceId: string;
+  origin: 'server' | 'local_workspace';
+  included: boolean;
+  available: boolean;
+  count?: number;
+  reasonFa?: string;
+}
+
+export interface ServerAccountExportEnvelope {
+  schemaVersion: string;
+  exportedAtIso: string;
+  ownerUid: string;
+  exportScope?: 'server_account';
+  isPartialExport?: boolean;
+  unavailableSources?: string[];
+  sources?: Array<AccountExportSourceInfo | { id: string; origin: 'server'; available: boolean; count: number }>;
+  excludedSources?: Array<AccountExportSourceInfo | string>;
+  profile: Record<string, unknown>;
+  favoriteNeighborhoodKeys: string[];
+  savedAlerts: unknown[];
+  publishedListings: unknown[];
+  calculationSnapshots: unknown[];
+  buyerLeads?: unknown[];
+  dataCorrections?: unknown[];
+  mediaObjects?: unknown[];
+  displayAreaUnitLabel?: string;
+  referenceValuationIntlText?: string;
+}
+
+export interface ServerAccountDeletionStep {
+  category: string;
+  policy: 'delete' | 'anonymize';
+  completed: boolean;
+}
+
+export interface ServerAccountDeletionPayload {
+  status: 'ok' | 'partial';
+  steps: ServerAccountDeletionStep[];
+  requiresClientAuthDeletion: boolean;
+  failedSteps: string[];
+  clearClientLocalStorageKeys: string[];
+  deletedMediaCount: number;
+  failedMediaCount: number;
+}
+
+export type AccountActionErrorCode =
+  | 'AUTH_REQUIRED'
+  | 'FORBIDDEN'
+  | 'RATE_LIMITED'
+  | 'SERVER_ERROR'
+  | 'NETWORK_ERROR'
+  | 'TIMEOUT'
+  | 'INVALID_RESPONSE'
+  | 'UNSUPPORTED_SCHEMA_VERSION'
+  | 'OWNER_MISMATCH'
+  | 'RECENT_LOGIN_REQUIRED'
+  | 'AUTH_DELETE_FAILED'
+  | 'DOWNLOAD_FAILED';
+
+export type AccountActionResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; code: AccountActionErrorCode; httpStatus?: number; messageFa: string; retryable: boolean; data?: T };
+
+export interface AccountDeleteLayerStatus {
+  serverDeletion: 'completed' | 'partial' | 'failed';
+  localCleanup: 'completed' | 'failed';
+  authDeletion: 'completed' | 'requires_reauth' | 'failed' | 'not_required';
+  overallStatus: 'completed' | 'partial' | 'failed';
+  requestStatus: DataRequestStatus;
+  removedLocalKeysCount: number;
+  messageFa: string;
+  requiresSignOut: boolean;
+}
+
 export interface AccountWorkspaceSnapshot {
+  ownerUserId?: string;
   profile: AccountProfileSettings;
   privacy: AccountPrivacyPreferences;
   notificationChannels: NotificationChannelPreferences;

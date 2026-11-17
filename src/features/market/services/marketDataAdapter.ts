@@ -12,7 +12,7 @@ import {
 } from '../../../data/realMarketPriceAggregator';
 import {
   buildTransparent12MonthMarketSeries,
-  type MarketSeriesProvenanceKind,
+  type MarketSeriesProvenanceType,
 } from '../../../utils/marketHistoryAndPulseIntegrity';
 import {
   convertPricePerSqmToUnit,
@@ -73,7 +73,7 @@ export interface MarketSnapshotBundle {
   supplyByArea: SupplyCompositionSegment[];
   supplyByAge: SupplyCompositionSegment[];
   trendSeries: MarketTrendSeriesPoint[];
-  trendProvenance: MarketSeriesProvenanceKind | 'scope_historical_unavailable';
+  trendProvenance: MarketSeriesProvenanceType | 'scope_historical_unavailable';
   trendProvenanceBadgeFa: string;
   trendProvenanceDescriptionFa: string;
   rentBreakdown: RentRawBreakdown;

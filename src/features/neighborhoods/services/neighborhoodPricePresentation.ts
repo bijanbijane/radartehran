@@ -15,6 +15,11 @@ import {
   type RuntimeExchangeRateReference,
 } from '../../../utils/areaUnit';
 
+import {
+  calculateDiscoverDepositForTargetArea,
+  matchesDiscoverPriceBracket,
+} from '../../discovery/services/discoverPricingEngine';
+
 export type PriceBracketId = 'all' | 'under5b' | '5to10b' | '10to20b' | 'luxury';
 
 export interface PriceBracketOption {
@@ -37,8 +42,8 @@ export interface NeighborhoodPricePresentation {
 }
 
 export function scaleFullRahnForTargetSqm(rahn80m: number, targetSqm: number): number {
-  const safeSqm = targetSqm > 0 ? targetSqm : 80;
-  return Math.round(rahn80m * (safeSqm / 80));
+  const safeSqm = targetSqm > 0 && Number.isFinite(targetSqm) ? targetSqm : 80;
+  return calculateDiscoverDepositForTargetArea(rahn80m, safeSqm) ?? 0;
 }
 
 export function matchesFinancialBracket(
@@ -48,20 +53,8 @@ export function matchesFinancialBracket(
   effectiveBuyPerSqm: number,
   bracket: PriceBracketId,
 ): boolean {
-  if (bracket === 'all') return true;
-  const safeSqm = targetSqm > 0 ? targetSqm : 80;
-  if (mode === 'rent') {
-    const rahn = scaleFullRahnForTargetSqm(hood.rahn80m, safeSqm);
-    if (bracket === 'under5b') return rahn < 1000;
-    if (bracket === '5to10b') return rahn >= 1000 && rahn <= 2000;
-    if (bracket === '10to20b') return rahn > 2000 && rahn <= 4000;
-    return rahn > 4000;
-  }
-  const total = effectiveBuyPerSqm * safeSqm;
-  if (bracket === 'under5b') return total < 5000;
-  if (bracket === '5to10b') return total >= 5000 && total <= 10000;
-  if (bracket === '10to20b') return total > 10000 && total <= 20000;
-  return total > 20000;
+  const safeSqm = targetSqm > 0 && Number.isFinite(targetSqm) ? targetSqm : 80;
+  return matchesDiscoverPriceBracket(hood, mode, safeSqm, effectiveBuyPerSqm, bracket);
 }
 
 export function getPriceBracketOptions(mode: 'rent' | 'buy', isEn: boolean): readonly PriceBracketOption[] {
@@ -108,7 +101,7 @@ export function getNeighborhoodPricePresentation(params: {
   intlCurrency?: IntlCurrencyCode;
   exchangeRateRef?: RuntimeExchangeRateReference | null;
 }): NeighborhoodPricePresentation {
-  const safeTargetSqm = params.targetSqm > 0 ? Math.round(params.targetSqm) : 80;
+  const safeTargetSqm = params.targetSqm > 0 && Number.isFinite(params.targetSqm) ? Math.round(params.targetSqm) : 80;
   const currency = params.intlCurrency ?? 'IRT';
   const unitBuy = convertPricePerSqmToUnit(params.hood.buyPerSqm, params.areaUnit);
   const unitDeal = convertPricePerSqmToUnit(params.dealPerSqm, params.areaUnit);
@@ -119,8 +112,8 @@ export function getNeighborhoodPricePresentation(params: {
   const areaSuffix = params.areaUnit === 'sqft' ? 'فوت‌مربع' : 'مترمربع';
   const unitPerAreaFa = currency === 'IRT' ? `میلیون تومان / ${areaSuffix}` : `/ ${areaSuffix}`;
   const buyReferenceLabelFa = refRow
-    ? `مرجع داخلی · به‌روزرسانی ${refRow.asOfJalali}`
-    : 'مرجع داخلی · تاریخ مرجع ثبت نشده';
+    ? `مرجع داخلی · بازبینی ${refRow.asOfJalali}`
+    : 'قیمت مرجع داخلی (بدون تاریخ به‌روزرسانی)';
   const buyValueWithUnitFa =
     currency === 'IRT'
       ? `${toPersianNum(unitBuy)} ${unitPerAreaFa}`

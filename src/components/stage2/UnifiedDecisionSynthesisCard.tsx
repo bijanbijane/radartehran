@@ -219,7 +219,7 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
                   <span>{pillar.nameFa}</span><ArrowUpLeft className="w-3 h-3 opacity-60 group-hover:opacity-100" />
                 </span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 tabular-nums">وزن {toPersianNum(pillar.weightPct)}٪</span>
+                  <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 tabular-nums">وزن {toPersianNum(pillar.weightPct)}٪</span>
                   <span className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{toPersianNum(pillar.score)}٪</span>
                 </div>
               </div>

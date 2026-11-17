@@ -218,7 +218,7 @@ export function useAppUiState(initialUrlState: any) {
       setShowVisitedModal(false); setShowTradeUpModal(false); setShowHedonicModal(false);
       setShowPriceTrendModal(false); setShowOnboardingModal(false); setExpansionModalType(null);
       setShowSearchDropdown(false); setShowToolsPopover(false); setShowMapLegendPopover(false); setMobileFilterOpen(false); setShowNationwideProvinceModal(false); setMobileSheetOpen(false);
-      setMapRailPanel(null); setShowSpatialTools(false);
+      setMapRailPanel(null); setShowSpatialTools(false); setShowListingVerifierModal(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);

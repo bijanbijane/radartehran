@@ -24,6 +24,7 @@ import { ProductGlobalHeader } from './navigation/ProductGlobalHeader';
 import { MapToolRail } from './navigation/MapToolRail';
 import { ProductViewRouter } from './views/ProductViewRouter';
 import { DevPerformancePanel } from './DevPerformancePanel';
+import { setActiveAccountScopeUid } from '../features/account/services/accountStorageScope';
 import type { SavedMapViewItem } from '../navigation/registry/route.types';
 const ReverseBudgetDiscoveryModal = lazy(() => import('./modals/ReverseBudgetDiscoveryModal').then((m) => ({ default: m.ReverseBudgetDiscoveryModal })));
 
@@ -58,6 +59,7 @@ export function RadarWorkspaceShell() {
     setFavoriteHoodIds, setFeatureFlags, setNeighborhoods, setCloudVotes: ui.setCloudVotes, setSponsorRequests: ui.setSponsorRequests, setBuyerLeads: ui.setBuyerLeads, setHasDelegatedAdminDoc: ui.setHasDelegatedAdminDoc,
   });
   const isVerifiedAdmin = useMemo(() => isAuthorizedAdminUser(currentUser, ui.hasDelegatedAdminDoc), [ui.hasDelegatedAdminDoc, currentUser?.uid, currentUser?.email, currentUser?.emailVerified]);
+  useEffect(() => { setActiveAccountScopeUid(currentUser?.uid ?? null); }, [currentUser?.uid]);
   const { fetchMarketPulse, handleDeepWebSync } = useMarketPulseSync({ ui, activeCityRef, currentUser, allExpansionSeeds, setNeighborhoods });
   const activeCityWorkHubs = useMemo(() => (ui.activeCity === 'tehran' ? WORK_HUBS : (MULTI_CITY_CONFIGS[ui.activeCity]?.workHubs || WORK_HUBS)), [ui.activeCity]);
   const selectedWorkHub = useMemo(() => activeCityWorkHubs.find((w) => w.id === workHubId) || activeCityWorkHubs[0] || WORK_HUBS[0], [activeCityWorkHubs, workHubId]);
@@ -179,7 +181,7 @@ export function RadarWorkspaceShell() {
           activePlaceLabelFa={findProvinceForHood(ui.selectedHoodId)?.capitalFa} currentUser={currentUser}
         />
       )}
-      <div role="region" aria-label="نقشه تعاملی محله‌ها" className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : 'top-[56px]'} z-0`}>
+      <div id={ui.primaryView === 'map' ? 'radar-main-content' : undefined} tabIndex={ui.primaryView === 'map' ? -1 : undefined} role="region" aria-label="نقشه تعاملی محله‌ها" className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : 'top-[56px]'} z-0 focus:outline-none`}>
         <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC]" />
         {!isMapLoaded && (
           <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[#F6F8F6]/70 dark:bg-slate-900/60 backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
@@ -218,7 +220,7 @@ export function RadarWorkspaceShell() {
         onCloseCompetingPanels={() => closeFloatingMapPanels('rail')} onToggleFilterPopover={() => { closeFloatingMapPanels('filter'); ui.setMobileFilterOpen((p) => !p); }} onLocateNearestHood={crudActions.handleLocateNearestHood}
         onOpenCompareModal={() => ui.setShowCompareModal(true)} onOpenPriceTrendModal={() => ui.setShowPriceTrendModal(true)} onOpenInspectorDrawer={() => ui.setMobileSheetOpen(true)} onRestoreSavedView={handleRestoreSavedView} />
       {ui.primaryView !== 'map' && (
-        <main className="relative z-10 w-full flex-1 overflow-hidden pointer-events-none flex justify-start">
+        <main id="radar-main-content" tabIndex={-1} className="relative z-10 w-full flex-1 overflow-hidden pointer-events-none flex justify-start focus:outline-none">
           <ProductViewRouter
             primaryView={ui.primaryView} ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} nationwideEvaluatedNeighborhoods={nationwideEvaluatedNeighborhoods} allNeighborhoods={neighborhoods}
             selectedHood={selectedHood} handleSelectNeighborhood={handleSelectNeighborhood} favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood} mode={mode}

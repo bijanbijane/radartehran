@@ -187,7 +187,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
         favoriteHoodIds={p.favoriteHoodIds} onToggleFavorite={p.toggleFavoriteHood}
         onOpenInspector={(h) => { handleSelectNeighborhood(h); ui.setMobileSheetOpen(true); }}
         onOpenCompare={(id1, id2) => { ui.setCompareId1(id1); ui.setCompareId2(id2); ui.setShowCompareModal(true); }}
-        onNavigateView={(v) => navigateTo(v)} activeCity={p.activeCity} mode={p.mode} onChangeMode={p.setMode} targetSqm={p.targetSqm}
+        activeCity={p.activeCity} mode={p.mode} targetSqm={p.targetSqm}
       />
     );
   } else if (primaryView === 'intelligence') {

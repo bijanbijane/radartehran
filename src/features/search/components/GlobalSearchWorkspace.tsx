@@ -205,11 +205,12 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
   const handleTransactionChange = (nextTx: SearchFilterSet['transactionType']) => {
     if (draftFilters.transactionType === 'BUY' && (nextTx === 'RENT' || nextTx === 'FULL_MORTGAGE') && draftFilters.maxPriceMillionToman) {
       const trans = transitionModuleContext('buy', 'rent', {
-        city: activeCity,
-        neighborhood: draftFilters.neighborhoodId,
-        buyMaxBudget: draftFilters.maxPriceMillionToman,
+        hoodId: Number(draftFilters.neighborhoodId) || 0,
+        dealMode: 'buy',
+        targetDealMode: 'rent',
+        buyBudgetMillion: draftFilters.maxPriceMillionToman,
       });
-      setContextTransitionBannerFa(trans.noticeFa);
+      setContextTransitionBannerFa(trans.userNoticeFa ?? null);
       setDraftFilters({ ...draftFilters, transactionType: nextTx, maxPriceMillionToman: undefined });
     } else {
       setContextTransitionBannerFa(null);

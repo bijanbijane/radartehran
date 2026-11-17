@@ -34,12 +34,21 @@ export function sanitizeSpreadsheetCellFormula(rawValue: string): string {
   const str = String(rawValue ?? '');
   return /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
 }
-export interface UserDataPortabilityExportEnvelope { schemaVersion: '2.0.0'; exportedAtIso: string; ownerUid: string; profile: Record<string, unknown>; favoriteNeighborhoodKeys: string[]; savedAlerts: unknown[]; publishedListings: unknown[]; calculationSnapshots: unknown[]; displayAreaUnitLabel?: string; referenceValuationIntlText?: string; }
-export function buildUserDataPortabilityExport(input: { ownerUid: string; profile?: Record<string, unknown>; favoriteNeighborhoodKeys?: string[]; savedAlerts?: unknown[]; publishedListings?: unknown[]; calculationSnapshots?: unknown[]; }): UserDataPortabilityExportEnvelope {
+export interface UserDataPortabilityExportEnvelope { schemaVersion: '2.0.0'; exportScope: 'server_account'; origin: 'server'; exportedAtIso: string; ownerUid: string; isPartialExport: boolean; unavailableSources: string[]; sources: Array<{ id: string; origin: 'server'; available: boolean; count: number }>; excludedSources: string[]; profile: Record<string, unknown>; favoriteNeighborhoodKeys: string[]; savedAlerts: unknown[]; publishedListings: unknown[]; calculationSnapshots: unknown[]; displayAreaUnitLabel?: string; referenceValuationIntlText?: string; }
+export function buildUserDataPortabilityExport(input: { ownerUid: string; profile?: Record<string, unknown>; favoriteNeighborhoodKeys?: string[]; savedAlerts?: unknown[]; publishedListings?: unknown[]; calculationSnapshots?: unknown[]; isPartialExport?: boolean; unavailableSources?: string[]; sources?: Array<{ id: string; origin: 'server'; available: boolean; count: number }>; excludedSources?: string[]; }): UserDataPortabilityExportEnvelope {
+  const unavailableSources = Array.isArray(input.unavailableSources) ? input.unavailableSources : [];
+  const publishedListings = Array.isArray(input.publishedListings) ? input.publishedListings : [];
+  const savedAlerts = Array.isArray(input.savedAlerts) ? input.savedAlerts : [];
   return {
-    schemaVersion: '2.0.0', exportedAtIso: new Date().toISOString(), ownerUid: String(input.ownerUid), profile: input.profile || {},
-    favoriteNeighborhoodKeys: Array.isArray(input.favoriteNeighborhoodKeys) ? input.favoriteNeighborhoodKeys : [], savedAlerts: Array.isArray(input.savedAlerts) ? input.savedAlerts : [],
-    publishedListings: Array.isArray(input.publishedListings) ? input.publishedListings : [], calculationSnapshots: Array.isArray(input.calculationSnapshots) ? input.calculationSnapshots : [],
+    schemaVersion: '2.0.0', exportScope: 'server_account', origin: 'server', exportedAtIso: new Date().toISOString(), ownerUid: String(input.ownerUid),
+    isPartialExport: Boolean(input.isPartialExport) || unavailableSources.length > 0, unavailableSources,
+    sources: Array.isArray(input.sources) ? input.sources : [
+      { id: 'server_published_bargains', origin: 'server', available: true, count: publishedListings.length },
+      { id: 'server_buyer_alerts', origin: 'server', available: !unavailableSources.includes('buyer_alerts_firestore'), count: savedAlerts.length },
+    ],
+    excludedSources: Array.isArray(input.excludedSources) ? input.excludedSources : ['local_workspace_browser_storage', 'firebase_auth_credentials_and_tokens', 'server_audit_logs_anonymized'],
+    profile: input.profile || {}, favoriteNeighborhoodKeys: Array.isArray(input.favoriteNeighborhoodKeys) ? input.favoriteNeighborhoodKeys : [],
+    savedAlerts, publishedListings, calculationSnapshots: Array.isArray(input.calculationSnapshots) ? input.calculationSnapshots : [],
     displayAreaUnitLabel: formatAreaUnitLabel(getStoredAreaUnit()), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(10_000, getStoredIntlCurrency()),
   };
 }

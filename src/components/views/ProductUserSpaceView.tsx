@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { User, LogIn, LogOut, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Download, Trash2 } from 'lucide-react';
 import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
@@ -10,12 +10,25 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { SearchHistory } from '../SearchHistory';
 import { AccountSubSectionsPanel } from '../navigation/AccountSubSectionsPanel';
 import type { AccountSubTabId, ModuleSubTabId, SavedMapViewItem } from '../../navigation/registry/route.types';
+import {
+  ACCOUNT_WORKSPACE_UPDATED_EVENT,
+  isStorageKeyForUid,
+  resolveEffectiveUid,
+  setActiveAccountScopeUid,
+} from '../../features/account/services/accountStorageScope';
+import { generateStableAccountId } from '../../features/account/services/accountSettingsStorageService';
+import { downloadJsonPayloadFile } from '../../features/account/services/accountExportDownloadService';
+import {
+  buildAccountExportDownloadPayload,
+  executeAccountDeletionFlow,
+  requestAccountServerExport,
+} from '../../features/account/services/accountActionService';
+import type { AccountDeleteLayerStatus, AccountWorkspaceSnapshot } from '../../features/account/types/account.types';
 import { loadAccountWorkspaceSnapshot, recordDataRequest, removeSavedPropertyById } from '../../features/account/services/accountWorkspaceService';
 import { AccountOverviewDashboard } from '../../features/account/components/AccountOverviewDashboard';
 import { AccountSavedItemsPanel } from '../../features/account/components/AccountSavedItemsPanel';
 import { AccountFavoriteNeighborhoodsSection } from '../../features/account/components/AccountFavoriteNeighborhoodsSection';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
-const CLIENT_STORAGE_KEYS_FALLBACK = ['tehran_housing_radar_v35_neighborhoods', 'tehran_radar_feature_flags_v35', 'tehran_radar_visited_homes_v1', 'tehran_radar_favorite_hoods_v1', 'tehran_radar_recent_searches_v1', 'tehran_radar_area_unit_v1', 'tehran_radar_intl_currency_v1'] as const;
 export interface ProductUserSpaceViewProps {
   currentUser: FirebaseUser | null; onGoogleSignIn: () => void; onSignOut: () => void;
   favoriteHoodIds: number[]; onToggleFavorite: (id: number) => void;
@@ -32,17 +45,33 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale();
   const [busyAction, setBusyAction] = useState<'export' | 'delete' | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [privacyNotice, setPrivacyNotice] = useState<string | null>(null);
-  const [snapshotRevision, setSnapshotRevision] = useState(0);
-  const exportRevokeTimerRef = useRef<number | null>(null);
-  useEffect(() => () => { if (exportRevokeTimerRef.current !== null) window.clearTimeout(exportRevokeTimerRef.current); }, []);
+  const [privacyNotice, setPrivacyNotice] = useState<{ kind: 'info' | 'error'; text: string } | null>(null);
+  const [deleteLayers, setDeleteLayers] = useState<AccountDeleteLayerStatus | null>(null);
+  const [dataRequestRevision, setDataRequestRevision] = useState(0);
+  const effectiveUid = resolveEffectiveUid(p.currentUser?.uid ?? null);
+  const effectiveDisplayName = p.currentUser?.displayName ?? null;
+  const syncKey = `${effectiveUid}|${effectiveDisplayName ?? ''}|${p.visitedHomesCount}`;
+  const lastSyncKeyRef = useRef(syncKey);
+  const downloadCancelRef = useRef<(() => void) | null>(null);
+  const [workspaceSnapshot, setWorkspaceSnapshot] = useState<AccountWorkspaceSnapshot>(() => {
+    setActiveAccountScopeUid(p.currentUser?.uid ?? null);
+    return loadAccountWorkspaceSnapshot({ callerUid: effectiveUid, displayName: effectiveDisplayName, visitedHomesCount: p.visitedHomesCount });
+  });
+  const refreshWorkspace = useCallback(() => {
+    setActiveAccountScopeUid(p.currentUser?.uid ?? null);
+    setWorkspaceSnapshot(loadAccountWorkspaceSnapshot({ callerUid: effectiveUid, displayName: effectiveDisplayName, visitedHomesCount: p.visitedHomesCount }));
+  }, [p.currentUser?.uid, effectiveUid, effectiveDisplayName, p.visitedHomesCount]);
+  useEffect(() => { if (lastSyncKeyRef.current !== syncKey) { lastSyncKeyRef.current = syncKey; refreshWorkspace(); } }, [syncKey, refreshWorkspace]);
+  useEffect(() => {
+    const onStorage = (ev: StorageEvent) => { if (!ev.key || isStorageKeyForUid(ev.key, effectiveUid)) refreshWorkspace(); };
+    const onEvent = (ev: Event) => { if (!(ev as CustomEvent<{ uid?: string }>)?.detail?.uid || (ev as CustomEvent<{ uid?: string }>).detail.uid === effectiveUid) refreshWorkspace(); };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, onEvent);
+    return () => { window.removeEventListener('storage', onStorage); window.removeEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, onEvent); };
+  }, [effectiveUid, refreshWorkspace]);
+  useEffect(() => () => { if (downloadCancelRef.current) downloadCancelRef.current(); }, []);
   const isEn = radarLocale === 'en';
   const currentTab: AccountSubTabId = p.activeSubTab || 'overview';
-  const workspaceSnapshot = useMemo(() => loadAccountWorkspaceSnapshot({
-    callerUid: p.currentUser?.uid || 'local-user',
-    displayName: p.currentUser?.displayName,
-    visitedHomesCount: p.visitedHomesCount,
-  }), [p.currentUser?.uid, p.currentUser?.displayName, p.visitedHomesCount, snapshotRevision]);
   const refHood = p.selectedHood || p.evaluatedNeighborhoods[0];
   const refDealSqm = refHood ? aggregateNeighborhoodMarketMetrics(refHood.id, refHood.name, refHood.buyPerSqm, buildNeighborhoodListingSamples(refHood)).estimatedDealPricePerSqm : 0;
   const effectiveBuyBudget = p.buyTotalBudget + (p.useLoanBooster ? 1200 : 0);
@@ -63,58 +92,61 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
   const budgetFx = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(p.mode === 'buy' ? effectiveBuyBudget : effectiveRahnPower, intlCurrency, radarLocale)})` : '';
   const avgShortlistScore = favoriteHoods.length > 0 ? (favoriteHoods.reduce((acc, h) => acc + h.overallScore, 0) / favoriteHoods.length).toFixed(1) : null;
 
-  const handleExportAccountData = async (): Promise<boolean> => {
+  const handleExportAccountData = async (includeLocalWorkspace = false): Promise<boolean> => {
     if (!p.currentUser || busyAction) return false;
-    setBusyAction('export'); setPrivacyNotice(null);
+    setBusyAction('export'); setPrivacyNotice(null); setDeleteLayers(null);
+    const scope = includeLocalWorkspace ? 'combined_account_and_workspace' : 'server_account';
+    const requestId = generateStableAccountId('dreq');
     try {
-      const token = await p.currentUser.getIdToken();
-      const res = await fetch('/api/account/export-data', { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.exportData) {
-        const blob = new Blob([JSON.stringify(data.exportData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `radar-account-export-${p.currentUser.uid.slice(0, 8)}.json`; a.click();
-        if (exportRevokeTimerRef.current !== null) window.clearTimeout(exportRevokeTimerRef.current);
-        exportRevokeTimerRef.current = window.setTimeout(() => { URL.revokeObjectURL(url); exportRevokeTimerRef.current = null; }, 1000);
-        setPrivacyNotice('فایل JSON اطلاعات حساب شما آماده و دانلود شد.');
-        return true;
+      const serverRes = await requestAccountServerExport({ getToken: () => p.currentUser!.getIdToken(), expectedUid: p.currentUser.uid });
+      if (serverRes.ok === false) {
+        const failRes = serverRes as Extract<typeof serverRes, { ok: false }>;
+        recordDataRequest('export', 'failed', { uid: effectiveUid, requestId, scope, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });
+        setDataRequestRevision((r) => r + 1); refreshWorkspace();
+        setPrivacyNotice({ kind: 'error', text: failRes.messageFa });
+        return false;
       }
-      setPrivacyNotice('خطا در دریافت خروجی اطلاعات حساب.');
-      return false;
-    } catch {
-      setPrivacyNotice('ارتباط با سرور برای دریافت اطلاعات برقرار نشد.');
-      return false;
+      recordDataRequest('export', 'ready', { uid: effectiveUid, requestId, scope });
+      const built = buildAccountExportDownloadPayload({ serverData: serverRes.data, uid: p.currentUser.uid, includeLocalWorkspace });
+      if (downloadCancelRef.current) downloadCancelRef.current();
+      const dl = downloadJsonPayloadFile(built.payload, { scope: built.scope });
+      downloadCancelRef.current = dl.cancelRevokeTimer ?? null;
+      if (!dl.ok) {
+        recordDataRequest('export', 'failed', { uid: effectiveUid, requestId, scope: built.scope, errorCode: dl.code, retentionNotesFa: dl.messageFa });
+        setDataRequestRevision((r) => r + 1); refreshWorkspace();
+        setPrivacyNotice({ kind: 'error', text: dl.messageFa || 'دانلود فایل خروجی در مرورگر انجام نشد.' });
+        return false;
+      }
+      const partialMsg = built.isPartialExport ? ` (هشدار: خروجی جزئی؛ منابع غیرقابل‌دسترس: ${built.unavailableSources.join('، ')})` : '';
+      recordDataRequest('export', 'completed', { uid: effectiveUid, requestId, scope: built.scope, retentionNotesFa: `فایل خروجی ${built.scope === 'combined_account_and_workspace' ? 'سرور + فضای محلی' : 'سرور'} با تفکیک منشأ آماده و دانلود شد${partialMsg}.` });
+      setDataRequestRevision((r) => r + 1); refreshWorkspace();
+      setPrivacyNotice({ kind: 'info', text: `فایل JSON اطلاعات حساب آماده و دانلود شد${partialMsg}.` });
+      return true;
     } finally { setBusyAction(null); }
   };
 
   const handleConfirmAccountDelete = async () => {
     if (!p.currentUser || busyAction) return;
-    setBusyAction('delete'); setPrivacyNotice(null);
+    setBusyAction('delete'); setPrivacyNotice(null); setDeleteLayers(null);
+    const requestId = generateStableAccountId('dreq');
     try {
-      const token = await p.currentUser.getIdToken();
-      const res = await fetch('/api/account/delete', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ confirmDelete: true }),
-      });
-      const data = await res.json().catch(() => null);
-      if (res.ok) {
-        const keys: readonly string[] = Array.isArray(data?.clearClientLocalStorageKeys) ? data.clearClientLocalStorageKeys : CLIENT_STORAGE_KEYS_FALLBACK;
-        try { keys.forEach((k) => window.localStorage.removeItem(k)); } catch { /* ignore */ }
-        if (data?.requiresClientAuthDeletion && p.currentUser) {
-          try { await deleteUser(p.currentUser); } catch (authErr: unknown) {
-            const errCode = (authErr as { code?: string })?.code || '';
-            recordDataRequest('delete', 'pending_verification');
-            setSnapshotRevision((r) => r + 1);
-            setConfirmDeleteOpen(false);
-            setPrivacyNotice(errCode === 'auth/requires-recent-login' ? 'داده‌های سرور پاکسازی شدند، اما برای حذف نهایی حساب فایربیس/گوگل به‌دلیل قدیمی‌بودن نشست فعلی، لطفاً یک‌بار خارج شده و دوباره وارد شوید و سپس دکمه حذف را بزنید.' : 'داده‌های سرور پاکسازی شدند، اما حذف خودکار حساب احراز هویت در مرورگر کامل نشد. لطفاً پس از ورود مجدد دوباره امتحان کنید.');
-            return;
-          }
-        }
-        recordDataRequest('delete', 'completed');
-        setSnapshotRevision((r) => r + 1);
-        setConfirmDeleteOpen(false); p.onSignOut();
-      } else { setPrivacyNotice(data?.message || 'حذف حساب کاربری انجام نشد.'); }
-    } catch { setPrivacyNotice('خطا در اجرای درخواست حذف حساب کاربری.'); } finally { setBusyAction(null); }
+      const res = await executeAccountDeletionFlow({ currentUser: p.currentUser, deleteFirebaseUserFn: (u) => deleteUser(u as FirebaseUser) });
+      if (res.ok === false && !res.data) {
+        const failRes = res as Extract<typeof res, { ok: false }>;
+        recordDataRequest('delete', 'failed', { uid: effectiveUid, requestId, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });
+        setDataRequestRevision((r) => r + 1); refreshWorkspace();
+        setPrivacyNotice({ kind: 'error', text: failRes.messageFa });
+        return;
+      }
+      if (!res.data) return;
+      const failCode = res.ok === false ? (res as Extract<typeof res, { ok: false }>).code : undefined;
+      setDeleteLayers(res.data);
+      recordDataRequest('delete', res.data.requestStatus, { uid: effectiveUid, requestId, errorCode: failCode, retentionNotesFa: res.data.messageFa });
+      setDataRequestRevision((r) => r + 1); refreshWorkspace();
+      setConfirmDeleteOpen(false);
+      setPrivacyNotice({ kind: res.ok ? 'info' : 'error', text: res.data.messageFa });
+      if (res.data.requiresSignOut) p.onSignOut();
+    } finally { setBusyAction(null); }
   };
 
   return (
@@ -140,7 +172,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {p.currentUser ? (
               <>
-                <button type="button" onClick={async () => { const ok = await handleExportAccountData(); if (ok) { recordDataRequest('export', 'completed'); setSnapshotRevision((r) => r + 1); } }} disabled={busyAction !== null} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Download className="w-3.5 h-3.5" /><span>دانلود اطلاعات حساب من</span></button>
+                <button type="button" onClick={() => void handleExportAccountData(false)} disabled={busyAction !== null} className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Download className="w-3.5 h-3.5" /><span>دانلود اطلاعات حساب من</span></button>
                 <button type="button" onClick={() => setConfirmDeleteOpen((v) => !v)} disabled={busyAction !== null} className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /><span>حذف کامل حساب کاربری</span></button>
                 <button type="button" onClick={p.onSignOut} className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"><LogOut className="w-3.5 h-3.5" /><span>{isEn ? 'Sign Out' : 'خروج از حساب'}</span></button>
               </>
@@ -153,12 +185,19 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           <div className="p-3.5 rounded-2xl bg-rose-50/90 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
             <span className="text-rose-800 dark:text-rose-200 font-bold">آیا از حذف دائمی حساب کاربری، آگهی‌ها، هشدارهای خرید و فایل‌های رسانه خود اطمینان دارید؟</span>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={handleConfirmAccountDelete} disabled={busyAction === 'delete'} className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black cursor-pointer disabled:opacity-50">تأیید نهایی حذف حساب</button>
+              <button type="button" onClick={() => void handleConfirmAccountDelete()} disabled={busyAction === 'delete'} className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black cursor-pointer disabled:opacity-50">تأیید نهایی حذف حساب</button>
               <button type="button" onClick={() => setConfirmDeleteOpen(false)} className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold cursor-pointer">انصراف</button>
             </div>
           </div>
         )}
-        {privacyNotice && <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{privacyNotice}</p>}
+        {deleteLayers && (
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 text-[11px] font-bold">
+            <span>حذف داده‌های سرور: {deleteLayers.serverDeletion === 'completed' ? 'کامل' : 'جزئی'}</span>
+            <span>· پاکسازی محلی حساب ({deleteLayers.removedLocalKeysCount} کلید): {deleteLayers.localCleanup === 'completed' ? 'انجام شد' : 'ناموفق'}</span>
+            <span>· هویت Firebase Auth: {deleteLayers.authDeletion === 'completed' || deleteLayers.authDeletion === 'not_required' ? 'حذف شد' : deleteLayers.authDeletion === 'requires_reauth' ? 'نیازمند ورود مجدد' : 'ناموفق'}</span>
+          </div>
+        )}
+        {privacyNotice && <p role={privacyNotice.kind === 'error' ? 'alert' : 'status'} className={`text-xs font-bold ${privacyNotice.kind === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>{privacyNotice.text}</p>}
       </div>
 
       {currentTab !== 'overview' && currentTab !== 'favorites' && (
@@ -167,7 +206,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
           visitedHomesCount={p.visitedHomesCount} onOpenVisitedModal={p.onOpenVisitedModal} onOpenBuyerAlertModal={p.onOpenBuyerAlertModal}
           onOpenBudgetFilter={p.onOpenBudgetFilter} onNavigateView={p.onNavigateView} onSelectNeighborhood={p.onSelectNeighborhood}
           onRestoreSavedView={p.onRestoreSavedView} onExportAccountData={handleExportAccountData}
-          onRequestDeleteAccount={() => setConfirmDeleteOpen(true)} busyAction={busyAction} dataRequestRevision={snapshotRevision}
+          onRequestDeleteAccount={() => setConfirmDeleteOpen(true)} busyAction={busyAction} dataRequestRevision={dataRequestRevision}
         />
       )}
 
@@ -207,35 +246,20 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
       </div>}
 
       {currentTab === 'overview' && (
-        <AccountOverviewDashboard
-          snapshot={workspaceSnapshot}
-          favoriteHoodsCount={favoriteHoods.length}
-          visitedHomesCount={p.visitedHomesCount}
-          onNavigateView={p.onNavigateView}
-          onSwitchAccountTab={(tab) => p.onNavigateView?.('userspace', tab)}
-        />
+        <AccountOverviewDashboard snapshot={workspaceSnapshot} favoriteHoodsCount={favoriteHoods.length} visitedHomesCount={p.visitedHomesCount} onNavigateView={p.onNavigateView} onSwitchAccountTab={(tab) => p.onNavigateView?.('userspace', tab)} />
       )}
 
       {currentTab === 'overview' && <SearchHistory variant="chips" title="آخرین محله‌های جست‌وجوشده" evaluatedNeighborhoods={p.evaluatedNeighborhoods} mode={p.mode} onSelectNeighborhood={(_name, matched) => { if (matched) { p.onSelectNeighborhood(matched); p.onNavigateView?.('map'); } }} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />}
 
       {currentTab === 'favorites' && (
         <AccountSavedItemsPanel
-          modeTab="properties_only"
-          savedProperties={workspaceSnapshot.savedProperties}
-          savedSearches={workspaceSnapshot.savedSearches}
-          savedMapViews={workspaceSnapshot.savedMapViews}
-          savedMarketAnalyses={workspaceSnapshot.savedMarketAnalyses}
-          evaluatedNeighborhoods={p.evaluatedNeighborhoods}
-          dealMode={p.mode}
-          onRemoveSavedProperty={(id) => { removeSavedPropertyById(id); setSnapshotRevision((r) => r + 1); }}
-          onCreateSearchWatchlist={() => {}}
-          onChangeSearchCadence={() => {}}
-          onDeleteSearchWatchlist={() => {}}
-          onDeleteSavedMapView={() => {}}
-          onDeleteSavedMarketAnalysis={() => {}}
-          onOpenBudgetFilter={p.onOpenBudgetFilter}
-          onSelectNeighborhood={p.onSelectNeighborhood}
-          onNavigateView={p.onNavigateView}
+          modeTab="properties_only" savedProperties={workspaceSnapshot.savedProperties} savedSearches={workspaceSnapshot.savedSearches}
+          savedMapViews={workspaceSnapshot.savedMapViews} savedMarketAnalyses={workspaceSnapshot.savedMarketAnalyses}
+          evaluatedNeighborhoods={p.evaluatedNeighborhoods} dealMode={p.mode}
+          onRemoveSavedProperty={(id) => { removeSavedPropertyById(id, effectiveUid); refreshWorkspace(); }}
+          onCreateSearchWatchlist={() => {}} onChangeSearchCadence={() => {}} onDeleteSearchWatchlist={() => {}}
+          onDeleteSavedMapView={() => {}} onDeleteSavedMarketAnalysis={() => {}}
+          onOpenBudgetFilter={p.onOpenBudgetFilter} onSelectNeighborhood={p.onSelectNeighborhood} onNavigateView={p.onNavigateView}
         />
       )}
 
@@ -247,19 +271,9 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             </div>
           )}
           <AccountFavoriteNeighborhoodsSection
-            favoriteHoods={favoriteHoods}
-            evaluatedNeighborhoods={p.evaluatedNeighborhoods}
-            selectedHood={p.selectedHood}
-            activeCity={p.activeCity}
-            mode={p.mode}
-            isEn={isEn}
-            areaUnit={areaUnit}
-            intlCurrency={intlCurrency}
-            radarLocale={radarLocale}
-            avgShortlistScore={avgShortlistScore}
-            topFavScore={topFavScore}
-            explainByHoodId={favExplainById}
-            dealSqmByHoodId={favDealSqmById}
+            favoriteHoods={favoriteHoods} evaluatedNeighborhoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} activeCity={p.activeCity}
+            mode={p.mode} isEn={isEn} areaUnit={areaUnit} intlCurrency={intlCurrency} radarLocale={radarLocale} avgShortlistScore={avgShortlistScore}
+            topFavScore={topFavScore} explainByHoodId={favExplainById} dealSqmByHoodId={favDealSqmById}
             renderCardHeader={(hood, isSelected, isOtherCity, cityLabel, explain) => (
               <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
                 <div className="flex items-center gap-1.5">
@@ -269,11 +283,8 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
                 <span className="text-[11px] text-slate-400">{hood.zone} · امتیاز {toPersianNum(hood.overallScore)}/۱۰ {explain.nonCompensatoryWarningsFa[0] ? <strong className="text-amber-600 dark:text-amber-400">· ⚠ {explain.nonCompensatoryWarningsFa[0]}</strong> : null}</span>
               </div>
             )}
-            onToggleFavorite={p.onToggleFavorite}
-            onSelectNeighborhood={p.onSelectNeighborhood}
-            onOpenInspector={p.onOpenInspector}
-            onOpenShortlistMatrix={p.onOpenShortlistMatrix}
-            onNavigateView={(v) => p.onNavigateView?.(v)}
+            onToggleFavorite={p.onToggleFavorite} onSelectNeighborhood={p.onSelectNeighborhood} onOpenInspector={p.onOpenInspector}
+            onOpenShortlistMatrix={p.onOpenShortlistMatrix} onNavigateView={(v) => p.onNavigateView?.(v)}
           />
         </>
       )}

@@ -106,7 +106,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
           <div className="text-right min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-black text-slate-800 dark:text-slate-100">{compareCopy.inlineTitle}</span>
-              <span className="px-1.5 py-0.2 rounded-[6px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-extrabold tabular-nums">
+              <span className="px-1.5 py-0.5 rounded-[6px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-extrabold tabular-nums">
                 {hoodA.name} vs {hoodB.name}
               </span>
             </div>

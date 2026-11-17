@@ -6,22 +6,30 @@ import { aggregateHoodMarketForUi } from '../../data/aggregateHoodMarketForUi';
 import { EpistemicMarketDisclaimer } from '../EpistemicMarketDisclaimer';
 import { NeighborhoodIntelligenceProfilePanel } from '../../features/neighborhoods/components/NeighborhoodIntelligenceProfilePanel';
 
+import { resolveCityIdForNeighborhood } from '../../data/multiCityData';
+
 export interface DiscoverSelectedHoodEpistemicBannerProps {
   hood: EvaluatedNeighborhood;
   cityId?: CityId | string;
   allNeighborhoods?: readonly EvaluatedNeighborhood[];
 }
 
-export function DiscoverSelectedHoodEpistemicBanner({ hood, cityId = 'tehran', allNeighborhoods }: DiscoverSelectedHoodEpistemicBannerProps): React.ReactElement {
+export function DiscoverSelectedHoodEpistemicBanner({
+  hood,
+  cityId,
+  allNeighborhoods,
+}: DiscoverSelectedHoodEpistemicBannerProps): React.ReactElement {
+  const effectiveCityId = cityId || resolveCityIdForNeighborhood(hood.id);
   const metrics = useMemo(() => aggregateHoodMarketForUi(hood).metrics, [hood]);
   return (
     <div className="space-y-2">
       <EpistemicMarketDisclaimer metrics={metrics} className="mt-2 max-w-xl" />
       <NeighborhoodIntelligenceProfilePanel
         hood={hood}
-        cityId={cityId}
+        cityId={effectiveCityId}
         allNeighborhoods={allNeighborhoods && allNeighborhoods.length > 0 ? allNeighborhoods : [hood]}
         dealPricePerSqm={metrics.observedSampleCount > 0 ? metrics.estimatedDealPricePerSqm : undefined}
+        marketMetrics={metrics}
       />
     </div>
   );

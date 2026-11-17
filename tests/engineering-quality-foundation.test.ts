@@ -2079,8 +2079,9 @@ async function runSuite(): Promise<void> {
     assert.equal(intelSrc.includes('<div key={hood.id} onClick='), false, 'ProductIntelligenceView outer card wrapper must not intercept clicks');
 
     const discoverSrc = readComp('src/components/views/ProductDiscoverView.tsx');
-    assert.equal(discoverSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer"'), true, 'ProductDiscoverView grid cards must handle click on inner role=button');
-    assert.equal(discoverSrc.includes('role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === \'Enter\' || e.key === \' \') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="flex items-center gap-3 cursor-pointer"'), true, 'ProductDiscoverView list rows must handle click on inner role=button');
+    const discoverResultsSrc = readComp('src/components/discover/DiscoverNeighborhoodResults.tsx');
+    assert.equal(discoverSrc.includes('div role="button"') || discoverResultsSrc.includes('div role="button"'), false, 'ProductDiscoverView must use semantic <button type="button"> instead of clickable <div role="button">');
+    assert.equal(discoverResultsSrc.includes('type="button"\n                    aria-pressed={isSelected}'), true, 'ProductDiscoverView grid and list cards must select neighborhood via semantic button');
     assert.equal(discoverSrc.includes('<div key={hood.id} onClick='), false, 'ProductDiscoverView outer card wrappers must not intercept clicks');
 
     const homeSrc = readComp('src/components/views/ProductHomeView.tsx');
@@ -2092,7 +2093,7 @@ async function runSuite(): Promise<void> {
     assert.equal(userSpaceSrc.includes('<div key={hood.id} onClick='), false, 'ProductUserSpaceView outer card wrapper must not intercept clicks');
 
     const toolsSrc = readComp('src/components/views/ProductToolsView.tsx');
-    assert.equal(toolsSrc.includes('<button key={tool.id} type="button" onClick={tool.action}'), true, 'ProductToolsView calculator cards must be semantic buttons');
+    assert.equal(toolsSrc.includes('<button key={tool.id} type="button" onClick={() => dispatchToolAction(tool.id)}'), true, 'ProductToolsView calculator cards must be semantic buttons');
 
     const legalSrc = readComp('src/components/ContractLegalAdvisorView.tsx');
     assert.equal(legalSrc.includes('onChange={() => {}}'), false, 'ContractLegalAdvisorView checklist checkboxes must not use a no-op onChange');

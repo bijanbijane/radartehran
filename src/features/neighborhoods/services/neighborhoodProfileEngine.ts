@@ -1,7 +1,20 @@
 import type { EvaluatedNeighborhood, Neighborhood } from '../../../data/neighborhoods';
-import { MULTI_CITY_CONFIGS, type CityId } from '../../../data/multiCityData';
+import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
+import {
+  buildNeighborhoodListingSamples,
+  isLiveDivarBargainId,
+  lookupMatchingDatedReferencePrice,
+} from '../../../data/neighborhoodListingSamples';
+import type { AggregatedMarketMetrics } from '../../../data/realMarketPriceAggregator';
 import type { DataQuality } from '../../home/types/home.types';
-import { convertPricePerSqmToUnitRaw, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../../../utils/areaUnit';
+import {
+  convertPricePerSqmToUnitRaw,
+  formatMillionTomanAsIntlCurrency,
+  type AreaUnit,
+  type IntlCurrencyCode,
+  type RadarLocale,
+  type RuntimeExchangeRateReference,
+} from '../../../utils/areaUnit';
 
 export type BoundaryStatus = 'official' | 'operational' | 'custom' | 'under-review';
 export type ProfileMaturityLevel = 'Basic' | 'Developing' | 'Detailed' | 'Research-ready';
@@ -44,9 +57,18 @@ export interface CommunityContributionEntry {
   id: string; streamType: 'verified_editorial' | 'pending_contribution' | 'user_comment';
   streamLabelFa: string; categoryFa: string; textFa: string; moderationStatus: ContributionModerationStatus; submittedAt: string;
 }
+export interface NeighborhoodSampleBreakdown {
+  rawInputCount: number;
+  observedSampleCount: number;
+  validSampleCount: number;
+  rejectedFraudCount: number;
+  syntheticSampleCount: number;
+}
 export interface NeighborhoodIntelligenceProfile {
   identity: NeighborhoodIdentity; boundary: NeighborhoodBoundary; maturityLevel: ProfileMaturityLevel; maturityLabelFa: string;
-  content: NeighborhoodContent; quickMetrics: NeighborhoodMetric[]; marketSampleAdequate: boolean; marketSampleWarningFa: string | null;
+  cityMismatchWarningFa: string | null;
+  content: NeighborhoodContent; quickMetrics: NeighborhoodMetric[]; sampleBreakdown: NeighborhoodSampleBreakdown;
+  marketSampleAdequate: boolean; marketSampleWarningFa: string | null;
   landUseDenominatorLabelFa: string; landUseShares: LandUseShareItem[]; amenities: ServiceAmenityGroup[];
   adjacentNeighborhoods: RelatedNeighborhoodRef[]; nearbyNeighborhoods: RelatedNeighborhoodRef[];
   historicalTimeline: HistoricalTimelineEntry[]; contributions: CommunityContributionEntry[];
@@ -66,19 +88,43 @@ export function formatNullSafeMetricValue(value: number | null | undefined, form
 
 export function evaluateNeighborhoodMaturity(
   hood: AnyNeighborhoodInput,
-  marketSampleCount = 0,
+  validSampleCount = 0,
+  qualityContext?: { verifiedTransactionCount?: number; hasSpatialPolygons?: boolean; sourceTrustScore?: number },
 ): { level: ProfileMaturityLevel; labelFa: string } {
   const hasRichNarrative = Boolean(hood.pros?.trim() && hood.cons?.trim());
-  const safeCount = Math.max(0, Math.round(marketSampleCount));
-  if (hasRichNarrative && safeCount >= 30) return { level: 'Research-ready', labelFa: 'آماده پژوهش (Research-ready)' };
-  if (hasRichNarrative && safeCount >= 12) return { level: 'Detailed', labelFa: 'تکمیل‌شده (Detailed)' };
-  if (hasRichNarrative) return { level: 'Developing', labelFa: 'در حال تکمیل (Developing)' };
+  const safeValid = Math.max(0, Math.round(validSampleCount));
+  const verifiedTx = qualityContext?.verifiedTransactionCount ?? 0;
+  const hasPolygons = Boolean(qualityContext?.hasSpatialPolygons);
+  const sourceTrust = qualityContext?.sourceTrustScore ?? 0;
+  if (hasRichNarrative && safeValid >= 30 && verifiedTx > 0 && hasPolygons && sourceTrust >= 0.7) {
+    return { level: 'Research-ready', labelFa: 'آماده پژوهش (Research-ready)' };
+  }
+  if (hasRichNarrative && safeValid >= 12) return { level: 'Detailed', labelFa: 'تکمیل‌شده (Detailed)' };
+  if (hasRichNarrative || safeValid >= 1) return { level: 'Developing', labelFa: 'در حال تکمیل (Developing)' };
   return { level: 'Basic', labelFa: 'پایه (Basic)' };
 }
 
-export function evaluateMarketSampleAdequacy(sampleSize: number): { adequate: boolean; quality: DataQuality; warningFa: string | null } {
-  if (sampleSize < 12) return { adequate: false, quality: 'incomplete', warningFa: 'تعداد نمونه برای تحلیل دقیق کافی نیست؛ شاخص‌ها با احتیاط تفسیر شوند.' };
-  if (sampleSize < 30) return { adequate: true, quality: 'estimated', warningFa: 'حجم نمونه متوسط است؛ میانه استنباطی با بازه اطمینان نمایش داده می‌شود.' };
+export function evaluateMarketSampleAdequacy(
+  validSampleSize: number,
+  verifiedTransactionCount = 0,
+): { adequate: boolean; quality: DataQuality; warningFa: string | null } {
+  if (validSampleSize < 12) {
+    return {
+      adequate: false,
+      quality: 'incomplete',
+      warningFa: 'تعداد نمونه معتبر برای تحلیل آماری کافی نیست؛ نمونه‌های نمایشی در محاسبه لحاظ نمی‌شوند.',
+    };
+  }
+  if (validSampleSize < 30 || verifiedTransactionCount === 0) {
+    return {
+      adequate: true,
+      quality: 'estimated',
+      warningFa:
+        verifiedTransactionCount === 0
+          ? 'حجم نمونه آگهی قابل تحلیل است اما معامله ثبت‌شده در این نسخه موجود نیست؛ شاخص‌ها برآوردی هستند.'
+          : 'حجم نمونه متوسط است؛ میانه استنباطی با بازه اطمینان نمایش داده می‌شود.',
+    };
+  }
   return { adequate: true, quality: 'verified', warningFa: null };
 }
 
@@ -94,20 +140,54 @@ export function buildNeighborhoodIntelligenceProfile(
   allNeighborhoods: readonly AnyNeighborhoodInput[],
   cityId = 'tehran',
   dealPricePerSqm?: number,
-  options?: { areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; locale?: 'fa' | 'en' },
+  options?: {
+    areaUnit?: AreaUnit;
+    intlCurrency?: IntlCurrencyCode;
+    locale?: RadarLocale;
+    marketMetrics?: AggregatedMarketMetrics | null;
+    exchangeRateRef?: RuntimeExchangeRateReference | null;
+  },
 ): NeighborhoodIntelligenceProfile {
   const areaUnit = options?.areaUnit ?? 'sqm';
   const intlCurrency = options?.intlCurrency ?? 'IRT';
   const locale = options?.locale ?? 'fa';
-  const cityNameFa = MULTI_CITY_CONFIGS[cityId as CityId]?.nameFa || 'تهران';
-  const slug = `hood-${hood.id}`, canonicalPath = `/areas/${cityId}/neighborhoods/${slug}`;
-  const liveCount = (hood.bargains || []).filter((b) => typeof b.id === 'string' && b.id.startsWith('live-divar-')).length;
-  const sampleEval = evaluateMarketSampleAdequacy(liveCount);
-  const maturity = evaluateNeighborhoodMaturity(hood, liveCount);
+  const normalizedCityId: CityId = (MULTI_CITY_CONFIGS[cityId as CityId] ? cityId : resolveCityIdForNeighborhood(hood.id)) as CityId;
+  const resolvedHoodCity = resolveCityIdForNeighborhood(hood.id);
+  const cityMismatchWarningFa =
+    resolvedHoodCity !== normalizedCityId
+      ? `این محله متعلق به شهر «${MULTI_CITY_CONFIGS[resolvedHoodCity]?.nameFa || resolvedHoodCity}» است و با شهر فعال «${MULTI_CITY_CONFIGS[normalizedCityId]?.nameFa || normalizedCityId}» هم‌خوانی ندارد.`
+      : null;
+  const cityNameFa = MULTI_CITY_CONFIGS[normalizedCityId]?.nameFa || 'تهران';
+  const slug = `hood-${hood.id}`, canonicalPath = `/areas/${normalizedCityId}/neighborhoods/${slug}`;
+
+  const rawBargains = Array.isArray(hood.bargains) ? hood.bargains : [];
+  const syntheticSampleCount = rawBargains.filter((b) => !isLiveDivarBargainId(b?.id)).length;
+  const derivedLiveSamples = buildNeighborhoodListingSamples(hood);
+  const mm = options?.marketMetrics;
+  const rawInputCount = mm?.rawInputCount ?? rawBargains.length;
+  const observedSampleCount = mm?.observedSampleCount ?? derivedLiveSamples.length;
+  const validSampleCount = mm?.eligibleObservedCount ?? derivedLiveSamples.length;
+  const rejectedFraudCount = mm?.rejectedFraudCount ?? 0;
+  const sampleBreakdown: NeighborhoodSampleBreakdown = {
+    rawInputCount,
+    observedSampleCount,
+    validSampleCount,
+    rejectedFraudCount,
+    syntheticSampleCount,
+  };
+
+  const sampleEval = evaluateMarketSampleAdequacy(validSampleCount, mm?.verifiedTransactionCount ?? 0);
+  const maturity = evaluateNeighborhoodMaturity(hood, validSampleCount, {
+    verifiedTransactionCount: mm?.verifiedTransactionCount ?? 0,
+    hasSpatialPolygons: false,
+    sourceTrustScore: validSampleCount > 0 ? 0.5 : 0.25,
+  });
   const hasExplicitDealPrice = typeof dealPricePerSqm === 'number' && Number.isFinite(dealPricePerSqm) && dealPricePerSqm > 0;
 
-  const othersWithDist = allNeighborhoods
-    .filter((item) => item.id !== hood.id)
+  const sameCityNeighbors = allNeighborhoods.filter(
+    (item) => item.id !== hood.id && resolveCityIdForNeighborhood(item.id) === normalizedCityId,
+  );
+  const othersWithDist = sameCityNeighbors
     .map((item) => ({
       item,
       distKm: haversineDistanceKm([hood.lat, hood.lng], [item.lat, item.lng]),
@@ -122,24 +202,37 @@ export function buildNeighborhoodIntelligenceProfile(
 
   const unitAsk = Math.round(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit) * 10) / 10;
   const unitDeal = hasExplicitDealPrice ? Math.round(convertPricePerSqmToUnitRaw(dealPricePerSqm!, areaUnit) * 10) / 10 : null;
-  const fxTag = (m: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(m, intlCurrency, locale)})` : '');
+  const fxTag = (m: number) => (intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(m, intlCurrency, locale, options?.exchangeRateRef)})` : '');
+  const datedRef = lookupMatchingDatedReferencePrice(normalizedCityId, hood.id, hood.buyPerSqm);
   const quickMetrics: NeighborhoodMetric[] = [
     {
       id: 'asking-median',
       title: sampleEval.adequate ? 'میانه قیمت پیشنهادی فروش' : 'قیمت مرجع داخلی هر مترمربع',
-      value: unitAsk,
-      formattedValue: `${formatNullSafeMetricValue(unitAsk, (v) => formatMillionTomanAsIntlCurrency(v, 'IRT', locale))}${fxTag(unitAsk)}`,
+      value: unitAsk > 0 ? unitAsk : null,
+      formattedValue: unitAsk > 0
+        ? `${formatNullSafeMetricValue(unitAsk, (v) => formatMillionTomanAsIntlCurrency(v, 'IRT', locale))}${fxTag(unitAsk)}`
+        : '—',
       unit: areaUnit === 'sqft' ? 'تومان / فوت مربع' : 'تومان / مترمربع',
-      period: cityId === 'tehran' ? 'مرجع داخلی' : 'بدون تاریخ به‌روزرسانی',
+      period: observedSampleCount > 0 ? 'تجمیع نمونه زنده' : datedRef ? `مرجع داخلی · بازبینی ${datedRef.asOfJalali}` : 'بدون تاریخ به‌روزرسانی',
       comparisonLabel: unitDeal !== null
         ? `سناریو v6.4 (غیرثبتی): ${formatMillionTomanAsIntlCurrency(unitDeal, 'IRT', locale)}${fxTag(unitDeal)}`
         : undefined,
-      sampleSize: liveCount, dataQuality: sampleEval.quality,
+      sampleSize: validSampleCount,
+      dataQuality: sampleEval.quality,
     },
     {
-      id: 'active-supply', title: 'تعداد آگهی‌های زنده محلی', value: liveCount,
-      formattedValue: formatNullSafeMetricValue(liveCount), unit: 'آگهی زنده', period: 'حافظه محلی',
-      comparisonLabel: `امتیاز دسترسی مترو: ${hood.metro}/۱۰`, sampleSize: liveCount, dataQuality: sampleEval.quality,
+      id: 'active-supply',
+      title: 'آگهی‌های زنده معتبر محلی',
+      value: observedSampleCount > 0 ? validSampleCount : null,
+      formattedValue: observedSampleCount > 0 ? formatNullSafeMetricValue(validSampleCount) : '—',
+      unit: observedSampleCount > 0 ? 'آگهی معتبر' : '',
+      period: observedSampleCount > 0 ? 'نمونه تاییدشده' : 'داده زنده ثبت نشده',
+      comparisonLabel: `امتیاز دسترسی مترو: ${hood.metro}/۱۰`,
+      sampleSize: validSampleCount,
+      dataQuality: observedSampleCount > 0 ? sampleEval.quality : 'unavailable',
+      zeroVsNullNote: observedSampleCount === 0
+        ? 'در نبود نمونه زنده معتبر، مقدار ناموجود (—) نمایش داده می‌شود و فایل‌های نمایشی شمارش نمی‌شوند.'
+        : undefined,
     },
     {
       id: 'official-census-household', title: 'تعداد دقیق خانوار ثبتی (سرشماری جدید)', value: null,
@@ -153,22 +246,23 @@ export function buildNeighborhoodIntelligenceProfile(
   const updatedAt = '—';
 
   return {
-    identity: { id: `NBH-${cityId.toUpperCase()}-${hood.id}`, slug, canonicalPath, name: hood.name, alternativeNames: [`محدوده ${hood.name}`, `پهنه مطالعاتی ${hood.zone}`], cityId, zone: hood.zone },
+    identity: { id: `NBH-${normalizedCityId.toUpperCase()}-${hood.id}`, slug, canonicalPath, name: hood.name, alternativeNames: [`محدوده ${hood.name}`, `پهنه مطالعاتی ${hood.zone}`], cityId: normalizedCityId, zone: hood.zone },
     boundary: {
-      boundaryId: `BND-${cityId.toUpperCase()}-${hood.id}-V2`, neighborhoodId: `NBH-${cityId.toUpperCase()}-${hood.id}`, version: 'v2.4-2026',
+      boundaryId: `BND-${normalizedCityId.toUpperCase()}-${hood.id}-V2`, neighborhoodId: `NBH-${normalizedCityId.toUpperCase()}-${hood.id}`, version: 'v2.4-2026',
       status: 'operational',
       statusLabelFa: 'مرز عملیاتی تحلیل بازار (برآورد هندسی تقریبی)',
       areaKm2: Number(((Math.PI * (hood.radius / 1000) ** 2) * 0.78).toFixed(2)),
       centroid: [hood.lat, hood.lng], source: `شعاع داخلی محدوده (برآورد هندسی تقریبی) · رادار ${cityNameFa}`, effectiveFrom: '—',
     },
     maturityLevel: maturity.level, maturityLabelFa: maturity.labelFa,
+    cityMismatchWarningFa,
     content: {
       summary: `محله ${hood.name} در ${cityNameFa} (${hood.zone}) با شاخص کیفیت هوا ${hood.air}/۱۰ و دسترسی حمل‌ونقل ${hood.metro}/۱۰ به عنوان محدوده عملیاتی ارزیابی شده است.`,
       strengths: prosList, challenges: consList,
       urbanNotes: ['تفکیک شاخص مرجع محله از ارزش‌گذاری ملک منفرد (Hedonic) الزامی است.'],
       editorialStatus: updatedAt === '—' ? 'draft' : 'published', updatedAt,
     },
-    quickMetrics, marketSampleAdequate: sampleEval.adequate, marketSampleWarningFa: sampleEval.warningFa,
+    quickMetrics, sampleBreakdown, marketSampleAdequate: sampleEval.adequate, marketSampleWarningFa: sampleEval.warningFa,
     landUseDenominatorLabelFa: 'لایه پهنه‌بندی تفصیلی کاربری اراضی بارگذاری نشده است (مخرج محاسبه ناموجود).',
     landUseShares: [],
     amenities: [

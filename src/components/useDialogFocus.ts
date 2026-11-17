@@ -5,19 +5,40 @@ import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+export interface UseDialogFocusOptions {
+  escapeDisabled?: boolean;
+}
+
+function isElementFocusableVisible(el: HTMLElement): boolean {
+  if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false;
+  if (el.closest('[hidden], [aria-hidden="true"]')) return false;
+  if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+  }
+  return true;
+}
+
 /**
- * Lightweight WCAG 2.1 AA dialog focus management hook.
- * Saves trigger element focus on open, focuses the first interactive control,
- * traps Tab / Shift+Tab cycling within the dialog, and restores focus on close.
+ * Lightweight WCAG 2.1 AA dialog focus & scroll-lock management hook.
+ * Saves trigger element focus & document body overflow on open, focuses initial dialog target,
+ * traps Tab / Shift+Tab cycling within the dialog, handles Escape, and restores state on close.
  */
-export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(open: boolean, onClose?: () => void) {
+export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
+  open: boolean,
+  onClose?: () => void,
+  options?: UseDialogFocusOptions,
+) {
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
   const [locale] = useRadarLocale();
   const containerRef = useRef<T | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousOverflowRef = useRef<string | null>(null);
   const onCloseRef = useRef<(() => void) | undefined>(onClose);
+  const escapeDisabledRef = useRef<boolean>(Boolean(options?.escapeDisabled));
   onCloseRef.current = onClose;
+  escapeDisabledRef.current = Boolean(options?.escapeDisabled);
 
   useEffect(() => {
     if (!open || !containerRef.current) return;
@@ -28,14 +49,19 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(open: boo
   }, [open, areaUnit, intlCurrency, locale]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || typeof document === 'undefined') return;
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    previousOverflowRef.current = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
     const container = containerRef.current;
     if (container) {
-      const focusable = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-      if (focusable.length > 0) {
+      const explicitInitial = container.querySelector<HTMLElement>('[data-dialog-initial-focus]');
+      const focusable = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(isElementFocusableVisible);
+      if (explicitInitial && typeof explicitInitial.focus === 'function') {
+        explicitInitial.focus();
+      } else if (focusable.length > 0) {
         focusable[0].focus();
       } else {
         container.focus();
@@ -43,15 +69,17 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(open: boo
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onCloseRef.current) {
-        e.preventDefault();
-        onCloseRef.current();
+      if (e.key === 'Escape') {
+        if (!escapeDisabledRef.current && onCloseRef.current) {
+          e.preventDefault();
+          onCloseRef.current();
+        }
         return;
       }
       if (e.key !== 'Tab' || !containerRef.current) return;
       const focusables = Array.from(
         containerRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      ).filter((el) => el.offsetParent !== null);
+      ).filter(isElementFocusableVisible);
 
       if (focusables.length === 0) {
         e.preventDefault();
@@ -78,9 +106,21 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(open: boo
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
-        previousFocusRef.current.focus();
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = previousOverflowRef.current ?? '';
+        const prev = previousFocusRef.current;
+        if (prev && prev.isConnected && typeof prev.focus === 'function') {
+          prev.focus();
+        } else {
+          const fallbackTarget = document.querySelector<HTMLElement>('main, [role="main"], h1');
+          if (fallbackTarget && typeof fallbackTarget.focus === 'function') {
+            if (!fallbackTarget.hasAttribute('tabindex')) fallbackTarget.setAttribute('tabindex', '-1');
+            fallbackTarget.focus();
+          }
+        }
       }
+      previousOverflowRef.current = null;
+      previousFocusRef.current = null;
     };
   }, [open]);
 

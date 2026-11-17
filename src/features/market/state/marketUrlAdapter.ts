@@ -8,6 +8,7 @@ import type {
   SavedMarketAnalysis,
 } from '../types/market.types';
 import { createDefaultMarketDraft, normalizeDraftForMarketType } from '../filters/MarketFilterDraft';
+import { readScopedStorageJson, writeScopedStorageJson } from '../../account/services/accountStorageScope';
 
 const SAVED_MARKET_STORAGE_KEY = 'tehran_radar_saved_market_analyses_v1';
 
@@ -85,29 +86,17 @@ export function parseMarketContextFromQuery(search: string): {
   return { draftPatch: base, compareHoodIds };
 }
 
-export function loadSavedMarketAnalyses(): SavedMarketAnalysis[] {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return [];
-    const raw = window.localStorage.getItem(SAVED_MARKET_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is SavedMarketAnalysis =>
-        Boolean(item && typeof item.id === 'string' && typeof item.title === 'string' && item.filters),
-    );
-  } catch {
-    return [];
-  }
+export function loadSavedMarketAnalyses(uid?: string | null): SavedMarketAnalysis[] {
+  const items = readScopedStorageJson<unknown[]>(SAVED_MARKET_STORAGE_KEY, [], uid);
+  if (!Array.isArray(items)) return [];
+  return items.filter(
+    (item): item is SavedMarketAnalysis =>
+      Boolean(item && typeof (item as SavedMarketAnalysis).id === 'string' && typeof (item as SavedMarketAnalysis).title === 'string' && (item as SavedMarketAnalysis).filters),
+  );
 }
 
-export function persistSavedMarketAnalyses(items: readonly SavedMarketAnalysis[]): void {
-  try {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    window.localStorage.setItem(SAVED_MARKET_STORAGE_KEY, JSON.stringify(items.slice(0, 20)));
-  } catch {
-    /* ignore storage quota failures */
-  }
+export function persistSavedMarketAnalyses(items: readonly SavedMarketAnalysis[], uid?: string | null): void {
+  writeScopedStorageJson(SAVED_MARKET_STORAGE_KEY, items.slice(0, 20), uid);
 }
 
 export type MarketEventName =

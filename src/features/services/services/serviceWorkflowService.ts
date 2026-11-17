@@ -174,9 +174,12 @@ export function transitionServiceRequestStatus(
   return { ok: true, request: updated };
 }
 
-export function loadServiceProposals(requestId?: string): ServiceProposalRecord[] {
+export function loadServiceProposals(requestId?: string, callerUserId?: string): ServiceProposalRecord[] {
   const all = readJson<ServiceProposalRecord[]>(SERVICE_PROPOSALS_KEY, []);
-  return requestId ? all.filter((p) => p.requestId === requestId) : all;
+  const byReq = requestId ? all.filter((p) => p.requestId === requestId) : all;
+  if (!callerUserId) return byReq;
+  const ownedReqIds = new Set(loadServiceRequests(callerUserId).map((r) => r.id));
+  return byReq.filter((p) => ownedReqIds.has(p.requestId));
 }
 
 export function submitServiceProposal(proposal: Omit<ServiceProposalRecord, 'proposalId' | 'createdAtIso'>): ServiceProposalRecord {

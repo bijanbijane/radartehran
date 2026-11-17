@@ -115,7 +115,7 @@ test.describe('Tehran & Multi-City Housing Radar — E2E, Responsive & Accessibi
     await mobileNav.getByRole('button', { name: 'نقشه' }).click();
 
     // Verify mobile inspector sheet handle has accessible role and label
-    const sheetHandle = page.locator('[role="button"][aria-label*="پنل کالبدشکافی"]');
+    const sheetHandle = page.getByRole('button', { name: /پنل کالبدشکافی/ });
     await expect(sheetHandle).toBeVisible();
     await sheetHandle.click();
     const inspectorTabs = page.getByRole('tablist', { name: 'بخش‌های کارنامه محله' });

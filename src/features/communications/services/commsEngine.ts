@@ -1,4 +1,4 @@
-/** @file src/features/communications/services/commsEngine.ts — Pure Deterministic Communications Core Engine (< 280 lines) */
+/** @file src/features/communications/services/commsEngine.ts — Hardened Deterministic Communications Core Engine (< 290 lines) */
 import { sanitizeInput } from '../../../utils/security';
 import {
   COMMS_CATEGORY_META, COMMS_TEMPLATE_REGISTRY, EVENT_POLICY_REGISTRY, renderSafeTemplateText,
@@ -6,7 +6,7 @@ import {
 import type {
   CommsAbuseReportRecord, CommsAuditRecord, CommsEventCode, CommunicationEventInput,
   ConversationParticipantRecord, ConversationRecord, ConversationType, DeadLetterRecord,
-  DeliveryAttemptRecord, DeliveryChannel, DeviceTokenRecord, MessageAttachmentMeta,
+  DeliveryAttemptRecord, DeliveryAttemptStatus, DeliveryChannel, DeviceTokenRecord, MessageAttachmentMeta,
   MessageRecord, NotificationRecord, UserCommsPreferences,
 } from '../types/comms.types';
 
@@ -17,7 +17,25 @@ export const ALLOWED_ATTACHMENT_MIMES = new Set(['application/pdf', 'image/jpeg'
 export const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
 export const MAX_MESSAGES_PER_MINUTE_STANDARD = 12;
 
+function generateSecureId(prefix: string): string {
+  const rand = typeof globalThis.crypto?.randomUUID === 'function'
+    ? globalThis.crypto.randomUUID().slice(0, 12)
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${rand}`;
+}
+
+export function getTehranLocalHour(date: Date = new Date()): number {
+  try {
+    const str = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tehran', hour: 'numeric', hour12: false }).format(date);
+    const parsed = Number.parseInt(str, 10);
+    return Number.isFinite(parsed) ? ((parsed % 24) + 24) % 24 : 12;
+  } catch {
+    return (date.getUTCHours() + 3) % 24;
+  }
+}
+
 export function createDefaultUserCommsPreferences(recipientUid: string): UserCommsPreferences {
+  const now = new Date().toISOString();
   return {
     recipientUid,
     channels: { inApp: true, email: false, sms: false, push: false },
@@ -31,12 +49,12 @@ export function createDefaultUserCommsPreferences(recipientUid: string): UserCom
       lockedMandatory: cat.code === 'SECURITY',
     })),
     consents: [
-      { consentType: 'SECURITY_MANDATORY', granted: true, updatedAtIso: new Date().toISOString(), sourceFa: 'سیاست امنیتی سامانه (اجباری)' },
-      { consentType: 'TRANSACTIONAL_SERVICE', granted: true, updatedAtIso: new Date().toISOString(), sourceFa: 'تأیید تراکنش‌های کاربری' },
-      { consentType: 'DIGEST_ALERTS', granted: false, updatedAtIso: new Date().toISOString(), sourceFa: 'خلاصه دیده‌بان بازار' },
-      { consentType: 'MARKETING_UPDATES', granted: false, updatedAtIso: new Date().toISOString(), sourceFa: 'اطلاع‌رسانی قابلیت‌ها' },
+      { consentType: 'SECURITY_MANDATORY', granted: true, updatedAtIso: now, sourceFa: 'سیاست امنیتی سامانه (اجباری)' },
+      { consentType: 'TRANSACTIONAL_SERVICE', granted: true, updatedAtIso: now, sourceFa: 'تأیید تراکنش‌های کاربری' },
+      { consentType: 'DIGEST_ALERTS', granted: false, updatedAtIso: now, sourceFa: 'خلاصه دیده‌بان بازار' },
+      { consentType: 'MARKETING_UPDATES', granted: false, updatedAtIso: now, sourceFa: 'اطلاع‌رسانی قابلیت‌ها' },
     ],
-    updatedAtIso: new Date().toISOString(),
+    updatedAtIso: now,
   };
 }
 
@@ -100,6 +118,9 @@ export class CommsCoreStateEngine {
   reports: CommsAbuseReportRecord[] = [];
   audits: CommsAuditRecord[] = [];
 
+  hydrateOutboxKeys(keys: string[]): void { this.outboxEventKeys.clear(); keys.forEach((k) => this.outboxEventKeys.add(k)); }
+  exportOutboxKeys(): string[] { return Array.from(this.outboxEventKeys); }
+
   getOrCreatePreferences(uid: string): UserCommsPreferences {
     const existing = this.preferencesByUid.get(uid);
     if (existing) return existing;
@@ -113,10 +134,20 @@ export class CommsCoreStateEngine {
     const nextCategoryRules = (patch.categoryRules ?? curr.categoryRules).map((rule) =>
       rule.category === 'SECURITY' ? { ...rule, inApp: true, email: true, sms: true, lockedMandatory: true } : rule,
     );
+    const rawStart = patch.quietHours?.startHourLocal ?? curr.quietHours.startHourLocal;
+    const rawEnd = patch.quietHours?.endHourLocal ?? curr.quietHours.endHourLocal;
+    const startHourLocal = Number.isInteger(rawStart) && rawStart >= 0 && rawStart <= 23 ? rawStart : curr.quietHours.startHourLocal;
+    const endHourLocal = Number.isInteger(rawEnd) && rawEnd >= 0 && rawEnd <= 23 ? rawEnd : curr.quietHours.endHourLocal;
+
     const next: UserCommsPreferences = {
       ...curr,
       channels: patch.channels ? { ...curr.channels, ...patch.channels } : curr.channels,
-      quietHours: patch.quietHours ? { ...curr.quietHours, ...patch.quietHours, timezone: 'Asia/Tehran' } : curr.quietHours,
+      quietHours: {
+        enabled: patch.quietHours?.enabled ?? curr.quietHours.enabled,
+        timezone: 'Asia/Tehran',
+        startHourLocal,
+        endHourLocal,
+      },
       digestFrequency: patch.digestFrequency ?? curr.digestFrequency,
       categoryRules: nextCategoryRules,
       consents: (patch.consents ?? curr.consents).map((c) => (c.consentType === 'SECURITY_MANDATORY' ? { ...c, granted: true } : c)),
@@ -126,7 +157,7 @@ export class CommsCoreStateEngine {
     return next;
   }
 
-  ingestEvent(input: CommunicationEventInput, nowTehranHour = 14): {
+  ingestEvent(input: CommunicationEventInput, nowTehranHour = getTehranLocalHour(), externalAdapterReady = false): {
     accepted: boolean; deduplicated: boolean; reasonCode: string | null; notification: NotificationRecord | null; deliveries: DeliveryAttemptRecord[];
   } {
     if (input.transactionCommitted === false) return { accepted: false, deduplicated: false, reasonCode: 'UNCOMMITTED_TRANSACTION', notification: null, deliveries: [] };
@@ -144,7 +175,7 @@ export class CommsCoreStateEngine {
     const expiresAtIso = policy.expiresInHours ? new Date(Date.parse(createdAtIso) + policy.expiresInHours * 3_600_000).toISOString() : null;
 
     const notif: NotificationRecord = {
-      id: `ntf-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, eventId: input.eventId || `evt-${Date.now()}`,
+      id: generateSecureId('ntf'), eventId: input.eventId || generateSecureId('evt'),
       idempotencyKey: input.idempotencyKey, recipientUid: input.recipientUid, eventCode: input.eventCode,
       category: policy.category, severity: policy.severity, urgency: policy.urgency, priority: policy.defaultPriority,
       titleFa: renderSafeTemplateText(tpl.titleTemplateFa, input.payload),
@@ -156,12 +187,16 @@ export class CommsCoreStateEngine {
       status: 'UNREAD', readAtIso: null, archivedAtIso: null, expiresAtIso, createdAtIso,
     };
     this.notifications.unshift(notif);
-    const createdAttempts: DeliveryAttemptRecord[] = deliverChannels.map((ch) => ({
-      attemptId: `dlv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, notificationId: notif.id,
-      eventCode: input.eventCode, recipientUid: input.recipientUid, channel: ch, queueName: policy.queueName,
-      status: ch === 'IN_APP' || ch === 'INTERNAL_INBOX' ? 'DELIVERED' : 'DISPATCHED',
-      attemptNumber: 1, errorCode: null, errorClass: null, createdAtIso,
-    }));
+    const createdAttempts: DeliveryAttemptRecord[] = deliverChannels.map((ch) => {
+      const isInApp = ch === 'IN_APP' || ch === 'INTERNAL_INBOX';
+      const status: DeliveryAttemptStatus = isInApp ? 'DELIVERED' : externalAdapterReady ? 'QUEUED' : 'SUPPRESSED_BY_POLICY';
+      return {
+        attemptId: generateSecureId('dlv'), notificationId: notif.id,
+        eventCode: input.eventCode, recipientUid: input.recipientUid, channel: ch, queueName: policy.queueName,
+        status, attemptNumber: 1, errorCode: isInApp || externalAdapterReady ? null : 'EXTERNAL_ADAPTER_NOT_CONFIGURED',
+        errorClass: null, createdAtIso,
+      };
+    });
     this.deliveries.unshift(...createdAttempts);
     return { accepted: true, deduplicated: false, reasonCode: null, notification: notif, deliveries: createdAttempts };
   }
@@ -206,7 +241,7 @@ export class CommsCoreStateEngine {
     if (attempt.attemptNumber < maxAttempts) { attempt.status = 'FAILED_RETRYABLE'; attempt.attemptNumber += 1; return { status: 'FAILED_RETRYABLE', dlqCreated: false }; }
     attempt.status = 'DEAD_LETTERED';
     this.deadLetters.unshift({
-      dlqId: `dlq-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, attemptId: attempt.attemptId,
+      dlqId: generateSecureId('dlq'), attemptId: attempt.attemptId,
       notificationId: attempt.notificationId, eventCode: attempt.eventCode, channel: attempt.channel, recipientUid: attempt.recipientUid,
       reasonCode: params.errorCode, reasonFa: `حداکثر تلاش ناموفق (${params.errorCode})`,
       retryCount: attempt.attemptNumber, replayed: false, replayedAtIso: null, createdAtIso: new Date().toISOString(),
@@ -221,12 +256,12 @@ export class CommsCoreStateEngine {
     const now = new Date().toISOString();
     item.replayed = true; item.replayedAtIso = now;
     this.deliveries.unshift({
-      attemptId: `dlv-replay-${Date.now()}`, notificationId: item.notificationId, eventCode: item.eventCode,
-      recipientUid: item.recipientUid, channel: item.channel, queueName: 'comms.retry', status: 'DISPATCHED',
+      attemptId: generateSecureId('dlv-replay'), notificationId: item.notificationId, eventCode: item.eventCode,
+      recipientUid: item.recipientUid, channel: item.channel, queueName: 'comms.retry', status: 'QUEUED',
       attemptNumber: item.retryCount + 1, errorCode: null, errorClass: null, createdAtIso: now,
     });
     this.audits.unshift({
-      auditId: `aud-${Date.now()}`, actorUid: adminUid, actionCode: 'COMMS_DLQ_REPLAY',
+      auditId: generateSecureId('aud'), actorUid: adminUid, actionCode: 'COMMS_DLQ_REPLAY',
       targetType: 'dead_letter', targetId: dlqId, summaryFa: `بازارسال کنترل‌شده رکورد DLQ برای رویداد ${item.eventCode}`, createdAtIso: now,
     });
     return { ok: true };
@@ -237,13 +272,14 @@ export class CommsCoreStateEngine {
     contextTitleFa: string; creatorUid: string; participants: ConversationParticipantRecord[];
   }): { ok: boolean; errorCode?: string; conversation?: ConversationRecord } {
     if (!ALLOWED_DIRECT_CONVERSATION_TYPES.includes(input.type) || !input.contextEntityId.trim()) return { ok: false, errorCode: 'CONTEXT_REQUIRED_NO_OPEN_CHAT' };
+    if (!input.participants || input.participants.length < 2) return { ok: false, errorCode: 'PARTICIPANTS_REQUIRED' };
     const existing = this.conversations.find(
       (c) => c.type === input.type && c.contextEntityId === input.contextEntityId && c.participants.some((p) => p.uid === input.creatorUid),
     );
     if (existing) return { ok: true, conversation: existing };
     const now = new Date().toISOString();
     const conv: ConversationRecord = {
-      conversationId: `conv-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, type: input.type,
+      conversationId: generateSecureId('conv'), type: input.type,
       contextEntityType: input.contextEntityType, contextEntityId: sanitizeInput(input.contextEntityId, 64),
       contextTitleFa: sanitizeInput(input.contextTitleFa, 120), status: 'OPEN', participants: input.participants,
       messages: [], createdAtIso: now, updatedAtIso: now,
@@ -259,7 +295,7 @@ export class CommsCoreStateEngine {
     if (!conv) return { ok: false, statusCode: 404, errorCode: 'CONVERSATION_NOT_FOUND' };
     const sender = conv.participants.find((p) => p.uid === input.senderUid);
     if (!sender) return { ok: false, statusCode: 403, errorCode: 'IDOR_FORBIDDEN_NON_PARTICIPANT' };
-    if (conv.participants.some((p) => p.uid !== input.senderUid && p.blockedOtherParticipant)) {
+    if (sender.blockedOtherParticipant || conv.participants.some((p) => p.uid !== input.senderUid && p.blockedOtherParticipant)) {
       return { ok: false, statusCode: 403, errorCode: 'CONVERSATION_BLOCKED_BY_RECIPIENT' };
     }
     const recentSentCount = conv.messages.filter((m) => m.senderUid === input.senderUid && Date.now() - Date.parse(m.createdAtIso) < 60_000).length;
@@ -269,7 +305,7 @@ export class CommsCoreStateEngine {
     const safeAttachments = (input.attachments ?? []).filter((a) => ALLOWED_ATTACHMENT_MIMES.has(a.mimeType) && a.sizeBytes > 0 && a.sizeBytes <= MAX_ATTACHMENT_SIZE_BYTES);
     const now = new Date().toISOString();
     const msg: MessageRecord = {
-      messageId: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`, conversationId: conv.conversationId,
+      messageId: generateSecureId('msg'), conversationId: conv.conversationId,
       senderUid: sender.uid, senderType: sender.senderType, senderLabelFa: sender.displayNameFa,
       bodyFa: cleanBody, attachments: safeAttachments, status: 'SENT', readByUids: [sender.uid], createdAtIso: now,
     };
@@ -284,7 +320,7 @@ export class CommsCoreStateEngine {
     msg.status = 'REDACTED'; msg.bodyFa = '[این پیام توسط ممیز حاکمیتی مخفی شد]';
     msg.redactedReasonFa = sanitizeInput(reasonFa, 160);
     this.audits.unshift({
-      auditId: `aud-${Date.now()}`, actorUid: adminUid, actionCode: 'COMMS_MESSAGE_REDACTED',
+      auditId: generateSecureId('aud'), actorUid: adminUid, actionCode: 'COMMS_MESSAGE_REDACTED',
       targetType: 'message', targetId: messageId, summaryFa: `پاکسازی پیام به‌دلیل گزارش تخلف (${msg.redactedReasonFa})`, createdAtIso: new Date().toISOString(),
     });
     return true;

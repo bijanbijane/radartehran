@@ -1,14 +1,21 @@
-/** @file server/modules/communications/commsRoutes.ts — Express REST Routes for RT-UI-COMMS-001 */
+/** @file server/modules/communications/commsRoutes.ts — Hardened Express REST Routes for RT-UI-COMMS-001 */
+import crypto from 'node:crypto';
 import type { Express, Request, Response } from 'express';
 import { sanitizeInput } from '../../../src/utils/security';
 import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
-import {
-  COMMS_TEMPLATE_REGISTRY,
-  EVENT_POLICY_REGISTRY,
-} from '../../../src/features/communications/registries/eventPolicyAndTemplateRegistry';
+import { COMMS_TEMPLATE_REGISTRY, EVENT_POLICY_REGISTRY } from '../../../src/features/communications/registries/eventPolicyAndTemplateRegistry';
 import type { ConversationType } from '../../../src/features/communications/types/comms.types';
-import { ensureServerCommsSeeded, serverCommsEngine } from './commsStore';
+import {
+  paginateNotifications,
+  scrubCommsAdminStats,
+  validateWebPushSubscriptionPayload,
+} from './commsRepository';
+import {
+  ensureServerCommsHydrated,
+  persistServerCommsNow,
+  serverCommsEngine,
+} from './commsStore';
 
 export interface CommunicationsRoutesOptions {
   checkRateLimit?: (ip: string, bucket: 'general', max: number, windowMs: number) => boolean;
@@ -20,21 +27,19 @@ const registeredCommsApps = new WeakSet<Express>();
 export function registerCommunicationsRoutes(app: Express, options?: CommunicationsRoutesOptions): void {
   if (registeredCommsApps.has(app)) return;
   registeredCommsApps.add(app);
-  ensureServerCommsSeeded();
+  ensureServerCommsHydrated();
 
   const getIp = options?.getClientIp ?? ((req: Request) => req.ip || '127.0.0.1');
   const allowRate = options?.checkRateLimit ?? (() => true);
 
   async function requireUser(req: Request, res: Response): Promise<string | null> {
     if (!allowRate(getIp(req), 'general', 120, 60_000)) {
-      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' });
-      return null;
+      res.status(429).json({ status: 'error', code: 'RATE_LIMIT_EXCEEDED' }); return null;
     }
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) {
       recordAbuseSignal(getIp(req), 'auth_failure');
-      res.status(auth.statusCode).json({ status: 'error', code: auth.reason });
-      return null;
+      res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return null;
     }
     return auth.uid;
   }
@@ -43,59 +48,65 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) {
       recordAbuseSignal(getIp(req), 'auth_failure');
-      res.status(auth.statusCode).json({ status: 'error', code: auth.reason });
-      return null;
+      res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return null;
     }
-    return auth.email || 'admin-operator';
+    return auth.email || auth.uid || 'admin-operator';
   }
 
-  // Notifications API
   app.get('/api/v1/notifications', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const statusFilter = typeof req.query.status === 'string' ? req.query.status.toUpperCase() : '';
     const categoryFilter = typeof req.query.category === 'string' ? req.query.category.toUpperCase() : '';
-    const items = serverCommsEngine.notifications.filter(
-      (n) =>
-        n.recipientUid === uid &&
-        (!statusFilter || n.status === statusFilter) &&
-        (!categoryFilter || n.category === categoryFilter),
+    const filtered = serverCommsEngine.notifications.filter(
+      (n) => n.recipientUid === uid && (!statusFilter || n.status === statusFilter) && (!categoryFilter || n.category === categoryFilter),
     );
+    const paged = paginateNotifications(filtered, {
+      cursor: typeof req.query.cursor === 'string' ? req.query.cursor : undefined,
+      limit: req.query.limit ? Number(req.query.limit) : 25,
+    });
     res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({ status: 'ok', items, total: items.length });
+    res.status(200).json({ status: 'ok', ...paged });
   });
 
   app.get('/api/v1/notifications/unread-count', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const unreadCount = serverCommsEngine.notifications.filter((n) => n.recipientUid === uid && n.status === 'UNREAD').length;
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ status: 'ok', unreadCount });
   });
 
   app.get('/api/v1/notifications/preferences', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ status: 'ok', preferences: serverCommsEngine.getOrCreatePreferences(uid) });
   });
 
   app.patch('/api/v1/notifications/preferences', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
+    const qh = req.body?.quietHours;
+    if (qh && typeof qh === 'object') {
+      const sh = Number(qh.startHourLocal);
+      const eh = Number(qh.endHourLocal);
+      if ((qh.startHourLocal !== undefined && (!Number.isInteger(sh) || sh < 0 || sh > 23)) ||
+          (qh.endHourLocal !== undefined && (!Number.isInteger(eh) || eh < 0 || eh > 23))) {
+        res.status(400).json({ status: 'error', code: 'INVALID_QUIET_HOURS', messageFa: 'ساعت سکوت باید عدد صحیح بین ۰ تا ۲۳ باشد.' });
+        return;
+      }
+    }
     const updated = serverCommsEngine.updatePreferences(uid, req.body ?? {});
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', preferences: updated });
   });
 
   app.post('/api/v1/notifications/read-all', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const markedCount = serverCommsEngine.markAllRead(uid);
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', markedCount });
   });
 
   app.get('/api/v1/notifications/:id', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const found = serverCommsEngine.notifications.find((n) => n.id === req.params.id);
     if (!found) { res.status(404).json({ status: 'error', code: 'NOTIFICATION_NOT_FOUND' }); return; }
     if (found.recipientUid !== uid) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
@@ -103,66 +114,69 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
   });
 
   app.post('/api/v1/notifications/:id/read', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const result = serverCommsEngine.mutateNotificationStatus(req.params.id, uid, 'READ');
     if (!result.ok) { res.status(result.statusCode).json({ status: 'error' }); return; }
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', item: result.notification });
   });
 
   app.post('/api/v1/notifications/:id/archive', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const result = serverCommsEngine.mutateNotificationStatus(req.params.id, uid, 'ARCHIVED');
     if (!result.ok) { res.status(result.statusCode).json({ status: 'error' }); return; }
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', item: result.notification });
   });
 
   app.post('/api/v1/notifications/:id/dismiss', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const result = serverCommsEngine.mutateNotificationStatus(req.params.id, uid, 'DISMISSED');
     if (!result.ok) { res.status(result.statusCode).json({ status: 'error' }); return; }
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', item: result.notification });
   });
 
-  // Scoped Direct Messaging API
   app.get('/api/v1/conversations', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const items = serverCommsEngine.conversations.filter((c) => c.participants.some((p) => p.uid === uid));
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ status: 'ok', items });
   });
 
   app.post('/api/v1/conversations', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
+    const convType = (req.body?.type as ConversationType) || 'SUPPORT';
+    const contextEntityId = sanitizeInput(String(req.body?.contextEntityId || ''), 64).trim();
+    const counterpartyUid = convType === 'SUPPORT' ? 'support-desk' : sanitizeInput(String(req.body?.counterpartyUid || ''), 64).trim();
+    if (!contextEntityId || !counterpartyUid || counterpartyUid === uid) {
+      res.status(400).json({ status: 'error', code: 'INVALID_CONVERSATION_CONTEXT', messageFa: 'شناسه پرونده و طرف گفت‌وگوی معتبر الزامی است.' });
+      return;
+    }
     const result = serverCommsEngine.createScopedConversation({
-      type: (req.body?.type as ConversationType) || 'SUPPORT',
-      contextEntityType: req.body?.contextEntityType || 'support_ticket',
-      contextEntityId: String(req.body?.contextEntityId || ''),
-      contextTitleFa: String(req.body?.contextTitleFa || 'گفت‌وگوی مرتبط'),
+      type: convType,
+      contextEntityType: req.body?.contextEntityType || (convType === 'SUPPORT' ? 'support_ticket' : 'listing'),
+      contextEntityId,
+      contextTitleFa: sanitizeInput(String(req.body?.contextTitleFa || 'گفت‌وگوی مرتبط با پرونده'), 120),
       creatorUid: uid,
       participants: [
-        { uid, displayNameFa: 'کاربر', roleLabelFa: 'عضو', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
+        { uid, displayNameFa: 'کاربر احرازشده', roleLabelFa: 'عضو', senderType: 'USER', muted: false, archived: false, blockedOtherParticipant: false },
         {
-          uid: sanitizeInput(String(req.body?.counterpartyUid || 'support-desk'), 64),
-          displayNameFa: sanitizeInput(String(req.body?.counterpartyLabelFa || 'پشتیبانی رادار'), 64),
-          roleLabelFa: 'طرف گفت‌وگو',
-          senderType: req.body?.type === 'SUPPORT' ? 'SUPPORT_AGENT' : 'USER',
-          muted: false,
-          archived: false,
-          blockedOtherParticipant: false,
+          uid: counterpartyUid,
+          displayNameFa: convType === 'SUPPORT' ? 'پشتیبانی رادار' : sanitizeInput(String(req.body?.counterpartyLabelFa || 'طرف پرونده'), 64),
+          roleLabelFa: convType === 'SUPPORT' ? 'کارشناس پشتیبانی' : 'طرف پرونده',
+          senderType: convType === 'SUPPORT' ? 'SUPPORT_AGENT' : 'USER',
+          muted: false, archived: false, blockedOtherParticipant: false,
         },
       ],
     });
     if (!result.ok) { res.status(400).json({ status: 'error', code: result.errorCode }); return; }
+    persistServerCommsNow();
     res.status(201).json({ status: 'ok', conversation: result.conversation });
   });
 
   app.get('/api/v1/conversations/:id', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv) { res.status(404).json({ status: 'error', code: 'CONVERSATION_NOT_FOUND' }); return; }
     if (!conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
@@ -170,8 +184,7 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
   });
 
   app.get('/api/v1/conversations/:id/messages', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv) { res.status(404).json({ status: 'error', code: 'CONVERSATION_NOT_FOUND' }); return; }
     if (!conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
@@ -179,111 +192,109 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
   });
 
   app.post('/api/v1/conversations/:id/messages', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const result = serverCommsEngine.sendMessage({
-      conversationId: req.params.id,
-      senderUid: uid,
-      bodyFa: String(req.body?.bodyFa || ''),
+      conversationId: req.params.id, senderUid: uid, bodyFa: String(req.body?.bodyFa || ''),
       attachments: Array.isArray(req.body?.attachments) ? req.body.attachments : [],
     });
     if (!result.ok) { res.status(result.statusCode).json({ status: 'error', code: result.errorCode }); return; }
+    persistServerCommsNow();
     res.status(201).json({ status: 'ok', message: result.message });
   });
 
   app.post('/api/v1/conversations/:id/read', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv || !conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
     conv.messages.forEach((m) => { if (!m.readByUids.includes(uid)) { m.readByUids.push(uid); m.status = 'READ'; } });
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok' });
   });
 
   app.post(['/api/v1/conversations/:id/mute', '/api/v1/conversations/:id/archive', '/api/v1/conversations/:id/block'], async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     const participant = conv?.participants.find((p) => p.uid === uid);
     if (!conv || !participant) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
     if (req.path.endsWith('/mute')) participant.muted = req.body?.muted !== false;
     else if (req.path.endsWith('/archive')) participant.archived = req.body?.archived !== false;
     else if (req.path.endsWith('/block')) participant.blockedOtherParticipant = req.body?.blocked !== false;
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', participant });
   });
 
   app.post('/api/v1/conversations/:id/report', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv || !conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
+    const messageId = typeof req.body?.messageId === 'string' && req.body.messageId.trim() ? req.body.messageId.trim() : undefined;
+    if (messageId && !conv.messages.some((m) => m.messageId === messageId)) {
+      res.status(400).json({ status: 'error', code: 'INVALID_MESSAGE_ID' }); return;
+    }
+    const alreadyReported = serverCommsEngine.reports.some(
+      (r) => r.conversationId === conv.conversationId && r.reporterUid === uid && r.messageId === messageId,
+    );
+    if (alreadyReported) { res.status(409).json({ status: 'error', code: 'DUPLICATE_REPORT' }); return; }
     const report = {
-      reportId: `rep-msg-${Date.now()}`,
-      conversationId: conv.conversationId,
-      messageId: typeof req.body?.messageId === 'string' ? req.body.messageId : undefined,
-      reporterUid: uid,
-      reasonFa: sanitizeInput(String(req.body?.reasonFa || 'گزارش نقض قوانین ارتباطی'), 200),
-      status: 'PENDING' as const,
-      createdAtIso: new Date().toISOString(),
+      reportId: `rep-${crypto.randomUUID().slice(0, 10)}`, conversationId: conv.conversationId, messageId,
+      reporterUid: uid, reasonFa: sanitizeInput(String(req.body?.reasonFa || 'گزارش نقض قوانین ارتباطی'), 200),
+      status: 'PENDING' as const, createdAtIso: new Date().toISOString(),
     };
     serverCommsEngine.reports.unshift(report);
+    persistServerCommsNow();
     res.status(201).json({ status: 'ok', report });
   });
 
   app.post('/api/v1/conversations/:id/participants', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const conv = serverCommsEngine.conversations.find((c) => c.conversationId === req.params.id);
     if (!conv || !conv.participants.some((p) => p.uid === uid)) { res.status(403).json({ status: 'error', code: 'IDOR_FORBIDDEN' }); return; }
     res.status(200).json({ status: 'ok', participants: conv.participants });
   });
 
-  // Device Token API
   app.get('/api/v1/devices', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     res.status(200).json({ status: 'ok', items: serverCommsEngine.devices.filter((d) => d.ownerUid === uid) });
   });
 
   app.post('/api/v1/devices/register', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
+    const validated = validateWebPushSubscriptionPayload(req.body);
+    if (!validated.valid || !validated.tokenMasked) {
+      res.status(400).json({ status: 'error', code: validated.errorCode || 'INVALID_PUSH_SUBSCRIPTION', messageFa: 'توکن معتبر Web Push یا کلید اشتراک مرورگر ارسال نشده است.' });
+      return;
+    }
     const rec = {
-      deviceId: `dev-${Date.now()}`,
-      ownerUid: uid,
-      platform: req.body?.platform === 'PWA_MOBILE' ? ('PWA_MOBILE' as const) : ('WEB_PUSH' as const),
-      labelFa: sanitizeInput(String(req.body?.labelFa || 'دستگاه وب'), 60),
-      tokenMasked: `wp_••••_${Math.random().toString(36).slice(2, 6)}`,
-      active: true,
-      registeredAtIso: new Date().toISOString(),
-      revokedAtIso: null,
+      deviceId: `dev-${crypto.randomUUID().slice(0, 10)}`, ownerUid: uid, platform: validated.platform,
+      labelFa: sanitizeInput(validated.labelFa, 60), tokenMasked: validated.tokenMasked,
+      active: true, registeredAtIso: new Date().toISOString(), revokedAtIso: null,
     };
     serverCommsEngine.devices.unshift(rec);
+    persistServerCommsNow();
     res.status(201).json({ status: 'ok', device: rec });
   });
 
   app.post('/api/v1/devices/revoke', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const dev = serverCommsEngine.devices.find((d) => d.deviceId === req.body?.deviceId && d.ownerUid === uid);
     if (!dev) { res.status(404).json({ status: 'error', code: 'DEVICE_NOT_FOUND' }); return; }
-    dev.active = false;
-    dev.revokedAtIso = new Date().toISOString();
+    dev.active = false; dev.revokedAtIso = new Date().toISOString();
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', device: dev });
   });
 
   app.delete('/api/v1/devices/:deviceId', async (req: Request, res: Response) => {
-    const uid = await requireUser(req, res);
-    if (!uid) return;
+    const uid = await requireUser(req, res); if (!uid) return;
     const idx = serverCommsEngine.devices.findIndex((d) => d.deviceId === req.params.deviceId && d.ownerUid === uid);
     if (idx === -1) { res.status(404).json({ status: 'error', code: 'DEVICE_NOT_FOUND' }); return; }
     serverCommsEngine.devices.splice(idx, 1);
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok' });
   });
 
-  // Admin Operations Center APIs (Zero access to raw private conversations)
   app.get('/api/admin/communications/overview', async (req: Request, res: Response) => {
     if (!(await requireAdmin(req, res))) return;
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({
       status: 'ok',
       totals: {
@@ -291,6 +302,13 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
         deliveries: serverCommsEngine.deliveries.length,
         deadLettersPending: serverCommsEngine.deadLetters.filter((d) => !d.replayed).length,
         pendingReports: serverCommsEngine.reports.filter((r) => r.status === 'PENDING').length,
+        ...scrubCommsAdminStats(serverCommsEngine.conversations),
+      },
+      channelAdapters: {
+        IN_APP: 'ACTIVE', INTERNAL_INBOX: 'ACTIVE',
+        PUSH: serverCommsEngine.devices.some((d) => d.active) ? 'READY_WEB_PUSH' : 'NO_ACTIVE_SUBSCRIPTIONS',
+        EMAIL: process.env.SMTP_HOST ? 'CONFIGURED' : 'NOT_CONFIGURED',
+        SMS: process.env.SMS_API_KEY ? 'CONFIGURED' : 'NOT_CONFIGURED',
       },
     });
   });
@@ -302,19 +320,25 @@ export function registerCommunicationsRoutes(app: Express, options?: Communicati
 
   app.get('/api/admin/communications/queues', async (req: Request, res: Response) => {
     if (!(await requireAdmin(req, res))) return;
-    const dlqItems = serverCommsEngine.deadLetters;
     res.status(200).json({
       status: 'ok',
-      queues: ['comms.critical', 'comms.transactional', 'comms.standard', 'comms.digest', 'comms.retry', 'comms.dead-letter'],
-      deadLetters: dlqItems,
+      queues: [
+        { name: 'comms.critical', pendingCount: serverCommsEngine.deliveries.filter((d) => d.queueName === 'comms.critical' && d.status === 'QUEUED').length, healthStatus: 'ONLINE' },
+        { name: 'comms.transactional', pendingCount: serverCommsEngine.deliveries.filter((d) => d.queueName === 'comms.transactional' && d.status === 'QUEUED').length, healthStatus: 'ONLINE' },
+        { name: 'comms.standard', pendingCount: serverCommsEngine.deliveries.filter((d) => d.queueName === 'comms.standard' && d.status === 'QUEUED').length, healthStatus: 'ONLINE' },
+        { name: 'comms.digest', pendingCount: serverCommsEngine.deliveries.filter((d) => d.queueName === 'comms.digest' && d.status === 'QUEUED').length, healthStatus: 'ONLINE' },
+        { name: 'comms.retry', pendingCount: serverCommsEngine.deliveries.filter((d) => d.status === 'FAILED_RETRYABLE').length, healthStatus: 'ONLINE' },
+        { name: 'comms.dead-letter', pendingCount: serverCommsEngine.deadLetters.filter((d) => !d.replayed).length, healthStatus: serverCommsEngine.deadLetters.some((d) => !d.replayed) ? 'ATTENTION_REQUIRED' : 'CLEAR' },
+      ],
+      deadLetters: serverCommsEngine.deadLetters,
     });
   });
 
   app.post('/api/admin/communications/dlq/replay', async (req: Request, res: Response) => {
-    const admin = await requireAdmin(req, res);
-    if (!admin) return;
+    const admin = await requireAdmin(req, res); if (!admin) return;
     const result = serverCommsEngine.replayDeadLetter(String(req.body?.dlqId || ''), admin);
     if (!result.ok) { res.status(404).json({ status: 'error', code: result.reasonCode }); return; }
+    persistServerCommsNow();
     res.status(200).json({ status: 'ok', reasonCode: result.reasonCode || 'REPLAYED' });
   });
 

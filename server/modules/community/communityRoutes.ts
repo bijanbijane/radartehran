@@ -4,12 +4,14 @@ import { sanitizeInput } from '../../../src/utils/security';
 import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { validateCommunityTextSafety } from '../../../src/features/community/services/communityTrustService';
-import type { CommunityAbuseReason, DataCorrectionCategory, ReactionType } from '../../../src/features/community/types/community.types';
+import type { CommunityAbuseReason, DataCorrectionCategory, ModerationActionRecord, ReactionType } from '../../../src/features/community/types/community.types';
+import { appendServerAdminAuditLog } from '../account-admin/accountAdminRepository';
 import {
   addServerDiscussionReply,
   communityServerStore,
   getPublicMemberByUsername,
   listAllCommunityTopics,
+  persistCommunityServerStore,
   resolveServerAuthorProfile,
 } from './communityStore';
 
@@ -66,20 +68,13 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
       neighborhoodId: Number(req.body?.neighborhoodId) || 1,
       neighborhoodNameFa: sanitizeInput(String(req.body?.neighborhoodNameFa || 'پونک'), 50),
       topicId: sanitizeInput(String(req.body?.topicId || 'topic-neighborhoods'), 50),
-      titleFa,
-      bodyFa,
-      ownerUserId: auth.uid,
-      authorProfile: resolveServerAuthorProfile(auth.uid),
-      helpfulCount: 0,
-      helpfulVoterIds: [],
-      reactionCounts: { helpful: 0, agree: 0, needs_source: 0, disagree: 0 },
-      reactionsByUser: {},
-      replies: [],
-      status: 'published' as const,
-      createdAtIso: new Date().toISOString(),
-      createdAtFa: 'امروز',
+      titleFa, bodyFa, ownerUserId: auth.uid, authorProfile: resolveServerAuthorProfile(auth.uid),
+      helpfulCount: 0, helpfulVoterIds: [],
+      reactionCounts: { helpful: 0, agree: 0, needs_source: 0, disagree: 0 }, reactionsByUser: {},
+      replies: [], status: 'published' as const, createdAtIso: new Date().toISOString(), createdAtFa: 'امروز',
     };
     communityServerStore.discussions.unshift(item);
+    persistCommunityServerStore();
     res.status(201).json({ status: 'ok', item });
   });
 
@@ -103,22 +98,14 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     const safety = validateCommunityTextSafety(bodyFa);
     if (titleFa.length < 8 || !safety.ok) { res.status(422).json({ status: 'error', code: 'INVALID_QUESTION', message: safety.errorFa }); return; }
     const q = {
-      id: `q-${Date.now()}`,
-      titleFa,
-      bodyFa,
-      neighborhoodId: Number(req.body?.neighborhoodId) || 1,
+      id: `q-${Date.now()}`, titleFa, bodyFa, neighborhoodId: Number(req.body?.neighborhoodId) || 1,
       neighborhoodNameFa: sanitizeInput(String(req.body?.neighborhoodNameFa || 'پونک'), 50),
       topicId: sanitizeInput(String(req.body?.topicId || 'topic-legal-contracts'), 50),
-      tags: [],
-      ownerUserId: auth.uid,
-      authorProfile: resolveServerAuthorProfile(auth.uid),
-      status: 'open' as const,
-      answers: [],
-      followerIds: [auth.uid],
-      createdAtIso: new Date().toISOString(),
-      createdAtFa: 'امروز',
+      tags: [], ownerUserId: auth.uid, authorProfile: resolveServerAuthorProfile(auth.uid),
+      status: 'open' as const, answers: [], followerIds: [auth.uid], createdAtIso: new Date().toISOString(), createdAtFa: 'امروز',
     };
     communityServerStore.questions.unshift(q);
+    persistCommunityServerStore();
     res.status(201).json({ status: 'ok', item: q });
   });
 
@@ -133,19 +120,13 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     const sourceReferenceFa = req.body?.sourceReferenceFa ? sanitizeInput(String(req.body.sourceReferenceFa), 140) : undefined;
     const author = resolveServerAuthorProfile(auth.uid);
     const answer = {
-      id: `ans-${Date.now()}`,
-      questionId: q.id,
-      authorProfile: author,
-      bodyFa,
-      sourceReferenceFa,
+      id: `ans-${Date.now()}`, questionId: q.id, authorProfile: author, bodyFa, sourceReferenceFa,
       markers: { isAskerSelected: false, hasCredibleSource: Boolean(sourceReferenceFa), isExpertReviewed: Boolean(author.verifiedCredentialFa), isOfficiallyVerified: false },
-      reactionCounts: { helpful: 0, agree: 0, needs_source: 0, disagree: 0 },
-      reactionsByUser: {},
-      createdAtFa: 'امروز',
-      status: 'visible' as const,
+      reactionCounts: { helpful: 0, agree: 0, needs_source: 0, disagree: 0 }, reactionsByUser: {}, createdAtFa: 'امروز', status: 'visible' as const,
     };
     q.answers.push(answer);
     if (q.status === 'open') q.status = 'answered';
+    persistCommunityServerStore();
     res.status(201).json({ status: 'ok', item: answer });
   });
 
@@ -161,24 +142,17 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     const safety = validateCommunityTextSafety(evidenceSummaryFa);
     if (titleFa.length < 5 || !safety.ok) { res.status(422).json({ status: 'error', code: 'INVALID_CORRECTION' }); return; }
     const proposal = {
-      id: `corr-${Date.now()}`,
-      neighborhoodId: Number(req.body?.neighborhoodId) || 1,
+      id: `corr-${Date.now()}`, neighborhoodId: Number(req.body?.neighborhoodId) || 1,
       neighborhoodNameFa: sanitizeInput(String(req.body?.neighborhoodNameFa || 'پونک'), 50),
-      category: (req.body?.category as DataCorrectionCategory) || 'urban_facility',
-      titleFa,
-      currentValueFa: sanitizeInput(String(req.body?.currentValueFa || ''), 140) || undefined,
-      evidenceSummaryFa,
+      category: (req.body?.category as DataCorrectionCategory) || 'urban_facility', titleFa,
+      currentValueFa: sanitizeInput(String(req.body?.currentValueFa || ''), 140) || undefined, evidenceSummaryFa,
       suggestedValueFa: sanitizeInput(String(req.body?.suggestedValueFa || ''), 160) || 'نیازمند بررسی',
-      observedDateFa: sanitizeInput(String(req.body?.observedDateFa || 'امروز'), 30),
-      evidenceAttachments: [],
-      ownerUserId: auth.uid,
-      authorProfile: resolveServerAuthorProfile(auth.uid),
-      status: 'submitted' as const,
-      appliedDataVersionId: null,
-      createdAtIso: new Date().toISOString(),
-      createdAtFa: 'امروز',
+      observedDateFa: sanitizeInput(String(req.body?.observedDateFa || 'امروز'), 30), evidenceAttachments: [],
+      ownerUserId: auth.uid, authorProfile: resolveServerAuthorProfile(auth.uid),
+      status: 'submitted' as const, appliedDataVersionId: null, createdAtIso: new Date().toISOString(), createdAtFa: 'امروز',
     };
     communityServerStore.corrections.unshift(proposal);
+    persistCommunityServerStore();
     res.status(201).json({ status: 'ok', item: proposal });
   });
 
@@ -192,6 +166,7 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
       res.status(409).json({ status: 'error', code: 'ALREADY_APPLIED' }); return;
     }
     item.status = 'withdrawn';
+    persistCommunityServerStore();
     res.status(200).json({ status: 'ok', item });
   });
 
@@ -208,6 +183,7 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     if (prev === reaction) { counts[reaction] = Math.max(0, counts[reaction] - 1); delete byUser[auth.uid]; }
     else { if (prev) counts[prev] = Math.max(0, counts[prev] - 1); counts[reaction] += 1; byUser[auth.uid] = reaction; }
     post.helpfulCount = counts.helpful;
+    persistCommunityServerStore();
     res.status(200).json({ status: 'ok', reactionCounts: counts });
   });
 
@@ -222,16 +198,14 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     const report = {
-      id: `abr-${Date.now()}`,
-      targetType: req.body?.targetType || 'discussion_post',
+      id: `abr-${Date.now()}`, targetType: req.body?.targetType || 'discussion_post',
       targetId: sanitizeInput(String(req.body?.targetId || ''), 60),
       reason: (req.body?.reason as CommunityAbuseReason) || 'spam_promo',
       detailsFa: sanitizeInput(String(req.body?.detailsFa || ''), 240),
-      reporterUserId: auth.uid,
-      status: 'submitted' as const,
-      createdAtIso: new Date().toISOString(),
+      reporterUserId: auth.uid, status: 'submitted' as const, createdAtIso: new Date().toISOString(),
     };
     communityServerStore.abuseReports.unshift(report);
+    persistCommunityServerStore();
     res.status(201).json({ status: 'ok', item: report });
   });
 
@@ -239,15 +213,12 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     const appeal = {
-      id: `apl-${Date.now()}`,
-      moderationActionId: sanitizeInput(String(req.body?.moderationActionId || ''), 60),
-      targetId: sanitizeInput(String(req.body?.targetId || ''), 60),
-      appellantUserId: auth.uid,
-      argumentFa: sanitizeInput(String(req.body?.argumentFa || ''), 320),
-      status: 'submitted' as const,
-      createdAtIso: new Date().toISOString(),
+      id: `apl-${Date.now()}`, moderationActionId: sanitizeInput(String(req.body?.moderationActionId || ''), 60),
+      targetId: sanitizeInput(String(req.body?.targetId || ''), 60), appellantUserId: auth.uid,
+      argumentFa: sanitizeInput(String(req.body?.argumentFa || ''), 320), status: 'submitted' as const, createdAtIso: new Date().toISOString(),
     };
     communityServerStore.appeals.unshift(appeal);
+    persistCommunityServerStore();
     res.status(201).json({ status: 'ok', item: appeal });
   });
 
@@ -269,10 +240,8 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     if (!auth.authorized) { recordAbuseSignal(getIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     res.status(200).json({
       status: 'ok',
-      corrections: communityServerStore.corrections,
-      reports: communityServerStore.abuseReports,
-      actions: communityServerStore.moderationActions,
-      appeals: communityServerStore.appeals,
+      corrections: communityServerStore.corrections, reports: communityServerStore.abuseReports,
+      actions: communityServerStore.moderationActions, appeals: communityServerStore.appeals,
     });
   });
 
@@ -281,17 +250,41 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     const targetId = sanitizeInput(String(req.body?.targetId || ''), 60);
-    const actionType = req.body?.actionType;
+    const actionType = String(req.body?.actionType || '');
     const reasonFa = sanitizeInput(String(req.body?.reasonFa || ''), 200);
+    if (!targetId || reasonFa.trim().length < 6) {
+      res.status(400).json({ status: 'error', code: 'REASON_REQUIRED', messageFa: 'ثبت دلیل تصمیم مدیریتی (حداقل ۶ کاراکتر) الزامی است.' });
+      return;
+    }
     if (actionType === 'approve_data' || actionType === 'apply_data_version' || actionType === 'reject_data') {
       const target = communityServerStore.corrections.find((c) => c.id === targetId);
       if (!target) { res.status(404).json({ status: 'error', code: 'CORRECTION_NOT_FOUND' }); return; }
+      if (target.status === 'withdrawn' || target.status === 'applied') {
+        res.status(409).json({ status: 'error', code: 'INVALID_CORRECTION_TRANSITION', messageFa: 'پیشنهاد پس‌گرفته‌شده یا اعمال‌شده قابل تغییر نیست.' });
+        return;
+      }
+      if (actionType === 'apply_data_version' && target.status !== 'approved' && target.status !== 'verified') {
+        res.status(409).json({ status: 'error', code: 'APPROVAL_REQUIRED_BEFORE_APPLY', messageFa: 'پیش از اعمال به داده مرجع، پیشنهاد باید در مرحله قبل تایید (approved) شده باشد.' });
+        return;
+      }
       target.status = actionType === 'approve_data' ? 'approved' : actionType === 'apply_data_version' ? 'applied' : 'rejected';
       target.moderatorNoteFa = reasonFa;
       if (actionType === 'apply_data_version') target.appliedDataVersionId = `canon-ver-${new Date().toISOString().slice(0, 10)}`;
+    } else if (actionType === 'resolve_report' || actionType === 'dismiss_report') {
+      const rep = communityServerStore.abuseReports.find((r) => r.id === targetId);
+      if (rep) rep.status = actionType === 'resolve_report' ? 'decision_made' : 'dismissed';
     }
-    const action = { id: `mact-${Date.now()}`, targetType: req.body?.targetType || 'data_correction', targetId, actionType, reasonFa, actorRole: 'admin', createdAtIso: new Date().toISOString() };
+    const action = {
+      id: `mact-${Date.now()}`, targetType: req.body?.targetType || 'data_correction', targetId,
+      actionType: actionType as ModerationActionRecord['actionType'], reasonFa,
+      actorRole: auth.email || auth.uid || 'admin', createdAtIso: new Date().toISOString(),
+    };
     communityServerStore.moderationActions.unshift(action);
+    persistCommunityServerStore();
+    appendServerAdminAuditLog({
+      actorRole: 'content_moderator', actorLabelFa: auth.email || 'ادمین نظارت انجمن',
+      actionCode: `COMMUNITY_${actionType.toUpperCase()}`, targetType: 'listing', targetId, reasonFa, severity: 'info',
+    });
     res.status(201).json({ status: 'ok', action });
   });
 
@@ -299,10 +292,24 @@ export function registerCommunityRoutes(app: Express, options?: CommunityRoutesO
     res.setHeader('Cache-Control', 'no-store');
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
+    const reviewerNoteFa = sanitizeInput(String(req.body?.reviewerNoteFa || ''), 200);
+    if (reviewerNoteFa.trim().length < 6) {
+      res.status(400).json({ status: 'error', code: 'REASON_REQUIRED', messageFa: 'ثبت توضیح بررسی اعتراض (حداقل ۶ کاراکتر) الزامی است.' });
+      return;
+    }
     const appeal = communityServerStore.appeals.find((a) => a.id === req.params.id);
     if (!appeal) { res.status(404).json({ status: 'error', code: 'APPEAL_NOT_FOUND' }); return; }
+    if (appeal.status === 'overturned' || appeal.status === 'upheld') {
+      res.status(409).json({ status: 'error', code: 'APPEAL_ALREADY_RESOLVED' });
+      return;
+    }
     appeal.status = req.body?.decision === 'overturned' ? 'overturned' : 'upheld';
-    appeal.reviewerNoteFa = sanitizeInput(String(req.body?.reviewerNoteFa || ''), 200);
+    appeal.reviewerNoteFa = reviewerNoteFa;
+    persistCommunityServerStore();
+    appendServerAdminAuditLog({
+      actorRole: 'content_moderator', actorLabelFa: auth.email || 'ادمین نظارت',
+      actionCode: `APPEAL_${appeal.status.toUpperCase()}`, targetType: 'listing', targetId: appeal.id, reasonFa: reviewerNoteFa, severity: 'info',
+    });
     res.status(200).json({ status: 'ok', appeal });
   });
 }

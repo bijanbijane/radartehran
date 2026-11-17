@@ -1,14 +1,14 @@
 /**
  * RT-UI-ANALYTICS-001 | Data Platform, Analytics & Research Intelligence Engine
  * Official Metric Registry, Semantic Layer, IQR Distribution & Percentile Engine,
- * SCD Type 2 Place Dimension, Pipeline Idempotency & Reproducible Research Workspace
+ * SCD Type 2 Place Dimension, Canonical Analysis Hash & K-Anonymity Guard
  */
-
 import {
   AnalyticalIngestionPayload,
   DataPipelineRecord,
   DistributionSummaryStats,
   MetricSnapshotResponse,
+  OfficialMetricDefinition,
   PeriodComparisonResult,
   PredictiveModelRegistryEntry,
   ReproducibleAnalysisDefinition,
@@ -17,6 +17,61 @@ import { SampleSufficiencyStatus } from '../../data-governance/models/dataGovern
 import { OFFICIAL_METRIC_REGISTRY, SCD2_PLACE_DIMENSIONS } from './analyticsRegistrySeeds';
 
 export { OFFICIAL_METRIC_REGISTRY, SCD2_PLACE_DIMENSIONS };
+
+function sortJsonKeysDeep(val: unknown): unknown {
+  if (val === null || typeof val !== 'object') return val;
+  if (Array.isArray(val)) return val.map(sortJsonKeysDeep);
+  const sorted: Record<string, unknown> = {};
+  for (const key of Object.keys(val as Record<string, unknown>).sort()) {
+    sorted[key] = sortJsonKeysDeep((val as Record<string, unknown>)[key]);
+  }
+  return sorted;
+}
+
+export function computeCanonicalAnalysisHash(
+  definition: Omit<ReproducibleAnalysisDefinition, 'analysisId' | 'createdAt' | 'outputSummaryFa' | 'reproducibleHash'>,
+): string {
+  const canonicalPayload = JSON.stringify(
+    sortJsonKeysDeep({
+      titleFa: definition.titleFa,
+      researchQuestionFa: definition.researchQuestionFa,
+      ownerId: definition.ownerId,
+      datasetVersions: [...definition.datasetVersions].sort(),
+      metricCodes: [...definition.metricCodes].sort(),
+      methodologyVersions: [...definition.methodologyVersions].sort(),
+      geographicScope: {
+        placeIds: [...definition.geographicScope.placeIds].sort(),
+        boundaryVersion: definition.geographicScope.boundaryVersion,
+      },
+      timeRange: definition.timeRange,
+    }),
+  );
+  // Deterministic 64-bit FNV-1a hex signature across browser & node environments
+  let h1 = 0x811c9dc5;
+  let h2 = 0x9e3779b9;
+  for (let i = 0; i < canonicalPayload.length; i++) {
+    const ch = canonicalPayload.charCodeAt(i);
+    h1 ^= ch;
+    h1 = Math.imul(h1, 0x01000193);
+    h2 ^= ch ^ i;
+    h2 = Math.imul(h2, 0x85ebca6b);
+  }
+  return `canon:${(h1 >>> 0).toString(16).padStart(8, '0')}${(h2 >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+export function enforceMetricNumeratorDenominatorParity(
+  metric: Pick<OfficialMetricDefinition, 'metricCode' | 'numeratorFa' | 'denominatorFa'>,
+  numeratorValue: number | null,
+  denominatorValue: number | null,
+): { valid: boolean; value: number | null; reasonFa?: string } {
+  if (numeratorValue === null || denominatorValue === null || !Number.isFinite(numeratorValue) || !Number.isFinite(denominatorValue)) {
+    return { valid: false, value: null, reasonFa: `مقادیر صورت یا مخرج برای شاخص ${metric.metricCode} کامل نیست.` };
+  }
+  if (denominatorValue <= 0) {
+    return { valid: false, value: null, reasonFa: 'مخرج شاخص صفر است و محاسبه نسبت ممکن نیست.' };
+  }
+  return { valid: true, value: Number(((numeratorValue / denominatorValue) * 100).toFixed(2)) };
+}
 
 export function computePercentile(sortedValues: number[], percentile0To100: number): number {
   if (sortedValues.length === 0) return 0;
@@ -32,34 +87,25 @@ export function computePercentile(sortedValues: number[], percentile0To100: numb
 export function computeDistributionStats(
   rawValues: number[],
   uniqueEntityCount = rawValues.length,
-  trimOutliers = true
+  trimOutliers = true,
 ): DistributionSummaryStats {
   const valid = rawValues.filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
   if (valid.length === 0) {
-    return {
-      count: 0, uniqueEntityCount: 0, mean: 0, median: 0, p10: 0, p25: 0, p75: 0, p90: 0, iqr: 0,
-      trimmedOutlierCount: 0, sufficiencyStatus: 'INSUFFICIENT',
-    };
+    return { count: 0, uniqueEntityCount: 0, mean: 0, median: 0, p10: 0, p25: 0, p75: 0, p90: 0, iqr: 0, trimmedOutlierCount: 0, sufficiencyStatus: 'INSUFFICIENT' };
   }
-
   const rawQ1 = computePercentile(valid, 25);
   const rawQ3 = computePercentile(valid, 75);
   const rawIqr = rawQ3 - rawQ1;
-
   let working = valid;
   let trimmedOutlierCount = 0;
   if (trimOutliers && valid.length >= 6 && rawIqr > 0) {
-    const lowFence = rawQ1 - 1.5 * rawIqr;
-    const highFence = rawQ3 + 1.5 * rawIqr;
-    const filtered = valid.filter((v) => v >= lowFence && v <= highFence);
+    const filtered = valid.filter((v) => v >= rawQ1 - 1.5 * rawIqr && v <= rawQ3 + 1.5 * rawIqr);
     if (filtered.length >= 3) {
       trimmedOutlierCount = valid.length - filtered.length;
       working = filtered;
     }
   }
-
-  const sum = working.reduce((acc, v) => acc + v, 0);
-  const mean = Number((sum / working.length).toFixed(2));
+  const mean = Number((working.reduce((acc, v) => acc + v, 0) / working.length).toFixed(2));
   const median = computePercentile(working, 50);
   const p10 = computePercentile(working, 10);
   const p25 = computePercentile(working, 25);
@@ -81,15 +127,14 @@ export function computeSafePeriodComparison(params: {
   compositionChangedSignificantly?: boolean;
 }): PeriodComparisonResult {
   const boundaryVersionConsistent = params.currentBoundaryVersion === params.previousBoundaryVersion;
-  if (!Number.isFinite(params.previousValue) || params.previousValue <= 0) {
+  if (!Number.isFinite(params.previousValue) || params.previousValue <= 0 || params.previousSampleCount <= 0) {
     return {
       currentPeriodLabelFa: params.currentPeriodLabelFa, previousPeriodLabelFa: params.previousPeriodLabelFa,
       currentValue: params.currentValue, previousValue: params.previousValue, changePercent: null, computable: false,
-      nonComputableReasonFa: 'مقدار دوره پایه صفر یا ناموجود است؛ درصد تغییر قابل محاسبه نیست.',
+      nonComputableReasonFa: 'داده تاریخی واقعی برای دوره قبل موجود یا دارای حجم نمونه کافی نیست.',
       currentSampleCount: params.currentSampleCount, previousSampleCount: params.previousSampleCount, boundaryVersionConsistent,
     };
   }
-
   const changePercent = Number((((params.currentValue - params.previousValue) / params.previousValue) * 100).toFixed(2));
   const warnings: string[] = [];
   if (!boundaryVersionConsistent) warnings.push(`نسخه مرز محله بین دو دوره تغییر کرده است (${params.previousBoundaryVersion} ← ${params.currentBoundaryVersion}).`);
@@ -104,53 +149,43 @@ export function computeSafePeriodComparison(params: {
 }
 
 export class AnalyticsPlatformEngine {
-  private processedIdempotencyKeys: Set<string> = new Set(['idem-boot-1']);
+  private processedIdempotencyKeys: Set<string>;
   private quarantinedPayloads: Array<{ payload: Partial<AnalyticalIngestionPayload>; reasonFa: string }> = [];
-  private pipelines: DataPipelineRecord[] = [
-    {
+  private pipelines: DataPipelineRecord[];
+  private savedAnalyses: ReproducibleAnalysisDefinition[];
+  private modelRegistry: PredictiveModelRegistryEntry[];
+
+  constructor(options: { seedDemo?: boolean } = { seedDemo: true }) {
+    const seed = options.seedDemo !== false;
+    this.processedIdempotencyKeys = new Set(seed ? ['idem-boot-1'] : []);
+    this.pipelines = seed ? [{
       id: 'pipe-mkt-gold-1', pipelineCode: 'PIPELINE.MARKET.SNAPSHOT_DAILY',
       titleFa: 'ساخت Snapshot روزانه قیمت پیشنهادی و عرضه (Silver → Gold)',
       sourceSystem: 'ListingOperationalOutbox', targetLayer: 'GOLD', targetDataset: 'FactMarketMetric',
-      scheduleFa: 'روزانه ۰۲:۰۰ بامداد (Incremental)', priority: 'HIGH', status: 'SUCCEEDED',
+      scheduleFa: 'روزانه ۰۲:۰۰ بامداد', priority: 'HIGH', status: 'SUCCEEDED',
       recordsProcessed: 4820, failedRecords: 14, computeDurationMs: 1420, estimatedCostUnits: 12, actualCostUnits: 11.4,
       lastRunAt: '2026-04-12T02:00:00Z',
-    },
-    {
-      id: 'pipe-geo-silver-2', pipelineCode: 'PIPELINE.GEO.NEIGHBORHOOD_PROFILE',
-      titleFa: 'تجمیع مکانی شاخص‌های کالبدی و دسترسی محلات (Bronze → Silver)',
-      sourceSystem: 'TehranGISRegistry', targetLayer: 'SILVER', targetDataset: 'FactNeighborhoodMetric',
-      scheduleFa: 'هفتگی', priority: 'NORMAL', status: 'SUCCEEDED',
-      recordsProcessed: 354, failedRecords: 0, computeDurationMs: 680, estimatedCostUnits: 5, actualCostUnits: 4.8,
-      lastRunAt: '2026-04-11T04:00:00Z',
-    },
-  ];
-
-  private savedAnalyses: ReproducibleAnalysisDefinition[] = [
-    {
+    }] : [];
+    this.savedAnalyses = seed ? [{
       analysisId: 'ana-rep-1405-01',
       titleFa: 'بررسی شکاف قیمت پیشنهادی و معامله سناریویی در مناطق ۲ و ۵ تهران',
       researchQuestionFa: 'آیا شکاف قیمت پیشنهادی و معامله در آپارتمان‌های ۲خوابه سعادت‌آباد و پونک از الگوی یکسانی پیروی می‌کند؟',
       ownerId: 'researcher-urban-1', datasetVersions: ['mkt-snapshot-2026-04-12'],
       metricCodes: ['MARKET.MEDIAN.ASKING_PRICE_PER_SQM', 'VALUATION.HEDONIC_ESTIMATE_PER_SQM'],
-      methodologyVersions: ['2.1', '1405.1'],
-      geographicScope: { placeIds: ['saadat-abad', 'punak'], boundaryVersion: 'v2.0-1405' },
+      methodologyVersions: ['2.1', '1405.1'], geographicScope: { placeIds: ['saadat-abad', 'punak'], boundaryVersion: 'v2.0-1405' },
       timeRange: { from: '2026-03-01', to: '2026-04-12', labelFa: 'بهار ۱۴۰۵' },
       createdAt: '2026-04-12T08:00:00Z',
-      outputSummaryFa: 'میانه قیمت پیشنهادی در سعادت‌آباد ۱۴۲.۰ و در پونک ۹۸.۵ میلیون تومان/مترمربع با شکاف میانگین ۶.۱٪ نسبت به سناریوی معامله است.',
-      reproducibleHash: 'sha256:ana-1405-verified-8841',
-    },
-  ];
-
-  private modelRegistry: PredictiveModelRegistryEntry[] = [
-    {
+      outputSummaryFa: 'تحلیل مقایسه‌ای ثبت‌شده در فضای پژوهش.', reproducibleHash: 'canon:8841demo',
+    }] : [];
+    this.modelRegistry = seed ? [{
       modelId: 'mdl-hedonic-v1405', modelNameFa: 'موتور هدونیک برآورد بازه ارزش مسکن تهران',
       analysisType: 'DIAGNOSTIC', version: '1405.1', trainingDatasetVersion: 'gold-hedonic-ref-1405-q1',
       mapePercent: 6.4, uncertaintyBandPercent: 8.5, dataDriftStatus: 'STABLE', conceptDriftStatus: 'STABLE',
-      knownLimitationsFa: ['در املاک لوکس بالای ۳۵۰ مترمربع یا کلنگی دارای قدرالسهم ویژه، بازه عدم‌قطعیت به ۱۲٪ می‌رسد.'],
-      approvedUseCasesFa: ['برآورد بازه اولیه تصمیم‌گیری خریدار و فروشنده در کنار نمونه‌های مقایسه‌ای'],
+      knownLimitationsFa: ['در املاک لوکس بالای ۳۵۰ مترمربع یا کلنگی، بازه عدم‌قطعیت افزایش می‌یابد.'],
+      approvedUseCasesFa: ['برآورد بازه اولیه تصمیم‌گیری کنار نمونه‌های مقایسه‌ای'],
       requiresHumanReview: true, status: 'ACTIVE', deployedAt: '2026-03-21T00:00:00Z',
-    },
-  ];
+    }] : [];
+  }
 
   public ingestAnalyticalEvent(payload: Partial<AnalyticalIngestionPayload>): {
     status: 'ACCEPTED' | 'DUPLICATE_SKIPPED' | 'QUARANTINED'; reasonFa: string;
@@ -166,59 +201,30 @@ export class AnalyticsPlatformEngine {
     return { status: 'ACCEPTED', reasonFa: 'رویداد در لایه Landing/Bronze ثبت شد.' };
   }
 
-  public getMetricSnapshotForPlace(
-    placeId: string | null,
-    _baseBuyPerSqm = 142,
-    observedValues?: number[],
-  ): MetricSnapshotResponse {
+  public getMetricSnapshotForPlace(placeId: string | null, _baseBuyPerSqm = 142, observedValues?: number[]): MetricSnapshotResponse {
     const placeDim = placeId ? SCD2_PLACE_DIMENSIONS.find((d) => d.canonicalPlaceId === placeId && d.isCurrent) : undefined;
     const validObserved = Array.isArray(observedValues) ? observedValues.filter((v) => Number.isFinite(v) && v > 0) : [];
     if (!placeDim || validObserved.length === 0) {
       return {
-        metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
-        displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
-        financialConcept: 'ASKING_PRICE',
-        value: null,
-        distribution: undefined,
-        unit: 'MILLION_TOMAN_PER_SQM',
-        period: { from: '', to: '', labelFa: 'ثبت نشده' },
+        metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM', displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع', financialConcept: 'ASKING_PRICE',
+        value: null, distribution: undefined, unit: 'MILLION_TOMAN_PER_SQM', period: { from: '', to: '', labelFa: 'ثبت نشده' },
         geography: placeDim
           ? { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion }
           : { placeId: placeId || '', placeNameFa: 'ثبت نشده', boundaryVersion: 'ثبت نشده' },
-        methodologyVersion: placeDim ? '2.1' : 'NONE',
-        dataSnapshotId: 'UNAVAILABLE',
-        qualityStatus: 'UNVERIFIED',
-        sufficiencyStatus: 'NOT_ASSESSED',
-        lastUpdatedAt: '',
-        dataOrigin: 'UNAVAILABLE',
-        limitationsFa: [
-          placeDim
-            ? 'داده تحلیلی معتبر (آگهی زنده تاییدشده) برای محاسبه توزیع این محله هنوز ثبت نشده است.'
-            : 'برای این محله هنوز اسنپ‌شات آماری و پروفایل مرز SCD2 در سکوی داده ثبت نشده است.',
-        ],
+        methodologyVersion: placeDim ? '2.1' : 'NONE', dataSnapshotId: 'UNAVAILABLE',
+        qualityStatus: 'UNVERIFIED', sufficiencyStatus: 'NOT_ASSESSED', lastUpdatedAt: '', dataOrigin: 'UNAVAILABLE',
+        limitationsFa: [placeDim ? 'داده تحلیلی معتبر (آگهی زنده تاییدشده) برای محاسبه توزیع این محله هنوز ثبت نشده است.' : 'برای این محله هنوز اسنپ‌شات آماری در سکوی داده ثبت نشده است.'],
       };
     }
-
     const dist = computeDistributionStats(validObserved, validObserved.length, true);
     return {
-      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
-      displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع',
-      financialConcept: 'ASKING_PRICE',
-      value: dist.median,
-      distribution: dist,
-      unit: 'MILLION_TOMAN_PER_SQM',
-      period: { from: '', to: '', labelFa: 'نمونه‌های زنده محلی' },
+      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM', displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع', financialConcept: 'ASKING_PRICE',
+      value: dist.median, distribution: dist, unit: 'MILLION_TOMAN_PER_SQM', period: { from: '', to: '', labelFa: 'نمونه‌های زنده تاییدشده' },
       geography: { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion },
-      methodologyVersion: '2.1',
-      dataSnapshotId: `live-${placeDim.canonicalPlaceId}`,
-      qualityStatus: 'SUPPORTED',
-      sufficiencyStatus: dist.sufficiencyStatus,
-      lastUpdatedAt: '',
-      dataOrigin: 'OBSERVED',
-      limitationsFa: [
-        'محاسبه بر پایه قیمت‌های پیشنهادی آگهی‌های زنده محلی است و معادل قیمت قطعی معامله نیست.',
-        `${dist.trimmedOutlierCount} داده پرت خارج از بازه 1.5×IQR پالایش شده است.`,
-      ],
+      methodologyVersion: '2.1', dataSnapshotId: `live-${placeDim.canonicalPlaceId}`,
+      qualityStatus: dist.sufficiencyStatus === 'INSUFFICIENT' ? 'INCOMPLETE' : 'SUPPORTED',
+      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: new Date().toISOString(), dataOrigin: 'OBSERVED',
+      limitationsFa: ['محاسبه بر پایه قیمت‌های پیشنهادی آگهی‌های زنده محلی است و معادل قیمت قطعی معامله نیست.', `${dist.trimmedOutlierCount} داده پرت خارج از بازه 1.5×IQR پالایش شده است.`],
     };
   }
 
@@ -228,29 +234,25 @@ export class AnalyticsPlatformEngine {
     const values = [0.88, 0.92, 0.96, 0.99, 1, 1.02, 1.05, 1.09, 1.14].map((f) => baseBuyPerSqm * f);
     const dist = computeDistributionStats(values, values.length, true);
     return {
-      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM',
-      displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع (نمونه شبیه‌سازی)',
-      financialConcept: 'ASKING_PRICE',
-      value: dist.median,
-      distribution: dist,
-      unit: 'MILLION_TOMAN_PER_SQM',
+      metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM', displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع (نمونه شبیه‌سازی)',
+      financialConcept: 'ASKING_PRICE', value: dist.median, distribution: dist, unit: 'MILLION_TOMAN_PER_SQM',
       period: { from: '', to: '', labelFa: 'شبیه‌سازی آزمایشی (فاقد مشاهده واقعی)' },
       geography: { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion },
-      methodologyVersion: '2.1',
-      dataSnapshotId: `sim-${placeDim.canonicalPlaceId}-demo`,
-      qualityStatus: 'ESTIMATED',
-      sufficiencyStatus: dist.sufficiencyStatus,
-      lastUpdatedAt: '',
-      dataOrigin: 'SIMULATED',
+      methodologyVersion: '2.1', dataSnapshotId: `sim-${placeDim.canonicalPlaceId}-demo`, qualityStatus: 'ESTIMATED',
+      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: '', dataOrigin: 'SIMULATED',
       limitationsFa: ['توزیع شبیه‌سازی آزمایشی پیرامون مرجع داخلی است و بیانگر داده واقعی بازار نیست.'],
     };
   }
 
   public canExportDatasetSlice(params: {
-    sampleCount: number; datasetClassification: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED'; callerRole: 'PUBLIC_USER' | 'RESEARCHER' | 'ADMIN';
+    sampleCount: number; uniqueEntityCount?: number; distinctContributorsCount?: number;
+    datasetClassification: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED'; callerRole: 'PUBLIC_USER' | 'RESEARCHER' | 'ADMIN';
   }): { allowed: boolean; reasonFa: string } {
-    if (params.sampleCount < 5) {
-      return { allowed: false, reasonFa: 'به دلیل حفاظت از حریم خصوصی و خطر شناسایی فردی در نمونه‌های کوچک (کمتر از ۵ رکورد)، خروجی گرفتن مجاز نیست.' };
+    if (params.sampleCount < 5 || (params.uniqueEntityCount !== undefined && params.uniqueEntityCount < 5)) {
+      return { allowed: false, reasonFa: 'به دلیل حفاظت از حریم خصوصی و خطر شناسایی فردی (K-Anonymity < 5)، خروجی گرفتن مجاز نیست.' };
+    }
+    if (params.distinctContributorsCount !== undefined && params.distinctContributorsCount < 2) {
+      return { allowed: false, reasonFa: 'خروجی با تعداد منبع/عرضه‌کننده کمتر از ۲ مورد مشمول محدودیت حریم خصوصی است.' };
     }
     if (params.datasetClassification === 'RESTRICTED' && params.callerRole !== 'ADMIN') {
       return { allowed: false, reasonFa: 'دسترسی و Export مجموعه‌داده محدود فقط برای نقش مجاز امکان‌پذیر است.' };
@@ -262,9 +264,7 @@ export class AnalyticsPlatformEngine {
   }
 
   public getOverviewBundle(placeId: string | null = null, baseBuyPerSqm = 142, observedValues?: number[]) {
-    const filteredAnalyses = placeId
-      ? this.savedAnalyses.filter((ana) => ana.geographicScope.placeIds.includes(placeId))
-      : [];
+    const filteredAnalyses = placeId ? this.savedAnalyses.filter((ana) => ana.geographicScope.placeIds.includes(placeId)) : [];
     return {
       metricsRegistry: OFFICIAL_METRIC_REGISTRY, placeDimensionsScd2: SCD2_PLACE_DIMENSIONS,
       activeSnapshot: this.getMetricSnapshotForPlace(placeId, baseBuyPerSqm, observedValues),

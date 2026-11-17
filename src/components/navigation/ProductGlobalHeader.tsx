@@ -1,5 +1,5 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, SlidersHorizontal, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
@@ -8,6 +8,7 @@ import { AreaUnitToggle, ExperienceModeToggle, useIntlCurrency, useRadarLocale }
 import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
 import { getProductNavigationItems } from './primaryNavigation';
 import { DesktopMegaMenu } from './DesktopMegaMenu';
+import { useMegaMenuLifecycle } from './useMegaMenuLifecycle';
 import { HeaderNotificationBell } from '../../features/communications/components/HeaderNotificationBell';
 import type { ModuleSubTabId } from '../../navigation/registry/route.types';
 import type { MegaMenuEntry } from '../../navigation/primary/megaMenuAndTabsConfig';
@@ -25,6 +26,7 @@ export interface ProductGlobalHeaderProps {
   searchQuery?: string;
   activePlaceLabelFa?: string;
   currentUser?: FirebaseUser | null;
+  unreadNotificationsCount?: number;
 }
 
 const CITIES: { id: CityId; labelFa: string; labelEn: string }[] = [
@@ -45,16 +47,25 @@ const BRAND_BY_CITY: Record<CityId, { fa: string; en: string }> = {
 
 export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   primaryView, activeSubTab, onSelectPrimaryView, activeCity, onSwitchCity, appleTheme,
-  onToggleAppleTheme, onOpenSearch, onMegaMenuAction, searchQuery, activePlaceLabelFa, currentUser,
+  onToggleAppleTheme, onOpenSearch, onMegaMenuAction, searchQuery, activePlaceLabelFa,
+  currentUser, unreadNotificationsCount,
 }) => {
   const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
   const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
-  const [megaMenuOpen, setMegaMenuOpen] = useState(false);
+  const megaMenuPanelId = `desktop-mega-menu-panel-${useId().replace(/:/g, '')}`;
   const [mobileDisplayOpen, setMobileDisplayOpen] = useState(false);
-  const megaMenuPinnedRef = useRef(false);
-  const hoverCloseTimer = useRef<number | null>(null);
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mobileDisplayRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    megaMenuOpen,
+    cancelCloseMega,
+    scheduleCloseMega,
+    openFromHover,
+    toggleFromTriggerClick,
+    closeMegaMenu,
+  } = useMegaMenuLifecycle({ activeCity, radarLocale, primaryView });
 
   const fxSampleHint = intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(100, intlCurrency, radarLocale, rateState.snapshot) : '';
   const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
@@ -66,22 +77,19 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const isMoreActive = primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'home';
 
-  const cancelCloseMega = useCallback(() => {
-    if (hoverCloseTimer.current !== null) {
-      window.clearTimeout(hoverCloseTimer.current);
-      hoverCloseTimer.current = null;
-    }
-  }, []);
-  const closeMegaMenu = useCallback(() => { cancelCloseMega(); megaMenuPinnedRef.current = false; setMegaMenuOpen(false); }, [cancelCloseMega]);
-  const scheduleCloseMega = useCallback(() => {
-    cancelCloseMega();
-    if (megaMenuPinnedRef.current) return;
-    hoverCloseTimer.current = window.setTimeout(() => { hoverCloseTimer.current = null; if (!megaMenuPinnedRef.current) setMegaMenuOpen(false); }, 160);
-  }, [cancelCloseMega]);
-  useEffect(() => () => { cancelCloseMega(); }, [cancelCloseMega]);
+  useEffect(() => {
+    if (!mobileDisplayOpen || typeof window === 'undefined') return undefined;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileDisplayOpen(false); };
+    const onMouseDown = (e: MouseEvent) => {
+      if (mobileDisplayRef.current && !mobileDisplayRef.current.contains(e.target as Node)) setMobileDisplayOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onMouseDown);
+    return () => { window.removeEventListener('keydown', onKeyDown); document.removeEventListener('mousedown', onMouseDown); };
+  }, [mobileDisplayOpen]);
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+    <header className="sticky top-0 z-[45] w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
       <a
         id="radar-skip-to-main-link"
         href="#radar-main-content"
@@ -89,8 +97,8 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
       >
         {isEn ? 'Skip to main content' : 'رفتن به محتوای اصلی'}
       </a>
-      <div className={`w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 flex items-center justify-between gap-2 ${primaryView === 'map' ? 'h-[56px]' : 'h-[56px] lg:h-[68px]'}`}>
-        <div className="flex items-center gap-2 shrink-0 min-w-0">
+      <div className={`w-full max-w-[1600px] mx-auto px-3 sm:px-4 flex items-center justify-between gap-2 ${primaryView === 'map' ? 'h-[56px]' : 'h-[56px] lg:h-[68px]'}`}>
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             data-testid="global-nav-home"
@@ -106,20 +114,20 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
               <span className="font-black text-xs sm:text-sm tracking-tight text-slate-900 dark:text-white whitespace-nowrap block">
                 {isEn ? cityBrand.en : cityBrand.fa}
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden xl:block whitespace-nowrap">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden 2xl:block whitespace-nowrap">
                 {isEn ? `${activeCityName} Spatial Atlas` : `هوش مکانی ${activeCityName}`}
               </span>
             </div>
           </button>
 
-          <div role="group" aria-label={isEn ? 'Metropolitan Cities' : 'کلان‌شهرها'} className="hidden md:flex items-center border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 bg-slate-50/80 dark:bg-slate-900/80 text-xs">
+          <div role="group" aria-label={isEn ? 'Metropolitan Cities' : 'کلان‌شهرها'} className="hidden xl:flex items-center shrink-0 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 bg-slate-50/80 dark:bg-slate-900/80 text-xs">
             {CITIES.map((c) => (
               <button
                 key={c.id}
                 type="button"
                 aria-pressed={activeCity === c.id}
                 onClick={() => onSwitchCity(c.id)}
-                className={`px-1.5 xl:px-2 py-0.5 rounded-md text-[11px] font-bold transition whitespace-nowrap cursor-pointer ${
+                className={`px-1.5 py-0.5 rounded-md text-[11px] font-bold transition whitespace-nowrap cursor-pointer ${
                   activeCity === c.id
                     ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -131,7 +139,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           </div>
         </div>
 
-        <nav aria-label={isEn ? 'Primary Navigation' : 'ناوبری اصلی پلتفرم'} className="hidden lg:flex flex-1 justify-center items-center gap-0.5 xl:gap-1 min-w-0">
+        <nav aria-label={isEn ? 'Primary Navigation' : 'ناوبری اصلی پلتفرم'} className="hidden lg:flex flex-1 justify-center items-center gap-0.5 min-w-0">
           {primaryNavItems.map((item) => {
             const isActive = primaryView === item.id;
             const Icon = item.Icon;
@@ -142,7 +150,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
                 data-testid={`global-nav-${item.id}`}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => { closeMegaMenu(); onSelectPrimaryView(item.id); }}
-                className={`relative flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+                className={`relative flex items-center gap-1.5 px-1.5 xl:px-2 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
                   isActive
                     ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 shadow-2xs'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60'
@@ -158,15 +166,11 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             type="button"
             data-testid="global-nav-more"
             aria-expanded={megaMenuOpen}
-            aria-controls="desktop-mega-menu-panel"
-            onMouseEnter={() => { cancelCloseMega(); setMegaMenuOpen(true); }}
+            aria-controls={megaMenuPanelId}
+            onMouseEnter={openFromHover}
             onMouseLeave={scheduleCloseMega}
-            onClick={() => {
-              cancelCloseMega();
-              if (!megaMenuOpen || !megaMenuPinnedRef.current) { megaMenuPinnedRef.current = true; setMegaMenuOpen(true); }
-              else closeMegaMenu();
-            }}
-            className={`flex items-center gap-1 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+            onClick={toggleFromTriggerClick}
+            className={`flex items-center gap-1 px-1.5 xl:px-2 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${
               megaMenuOpen || isMoreActive
                 ? 'text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60'
@@ -200,38 +204,57 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           >
             <HelpCircle className="w-4 h-4" aria-hidden="true" />
           </button>
-          <HeaderNotificationBell uid={currentUser?.uid || 'local-user'} isEn={isEn} onNavigateView={(v, sub) => { closeMegaMenu(); onSelectPrimaryView(v, sub); }} />
+          <HeaderNotificationBell
+            uid={currentUser?.uid || 'local-user'}
+            isEn={isEn}
+            unreadNotificationsCount={unreadNotificationsCount}
+            onNavigateView={(v, sub) => { closeMegaMenu(); onSelectPrimaryView(v, sub); }}
+          />
           <button
             type="button"
             data-testid="global-nav-userspace"
+            aria-label={currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}
+            title={currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}
             aria-current={primaryView === 'userspace' ? 'page' : undefined}
             onClick={() => { closeMegaMenu(); onSelectPrimaryView('userspace', 'overview'); }}
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+            className={`hidden sm:flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
               primaryView === 'userspace'
                 ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
                 : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             <User className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <span className="hidden xl:inline max-w-[84px] truncate">{currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}</span>
+            <span className="hidden 2xl:inline max-w-[84px] truncate">{currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}</span>
           </button>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden xl:flex items-center gap-1">
             <div className="hidden 2xl:inline-flex"><ExperienceModeToggle compact /></div>
             <AreaUnitToggle compact showIntlControls className="flex-nowrap" />
           </div>
 
-          <button
-            type="button"
-            data-testid="mobile-unit-currency-btn"
-            aria-expanded={mobileDisplayOpen}
-            aria-label={isEn ? 'Area unit and currency settings' : 'تنظیم واحد مساحت و ارز'}
-            onClick={() => setMobileDisplayOpen((prev) => !prev)}
-            className="md:hidden inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[10.5px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>{isEn ? 'Unit/FX' : 'واحد/ارز'}</span>
-          </button>
+          <div ref={mobileDisplayRef} className="relative xl:hidden">
+            <button
+              type="button"
+              data-testid="mobile-unit-currency-btn"
+              aria-expanded={mobileDisplayOpen}
+              aria-label={isEn ? 'Area unit and currency settings' : 'تنظیم واحد مساحت و ارز'}
+              onClick={() => setMobileDisplayOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[10.5px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>{isEn ? 'Unit/FX' : 'واحد/ارز'}</span>
+            </button>
+            {mobileDisplayOpen && (
+              <div role="dialog" aria-label={isEn ? 'Unit, currency & mode settings' : 'تنظیمات واحد، ارز و حالت تجربه'} className="absolute left-0 top-10 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-3 space-y-2.5 z-50 text-xs">
+                <div className="font-black text-slate-800 dark:text-white">{isEn ? 'Display Unit & Currency' : 'تنظیم واحد نمایش و ارز'}</div>
+                <AreaUnitToggle compact showIntlControls />
+                <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-500">{isEn ? 'View Mode:' : 'حالت نمایش:'}</span>
+                  <ExperienceModeToggle compact />
+                </div>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
@@ -243,23 +266,12 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           >
             {appleTheme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
           </button>
-
-          {mobileDisplayOpen && (
-            <div role="dialog" aria-label={isEn ? 'Unit, currency & mode settings' : 'تنظیمات واحد، ارز و حالت تجربه'} className="md:hidden absolute left-0 top-12 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-3 space-y-2.5 z-50 text-xs">
-              <div className="font-black text-slate-800 dark:text-white">{isEn ? 'Display Unit & Currency' : 'تنظیم واحد نمایش و ارز'}</div>
-              <AreaUnitToggle compact showIntlControls />
-              <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500">{isEn ? 'View Mode:' : 'حالت نمایش:'}</span>
-                <ExperienceModeToggle compact />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       <DesktopMegaMenu
         open={megaMenuOpen} onClose={closeMegaMenu} onMouseEnterMenu={cancelCloseMega} onMouseLeaveMenu={scheduleCloseMega}
-        triggerRef={moreButtonRef} topOffsetClass={primaryView === 'map' ? 'top-[56px]' : 'top-[56px] lg:top-[68px]'}
+        triggerRef={moreButtonRef} panelId={megaMenuPanelId}
         locale={radarLocale} activeView={primaryView} activeSubTab={activeSubTab}
         onSelectDestination={onSelectPrimaryView} onTriggerAction={(actionId) => onMegaMenuAction?.(actionId)}
       />

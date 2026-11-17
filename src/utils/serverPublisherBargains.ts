@@ -275,8 +275,15 @@ export function registerPublisherAndPlatformRoutes(app: Express): void { if (reg
     for (const fl of firestoreLeads) { if (!serverSideBuyerLeads.some((m) => m.submittedByUid === auth.uid && m.hoodId === fl.hoodId && m.dealType === fl.dealType)) serverSideBuyerLeads.unshift(fl); }
     if (serverSideBuyerLeads.length > 200) serverSideBuyerLeads.length = 200;
     const ownCorrections = serverDataCorrections.filter((c) => c.reporterUid === auth.uid);
-    const envelope = buildUserDataPortabilityExport({ ownerUid: auth.uid, publishedListings: ownListings, savedAlerts: ownBuyerLeads });
-    res.status(200).json({ status: 'ok', exportData: { ...envelope, buyerLeads: ownBuyerLeads, dataCorrections: ownCorrections } });
+    const ownMediaObjects = objectStoreIndex.filter((o) => o.ownerUid === auth.uid && String(o.deletionState) !== 'deleted').map((o) => ({ id: o.id, bargainId: o.bargainId, mimeType: o.mimeType, createdAtIso: o.createdAtIso }));
+    const unavailableSources = !req.headers.authorization && !process.env.FIREBASE_SERVICE_ACCOUNT_JSON ? ['buyer_alerts_firestore'] : [];
+    const envelope = buildUserDataPortabilityExport({ ownerUid: auth.uid, publishedListings: ownListings, savedAlerts: ownBuyerLeads, unavailableSources, sources: [
+      { id: 'server_published_bargains', origin: 'server', available: true, count: ownListings.length },
+      { id: 'server_buyer_alerts', origin: 'server', available: unavailableSources.length === 0, count: ownBuyerLeads.length },
+      { id: 'server_data_corrections', origin: 'server', available: true, count: ownCorrections.length },
+      { id: 'server_media_objects', origin: 'server', available: true, count: ownMediaObjects.length },
+    ] });
+    res.status(200).json({ status: 'ok', exportData: { ...envelope, buyerLeads: ownBuyerLeads, dataCorrections: ownCorrections, mediaObjects: ownMediaObjects } });
   }));
   app.post('/api/account/delete', safeAsync(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'private, no-store');

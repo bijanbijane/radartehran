@@ -10,6 +10,7 @@ import {
   type NeighborhoodInternalSectionId,
   type NeighborhoodMarketTabId,
 } from '../services/neighborhoodProfileEngine';
+import type { AggregatedMarketMetrics } from '../../../data/realMarketPriceAggregator';
 import { convertPricePerSqmToUnitRaw, formatMillionTomanAsIntlCurrency } from '../../../utils/areaUnit';
 import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../../../components/AreaUnitToggle';
 
@@ -18,15 +19,16 @@ export interface NeighborhoodIntelligenceProfilePanelProps {
   cityId?: string;
   allNeighborhoods?: readonly AnyNeighborhoodInput[];
   dealPricePerSqm?: number;
+  marketMetrics?: AggregatedMarketMetrics | null;
 }
 
 export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntelligenceProfilePanelProps> = ({
-  hood, cityId = 'tehran', allNeighborhoods = [], dealPricePerSqm,
+  hood, cityId = 'tehran', allNeighborhoods = [], dealPricePerSqm, marketMetrics,
 }) => {
   const [areaUnit] = useAreaUnit();
   const [intlCurrency] = useIntlCurrency();
   const [radarLocale] = useRadarLocale();
-  useExchangeRateSnapshot();
+  const rateState = useExchangeRateSnapshot();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<NeighborhoodInternalSectionId>('overview');
   const [marketTab, setMarketTab] = useState<NeighborhoodMarketTabId>('sale');
@@ -38,9 +40,9 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
       allNeighborhoods.length ? allNeighborhoods : [hood],
       cityId,
       dealPricePerSqm,
-      { areaUnit, intlCurrency, locale: radarLocale },
+      { areaUnit, intlCurrency, locale: radarLocale, marketMetrics, exchangeRateRef: rateState.snapshot },
     ),
-    [hood, allNeighborhoods, cityId, dealPricePerSqm, areaUnit, intlCurrency, radarLocale]
+    [hood, allNeighborhoods, cityId, dealPricePerSqm, marketMetrics, areaUnit, intlCurrency, radarLocale, rateState.snapshot]
   );
 
   return (
@@ -70,6 +72,11 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
 
       {isOpen && (
         <div className="mt-3 space-y-3 border-t border-slate-200/80 dark:border-slate-800 pt-3">
+          {profile.cityMismatchWarningFa && (
+            <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 text-[11px] text-amber-800 dark:text-amber-300">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> <span>{profile.cityMismatchWarningFa}</span>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-100/90 dark:bg-slate-800/80 p-1" role="tablist" aria-label="بخش‌های شناسنامه محله">
             {NEIGHBORHOOD_SECTION_NAV_8.map((sec) => (
               <button
@@ -145,8 +152,11 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
               <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-2.5 text-[11px] space-y-1">
                 <div className="font-bold text-slate-900 dark:text-white">تحلیل زبانه «{marketTab}» — تفکیک از ارزش‌گذاری ملک منفرد (Hedonic)</div>
                 <p className="text-slate-600 dark:text-slate-400">
-                  شاخص پایه محله ({formatMillionTomanAsIntlCurrency(Math.round(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit) * 10) / 10, 'IRT', radarLocale)}{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit), intlCurrency, radarLocale)}` : ''} بر {areaUnit === 'sqft' ? 'ft²' : 'm²'}) معیار مکانی است و جایگزین ارزش‌گذاری هدونیک تک‌ملک نمی‌شود.
+                  شاخص پایه محله ({formatMillionTomanAsIntlCurrency(Math.round(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit) * 10) / 10, 'IRT', radarLocale)}{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnitRaw(hood.buyPerSqm, areaUnit), intlCurrency, radarLocale, rateState.snapshot)}` : ''} بر {areaUnit === 'sqft' ? 'ft²' : 'm²'}) معیار مکانی است و جایگزین ارزش‌گذاری هدونیک تک‌ملک نمی‌شود.
                 </p>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 pt-1">
+                  تفکیک نمونه: ورودی خام {profile.sampleBreakdown.rawInputCount} · مشاهده‌شده {profile.sampleBreakdown.observedSampleCount} · معتبر {profile.sampleBreakdown.validSampleCount} · رد پرت/تقلب {profile.sampleBreakdown.rejectedFraudCount} · نمایشی {profile.sampleBreakdown.syntheticSampleCount}
+                </div>
               </div>
             </div>
           )}

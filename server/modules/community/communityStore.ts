@@ -1,5 +1,6 @@
-/** @file server/modules/community/communityStore.ts — Authoritative Server-Side Community State, Privacy Stripping & Governance Store */
+/** @file server/modules/community/communityStore.ts — Durable Server-Side Community State, Privacy Stripping & Governance Store */
 import { sanitizeInput } from '../../../src/utils/security';
+import { AtomicJsonRepository } from '../shared/atomicJsonRepository';
 import {
   COMMUNITY_MEMBER_PROFILES,
   COMMUNITY_SEED_QUESTIONS,
@@ -41,12 +42,11 @@ export interface ServerCommunityState {
 }
 
 const clone = <T>(val: T): T => JSON.parse(JSON.stringify(val));
+const communityFileRepo = new AtomicJsonRepository<ServerCommunityState>('community-state.json');
 
 export function createInitialCommunityState(): ServerCommunityState {
   const profiles: Record<string, CommunityProfile> = {};
-  for (const p of COMMUNITY_MEMBER_PROFILES) {
-    profiles[p.username] = clone(p);
-  }
+  for (const p of COMMUNITY_MEMBER_PROFILES) profiles[p.username] = clone(p);
   return {
     discussions: clone(COMMUNITY_SEED_DISCUSSIONS),
     questions: clone(COMMUNITY_SEED_QUESTIONS),
@@ -59,9 +59,15 @@ export function createInitialCommunityState(): ServerCommunityState {
   };
 }
 
-export const communityServerStore: ServerCommunityState = createInitialCommunityState();
+export const communityServerStore: ServerCommunityState = communityFileRepo.load(createInitialCommunityState);
+
+export function persistCommunityServerStore(immediate = false): void {
+  if (immediate) communityFileRepo.writeImmediate(communityServerStore);
+  else communityFileRepo.saveDebounced(communityServerStore);
+}
 
 export function resetCommunityServerStoreForTests(): void {
+  communityFileRepo.resetInMemoryCacheForTests();
   const fresh = createInitialCommunityState();
   communityServerStore.discussions = fresh.discussions;
   communityServerStore.questions = fresh.questions;
@@ -73,7 +79,6 @@ export function resetCommunityServerStoreForTests(): void {
   communityServerStore.profiles = fresh.profiles;
 }
 
-/** Authoritatively constructs author profile from server-verified uid; discards client-forged reputation/credentials */
 export function resolveServerAuthorProfile(uid: string, requestedDisplayName?: string): CommunityTrustBadgeProfile {
   const existing = Object.values(communityServerStore.profiles).find((p) => p.userId === uid);
   if (existing) {
@@ -134,5 +139,6 @@ export function addServerDiscussionReply(postId: string, bodyFa: string, parentR
     reactionsByUser: {},
     status: 'visible',
   });
+  persistCommunityServerStore();
   return { ok: true, status: 201, message: 'CREATED', post };
 }

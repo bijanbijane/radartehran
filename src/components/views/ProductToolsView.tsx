@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Calculator, Building2, Scale, ShieldAlert, Sparkles, FileCheck, Hammer,
-  GraduationCap, ArrowLeftRight, ChevronRight, ArrowUpRight, ClipboardCheck, Coins, Share2, Search, X,
-  Compass, Network, Hourglass, Briefcase, Activity, PieChart, Wallet, Split, Award
+  Calculator, Compass, ChevronRight, ArrowUpRight, FileCheck, Search, Sparkles, X,
 } from 'lucide-react';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { toPersianNum } from '../../data/neighborhoods';
@@ -16,6 +14,14 @@ import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } f
 import { matchesPersianSearch } from '../../utils/security';
 import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
 import type { ToolsSubTabId } from '../../navigation/registry/route.types';
+import {
+  buildToolCategoriesForHood,
+  calculateContractInitialTotalMillion,
+  computeToolCategoryCounts,
+  isRadarUiLabAvailable,
+  sanitizeContractTargetSqm,
+  type ToolDispatchTarget,
+} from '../../features/tools/services/toolsCatalogEngine';
 
 const InstantListingVerifierModal = React.lazy(() => import('../modals/InstantListingVerifierModal').then((m) => ({ default: m.InstantListingVerifierModal })));
 const ContractRoomShieldModal = React.lazy(() => import('../modals/ContractRoomShieldModal').then((m) => ({ default: m.ContractRoomShieldModal })));
@@ -36,85 +42,74 @@ export interface ProductToolsViewProps {
   activeCity?: string;
   targetSqm?: number;
   activeSubTab?: ToolsSubTabId;
+  isDevEnvironment?: boolean;
 }
 
 export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
+  const {
+    selectedHood, onSelectNeighborhood, onOpenInspector, onOpenHedonic,
+    onOpenSuperModule, onOpenExpansionModal, onOpenReverseBudget, onOpenCompare,
+    evaluatedNeighborhoods, activeCity, targetSqm, activeSubTab, isDevEnvironment,
+  } = p;
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [radarLocale] = useRadarLocale(), [experienceMode] = useExperienceMode();
   const rateState = useExchangeRateSnapshot();
   const isEn = radarLocale === 'en';
-  const safeTargetSqm = Math.max(25, p.targetSqm || 80);
+  const canAccessUiLab = isRadarUiLabAvailable(isDevEnvironment);
+  const safeTargetSqm = sanitizeContractTargetSqm(targetSqm);
+  const initialContractTotalMillion = calculateContractInitialTotalMillion(selectedHood?.buyPerSqm, safeTargetSqm);
   const [toolQuery, setToolQuery] = useState<string>('');
   const [activeCat, setActiveCat] = useState<'all' | 'financial' | 'legal' | 'urban' | 'decision'>('all');
   const [showEmbeddedLab, setShowEmbeddedLab] = useState<boolean>(false), [showUiLab, setShowUiLab] = useState<boolean>(false);
-  const [showValuationWorkspace, setShowValuationWorkspace] = useState<boolean>(p.activeSubTab === 'valuation');
+  const [showValuationWorkspace, setShowValuationWorkspace] = useState<boolean>(activeSubTab === 'valuation');
   const [activeDecisionTab, setActiveDecisionTab] = useState<Stage2ActiveTab>('DECISION_SYNTHESIS');
   const [showVerifierModal, setShowVerifierModal] = useState<boolean>(false), [showContractShieldModal, setShowContractShieldModal] = useState<boolean>(false);
+
   useEffect(() => {
-    if (p.activeSubTab === 'valuation') { setActiveCat('financial'); setShowValuationWorkspace(true); }
-    else if (p.activeSubTab === 'calculators') setActiveCat('financial');
-    else if (p.activeSubTab === 'compare_props' || p.activeSubTab === 'compare_areas') setActiveCat('decision');
+    if (activeSubTab === 'valuation') { setActiveCat('financial'); setShowValuationWorkspace(true); }
+    else if (activeSubTab === 'calculators') setActiveCat('financial');
+    else if (activeSubTab === 'compare_props' || activeSubTab === 'compare_areas') setActiveCat('decision');
     else setActiveCat('all');
-  }, [p.activeSubTab]);
+  }, [activeSubTab]);
 
-  const openDecisionTool = useCallback((tabId: Stage2ActiveTab) => { setActiveDecisionTab(tabId); setShowEmbeddedLab(true); }, []);
+  const openDecisionTool = useCallback((tabId: Stage2ActiveTab) => {
+    setActiveDecisionTab(tabId);
+    setShowEmbeddedLab(true);
+  }, []);
 
-  const dealSqm = aggregateNeighborhoodMarketMetrics(p.selectedHood.id, p.selectedHood.name, p.selectedHood.buyPerSqm, buildNeighborhoodListingSamples(p.selectedHood)).estimatedDealPricePerSqm;
-  const unitBuy = convertPricePerSqmToUnit(p.selectedHood.buyPerSqm, areaUnit), unitDeal = convertPricePerSqmToUnit(dealSqm, areaUnit);
-  const unitBuyRaw = convertPricePerSqmToUnitRaw(p.selectedHood.buyPerSqm, areaUnit), unitDealRaw = convertPricePerSqmToUnitRaw(dealSqm, areaUnit);
+  const dispatchTarget = useCallback((target: ToolDispatchTarget) => {
+    switch (target.kind) {
+      case 'decision': openDecisionTool(target.tab); break;
+      case 'verifier': setShowVerifierModal(true); break;
+      case 'contract_shield': setShowContractShieldModal(true); break;
+      case 'hedonic': onOpenHedonic(); break;
+      case 'reverse_budget': onOpenReverseBudget(); break;
+      case 'compare': onOpenCompare(); break;
+      case 'expansion': onOpenExpansionModal(target.modal); break;
+      case 'super': onOpenSuperModule(target.tab); break;
+    }
+  }, [openDecisionTool, onOpenHedonic, onOpenReverseBudget, onOpenCompare, onOpenExpansionModal, onOpenSuperModule]);
+
+  const dealSqm = aggregateNeighborhoodMarketMetrics(selectedHood.id, selectedHood.name, selectedHood.buyPerSqm, buildNeighborhoodListingSamples(selectedHood)).estimatedDealPricePerSqm;
+  const unitBuy = convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), unitDeal = convertPricePerSqmToUnit(dealSqm, areaUnit);
+  const unitBuyRaw = convertPricePerSqmToUnitRaw(selectedHood.buyPerSqm, areaUnit), unitDealRaw = convertPricePerSqmToUnitRaw(dealSqm, areaUnit);
   const areaSuffix = formatAreaUnitLabel(areaUnit);
   const buyText = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(unitBuyRaw, intlCurrency, radarLocale, rateState.snapshot)} / ${areaSuffix}` : `${toPersianNum(unitBuy)} میلیون تومان / ${areaSuffix}`;
   const dealText = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(unitDealRaw, intlCurrency, radarLocale, rateState.snapshot)} / ${areaSuffix}` : `${toPersianNum(unitDeal)} میلیون تومان / ${areaSuffix}`;
 
-  const toolCategories = useMemo(() => [
-    {
-      id: 'decision' as const,
-      category: isEn ? 'Smart Deal Readiness & Market Risk' : 'تصمیم‌یار خرید، چانه‌زنی و سنجش ریسک بازار',
-      items: [
-        { id: 'casper_decision_synthesis', title: 'خلاصه تصمیم خرید، سقف قیمت و راهنمای چانه‌زنی (Executive Deal Readiness)', desc: 'حکم نهایی ورود به معامله، ارزیابی ۶ شاخص کلیدی، تعیین سقف ترک جلسه و پیشنهاد قیمت شروع مذاکره', icon: Award, action: () => openDecisionTool('DECISION_SYNTHESIS') },
-        { id: 'casper_regret', title: 'مقایسه محله‌های جایگزین و کمترین ریسک پشیمانی (Savage Minimax Regret)', desc: `شبیه‌سازی ارزش ۳ ساله دارایی در ۳ وضعیت جهش ارزی، رکود تورمی و ثبات در محله ${p.selectedHood.name}`, icon: Compass, action: () => openDecisionTool('PARETO_REGRET') },
-        { id: 'casper_lemon', title: 'تشخیص حباب آگهی‌ها و فرمول چانه‌زنی قیمت (Akerlof Lemon Index)', desc: 'سنجش ریسک آگهی‌های غیرواقعی یا طعمه و محاسبه تخفیف منطقی پای میز مذاکره (λ=۲٫۲۵)', icon: Network, action: () => openDecisionTool('SPATIAL_CONTAGION') },
-        { id: 'casper_real_options', title: 'بررسی زمان مناسب خرید و سرعت فروش ملک (Dixit-Pindyck Real Options)', desc: 'مقایسه خرید فوری یا صبر کردن، تخمین مدت‌زمان فروش ملک و اثر دلار و طلا بر مسکن', icon: Hourglass, action: () => openDecisionTool('REAL_OPTIONS') },
-        { id: 'casper_urban_affordability', title: 'هزینه واقعی زندگی و رفت‌وآمد در محله (TCOH & Isochrone)', desc: 'محاسبه نسبت قیمت به درآمد، هزینه اتلاف وقت در ترافیک، استهلاک خودرو و مقایسه با محله‌های نزدیک محل کار', icon: Briefcase, action: () => openDecisionTool('URBAN_AFFORDABILITY') },
-        { id: 'casper_monte_carlo', title: 'شبیه‌سازی ۱٬۰۰۰ حالت آینده قیمت و ریسک افت سرمایه (Merton VaR)', desc: 'پیش‌بینی بازده واقعی ملک در برابر نوسان دلار و محاسبه حداکثر ریسک افت سرمایه با اطمینان ۹۵٪', icon: Activity, action: () => openDecisionTool('MONTE_CARLO_VAR') },
-        { id: 'casper_housing_cycle', title: 'تشخیص وضعیت فعلی بازار مسکن: رکود یا رونق؟ (Housing Cycle Radar)', desc: 'شناسایی فاز فعلی بازار (رکود، رونق، اشباع یا کف قیمتی) همراه با پیشنهاد عملی برای خانه‌اولی‌ها و سرمایه‌گذاران', icon: PieChart, action: () => openDecisionTool('HOUSING_CYCLE') },
-        { id: 'casper_macro_portfolio', title: 'مقایسه سود مسکن با طلا، دلار و سود بانکی (Markowitz Portfolio & Gold Arbitrage)', desc: 'پیشنهاد ترکیب بهینه سرمایه بین ملک، طلا، دلار و صندوق درآمد ثابت و بررسی به‌صرفه بودن تبدیل طلا به مسکن', icon: Wallet, action: () => openDecisionTool('MACRO_PORTFOLIO') },
-        { id: 'casper_rent_vs_buy', title: 'مقایسه دقیق «خرید خانه» یا «اجاره‌نشینی + سرمایه‌گذاری» (Rent vs. Buy NPV Arbitrage)', desc: 'مقایسه مالی ۵ ساله بین خرید ملک یا اجاره‌نشینی و سرمایه‌گذاری الباقی پول با احتساب هزینه تعمیرات و استهلاک', icon: Split, action: () => openDecisionTool('RENT_VS_BUY') },
-      ],
-    },
-    {
-      id: 'financial' as const,
-      category: isEn ? 'Valuation & Financial Calculators' : 'قیمت‌گذاری و ارزیابی مالی',
-      items: [
-        { id: 'deal_verifier', title: 'آنتی‌ویروس و کارشناسی فوری آگهی‌های دیوار (Deal Verifier)', desc: 'الصاق متن یا لینک آگهی، کشف حباب قیمت، تله‌های سندی و سناریوی چانه‌زنی با مشاور املاک', icon: ShieldAlert, action: () => setShowVerifierModal(true) },
-        { id: 'hedonic', title: 'کارشناسی هوشمند ارزش ملک (Hedonic)', desc: `محاسبه ارزش منصفانه و قیمت فروش فوری واحد در محله ${p.selectedHood.name} با در نظر گرفتن سن بنا، طبقه و امکانات`, icon: Calculator, action: p.onOpenHedonic },
-        { id: 'reverse_budget', title: 'کاشف معکوس بودجه مسکن', desc: '«با بودجه من کجای شهر می‌توانم خانه بخرم؟» تطبیق فوری متراژ و قدرت خرید', icon: Sparkles, action: p.onOpenReverseBudget },
-        { id: 'commission', title: 'ماشین‌حساب کمیسیون املاک و هزینه محضر', desc: 'محاسبه دقیق حق‌الزحمه قانونی مشاور، ۹٪ ارزش افزوده و هزینه ثبت در دفترخانه اسناد رسمی', icon: Scale, action: () => p.onOpenExpansionModal('commission') },
-        { id: 'mortgage', title: 'شبیه‌ساز اوراق تسه، وام مسکن و خرید متری', desc: 'محاسبه هزینه خرید برگه تسهیلات، اقساط ۱۲ ساله بانک مسکن و مدل سرمایه‌گذاری متری', icon: Building2, action: () => p.onOpenSuperModule('mortgage') },
-        { id: 'tax_inheritance', title: 'محاسبه مالیات نقل‌وانتقال ۱۴۰۵، ارث و مهریه‌یار', desc: 'فرمول ماده ۵۹ مالیات مستقیم، محاسبه سهم‌الارث طبقات، مالیات بر خانه‌های خالی و مهریه ملکی', icon: Coins, action: () => p.onOpenSuperModule('tax_inheritance') },
-      ],
-    },
-    {
-      id: 'legal' as const,
-      category: isEn ? 'Legal Security & Contract Verification' : 'امنیت حقوقی و راستی‌آزمایی قراردادها',
-      items: [
-        { id: 'contract_shield', title: 'سپر و دستیار زنده اتاق قرارداد (Contract-Room Shield)', desc: 'تقویم امن چک‌ها (قرارداد/تحویل/سند)، وجه التزام متقارن روزانه و پاتک به شگردهای روانی مشاور', icon: Scale, action: () => setShowContractShieldModal(true) },
-        { id: 'fake_ad', title: 'مچ‌گیر هوشمند آگهی‌های فیک و قیمت طعمه', desc: 'تشخیص آگهی‌های غیرواقعی، راستی‌آزمایی تله‌های قیمتی و تولید سوالات کلیدی استعلام تلفنی', icon: ShieldAlert, action: () => p.onOpenSuperModule('fake_detector') },
-        { id: 'contract', title: 'مشاور حقوقی هوشمند قولنامه و مبایعه‌نامه', desc: 'بررسی بندهای حقوقی، شروط فسخ، خیارات غبن، نحوه پرداخت چک‌ها و جلوگیری از کلاهبرداری', icon: FileCheck, action: () => p.onOpenExpansionModal('contract') },
-        { id: 'tenant_rights', title: 'داور هوشمند روابط موجر و مستأجر', desc: 'تفکیک قانونی هزینه‌های اساسی و جاری ساختمان، فرمول شارژ و تقویم حقوقی قرارداد', icon: Scale, action: () => p.onOpenSuperModule('tenant_rights') },
-        { id: 'visit_checklist', title: 'چک‌لیست هوشمند کارشناسی بازدید و عیب‌یابی ملک', desc: 'ماتریس ۵۰ نقطه‌ای بررسی نم و رطوبت، فشار آب، پارکینگ، تاسیسات موتورخانه و فرهنگ ساختمان', icon: ClipboardCheck, action: () => p.onOpenSuperModule('visit_checklist') },
-      ],
-    },
-    {
-      id: 'urban' as const,
-      category: isEn ? 'Swap, Zoning (R122), Schools & Realtor Studio' : 'معاوضه، ساخت، ضوابط، تولید محتوا و سبک زندگی',
-      items: [
-        { id: 'swap', title: 'مرکز تهاتر ملک و مقایسه شهرهای حومه', desc: 'موتور تطبیق معاوضه و ارزیابی اقتصادی شهرهای جدید اطراف کلان‌شهرها', icon: ArrowLeftRight, action: () => p.onOpenSuperModule('swap_suburb') },
-        { id: 'municipality', title: 'دستیار ضوابط شهرداری (R122) و بازسازی', desc: 'محاسبه تراکم مجاز، درصد مشارکت در ساخت، جریمه ماده ۱۰۰ و برآورد هزینه نوسازی واحد', icon: Hammer, action: () => p.onOpenSuperModule('municipality') },
-        { id: 'school_radar', title: 'رادار مدارس برتر، ایمنی گسل و سبک زندگی', desc: 'فاصله تا پهنه‌های گسلی، کیفیت آموزشی مدارس اطراف و دسترسی معابر', icon: GraduationCap, action: () => p.onOpenSuperModule('school_traffic') },
-        { id: 'realtor_studio', title: 'استودیو هوش مصنوعی آگهی‌نویسی و استوری ملکی', desc: 'تولید متن جذاب و استاندارد برای دیوار و شیپور با فرمت استوری و بدون کلیشه‌های تکراری', icon: Share2, action: () => p.onOpenSuperModule('realtor_studio') },
-      ],
-    },
-  ], [isEn, p.selectedHood.name, openDecisionTool, p.onOpenHedonic, p.onOpenReverseBudget, p.onOpenExpansionModal, p.onOpenSuperModule]);
+  const toolCategories = useMemo(
+    () => buildToolCategoriesForHood({ isEn, hoodName: selectedHood.name }),
+    [isEn, selectedHood.name],
+  );
+  const toolCounts = useMemo(() => computeToolCategoryCounts(toolCategories), [toolCategories]);
+  const targetByToolId = useMemo(() => {
+    const map = new Map<string, ToolDispatchTarget>();
+    for (const cat of toolCategories) for (const item of cat.items) map.set(item.id, item.target);
+    return map;
+  }, [toolCategories]);
+  const dispatchToolAction = useCallback((toolId: string) => {
+    const target = targetByToolId.get(toolId);
+    if (target) dispatchTarget(target);
+  }, [targetByToolId, dispatchTarget]);
 
   const filteredCategories = useMemo(() => {
     const q = toolQuery.trim();
@@ -130,6 +125,15 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       .filter((c) => c.items.length > 0);
   }, [toolCategories, activeCat, toolQuery, experienceMode]);
 
+  const fmtCount = (n: number) => (isEn ? n.toLocaleString('en-US') : toPersianNum(n));
+  const categoryTabs = useMemo(() => [
+    { id: 'all' as const, label: isEn ? `All (${fmtCount(toolCounts.total)})` : `همه ابزارها (${fmtCount(toolCounts.total)})` },
+    { id: 'financial' as const, label: isEn ? `Financial (${fmtCount(toolCounts.byCategory.financial)})` : `مالی و قیمت (${fmtCount(toolCounts.byCategory.financial)})` },
+    { id: 'legal' as const, label: isEn ? `Legal (${fmtCount(toolCounts.byCategory.legal)})` : `حقوقی و بازدید (${fmtCount(toolCounts.byCategory.legal)})` },
+    { id: 'decision' as const, label: isEn ? `Deal & Risk Lab (${fmtCount(toolCounts.byCategory.decision)})` : `تصمیم‌یار و چانه‌زنی (${fmtCount(toolCounts.byCategory.decision)})` },
+    { id: 'urban' as const, label: isEn ? `Urban & Swap (${fmtCount(toolCounts.byCategory.urban)})` : `ساخت و تهاتر (${fmtCount(toolCounts.byCategory.urban)})` },
+  ], [isEn, toolCounts]);
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6 animate-fadeIn" data-testid="product-tools-view">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
@@ -140,80 +144,64 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {isEn ? 'Real Estate Transaction Toolkit' : 'جعبه‌ابزار هوشمند معاملات مسکن'}
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            مجموعه ۲۴ ابزار کارشناسی قیمت، شبیه‌ساز مالی، راهنمای چانه‌زنی و بررسی حقوقی معاملات ملک در ۴ گام
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1" data-testid="tools-total-summary">
+            {isEn
+              ? `${fmtCount(toolCounts.total)} analytical, financial, negotiation & legal tools across ${fmtCount(toolCategories.length)} categories`
+              : `مجموعه ${fmtCount(toolCounts.total)} ابزار کارشناسی قیمت، شبیه‌ساز مالی، راهنمای چانه‌زنی و بررسی حقوقی معاملات ملک در ${fmtCount(toolCategories.length)} گام`}
           </p>
         </div>
         <div className="p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs space-y-2 min-w-[260px]">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">محله هدف محاسبات (قابل تغییر از نقشه):</span>
-            {p.onOpenInspector && (
-              <button type="button" onClick={() => p.onOpenInspector?.(p.selectedHood)} className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer">
+            {onOpenInspector && (
+              <button type="button" onClick={() => onOpenInspector(selectedHood)} className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer">
                 <span>کارنامه</span><ArrowUpRight className="w-3 h-3" />
               </button>
             )}
           </div>
-          {p.evaluatedNeighborhoods && p.onSelectNeighborhood ? (
-            <select
-              aria-label="انتخاب محله هدف محاسبات"
-              value={p.selectedHood.id}
-              onChange={(e) => {
-                const found = p.evaluatedNeighborhoods?.find((h) => h.id === Number(e.target.value));
-                if (found) p.onSelectNeighborhood?.(found);
-              }}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 font-black text-slate-900 dark:text-white text-xs focus:outline-none cursor-pointer"
-            >
-              {p.evaluatedNeighborhoods.map((h) => (
-                <option key={h.id} value={h.id}>محله {h.name} {h.zone ? `· ${h.zone}` : ''}</option>
-              ))}
+          {evaluatedNeighborhoods && onSelectNeighborhood ? (
+            <select aria-label="انتخاب محله هدف محاسبات" value={selectedHood.id} onChange={(e) => { const found = evaluatedNeighborhoods.find((h) => h.id === Number(e.target.value)); if (found) onSelectNeighborhood(found); }} className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 font-black text-slate-900 dark:text-white text-xs focus:outline-none cursor-pointer">
+              {evaluatedNeighborhoods.map((h) => (<option key={h.id} value={h.id}>محله {h.name} {h.zone ? `· ${h.zone}` : ''}</option>))}
             </select>
           ) : (
-            <strong className="font-black text-emerald-700 dark:text-emerald-300 block">محله {p.selectedHood.name} {p.selectedHood.zone ? `· ${p.selectedHood.zone}` : ''}</strong>
+            <strong className="font-black text-emerald-700 dark:text-emerald-300 block">محله {selectedHood.name} {selectedHood.zone ? `· ${selectedHood.zone}` : ''}</strong>
           )}
           <div className="flex items-center justify-between text-[11px] tabular-nums pt-0.5 gap-2">
             <span className="text-slate-600 dark:text-slate-300">اعلامی: <strong>{buyText}</strong> · سناریو v6.4 (غیرثبتی): <strong className="text-emerald-700 dark:text-emerald-400">{dealText}</strong></span>
-            <button type="button" onClick={p.onOpenCompare} className="text-[10.5px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer shrink-0">مقایسه دو محله</button>
+            <button type="button" onClick={onOpenCompare} className="text-[10.5px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer shrink-0">مقایسه دو محله</button>
           </div>
         </div>
       </div>
 
-      {/* 3-Step Guided Workflow Quick-Start Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        <button type="button" onClick={p.onOpenReverseBudget} className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/70 text-right hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
+        <button type="button" onClick={onOpenReverseBudget} className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/70 text-right hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
           <div><div className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">گام ۱ · کشف و تطبیق بودجه</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">با بودجه من کجا خانه بخرم؟</div></div>
           <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
         </button>
-        <button type="button" onClick={p.onOpenHedonic} className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/70 text-right hover:border-sky-500 transition cursor-pointer flex items-center justify-between">
+        <button type="button" onClick={onOpenHedonic} className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/70 text-right hover:border-sky-500 transition cursor-pointer flex items-center justify-between">
           <div><div className="text-[10px] font-black text-sky-700 dark:text-sky-400">گام ۲ · کارشناسی قیمت منصفانه</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">محاسبه قیمت واقعی ملک هدف</div></div>
           <Calculator className="w-4 h-4 text-sky-600 shrink-0" />
         </button>
-        <button type="button" onClick={() => p.onOpenExpansionModal('contract')} className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/70 text-right hover:border-amber-500 transition cursor-pointer flex items-center justify-between">
+        <button type="button" onClick={() => onOpenExpansionModal('contract')} className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/70 text-right hover:border-amber-500 transition cursor-pointer flex items-center justify-between">
           <div><div className="text-[10px] font-black text-amber-700 dark:text-amber-400">گام ۳ · امنیت حقوقی پیش از امضا</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">چک‌لیست قولنامه و کمیسیون</div></div>
           <FileCheck className="w-4 h-4 text-amber-600 shrink-0" />
         </button>
       </div>
 
-      {/* Instant Tool Filter & Category Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-2.5 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="relative w-full">
           <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input type="text" aria-label={isEn ? 'Search calculators' : 'جستجوی سریع ابزار'} value={toolQuery} onChange={(e) => setToolQuery(e.target.value)} placeholder={isEn ? 'Search calculators (e.g. mortgage, tax, commission, R122)...' : 'جستجوی سریع ابزار (مثلاً: وام، مالیات، کمیسیون، قولنامه، R122)...'} className="w-full pr-9 pl-7 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
           {toolQuery && <button type="button" aria-label="پاک کردن جستجوی ابزار" onClick={() => setToolQuery('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
         </div>
-        <div className="flex items-center gap-1 overflow-x-auto text-xs">
-          {[
-            { id: 'all' as const, label: isEn ? 'All (24)' : 'همه ابزارها (۲۴)' },
-            { id: 'financial' as const, label: isEn ? 'Financial (6)' : 'مالی و قیمت (۶)' },
-            { id: 'legal' as const, label: isEn ? 'Legal (5)' : 'حقوقی و بازدید (۵)' },
-            { id: 'decision' as const, label: isEn ? 'Deal & Risk Lab (9)' : 'تصمیم‌یار و چانه‌زنی (۹)' },
-            { id: 'urban' as const, label: isEn ? 'Urban & Swap (4)' : 'ساخت و تهاتر (۴)' },
-          ].map((tab) => (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {categoryTabs.map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveCat(tab.id)} className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition cursor-pointer ${activeCat === tab.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>{tab.label}</button>
           ))}
           <button type="button" data-testid="toggle-valuation-workspace-btn" onClick={() => setShowValuationWorkspace((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showValuationWorkspace ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
             میز کار ارزش‌گذاری
           </button>
-          {import.meta.env.DEV && (
+          {canAccessUiLab && (
             <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
               Radar UI Lab
             </button>
@@ -221,10 +209,10 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         </div>
       </div>
 
-      {showValuationWorkspace && p.evaluatedNeighborhoods && p.onSelectNeighborhood && <React.Suspense fallback={null}><ValuationWorkspacePage evaluatedNeighborhoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} onSelectNeighborhood={p.onSelectNeighborhood} onOpenModalCalculator={p.onOpenHedonic} /></React.Suspense>}
-      {import.meta.env.DEV && showUiLab && <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} /></React.Suspense>}
+      {showValuationWorkspace && evaluatedNeighborhoods && onSelectNeighborhood && <React.Suspense fallback={null}><ValuationWorkspacePage evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood} onSelectNeighborhood={onSelectNeighborhood} onOpenModalCalculator={onOpenHedonic} /></React.Suspense>}
+      {canAccessUiLab && showUiLab && <React.Suspense fallback={null}><RadarUiLabPanel onClose={() => setShowUiLab(false)} isDevEnvironment={isDevEnvironment} /></React.Suspense>}
       {showEmbeddedLab && (
-        <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3">
+        <div className="rounded-2xl border-2 border-indigo-500/40 p-4 bg-indigo-50/20 dark:bg-indigo-950/20 space-y-3" data-testid="decision-lab-panel">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-2">
               <Compass className="w-4 h-4 text-indigo-600" />
@@ -235,9 +223,9 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
             </button>
           </div>
           <Stage2MasterWidget
-            hoodId={p.selectedHood.id} hoodName={p.selectedHood.name} basePriceSqm={p.selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={p.selectedHood}
+            hoodId={selectedHood.id} hoodName={selectedHood.name} basePriceSqm={selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={selectedHood}
             initialTab={activeDecisionTab} onTabChange={(tab) => setActiveDecisionTab(tab)}
-            onSelectCompareHood={(targetName) => { const match = p.evaluatedNeighborhoods?.find((h) => h.name === targetName); if (match) p.onSelectNeighborhood?.(match); }}
+            onSelectCompareHood={(targetName) => { const match = evaluatedNeighborhoods?.find((h) => h.name === targetName); if (match) onSelectNeighborhood?.(match); }}
           />
         </div>
       )}
@@ -252,7 +240,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
               {cat.items.map((tool) => {
                 const IconC = tool.icon;
                 return (
-                  <button key={tool.id} type="button" onClick={tool.action} className="p-5 rounded-2xl text-start w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-600 dark:hover:border-emerald-400 hover:shadow-md transition cursor-pointer flex items-start gap-4 group focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none">
+                  <button key={tool.id} type="button" onClick={() => dispatchToolAction(tool.id)} className="p-5 rounded-2xl text-start w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-600 dark:hover:border-emerald-400 hover:shadow-md transition cursor-pointer flex items-start gap-4 group focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none">
                     <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 transition shrink-0">
                       <IconC className="w-5 h-5 stroke-[2]" />
                     </span>
@@ -273,14 +261,20 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
 
       {showVerifierModal && (
         <React.Suspense fallback={null}>
-          <InstantListingVerifierModal isOpen={showVerifierModal} onClose={() => setShowVerifierModal(false)} initialHoodName={p.selectedHood?.name} cityKey={p.activeCity || 'tehran'} evaluatedNeighborhoods={p.evaluatedNeighborhoods} />
+          <InstantListingVerifierModal isOpen={showVerifierModal} onClose={() => setShowVerifierModal(false)} initialHoodName={selectedHood?.name} cityKey={activeCity || 'tehran'} evaluatedNeighborhoods={evaluatedNeighborhoods} />
         </React.Suspense>
       )}
       {showContractShieldModal && (
         <React.Suspense fallback={null}>
-          <ContractRoomShieldModal key={`${p.selectedHood?.id}-${safeTargetSqm}`} isOpen={showContractShieldModal} onClose={() => setShowContractShieldModal(false)} initialTotalMillion={p.selectedHood ? Math.round(p.selectedHood.buyPerSqm * safeTargetSqm) : 12000} />
+          <ContractRoomShieldModal
+            isOpen={showContractShieldModal}
+            onClose={() => setShowContractShieldModal(false)}
+            initialTotalMillion={initialContractTotalMillion}
+            contextKey={`${selectedHood?.id ?? 0}-${safeTargetSqm}`}
+          />
         </React.Suspense>
       )}
     </div>
   );
 }
+
