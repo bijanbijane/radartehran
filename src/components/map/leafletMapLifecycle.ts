@@ -6,6 +6,7 @@ import { recordDiagnosticEvent } from '../../utils/security';
 import { createLeafletBaseTileController, type BaseTileControllerInstance } from '../mapBaseTileController';
 import { updateMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { mountNeighborhoodTooltipTrendOnOpen, unmountNeighborhoodTooltipTrendOnClose } from './NeighborhoodTooltipMarketTrend';
+import { getMapInstanceRegistry } from '../../platform/geo/leaflet/MapInstanceRegistry';
 
 export interface MountLeafletLifecycleParams {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -44,6 +45,7 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
   let handleTooltipOpen: ((e: any) => void) | null = null;
   let handleTooltipClose: ((e: any) => void) | null = null;
   let handleMapActionClick: ((e: MouseEvent) => void) | null = null;
+  const registryContainerId = 'tehran-radar-primary-map';
 
   const handlePageShow = () => {
     if (!unmounted) mapInstanceRef.current?.invalidateSize?.();
@@ -71,6 +73,7 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
       maxBoundsViscosity: 0.8, inertia: true, inertiaDeceleration: 3000, wheelDebounceTime: 40, wheelPxPerZoomLevel: 120,
     });
     attachedMap = map;
+    getMapInstanceRegistry().register(registryContainerId, map);
     tileLayerRef.current = createLeafletBaseTileController({
       map, L, initialPreferredStyle: initialTileStyle, onSelectPreferredStyle,
     });
@@ -137,12 +140,30 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
       if (!Number.isNaN(hoodId) && action) onOpenModalQuick(hoodId, action);
     };
     attachedContainer?.addEventListener?.('click', handleMapActionClick);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', handleMapActionClick);
+    }
   };
 
   const attemptLeafletInit = (attempt: number) => {
     if (unmounted) return;
     if (typeof window !== 'undefined' && (window as any).L) { initMap(); return; }
-    (attempt === 0 ? loadLeaflet() : retryLoadLeaflet())
+    const ensureLocalOrLoaded = async () => {
+      if (typeof window !== 'undefined' && !(window as any).L && !params.loadLeaflet && !params.retryLoadLeaflet) {
+        try {
+          const localMod: any = await import('leaflet');
+          const resolvedL = localMod?.default || localMod;
+          if (resolvedL && typeof resolvedL.map === 'function') {
+            (window as any).L = resolvedL;
+            return resolvedL;
+          }
+        } catch {
+          // Fall back to loader
+        }
+      }
+      return attempt === 0 ? loadLeaflet() : retryLoadLeaflet();
+    };
+    ensureLocalOrLoaded()
       .then(() => { if (!unmounted) initMap(); })
       .catch((err) => {
         if (unmounted) return;
@@ -174,9 +195,11 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
       if (handleTooltipClose) map.off?.('tooltipclose', handleTooltipClose);
     }
     if (attachedContainer && handleMapActionClick) attachedContainer.removeEventListener?.('click', handleMapActionClick);
+    if (typeof document !== 'undefined' && handleMapActionClick) document.removeEventListener('click', handleMapActionClick);
     onTeardownLayers(map);
     tileLayerRef.current?.destroy();
     tileLayerRef.current = null;
+    getMapInstanceRegistry().unregister(registryContainerId);
     if (map) {
       map.remove?.();
       if (mapInstanceRef.current === map) mapInstanceRef.current = null;

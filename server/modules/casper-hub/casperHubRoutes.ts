@@ -220,7 +220,7 @@ export function registerCasperHubRoutes(
     if (!result.ok) {
       if (isFallbackEligible(result)) {
         const normalized = normalizeCasperHubNotePayload(validation.sanitized);
-        const resolvedKey = headerIdempotencyKey || deriveDeterministicNoteIdempotencyKey(normalized);
+        const resolvedKey = deriveDeterministicNoteIdempotencyKey(normalized, headerIdempotencyKey || undefined);
         const existing = localIdempotencyLedger.get(resolvedKey);
         if (existing) {
           res.status(200).json({

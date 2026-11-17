@@ -24,7 +24,8 @@ export function seedToUuidV5(canonical: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
-export function generateDeterministicNoteIdempotencyKey(payload: Record<string, unknown>): string {
+export function generateDeterministicNoteIdempotencyKey(payload: Record<string, unknown>, explicitKey?: string): string {
+  if (typeof explicitKey === 'string' && explicitKey.trim().length > 0) return explicitKey.trim();
   const title = normalizePersianOrthography(payload.title);
   const summary = normalizePersianOrthography(payload.summary);
   const scope = normalizePersianOrthography(payload.note_scope || 'global').toLowerCase();

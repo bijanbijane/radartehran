@@ -1,0 +1,34 @@
+@layer themes {
+  [data-apple-theme='dark'],
+  html.dark {
+    color-scheme: dark;
+    --color-bg-canvas: #0F1715;
+    --color-bg-surface: #15211E;
+    --color-bg-elevated: #1B2926;
+    --color-bg-muted: #20312D;
+    --color-text-primary: #EDF3F0;
+    --color-text-secondary: #C3D0CA;
+    --color-text-muted: #8FA19A;
+    --color-border-subtle: #29403B;
+    --color-border-strong: #39554E;
+    --color-focus: #3AA397;
+
+    --apple-bg-base: #0F1715;
+    --apple-surface: rgba(21, 33, 30, 0.92);
+    --apple-surface-elevated: rgba(27, 41, 38, 0.95);
+    --apple-surface-secondary: rgba(32, 49, 45, 0.9);
+    --apple-fill-tertiary: rgba(118, 118, 128, 0.24);
+    --apple-fill-quaternary: rgba(118, 118, 128, 0.18);
+    --apple-text-primary: #EDF3F0;
+    --apple-text-secondary: #C3D0CA;
+    --apple-text-tertiary: #8FA19A;
+    --apple-separator: rgba(237, 243, 240, 0.14);
+    --apple-border-hairline: rgba(255, 255, 255, 0.12);
+    --apple-accent-green: #2E8F83;
+    --apple-accent-blue: #3AA397;
+    --apple-accent-amber: #F59E0B;
+    --apple-accent-red: #EF4444;
+    --apple-shadow-floating: 0 12px 36px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+    --apple-shadow-sheet: 0 24px 60px -12px rgba(0, 0, 0, 0.72), 0 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+}

@@ -1,0 +1,12 @@
+@layer layouts {
+  .radar-map-viewport-lock {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .radar-scrollable-page {
+    min-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}

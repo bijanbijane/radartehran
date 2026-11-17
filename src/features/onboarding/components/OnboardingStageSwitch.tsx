@@ -1,56 +1,84 @@
-/** @file src/features/onboarding/components/OnboardingStageSwitch.tsx — Extracted Stage 34–46 Subpanel Router */
-import React from 'react';
+/** @file src/features/onboarding/components/OnboardingStageSwitch.tsx — Lazy-Loaded Stage 34–84 Subpanel Router */
+import React, { Suspense, lazy } from 'react';
 import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import type { OnboardingHelpStageTabId } from '../types/onboardingStageTabs';
-import { RadarMotionLabSubpanel } from './RadarMotionLabSubpanel';
-import { Stage34AccessibilitySubpanel } from './Stage34AccessibilitySubpanel';
-import { Stage36DataVisSubpanel } from './Stage36DataVisSubpanel';
-import { Stage37DataTrustSubpanel } from './Stage37DataTrustSubpanel';
-import { Stage38ComparisonSubpanel } from './Stage38ComparisonSubpanel';
-import { Stage39MonitoringAlertsSubpanel } from './Stage39MonitoringAlertsSubpanel';
-import { Stage40ReportsSubpanel } from './Stage40ReportsSubpanel';
-import { Stage41WorkspaceSubpanel } from './Stage41WorkspaceSubpanel';
-import { Stage42VerificationSubpanel } from './Stage42VerificationSubpanel';
-import { Stage43ProMarketplaceSubpanel } from './Stage43ProMarketplaceSubpanel';
-import { Stage44TransactionSubpanel } from './Stage44TransactionSubpanel';
-import { Stage45DeliverySubpanel } from './Stage45DeliverySubpanel';
-import { Stage46QualitySubpanel } from './Stage46QualitySubpanel';
-import { Stage47ProfessionalKnowledgeSubpanel } from './Stage47ProfessionalKnowledgeSubpanel';
-import { Stage48DecisionToolsSubpanel } from './Stage48DecisionToolsSubpanel';
-import { Stage49MarketMonitoringSubpanel } from './Stage49MarketMonitoringSubpanel';
-import { Stage50MarketReportingSubpanel } from './Stage50MarketReportingSubpanel';
-import { Stage51GeospatialIntelligenceSubpanel } from './Stage51GeospatialIntelligenceSubpanel';
-import { Stage52UrbanDataAtlasSubpanel } from './Stage52UrbanDataAtlasSubpanel';
-import { Stage53UrbanProjectsSubpanel } from './Stage53UrbanProjectsSubpanel';
-import { Stage54BuiltEnvironmentSubpanel } from './Stage54BuiltEnvironmentSubpanel';
-import { Stage55UrbanRegulationSubpanel } from './Stage55UrbanRegulationSubpanel';
-import { Stage56UrbanInfrastructureSubpanel } from './Stage56UrbanInfrastructureSubpanel';
-import { Stage57UrbanEnvironmentSubpanel } from './Stage57UrbanEnvironmentSubpanel';
-import { Stage58UrbanRiskSubpanel } from './Stage58UrbanRiskSubpanel';
-import { Stage59UrbanDemographicsSubpanel } from './Stage59UrbanDemographicsSubpanel';
-import { Stage60UrbanEconomySubpanel } from './Stage60UrbanEconomySubpanel';
-import { Stage61UrbanLandUseSubpanel } from './Stage61UrbanLandUseSubpanel';
-import { Stage63UrbanPublicRealmSubpanel } from './Stage63UrbanPublicRealmSubpanel';
-import { Stage64UrbanMobilitySubpanel } from './Stage64UrbanMobilitySubpanel';
-import { Stage65UrbanRiskResilienceSubpanel } from './Stage65UrbanRiskResilienceSubpanel';
-import { Stage66EnvironmentalSustainabilitySubpanel } from './Stage66EnvironmentalSustainabilitySubpanel';
-import { Stage67DemographicSocialSubpanel } from './Stage67DemographicSocialSubpanel';
-import { Stage68EconomicIntelligenceSubpanel } from './Stage68EconomicIntelligenceSubpanel';
-import { Stage69LandUseFunctionalSubpanel } from './Stage69LandUseFunctionalSubpanel';
-import { Stage70DemographicIntelligenceSubpanel } from './Stage70DemographicIntelligenceSubpanel';
-import { Stage71SpatialEquitySubpanel } from './Stage71SpatialEquitySubpanel';
-import { Stage72HousingAffordabilitySubpanel } from './Stage72HousingAffordabilitySubpanel';
-import { Stage73PopulationMobilitySubpanel } from './Stage73PopulationMobilitySubpanel';
-import { Stage74MarketEquilibriumSubpanel } from './Stage74MarketEquilibriumSubpanel';
-import { Stage75BuildingLifecycleSubpanel } from './Stage75BuildingLifecycleSubpanel';
-import { Stage77RentalMarketSubpanel } from './Stage77RentalMarketSubpanel';
-import { Stage78SalesLiquiditySubpanel } from './Stage78SalesLiquiditySubpanel';
-import { Stage79InvestmentOpportunitySubpanel } from './Stage79InvestmentOpportunitySubpanel';
-import { Stage80ConstructionEconomicsSubpanel } from './Stage80ConstructionEconomicsSubpanel';
-import { Stage81UrbanLandMarketSubpanel } from './Stage81UrbanLandMarketSubpanel';
-import { Stage82UrbanRegenerationSubpanel } from './Stage82UrbanRegenerationSubpanel';
-import { Stage83UrbanInvestmentSubpanel } from './Stage83UrbanInvestmentSubpanel';
-import { Stage84UrbanMacroeconomicsSubpanel } from './Stage84UrbanMacroeconomicsSubpanel';
+
+const Stage34AccessibilitySubpanel = lazy(() =>
+  import('./Stage34AccessibilitySubpanel').then((m) => ({ default: m.Stage34AccessibilitySubpanel })),
+);
+const RadarMotionLabSubpanel = lazy(() =>
+  import('./RadarMotionLabSubpanel').then((m) => ({ default: m.RadarMotionLabSubpanel })),
+);
+const Stage36DataVisSubpanel = lazy(() =>
+  import('./Stage36DataVisSubpanel').then((m) => ({ default: m.Stage36DataVisSubpanel })),
+);
+
+export interface LazyStageComponentEntry {
+  readonly id: OnboardingHelpStageTabId;
+  readonly Loader: React.LazyExoticComponent<React.ComponentType<Record<string, never>>>;
+}
+
+const LAZY_STAGE_COMPONENTS: Partial<
+  Record<OnboardingHelpStageTabId, React.LazyExoticComponent<React.ComponentType<Record<string, never>>>>
+> = {
+  stage37: lazy(() => import('./Stage37DataTrustSubpanel').then((m) => ({ default: m.Stage37DataTrustSubpanel }))),
+  stage38: lazy(() => import('./Stage38ComparisonSubpanel').then((m) => ({ default: m.Stage38ComparisonSubpanel }))),
+  stage39: lazy(() => import('./Stage39MonitoringAlertsSubpanel').then((m) => ({ default: m.Stage39MonitoringAlertsSubpanel }))),
+  stage40: lazy(() => import('./Stage40ReportsSubpanel').then((m) => ({ default: m.Stage40ReportsSubpanel }))),
+  stage41: lazy(() => import('./Stage41WorkspaceSubpanel').then((m) => ({ default: m.Stage41WorkspaceSubpanel }))),
+  stage42: lazy(() => import('./Stage42VerificationSubpanel').then((m) => ({ default: m.Stage42VerificationSubpanel }))),
+  stage43: lazy(() => import('./Stage43ProMarketplaceSubpanel').then((m) => ({ default: m.Stage43ProMarketplaceSubpanel }))),
+  stage44: lazy(() => import('./Stage44TransactionSubpanel').then((m) => ({ default: m.Stage44TransactionSubpanel }))),
+  stage45: lazy(() => import('./Stage45DeliverySubpanel').then((m) => ({ default: m.Stage45DeliverySubpanel }))),
+  stage46: lazy(() => import('./Stage46QualitySubpanel').then((m) => ({ default: m.Stage46QualitySubpanel }))),
+  stage47: lazy(() => import('./Stage47ProfessionalKnowledgeSubpanel').then((m) => ({ default: m.Stage47ProfessionalKnowledgeSubpanel }))),
+  stage48: lazy(() => import('./Stage48DecisionToolsSubpanel').then((m) => ({ default: m.Stage48DecisionToolsSubpanel }))),
+  stage49: lazy(() => import('./Stage49MarketMonitoringSubpanel').then((m) => ({ default: m.Stage49MarketMonitoringSubpanel }))),
+  stage50: lazy(() => import('./Stage50MarketReportingSubpanel').then((m) => ({ default: m.Stage50MarketReportingSubpanel }))),
+  stage51: lazy(() => import('./Stage51GeospatialIntelligenceSubpanel').then((m) => ({ default: m.Stage51GeospatialIntelligenceSubpanel }))),
+  stage52: lazy(() => import('./Stage52UrbanDataAtlasSubpanel').then((m) => ({ default: m.Stage52UrbanDataAtlasSubpanel }))),
+  stage53: lazy(() => import('./Stage53UrbanProjectsSubpanel').then((m) => ({ default: m.Stage53UrbanProjectsSubpanel }))),
+  stage54: lazy(() => import('./Stage54BuiltEnvironmentSubpanel').then((m) => ({ default: m.Stage54BuiltEnvironmentSubpanel }))),
+  stage55: lazy(() => import('./Stage55UrbanRegulationSubpanel').then((m) => ({ default: m.Stage55UrbanRegulationSubpanel }))),
+  stage56: lazy(() => import('./Stage56UrbanInfrastructureSubpanel').then((m) => ({ default: m.Stage56UrbanInfrastructureSubpanel }))),
+  stage57: lazy(() => import('./Stage57UrbanEnvironmentSubpanel').then((m) => ({ default: m.Stage57UrbanEnvironmentSubpanel }))),
+  stage58: lazy(() => import('./Stage58UrbanRiskSubpanel').then((m) => ({ default: m.Stage58UrbanRiskSubpanel }))),
+  stage59: lazy(() => import('./Stage59UrbanDemographicsSubpanel').then((m) => ({ default: m.Stage59UrbanDemographicsSubpanel }))),
+  stage60: lazy(() => import('./Stage60UrbanEconomySubpanel').then((m) => ({ default: m.Stage60UrbanEconomySubpanel }))),
+  stage61: lazy(() => import('./Stage61UrbanLandUseSubpanel').then((m) => ({ default: m.Stage61UrbanLandUseSubpanel }))),
+  stage63: lazy(() => import('./Stage63UrbanPublicRealmSubpanel').then((m) => ({ default: m.Stage63UrbanPublicRealmSubpanel }))),
+  stage64: lazy(() => import('./Stage64UrbanMobilitySubpanel').then((m) => ({ default: m.Stage64UrbanMobilitySubpanel }))),
+  stage65: lazy(() => import('./Stage65UrbanRiskResilienceSubpanel').then((m) => ({ default: m.Stage65UrbanRiskResilienceSubpanel }))),
+  stage66: lazy(() => import('./Stage66EnvironmentalSustainabilitySubpanel').then((m) => ({ default: m.Stage66EnvironmentalSustainabilitySubpanel }))),
+  stage67: lazy(() => import('./Stage67DemographicSocialSubpanel').then((m) => ({ default: m.Stage67DemographicSocialSubpanel }))),
+  stage68: lazy(() => import('./Stage68EconomicIntelligenceSubpanel').then((m) => ({ default: m.Stage68EconomicIntelligenceSubpanel }))),
+  stage69: lazy(() => import('./Stage69LandUseFunctionalSubpanel').then((m) => ({ default: m.Stage69LandUseFunctionalSubpanel }))),
+  stage70: lazy(() => import('./Stage70DemographicIntelligenceSubpanel').then((m) => ({ default: m.Stage70DemographicIntelligenceSubpanel }))),
+  stage71: lazy(() => import('./Stage71SpatialEquitySubpanel').then((m) => ({ default: m.Stage71SpatialEquitySubpanel }))),
+  stage72: lazy(() => import('./Stage72HousingAffordabilitySubpanel').then((m) => ({ default: m.Stage72HousingAffordabilitySubpanel }))),
+  stage73: lazy(() => import('./Stage73PopulationMobilitySubpanel').then((m) => ({ default: m.Stage73PopulationMobilitySubpanel }))),
+  stage74: lazy(() => import('./Stage74MarketEquilibriumSubpanel').then((m) => ({ default: m.Stage74MarketEquilibriumSubpanel }))),
+  stage75: lazy(() => import('./Stage75BuildingLifecycleSubpanel').then((m) => ({ default: m.Stage75BuildingLifecycleSubpanel }))),
+  stage77: lazy(() => import('./Stage77RentalMarketSubpanel').then((m) => ({ default: m.Stage77RentalMarketSubpanel }))),
+  stage78: lazy(() => import('./Stage78SalesLiquiditySubpanel').then((m) => ({ default: m.Stage78SalesLiquiditySubpanel }))),
+  stage79: lazy(() => import('./Stage79InvestmentOpportunitySubpanel').then((m) => ({ default: m.Stage79InvestmentOpportunitySubpanel }))),
+  stage80: lazy(() => import('./Stage80ConstructionEconomicsSubpanel').then((m) => ({ default: m.Stage80ConstructionEconomicsSubpanel }))),
+  stage81: lazy(() => import('./Stage81UrbanLandMarketSubpanel').then((m) => ({ default: m.Stage81UrbanLandMarketSubpanel }))),
+  stage82: lazy(() => import('./Stage82UrbanRegenerationSubpanel').then((m) => ({ default: m.Stage82UrbanRegenerationSubpanel }))),
+  stage83: lazy(() => import('./Stage83UrbanInvestmentSubpanel').then((m) => ({ default: m.Stage83UrbanInvestmentSubpanel }))),
+  stage84: lazy(() => import('./Stage84UrbanMacroeconomicsSubpanel').then((m) => ({ default: m.Stage84UrbanMacroeconomicsSubpanel }))),
+};
+
+const StageLoadingSkeleton: React.FC = () => (
+  <div
+    role="status"
+    aria-live="polite"
+    data-testid="onboarding-stage-suspense-fallback"
+    className="p-6 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 bg-[#F6F8F6] dark:bg-slate-800/50 text-xs text-[#586760] dark:text-slate-300 animate-pulse"
+  >
+    در حال بارگذاری ماژول تخصصی مرحله انتخاب‌شده...
+  </div>
+);
 
 export const OnboardingStageSwitch: React.FC<{
   stageTab: OnboardingHelpStageTabId;
@@ -68,65 +96,23 @@ export const OnboardingStageSwitch: React.FC<{
   reducedMotion,
   onToggleReducedMotion,
   onAnnounceStatus,
-}) => (
-  <>
-    {stageTab === 'stage34' && (
-      <Stage34AccessibilitySubpanel
-        evaluatedNeighborhoods={evaluatedNeighborhoods}
-        wcagTextSpacing={wcagTextSpacing}
-        onToggleWcagTextSpacing={onToggleWcagTextSpacing}
-        reducedMotion={reducedMotion}
-        onToggleReducedMotion={onToggleReducedMotion}
-        onAnnounceStatus={onAnnounceStatus}
-      />
-    )}
-    {stageTab === 'stage35' && <RadarMotionLabSubpanel onAnnounceStatus={onAnnounceStatus} />}
-    {stageTab === 'stage36' && <Stage36DataVisSubpanel onAnnounceStatus={onAnnounceStatus} />}
-    {stageTab === 'stage37' && <Stage37DataTrustSubpanel />}
-    {stageTab === 'stage38' && <Stage38ComparisonSubpanel />}
-    {stageTab === 'stage39' && <Stage39MonitoringAlertsSubpanel />}
-    {stageTab === 'stage40' && <Stage40ReportsSubpanel />}
-    {stageTab === 'stage41' && <Stage41WorkspaceSubpanel />}
-    {stageTab === 'stage42' && <Stage42VerificationSubpanel />}
-    {stageTab === 'stage43' && <Stage43ProMarketplaceSubpanel />}
-    {stageTab === 'stage44' && <Stage44TransactionSubpanel />}
-    {stageTab === 'stage45' && <Stage45DeliverySubpanel />}
-    {stageTab === 'stage46' && <Stage46QualitySubpanel />}
-    {stageTab === 'stage47' && <Stage47ProfessionalKnowledgeSubpanel />}
-    {stageTab === 'stage48' && <Stage48DecisionToolsSubpanel />}
-    {stageTab === 'stage49' && <Stage49MarketMonitoringSubpanel />}
-    {stageTab === 'stage50' && <Stage50MarketReportingSubpanel />}
-    {stageTab === 'stage51' && <Stage51GeospatialIntelligenceSubpanel />}
-    {stageTab === 'stage52' && <Stage52UrbanDataAtlasSubpanel />}
-    {stageTab === 'stage53' && <Stage53UrbanProjectsSubpanel />}
-    {stageTab === 'stage54' && <Stage54BuiltEnvironmentSubpanel />}
-    {stageTab === 'stage55' && <Stage55UrbanRegulationSubpanel />}
-    {stageTab === 'stage56' && <Stage56UrbanInfrastructureSubpanel />}
-    {stageTab === 'stage57' && <Stage57UrbanEnvironmentSubpanel />}
-    {stageTab === 'stage58' && <Stage58UrbanRiskSubpanel />}
-    {stageTab === 'stage59' && <Stage59UrbanDemographicsSubpanel />}
-    {stageTab === 'stage60' && <Stage60UrbanEconomySubpanel />}
-    {stageTab === 'stage61' && <Stage61UrbanLandUseSubpanel />}
-    {stageTab === 'stage63' && <Stage63UrbanPublicRealmSubpanel />}
-    {stageTab === 'stage64' && <Stage64UrbanMobilitySubpanel />}
-    {stageTab === 'stage65' && <Stage65UrbanRiskResilienceSubpanel />}
-    {stageTab === 'stage66' && <Stage66EnvironmentalSustainabilitySubpanel />}
-    {stageTab === 'stage67' && <Stage67DemographicSocialSubpanel />}
-    {stageTab === 'stage68' && <Stage68EconomicIntelligenceSubpanel />}
-    {stageTab === 'stage69' && <Stage69LandUseFunctionalSubpanel />}
-    {stageTab === 'stage70' && <Stage70DemographicIntelligenceSubpanel />}
-    {stageTab === 'stage71' && <Stage71SpatialEquitySubpanel />}
-    {stageTab === 'stage72' && <Stage72HousingAffordabilitySubpanel />}
-    {stageTab === 'stage73' && <Stage73PopulationMobilitySubpanel />}
-    {stageTab === 'stage74' && <Stage74MarketEquilibriumSubpanel />}
-    {stageTab === 'stage75' && <Stage75BuildingLifecycleSubpanel />}
-    {stageTab === 'stage77' && <Stage77RentalMarketSubpanel />}
-    {stageTab === 'stage78' && <Stage78SalesLiquiditySubpanel />}
-    {stageTab === 'stage79' && <Stage79InvestmentOpportunitySubpanel />}
-    {stageTab === 'stage80' && <Stage80ConstructionEconomicsSubpanel />}
-    {stageTab === 'stage81' && <Stage81UrbanLandMarketSubpanel />}
-    {stageTab === 'stage82' && <Stage82UrbanRegenerationSubpanel />}
-    {stageTab === 'stage83' && <Stage83UrbanInvestmentSubpanel />}
-    {stageTab === 'stage84' && <Stage84UrbanMacroeconomicsSubpanel />}
-  </>
-);
+}) => {
+  const LazyTarget = LAZY_STAGE_COMPONENTS[stageTab];
+  return (
+    <Suspense fallback={<StageLoadingSkeleton />}>
+      {stageTab === 'stage34' && (
+        <Stage34AccessibilitySubpanel
+          evaluatedNeighborhoods={evaluatedNeighborhoods}
+          wcagTextSpacing={wcagTextSpacing}
+          onToggleWcagTextSpacing={onToggleWcagTextSpacing}
+          reducedMotion={reducedMotion}
+          onToggleReducedMotion={onToggleReducedMotion}
+          onAnnounceStatus={onAnnounceStatus}
+        />
+      )}
+      {stageTab === 'stage35' && <RadarMotionLabSubpanel onAnnounceStatus={onAnnounceStatus} />}
+      {stageTab === 'stage36' && <Stage36DataVisSubpanel onAnnounceStatus={onAnnounceStatus} />}
+      {LazyTarget ? <LazyTarget /> : null}
+    </Suspense>
+  );
+};

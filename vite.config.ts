@@ -113,10 +113,14 @@ export default defineConfig(({ mode }) => {
               return 'engine-decision-cells';
             }
             if (id.includes('src/features/onboarding/components/')) {
-              if (/Stage[34]\d/.test(id)) return 'onboarding-ui-34-49';
-              if (/Stage5\d/.test(id)) return 'onboarding-ui-50-59';
+              if (/Stage3\d/.test(id)) return 'onboarding-ui-34-39';
+              if (/Stage4[0-4]/.test(id)) return 'onboarding-ui-40-44';
+              if (/Stage4[5-9]/.test(id)) return 'onboarding-ui-45-49';
+              if (/Stage5[0-4]/.test(id)) return 'onboarding-ui-50-54';
+              if (/Stage5[5-9]/.test(id)) return 'onboarding-ui-55-59';
               if (/Stage6\d/.test(id)) return 'onboarding-ui-60-69';
-              if (/Stage[78]\d/.test(id)) return 'onboarding-ui-70-84';
+              if (/Stage7\d/.test(id)) return 'onboarding-ui-70-79';
+              if (/Stage8\d/.test(id)) return 'onboarding-ui-80-84';
               return 'onboarding-ui-core';
             }
             if (id.includes('src/features/onboarding/services/')) {
@@ -137,43 +141,48 @@ export default defineConfig(({ mode }) => {
             if (id.includes('src/features/home/')) {
               return 'feature-home';
             }
-            if (
-              id.includes('src/features/market/') ||
-              id.includes('src/features/valuation/') ||
-              id.includes('src/features/admin/')
-            ) {
-              return 'feature-market-valuation';
+            if (id.includes('src/features/market/')) {
+              return 'feature-market';
+            }
+            if (id.includes('src/features/valuation/')) {
+              return 'feature-valuation';
+            }
+            if (id.includes('src/features/admin/')) {
+              return 'feature-admin';
+            }
+            if (id.includes('src/features/community/')) {
+              return 'feature-community';
+            }
+            if (id.includes('src/features/services/') || id.includes('src/features/communications/')) {
+              return 'feature-services';
+            }
+            if (id.includes('src/features/account/')) {
+              return 'feature-account';
+            }
+            if (id.includes('src/features/search/') || id.includes('src/features/discovery/')) {
+              return 'feature-search-discovery';
+            }
+            if (id.includes('src/features/knowledge/')) {
+              return 'feature-knowledge';
+            }
+            if (id.includes('src/features/data-governance/') || id.includes('src/features/analytics/')) {
+              return 'feature-analytics-governance';
+            }
+            if (id.includes('src/components/stage2/')) {
+              return 'ui-stage2';
             }
             if (
-              id.includes('src/features/community/') ||
-              id.includes('src/features/services/') ||
-              id.includes('src/features/communications/')
-            ) {
-              return 'feature-community-services';
-            }
-            if (
-              id.includes('src/features/account/') ||
-              id.includes('src/features/search/') ||
-              id.includes('src/features/knowledge/') ||
-              id.includes('src/features/data-governance/')
-            ) {
-              return 'feature-account-search';
-            }
-            if (
-              id.includes('src/components/stage2/') ||
               id.includes('src/components/SuperModules') ||
               id.includes('src/components/EnterpriseAssetFund') ||
               id.includes('src/components/AgencyCrm')
             ) {
-              return 'ui-stage2-supermodules';
+              return 'ui-supermodules';
             }
-            if (
-              id.includes('src/components/inspector/') ||
-              id.includes('src/components/casper/') ||
-              id.includes('src/components/modals/') ||
-              id.includes('src/components/NeighborhoodInspector')
-            ) {
-              return 'ui-inspector-modals';
+            if (id.includes('src/components/inspector/')) {
+              return 'ui-inspector';
+            }
+            if (id.includes('src/components/casper/') || id.includes('src/components/modals/')) {
+              return 'ui-modals-casper';
             }
             return undefined;
           },

@@ -1,0 +1,17 @@
+@layer utilities {
+  .tabular-nums,
+  [data-tabular-num] {
+    font-variant-numeric: tabular-nums lining-nums;
+    -webkit-font-feature-settings: "tnum" 1, "lnum" 1;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

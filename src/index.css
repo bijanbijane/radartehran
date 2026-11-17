@@ -1,173 +1,51 @@
 @import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
-@import "./styles/tokens.css";
+@import "./styles/index.css";
 
-/**
- * Apple iOS Settings & macOS System Settings Design System
- * Clean grouped neutral canvas (#F2F2F7 / #F5F5F7), inset white cards (#FFFFFF),
- * subtle hairline separators, native-style segmented controls, and WCAG AA focus rings.
- */
-@layer base {
-  :root {
-    --radar-bg-primary: var(--color-canvas);
-    --radar-surface: var(--color-surface);
-    --radar-text-primary: var(--color-text-primary);
-    --radar-text-muted: var(--color-text-muted);
-    --radar-border: var(--color-border-subtle);
-    --radar-brand-emerald: var(--color-brand-primary);
+@custom-variant dark (&:where(.dark, .dark *, [data-apple-theme="dark"], [data-apple-theme="dark"] *));
 
-    /* Light Mode Neutral & Brand Tokens aligned with RT-UI-COLOR-001 */
-    --apple-bg-grouped: var(--color-canvas);
-    --apple-bg-window: var(--color-surface-subtle);
-    --apple-surface: var(--color-surface);
-    --apple-surface-secondary: var(--color-surface-subtle);
-    --apple-surface-elevated: rgba(255, 255, 255, 0.9);
-    --apple-inspector-bg: rgba(246, 248, 246, 0.95);
-    --apple-fill-tertiary: rgba(24, 37, 34, 0.08);
-    --apple-fill-quaternary: rgba(24, 37, 34, 0.04);
-    --apple-separator: var(--color-border-subtle);
-    --apple-border: var(--color-border-strong);
-    --apple-text-primary: var(--color-text-primary);
-    --apple-text-secondary: var(--color-text-secondary);
-    --apple-text-tertiary: var(--color-text-muted);
-    --apple-accent-blue: var(--color-brand-primary);
-    --apple-accent-blue-hover: var(--color-brand-hover);
-    --apple-accent-emerald: #176b4c;
-    --apple-radius-control: var(--radius-input);
-    --apple-radius-group: var(--radius-card);
-    --apple-radius-sheet: var(--radius-dialog);
-    --apple-shadow-toolbar: var(--shadow-elevation-2);
-    --apple-shadow-sheet: var(--shadow-elevation-3);
-    --apple-shadow-card: var(--shadow-elevation-1);
-  }
-
-  [data-apple-theme='dark'] {
-    --apple-bg-grouped: #090d16;
-    --apple-bg-window: #0f172a;
-    --apple-surface: #0f172a;
-    --apple-surface-secondary: #1e293b;
-    --apple-surface-elevated: rgba(15, 23, 42, 0.88);
-    --apple-inspector-bg: rgba(11, 15, 23, 0.94);
-    --apple-fill-tertiary: rgba(148, 163, 184, 0.16);
-    --apple-fill-quaternary: rgba(148, 163, 184, 0.08);
-    --apple-separator: rgba(255, 255, 255, 0.08);
-    --apple-border: rgba(255, 255, 255, 0.12);
-    --apple-text-primary: #f8fafc;
-    --apple-text-secondary: #e2e8f0;
-    --apple-text-tertiary: #94a3b8;
-    --apple-accent-blue: #0a84ff;
-    --apple-accent-blue-hover: #409cff;
-    --apple-accent-emerald: #30d158;
-    --apple-shadow-toolbar: 0 10px 32px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    --apple-shadow-sheet: 0 28px 64px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    --apple-shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.07);
-  }
-
-  html,
-  body {
-    font-family: var(--font-primary);
-    font-weight: var(--weight-regular);
-    font-size: var(--type-body);
-    line-height: var(--leading-body);
-    background-color: var(--apple-bg-grouped);
-    color: var(--apple-text-primary);
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
+@theme {
+  --font-sans: "Vazirmatn", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Vazirmatn", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* RT-UI-TYPE-001 Functional, Editorial & Bidirectional Typography Classes */
-.ui-label { font-size: var(--type-body-small); font-weight: var(--weight-medium); line-height: var(--leading-ui); }
-.ui-input { font-size: var(--type-body); font-weight: var(--weight-regular); line-height: var(--leading-ui); }
-.data-value { font-size: var(--type-h2); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; line-height: 1.4; }
-.map-label { font-size: var(--type-micro); font-weight: var(--weight-medium); line-height: 1.5; }
-.caption { font-size: var(--type-caption); font-weight: var(--weight-regular); line-height: var(--leading-caption); }
-.editorial-prose { max-width: var(--measure-editorial); font-size: var(--type-body); line-height: var(--leading-body); }
-.code, .bidi-ltr-isolate { direction: ltr; unicode-bidi: isolate; font-family: var(--font-mono); }
-
-/* RT-UI-SPACING-001 Semantic Geometry Primitives */
-.property-card {
-  border: var(--border-width) solid var(--color-border-subtle);
-  border-radius: var(--radius-card);
-  padding: var(--space-4);
-}
-.primary-button {
-  min-height: var(--height-button-md);
-  border-radius: var(--radius-button);
-  padding-inline: var(--space-4);
-}
-.map-context-panel {
-  width: var(--map-panel-width);
-  border-radius: var(--radius-lg);
+.apple-segmented {
+  background-color: var(--apple-fill-tertiary);
+  padding: 2px;
+  border-radius: 9px;
 }
 
-/* Apple Settings Reusable Surface Primitives */
-.apple-vibrancy-bar {
-  background-color: var(--apple-surface-elevated);
-  backdrop-filter: saturate(190%) blur(24px);
-  -webkit-backdrop-filter: saturate(190%) blur(24px);
-  border: 0.5px solid var(--apple-border);
-  box-shadow: var(--apple-shadow-toolbar);
+.apple-segmented-pill-active {
+  background-color: var(--apple-surface);
+  color: var(--apple-text-primary);
+  border-radius: 7px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
 }
 
-.apple-inspector-panel {
-  background-color: var(--apple-inspector-bg);
-  backdrop-filter: saturate(190%) blur(28px);
-  -webkit-backdrop-filter: saturate(190%) blur(28px);
-  border: 0.5px solid var(--apple-border);
-  box-shadow: var(--apple-shadow-sheet);
+.apple-primary-btn {
+  background: linear-gradient(180deg, #1F7A70 0%, #176B63 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(23, 107, 99, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
-/* iOS Spring & Slide-In Fluid Transitions */
-@keyframes iosSlideInRight {
-  0% {
-    transform: translate3d(28px, 0, 0);
-    opacity: 0;
-  }
-  100% {
-    transform: translate3d(0, 0, 0);
-    opacity: 1;
-  }
+.apple-primary-btn:hover {
+  background: linear-gradient(180deg, #176B63 0%, #14534E 100%);
 }
 
-.ios-inspector-enter {
-  animation: iosSlideInRight 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes iosItemFadeIn {
+@keyframes iosSpringSlideUp {
   0% {
     opacity: 0;
-    transform: translate3d(0, 6px, 0);
+    transform: translateY(14px) scale(0.985);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: translateY(0) scale(1);
   }
 }
 
-.ios-stagger-item {
-  animation: iosItemFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* Harmonic Map Canvas Tonal Integration */
-.leaflet-tile-pane {
-  filter: saturate(0.88) contrast(1.02);
-  transition: filter 0.3s ease;
-}
-[data-apple-theme='dark'] .leaflet-tile-pane {
-  filter: brightness(0.92) contrast(1.04) saturate(0.85);
-}
-
-@keyframes modalScaleEnter {
+@keyframes iosSheetPopup {
   0% {
     opacity: 0;
-    transform: scale(0.97) translateY(4px);
+    transform: scale(0.96) translateY(8px);
   }
   100% {
     opacity: 1;
@@ -175,267 +53,217 @@
   }
 }
 
-.apple-window-sheet {
-  background-color: var(--apple-bg-grouped);
-  border: 0.5px solid var(--apple-border);
-  border-radius: var(--apple-radius-sheet);
-  box-shadow: var(--apple-shadow-sheet);
-  animation: modalScaleEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+.ios-sheet-enter {
+  animation: iosSheetPopup 0.24s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
 }
 
-.apple-grouped-card {
-  background-color: var(--apple-surface);
-  border: 0.5px solid var(--apple-separator);
-  border-radius: var(--apple-radius-group);
-  box-shadow: var(--apple-shadow-card);
+.ios-inspector-enter {
+  animation: iosSpringSlideUp 0.28s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
 }
 
-.apple-segmented {
-  background-color: var(--apple-fill-tertiary);
-  padding: 2.5px;
-  border-radius: var(--apple-radius-control);
-}
-
-.apple-segmented-pill-active {
-  background-color: var(--apple-surface);
-  color: var(--apple-accent-blue);
-  border-radius: 7px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
-}
-
-[data-apple-theme='dark'] .apple-segmented-pill-active {
-  background-color: #3a3a3c;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 0.5px rgba(255, 255, 255, 0.14);
-}
-
-.apple-primary-btn {
-  background-color: var(--color-brand-primary);
-  color: #ffffff !important;
-  border: 1px solid rgba(16, 59, 56, 0.25);
-  box-shadow: 0 1px 3px rgba(16, 59, 56, 0.2);
-}
-
-.apple-primary-btn:hover {
-  background-color: var(--color-brand-hover);
-}
-
-/* iOS Settings Squircle Icon Badge */
-.ios-squircle-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), inset 0 0.5px 0 rgba(255, 255, 255, 0.35);
-}
-
-/* macOS Window Traffic Lights */
-.macos-traffic-dot {
-  width: 11px;
-  height: 11px;
+.ios-status-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 9999px;
   display: inline-block;
   box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18);
 }
 
-/* Dark Theme Surface Overrides for Tailwind Utility Classes inside [data-apple-theme='dark'] */
-[data-apple-theme='dark'] .apple-inspector-panel.text-slate-900,
-[data-apple-theme='dark'] .apple-inspector-panel .text-slate-900,
-[data-apple-theme='dark'] .apple-vibrancy-bar.text-slate-900,
-[data-apple-theme='dark'] .apple-vibrancy-bar .text-slate-900,
-[data-apple-theme='dark'] .apple-window-sheet.text-slate-900,
-[data-apple-theme='dark'] .apple-window-sheet .text-slate-900,
-[data-apple-theme='dark'] .apple-grouped-card.text-slate-900,
-[data-apple-theme='dark'] .apple-grouped-card .text-slate-900 {
-  color: #f5f5f7 !important;
+/* High-specificity Dark Theme Surface Rules (Zero !important needed) */
+html[data-apple-theme='dark'] body .apple-inspector-panel.text-slate-900,
+html[data-apple-theme='dark'] body .apple-inspector-panel .text-slate-900,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar.text-slate-900,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .text-slate-900,
+html[data-apple-theme='dark'] body .apple-window-sheet.text-slate-900,
+html[data-apple-theme='dark'] body .apple-window-sheet .text-slate-900,
+html[data-apple-theme='dark'] body .apple-grouped-card.text-slate-900,
+html[data-apple-theme='dark'] body .apple-grouped-card .text-slate-900 {
+  color: #f5f5f7;
 }
 
-[data-apple-theme='dark'] .apple-inspector-panel.text-slate-800,
-[data-apple-theme='dark'] .apple-inspector-panel.text-slate-700,
-[data-apple-theme='dark'] .apple-inspector-panel .text-slate-800,
-[data-apple-theme='dark'] .apple-inspector-panel .text-slate-700,
-[data-apple-theme='dark'] .apple-vibrancy-bar.text-slate-800,
-[data-apple-theme='dark'] .apple-vibrancy-bar.text-slate-700,
-[data-apple-theme='dark'] .apple-vibrancy-bar .text-slate-800,
-[data-apple-theme='dark'] .apple-vibrancy-bar .text-slate-700,
-[data-apple-theme='dark'] .apple-window-sheet.text-slate-800,
-[data-apple-theme='dark'] .apple-window-sheet.text-slate-700,
-[data-apple-theme='dark'] .apple-window-sheet .text-slate-800,
-[data-apple-theme='dark'] .apple-window-sheet .text-slate-700,
-[data-apple-theme='dark'] .apple-grouped-card.text-slate-800,
-[data-apple-theme='dark'] .apple-grouped-card.text-slate-700,
-[data-apple-theme='dark'] .apple-grouped-card .text-slate-800,
-[data-apple-theme='dark'] .apple-grouped-card .text-slate-700 {
-  color: #e5e5ea !important;
+html[data-apple-theme='dark'] body .apple-inspector-panel.text-slate-800,
+html[data-apple-theme='dark'] body .apple-inspector-panel.text-slate-700,
+html[data-apple-theme='dark'] body .apple-inspector-panel .text-slate-800,
+html[data-apple-theme='dark'] body .apple-inspector-panel .text-slate-700,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar.text-slate-800,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar.text-slate-700,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .text-slate-800,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .text-slate-700,
+html[data-apple-theme='dark'] body .apple-window-sheet.text-slate-800,
+html[data-apple-theme='dark'] body .apple-window-sheet.text-slate-700,
+html[data-apple-theme='dark'] body .apple-window-sheet .text-slate-800,
+html[data-apple-theme='dark'] body .apple-window-sheet .text-slate-700,
+html[data-apple-theme='dark'] body .apple-grouped-card.text-slate-800,
+html[data-apple-theme='dark'] body .apple-grouped-card.text-slate-700,
+html[data-apple-theme='dark'] body .apple-grouped-card .text-slate-800,
+html[data-apple-theme='dark'] body .apple-grouped-card .text-slate-700 {
+  color: #e5e5ea;
 }
 
-[data-apple-theme='dark'] .apple-vibrancy-bar:hover {
-  background-color: rgba(44, 44, 46, 0.95) !important;
+html[data-apple-theme='dark'] body .apple-vibrancy-bar:hover {
+  background-color: rgba(44, 44, 46, 0.95);
 }
 
-[data-apple-theme='dark'] .apple-inspector-panel .text-slate-600,
-[data-apple-theme='dark'] .apple-inspector-panel .text-slate-500,
-[data-apple-theme='dark'] .apple-vibrancy-bar .text-slate-600,
-[data-apple-theme='dark'] .apple-vibrancy-bar .text-slate-500,
-[data-apple-theme='dark'] .apple-window-sheet .text-slate-600,
-[data-apple-theme='dark'] .apple-window-sheet .text-slate-500,
-[data-apple-theme='dark'] .apple-grouped-card .text-slate-600,
-[data-apple-theme='dark'] .apple-grouped-card .text-slate-500 {
-  color: #98989d !important;
+html[data-apple-theme='dark'] body .apple-inspector-panel .text-slate-600,
+html[data-apple-theme='dark'] body .apple-inspector-panel .text-slate-500,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .text-slate-600,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .text-slate-500,
+html[data-apple-theme='dark'] body .apple-window-sheet .text-slate-600,
+html[data-apple-theme='dark'] body .apple-window-sheet .text-slate-500,
+html[data-apple-theme='dark'] body .apple-grouped-card .text-slate-600,
+html[data-apple-theme='dark'] body .apple-grouped-card .text-slate-500 {
+  color: #98989d;
 }
 
-[data-apple-theme='dark'] .apple-inspector-panel .bg-white,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-white\/80,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-white\/85,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-white\/90,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-white\/95,
-[data-apple-theme='dark'] .apple-vibrancy-bar .bg-white,
-[data-apple-theme='dark'] .apple-vibrancy-bar .bg-white\/90,
-[data-apple-theme='dark'] .apple-window-sheet .bg-white,
-[data-apple-theme='dark'] .apple-window-sheet .bg-white\/80,
-[data-apple-theme='dark'] .apple-window-sheet .bg-white\/85,
-[data-apple-theme='dark'] .apple-window-sheet .bg-white\/90,
-[data-apple-theme='dark'] .apple-window-sheet .bg-white\/95,
-[data-apple-theme='dark'] .apple-grouped-card .bg-white,
-[data-apple-theme='dark'] .apple-grouped-card .bg-white\/80 {
-  background-color: #2c2c2e !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: #f5f5f7 !important;
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-white,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-white\/80,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-white\/85,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-white\/90,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-white\/95,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .bg-white,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .bg-white\/90,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-white,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-white\/80,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-white\/85,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-white\/90,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-white\/95,
+html[data-apple-theme='dark'] body .apple-grouped-card .bg-white,
+html[data-apple-theme='dark'] body .apple-grouped-card .bg-white\/80 {
+  background-color: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
 }
 
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-50,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-50\/70,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-50\/80,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-50\/90,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-100,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-100\/80,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-100\/90,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-200,
-[data-apple-theme='dark'] .apple-inspector-panel .bg-slate-200\/70,
-[data-apple-theme='dark'] .apple-vibrancy-bar .bg-slate-100\/90,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-50,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-50\/70,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-50\/80,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-50\/90,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-100,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-100\/80,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-100\/90,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-200,
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-200\/70 {
-  background-color: #1c1c1e !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #e5e5ea !important;
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-50,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-50\/70,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-50\/80,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-50\/90,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-100,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-100\/80,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-100\/90,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-200,
+html[data-apple-theme='dark'] body .apple-inspector-panel .bg-slate-200\/70,
+html[data-apple-theme='dark'] body .apple-vibrancy-bar .bg-slate-100\/90,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-50,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-50\/70,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-50\/80,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-50\/90,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-100,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-100\/80,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-100\/90,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-200,
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-200\/70 {
+  background-color: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e5e5ea;
 }
 
-[data-apple-theme='dark'] .apple-window-sheet .bg-slate-900:not(.dark\:bg-white) {
-  background-color: #3a3a3c !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  color: #ffffff !important;
+html[data-apple-theme='dark'] body .apple-window-sheet .bg-slate-900:not(.dark\:bg-white) {
+  background-color: #3a3a3c;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
 
-[data-apple-theme='dark'] .via-white,
-[data-apple-theme='dark'] .from-slate-50\/80 {
-  background-image: none !important;
-  background-color: #2c2c2e !important;
+html[data-apple-theme='dark'] body .via-white,
+html[data-apple-theme='dark'] body .from-slate-50\/80 {
+  background-image: none;
+  background-color: #2c2c2e;
 }
 
-[data-apple-theme='dark'] .bg-emerald-50,
-[data-apple-theme='dark'] .bg-emerald-50\/60,
-[data-apple-theme='dark'] .bg-emerald-50\/70,
-[data-apple-theme='dark'] .bg-emerald-50\/80,
-[data-apple-theme='dark'] .bg-emerald-50\/90,
-[data-apple-theme='dark'] .bg-emerald-100 {
-  background-color: rgba(6, 78, 59, 0.36) !important;
-  border-color: rgba(16, 185, 129, 0.38) !important;
-  color: #ecfdf5 !important;
+html[data-apple-theme='dark'] body .bg-emerald-50,
+html[data-apple-theme='dark'] body .bg-emerald-50\/60,
+html[data-apple-theme='dark'] body .bg-emerald-50\/70,
+html[data-apple-theme='dark'] body .bg-emerald-50\/80,
+html[data-apple-theme='dark'] body .bg-emerald-50\/90,
+html[data-apple-theme='dark'] body .bg-emerald-100 {
+  background-color: rgba(6, 78, 59, 0.36);
+  border-color: rgba(16, 185, 129, 0.38);
+  color: #ecfdf5;
 }
 
-[data-apple-theme='dark'] .bg-amber-50,
-[data-apple-theme='dark'] .bg-amber-50\/50,
-[data-apple-theme='dark'] .bg-amber-50\/75,
-[data-apple-theme='dark'] .bg-amber-50\/90,
-[data-apple-theme='dark'] .bg-amber-100,
-[data-apple-theme='dark'] .bg-amber-200,
-[data-apple-theme='dark'] .bg-amber-200\/80 {
-  background-color: rgba(120, 53, 15, 0.38) !important;
-  border-color: rgba(245, 158, 11, 0.42) !important;
-  color: #fffbeb !important;
+html[data-apple-theme='dark'] body .bg-amber-50,
+html[data-apple-theme='dark'] body .bg-amber-50\/50,
+html[data-apple-theme='dark'] body .bg-amber-50\/75,
+html[data-apple-theme='dark'] body .bg-amber-50\/90,
+html[data-apple-theme='dark'] body .bg-amber-100,
+html[data-apple-theme='dark'] body .bg-amber-200,
+html[data-apple-theme='dark'] body .bg-amber-200\/80 {
+  background-color: rgba(120, 53, 15, 0.38);
+  border-color: rgba(245, 158, 11, 0.42);
+  color: #fffbeb;
 }
 
-[data-apple-theme='dark'] .bg-rose-50,
-[data-apple-theme='dark'] .bg-rose-50\/60,
-[data-apple-theme='dark'] .bg-rose-50\/70,
-[data-apple-theme='dark'] .bg-rose-50\/80,
-[data-apple-theme='dark'] .bg-rose-50\/90,
-[data-apple-theme='dark'] .bg-rose-100 {
-  background-color: rgba(136, 19, 55, 0.34) !important;
-  border-color: rgba(244, 63, 94, 0.4) !important;
-  color: #fff1f2 !important;
+html[data-apple-theme='dark'] body .bg-rose-50,
+html[data-apple-theme='dark'] body .bg-rose-50\/60,
+html[data-apple-theme='dark'] body .bg-rose-50\/70,
+html[data-apple-theme='dark'] body .bg-rose-50\/80,
+html[data-apple-theme='dark'] body .bg-rose-50\/90,
+html[data-apple-theme='dark'] body .bg-rose-100 {
+  background-color: rgba(136, 19, 55, 0.34);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fff1f2;
 }
 
-[data-apple-theme='dark'] .bg-indigo-50,
-[data-apple-theme='dark'] .bg-indigo-50\/70,
-[data-apple-theme='dark'] .bg-indigo-100 {
-  background-color: rgba(49, 46, 129, 0.35) !important;
-  border-color: rgba(99, 102, 241, 0.35) !important;
-  color: #e0e7ff !important;
+html[data-apple-theme='dark'] body .bg-indigo-50,
+html[data-apple-theme='dark'] body .bg-indigo-50\/70,
+html[data-apple-theme='dark'] body .bg-indigo-100 {
+  background-color: rgba(49, 46, 129, 0.35);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #e0e7ff;
 }
 
-[data-apple-theme='dark'] .text-emerald-950,
-[data-apple-theme='dark'] .text-emerald-900,
-[data-apple-theme='dark'] .text-emerald-800,
-[data-apple-theme='dark'] .text-emerald-700,
-[data-apple-theme='dark'] .text-teal-700 {
-  color: #6ee7b7 !important;
+html[data-apple-theme='dark'] body .text-emerald-950,
+html[data-apple-theme='dark'] body .text-emerald-900,
+html[data-apple-theme='dark'] body .text-emerald-800,
+html[data-apple-theme='dark'] body .text-emerald-700,
+html[data-apple-theme='dark'] body .text-teal-700 {
+  color: #6ee7b7;
 }
 
-[data-apple-theme='dark'] .text-amber-950,
-[data-apple-theme='dark'] .text-amber-900,
-[data-apple-theme='dark'] .text-amber-800,
-[data-apple-theme='dark'] .text-amber-700 {
-  color: #fcd34d !important;
+html[data-apple-theme='dark'] body .text-amber-950,
+html[data-apple-theme='dark'] body .text-amber-900,
+html[data-apple-theme='dark'] body .text-amber-800,
+html[data-apple-theme='dark'] body .text-amber-700 {
+  color: #fcd34d;
 }
 
-[data-apple-theme='dark'] .text-rose-950,
-[data-apple-theme='dark'] .text-rose-900,
-[data-apple-theme='dark'] .text-rose-800,
-[data-apple-theme='dark'] .text-rose-700,
-[data-apple-theme='dark'] .text-rose-600 {
-  color: #fda4af !important;
+html[data-apple-theme='dark'] body .text-rose-950,
+html[data-apple-theme='dark'] body .text-rose-900,
+html[data-apple-theme='dark'] body .text-rose-800,
+html[data-apple-theme='dark'] body .text-rose-700,
+html[data-apple-theme='dark'] body .text-rose-600 {
+  color: #fda4af;
 }
 
-[data-apple-theme='dark'] .text-indigo-900,
-[data-apple-theme='dark'] .text-indigo-800,
-[data-apple-theme='dark'] .text-indigo-700,
-[data-apple-theme='dark'] .text-indigo-600 {
-  color: #a5b4fc !important;
+html[data-apple-theme='dark'] body .text-indigo-900,
+html[data-apple-theme='dark'] body .text-indigo-800,
+html[data-apple-theme='dark'] body .text-indigo-700,
+html[data-apple-theme='dark'] body .text-indigo-600 {
+  color: #a5b4fc;
 }
 
-[data-apple-theme='dark'] .apple-inspector-panel .border-slate-200,
-[data-apple-theme='dark'] .apple-inspector-panel .border-slate-200\/70,
-[data-apple-theme='dark'] .apple-inspector-panel .border-slate-200\/80,
-[data-apple-theme='dark'] .apple-inspector-panel .border-slate-200\/60,
-[data-apple-theme='dark'] .apple-inspector-panel .border-slate-100,
-[data-apple-theme='dark'] .apple-window-sheet .border-slate-200,
-[data-apple-theme='dark'] .apple-window-sheet .border-slate-200\/70,
-[data-apple-theme='dark'] .apple-window-sheet .border-slate-200\/80,
-[data-apple-theme='dark'] .apple-window-sheet .border-slate-200\/60,
-[data-apple-theme='dark'] .apple-window-sheet .border-slate-100 {
-  border-color: rgba(255, 255, 255, 0.1) !important;
+html[data-apple-theme='dark'] body .apple-inspector-panel .border-slate-200,
+html[data-apple-theme='dark'] body .apple-inspector-panel .border-slate-200\/70,
+html[data-apple-theme='dark'] body .apple-inspector-panel .border-slate-200\/80,
+html[data-apple-theme='dark'] body .apple-inspector-panel .border-slate-200\/60,
+html[data-apple-theme='dark'] body .apple-inspector-panel .border-slate-100,
+html[data-apple-theme='dark'] body .apple-window-sheet .border-slate-200,
+html[data-apple-theme='dark'] body .apple-window-sheet .border-slate-200\/70,
+html[data-apple-theme='dark'] body .apple-window-sheet .border-slate-200\/80,
+html[data-apple-theme='dark'] body .apple-window-sheet .border-slate-200\/60,
+html[data-apple-theme='dark'] body .apple-window-sheet .border-slate-100 {
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-[data-apple-theme='dark'] .apple-window-sheet input:not([type='checkbox']):not([type='radio']):not([type='range']),
-[data-apple-theme='dark'] .apple-window-sheet select,
-[data-apple-theme='dark'] .apple-window-sheet textarea,
-[data-apple-theme='dark'] .apple-inspector-panel input:not([type='checkbox']):not([type='radio']):not([type='range']),
-[data-apple-theme='dark'] .apple-inspector-panel select,
-[data-apple-theme='dark'] .apple-inspector-panel textarea {
-  background-color: #1c1c1e !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
-  color: #f5f5f7 !important;
+html[data-apple-theme='dark'] body .apple-window-sheet input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html[data-apple-theme='dark'] body .apple-window-sheet select,
+html[data-apple-theme='dark'] body .apple-window-sheet textarea,
+html[data-apple-theme='dark'] body .apple-inspector-panel input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html[data-apple-theme='dark'] body .apple-inspector-panel select,
+html[data-apple-theme='dark'] body .apple-inspector-panel textarea {
+  background-color: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f5f5f7;
 }
 
 .apple-search-field {
@@ -452,17 +280,16 @@
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
 }
 
-/* Range Input Refinement for iOS/macOS Settings Sliders */
 input[type='range'] {
   accent-color: var(--apple-accent-blue);
   height: 5px;
   border-radius: 9999px;
 }
 
-/* Leaflet Canvas & Tile Layer Overrides */
-.leaflet-container {
-  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
-  background-color: #e5e5ea !important;
+/* Leaflet Canvas & Tile Layer Overrides (High specificity without !important) */
+html body .leaflet-container {
+  font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background-color: #e5e5ea;
   width: 100%;
   height: 100%;
   z-index: 0;
@@ -473,20 +300,20 @@ input[type='range'] {
   filter: brightness(0.96) contrast(1.03);
 }
 
-.leaflet-tooltip {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  backdrop-filter: saturate(180%) blur(16px) !important;
-  border: 0.5px solid rgba(60, 60, 67, 0.18) !important;
-  color: #1c1c1e !important;
-  border-radius: 14px !important;
-  padding: 10px 12px !important;
-  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.14) !important;
-  direction: rtl !important;
-  pointer-events: auto !important;
+html body .leaflet-tooltip {
+  background-color: rgba(255, 255, 255, 0.96);
+  backdrop-filter: saturate(180%) blur(16px);
+  border: 0.5px solid rgba(60, 60, 67, 0.18);
+  color: #1c1c1e;
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.14);
+  direction: rtl;
+  pointer-events: auto;
 }
 
-.leaflet-tooltip-top:before {
-  border-top-color: rgba(255, 255, 255, 0.96) !important;
+html body .leaflet-tooltip-top:before {
+  border-top-color: rgba(255, 255, 255, 0.96);
 }
 
 .leaflet-tooltip .hood-tooltip-copy-btn {
@@ -586,51 +413,49 @@ input[type='range'] {
   color: #065f46;
 }
 
-/* Dark Mode Overrides for Leaflet Tooltips & Floating Map Controls */
-[data-apple-theme='dark'] .leaflet-tooltip {
-  background-color: rgba(28, 28, 30, 0.95) !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
-  color: #f5f5f7 !important;
-  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.65) !important;
+html[data-apple-theme='dark'] body .leaflet-tooltip {
+  background-color: rgba(28, 28, 30, 0.95);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f5f5f7;
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.65);
 }
 
-[data-apple-theme='dark'] .leaflet-tooltip-top:before {
-  border-top-color: rgba(28, 28, 30, 0.95) !important;
+html[data-apple-theme='dark'] body .leaflet-tooltip-top:before {
+  border-top-color: rgba(28, 28, 30, 0.95);
 }
 
-[data-apple-theme='dark'] .leaflet-tooltip .hood-tooltip-cell,
-[data-apple-theme='dark'] .leaflet-tooltip .hood-tooltip-action-btn,
-[data-apple-theme='dark'] .leaflet-tooltip .hood-tooltip-copy-btn {
-  background-color: #2c2c2e !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: #f5f5f7 !important;
+html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-cell,
+html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-action-btn,
+html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-copy-btn {
+  background-color: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
 }
 
-[data-apple-theme='dark'] .leaflet-tooltip .hood-tooltip-label {
-  color: #98989d !important;
+html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-label {
+  color: #98989d;
 }
 
-[data-apple-theme='dark'] .leaflet-tooltip .hood-tooltip-value {
-  color: #ffffff !important;
+html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-value {
+  color: #ffffff;
 }
 
-[data-apple-theme='dark'] .leaflet-bar a {
-  background-color: rgba(28, 28, 30, 0.92) !important;
-  color: #f5f5f7 !important;
-  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+html[data-apple-theme='dark'] body .leaflet-bar a {
+  background-color: rgba(28, 28, 30, 0.92);
+  color: #f5f5f7;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 
-[data-apple-theme='dark'] .leaflet-bar a:hover {
-  background-color: #2c2c2e !important;
-  color: #30d158 !important;
+html[data-apple-theme='dark'] body .leaflet-bar a:hover {
+  background-color: #2c2c2e;
+  color: #30d158;
 }
 
-[data-apple-theme='dark'] .leaflet-control-attribution {
-  background-color: rgba(28, 28, 30, 0.85) !important;
-  color: #98989d !important;
+html[data-apple-theme='dark'] body .leaflet-control-attribution {
+  background-color: rgba(28, 28, 30, 0.85);
+  color: #98989d;
 }
 
-/* Custom Slim Scrollbars (macOS overlay style) */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -657,30 +482,19 @@ input[type='range'] {
   background: rgba(235, 235, 245, 0.48);
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Map Price Pill Marker — pointer-events enabled & tactile hover elevation */
-.leaflet-div-icon.price-pill-icon {
-  background: transparent !important;
-  border: none !important;
-  pointer-events: auto !important;
+html body .leaflet-div-icon.price-pill-icon {
+  background: transparent;
+  border: none;
+  pointer-events: auto;
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease;
 }
 
-.leaflet-div-icon.price-pill-icon:hover {
+html body .leaflet-div-icon.price-pill-icon:hover {
   transform: translateY(-2px) scale(1.05);
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.22));
-  z-index: 950 !important;
+  z-index: 950;
 }
 
-/* Pulsing Golden Pin for Under-Market Bargains */
 @keyframes pulse-gold-ring {
   0%, 100% {
     transform: scale(1);
@@ -692,10 +506,10 @@ input[type='range'] {
   }
 }
 
-.leaflet-div-icon.gold-pin-wrapper {
-  background: transparent !important;
-  border: none !important;
-  pointer-events: auto !important;
+html body .leaflet-div-icon.gold-pin-wrapper {
+  background: transparent;
+  border: none;
+  pointer-events: auto;
 }
 
 .gold-pin-marker {
@@ -715,7 +529,6 @@ input[type='range'] {
   box-shadow: 0 4px 10px rgba(161, 98, 7, 0.4);
 }
 
-/* Tabular Numerals for Financial Tables, Price Tooltips, and Live Metrics */
 .tabular-nums,
 .hood-tooltip-value,
 table td,
@@ -724,7 +537,6 @@ table th {
   font-feature-settings: "tnum" 1;
 }
 
-/* WCAG 2.2 AA Visible Keyboard Focus Rings (macOS/iOS focus ring) */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -746,51 +558,48 @@ textarea:focus-visible,
   outline-color: #34d399;
 }
 
-/* Leaflet Zoom Control Styling (macOS floating control bar) */
-.leaflet-bar {
-  border: 0.5px solid rgba(60, 60, 67, 0.18) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
-  border-radius: 11px !important;
-  overflow: hidden !important;
+html body .leaflet-bar {
+  border: 0.5px solid rgba(60, 60, 67, 0.18);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-radius: 11px;
+  overflow: hidden;
 }
 
-.leaflet-bar a {
-  background-color: rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter: saturate(180%) blur(12px) !important;
-  color: #1c1c1e !important;
-  border-bottom: 0.5px solid rgba(60, 60, 67, 0.12) !important;
-  width: 34px !important;
-  height: 34px !important;
-  line-height: 34px !important;
-  font-weight: 700 !important;
-  transition: background-color 0.15s ease !important;
+html body .leaflet-bar a {
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(12px);
+  color: #1c1c1e;
+  border-bottom: 0.5px solid rgba(60, 60, 67, 0.12);
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  font-weight: 700;
+  transition: background-color 0.15s ease;
 }
 
-.leaflet-bar a:hover {
-  background-color: #ffffff !important;
-  color: #059669 !important;
+html body .leaflet-bar a:hover {
+  background-color: #ffffff;
+  color: #059669;
 }
 
-.leaflet-control-attribution {
-  background-color: rgba(242, 242, 247, 0.85) !important;
-  backdrop-filter: blur(8px) !important;
-  color: #6c6c70 !important;
-  font-size: 9px !important;
-  border-radius: 8px 8px 0 0 !important;
-  padding: 2px 6px !important;
+html body .leaflet-control-attribution {
+  background-color: rgba(242, 242, 247, 0.85);
+  backdrop-filter: blur(8px);
+  color: #6c6c70;
+  font-size: 9px;
+  border-radius: 8px 8px 0 0;
+  padding: 2px 6px;
 }
 
-/* Clean Mobile Viewport: hide zoom +/- buttons on touch screens to prevent clutter */
 @media (max-width: 1023px) {
-  .leaflet-bottom {
-    bottom: 142px !important;
+  html body .leaflet-bottom {
+    bottom: 142px;
   }
-  .leaflet-control-zoom {
-    display: none !important;
+  html body .leaflet-control-zoom {
+    display: none;
   }
 }
 
-/* High-End Spatial Real Estate Sliders */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
@@ -823,56 +632,46 @@ input[type='range']:active::-webkit-slider-thumb {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(5, 150, 105, 0.25);
 }
 
-/* Desktop Viewport: position Leaflet zoom buttons neatly above the bottom-4 MapLegend bar */
 @media (min-width: 1024px) {
-  .leaflet-bottom.leaflet-left {
-    bottom: 60px !important;
-    left: 16px !important;
+  html body .leaflet-bottom.leaflet-left {
+    bottom: 60px;
+    left: 16px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  html body *,
+  html body *::before,
+  html body *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
   }
 }
 
 @media print {
-  .leaflet-container,
-  header,
-  .no-print {
-    display: none !important;
+  html body .leaflet-container,
+  html body header,
+  html body .no-print {
+    display: none;
   }
-  body,
-  html {
-    overflow: visible !important;
-    height: auto !important;
-    background: #ffffff !important;
+  html,
+  body {
+    overflow: visible;
+    height: auto;
+    background: #ffffff;
   }
-  .apple-window-sheet,
-  .apple-inspector-panel {
-    position: static !important;
-    max-height: none !important;
-    box-shadow: none !important;
-    border: 1px solid #cbd5e1 !important;
-    width: 100% !important;
+  html body .apple-window-sheet,
+  html body .apple-inspector-panel {
+    position: static;
+    max-height: none;
+    box-shadow: none;
+    border: 1px solid #cbd5e1;
+    width: 100%;
   }
 }
 
-/* CASPER Tabular Numeral & Financial Alignment */
-.tabular-nums,
-[data-tabular-num] {
-  font-variant-numeric: tabular-nums lining-nums;
-  -webkit-font-feature-settings: "tnum" 1, "lnum" 1;
-  font-feature-settings: "tnum" 1, "lnum" 1;
-}
-
-/* CASPER Cyber-Obsidian Neon Spatial Glass & Kinetic Glow */
 @keyframes casperRadarPulse {
   0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
   70% { transform: scale(1.05); opacity: 0.3; box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }

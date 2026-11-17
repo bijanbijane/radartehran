@@ -1,0 +1,21 @@
+@layer base {
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--apple-bg-base);
+    color: var(--apple-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100%;
+    overflow-x: hidden;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .leaflet-container,
+  .radar-drawer-drag-handle {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
