@@ -29,4 +29,10 @@ export default defineConfig({
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
     },
   },
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://127.0.0.1:3000/api/healthz',
+    reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
+  },
 });

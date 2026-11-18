@@ -50,12 +50,13 @@ export const Stage44InvoicesAndPaymentsPanel: React.FC<Stage44InvoicesAndPayment
     onFeedbackFa(res.ok ? 'تراکنش ایجاد شد و تا تأیید رسمی سرور در وضعیت «در انتظار تأیید» قرار دارد.' : (res.errorFa || 'خطا در شروع پرداخت'));
   };
 
-  const handleVerifyGateway = (paymentId: string, verified: boolean) => {
+  const handleServerStatusInquiry = (paymentId: string, simulateTimeout: boolean) => {
     const res = confirmPaymentAndIssueReceipt({
       dossier,
       paymentId,
-      authoritativeVerified: verified,
-      trackingCode: `SHP-${Math.floor(100000 + Math.random() * 899999)}`,
+      authoritativeVerified: false,
+      trackingCode: '',
+      networkTimedOut: simulateTimeout,
     });
     onUpdateDossier(res.dossier);
     onFeedbackFa(res.messageFa);
@@ -121,9 +122,19 @@ export const Stage44InvoicesAndPaymentsPanel: React.FC<Stage44InvoicesAndPayment
   }
 
   const msSummary = splitMilestoneExecutionVsPayment(dossier.milestones);
-  const pendingPay = dossier.payments.find((p) => p.status === 'در انتظار تأیید' || p.status === 'در حال انتقال');
+  const pendingPay = dossier.payments.find(
+    (p) => p.status === 'در انتظار تأیید' || p.status === 'در حال انتقال' || p.status === 'وضعیت نامشخص — نیازمند استعلام مجدد از سرور',
+  );
   return (
     <div className="space-y-4" data-testid="txn-payments-panel">
+      <div
+        data-testid="txn-financial-trust-boundary-banner"
+        className="rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-[11px] text-amber-200"
+      >
+        <strong>مرز اعتماد مالی (RT-FE-REBUILD-017):</strong>{' '}
+        {dossier.isFixtureDemo ? 'نمایشی — بدون تراکنش واقعی (DEMO) · ' : ''}
+        درگاه پرداخت در حال حاضر فعال نیست (UNAVAILABLE). هیچ دکمه‌ای در مرورگر مجاز به تأیید نهایی پرداخت یا تولید کد رهگیری تصادفی نیست؛ صدور رسید صرفاً با مدرک امضاشده سرور انجام می‌شود.
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-[11px]">
         <div className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2.5">
           <div className="text-xs font-bold text-white">شروع پرداخت شفاف به تومان (محافظت در برابر پرداخت تکراری)</div>
@@ -159,14 +170,26 @@ export const Stage44InvoicesAndPaymentsPanel: React.FC<Stage44InvoicesAndPayment
 
           {pendingPay && (
             <div className="rounded border border-amber-600/50 bg-amber-950/20 p-2.5 space-y-2" data-testid="txn-pending-payment-guard">
-              <div className="font-bold text-amber-200">تراکنش در انتظار تأیید: {formatTomanCurrency(pendingPay.amountToman)}</div>
+              <div className="font-bold text-amber-200">
+                وضعیت تراکنش: {pendingPay.status} ({formatTomanCurrency(pendingPay.amountToman)})
+              </div>
               <div className="text-slate-300">{pendingPay.gatewayVerifiedSourceFa}</div>
               <div className="flex flex-wrap gap-1.5">
-                <button type="button" data-testid="txn-unverified-return-btn" onClick={() => handleVerifyGateway(pendingPay.paymentId, false)} className="rounded border border-amber-500 bg-slate-900 px-2 py-1 font-bold text-amber-200 cursor-pointer">
-                  بازگشت از درگاه بدون تأیید استعلام
+                <button
+                  type="button"
+                  data-testid="txn-unverified-return-btn"
+                  onClick={() => handleServerStatusInquiry(pendingPay.paymentId, false)}
+                  className="rounded border border-amber-500 bg-slate-900 px-2 py-1 font-bold text-amber-200 cursor-pointer"
+                >
+                  استعلام وضعیت از سرور (بدون تأیید کلاینت)
                 </button>
-                <button type="button" data-testid="txn-confirm-payment-btn" onClick={() => handleVerifyGateway(pendingPay.paymentId, true)} className="rounded bg-emerald-500 px-2 py-1 font-bold text-slate-950 cursor-pointer">
-                  تأیید استعلام رسمی و صدور رسید
+                <button
+                  type="button"
+                  data-testid="txn-timeout-inquiry-btn"
+                  onClick={() => handleServerStatusInquiry(pendingPay.paymentId, true)}
+                  className="rounded border border-slate-600 bg-slate-900 px-2 py-1 font-bold text-slate-200 cursor-pointer"
+                >
+                  ثبت حالت نامشخص (UNKNOWN در صورت Timeout)
                 </button>
               </div>
             </div>

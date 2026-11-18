@@ -113,14 +113,13 @@ export default defineConfig(({ mode }) => {
               return 'engine-decision-cells';
             }
             if (id.includes('src/features/onboarding/components/')) {
-              if (/Stage3\d/.test(id)) return 'onboarding-ui-34-39';
+              if (/Stage3\d/.test(id)) return 'onboarding-ui-30s';
               if (/Stage4[0-4]/.test(id)) return 'onboarding-ui-40-44';
               if (/Stage4[5-9]/.test(id)) return 'onboarding-ui-45-49';
               if (/Stage5[0-4]/.test(id)) return 'onboarding-ui-50-54';
               if (/Stage5[5-9]/.test(id)) return 'onboarding-ui-55-59';
               if (/Stage6\d/.test(id)) return 'onboarding-ui-60-69';
-              if (/Stage7\d/.test(id)) return 'onboarding-ui-70-79';
-              if (/Stage8\d/.test(id)) return 'onboarding-ui-80-84';
+              if (/Stage[78]\d/.test(id)) return 'onboarding-ui-70s-80s';
               return 'onboarding-ui-core';
             }
             if (id.includes('src/features/onboarding/services/')) {

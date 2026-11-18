@@ -199,10 +199,14 @@ export function registerOrRevokeDeviceClient(action: 'register' | 'revoke', labe
 export function sendScopedConversationMessage(
   conversationId: string, bodyFa: string, uid = 'local-user',
 ): { ok: boolean; errorFa?: string; state: PersistedCommsWorkspace } {
-  const state = loadCommsWorkspaceState(uid);
+  const safeUid = String(uid ?? '').trim();
+  if (!safeUid || safeUid === 'system' || safeUid === 'admin-spoof') {
+    return { ok: false, errorFa: 'ارسال پیام نیازمند شناسه نشست معتبر کاربر است.', state: loadCommsWorkspaceState('local-user') };
+  }
+  const state = loadCommsWorkspaceState(safeUid);
   const engine = new CommsCoreStateEngine();
   engine.conversations = state.conversations;
-  const res = engine.sendMessage({ conversationId, senderUid: uid, bodyFa });
+  const res = engine.sendMessage({ conversationId, senderUid: safeUid, bodyFa });
   if (!res.ok) {
     return {
       ok: false,

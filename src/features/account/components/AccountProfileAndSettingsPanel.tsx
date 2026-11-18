@@ -242,12 +242,21 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
         {p.actionErrorFa && (
           <p role="alert" className="text-[11px] font-bold text-rose-700 dark:text-rose-300">{p.actionErrorFa}</p>
         )}
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-[10.5px] text-slate-600 dark:text-slate-300" data-testid="account-seven-sources-disclosure">
+          <strong>پوشش ۷ منبع رسمی خروجی داده (RT-FE-REBUILD-019):</strong> پروفایل کاربر (USER_PROFILE)، علاقه‌مندی‌ها و فضای کاری (FAVORITES_AND_WORKSPACES)، هشدارهای خریدار (BUYER_ALERTS)، آگهی‌های ثبت‌شده (BARGAIN_LISTINGS)، سوابق حامیان (SPONSOR_RECORDS)، مشارکت‌های جمعی (CROWD_CLAIMS) و فراداده رسانه‌ها (MEDIA_METADATA). خروجی ناقص هرگز با برچسب «تمام اطلاعات حساب شما» ارائه نمی‌شود.
+        </div>
         {p.dataRequests.length > 0 && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-            <span className="text-[11px] font-bold text-slate-500">سوابق درخواست‌های داده اخیر:</span>
-            {p.dataRequests.slice(0, 4).map((dr) => (
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5" data-testid="account-data-requests-history">
+            <span className="text-[11px] font-bold text-slate-500">سوابق درخواست‌های داده (تفکیک منشأ سرور و مرورگر محلی):</span>
+            {p.dataRequests.slice(0, 8).map((dr) => (
               <div key={dr.id} className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between gap-2">
-                <span>{dr.kind === 'export' ? 'درخواست خروجی داده' : 'درخواست حذف حساب'} · {dr.retentionNotesFa}</span>
+                <span>
+                  {dr.kind === 'export' ? 'درخواست خروجی داده' : 'درخواست حذف حساب'} ·{' '}
+                  <strong className="text-emerald-700 dark:text-emerald-300">
+                    [{dr.origin === 'server' ? 'منشأ: سرور معتبر' : 'منشأ: سابقه محلی مرورگر'}]
+                  </strong>{' '}
+                  · {dr.retentionNotesFa}
+                </span>
                 <span className={`px-2 py-0.5 rounded font-bold shrink-0 ${dr.status === 'failed' ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300' : 'bg-slate-100 dark:bg-slate-800'}`}>
                   {DATA_REQUEST_STATUS_LABELS[dr.status] || dr.status}{dr.errorCode ? ` (${dr.errorCode})` : ''}
                 </span>

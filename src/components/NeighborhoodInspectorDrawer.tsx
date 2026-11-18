@@ -29,7 +29,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               <ChevronUp className={`w-4 h-4 stroke-[1.75] ${desktopCollapsed ? 'lg:hidden' : ''}`} aria-hidden="true" />
             </button>
           </div> )}
-        <div id="neighborhood-inspector-content" className={`flex-col flex-1 overflow-y-auto overscroll-contain radar-drawer-scroll-container p-4 sm:p-5 justify-between transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${desktopCollapsed ? 'lg:hidden' : ''} ${mobileSheetOpen ? 'flex opacity-100 translate-y-0 pointer-events-auto' : 'hidden lg:flex opacity-0 translate-y-6 pointer-events-none lg:opacity-100 lg:translate-y-0 lg:pointer-events-auto'}`}>
+        <div id="neighborhood-inspector-content" inert={desktopCollapsed ? true : undefined} data-mobile-collapsed={!mobileSheetOpen ? 'true' : 'false'} className={`flex-col flex-1 overflow-y-auto overscroll-contain radar-drawer-scroll-container p-4 sm:p-5 justify-between transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${desktopCollapsed ? 'lg:hidden' : ''} ${mobileSheetOpen ? 'flex opacity-100 translate-y-0 pointer-events-auto' : 'hidden lg:flex opacity-0 translate-y-6 pointer-events-none lg:opacity-100 lg:translate-y-0 lg:pointer-events-auto'}`}>
         <div>
           <div className="flex items-center justify-between gap-2 pb-2 mb-2.5 border-b border-slate-200/70 dark:border-slate-800">
             <div className="flex items-center gap-2 shrink-0">

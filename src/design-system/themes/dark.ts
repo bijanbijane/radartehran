@@ -4,6 +4,10 @@ import { RADAR_BRAND_COLOR_TOKENS, RADAR_DARK_SURFACE_TEXT_TOKENS } from '../col
 export const DARK_THEME_TOKENS = {
   mode: 'dark' as const,
   direction: 'rtl' as const,
+  background: {
+    primary: RADAR_DARK_SURFACE_TEXT_TOKENS['bg-canvas'],
+    surface: RADAR_DARK_SURFACE_TEXT_TOKENS['bg-surface'],
+  },
   brandPrimary: '#2E8F83',
   brandHover: RADAR_BRAND_COLOR_TOKENS['brand-500'],
   bgCanvas: RADAR_DARK_SURFACE_TEXT_TOKENS['bg-canvas'],

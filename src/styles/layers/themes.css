@@ -1,4 +1,8 @@
 @layer themes {
+  html.light-mode {
+    color-scheme: light;
+  }
+
   [data-apple-theme='dark'],
   html.dark {
     color-scheme: dark;

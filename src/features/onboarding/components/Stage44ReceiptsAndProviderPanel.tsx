@@ -37,9 +37,10 @@ export const Stage44ReceiptsAndProviderPanel: React.FC<Stage44ReceiptsAndProvide
       paymentId: confirmed.paymentId,
       requestedAmountToman: Math.round(confirmed.amountToman / 2),
       reasonFa: 'توافق بر بازپرداخت جزئی ۵۰٪ هزینه مرحله باقی‌مانده',
+      awaitServerConfirmation: true,
     });
     onUpdateDossier(next);
-    onFeedbackFa('درخواست بازپرداخت جزئی بدون حذف سابقه پرداخت اولیه ثبت و رسید بازپرداخت مجزا صادر شد.');
+    onFeedbackFa('درخواست بازپرداخت جزئی با وضعیت «درخواست ثبت‌شده» (REFUND_PENDING) ثبت شد و تا تأیید نهایی سرور، رسید بازپرداخت قطعی صادر نمی‌شود.');
   };
 
   if (section === 'receipts') {
@@ -57,7 +58,7 @@ export const Stage44ReceiptsAndProviderPanel: React.FC<Stage44ReceiptsAndProvide
           </div>
           <div className="flex gap-1.5">
             <button type="button" data-testid="txn-request-refund-btn" onClick={handleRefundLastConfirmed} className="rounded border border-rose-600 bg-rose-950/40 px-2.5 py-1 font-bold text-rose-200 cursor-pointer">
-              ثبت بازپرداخت جزئی مستقل
+              ثبت درخواست بازپرداخت جزئی (نیازمند تأیید سرور)
             </button>
             <button type="button" data-testid="txn-export-csv-btn" onClick={() => setCsvPreview(buildStage44FinancialExportCsv(dossier))} className="rounded border border-slate-700 bg-slate-900 px-2.5 py-1 font-bold text-slate-200 cursor-pointer">
               پیش‌نمایش خروجی CSV (مرحله ۴۰)
@@ -69,7 +70,9 @@ export const Stage44ReceiptsAndProviderPanel: React.FC<Stage44ReceiptsAndProvide
           {filteredReceipts.map((r) => (
             <div key={r.receiptId} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-1">
               <div className="flex items-center justify-between font-bold">
-                <span className={r.receiptType === 'refund' ? 'text-rose-300' : 'text-emerald-300'}>{r.statusLabelFa} ({r.receiptId})</span>
+                <span className={r.receiptType === 'refund' ? 'text-rose-300' : 'text-emerald-300'}>
+                  {r.statusLabelFa} ({r.receiptId}) {r.isDemoFixture ? '· [DEMO]' : ''}
+                </span>
                 <span className="text-white tabular-nums">{formatTomanCurrency(r.amountToman)}</span>
               </div>
               <div className="text-slate-300">پرداخت‌کننده: {r.payerNameFa} ← دریافت‌کننده: {r.payeeNameFa}</div>

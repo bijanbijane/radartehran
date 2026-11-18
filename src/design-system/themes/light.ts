@@ -4,6 +4,10 @@ import { RADAR_BRAND_COLOR_TOKENS, RADAR_LIGHT_SURFACE_TEXT_TOKENS } from '../co
 export const LIGHT_THEME_TOKENS = {
   mode: 'light' as const,
   direction: 'rtl' as const,
+  background: {
+    primary: RADAR_LIGHT_SURFACE_TEXT_TOKENS['bg-canvas'],
+    surface: RADAR_LIGHT_SURFACE_TEXT_TOKENS['bg-surface'],
+  },
   brandPrimary: RADAR_BRAND_COLOR_TOKENS['brand-600'],
   brandHover: RADAR_BRAND_COLOR_TOKENS['brand-700'],
   bgCanvas: RADAR_LIGHT_SURFACE_TEXT_TOKENS['bg-canvas'],

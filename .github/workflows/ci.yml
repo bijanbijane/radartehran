@@ -54,9 +54,10 @@ jobs:
       - name: Gate B — Architecture & Module Boundary Guardrails
         run: npm run arch:check
 
-      - name: Gate C — Automated Unit, Security, Rules, Contract, Mutation & Insights Suite
+      - name: Gate C — Automated Unit, Security, Rules, Contract, Mutation, Roadmap & Insights Suite
         run: |
           npm test
+          npm run test:roadmap
           npm run test:contracts
           npm run test:mutation
 

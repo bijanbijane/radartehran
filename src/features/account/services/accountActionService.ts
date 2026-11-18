@@ -5,13 +5,17 @@ import {
   resolveEffectiveUid,
 } from './accountStorageScope';
 import { buildLocalWorkspaceExportBundle } from './accountWorkspaceService';
-import type {
-  AccountActionErrorCode,
-  AccountActionResult,
-  AccountDeleteLayerStatus,
-  AccountExportScope,
-  ServerAccountDeletionPayload,
-  ServerAccountExportEnvelope,
+import {
+  ACCOUNT_DELETION_LIFECYCLE_LABELS_FA,
+  ALL_SEVEN_ACCOUNT_EXPORT_SOURCES,
+  type AccountActionErrorCode,
+  type AccountActionResult,
+  type AccountDeleteLayerStatus,
+  type AccountDeletionLifecycleState,
+  type AccountExportScope,
+  type DataRequestRecord,
+  type ServerAccountDeletionPayload,
+  type ServerAccountExportEnvelope,
 } from '../types/account.types';
 
 export const SUPPORTED_EXPORT_SCHEMA_VERSION = '2.0.0';
@@ -149,7 +153,7 @@ export async function requestAccountServerExport(params: {
           : 'پاسخ دریافتی از سرور دارای ساختار معتبر خروجی حساب نیست.',
       };
     }
-    if (json.exportData.schemaVersion !== SUPPORTED_EXPORT_SCHEMA_VERSION) {
+    if (json.exportData.schemaVersion !== SUPPORTED_EXPORT_SCHEMA_VERSION && json.exportData.schemaVersion !== '2026-05.account-export.v1') {
       return {
         ok: false,
         code: 'UNSUPPORTED_SCHEMA_VERSION',
@@ -177,18 +181,42 @@ export function buildAccountExportDownloadPayload(params: {
   scope: AccountExportScope;
   payload: Record<string, unknown>;
   isPartialExport: boolean;
+  completenessStatus: 'COMPLETE' | 'INCOMPLETE_PARTIAL';
+  completenessBannerFa: string;
+  totalRecordsExported: number;
+  omittedPagesCount: number;
   unavailableSources: string[];
 } {
   const scopeUid = resolveEffectiveUid(params.uid);
   const scope: AccountExportScope = params.includeLocalWorkspace ? 'combined_account_and_workspace' : 'server_account';
   const cleanServer = stripSecretsFromExportValue(params.serverData) as Record<string, unknown>;
   const unavailableSources = Array.isArray(params.serverData.unavailableSources) ? [...params.serverData.unavailableSources] : [];
-  const isPartialExport = Boolean(params.serverData.isPartialExport) || unavailableSources.length > 0;
+  const omittedPagesCount = Math.max(0, Number(params.serverData.omittedPagesCount || 0));
+  const isPartialExport =
+    Boolean(params.serverData.isPartialExport) ||
+    params.serverData.completenessStatus === 'INCOMPLETE_PARTIAL' ||
+    unavailableSources.length > 0 ||
+    omittedPagesCount > 0;
+  const completenessStatus: 'COMPLETE' | 'INCOMPLETE_PARTIAL' = isPartialExport ? 'INCOMPLETE_PARTIAL' : 'COMPLETE';
+  const completenessBannerFa = isPartialExport
+    ? `خروجی ناقص (INCOMPLETE_PARTIAL): برخی منابع (${unavailableSources.join('، ') || 'صفحات جاافتاده'}) در دسترس نبودند و این فایل شامل تمام اطلاعات حساب نیست.`
+    : 'خروجی کامل (COMPLETE): هر هفت منبع رسمی داده حساب کاربری بدون خطا دریافت شد.';
   const localBundle = params.includeLocalWorkspace ? (stripSecretsFromExportValue(buildLocalWorkspaceExportBundle(scopeUid)) as Record<string, unknown>) : null;
+  const totalRecordsExported =
+    typeof params.serverData.totalRecordsExported === 'number'
+      ? params.serverData.totalRecordsExported
+      : (params.serverData.publishedListings?.length || 0) +
+        (params.serverData.savedAlerts?.length || 0) +
+        (params.serverData.favoriteNeighborhoodKeys?.length || 0) +
+        (params.serverData.mediaObjects?.length || 0);
 
   return {
     scope,
     isPartialExport,
+    completenessStatus,
+    completenessBannerFa,
+    totalRecordsExported,
+    omittedPagesCount,
     unavailableSources,
     payload: {
       schemaVersion: SUPPORTED_EXPORT_SCHEMA_VERSION,
@@ -196,18 +224,72 @@ export function buildAccountExportDownloadPayload(params: {
       exportedAtIso: new Date().toISOString(),
       ownerUid: scopeUid,
       isPartialExport,
+      completenessStatus,
+      completenessBannerFa,
+      totalRecordsExported,
+      omittedPagesCount,
       unavailableSources,
+      canonicalSevenDomainSources: ALL_SEVEN_ACCOUNT_EXPORT_SOURCES,
       serverAccountData: {
         origin: 'server',
-        includedSources: Array.isArray(params.serverData.sources) ? params.serverData.sources : ['server_published_bargains', 'server_buyer_alerts', 'server_data_corrections'],
+        includedSources: Array.isArray(params.serverData.sources)
+          ? params.serverData.sources
+          : ALL_SEVEN_ACCOUNT_EXPORT_SOURCES.map((id) => ({ id, origin: 'server', available: !unavailableSources.includes(id) })),
         excludedSources: Array.isArray(params.serverData.excludedSources)
           ? params.serverData.excludedSources
-          : params.includeLocalWorkspace ? ['firebase_auth_credentials_and_tokens', 'server_audit_logs_anonymized'] : ['local_workspace_browser_storage', 'firebase_auth_credentials_and_tokens'],
+          : params.includeLocalWorkspace
+            ? ['firebase_auth_credentials_and_tokens', 'server_audit_logs_anonymized']
+            : ['local_workspace_browser_storage', 'firebase_auth_credentials_and_tokens'],
         data: cleanServer,
       },
       localWorkspaceData: localBundle ? { origin: 'local_workspace', data: localBundle.localWorkspaceData ?? localBundle } : null,
     },
   };
+}
+
+export async function fetchServerAccountDataRequests(params: {
+  getToken: () => Promise<string | null>;
+  expectedUid: string;
+  fetchFn?: typeof fetch;
+  timeoutMs?: number;
+}): Promise<AccountActionResult<DataRequestRecord[]>> {
+  const fetchFn = params.fetchFn ?? fetch;
+  const timeoutMs = params.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+  let token: string | null = null;
+  try {
+    token = await params.getToken();
+  } catch {
+    return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'توکن احراز هویت برای دریافت تاریخچه سرور در دسترس نیست.' };
+  }
+  if (!token) return { ok: false, code: 'AUTH_REQUIRED', retryable: false, messageFa: 'توکن احراز هویت نامعتبر است.' };
+  try {
+    const { res, json } = await fetchJsonWithTimeout(
+      '/api/account/data-requests',
+      { method: 'GET', headers: { Authorization: `Bearer ${token}` } },
+      fetchFn,
+      timeoutMs,
+    );
+    if (!res.ok) {
+      const mapped = mapHttpErrorCode(res.status);
+      return { ok: false, code: mapped.code, httpStatus: res.status, retryable: mapped.retryable, messageFa: mapped.messageFa };
+    }
+    const rawItems = isPlainRecord(json) && Array.isArray(json.items) ? json.items : [];
+    const items: DataRequestRecord[] = rawItems
+      .filter((r): r is Record<string, unknown> => isPlainRecord(r) && (!r.ownerUserId || r.ownerUserId === params.expectedUid))
+      .map((r, idx) => ({
+        id: typeof r.id === 'string' && r.id.trim() ? r.id : `srv-dreq-${idx}`,
+        ownerUserId: params.expectedUid,
+        kind: r.kind === 'delete' ? 'delete' : 'export',
+        status: r.status === 'completed' || r.status === 'failed' || r.status === 'ready' ? r.status : 'pending_verification',
+        origin: 'server',
+        jobId: typeof r.jobId === 'string' ? r.jobId : undefined,
+        retentionNotesFa: typeof r.retentionNotesFa === 'string' ? r.retentionNotesFa : 'ثبت‌شده در تاریخچه معتبر سرور',
+        createdAtIso: typeof r.createdAtIso === 'string' ? r.createdAtIso : new Date().toISOString(),
+      }));
+    return { ok: true, data: items };
+  } catch {
+    return { ok: false, code: 'NETWORK_ERROR', retryable: true, messageFa: 'خطا در دریافت تاریخچه درخواست‌های داده از سرور.' };
+  }
 }
 
 export async function executeAccountDeletionFlow(params: {
@@ -258,9 +340,36 @@ export async function executeAccountDeletionFlow(params: {
     };
   }
 
-  const cleanupResult = cleanupAccountLocalStorageForUid(targetUid, serverPayload.clearClientLocalStorageKeys);
-  const serverFullyOk = serverPayload.status === 'ok';
-  const serverDeletionState: AccountDeleteLayerStatus['serverDeletion'] = serverFullyOk ? 'completed' : 'partial';
+  // Stage 19 P0 Guard: Verify ALL dependent server steps and media cleanup succeeded before local storage cleanup or Firebase Auth removal.
+  const allDependentServerStepsCompleted =
+    serverPayload.status === 'ok' &&
+    (serverPayload.failedSteps?.length ?? 0) === 0 &&
+    (serverPayload.failedMediaCount ?? 0) === 0 &&
+    serverPayload.steps.filter((s) => s.category !== 'firebase_auth_identity').every((s) => s.completed === true);
+
+  if (!allDependentServerStepsCompleted) {
+    const partialState: AccountDeletionLifecycleState = serverPayload.lifecycleState || 'PARTIAL_FAILURE_RETRYABLE';
+    const partialLayer: AccountDeleteLayerStatus = {
+      jobId: serverPayload.jobId,
+      lifecycleState: partialState,
+      lifecycleLabelFa: ACCOUNT_DELETION_LIFECYCLE_LABELS_FA[partialState],
+      serverDeletion: 'partial',
+      localCleanup: 'skipped_server_incomplete',
+      authDeletion: 'blocked_by_incomplete_server_steps',
+      overallStatus: 'partial',
+      requestStatus: 'pending_verification',
+      removedLocalKeysCount: 0,
+      messageFa: 'عملیات حذف در سرور به‌صورت جزئی متوقف شد (PARTIAL_FAILURE_RETRYABLE)؛ برای جلوگیری از ازدست‌رفتن امکان پیگیری، اطلاعات محلی و هویت Firebase حذف نشدند.',
+      requiresSignOut: false,
+    };
+    return {
+      ok: false,
+      code: 'AUTH_DELETION_PRECONDITION_FAILED',
+      retryable: true,
+      messageFa: partialLayer.messageFa,
+      data: partialLayer,
+    };
+  }
 
   let authDeletionState: AccountDeleteLayerStatus['authDeletion'] = serverPayload.requiresClientAuthDeletion ? 'completed' : 'not_required';
   let errorCode: AccountActionErrorCode | undefined;
@@ -270,7 +379,7 @@ export async function executeAccountDeletionFlow(params: {
     if (!params.deleteFirebaseUserFn) {
       authDeletionState = 'failed';
       errorCode = 'AUTH_DELETE_FAILED';
-      noticeFa = 'داده‌های سرور و فضای محلی حساب پاکسازی شدند، اما سرویس حذف حساب احراز هویت در مرورگر در دسترس نیست.';
+      noticeFa = 'مراحل وابسته سرور تکمیل شد، اما سرویس حذف حساب احراز هویت در مرورگر در دسترس نیست.';
     } else {
       try {
         await params.deleteFirebaseUserFn(params.currentUser);
@@ -279,20 +388,27 @@ export async function executeAccountDeletionFlow(params: {
         if (errCode === 'auth/requires-recent-login') {
           authDeletionState = 'requires_reauth';
           errorCode = 'RECENT_LOGIN_REQUIRED';
-          noticeFa = 'داده‌های سرور و فضای محلی همین حساب پاکسازی شدند، اما برای حذف نهایی هویت Firebase به‌دلیل قدیمی‌بودن نشست، یک‌بار خارج شده و دوباره وارد شوید و عملیات حذف را تکمیل کنید.';
+          noticeFa = 'مراحل وابسته سرور تکمیل شد، اما برای حذف نهایی هویت Firebase به‌دلیل قدیمی‌بودن نشست، یک‌بار خارج شده و دوباره وارد شوید و عملیات حذف را تکمیل کنید.';
         } else {
           authDeletionState = 'failed';
           errorCode = 'AUTH_DELETE_FAILED';
-          noticeFa = 'داده‌های سرور و فضای محلی حساب پاکسازی شدند، اما حذف نهایی حساب احراز هویت انجام نشد. لطفاً پس از ورود مجدد دوباره امتحان کنید.';
+          noticeFa = 'مراحل وابسته سرور تکمیل شد، اما حذف نهایی حساب احراز هویت انجام نشد. لطفاً پس از ورود مجدد دوباره امتحان کنید.';
         }
       }
     }
   }
 
-  const allCompleted = serverDeletionState === 'completed' && (authDeletionState === 'completed' || authDeletionState === 'not_required');
+  const allCompleted = authDeletionState === 'completed' || authDeletionState === 'not_required';
+  const cleanupResult = allCompleted
+    ? cleanupAccountLocalStorageForUid(targetUid, serverPayload.clearClientLocalStorageKeys)
+    : { removedKeys: [] as string[] };
+  const finalLifecycleState: AccountDeletionLifecycleState = allCompleted ? 'COMPLETED' : 'DELETING_AUTH_IDENTITY';
   const layerStatus: AccountDeleteLayerStatus = {
-    serverDeletion: serverDeletionState,
-    localCleanup: 'completed',
+    jobId: serverPayload.jobId,
+    lifecycleState: finalLifecycleState,
+    lifecycleLabelFa: ACCOUNT_DELETION_LIFECYCLE_LABELS_FA[finalLifecycleState],
+    serverDeletion: 'completed',
+    localCleanup: allCompleted ? 'completed' : 'skipped_server_incomplete',
     authDeletion: authDeletionState,
     overallStatus: allCompleted ? 'completed' : 'partial',
     requestStatus: allCompleted ? 'completed' : 'pending_verification',
@@ -305,8 +421,9 @@ export async function executeAccountDeletionFlow(params: {
   return {
     ok: false,
     code: errorCode || 'SERVER_ERROR',
-    retryable: authDeletionState !== 'completed',
+    retryable: true,
     messageFa: noticeFa,
     data: layerStatus,
   };
 }
+

@@ -174,21 +174,40 @@ export function serializeShareableMapUrl(state: Pick<MapState, 'cityId' | 'viewp
   return `/explore/map?${params.toString()}`;
 }
 
+const VALID_MAP_CITY_CENTERS: Record<string, { lat: number; lng: number; zoom: number }> = {
+  tehran: { lat: 35.7219, lng: 51.3347, zoom: 12 },
+  karaj: { lat: 35.8327, lng: 50.9915, zoom: 12 },
+  mashhad: { lat: 36.2972, lng: 59.6067, zoom: 12 },
+  isfahan: { lat: 32.6539, lng: 51.6660, zoom: 12 },
+  shiraz: { lat: 29.5918, lng: 52.5837, zoom: 12 },
+};
+
 export function parseShareableMapUrl(search: string): {
-  cityId: string; viewport: { latitude: number; longitude: number; zoom: number }; activeLayerIds: string[]; appliedFilters: Record<string, string>;
+  cityId: string;
+  cityValid: boolean;
+  invalidCityRequested: string | null;
+  viewport: { latitude: number; longitude: number; zoom: number };
+  activeLayerIds: string[];
+  appliedFilters: Record<string, string>;
 } {
   const q = new URLSearchParams(search.startsWith('?') ? search : `?${search}`);
+  const rawCity = q.get('city');
+  const cityValid = rawCity === null || rawCity === '' || rawCity in VALID_MAP_CITY_CENTERS;
+  const resolvedCity = rawCity && rawCity in VALID_MAP_CITY_CENTERS ? rawCity : 'tehran';
+  const defaultCenter = VALID_MAP_CITY_CENTERS[resolvedCity];
   const lat = Number(q.get('lat')), lng = Number(q.get('lng')), zoom = Number(q.get('zoom'));
   const layersRaw = q.get('layers');
   const appliedFilters: Record<string, string> = {};
   if (q.get('market')) appliedFilters.market = q.get('market')!;
   if (q.get('propertyType')) appliedFilters.propertyType = q.get('propertyType')!;
   return {
-    cityId: q.get('city') || 'tehran',
+    cityId: cityValid ? resolvedCity : 'invalid_city',
+    cityValid,
+    invalidCityRequested: cityValid ? null : rawCity,
     viewport: {
-      latitude: Number.isFinite(lat) && lat >= 24 && lat <= 40 ? lat : 35.7219,
-      longitude: Number.isFinite(lng) && lng >= 44 && lng <= 64 ? lng : 51.3347,
-      zoom: Number.isFinite(zoom) && zoom >= 5 && zoom <= 19 ? zoom : 12,
+      latitude: q.has('lat') && Number.isFinite(lat) && lat >= 24 && lat <= 40 ? lat : defaultCenter.lat,
+      longitude: q.has('lng') && Number.isFinite(lng) && lng >= 44 && lng <= 64 ? lng : defaultCenter.lng,
+      zoom: q.has('zoom') && Number.isFinite(zoom) && zoom >= 5 && zoom <= 19 ? zoom : defaultCenter.zoom,
     },
     activeLayerIds: layersRaw ? layersRaw.split(',').filter(Boolean) : ['base_light', 'boundaries_hoods'],
     appliedFilters,

@@ -46,8 +46,12 @@ export const HOME_RESEARCH_REPORTS: readonly HomeResearchReportItem[] = [
 export function buildHomeMarketSnapshotMetrics(
   neighborhoods: readonly EvaluatedNeighborhood[], cityId: CityId = 'tehran', resilienceScenario: HomeResilienceScenarioId = 'normal',
 ): MarketSnapshotMetric[] {
-  const cityLabelFa = MULTI_CITY_CONFIGS[cityId]?.nameFa || 'تهران';
-  if (resilienceScenario === 'market_unavailable' || neighborhoods.length === 0) {
+  const isCityValid = typeof cityId === 'string' && cityId in MULTI_CITY_CONFIGS;
+  const cityLabelFa = isCityValid ? MULTI_CITY_CONFIGS[cityId].nameFa : 'شهر نامعتبر';
+  const cityScopedHoods = isCityValid
+    ? neighborhoods.filter((h) => MULTI_CITY_CONFIGS[cityId].neighborhoods.some((ch) => ch.id === h.id))
+    : [];
+  if (!isCityValid || resilienceScenario === 'market_unavailable' || cityScopedHoods.length === 0) {
     return [
       {
         id: 'asking_price_sqm', title: 'قیمت پیشنهادی هر متر مربع', value: null, unit: 'میلیون تومان',
@@ -66,12 +70,12 @@ export function buildHomeMarketSnapshotMetrics(
     ];
   }
 
-  const sortedBuy = [...neighborhoods].map((h) => h.buyPerSqm).sort((a, b) => a - b);
+  const sortedBuy = [...cityScopedHoods].map((h) => h.buyPerSqm).sort((a, b) => a - b);
   const medianAskingSqm = sortedBuy[Math.floor(sortedBuy.length / 2)] || 0;
-  const sortedRent = [...neighborhoods].map((h) => h.rahn80m).sort((a, b) => a - b);
+  const sortedRent = [...cityScopedHoods].map((h) => h.rahn80m).sort((a, b) => a - b);
   const medianRahn80m = sortedRent[Math.floor(sortedRent.length / 2)] || 0;
-  const validSupplyCount = neighborhoods.reduce((acc, h) => acc + buildNeighborhoodListingSamples(h).length, 0);
-  const refHood = neighborhoods[0];
+  const validSupplyCount = cityScopedHoods.reduce((acc, h) => acc + buildNeighborhoodListingSamples(h).length, 0);
+  const refHood = cityScopedHoods[0];
   const agg = aggregateNeighborhoodMarketMetrics(refHood.id, refHood.name, medianAskingSqm, buildNeighborhoodListingSamples(refHood));
 
   const isStale = resilienceScenario === 'old_data', isPartial = resilienceScenario === 'partial_data';

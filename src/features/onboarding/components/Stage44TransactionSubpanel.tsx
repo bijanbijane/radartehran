@@ -30,13 +30,23 @@ export const Stage44TransactionSubpanel: React.FC = () => {
       <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-white">مرحله ۴۴: توافق خدمت، پرداخت شفاف و پرونده مالی (RT-UI-SERVICE-TRANSACTION-001)</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-bold text-white">مرحله ۴۴: توافق خدمت، پرداخت شفاف و پرونده مالی (RT-UI-SERVICE-TRANSACTION-001)</h3>
+              {dossier.isFixtureDemo && (
+                <span
+                  data-testid="txn-demo-mode-badge"
+                  className="rounded border border-amber-500/60 bg-amber-950/60 px-2 py-0.5 text-[10px] font-bold text-amber-200"
+                >
+                  نمایشی — بدون تراکنش واقعی (DEMO)
+                </span>
+              )}
+            </div>
             <p className="mt-1 text-xs text-slate-400">
               متصل به درخواست {dossier.requestId} · پیشنهاد {dossier.quoteId} · واحد انحصاری تومان + نمایش حروفی · تفکیک ۸ مفهوم مالی
             </p>
           </div>
           <div className="flex items-center gap-1.5 text-[11px]">
-            <span className="text-slate-400">نقش بیننده (کنترل دسترسی):</span>
+            <span className="text-slate-400">نقش بیننده (شبیه‌ساز نمایشی دسترسی):</span>
             <select
               aria-label="نقش بیننده پرونده مالی"
               data-testid="txn-viewer-role-select"

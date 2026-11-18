@@ -28,12 +28,38 @@ export type PaymentOperationStatus =
   | 'آماده پرداخت'
   | 'در حال انتقال'
   | 'در انتظار تأیید'
+  | 'وضعیت نامشخص — نیازمند استعلام مجدد از سرور'
+  | 'درگاه غیرفعال'
+  | 'نمایشی (بدون تراکنش واقعی)'
   | 'موفق'
   | 'ناموفق'
   | 'لغوشده'
   | 'بازگشت وجه در انتظار'
   | 'بازپرداخت‌شده'
   | 'بازپرداخت جزئی';
+
+export type AuthoritativeFinancialStatus =
+  | 'DEMO'
+  | 'UNAVAILABLE'
+  | 'CREATED'
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'CONFIRMED'
+  | 'FAILED'
+  | 'REFUND_PENDING'
+  | 'REFUNDED'
+  | 'UNKNOWN';
+
+export type DossierExecutionMode = 'DEMO' | 'REAL';
+
+export interface ServerPaymentVerificationProof {
+  verifiedByServer: boolean;
+  providerStatus: 'CONFIRMED' | 'FAILED' | 'PENDING' | 'PROCESSING' | 'UNKNOWN' | 'UNAVAILABLE';
+  serverTrackingCode?: string;
+  serverReceiptId?: string;
+  verifiedAtIso?: string;
+  hmacSignatureValid?: boolean;
+}
 
 export type OfflineTransferVerificationState =
   | 'اعلام‌شده توسط پرداخت‌کننده'
@@ -60,6 +86,7 @@ export type CancellationScenarioKind =
   | 'request_refund';
 
 export type TransactionViewerRole = 'applicant' | 'provider' | 'admin' | 'unauthorized_third_party';
+
 
 export interface FinancialConceptDefinition {
   id: FinancialConceptId;
@@ -211,6 +238,8 @@ export interface PaymentOperationRecord {
   methodId: 'shaparak_gateway' | 'bank_transfer_declared';
   methodLabelFa: string;
   status: PaymentOperationStatus;
+  authoritativeStatus?: AuthoritativeFinancialStatus;
+  isDemoFixture?: boolean;
   isPartialPayment: boolean;
   gatewayVerifiedSourceFa: string;
   trackingCode?: string;
@@ -234,6 +263,8 @@ export interface PaymentReceiptRecord {
   trackingCode: string;
   statusLabelFa: string;
   isPartial: boolean;
+  isDemoFixture?: boolean;
+  issuedByServer?: boolean;
 }
 
 export interface RefundRequestRecord {
@@ -245,7 +276,9 @@ export interface RefundRequestRecord {
   reasonFa: string;
   requestedAtFa: string;
   status: RefundStatus;
+  authoritativeStatus?: AuthoritativeFinancialStatus;
   refundTrackingCode?: string;
+  verifiedByServer?: boolean;
 }
 
 export interface SettlementRecord {
@@ -258,6 +291,9 @@ export interface SettlementRecord {
 
 export interface ServiceTransactionDossier {
   dossierId: string;
+  executionMode?: DossierExecutionMode;
+  isFixtureDemo?: boolean;
+  paymentGatewayAvailable?: boolean;
   requestId: string;
   quoteId: string;
   subjectPropertyRef: string;
@@ -278,3 +314,4 @@ export interface ServiceTransactionDossier {
   supportedPaymentMethods: Array<{ id: 'shaparak_gateway' | 'bank_transfer_declared'; labelFa: string; supported: boolean; noteFa: string }>;
   auditHistoryFa: Array<{ id: string; timestampFa: string; actorFa: string; actionFa: string }>;
 }
+

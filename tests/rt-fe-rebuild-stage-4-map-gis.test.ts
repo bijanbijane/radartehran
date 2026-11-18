@@ -67,7 +67,7 @@ import {
   SpatialPointItem,
 } from '../src/platform/geo';
 import * as GeoUiMod from '../src/shared/geo-ui';
-import { neighborhoods } from '../src/data/neighborhoods';
+import { INITIAL_NEIGHBORHOODS as neighborhoods } from '../src/data/neighborhoods';
 import { CENTRAL_ROUTE_REGISTRY, findRegisteredRoute } from '../src/app/router';
 
 // ============================================================================
@@ -2019,7 +2019,7 @@ const regressionNavigationCases: Array<{ name: string; run: () => void }> = [
         neighborhoods.slice(0, 10).map((h) => ({
           lat: h.lat,
           lng: h.lng,
-          weight: h.avgPrice,
+          weight: h.buyPerSqm,
         }))
       );
       assert.equal(cells.length, 10);
@@ -2034,7 +2034,7 @@ const regressionNavigationCases: Array<{ name: string; run: () => void }> = [
         lat: h.lat,
         lng: h.lng,
         neighborhoodId: h.id,
-        pricePerSqm: h.avgPrice,
+        pricePerSqm: h.buyPerSqm,
         payload: { name: h.name },
       }));
       const res = buildSpatialClusters(pts, 12);

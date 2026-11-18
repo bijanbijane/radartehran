@@ -21,12 +21,22 @@ export function initiatePaymentAttempt(params: {
   amountToman: number;
   methodId: 'shaparak_gateway' | 'bank_transfer_declared';
   currencyUnit?: string;
+  requireLiveGateway?: boolean;
 }): { ok: boolean; errorFa?: string; dossier: ServiceTransactionDossier; createdPayment?: PaymentOperationRecord } {
   if (params.currencyUnit && params.currencyUnit !== 'toman') {
     return { ok: false, errorFa: 'واحد پول ناسازگار مسدود شد: تنها پرداخت با واحد شفاف تومان مجاز است.', dossier: params.dossier };
   }
+  if (params.requireLiveGateway && params.dossier.paymentGatewayAvailable === false) {
+    return {
+      ok: false,
+      errorFa: 'درگاه پرداخت در حال حاضر فعال نیست (UNAVAILABLE)؛ امکان ایجاد تراکنش واقعی وجود ندارد.',
+      dossier: params.dossier,
+    };
+  }
   const hasPendingOrInFlight = params.dossier.payments.some(
-    (p) => p.invoiceId === params.invoiceId && (p.status === 'در حال انتقال' || p.status === 'در انتظار تأیید'),
+    (p) =>
+      p.invoiceId === params.invoiceId &&
+      (p.status === 'در حال انتقال' || p.status === 'در انتظار تأیید' || p.status === 'وضعیت نامشخص — نیازمند استعلام مجدد از سرور'),
   );
   if (hasPendingOrInFlight) {
     return {
@@ -39,6 +49,7 @@ export function initiatePaymentAttempt(params: {
   if (!invoice || params.amountToman <= 0) {
     return { ok: false, errorFa: 'صورت‌حساب یا مبلغ معتبر نیست.', dossier: params.dossier };
   }
+  const isDemo = params.dossier.executionMode === 'DEMO' || Boolean(params.dossier.isFixtureDemo);
   const createdPayment: PaymentOperationRecord = {
     paymentId: `pay-${Date.now()}`,
     invoiceId: invoice.invoiceId,
@@ -49,8 +60,13 @@ export function initiatePaymentAttempt(params: {
     methodId: params.methodId,
     methodLabelFa: params.methodId === 'shaparak_gateway' ? 'درگاه پرداخت شاپرک' : 'انتقال بانکی اعلام‌شده (خارج از سامانه)',
     status: 'در انتظار تأیید',
+    authoritativeStatus: isDemo ? 'DEMO' : 'PENDING',
+    isDemoFixture: isDemo,
     isPartialPayment: params.amountToman < invoice.totalPayableToman,
-    gatewayVerifiedSourceFa: params.methodId === 'shaparak_gateway' ? 'بازگشت کاربر از درگاه (هنوز از منبع معتبر تأیید نشده)' : 'اعلام رسید توسط پرداخت‌کننده (نیازمند تأیید دریافت)',
+    gatewayVerifiedSourceFa:
+      params.methodId === 'shaparak_gateway'
+        ? 'بازگشت کاربر از درگاه (هنوز از منبع معتبر سرور تأیید نشده)'
+        : 'اعلام رسید توسط پرداخت‌کننده (نیازمند تأیید دریافت سرور)',
     offlineVerificationState: params.methodId === 'bank_transfer_declared' ? 'اعلام‌شده توسط پرداخت‌کننده' : undefined,
     idempotencyKey: `idem-${invoice.invoiceId}-${params.amountToman}`,
   };
@@ -66,10 +82,28 @@ export function confirmPaymentAndIssueReceipt(params: {
   paymentId: string;
   authoritativeVerified: boolean;
   trackingCode: string;
+  networkTimedOut?: boolean;
 }): { dossier: ServiceTransactionDossier; receiptIssued: boolean; messageFa: string } {
   const target = params.dossier.payments.find((p) => p.paymentId === params.paymentId);
   if (!target) return { dossier: params.dossier, receiptIssued: false, messageFa: 'تراکنش یافت نشد.' };
-  if (!params.authoritativeVerified) {
+  if (params.networkTimedOut) {
+    const unknownPayments = params.dossier.payments.map((p) =>
+      p.paymentId === params.paymentId
+        ? {
+            ...p,
+            status: 'وضعیت نامشخص — نیازمند استعلام مجدد از سرور' as const,
+            authoritativeStatus: 'UNKNOWN' as const,
+            gatewayVerifiedSourceFa: 'پاسخ استعلام سرور دریافت نشد (Timeout) — وضعیت نامشخص است',
+          }
+        : p,
+    );
+    return {
+      dossier: { ...params.dossier, payments: unknownPayments },
+      receiptIssued: false,
+      messageFa: 'پاسخ استعلام سرور دریافت نشد؛ وضعیت تراکنش «وضعیت نامشخص — نیازمند استعلام مجدد از سرور» ثبت شد و هیچ رسیدی صادر نگردید.',
+    };
+  }
+  if (!params.authoritativeVerified || !params.trackingCode || params.trackingCode.startsWith('FAKE')) {
     return {
       dossier: params.dossier,
       receiptIssued: false,
@@ -81,8 +115,9 @@ export function confirmPaymentAndIssueReceipt(params: {
       ? {
           ...p,
           status: 'موفق' as const,
+          authoritativeStatus: (params.dossier.isFixtureDemo ? 'DEMO' : 'CONFIRMED') as 'DEMO' | 'CONFIRMED',
           finalizedAtFa: '۱۴ آبان ۱۴۰۵ · ۱۳:۱۲',
-          gatewayVerifiedSourceFa: 'تأیید استعلام رسمی سرویس پرداخت',
+          gatewayVerifiedSourceFa: 'تأیید استعلام رسمی سرویس پرداخت (منبع سرور)',
           trackingCode: params.trackingCode,
           offlineVerificationState: p.methodId === 'bank_transfer_declared' ? ('دریافت وجه تأییدشده توسط ارائه‌دهنده' as const) : undefined,
         }
@@ -110,6 +145,8 @@ export function confirmPaymentAndIssueReceipt(params: {
     trackingCode: params.trackingCode,
     statusLabelFa: target.isPartialPayment ? 'پرداخت جزئی تأییدشده' : 'پرداخت کامل تأییدشده',
     isPartial: target.isPartialPayment,
+    isDemoFixture: Boolean(params.dossier.isFixtureDemo),
+    issuedByServer: !params.dossier.isFixtureDemo,
   };
   return {
     dossier: { ...params.dossier, payments: updatedPayments, invoices: updatedInvoices, receipts: [receipt, ...params.dossier.receipts] },
@@ -123,11 +160,33 @@ export function requestRefundSafely(params: {
   paymentId: string;
   requestedAmountToman: number;
   reasonFa: string;
+  awaitServerConfirmation?: boolean;
 }): ServiceTransactionDossier {
   const pay = params.dossier.payments.find((p) => p.paymentId === params.paymentId && p.status === 'موفق');
   if (!pay) return params.dossier;
   const clamped = Math.max(0, Math.min(pay.amountToman, Math.round(params.requestedAmountToman)));
   const isPartial = clamped < pay.amountToman;
+  if (params.awaitServerConfirmation) {
+    const pendingRefund: RefundRequestRecord = {
+      refundId: `ref-${Date.now()}`,
+      originalPaymentId: pay.paymentId,
+      originalAmountToman: pay.amountToman,
+      requestedAmountToman: clamped,
+      approvedAmountToman: 0,
+      reasonFa: params.reasonFa.trim() || 'درخواست بازپرداخت ثبت‌شده برای بررسی سرور',
+      requestedAtFa: '۱۴ آبان ۱۴۰۵ · ۱۳:۳۰',
+      status: 'درخواست ثبت‌شده',
+      authoritativeStatus: 'REFUND_PENDING',
+      verifiedByServer: false,
+    };
+    return {
+      ...params.dossier,
+      payments: params.dossier.payments.map((p) =>
+        p.paymentId === pay.paymentId ? { ...p, status: 'بازگشت وجه در انتظار' as const, authoritativeStatus: 'REFUND_PENDING' as const } : p,
+      ),
+      refunds: [pendingRefund, ...params.dossier.refunds],
+    };
+  }
   const refund: RefundRequestRecord = {
     refundId: `ref-${Date.now()}`,
     originalPaymentId: pay.paymentId,
@@ -137,7 +196,9 @@ export function requestRefundSafely(params: {
     reasonFa: params.reasonFa.trim() || 'توافق طرفین برای بازگشت وجه',
     requestedAtFa: '۱۴ آبان ۱۴۰۵ · ۱۳:۳۰',
     status: isPartial ? 'بازپرداخت جزئی' : 'انجام‌شده',
+    authoritativeStatus: 'REFUNDED',
     refundTrackingCode: `RF-${toPersianNum(8421)}`,
+    verifiedByServer: !params.dossier.isFixtureDemo,
   };
   const refundReceipt: PaymentReceiptRecord = {
     receiptId: `rcp-ref-${Date.now()}`,
@@ -155,11 +216,13 @@ export function requestRefundSafely(params: {
     trackingCode: refund.refundTrackingCode || 'RF-8421',
     statusLabelFa: isPartial ? 'رسید بازپرداخت جزئی (پرداخت اولیه محفوظ است)' : 'رسید بازپرداخت کامل',
     isPartial,
+    isDemoFixture: Boolean(params.dossier.isFixtureDemo),
+    issuedByServer: !params.dossier.isFixtureDemo,
   };
   return {
     ...params.dossier,
     payments: params.dossier.payments.map((p) =>
-      p.paymentId === pay.paymentId ? { ...p, status: isPartial ? ('بازپرداخت جزئی' as const) : ('بازپرداخت‌شده' as const) } : p,
+      p.paymentId === pay.paymentId ? { ...p, status: isPartial ? ('بازپرداخت جزئی' as const) : ('بازپرداخت‌شده' as const), authoritativeStatus: 'REFUNDED' as const } : p,
     ),
     refunds: [refund, ...params.dossier.refunds],
     receipts: [refundReceipt, ...params.dossier.receipts],

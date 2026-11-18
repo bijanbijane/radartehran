@@ -33,6 +33,10 @@
     "test:storage": "tsx tests/object-storage-upload-auth.test.ts && tsx tests/object-storage-range.test.ts",
     "test:stress": "tsx tests/stress-50-cycles.test.ts",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:e2e:critical": "playwright test --grep @critical",
+    "test:e2e:regression": "playwright test --grep @regression",
+    "test:roadmap": "tsx --test tests/rt-fe-rebuild-stages-1-to-3.test.ts tests/rt-fe-rebuild-stage-4-map-gis.test.ts tests/rt-fe-rebuild-stages-10-to-21.test.ts src/features/onboarding/tests/rtFeArch001To004Roadmap.test.ts src/features/onboarding/tests/rtFeStages10To13Roadmap.test.ts src/features/onboarding/tests/rtFeStage14Navigation.test.ts src/features/onboarding/tests/rtFeStage15PageComposition.test.ts src/features/onboarding/tests/rtFeStage16Interaction.test.ts src/features/onboarding/tests/rtFeStage17FormWorkflow.test.ts src/features/onboarding/tests/rtFeStage18SearchFilter.test.ts src/features/onboarding/tests/rtFeStage19ResultsPresentation.test.ts src/features/onboarding/tests/rtFeStage20DataVisualization.test.ts src/features/onboarding/tests/rtFeStage21EntityDetail.test.ts src/features/onboarding/tests/rtFeStage22Engagement.test.ts src/features/onboarding/tests/rtFeStage23Notification.test.ts src/features/onboarding/tests/rtFeStage24Account.test.ts",
     "test:object-storage-delete-coordinator": "tsx --test tests/object-storage-delete-coordinator.test.ts",
     "test:deletion-journal": "tsx --test tests/deletion-journal.test.ts",
     "test:object-storage-cleanup": "firebase emulators:exec --project gen-lang-client-0713157837 --only firestore \"tsx tests/object-storage-cleanup.integration.test.ts\"",
@@ -54,8 +58,8 @@
     "cf:preview": "CLOUDFLARE_VITE=1 vite preview --mode cloudflare",
     "cf:config:check": "wrangler deploy --dry-run",
     "cf:staging:preflight": "wrangler deploy --env staging --dry-run",
-    "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:assess && npm run test:storage && npm run test:rules:static && npm run test:insights",
-    "verify": "npm run typecheck && npm run test:security && npm run build && npm run arch:check"
+    "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:roadmap && npm run test:assess && npm run test:storage && npm run test:rules:static && npm run test:insights",
+    "verify": "npm run typecheck && npm run test:security && npm run test:roadmap && npm run build && npm run arch:check"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

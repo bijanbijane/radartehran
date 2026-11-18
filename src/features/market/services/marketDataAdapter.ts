@@ -165,20 +165,24 @@ export function buildMarketSnapshotBundle(params: {
   radarLocale: RadarLocale;
 }): MarketSnapshotBundle {
   const { allHoods, selectedHood, activeCity, filters, compareHoodIds, areaUnit, intlCurrency, radarLocale } = params;
-  const validCityId: CityId = activeCity in MULTI_CITY_CONFIGS ? (activeCity as CityId) : 'tehran';
+  const isCityValid = typeof activeCity === 'string' && activeCity in MULTI_CITY_CONFIGS;
+  const validCityId: CityId = isCityValid ? (activeCity as CityId) : 'tehran';
   const cityConfig = MULTI_CITY_CONFIGS[validCityId];
-  const cityNameFa = cityConfig.nameFa;
+  const cityNameFa = isCityValid ? cityConfig.nameFa : 'شهر نامعتبر';
   const periodLabelFa = getPeriodLabelFa(filters.period);
   const isNonResidentialUnavailable = filters.marketType !== 'residential';
 
-  const cityScopedAll = allHoods.filter((h) => cityConfig.neighborhoods.some((ch) => ch.id === h.id));
-  const effectiveCityHoods = cityScopedAll.length > 0 ? cityScopedAll : [...allHoods];
-  const resolvedSelectedHood =
-    effectiveCityHoods.find((h) => h.id === selectedHood?.id) ?? effectiveCityHoods[0] ?? selectedHood;
+  // Stage 20 P0 Guard: Never fall back to [...allHoods] when activeCity neighborhoods are missing, and never silently pick effectiveCityHoods[0] on cross-city mismatch.
+  const cityScopedAll = isCityValid ? allHoods.filter((h) => cityConfig.neighborhoods.some((ch) => ch.id === h.id)) : [];
+  const effectiveCityHoods = cityScopedAll;
+  const matchedSelectedHood = selectedHood ? effectiveCityHoods.find((h) => h.id === selectedHood.id) ?? null : null;
+  const resolvedSelectedHood = filters.geoLevel === 'neighborhood' ? matchedSelectedHood : (matchedSelectedHood ?? effectiveCityHoods[0] ?? null);
 
   const targetZone = filters.zoneName || resolvedSelectedHood?.zone || '';
-  const scopedNeighborhoods: EvaluatedNeighborhood[] =
-    filters.geoLevel === 'city'
+  const hasNeighborhoodMismatch = filters.geoLevel === 'neighborhood' && (!selectedHood || matchedSelectedHood === null);
+  const scopedNeighborhoods: EvaluatedNeighborhood[] = !isCityValid || hasNeighborhoodMismatch
+    ? []
+    : filters.geoLevel === 'city'
       ? [...effectiveCityHoods]
       : filters.geoLevel === 'zone'
         ? effectiveCityHoods.filter((h) => h.zone === targetZone)
@@ -186,26 +190,30 @@ export function buildMarketSnapshotBundle(params: {
           ? [resolvedSelectedHood]
           : [];
 
-  const scopeStatus: MarketScopeStatus =
-    scopedNeighborhoods.length === 0
+  const scopeStatus: MarketScopeStatus = !isCityValid || hasNeighborhoodMismatch
+    ? 'invalid_scope'
+    : scopedNeighborhoods.length === 0
       ? filters.geoLevel === 'zone' && !effectiveCityHoods.some((h) => h.zone === targetZone)
         ? 'invalid_scope'
         : 'valid_empty'
       : 'valid_with_data';
 
-  const geoScopeFa =
-    filters.geoLevel === 'city'
+  const geoScopeFa = !isCityValid
+    ? 'شهر نامعتبر'
+    : filters.geoLevel === 'city'
       ? `کل شهر ${cityNameFa}`
       : filters.geoLevel === 'zone'
         ? `${targetZone || 'منطقه انتخابی'} (${cityNameFa})`
-        : `محله ${resolvedSelectedHood?.name || 'نامشخص'}`;
+        : `محله ${resolvedSelectedHood?.name || 'نامعتبر در این شهر'}`;
 
-  const selectedAgg = aggregateNeighborhoodMarketMetrics(
-    resolvedSelectedHood?.id ?? 1,
-    resolvedSelectedHood?.name ?? '',
-    resolvedSelectedHood?.buyPerSqm ?? 120,
-    buildNeighborhoodListingSamples(resolvedSelectedHood, 'sale'),
-  );
+  const selectedAgg = resolvedSelectedHood
+    ? aggregateNeighborhoodMarketMetrics(
+        resolvedSelectedHood.id,
+        resolvedSelectedHood.name,
+        resolvedSelectedHood.buyPerSqm,
+        buildNeighborhoodListingSamples(resolvedSelectedHood, 'sale'),
+      )
+    : aggregateNeighborhoodMarketMetrics(0, 'ناموجود', 0, []);
 
   const scatterPoints =
     isNonResidentialUnavailable || scopeStatus !== 'valid_with_data'
@@ -318,7 +326,7 @@ export function buildMarketSnapshotBundle(params: {
 
   const trendSeries: MarketTrendSeriesPoint[] = slicedPoints.map((pt, idx) => {
     const askSqm = pt.buyPricePerSqmMillions;
-    const ratio = resolvedSelectedHood.buyPerSqm > 0 && askSqm !== null ? askSqm / resolvedSelectedHood.buyPerSqm : 1;
+    const ratio = resolvedSelectedHood && resolvedSelectedHood.buyPerSqm > 0 && askSqm !== null ? askSqm / resolvedSelectedHood.buyPerSqm : 1;
     const hasGap = filters.onlyObserved && observedCount === 0 && idx < slicedPoints.length - 1;
     return {
       monthKey: pt.monthKey,
@@ -417,6 +425,7 @@ export function buildMarketSnapshotBundle(params: {
         makeMarketIndicatorValue('verified_transaction_sqm', null, '۰ معامله ثبت‌شده', geoScopeFa, periodLabelFa, 0, 'unavailable', 'رادار تهران قیمت آگهی و برآورد مدل را با معامله ثبت‌شده یکی نمی‌داند.'),
       ];
 
+  const validCompareIds = compareHoodIds.filter((id) => effectiveCityHoods.some((h) => h.id === id));
   return {
     geoScopeFa,
     cityNameFa,
@@ -460,22 +469,24 @@ export function buildMarketSnapshotBundle(params: {
       freshnessLabelFa,
       limitationFa: 'داده‌های پرت، آگهی‌های تکراری و معاملات تاییدنشده از میانه قیمت کنار گذاشته شده‌اند.',
     },
-    comparisonRows: buildGeoComparisonRows(effectiveCityHoods, resolvedSelectedHood, compareHoodIds, filters),
-    reports: buildMarketReportsList({
-      selectedHood: resolvedSelectedHood,
-      geoScopeFa,
-      periodLabelFa,
-      unitAsk,
-      unitDeal,
-      avgRahn80,
-      convertedMonthly,
-      grossYieldPct,
-      askingStatus,
-      rentStatus,
-      distribution,
-      observedSaleCount: observedValidPoints.length,
-      observedRentCount: rentSamplesCount,
-      dataAsOfIso: latestListingIso ?? (datedRef ? datedRef.asOfJalali : null),
-    }),
+    comparisonRows: resolvedSelectedHood ? buildGeoComparisonRows(effectiveCityHoods, resolvedSelectedHood, validCompareIds, filters) : [],
+    reports: resolvedSelectedHood
+      ? buildMarketReportsList({
+          selectedHood: resolvedSelectedHood,
+          geoScopeFa,
+          periodLabelFa,
+          unitAsk,
+          unitDeal,
+          avgRahn80,
+          convertedMonthly,
+          grossYieldPct,
+          askingStatus,
+          rentStatus,
+          distribution,
+          observedSaleCount: observedValidPoints.length,
+          observedRentCount: rentSamplesCount,
+          dataAsOfIso: latestListingIso ?? (datedRef ? datedRef.asOfJalali : null),
+        })
+      : [],
   };
 }

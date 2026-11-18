@@ -34,21 +34,39 @@ export function sanitizeSpreadsheetCellFormula(rawValue: string): string {
   const str = String(rawValue ?? '');
   return /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
 }
-export interface UserDataPortabilityExportEnvelope { schemaVersion: '2.0.0'; exportScope: 'server_account'; origin: 'server'; exportedAtIso: string; ownerUid: string; isPartialExport: boolean; unavailableSources: string[]; sources: Array<{ id: string; origin: 'server'; available: boolean; count: number }>; excludedSources: string[]; profile: Record<string, unknown>; favoriteNeighborhoodKeys: string[]; savedAlerts: unknown[]; publishedListings: unknown[]; calculationSnapshots: unknown[]; displayAreaUnitLabel?: string; referenceValuationIntlText?: string; }
-export function buildUserDataPortabilityExport(input: { ownerUid: string; profile?: Record<string, unknown>; favoriteNeighborhoodKeys?: string[]; savedAlerts?: unknown[]; publishedListings?: unknown[]; calculationSnapshots?: unknown[]; isPartialExport?: boolean; unavailableSources?: string[]; sources?: Array<{ id: string; origin: 'server'; available: boolean; count: number }>; excludedSources?: string[]; }): UserDataPortabilityExportEnvelope {
+export const SEVEN_ACCOUNT_EXPORT_DOMAIN_SOURCES = ['USER_PROFILE', 'FAVORITES_AND_WORKSPACES', 'BUYER_ALERTS', 'BARGAIN_LISTINGS', 'SPONSOR_RECORDS', 'CROWD_CLAIMS', 'MEDIA_METADATA'] as const;
+export type AccountExportDomainSourceId = (typeof SEVEN_ACCOUNT_EXPORT_DOMAIN_SOURCES)[number];
+export interface UserDataPortabilityExportEnvelope { schemaVersion: '2.0.0'; exportScope: 'server_account'; origin: 'server'; exportedAtIso: string; ownerUid: string; isPartialExport: boolean; completenessStatus: 'COMPLETE' | 'INCOMPLETE_PARTIAL'; totalRecordsExported: number; omittedPagesCount: number; unavailableSources: string[]; domainSourcesIncluded: AccountExportDomainSourceId[]; sources: Array<{ id: string; domainSource?: AccountExportDomainSourceId; origin: 'server'; available: boolean; count: number; omittedPagesCount?: number }>; excludedSources: string[]; profile: Record<string, unknown>; favoriteNeighborhoodKeys: string[]; savedAlerts: unknown[]; publishedListings: unknown[]; calculationSnapshots: unknown[]; sponsorRecords?: unknown[]; crowdClaims?: unknown[]; mediaObjects?: unknown[]; displayAreaUnitLabel?: string; referenceValuationIntlText?: string; }
+export function buildUserDataPortabilityExport(input: { ownerUid: string; profile?: Record<string, unknown>; favoriteNeighborhoodKeys?: string[]; savedAlerts?: unknown[]; publishedListings?: unknown[]; calculationSnapshots?: unknown[]; sponsorRecords?: unknown[]; crowdClaims?: unknown[]; mediaObjects?: unknown[]; omittedPagesCount?: number; isPartialExport?: boolean; unavailableSources?: string[]; sources?: Array<{ id: string; domainSource?: AccountExportDomainSourceId; origin: 'server'; available: boolean; count: number; omittedPagesCount?: number }>; excludedSources?: string[]; }): UserDataPortabilityExportEnvelope {
   const unavailableSources = Array.isArray(input.unavailableSources) ? input.unavailableSources : [];
   const publishedListings = Array.isArray(input.publishedListings) ? input.publishedListings : [];
   const savedAlerts = Array.isArray(input.savedAlerts) ? input.savedAlerts : [];
+  const favoriteNeighborhoodKeys = Array.isArray(input.favoriteNeighborhoodKeys) ? input.favoriteNeighborhoodKeys : [];
+  const sponsorRecords = Array.isArray(input.sponsorRecords) ? input.sponsorRecords : [];
+  const crowdClaims = Array.isArray(input.crowdClaims) ? input.crowdClaims : [];
+  const mediaObjects = Array.isArray(input.mediaObjects) ? input.mediaObjects : [];
+  const profile = input.profile || {};
+  const omittedPagesCount = Math.max(0, Number(input.omittedPagesCount || 0));
+  const isPartialExport = Boolean(input.isPartialExport) || unavailableSources.length > 0 || omittedPagesCount > 0;
+  const defaultSources: Array<{ id: string; domainSource?: AccountExportDomainSourceId; origin: 'server'; available: boolean; count: number }> = [
+    { id: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', available: !unavailableSources.includes('USER_PROFILE'), count: Object.keys(profile).length > 0 ? 1 : 0 },
+    { id: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', available: !unavailableSources.includes('FAVORITES_AND_WORKSPACES'), count: favoriteNeighborhoodKeys.length },
+    { id: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', available: !unavailableSources.includes('buyer_alerts_firestore') && !unavailableSources.includes('BUYER_ALERTS'), count: savedAlerts.length },
+    { id: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', available: !unavailableSources.includes('BARGAIN_LISTINGS'), count: publishedListings.length },
+    { id: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', available: !unavailableSources.includes('SPONSOR_RECORDS'), count: sponsorRecords.length },
+    { id: 'CROWD_CLAIMS', domainSource: 'CROWD_CLAIMS', origin: 'server', available: !unavailableSources.includes('CROWD_CLAIMS'), count: crowdClaims.length },
+    { id: 'MEDIA_METADATA', domainSource: 'MEDIA_METADATA', origin: 'server', available: !unavailableSources.includes('MEDIA_METADATA'), count: mediaObjects.length },
+  ];
+  const sources = Array.isArray(input.sources) ? input.sources : defaultSources;
+  const totalRecordsExported = sources.reduce((sum, s) => sum + (Number(s.count) || 0), 0);
   return {
     schemaVersion: '2.0.0', exportScope: 'server_account', origin: 'server', exportedAtIso: new Date().toISOString(), ownerUid: String(input.ownerUid),
-    isPartialExport: Boolean(input.isPartialExport) || unavailableSources.length > 0, unavailableSources,
-    sources: Array.isArray(input.sources) ? input.sources : [
-      { id: 'server_published_bargains', origin: 'server', available: true, count: publishedListings.length },
-      { id: 'server_buyer_alerts', origin: 'server', available: !unavailableSources.includes('buyer_alerts_firestore'), count: savedAlerts.length },
-    ],
+    isPartialExport, completenessStatus: isPartialExport ? 'INCOMPLETE_PARTIAL' : 'COMPLETE', totalRecordsExported, omittedPagesCount, unavailableSources,
+    domainSourcesIncluded: SEVEN_ACCOUNT_EXPORT_DOMAIN_SOURCES.filter((ds) => !unavailableSources.includes(ds)),
+    sources,
     excludedSources: Array.isArray(input.excludedSources) ? input.excludedSources : ['local_workspace_browser_storage', 'firebase_auth_credentials_and_tokens', 'server_audit_logs_anonymized'],
-    profile: input.profile || {}, favoriteNeighborhoodKeys: Array.isArray(input.favoriteNeighborhoodKeys) ? input.favoriteNeighborhoodKeys : [],
-    savedAlerts, publishedListings, calculationSnapshots: Array.isArray(input.calculationSnapshots) ? input.calculationSnapshots : [],
+    profile, favoriteNeighborhoodKeys, savedAlerts, publishedListings, calculationSnapshots: Array.isArray(input.calculationSnapshots) ? input.calculationSnapshots : [],
+    sponsorRecords, crowdClaims, mediaObjects,
     displayAreaUnitLabel: formatAreaUnitLabel(getStoredAreaUnit()), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(10_000, getStoredIntlCurrency()),
   };
 }

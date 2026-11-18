@@ -150,3 +150,43 @@ export const COLOR_SYSTEM_ACCEPTANCE_CRITERIA: readonly { id: string; titleFa: s
   { id: 'COL-19', titleFa: 'تفاوت رنگ لایه‌های کارتوگرافیک نقشه و رابط عمومی مشخص شده است' },
   { id: 'COL-20', titleFa: 'تم روشن پیش‌فرض و توکن‌های مستقل تم تاریک در معماری پیش‌بینی شده است' },
 ] as const;
+
+export const RADAR_BRAND_COLOR_TOKENS = {
+  ...BRAND_PALETTE,
+  'brand-500': '#228B7E',
+  'brand-600': BRAND_PALETTE.brand600,
+  'brand-700': BRAND_PALETTE.brand700,
+  emerald600: BRAND_PALETTE.brand600,
+} as const;
+
+export const RADAR_LIGHT_SURFACE_TEXT_TOKENS = {
+  ...NEUTRAL_PALETTE,
+  'bg-canvas': NEUTRAL_PALETTE.canvas,
+  'bg-surface': NEUTRAL_PALETTE.surface,
+  'bg-elevated': '#FFFFFF',
+  'bg-muted': NEUTRAL_PALETTE.surfaceSubtle,
+  'text-primary': NEUTRAL_PALETTE.textPrimary,
+  'text-secondary': NEUTRAL_PALETTE.textSecondary,
+  'text-muted': NEUTRAL_PALETTE.textMuted,
+  'border-subtle': NEUTRAL_PALETTE.borderSubtle,
+  'border-strong': NEUTRAL_PALETTE.borderStrong,
+  focus: SEMANTIC_PALETTE.focusRing,
+} as const;
+
+export const RADAR_DARK_SURFACE_TEXT_TOKENS = {
+  'bg-canvas': '#0D1513',
+  'bg-surface': '#131F1C',
+  'bg-elevated': '#1A2A26',
+  'bg-muted': '#172522',
+  'text-primary': '#EEF4F2',
+  'text-secondary': '#C2D1CC',
+  'text-muted': '#8CA19A',
+  'border-subtle': '#233631',
+  'border-strong': '#324B44',
+  focus: '#5A95FF',
+} as const;
+
+export const RADAR_SEMANTIC_STATUS_PALETTE = SEMANTIC_PALETTE;
+export const RADAR_MAP_GEO_TOKENS = CARTOGRAPHIC_PALETTE;
+export const RADAR_CHART_8_SERIES_PALETTE = DATA_VIZ_SERIES_PALETTE;
+

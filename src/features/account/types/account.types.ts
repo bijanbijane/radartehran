@@ -93,11 +93,54 @@ export interface AccountActionRequiredItem {
   targetSubTab?: ModuleSubTabId;
 }
 
+export type AccountDeletionLifecycleState =
+  | 'INITIATED_WRITE_BLOCKED'
+  | 'PURGING_DEPENDENT_RECORDS'
+  | 'CLEANING_UP_MEDIA'
+  | 'APPLYING_RETENTION_POLICIES'
+  | 'DELETING_AUTH_IDENTITY'
+  | 'PARTIAL_FAILURE_RETRYABLE'
+  | 'BLOCKED_MANUAL_REVIEW'
+  | 'COMPLETED';
+
+export const ACCOUNT_DELETION_LIFECYCLE_LABELS_FA: Record<AccountDeletionLifecycleState, string> = {
+  INITIATED_WRITE_BLOCKED: 'درخواست ثبت شد؛ عملیات آغاز شده است',
+  PURGING_DEPENDENT_RECORDS: 'در حال تعیین تکلیف اطلاعات حساب',
+  CLEANING_UP_MEDIA: 'در حال پاکسازی رسانه‌ها',
+  APPLYING_RETENTION_POLICIES: 'در حال اعمال سیاست نگهداری داده',
+  DELETING_AUTH_IDENTITY: 'در حال حذف هویت حساب',
+  PARTIAL_FAILURE_RETRYABLE: 'عملیات ناقص است و امکان ادامه دارد',
+  BLOCKED_MANUAL_REVIEW: 'نیازمند بررسی دستی',
+  COMPLETED: 'حذف حساب تکمیل شده است',
+};
+
+export type AccountExportDomainSourceId =
+  | 'USER_PROFILE'
+  | 'FAVORITES_AND_WORKSPACES'
+  | 'BUYER_ALERTS'
+  | 'BARGAIN_LISTINGS'
+  | 'SPONSOR_RECORDS'
+  | 'CROWD_CLAIMS'
+  | 'MEDIA_METADATA';
+
+export const ALL_SEVEN_ACCOUNT_EXPORT_SOURCES: readonly AccountExportDomainSourceId[] = [
+  'USER_PROFILE',
+  'FAVORITES_AND_WORKSPACES',
+  'BUYER_ALERTS',
+  'BARGAIN_LISTINGS',
+  'SPONSOR_RECORDS',
+  'CROWD_CLAIMS',
+  'MEDIA_METADATA',
+] as const;
+
 export interface DataRequestRecord {
   id: string;
   ownerUserId?: string;
   kind: 'export' | 'delete';
   status: DataRequestStatus;
+  lifecycleState?: AccountDeletionLifecycleState;
+  origin?: 'server' | 'local_browser';
+  jobId?: string;
   scope?: AccountExportScope;
   errorCode?: string;
   retentionNotesFa: string;
@@ -114,10 +157,12 @@ export const DATA_REQUEST_STATUS_LABELS: Record<DataRequestStatus, string> = {
 
 export interface AccountExportSourceInfo {
   sourceId: string;
+  domainSource?: AccountExportDomainSourceId;
   origin: 'server' | 'local_workspace';
   included: boolean;
   available: boolean;
   count?: number;
+  omittedPagesCount?: number;
   reasonFa?: string;
 }
 
@@ -127,8 +172,12 @@ export interface ServerAccountExportEnvelope {
   ownerUid: string;
   exportScope?: 'server_account';
   isPartialExport?: boolean;
+  completenessStatus?: 'COMPLETE' | 'INCOMPLETE_PARTIAL';
+  totalRecordsExported?: number;
+  omittedPagesCount?: number;
   unavailableSources?: string[];
-  sources?: Array<AccountExportSourceInfo | { id: string; origin: 'server'; available: boolean; count: number }>;
+  domainSourcesIncluded?: AccountExportDomainSourceId[];
+  sources?: Array<AccountExportSourceInfo | { id: string; domainSource?: AccountExportDomainSourceId; origin: 'server'; available: boolean; count: number; omittedPagesCount?: number }>;
   excludedSources?: Array<AccountExportSourceInfo | string>;
   profile: Record<string, unknown>;
   favoriteNeighborhoodKeys: string[];
@@ -137,6 +186,8 @@ export interface ServerAccountExportEnvelope {
   calculationSnapshots: unknown[];
   buyerLeads?: unknown[];
   dataCorrections?: unknown[];
+  sponsorRecords?: unknown[];
+  crowdClaims?: unknown[];
   mediaObjects?: unknown[];
   displayAreaUnitLabel?: string;
   referenceValuationIntlText?: string;
@@ -150,6 +201,8 @@ export interface ServerAccountDeletionStep {
 
 export interface ServerAccountDeletionPayload {
   status: 'ok' | 'partial';
+  jobId?: string;
+  lifecycleState?: AccountDeletionLifecycleState;
   steps: ServerAccountDeletionStep[];
   requiresClientAuthDeletion: boolean;
   failedSteps: string[];
@@ -170,6 +223,7 @@ export type AccountActionErrorCode =
   | 'OWNER_MISMATCH'
   | 'RECENT_LOGIN_REQUIRED'
   | 'AUTH_DELETE_FAILED'
+  | 'AUTH_DELETION_PRECONDITION_FAILED'
   | 'DOWNLOAD_FAILED';
 
 export type AccountActionResult<T> =
@@ -177,9 +231,12 @@ export type AccountActionResult<T> =
   | { ok: false; code: AccountActionErrorCode; httpStatus?: number; messageFa: string; retryable: boolean; data?: T };
 
 export interface AccountDeleteLayerStatus {
+  jobId?: string;
+  lifecycleState: AccountDeletionLifecycleState;
+  lifecycleLabelFa: string;
   serverDeletion: 'completed' | 'partial' | 'failed';
-  localCleanup: 'completed' | 'failed';
-  authDeletion: 'completed' | 'requires_reauth' | 'failed' | 'not_required';
+  localCleanup: 'completed' | 'skipped_server_incomplete' | 'failed';
+  authDeletion: 'completed' | 'requires_reauth' | 'blocked_by_incomplete_server_steps' | 'failed' | 'not_required';
   overallStatus: 'completed' | 'partial' | 'failed';
   requestStatus: DataRequestStatus;
   removedLocalKeysCount: number;
