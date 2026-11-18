@@ -7,6 +7,11 @@ import {
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { defaultSocialOutboxWorker } from '../notifications/socialOutboxWorker';
 import { defaultSocialDiscoveryAndFeed } from '../search/socialDiscoveryAndFeed';
+import {
+  CommunityDatabaseUnavailableError,
+  CommunityHttpError,
+} from '../community/communityFirestoreAdapter';
+import { communityUnifiedRepository } from '../community/communityUnifiedRepository';
 import { defaultPlatformTelemetryTaxonomy } from '../analytics-research/platformTelemetryAndTaxonomy';
 import { defaultRuntimeResilience, FAILURE_ISOLATION_MATRIX_10 } from '../platform-resilience/runtimeResilienceAndIncidents';
 import { defaultOpsCostAndReleaseGovernance } from '../platform-resilience/opsCostAndReleaseGovernance';
@@ -34,6 +39,31 @@ export function registerUnifiedPlatformWave1Routes(app: Express, deps?: UnifiedP
   const getIp = deps?.getClientIp ?? ((req: Request) => req.ip || '127.0.0.1');
   const allowRate = deps?.checkRateLimit ?? (() => true);
 
+  function handleSocialFeedRouteError(res: Response, err: unknown): void {
+    if (err instanceof CommunityHttpError) {
+      res.status(err.statusCode).json({
+        status: 'error',
+        code: err.code,
+        message: err.messageFa,
+        ...(err.details ? { details: err.details } : {}),
+      });
+      return;
+    }
+    if (err instanceof CommunityDatabaseUnavailableError) {
+      res.status(503).json({
+        status: 'error',
+        code: err.code,
+        message: err.message,
+      });
+      return;
+    }
+    res.status(500).json({
+      status: 'error',
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'خطای داخلی سرور در پردازش درخواست فید اجتماعی.',
+    });
+  }
+
   async function requireAdmin(req: Request, res: Response): Promise<{ ok: true; uid: string } | { ok: false }> {
     res.setHeader('Cache-Control', 'no-store');
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>, process.env, {
@@ -60,44 +90,125 @@ export function registerUnifiedPlatformWave1Routes(app: Express, deps?: UnifiedP
     res.status(200).json({ status: 'ok', item });
   });
 
-  // Stage 7: Social Search & Feeds
+  // Stage 7: Social Search & Feeds (RT-SOCIAL-IMPL-007 hardened)
   app.get('/api/v1/social/search', async (req, res) => {
-    if (!allowRate(getIp(req), 'general', 90, 60_000)) { res.status(429).json({ status: 'error', code: 'RATE_LIMITED' }); return; }
-    const out = await defaultSocialDiscoveryAndFeed.searchSocial({
-      q: typeof req.query.q === 'string' ? req.query.q : '',
-      neighborhoodId: req.query.neighborhoodId ? Number(req.query.neighborhoodId) : undefined,
-      limit: req.query.limit ? Number(req.query.limit) : undefined,
-      cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
-    });
-    res.status(200).json({ status: 'ok', ...out });
+    try {
+      const ip = getIp(req);
+      if (!allowRate(ip, 'general', 90, 60_000)) {
+        res.status(429).json({ status: 'error', code: 'RATE_LIMITED' });
+        return;
+      }
+      await communityUnifiedRepository.enforceRateLimit('read', `ip:${ip}`);
+      const rawHood = req.query.neighborhoodId;
+      const neighborhoodId =
+        rawHood !== undefined && rawHood !== '' ? Number(rawHood) : undefined;
+      if (
+        neighborhoodId !== undefined &&
+        (!Number.isInteger(neighborhoodId) || neighborhoodId < 1)
+      ) {
+        throw new CommunityHttpError(400, 'INVALID_NEIGHBORHOOD_ID', 'شناسه محله نامعتبر است.');
+      }
+      const rawLimit = req.query.limit;
+      const limit = rawLimit !== undefined && rawLimit !== '' ? Number(rawLimit) : undefined;
+      const out = await defaultSocialDiscoveryAndFeed.searchSocial({
+        q: typeof req.query.q === 'string' ? req.query.q : '',
+        neighborhoodId,
+        limit,
+        cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
+      });
+      res.status(200).json({ status: 'ok', ...out });
+    } catch (err) {
+      handleSocialFeedRouteError(res, err);
+    }
   });
+
   app.get('/api/v1/social/feed/discover', async (req, res) => {
-    const out = await defaultSocialDiscoveryAndFeed.getDiscoverFeed({
-      limit: req.query.limit ? Number(req.query.limit) : undefined,
-      cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
-    });
-    res.status(200).json({ status: 'ok', ...out });
+    try {
+      const ip = getIp(req);
+      if (!allowRate(ip, 'general', 90, 60_000)) {
+        res.status(429).json({ status: 'error', code: 'RATE_LIMITED' });
+        return;
+      }
+      await communityUnifiedRepository.enforceRateLimit('read', `ip:${ip}`);
+      const rawLimit = req.query.limit;
+      const limit = rawLimit !== undefined && rawLimit !== '' ? Number(rawLimit) : undefined;
+      const out = await defaultSocialDiscoveryAndFeed.getDiscoverFeed({
+        limit,
+        cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
+      });
+      res.status(200).json({ status: 'ok', ...out });
+    } catch (err) {
+      handleSocialFeedRouteError(res, err);
+    }
   });
+
   app.get('/api/v1/social/feed/neighborhood/:hoodId', async (req, res) => {
-    const out = await defaultSocialDiscoveryAndFeed.getNeighborhoodFeed(Number(req.params.hoodId) || 1, {
-      limit: req.query.limit ? Number(req.query.limit) : undefined,
-      cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
-    });
-    res.status(200).json({ status: 'ok', ...out });
+    try {
+      const ip = getIp(req);
+      if (!allowRate(ip, 'general', 90, 60_000)) {
+        res.status(429).json({ status: 'error', code: 'RATE_LIMITED' });
+        return;
+      }
+      await communityUnifiedRepository.enforceRateLimit('read', `ip:${ip}`);
+      const hoodId = Number(req.params.hoodId);
+      if (!Number.isInteger(hoodId) || hoodId < 1) {
+        throw new CommunityHttpError(400, 'INVALID_NEIGHBORHOOD_ID', 'شناسه محله نامعتبر است.');
+      }
+      const rawLimit = req.query.limit;
+      const limit = rawLimit !== undefined && rawLimit !== '' ? Number(rawLimit) : undefined;
+      const out = await defaultSocialDiscoveryAndFeed.getNeighborhoodFeed(hoodId, {
+        limit,
+        cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
+      });
+      res.status(200).json({ status: 'ok', ...out });
+    } catch (err) {
+      handleSocialFeedRouteError(res, err);
+    }
   });
+
   app.get('/api/v1/social/feed/following', async (req, res) => {
-    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
-    if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason || 'UNAUTHORIZED' }); return; }
-    const out = await defaultSocialDiscoveryAndFeed.getFollowingFeed(auth.uid, {
-      limit: req.query.limit ? Number(req.query.limit) : undefined,
-      cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
-    });
-    res.status(200).json({ status: 'ok', ...out });
+    try {
+      const auth = await verifyAuthenticatedUserHeader(
+        req.headers as Record<string, string | string[] | undefined>,
+      );
+      if (!auth.authorized || !auth.uid) {
+        res.status(401).json({ status: 'error', code: auth.reason || 'UNAUTHORIZED' });
+        return;
+      }
+      const ip = getIp(req);
+      if (!allowRate(ip, 'general', 90, 60_000)) {
+        res.status(429).json({ status: 'error', code: 'RATE_LIMITED' });
+        return;
+      }
+      await communityUnifiedRepository.enforceRateLimit('read', auth.uid);
+      const rawLimit = req.query.limit;
+      const limit = rawLimit !== undefined && rawLimit !== '' ? Number(rawLimit) : undefined;
+      const out = await defaultSocialDiscoveryAndFeed.getFollowingFeed(auth.uid, {
+        limit,
+        cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
+      });
+      res.status(200).json({ status: 'ok', ...out });
+    } catch (err) {
+      handleSocialFeedRouteError(res, err);
+    }
   });
+
   app.post('/api/v1/social/search/rebuild', async (req, res) => {
-    const a = await requireAdmin(req, res);
-    if (!a.ok) return;
-    res.status(200).json({ status: 'ok', ...(await defaultSocialDiscoveryAndFeed.rebuildDerivedIndex(a.uid)) });
+    try {
+      const a = await requireAdmin(req, res);
+      if (!a.ok) return;
+      const batchSize =
+        typeof req.body?.batchSize === 'number' ? req.body.batchSize : undefined;
+      const resumeJobId =
+        typeof req.body?.resumeJobId === 'string' ? req.body.resumeJobId : undefined;
+      const out = await defaultSocialDiscoveryAndFeed.rebuildDerivedIndex(a.uid, {
+        batchSize,
+        resumeJobId,
+      });
+      res.status(200).json({ status: 'ok', ...out });
+    } catch (err) {
+      handleSocialFeedRouteError(res, err);
+    }
   });
 
   // Stage 8: Taxonomy Telemetry & Rollups

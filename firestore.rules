@@ -693,7 +693,10 @@ service cloud.firestore {
         isValidId(followId) &&
         incoming().keys().hasAll(['scope', 'targetId', 'followerUid']) &&
         incoming().followerUid == request.auth.uid &&
-        incoming().scope in ['topic', 'post', 'user'];
+        incoming().targetId is string &&
+        incoming().targetId.size() >= 1 &&
+        incoming().scope in ['topic', 'post', 'user'] &&
+        (incoming().scope != 'user' || incoming().followerUid != incoming().targetId);
       allow update: if false;
       allow delete: if isVerifiedUser() && resource != null && existing().followerUid == request.auth.uid;
     }
@@ -715,11 +718,20 @@ service cloud.firestore {
       allow get: if isValidId(userId) &&
         (isAdmin() || (isSignedIn() && request.auth.uid == userId) || existing().visibility == 'public');
       allow list: if isAdmin() || existing().visibility == 'public';
-      allow create, update: if isVerifiedUser() &&
+      allow create: if isVerifiedUser() &&
         isValidId(userId) &&
         request.auth.uid == userId &&
         incoming().userId == request.auth.uid &&
-        incoming().visibility in ['public', 'members_only', 'private'];
+        incoming().visibility in ['public', 'members_only', 'private'] &&
+        (!('followersCount' in incoming()) || incoming().followersCount == 0) &&
+        (!('followingCount' in incoming()) || incoming().followingCount == 0);
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        incoming().userId == request.auth.uid &&
+        incoming().visibility in ['public', 'members_only', 'private'] &&
+        (!('followersCount' in incoming()) || incoming().followersCount == existing().get('followersCount', 0)) &&
+        (!('followingCount' in incoming()) || incoming().followingCount == existing().get('followingCount', 0));
       allow delete: if isAdmin() && isValidId(userId);
     }
 
@@ -738,6 +750,22 @@ service cloud.firestore {
 
     match /socialOutbox/{outboxId} {
       allow get, list, create, update, delete: if isAdmin() && isValidId(outboxId);
+    }
+
+    match /socialRateLimits/{rateLimitId} {
+      allow read, write: if false;
+    }
+
+    match /socialActivities/{activityId} {
+      allow read, write: if false;
+    }
+
+    match /socialFeedIndex/{indexId} {
+      allow read, write: if false;
+    }
+
+    match /socialFeedIndexJobs/{jobId} {
+      allow read, write: if false;
     }
   }
 }

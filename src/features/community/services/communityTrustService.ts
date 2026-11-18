@@ -138,8 +138,12 @@ export function sanitizePublicProfile(profile: CommunityProfile, isViewerMember:
   if (profile.visibility === 'private' && !isSelf) return null;
   if (profile.visibility === 'members_only' && !isViewerMember && !isSelf) return null;
   const nowMs = Date.now();
-  const activeBadges = profile.showBadges
-    ? profile.badges.filter((b) => b.status === 'active' && (!b.expiresAtIso || Date.parse(b.expiresAtIso) > nowMs))
+  const canShowBadges = Boolean(profile.showBadges || isSelf);
+  const canShowContributions = Boolean(profile.showContributions || isSelf);
+  const canShowFollowedTopics = Boolean(profile.showFollowedTopics || isSelf);
+  const rawBadges = Array.isArray(profile.badges) ? profile.badges : [];
+  const activeBadges = canShowBadges
+    ? rawBadges.filter((b) => (!b.status || b.status === 'active') && (!b.expiresAtIso || Date.parse(b.expiresAtIso) > nowMs))
     : [];
   const raw = profile as unknown as Record<string, unknown>;
   const stripped: Record<string, unknown> = { ...raw };
@@ -154,8 +158,10 @@ export function sanitizePublicProfile(profile: CommunityProfile, isViewerMember:
   return {
     ...(stripped as unknown as CommunityProfile),
     badges: activeBadges,
-    recentPublicSummaryFa: profile.showContributions ? profile.recentPublicSummaryFa : [],
-    followedTopicIds: profile.showFollowedTopics ? profile.followedTopicIds : [],
+    recentPublicSummaryFa: canShowContributions ? profile.recentPublicSummaryFa : [],
+    followedTopicIds: canShowFollowedTopics ? profile.followedTopicIds : [],
+    followersCount: Math.max(0, Number(profile.followersCount ?? 0)),
+    followingCount: Math.max(0, Number(profile.followingCount ?? 0)),
   };
 }
 
@@ -369,19 +375,31 @@ export function togglePostHelpfulVote(postId: string, voterUserId: string): Comm
 
 export function loadCommunityAbuseReports(): CommunityAbuseReport[] { return readCommunityJson<CommunityAbuseReport[]>(ABUSE_REPORTS_KEY, []); }
 
-export function submitCommunityAbuseReport(params: {
+export function submitCommunityAbuseReportWithResult(params: {
   targetType: CommunityAbuseReport['targetType']; targetId: string; reason: CommunityAbuseReason; detailsFa: string; reporterUserId: string;
-}): CommunityAbuseReport[] {
-  if (!isRealAuthenticatedUid(params.reporterUserId)) return loadCommunityAbuseReports();
+}): { ok: boolean; items: CommunityAbuseReport[]; report?: CommunityAbuseReport; errorFa?: string } {
+  if (!isRealAuthenticatedUid(params.reporterUserId)) {
+    return { ok: false, items: loadCommunityAbuseReports(), errorFa: COMMUNITY_AUTH_REQUIRED_FA };
+  }
+  const safeTargetId = sanitizeInput(params.targetId, 60);
+  if (!safeTargetId) {
+    return { ok: false, items: loadCommunityAbuseReports(), errorFa: 'شناسه محتوای هدف نامعتبر است.' };
+  }
   const report: CommunityAbuseReport = {
     id: `abr-${Date.now()}-${Math.random().toString(36).slice(2, 4)}`, targetType: params.targetType,
-    targetId: sanitizeInput(params.targetId, 60), reason: params.reason,
+    targetId: safeTargetId, reason: params.reason,
     detailsFa: sanitizeInput(params.detailsFa, 240) || 'گزارش‌شده توسط کاربر',
-    reporterUserId: params.reporterUserId, status: 'submitted', createdAtIso: new Date().toISOString(),
+    reporterUserId: params.reporterUserId.trim(), status: 'submitted', createdAtIso: new Date().toISOString(),
   };
   const next = [report, ...loadCommunityAbuseReports()];
   writeCommunityJson(ABUSE_REPORTS_KEY, next);
-  return next;
+  return { ok: true, items: next, report };
+}
+
+export function submitCommunityAbuseReport(params: {
+  targetType: CommunityAbuseReport['targetType']; targetId: string; reason: CommunityAbuseReason; detailsFa: string; reporterUserId: string;
+}): CommunityAbuseReport[] {
+  return submitCommunityAbuseReportWithResult(params).items;
 }
 
 export function moderateCommunityPost(postId: string, status: DiscussionModerationStatus): CommunityDiscussionPost[] {

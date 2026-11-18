@@ -51,6 +51,8 @@ export interface CommunityActorContext {
 export interface CommunityDiscussionQuery {
   neighborhoodId?: number | null;
   topicId?: string;
+  entityType?: string;
+  entityId?: string;
   sort?: 'rank' | 'recent' | 'helpful';
   includeSeeds?: boolean;
 }
@@ -58,6 +60,8 @@ export interface CommunityDiscussionQuery {
 export interface CommunityQuestionQuery {
   neighborhoodId?: number | null;
   topicId?: string;
+  entityType?: string;
+  entityId?: string;
   status?: string;
   includeSeeds?: boolean;
 }

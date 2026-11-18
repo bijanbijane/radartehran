@@ -132,6 +132,70 @@
         { "fieldPath": "scope", "order": "ASCENDING" },
         { "fieldPath": "targetId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "socialFollows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "followerUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "neighborhoodId", "order": "ASCENDING" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "topicId", "order": "ASCENDING" },
+        { "fieldPath": "createdAtIso", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "normalizedSearchTokens", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "socialFeedIndex",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "neighborhoodId", "order": "ASCENDING" },
+        { "fieldPath": "normalizedSearchTokens", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "feedScore", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

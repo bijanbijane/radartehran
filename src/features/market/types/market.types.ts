@@ -70,6 +70,8 @@ export interface DataQualityAssessment {
   verifiedTransactionCount: number;
   coverageLabelFa: string;
   freshnessLabelFa: string;
+  freshnessStatus?: 'FRESH' | 'AGING' | 'STALE' | 'UNKNOWN';
+  observedAtIso?: string | null;
   limitationFa: string;
 }
 
@@ -99,6 +101,8 @@ export interface MarketReportItem {
   publishedJalali: string;
   generatedAtIso: string;
   dataAsOfIso: string | null;
+  dataAsOfDisplayFa?: string | null;
+  freshnessStatus?: 'FRESH' | 'AGING' | 'STALE' | 'UNKNOWN';
   status: MarketIndicatorStatus;
   summaryFa: string;
   keyTakeawaysFa: string[];

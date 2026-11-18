@@ -44,12 +44,11 @@ import {
   parseApiResponse,
 } from '../src/platform/api';
 import {
-  ALLOWED_SHELL_LAYOUTS,
-  CENTRAL_ROUTE_REGISTRY,
-  findRegisteredRoute,
   runAppBootstrap,
   initializeApp,
 } from '../src/app/bootstrap';
+import { ALLOWED_SHELL_LAYOUTS } from '../src/app/application-shell';
+import { CENTRAL_ROUTE_REGISTRY, findRegisteredRoute } from '../src/app/router';
 import * as AppShellMod from '../src/app/application-shell';
 import * as AppRouterMod from '../src/app/router';
 import {
@@ -307,8 +306,8 @@ test('RTD-007: OnboardingStageSwitch uses React.lazy + Suspense for Stage34..Sta
 
 test('RTD-008: vite.config.ts manualChunks splits onboarding-ui and feature chunks cleanly', () => {
   const viteConfig = fs.readFileSync(path.join(ROOT, 'vite.config.ts'), 'utf8');
-  assert.equal(viteConfig.includes('onboarding-ui-30s'), true);
-  assert.equal(viteConfig.includes('onboarding-ui-70s-80s'), true);
+  assert.equal(viteConfig.includes('onboarding-ui-34-39'), true);
+  assert.equal(viteConfig.includes('onboarding-ui-70-79'), true);
   assert.equal(viteConfig.includes('vendor-leaflet'), true);
 });
 

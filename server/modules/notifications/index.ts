@@ -50,6 +50,23 @@ export {
   registerNotificationRoutes,
   type NotificationModuleOptions,
 } from './notificationRoutes.ts';
+export {
+  SocialOutboxWorkerService,
+  NotificationsModuleSocialAdapter,
+  appendSocialOutboxEvent,
+  buildSocialOutboxRecord,
+  computeSocialOutboxEventId,
+  computeBackoffWithJitterMs,
+  defaultSocialOutboxWorker,
+  setSimulateOutboxWriteFailureForTests,
+  type SocialEventType,
+  type OutboxDeliveryStatus,
+  type SocialOutboxRecord,
+  type OutboxWorkerMetrics,
+  type SocialNotificationAdapter,
+  type SocialNotificationDispatchInput,
+  type SocialNotificationDispatchResult,
+} from './socialOutboxWorker.ts';
 
 import { FirestoreAndJournalNotificationStore } from './durableNotificationStore.ts';
 import { NotificationLifecycleEngine } from './notificationEngine.ts';

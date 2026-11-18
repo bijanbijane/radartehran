@@ -17,6 +17,7 @@
   - `/userPreferences/{userId}`: Owner and admin `get`, admin-only `list`, owner `create`/`update` with validated `favoriteHoodIds` (at most 25 members, and every member is an integer from 1 to 999), and owner/admin `delete`.
   - `/socialPosts/{postId}`, `/socialComments/{commentId}`, `/socialReactions/{reactionId}`, `/socialFollows/{followId}`, `/socialReports/{reportId}`, `/socialProfiles/{userId}`, `/socialIdempotency/{keyId}`: Least-privilege verified-owner rules and soft-delete visibility enforcement.
   - `/socialModerationCases/{caseId}`, `/socialModerationEvents/{eventId}`, `/socialOutbox/{outboxId}`: Fail-closed `isAdmin() && isValidId(...)` access; `/socialModerationEvents` enforces append-only immutability (`allow update, delete: if false`).
+  - `/socialRateLimits/{rateLimitId}`, `/socialActivities/{activityId}`, `/socialFeedIndex/{indexId}`, & `/socialFeedIndexJobs/{jobId}`: Strictly server-only (`allow read, write: if false;`) accessed exclusively via backend Firestore transactions/projections with zero raw PII or full content body storage.
   - `/{document=**}`: Explicit catch-all deny (`allow read, write: if false`).
 
 ## 2. Backend HTTP & API Security (`server.ts`, `src/utils/serverAdminAndTelegramSecurity.ts`)

@@ -1,20 +1,18 @@
 import {
-  getRadarBottomNavCopy,
-  getRadarCompareCopy,
-  getRadarGlobalNavCopy,
-  getRadarInspectorCopy,
-  getRadarLegendCopy,
-  getRadarTopBarCopy,
-  type RadarBottomNavCopy,
-  type RadarCompareCopy,
-  type RadarGlobalNavCopy,
-  type RadarInspectorCopy,
-  type RadarLegendCopy,
-  type RadarTopBarCopy,
+  getRadarBottomNavCopy, getRadarCompareCopy, getRadarGlobalNavCopy, getRadarInspectorCopy, getRadarLegendCopy, getRadarTopBarCopy,
+  type PlannedRadarLocale, type RadarBottomNavCopy, type RadarCompareCopy, type RadarGlobalNavCopy,
+  type RadarInspectorCopy, type RadarLegendCopy, type RadarTopBarCopy, type SupportedRadarLocale,
 } from './i18n/radarCopies';
+import {
+  evaluateSingleLocaleCandidate, isPlannedRadarLocale, isSupportedRadarLocale,
+  resolveRadarLocaleContract, syncLocaleToDocumentRoot, type LocaleResolutionResult,
+} from '../platform/locale';
+
+export type { PlannedRadarLocale, SupportedRadarLocale, LocaleResolutionResult };
+export { isPlannedRadarLocale, isSupportedRadarLocale, resolveRadarLocaleContract };
 
 export type AreaUnit = 'sqm' | 'sqft';
-export type RadarLocale = 'fa' | 'en' | 'ar' | 'tr';
+export type RadarLocale = SupportedRadarLocale | PlannedRadarLocale;
 export type IntlCurrencyCode = 'IRT' | 'USD' | 'EUR' | 'AED';
 export type RadarExperienceMode = 'simple' | 'pro';
 export type PrimaryViewId =
@@ -28,7 +26,7 @@ export interface RuntimeExchangeRateReference {
   isStaleWarningFa?: string;
 }
 
-export const SQM_TO_SQFT = 10.7639104;
+export const SQM_TO_SQFT = 10.7639104167;
 export const AREA_UNIT_STORAGE_KEY = 'radar_area_unit_v1';
 export const RADAR_LOCALE_STORAGE_KEY = 'radar_locale_v1';
 export const RADAR_CURRENCY_STORAGE_KEY = 'radar_intl_currency_v1';
@@ -42,10 +40,11 @@ export const MILLION_TOMAN_PER_FX_UNIT: Record<Exclude<IntlCurrencyCode, 'IRT'>,
 };
 
 let currentMemoryAreaUnit: AreaUnit = 'sqm';
-let currentMemoryLocale: 'fa' | 'en' = 'fa';
+let currentMemoryLocale: SupportedRadarLocale = 'fa';
 let currentMemoryCurrency: IntlCurrencyCode = 'IRT';
 let currentMemoryExperienceMode: RadarExperienceMode = 'simple';
 let runtimeExchangeRateSnapshot: RuntimeExchangeRateReference | null = null;
+let lastLocaleResolutionState: LocaleResolutionResult = resolveRadarLocaleContract();
 const listeners = new Set<() => void>();
 
 function notifyAllListeners(): void {
@@ -54,12 +53,16 @@ function notifyAllListeners(): void {
   });
 }
 
-function normalizeSupportedLocale(raw?: string | null): 'fa' | 'en' | undefined {
+function normalizeSupportedLocale(raw?: string | null): SupportedRadarLocale | undefined {
   if (!raw || typeof raw !== 'string') return undefined;
   const code = raw.trim().toLowerCase();
   if (code === 'en' || code.startsWith('en-')) return 'en';
   if (code === 'fa' || code.startsWith('fa-')) return 'fa';
   return undefined;
+}
+
+export function getLastLocaleResolutionState(): LocaleResolutionResult {
+  return lastLocaleResolutionState;
 }
 
 export function setRuntimeExchangeRateSnapshot(snapshot: RuntimeExchangeRateReference | null): void {
@@ -127,7 +130,7 @@ export function subscribeAreaUnit(listener: () => void): () => void {
   return () => { listeners.delete(listener); };
 }
 
-export function detectBrowserLocaleFromNavigator(languages?: readonly string[]): 'fa' | 'en' {
+export function detectBrowserLocaleFromNavigator(languages?: readonly string[]): SupportedRadarLocale {
   const list = languages ?? (typeof navigator !== 'undefined' && Array.isArray(navigator.languages) ? navigator.languages : undefined);
   if (Array.isArray(list)) {
     for (const lang of list) {
@@ -142,11 +145,15 @@ export function getRadarLocaleDirection(locale: RadarLocale): 'rtl' | 'ltr' {
   return locale === 'en' ? 'ltr' : 'rtl';
 }
 
-export function parseUrlIntlParams(search?: string): { lang?: 'fa' | 'en'; currency?: IntlCurrencyCode; unit?: AreaUnit } {
+export function parseUrlIntlParams(search?: string): { lang?: SupportedRadarLocale; currency?: IntlCurrencyCode; unit?: AreaUnit } {
   if (!search || typeof search !== 'string') return { lang: undefined, currency: undefined, unit: undefined };
   try {
     const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-    const lang = normalizeSupportedLocale(params.get('lang'));
+    const rawLang = params.get('lang');
+    if (rawLang) {
+      lastLocaleResolutionState = evaluateSingleLocaleCandidate(rawLang, 'url') ?? lastLocaleResolutionState;
+    }
+    const lang = normalizeSupportedLocale(rawLang);
     const rawUnit = (params.get('unit') || '').trim().toLowerCase();
     const rawCurrency = (params.get('currency') || '').trim().toUpperCase();
     const unit: AreaUnit | undefined = rawUnit === 'sqm' || rawUnit === 'sqft' ? rawUnit : undefined;
@@ -159,35 +166,37 @@ export function parseUrlIntlParams(search?: string): { lang?: 'fa' | 'en'; curre
 
 export function resolveInitialRadarLocale(options?: {
   savedLocale?: string | null; urlLang?: string | null; navigatorLanguages?: readonly string[]; enableAutoBrowserDetect?: boolean;
-}): 'fa' | 'en' {
-  const fromUrl = normalizeSupportedLocale(options?.urlLang);
-  if (fromUrl) return fromUrl;
-  const fromSaved = normalizeSupportedLocale(options?.savedLocale);
-  if (fromSaved) return fromSaved;
-  if (options?.enableAutoBrowserDetect) return detectBrowserLocaleFromNavigator(options.navigatorLanguages);
-  return 'fa';
+}): SupportedRadarLocale {
+  const resolved = resolveRadarLocaleContract(options);
+  lastLocaleResolutionState = resolved;
+  return resolved.activeLocale;
 }
 
-export function getStoredRadarLocale(): 'fa' | 'en' {
+export function getStoredRadarLocale(): SupportedRadarLocale {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      const raw = normalizeSupportedLocale(window.localStorage.getItem(RADAR_LOCALE_STORAGE_KEY));
-      if (raw) { currentMemoryLocale = raw; return raw; }
+      const rawItem = window.localStorage.getItem(RADAR_LOCALE_STORAGE_KEY);
+      if (rawItem) {
+        const evalRes = evaluateSingleLocaleCandidate(rawItem, 'storage');
+        if (evalRes) {
+          lastLocaleResolutionState = evalRes;
+          currentMemoryLocale = evalRes.activeLocale;
+          return evalRes.activeLocale;
+        }
+      }
     }
   } catch { /* Ignore */ }
   return currentMemoryLocale;
 }
 
 export function setStoredRadarLocale(next: RadarLocale): void {
-  const valid: 'fa' | 'en' = next === 'en' ? 'en' : 'fa';
+  const evalRes = evaluateSingleLocaleCandidate(String(next), 'storage') ?? resolveRadarLocaleContract();
+  lastLocaleResolutionState = evalRes;
+  const valid: SupportedRadarLocale = evalRes.activeLocale;
   currentMemoryLocale = valid;
   try {
     if (typeof window !== 'undefined' && window.localStorage) window.localStorage.setItem(RADAR_LOCALE_STORAGE_KEY, valid);
-    if (typeof document !== 'undefined' && document.documentElement) {
-      document.documentElement.setAttribute('data-radar-locale', valid);
-      document.documentElement.lang = valid;
-      document.documentElement.dir = getRadarLocaleDirection(valid);
-    }
+    syncLocaleToDocumentRoot(valid);
   } catch { /* Ignore */ }
   notifyAllListeners();
 }
@@ -230,10 +239,7 @@ export function formatMillionTomanAsIntlCurrency(
     const usdValue = (safeMillion * 1_000_000) / rate;
     const maxDigits = usdValue > 0 && usdValue < 1000 ? 2 : 0;
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: usdValue > 0 && usdValue < 1000 ? 2 : 0,
-      maximumFractionDigits: maxDigits,
+      style: 'currency', currency: 'USD', minimumFractionDigits: maxDigits, maximumFractionDigits: maxDigits,
     }).format(usdValue);
   }
   if (safeMillion < 1000) {
@@ -247,12 +253,10 @@ export { getRadarBottomNavCopy, getRadarCompareCopy, getRadarGlobalNavCopy, getR
 export type { RadarBottomNavCopy, RadarCompareCopy, RadarGlobalNavCopy, RadarInspectorCopy, RadarLegendCopy, RadarTopBarCopy };
 
 export function sqmToSqft(sqm: number): number {
-  const safeSqm = Number.isFinite(sqm) ? Math.max(0, sqm) : 0;
-  return Number((safeSqm * SQM_TO_SQFT).toFixed(2));
+  return Number(((Number.isFinite(sqm) ? Math.max(0, sqm) : 0) * SQM_TO_SQFT).toFixed(2));
 }
 export function sqftToSqm(sqft: number): number {
-  const safeSqft = Number.isFinite(sqft) ? Math.max(0, sqft) : 0;
-  return Number((safeSqft / SQM_TO_SQFT).toFixed(2));
+  return Number(((Number.isFinite(sqft) ? Math.max(0, sqft) : 0) / SQM_TO_SQFT).toFixed(2));
 }
 export function convertAreaFromSqm(sqm: number, unit: AreaUnit = 'sqm'): number {
   const safeSqm = Number.isFinite(sqm) ? Math.max(0, sqm) : 0;

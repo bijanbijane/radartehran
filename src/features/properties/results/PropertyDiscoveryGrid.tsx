@@ -81,7 +81,7 @@ export const PropertyDiscoveryGrid: React.FC<PropertyDiscoveryGridProps> = ({
     );
   }
 
-  if (records.length === 0) {
+  if (records.length === 0 && (!applied.onlyInMapBounds || viewMode === 'list')) {
     return (
       <div className="p-8 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-center space-y-3">
         <p className="text-sm font-bold text-[#182522] dark:text-slate-200">فایلی با فیلتر فعلی یافت نشد.</p>
@@ -104,30 +104,39 @@ export const PropertyDiscoveryGrid: React.FC<PropertyDiscoveryGridProps> = ({
                 : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
           } gap-4`}
         >
-          {records.slice(0, 24).map((rec) => {
-            const hood = evaluatedNeighborhoods.find((h) => h.id === rec.property.hoodId) || selectedHood;
-            return (
-              <PropertyCard
-                key={rec.listing.listingId}
-                record={rec}
-                areaUnit={areaUnit}
-                intlCurrency={intlCurrency}
-                radarLocale={radarLocale}
-                isSaved={savedItems.some((s) => s.listingId === rec.listing.listingId)}
-                isCompared={compareIds.includes(rec.listing.listingId)}
-                isHighlighted={highlightedId === rec.listing.listingId}
-                onHoverChange={onHighlight}
-                onOpenDetail={onOpenDetail}
-                onToggleSave={onToggleSave}
-                onToggleCompare={onToggleCompare}
-                onLocateOnMap={(r) => {
-                  onHighlight(r.listing.listingId);
-                  if (viewMode === 'list') onChangeViewMode('split');
-                }}
-                onOpenValuation={(r) => onOpenValuation(hood, { sqm: r.property.areaSqm || targetSqm })}
-              />
-            );
-          })}
+          {records.length === 0 ? (
+            <div className="p-8 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-center space-y-3">
+              <p className="text-sm font-bold text-[#182522] dark:text-slate-200">در این محدوده نقشه فایلی یافت نشد. می‌توانید نقشه را جابه‌جا یا کوچک‌نمایی کنید.</p>
+              <button type="button" onClick={onClearViewportBounds} className="px-4 py-1.5 rounded-[9px] bg-[#176B63] text-white text-xs font-bold cursor-pointer">
+                حذف محدوده نقشه
+              </button>
+            </div>
+          ) : (
+            records.slice(0, 24).map((rec) => {
+              const hood = evaluatedNeighborhoods.find((h) => h.id === rec.property.hoodId) || selectedHood;
+              return (
+                <PropertyCard
+                  key={rec.listing.listingId}
+                  record={rec}
+                  areaUnit={areaUnit}
+                  intlCurrency={intlCurrency}
+                  radarLocale={radarLocale}
+                  isSaved={savedItems.some((s) => s.listingId === rec.listing.listingId)}
+                  isCompared={compareIds.includes(rec.listing.listingId)}
+                  isHighlighted={highlightedId === rec.listing.listingId}
+                  onHoverChange={onHighlight}
+                  onOpenDetail={onOpenDetail}
+                  onToggleSave={onToggleSave}
+                  onToggleCompare={onToggleCompare}
+                  onLocateOnMap={(r) => {
+                    onHighlight(r.listing.listingId);
+                    if (viewMode === 'list') onChangeViewMode('split');
+                  }}
+                  onOpenValuation={(r) => onOpenValuation(hood, { sqm: r.property.areaSqm || targetSqm })}
+                />
+              );
+            })
+          )}
         </div>
       )}
 
@@ -137,6 +146,9 @@ export const PropertyDiscoveryGrid: React.FC<PropertyDiscoveryGridProps> = ({
             records={records}
             highlightedListingId={highlightedId}
             selectedHoodName={selectedHood.name}
+            centerLat={selectedHood.lat}
+            centerLng={selectedHood.lng}
+            cityScopeKey={`${selectedHood.id}:${selectedHood.name}`}
             boundsActive={applied.onlyInMapBounds}
             onHighlightListing={onHighlight}
             onOpenDetail={onOpenDetail}

@@ -182,7 +182,7 @@ test('Stage 28 (RT-UI-DATA-GOV-001): Source Registry, Usage Policy, Independent 
 });
 
 test('Stage 29 (RT-UI-ANALYTICS-001): Idempotent Ingestion, IQR Trimmed Percentiles, Safe Change % & Small-Cell Guard', () => {
-  const analytics = new AnalyticsPlatformEngine();
+  const analytics = new AnalyticsPlatformEngine({ seedDemo: true });
   const dup = analytics.ingestAnalyticalEvent({
     idempotencyKey: 'idem-boot-1', sourceSystem: 'ListingOutbox', schemaVersion: '1.0', occurredAt: '2026-04-12T00:00:00Z',
   });

@@ -23,14 +23,22 @@ export function handleCommunityRouteError(res: Response, err: unknown): void {
     return;
   }
   if (err instanceof CommunityHttpError) {
+    if (err.statusCode === 429 && typeof err.details?.retryAfterSec === 'number') {
+      res.setHeader('Retry-After', String(Math.max(1, Math.ceil(err.details.retryAfterSec))));
+    }
     res.status(err.statusCode).json({ status: 'error', code: err.code, message: err.messageFa, messageFa: err.messageFa, ...(err.details ?? {}) });
     return;
   }
   res.status(500).json({ status: 'error', code: 'COMMUNITY_INTERNAL_ERROR', messageFa: 'خطای داخلی سرویس انجمن.' });
 }
 
-export async function requireVerifiedMember(req: Request, res: Response, getIp: (r: Request) => string) {
-  const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+export async function requireVerifiedMember(
+  req: Request,
+  res: Response,
+  getIp: (r: Request) => string,
+  authenticateMemberFn: typeof verifyAuthenticatedUserHeader = verifyAuthenticatedUserHeader,
+) {
+  const auth = await authenticateMemberFn(req.headers as Record<string, string | string[] | undefined>);
   if (!auth.authorized || !auth.uid) {
     recordAbuseSignal(getIp(req), 'auth_failure');
     res.status(auth.statusCode).json({ status: 'error', code: auth.reason });
@@ -49,9 +57,12 @@ export async function requireCommunityAdmin(req: Request, res: Response, getIp: 
   return auth;
 }
 
-export async function resolveOptionalViewer(req: Request) {
+export async function resolveOptionalViewer(
+  req: Request,
+  authenticateMemberFn: typeof verifyAuthenticatedUserHeader = verifyAuthenticatedUserHeader,
+) {
   if (!req.headers.authorization) return null;
-  const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+  const auth = await authenticateMemberFn(req.headers as Record<string, string | string[] | undefined>);
   return auth.authorized && auth.uid ? auth : null;
 }
 
@@ -63,7 +74,12 @@ export function extractIdempotencyKeyHeader(req: Request): string | undefined {
   return chosen ? sanitizeInput(String(chosen), 80) : undefined;
 }
 
-export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, getIp: (r: Request) => string, allowRate: (ip: string, bucket: 'general', max: number, win: number) => boolean) {
+export function createCommunityReadHandlers(
+  repo: CommunityUnifiedRepository,
+  getIp: (r: Request) => string,
+  allowRate: (ip: string, bucket: 'general', max: number, win: number) => boolean,
+  authenticateMemberFn: typeof verifyAuthenticatedUserHeader = verifyAuthenticatedUserHeader,
+) {
   return {
     overview: async (req: Request, res: Response) => {
       try {
@@ -77,7 +93,7 @@ export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, ge
     topics: async (req: Request, res: Response) => {
       try {
         await repo.ensureSeedsBootstrappedIfEmpty();
-        const viewer = await resolveOptionalViewer(req);
+        const viewer = await resolveOptionalViewer(req, authenticateMemberFn);
         const topics = await listCommunityTopicsFromStore(repo.getStore(), viewer?.uid);
         res.status(200).json({ status: 'ok', topics });
       } catch (err) { handleCommunityRouteError(res, err); }
@@ -89,6 +105,8 @@ export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, ge
           recordKind: 'discussion',
           neighborhoodId: req.query.neighborhoodId ? Number(req.query.neighborhoodId) : null,
           topicId: typeof req.query.topicId === 'string' ? req.query.topicId.trim() : '',
+          entityType: typeof req.query.entityType === 'string' ? req.query.entityType.trim() : '',
+          entityId: typeof req.query.entityId === 'string' ? req.query.entityId.trim() : '',
           includeSeeds: req.query.includeSeeds !== 'false',
           sort: req.query.sort === 'recent' ? 'recent' : req.query.sort === 'helpful' ? 'helpful' : 'rank',
           limit: req.query.limit,
@@ -114,6 +132,8 @@ export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, ge
           recordKind: 'question',
           neighborhoodId: req.query.neighborhoodId ? Number(req.query.neighborhoodId) : null,
           topicId: typeof req.query.topicId === 'string' ? req.query.topicId.trim() : '',
+          entityType: typeof req.query.entityType === 'string' ? req.query.entityType.trim() : '',
+          entityId: typeof req.query.entityId === 'string' ? req.query.entityId.trim() : '',
           statusFilter: typeof req.query.status === 'string' ? req.query.status.trim() : '',
           includeSeeds: req.query.includeSeeds !== 'false',
           limit: req.query.limit,
@@ -128,6 +148,8 @@ export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, ge
         const page = await queryCommunityPostsPaginated(repo.getStore(), {
           recordKind: 'correction',
           neighborhoodId: req.query.neighborhoodId ? Number(req.query.neighborhoodId) : null,
+          entityType: typeof req.query.entityType === 'string' ? req.query.entityType.trim() : '',
+          entityId: typeof req.query.entityId === 'string' ? req.query.entityId.trim() : '',
           includeSeeds: req.query.includeSeeds !== 'false',
           limit: req.query.limit,
           cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
@@ -141,6 +163,8 @@ export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, ge
         await repo.ensureSeedsBootstrappedIfEmpty();
         const page = await queryCommunityPostsPaginated(repo.getStore(), {
           recordKind: 'research_proposal',
+          entityType: typeof req.query.entityType === 'string' ? req.query.entityType.trim() : '',
+          entityId: typeof req.query.entityId === 'string' ? req.query.entityId.trim() : '',
           includeSeeds: req.query.includeSeeds !== 'false',
           limit: req.query.limit,
           cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
@@ -152,7 +176,7 @@ export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, ge
       try {
         res.setHeader('Cache-Control', 'no-store');
         await repo.ensureSeedsBootstrappedIfEmpty();
-        const viewer = await resolveOptionalViewer(req);
+        const viewer = await resolveOptionalViewer(req, authenticateMemberFn);
         const result = await queryCommunityMembersPaginated(repo.getStore(), {
           q: typeof req.query.q === 'string' ? req.query.q : '',
           includeSeeds: req.query.includeSeeds !== 'false',
@@ -168,16 +192,33 @@ export function createCommunityReadHandlers(repo: CommunityUnifiedRepository, ge
       try {
         res.setHeader('Cache-Control', 'no-store');
         await repo.ensureSeedsBootstrappedIfEmpty();
-        const viewer = await resolveOptionalViewer(req);
+        const viewer = await resolveOptionalViewer(req, authenticateMemberFn);
+        await repo.enforceRateLimit('read', viewer?.uid || `ip:${getIp(req)}`);
         const profile = await repo.getPublicProfileByUsername(String(req.params.username || ''), Boolean(viewer), viewer?.uid);
         if (!profile) { res.status(404).json({ status: 'error', code: 'PROFILE_NOT_PUBLIC_OR_FOUND' }); return; }
         res.status(200).json({ status: 'ok', profile });
       } catch (err) { handleCommunityRouteError(res, err); }
     },
+    memberContributionsByUsername: async (req: Request, res: Response) => {
+      try {
+        res.setHeader('Cache-Control', 'no-store');
+        await repo.ensureSeedsBootstrappedIfEmpty();
+        const viewer = await resolveOptionalViewer(req, authenticateMemberFn);
+        await repo.enforceRateLimit('read', viewer?.uid || `ip:${getIp(req)}`);
+        const page = await repo.getProfileContributions(String(req.params.username || ''), {
+          limit: req.query.limit,
+          cursor: typeof req.query.cursor === 'string' ? req.query.cursor : null,
+          kind: req.query.kind,
+          isViewerMember: Boolean(viewer),
+          viewerUid: viewer?.uid,
+        });
+        res.status(200).json({ status: 'ok', ...page });
+      } catch (err) { handleCommunityRouteError(res, err); }
+    },
     accountSummary: async (req: Request, res: Response) => {
       try {
         res.setHeader('Cache-Control', 'no-store');
-        const auth = await requireVerifiedMember(req, res, getIp);
+        const auth = await requireVerifiedMember(req, res, getIp, authenticateMemberFn);
         if (!auth) return;
         const myProfile = await repo.getOrCreateProfile({ uid: auth.uid, emailVerified: true });
         const [corrPage, queue] = await Promise.all([

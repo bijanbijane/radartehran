@@ -1,20 +1,15 @@
-/** @file server/modules/community/communityUnifiedRepository.ts — Single Transactional Firestore Source of Truth for Community (Stage 3) */
+/** @file server/modules/community/communityUnifiedRepository.ts — Single Transactional Firestore Source of Truth for Community (Stage 3–9) */
 import type {
   CommunityAbuseReason,
   CommunityDiscussionPost,
   CommunityProfile,
-  CommunityQuestionItem,
   DataCorrectionCategory,
   DataCorrectionProposal,
   ModerationActionRecord,
-  ModerationAppeal,
+  ProfileContributionPage,
   ReactionType,
-  ResearchTopicProposal,
+  SocialContentContext,
 } from '../../../src/features/community/types/community.types';
-import {
-  resolveReplyDepth,
-  validateCommunityTextSafety,
-} from '../../../src/features/community/services/communityTrustService';
 import { sanitizeInput } from '../../../src/utils/security';
 import {
   CommunityHttpError,
@@ -23,9 +18,13 @@ import {
   type CommunityDatabaseStore,
 } from './communityFirestoreAdapter';
 import {
+  assertCommunityUsernameUnique,
+  lookupRawCommunityProfileByUsername,
+  normalizeCommunityUsername,
+  queryProfileContributionsPaginated,
+} from './communityProfileQueries';
+import {
   CommunityRateLimiter,
-  hashCommunityIdempotencyKey,
-  hashCommunityPayload,
   type CommunityActionBucket,
 } from './communityRateLimiter';
 import { runNonDestructiveCommunityImport } from './communitySeedImporter';
@@ -37,6 +36,7 @@ export interface VerifiedActorIdentity {
   emailVerified?: boolean;
   phoneVerified?: boolean;
   displayNameFa?: string;
+  username?: string;
 }
 
 export class CommunityUnifiedRepository {
@@ -44,15 +44,16 @@ export class CommunityUnifiedRepository {
 
   constructor(
     private store: CommunityDatabaseStore = createDefaultCommunityDatabaseStore(),
-    public readonly rateLimiter: CommunityRateLimiter = new CommunityRateLimiter(),
-  ) {}
-
-  public getStore(): CommunityDatabaseStore {
-    return this.store;
+    public readonly rateLimiter: CommunityRateLimiter = new CommunityRateLimiter(process.env, store),
+  ) {
+    this.rateLimiter.bindStore(this.store);
   }
+
+  public getStore(): CommunityDatabaseStore { return this.store; }
 
   public setStore(nextStore: CommunityDatabaseStore): void {
     this.store = nextStore;
+    this.rateLimiter.bindStore(nextStore);
     this.seededOnBoot = false;
   }
 
@@ -63,18 +64,17 @@ export class CommunityUnifiedRepository {
       if (first.items.length === 0) {
         await runNonDestructiveCommunityImport(this.store, { dryRun: false });
       }
-      this.seededOnBoot = true;
-    } else {
-      this.seededOnBoot = true;
     }
+    this.seededOnBoot = true;
   }
 
-  public enforceRateLimit(bucket: CommunityActionBucket, actorKey: string): void {
-    const res = this.rateLimiter.checkAndConsume(bucket, actorKey);
+  public async enforceRateLimit(bucket: CommunityActionBucket, actorKey: string, nowMs = Date.now()): Promise<void> {
+    const res = await this.rateLimiter.checkAndConsume(bucket, actorKey, nowMs, undefined, this.store);
     if (!res.allowed) {
-      throw new CommunityHttpError(429, 'RATE_LIMIT_EXCEEDED', 'تعداد درخواست‌های شما از حد مجاز فراتر رفته است.', {
+      throw new CommunityHttpError(429, 'RATE_LIMITED', 'تعداد درخواست‌های شما از حد مجاز فراتر رفته است.', {
         retryAfterSec: res.retryAfterSec,
         limit: res.limit,
+        bucket,
       });
     }
   }
@@ -84,6 +84,13 @@ export class CommunityUnifiedRepository {
     if (existing) {
       let dirty = false;
       const patch: Partial<CommunityProfile> = {};
+      if (actor.username) {
+        const cleanUser = await assertCommunityUsernameUnique(this.store, actor.username, actor.uid);
+        if (existing.username !== cleanUser) { patch.username = cleanUser; dirty = true; }
+      } else if (existing.username && existing.username !== existing.username.toLowerCase()) {
+        patch.username = existing.username.toLowerCase();
+        dirty = true;
+      }
       if (actor.displayNameFa && (!existing.displayNameFa || existing.displayNameFa === 'کاربر عضو رادار')) {
         patch.displayNameFa = sanitizeInput(actor.displayNameFa, 50) || existing.displayNameFa;
         dirty = true;
@@ -95,7 +102,9 @@ export class CommunityUnifiedRepository {
     }
 
     const safeUid = sanitizeInput(actor.uid, 64);
-    const username = `u_${safeUid.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 12) || 'member'}`;
+    const defaultUsername = `u_${safeUid.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase().slice(0, 24) || 'member'}`;
+    const username = await assertCommunityUsernameUnique(this.store, actor.username || defaultUsername, safeUid);
+
     const created: CommunityProfile = {
       userId: safeUid,
       username,
@@ -112,6 +121,8 @@ export class CommunityUnifiedRepository {
       reputation: { data: 0, community: 0, research: 0, sources: 0, professional: 0 },
       badges: [],
       followedTopicIds: [],
+      followersCount: 0,
+      followingCount: 0,
       memberSinceFa: 'امروز',
       recentPublicSummaryFa: [],
       verifiedCredentialFa: null,
@@ -123,9 +134,12 @@ export class CommunityUnifiedRepository {
 
   public async updateProfilePrivacy(
     uid: string,
-    privacy: Partial<Pick<CommunityProfile, 'visibility' | 'showBadges' | 'showContributions' | 'showFollowedTopics' | 'bioFa' | 'displayNameFa'>>,
+    privacy: Partial<Pick<CommunityProfile, 'visibility' | 'showBadges' | 'showContributions' | 'showFollowedTopics' | 'bioFa' | 'displayNameFa' | 'username'>>,
   ): Promise<CommunityProfile> {
     const profile = await this.getOrCreateProfile({ uid, emailVerified: true });
+    if (privacy.username !== undefined) {
+      profile.username = await assertCommunityUsernameUnique(this.store, privacy.username, uid);
+    }
     if (privacy.visibility === 'public' || privacy.visibility === 'members_only' || privacy.visibility === 'private') {
       profile.visibility = privacy.visibility;
     }
@@ -140,100 +154,39 @@ export class CommunityUnifiedRepository {
     return profile;
   }
 
-  public async getPublicProfileByUsername(username: string, isViewerMember: boolean, viewerUid?: string): Promise<CommunityProfile | null> {
-    const clean = sanitizeInput(username, 40).toLowerCase();
-    const page = await this.store.queryDocs<CommunityProfile & Record<string, unknown>>(SOCIAL_COLLECTIONS.profiles, { limit: 50 });
-    const matched = page.items.find((p) => String(p.username || '').toLowerCase() === clean);
+  public async getPublicProfileByUsername(
+    username: string,
+    isViewerMember: boolean,
+    viewerUid?: string,
+  ): Promise<CommunityProfile | null> {
+    const clean = normalizeCommunityUsername(username);
+    const matched = await lookupRawCommunityProfileByUsername(this.store, clean);
     if (!matched) return null;
     return stripSensitiveMemberProfileServerSide(matched, isViewerMember, viewerUid === matched.userId);
   }
 
+  public async getProfileContributions(
+    username: string,
+    params: { limit?: unknown; cursor?: string | null; kind?: unknown; isViewerMember: boolean; viewerUid?: string },
+  ): Promise<ProfileContributionPage> {
+    return queryProfileContributionsPaginated(this.store, username, params);
+  }
+
   public async createDiscussion(
     actor: VerifiedActorIdentity,
-    input: { titleFa: string; bodyFa: string; neighborhoodId?: number; neighborhoodNameFa?: string; topicId?: string; track?: string; idempotencyKey?: string },
+    input: {
+      titleFa: string;
+      bodyFa: string;
+      neighborhoodId?: number;
+      neighborhoodNameFa?: string;
+      topicId?: string;
+      track?: string;
+      socialContext?: SocialContentContext;
+      idempotencyKey?: string;
+    },
   ): Promise<{ item: CommunityDiscussionPost; idempotentReplay: boolean }> {
-    this.enforceRateLimit('create_post', actor.uid);
-    const titleFa = sanitizeInput(input.titleFa || '', 120);
-    const bodyFa = sanitizeInput(input.bodyFa || '', 500);
-    const safety = validateCommunityTextSafety(bodyFa);
-    if (titleFa.length < 5 || !safety.ok) {
-      throw new CommunityHttpError(422, 'INVALID_DISCUSSION_BODY', safety.errorFa || 'عنوان باید حداقل ۵ کاراکتر باشد.');
-    }
-
-    const profile = await this.getOrCreateProfile(actor);
-    const authorProfile = {
-      userId: actor.uid,
-      username: profile.username,
-      displayNameFa: profile.displayNameFa,
-      isAuthenticated: true,
-      isEmailVerified: Boolean(actor.emailVerified || profile.isEmailVerified),
-      isPhoneVerified: Boolean(actor.phoneVerified || profile.isPhoneVerified),
-      identityStatus: profile.identityStatus,
-      participationScore: profile.reputation.data + profile.reputation.community,
-      participationTierFa: 'مشارکت‌کننده جدید' as const,
-      verifiedCredentialFa: profile.verifiedCredentialFa,
-      reputation: profile.reputation,
-    };
-
-    const payloadHash = hashCommunityPayload({ titleFa, bodyFa, neighborhoodId: input.neighborhoodId || 1, topicId: input.topicId || 'topic-neighborhoods' });
-    const rawIdemKey = typeof input.idempotencyKey === 'string' ? sanitizeInput(input.idempotencyKey, 80) : '';
-    const idemDocId = rawIdemKey ? hashCommunityIdempotencyKey(actor.uid, 'create_post', rawIdemKey) : null;
-
-    return this.store.runTransaction(async (tx) => {
-      if (idemDocId) {
-        const existingIdem = await tx.get<{ targetId: string; payloadHash: string } & Record<string, unknown>>(SOCIAL_COLLECTIONS.idempotency, idemDocId);
-        if (existingIdem) {
-          if (existingIdem.payloadHash !== payloadHash) {
-            throw new CommunityHttpError(409, 'IDEMPOTENCY_KEY_CONFLICT', 'کلید یکتای تکراری با محتوای متفاوت ارسال شده است.');
-          }
-          const existingPost = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, existingIdem.targetId);
-          if (existingPost) return { item: existingPost, idempotentReplay: true };
-        }
-      }
-
-      const id = `post_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const nowIso = new Date().toISOString();
-      const post: CommunityDiscussionPost & UnifiedSocialPostDoc = {
-        id,
-        recordKind: 'discussion',
-        track: input.track === 'expert_qa' ? 'expert_qa' : 'social_discussion',
-        neighborhoodId: Number(input.neighborhoodId) || 1,
-        neighborhoodNameFa: sanitizeInput(input.neighborhoodNameFa || 'پونک', 50),
-        topicId: sanitizeInput(input.topicId || 'topic-neighborhoods', 50),
-        titleFa,
-        bodyFa,
-        ownerUserId: actor.uid,
-        authorProfile,
-        helpfulCount: 0,
-        helpfulVoterIds: [],
-        reactionCounts: { helpful: 0, agree: 0, needs_source: 0, disagree: 0 },
-        reactionsByUser: {},
-        replies: [],
-        replyCount: 0,
-        followerIds: [actor.uid],
-        followerCount: 1,
-        revisionHistory: [],
-        status: 'published',
-        moderationStatus: 'approved',
-        isDeleted: false,
-        version: 1,
-        source: 'user',
-        createdAtIso: nowIso,
-        updatedAtIso: nowIso,
-        createdAtFa: 'امروز',
-      };
-      tx.set(SOCIAL_COLLECTIONS.posts, id, post as unknown as Record<string, unknown>);
-      if (idemDocId) {
-        tx.set(SOCIAL_COLLECTIONS.idempotency, idemDocId, {
-          scope: 'create_post',
-          uid: actor.uid,
-          targetId: id,
-          payloadHash,
-          createdAtIso: nowIso,
-        });
-      }
-      return { item: post, idempotentReplay: false };
-    });
+    const { createDiscussionOp } = await import('./communityDiscussionOps');
+    return createDiscussionOp(this, actor, input);
   }
 
   public async updateDiscussion(
@@ -241,60 +194,13 @@ export class CommunityUnifiedRepository {
     postId: string,
     input: { titleFa: string; bodyFa: string; reasonFa?: string },
   ): Promise<CommunityDiscussionPost> {
-    this.enforceRateLimit('edit_post', uid);
-    const titleFa = sanitizeInput(input.titleFa || '', 120);
-    const bodyFa = sanitizeInput(input.bodyFa || '', 500);
-    const safety = validateCommunityTextSafety(bodyFa);
-    if (titleFa.length < 5 || !safety.ok) {
-      throw new CommunityHttpError(422, 'INVALID_DISCUSSION_BODY', safety.errorFa || 'عنوان باید حداقل ۵ کاراکتر باشد.');
-    }
-
-    return this.store.runTransaction(async (tx) => {
-      const post = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, postId);
-      if (!post || post.isDeleted) throw new CommunityHttpError(404, 'DISCUSSION_NOT_FOUND', 'مطلب موردنظر یافت نشد.');
-      if (post.ownerUserId !== uid) throw new CommunityHttpError(403, 'OWNER_MISMATCH', 'شما مجاز به ویرایش این مطلب نیستید.');
-      if (post.status === 'locked' || post.status === 'archived') {
-        throw new CommunityHttpError(409, 'DISCUSSION_LOCKED', 'این گفتگو قفل یا بایگانی شده است.');
-      }
-
-      const history = [...(post.revisionHistory ?? [])];
-      history.push({
-        version: history.length + 1,
-        titleFa: post.titleFa,
-        bodyFa: post.bodyFa,
-        editedAtFa: 'امروز',
-        reasonFa: sanitizeInput(input.reasonFa || 'ویرایش توسط نویسنده', 80),
-      });
-      const updated: CommunityDiscussionPost & UnifiedSocialPostDoc = {
-        ...post,
-        titleFa,
-        bodyFa,
-        revisionHistory: history,
-        version: Number(post.version ?? 1) + 1,
-        updatedAtIso: new Date().toISOString(),
-      };
-      tx.set(SOCIAL_COLLECTIONS.posts, postId, updated as unknown as Record<string, unknown>);
-      return updated;
-    });
+    const { updateDiscussionOp } = await import('./communityDiscussionOps');
+    return updateDiscussionOp(this, uid, postId, input);
   }
 
   public async softDeleteDiscussion(uid: string, postId: string, isAdmin = false): Promise<{ deleted: true; id: string }> {
-    return this.store.runTransaction(async (tx) => {
-      const post = await tx.get<UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, postId);
-      if (!post || post.isDeleted) throw new CommunityHttpError(404, 'DISCUSSION_NOT_FOUND', 'مطلب موردنظر یافت نشد.');
-      if (post.ownerUserId !== uid && !isAdmin) {
-        throw new CommunityHttpError(403, 'OWNER_MISMATCH', 'حذف فقط توسط نویسنده یا مدیر مجاز است.');
-      }
-      const nowIso = new Date().toISOString();
-      tx.update(SOCIAL_COLLECTIONS.posts, postId, {
-        isDeleted: true,
-        deletedAtIso: nowIso,
-        status: 'hidden',
-        moderationStatus: 'removed',
-        updatedAtIso: nowIso,
-      });
-      return { deleted: true, id: postId };
-    });
+    const { softDeleteDiscussionOp } = await import('./communityDiscussionOps');
+    return softDeleteDiscussionOp(this, uid, postId, isAdmin);
   }
 
   public async addDiscussionComment(
@@ -302,112 +208,62 @@ export class CommunityUnifiedRepository {
     postId: string,
     input: { bodyFa: string; parentReplyId?: string | null; idempotencyKey?: string },
   ): Promise<CommunityDiscussionPost> {
-    this.enforceRateLimit('create_comment', actor.uid);
-    const safety = validateCommunityTextSafety(input.bodyFa || '');
-    if (!safety.ok) throw new CommunityHttpError(422, 'INVALID_TEXT', safety.errorFa || 'متن دیدگاه معتبر نیست.');
-    const profile = await this.getOrCreateProfile(actor);
-
-    const payloadHash = hashCommunityPayload({ postId, bodyFa: input.bodyFa, parentReplyId: input.parentReplyId || null });
-    const rawIdemKey = typeof input.idempotencyKey === 'string' ? sanitizeInput(input.idempotencyKey, 80) : '';
-    const idemDocId = rawIdemKey ? hashCommunityIdempotencyKey(actor.uid, 'create_comment', rawIdemKey) : null;
-
-    return this.store.runTransaction(async (tx) => {
-      const post = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, postId);
-      if (!post || post.isDeleted) throw new CommunityHttpError(404, 'DISCUSSION_NOT_FOUND', 'مطلب یافت نشد.');
-      if (post.status === 'locked' || post.status === 'archived') {
-        throw new CommunityHttpError(409, 'DISCUSSION_LOCKED', 'امکان ثبت نظر روی گفتگوی قفل‌شده وجود ندارد.');
-      }
-
-      if (idemDocId) {
-        const existingIdem = await tx.get<{ targetId: string; payloadHash: string } & Record<string, unknown>>(SOCIAL_COLLECTIONS.idempotency, idemDocId);
-        if (existingIdem) {
-          if (existingIdem.payloadHash !== payloadHash) {
-            throw new CommunityHttpError(409, 'IDEMPOTENCY_KEY_CONFLICT', 'کلید یکتای دیدگاه با متن متفاوت تکرار شده است.');
-          }
-          return post;
-        }
-      }
-
-      const depth = resolveReplyDepth(post.replies ?? [], input.parentReplyId ?? null);
-      if (!depth.ok) throw new CommunityHttpError(422, 'MAX_REPLY_DEPTH_EXCEEDED', depth.errorFa || 'حداکثر عمق پاسخ رعایت نشده است.');
-
-      const commentId = `cmt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const nowIso = new Date().toISOString();
-      const commentObj = {
-        id: commentId,
-        parentReplyId: input.parentReplyId ?? null,
-        depth: depth.depth,
-        ownerUserId: actor.uid,
-        authorProfile: {
-          userId: actor.uid,
-          username: profile.username,
-          displayNameFa: profile.displayNameFa,
-          isAuthenticated: true,
-          isEmailVerified: Boolean(actor.emailVerified || profile.isEmailVerified),
-          isPhoneVerified: Boolean(actor.phoneVerified || profile.isPhoneVerified),
-          identityStatus: profile.identityStatus,
-          participationScore: profile.reputation.data + profile.reputation.community,
-          participationTierFa: 'مشارکت‌کننده جدید' as const,
-          verifiedCredentialFa: profile.verifiedCredentialFa,
-          reputation: profile.reputation,
-        },
-        bodyFa: sanitizeInput(input.bodyFa, 400),
-        createdAtFa: 'امروز',
-        reactionCounts: { helpful: 0, agree: 0, needs_source: 0, disagree: 0 },
-        reactionsByUser: {},
-        status: 'visible' as const,
-      };
-
-      tx.set(SOCIAL_COLLECTIONS.comments, commentId, {
-        ...commentObj,
-        postId,
-        recordKind: 'reply',
-        isDeleted: false,
-        createdAtIso: nowIso,
-      });
-
-      const nextReplies = [...(post.replies ?? []), commentObj];
-      tx.update(SOCIAL_COLLECTIONS.posts, postId, {
-        replies: nextReplies,
-        updatedAtIso: nowIso,
-      });
-      tx.incrementNumeric(SOCIAL_COLLECTIONS.posts, postId, { replyCount: 1 });
-
-      if (idemDocId) {
-        tx.set(SOCIAL_COLLECTIONS.idempotency, idemDocId, {
-          scope: 'create_comment',
-          uid: actor.uid,
-          targetId: commentId,
-          payloadHash,
-          createdAtIso: nowIso,
-        });
-      }
-      return { ...post, replies: nextReplies, replyCount: Number(post.replyCount ?? post.replies?.length ?? 0) + 1 };
-    });
+    const { addDiscussionCommentOp } = await import('./communityDiscussionOps');
+    return addDiscussionCommentOp(this, actor, postId, input);
   }
 
-  public async toggleReactionTransactional(uid: string, targetId: string, reaction: ReactionType) {
+  public async toggleReactionTransactional(
+    uid: string,
+    targetId: string,
+    reaction: ReactionType,
+    options?: { idempotencyKey?: string; mode?: 'toggle' | 'set' | 'remove'; operation?: 'toggle' | 'set' | 'remove' },
+  ) {
     const { toggleReactionOp } = await import('./communityUnifiedSecondaryOps');
-    return toggleReactionOp(this, uid, targetId, reaction);
+    return toggleReactionOp(this, uid, targetId, reaction, options);
   }
 
-  public async toggleFollowTransactional(uid: string, scope: 'topic' | 'post' | 'user', targetId: string) {
+  public async toggleFollowTransactional(
+    uid: string,
+    scope: 'topic' | 'post' | 'user',
+    targetId: string,
+    options?: { idempotencyKey?: string; mode?: 'toggle' | 'follow' | 'unfollow'; operation?: 'toggle' | 'follow' | 'unfollow' },
+  ) {
     const { toggleFollowOp } = await import('./communityUnifiedSecondaryOps');
-    return toggleFollowOp(this, uid, scope, targetId);
+    return toggleFollowOp(this, uid, scope, targetId, options);
   }
 
-  public async createQuestion(actor: VerifiedActorIdentity, input: { titleFa: string; bodyFa: string; neighborhoodId?: number; neighborhoodNameFa?: string; topicId?: string }) {
-    const { createQuestionOp } = await import('./communityUnifiedSecondaryOps');
+  public async followUser(followerUid: string, targetUid: string, options?: { idempotencyKey?: string; isViewerVerifiedMember?: boolean }) {
+    const { followUserOp } = await import('./communityUserFollowOps');
+    return followUserOp(this, followerUid, targetUid, options);
+  }
+
+  public async unfollowUser(followerUid: string, targetUid: string, options?: { idempotencyKey?: string }) {
+    const { unfollowUserOp } = await import('./communityUserFollowOps');
+    return unfollowUserOp(this, followerUid, targetUid, options);
+  }
+
+  public async getUserFollowStatus(viewerUid: string | null | undefined, targetUid: string, options?: { isViewerVerifiedMember?: boolean }) {
+    const { getUserFollowStatus } = await import('./communityUserFollowOps');
+    return getUserFollowStatus(this, viewerUid, targetUid, options);
+  }
+
+  public async auditUserFollowGraphConsistency() {
+    const { auditUserFollowGraphConsistency } = await import('./communityUserFollowOps');
+    return auditUserFollowGraphConsistency(this.store);
+  }
+
+  public async createQuestion(actor: VerifiedActorIdentity, input: { titleFa: string; bodyFa: string; neighborhoodId?: number; neighborhoodNameFa?: string; topicId?: string; socialContext?: SocialContentContext; idempotencyKey?: string }) {
+    const { createQuestionOp } = await import('./communityContentCreationOps');
     return createQuestionOp(this, actor, input);
   }
 
   public async submitReport(actorUid: string, input: { targetType: string; targetId: string; reason: CommunityAbuseReason; detailsFa: string }) {
-    const { submitReportOp } = await import('./communityUnifiedSecondaryOps');
+    const { submitReportOp } = await import('./communityContentCreationOps');
     return submitReportOp(this, actorUid, input);
   }
 
-  public async createCorrection(actor: VerifiedActorIdentity, input: { titleFa: string; evidenceSummaryFa: string; neighborhoodId?: number; neighborhoodNameFa?: string; category?: DataCorrectionCategory; currentValueFa?: string; suggestedValueFa?: string; observedDateFa?: string }) {
-    const { createCorrectionOp } = await import('./communityUnifiedSecondaryOps');
+  public async createCorrection(actor: VerifiedActorIdentity, input: { titleFa: string; evidenceSummaryFa: string; neighborhoodId?: number; neighborhoodNameFa?: string; category?: DataCorrectionCategory; currentValueFa?: string; suggestedValueFa?: string; observedDateFa?: string; socialContext?: SocialContentContext; idempotencyKey?: string }) {
+    const { createCorrectionOp } = await import('./communityContentCreationOps');
     return createCorrectionOp(this, actor, input);
   }
 
@@ -420,20 +276,19 @@ export class CommunityUnifiedRepository {
   }
 
   public async recordModerationAction(action: Omit<ModerationActionRecord, 'id' | 'createdAtIso'>) {
-    const { recordModerationActionOp } = await import('./communityUnifiedSecondaryOps');
+    const { recordModerationActionOp } = await import('./communityContentCreationOps');
     return recordModerationActionOp(this, action);
   }
 
   public async createAppeal(actorUid: string, input: { moderationActionId: string; targetId: string; argumentFa: string }) {
-    const { createAppealOp } = await import('./communityUnifiedSecondaryOps');
+    const { createAppealOp } = await import('./communityContentCreationOps');
     return createAppealOp(this, actorUid, input);
   }
 
-  public async createResearchProposal(actor: VerifiedActorIdentity, input: { titleFa: string; questionFa: string; neighborhoodNameFa?: string; linkedKnowledgeTab?: string }) {
-    const { createResearchProposalOp } = await import('./communityUnifiedSecondaryOps');
+  public async createResearchProposal(actor: VerifiedActorIdentity, input: { titleFa: string; questionFa: string; neighborhoodNameFa?: string; linkedKnowledgeTab?: string; socialContext?: SocialContentContext; idempotencyKey?: string }) {
+    const { createResearchProposalOp } = await import('./communityContentCreationOps');
     return createResearchProposalOp(this, actor, input);
   }
 }
 
 export const communityUnifiedRepository = new CommunityUnifiedRepository();
-

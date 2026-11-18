@@ -111,6 +111,42 @@ export const NOTIFICATION_TEMPLATES: Readonly<Record<string, NotificationTemplat
     allowedVariables: ['announcementTitle', 'announcementMessage', 'senderName'],
     defaultPriority: 'high',
   },
+  'social.post.created.v1:v1': {
+    id: 'social.post.created.v1',
+    version: 1,
+    category: 'crowd_claims',
+    titleTemplateFa: 'گفتگوی جدید در انجمن رادار: {{summaryFa}}',
+    bodyTemplateFa: 'یک گفتگوی جدید در انجمن رادار ثبت شد: {{summaryFa}}',
+    allowedVariables: ['summaryFa', 'targetId'],
+    defaultPriority: 'normal',
+  },
+  'social.comment.created.v1:v1': {
+    id: 'social.comment.created.v1',
+    version: 1,
+    category: 'crowd_claims',
+    titleTemplateFa: 'پاسخ جدید به گفتگوی شما در انجمن',
+    bodyTemplateFa: 'یک دیدگاه جدید روی گفتگوی شما ثبت شد: {{summaryFa}}',
+    allowedVariables: ['summaryFa', 'targetId'],
+    defaultPriority: 'normal',
+  },
+  'social.question.answered.v1:v1': {
+    id: 'social.question.answered.v1',
+    version: 1,
+    category: 'crowd_claims',
+    titleTemplateFa: 'پاسخ جدید به پرسش شما در انجمن',
+    bodyTemplateFa: 'یک پاسخ جدید برای پرسش شما ثبت شد: {{summaryFa}}',
+    allowedVariables: ['summaryFa', 'targetId'],
+    defaultPriority: 'normal',
+  },
+  'social.moderation.decided.v1:v1': {
+    id: 'social.moderation.decided.v1',
+    version: 1,
+    category: 'crowd_claims',
+    titleTemplateFa: 'به‌روزرسانی وضعیت محتوای شما در انجمن',
+    bodyTemplateFa: 'وضعیت محتوای شما بررسی شد: {{summaryFa}}',
+    allowedVariables: ['summaryFa', 'targetId'],
+    defaultPriority: 'normal',
+  },
 };
 
 /**

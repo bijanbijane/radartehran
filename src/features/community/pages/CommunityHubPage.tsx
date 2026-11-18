@@ -94,6 +94,11 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
   const [includeSeeds, setIncludeSeeds] = useState(true);
   const [selectedUsername, setSelectedUsername] = useState<string | null>(null);
   const [toastFa, setToastFa] = useState<string | null>(null);
+  const [toastKind, setToastKind] = useState<'success' | 'error'>('success');
+  const showToast = (msg: string | null, kind: 'success' | 'error' = 'success') => {
+    setToastFa(msg);
+    setToastKind(kind);
+  };
 
   const {
     topics,
@@ -122,6 +127,11 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
   useEffect(() => {
     if (activeSubTab) setActiveTab(mapSubTabToHubTab(activeSubTab));
   }, [activeSubTab]);
+
+  useEffect(() => {
+    setToastFa(null);
+    setSelectedUsername(null);
+  }, [currentUser?.uid]);
 
   const currentUserProfile = useMemo(
     () => resolveAuthenticatedCommunityUser(currentUser, myServerProfile),
@@ -217,7 +227,15 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
       )}
 
       {toastFa && (
-        <div className="p-3 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-200">
+        <div
+          data-testid={toastKind === 'error' ? 'community-toast-error' : 'community-toast-success'}
+          role={toastKind === 'error' ? 'alert' : 'status'}
+          className={`p-3 rounded-[10px] border text-xs font-bold ${
+            toastKind === 'error'
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+              : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+          }`}
+        >
           {toastFa}
         </div>
       )}
@@ -295,7 +313,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
               return { ok: res.ok, errorFa: res.errorFa };
             }}
             onToggleReaction={async (postId, reaction: ReactionType) => {
-              if (!currentUserProfile.isAuthenticated) { setToastFa(COMMUNITY_AUTH_REQUIRED_FA); return; }
+              if (!currentUserProfile.isAuthenticated) { showToast(COMMUNITY_AUTH_REQUIRED_FA, 'error'); return; }
               const res = await toggleCommunityReaction(postId, reaction, currentUser);
               if (res.ok && res.data) {
                 const { reactionCounts, activeReaction } = res.data;
@@ -309,19 +327,23 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
                   }),
                 );
               } else if (res.errorFa) {
-                setToastFa(res.errorFa);
+                showToast(res.errorFa, 'error');
               }
             }}
             onToggleFollow={async (postId) => {
-              if (!currentUserProfile.isAuthenticated) { setToastFa(COMMUNITY_AUTH_REQUIRED_FA); return; }
+              if (!currentUserProfile.isAuthenticated) { showToast(COMMUNITY_AUTH_REQUIRED_FA, 'error'); return; }
               const res = await toggleCommunityDiscussionFollow(postId, currentUser);
               if (res.ok && res.data) setPosts((prev) => prev.map((p) => (p.id === postId ? res.data! : p)));
-              else if (res.errorFa) setToastFa(res.errorFa);
+              else if (res.errorFa) showToast(res.errorFa, 'error');
             }}
             onReportAbuse={async (postId, reason: CommunityAbuseReason, detailsFa: string) => {
-              if (!currentUserProfile.isAuthenticated) { setToastFa(COMMUNITY_AUTH_REQUIRED_FA); return; }
+              if (!currentUserProfile.isAuthenticated) { showToast(COMMUNITY_AUTH_REQUIRED_FA, 'error'); return; }
               const res = await submitCommunityAbuseReport({ targetType: 'discussion_post', targetId: postId, reason, detailsFa }, currentUser);
-              setToastFa(res.ok ? 'گزارش تخلف به صف نظارت سرور ارسال شد.' : (res.errorFa || 'خطا در ارسال گزارش'));
+              if (res.ok && res.data) {
+                showToast('گزارش تخلف به صف نظارت سرور ارسال شد.', 'success');
+              } else {
+                showToast(res.errorFa || 'خطا در ارسال گزارش تخلف؛ گزارش ثبت نشد.', 'error');
+              }
             }}
             onSelectAuthor={openMemberProfile}
             onOpenResidentVoteTab={onOpenResidentVoteTab}
@@ -368,7 +390,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
             if (!currentUserProfile.isAuthenticated) return requireAuthResult();
             const res = await selectQuestionAnswer(qId, aId, currentUser);
             if (res.ok && res.data) setQuestions((prev) => prev.map((q) => (q.id === qId ? res.data! : q)));
-            else if (res.errorFa) setToastFa(res.errorFa);
+            else if (res.errorFa) showToast(res.errorFa, 'error');
             return { ok: res.ok, errorFa: res.errorFa };
           }}
           onSelectAuthor={openMemberProfile}
@@ -392,9 +414,9 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
             const res = await withdrawDataCorrection(id, currentUser);
             if (res.ok && res.data) {
               setCorrections((prev) => prev.map((c) => (c.id === id ? res.data! : c)));
-              setToastFa('پیشنهاد از صف بررسی خارج شد.');
+              showToast('پیشنهاد از صف بررسی خارج شد.', 'success');
             } else if (res.errorFa) {
-              setToastFa(res.errorFa);
+              showToast(res.errorFa, 'error');
             }
             return { ok: res.ok, errorFa: res.errorFa };
           }}
@@ -413,10 +435,10 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
           posts={posts}
           questions={questions}
           onToggleFollowTopic={async (topicId) => {
-            if (!currentUserProfile.isAuthenticated) { setToastFa(COMMUNITY_AUTH_REQUIRED_FA); return; }
+            if (!currentUserProfile.isAuthenticated) { showToast(COMMUNITY_AUTH_REQUIRED_FA, 'error'); return; }
             const res = await toggleTopicFollow(topicId, currentUser);
             if (res.ok && res.data?.topics) setTopics(res.data.topics);
-            else if (res.errorFa) setToastFa(res.errorFa);
+            else if (res.errorFa) showToast(res.errorFa, 'error');
           }}
           onSelectAuthor={openMemberProfile}
           onOpenHoodMarket={() => onNavigateView('intelligence', 'overview')}
@@ -435,10 +457,10 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
             return { ok: res.ok, errorFa: res.errorFa };
           }}
           onVoteProposal={async (id) => {
-            if (!currentUserProfile.isAuthenticated) { setToastFa(COMMUNITY_AUTH_REQUIRED_FA); return; }
+            if (!currentUserProfile.isAuthenticated) { showToast(COMMUNITY_AUTH_REQUIRED_FA, 'error'); return; }
             const res = await voteResearchProposal(id, currentUser);
             if (res.ok && res.data) setResearchProposals((prev) => prev.map((r) => (r.id === id ? res.data! : r)));
-            else if (res.errorFa) setToastFa(res.errorFa);
+            else if (res.errorFa) showToast(res.errorFa, 'error');
           }}
           onNavigateView={onNavigateView}
         />
@@ -450,6 +472,11 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
           members={members}
           selectedUsername={selectedUsername}
           onSelectUsername={setSelectedUsername}
+          currentUser={currentUser}
+          onNavigateToContribution={(targetTab) => {
+            setActiveTab(targetTab);
+            setToastFa(null);
+          }}
         />
       )}
     </div>

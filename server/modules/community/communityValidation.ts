@@ -13,7 +13,18 @@ import type {
   ModerationActionRecord,
   ProfessionalCredentialRecord,
   ReactionType,
+  SocialContentContext,
+  SocialEntityReference,
+  SocialEntityType,
 } from '../../../src/features/community/types/community.types';
+import {
+  CommunityHttpError,
+  type CommunityDatabaseStore,
+} from './communityFirestoreAdapter';
+import {
+  ALL_SOCIAL_ENTITY_TYPES,
+  resolveSocialEntityReference,
+} from './socialEntityResolver';
 
 export const VALID_REACTION_TYPES = new Set<ReactionType>(['helpful', 'agree', 'needs_source', 'disagree']);
 
@@ -187,3 +198,189 @@ export function validateSanitizedTitleAndBody(
   }
   return { ok: true, titleFa, bodyFa };
 }
+
+export const MAX_SOCIAL_CONTEXT_RELATED_COUNT = 4;
+export const MAX_SOCIAL_ENTITY_ID_LENGTH = 128;
+
+function parseSingleEntityReference(raw: unknown): SocialEntityReference {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new CommunityHttpError(
+      422,
+      'INVALID_SOCIAL_CONTEXT',
+      'مرجع موجودیت در زمینه محتوا باید یک شیء معتبر باشد.',
+    );
+  }
+  const obj = raw as Record<string, unknown>;
+  const rawType = typeof obj.entityType === 'string' ? obj.entityType.trim() : '';
+  if (!ALL_SOCIAL_ENTITY_TYPES.has(rawType as SocialEntityType)) {
+    throw new CommunityHttpError(
+      422,
+      'INVALID_SOCIAL_CONTEXT',
+      `نوع موجودیت «${rawType || 'نامشخص'}» در زمینه محتوا معتبر نیست.`,
+    );
+  }
+  if (typeof obj.entityId !== 'string') {
+    throw new CommunityHttpError(
+      422,
+      'INVALID_SOCIAL_CONTEXT',
+      'شناسه موجودیت در زمینه محتوا باید رشته غیرخالی باشد.',
+    );
+  }
+  const cleanId = obj.entityId.trim();
+  if (cleanId.length === 0 || cleanId.length > MAX_SOCIAL_ENTITY_ID_LENGTH) {
+    throw new CommunityHttpError(
+      422,
+      'INVALID_SOCIAL_CONTEXT',
+      'شناسه موجودیت در زمینه محتوا نباید خالی یا بیش از ۱۲۸ کاراکتر باشد.',
+    );
+  }
+  // Strip any extra client-injected fields such as titleFa, labelFa, slug (CTX-017)
+  return {
+    entityType: rawType as SocialEntityType,
+    entityId: cleanId,
+  };
+}
+
+export async function validateSocialContentContext(
+  rawContext: unknown,
+  options?: { store?: CommunityDatabaseStore },
+): Promise<SocialContentContext | undefined> {
+  if (rawContext === undefined) {
+    return undefined;
+  }
+  if (rawContext === null || typeof rawContext !== 'object' || Array.isArray(rawContext)) {
+    throw new CommunityHttpError(
+      422,
+      'INVALID_SOCIAL_CONTEXT',
+      'ساختار socialContext نامعتبر است.',
+    );
+  }
+
+  const raw = rawContext as Record<string, unknown>;
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 1) {
+    throw new CommunityHttpError(
+      422,
+      'INVALID_SOCIAL_CONTEXT',
+      'نسخه schemaVersion در socialContext باید برابر ۱ باشد.',
+    );
+  }
+
+  let primaryRef: SocialEntityReference | null = null;
+  if (raw.primary !== undefined && raw.primary !== null) {
+    if (Array.isArray(raw.primary)) {
+      throw new CommunityHttpError(
+        422,
+        'INVALID_SOCIAL_CONTEXT',
+        'زمینه اصلی (primary) فقط می‌تواند حداکثر یک موجودیت باشد.',
+      );
+    }
+    primaryRef = parseSingleEntityReference(raw.primary);
+  }
+
+  let relatedRefs: SocialEntityReference[] = [];
+  if (raw.related !== undefined) {
+    if (!Array.isArray(raw.related)) {
+      throw new CommunityHttpError(
+        422,
+        'INVALID_SOCIAL_CONTEXT',
+        'فیلد related در socialContext باید آرایه باشد.',
+      );
+    }
+    if (raw.related.length > MAX_SOCIAL_CONTEXT_RELATED_COUNT) {
+      throw new CommunityHttpError(
+        422,
+        'INVALID_SOCIAL_CONTEXT',
+        `حداکثر ${MAX_SOCIAL_CONTEXT_RELATED_COUNT} موجودیت مرتبط در socialContext مجاز است.`,
+      );
+    }
+    relatedRefs = raw.related.map((item) => parseSingleEntityReference(item));
+  }
+
+  const seenKeys = new Set<string>();
+  const allRefs = [...(primaryRef ? [primaryRef] : []), ...relatedRefs];
+  for (const ref of allRefs) {
+    const key = `${ref.entityType}:${ref.entityId}`;
+    if (seenKeys.has(key)) {
+      throw new CommunityHttpError(
+        422,
+        'DUPLICATE_SOCIAL_CONTEXT',
+        'تکرار یک موجودیت در primary و related یا درون related مجاز نیست.',
+      );
+    }
+    seenKeys.add(key);
+  }
+
+  const resolveAndAssert = async (ref: SocialEntityReference): Promise<SocialEntityReference> => {
+    const res = await resolveSocialEntityReference(ref, options);
+    if (!res.supported) {
+      throw new CommunityHttpError(
+        422,
+        'UNSUPPORTED_ENTITY_TYPE',
+        `نوع موجودیت «${ref.entityType}» هنوز مخزن مرجع فعال ندارد.`,
+      );
+    }
+    if (!res.exists) {
+      throw new CommunityHttpError(
+        404,
+        'SOCIAL_ENTITY_NOT_FOUND',
+        `موجودیت «${ref.entityType}:${ref.entityId}» در سامانه یافت نشد.`,
+      );
+    }
+    if (!res.linkable) {
+      throw new CommunityHttpError(
+        422,
+        'SOCIAL_ENTITY_NOT_LINKABLE',
+        `موجودیت «${ref.entityType}:${ref.entityId}» در وضعیت فعلی قابل اتصال نیست.`,
+      );
+    }
+    return {
+      entityType: ref.entityType,
+      entityId: res.canonicalId || ref.entityId,
+    };
+  };
+
+  const resolvedPrimary = primaryRef ? await resolveAndAssert(primaryRef) : null;
+  const resolvedRelated: SocialEntityReference[] = [];
+  for (const r of relatedRefs) {
+    resolvedRelated.push(await resolveAndAssert(r));
+  }
+
+  return {
+    primary: resolvedPrimary,
+    related: resolvedRelated,
+    schemaVersion: 1,
+  };
+}
+
+export async function resolveOrBuildFallbackNeighborhoodContext(
+  rawContext: unknown,
+  neighborhoodId?: number,
+  options?: { store?: CommunityDatabaseStore },
+): Promise<SocialContentContext | undefined> {
+  if (rawContext !== undefined) {
+    return validateSocialContentContext(rawContext, options);
+  }
+  const num = Number(neighborhoodId);
+  if (Number.isInteger(num) && num >= 1) {
+    const candidate: SocialContentContext = {
+      primary: { entityType: 'neighborhood', entityId: String(num) },
+      related: [],
+      schemaVersion: 1,
+    };
+    const res = await resolveSocialEntityReference(candidate.primary!, options);
+    if (res.exists && res.linkable) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+export function canonicalizeSocialContentContextForHash(
+  ctx?: SocialContentContext,
+): string {
+  if (!ctx) return 'ctx:none';
+  const p = ctx.primary ? `${ctx.primary.entityType}:${ctx.primary.entityId}` : 'null';
+  const r = (ctx.related ?? []).map((item) => `${item.entityType}:${item.entityId}`).join(',');
+  return `ctx:v${ctx.schemaVersion}:p=${p}:r=[${r}]`;
+}
+

@@ -12,6 +12,10 @@ import {
 import type { D3PriceDensityScaleResult } from '../priceHeatmapAndViewportLazy';
 import { profileLayerReconciliation } from './mapRenderProfiler';
 
+export function formatNeighborhoodLayerKey(cityId: CityId | string, hoodId: number): string {
+  return `${cityId || 'tehran'}:${hoodId}`;
+}
+
 export interface PolygonLayerEntry {
   layer: any;
   geometryKey: string;
@@ -19,6 +23,8 @@ export interface PolygonLayerEntry {
   stroke: string;
   fill: string;
   hood: EvaluatedNeighborhood;
+  cityId?: CityId;
+  scopedKey?: string;
 }
 
 export interface NeighborhoodMarkerEntry {
@@ -34,6 +40,8 @@ export interface NeighborhoodMarkerEntry {
   stroke: string;
   fill: string;
   hood: EvaluatedNeighborhood;
+  cityId?: CityId;
+  scopedKey?: string;
 }
 
 export type MarkerLayerEntry = NeighborhoodMarkerEntry;
@@ -41,6 +49,8 @@ export type MarkerLayerEntry = NeighborhoodMarkerEntry;
 export interface GoldPinLayerEntry {
   pin: any;
   signature: string;
+  cityId?: CityId;
+  scopedKey?: string;
 }
 
 export interface NeighborhoodReconcilerRefs {
@@ -199,9 +209,10 @@ export function updateNeighborhoodMarkerPresentation(params: {
 export function reconcileGoldPinsLayer(params: {
   L: any; map: any; refs: NeighborhoodReconcilerRefs; visibleHoods: EvaluatedNeighborhood[];
   currentZoom: number; secondaryPinsMinZoom: number; showGoldPins: boolean; isDarkMap: boolean;
+  activeCity?: CityId;
   onOpenBargains: (hoodId: number) => void; reason?: string;
 }): void {
-  const { L, map, refs, visibleHoods, currentZoom, secondaryPinsMinZoom, showGoldPins, isDarkMap, onOpenBargains, reason = 'goldPins' } = params;
+  const { L, map, refs, visibleHoods, currentZoom, secondaryPinsMinZoom, showGoldPins, isDarkMap, activeCity = 'tehran', onOpenBargains, reason = 'goldPins' } = params;
   profileLayerReconciliation('gold-pins', reason, () => {
     let created = 0, updated = 0, removed = 0, retained = 0;
     const goldTargets = new Map<number, { hood: EvaluatedNeighborhood; signature: string }>();
@@ -210,18 +221,25 @@ export function reconcileGoldPinsLayer(params: {
         if (!refs.markersByHood.has(hood.id)) continue;
         const bargain = Array.isArray(hood.bargains) ? hood.bargains.find((row) => isLiveDivarBargainId(row.id)) : undefined;
         if (!bargain) continue;
-        goldTargets.set(hood.id, { hood, signature: `${hood.id}|${hood.lat}|${hood.lng}|${isDarkMap ? 1 : 0}|${bargain.id}|${bargain.discountPercent}|${bargain.priceText}` });
+        goldTargets.set(hood.id, { hood, signature: `${activeCity}|${hood.id}|${hood.lat}|${hood.lng}|${isDarkMap ? 1 : 0}|${bargain.id}|${bargain.discountPercent}|${bargain.priceText}` });
       }
     }
     for (const [id, entry] of refs.goldPinsByHood.entries()) {
-      if (!goldTargets.has(id)) { map.removeLayer(entry.pin); refs.goldPinsByHood.delete(id); removed++; }
+      if (!goldTargets.has(id) || (entry.cityId && entry.cityId !== activeCity)) {
+        map.removeLayer(entry.pin);
+        refs.goldPinsByHood.delete(id);
+        removed++;
+      }
     }
     for (const [id, target] of goldTargets.entries()) {
       const existing = refs.goldPinsByHood.get(id);
-      if (existing && existing.signature === target.signature) { retained++; continue; }
+      if (existing && existing.cityId === activeCity && existing.signature === target.signature) { retained++; continue; }
       if (existing) map.removeLayer(existing.pin);
       const pin = renderGoldBargainPinOnLeaflet({ L, map, hood: target.hood, isDarkMap, onClickBargain: onOpenBargains });
-      if (pin) { refs.goldPinsByHood.set(id, { pin, signature: target.signature }); if (existing) updated++; else created++; }
+      if (pin) {
+        refs.goldPinsByHood.set(id, { pin, signature: target.signature, cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, id) });
+        if (existing) updated++; else created++;
+      }
     }
     return { created, updated, removed, retained };
   });
@@ -235,7 +253,13 @@ export function ensureSelectedMarkerExists(params: {
   areaUnit: AreaUnit; intlCurrency: IntlCurrencyCode; locale: RadarLocale; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
 }): void {
   const { L, map, refs, selectedHood, allCityHoods, currentZoom, activeCity, mode, targetSqm, rentAgeMultiplier, mapLens, isDarkMap, lowBandwidthMode, enableSponsorBilling, osmBoundariesByHood, d3PriceScale, areaUnit, intlCurrency, locale, onSelectNeighborhood } = params;
-  if (!map || !L || !selectedHood || refs.markersByHood.has(selectedHood.id)) return;
+  if (!map || !L || !selectedHood) return;
+  const existingMarker = refs.markersByHood.get(selectedHood.id);
+  if (existingMarker && (!existingMarker.cityId || existingMarker.cityId === activeCity)) return;
+  if (existingMarker) {
+    map.removeLayer(existingMarker.marker);
+    refs.markersByHood.delete(selectedHood.id);
+  }
   const palette = getLensPalette(selectedHood, mapLens, d3PriceScale);
   const safeSqmPill = Math.max(25, targetSqm || 75);
   const scaledRahnPill = Math.round(selectedHood.rahn80m * (safeSqmPill / 80) * rentAgeMultiplier);
@@ -243,11 +267,16 @@ export function ensureSelectedMarkerExists(params: {
   const tier: MarkerVisualTier = currentZoom >= 14 ? 'detailed_pill' : 'standard_pill';
   const { shortPriceLabel, fullPriceLabel } = buildMarkerPriceLabels(selectedHood, mapLens, mode, scaledRahnPill, areaUnit, intlCurrency, locale);
   const themeKey = `${isDarkMap ? 1 : 0}|${locale}`;
+  const existingPoly = refs.polygonsByHood.get(selectedHood.id);
+  if (existingPoly && existingPoly.cityId && existingPoly.cityId !== activeCity) {
+    map.removeLayer(existingPoly.layer);
+    refs.polygonsByHood.delete(selectedHood.id);
+  }
   if (!refs.polygonsByHood.has(selectedHood.id)) {
     const style = getZoomAdaptivePolygonStyle(currentZoom, true, palette.stroke, palette.fill);
-    const { geometryKey, geoJsonFeature, coords } = resolveNeighborhoodGeoJsonForLod(selectedHood, allCityHoods, osmBoundariesByHood[selectedHood.id]?.coordinates, { zoom: currentZoom, isSelected: true, lowBandwidthMode });
+    const { geometryKey, geoJsonFeature, coords } = resolveNeighborhoodGeoJsonForLod(selectedHood, allCityHoods, osmBoundariesByHood[selectedHood.id]?.coordinates, { zoom: currentZoom, isSelected: true, lowBandwidthMode, cityId: activeCity });
     const layer = typeof L.geoJSON === 'function' ? L.geoJSON(geoJsonFeature, { style: () => style }).addTo(map) : L.polygon(coords, style).addTo(map);
-    const pEntry: PolygonLayerEntry = { layer, geometryKey, styleKey: `${palette.stroke}|${palette.fill}|${currentZoom}|1`, stroke: palette.stroke, fill: palette.fill, hood: selectedHood };
+    const pEntry: PolygonLayerEntry = { layer, geometryKey, styleKey: `${activeCity}|${palette.stroke}|${palette.fill}|${currentZoom}|1`, stroke: palette.stroke, fill: palette.fill, hood: selectedHood, cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, selectedHood.id) };
     layer.on?.('click', () => onSelectNeighborhood(pEntry.hood));
     refs.polygonsByHood.set(selectedHood.id, pEntry);
   }
@@ -256,7 +285,8 @@ export function ensureSelectedMarkerExists(params: {
   marker.bindTooltip?.(buildNeighborhoodRichTooltipHtml({ hood: selectedHood, activeCity, mode, safeSqmPill, scaledRahnPill, isDarkMap }), { direction: 'top', interactive: true, offset: [0, -10] });
   const mEntry: NeighborhoodMarkerEntry = {
     marker, lat: selectedHood.lat, lng: selectedHood.lng, lodTier: tier, pillBg: palette.pillBg, hasSponsor, stroke: palette.stroke, fill: palette.fill, hood: selectedHood,
-    lastThemeKey: themeKey, lastIconKey: `${selectedHood.id}|${selectedHood.lat}|${selectedHood.lng}|${currentZoom}|${tier}|1|${hasSponsor ? 1 : 0}|${themeKey}|${palette.pillBg}|${shortPriceLabel}|${fullPriceLabel}`,
+    cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, selectedHood.id),
+    lastThemeKey: themeKey, lastIconKey: `${activeCity}|${selectedHood.id}|${selectedHood.lat}|${selectedHood.lng}|${currentZoom}|${tier}|1|${hasSponsor ? 1 : 0}|${themeKey}|${palette.pillBg}|${shortPriceLabel}|${fullPriceLabel}`,
     lastTooltipKey: `${selectedHood.id}|${activeCity}|${mode}|${safeSqmPill}|${scaledRahnPill}|${themeKey}|${areaUnit}|${intlCurrency}|${selectedHood.buyPerSqm}|${selectedHood.bargains?.length ?? 0}`,
   };
   marker.on?.('click', () => onSelectNeighborhood(mEntry.hood));

@@ -13,6 +13,11 @@
     -webkit-user-select: text;
   }
 
+  .app-viewport-locked {
+    overflow: hidden;
+    height: 100dvh;
+  }
+
   .leaflet-container,
   .radar-drawer-drag-handle {
     user-select: none;

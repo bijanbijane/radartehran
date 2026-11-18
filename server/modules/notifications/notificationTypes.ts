@@ -116,7 +116,11 @@ export type NotificationEventType =
   | 'sponsor.application_approved_or_rejected'
   | 'crowd_claim.accepted_or_rejected'
   | 'account.security_alert'
-  | 'system.administrative_announcement';
+  | 'system.administrative_announcement'
+  | 'social.post.created.v1'
+  | 'social.comment.created.v1'
+  | 'social.question.answered.v1'
+  | 'social.moderation.decided.v1';
 
 export interface NotificationEventPayload {
   readonly eventId: string;

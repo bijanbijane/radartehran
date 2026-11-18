@@ -236,6 +236,7 @@
         "replyCount": { "type": "number" },
         "followerCount": { "type": "number" },
         "helpfulCount": { "type": "number" },
+        "socialContext": { "type": "object", "description": "Canonical multi-entity content context (primary and related entity references, schemaVersion: 1)" },
         "isDeleted": { "type": "boolean" },
         "createdAtIso": { "type": "string", "format": "date-time" }
       },
@@ -305,7 +306,9 @@
         "userId": { "type": "string" },
         "username": { "type": "string" },
         "displayNameFa": { "type": "string" },
-        "visibility": { "type": "string", "enum": ["public", "members_only", "private"] }
+        "visibility": { "type": "string", "enum": ["public", "members_only", "private"] },
+        "followersCount": { "type": "number", "description": "Server-managed follower count" },
+        "followingCount": { "type": "number", "description": "Server-managed following count" }
       },
       "required": ["userId", "username", "displayNameFa", "visibility"]
     },
@@ -365,6 +368,135 @@
         "createdAtIso": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "eventType", "schemaVersion", "status", "attemptCount", "createdAtIso"]
+    },
+    "SocialRateLimit": {
+      "title": "SocialRateLimit",
+      "description": "Shared transactional Firestore rate limit bucket counter for multi-instance social backend (zero raw UID)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "bucket": { "type": "string", "enum": ["read", "create_post", "edit_post", "create_comment", "reaction", "follow", "report", "appeal", "admin"] },
+        "subjectHash": { "type": "string" },
+        "count": { "type": "number" },
+        "windowStartMs": { "type": "number" },
+        "expiresAtMs": { "type": "number" },
+        "updatedAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "bucket", "subjectHash", "count", "windowStartMs", "expiresAtMs", "updatedAtIso"]
+    },
+    "SocialActivityRecord": {
+      "title": "SocialActivityRecord",
+      "description": "Immutable social activity ledger record written atomically with content creation, follow, or reaction (zero full body text or PII)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventType": {
+          "type": "string",
+          "enum": [
+            "content.created",
+            "comment.created",
+            "question.answered",
+            "social.follow.created.v1",
+            "social.follow.removed.v1",
+            "social.reaction.created.v1",
+            "social.reaction.removed.v1"
+          ]
+        },
+        "actorUid": { "type": "string" },
+        "objectType": {
+          "type": "string",
+          "enum": ["discussion", "question", "correction", "research_proposal", "comment", "answer", "follow", "reaction"]
+        },
+        "objectId": { "type": "string" },
+        "parentObjectId": { "type": "string" },
+        "socialContext": { "type": "object" },
+        "visibility": { "type": "string", "enum": ["public", "restricted"] },
+        "createdAtIso": { "type": "string", "format": "date-time" },
+        "schemaVersion": { "type": "integer" }
+      },
+      "required": ["id", "eventType", "actorUid", "objectType", "objectId", "visibility", "createdAtIso", "schemaVersion"]
+    },
+    "SocialFeedIndexDocument": {
+      "title": "SocialFeedIndexDocument",
+      "description": "Derived server-only projection document for scalable social search and feed discovery (zero full bodyFa or PII)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sourcePostId": { "type": "string" },
+        "recordKind": { "type": "string", "enum": ["discussion", "question", "correction", "research_proposal"] },
+        "authorUid": { "type": "string" },
+        "neighborhoodId": { "type": "integer" },
+        "topicId": { "type": "string" },
+        "normalizedTitleFa": { "type": "string" },
+        "normalizedSearchTokens": { "type": "array", "items": { "type": "string" } },
+        "excerptFa": { "type": "string" },
+        "createdAtIso": { "type": "string", "format": "date-time" },
+        "updatedAtIso": { "type": "string", "format": "date-time" },
+        "helpfulCount": { "type": "integer" },
+        "replyCount": { "type": "integer" },
+        "visibility": { "type": "string", "enum": ["discoverable", "restricted", "hidden"] },
+        "moderationStatus": { "type": "string", "enum": ["active", "pending", "hidden", "removed"] },
+        "feedScore": { "type": "number" },
+        "formulaVersion": { "type": "string" },
+        "projectionVersion": { "type": "integer" },
+        "indexedAtIso": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "sourcePostId",
+        "recordKind",
+        "authorUid",
+        "neighborhoodId",
+        "topicId",
+        "normalizedTitleFa",
+        "normalizedSearchTokens",
+        "excerptFa",
+        "createdAtIso",
+        "updatedAtIso",
+        "helpfulCount",
+        "replyCount",
+        "visibility",
+        "moderationStatus",
+        "feedScore",
+        "formulaVersion",
+        "projectionVersion",
+        "indexedAtIso"
+      ]
+    },
+    "SocialFeedIndexJob": {
+      "title": "SocialFeedIndexJob",
+      "description": "Server-only job tracking document for paged socialFeedIndex rebuild operations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string", "enum": ["RUNNING", "COMPLETED", "FAILED"] },
+        "startedByUid": { "type": "string" },
+        "startedAtIso": { "type": "string", "format": "date-time" },
+        "updatedAtIso": { "type": "string", "format": "date-time" },
+        "completedAtIso": { "type": "string", "format": "date-time" },
+        "batchSize": { "type": "integer" },
+        "scannedCount": { "type": "integer" },
+        "indexedCount": { "type": "integer" },
+        "skippedCount": { "type": "integer" },
+        "deletedOrHiddenCount": { "type": "integer" },
+        "lastCursorDocId": { "type": "string" },
+        "formulaVersion": { "type": "string" },
+        "projectionVersion": { "type": "integer" }
+      },
+      "required": [
+        "id",
+        "status",
+        "startedByUid",
+        "startedAtIso",
+        "updatedAtIso",
+        "batchSize",
+        "scannedCount",
+        "indexedCount",
+        "skippedCount",
+        "deletedOrHiddenCount",
+        "formulaVersion",
+        "projectionVersion"
+      ]
     }
   },
   "firestore": {
@@ -443,6 +575,22 @@
     "/socialOutbox/{outboxId}": {
       "schema": { "$ref": "#/entities/SocialOutboxEvent" },
       "description": "Stage 6 durable transactional outbox events for zero-PII notification dispatch"
+    },
+    "/socialRateLimits/{rateLimitId}": {
+      "schema": { "$ref": "#/entities/SocialRateLimit" },
+      "description": "Server-only shared transactional rate limit counters (allow read, write: if false)"
+    },
+    "/socialActivities/{activityId}": {
+      "schema": { "$ref": "#/entities/SocialActivityRecord" },
+      "description": "Server-only atomic social activity ledger records (allow read, write: if false)"
+    },
+    "/socialFeedIndex/{indexId}": {
+      "schema": { "$ref": "#/entities/SocialFeedIndexDocument" },
+      "description": "Server-only derived social search and feed discovery projection documents (allow read, write: if false)"
+    },
+    "/socialFeedIndexJobs/{jobId}": {
+      "schema": { "$ref": "#/entities/SocialFeedIndexJob" },
+      "description": "Server-only paged index rebuild job status documents (allow read, write: if false)"
     }
   }
 }

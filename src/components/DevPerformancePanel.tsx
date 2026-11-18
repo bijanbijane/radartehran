@@ -261,9 +261,10 @@ export const DevPerformancePanel: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <button
                 type="button" onClick={handleRunMicroBenchmark} disabled={benchmarking}
+                data-measurement-source="SYNTHETIC_LOCAL"
                 className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg font-medium transition-all shadow"
               >
-                {benchmarking ? 'در حال تست...' : '🧪 بنچمارک سریع'}
+                {benchmarking ? 'در حال تست...' : '🧪 بنچمارک مصنوعی (SYNTHETIC_LOCAL)'}
               </button>
               <button type="button" onClick={refreshData} className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors">
                 🔄 تازه‌سازی

@@ -1,27 +1,11 @@
-/**
- * RT-UI-SEARCH-001 (Stages 27 & 30) | Global Search, Discovery & Recommendation Interface
- * Multi-City, Real Viewport Bounds, URL State Preservation, Popstate Sync & Accessible Combobox
- */
-
+/** RT-UI-SEARCH-001 (Stages 27 & 30) | Global Search, Discovery & Recommendation Interface */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookmarkPlus, Filter, MapPin, RotateCcw, Search, X } from 'lucide-react';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../../data/multiCityData';
 import { toPersianNum } from '../../../data/neighborhoods';
 import { transitionModuleContext } from '../../../interaction-system/interactionEngines';
-import type {
-  SavedSearchAlertFrequency,
-  SearchBoundingBox,
-  SearchExecutionResponse,
-  SearchFilterSet,
-  SearchScope,
-  SearchSortOption,
-  SearchViewMode,
-} from '../models/search.types';
-import {
-  decodeSearchUrlState,
-  getPlaceHierarchyForCity,
-  mergeSearchUrlStateIntoSearch,
-} from '../services/searchNormalizerAndPlanner';
+import type { SavedSearchAlertFrequency, SearchBoundingBox, SearchExecutionResponse, SearchFilterSet, SearchScope, SearchSortOption, SearchViewMode } from '../models/search.types';
+import { decodeSearchUrlState, getPlaceHierarchyForCity, mergeSearchUrlStateIntoSearch } from '../services/searchNormalizerAndPlanner';
 import { defaultSearchEngine } from '../services/searchOrchestratorEngine';
 import { defaultSearchWorkspaceService } from '../services/searchWorkspaceService';
 import { SearchResultsAndDiscoveryGrid } from './SearchResultsAndDiscoveryGrid';
@@ -37,24 +21,40 @@ export interface GlobalSearchWorkspaceProps {
 }
 
 const SCOPE_TABS: Array<{ id: SearchScope; labelFa: string }> = [
-  { id: 'ALL', labelFa: 'همه نتایج' },
-  { id: 'NEIGHBORHOODS', labelFa: 'محله‌ها' },
-  { id: 'PROPERTIES', labelFa: 'املاک' },
-  { id: 'MARKET', labelFa: 'بازار' },
-  { id: 'SERVICES', labelFa: 'خدمات' },
-  { id: 'KNOWLEDGE', labelFa: 'دانش و پژوهش' },
-  { id: 'COMMUNITY', labelFa: 'جامعه' },
-  { id: 'MAP', labelFa: 'نقشه و مکان' },
+  { id: 'ALL', labelFa: 'همه نتایج' }, { id: 'NEIGHBORHOODS', labelFa: 'محله‌ها' },
+  { id: 'PROPERTIES', labelFa: 'املاک' }, { id: 'MARKET', labelFa: 'بازار' },
+  { id: 'SERVICES', labelFa: 'خدمات' }, { id: 'KNOWLEDGE', labelFa: 'دانش و پژوهش' },
+  { id: 'COMMUNITY', labelFa: 'جامعه' }, { id: 'MAP', labelFa: 'نقشه و مکان' },
 ];
 
+export function syncSearchHistoryUrl(
+  historyObj: Pick<History, 'pushState' | 'replaceState'> | undefined,
+  pathname: string,
+  currentSearch: string,
+  nextState: { q: string; scope: SearchScope; sort: SearchSortOption; viewMode: SearchViewMode; filters: SearchFilterSet },
+  mode: 'push' | 'replace',
+  isPopStateRestore = false,
+): { committedUrl: string; methodCalled: 'pushState' | 'replaceState' | 'none' } {
+  const normalizedCurrentSearch = currentSearch ? (currentSearch.startsWith('?') ? currentSearch : `?${currentSearch}`) : '';
+  const currentUrl = `${pathname}${normalizedCurrentSearch}`;
+  if (isPopStateRestore || !historyObj) return { committedUrl: currentUrl, methodCalled: 'none' };
+  const mergedQs = mergeSearchUrlStateIntoSearch(normalizedCurrentSearch, nextState);
+  const nextUrl = `${pathname}${mergedQs ? `?${mergedQs}` : ''}`;
+  if (nextUrl === currentUrl) return { committedUrl: nextUrl, methodCalled: 'none' };
+  if (mode === 'push' && typeof historyObj.pushState === 'function') {
+    historyObj.pushState(null, '', nextUrl);
+    return { committedUrl: nextUrl, methodCalled: 'pushState' };
+  }
+  if (typeof historyObj.replaceState === 'function') {
+    historyObj.replaceState(null, '', nextUrl);
+    return { committedUrl: nextUrl, methodCalled: 'replaceState' };
+  }
+  return { committedUrl: nextUrl, methodCalled: 'none' };
+}
+
 export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
-  activeCity = 'tehran',
-  activeNeighborhoodId,
-  activeNeighborhoodName,
-  viewportBounds = null,
-  initialQuery = '',
-  onSelectNeighborhoodId,
-  onNavigatePath,
+  activeCity = 'tehran', activeNeighborhoodId, activeNeighborhoodName, viewportBounds = null,
+  initialQuery = '', onSelectNeighborhoodId, onNavigatePath,
 }) => {
   const initialDecoded = useMemo(
     () => decodeSearchUrlState(typeof window !== 'undefined' ? window.location.search : ''),
@@ -73,6 +73,8 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
   const [saveAlertFreq, setSaveAlertFreq] = useState<SavedSearchAlertFrequency>('OFF');
   const [savedBannerFa, setSavedBannerFa] = useState<string | null>(null);
   const [degradedScopes, setDegradedScopes] = useState<SearchScope[]>([]);
+  const pendingHistoryModeRef = useRef<'push' | 'replace'>('replace');
+  const isPopStateRestoreRef = useRef<boolean>(false);
 
   const cityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
   const cityPlaces = useMemo(() => getPlaceHierarchyForCity(activeCity), [activeCity]);
@@ -108,6 +110,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
   useEffect(() => {
     if (prevCityRef.current !== activeCity) {
       prevCityRef.current = activeCity;
+      pendingHistoryModeRef.current = 'push';
       setDraftFilters((prev) => ({ ...prev, cityId: activeCity, neighborhoodId: undefined, districtNumber: undefined }));
       setAppliedFilters((prev) => ({ ...prev, cityId: activeCity, neighborhoodId: undefined, districtNumber: undefined }));
     }
@@ -132,7 +135,8 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
     nextFilters: SearchFilterSet = appliedFilters,
     nextSort: SearchSortOption = sort,
     nextViewMode: SearchViewMode = viewMode,
-    nextDegraded: SearchScope[] = degradedScopes
+    nextDegraded: SearchScope[] = degradedScopes,
+    historyModeOverride?: 'push' | 'replace',
   ) => {
     latestReqCounter.current += 1;
     const reqId = `req-${latestReqCounter.current}`;
@@ -151,24 +155,33 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
         rawQuery: nextQuery, scope: nextScope, filters: scopedFilters, resultCount: res.totalCount,
       });
     }
+    const modeToUse = historyModeOverride || pendingHistoryModeRef.current;
+    pendingHistoryModeRef.current = 'replace';
     if (typeof window !== 'undefined') {
-      const mergedQs = mergeSearchUrlStateIntoSearch(window.location.search, {
-        q: nextQuery, scope: nextScope, sort: nextSort, viewMode: nextViewMode, filters: scopedFilters,
-      });
-      window.history.replaceState(null, '', `${window.location.pathname}${mergedQs ? `?${mergedQs}` : ''}`);
+      syncSearchHistoryUrl(
+        window.history,
+        window.location.pathname,
+        window.location.search,
+        { q: nextQuery, scope: nextScope, sort: nextSort, viewMode: nextViewMode, filters: scopedFilters },
+        modeToUse,
+        isPopStateRestoreRef.current,
+      );
     }
+    isPopStateRestoreRef.current = false;
   };
 
   useEffect(() => {
     const timer = setTimeout(() => {
       runCommittedSearch(rawQuery, activeScope, appliedFilters, sort, viewMode, degradedScopes);
-    }, 150);
+    }, 300);
     return () => clearTimeout(timer);
   }, [rawQuery, activeScope, appliedFilters, sort, viewMode, activeCity, degradedScopes]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const handlePopState = () => {
+      isPopStateRestoreRef.current = true;
+      pendingHistoryModeRef.current = 'replace';
       const decoded = decodeSearchUrlState(window.location.search);
       setRawQuery(decoded.q);
       setActiveScope(decoded.scope);
@@ -185,6 +198,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
 
   const handleResetFiltersOnly = () => {
     const clean: SearchFilterSet = { cityId: activeCity };
+    pendingHistoryModeRef.current = 'push';
     setDraftFilters(clean);
     setAppliedFilters(clean);
     setFilterStatus('DEFAULT');
@@ -193,6 +207,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
 
   const handleResetFullSearch = () => {
     const clean: SearchFilterSet = { cityId: activeCity };
+    pendingHistoryModeRef.current = 'push';
     setDraftFilters(clean);
     setAppliedFilters(clean);
     setFilterStatus('DEFAULT');
@@ -259,7 +274,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
               key={m}
               type="button"
               data-testid={`search-view-mode-${m.toLowerCase()}`}
-              onClick={() => setViewMode(m)}
+              onClick={() => { pendingHistoryModeRef.current = 'push'; setViewMode(m); }}
               className={`min-h-[38px] px-2.5 py-1 rounded-lg font-bold cursor-pointer ${viewMode === m ? 'bg-[#176B63] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
             >
               {m === 'LIST' ? 'فهرست' : m === 'MAP' ? 'نقشه' : 'ترکیبی (فهرست + نقشه)'}
@@ -282,17 +297,29 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             value={rawQuery}
             placeholder={`محله، ملک، خیابان یا شاخص بازار در ${cityNameFa} را جست‌وجو کنید...`}
             onFocus={() => setSuggestOpen(true)}
-            onChange={(e) => { setRawQuery(e.target.value); setSuggestOpen(true); setHighlightedIdx(-1); }}
+            onChange={(e) => { pendingHistoryModeRef.current = 'replace'; setRawQuery(e.target.value); setSuggestOpen(true); setHighlightedIdx(-1); }}
             onKeyDown={(e) => {
               if (e.key === 'ArrowDown') { e.preventDefault(); setSuggestOpen(true); setHighlightedIdx((p) => (p + 1) % Math.max(1, suggestions.length)); }
               else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightedIdx((p) => (p <= 0 ? suggestions.length - 1 : p - 1)); }
-              else if (e.key === 'Enter' && highlightedIdx >= 0 && suggestions[highlightedIdx]) { e.preventDefault(); setRawQuery(suggestions[highlightedIdx].queryText); setSuggestOpen(false); }
+              else if (e.key === 'Enter') {
+                e.preventDefault();
+                pendingHistoryModeRef.current = 'push';
+                if (highlightedIdx >= 0 && suggestions[highlightedIdx]) {
+                  const chosen = suggestions[highlightedIdx].queryText;
+                  setRawQuery(chosen);
+                  setSuggestOpen(false);
+                  runCommittedSearch(chosen, activeScope, appliedFilters, sort, viewMode, degradedScopes, 'push');
+                } else {
+                  setSuggestOpen(false);
+                  runCommittedSearch(rawQuery, activeScope, appliedFilters, sort, viewMode, degradedScopes, 'push');
+                }
+              }
               else if (e.key === 'Escape') { setSuggestOpen(false); }
             }}
             className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none"
           />
           {rawQuery && (
-            <button type="button" aria-label="پاک‌سازی عبارت جست‌وجو" data-testid="btn-clear-global-search" onClick={() => { setRawQuery(''); setHighlightedIdx(-1); }} className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 cursor-pointer">
+            <button type="button" aria-label="پاک‌سازی عبارت جست‌وجو" data-testid="btn-clear-global-search" onClick={() => { pendingHistoryModeRef.current = 'push'; setRawQuery(''); setHighlightedIdx(-1); }} className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -311,7 +338,12 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
                 role="option"
                 aria-selected={highlightedIdx === idx}
                 data-testid={`search-suggestion-item-${idx}`}
-                onClick={() => { setRawQuery(sug.queryText); setSuggestOpen(false); }}
+                onClick={() => {
+                  pendingHistoryModeRef.current = 'push';
+                  setRawQuery(sug.queryText);
+                  setSuggestOpen(false);
+                  runCommittedSearch(sug.queryText, activeScope, appliedFilters, sort, viewMode, degradedScopes, 'push');
+                }}
                 className={`p-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer ${highlightedIdx === idx ? 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300' : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'}`}
               >
                 <div>
@@ -328,7 +360,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
       {searchResponse.plan.typoSuggestion && (
         <div data-testid="search-typo-suggestion-banner" className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 flex items-center justify-between gap-2">
           <span className="font-bold text-amber-900 dark:text-amber-200">{searchResponse.plan.typoSuggestion.promptFa} (عبارت اصلی شما حفظ شده است)</span>
-          <button type="button" onClick={() => setRawQuery(searchResponse.plan.typoSuggestion!.suggestedQuery)} className="px-2.5 py-1 rounded-lg bg-amber-600 text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => { pendingHistoryModeRef.current = 'push'; setRawQuery(searchResponse.plan.typoSuggestion!.suggestedQuery); }} className="px-2.5 py-1 rounded-lg bg-amber-600 text-white font-bold cursor-pointer">
             جست‌وجوی «{searchResponse.plan.typoSuggestion.suggestedQuery}»
           </button>
         </div>
@@ -353,7 +385,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             role="tab"
             aria-selected={activeScope === tab.id}
             data-testid={`search-scope-tab-${tab.id.toLowerCase()}`}
-            onClick={() => setActiveScope(tab.id)}
+            onClick={() => { pendingHistoryModeRef.current = 'push'; setActiveScope(tab.id); }}
             className={`min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 cursor-pointer ${activeScope === tab.id ? 'bg-[#176B63] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
           >
             <span>{tab.labelFa}</span>
@@ -369,22 +401,16 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             <select aria-label="فیلتر محله" data-testid="search-filter-neighborhood" value={draftFilters.neighborhoodId || ''} onChange={(e) => { setDraftFilters({ ...draftFilters, neighborhoodId: e.target.value || undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
               <option value="">همه محله‌های {cityNameFa}</option>
               {cityPlaces.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.canonicalName}{p.district !== undefined ? ` (منطقه ${toPersianNum(p.district)})` : ''}
-                </option>
+                <option key={p.id} value={p.id}>{p.canonicalName}{p.district !== undefined ? ` (منطقه ${toPersianNum(p.district)})` : ''}</option>
               ))}
             </select>
             <select aria-label="نوع معامله" data-testid="search-filter-transaction" value={draftFilters.transactionType || ''} onChange={(e) => handleTransactionChange((e.target.value || undefined) as SearchFilterSet['transactionType'])} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
-              <option value="">همه انواع معامله</option>
-              <option value="BUY">خرید و فروش</option>
-              <option value="RENT">رهن و اجاره</option>
-              <option value="FULL_MORTGAGE">رهن کامل</option>
+              <option value="">همه انواع معامله</option><option value="BUY">خرید و فروش</option><option value="RENT">رهن و اجاره</option><option value="FULL_MORTGAGE">رهن کامل</option>
             </select>
             <select aria-label="تعداد اتاق خواب" data-testid="search-filter-bedrooms" value={draftFilters.bedrooms ? String(draftFilters.bedrooms) : ''} onChange={(e) => { setDraftFilters({ ...draftFilters, bedrooms: e.target.value ? Number(e.target.value) : undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
-              <option value="">همه تعداد اتاق</option>
-              <option value="1">۱ خوابه</option><option value="2">۲ خوابه</option><option value="3">۳ خوابه</option>
+              <option value="">همه تعداد اتاق</option><option value="1">۱ خوابه</option><option value="2">۲ خوابه</option><option value="3">۳ خوابه</option>
             </select>
-            <button type="button" data-testid="btn-apply-search-filters" onClick={() => { setAppliedFilters({ ...draftFilters, cityId: activeCity }); setFilterStatus('APPLIED'); }} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer">اعمال فیلتر</button>
+            <button type="button" data-testid="btn-apply-search-filters" onClick={() => { pendingHistoryModeRef.current = 'push'; const nextF = { ...draftFilters, cityId: activeCity }; setAppliedFilters(nextF); setFilterStatus('APPLIED'); runCommittedSearch(rawQuery, activeScope, nextF, sort, viewMode, degradedScopes, 'push'); }} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer">اعمال فیلتر</button>
             <button
               type="button"
               data-testid="btn-search-in-map-bounds"
@@ -398,14 +424,13 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
               }}
               className={`min-h-[38px] px-2.5 py-1.5 rounded-lg border font-bold flex items-center gap-1 ${hasValidViewportBounds ? 'border-[#176B63] text-[#176B63] cursor-pointer' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-60'}`}
             >
-              <MapPin className="w-3.5 h-3.5" />
-              <span>جست‌وجو در این محدوده نقشه</span>
+              <MapPin className="w-3.5 h-3.5" /><span>جست‌وجو در این محدوده نقشه</span>
             </button>
             <button type="button" data-testid="btn-reset-search-filters" onClick={handleResetFiltersOnly} className="min-h-[38px] px-2 py-1.5 rounded-lg border border-slate-300 text-slate-600 flex items-center gap-1 cursor-pointer"><RotateCcw className="w-3.5 h-3.5" /><span>پاک‌کردن فیلترها</span></button>
             <button type="button" data-testid="btn-reset-full-search" onClick={handleResetFullSearch} className="min-h-[38px] px-2 py-1.5 rounded-lg border border-rose-200 text-rose-700 flex items-center gap-1 cursor-pointer"><span>پاک‌کردن جست‌وجوی کامل</span></button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select aria-label="مرتب‌سازی نتایج" data-testid="search-sort-select" value={sort} onChange={(e) => setSort(e.target.value as SearchSortOption)} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
+            <select aria-label="مرتب‌سازی نتایج" data-testid="search-sort-select" value={sort} onChange={(e) => { pendingHistoryModeRef.current = 'push'; setSort(e.target.value as SearchSortOption); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
               <option value="RELEVANCE">مرتبط‌ترین</option><option value="NEWEST">جدیدترین</option><option value="PRICE_ASC">کمترین قیمت پیشنهادی</option><option value="PRICE_DESC">بیشترین قیمت پیشنهادی</option><option value="QUALITY_SCORE_DESC">بالاترین کیفیت مستندات</option>
             </select>
             <select aria-label="تنظیم اعلان جست‌وجوی ذخیره‌شده" value={saveAlertFreq} onChange={(e) => setSaveAlertFreq(e.target.value as SavedSearchAlertFrequency)} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300">

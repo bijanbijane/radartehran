@@ -1,5 +1,11 @@
-/** @file server/modules/community/communityRateLimiter.ts — Configurable Centralized Community Rate Limiting (Stage 3) */
+/** @file server/modules/community/communityRateLimiter.ts — Shared Transactional Firestore Community Rate Limiting (RT-SOCIAL-IMPL-002) */
 import crypto from 'node:crypto';
+import {
+  CommunityDatabaseUnavailableError,
+  SOCIAL_COLLECTIONS,
+  createDefaultCommunityDatabaseStore,
+  type CommunityDatabaseStore,
+} from './communityFirestoreAdapter';
 
 export type CommunityActionBucket =
   | 'read'
@@ -17,9 +23,22 @@ export interface CommunityRateLimitPolicy {
   limits: Record<CommunityActionBucket, number>;
 }
 
-interface CounterSlot {
+export interface SocialRateLimitRecord extends Record<string, unknown> {
+  id: string;
+  subjectHash: string;
+  bucket: CommunityActionBucket;
   count: number;
+  windowMs: number;
   resetAtMs: number;
+  updatedAtIso: string;
+  schemaVersion: 1;
+}
+
+export interface CommunityRateLimitDecision {
+  allowed: boolean;
+  remaining: number;
+  retryAfterSec: number;
+  limit: number;
 }
 
 function readIntEnv(env: Record<string, string | undefined>, key: string, fallback: number, min = 1, max = 10_000): number {
@@ -45,12 +64,53 @@ export function resolveCommunityRateLimitPolicy(env: Record<string, string | und
   };
 }
 
-export class CommunityRateLimiter {
-  private readonly slots = new Map<string, CounterSlot>();
-  private policy: CommunityRateLimitPolicy;
+export const COMMUNITY_RATE_LIMITS: Record<CommunityActionBucket, { max: number; windowMs: number }> = {
+  read: { max: 120, windowMs: 60_000 },
+  create_post: { max: 10, windowMs: 60_000 },
+  edit_post: { max: 20, windowMs: 60_000 },
+  create_comment: { max: 25, windowMs: 60_000 },
+  reaction: { max: 60, windowMs: 60_000 },
+  follow: { max: 40, windowMs: 60_000 },
+  report: { max: 10, windowMs: 60_000 },
+  appeal: { max: 5, windowMs: 60_000 },
+  admin: { max: 60, windowMs: 60_000 },
+};
 
-  constructor(env: Record<string, string | undefined> = process.env) {
+export function normalizeRateLimitSubject(subjectKey: string): string {
+  return String(subjectKey || '').trim().slice(0, 128) || 'anonymous';
+}
+
+export function hashRateLimitDocId(bucket: CommunityActionBucket, subjectKey: string): string {
+  const cleanSubject = normalizeRateLimitSubject(subjectKey);
+  return crypto.createHash('sha256').update(`${bucket}:${cleanSubject}`).digest('hex');
+}
+
+export function hashRateLimitSubject(subjectKey: string): string {
+  const cleanSubject = normalizeRateLimitSubject(subjectKey);
+  return crypto.createHash('sha256').update(cleanSubject).digest('hex');
+}
+
+export class CommunityRateLimiter {
+  private policy: CommunityRateLimitPolicy;
+  private store?: CommunityDatabaseStore;
+
+  constructor(
+    private readonly env: Record<string, string | undefined> = process.env,
+    store?: CommunityDatabaseStore,
+  ) {
     this.policy = resolveCommunityRateLimitPolicy(env);
+    this.store = store;
+  }
+
+  public bindStore(store: CommunityDatabaseStore): void {
+    this.store = store;
+  }
+
+  public getStore(): CommunityDatabaseStore {
+    if (!this.store) {
+      this.store = createDefaultCommunityDatabaseStore(this.env);
+    }
+    return this.store;
   }
 
   public reconfigure(env: Record<string, string | undefined>): void {
@@ -61,39 +121,91 @@ export class CommunityRateLimiter {
     return { windowMs: this.policy.windowMs, limits: { ...this.policy.limits } };
   }
 
-  public checkAndConsume(
+  public resetForTests(): void {
+    this.policy = resolveCommunityRateLimitPolicy(this.env);
+  }
+
+  public async checkAndConsume(
     bucket: CommunityActionBucket,
     subjectKey: string,
     nowMs = Date.now(),
     overrideLimit?: number,
-  ): { allowed: boolean; remaining: number; retryAfterSec: number; limit: number } {
-    const cleanSubject = subjectKey.trim().slice(0, 128) || 'anonymous';
+    explicitStore?: CommunityDatabaseStore,
+  ): Promise<CommunityRateLimitDecision> {
+    const activeStore = explicitStore ?? this.getStore();
+    if (!activeStore || typeof activeStore.runTransaction !== 'function') {
+      throw new CommunityDatabaseUnavailableError('ذخیره‌ساز محدودیت نرخ انجمن در دسترس نیست (Fail-Closed).');
+    }
+
+    const cleanSubject = normalizeRateLimitSubject(subjectKey);
+    const docId = hashRateLimitDocId(bucket, cleanSubject);
+    const subjectHash = hashRateLimitSubject(cleanSubject);
     const limit = typeof overrideLimit === 'number' && overrideLimit >= 1 ? Math.floor(overrideLimit) : this.policy.limits[bucket];
-    const key = `${bucket}:${cleanSubject}`;
+    const configuredWindowMs = this.policy.windowMs;
+    const nowIso = new Date(nowMs).toISOString();
 
-    if (this.slots.size > 10_000) {
-      for (const [k, slot] of this.slots) {
-        if (nowMs >= slot.resetAtMs) this.slots.delete(k);
-      }
+    try {
+      return await activeStore.runTransaction(async (tx) => {
+        const existing = await tx.get<SocialRateLimitRecord & Record<string, unknown>>(
+          SOCIAL_COLLECTIONS.rateLimits,
+          docId,
+        );
+
+        if (!existing || typeof existing.resetAtMs !== 'number' || nowMs >= existing.resetAtMs) {
+          const resetAtMs = nowMs + configuredWindowMs;
+          const nextRecord: SocialRateLimitRecord = {
+            id: docId,
+            subjectHash,
+            bucket,
+            count: 1,
+            windowMs: configuredWindowMs,
+            resetAtMs,
+            updatedAtIso: nowIso,
+            schemaVersion: 1,
+          };
+          tx.set(SOCIAL_COLLECTIONS.rateLimits, docId, nextRecord as unknown as Record<string, unknown>);
+          return {
+            allowed: true,
+            remaining: Math.max(0, limit - 1),
+            retryAfterSec: 0,
+            limit,
+          };
+        }
+
+        const currentCount = Number(existing.count ?? 0);
+        if (currentCount >= limit) {
+          const retryAfterSec = Math.max(1, Math.ceil((existing.resetAtMs - nowMs) / 1000));
+          return {
+            allowed: false,
+            remaining: 0,
+            retryAfterSec,
+            limit,
+          };
+        }
+
+        const nextCount = currentCount + 1;
+        const updatedRecord: SocialRateLimitRecord = {
+          id: docId,
+          subjectHash,
+          bucket,
+          count: nextCount,
+          windowMs: typeof existing.windowMs === 'number' && existing.windowMs > 0 ? existing.windowMs : configuredWindowMs,
+          resetAtMs: existing.resetAtMs,
+          updatedAtIso: nowIso,
+          schemaVersion: 1,
+        };
+        tx.set(SOCIAL_COLLECTIONS.rateLimits, docId, updatedRecord as unknown as Record<string, unknown>);
+        return {
+          allowed: true,
+          remaining: Math.max(0, limit - nextCount),
+          retryAfterSec: 0,
+          limit,
+        };
+      });
+    } catch (err) {
+      if (err instanceof CommunityDatabaseUnavailableError) throw err;
+      throw new CommunityDatabaseUnavailableError('خطا در بررسی محدودیت نرخ روی Firestore (Fail-Closed).', err);
     }
-
-    const current = this.slots.get(key);
-    if (!current || nowMs >= current.resetAtMs) {
-      this.slots.set(key, { count: 1, resetAtMs: nowMs + this.policy.windowMs });
-      return { allowed: true, remaining: Math.max(0, limit - 1), retryAfterSec: 0, limit };
-    }
-
-    if (current.count >= limit) {
-      const retryAfterSec = Math.max(1, Math.ceil((current.resetAtMs - nowMs) / 1000));
-      return { allowed: false, remaining: 0, retryAfterSec, limit };
-    }
-
-    current.count += 1;
-    return { allowed: true, remaining: Math.max(0, limit - current.count), retryAfterSec: 0, limit };
-  }
-
-  public resetForTests(): void {
-    this.slots.clear();
   }
 }
 

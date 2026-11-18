@@ -11,9 +11,15 @@ export interface StepValidationResult {
   errors: Record<string, string>;
 }
 
-export function createEmptySubmissionDraft(defaultHoodId: number, cityId = 'tehran'): ListingSubmissionDraft {
+export function createEmptySubmissionDraft(
+  defaultHoodId: number,
+  cityId = 'tehran',
+  ownerUid?: string | null,
+): ListingSubmissionDraft {
+  const normalizedUid = typeof ownerUid === 'string' && ownerUid.trim().length > 0 ? ownerUid.trim() : 'local-user';
   return {
     draftId: `draft-${Date.now()}`,
+    ownerUid: normalizedUid,
     stepIndex: 1,
     lastSavedAtIso: new Date().toISOString(),
     propertyType: 'apartment',

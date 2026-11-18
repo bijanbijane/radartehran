@@ -11,6 +11,7 @@ export interface ProductPropertiesViewProps {
   selectedHood: EvaluatedNeighborhood;
   activeCity?: CityId;
   activeSubTab?: PropertiesSubTabId;
+  currentUserUid?: string | null;
   onChangeSubTab?: (tab: PropertiesSubTabId) => void;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
   onOpenInspector: (hood: EvaluatedNeighborhood) => void;
@@ -49,6 +50,7 @@ export function ProductPropertiesView(p: ProductPropertiesViewProps): React.Reac
         selectedHood={p.selectedHood}
         activeCity={p.activeCity}
         activeSubTab={p.activeSubTab}
+        currentUserUid={p.currentUserUid}
         onChangeSubTab={p.onChangeSubTab}
         onSelectNeighborhood={p.onSelectNeighborhood}
         onOpenInspector={p.onOpenInspector}

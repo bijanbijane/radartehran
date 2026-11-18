@@ -1,4 +1,5 @@
 export type SupportedRadarLocale = 'fa' | 'en';
+export type PlannedRadarLocale = 'ar' | 'tr';
 
 export interface RadarTopBarCopy {
   searchPlaceholder: string;
@@ -206,4 +207,46 @@ export function getRadarLegendCopy(locale: string = 'fa'): RadarLegendCopy {
 
 export function getRadarCompareCopy(locale: string = 'fa'): RadarCompareCopy {
   return COMPARE_COPY[normLocale(locale)];
+}
+
+export function getLocaleDirection(locale: string = 'fa'): 'rtl' | 'ltr' {
+  return normLocale(locale) === 'en' ? 'ltr' : 'rtl';
+}
+
+export function detectLocaleFromEnvironment(options?: {
+  urlSearch?: string;
+  savedPreference?: string | null;
+  navigatorLanguages?: readonly string[];
+  enableAutoBrowserDetect?: boolean;
+}): SupportedRadarLocale {
+  if (options?.urlSearch) {
+    const m = /[?&]lang=([a-zA-Z-]+)/.exec(options.urlSearch);
+    if (m) {
+      const code = m[1].slice(0, 2).toLowerCase();
+      if (code === 'fa' || code === 'en') return code;
+    }
+  }
+  if (options?.savedPreference) {
+    const saved = options.savedPreference.trim().slice(0, 2).toLowerCase();
+    if (saved === 'fa' || saved === 'en') return saved;
+  }
+  if (options?.enableAutoBrowserDetect && Array.isArray(options?.navigatorLanguages)) {
+    for (const candidate of options.navigatorLanguages) {
+      const code = String(candidate || '').trim().slice(0, 2).toLowerCase();
+      if (code === 'fa' || code === 'en') return code;
+    }
+  }
+  return 'fa';
+}
+
+export function getRadarCopy(locale: string = 'fa'): Record<string, string> {
+  const l = normLocale(locale);
+  return {
+    ...TOP_BAR_COPY[l],
+    ...GLOBAL_NAV_COPY[l],
+    ...BOTTOM_NAV_COPY[l],
+    ...INSPECTOR_COPY[l],
+    ...LEGEND_COPY[l],
+    ...COMPARE_COPY[l],
+  };
 }

@@ -26,6 +26,10 @@ const VALID_EVENT_TYPES = new Set<NotificationEventType>([
   'crowd_claim.accepted_or_rejected',
   'account.security_alert',
   'system.administrative_announcement',
+  'social.post.created.v1',
+  'social.comment.created.v1',
+  'social.question.answered.v1',
+  'social.moderation.decided.v1',
 ]);
 
 const VALID_CATEGORIES = new Set<NotificationCategory>([

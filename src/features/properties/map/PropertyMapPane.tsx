@@ -1,8 +1,14 @@
 /** @file src/features/properties/map/PropertyMapPane.tsx — Synced Split Map View with Privacy Precision & Viewport Search */
-import React, { useMemo, useState } from 'react';
-import { Compass, Layers, MapPin, Shield, ZoomIn, ZoomOut } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Compass, Layers, MapPin, Shield, ZoomIn, ZoomOut } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
-import { buildPropertyMapProjection } from '../services/propertyMapService';
+import {
+  buildPropertyMapProjection,
+  computeCameraViewportBounds,
+  DEFAULT_TEHRAN_CAMERA,
+  panCameraViewport,
+  type PropertyMapCameraState,
+} from '../services/propertyMapService';
 import type { GeoBounds } from '../filters/PropertyFilterDraft';
 import type { PropertyListingRecord } from '../types/listing.types';
 
@@ -10,6 +16,9 @@ export interface PropertyMapPaneProps {
   records: PropertyListingRecord[];
   highlightedListingId: string | null;
   selectedHoodName: string;
+  centerLat?: number;
+  centerLng?: number;
+  cityScopeKey?: string;
   boundsActive: boolean;
   onHighlightListing: (listingId: string | null) => void;
   onOpenDetail: (listingId: string) => void;
@@ -22,6 +31,9 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
   records,
   highlightedListingId,
   selectedHoodName,
+  centerLat,
+  centerLng,
+  cityScopeKey,
   boundsActive,
   onHighlightListing,
   onOpenDetail,
@@ -29,26 +41,66 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
   onClearViewportBounds,
   onOpenFullMap,
 }) => {
-  const [zoom, setZoom] = useState(12);
+  const initialLat = Number.isFinite(centerLat) ? (centerLat as number) : DEFAULT_TEHRAN_CAMERA.centerLat;
+  const initialLng = Number.isFinite(centerLng) ? (centerLng as number) : DEFAULT_TEHRAN_CAMERA.centerLng;
+  const [camera, setCamera] = useState<PropertyMapCameraState>(() => ({
+    centerLat: initialLat,
+    centerLng: initialLng,
+    zoom: 12,
+    cityId: cityScopeKey || 'tehran',
+  }));
   const [viewportDirty, setViewportDirty] = useState(false);
 
+  useEffect(() => {
+    if (!Number.isFinite(centerLat) || !Number.isFinite(centerLng)) return;
+    setCamera((prev) => {
+      if (
+        prev.cityId === (cityScopeKey || 'tehran') &&
+        Math.abs(prev.centerLat - (centerLat as number)) < 1e-6 &&
+        Math.abs(prev.centerLng - (centerLng as number)) < 1e-6
+      ) {
+        return prev;
+      }
+      return {
+        centerLat: centerLat as number,
+        centerLng: centerLng as number,
+        zoom: 12,
+        cityId: cityScopeKey || 'tehran',
+      };
+    });
+    setViewportDirty(false);
+  }, [centerLat, centerLng, cityScopeKey]);
+
+  const cameraBounds = useMemo(
+    () => computeCameraViewportBounds(camera.centerLat, camera.centerLng, camera.zoom),
+    [camera.centerLat, camera.centerLng, camera.zoom],
+  );
+
   const projection = useMemo(
-    () => buildPropertyMapProjection(records, zoom, highlightedListingId),
-    [records, zoom, highlightedListingId],
+    () => buildPropertyMapProjection(records, camera.zoom, highlightedListingId, cameraBounds),
+    [records, camera.zoom, highlightedListingId, cameraBounds],
   );
 
   const { bounds } = projection;
-  const latSpan = Math.max(0.02, bounds.north - bounds.south + 0.02);
-  const lngSpan = Math.max(0.02, bounds.east - bounds.west + 0.02);
+  const latSpan = Math.max(0.01, bounds.north - bounds.south);
+  const lngSpan = Math.max(0.01, bounds.east - bounds.west);
 
   const toPercentPos = (lat: number, lng: number) => {
-    const x = ((lng - (bounds.west - 0.01)) / lngSpan) * 86 + 7;
-    const y = (1 - (lat - (bounds.south - 0.01)) / latSpan) * 82 + 9;
+    const x = ((lng - bounds.west) / lngSpan) * 86 + 7;
+    const y = (1 - (lat - bounds.south) / latSpan) * 82 + 9;
     return { x: Math.min(93, Math.max(7, x)), y: Math.min(91, Math.max(9, y)) };
   };
 
   const handleZoom = (delta: number) => {
-    setZoom((z) => Math.min(15, Math.max(11, z + delta)));
+    setCamera((prev) => ({
+      ...prev,
+      zoom: Math.min(15, Math.max(11, prev.zoom + delta)),
+    }));
+    setViewportDirty(true);
+  };
+
+  const handlePan = (direction: 'north' | 'south' | 'east' | 'west') => {
+    setCamera((prev) => panCameraViewport(prev, direction));
     setViewportDirty(true);
   };
 
@@ -105,7 +157,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
               onClick={() => {
                 if (cl.count === 1) onOpenDetail(cl.primaryItem.listing.listingId);
                 else {
-                  setZoom(14);
+                  setCamera((prev) => ({ ...prev, centerLat: cl.lat, centerLng: cl.lng, zoom: 14 }));
                   onHighlightListing(cl.primaryItem.listing.listingId);
                 }
               }}
@@ -141,7 +193,7 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
           );
         })}
 
-        {/* Zoom & Viewport Search Controls */}
+        {/* Zoom & Pan Camera Controls */}
         <div className="absolute top-3 left-3 flex flex-col gap-1 z-20">
           <button
             type="button"
@@ -159,6 +211,44 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
           >
             <ZoomOut className="w-4 h-4" />
           </button>
+          <div className="grid grid-cols-2 gap-1 pt-1">
+            <button
+              type="button"
+              data-testid="map-pan-north-btn"
+              onClick={() => handlePan('north')}
+              aria-label="حرکت به شمال"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 flex items-center justify-center text-[#182522] dark:text-white shadow-xs cursor-pointer"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              data-testid="map-pan-south-btn"
+              onClick={() => handlePan('south')}
+              aria-label="حرکت به جنوب"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 flex items-center justify-center text-[#182522] dark:text-white shadow-xs cursor-pointer"
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              data-testid="map-pan-east-btn"
+              onClick={() => handlePan('east')}
+              aria-label="حرکت به شرق"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 flex items-center justify-center text-[#182522] dark:text-white shadow-xs cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              data-testid="map-pan-west-btn"
+              onClick={() => handlePan('west')}
+              aria-label="حرکت به غرب"
+              className="w-7 h-7 rounded-[7px] bg-white/95 dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 flex items-center justify-center text-[#182522] dark:text-white shadow-xs cursor-pointer"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {(viewportDirty || boundsActive) && (
@@ -166,18 +256,9 @@ export const PropertyMapPane: React.FC<PropertyMapPaneProps> = ({
             {viewportDirty && (
               <button
                 type="button"
+                data-testid="property-map-search-in-viewport-btn"
                 onClick={() => {
-                  const shrink = zoom >= 14 ? 0.45 : zoom >= 13 ? 0.75 : 1;
-                  const cLat = (bounds.north + bounds.south) / 2;
-                  const cLng = (bounds.east + bounds.west) / 2;
-                  const halfLat = Math.max(0.01, ((bounds.north - bounds.south) / 2) * shrink);
-                  const halfLng = Math.max(0.01, ((bounds.east - bounds.west) / 2) * shrink);
-                  onSearchInViewport({
-                    north: cLat + halfLat,
-                    south: cLat - halfLat,
-                    east: cLng + halfLng,
-                    west: cLng - halfLng,
-                  });
+                  onSearchInViewport(cameraBounds);
                   setViewportDirty(false);
                 }}
                 className="px-3 py-1.5 rounded-[8px] bg-[#182522] text-white text-[11px] font-bold shadow-md flex items-center gap-1 cursor-pointer"

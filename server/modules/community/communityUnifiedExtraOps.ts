@@ -10,12 +10,18 @@ import type {
 import { validateCommunityTextSafety } from '../../../src/features/community/services/communityTrustService';
 import { sanitizeInput } from '../../../src/utils/security';
 import { appendServerAdminAuditLog } from '../account-admin/accountAdminRepository';
+import { appendSocialOutboxEvent } from '../notifications/socialOutboxWorker';
+import {
+  markSocialFeedProjectionHiddenInTx,
+  upsertSocialFeedProjectionInTx,
+} from '../search/socialFeedProjection';
 import {
   CommunityHttpError,
   SOCIAL_COLLECTIONS,
 } from './communityFirestoreAdapter';
 import type { CommunityUnifiedRepository, VerifiedActorIdentity } from './communityUnifiedRepository';
 import type { UnifiedSocialPostDoc } from './communityUnifiedQueries';
+import { appendSocialActivity } from './socialActivityRepository';
 
 export async function addQuestionAnswerOp(
   repo: CommunityUnifiedRepository,
@@ -23,12 +29,13 @@ export async function addQuestionAnswerOp(
   questionId: string,
   input: { bodyFa: string; sourceReferenceFa?: string },
 ) {
-  repo.enforceRateLimit('create_comment', actor.uid);
+  await repo.enforceRateLimit('create_comment', actor.uid);
   const bodyFa = sanitizeInput(input.bodyFa || '', 600);
   const safety = validateCommunityTextSafety(bodyFa);
   if (!safety.ok) throw new CommunityHttpError(422, 'INVALID_ANSWER', safety.errorFa || 'متن پاسخ معتبر نیست.');
   const profile = await repo.getOrCreateProfile(actor);
   const sourceReferenceFa = input.sourceReferenceFa ? sanitizeInput(input.sourceReferenceFa, 140) : undefined;
+  const preGeneratedAnswerId = `ans_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
   return repo.getStore().runTransaction(async (tx) => {
     const q = await tx.get<CommunityQuestionItem & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, questionId);
@@ -39,7 +46,7 @@ export async function addQuestionAnswerOp(
       throw new CommunityHttpError(409, 'QUESTION_CLOSED', 'این پرسش بسته شده است.');
     }
 
-    const answerId = `ans_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const answerId = preGeneratedAnswerId;
     const nowIso = new Date().toISOString();
     const author = {
       userId: actor.uid, username: profile.username, displayNameFa: profile.displayNameFa,
@@ -61,8 +68,33 @@ export async function addQuestionAnswerOp(
     tx.set(SOCIAL_COLLECTIONS.comments, answerId, { ...answer, postId: q.id, recordKind: 'answer', isDeleted: false, createdAtIso: nowIso });
     const nextAnswers = [...(q.answers ?? []), answer];
     const nextStatus = q.status === 'open' ? 'answered' : q.status;
+    const nextReplyCount = Number(q.replyCount ?? q.answers?.length ?? 0) + 1;
     tx.update(SOCIAL_COLLECTIONS.posts, questionId, { answers: nextAnswers, status: nextStatus, updatedAtIso: nowIso });
     tx.incrementNumeric(SOCIAL_COLLECTIONS.posts, questionId, { replyCount: 1 });
+    upsertSocialFeedProjectionInTx(
+      tx,
+      { ...(q as unknown as Record<string, unknown>), answers: nextAnswers, status: nextStatus, replyCount: nextReplyCount, updatedAtIso: nowIso },
+      nowIso,
+    );
+    appendSocialActivity(tx, {
+      eventType: 'question.answered',
+      actorUid: actor.uid,
+      verifiedActorUid: actor.uid,
+      objectType: 'answer',
+      objectId: answerId,
+      parentObjectId: q.id,
+      socialContext: q.socialContext,
+      visibility: 'public',
+      createdAtIso: nowIso,
+    });
+    appendSocialOutboxEvent(tx, {
+      eventId: answerId,
+      eventType: 'social.question.answered.v1',
+      targetId: q.id,
+      actorUid: actor.uid,
+      recipientUids: q.ownerUserId ? [q.ownerUserId] : [],
+      payloadSummaryFa: 'پاسخ جدید به پرسش شما در انجمن ثبت شد',
+    });
     return { item: answer, question: { ...q, answers: nextAnswers, status: nextStatus } };
   });
 }
@@ -90,13 +122,15 @@ export async function withdrawCorrectionOp(repo: CommunityUnifiedRepository, uid
     if (item.status === 'applied' || item.status === 'approved' || item.status === 'verified') {
       throw new CommunityHttpError(409, 'ALREADY_APPLIED', 'پیشنهاد تایید یا اعمال‌شده قابل انصراف نیست.');
     }
-    tx.update(SOCIAL_COLLECTIONS.posts, correctionId, { status: 'withdrawn', updatedAtIso: new Date().toISOString() });
+    const nowIso = new Date().toISOString();
+    tx.update(SOCIAL_COLLECTIONS.posts, correctionId, { status: 'withdrawn', updatedAtIso: nowIso });
+    markSocialFeedProjectionHiddenInTx(tx, correctionId, item, nowIso);
     return { ...item, status: 'withdrawn' as const };
   });
 }
 
 export async function voteResearchProposalOp(repo: CommunityUnifiedRepository, uid: string, proposalId: string) {
-  repo.enforceRateLimit('reaction', uid);
+  await repo.enforceRateLimit('reaction', uid);
   return repo.getStore().runTransaction(async (tx) => {
     const prop = await tx.get<ResearchTopicProposal & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, proposalId);
     if (!prop || prop.recordKind !== 'research_proposal') throw new CommunityHttpError(404, 'PROPOSAL_NOT_FOUND', 'پیشنهاد یافت نشد.');
@@ -139,17 +173,33 @@ export async function executeAdminCommunityModerationOp(
         appliedDataVersionId: input.actionType === 'apply_data_version' ? `canon-ver-${nowIso.slice(0, 10)}` : target.appliedDataVersionId,
         updatedAtIso: nowIso,
       });
+      if (nextStatus === 'rejected') {
+        markSocialFeedProjectionHiddenInTx(tx, targetId, target, nowIso);
+      } else {
+        upsertSocialFeedProjectionInTx(tx, { ...target, status: nextStatus, updatedAtIso: nowIso }, nowIso);
+      }
     } else if (input.actionType === 'resolve_report' || input.actionType === 'dismiss_report') {
       const rep = await tx.get(SOCIAL_COLLECTIONS.reports, targetId);
       if (rep) tx.update(SOCIAL_COLLECTIONS.reports, targetId, { status: input.actionType === 'resolve_report' ? 'decision_made' : 'dismissed', updatedAtIso: nowIso });
     } else if (['hide', 'lock', 'restore'].includes(input.actionType)) {
       const post = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, targetId);
       if (post) {
+        const nextPostStatus = input.actionType === 'hide' ? 'hidden' : input.actionType === 'lock' ? 'locked' : 'published';
+        const nextModStatus = input.actionType === 'hide' ? 'hidden' : 'approved';
         tx.update(SOCIAL_COLLECTIONS.posts, targetId, {
-          status: input.actionType === 'hide' ? 'hidden' : input.actionType === 'lock' ? 'locked' : 'published',
-          moderationStatus: input.actionType === 'hide' ? 'hidden' : 'approved',
+          status: nextPostStatus,
+          moderationStatus: nextModStatus,
           updatedAtIso: nowIso,
         });
+        if (input.actionType === 'hide') {
+          markSocialFeedProjectionHiddenInTx(tx, targetId, post, nowIso);
+        } else {
+          upsertSocialFeedProjectionInTx(
+            tx,
+            { ...(post as unknown as Record<string, unknown>), status: nextPostStatus, moderationStatus: nextModStatus, updatedAtIso: nowIso },
+            nowIso,
+          );
+        }
       }
     }
   });

@@ -90,6 +90,8 @@ export interface CommunityProfile {
   badges: TrustBadge[];
   credentials?: ProfessionalCredentialRecord[];
   followedTopicIds: string[];
+  followersCount?: number;
+  followingCount?: number;
   memberSinceFa: string;
   recentPublicSummaryFa: string[];
   /** Audited credential label ONLY from admin specialist review; never derived from participation */
@@ -146,6 +148,30 @@ export interface EntityLink {
   labelFa: string;
 }
 
+export type SocialEntityType =
+  | 'neighborhood'
+  | 'listing'
+  | 'property'
+  | 'expert'
+  | 'company'
+  | 'project'
+  | 'tool'
+  | 'service'
+  | 'research'
+  | 'market'
+  | 'topic';
+
+export interface SocialEntityReference {
+  entityType: SocialEntityType;
+  entityId: string;
+}
+
+export interface SocialContentContext {
+  primary: SocialEntityReference | null;
+  related: SocialEntityReference[];
+  schemaVersion: 1;
+}
+
 /** 4 Bounded Reactions (§25.13) — Never acts as truth certification */
 export type ReactionType = 'helpful' | 'agree' | 'needs_source' | 'disagree';
 
@@ -165,4 +191,38 @@ export const REPUTATION_AXIS_LABELS_FA: Record<ReputationAxis, string> = {
   sources: 'ارجاع به منبع معتبر',
   professional: 'صلاحیت تخصصی ممیزی‌شده',
 };
+
+export type ProfileContributionKind =
+  | 'all'
+  | 'discussion'
+  | 'question'
+  | 'correction'
+  | 'research_proposal'
+  | 'comment';
+
+export interface ProfileContributionItem {
+  id: string;
+  kind: Exclude<ProfileContributionKind, 'all'>;
+  ownerUid: string;
+  titleFa?: string;
+  excerptFa: string;
+  targetPostId?: string;
+  neighborhoodId?: number;
+  neighborhoodNameFa?: string;
+  topicId?: string;
+  helpfulCount?: number;
+  replyCount?: number;
+  createdAtIso: string;
+  createdAtFa?: string;
+  visibility: 'public' | 'members_only';
+}
+
+export interface ProfileContributionPage {
+  items: ProfileContributionItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  limit: number;
+  contributionsVisible?: boolean;
+}
+
 

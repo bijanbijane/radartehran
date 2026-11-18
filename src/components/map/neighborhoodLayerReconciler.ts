@@ -8,6 +8,7 @@ import { profileLayerReconciliation } from './mapRenderProfiler';
 import {
   buildMarkerPriceLabels,
   ensureSelectedMarkerExists,
+  formatNeighborhoodLayerKey,
   getLensPalette,
   reconcileGoldPinsLayer,
   updateNeighborhoodMarkerPresentation,
@@ -23,7 +24,7 @@ import { resolveGeoLazyLoadingPolicy } from '../../utils/geojsonViewportLazyEngi
 import { isNeighborhoodInLeafletViewport } from '../priceHeatmapAndViewportLazy';
 
 export type { PolygonLayerEntry, NeighborhoodMarkerEntry, MarkerLayerEntry, GoldPinLayerEntry, NeighborhoodReconcilerRefs };
-export { getLensPalette, buildMarkerPriceLabels, updateNeighborhoodMarkerPresentation, reconcileGoldPinsLayer, ensureSelectedMarkerExists };
+export { getLensPalette, buildMarkerPriceLabels, updateNeighborhoodMarkerPresentation, reconcileGoldPinsLayer, ensureSelectedMarkerExists, formatNeighborhoodLayerKey };
 
 export function selectVisibleMapNeighborhoods(params: {
   map: any; allNeighborhoods: EvaluatedNeighborhood[]; activeCity: CityId; activeCityHoodIds: Set<number>;
@@ -32,7 +33,7 @@ export function selectVisibleMapNeighborhoods(params: {
 }) {
   const { map, allNeighborhoods, activeCity, activeCityHoodIds, selectedHoodId, selectedHood, currentZoom, statusFilter, lowBandwidthMode } = params;
   const cityScopedHoods = allNeighborhoods.filter((h) => activeCityHoodIds.has(h.id));
-  const renderHoods = activeCity === 'tehran' && activeCityHoodIds.has(selectedHoodId) && currentZoom >= 10 ? cityScopedHoods : allNeighborhoods;
+  const renderHoods = activeCityHoodIds.size > 0 ? cityScopedHoods : allNeighborhoods;
   const lazyPolicy = resolveGeoLazyLoadingPolicy(currentZoom, lowBandwidthMode);
   const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
   const refLat = selectedHood?.lat ?? cityCfg.center[0], refLng = selectedHood?.lng ?? cityCfg.center[1];
@@ -93,19 +94,24 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
   profileLayerReconciliation('polygons', reason, () => {
     let created = 0, updated = 0, removed = 0, retained = 0;
     for (const [id, entry] of refs.polygonsByHood.entries()) {
-      if (!visibleIds.has(id)) { map.removeLayer(entry.layer); refs.polygonsByHood.delete(id); removed++; }
+      if (!visibleIds.has(id) || (entry.cityId && entry.cityId !== activeCity)) {
+        map.removeLayer(entry.layer);
+        refs.polygonsByHood.delete(id);
+        removed++;
+      }
     }
     for (const hood of visibleHoods) {
       const isSelected = hood.id === selectedHoodId;
       const { stroke, fill } = paletteById.get(hood.id)!;
       const style = getZoomAdaptivePolygonStyle(currentZoom, isSelected, stroke, fill);
-      const styleKey = `${stroke}|${fill}|${currentZoom}|${isSelected ? 1 : 0}`;
+      const styleKey = `${activeCity}|${stroke}|${fill}|${currentZoom}|${isSelected ? 1 : 0}`;
       const { geometryKey, geoJsonFeature, coords } = resolveNeighborhoodGeoJsonForLod(
-        hood, allCityHoods, osmBoundariesByHood[hood.id]?.coordinates, { zoom: currentZoom, isSelected, lowBandwidthMode }
+        hood, allCityHoods, osmBoundariesByHood[hood.id]?.coordinates, { zoom: currentZoom, isSelected, lowBandwidthMode, cityId: activeCity }
       );
       const existing = refs.polygonsByHood.get(hood.id);
       if (existing) {
         existing.hood = hood; existing.stroke = stroke; existing.fill = fill;
+        existing.cityId = activeCity; existing.scopedKey = formatNeighborhoodLayerKey(activeCity, hood.id);
         if (existing.geometryKey !== geometryKey) {
           if (typeof existing.layer?.clearLayers === 'function' && typeof existing.layer?.addData === 'function') {
             existing.layer.clearLayers(); existing.layer.addData(geoJsonFeature); existing.layer.setStyle?.(() => style);
@@ -121,7 +127,10 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
         } else retained++;
       } else {
         const layer = typeof L.geoJSON === 'function' ? L.geoJSON(geoJsonFeature, { style: () => style }).addTo(map) : L.polygon(coords, style).addTo(map);
-        const entry: PolygonLayerEntry = { layer, geometryKey, styleKey, stroke, fill, hood };
+        const entry: PolygonLayerEntry = {
+          layer, geometryKey, styleKey, stroke, fill, hood,
+          cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, hood.id),
+        };
         layer.on?.('click', () => onSelectNeighborhood(entry.hood));
         refs.polygonsByHood.set(hood.id, entry);
         created++;
@@ -135,7 +144,11 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
   profileLayerReconciliation('markers', reason, () => {
     let created = 0, updated = 0, removed = 0, retained = 0;
     for (const [id, entry] of refs.markersByHood.entries()) {
-      if (!visibleIds.has(id)) { map.removeLayer(entry.marker); refs.markersByHood.delete(id); removed++; }
+      if (!visibleIds.has(id) || (entry.cityId && entry.cityId !== activeCity)) {
+        map.removeLayer(entry.marker);
+        refs.markersByHood.delete(id);
+        removed++;
+      }
     }
     for (const hood of visibleHoods) {
       const id = hood.id;
@@ -145,12 +158,13 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
       const palette = paletteById.get(id)!;
       const { shortPriceLabel, fullPriceLabel } = buildMarkerPriceLabels(hood, mapLens, mode, scaledRahnPill, areaUnit, intlCurrency, locale);
       const hasSponsor = isSponsorActive(hood.sponsor, enableSponsorBilling);
-      const lastIconKey = `${id}|${hood.lat}|${hood.lng}|${currentZoom}|${tier}|${isSelected ? 1 : 0}|${hasSponsor ? 1 : 0}|${themeKey}|${palette.pillBg}|${shortPriceLabel}|${fullPriceLabel}`;
+      const lastIconKey = `${activeCity}|${id}|${hood.lat}|${hood.lng}|${currentZoom}|${tier}|${isSelected ? 1 : 0}|${hasSponsor ? 1 : 0}|${themeKey}|${palette.pillBg}|${shortPriceLabel}|${fullPriceLabel}`;
       const lastTooltipKey = `${id}|${activeCity}|${mode}|${safeSqmPill}|${scaledRahnPill}|${themeKey}|${areaUnit}|${intlCurrency}|${hood.buyPerSqm}|${hood.bargains?.length ?? 0}`;
       const existing = refs.markersByHood.get(id);
       if (existing) {
         let changed = false;
         existing.hood = hood; existing.stroke = palette.stroke; existing.fill = palette.fill;
+        existing.cityId = activeCity; existing.scopedKey = formatNeighborhoodLayerKey(activeCity, id);
         existing.pillBg = palette.pillBg; existing.hasSponsor = hasSponsor; existing.lodTier = tier; existing.lastThemeKey = themeKey;
         if (existing.lat !== hood.lat || existing.lng !== hood.lng) {
           existing.marker.setLatLng?.([hood.lat, hood.lng]); existing.lat = hood.lat; existing.lng = hood.lng; changed = true;
@@ -173,6 +187,7 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
         const entry: NeighborhoodMarkerEntry = {
           marker, lat: hood.lat, lng: hood.lng, lastIconKey, lastTooltipKey, lastThemeKey: themeKey,
           lodTier: tier, pillBg: palette.pillBg, hasSponsor, stroke: palette.stroke, fill: palette.fill, hood,
+          cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, id),
         };
         marker.on?.('click', () => onSelectNeighborhood(entry.hood));
         refs.markersByHood.set(id, entry);
@@ -183,7 +198,7 @@ export function reconcileNeighborhoodLayers(params: ReconcileNeighborhoodLayersP
   });
 
   if (!skipGoldPins && onOpenBargains) {
-    reconcileGoldPinsLayer({ L, map, refs, visibleHoods, currentZoom, secondaryPinsMinZoom, showGoldPins, isDarkMap, onOpenBargains, reason });
+    reconcileGoldPinsLayer({ L, map, refs, visibleHoods, currentZoom, secondaryPinsMinZoom, showGoldPins, isDarkMap, activeCity, onOpenBargains, reason });
   }
 }
 

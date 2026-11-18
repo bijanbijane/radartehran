@@ -37,10 +37,65 @@ export function formatStraightLineDistanceFa(km: number): string {
   return `${km.toFixed(1)} کیلومتر (فاصله مستقیم خطی)`;
 }
 
+export interface PropertyMapCameraState {
+  centerLat: number;
+  centerLng: number;
+  zoom: number;
+  cityId?: string;
+}
+
+export const DEFAULT_TEHRAN_CAMERA: PropertyMapCameraState = {
+  centerLat: 35.7219,
+  centerLng: 51.3347,
+  zoom: 12,
+  cityId: 'tehran',
+};
+
+export function computeCameraViewportBounds(
+  centerLat: number,
+  centerLng: number,
+  zoom = 12,
+): GeoBounds {
+  const safeLat = Number.isFinite(centerLat) ? centerLat : DEFAULT_TEHRAN_CAMERA.centerLat;
+  const safeLng = Number.isFinite(centerLng) ? centerLng : DEFAULT_TEHRAN_CAMERA.centerLng;
+  const clampedZoom = Math.min(16, Math.max(9, Number.isFinite(zoom) ? zoom : 12));
+  const scale = Math.pow(2, 12 - clampedZoom);
+  const halfLat = Math.max(0.005, 0.08 * scale);
+  const halfLng = Math.max(0.006, 0.11 * scale);
+  return {
+    north: Number((safeLat + halfLat).toFixed(6)),
+    south: Number((safeLat - halfLat).toFixed(6)),
+    east: Number((safeLng + halfLng).toFixed(6)),
+    west: Number((safeLng - halfLng).toFixed(6)),
+  };
+}
+
+export function panCameraViewport(
+  camera: PropertyMapCameraState,
+  direction: 'north' | 'south' | 'east' | 'west',
+  stepFraction = 0.35,
+): PropertyMapCameraState {
+  const currentBounds = computeCameraViewportBounds(camera.centerLat, camera.centerLng, camera.zoom);
+  const latStep = (currentBounds.north - currentBounds.south) * stepFraction;
+  const lngStep = (currentBounds.east - currentBounds.west) * stepFraction;
+  if (direction === 'north') {
+    return { ...camera, centerLat: Math.min(85, Number((camera.centerLat + latStep).toFixed(6))) };
+  }
+  if (direction === 'south') {
+    return { ...camera, centerLat: Math.max(-85, Number((camera.centerLat - latStep).toFixed(6))) };
+  }
+  if (direction === 'east') {
+    return { ...camera, centerLng: Math.min(179, Number((camera.centerLng + lngStep).toFixed(6))) };
+  }
+  return { ...camera, centerLng: Math.max(-179, Number((camera.centerLng - lngStep).toFixed(6))) };
+}
+
 export function buildPropertyMapProjection(
   records: PropertyListingRecord[],
   zoomLevel = 12,
   selectedListingId?: string | null,
+  cameraBounds?: GeoBounds | null,
+  cameraCenter?: { lat: number; lng: number } | null,
 ): PropertyMapProjection {
   const mapped: PropertyListingRecord[] = [];
   let unavailableCount = 0;
@@ -59,24 +114,15 @@ export function buildPropertyMapProjection(
     }
   }
 
-  let north = -90;
-  let south = 90;
-  let east = -180;
-  let west = 180;
-  for (const r of mapped) {
-    const lat = r.property.lat as number;
-    const lng = r.property.lng as number;
-    if (lat > north) north = lat;
-    if (lat < south) south = lat;
-    if (lng > east) east = lng;
-    if (lng < west) west = lng;
-  }
-  if (mapped.length === 0) {
-    north = 35.84;
-    south = 35.58;
-    east = 51.56;
-    west = 51.20;
-  }
+  const resolvedBounds: GeoBounds = cameraBounds
+    ? { ...cameraBounds }
+    : cameraCenter && Number.isFinite(cameraCenter.lat) && Number.isFinite(cameraCenter.lng)
+    ? computeCameraViewportBounds(cameraCenter.lat, cameraCenter.lng, zoomLevel)
+    : computeCameraViewportBounds(
+        DEFAULT_TEHRAN_CAMERA.centerLat,
+        DEFAULT_TEHRAN_CAMERA.centerLng,
+        zoomLevel,
+      );
 
   // Group into grid cells when zoomed out (< 13) unless listing is explicitly selected
   const cellDeg = zoomLevel >= 14 ? 0.0001 : zoomLevel >= 12 ? 0.015 : 0.032;
@@ -115,6 +161,6 @@ export function buildPropertyMapProjection(
     clusters,
     mappedCount: mapped.length,
     unavailableCount,
-    bounds: { north, south, east, west },
+    bounds: resolvedBounds,
   };
 }

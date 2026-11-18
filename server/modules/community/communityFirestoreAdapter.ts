@@ -12,6 +12,10 @@ export const SOCIAL_COLLECTIONS = {
   outbox: 'socialOutbox',
   profiles: 'socialProfiles',
   idempotency: 'socialIdempotency',
+  rateLimits: 'socialRateLimits',
+  activities: 'socialActivities',
+  feedIndex: 'socialFeedIndex',
+  feedIndexJobs: 'socialFeedIndexJobs',
 } as const;
 
 export type SocialCollectionName = (typeof SOCIAL_COLLECTIONS)[keyof typeof SOCIAL_COLLECTIONS];
@@ -43,12 +47,21 @@ export interface CommunityQueryFilter {
   value: unknown;
 }
 
+export interface CommunityOrderBy {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
 export interface CommunityQueryOptions {
   filters?: CommunityQueryFilter[];
+  orderBy?: CommunityOrderBy[];
   orderByField?: string;
   orderDirection?: 'asc' | 'desc';
   limit?: number;
   cursorDocId?: string | null;
+  cursor?: {
+    documentId: string;
+  } | null;
 }
 
 export interface CommunityQueryPage<T extends Record<string, unknown>> {
@@ -153,11 +166,18 @@ export class FirestoreAdminCommunityStore implements CommunityDatabaseStore {
       for (const f of options.filters ?? []) {
         ref = ref.where(f.field, f.op, f.value);
       }
-      if (options.orderByField) {
-        ref = ref.orderBy(options.orderByField, options.orderDirection ?? 'desc');
+      const orderSpecs: CommunityOrderBy[] =
+        options.orderBy && options.orderBy.length > 0
+          ? options.orderBy
+          : options.orderByField
+            ? [{ field: options.orderByField, direction: options.orderDirection ?? 'desc' }]
+            : [];
+      for (const ord of orderSpecs) {
+        ref = ref.orderBy(ord.field, ord.direction);
       }
-      if (options.cursorDocId) {
-        const cursorSnap = await db.collection(col).doc(options.cursorDocId).get();
+      const cursorId = options.cursor?.documentId ?? options.cursorDocId ?? null;
+      if (cursorId) {
+        const cursorSnap = await db.collection(col).doc(cursorId).get();
         if (cursorSnap.exists) ref = ref.startAfter(cursorSnap);
       }
       const snap = await ref.limit(limit + 1).get();
@@ -244,6 +264,7 @@ export class MockFirestoreCommunityStore implements CommunityDatabaseStore {
   public readonly backendKind = 'mock_firestore' as const;
   private collections = new Map<SocialCollectionName, Map<string, Record<string, unknown>>>();
   private simulatedUnavailable = false;
+  private txChain: Promise<unknown> = Promise.resolve();
 
   constructor() {
     for (const col of Object.values(SOCIAL_COLLECTIONS)) {
@@ -285,22 +306,39 @@ export class MockFirestoreCommunityStore implements CommunityDatabaseStore {
     this.assertAvailable();
     const limit = clampCommunityLimit(options.limit);
     const filters = options.filters ?? [];
-    let docs = Array.from(this.colMap(col).entries())
+    const docs = Array.from(this.colMap(col).entries())
       .map(([id, data]) => ({ ...(deepClone(data) as T), id }))
       .filter((item) => filters.every((f) => matchesFilter(item, f)));
 
-    if (options.orderByField) {
-      const dir = options.orderDirection === 'asc' ? 1 : -1;
+    const orderSpecs: CommunityOrderBy[] =
+      options.orderBy && options.orderBy.length > 0
+        ? options.orderBy
+        : options.orderByField
+          ? [{ field: options.orderByField, direction: options.orderDirection ?? 'desc' }]
+          : [];
+
+    if (orderSpecs.length > 0) {
       docs.sort((a, b) => {
-        const va = String(getNestedField(a, options.orderByField!) ?? '');
-        const vb = String(getNestedField(b, options.orderByField!) ?? '');
-        return va === vb ? a.id.localeCompare(b.id) : va < vb ? -1 * dir : 1 * dir;
+        for (const spec of orderSpecs) {
+          const dir = spec.direction === 'asc' ? 1 : -1;
+          const rawA = spec.field === 'id' ? a.id : getNestedField(a, spec.field);
+          const rawB = spec.field === 'id' ? b.id : getNestedField(b, spec.field);
+          if (typeof rawA === 'number' && typeof rawB === 'number') {
+            if (rawA !== rawB) return (rawA < rawB ? -1 : 1) * dir;
+          } else {
+            const va = String(rawA ?? '');
+            const vb = String(rawB ?? '');
+            if (va !== vb) return (va < vb ? -1 : 1) * dir;
+          }
+        }
+        return a.id.localeCompare(b.id);
       });
     }
 
     let startIdx = 0;
-    if (options.cursorDocId) {
-      const idx = docs.findIndex((d) => d.id === options.cursorDocId);
+    const cursorId = options.cursor?.documentId ?? options.cursorDocId ?? null;
+    if (cursorId) {
+      const idx = docs.findIndex((d) => d.id === cursorId);
       if (idx >= 0) startIdx = idx + 1;
     }
     const pageSlice = docs.slice(startIdx, startIdx + limit);
@@ -324,54 +362,63 @@ export class MockFirestoreCommunityStore implements CommunityDatabaseStore {
   }
 
   async runTransaction<R>(fn: (tx: CommunityTransaction) => Promise<R>): Promise<R> {
-    this.assertAvailable();
-    const stagedOps: Array<() => void> = [];
-    const tx: CommunityTransaction = {
-      get: async <T extends Record<string, unknown>>(col: SocialCollectionName, docId: string) => {
-        this.assertAvailable();
-        const raw = this.colMap(col).get(docId);
-        return raw ? ({ ...(deepClone(raw) as T), id: docId }) : null;
-      },
-      set: (col, docId, data) => {
-        stagedOps.push(() => {
-          this.colMap(col).set(docId, { ...deepClone(data), id: docId });
-        });
-      },
-      update: (col, docId, patch) => {
-        stagedOps.push(() => {
-          const map = this.colMap(col);
-          const cur = map.get(docId);
-          if (!cur) throw new CommunityHttpError(404, 'DOCUMENT_NOT_FOUND', 'سند موردنظر یافت نشد.');
-          const copy = deepClone(cur);
-          for (const [k, v] of Object.entries(patch)) {
-            if (k.includes('.')) setNestedField(copy, k, deepClone(v));
-            else copy[k] = deepClone(v);
-          }
-          map.set(docId, copy);
-        });
-      },
-      delete: (col, docId) => {
-        stagedOps.push(() => {
-          this.colMap(col).delete(docId);
-        });
-      },
-      incrementNumeric: (col, docId, deltas) => {
-        stagedOps.push(() => {
-          const map = this.colMap(col);
-          const cur = map.get(docId);
-          if (!cur) throw new CommunityHttpError(404, 'DOCUMENT_NOT_FOUND', 'سند برای به‌روزرسانی شمارنده یافت نشد.');
-          const copy = deepClone(cur);
-          for (const [dotField, delta] of Object.entries(deltas)) {
-            const prev = Number(getNestedField(copy, dotField) ?? 0);
-            setNestedField(copy, dotField, Math.max(0, prev + delta));
-          }
-          map.set(docId, copy);
-        });
-      },
+    const execute = async (): Promise<R> => {
+      this.assertAvailable();
+      const stagedOps: Array<() => void> = [];
+      const tx: CommunityTransaction = {
+        get: async <T extends Record<string, unknown>>(col: SocialCollectionName, docId: string) => {
+          this.assertAvailable();
+          const raw = this.colMap(col).get(docId);
+          return raw ? ({ ...(deepClone(raw) as T), id: docId }) : null;
+        },
+        set: (col, docId, data) => {
+          stagedOps.push(() => {
+            this.colMap(col).set(docId, { ...deepClone(data), id: docId });
+          });
+        },
+        update: (col, docId, patch) => {
+          stagedOps.push(() => {
+            const map = this.colMap(col);
+            const cur = map.get(docId);
+            if (!cur) throw new CommunityHttpError(404, 'DOCUMENT_NOT_FOUND', 'سند موردنظر یافت نشد.');
+            const copy = deepClone(cur);
+            for (const [k, v] of Object.entries(patch)) {
+              if (k.includes('.')) setNestedField(copy, k, deepClone(v));
+              else copy[k] = deepClone(v);
+            }
+            map.set(docId, copy);
+          });
+        },
+        delete: (col, docId) => {
+          stagedOps.push(() => {
+            this.colMap(col).delete(docId);
+          });
+        },
+        incrementNumeric: (col, docId, deltas) => {
+          stagedOps.push(() => {
+            const map = this.colMap(col);
+            const cur = map.get(docId);
+            if (!cur) throw new CommunityHttpError(404, 'DOCUMENT_NOT_FOUND', 'سند برای به‌روزرسانی شمارنده یافت نشد.');
+            const copy = deepClone(cur);
+            for (const [dotField, delta] of Object.entries(deltas)) {
+              const prev = Number(getNestedField(copy, dotField) ?? 0);
+              setNestedField(copy, dotField, Math.max(0, prev + delta));
+            }
+            map.set(docId, copy);
+          });
+        },
+      };
+      const result = await fn(tx);
+      for (const op of stagedOps) op();
+      return result;
     };
-    const result = await fn(tx);
-    for (const op of stagedOps) op();
-    return result;
+
+    const next = this.txChain.then(execute, execute);
+    this.txChain = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
   }
 
   async healthCheck(): Promise<{ ok: boolean; backendKind: string; latencyMs: number; errorCode?: string }> {

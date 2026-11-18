@@ -6,6 +6,7 @@ import type {
   EntityLink,
   ReactionCounts,
   ReactionType,
+  SocialContentContext,
 } from './communityDomain.types';
 
 export type DataCorrectionCategory =
@@ -48,6 +49,7 @@ export interface DataCorrectionProposal {
   suggestedValueFa: string;
   observedDateFa?: string;
   evidenceAttachments?: EvidenceAttachment[];
+  socialContext?: SocialContentContext;
   ownerUserId: string;
   authorProfile: CommunityTrustBadgeProfile;
   status: DataCorrectionModerationStatus;
@@ -95,6 +97,7 @@ export interface CommunityDiscussionPost {
   topicId?: string;
   tags?: string[];
   entityLink?: EntityLink;
+  socialContext?: SocialContentContext;
   pinned?: boolean;
   followerIds?: string[];
   revisionHistory?: DiscussionRevision[];
@@ -158,6 +161,7 @@ export interface CommunityQuestionItem {
   neighborhoodNameFa: string;
   topicId: string;
   tags: string[];
+  socialContext?: SocialContentContext;
   ownerUserId: string;
   authorProfile: CommunityTrustBadgeProfile;
   status: QuestionWorkflowStatus;
@@ -252,6 +256,7 @@ export interface ResearchTopicProposal {
   titleFa: string;
   questionFa: string;
   neighborhoodNameFa: string;
+  socialContext?: SocialContentContext;
   ownerUserId?: string;
   authorProfile: CommunityTrustBadgeProfile;
   votesCount: number;

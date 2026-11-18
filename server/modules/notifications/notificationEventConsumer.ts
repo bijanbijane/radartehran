@@ -42,12 +42,14 @@ export class NotificationEventConsumer {
 
     const payload: NotificationEventPayload = validation.sanitizedPayload;
 
-    // In-memory quick check + persistent idempotency key check
+    // Persistent store idempotency check (multi-instance safe) + in-memory cache
     const idempotencyKey = payload.idempotencyKey || `ntf_evt_${payload.eventId}`;
-    if (this.processedEventIds.has(payload.eventId)) {
+    const existingDoc = this.store.getNotificationByIdempotencyKey(idempotencyKey);
+    if (existingDoc || this.processedEventIds.has(payload.eventId)) {
       return {
         success: true,
         duplicate: true,
+        notification: existingDoc ?? undefined,
       };
     }
 

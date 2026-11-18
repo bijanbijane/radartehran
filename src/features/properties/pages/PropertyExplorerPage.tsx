@@ -42,6 +42,7 @@ export interface PropertyExplorerPageProps {
   selectedHood: EvaluatedNeighborhood;
   activeCity?: CityId;
   activeSubTab?: PropertiesSubTabId;
+  currentUserUid?: string | null;
   onChangeSubTab?: (tab: PropertiesSubTabId) => void;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
   onOpenInspector: (hood: EvaluatedNeighborhood) => void;
@@ -60,16 +61,17 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
   const reqGuardRef = useRef(new StaleRequestGuard());
 
   const [sectionTab, setSectionTab] = useState<ExplorerSectionTab>('discover');
-  const [myListings, setMyListings] = useState<PropertyListingRecord[]>(() => loadMyListings());
-  const [savedItems, setSavedItems] = useState<SavedPropertySnapshot[]>(() => loadSavedProperties());
+  const [myListings, setMyListings] = useState<PropertyListingRecord[]>(() => loadMyListings(p.currentUserUid));
+  const [savedItems, setSavedItems] = useState<SavedPropertySnapshot[]>(() => loadSavedProperties(p.currentUserUid));
   useEffect(() => {
     const syncScopedListings = () => {
-      setMyListings(loadMyListings());
-      setSavedItems(loadSavedProperties());
+      setMyListings(loadMyListings(p.currentUserUid));
+      setSavedItems(loadSavedProperties(p.currentUserUid));
     };
+    syncScopedListings();
     window.addEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, syncScopedListings);
     return () => window.removeEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, syncScopedListings);
-  }, []);
+  }, [p.currentUserUid]);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -86,7 +88,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
       const next = { ...draft, transactionType: 'sale' as const, propertyType: 'all' as const };
       setDraft(next); setApplied(commitPropertyFilterDraft(next));
     } else if (p.activeSubTab === 'rent') {
-      const next = { ...draft, transactionType: 'full_deposit' as const, propertyType: 'all' as const };
+      const next = { ...draft, transactionType: 'rent' as const, propertyType: 'all' as const };
       setDraft(next); setApplied(commitPropertyFilterDraft(next));
     } else if (p.activeSubTab === 'commercial' || p.activeSubTab === 'office') {
       const next = { ...draft, propertyType: p.activeSubTab };
@@ -192,6 +194,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
           evaluatedNeighborhoods={p.evaluatedNeighborhoods}
           selectedHood={p.selectedHood}
           existingRecords={allRecords}
+          currentUserUid={p.currentUserUid}
           onCancel={() => setSectionTab('discover')}
           onSubmitted={(created) => {
             setMyListings((prev) => [created, ...prev]);

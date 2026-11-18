@@ -77,17 +77,32 @@ export function toggleSavedProperty(rec: PropertyListingRecord, uid?: string | n
 }
 
 export function loadSubmissionDraft(uid?: string | null): ListingSubmissionDraft | null {
-  return readScopedStorageJson<ListingSubmissionDraft | null>(SUBMISSION_DRAFT_KEY, null, uid);
+  const scopeUid = resolveEffectiveUid(uid);
+  const loaded = readScopedStorageJson<ListingSubmissionDraft | null>(SUBMISSION_DRAFT_KEY, null, scopeUid);
+  if (!loaded) return null;
+  if (loaded.ownerUid && loaded.ownerUid !== scopeUid) {
+    return null;
+  }
+  return { ...loaded, ownerUid: scopeUid };
 }
 
 export function saveSubmissionDraft(draft: ListingSubmissionDraft, uid?: string | null): ListingSubmissionDraft {
-  const stamped = { ...draft, lastSavedAtIso: new Date().toISOString() };
-  writeScopedStorageJson(SUBMISSION_DRAFT_KEY, stamped, uid);
+  const scopeUid = resolveEffectiveUid(uid);
+  if (draft.ownerUid && draft.ownerUid !== scopeUid) {
+    throw new Error('DRAFT_OWNER_UID_MISMATCH');
+  }
+  const stamped: ListingSubmissionDraft = {
+    ...draft,
+    ownerUid: scopeUid,
+    lastSavedAtIso: new Date().toISOString(),
+  };
+  writeScopedStorageJson(SUBMISSION_DRAFT_KEY, stamped, scopeUid);
   return stamped;
 }
 
 export function clearSubmissionDraft(uid?: string | null): void {
-  removeScopedStorageKey(SUBMISSION_DRAFT_KEY, uid);
+  const scopeUid = resolveEffectiveUid(uid);
+  removeScopedStorageKey(SUBMISSION_DRAFT_KEY, scopeUid);
 }
 
 export function loadMyListings(uid?: string | null): PropertyListingRecord[] {
@@ -141,6 +156,9 @@ export function submitDraftAsPropertyListing(
   uid?: string | null,
 ): PropertyListingRecord {
   const scopeUid = resolveEffectiveUid(uid);
+  if (draft.ownerUid && draft.ownerUid !== scopeUid) {
+    throw new Error('DRAFT_OWNER_UID_MISMATCH');
+  }
   const nowIso = new Date().toISOString();
   const area = parseAsciiNum(draft.areaSqm);
   const isSale = draft.transactionType === 'sale' || draft.transactionType === 'presale';

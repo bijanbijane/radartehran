@@ -95,7 +95,7 @@ export class NotificationDeliveryEngine {
     const isCategoryEnabled = doc.category === 'security' || Boolean(preferences.categories[doc.category]);
 
     for (const channel of targetChannels) {
-      const isChannelEnabled = channel === 'in_app' || Boolean(preferences.channels[channel]);
+      const isChannelEnabled = channel === 'in_app' ? Boolean(preferences.channels.inApp) : Boolean(preferences.channels[channel]);
       const shouldDeliver = isChannelEnabled && isCategoryEnabled;
 
       const idempotencyKey = `job_${doc.id}_${channel}`;

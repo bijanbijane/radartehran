@@ -2,10 +2,13 @@ import React, { useSyncExternalStore } from 'react';
 import {
   AreaUnit,
   IntlCurrencyCode,
+  LocaleResolutionResult,
   RadarExperienceMode,
   RadarLocale,
+  SupportedRadarLocale,
   formatAreaUnitLabel,
   formatMillionTomanAsIntlCurrency,
+  getLastLocaleResolutionState,
   getStoredAreaUnit,
   getStoredExperienceMode,
   getStoredIntlCurrency,
@@ -30,9 +33,13 @@ export function useAreaUnit(): [AreaUnit, (next: AreaUnit) => void, () => AreaUn
   return [unit, setStoredAreaUnit, toggleStoredAreaUnit];
 }
 
-export function useRadarLocale(): ['fa' | 'en', (next: RadarLocale) => void] {
+export function useRadarLocale(): [SupportedRadarLocale, (next: RadarLocale) => void] {
   const locale = useSyncExternalStore(subscribeAreaUnit, getStoredRadarLocale, () => 'fa' as const);
   return [locale, setStoredRadarLocale];
+}
+
+export function useLocaleResolutionState(): LocaleResolutionResult {
+  return useSyncExternalStore(subscribeAreaUnit, getLastLocaleResolutionState, getLastLocaleResolutionState);
 }
 
 export function useIntlCurrency(): [IntlCurrencyCode, (next: IntlCurrencyCode) => void] {

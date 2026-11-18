@@ -68,18 +68,31 @@ export const RT_FE_FPA_DELIVERABLES_38 = Array.from({ length: 38 }, (_, idx) => 
 });
 
 /**
- * Evaluates Core Web Vitals & Long-Task compliance against Stage 13 targets (FPA-020 / FPA-021).
+ * Evaluates Core Web Vitals & Long-Task compliance against Stage 13/30 targets (FPA-020 / FPA-021).
+ * Never infers longTaskCount from lcpMs; requires explicit independent longTaskCount.
  */
 export function evaluatePagePerformanceBudget(metrics: {
   lcpMs: number;
   inpMs: number;
   cls: number;
   longTaskCount: number;
+  sampleCount?: number;
+  measurementSource?: 'FIELD_RUM' | 'LAB' | 'SYNTHETIC_LOCAL';
 }): {
   withinBudget: boolean;
   failingMetrics: string[];
-  grade: 'GOOD' | 'NEEDS_IMPROVEMENT' | 'BUDGET_VIOLATION';
+  grade: 'GOOD' | 'NEEDS_IMPROVEMENT' | 'BUDGET_VIOLATION' | 'INSUFFICIENT_SAMPLE';
+  measurementSource: 'FIELD_RUM' | 'LAB' | 'SYNTHETIC_LOCAL';
 } {
+  const source = metrics.measurementSource ?? 'SYNTHETIC_LOCAL';
+  if (metrics.sampleCount !== undefined && metrics.sampleCount <= 0) {
+    return {
+      withinBudget: false,
+      failingMetrics: [],
+      grade: 'INSUFFICIENT_SAMPLE',
+      measurementSource: source,
+    };
+  }
   const failingMetrics: string[] = [];
   if (metrics.lcpMs > RT_FE_FPA_CWV_TARGETS.lcpMaxMs) failingMetrics.push('LCP');
   if (metrics.inpMs > RT_FE_FPA_CWV_TARGETS.inpMaxMs) failingMetrics.push('INP');
@@ -88,7 +101,7 @@ export function evaluatePagePerformanceBudget(metrics: {
 
   const grade =
     failingMetrics.length === 0 ? 'GOOD' : failingMetrics.length === 1 ? 'NEEDS_IMPROVEMENT' : 'BUDGET_VIOLATION';
-  return { withinBudget: failingMetrics.length === 0, failingMetrics, grade };
+  return { withinBudget: failingMetrics.length === 0, failingMetrics, grade, measurementSource: source };
 }
 
 /**

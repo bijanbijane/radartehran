@@ -1,31 +1,106 @@
-/** @file server/modules/community/communityUnifiedSecondaryOps.ts — Reactions, Follows, Questions, Corrections, Reports & Proposals (Stage 3) */
+/** @file server/modules/community/communityUnifiedSecondaryOps.ts — Reactions, Follows & Re-exported Content Ops (Stages 3–9) */
+import { COMMUNITY_TOPICS_REGISTRY } from '../../../src/features/community/data/communityTopicsAndSeeds';
 import type {
-  CommunityAbuseReason,
-  CommunityAbuseReport,
   CommunityDiscussionPost,
-  CommunityQuestionItem,
-  DataCorrectionCategory,
-  DataCorrectionProposal,
-  ModerationActionRecord,
-  ModerationAppeal,
   ReactionType,
-  ResearchTopicProposal,
 } from '../../../src/features/community/types/community.types';
-import { validateCommunityTextSafety } from '../../../src/features/community/services/communityTrustService';
 import { sanitizeInput } from '../../../src/utils/security';
+import { upsertSocialFeedProjectionInTx } from '../search/socialFeedProjection';
 import { CommunityHttpError, SOCIAL_COLLECTIONS } from './communityFirestoreAdapter';
-import type { CommunityUnifiedRepository, VerifiedActorIdentity } from './communityUnifiedRepository';
+import {
+  hashCommunityIdempotencyKey,
+  hashCommunityPayload,
+} from './communityRateLimiter';
 import type { UnifiedSocialPostDoc } from './communityUnifiedQueries';
+import type { CommunityUnifiedRepository } from './communityUnifiedRepository';
+import { appendSocialActivity } from './socialActivityRepository';
 
-export async function toggleReactionOp(repo: CommunityUnifiedRepository, uid: string, targetId: string, reaction: ReactionType) {
-  repo.enforceRateLimit('reaction', uid);
+export {
+  createAppealOp,
+  createCorrectionOp,
+  createQuestionOp,
+  createResearchProposalOp,
+  recordModerationActionOp,
+  submitReportOp,
+} from './communityContentCreationOps';
+export {
+  auditUserFollowGraphConsistency,
+  buildUserFollowDocId,
+  followUserOp,
+  getUserFollowStatus,
+  unfollowUserOp,
+  validateFollowUserId,
+  type UserFollowConsistencyAuditReport,
+  type UserFollowMutationResult,
+  type UserFollowStatusResult,
+} from './communityUserFollowOps';
+
+export async function toggleReactionOp(
+  repo: CommunityUnifiedRepository,
+  uid: string,
+  targetId: string,
+  reaction: ReactionType,
+  options?: { idempotencyKey?: string; mode?: 'toggle' | 'set' | 'remove'; operation?: 'toggle' | 'set' | 'remove' },
+) {
+  await repo.enforceRateLimit('reaction', uid);
+  const mode = options?.mode ?? options?.operation ?? 'toggle';
+  const rawIdemKey =
+    typeof options?.idempotencyKey === 'string' && options.idempotencyKey.trim()
+      ? sanitizeInput(options.idempotencyKey.trim(), 80)
+      : '';
+  const idemDocId = rawIdemKey
+    ? hashCommunityIdempotencyKey(uid, 'reaction', rawIdemKey)
+    : null;
+  const operationId =
+    idemDocId || `op_rx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const payloadHash = hashCommunityPayload({ uid, targetId, reaction, mode });
+
   return repo.getStore().runTransaction(async (tx) => {
-    const post = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, targetId);
-    if (!post || post.isDeleted) throw new CommunityHttpError(404, 'TARGET_NOT_FOUND', 'محتوای هدف یافت نشد.');
+    if (idemDocId) {
+      const existingIdem = await tx.get<
+        {
+          payloadHash: string;
+          result: { reactionCounts: Record<ReactionType, number>; activeReaction: ReactionType | null };
+        } & Record<string, unknown>
+      >(SOCIAL_COLLECTIONS.idempotency, idemDocId);
+      if (existingIdem) {
+        if (existingIdem.payloadHash !== payloadHash) {
+          throw new CommunityHttpError(
+            409,
+            'IDEMPOTENCY_CONFLICT',
+            'کلید یکتای واکنش با پارامترهای متفاوت ارسال شده است.',
+          );
+        }
+        return { ...existingIdem.result, idempotentReplay: true };
+      }
+    }
+
+    const post = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(
+      SOCIAL_COLLECTIONS.posts,
+      targetId,
+    );
+    if (
+      !post ||
+      post.isDeleted ||
+      post.status === 'hidden' ||
+      post.moderationStatus === 'hidden' ||
+      post.moderationStatus === 'removed'
+    ) {
+      throw new CommunityHttpError(404, 'TARGET_NOT_FOUND', 'محتوای هدف یافت نشد.');
+    }
 
     const reactionDocId = `${targetId}__${uid}`;
-    const existingReaction = await tx.get<{ reactionType?: ReactionType } & Record<string, unknown>>(SOCIAL_COLLECTIONS.reactions, reactionDocId);
-    const prev = existingReaction?.reactionType ?? post.reactionsByUser?.[uid] ?? null;
+    const existingReaction = await tx.get<{ reactionType?: ReactionType } & Record<string, unknown>>(
+      SOCIAL_COLLECTIONS.reactions,
+      reactionDocId,
+    );
+    const prev: ReactionType | null =
+      existingReaction?.reactionType ?? post.reactionsByUser?.[uid] ?? null;
+
+    let nextReaction: ReactionType | null;
+    if (mode === 'remove') nextReaction = null;
+    else if (mode === 'set') nextReaction = reaction;
+    else nextReaction = prev === reaction ? null : reaction;
 
     const counts = {
       helpful: Number(post.reactionCounts?.helpful ?? post.helpfulCount ?? 0),
@@ -35,157 +110,363 @@ export async function toggleReactionOp(repo: CommunityUnifiedRepository, uid: st
     };
     const byUser = { ...(post.reactionsByUser ?? {}) };
     const nowIso = new Date().toISOString();
-    let activeReaction: ReactionType | null = reaction;
 
-    if (prev === reaction) {
-      counts[reaction] = Math.max(0, counts[reaction] - 1);
-      delete byUser[uid];
-      activeReaction = null;
-      tx.delete(SOCIAL_COLLECTIONS.reactions, reactionDocId);
-    } else {
-      if (prev) counts[prev] = Math.max(0, counts[prev] - 1);
-      counts[reaction] += 1;
-      byUser[uid] = reaction;
-      tx.set(SOCIAL_COLLECTIONS.reactions, reactionDocId, { targetId, uid, reactionType: reaction, updatedAtIso: nowIso });
+    if (prev !== nextReaction) {
+      if (prev && nextReaction === null) {
+        counts[prev] = Math.max(0, counts[prev] - 1);
+        delete byUser[uid];
+        tx.delete(SOCIAL_COLLECTIONS.reactions, reactionDocId);
+        appendSocialActivity(tx, {
+          eventType: 'social.reaction.removed.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'reaction',
+          objectId: reactionDocId,
+          parentObjectId: targetId,
+          reactionType: prev,
+          operationId,
+          socialContext: post.socialContext,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+      } else if (prev === null && nextReaction) {
+        counts[nextReaction] += 1;
+        byUser[uid] = nextReaction;
+        tx.set(SOCIAL_COLLECTIONS.reactions, reactionDocId, {
+          targetId,
+          uid,
+          reactionType: nextReaction,
+          updatedAtIso: nowIso,
+        });
+        appendSocialActivity(tx, {
+          eventType: 'social.reaction.created.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'reaction',
+          objectId: reactionDocId,
+          parentObjectId: targetId,
+          reactionType: nextReaction,
+          operationId,
+          socialContext: post.socialContext,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+      } else if (prev && nextReaction && prev !== nextReaction) {
+        counts[prev] = Math.max(0, counts[prev] - 1);
+        counts[nextReaction] += 1;
+        byUser[uid] = nextReaction;
+        tx.set(SOCIAL_COLLECTIONS.reactions, reactionDocId, {
+          targetId,
+          uid,
+          reactionType: nextReaction,
+          updatedAtIso: nowIso,
+        });
+        appendSocialActivity(tx, {
+          eventType: 'social.reaction.removed.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'reaction',
+          objectId: reactionDocId,
+          parentObjectId: targetId,
+          reactionType: prev,
+          operationId,
+          metadata: { previousReactionType: prev, newReactionType: nextReaction },
+          socialContext: post.socialContext,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+        appendSocialActivity(tx, {
+          eventType: 'social.reaction.created.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'reaction',
+          objectId: reactionDocId,
+          parentObjectId: targetId,
+          reactionType: nextReaction,
+          operationId,
+          metadata: { previousReactionType: prev, newReactionType: nextReaction },
+          socialContext: post.socialContext,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+      }
+
+      tx.update(SOCIAL_COLLECTIONS.posts, targetId, {
+        reactionCounts: counts,
+        reactionsByUser: byUser,
+        helpfulCount: counts.helpful,
+        updatedAtIso: nowIso,
+      });
+      upsertSocialFeedProjectionInTx(
+        tx,
+        {
+          ...(post as unknown as Record<string, unknown>),
+          reactionCounts: counts,
+          reactionsByUser: byUser,
+          helpfulCount: counts.helpful,
+          updatedAtIso: nowIso,
+        },
+        nowIso,
+      );
     }
 
-    tx.update(SOCIAL_COLLECTIONS.posts, targetId, { reactionCounts: counts, reactionsByUser: byUser, helpfulCount: counts.helpful, updatedAtIso: nowIso });
-    return { reactionCounts: counts, activeReaction };
+    const result = { reactionCounts: counts, activeReaction: nextReaction };
+    if (idemDocId) {
+      tx.set(SOCIAL_COLLECTIONS.idempotency, idemDocId, {
+        scope: 'reaction',
+        uid,
+        targetId,
+        payloadHash,
+        result,
+        createdAtIso: nowIso,
+      });
+    }
+    return result;
   });
 }
 
-export async function toggleFollowOp(repo: CommunityUnifiedRepository, uid: string, scope: 'topic' | 'post' | 'user', targetId: string) {
-  repo.enforceRateLimit('follow', uid);
-  const followDocId = `${scope}_${targetId}__${uid}`;
+export async function toggleFollowOp(
+  repo: CommunityUnifiedRepository,
+  uid: string,
+  scope: 'topic' | 'post' | 'user',
+  targetId: string,
+  options?: { idempotencyKey?: string; mode?: 'toggle' | 'follow' | 'unfollow'; operation?: 'toggle' | 'follow' | 'unfollow' },
+) {
+  if (scope !== 'topic' && scope !== 'post' && scope !== 'user') {
+    throw new CommunityHttpError(400, 'INVALID_FOLLOW_SCOPE', 'دامنه دنبال‌کردن نامعتبر است.');
+  }
+  const cleanTargetId = sanitizeInput(targetId || '', 64).trim();
+  if (!cleanTargetId) {
+    throw new CommunityHttpError(400, 'INVALID_FOLLOW_TARGET', 'شناسه هدف دنبال‌کردن الزامی است.');
+  }
+  if (scope === 'user' && cleanTargetId === uid) {
+    throw new CommunityHttpError(
+      422,
+      'SELF_FOLLOW_NOT_ALLOWED',
+      'کاربر نمی‌تواند حساب کاربری خودش را دنبال کند.',
+    );
+  }
+
+  await repo.enforceRateLimit('follow', uid);
+  const mode = options?.mode ?? options?.operation ?? 'toggle';
+  const rawIdemKey =
+    typeof options?.idempotencyKey === 'string' && options.idempotencyKey.trim()
+      ? sanitizeInput(options.idempotencyKey.trim(), 80)
+      : '';
+  const idemDocId = rawIdemKey
+    ? hashCommunityIdempotencyKey(uid, 'follow', rawIdemKey)
+    : null;
+  const operationId =
+    idemDocId || `op_flw_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const payloadHash = hashCommunityPayload({ uid, scope, targetId: cleanTargetId, mode });
+  const followDocId = `${scope}_${cleanTargetId}__${uid}`;
+
   return repo.getStore().runTransaction(async (tx) => {
+    if (idemDocId) {
+      const existingIdem = await tx.get<
+        {
+          payloadHash: string;
+          result: { isFollowed: boolean; followerCount: number };
+        } & Record<string, unknown>
+      >(SOCIAL_COLLECTIONS.idempotency, idemDocId);
+      if (existingIdem) {
+        if (existingIdem.payloadHash !== payloadHash) {
+          throw new CommunityHttpError(
+            409,
+            'IDEMPOTENCY_CONFLICT',
+            'کلید یکتای دنبال‌کردن با پارامترهای متفاوت ارسال شده است.',
+          );
+        }
+        return { ...existingIdem.result, idempotentReplay: true };
+      }
+    }
+
+    if (scope === 'topic') {
+      const topicExists = COMMUNITY_TOPICS_REGISTRY.some((t) => t.id === cleanTargetId);
+      if (!topicExists) {
+        throw new CommunityHttpError(404, 'TOPIC_NOT_FOUND', 'موضوع موردنظر یافت نشد.');
+      }
+    }
+
     const existing = await tx.get(SOCIAL_COLLECTIONS.follows, followDocId);
+    const nowIso = new Date().toISOString();
+    let result: { isFollowed: boolean; followerCount: number };
+
     if (scope === 'post') {
-      const post = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(SOCIAL_COLLECTIONS.posts, targetId);
-      if (!post || post.isDeleted) throw new CommunityHttpError(404, 'DISCUSSION_NOT_FOUND', 'مطلب یافت نشد.');
+      const post = await tx.get<CommunityDiscussionPost & UnifiedSocialPostDoc>(
+        SOCIAL_COLLECTIONS.posts,
+        cleanTargetId,
+      );
+      if (
+        !post ||
+        post.isDeleted ||
+        post.status === 'hidden' ||
+        post.moderationStatus === 'hidden' ||
+        post.moderationStatus === 'removed'
+      ) {
+        throw new CommunityHttpError(404, 'DISCUSSION_NOT_FOUND', 'مطلب یافت نشد.');
+      }
       const currentIds = Array.isArray(post.followerIds) ? [...post.followerIds] : [];
-      const idx = currentIds.indexOf(uid);
-      if (existing || idx >= 0) {
+      const wasFollowed = Boolean(existing || currentIds.includes(uid));
+      const shouldFollow =
+        mode === 'follow' ? true : mode === 'unfollow' ? false : !wasFollowed;
+
+      if (wasFollowed && !shouldFollow) {
         tx.delete(SOCIAL_COLLECTIONS.follows, followDocId);
         const nextIds = currentIds.filter((id) => id !== uid);
-        tx.update(SOCIAL_COLLECTIONS.posts, targetId, { followerIds: nextIds, followerCount: nextIds.length });
-        return { isFollowed: false, followerCount: nextIds.length };
+        tx.update(SOCIAL_COLLECTIONS.posts, cleanTargetId, {
+          followerIds: nextIds,
+          followerCount: nextIds.length,
+        });
+        appendSocialActivity(tx, {
+          eventType: 'social.follow.removed.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'follow',
+          objectId: followDocId,
+          parentObjectId: cleanTargetId,
+          followScope: 'post',
+          followTargetId: cleanTargetId,
+          operationId,
+          socialContext: post.socialContext,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+        result = { isFollowed: false, followerCount: nextIds.length };
+      } else if (!wasFollowed && shouldFollow) {
+        const nextIds = currentIds.includes(uid) ? currentIds : [...currentIds, uid];
+        tx.set(SOCIAL_COLLECTIONS.follows, followDocId, {
+          scope,
+          targetId: cleanTargetId,
+          followerUid: uid,
+          createdAtIso: nowIso,
+        });
+        tx.update(SOCIAL_COLLECTIONS.posts, cleanTargetId, {
+          followerIds: nextIds,
+          followerCount: nextIds.length,
+        });
+        appendSocialActivity(tx, {
+          eventType: 'social.follow.created.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'follow',
+          objectId: followDocId,
+          parentObjectId: cleanTargetId,
+          followScope: 'post',
+          followTargetId: cleanTargetId,
+          operationId,
+          socialContext: post.socialContext,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+        result = { isFollowed: true, followerCount: nextIds.length };
+      } else {
+        result = { isFollowed: wasFollowed, followerCount: currentIds.length };
       }
-      currentIds.push(uid);
-      tx.set(SOCIAL_COLLECTIONS.follows, followDocId, { scope, targetId, followerUid: uid, createdAtIso: new Date().toISOString() });
-      tx.update(SOCIAL_COLLECTIONS.posts, targetId, { followerIds: currentIds, followerCount: currentIds.length });
-      return { isFollowed: true, followerCount: currentIds.length };
+    } else {
+      const targetUserProfile =
+        scope === 'user'
+          ? await tx.get<Record<string, unknown>>(SOCIAL_COLLECTIONS.profiles, cleanTargetId)
+          : null;
+      const followerUserProfile =
+        scope === 'user'
+          ? await tx.get<Record<string, unknown>>(SOCIAL_COLLECTIONS.profiles, uid)
+          : null;
+
+      if (scope === 'user' && targetUserProfile && targetUserProfile.visibility === 'private') {
+        throw new CommunityHttpError(
+          403,
+          'FOLLOW_NOT_ALLOWED',
+          'امکان دنبال‌کردن پروفایل خصوصی وجود ندارد.',
+        );
+      }
+
+      const wasFollowed = Boolean(existing);
+      const shouldFollow =
+        mode === 'follow' ? true : mode === 'unfollow' ? false : !wasFollowed;
+
+      if (wasFollowed && !shouldFollow) {
+        tx.delete(SOCIAL_COLLECTIONS.follows, followDocId);
+        if (scope === 'user') {
+          if (targetUserProfile) {
+            tx.incrementNumeric(SOCIAL_COLLECTIONS.profiles, cleanTargetId, { followersCount: -1 });
+          }
+          if (followerUserProfile) {
+            tx.incrementNumeric(SOCIAL_COLLECTIONS.profiles, uid, { followingCount: -1 });
+          }
+        }
+        appendSocialActivity(tx, {
+          eventType: 'social.follow.removed.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'follow',
+          objectId: followDocId,
+          parentObjectId: cleanTargetId,
+          followScope: scope,
+          followTargetId: cleanTargetId,
+          operationId,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+        const nextCount =
+          scope === 'user' && targetUserProfile
+            ? Math.max(0, Number(targetUserProfile.followersCount ?? 1) - 1)
+            : 0;
+        result = { isFollowed: false, followerCount: nextCount };
+      } else if (!wasFollowed && shouldFollow) {
+        tx.set(SOCIAL_COLLECTIONS.follows, followDocId, {
+          scope,
+          targetId: cleanTargetId,
+          followerUid: uid,
+          createdAtIso: nowIso,
+        });
+        if (scope === 'user') {
+          if (targetUserProfile) {
+            tx.incrementNumeric(SOCIAL_COLLECTIONS.profiles, cleanTargetId, { followersCount: 1 });
+          }
+          if (followerUserProfile) {
+            tx.incrementNumeric(SOCIAL_COLLECTIONS.profiles, uid, { followingCount: 1 });
+          }
+        }
+        appendSocialActivity(tx, {
+          eventType: 'social.follow.created.v1',
+          actorUid: uid,
+          verifiedActorUid: uid,
+          objectType: 'follow',
+          objectId: followDocId,
+          parentObjectId: cleanTargetId,
+          followScope: scope,
+          followTargetId: cleanTargetId,
+          operationId,
+          visibility: 'public',
+          createdAtIso: nowIso,
+        });
+        const nextCount =
+          scope === 'user' && targetUserProfile
+            ? Math.max(0, Number(targetUserProfile.followersCount ?? 0)) + 1
+            : 1;
+        result = { isFollowed: true, followerCount: nextCount };
+      } else {
+        const noOpCount =
+          scope === 'user' && targetUserProfile
+            ? Math.max(0, Number(targetUserProfile.followersCount ?? 0))
+            : wasFollowed
+              ? 1
+              : 0;
+        result = { isFollowed: wasFollowed, followerCount: noOpCount };
+      }
     }
-    if (existing) {
-      tx.delete(SOCIAL_COLLECTIONS.follows, followDocId);
-      return { isFollowed: false, followerCount: 0 };
+
+    if (idemDocId) {
+      tx.set(SOCIAL_COLLECTIONS.idempotency, idemDocId, {
+        scope: 'follow',
+        uid,
+        targetId: cleanTargetId,
+        payloadHash,
+        result,
+        createdAtIso: nowIso,
+      });
     }
-    tx.set(SOCIAL_COLLECTIONS.follows, followDocId, { scope, targetId, followerUid: uid, createdAtIso: new Date().toISOString() });
-    return { isFollowed: true, followerCount: 1 };
+    return result;
   });
-}
-
-export async function createQuestionOp(repo: CommunityUnifiedRepository, actor: VerifiedActorIdentity, input: { titleFa: string; bodyFa: string; neighborhoodId?: number; neighborhoodNameFa?: string; topicId?: string }) {
-  repo.enforceRateLimit('create_post', actor.uid);
-  const titleFa = sanitizeInput(input.titleFa || '', 140);
-  const bodyFa = sanitizeInput(input.bodyFa || '', 500);
-  const safety = validateCommunityTextSafety(bodyFa);
-  if (titleFa.length < 8 || !safety.ok) throw new CommunityHttpError(422, 'INVALID_QUESTION', safety.errorFa || 'عنوان پرسش باید حداقل ۸ کاراکتر باشد.');
-  const profile = await repo.getOrCreateProfile(actor);
-  const id = `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  const q: CommunityQuestionItem & UnifiedSocialPostDoc = {
-    id, recordKind: 'question', titleFa, bodyFa,
-    neighborhoodId: Number(input.neighborhoodId) || 1,
-    neighborhoodNameFa: sanitizeInput(input.neighborhoodNameFa || 'پونک', 50),
-    topicId: sanitizeInput(input.topicId || 'topic-legal-contracts', 50),
-    tags: [], ownerUserId: actor.uid,
-    authorProfile: {
-      userId: actor.uid, username: profile.username, displayNameFa: profile.displayNameFa,
-      isAuthenticated: true, isEmailVerified: Boolean(actor.emailVerified || profile.isEmailVerified), isPhoneVerified: Boolean(actor.phoneVerified || profile.isPhoneVerified),
-      identityStatus: profile.identityStatus, participationScore: 0, participationTierFa: 'مشارکت‌کننده جدید', verifiedCredentialFa: profile.verifiedCredentialFa, reputation: profile.reputation,
-    },
-    status: 'open', answers: [], followerIds: [actor.uid], replyCount: 0, followerCount: 1,
-    moderationStatus: 'approved', isDeleted: false, source: 'user', createdAtIso: new Date().toISOString(), createdAtFa: 'امروز',
-  };
-  await repo.getStore().setDoc(SOCIAL_COLLECTIONS.posts, id, q as unknown as Record<string, unknown>);
-  return q;
-}
-
-export async function submitReportOp(repo: CommunityUnifiedRepository, actorUid: string, input: { targetType: string; targetId: string; reason: CommunityAbuseReason; detailsFa: string }) {
-  repo.enforceRateLimit('report', actorUid);
-  const id = `abr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  const report: CommunityAbuseReport & Record<string, unknown> = {
-    id, recordKind: 'report', targetType: (input.targetType || 'discussion_post') as CommunityAbuseReport['targetType'],
-    targetId: sanitizeInput(input.targetId || '', 60), reason: input.reason || 'spam_promo',
-    detailsFa: sanitizeInput(input.detailsFa || '', 240), reporterUserId: actorUid, status: 'submitted', createdAtIso: new Date().toISOString(),
-  };
-  await repo.getStore().setDoc(SOCIAL_COLLECTIONS.reports, id, report);
-  return report;
-}
-
-export async function createCorrectionOp(repo: CommunityUnifiedRepository, actor: VerifiedActorIdentity, input: { titleFa: string; evidenceSummaryFa: string; neighborhoodId?: number; neighborhoodNameFa?: string; category?: DataCorrectionCategory; currentValueFa?: string; suggestedValueFa?: string; observedDateFa?: string }) {
-  repo.enforceRateLimit('create_post', actor.uid);
-  const titleFa = sanitizeInput(input.titleFa || '', 120);
-  const evidenceSummaryFa = sanitizeInput(input.evidenceSummaryFa || '', 420);
-  const safety = validateCommunityTextSafety(evidenceSummaryFa);
-  if (titleFa.length < 5 || !safety.ok) throw new CommunityHttpError(422, 'INVALID_CORRECTION', safety.errorFa || 'عنوان گزارش باید حداقل ۵ کاراکتر باشد.');
-  const profile = await repo.getOrCreateProfile(actor);
-  const id = `corr_${Date.now()}`;
-  const proposal: DataCorrectionProposal & UnifiedSocialPostDoc = {
-    id, recordKind: 'correction', neighborhoodId: Number(input.neighborhoodId) || 1,
-    neighborhoodNameFa: sanitizeInput(input.neighborhoodNameFa || 'پونک', 50), category: input.category || 'urban_facility', titleFa,
-    currentValueFa: sanitizeInput(input.currentValueFa || '', 140) || undefined, evidenceSummaryFa,
-    suggestedValueFa: sanitizeInput(input.suggestedValueFa || '', 160) || 'نیازمند بررسی', observedDateFa: sanitizeInput(input.observedDateFa || 'امروز', 30),
-    evidenceAttachments: [], ownerUserId: actor.uid,
-    authorProfile: {
-      userId: actor.uid, username: profile.username, displayNameFa: profile.displayNameFa,
-      isAuthenticated: true, isEmailVerified: true, isPhoneVerified: Boolean(actor.phoneVerified),
-      identityStatus: profile.identityStatus, participationScore: 0, participationTierFa: 'مشارکت‌کننده جدید', verifiedCredentialFa: profile.verifiedCredentialFa, reputation: profile.reputation,
-    },
-    status: 'submitted', appliedDataVersionId: null, isDeleted: false, source: 'user', createdAtIso: new Date().toISOString(), createdAtFa: 'امروز',
-  };
-  await repo.getStore().setDoc(SOCIAL_COLLECTIONS.posts, id, proposal as unknown as Record<string, unknown>);
-  return proposal;
-}
-
-export async function recordModerationActionOp(repo: CommunityUnifiedRepository, action: Omit<ModerationActionRecord, 'id' | 'createdAtIso'>) {
-  const id = `mact_${Date.now()}`;
-  const rec: ModerationActionRecord & Record<string, unknown> = { ...action, id, recordKind: 'moderation_action', createdAtIso: new Date().toISOString() };
-  await repo.getStore().setDoc(SOCIAL_COLLECTIONS.reports, id, rec);
-  return rec;
-}
-
-export async function createAppealOp(repo: CommunityUnifiedRepository, actorUid: string, input: { moderationActionId: string; targetId: string; argumentFa: string }) {
-  repo.enforceRateLimit('appeal', actorUid);
-  const argumentFa = sanitizeInput(input.argumentFa || '', 320);
-  if (argumentFa.trim().length < 8) throw new CommunityHttpError(422, 'INVALID_APPEAL', 'متن اعتراض باید حداقل ۸ کاراکتر باشد.');
-  const id = `apl_${Date.now()}`;
-  const appeal: ModerationAppeal & Record<string, unknown> = {
-    id, recordKind: 'appeal', moderationActionId: sanitizeInput(input.moderationActionId || '', 60),
-    targetId: sanitizeInput(input.targetId || '', 60), appellantUserId: actorUid, argumentFa, status: 'submitted', createdAtIso: new Date().toISOString(),
-  };
-  await repo.getStore().setDoc(SOCIAL_COLLECTIONS.reports, id, appeal);
-  return appeal;
-}
-
-export async function createResearchProposalOp(repo: CommunityUnifiedRepository, actor: VerifiedActorIdentity, input: { titleFa: string; questionFa: string; neighborhoodNameFa?: string; linkedKnowledgeTab?: string }) {
-  repo.enforceRateLimit('create_post', actor.uid);
-  const titleFa = sanitizeInput(input.titleFa || '', 120);
-  const questionFa = sanitizeInput(input.questionFa || '', 450);
-  const safety = validateCommunityTextSafety(questionFa);
-  if (titleFa.length < 5 || !safety.ok) throw new CommunityHttpError(422, 'INVALID_PROPOSAL', safety.errorFa || 'عنوان پیشنهاد پژوهش باید حداقل ۵ کاراکتر باشد.');
-  const profile = await repo.getOrCreateProfile(actor);
-  const id = `rp_${Date.now()}`;
-  const item: ResearchTopicProposal & UnifiedSocialPostDoc = {
-    id, recordKind: 'research_proposal', titleFa, questionFa, neighborhoodNameFa: sanitizeInput(input.neighborhoodNameFa || 'تهران', 50),
-    ownerUserId: actor.uid,
-    authorProfile: {
-      userId: actor.uid, username: profile.username, displayNameFa: profile.displayNameFa,
-      isAuthenticated: true, isEmailVerified: true, isPhoneVerified: false,
-      identityStatus: profile.identityStatus, participationScore: 0, participationTierFa: 'مشارکت‌کننده جدید', verifiedCredentialFa: profile.verifiedCredentialFa, reputation: profile.reputation,
-    },
-    votesCount: 1, voterIds: [actor.uid], status: 'open', linkedKnowledgeTab: input.linkedKnowledgeTab === 'methodology' ? 'methodology' : 'reports',
-    isDeleted: false, source: 'user', createdAtFa: 'امروز', createdAtIso: new Date().toISOString(),
-  };
-  await repo.getStore().setDoc(SOCIAL_COLLECTIONS.posts, id, item as unknown as Record<string, unknown>);
-  return item;
 }

@@ -56,12 +56,42 @@ export function isCommunitySeedRecord(item: { id?: string; source?: string; isSe
   return Boolean(item.id && (item.id.includes('-seed-') || item.id.startsWith('seed-') || item.id.startsWith('user_resident_') || item.id.startsWith('user_expert_')));
 }
 
+export function matchesSocialContentContextEntity(
+  doc: {
+    socialContext?: {
+      primary?: { entityType?: string; entityId?: string; type?: string; id?: string } | null;
+      related?: Array<{ entityType?: string; entityId?: string; type?: string; id?: string }>;
+    } | null;
+    linkedEntity?: { entityType?: string; entityId?: string } | null;
+    neighborhoodId?: number;
+    topicId?: string;
+  },
+  entityType: string,
+  entityId: string,
+): boolean {
+  const cleanType = entityType.trim();
+  const cleanId = entityId.trim();
+  if (!cleanType || !cleanId) return true;
+  const ctx = doc.socialContext;
+  const matchRef = (r?: { entityType?: string; entityId?: string; type?: string; id?: string } | null) =>
+    Boolean(r && (r.entityType ?? r.type) === cleanType && String(r.entityId ?? r.id ?? '') === cleanId);
+
+  if (matchRef(ctx?.primary)) return true;
+  if (Array.isArray(ctx?.related) && ctx.related.some((r) => matchRef(r))) return true;
+  if (matchRef(doc.linkedEntity)) return true;
+  if (cleanType === 'neighborhood' && doc.neighborhoodId !== undefined && String(doc.neighborhoodId) === cleanId) return true;
+  if (cleanType === 'topic' && doc.topicId && doc.topicId === cleanId) return true;
+  return false;
+}
+
 export async function queryCommunityPostsPaginated<T extends UnifiedSocialPostDoc>(
   store: CommunityDatabaseStore,
   params: {
     recordKind: SocialPostRecordKind;
     neighborhoodId?: number | null;
     topicId?: string;
+    entityType?: string;
+    entityId?: string;
     statusFilter?: string;
     includeSeeds?: boolean;
     sort?: 'rank' | 'recent' | 'helpful';
@@ -90,11 +120,17 @@ export async function queryCommunityPostsPaginated<T extends UnifiedSocialPostDo
     cursorDocId: params.cursor ?? null,
   });
 
+  const cleanEntityType = typeof params.entityType === 'string' ? params.entityType.trim() : '';
+  const cleanEntityId = typeof params.entityId === 'string' ? params.entityId.trim() : '';
+
   let filtered = page.items.filter((doc) => {
     if (doc.isDeleted === true || doc.moderationStatus === 'removed') return false;
     if (params.excludeHidden !== false && doc.status === 'hidden') return false;
     if (params.includeSeeds === false && isCommunitySeedRecord(doc)) return false;
     if (params.statusFilter && params.statusFilter !== 'all' && doc.status !== params.statusFilter) return false;
+    if (cleanEntityType && cleanEntityId && !matchesSocialContentContextEntity(doc as unknown as { socialContext?: { primary?: { type?: string; id?: string }; related?: Array<{ type?: string; id?: string }> } }, cleanEntityType, cleanEntityId)) {
+      return false;
+    }
     return true;
   });
 

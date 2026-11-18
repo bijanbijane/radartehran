@@ -104,7 +104,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             data-testid="global-nav-home"
             aria-current={primaryView === 'home' ? 'page' : undefined}
             onClick={() => { closeMegaMenu(); onSelectPrimaryView('home'); }}
-            title={fxSampleHint ? `۱۰۰ م.ت ≈ ${fxSampleHint}` : isEn ? `${cityBrand.en} Home` : `صفحه نخست ${cityBrand.fa}`}
+            title={fxSampleHint ? `۱۰۰ میلیون تومان ≈ ${fxSampleHint}` : isEn ? `${cityBrand.en} Home` : `صفحه نخست ${cityBrand.fa}`}
             className="flex items-center gap-2 group text-start focus-visible:outline-2 focus-visible:outline-emerald-600 rounded-lg cursor-pointer"
           >
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition ${primaryView === 'home' ? 'bg-emerald-600 text-white' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 group-hover:bg-emerald-700'}`}>

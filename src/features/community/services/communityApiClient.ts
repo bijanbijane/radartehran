@@ -14,9 +14,14 @@ import type {
   ModerationActionRecord,
   ModerationAppeal,
   PrivacySettings,
+  ProfileContributionItem,
+  ProfileContributionKind,
+  ProfileContributionPage,
   ReactionCounts,
   ReactionType,
   ResearchTopicProposal,
+  SocialContentContext,
+  SocialEntityType,
 } from '../types/community.types';
 
 export interface CommunityApiCallResult<T> {
@@ -52,14 +57,21 @@ async function buildProtectedHeaders(currentUser: User | null | undefined): Prom
   }
 }
 
-function mapCommunityErrorFa(status: number, code?: string, serverMsg?: string): string {
-  if (status === 401 || status === 403) {
+export const COMMUNITY_PERMISSION_DENIED_FA =
+  'شما مجوز انجام این عملیات یا دسترسی به این بخش را ندارید.';
+export const COMMUNITY_NETWORK_ERROR_FA =
+  'خطای شبکه در ارتباط با سرور جامعه کاربران؛ اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.';
+
+export function mapCommunityErrorFa(status: number, code?: string, serverMsg?: string): string {
+  if (status === 401) return COMMUNITY_AUTH_REQUIRED_FA;
+  if (status === 403) {
     if (code === 'OWNER_MISMATCH' || code === 'ONLY_ASKER_CAN_SELECT') {
       return 'شما مالک این محتوا نیستید و مجوز ویرایش یا تغییر آن را ندارید.';
     }
-    return COMMUNITY_AUTH_REQUIRED_FA;
+    return serverMsg || COMMUNITY_PERMISSION_DENIED_FA;
   }
-  if (status === 404) return 'رکورد موردنظر در سرور جامعه یافت نشد.';
+  if (status === 0) return COMMUNITY_NETWORK_ERROR_FA;
+  if (status === 404) return serverMsg || 'رکورد موردنظر در سرور جامعه یافت نشد.';
   if (status === 409) {
     if (code === 'ALREADY_APPLIED') return 'این پیشنهاد قبلاً تأیید یا اعمال شده و امکان انصراف وجود ندارد.';
     if (code === 'DISCUSSION_LOCKED') return 'این گفت‌وگو قفل یا آرشیو شده و امکان ثبت پاسخ جدید وجود ندارد.';
@@ -69,7 +81,7 @@ function mapCommunityErrorFa(status: number, code?: string, serverMsg?: string):
   }
   if (status === 422) return serverMsg || 'متن واردشده کوتاه یا حاوی الگوی غیرمجاز (تبلیغات/شماره تماس) است.';
   if (status === 429) return 'تعداد درخواست‌ها بیش از حد مجاز است؛ لطفاً چند لحظه صبر کنید.';
-  return 'خطا در ارتباط با سرور جامعه کاربران؛ لطفاً دوباره تلاش کنید.';
+  return serverMsg || 'خطا در ارتباط با سرور جامعه کاربران؛ لطفاً دوباره تلاش کنید.';
 }
 
 async function fetchJsonSafe<T>(
@@ -96,7 +108,7 @@ async function fetchJsonSafe<T>(
     };
   } catch (err) {
     if ((err as Error)?.name === 'AbortError') return { ok: false, status: 0, errorFa: 'ABORTED' };
-    return { ok: false, status: 503, errorFa: mapCommunityErrorFa(503) };
+    return { ok: false, status: 503, errorFa: COMMUNITY_NETWORK_ERROR_FA };
   }
 }
 
@@ -125,6 +137,8 @@ export async function getCommunityTopics(currentUser?: User | null, signal?: Abo
 export function getCommunityDiscussions(params?: {
   neighborhoodId?: number | null;
   topicId?: string;
+  entityType?: SocialEntityType;
+  entityId?: string;
   sort?: 'rank' | 'recent' | 'helpful';
   includeSeeds?: boolean;
   limit?: number;
@@ -134,6 +148,8 @@ export function getCommunityDiscussions(params?: {
   const qs = new URLSearchParams();
   if (params?.neighborhoodId) qs.set('neighborhoodId', String(params.neighborhoodId));
   if (params?.topicId && params.topicId !== 'all') qs.set('topicId', params.topicId);
+  if (params?.entityType) qs.set('entityType', params.entityType);
+  if (params?.entityId) qs.set('entityId', params.entityId);
   if (params?.sort) qs.set('sort', params.sort);
   if (params?.includeSeeds === false) qs.set('includeSeeds', 'false');
   if (params?.limit) qs.set('limit', String(params.limit));
@@ -148,6 +164,8 @@ export function getCommunityDiscussions(params?: {
 export function getCommunityQuestions(params?: {
   neighborhoodId?: number | null;
   topicId?: string;
+  entityType?: SocialEntityType;
+  entityId?: string;
   status?: string;
   includeSeeds?: boolean;
   limit?: number;
@@ -157,6 +175,8 @@ export function getCommunityQuestions(params?: {
   const qs = new URLSearchParams();
   if (params?.neighborhoodId) qs.set('neighborhoodId', String(params.neighborhoodId));
   if (params?.topicId && params.topicId !== 'all') qs.set('topicId', params.topicId);
+  if (params?.entityType) qs.set('entityType', params.entityType);
+  if (params?.entityId) qs.set('entityId', params.entityId);
   if (params?.status && params.status !== 'all') qs.set('status', params.status);
   if (params?.includeSeeds === false) qs.set('includeSeeds', 'false');
   if (params?.limit) qs.set('limit', String(params.limit));
@@ -170,6 +190,8 @@ export function getCommunityQuestions(params?: {
 
 export function getCommunityCorrections(params?: {
   neighborhoodId?: number | null;
+  entityType?: SocialEntityType;
+  entityId?: string;
   includeSeeds?: boolean;
   limit?: number;
   cursor?: string | null;
@@ -177,6 +199,8 @@ export function getCommunityCorrections(params?: {
 }) {
   const qs = new URLSearchParams();
   if (params?.neighborhoodId) qs.set('neighborhoodId', String(params.neighborhoodId));
+  if (params?.entityType) qs.set('entityType', params.entityType);
+  if (params?.entityId) qs.set('entityId', params.entityId);
   if (params?.includeSeeds === false) qs.set('includeSeeds', 'false');
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.cursor) qs.set('cursor', params.cursor);
@@ -188,12 +212,16 @@ export function getCommunityCorrections(params?: {
 }
 
 export function getCommunityResearchProposals(params?: {
+  entityType?: SocialEntityType;
+  entityId?: string;
   includeSeeds?: boolean;
   limit?: number;
   cursor?: string | null;
   signal?: AbortSignal;
 }) {
   const qs = new URLSearchParams();
+  if (params?.entityType) qs.set('entityType', params.entityType);
+  if (params?.entityId) qs.set('entityId', params.entityId);
   if (params?.includeSeeds === false) qs.set('includeSeeds', 'false');
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.cursor) qs.set('cursor', params.cursor);
@@ -284,7 +312,7 @@ async function postProtectedJson<T>(
 }
 
 export const createCommunityDiscussion = (
-  payload: { track: 'social_discussion' | 'expert_qa'; neighborhoodId: number; neighborhoodNameFa: string; topicId: string; titleFa: string; bodyFa: string },
+  payload: { track: 'social_discussion' | 'expert_qa'; neighborhoodId: number; neighborhoodNameFa: string; topicId: string; titleFa: string; bodyFa: string; socialContext?: SocialContentContext },
   currentUser: User | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<CommunityDiscussionPost>('/api/v1/community/posts', 'POST', payload, currentUser, (b) => b.item as CommunityDiscussionPost, idempotencyKey);
@@ -304,7 +332,7 @@ export const createCommunityReply = (
 ) => postProtectedJson<CommunityDiscussionPost>(`/api/v1/community/posts/${encodeURIComponent(postId)}/comments`, 'POST', payload, currentUser, (b) => b.post as CommunityDiscussionPost, idempotencyKey);
 
 export const createCommunityQuestion = (
-  payload: { titleFa: string; bodyFa: string; neighborhoodId: number; neighborhoodNameFa: string; topicId: string },
+  payload: { titleFa: string; bodyFa: string; neighborhoodId: number; neighborhoodNameFa: string; topicId: string; socialContext?: SocialContentContext },
   currentUser: User | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<CommunityQuestionItem>('/api/v1/community/questions', 'POST', payload, currentUser, (b) => b.item as CommunityQuestionItem, idempotencyKey);
@@ -330,7 +358,7 @@ export const selectQuestionAnswer = (
 ) => postProtectedJson<CommunityQuestionItem>(`/api/v1/community/questions/${encodeURIComponent(questionId)}/select-answer`, 'POST', { answerId }, currentUser, (b) => b.item as CommunityQuestionItem);
 
 export const createDataCorrection = (
-  payload: { neighborhoodId: number; neighborhoodNameFa: string; category: DataCorrectionCategory; titleFa: string; currentValueFa?: string; evidenceSummaryFa: string; suggestedValueFa: string; observedDateFa?: string },
+  payload: { neighborhoodId: number; neighborhoodNameFa: string; category: DataCorrectionCategory; titleFa: string; currentValueFa?: string; evidenceSummaryFa: string; suggestedValueFa: string; observedDateFa?: string; socialContext?: SocialContentContext },
   currentUser: User | null | undefined,
   idempotencyKey?: string,
 ) => postProtectedJson<DataCorrectionProposal>('/api/v1/community/contributions', 'POST', payload, currentUser, (b) => b.item as DataCorrectionProposal, idempotencyKey);
@@ -338,13 +366,14 @@ export const createDataCorrection = (
 export const withdrawDataCorrection = (proposalId: string, currentUser: User | null | undefined) =>
   postProtectedJson<DataCorrectionProposal>(`/api/v1/community/contributions/${encodeURIComponent(proposalId)}/withdraw`, 'POST', {}, currentUser, (b) => b.item as DataCorrectionProposal);
 
-export const toggleCommunityReaction = (targetId: string, reaction: ReactionType, currentUser: User | null | undefined) =>
+export const toggleCommunityReaction = (targetId: string, reaction: ReactionType, currentUser: User | null | undefined, idempotencyKey?: string) =>
   postProtectedJson<{ reactionCounts: ReactionCounts; activeReaction: ReactionType | null }>(
     '/api/v1/community/reactions',
     'POST',
     { targetId, reaction },
     currentUser,
     (b) => ({ reactionCounts: b.reactionCounts as ReactionCounts, activeReaction: (b.activeReaction as ReactionType) ?? null }),
+    idempotencyKey,
   );
 
 export const submitCommunityAbuseReport = (
@@ -359,75 +388,37 @@ export const submitCommunityAppeal = (
 ) => postProtectedJson<ModerationAppeal>('/api/v1/community/appeals', 'POST', payload, currentUser, (b) => b.item as ModerationAppeal);
 
 export const createResearchProposal = (
-  payload: { titleFa: string; questionFa: string; neighborhoodNameFa: string; linkedKnowledgeTab: 'reports' | 'methodology' },
+  payload: { titleFa: string; questionFa: string; neighborhoodNameFa: string; linkedKnowledgeTab: 'reports' | 'methodology'; socialContext?: SocialContentContext },
   currentUser: User | null | undefined,
-) => postProtectedJson<ResearchTopicProposal>('/api/v1/community/research-proposals', 'POST', payload, currentUser, (b) => b.item as ResearchTopicProposal);
+  idempotencyKey?: string,
+) => postProtectedJson<ResearchTopicProposal>('/api/v1/community/research-proposals', 'POST', payload, currentUser, (b) => b.item as ResearchTopicProposal, idempotencyKey);
 
 export const voteResearchProposal = (proposalId: string, currentUser: User | null | undefined) =>
   postProtectedJson<ResearchTopicProposal>(`/api/v1/community/research-proposals/${encodeURIComponent(proposalId)}/vote`, 'POST', {}, currentUser, (b) => b.item as ResearchTopicProposal);
 
-export const toggleTopicFollow = (topicId: string, currentUser: User | null | undefined) =>
+export const toggleTopicFollow = (topicId: string, currentUser: User | null | undefined, idempotencyKey?: string) =>
   postProtectedJson<{ topics: Array<CommunityTopicNode & { isFollowedByMe?: boolean }>; isFollowed: boolean }>(
     '/api/v1/community/follows',
     'POST',
     { scope: 'topic', targetId: topicId },
     currentUser,
     (b) => ({ topics: (b.topics as Array<CommunityTopicNode & { isFollowedByMe?: boolean }>) || [], isFollowed: Boolean(b.isFollowed) }),
+    idempotencyKey,
   );
 
-export const toggleCommunityDiscussionFollow = (postId: string, currentUser: User | null | undefined) =>
-  postProtectedJson<CommunityDiscussionPost>('/api/v1/community/follows', 'POST', { scope: 'post', targetId: postId }, currentUser, (b) => b.item as CommunityDiscussionPost);
+export const toggleCommunityDiscussionFollow = (postId: string, currentUser: User | null | undefined, idempotencyKey?: string) =>
+  postProtectedJson<CommunityDiscussionPost>('/api/v1/community/follows', 'POST', { scope: 'post', targetId: postId }, currentUser, (b) => b.item as CommunityDiscussionPost, idempotencyKey);
 
 export const updateCommunityPrivacySettings = (privacy: Partial<PrivacySettings>, currentUser: User | null | undefined) =>
   postProtectedJson<CommunityProfile>('/api/account/community/privacy', 'PATCH', { privacy }, currentUser, (b) => b.profile as CommunityProfile);
 
-export async function getAdminCommunityModerationQueue(signal?: AbortSignal, currentUser?: User | null) {
-  const auth = currentUser ? await buildProtectedHeaders(currentUser) : { ok: false, headers: {} };
-  return fetchJsonSafe<{
-    corrections: DataCorrectionProposal[];
-    reports: CommunityAbuseReport[];
-    actions: ModerationActionRecord[];
-    appeals: ModerationAppeal[];
-  }>(
-    '/api/admin/community/moderation',
-    { headers: { Accept: 'application/json', ...(auth.ok ? auth.headers : {}) }, signal },
-    (b) => ({
-      corrections: (b.corrections as DataCorrectionProposal[]) || [],
-      reports: (b.reports as CommunityAbuseReport[]) || [],
-      actions: (b.actions as ModerationActionRecord[]) || [],
-      appeals: (b.appeals as ModerationAppeal[]) || [],
-    }),
-  );
-}
-
-export async function submitAdminCommunityModerationAction(
-  payload: { targetType: CommunityAbuseReport['targetType']; targetId: string; actionType: ModerationActionRecord['actionType']; reasonFa: string; actorRole?: string },
-  currentUser?: User | null,
-) {
-  const auth = currentUser ? await buildProtectedHeaders(currentUser) : { ok: false, headers: {} };
-  return fetchJsonSafe<ModerationActionRecord>(
-    '/api/admin/community/moderation-actions',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('mod'), ...(auth.ok ? auth.headers : {}) },
-      body: JSON.stringify({ targetType: payload.targetType, targetId: payload.targetId, actionType: payload.actionType, reasonFa: payload.reasonFa }),
-    },
-    (b) => b.action as ModerationActionRecord,
-  );
-}
-
-export async function resolveAdminCommunityAppeal(
-  payload: { appealId: string; decision: 'upheld' | 'overturned'; reviewerNoteFa: string },
-  currentUser?: User | null,
-) {
-  const auth = currentUser ? await buildProtectedHeaders(currentUser) : { ok: false, headers: {} };
-  return fetchJsonSafe<ModerationAppeal>(
-    `/api/admin/community/appeals/${encodeURIComponent(payload.appealId)}/resolve`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('app'), ...(auth.ok ? auth.headers : {}) },
-      body: JSON.stringify({ decision: payload.decision, reviewerNoteFa: payload.reviewerNoteFa }),
-    },
-    (b) => b.appeal as ModerationAppeal,
-  );
-}
+export {
+  getCommunityProfileContributions,
+  followCommunityUser,
+  unfollowCommunityUser,
+  getCommunityUserFollowStatus,
+  getAdminCommunityModerationQueue,
+  submitAdminCommunityModerationAction,
+  resolveAdminCommunityAppeal,
+  type CommunityUserFollowResult,
+} from './communityProfileAndFollowClient';

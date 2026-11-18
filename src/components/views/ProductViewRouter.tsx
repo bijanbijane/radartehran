@@ -204,6 +204,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
     content = (
       <ProductPropertiesView
         evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood} activeSubTab={effectiveSubTab as PropertiesSubTabId}
+        currentUserUid={p.currentUser?.uid ?? null}
         onChangeSubTab={(t) => ui.setActiveSubTab?.(t)} onSelectNeighborhood={handleSelectNeighborhood}
         onOpenInspector={(h) => { handleSelectNeighborhood(h); ui.setMobileSheetOpen(true); }}
         onOpenHedonicForProperty={(h, params) => { handleSelectNeighborhood(h); if (params) ui.setHedonicInitialParams(params); ui.setShowHedonicModal(true); }}

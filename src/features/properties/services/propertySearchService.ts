@@ -5,11 +5,30 @@ import {
   type AppliedPropertyFilters,
 } from '../filters/PropertyFilterDraft';
 import type { AmenityValue } from '../types/property.types';
-import type { PropertyListingRecord } from '../types/listing.types';
+import type { PropertyListingRecord, TransactionType } from '../types/listing.types';
 
 function matchesTriState(actual: AmenityValue, filter: AmenityValue | 'any'): boolean {
   if (filter === 'any') return true;
   return actual === filter;
+}
+
+export function matchesTransactionTypeFilter(
+  recordTx: TransactionType,
+  filterTx: 'all' | TransactionType,
+  monthlyRentMillion?: number | null,
+): boolean {
+  if (filterTx === 'all') return true;
+  if (filterTx === 'rent') {
+    return recordTx === 'rent' || recordTx === 'full_deposit';
+  }
+  if (filterTx === 'full_deposit') {
+    if (recordTx === 'full_deposit') return true;
+    if (recordTx === 'rent' && (monthlyRentMillion === null || monthlyRentMillion === undefined || monthlyRentMillion === 0)) {
+      return true;
+    }
+    return false;
+  }
+  return recordTx === filterTx;
 }
 
 export function isVerifiedListing(rec: PropertyListingRecord): boolean {
@@ -42,7 +61,9 @@ export function filterAndSortProperties(
 
   const filtered = records.filter((rec) => {
     if (rec.listing.status !== 'published') return false;
-    if (filters.transactionType !== 'all' && rec.listing.transactionType !== filters.transactionType) return false;
+    if (!matchesTransactionTypeFilter(rec.listing.transactionType, filters.transactionType, rec.listing.price.monthlyRentMillion)) {
+      return false;
+    }
     if (filters.propertyType !== 'all' && rec.property.propertyType !== filters.propertyType) return false;
     if (filters.onlySelectedHood && selectedHoodId && rec.property.hoodId !== selectedHoodId) return false;
     if (filters.hoodIds.length > 0 && !filters.hoodIds.includes(rec.property.hoodId)) return false;

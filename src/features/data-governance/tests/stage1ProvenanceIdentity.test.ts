@@ -56,7 +56,7 @@ test('Stage 1.3: Public provenance contract never inflates sampleCount/uniqueEnt
 });
 
 test('Stage 1.4: Analytics engine returns UNAVAILABLE when observed data is absent and marks explicit demo simulation honestly', () => {
-  const analytics = new AnalyticsPlatformEngine();
+  const analytics = new AnalyticsPlatformEngine({ seedDemo: true });
   const unmapped = analytics.getOverviewBundle(null, 180);
   assert.equal(unmapped.activeSnapshot.value, null);
   assert.equal(unmapped.activeSnapshot.distribution, undefined);

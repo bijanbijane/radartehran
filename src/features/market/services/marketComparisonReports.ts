@@ -205,6 +205,7 @@ export function buildMarketReportsList(params: {
   observedSaleCount: number;
   observedRentCount: number;
   dataAsOfIso: string | null;
+  dataAsOfDisplayFa?: string | null;
 }): MarketReportItem[] {
   const {
     selectedHood,
@@ -220,11 +221,30 @@ export function buildMarketReportsList(params: {
     distribution,
     observedSaleCount,
     observedRentCount,
-    dataAsOfIso,
+    dataAsOfIso: rawDataAsOfIso,
+    dataAsOfDisplayFa,
   } = params;
   const hoodId = selectedHood?.id ?? 0;
   const generatedAtIso = new Date().toISOString();
-  const publishedJalali = dataAsOfIso ? dataAsOfIso.slice(0, 10) : 'ثبت نشده';
+  // Stage 27 invariant: dataAsOfIso must NEVER contain a Jalali string; validate ISO-8601 strictly
+  const isValidIso =
+    typeof rawDataAsOfIso === 'string' &&
+    /^\d{4}-\d{2}-\d{2}/.test(rawDataAsOfIso.trim()) &&
+    !/^(13\d{2}|14\d{2}|۱۳\d{2}|۱۴\d{2})/.test(rawDataAsOfIso.trim()) &&
+    !Number.isNaN(Date.parse(rawDataAsOfIso.trim()));
+  const dataAsOfIso: string | null = isValidIso ? rawDataAsOfIso!.trim() : null;
+  const publishedJalali = dataAsOfDisplayFa?.trim()
+    ? dataAsOfDisplayFa.trim()
+    : dataAsOfIso
+      ? dataAsOfIso.slice(0, 10)
+      : 'ثبت نشده';
+  const freshnessStatus: 'FRESH' | 'AGING' | 'STALE' | 'UNKNOWN' = dataAsOfIso
+    ? Date.now() - Date.parse(dataAsOfIso) <= 3 * 86_400_000
+      ? 'FRESH'
+      : Date.now() - Date.parse(dataAsOfIso) <= 14 * 86_400_000
+        ? 'AGING'
+        : 'STALE'
+    : 'UNKNOWN';
 
   const askingSources = observedSaleCount > 0
     ? ['src-live-listings', 'src-radar-baseline']
@@ -242,6 +262,8 @@ export function buildMarketReportsList(params: {
       publishedJalali,
       generatedAtIso,
       dataAsOfIso,
+      dataAsOfDisplayFa: dataAsOfDisplayFa ?? (dataAsOfIso ? dataAsOfIso.slice(0, 10) : null),
+      freshnessStatus,
       status: askingStatus,
       summaryFa:
         unitAsk !== null && unitDeal !== null
@@ -263,6 +285,8 @@ export function buildMarketReportsList(params: {
       publishedJalali,
       generatedAtIso,
       dataAsOfIso,
+      dataAsOfDisplayFa: dataAsOfDisplayFa ?? (dataAsOfIso ? dataAsOfIso.slice(0, 10) : null),
+      freshnessStatus,
       status: rentStatus,
       summaryFa: `شاخص رهن کامل واحد ۸۰ متری معادل ${toPersianNum(avgRahn80)} میلیون تومان و معادل اجاره ماهانه (با نرخ تبدیل ۳۶٪ سالانه) برابر ${toPersianNum(convertedMonthly)} میلیون تومان است.`,
       keyTakeawaysFa: [

@@ -204,17 +204,49 @@ export function getNeighborhoodBoundaryPolygon(
     Number((hood.lng + mx * degLngPerM).toFixed(5)),
   ]);
 }
+function hashStringFnv1a(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+export function computeNeighborhoodGeometryFingerprint(
+  hood: BoundaryNeighborhoodInput,
+  allCityHoods: readonly BoundaryNeighborhoodInput[] = [],
+  osmOverrideCoords?: readonly (readonly [number, number])[] | null,
+  lodBucket = 'z12',
+  cityId = 'tehran',
+): string {
+  const neighborSig = allCityHoods
+    .filter((n) => n && n.id !== hood.id)
+    .map((n) => `${n.id}:${Number(n.lat).toFixed(5)}:${Number(n.lng).toFixed(5)}:${Math.round(Number(n.radius) || 0)}`)
+    .join('|');
+  const osmSig =
+    Array.isArray(osmOverrideCoords) && osmOverrideCoords.length > 0
+      ? osmOverrideCoords
+          .map(([lat, lng]) => `${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`)
+          .join(';')
+      : 'none';
+  const neighborHash = hashStringFnv1a(neighborSig);
+  const osmHash = hashStringFnv1a(osmSig);
+  return `${cityId}:${hood.id}:${Number(hood.lat).toFixed(5)}:${Number(hood.lng).toFixed(5)}:${Math.round(Number(hood.radius) || 0)}:nb(${allCityHoods.length}:${neighborHash}):osm(${osmOverrideCoords ? osmOverrideCoords.length : 0}:${osmHash}):${lodBucket}`;
+}
+
 export function resolveNeighborhoodGeoJsonForLod(
   hood: BoundaryNeighborhoodInput,
   allCityHoods: readonly BoundaryNeighborhoodInput[],
   osmOverrideCoords?: readonly (readonly [number, number])[] | null,
-  lodOptions?: { zoom?: number; isSelected?: boolean; lowBandwidthMode?: boolean }
+  lodOptions?: { zoom?: number; isSelected?: boolean; lowBandwidthMode?: boolean; cityId?: string }
 ): { geometryKey: string; geoJsonFeature: NeighborhoodGeoJSONFeature; coords: [number, number][] } {
   const zoom = lodOptions?.zoom ?? 12;
   const isSelected = Boolean(lodOptions?.isSelected);
   const lowBw = Boolean(lodOptions?.lowBandwidthMode);
+  const cityId = lodOptions?.cityId || 'tehran';
   const lodBucket = isSelected ? 'sel' : lowBw ? `bw:${zoom <= 11 ? 'lo' : 'md'}` : zoom <= 10 ? 'z10' : zoom <= 12 ? 'z12' : 'zFull';
-  const cacheKey = `${hood.id}:${hood.lat}:${hood.lng}:${hood.radius}:${allCityHoods.length}:${osmOverrideCoords ? osmOverrideCoords.length : 0}:${lodBucket}`;
+  const cacheKey = computeNeighborhoodGeometryFingerprint(hood, allCityHoods, osmOverrideCoords, lodBucket, cityId);
   let geoJsonFeature = clientGeoJsonLruCache.get(cacheKey);
   if (!geoJsonFeature) {
     const rawCoords = getNeighborhoodBoundaryPolygon(hood, allCityHoods, osmOverrideCoords);
@@ -222,7 +254,6 @@ export function resolveNeighborhoodGeoJsonForLod(
     const source = Array.isArray(osmOverrideCoords) && osmOverrideCoords.length >= 4 ? 'osm_overpass_geojson' : 'dynamic_voronoi_geojson';
     geoJsonFeature = latLngRingToGeoJSONFeature(hood, coords, source);
     clientGeoJsonLruCache.set(cacheKey, geoJsonFeature);
-    clientGeoJsonLruCache.set(hood.id, geoJsonFeature);
     return { geometryKey: cacheKey, geoJsonFeature, coords };
   }
   const ring = geoJsonFeature.geometry.coordinates[0] || [];
@@ -231,7 +262,7 @@ export function resolveNeighborhoodGeoJsonForLod(
 export function renderNeighborhoodGeoJSONOnLeaflet(
   L: any, map: any, hood: BoundaryNeighborhoodInput, allCityHoods: readonly BoundaryNeighborhoodInput[], style: ZoomAdaptivePolygonStyle,
   osmOverrideCoords?: readonly (readonly [number, number])[] | null, onClick?: () => void,
-  lodOptions?: { zoom?: number; isSelected?: boolean; lowBandwidthMode?: boolean }
+  lodOptions?: { zoom?: number; isSelected?: boolean; lowBandwidthMode?: boolean; cityId?: string }
 ): any {
   const zoom = lodOptions?.zoom ?? (typeof map?.getZoom === 'function' ? map.getZoom() : 12);
   const { geoJsonFeature, coords } = resolveNeighborhoodGeoJsonForLod(hood, allCityHoods, osmOverrideCoords, { ...lodOptions, zoom });

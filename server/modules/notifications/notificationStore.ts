@@ -40,11 +40,26 @@ export class NotificationStore {
   private readonly jobDeliveryIdempotency = new Map<string, string>(); // idempotencyKey -> jobId
 
   private readonly maxStorageRecords = 10000;
+  private simulateStorageFailure = false;
+
+  public setSimulatedStorageFailure(enabled: boolean): void {
+    this.simulateStorageFailure = enabled;
+  }
+
+  public getNotificationByIdempotencyKey(idempotencyKey: string): NotificationDocument | null {
+    if (!idempotencyKey) return null;
+    const existingId = this.idempotencyIndex.get(idempotencyKey);
+    if (!existingId) return null;
+    return this.notifications.get(existingId) ?? null;
+  }
 
   /**
    * Creates a notification with idempotency protection.
    */
   public async createNotification(doc: Omit<NotificationDocument, 'id' | 'createdAtIso' | 'updatedAtIso' | 'schemaVersion'>): Promise<NotificationDocument> {
+    if (this.simulateStorageFailure) {
+      throw new Error('NOTIFICATION_STORAGE_UNAVAILABLE');
+    }
     if (doc.idempotencyKey && this.idempotencyIndex.has(doc.idempotencyKey)) {
       const existingId = this.idempotencyIndex.get(doc.idempotencyKey)!;
       const existing = this.notifications.get(existingId);

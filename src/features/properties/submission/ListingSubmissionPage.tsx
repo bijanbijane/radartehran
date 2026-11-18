@@ -1,7 +1,11 @@
 /** @file src/features/properties/submission/ListingSubmissionPage.tsx — 7-Step Adaptive Listing Submission Wizard */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, Save, ShieldCheck } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
+import {
+  ACCOUNT_WORKSPACE_UPDATED_EVENT,
+  resolveEffectiveUid,
+} from '../../account/services/accountStorageScope';
 import {
   PROPERTY_TYPE_LABELS_FA,
   type LocationPrecision,
@@ -33,6 +37,7 @@ export interface ListingSubmissionPageProps {
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   selectedHood: EvaluatedNeighborhood;
   existingRecords: PropertyListingRecord[];
+  currentUserUid?: string | null;
   onCancel: () => void;
   onSubmitted: (record: PropertyListingRecord) => void;
 }
@@ -51,15 +56,34 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
   evaluatedNeighborhoods,
   selectedHood,
   existingRecords,
+  currentUserUid,
   onCancel,
   onSubmitted,
 }) => {
+  const activeOwnerUid = resolveEffectiveUid(currentUserUid);
+  const lastOwnerUidRef = useRef<string>(activeOwnerUid);
   const [draft, setDraft] = useState<ListingSubmissionDraft>(
-    () => loadSubmissionDraft() || createEmptySubmissionDraft(selectedHood.id),
+    () => loadSubmissionDraft(activeOwnerUid) || createEmptySubmissionDraft(selectedHood.id, 'tehran', activeOwnerUid),
   );
   const [step, setStep] = useState<number>(draft.stepIndex || 1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [savedNotice, setSavedNotice] = useState<string>('');
+
+  useEffect(() => {
+    const syncAccountDraft = () => {
+      const nextUid = resolveEffectiveUid(currentUserUid);
+      if (lastOwnerUidRef.current === nextUid && draft.ownerUid === nextUid) return;
+      lastOwnerUidRef.current = nextUid;
+      const loaded = loadSubmissionDraft(nextUid) || createEmptySubmissionDraft(selectedHood.id, 'tehran', nextUid);
+      setDraft(loaded);
+      setStep(loaded.stepIndex || 1);
+      setErrors({});
+      setSavedNotice('');
+    };
+    syncAccountDraft();
+    window.addEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, syncAccountDraft);
+    return () => window.removeEventListener(ACCOUNT_WORKSPACE_UPDATED_EVENT, syncAccountDraft);
+  }, [currentUserUid, selectedHood.id, draft.ownerUid]);
 
   const targetHood = useMemo(
     () => evaluatedNeighborhoods.find((h) => h.id === draft.hoodId) || selectedHood,
@@ -70,32 +94,46 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
   const duplicateAssessment = useMemo(() => assessDuplicateSubmission(draft, existingRecords), [draft, existingRecords]);
 
   const update = (patch: Partial<ListingSubmissionDraft>) => {
-    const next = { ...draft, ...patch, stepIndex: step };
+    const scopeUid = resolveEffectiveUid(currentUserUid);
+    const baseDraft = draft.ownerUid && draft.ownerUid !== scopeUid
+      ? loadSubmissionDraft(scopeUid) || createEmptySubmissionDraft(selectedHood.id, 'tehran', scopeUid)
+      : draft;
+    const next: ListingSubmissionDraft = { ...baseDraft, ...patch, ownerUid: scopeUid, stepIndex: step };
     setDraft(next);
-    saveSubmissionDraft(next);
+    saveSubmissionDraft(next, scopeUid);
   };
 
   const handleNext = () => {
+    const scopeUid = resolveEffectiveUid(currentUserUid);
     const res = validateSubmissionStep(draft, step);
     setErrors(res.errors);
     if (!res.valid) return;
     const nextStep = Math.min(7, step + 1);
     setStep(nextStep);
-    saveSubmissionDraft({ ...draft, stepIndex: nextStep });
+    saveSubmissionDraft({ ...draft, ownerUid: scopeUid, stepIndex: nextStep }, scopeUid);
     trackPropertyEvent('property_submission_step', { step: nextStep });
   };
 
   const handleManualDraftSave = () => {
-    const stamped = saveSubmissionDraft({ ...draft, stepIndex: step });
+    const scopeUid = resolveEffectiveUid(currentUserUid);
+    const stamped = saveSubmissionDraft({ ...draft, ownerUid: scopeUid, stepIndex: step }, scopeUid);
     setSavedNotice(`پیش‌نویس در ${new Date(stamped.lastSavedAtIso).toLocaleTimeString('fa-IR')} ذخیره شد`);
     setTimeout(() => setSavedNotice(''), 2500);
   };
 
   const handleSubmit = () => {
+    const scopeUid = resolveEffectiveUid(currentUserUid);
+    if (draft.ownerUid && draft.ownerUid !== scopeUid) {
+      const reloaded = loadSubmissionDraft(scopeUid) || createEmptySubmissionDraft(selectedHood.id, 'tehran', scopeUid);
+      setDraft(reloaded);
+      setStep(reloaded.stepIndex || 1);
+      setErrors({ publisherName: 'حساب کاربری تغییر کرده است. لطفاً پیش‌نویس حساب فعلی را بررسی کنید.' });
+      return;
+    }
     const res = validateSubmissionStep(draft, 7);
     setErrors(res.errors);
     if (!res.valid) return;
-    const created = submitDraftAsPropertyListing(draft, targetHood, duplicateAssessment);
+    const created = submitDraftAsPropertyListing({ ...draft, ownerUid: scopeUid }, targetHood, duplicateAssessment, scopeUid);
     trackPropertyEvent('property_submitted', { status: created.listing.status, dup: duplicateAssessment.level });
     onSubmitted(created);
   };
@@ -116,7 +154,7 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => { clearSubmissionDraft(); onCancel(); }}
+            onClick={() => { clearSubmissionDraft(resolveEffectiveUid(currentUserUid)); onCancel(); }}
             className="px-2.5 py-1.5 rounded-[8px] text-[#B3261E] font-bold hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
           >
             انصراف

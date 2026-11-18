@@ -29,6 +29,7 @@ export interface ListingAnomalyFlag {
 
 export interface ListingSubmissionDraft {
   draftId: string;
+  ownerUid?: string;
   stepIndex: number;
   lastSavedAtIso: string;
   propertyType: PropertyType;

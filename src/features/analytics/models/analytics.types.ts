@@ -142,6 +142,18 @@ export interface MetricSnapshotResponse {
   qualityStatus: DataQualityStatus;
   sufficiencyStatus: SampleSufficiencyStatus;
   lastUpdatedAt: string;
+  observedAt?: string | null;
+  receivedAt?: string | null;
+  computedAt?: string;
+  publishedAt?: string | null;
+  freshnessStatus?: 'FRESH' | 'AGING' | 'STALE' | 'UNKNOWN';
+  temporal?: {
+    observedAt: string | null;
+    receivedAt: string | null;
+    computedAt: string;
+    publishedAt: string | null;
+    freshnessStatus: 'FRESH' | 'AGING' | 'STALE' | 'UNKNOWN';
+  };
   dataOrigin?: 'OBSERVED' | 'SIMULATED' | 'UNAVAILABLE';
   limitationsFa: string[];
 }
@@ -195,3 +207,34 @@ export interface PredictiveModelRegistryEntry {
   status: 'ACTIVE' | 'SHADOW_MODE' | 'ROLLED_BACK';
   deployedAt: string;
 }
+
+export interface AnalyticsExportResponse {
+  ok: boolean;
+  exportId?: string;
+  status?: 'READY' | 'FAILED' | 'DENIED';
+  downloadUrl?: string;
+  sampleCount?: number;
+  uniqueEntityCount?: number;
+  dataSnapshotId?: string;
+  createdAt?: string;
+  reasonFa?: string;
+  error?: string;
+}
+
+export interface AnalyticsMarketApiBundle {
+  placeId: string | null;
+  activeSnapshot: MetricSnapshotResponse;
+  metricsRegistry: OfficialMetricDefinition[];
+  placeDimensionsScd2: DimPlaceScd2Record[];
+  authoritySource: 'BACKEND_API' | 'UNAVAILABLE_FALLBACK';
+  fetchedAtIso: string;
+}
+
+export interface ResearchWorkspaceApiBundle {
+  savedAnalyses: ReproducibleAnalysisDefinition[];
+  pipelines: DataPipelineRecord[];
+  modelRegistry: PredictiveModelRegistryEntry[];
+  authoritySource: 'BACKEND_API' | 'UNAVAILABLE_FALLBACK';
+  fetchedAtIso: string;
+}
+

@@ -15,8 +15,16 @@ import {
 } from '../models/analytics.types';
 import { SampleSufficiencyStatus } from '../../data-governance/models/dataGovernance.types';
 import { OFFICIAL_METRIC_REGISTRY, SCD2_PLACE_DIMENSIONS } from './analyticsRegistrySeeds';
+import { evaluateTemporalFreshness, sanitizeIso8601OrNull } from '../../../platform/temporal';
 
 export { OFFICIAL_METRIC_REGISTRY, SCD2_PLACE_DIMENSIONS };
+
+export interface SnapshotTemporalMetaInput {
+  observedAt?: string | null;
+  receivedAt?: string | null;
+  publishedAt?: string | null;
+  referenceNowIso?: string;
+}
 
 function sortJsonKeysDeep(val: unknown): unknown {
   if (val === null || typeof val !== 'object') return val;
@@ -46,15 +54,12 @@ export function computeCanonicalAnalysisHash(
       timeRange: definition.timeRange,
     }),
   );
-  // Deterministic 64-bit FNV-1a hex signature across browser & node environments
   let h1 = 0x811c9dc5;
   let h2 = 0x9e3779b9;
   for (let i = 0; i < canonicalPayload.length; i++) {
     const ch = canonicalPayload.charCodeAt(i);
-    h1 ^= ch;
-    h1 = Math.imul(h1, 0x01000193);
-    h2 ^= ch ^ i;
-    h2 = Math.imul(h2, 0x85ebca6b);
+    h1 = Math.imul(h1 ^ ch, 0x01000193);
+    h2 = Math.imul(h2 ^ ch ^ i, 0x85ebca6b);
   }
   return `canon:${(h1 >>> 0).toString(16).padStart(8, '0')}${(h2 >>> 0).toString(16).padStart(8, '0')}`;
 }
@@ -112,12 +117,10 @@ export function computeDistributionStats(
   const p75 = computePercentile(working, 75);
   const p90 = computePercentile(working, 90);
   const iqr = Number((p75 - p25).toFixed(2));
-
   let sufficiencyStatus: SampleSufficiencyStatus = 'STRONG';
   if (uniqueEntityCount < 5) sufficiencyStatus = 'INSUFFICIENT';
   else if (uniqueEntityCount < 25) sufficiencyStatus = 'LIMITED';
   else if (uniqueEntityCount < 60) sufficiencyStatus = 'ADEQUATE';
-
   return { count: working.length, uniqueEntityCount, mean, median, p10, p25, p75, p90, iqr, trimmedOutlierCount, sufficiencyStatus };
 }
 
@@ -139,7 +142,6 @@ export function computeSafePeriodComparison(params: {
   const warnings: string[] = [];
   if (!boundaryVersionConsistent) warnings.push(`نسخه مرز محله بین دو دوره تغییر کرده است (${params.previousBoundaryVersion} ← ${params.currentBoundaryVersion}).`);
   if (params.compositionChangedSignificantly) warnings.push('ترکیب سن بنا و متراژ نمونه‌ها بین دو دوره تغییر محسوسی داشته است.');
-
   return {
     currentPeriodLabelFa: params.currentPeriodLabelFa, previousPeriodLabelFa: params.previousPeriodLabelFa,
     currentValue: params.currentValue, previousValue: params.previousValue, changePercent, computable: true,
@@ -155,8 +157,8 @@ export class AnalyticsPlatformEngine {
   private savedAnalyses: ReproducibleAnalysisDefinition[];
   private modelRegistry: PredictiveModelRegistryEntry[];
 
-  constructor(options: { seedDemo?: boolean } = { seedDemo: true }) {
-    const seed = options.seedDemo !== false;
+  constructor(options: { seedDemo?: boolean } = { seedDemo: false }) {
+    const seed = options.seedDemo === true;
     this.processedIdempotencyKeys = new Set(seed ? ['idem-boot-1'] : []);
     this.pipelines = seed ? [{
       id: 'pipe-mkt-gold-1', pipelineCode: 'PIPELINE.MARKET.SNAPSHOT_DAILY',
@@ -201,9 +203,21 @@ export class AnalyticsPlatformEngine {
     return { status: 'ACCEPTED', reasonFa: 'رویداد در لایه Landing/Bronze ثبت شد.' };
   }
 
-  public getMetricSnapshotForPlace(placeId: string | null, _baseBuyPerSqm = 142, observedValues?: number[]): MetricSnapshotResponse {
+  public getMetricSnapshotForPlace(
+    placeId: string | null, _baseBuyPerSqm = 142, observedValues?: number[], temporalMeta?: SnapshotTemporalMetaInput,
+  ): MetricSnapshotResponse {
     const placeDim = placeId ? SCD2_PLACE_DIMENSIONS.find((d) => d.canonicalPlaceId === placeId && d.isCurrent) : undefined;
     const validObserved = Array.isArray(observedValues) ? observedValues.filter((v) => Number.isFinite(v) && v > 0) : [];
+    const computedAt = new Date().toISOString();
+    const observedAt = sanitizeIso8601OrNull(temporalMeta?.observedAt);
+    const receivedAt = sanitizeIso8601OrNull(temporalMeta?.receivedAt);
+    const publishedAt = sanitizeIso8601OrNull(temporalMeta?.publishedAt);
+    const freshness = evaluateTemporalFreshness({
+      observedAt: observedAt ?? undefined,
+      receivedAt: receivedAt ?? undefined,
+      domain: 'market_snapshot',
+      nowMs: temporalMeta?.referenceNowIso ? Date.parse(temporalMeta.referenceNowIso) : undefined,
+    });
     if (!placeDim || validObserved.length === 0) {
       return {
         metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM', displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع', financialConcept: 'ASKING_PRICE',
@@ -212,7 +226,10 @@ export class AnalyticsPlatformEngine {
           ? { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion }
           : { placeId: placeId || '', placeNameFa: 'ثبت نشده', boundaryVersion: 'ثبت نشده' },
         methodologyVersion: placeDim ? '2.1' : 'NONE', dataSnapshotId: 'UNAVAILABLE',
-        qualityStatus: 'UNVERIFIED', sufficiencyStatus: 'NOT_ASSESSED', lastUpdatedAt: '', dataOrigin: 'UNAVAILABLE',
+        qualityStatus: 'UNVERIFIED', sufficiencyStatus: 'NOT_ASSESSED', lastUpdatedAt: '',
+        observedAt: null, receivedAt: null, computedAt, publishedAt: null, freshnessStatus: 'UNKNOWN',
+        temporal: { observedAt: null, receivedAt: null, computedAt, publishedAt: null, freshnessStatus: 'UNKNOWN' },
+        dataOrigin: 'UNAVAILABLE',
         limitationsFa: [placeDim ? 'داده تحلیلی معتبر (آگهی زنده تاییدشده) برای محاسبه توزیع این محله هنوز ثبت نشده است.' : 'برای این محله هنوز اسنپ‌شات آماری در سکوی داده ثبت نشده است.'],
       };
     }
@@ -223,23 +240,34 @@ export class AnalyticsPlatformEngine {
       geography: { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion },
       methodologyVersion: '2.1', dataSnapshotId: `live-${placeDim.canonicalPlaceId}`,
       qualityStatus: dist.sufficiencyStatus === 'INSUFFICIENT' ? 'INCOMPLETE' : 'SUPPORTED',
-      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: new Date().toISOString(), dataOrigin: 'OBSERVED',
+      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: observedAt ?? receivedAt ?? '',
+      observedAt, receivedAt, computedAt, publishedAt, freshnessStatus: freshness.status,
+      temporal: { observedAt, receivedAt, computedAt, publishedAt, freshnessStatus: freshness.status },
+      dataOrigin: 'OBSERVED',
       limitationsFa: ['محاسبه بر پایه قیمت‌های پیشنهادی آگهی‌های زنده محلی است و معادل قیمت قطعی معامله نیست.', `${dist.trimmedOutlierCount} داده پرت خارج از بازه 1.5×IQR پالایش شده است.`],
     };
   }
+
+  public getPipelines(): DataPipelineRecord[] { return [...this.pipelines]; }
+  public getRegisteredModels(): PredictiveModelRegistryEntry[] { return [...this.modelRegistry]; }
+  public getSavedAnalyses(): ReproducibleAnalysisDefinition[] { return [...this.savedAnalyses]; }
 
   public createDemoSimulatedSnapshot(placeId: string, baseBuyPerSqm = 142): MetricSnapshotResponse {
     const placeDim = SCD2_PLACE_DIMENSIONS.find((d) => d.canonicalPlaceId === placeId && d.isCurrent);
     if (!placeDim) return this.getMetricSnapshotForPlace(null);
     const values = [0.88, 0.92, 0.96, 0.99, 1, 1.02, 1.05, 1.09, 1.14].map((f) => baseBuyPerSqm * f);
     const dist = computeDistributionStats(values, values.length, true);
+    const computedAt = new Date().toISOString();
     return {
       metricCode: 'MARKET.MEDIAN.ASKING_PRICE_PER_SQM', displayNameFa: 'میانه قیمت پیشنهادی هر مترمربع (نمونه شبیه‌سازی)',
       financialConcept: 'ASKING_PRICE', value: dist.median, distribution: dist, unit: 'MILLION_TOMAN_PER_SQM',
       period: { from: '', to: '', labelFa: 'شبیه‌سازی آزمایشی (فاقد مشاهده واقعی)' },
       geography: { placeId: placeDim.canonicalPlaceId, placeNameFa: placeDim.placeNameFa, boundaryVersion: placeDim.boundaryVersion },
       methodologyVersion: '2.1', dataSnapshotId: `sim-${placeDim.canonicalPlaceId}-demo`, qualityStatus: 'ESTIMATED',
-      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: '', dataOrigin: 'SIMULATED',
+      sufficiencyStatus: dist.sufficiencyStatus, lastUpdatedAt: '', observedAt: null, receivedAt: null,
+      computedAt, publishedAt: null, freshnessStatus: 'UNKNOWN',
+      temporal: { observedAt: null, receivedAt: null, computedAt, publishedAt: null, freshnessStatus: 'UNKNOWN' },
+      dataOrigin: 'SIMULATED',
       limitationsFa: ['توزیع شبیه‌سازی آزمایشی پیرامون مرجع داخلی است و بیانگر داده واقعی بازار نیست.'],
     };
   }
@@ -263,15 +291,21 @@ export class AnalyticsPlatformEngine {
     return { allowed: true, reasonFa: 'مجاز برای دریافت خروجی تجمیعی' };
   }
 
-  public getOverviewBundle(placeId: string | null = null, baseBuyPerSqm = 142, observedValues?: number[]) {
+  public getOverviewBundle(
+    placeId: string | null = null, baseBuyPerSqm = 142, observedValues?: number[], temporalMeta?: SnapshotTemporalMetaInput,
+  ) {
     const filteredAnalyses = placeId ? this.savedAnalyses.filter((ana) => ana.geographicScope.placeIds.includes(placeId)) : [];
     return {
       metricsRegistry: OFFICIAL_METRIC_REGISTRY, placeDimensionsScd2: SCD2_PLACE_DIMENSIONS,
-      activeSnapshot: this.getMetricSnapshotForPlace(placeId, baseBuyPerSqm, observedValues),
+      activeSnapshot: this.getMetricSnapshotForPlace(placeId, baseBuyPerSqm, observedValues, temporalMeta),
       pipelines: this.pipelines, savedAnalyses: filteredAnalyses, modelRegistry: this.modelRegistry,
       quarantinedCount: this.quarantinedPayloads.length,
     };
   }
 }
 
-export const defaultAnalyticsPlatformEngine = new AnalyticsPlatformEngine();
+export function createDemoAnalyticsPlatformEngine(): AnalyticsPlatformEngine {
+  return new AnalyticsPlatformEngine({ seedDemo: true });
+}
+
+export const defaultAnalyticsPlatformEngine = new AnalyticsPlatformEngine({ seedDemo: false });

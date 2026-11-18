@@ -7,6 +7,11 @@ import {
   type CommunityDatabaseStore,
 } from '../community/communityFirestoreAdapter';
 import { communityUnifiedRepository } from '../community/communityUnifiedRepository';
+import { appendSocialOutboxEvent } from '../notifications/socialOutboxWorker';
+import {
+  markSocialFeedProjectionHiddenInTx,
+  upsertSocialFeedProjectionInTx,
+} from '../search/socialFeedProjection';
 
 export type SocialModerationDecision =
   | 'dismiss'
@@ -203,15 +208,47 @@ export class SocialModerationLifecycleService {
         throw new CommunityHttpError(409, 'CASE_CLAIM_CONFLICT', 'پرونده توسط ناظر دیگری قفل شده است.');
       }
 
-      if (params.decision === 'hide' || params.decision === 'lock' || params.decision === 'soft_delete') {
+      let targetOwnerUid: string | null = null;
+      if (
+        params.decision === 'hide' ||
+        params.decision === 'lock' ||
+        params.decision === 'soft_delete' ||
+        params.decision === 'warn_author'
+      ) {
         const post = await tx.get<Record<string, unknown>>(SOCIAL_COLLECTIONS.posts, modCase.targetId);
         if (post) {
-          tx.update(SOCIAL_COLLECTIONS.posts, modCase.targetId, {
-            status: params.decision === 'lock' ? 'locked' : 'hidden',
-            moderationStatus: params.decision === 'soft_delete' ? 'removed' : params.decision === 'hide' ? 'hidden' : 'locked',
-            ...(params.decision === 'soft_delete' ? { isDeleted: true, deletedAtIso: nowIso } : {}),
-            updatedAtIso: nowIso,
-          });
+          if (typeof post.ownerUserId === 'string' && post.ownerUserId.trim()) {
+            targetOwnerUid = post.ownerUserId.trim();
+          }
+          if (params.decision !== 'warn_author') {
+            const nextStatus = params.decision === 'lock' ? 'locked' : 'hidden';
+            const nextModStatus =
+              params.decision === 'soft_delete'
+                ? 'removed'
+                : params.decision === 'hide'
+                  ? 'hidden'
+                  : 'locked';
+            tx.update(SOCIAL_COLLECTIONS.posts, modCase.targetId, {
+              status: nextStatus,
+              moderationStatus: nextModStatus,
+              ...(params.decision === 'soft_delete' ? { isDeleted: true, deletedAtIso: nowIso } : {}),
+              updatedAtIso: nowIso,
+            });
+            if (params.decision === 'hide' || params.decision === 'soft_delete') {
+              markSocialFeedProjectionHiddenInTx(tx, modCase.targetId, post, nowIso);
+            } else {
+              upsertSocialFeedProjectionInTx(
+                tx,
+                {
+                  ...post,
+                  status: nextStatus,
+                  moderationStatus: nextModStatus,
+                  updatedAtIso: nowIso,
+                },
+                nowIso,
+              );
+            }
+          }
         }
       }
 
@@ -253,6 +290,17 @@ export class SocialModerationLifecycleService {
         createdAtIso: nowIso,
       });
 
+      if (targetOwnerUid) {
+        appendSocialOutboxEvent(tx, {
+          eventId: `${params.caseId}_${params.decision}`,
+          eventType: 'social.moderation.decided.v1',
+          targetId: modCase.targetId,
+          actorUid: params.adminUid,
+          recipientUids: [targetOwnerUid],
+          payloadSummaryFa: 'تصمیم نظارتی روی محتوای انجمن ثبت شد',
+        });
+      }
+
       return updatedCase;
     });
   }
@@ -287,6 +335,18 @@ export class SocialModerationLifecycleService {
             deletedAtIso: null,
             updatedAtIso: nowIso,
           });
+          upsertSocialFeedProjectionInTx(
+            tx,
+            {
+              ...post,
+              status: 'published',
+              moderationStatus: 'approved',
+              isDeleted: false,
+              deletedAtIso: null,
+              updatedAtIso: nowIso,
+            },
+            nowIso,
+          );
         }
       }
 
