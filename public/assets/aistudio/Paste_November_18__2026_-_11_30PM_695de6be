@@ -1,0 +1,702 @@
+
+نکته مهم درباره داده‌های قدیمی
+در بررسی خود فایل، این مورد هم مشخص شد:
+* فایل .cache/repositories/comms-state.json داخل نسخه پروژه موجود است، اما تعداد اعلان‌ها و Preferenceهای ذخیره‌شده در آن صفر است.  
+* فایل Journal دوم با مسیر پیش‌فرض .cache/notifications-outbox-journal.v1.json در ZIP وجود ندارد.  
+* کلید مرورگر radar_comms_workspace_v1 در commsClientService.ts:9 با readAccountJson خوانده می‌شود، نه با ذخیره‌سازی UID-scoped. بنابراین محتوای آن را نمی‌توان با اطمینان متعلق به کاربر واردشده دانست.  
+* خود notificationStore.ts:35–40 نیز از Map حافظه‌ای استفاده می‌کند و Route آن در Bootstrap فعلی ثبت نشده است.  
+پس مرحله ۱۹ باید مهاجرت سروری را با گزارش واقعی محیط اجرا انجام دهد و داده LocalStorage را بدون اثبات مالکیت به حساب کاربران منتقل نکند. خالی‌بودن Snapshot داخل ZIP نیز به‌معنی خالی‌بودن داده‌های محیط Production نیست.
+مرحله ۱۹: مهاجرت تاریخچه اعلان‌ها و انتقال API و رابط کاربری به Notification Orchestration
+شناسه: RT-SOCIAL-IMPL-019-NOTIFICATION-LEGACY-MIGRATION-API-UI-CUTOVER
+عنوان انگلیسی: Legacy Notification Migration & Canonical API/UI Cutover
+اولویت: P1 ــ یکپارچگی داده، امنیت حساب و حذف معماری موازی
+
+تدوین و ثبت شد
+وابسته به تکمیل مرحله ۱۸
+
+هدف: انتقال تاریخچه اعلان‌های قدیمی به مخزن مرجع Notification Orchestration، جایگزینی مسیرهای قدیمی API، اتصال زنگوله و مرکز اعلان حساب به Backend واقعی و جلوگیری از تولید یا نمایش اعلان‌های ساختگی.
+در این مرحله مالکیت دامنه اعلان‌ها دیگر نباید میان سه سیستم تقسیم شود.
+
+۱. یافته‌های مستقیم از نسخه فعلی
+۱.۱. مسیرهای فعال اعلان هنوز از Engine قدیمی استفاده می‌کنند
+فایل:
+server/modules/communications/commsRoutes.ts
+در خطوط 56 تا 138 مسیرهای زیر فعال هستند:
+متد	Endpoint	مختصات
+GET	/api/v1/notifications	56–69
+GET	/api/v1/notifications/unread-count	71–76
+GET	/api/v1/notifications/preferences	78–82
+PATCH	/api/v1/notifications/preferences	84–99
+POST	/api/v1/notifications/read-all	101–106
+GET	/api/v1/notifications/:id	108–114
+POST	/api/v1/notifications/:id/read	116–122
+POST	/api/v1/notifications/:id/archive	124–130
+POST	/api/v1/notifications/:id/dismiss	132–138
+این مسیرها از serverCommsEngine استفاده می‌کنند.
+در نتیجه، حتی اگر Notification Orchestration به‌درستی ساخته شود، تا زمانی که این Routeها منتقل نشوند، رابط اصلی کاربر همچنان به سیستم قدیمی متصل است.
+۱.۲. Snapshot سرور محدودیت ذخیره‌سازی دارد
+فایل:
+server/modules/communications/commsRepository.ts
+ساختار Snapshot در خطوط 11 تا 22 تعریف شده است.
+ذخیره‌سازی در خطوط 56 تا 71 انجام می‌شود:
+نوع داده	سقف ذخیره
+Notifications	۱۵۰۰
+Devices	۵۰۰
+Deliveries	۲۰۰۰
+Dead Letters	۵۰۰
+Conversations	۵۰۰
+Reports	۵۰۰
+Audits	۱۰۰۰
+این داده‌ها در فایل JSON نگهداری می‌شوند، نه Firestore Transaction.
+بنابراین Snapshot فعلی نمی‌تواند منبع اصلی Notification Orchestration باشد.
+۱.۳. ماژول دوم Notification هم هنوز مرجع مناسبی نیست
+فایل:
+server/modules/notifications/notificationStore.ts
+در خطوط 35 تا 40 این Mapها را نگهداری می‌کند:
+private readonly notifications =
+  new Map<string, NotificationDocument>();
+
+private readonly idempotencyIndex =
+  new Map<string, string>();
+
+private readonly preferences =
+  new Map<string, NotificationPreferencesDocument>();
+
+private readonly deliveryJobs =
+  new Map<string, NotificationDeliveryJob>();
+Store پیش‌فرض در خط 314 ساخته می‌شود:
+export const defaultNotificationStore =
+  new NotificationStore();
+Routeهای این ماژول در notificationRoutes.ts:53–59 از همین Store استفاده می‌کنند؛ اما جست‌وجوی Bootstrap نشان داد registerNotificationRoutes در server.ts ثبت نشده است.
+پس نباید این ماژول را به‌جای Notification Orchestration به‌عنوان Backend جدید انتخاب کرد.
+۱.۴. وضعیت واقعی فایل‌های داده داخل نسخه مرجع
+فایل زیر داخل آرشیو موجود است:
+/.cache/repositories/comms-state.json
+محتوای آن در نسخه بررسی‌شده این وضعیت را دارد:
+داده	تعداد
+Notifications	۰
+Preferences	۰
+Devices	۰
+Deliveries	۰
+Dead Letters	۰
+Conversations	۰
+Reports	۰
+Audits	۰
+این فقط Snapshot داخل نسخه کد است؛ اثبات نمی‌کند که محیط Production نیز داده‌ای ندارد.
+همچنین مسیر Journal تعریف‌شده در:
+server/modules/notifications/durableNotificationStore.ts:109–110
+برابر است با:
+.cache/notifications-outbox-journal.v1.json
+اما این فایل در نسخه بررسی‌شده وجود ندارد.
+وضعیت واقعی سرور باید هنگام اجرای Migration از محیط استقرار خوانده شود.
+۱.۵. یک مشکل مهم در LocalStorage
+فایل:
+src/features/communications/services/commsClientService.ts:9
+کلید زیر را استفاده می‌کند:
+const COMMS_STATE_KEY =
+  'radar_comms_workspace_v1';
+این کلید در خطوط 132 تا 137 با readAccountJson خوانده می‌شود.
+اما در:
+src/features/account/services/accountSettingsStorageService.ts:39–54
+تابع readAccountJson مستقیماً LocalStorage را می‌خواند و UID را برای جداسازی مالکیت بررسی نمی‌کند.
+در مقابل، radar_account_notif_channels_v1 در:
+src/features/account/services/accountStorageScope.ts:16–31
+به‌عنوان کلید UID-scoped تعریف شده است.
+پس محتوای radar_comms_workspace_v1 را نمی‌توان با اطمینان به کاربری که اکنون وارد حساب شده نسبت داد.
+این کلید شامل داده‌های Seed و گفت‌وگوهای local-user نیز هست.
+قانون مرحله ۱۹: هیچ Notification یا Conversation از این کلید نباید بدون اثبات مالکیت به سرور منتقل شود.
+
+۲. معماری مقصد
+مالک رسمی Notification همچنان این ماژول است:
+server/modules/notification-orchestration/
+مقصد داده:
+no_notifications/{notificationId}
+no_preferences/{uid}
+no_dedup/{deduplicationHash}
+no_delivery_attempts/{attemptId}
+مرحله ۱۸ باید قبلاً این زیرساخت‌ها را آماده کرده باشد:
+* Firestore Transaction Runner واقعی.  
+* Notification Read Repository.  
+* Production Factory.  
+* Entity Authorization با سیاست Fail-Closed.  
+* Consent اصلاح‌شده.  
+* Rate Limit مشترک.  
+* Delivery Lease و Idempotency.  
+* جلوگیری از Sandbox Delivery در Production.  
+مرحله ۱۹ نباید هیچ‌یک از این زیرساخت‌ها را دوباره طراحی کند.
+
+۳. مهاجرت داده‌های قدیمی
+۳.۱. ساخت ابزار Migration
+دو فایل جدید:
+scripts/migrations/plan-legacy-comms-notifications.ts
+
+scripts/migrations/apply-legacy-comms-notifications.ts
+فایل اول فقط داده‌ها را بررسی و گزارش می‌کند.
+فایل دوم فقط پس از تأیید گزارش و تطبیق Gateهای مرحله ۱۸ اجازه نوشتن دارد.
+منابع مجاز Migration
+منبع	رفتار
+.cache/repositories/comms-state.json	منبع اصلی بررسی
+.cache/notifications-outbox-journal.v1.json	منبع اختیاری؛ نیازمند تطبیق مستقل
+NotificationStore درون حافظه	فقط با Export مدیریتی از تمام Instanceهای فعال
+radar_comms_workspace_v1	عدم مهاجرت خودکار
+radar_account_notif_channels_v1	فقط پیشنهاد تنظیمات برای تأیید کاربر
+اگر یک Instance قدیمی در حال اجراست و داده‌ای فقط در Map دارد، باید پیش از خاموش‌شدن از آن Export مدیریتی گرفته شود.
+داده‌ای که پس از خاموشی Process از بین رفته باشد، نباید در گزارش به‌عنوان داده قابل بازیابی معرفی شود.
+۳.۲. ساختار گزارش Preflight
+مسیر:
+reports/migrations/notifications-v1-preflight.json
+نمونه:
+{
+  "schemaVersion": "1.0",
+  "migrationId": "legacy-notifications-v1",
+  "mode": "READ_ONLY",
+  "source": {
+    "collection": "comms-state.json",
+    "schemaVersion": 2,
+    "sha256": "SOURCE_HASH"
+  },
+  "summary": {
+    "notifications": 0,
+    "preferences": 0,
+    "ready": 0,
+    "reviewRequired": 0,
+    "blocked": 0,
+    "conflicts": 0
+  },
+  "result": {
+    "eligibleForImport": 0,
+    "existingCanonicalRecords": 0,
+    "invalidRecipients": 0,
+    "unknownEventCodes": 0
+  }
+}
+اعداد نمونه نباید در برنامه ثابت شوند.
+اطلاعات گزارش باید از فایل واقعی محیط اجرا استخراج شود.
+اطلاعات زیر در گزارش عمومی یا فایل غیرمحافظت‌شده قرار نگیرند:
+* UID خام کاربران.  
+* متن کامل Notification.  
+* شماره تلفن و Email.  
+* محتوای خصوصی یا Deep Link غیرمجاز.  
+۳.۳. اجرای Migration
+اجرای Dry Run:
+npx tsx scripts/migrations/plan-legacy-comms-notifications.ts \
+  --source=.cache/repositories/comms-state.json \
+  --dry-run
+اجرای Migration:
+npx tsx scripts/migrations/apply-legacy-comms-notifications.ts \
+  --source=.cache/repositories/comms-state.json \
+  --apply \
+  --confirm-manifest-sha256=MANIFEST_SHA256
+اگر Hash گزارش پس از Preflight تغییر کرده باشد، Migration باید متوقف شود.
+شناسه قطعی Notification مقصد
+const targetNotificationId =
+  `ntf_legacy_${sha256(
+    `comms-state:${legacyNotification.id}`
+  ).slice(0, 32)}`;
+رفتار در برابر تکرار:
+وضعیت	نتیجه
+Notification در مقصد وجود ندارد	Create
+وجود دارد و Payload Hash برابر است	No-op
+وجود دارد و Hash متفاوت است	توقف با Conflict
+Manifest با Source تغییر کرده	توقف
+Recipient نامعتبر است	BLOCKED
+ایجاد Notification و Dedup Record باید در یک Transaction انجام شود.
+
+۴. تطبیق معنایی Notification قدیمی با مدل جدید
+فایل قدیمی:
+src/features/communications/types/comms.types.ts
+مدل NotificationRecord در خطوط 119 تا 144 شامل این فیلدهاست:
+id
+eventId
+idempotencyKey
+recipientUid
+eventCode
+category
+severity
+urgency
+priority
+titleFa
+bodyFa
+shortPreviewFa
+ctaLabelFa
+deepLinkPath
+targetView
+targetSubTab
+entityType
+entityId
+requiresUserAction
+status
+readAtIso
+archivedAtIso
+expiresAtIso
+createdAtIso
+تمام داده‌های معتبر باید حفظ شوند؛ به‌ویژه متن و وضعیت قبلی اعلان.
+۴.۱. قرارداد رکورد مهاجرت‌شده
+در server/modules/notification-orchestration/types.ts به مدل UnifiedNotificationRecord اطلاعات منشأ مهاجرت اضافه شود:
+interface LegacyNotificationProvenance {
+  sourceSystem: 'COMMS_V1';
+
+  sourceRecordIdHash: string;
+  sourcePayloadHash: string;
+
+  legacyEventCode: string;
+  legacyCategory: string;
+
+  legacyTargetView?: string;
+  legacyTargetSubTab?: string;
+
+  importedAtIso: string;
+  migrationVersion: string;
+}
+فیلدهای زیر نیز برای حفظ معنای داده قدیمی اضافه یا اصلاح شوند:
+dismissedAtIso: string | null;
+
+requiresUserAction: boolean;
+
+expiresAtIso: string | null;
+
+retentionPolicyDays: number | null;
+
+legacyMigrationProvenance?: LegacyNotificationProvenance;
+این اصلاحات برای حفظ معنا و جلوگیری از تبدیل وضعیت‌های متفاوت به یک وضعیت عمومی ضروری است.
+۴.۲. نگاشت Status
+مدل قدیمی:
+type NotificationStatus =
+  | 'UNREAD'
+  | 'READ'
+  | 'ARCHIVED'
+  | 'DISMISSED'
+  | 'EXPIRED';
+مدل جدید باید DISMISSED را در قرارداد وضعیت خواندن بپذیرد:
+type InAppReadStatus =
+  | 'UNREAD'
+  | 'READ'
+  | 'ARCHIVED'
+  | 'DISMISSED';
+قواعد:
+وضعیت قدیمی	وضعیت جدید
+UNREAD	DELIVERED + UNREAD
+READ	DELIVERED + READ
+ARCHIVED	DELIVERED + ARCHIVED
+DISMISSED	DELIVERED + DISMISSED
+EXPIRED	EXPIRED
+EXPIRED نباید اشتباهاً به READ یا ARCHIVED تبدیل شود.
+DISMISSED نیز نباید با Delete واقعی سند یکسان شود.
+۴.۳. وضعیت تحویل تاریخی
+چون Notification قدیمی داخل صندوق ورودی سرور ذخیره شده است، می‌توان حضور آن را به‌عنوان تحویل داخل سامانه حفظ کرد:
+requestedChannels: ['IN_APP'];
+
+eligibleChannels: ['IN_APP'];
+
+deliveredChannels: ['IN_APP'];
+اما ارسال موفق Email، SMS یا Push نباید از روی وجود Notification در JSON نتیجه‌گیری شود.
+هیچ Delivery Attempt جدیدی برای این رکوردها ساخته نشود.
+این Migration نباید اعلان‌های قدیمی را دوباره برای کاربر ارسال کند.
+
+۵. نگاشت Event Code و Category
+نگاشت باید با یک Switch Table صریح انجام شود؛ تبدیل رشته‌ای و حدسی ممنوع است.
+فایل پیشنهادی:
+server/modules/notification-orchestration/legacyNotificationMapper.ts
+Event Code قدیمی	Source Domain جدید	Category جدید
+LISTING.APPROVED	EMP_58_LISTING_LIFECYCLE	PROPERTY_AND_LISTING_UPDATES
+LISTING.REJECTED	EMP_58_LISTING_LIFECYCLE	VERIFICATION_UPDATES
+LISTING.PRICE_DROPPED	EMP_60_MARKET_INTELLIGENCE	PRICE_CHANGES
+SERVICE.REQUEST_CREATED	EMP_57_BROKERAGE_AGENT	BROKERAGE_AND_AGENT_UPDATES
+SERVICE.PROPOSAL_RECEIVED	EMP_57_BROKERAGE_AGENT	BROKERAGE_AND_AGENT_UPDATES
+PROPERTY.WATCHLIST_MATCH	EMP_58_LISTING_LIFECYCLE	PROPERTY_AVAILABILITY_CHANGES
+MARKET.ALERT_TRIGGERED	EMP_60_MARKET_INTELLIGENCE	PRICE_CHANGES
+VALUATION.REPORT_READY	EMP_59_VALUATION	DOCUMENT_STATUS_UPDATES
+COMMUNITY.REPLY_RECEIVED	EMP_64_CUSTOMER_EXPERIENCE	REVIEW_AND_REPUTATION_UPDATES
+CONTRIBUTION.PROPOSAL_APPROVED	EMP_62_DATA_GOVERNANCE	VERIFICATION_UPDATES
+CONTRIBUTION.PROPOSAL_REJECTED	EMP_62_DATA_GOVERNANCE	VERIFICATION_UPDATES
+KNOWLEDGE.PUBLICATION_UPDATED	EMP_63_DOCUMENTS	DOCUMENT_STATUS_UPDATES
+ACCOUNT.PROFILE_EXPORT_READY	EMP_64_CUSTOMER_EXPERIENCE	DOCUMENT_STATUS_UPDATES
+SECURITY.NEW_LOGIN	EMP_65_TRUST_VERIFICATION	SECURITY_AND_ACCOUNT_NOTIFICATIONS
+SECURITY.PASSWORD_CHANGED	EMP_65_TRUST_VERIFICATION	SECURITY_AND_ACCOUNT_NOTIFICATIONS
+SUPPORT.TICKET_REPLIED	EMP_66_CUSTOMER_SUPPORT	SUPPORT_CASE_UPDATES
+SYSTEM.MAINTENANCE_NOTICE	ADMIN_SYSTEM	ADMINISTRATIVE_ANNOUNCEMENTS
+ADMIN.ESCALATION_FLAGGED	ADMIN_SYSTEM	ADMINISTRATIVE_ANNOUNCEMENTS
+در هر Migration:
+* eventType برابر Event Code اصلی حفظ شود.  
+* legacyCategory حفظ شود.  
+* متن Title و Body دوباره Render نشود.  
+* requiresUserAction حفظ شود.  
+* templateId برابر legacy-rendered-content-v1 باشد.  
+* templateVersion برابر 1 باشد.  
+* Deep Link فقط پس از Sanitize و Entity Authorization قابل انتقال باشد.  
+Event Code ناشناخته، Category ناسازگار یا Recipient نامعتبر باید به REVIEW_REQUIRED یا BLOCKED برود.
+
+۶. مهاجرت Preferences و Consent
+فایل قدیمی:
+src/features/communications/types/comms.types.ts:169–182
+مدل قدیمی شامل:
+* Channels  
+* Quiet Hours  
+* Digest Frequency  
+* Category Rules  
+* Consent Records  
+فایل مقصد:
+server/modules/notification-orchestration/types.ts:185–207
+مدل جدید:
+UserCommunicationPreferenceRecord
+قواعد انتقال
+فیلد قدیمی	مقصد جدید
+channels.inApp	channelEnabled.IN_APP
+quietHours.enabled	quietHours.enabled
+quietHours.startHourLocal	quietHours.startHourLocal
+quietHours.endHourLocal	quietHours.endHourLocal
+digestFrequency=instant	IMMEDIATE
+digestFrequency=daily_evening	DAILY_DIGEST
+digestFrequency=weekly	WEEKLY_DIGEST
+Timezone باید Asia/Tehran باقی بماند.
+محدودیت کانال‌های خارجی
+در زمان مهاجرت:
+* EMAIL غیرفعال.  
+* SMS غیرفعال.  
+* PUSH غیرفعال.  
+فعال‌کردن آن‌ها فقط زمانی مجاز است که Provider واقعی، تنظیمات معتبر و Consent قابل اثبات وجود داشته باشد.
+promotionalOptInGranted فقط وقتی می‌تواند true شود که رکورد سروری معتبری برای:
+consentType === 'MARKETING_UPDATES'
+با این شرایط وجود داشته باشد:
+* granted === true  
+* updatedAtIso معتبر  
+* sourceFa غیرخالی  
+صرفاً وجود channels.email=true یا marketingOptIn=true در LocalStorage برای اثبات Consent کافی نیست.
+اگر در no_preferences/{uid} از قبل Preference وجود دارد، داده قدیمی نباید آن را Overwrite کند.
+اختلاف‌ها باید در گزارش Migration ثبت شوند.
+
+۷. اتصال APIهای قدیمی به Notification Orchestration
+فایل جدید:
+server/modules/notification-orchestration/legacyNotificationCompatibilityRouter.ts
+این Router باید APIهای قدیمی را به سرویس مرجع متصل کند.
+مقصد اصلی:
+/api/v1/notifications
+مسیرهای قدیمی حفظ شوند:
+متد	مسیر	عملیات جدید
+GET	/	listUserNotifications
+GET	/unread-count	Unread Count
+GET	/preferences	getUserPreferences
+PATCH	/preferences	updateUserPreferences
+POST	/read-all	markAllNotificationsAsRead
+GET	/:id	دریافت با کنترل مالکیت
+POST	/:id/read	وضعیت READ
+POST	/:id/archive	وضعیت ARCHIVED
+POST	/:id/dismiss	وضعیت DISMISSED
+در Router ترتیب ثبت اهمیت دارد:
+مسیرهای /unread-count، /preferences و مسیرهای ثابت باید قبل از /:id تعریف شوند تا تداخل Route ایجاد نشود.
+قرارداد پاسخ V1
+در دوره سازگاری، Response Shape قبلی حفظ شود:
+{
+  "status": "ok",
+  "items": [],
+  "nextCursor": null,
+  "hasMore": false,
+  "total": 0,
+  "unreadCount": 0
+}
+اما اطلاعات از Service جدید دریافت شوند.
+کلاینت‌های جدید می‌توانند از مسیر زیر استفاده کنند:
+/api/v1/notifications/center
+مسیرهای Preferences نیز همچنان از همان سرویس مرجع پاسخ بگیرند.
+اصلاح Bootstrap
+فایل:
+server.ts
+ثبت جدید باید به این صورت انجام شود:
+const notificationModule =
+  createNotificationOrchestrationProductionModule();
+
+registerNotificationOrchestrationRoutes(
+  app,
+  notificationModule
+);
+registerCommunicationsRoutes همچنان برای Conversationها و Routeهای غیرمرتبط باقی می‌ماند.
+اما مسیرهای Notification از:
+server/modules/communications/commsRoutes.ts:56–138
+حذف شوند تا Route تکراری ثبت نشود.
+همچنین مسیرهای Legacy نباید به Map یا JSON بازگردند.
+در صورت غیرفعال‌شدن Canonical Notification Service، پاسخ مناسب 503 است؛ نه Fallback به Engine قدیمی.
+
+۸. اتصال Frontend به API واقعی
+۸.۱. ساخت API Client
+فایل جدید:
+src/features/notification-center/services/notificationApiClient.ts
+توابع لازم:
+getNotifications(params)
+
+getUnreadNotificationCount()
+
+getNotificationPreferences()
+
+updateNotificationPreferences(patch)
+
+updateNotificationStatus(id, status)
+
+markAllNotificationsAsRead()
+
+getNotificationCapabilities()
+همه درخواست‌ها باید با UID احرازشده و Protected Headerهای موجود پروژه ارسال شوند.
+ذخیره‌سازی LocalStorage به‌عنوان منبع حقیقت ممنوع شود.
+۸.۲. اصلاح HeaderNotificationBell
+فایل:
+src/features/communications/components/HeaderNotificationBell.tsx
+محدوده فعلی:
+* خطوط 7–12: Import از Client Service محلی.  
+* خطوط 26–30: UID پیش‌فرض.  
+* خطوط 59–72: خواندن Notificationها از Local Workspace.  
+* خطوط 115–120: خواندن همه از LocalStorage.  
+* خطوط 187–205: تغییر وضعیت محلی.  
+همه این عملیات به API Client جدید منتقل شوند.
+تغییر ضروری UID
+در فایل:
+src/components/navigation/ProductGlobalHeader.tsx:207–211
+این مقدار باید حذف شود:
+currentUser?.uid || 'local-user'
+اگر کاربر احراز هویت نشده باشد، زنگوله نباید با هویت ساختگی به Endpoint خصوصی درخواست بدهد.
+۸.۳. اصلاح AccountNotificationsPanel
+فایل:
+src/features/account/components/AccountNotificationsPanel.tsx
+محدوده:
+* خطوط 8–17: Import توابع محلی.  
+* خطوط 40–47: Props.  
+* خطوط 60–73: دریافت Notificationهای محلی.  
+* خطوط 82–85: Read All محلی.  
+* خطوط 280–295: نمایش Conversation و Preferences.  
+تغییرات:
+1. Feed اعلان‌ها از API دریافت شود.  
+2. Pagination واقعی اجرا شود.  
+3. Category و Status Filter از Query سرور استفاده کنند.  
+4. Mark Read و Archive و Dismiss از API اجرا شوند.  
+5. Unread Count از Backend بیاید.  
+6. خطای دریافت اطلاعات به وضعیت Error واقعی منجر شود، نه نمایش Seed.  
+تب صندوق گفت‌وگوهای مرتبط در این مرحله مهاجرت داده نمی‌شود. آن بخش متعلق به مرحله ۱۷ است و اطلاعات Conversation باید دست‌نخورده باقی بماند.
+۸.۴. اصلاح AccountCommsPreferencesPanel
+فایل:
+src/features/communications/components/AccountCommsPreferencesPanel.tsx
+محدوده:
+* خطوط 6–10  
+* خطوط 50–58  
+* خطوط 79–84  
+* خطوط 98–140  
+* خطوط 169–186  
+تمام توابع زیر حذف شوند:
+registerOrRevokeDeviceClient()
+toggleCategoryChannelRule()
+updateCommsPreferencesClient()
+و به API جدید متصل شوند.
+تا زمانی که Provider واقعی Email، SMS یا Push وجود ندارد، UI نباید به کاربر وعده ارسال فعال این کانال‌ها بدهد.
+قسمت Device Registration نیز تا زمان اتصال Provider واقعی غیرفعال شود؛ ساخت توکن Masked ساختگی ممنوع است.
+۸.۵. NotificationCenterWorkspace
+در حال حاضر:
+src/features/notification-center/components/NotificationCenterWorkspace.tsx
+و:
+src/features/notification-center/hooks/useNotificationCenter.ts
+به Serviceهای Local مانند NotificationInboxService و NotificationPreferencesService وابسته‌اند.
+جست‌وجوی مصرف‌کنندگان نشان داد این Workspace در مسیر فعال Navigation استفاده نمی‌شود.
+راه‌حل قطعی:
+* اگر قرار است حفظ شود، Hook آن باید به API Client جدید وصل شود.  
+* اگر قرار نیست استفاده شود، Export آن از src/features/notification-center/index.ts حذف و ماژول Local آن بازنشسته شود.  
+وجود دو Notification Center با دو منبع داده متفاوت ممنوع است.
+
+۹. اصلاح AdminCommunicationsPanel
+فایل:
+src/features/admin/components/AdminCommunicationsPanel.tsx
+در خطوط 10 تا 35 از loadCommsWorkspaceState و replayDeadLetterClient استفاده می‌کند.
+این رفتار باید اصلاح شود.
+پنل مدیریتی باید از مسیرهای Canonical استفاده کند:
+/api/v1/notifications/admin/analytics
+/api/v1/notifications/admin/delivery-attempts
+/api/v1/notifications/admin/templates
+مسیر delivery-attempts فقط در صورتی اضافه شود که Repository مرحله ۱۸ امکان Query صفحه‌بندی‌شده را داشته باشد.
+قانون مهم درباره DLQ
+تابع:
+replayDeadLetterClient(...)
+که در مرورگر LocalStorage را تغییر می‌دهد، حذف شود.
+نمایش وضعیت خطا و Replay موفق ساختگی ممنوع است.
+در این مرحله تاریخچه DLQ قدیمی فقط قابل مشاهده یا آرشیو است؛ عملیات Replay واقعی باید با Worker و Lease و Idempotency مرحله ۱۸ انجام شود.
+Route گزارش‌های Abuse مربوط به Conversationها تا زمان تعیین تکلیف مرحله ۱۷ از مسیرهای مربوط به خودشان جدا باقی بماند.
+
+۱۰. تعیین تکلیف Legacy Storage
+فایل:
+src/features/communications/services/commsClientService.ts
+در مرحله ۱۹ نباید به‌صورت کامل حذف شود؛ زیرا Conversationهای آن متعلق به مرحله ۱۷ هستند.
+اقدام دقیق:
+* توابع Notification محلی از مسیر Production خارج شوند.  
+* توابع مربوط به Conversation تا زمان مهاجرت مرحله ۱۷ حفظ شوند.  
+* بخش notifications در radar_comms_workspace_v1 دیگر در UI نمایش داده نشود.  
+* داده قدیمی به سرور Upload نشود.  
+* کلید LocalStorage تا زمان تکمیل مرحله ۱۷ حذف نشود؛ زیرا بخش Conversation آن هنوز نیازمند تعیین تکلیف است.  
+* داده قدیمی در صورت نیاز به خروجی کاربر، فقط به‌صورت Export محلی و با برچسب Legacy ارائه شود.  
+در نتیجه Stage19 نباید ناخواسته داده پیام‌رسانی مرحله ۱۷ را پاک کند.
+
+۱۱. بازنشستگی ماژول‌های موازی
+پس از حذف Callsiteهای Production، این ماژول‌ها بررسی و بازنشسته شوند:
+فایل	تصمیم
+server/modules/notifications/notificationRoutes.ts	عدم استفاده Production
+server/modules/notifications/notificationStore.ts	بازنشستگی Store Map
+server/modules/notifications/notificationEventConsumer.ts	عدم استفاده به‌عنوان Event Consumer مرجع
+server/modules/notifications/durableNotificationStore.ts	عدم استفاده به‌عنوان Store Canonical
+src/features/communications/services/commsClientService.ts	حفظ Conversation؛ حذف عملیات Notification
+src/platform/notifications/state/NotificationState.ts	فقط Cache غیرمرجع یا حذف Callsite
+src/features/notification-center/hooks/useNotificationCenter.ts	API-backed یا بازنشسته
+قبل از حذف هر Export، جست‌وجوی کامل Importها در پروژه انجام شود.
+ماژول‌های Communications را نباید یک‌جا حذف کرد؛ زیرا بخشی از آن‌ها هنوز مسئول Conversationهای مرحله ۱۷ هستند.
+
+۱۲. اتصال تولیدکنندگان رویداد: محدودیت مهم نسخه فعلی
+یک یافته دیگر در بررسی کل پروژه:
+فراخوانی‌های CommsCoreStateEngine.ingestEvent در مسیر Production وجود ندارند؛ تنها فراخوانی خارج از تست‌ها در:
+server/modules/communications/commsStore.ts:41–47
+داخل تابعی با نام:
+seedServerCommsDemoForTests
+قرار دارد.
+همچنین در نسخه فعلی هیچ Callsite تولیدی برای:
+NotificationOrchestrationService.orchestrateDomainEvent
+وجود ندارد.
+بنابراین:
+* این مرحله نباید با ساخت اعلان Seed موفقیت خود را اثبات کند.  
+* مهاجرت تاریخچه و اتصال API به معنی فعال‌شدن تمام اعلان‌های تجاری نیست.  
+* اتصال واقعی رویدادهای آگهی، خدمات، بازار، جامعه، امنیت و پشتیبانی به AuthorizedNotificationEventPublisher باید در مرحله ۲۰ انجام شود.  
+این تفکیک مانع از آن می‌شود که سیستم ظاهراً فعال باشد ولی در عمل رویداد واقعی تولید نکند.
+
+۱۳. فایل‌های اصلی مرحله ۱۹
+فایل	عملیات
+server.ts	ثبت Notification Router مرجع
+server/modules/communications/commsRoutes.ts	حذف مسیرهای Notification از Engine قدیمی
+server/modules/communications/commsRepository.ts	حفظ Snapshot سایر بخش‌های Communications
+server/modules/notification-orchestration/legacyNotificationCompatibilityRouter.ts	Router سازگاری V1
+server/modules/notification-orchestration/legacyNotificationMapper.ts	Mapper داده قدیمی
+server/modules/notification-orchestration/routes.ts	اتصال Canonical API
+server/modules/notification-orchestration/service.ts	پشتیبانی Statusهای قدیمی
+server/modules/notification-orchestration/types.ts	DISMISSED و Migration Provenance
+server/modules/notification-orchestration/notificationReadRepository.ts	استفاده از Query مرجع مرحله ۱۸
+scripts/migrations/plan-legacy-comms-notifications.ts	Preflight
+scripts/migrations/apply-legacy-comms-notifications.ts	Migration Executor
+src/features/notification-center/services/notificationApiClient.ts	API Client جدید
+src/features/communications/components/HeaderNotificationBell.tsx	اتصال به API
+src/components/navigation/ProductGlobalHeader.tsx	حذف local-user
+src/features/account/components/AccountNotificationsPanel.tsx	اتصال Feed به API
+src/features/communications/components/AccountCommsPreferencesPanel.tsx	اتصال Preferences به API
+src/components/navigation/AccountSubSectionsPanel.tsx	اصلاح Props و داده‌ها
+src/features/admin/components/AdminCommunicationsPanel.tsx	حذف داده‌های Local
+src/features/notification-center/hooks/useNotificationCenter.ts	اتصال به API یا بازنشستگی
+src/features/communications/services/commsClientService.ts	حذف فقط عملیات Notification
+src/utils/expressRouteCatalog.ts	اصلاح Route Catalog
+firestore.rules	حفظ سیاست Server-only
+firestore.indexes.json	استفاده از Indexهای مرحله ۱۸
+firebase-blueprint.json	ثبت قرارداد نهایی
+۱۴. آزمون‌های پذیرش
+سه فایل جدید:
+tests/legacy-notification-migration.test.ts
+
+tests/notification-api-cutover.test.ts
+
+tests/notification-ui-api-integration.test.ts
+تست Emulator:
+tests/legacy-notification-migration.emulator.test.ts
+تعداد: ۳۶ تست پذیرش
+شناسه	سناریو	معیار قبولی
+NOTIFCUT-001	Preflight بدون ورودی	گزارش صفر، بدون Write
+NOTIFCUT-002	Snapshot خالی نسخه	صفر داده شناسایی شود
+NOTIFCUT-003	تغییر Hash منبع	توقف Migration
+NOTIFCUT-004	Schema نامعتبر	Fail-Closed
+NOTIFCUT-005	Recipient برابر local-user	BLOCKED
+NOTIFCUT-006	Seed Notification	عدم ورود به داده واقعی
+NOTIFCUT-007	Event Code معتبر	نگاشت دقیق
+NOTIFCUT-008	Event Code ناشناخته	REVIEW_REQUIRED
+NOTIFCUT-009	Category ناسازگار	رد انتقال
+NOTIFCUT-010	وضعیت UNREAD	حفظ وضعیت
+NOTIFCUT-011	وضعیت DISMISSED	حفظ وضعیت
+NOTIFCUT-012	وضعیت EXPIRED	حفظ چرخه انقضا
+NOTIFCUT-013	expiresAtIso برابر null	عدم ساخت تاریخ جعلی
+NOTIFCUT-014	Deep Link نامعتبر	حذف Deep Link
+NOTIFCUT-015	شناسه قطعی مقصد	بدون Duplicate
+NOTIFCUT-016	Retry Migration	No-op
+NOTIFCUT-017	برخورد Payload Hash	توقف
+NOTIFCUT-018	Preference موجود در v2	عدم Overwrite
+NOTIFCUT-019	Channel Mapping	رعایت محدودیت Consent
+NOTIFCUT-020	Marketing Consent فاقد Source	false
+NOTIFCUT-021	Consent صریح معتبر	حفظ رضایت
+NOTIFCUT-022	ارسال کانال خارجی هنگام Migration	صفر ارسال
+NOTIFCUT-023	Migration با Batch	بدون سند نیمه‌کاره
+NOTIFCUT-024	Resume Migration	ادامه از Checkpoint
+NOTIFCUT-025	API فهرست اعلان	اتصال به Service مرجع
+NOTIFCUT-026	Unread Count	عدد صحیح
+NOTIFCUT-027	GET/PATCH Preferences	ذخیره پایدار
+NOTIFCUT-028	Read/Archive/Dismiss/Unread	State صحیح
+NOTIFCUT-029	Mark All Read	Batch امن
+NOTIFCUT-030	IDOR	جلوگیری از دسترسی بین کاربران
+NOTIFCUT-031	Cursor دست‌کاری‌شده	رد درخواست
+NOTIFCUT-032	HeaderNotificationBell	فقط API
+NOTIFCUT-033	Account Notifications	فقط API برای اعلان‌ها
+NOTIFCUT-034	Preferences Panel	بدون Local Write
+NOTIFCUT-035	Local Workspace مشترک	عدم Auto Import
+NOTIFCUT-036	حفظ Conversation و عدم Replay ساختگی	بدون تخریب Stage17 و بدون موفقیت جعلی
+علاوه بر این، جست‌وجوی کل پروژه باید ثابت کند که دیگر هیچ مسیر Production برای نمایش یا تغییر Notification از serverCommsEngine.notifications یا LocalStorage استفاده نمی‌کند.
+
+۱۵. دستورات تحویل
+تست‌های Migration، API و UI:
+npx tsx --test \
+  tests/legacy-notification-migration.test.ts \
+  tests/notification-api-cutover.test.ts \
+  tests/notification-ui-api-integration.test.ts
+تست Firestore Emulator:
+firebase emulators:exec \
+  --project demo-radar-notifications \
+  --only firestore \
+  "npx tsx --test tests/legacy-notification-migration.emulator.test.ts"
+کنترل TypeScript:
+npm run typecheck
+کنترل معماری:
+npm run arch:check
+کنترل Firestore Rules:
+npm run test:rules:static
+npm run test:rules
+
+۱۶. معیار نهایی تکمیل
+مرحله ۱۹ زمانی تکمیل‌شده محسوب می‌شود که:
+1. مرحله ۱۸ در محیط واقعی تأیید شده باشد.  
+2. گزارش Preflight دارای Source Hash و شمارش قابل‌تطبیق باشد.  
+3. Notificationهای معتبر بدون Duplicate منتقل شده باشند.  
+4. وضعیت‌های READ، ARCHIVED، DISMISSED و EXPIRED حفظ شده باشند.  
+5. External Delivery برای Notificationهای مهاجرت‌شده دوباره اجرا نشود.  
+6. Preferences کاربران بدون Overwrite و بدون Consent ساختگی منتقل شوند.  
+7. تمام مسیرهای V1 از Notification Orchestration استفاده کنند.  
+8. HeaderNotificationBell دیگر LocalStorage را نخواند.  
+9. Account Notifications دیگر از Local Workspace برای نمایش اعلان‌ها استفاده نکند.  
+10. Admin Communications داده‌های محلی و Replay ساختگی نشان ندهد.  
+11. Conversationهای مرحله ۱۷ دست‌نخورده باقی بمانند.  
+12. Sourceهای قدیمی حذف نشوند و برای ممیزی حفظ شوند.  
+13. ۳۶ آزمون پذیرش موفق باشند.  
+
+۱۷. موارد خارج از محدوده
+در مرحله ۱۹ این موارد انجام نشوند:
+* ایجاد WebSocket و اعلان لحظه‌ای.  
+* اتصال واقعی SMS، Email و Push Provider.  
+* مهاجرت Conversation و Message.  
+* مهاجرت Device Tokenها.  
+* اجرای مجدد Deliveryهای قدیمی و DLQ.  
+* ساخت Event Producer برای تمام دامنه‌های تجاری.  
+* حذف فوری تمام Snapshotهای Communications.  
+* ساخت Notification Store جدید و موازی.  
+* افزودن Redis یا Queue جدید.  
+
+۱۸. وابستگی و ترتیب مراحل بعد
+1. مرحله ۱۸ ــ پیش‌نیاز ایجاد Notification Orchestration پایدار، Transaction، Consent و Delivery Lease.  
+2. مرحله ۱۹ ــ مرحله فعلی انتقال داده‌های قدیمی، جایگزینی APIهای قدیمی و اتصال رابط کاربری.  
+3. مرحله ۲۰ اتصال واقعی رویدادهای دامنه‌ای به Publisher مرجع و فعال‌سازی جریان تولید Notification؛ شامل رویدادهای آگهی، خدمات، بازار، جامعه، امنیت و پشتیبانی.  
+تفکیک مرحله ۲۰ ضروری است: نسخه فعلی فقط رجیستری Event Policy دارد و فراخوان تولیدی واقعی برای ingestEvent یا orchestrateDomainEvent در دامنه‌های تجاری مشاهده نشد. نباید این خلأ با Seed پر شود.
+
+وضعیت ثبت رسمی
+شناسه: RT-SOCIAL-IMPL-019-NOTIFICATION-LEGACY-MIGRATION-API-UI-CUTOVER
+عنوان: مهاجرت تاریخچه اعلان‌ها و انتقال API و رابط کاربری به Notification Orchestration
+تعداد تست پذیرش: ۳۶
+تدوین‌شده و ثبت‌شده
+اجرا و تأیید: انجام نشده
+وابستگی: تکمیل واقعی مرحله ۱۸
+مرحله بعدی: RT-SOCIAL-IMPL-020
+مرجع پروژه مجدداً با SHA-256 ثبت‌شده تطبیق داده شد:
+29f478df9dfd272300fcd7db499ed848573fcd0a0780fcdd782cf26edd2e2079
+شناسه Library آن نیز همچنان:
+libfile_685ab25df3948191b9dda4ad5dcc32c9
+است.
+مرحله ۱۹ در حافظه ثبت شد. در مرحله ۲۰ نباید دوباره ذخیره‌سازی Firestore، مهاجرت تاریخچه، تعویض APIها، اتصال زنگوله یا Preferences انجام شوند؛ موضوع مستقل آن باید اتصال واقعی تولیدکنندگان رویداد به Notification Orchestration باشد.
+
