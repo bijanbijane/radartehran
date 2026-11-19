@@ -1,9 +1,15 @@
-import { LegalRegulatoryError, normalizePaginationLimit } from './validationAndAuthz';
+import {
+  assertIdempotencyRecordMatches,
+  buildIdempotencyDocumentId,
+  IdempotencyRecord,
+  LEGAL_REGULATORY_COLLECTIONS,
+  LegalRegulatoryTransaction,
+  paginateSortedItems,
+} from './transactionalCore';
 import {
   ComplianceRequirementRecord,
   LegalRegulatoryAuditRecord,
   NonAuthoritativeAiSummaryRecord,
-  PaginatedResult,
   RegulatoryApplicabilityRuleRecord,
   RegulatoryChangeRecord,
   RegulatoryDocumentRecord,
@@ -11,31 +17,22 @@ import {
   RegulatoryProvisionRecord,
   RegulatorySourceRecord,
 } from './types';
+import { LegalRegulatoryError, normalizePaginationLimit } from './validationAndAuthz';
 
-export const LEGAL_REGULATORY_COLLECTIONS = {
-  SOURCES: 'legal_regulatory_sources_v1',
-  DOCUMENTS: 'legal_regulatory_documents_v1',
-  PROVISIONS: 'legal_regulatory_provisions_v1',
-  APPLICABILITY_RULES: 'legal_applicability_rules_v1',
-  CHANGE_HISTORY: 'legal_change_records_v1',
-  CONFLICTS: 'legal_conflict_records_v1',
-  COMPLIANCE_REQUIREMENTS: 'legal_compliance_requirements_v1',
-  AI_SUMMARIES: 'legal_ai_suggestions_v1',
-  AUDIT_LOG: 'legal_regulatory_audit_v1',
-  IDEMPOTENCY: 'legal_regulatory_idempotency_v1',
-} as const;
-
-export interface IdempotencyRecord<T = unknown> {
-  key: string;
-  operation: string;
-  actorId: string;
-  responsePayload: T;
-  createdAtIso: string;
-}
+export { LEGAL_REGULATORY_COLLECTIONS, paginateSortedItems };
+export type { IdempotencyRecord, LegalRegulatoryTransaction };
 
 export interface LegalRegulatoryStore {
-  getIdempotentResult<T>(key: string, operation: string, actorId: string): Promise<T | null>;
-  saveIdempotentResult<T>(key: string, operation: string, actorId: string, payload: T): Promise<void>;
+  runTransaction<T>(operation: (transaction: LegalRegulatoryTransaction) => Promise<T>): Promise<T>;
+
+  getIdempotentResult<T>(key: string, operation: string, actorId: string, requestHash?: string): Promise<T | null>;
+  saveIdempotentResult<T>(
+    key: string,
+    operation: string,
+    actorId: string,
+    payload: T,
+    requestHash?: string,
+  ): Promise<void>;
 
   getSourceById(id: string): Promise<RegulatorySourceRecord | null>;
   saveSource(record: RegulatorySourceRecord, expectedPreviousVersion?: number): Promise<RegulatorySourceRecord>;
@@ -46,10 +43,7 @@ export interface LegalRegulatoryStore {
   listDocumentsBySource(sourceId: string): Promise<RegulatoryDocumentRecord[]>;
 
   getProvisionById(id: string): Promise<RegulatoryProvisionRecord | null>;
-  saveProvision(
-    record: RegulatoryProvisionRecord,
-    expectedPreviousVersion?: number,
-  ): Promise<RegulatoryProvisionRecord>;
+  saveProvision(record: RegulatoryProvisionRecord, expectedPreviousVersion?: number): Promise<RegulatoryProvisionRecord>;
   listProvisions(): Promise<RegulatoryProvisionRecord[]>;
 
   saveChangeRecord(record: RegulatoryChangeRecord): Promise<RegulatoryChangeRecord>;
@@ -86,103 +80,250 @@ export interface LegalRegulatoryStore {
   listAuditRecords(limit?: number): Promise<LegalRegulatoryAuditRecord[]>;
 }
 
-export function paginateSortedItems<T extends { id: string }>(
-  sortedItems: T[],
-  limitRaw?: number,
-  cursor?: string | null,
-): PaginatedResult<T> {
-  const limit = normalizePaginationLimit(limitRaw);
-  let startIndex = 0;
-  if (cursor && cursor.trim() !== '') {
-    const foundIdx = sortedItems.findIndex((item) => item.id === cursor.trim());
-    if (foundIdx >= 0) {
-      startIndex = foundIdx + 1;
-    }
-  }
-  const slice = sortedItems.slice(startIndex, startIndex + limit);
-  const nextCursor =
-    startIndex + limit < sortedItems.length && slice.length > 0 ? slice[slice.length - 1].id : null;
-  return {
-    items: slice,
-    nextCursor,
-    limit,
-    totalMatched: sortedItems.length,
-  };
-}
+type StagedMemoryWrite =
+  | { kind: 'SOURCE'; record: RegulatorySourceRecord; expectedPreviousVersion: number }
+  | { kind: 'DOCUMENT'; record: RegulatoryDocumentRecord; expectedPreviousVersion: number }
+  | { kind: 'PROVISION'; record: RegulatoryProvisionRecord; expectedPreviousVersion: number }
+  | { kind: 'CHANGE'; record: RegulatoryChangeRecord }
+  | { kind: 'CONFLICT'; record: RegulatoryProvisionConflictRecord; expectedPreviousVersion: number }
+  | { kind: 'RULE'; record: RegulatoryApplicabilityRuleRecord; expectedPreviousVersion: number }
+  | { kind: 'COMPLIANCE'; record: ComplianceRequirementRecord; expectedPreviousVersion: number }
+  | { kind: 'AI'; record: NonAuthoritativeAiSummaryRecord }
+  | { kind: 'AUDIT'; record: LegalRegulatoryAuditRecord }
+  | { kind: 'IDEMPOTENCY'; docId: string; record: IdempotencyRecord<unknown> };
 
+/**
+ * Deterministic in-memory transactional store strictly for isolated unit tests.
+ * Prohibited in production factories and never used as a fallback by FirestoreLegalRegulatoryStore.
+ */
 export class DeterministicLegalRegulatoryStore implements LegalRegulatoryStore {
   private readonly sources = new Map<string, RegulatorySourceRecord>();
   private readonly documents = new Map<string, RegulatoryDocumentRecord>();
   private readonly provisions = new Map<string, RegulatoryProvisionRecord>();
-  private readonly rules = new Map<string, RegulatoryApplicabilityRuleRecord>();
-  private readonly changes = new Map<string, RegulatoryChangeRecord>();
+  private readonly changeRecords = new Map<string, RegulatoryChangeRecord>();
   private readonly conflicts = new Map<string, RegulatoryProvisionConflictRecord>();
-  private readonly complianceReqs = new Map<string, ComplianceRequirementRecord>();
+  private readonly applicabilityRules = new Map<string, RegulatoryApplicabilityRuleRecord>();
+  private readonly complianceRequirements = new Map<string, ComplianceRequirementRecord>();
   private readonly aiSummaries = new Map<string, NonAuthoritativeAiSummaryRecord>();
-  private readonly audits: LegalRegulatoryAuditRecord[] = [];
-  private readonly idempotency = new Map<string, IdempotencyRecord>();
-  private failNextWritesCount = 0;
+  private readonly auditRecords: LegalRegulatoryAuditRecord[] = [];
+  private readonly idempotency = new Map<string, IdempotencyRecord<unknown>>();
+  private remainingWriteFailures = 0;
+  private failNextTxAtWriteIndex: number | null = null;
+  private failNextTxOnKind: StagedMemoryWrite['kind'] | null = null;
 
   public simulateNextWriteFailure(count = 1): void {
-    this.failNextWritesCount = Math.max(0, count);
+    this.remainingWriteFailures = Math.max(0, count);
   }
 
-  private checkSimulatedFailure(): void {
-    if (this.failNextWritesCount > 0) {
-      this.failNextWritesCount -= 1;
-      throw new LegalRegulatoryError(
-        'PERSISTENCE_UNAVAILABLE',
-        'Simulated persistence write failure in DeterministicLegalRegulatoryStore.',
-        503,
-      );
+  public simulateNextTransactionFailureAtWriteIndex(writeIndex: number): void {
+    this.failNextTxAtWriteIndex = writeIndex;
+  }
+
+  public simulateNextTransactionFailureOnKind(kind: StagedMemoryWrite['kind']): void {
+    this.failNextTxOnKind = kind;
+  }
+
+  private assertWriteAvailable(): void {
+    if (this.remainingWriteFailures > 0) {
+      this.remainingWriteFailures -= 1;
+      throw new LegalRegulatoryError('PERSISTENCE_UNAVAILABLE', 'Simulated persistence write outage.', 503);
     }
   }
 
-  private assertOptimisticVersion(
-    entityType: string,
+  private assertVersionMatch<T extends { version: number }>(
+    map: Map<string, T>,
     id: string,
-    existingVersion: number | undefined,
-    expectedPreviousVersion?: number,
+    expectedPreviousVersion: number | undefined,
+    entityName: string,
   ): void {
     if (expectedPreviousVersion === undefined) return;
-    const actual = existingVersion ?? 0;
-    if (actual !== expectedPreviousVersion) {
+    const current = map.get(id);
+    const currentVersion = current ? current.version : 0;
+    if (currentVersion !== expectedPreviousVersion) {
       throw new LegalRegulatoryError(
         'CONCURRENT_MODIFICATION_CONFLICT',
-        `Concurrent modification conflict on ${entityType} '${id}': expected version ${expectedPreviousVersion}, found ${actual}.`,
+        `Concurrent modification conflict on ${entityName} '${id}': expected version ${expectedPreviousVersion}, found ${currentVersion}.`,
         409,
-        { entityType, id, expectedPreviousVersion, actualVersion: actual },
+        { entityName, id, expectedPreviousVersion, actualVersion: currentVersion },
       );
     }
   }
 
-  private saveVersionedEntity<T extends { id: string; version: number }>(
-    map: Map<string, T>,
-    entityType: string,
-    record: T,
-    expectedPreviousVersion?: number,
-  ): Promise<T> {
-    this.checkSimulatedFailure();
-    const existing = map.get(record.id);
-    this.assertOptimisticVersion(entityType, record.id, existing?.version, expectedPreviousVersion);
-    const cloned = structuredClone(record);
-    map.set(record.id, cloned);
-    return Promise.resolve(structuredClone(cloned));
+  public async runTransaction<T>(operation: (transaction: LegalRegulatoryTransaction) => Promise<T>): Promise<T> {
+    this.assertWriteAvailable();
+    const staged: StagedMemoryWrite[] = [];
+    let flushing = false;
+
+    const assertReadable = (): void => {
+      if (flushing) {
+        throw new LegalRegulatoryError(
+          'PERSISTENCE_UNAVAILABLE',
+          'Transaction protocol violation: attempted read after write flush began.',
+          503,
+        );
+      }
+    };
+
+    const tx: LegalRegulatoryTransaction = {
+      getSourceById: async (id) => {
+        assertReadable();
+        const found = this.sources.get(id);
+        return found ? structuredClone(found) : null;
+      },
+      getDocumentById: async (id) => {
+        assertReadable();
+        const found = this.documents.get(id);
+        return found ? structuredClone(found) : null;
+      },
+      getProvisionById: async (id) => {
+        assertReadable();
+        const found = this.provisions.get(id);
+        return found ? structuredClone(found) : null;
+      },
+      getConflictById: async (id) => {
+        assertReadable();
+        const found = this.conflicts.get(id);
+        return found ? structuredClone(found) : null;
+      },
+      getApplicabilityRuleById: async (id) => {
+        assertReadable();
+        const found = this.applicabilityRules.get(id);
+        return found ? structuredClone(found) : null;
+      },
+      getComplianceRequirementById: async (id) => {
+        assertReadable();
+        const found = this.complianceRequirements.get(id);
+        return found ? structuredClone(found) : null;
+      },
+      getIdempotencyRecord: async <R>(key: string, op: string, actorId: string) => {
+        assertReadable();
+        const docId = buildIdempotencyDocumentId(op, actorId, key);
+        const found = this.idempotency.get(docId);
+        return found ? (structuredClone(found) as IdempotencyRecord<R>) : null;
+      },
+
+      putSource: (record, expectedPreviousVersion) =>
+        staged.push({ kind: 'SOURCE', record: structuredClone(record), expectedPreviousVersion }),
+      putDocument: (record, expectedPreviousVersion) =>
+        staged.push({ kind: 'DOCUMENT', record: structuredClone(record), expectedPreviousVersion }),
+      putProvision: (record, expectedPreviousVersion) =>
+        staged.push({ kind: 'PROVISION', record: structuredClone(record), expectedPreviousVersion }),
+      putChangeRecord: (record) => staged.push({ kind: 'CHANGE', record: structuredClone(record) }),
+      putConflict: (record, expectedPreviousVersion) =>
+        staged.push({ kind: 'CONFLICT', record: structuredClone(record), expectedPreviousVersion }),
+      putApplicabilityRule: (record, expectedPreviousVersion) =>
+        staged.push({ kind: 'RULE', record: structuredClone(record), expectedPreviousVersion }),
+      putComplianceRequirement: (record, expectedPreviousVersion) =>
+        staged.push({ kind: 'COMPLIANCE', record: structuredClone(record), expectedPreviousVersion }),
+      putAiSummaryRecord: (record) => staged.push({ kind: 'AI', record: structuredClone(record) }),
+      putAuditRecord: (record) => staged.push({ kind: 'AUDIT', record: structuredClone(record) }),
+      putIdempotencyRecord: <R>(record: IdempotencyRecord<R>) => {
+        const docId = buildIdempotencyDocumentId(record.operation, record.actorId, record.key);
+        staged.push({ kind: 'IDEMPOTENCY', docId, record: structuredClone({ ...record, schemaVersion: 1 }) });
+      },
+    };
+
+    const result = await operation(tx);
+    flushing = true;
+
+    // Validate all CAS assertions and simulated failures BEFORE mutating any map (atomic rollback).
+    const failAt = this.failNextTxAtWriteIndex;
+    this.failNextTxAtWriteIndex = null;
+    const failKind = this.failNextTxOnKind;
+    this.failNextTxOnKind = null;
+
+    for (let idx = 0; idx < staged.length; idx += 1) {
+      const write = staged[idx];
+      if (failAt !== null && idx === failAt) {
+        throw new LegalRegulatoryError(
+          'PERSISTENCE_UNAVAILABLE',
+          `Simulated mid-transaction failure at write index ${idx}; all staged writes rolled back.`,
+          503,
+        );
+      }
+      if (failKind !== null && write.kind === failKind) {
+        throw new LegalRegulatoryError(
+          'PERSISTENCE_UNAVAILABLE',
+          `Simulated mid-transaction failure while committing ${write.kind}; all staged writes rolled back.`,
+          503,
+        );
+      }
+      if (write.kind === 'SOURCE') this.assertVersionMatch(this.sources, write.record.id, write.expectedPreviousVersion, 'RegulatorySource');
+      if (write.kind === 'DOCUMENT') this.assertVersionMatch(this.documents, write.record.id, write.expectedPreviousVersion, 'RegulatoryDocument');
+      if (write.kind === 'PROVISION') this.assertVersionMatch(this.provisions, write.record.id, write.expectedPreviousVersion, 'RegulatoryProvision');
+      if (write.kind === 'CONFLICT') this.assertVersionMatch(this.conflicts, write.record.id, write.expectedPreviousVersion, 'ProvisionConflict');
+      if (write.kind === 'RULE') this.assertVersionMatch(this.applicabilityRules, write.record.id, write.expectedPreviousVersion, 'ApplicabilityRule');
+      if (write.kind === 'COMPLIANCE') this.assertVersionMatch(this.complianceRequirements, write.record.id, write.expectedPreviousVersion, 'ComplianceRequirement');
+    }
+
+    // Commit all staged writes atomically.
+    for (const write of staged) {
+      switch (write.kind) {
+        case 'SOURCE':
+          this.sources.set(write.record.id, write.record);
+          break;
+        case 'DOCUMENT':
+          this.documents.set(write.record.id, write.record);
+          break;
+        case 'PROVISION':
+          this.provisions.set(write.record.id, write.record);
+          break;
+        case 'CHANGE':
+          this.changeRecords.set(write.record.id, write.record);
+          break;
+        case 'CONFLICT':
+          this.conflicts.set(write.record.id, write.record);
+          break;
+        case 'RULE':
+          this.applicabilityRules.set(write.record.id, write.record);
+          break;
+        case 'COMPLIANCE':
+          this.complianceRequirements.set(write.record.id, write.record);
+          break;
+        case 'AI':
+          this.aiSummaries.set(write.record.id, write.record);
+          break;
+        case 'AUDIT':
+          this.auditRecords.push(write.record);
+          break;
+        case 'IDEMPOTENCY':
+          this.idempotency.set(write.docId, write.record);
+          break;
+      }
+    }
+
+    return result;
   }
 
-  async getIdempotentResult<T>(key: string, operation: string, actorId: string): Promise<T | null> {
-    const existing = this.idempotency.get(`${operation}::${actorId}::${key}`);
-    return existing ? (structuredClone(existing.responsePayload) as T) : null;
+  async getIdempotentResult<T>(
+    key: string,
+    operation: string,
+    actorId: string,
+    requestHash?: string,
+  ): Promise<T | null> {
+    const docId = buildIdempotencyDocumentId(operation, actorId, key);
+    const existing = this.idempotency.get(docId);
+    if (!existing) return null;
+    return assertIdempotencyRecordMatches(existing as IdempotencyRecord<T>, requestHash, operation, key);
   }
 
-  async saveIdempotentResult<T>(key: string, operation: string, actorId: string, payload: T): Promise<void> {
-    this.checkSimulatedFailure();
-    this.idempotency.set(`${operation}::${actorId}::${key}`, {
-      key,
-      operation,
-      actorId,
-      responsePayload: structuredClone(payload),
-      createdAtIso: new Date().toISOString(),
+  async saveIdempotentResult<T>(
+    key: string,
+    operation: string,
+    actorId: string,
+    payload: T,
+    requestHash = '',
+  ): Promise<void> {
+    await this.runTransaction(async (tx) => {
+      tx.putIdempotencyRecord({
+        key,
+        operation,
+        actorId,
+        requestHash,
+        responsePayload: structuredClone(payload),
+        createdAtIso: new Date().toISOString(),
+        schemaVersion: 1,
+      });
     });
   }
 
@@ -191,14 +332,16 @@ export class DeterministicLegalRegulatoryStore implements LegalRegulatoryStore {
     return found ? structuredClone(found) : null;
   }
 
-  saveSource(record: RegulatorySourceRecord, expectedPreviousVersion?: number): Promise<RegulatorySourceRecord> {
-    return this.saveVersionedEntity(this.sources, 'RegulatorySource', record, expectedPreviousVersion);
+  async saveSource(record: RegulatorySourceRecord, expectedPreviousVersion?: number): Promise<RegulatorySourceRecord> {
+    const expected = expectedPreviousVersion ?? (this.sources.get(record.id)?.version ?? 0);
+    await this.runTransaction(async (tx) => {
+      tx.putSource(record, expected);
+    });
+    return structuredClone(record);
   }
 
   async listSources(): Promise<RegulatorySourceRecord[]> {
-    return Array.from(this.sources.values())
-      .map((s) => structuredClone(s))
-      .sort((a, b) => a.id.localeCompare(b.id));
+    return Array.from(this.sources.values()).map((r) => structuredClone(r)).sort((a, b) => a.id.localeCompare(b.id));
   }
 
   async getDocumentById(id: string): Promise<RegulatoryDocumentRecord | null> {
@@ -206,11 +349,12 @@ export class DeterministicLegalRegulatoryStore implements LegalRegulatoryStore {
     return found ? structuredClone(found) : null;
   }
 
-  saveDocument(
-    record: RegulatoryDocumentRecord,
-    expectedPreviousVersion?: number,
-  ): Promise<RegulatoryDocumentRecord> {
-    return this.saveVersionedEntity(this.documents, 'RegulatoryDocument', record, expectedPreviousVersion);
+  async saveDocument(record: RegulatoryDocumentRecord, expectedPreviousVersion?: number): Promise<RegulatoryDocumentRecord> {
+    const expected = expectedPreviousVersion ?? (this.documents.get(record.id)?.version ?? 0);
+    await this.runTransaction(async (tx) => {
+      tx.putDocument(record, expected);
+    });
+    return structuredClone(record);
   }
 
   async listDocumentsBySource(sourceId: string): Promise<RegulatoryDocumentRecord[]> {
@@ -225,28 +369,27 @@ export class DeterministicLegalRegulatoryStore implements LegalRegulatoryStore {
     return found ? structuredClone(found) : null;
   }
 
-  saveProvision(
-    record: RegulatoryProvisionRecord,
-    expectedPreviousVersion?: number,
-  ): Promise<RegulatoryProvisionRecord> {
-    return this.saveVersionedEntity(this.provisions, 'RegulatoryProvision', record, expectedPreviousVersion);
+  async saveProvision(record: RegulatoryProvisionRecord, expectedPreviousVersion?: number): Promise<RegulatoryProvisionRecord> {
+    const expected = expectedPreviousVersion ?? (this.provisions.get(record.id)?.version ?? 0);
+    await this.runTransaction(async (tx) => {
+      tx.putProvision(record, expected);
+    });
+    return structuredClone(record);
   }
 
   async listProvisions(): Promise<RegulatoryProvisionRecord[]> {
-    return Array.from(this.provisions.values())
-      .map((p) => structuredClone(p))
-      .sort((a, b) => a.id.localeCompare(b.id));
+    return Array.from(this.provisions.values()).map((p) => structuredClone(p)).sort((a, b) => a.id.localeCompare(b.id));
   }
 
   async saveChangeRecord(record: RegulatoryChangeRecord): Promise<RegulatoryChangeRecord> {
-    this.checkSimulatedFailure();
-    const cloned = structuredClone(record);
-    this.changes.set(record.id, cloned);
-    return structuredClone(cloned);
+    await this.runTransaction(async (tx) => {
+      tx.putChangeRecord(record);
+    });
+    return structuredClone(record);
   }
 
   async listChangeRecordsForProvision(provisionId: string): Promise<RegulatoryChangeRecord[]> {
-    return Array.from(this.changes.values())
+    return Array.from(this.changeRecords.values())
       .filter((c) => c.targetProvisionId === provisionId)
       .map((c) => structuredClone(c))
       .sort((a, b) => a.previousProvisionVersion - b.previousProvisionVersion);
@@ -257,65 +400,66 @@ export class DeterministicLegalRegulatoryStore implements LegalRegulatoryStore {
     return found ? structuredClone(found) : null;
   }
 
-  saveConflictRecord(
+  async saveConflictRecord(
     record: RegulatoryProvisionConflictRecord,
     expectedPreviousVersion?: number,
   ): Promise<RegulatoryProvisionConflictRecord> {
-    return this.saveVersionedEntity(this.conflicts, 'RegulatoryConflict', record, expectedPreviousVersion);
+    const expected = expectedPreviousVersion ?? (this.conflicts.get(record.id)?.version ?? 0);
+    await this.runTransaction(async (tx) => {
+      tx.putConflict(record, expected);
+    });
+    return structuredClone(record);
   }
 
   async listConflictRecords(): Promise<RegulatoryProvisionConflictRecord[]> {
-    return Array.from(this.conflicts.values())
-      .map((c) => structuredClone(c))
-      .sort((a, b) => a.id.localeCompare(b.id));
+    return Array.from(this.conflicts.values()).map((c) => structuredClone(c)).sort((a, b) => a.id.localeCompare(b.id));
   }
 
   async getApplicabilityRuleById(id: string): Promise<RegulatoryApplicabilityRuleRecord | null> {
-    const found = this.rules.get(id);
+    const found = this.applicabilityRules.get(id);
     return found ? structuredClone(found) : null;
   }
 
-  saveApplicabilityRule(
+  async saveApplicabilityRule(
     record: RegulatoryApplicabilityRuleRecord,
     expectedPreviousVersion?: number,
   ): Promise<RegulatoryApplicabilityRuleRecord> {
-    return this.saveVersionedEntity(this.rules, 'ApplicabilityRule', record, expectedPreviousVersion);
+    const expected = expectedPreviousVersion ?? (this.applicabilityRules.get(record.id)?.version ?? 0);
+    await this.runTransaction(async (tx) => {
+      tx.putApplicabilityRule(record, expected);
+    });
+    return structuredClone(record);
   }
 
   async listApplicabilityRules(): Promise<RegulatoryApplicabilityRuleRecord[]> {
-    return Array.from(this.rules.values())
-      .map((r) => structuredClone(r))
-      .sort((a, b) => a.id.localeCompare(b.id));
+    return Array.from(this.applicabilityRules.values()).map((r) => structuredClone(r)).sort((a, b) => a.id.localeCompare(b.id));
   }
 
   async getComplianceRequirementById(id: string): Promise<ComplianceRequirementRecord | null> {
-    const found = this.complianceReqs.get(id);
+    const found = this.complianceRequirements.get(id);
     return found ? structuredClone(found) : null;
   }
 
-  saveComplianceRequirement(
+  async saveComplianceRequirement(
     record: ComplianceRequirementRecord,
     expectedPreviousVersion?: number,
   ): Promise<ComplianceRequirementRecord> {
-    return this.saveVersionedEntity(
-      this.complianceReqs,
-      'ComplianceRequirement',
-      record,
-      expectedPreviousVersion,
-    );
+    const expected = expectedPreviousVersion ?? (this.complianceRequirements.get(record.id)?.version ?? 0);
+    await this.runTransaction(async (tx) => {
+      tx.putComplianceRequirement(record, expected);
+    });
+    return structuredClone(record);
   }
 
   async listComplianceRequirements(): Promise<ComplianceRequirementRecord[]> {
-    return Array.from(this.complianceReqs.values())
-      .map((c) => structuredClone(c))
-      .sort((a, b) => a.id.localeCompare(b.id));
+    return Array.from(this.complianceRequirements.values()).map((r) => structuredClone(r)).sort((a, b) => a.id.localeCompare(b.id));
   }
 
   async saveAiSummaryRecord(record: NonAuthoritativeAiSummaryRecord): Promise<NonAuthoritativeAiSummaryRecord> {
-    this.checkSimulatedFailure();
-    const cloned = structuredClone(record);
-    this.aiSummaries.set(record.id, cloned);
-    return structuredClone(cloned);
+    await this.runTransaction(async (tx) => {
+      tx.putAiSummaryRecord(record);
+    });
+    return structuredClone(record);
   }
 
   async listAiSummariesForTarget(
@@ -323,18 +467,19 @@ export class DeterministicLegalRegulatoryStore implements LegalRegulatoryStore {
     targetEntityId: string,
   ): Promise<NonAuthoritativeAiSummaryRecord[]> {
     return Array.from(this.aiSummaries.values())
-      .filter((s) => s.targetEntityType === targetEntityType && s.targetEntityId === targetEntityId)
-      .map((s) => structuredClone(s))
+      .filter((a) => a.targetEntityType === targetEntityType && a.targetEntityId === targetEntityId)
+      .map((a) => structuredClone(a))
       .sort((a, b) => b.generatedAtIso.localeCompare(a.generatedAtIso));
   }
 
   async appendAuditRecord(record: LegalRegulatoryAuditRecord): Promise<void> {
-    this.checkSimulatedFailure();
-    this.audits.push(structuredClone(record));
+    await this.runTransaction(async (tx) => {
+      tx.putAuditRecord(record);
+    });
   }
 
   async listAuditRecords(limit = 50): Promise<LegalRegulatoryAuditRecord[]> {
     const clamped = normalizePaginationLimit(limit);
-    return this.audits.slice(-clamped).map((a) => structuredClone(a));
+    return this.auditRecords.slice(-clamped).reverse().map((r) => structuredClone(r));
   }
 }

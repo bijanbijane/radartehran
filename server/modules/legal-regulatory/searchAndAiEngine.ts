@@ -3,6 +3,11 @@ import { ProvinceId, SupportedCityId } from '../geography/types';
 import { evaluateJurisdictionHierarchyMatch } from './applicabilityEngine';
 import { LegalRegulatoryStore, paginateSortedItems } from './store';
 import {
+  assertIdempotencyRecordMatches,
+  computeCanonicalPayloadHash,
+  sanitizeForFirestore,
+} from './transactionalCore';
+import {
   LegalRegulatoryActorContext,
   NonAuthoritativeAiSummaryRecord,
   PaginatedResult,
@@ -51,6 +56,7 @@ export interface RecordNonAuthoritativeAiSuggestionInput {
   attemptSetAuthoritative?: boolean;
   attemptOverwriteOriginalLegalText?: boolean;
   attemptEstablishCompliance?: boolean;
+  idempotencyKey?: string;
 }
 
 export async function executeSearchProvisions(
@@ -165,39 +171,86 @@ export async function executeRecordNonAuthoritativeAiSuggestion(
     );
   }
 
-  const nowIso = new Date().toISOString();
-  const record: NonAuthoritativeAiSummaryRecord = {
-    id: `ai_sum_${crypto.randomUUID()}`,
-    targetEntityType: input.targetEntityType,
-    targetEntityId: assertNonEmptyText(input.targetEntityId, 'targetEntityId', 120),
-    targetEntityVersion: input.targetEntityVersion,
-    summaryText: assertNonEmptyText(input.summaryText, 'summaryText', 6000),
-    suggestedCategoryTags: input.suggestedCategoryTags ?? [],
-    modelIdentifier: assertNonEmptyText(input.modelIdentifier, 'modelIdentifier', 120),
-    promptTemplateVersion: assertNonEmptyText(input.promptTemplateVersion, 'promptTemplateVersion', 120),
-    generatedAtIso: nowIso,
-    generatedByActorId: actor.actorId,
-    isAuthoritative: false,
-    requiresHumanReview: true,
-    humanReviewStatus: 'UNREVIEWED',
-    disclaimer:
-      'AI-GENERATED NON-AUTHORITATIVE SUMMARY: Requires human legal reviewer verification. Never rely on this summary as primary statutory text or compliance certification.',
-  };
+  const targetEntityId = assertNonEmptyText(input.targetEntityId, 'targetEntityId', 120);
+  const summaryText = assertNonEmptyText(input.summaryText, 'summaryText', 6000);
+  const modelIdentifier = assertNonEmptyText(input.modelIdentifier, 'modelIdentifier', 120);
+  const promptTemplateVersion = assertNonEmptyText(input.promptTemplateVersion, 'promptTemplateVersion', 120);
+  const requestHash = input.idempotencyKey
+    ? computeCanonicalPayloadHash({ ...input, idempotencyKey: undefined })
+    : '';
 
-  const saved = await store.saveAiSummaryRecord(record);
-  if (input.targetEntityType === 'PROVISION') {
-    const prov = await store.getProvisionById(input.targetEntityId);
+  return store.runTransaction(async (tx) => {
+    if (input.idempotencyKey) {
+      const cached = await tx.getIdempotencyRecord<NonAuthoritativeAiSummaryRecord>(
+        input.idempotencyKey,
+        'recordNonAuthoritativeAiSuggestion',
+        actor.actorId,
+      );
+      if (cached) {
+        return assertIdempotencyRecordMatches(
+          cached,
+          requestHash,
+          'recordNonAuthoritativeAiSuggestion',
+          input.idempotencyKey,
+        );
+      }
+    }
+
+    const prov =
+      input.targetEntityType === 'PROVISION' ? await tx.getProvisionById(targetEntityId) : null;
+
+    const nowIso = new Date().toISOString();
+    const record: NonAuthoritativeAiSummaryRecord = {
+      id: `ai_sum_${crypto.randomUUID()}`,
+      targetEntityType: input.targetEntityType,
+      targetEntityId,
+      targetEntityVersion: input.targetEntityVersion,
+      summaryText,
+      suggestedCategoryTags: input.suggestedCategoryTags ?? [],
+      modelIdentifier,
+      promptTemplateVersion,
+      generatedAtIso: nowIso,
+      generatedByActorId: actor.actorId,
+      isAuthoritative: false,
+      requiresHumanReview: true,
+      humanReviewStatus: 'UNREVIEWED',
+      disclaimer:
+        'AI-GENERATED NON-AUTHORITATIVE SUMMARY: Requires human legal reviewer verification. Never rely on this summary as primary statutory text or compliance certification.',
+    };
+
+    tx.putAiSummaryRecord(record);
     if (prov) {
-      await store.saveProvision(
+      tx.putProvision(
         {
           ...prov,
-          nonAuthoritativeAiSummary: saved,
+          nonAuthoritativeAiSummary: record,
           updatedAtIso: nowIso,
           version: prov.version + 1,
         },
         prov.version,
       );
     }
-  }
-  return saved;
+    tx.putAuditRecord({
+      id: `audit_${crypto.randomUUID()}`,
+      action: 'RECORD_AI_SUGGESTION',
+      targetEntityType: 'AI_SUMMARY',
+      targetEntityId: record.id,
+      actorId: actor.actorId,
+      actorRole: actor.role,
+      occurredAtIso: nowIso,
+      summary: `Recorded non-authoritative AI suggestion ${record.id} for ${input.targetEntityType}:${targetEntityId}`,
+    });
+    if (input.idempotencyKey) {
+      tx.putIdempotencyRecord({
+        key: input.idempotencyKey,
+        operation: 'recordNonAuthoritativeAiSuggestion',
+        actorId: actor.actorId,
+        requestHash,
+        responsePayload: record,
+        createdAtIso: nowIso,
+        schemaVersion: 1,
+      });
+    }
+    return sanitizeForFirestore(structuredClone(record));
+  });
 }

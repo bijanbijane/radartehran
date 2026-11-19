@@ -196,6 +196,14 @@
         { "fieldPath": "normalizedSearchTokens", "arrayConfig": "CONTAINS" },
         { "fieldPath": "feedScore", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "legal_ai_suggestions_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "targetEntityType", "order": "ASCENDING" },
+        { "fieldPath": "targetEntityId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

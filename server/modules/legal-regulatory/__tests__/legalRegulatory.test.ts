@@ -77,20 +77,48 @@ async function runTests(): Promise<void> {
   const replaySource = await sourceAndProvisionService.createRegulatorySource(
     {
       id: 'src_nat_building_m3',
-      officialTitleFa: 'Duplicate call with same idempotency key',
+      officialTitleFa: '[TEST FIXTURE] مبحث سوم مقررات ملی ساختمان - حفاظت ساختمان‌ها در برابر حریق',
       issuingAuthority: 'وزارت راه و شهرسازی',
       jurisdictionScope: { level: 'NATIONAL', countryCode: 'IR' },
       sourceCategory: 'NATIONAL_BUILDING_CODE_MABHAS',
       reliabilityTier: 'PRIMARY_OFFICIAL_STATUTE',
+      verificationStatus: 'VERIFIED',
       officialReferenceNumber: 'SYNTH-MABHAS-3-1395',
       publicationDateIso: '2016-05-01',
       effectiveFromIso: '2016-09-01',
+      verifiedOriginalSourceUrl: 'https://inbr.ir/synthetic-fixture-mabhas3',
+      isSyntheticTestFixture: true,
+      internalReviewerNotes: 'CONFIDENTIAL_REVIEWER_NOTE_DO_NOT_LEAK',
+      restrictedAuditMetadata: { ticket: 'LEGAL-101' },
       idempotencyKey: 'idem-create-src-m3',
     },
     ADMIN_ACTOR,
   );
   assert.equal(replaySource.id, nationalSource.id);
   assert.equal(replaySource.version, 1);
+
+  await assert.rejects(
+    () =>
+      sourceAndProvisionService.createRegulatorySource(
+        {
+          id: 'src_nat_building_m3',
+          officialTitleFa: 'Conflicting payload with same idempotency key',
+          issuingAuthority: 'وزارت راه و شهرسازی',
+          jurisdictionScope: { level: 'NATIONAL', countryCode: 'IR' },
+          sourceCategory: 'NATIONAL_BUILDING_CODE_MABHAS',
+          reliabilityTier: 'PRIMARY_OFFICIAL_STATUTE',
+          officialReferenceNumber: 'SYNTH-MABHAS-3-1395',
+          publicationDateIso: '2016-05-01',
+          effectiveFromIso: '2016-09-01',
+          idempotencyKey: 'idem-create-src-m3',
+        },
+        ADMIN_ACTOR,
+      ),
+    (err: unknown) =>
+      err instanceof LegalRegulatoryError &&
+      err.code === 'IDEMPOTENCY_KEY_REUSED' &&
+      err.statusCode === 409,
+  );
 
   // 2. Invalid or incomplete source metadata rejection
   await assert.rejects(
@@ -378,7 +406,7 @@ async function runTests(): Promise<void> {
   // 9. Requirement vs compliance distinction & 6/8. Property Regulatory Profile
   const fullProfile = await applicabilityAndProfileService.buildPropertyRegulatoryProfile(
     { propertyId: 'prop_tehran_punak_01', transactionContext: 'SALE_TRANSFER', asOfDateIso: '2025-01-10' },
-    PUBLIC_ACTOR,
+    REGULAR_USER_ACTOR,
   );
   assert.equal(fullProfile.resolvedGeography.geographyVerified, true);
   assert.equal(fullProfile.resolvedGeography.neighborhoodNameFa, 'پونک');

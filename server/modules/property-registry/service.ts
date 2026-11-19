@@ -148,6 +148,85 @@ export class PropertyRegistryService {
     return asset;
   }
 
+  /**
+   * Strictly read-only authorization and non-PII characteristic snapshot lookup for
+   * cross-module legal-regulatory evaluation (Stage 30-B).
+   * - Independently verifies (1) property existence and (2) registered ownership or
+   *   active non-expired representative/delegated access for `actorId`.
+   * - Never accepts headers/roles as ownership proof and never mutates any record.
+   * - Omits exactLocationPrivate, postalCode, coordinates, exactUnitAddress, and owner PII.
+   */
+  async authorizePropertyContextRead(input: {
+    propertyId: string;
+    actorId: string;
+    nowIso?: string;
+  }): Promise<import('./types').PropertyContextReadAuthorizationResult> {
+    const propertyId = typeof input?.propertyId === 'string' ? input.propertyId.trim() : '';
+    const actorId = typeof input?.actorId === 'string' ? input.actorId.trim() : '';
+    if (!propertyId || propertyId.length > 128 || /[/\s]/.test(propertyId) || propertyId.includes('..')) {
+      throw new CoreApiError('VALIDATION_FAILED', 400, 'Invalid propertyId format.');
+    }
+
+    const asset = await this.deps.repository.getAsset(propertyId);
+    if (!asset) {
+      return { status: 'NOT_FOUND', authorized: false, snapshot: null };
+    }
+    if (asset.id !== propertyId) {
+      throw new CoreApiError(
+        'VALIDATION_FAILED',
+        422,
+        `Property Registry asset identity mismatch: requested "${propertyId}", loaded "${asset.id}".`,
+      );
+    }
+    if (
+      !actorId ||
+      actorId === 'anonymous' ||
+      actorId === 'anonymous-public-reader' ||
+      actorId === 'server-secret-admin' ||
+      actorId === 'system-admin-key'
+    ) {
+      return { status: 'FORBIDDEN', authorized: false, snapshot: null };
+    }
+
+    const nowIso = input.nowIso ?? this.nowIso();
+    let authorized = false;
+
+    if (this.deps.ownershipAuthorizationReader) {
+      authorized = await this.deps.ownershipAuthorizationReader.isActorAuthorizedForProperty({
+        propertyId,
+        actorId,
+        nowIso,
+      });
+    }
+
+    if (!authorized && asset.status !== 'archived' && asset.status !== 'merged') {
+      const history = await this.deps.repository.getHistoryRecords(propertyId);
+      authorized = history.some((h) => h.changeType === 'created' && h.actorUid === actorId);
+    }
+
+    if (!authorized) {
+      return { status: 'FORBIDDEN', authorized: false, snapshot: null };
+    }
+
+    const sanitized = sanitizeAssetForPublicView(asset);
+    return {
+      status: 'FOUND',
+      authorized: true,
+      snapshot: {
+        propertyId: sanitized.id,
+        category: sanitized.category,
+        cityId: sanitized.geographicRef.cityId,
+        districtNumber: sanitized.geographicRef.districtId,
+        neighborhoodId: String(sanitized.geographicRef.hoodId),
+        areaSqm: sanitized.areaSqm,
+        landAreaSqm: sanitized.landAreaSqm,
+        constructionYear: sanitized.constructionYear,
+        totalFloors: sanitized.totalFloors,
+        status: sanitized.status,
+      },
+    };
+  }
+
   async createBuilding(params: {
     input: CreateBuildingInput;
     actorUid: string;

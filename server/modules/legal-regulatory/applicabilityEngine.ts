@@ -244,7 +244,7 @@ export function evaluateSingleApplicabilityRule(
     } else matchedReasons.push('Matches active fault line proximity condition.');
   }
 
-  for (const reqField of cond.requiredContextFields) {
+  for (const reqField of cond.requiredContextFields ?? []) {
     if (input[reqField] === undefined && !missingRequiredFields.includes(reqField)) {
       missingRequiredFields.push(reqField);
     }

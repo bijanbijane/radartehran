@@ -1,5 +1,9 @@
 import crypto from 'node:crypto';
-import { GeographyLookupAdapter, PropertyContextReferenceAdapter } from './adapters';
+import {
+  GeographyLookupAdapter,
+  PropertyContextReferenceAdapter,
+  validatePropertyCharacteristicsSnapshot,
+} from './adapters';
 import {
   evaluateJurisdictionHierarchyMatch,
   evaluateSingleApplicabilityRule,
@@ -11,6 +15,7 @@ import {
   RecordNonAuthoritativeAiSuggestionInput,
 } from './searchAndAiEngine';
 import { LegalRegulatoryStore } from './store';
+import { assertIdempotencyRecordMatches, computeCanonicalPayloadHash } from './transactionalCore';
 import {
   ApplicabilityOutcomeState,
   ApplicabilityRuleCondition,
@@ -92,63 +97,78 @@ export class RegulatoryApplicabilityAndProfileService {
     actor: LegalRegulatoryActorContext,
   ): Promise<RegulatoryApplicabilityRuleRecord> {
     assertAdminOrReviewerActor(actor, ['LEGAL_REVIEWER', 'REGULATORY_ADMIN']);
-    if (input.idempotencyKey) {
-      const cached = await this.store.getIdempotentResult<RegulatoryApplicabilityRuleRecord>(
-        input.idempotencyKey,
-        'createApplicabilityRule',
-        actor.actorId,
-      );
-      if (cached) return cached;
-    }
-
-    const [provision, source] = await Promise.all([
-      this.store.getProvisionById(input.provisionId),
-      this.store.getSourceById(input.sourceId),
-    ]);
-    if (!provision) throw new LegalRegulatoryError('NOT_FOUND', `Provision '${input.provisionId}' not found.`, 404);
-    if (!source) throw new LegalRegulatoryError('NOT_FOUND', `Source '${input.sourceId}' not found.`, 404);
-
-    const scope = input.jurisdictionScope ?? provision.jurisdictionScope;
-    validateJurisdictionScopeStructure(scope);
-    const geoValidation = this.geographyAdapter.validateJurisdictionScope(scope);
-    if (!geoValidation.valid) {
-      throw new LegalRegulatoryError(
-        'VALIDATION_ERROR',
-        `Invalid applicability rule geography: ${geoValidation.warnings.join('; ')}`,
-        400,
-      );
-    }
-
+    const ruleName = assertNonEmptyText(input.ruleName, 'ruleName', 250);
+    const restrictionOrObligationSummary = assertNonEmptyText(
+      input.restrictionOrObligationSummary,
+      'restrictionOrObligationSummary',
+      2000,
+    );
     const effectiveFromIso = assertValidIsoDate(input.effectiveFromIso, 'effectiveFromIso');
     validateDateWindow(effectiveFromIso, input.effectiveToIso);
 
-    const nowIso = new Date().toISOString();
-    const record: RegulatoryApplicabilityRuleRecord = {
-      id: input.id?.trim() || `reg_rule_${crypto.randomUUID()}`,
-      provisionId: provision.id,
-      sourceId: source.id,
-      ruleName: assertNonEmptyText(input.ruleName, 'ruleName', 250),
-      jurisdictionScope: structuredClone(scope),
-      conditions: structuredClone(input.conditions),
-      restrictionOrObligationSummary: assertNonEmptyText(
-        input.restrictionOrObligationSummary,
-        'restrictionOrObligationSummary',
-        2000,
-      ),
-      mandatoryClassification: input.mandatoryClassification,
-      effectiveFromIso,
-      effectiveToIso: input.effectiveToIso ?? null,
-      verificationStatus: input.verificationStatus ?? provision.verificationStatus,
-      version: 1,
-      createdAtIso: nowIso,
-      updatedAtIso: nowIso,
-    };
+    const requestHash = input.idempotencyKey ? computeCanonicalPayloadHash({ ...input, idempotencyKey: undefined }) : '';
+    const id = input.id?.trim() || `reg_rule_${crypto.randomUUID()}`;
 
-    const saved = await this.store.saveApplicabilityRule(record, 0);
-    if (input.idempotencyKey) {
-      await this.store.saveIdempotentResult(input.idempotencyKey, 'createApplicabilityRule', actor.actorId, saved);
-    }
-    return saved;
+    return this.store.runTransaction(async (tx) => {
+      if (input.idempotencyKey) {
+        const cached = await tx.getIdempotencyRecord<RegulatoryApplicabilityRuleRecord>(
+          input.idempotencyKey,
+          'createApplicabilityRule',
+          actor.actorId,
+        );
+        if (cached) {
+          return assertIdempotencyRecordMatches(cached, requestHash, 'createApplicabilityRule', input.idempotencyKey);
+        }
+      }
+
+      const [provision, source, existing] = await Promise.all([
+        tx.getProvisionById(input.provisionId),
+        tx.getSourceById(input.sourceId),
+        tx.getApplicabilityRuleById(id),
+      ]);
+      if (!provision) throw new LegalRegulatoryError('NOT_FOUND', `Provision '${input.provisionId}' not found.`, 404);
+      if (!source) throw new LegalRegulatoryError('NOT_FOUND', `Source '${input.sourceId}' not found.`, 404);
+      if (provision.sourceId !== source.id) {
+        throw new LegalRegulatoryError('VALIDATION_ERROR', `Provision '${provision.id}' does not belong to source '${source.id}'.`, 400);
+      }
+      if (existing) {
+        throw new LegalRegulatoryError('CONFLICT_OR_DUPLICATE', `Applicability rule '${id}' already exists.`, 409);
+      }
+      const scope = input.jurisdictionScope ?? provision.jurisdictionScope;
+      validateJurisdictionScopeStructure(scope);
+      const geoValidation = this.geographyAdapter.validateJurisdictionScope(scope);
+      if (!geoValidation.valid) {
+        throw new LegalRegulatoryError('VALIDATION_ERROR', `Invalid applicability rule geography: ${geoValidation.warnings.join('; ')}`, 400);
+      }
+      const nowIso = new Date().toISOString();
+      const normalizedConditions = {
+        ...structuredClone(input.conditions ?? {}),
+        requiredContextFields: Array.isArray(input.conditions?.requiredContextFields)
+          ? [...input.conditions.requiredContextFields]
+          : [],
+      };
+      const record: RegulatoryApplicabilityRuleRecord = {
+        id, provisionId: provision.id, sourceId: source.id, ruleName,
+        jurisdictionScope: structuredClone(scope), conditions: normalizedConditions,
+        restrictionOrObligationSummary, mandatoryClassification: input.mandatoryClassification,
+        effectiveFromIso, effectiveToIso: input.effectiveToIso ?? null,
+        verificationStatus: input.verificationStatus ?? provision.verificationStatus,
+        version: 1, createdAtIso: nowIso, updatedAtIso: nowIso,
+      };
+      tx.putApplicabilityRule(record, 0);
+      tx.putAuditRecord({
+        id: `audit_${crypto.randomUUID()}`, action: 'CREATE_APPLICABILITY_RULE', targetEntityType: 'RULE',
+        targetEntityId: record.id, actorId: actor.actorId, actorRole: actor.role, occurredAtIso: nowIso,
+        summary: `Created applicability rule ${record.id} for provision ${provision.id}`,
+      });
+      if (input.idempotencyKey) {
+        tx.putIdempotencyRecord({
+          key: input.idempotencyKey, operation: 'createApplicabilityRule', actorId: actor.actorId,
+          requestHash, responsePayload: record, createdAtIso: nowIso, schemaVersion: 1,
+        });
+      }
+      return structuredClone(record);
+    });
   }
 
   async createComplianceRequirement(
@@ -156,29 +176,15 @@ export class RegulatoryApplicabilityAndProfileService {
     actor: LegalRegulatoryActorContext,
   ): Promise<ComplianceRequirementRecord> {
     assertAdminOrReviewerActor(actor, ['LEGAL_REVIEWER', 'REGULATORY_ADMIN']);
-    if (input.idempotencyKey) {
-      const cached = await this.store.getIdempotentResult<ComplianceRequirementRecord>(
-        input.idempotencyKey,
-        'createComplianceRequirement',
-        actor.actorId,
-      );
-      if (cached) return cached;
-    }
-
-    const [source, provision] = await Promise.all([
-      this.store.getSourceById(input.sourceId),
-      this.store.getProvisionById(input.provisionId),
-    ]);
-    if (!source || !provision) {
-      throw new LegalRegulatoryError(
-        'NOT_FOUND',
-        'Both sourceId and provisionId must exist to create a compliance requirement.',
-        404,
-      );
-    }
-
-    const scope = input.jurisdictionScope ?? provision.jurisdictionScope;
-    validateJurisdictionScopeStructure(scope);
+    const requirementCode = assertNonEmptyText(input.requirementCode, 'requirementCode', 100);
+    const titleFa = assertNonEmptyText(input.titleFa, 'titleFa', 400);
+    const requirementDescription = assertNonEmptyText(input.requirementDescription, 'requirementDescription', 2000);
+    const verificationMethodDescription = assertNonEmptyText(
+      input.verificationMethodDescription,
+      'verificationMethodDescription',
+      1000,
+    );
+    const responsibleAuthorityName = assertNonEmptyText(input.responsibleAuthorityName, 'responsibleAuthorityName', 300);
     const effectiveFromIso = assertValidIsoDate(input.effectiveFromIso, 'effectiveFromIso');
     validateDateWindow(effectiveFromIso, input.effectiveToIso);
 
@@ -190,70 +196,127 @@ export class RegulatoryApplicabilityAndProfileService {
       );
     }
 
-    const nowIso = new Date().toISOString();
-    const record: ComplianceRequirementRecord = {
-      id: input.id?.trim() || `comp_req_${crypto.randomUUID()}`,
-      requirementCode: assertNonEmptyText(input.requirementCode, 'requirementCode', 100),
-      sourceId: source.id,
-      provisionId: provision.id,
-      jurisdictionScope: structuredClone(scope),
-      applicablePropertyCategories: [...input.applicablePropertyCategories],
-      applicableTransactionContexts: [...input.applicableTransactionContexts],
-      titleFa: assertNonEmptyText(input.titleFa, 'titleFa', 400),
-      requirementDescription: assertNonEmptyText(input.requirementDescription, 'requirementDescription', 2000),
-      mandatoryClassification: input.mandatoryVersionClassification,
-      conditionTriggerDescription: input.conditionTriggerDescription?.trim(),
-      requiredEvidenceTypes: [...input.requiredEvidenceTypes],
-      verificationMethodDescription: assertNonEmptyText(
-        input.verificationMethodDescription,
-        'verificationMethodDescription',
-        1000,
-      ),
-      responsibleAuthorityName: assertNonEmptyText(
-        input.responsibleAuthorityName,
-        'responsibleAuthorityName',
-        300,
-      ),
-      effectiveFromIso,
-      effectiveToIso: input.effectiveToIso ?? null,
-      status: 'ACTIVE',
-      verificationStatus: provision.verificationStatus,
-      provenance: structuredClone(source.provenance),
-      internalReviewerNotes: input.internalReviewerNotes,
-      version: 1,
-      createdAtIso: nowIso,
-      updatedAtIso: nowIso,
-    };
+    const requestHash = input.idempotencyKey ? computeCanonicalPayloadHash({ ...input, idempotencyKey: undefined }) : '';
+    const id = input.id?.trim() || `comp_req_${crypto.randomUUID()}`;
 
-    const saved = await this.store.saveComplianceRequirement(record, 0);
-    if (input.idempotencyKey) {
-      await this.store.saveIdempotentResult(
-        input.idempotencyKey,
-        'createComplianceRequirement',
-        actor.actorId,
-        saved,
-      );
-    }
-    return saved;
+    return this.store.runTransaction(async (tx) => {
+      if (input.idempotencyKey) {
+        const cached = await tx.getIdempotencyRecord<ComplianceRequirementRecord>(
+          input.idempotencyKey,
+          'createComplianceRequirement',
+          actor.actorId,
+        );
+        if (cached) {
+          return assertIdempotencyRecordMatches(
+            cached,
+            requestHash,
+            'createComplianceRequirement',
+            input.idempotencyKey,
+          );
+        }
+      }
+
+      const [source, provision, existing] = await Promise.all([
+        tx.getSourceById(input.sourceId),
+        tx.getProvisionById(input.provisionId),
+        tx.getComplianceRequirementById(id),
+      ]);
+      if (!source || !provision) {
+        throw new LegalRegulatoryError(
+          'NOT_FOUND',
+          'Both sourceId and provisionId must exist to create a compliance requirement.',
+          404,
+        );
+      }
+      if (provision.sourceId !== source.id) {
+        throw new LegalRegulatoryError('VALIDATION_ERROR', `Provision '${provision.id}' does not belong to source '${source.id}'.`, 400);
+      }
+      if (existing) {
+        throw new LegalRegulatoryError('CONFLICT_OR_DUPLICATE', `Compliance requirement '${id}' already exists.`, 409);
+      }
+      const scope = input.jurisdictionScope ?? provision.jurisdictionScope;
+      validateJurisdictionScopeStructure(scope);
+      const nowIso = new Date().toISOString();
+      const record: ComplianceRequirementRecord = {
+        id, requirementCode, sourceId: source.id, provisionId: provision.id,
+        jurisdictionScope: structuredClone(scope),
+        applicablePropertyCategories: [...input.applicablePropertyCategories],
+        applicableTransactionContexts: [...input.applicableTransactionContexts],
+        titleFa, requirementDescription, mandatoryClassification: input.mandatoryVersionClassification,
+        conditionTriggerDescription: input.conditionTriggerDescription?.trim(),
+        requiredEvidenceTypes: [...input.requiredEvidenceTypes],
+        verificationMethodDescription, responsibleAuthorityName, effectiveFromIso,
+        effectiveToIso: input.effectiveToIso ?? null, status: 'ACTIVE',
+        verificationStatus: provision.verificationStatus, provenance: structuredClone(source.provenance),
+        internalReviewerNotes: input.internalReviewerNotes, version: 1, createdAtIso: nowIso, updatedAtIso: nowIso,
+      };
+      tx.putComplianceRequirement(record, 0);
+      tx.putAuditRecord({
+        id: `audit_${crypto.randomUUID()}`, action: 'CREATE_COMPLIANCE_REQUIREMENT', targetEntityType: 'COMPLIANCE_REQ',
+        targetEntityId: record.id, actorId: actor.actorId, actorRole: actor.role, occurredAtIso: nowIso,
+        summary: `Created compliance requirement ${record.id} (${record.requirementCode})`,
+      });
+      if (input.idempotencyKey) {
+        tx.putIdempotencyRecord({
+          key: input.idempotencyKey, operation: 'createComplianceRequirement', actorId: actor.actorId,
+          requestHash, responsePayload: record, createdAtIso: nowIso, schemaVersion: 1,
+        });
+      }
+      return structuredClone(record);
+    });
   }
 
   async buildPropertyRegulatoryProfile(
     rawInput: PropertyRegulatoryEvaluationInput,
     actor?: LegalRegulatoryActorContext,
   ): Promise<PropertyRegulatoryProfile> {
-    let mergedInput: PropertyRegulatoryEvaluationInput = { ...rawInput };
     const incompleteWarnings: string[] = [];
     const unverifiedSourceWarnings: string[] = [];
+    let mergedInput: PropertyRegulatoryEvaluationInput;
+    let blockConfirmedDueToIncompleteSnapshot = false;
 
-    if (rawInput.propertyId && this.propertyContextAdapter) {
-      const snapshot = await this.propertyContextAdapter.getPropertyCharacteristicsById(rawInput.propertyId);
-      if (snapshot) {
-        mergedInput = { ...snapshot, ...rawInput };
-      } else {
-        incompleteWarnings.push(
-          `Property ID '${rawInput.propertyId}' was not found in PropertyContextReferenceAdapter; evaluating with caller-supplied attributes only.`,
-        );
+    if (rawInput.propertyId) {
+      if (!actor || !actor.isAuthenticated || !actor.actorId || actor.role === 'PUBLIC_READER') {
+        throw new LegalRegulatoryError('UNAUTHENTICATED', 'Authenticated actor context is required to evaluate a registered property.', 401);
       }
+      if (!this.propertyContextAdapter) {
+        throw new LegalRegulatoryError('PERSISTENCE_UNAVAILABLE', 'Property Registry read adapter is not configured for propertyId evaluation.', 503);
+      }
+      const authResult = await this.propertyContextAdapter.getPropertyCharacteristicsById({
+        propertyId: rawInput.propertyId,
+        actorId: actor.actorId,
+      });
+      if (authResult.status === 'NOT_FOUND') {
+        throw new LegalRegulatoryError('NOT_FOUND', `Property '${rawInput.propertyId}' was not found in Property Registry.`, 404);
+      }
+      if (authResult.status === 'FORBIDDEN') {
+        throw new LegalRegulatoryError('FORBIDDEN', 'Caller is not authorized to access or evaluate this registered property.', 403);
+      }
+
+      const snapshot = authResult.snapshot;
+      const report = validatePropertyCharacteristicsSnapshot(rawInput.propertyId, snapshot);
+      if (!report.identityValid || !report.attributesValid) {
+        throw new LegalRegulatoryError('SNAPSHOT_INCONSISTENT', `Property Registry snapshot validation failed: ${report.issues.join(' ')}`, 422);
+      }
+      if (report.missingCoreFields.length > 0) {
+        incompleteWarnings.push(`Authoritative Property Registry snapshot is incomplete; missing fields: [${report.missingCoreFields.join(', ')}].`);
+        if ((!snapshot.cityId && !snapshot.provinceId) || !snapshot.propertyCategory) {
+          blockConfirmedDueToIncompleteSnapshot = true;
+        }
+      }
+
+      // Canonical evaluation input built strictly from snapshot + allowed control params (transactionContext, asOfDateIso).
+      mergedInput = {
+        propertyId: snapshot.propertyId, countryCode: 'IR', provinceId: snapshot.provinceId, cityId: snapshot.cityId,
+        municipalityCode: snapshot.municipalityCode, districtNumber: snapshot.districtNumber, neighborhoodId: snapshot.neighborhoodId,
+        designatedZoneCode: snapshot.designatedZoneCode, propertyCategory: snapshot.propertyCategory, landUseCategory: snapshot.landUseCategory,
+        constructionStage: snapshot.constructionStage, floorsCount: snapshot.floorsCount, plotAreaSqm: snapshot.plotAreaSqm,
+        buildingAgeYears: snapshot.buildingAgeYears, isWornOutTextureBaftFarsoodeh: snapshot.isWornOutTextureBaftFarsoodeh,
+        isNearActiveFaultLine: snapshot.isNearActiveFaultLine, transactionContext: rawInput.transactionContext, asOfDateIso: rawInput.asOfDateIso,
+      };
+    } else {
+      // Hypothetical / general non-registered regulatory evaluation (strictly isolated from Property Registry).
+      mergedInput = { ...rawInput, countryCode: rawInput.countryCode ?? 'IR', propertyId: undefined };
     }
 
     const asOfDateIso = mergedInput.asOfDateIso ?? new Date().toISOString();
@@ -306,6 +369,9 @@ export class RegulatoryApplicabilityAndProfileService {
       );
 
       if (evalResult.outcomeState === 'NOT_APPLICABLE_VERIFIED_EXCLUSION') continue;
+      if (blockConfirmedDueToIncompleteSnapshot && evalResult.outcomeState === 'CONFIRMED_APPLICABLE') {
+        evalResult.outcomeState = 'UNKNOWN_APPLICABILITY_MISSING_DATA';
+      }
       activeProvisionIds.add(prov.id);
 
       if (evalResult.missingRequiredFields.length > 0) {
@@ -367,6 +433,9 @@ export class RegulatoryApplicabilityAndProfileService {
         reqOutcome = 'POTENTIALLY_APPLICABLE_NEEDS_INFO';
       }
 
+      if (blockConfirmedDueToIncompleteSnapshot && reqOutcome === 'CONFIRMED_APPLICABLE') {
+        reqOutcome = 'UNKNOWN_APPLICABILITY_MISSING_DATA';
+      }
       applicableComplianceRequirements.push({
         requirement: toPublicComplianceRequirement(req, actor),
         applicabilityState: reqOutcome,

@@ -1,0 +1,1006 @@
+# **مرحله ۲۳: تبدیل ماژول مالیات ملک به مخزن پایدار Firestore و حذف Adapterهای ساختگی**
+
+**شناسه:** `RT-SOCIAL-IMPL-023-PROPERTY-TAX-FIRESTORE-DURABLE-CORE`
+
+**عنوان انگلیسی:** `Property Tax Firestore Durable Core & Production Adapter Hardening`
+
+**اولویت:** P1 ــ پایداری مالی، یکپارچگی سوابق و امنیت داده
+
+تدوین و ثبت شد
+
+**هدف:** آماده‌سازی ماژول مالیات ملک برای استفاده واقعی در Backend، با چهار تغییر اساسی:
+
+1. حذف وابستگی به Map و حافظه محلی.
+2. ایجاد مخزن واقعی Firestore با Transaction و کنترل هم‌زمانی.
+3. حذف Adapterهایی که بدون استعلام واقعی، مالکیت ملک، اعتبار مقررات، تأیید پرداخت یا تحویل اعلان را موفق اعلام می‌کنند.
+4. پایدارکردن Idempotency و تاریخچه سوابق مالیاتی.
+
+این مرحله درباره `Property Tax & Municipal Charges` است؛ با مرحله ۲۲ که مربوط به `Property Permits` بود متفاوت است.
+
+## **۱. یافته‌های قطعی از نسخه فعلی**
+
+در بررسی مستقیم فایل‌های ماژول:
+
+`server/modules/property-tax/`
+
+مشخص شد که این ماژول با وجود داشتن مدل‌های نسبتاً کامل مالیاتی، هنوز مخزن Firestore ندارد.
+
+### **۱.۱. تمام اطلاعات در Map نگهداری می‌شوند**
+
+فایل:
+
+`server/modules/property-tax/store.ts`
+
+در خطوط 115 تا 130:
+
+```
+private authorities =
+  new Map<string, TaxAuthorityReferenceRecord>();
+
+private taxRecords =
+  new Map<string, PropertyTaxRecord>();
+
+private assessments =
+  new Map<string, TaxAssessmentRecord>();
+
+private obligations =
+  new Map<string, TaxObligationRecord>();
+
+private bills =
+  new Map<string, TaxBillRecord>();
+
+private municipalCharges =
+  new Map<string, MunicipalChargeRecord>();
+
+private payments =
+  new Map<string, TaxPaymentStatusReferenceRecord>();
+
+private deadlines =
+  new Map<string, TaxDeadlineRecord>();
+
+private exemptions =
+  new Map<string, TaxExemptionRecord>();
+
+private disputes =
+  new Map<string, TaxDisputeRecord>();
+
+private partyRelationships =
+  new Map<string, TaxPartyRelationshipRecord>();
+
+private documents =
+  new Map<string, TaxDocumentReferenceRecord>();
+
+private history: TaxHistoryEntryRecord[] = [];
+```
+
+همچنین Idempotency نیز فقط در حافظه است:
+
+```
+private idempotencyRegistry = new Map<
+  string,
+  { scope: string; entityId: string }
+>();
+```
+
+بنابراین با Restart سرور، تمام اطلاعاتی که فقط در این Store ثبت شده‌اند از بین می‌روند.
+
+### **۱.۲. Transaction فعلی فقط شبیه‌سازی Rollback است**
+
+در `store.ts:146–184`:
+
+```
+public async runTransaction<T>(
+  work: (tx: this) => Promise<T> | T
+): Promise<T> {
+  this.assertHealthyPersistence();
+
+  const snapAuthorities = new Map(this.authorities);
+  const snapTaxRecords = new Map(this.taxRecords);
+
+  // Other Map snapshots...
+
+  try {
+    const result = await work(this);
+
+    this.assertHealthyPersistence();
+
+    return result;
+  } catch (err) {
+    this.authorities = snapAuthorities;
+    this.taxRecords = snapTaxRecords;
+
+    // Restore remaining Maps...
+
+    throw err;
+  }
+}
+```
+
+این Transaction واقعی نیست.
+
+هیچ `db.runTransaction` وجود ندارد. قفل بین دو نمونه سرور وجود ندارد و تغییرات چند Process به هم اطلاع داده نمی‌شوند.
+
+علاوه بر آن، Snapshotهای فعلی با `new Map()` کپی سطحی هستند؛ برای ساختارهای دارای آرایه و Objectهای داخلی، این روش به‌تنهایی تضمین Rollback عمیق نمی‌دهد.
+
+### **۱.۳. Adapterهای پیش‌فرض موفقیت ساختگی تولید می‌کنند**
+
+این یافته از نظر امنیتی بسیار مهم است.
+
+در فایل `store.ts:50–80` تابع زیر وجود دارد:
+
+`createDefaultPropertyTaxAdapters`
+
+رفتار واقعی پنج Adapter:
+
+| Adapter           | مختصات | رفتار فعلی                                        |
+| ----------------- | ------ | ------------------------------------------------- |
+| Property Registry | 52–55  | معتبر دانستن شناسه غیرخالی ملک                    |
+| Legal Regulatory  | 57–60  | معتبر دانستن مرجع قانونی بر اساس رشته و Prefix    |
+| Payments          | 62–68  | تأیید پرداخت برای شناسه دارای Prefix `confirmed-` |
+| Media             | 70–73  | معتبر دانستن Media ID غیرخالی                     |
+| Notifications     | 75–78  | اعلام تحویل بر اساس Prefix شناسه                  |
+
+برای نمونه، Adapter پرداخت این رفتار را دارد:
+
+```
+async verifyAuthoritativePaymentConfirmation(
+  externalPaymentRef: string
+) {
+  if (externalPaymentRef.startsWith('confirmed-')) {
+    return {
+      confirmed: true,
+      authorityReceiptRef:
+        `AUTH-RCPT-${externalPaymentRef}`
+    };
+  }
+
+  return { confirmed: false };
+}
+```
+
+این یعنی صرفاً ارسال متنی با Prefix خاص می‌تواند پاسخ موفقیت تأیید پرداخت تولید کند.
+
+این وضعیت برای یک ماژول مالیاتی قابل‌قبول نیست.
+
+### **۱.۴. Factory به‌صورت پیش‌فرض Store و Adapter آزمایشی می‌سازد**
+
+فایل:
+
+`server/modules/property-tax/index.ts`
+
+خطوط 24 تا 36:
+
+```
+export function createPropertyTaxModuleFacade(
+  options?: {
+    store?: TransactionalPropertyTaxStore;
+    adapters?: Partial<PropertyTaxCrossModuleAdapters>;
+  }
+) {
+  const store =
+    options?.store ??
+    new TransactionalPropertyTaxStore();
+
+  const defaults =
+    createDefaultPropertyTaxAdapters();
+
+  // ...
+}
+```
+
+بنابراین حذف‌کردن یک Dependency از زمان ساخت ماژول، باعث ایجاد سیستم حافظه‌ای و Adapterهای مثبت پیش‌فرض می‌شود.
+
+این Factory نباید در مسیر Production چنین رفتاری داشته باشد.
+
+### **۱.۵. هنوز Firestore Store وجود ندارد**
+
+در پوشه:
+
+`server/modules/property-tax/`
+
+فایلی به نام:
+
+```
+firestoreStore.ts
+```
+
+وجود ندارد.
+
+همچنین بررسی `server.ts` نشان داد ماژول Property Tax در Bootstrap تولیدی ثبت نشده است.
+
+سند موجود:
+
+`server/modules/property-tax/HANDOFF.md:24–30`
+
+نیز Route Mount، Firestore Security Rules، Indexها و اتصال Cross-Module Adapterها را به‌عنوان کار باقی‌مانده Integration Lead معرفی می‌کند.
+
+بنابراین مرحله ۲۳ باید زیرساخت را آماده کند؛ نباید ادعا کند API مالیات ملک در Production فعال شده است.
+
+# **۲. تصمیم معماری: Firestore منبع قطعی اطلاعات مالیاتی**
+
+مالکیت Domain حفظ شود:
+
+```
+server/modules/property-tax/
+```
+
+اما مالک Persistence از Map به Firestore تغییر کند.
+
+**Domain Services**
+
+`AuthorityTaxRecordAndAssessmentService`
+
+`ObligationBillPaymentAndDeadlineService`
+
+`ExemptionDisputeAndReportingService`
+
+**Persistence Contract**
+
+`PropertyTaxStore`
+
+`PropertyTaxUnitOfWork`
+
+**Production Repository**
+
+`FirestorePropertyTaxStore`
+
+**Database**
+
+Google Cloud Firestore
+
+**Test Repository**
+
+`InMemoryPropertyTaxStore`
+
+صرفاً برای آزمون؛ بدون استفاده در Production
+
+قواعد:
+
+- هیچ Memory Fallback در Factory تولیدی وجود نداشته باشد.
+- هیچ JSON Snapshot به‌عنوان منبع اصلی داده مالیاتی استفاده نشود.
+- تمام Read و Writeهای یک عملیات تراکنشی از همان Native Transaction عبور کنند.
+- هر تغییر حساس همراه با تاریخچه مرتبط Commit شود.
+- هیچ Adapter بدون اتصال واقعی مجاز به بازگرداندن نتیجه مثبت نباشد.
+
+## **۳. بازطراحی قرارداد Store**
+
+فایل:
+
+`server/modules/property-tax/store.ts`
+
+کلاس فعلی `TransactionalPropertyTaxStore` نباید دیگر به‌عنوان Store عمومی استفاده شود.
+
+دو Interface اصلی تعریف شود.
+
+### **۳.۱. قرارداد Repository**
+
+```
+export interface PropertyTaxStore {
+  runTransaction<T>(
+    work: (
+      tx: PropertyTaxUnitOfWork
+    ) => Promise<T>
+  ): Promise<T>;
+
+  getAuthority(
+    id: string
+  ): Promise<TaxAuthorityReferenceRecord | null>;
+
+  getTaxRecord(
+    id: string
+  ): Promise<PropertyTaxRecord | null>;
+
+  getObligation(
+    id: string
+  ): Promise<TaxObligationRecord | null>;
+
+  getAssessment(
+    id: string
+  ): Promise<TaxAssessmentRecord | null>;
+
+  getBill(
+    id: string
+  ): Promise<TaxBillRecord | null>;
+
+  getPayment(
+    id: string
+  ): Promise<TaxPaymentStatusReferenceRecord | null>;
+
+  listTaxRecordsByProperty(
+    propertyId: string
+  ): Promise<PropertyTaxRecord[]>;
+
+  listHistoryByProperty(
+    propertyId: string
+  ): Promise<TaxHistoryEntryRecord[]>;
+}
+```
+
+این‌ها فقط نمونه‌ای از قرارداد هستند؛ تمام Getterها و Listهای فعلی باید در Interface نهایی پوشش داده شوند.
+
+### **۳.۲. قرارداد UnitOfWork**
+
+```
+export interface PropertyTaxUnitOfWork {
+  getAuthority(
+    id: string
+  ): Promise<TaxAuthorityReferenceRecord | null>;
+
+  getTaxRecord(
+    id: string
+  ): Promise<PropertyTaxRecord | null>;
+
+  getObligation(
+    id: string
+  ): Promise<TaxObligationRecord | null>;
+
+  getIdempotencyRecord(
+    id: string
+  ): Promise<PropertyTaxIdempotencyRecord | null>;
+
+  saveAuthority(
+    record: TaxAuthorityReferenceRecord
+  ): void;
+
+  saveTaxRecord(
+    record: PropertyTaxRecord
+  ): void;
+
+  saveObligation(
+    record: TaxObligationRecord
+  ): void;
+
+  appendHistory(
+    entry: TaxHistoryEntryRecord
+  ): void;
+
+  setIdempotencyRecord(
+    record: PropertyTaxIdempotencyRecord
+  ): void;
+}
+```
+
+قرارداد نهایی باید تمام ۱۳ نوع داده فعلی را پوشش دهد.
+
+### **۳.۳. تبدیل Getterهای Sync به Async**
+
+در وضعیت فعلی Getterهای Store همگی Sync هستند.
+
+برای نمونه:
+
+```
+getObligation(id)
+```
+
+در نسخه جدید:
+
+```
+await store.getObligation(id)
+```
+
+خواهد بود.
+
+در نتیجه این سه Service باید اصلاح شوند:
+
+1. `authorityTaxRecordAndAssessmentService.ts`
+2. `obligationBillPaymentAndDeadlineService.ts`
+3. `exemptionDisputeAndReportingService.ts`
+
+همچنین تابع:
+
+`assertPropertyTaxAccess`
+
+در `authorityTaxRecordAndAssessmentService.ts:25–50` باید Async شود؛ چون بررسی مالکیت و Party Relationship دیگر از Map خوانده نخواهد شد.
+
+**هیچ Query مربوط به دسترسی کاربران نباید در حافظه محلی انجام شود.**
+
+## **۴. ساخت FirestorePropertyTaxStore**
+
+فایل جدید:
+
+`server/modules/property-tax/firestoreStore.ts`
+
+در سایر ماژول‌های پروژه استفاده از این Helper وجود دارد:
+
+```
+getFirebaseAdminFirestoreForServer
+```
+
+مسیر:
+
+`src/utils/serverAdminAndTelegramSecurity.ts`
+
+Import مورد استفاده:
+
+```
+import {
+  getFirebaseAdminFirestoreForServer
+} from '../../../src/utils/serverAdminAndTelegramSecurity';
+```
+
+### **۴.۱. Transaction واقعی**
+
+```
+export class FirestorePropertyTaxStore
+  implements PropertyTaxStore {
+
+  private readonly db =
+    getFirebaseAdminFirestoreForServer();
+
+  async runTransaction<T>(
+    work: (
+      tx: PropertyTaxUnitOfWork
+    ) => Promise<T>
+  ): Promise<T> {
+
+    return this.db.runTransaction(
+      async nativeTx => {
+        const tx =
+          this.createUnitOfWork(nativeTx);
+
+        return work(tx);
+      }
+    );
+  }
+}
+```
+
+این کد قرارداد طراحی است؛ پیاده‌سازی نهایی باید برای تمام عملیات UnitOfWork اتصال واقعی Native Firestore را برقرار کند.
+
+### **۴.۲. ممنوعیت Read پس از Write**
+
+در تمام Transactionها:
+
+1. Readهای موردنیاز انجام شوند.
+2. اعتبارسنجی تکمیل شود.
+3. سپس Write آغاز شود.
+4. تمام Writeها با Native Transaction انجام شوند.
+
+این ترتیب ممنوع است:
+
+```
+tx.set(ref, record);
+
+const current = await tx.get(otherRef);
+```
+
+در عوض تمام `get`ها باید پیش از `set` و `update` انجام شوند.
+
+Mock Store نیز باید همین محدودیت را کنترل کند.
+
+### **۴.۳. کنترل Version و CAS**
+
+مدل‌های مهم مالیاتی از قبل فیلد `version` دارند.
+
+در Update:
+
+```
+if (
+  current.version !== expectedVersion
+) {
+  throw new PropertyTaxError(
+    'CONCURRENCY_CONFLICT',
+    'Record version mismatch.',
+    409
+  );
+}
+```
+
+سپس Version یک واحد افزایش یابد.
+
+هیچ Update مبتنی بر داده قدیمی خارج از Transaction مجاز نباشد.
+
+## **۵. Collectionهای Firestore**
+
+۱۳ مجموعه داده در `HANDOFF.md` تعریف شده‌اند.
+
+همه باید در Firestore Store پشتیبانی شوند.
+
+| شماره | Collection                   | نوع اطلاعات               |
+| ----- | ---------------------------- | ------------------------- |
+| ۱     | `property_tax_authorities`   | مراجع مالیاتی             |
+| ۲     | `property_tax_records`       | پرونده مالیاتی ملک        |
+| ۳     | `property_tax_assessments`   | ارزیابی‌ها                |
+| ۴     | `property_tax_obligations`   | بدهی‌ها و تعهدات          |
+| ۵     | `property_tax_bills`         | قبض‌ها و صورتحساب‌ها      |
+| ۶     | `property_municipal_charges` | عوارض و هزینه‌های شهرداری |
+| ۷     | `property_tax_payments`      | سوابق وضعیت پرداخت        |
+| ۸     | `property_tax_deadlines`     | مهلت‌های مالیاتی          |
+| ۹     | `property_tax_exemptions`    | معافیت‌ها                 |
+| ۱۰    | `property_tax_disputes`      | اختلافات مالیاتی          |
+| ۱۱    | `property_tax_parties`       | روابط اشخاص مسئول         |
+| ۱۲    | `property_tax_documents`     | ارجاع اسناد               |
+| ۱۳    | `property_tax_history`       | تاریخچه تغییرات           |
+
+### **Collection چهاردهم: Idempotency**
+
+در وضعیت فعلی Idempotency فقط در Map قرار دارد.
+
+برای پایدارشدن آن، یک Collection مشخص اضافه شود:
+
+```
+property_tax_idempotency_keys/{hashedKey}
+```
+
+ساختار:
+
+```
+interface PropertyTaxIdempotencyRecord {
+  id: string;
+
+  actorId: string;
+
+  operation: string;
+
+  targetId: string;
+
+  payloadHash: string;
+
+  createdAtIso: string;
+}
+```
+
+شناسه باید از Hash کلید و هویت کاربر و نوع عملیات ساخته شود.
+
+کلید خام کاربر نباید داخل Document Path قرار بگیرد.
+
+رفتار:
+
+| درخواست                           | نتیجه             |
+| --------------------------------- | ----------------- |
+| Key جدید                          | اجرای عملیات      |
+| Key قبلی + Payload یکسان          | Replay همان نتیجه |
+| Key قبلی + Payload متفاوت         | 409               |
+| رکورد Idempotency بدون رکورد مقصد | خطای Integrity    |
+
+ثبت Idempotency Record باید در همان Transaction عملیات اصلی انجام شود.
+
+## **۶. بازطراحی InMemory Store برای تست**
+
+Store فعلی در `store.ts` فقط برای آزمون قابل استفاده باشد.
+
+نام پیشنهادی:
+
+```
+export class InMemoryPropertyTaxStore
+  implements PropertyTaxStore {
+}
+```
+
+Factory:
+
+```
+export function
+createInMemoryPropertyTaxStoreForTests()
+```
+
+قواعد:
+
+- فقط در تست‌ها فراخوانی شود.
+- Factory تولیدی اجازه انتخاب خودکار آن را نداشته باشد.
+- Snapshot باید Deep Clone باشد.
+- Rollback باید تمام ۱۴ مجموعه داده را پوشش دهد.
+- Read-after-Write در Transaction تستی شناسایی شود.
+- تست دو Store مستقل امکان‌پذیر باشد.
+
+## **۷. حذف Adapterهای موفقیت‌ساز و جداسازی Test Fixture**
+
+این تغییر ضروری است و نباید به مرحله بعد موکول شود.
+
+در `store.ts:50–80` تابع `createDefaultPropertyTaxAdapters` با رفتارهای ساختگی وجود دارد.
+
+آن را به قرارداد مخصوص تست تبدیل کنید:
+
+```
+export function createTestPropertyTaxAdapters()
+  : PropertyTaxCrossModuleAdapters;
+```
+
+این تابع فقط در فایل‌های تست استفاده شود.
+
+برای Production، هیچ Default Adapter مثبت وجود نداشته باشد.
+
+### **رفتار Adapterهای بدون اتصال**
+
+| Adapter           | رفتار در صورت نبود اتصال واقعی |
+| ----------------- | ------------------------------ |
+| Property Registry | 503                            |
+| Legal Regulatory  | 503                            |
+| Payments          | 503                            |
+| Media             | 503                            |
+| Notifications     | 503                            |
+
+کد خطای پیشنهادی:
+
+```
+PROPERTY_TAX_ADAPTER_NOT_CONFIGURED
+```
+
+### **نمونه رفتار مجاز**
+
+```
+async verifyCanonicalPropertyExists() {
+  throw new PropertyTaxError(
+    'PROPERTY_TAX_ADAPTER_NOT_CONFIGURED',
+    'Property Registry adapter is unavailable.',
+    503
+  );
+}
+```
+
+این Adapter فقط نمونه Fail-Closed است.
+
+پیاده‌سازی اصلی باید از ماژول مرجع مربوط داده دریافت کند.
+
+### **Factory تولیدی جدید**
+
+در `index.ts`:
+
+```
+export function createPropertyTaxProductionModule(
+  options: {
+    store: PropertyTaxStore;
+
+    adapters:
+      PropertyTaxCrossModuleAdapters;
+  }
+): PropertyTaxModuleFacade {
+  // Validate all dependencies.
+}
+```
+
+شرایط:
+
+- Store اجباری است.
+- هر پنج Adapter اجباری‌اند.
+- Store حافظه‌ای پیش‌فرض ممنوع است.
+- Fake Adapter در Factory تولیدی ممنوع است.
+- نبود هر وابستگی باید پیش از شروع کار Module تشخیص داده شود.
+
+Factory تستی نیز جدا باشد:
+
+```
+createInMemoryPropertyTaxModuleForTests()
+```
+
+### **یک هشدار درباره PAYMENT**
+
+تست فعلی در:
+
+`propertyTax.test.ts:316–328`
+
+با این شناسه:
+
+```
+externalPaymentsModuleRef:
+  'confirmed-pay-101'
+```
+
+موفق می‌شود.
+
+این رفتار فقط باید در Test Adapter مجاز باشد.
+
+این Prefix هیچ‌گاه نباید در مسیر Production معیار تأیید پرداخت باشد.
+
+## **۸. اصلاح خدمات Domain برای Repository جدید**
+
+این بخش صرفاً تغییر Persistence نیست؛ تمام Serviceها باید با API جدید هماهنگ شوند.
+
+| فایل                                         | تغییر موردنیاز                 |
+| -------------------------------------------- | ------------------------------ |
+| `authorityTaxRecordAndAssessmentService.ts`  | Async Store، تراکنش جدید و CAS |
+| `obligationBillPaymentAndDeadlineService.ts` | Async Read و Transaction جدید  |
+| `exemptionDisputeAndReportingService.ts`     | Async Read و Transaction جدید  |
+
+### **مواردی که باید اصلاح شوند**
+
+- `registerTaxAuthorityReference`
+- `registerPropertyTaxRecord`
+- `registerTaxPartyRelationship`
+- `registerTaxAssessment`
+- `correctOrSupersedeTaxAssessment`
+- `registerTaxDocumentReference`
+- `registerTaxObligation`
+- `transitionTaxObligationStatus`
+- `registerTaxBill`
+- `recordMunicipalCharge`
+- `recordPaymentStatusReference`
+- `recordTaxDeadline`
+- `registerExemptionApplication`
+- `recordExemptionDecision`
+- `evaluateExemptionExpiration`
+- `createTaxDispute`
+- `recordAppealSubmissionReference`
+- `recordDisputeResolution`
+- `generatePropertyTaxReportingSummary`
+
+### **الزام مهم برای تاریخچه**
+
+هر عملیاتی که یک Record را تغییر می‌دهد، باید در همان Transaction تاریخچه خود را ثبت کند.
+
+برای مثال:
+
+اصلاح Assessment باید این سه نتیجه را اتمیک انجام دهد:
+
+1. Supersede شدن Assessment قبلی.
+2. ایجاد Assessment جدید.
+3. ثبت دو History Entry مرتبط.
+
+اگر یکی از این عملیات شکست بخورد، هیچ‌کدام نباید Commit شوند.
+
+## **۹. Indexهای Firestore**
+
+در `firestore.indexes.json` باید Indexهای موردنیاز Queryهای واقعی Store تعریف شوند.
+
+فهرست اولیه پیشنهادی:
+
+| Collection                   | Index                                          |
+| ---------------------------- | ---------------------------------------------- |
+| `property_tax_records`       | `propertyId ASC + createdAt DESC`              |
+| `property_tax_assessments`   | `propertyId ASC + createdAt DESC`              |
+| `property_tax_obligations`   | `propertyId ASC + dueDateIso ASC`              |
+| `property_tax_bills`         | `propertyId ASC + dueDateIso ASC`              |
+| `property_municipal_charges` | `propertyId ASC + dueDateIso ASC`              |
+| `property_tax_payments`      | `obligationId ASC + paymentDateIso DESC`       |
+| `property_tax_deadlines`     | `propertyId ASC + dueDateIso ASC`              |
+| `property_tax_exemptions`    | `propertyId ASC + createdAt DESC`              |
+| `property_tax_disputes`      | `propertyId ASC + status ASC + createdAt DESC` |
+| `property_tax_parties`       | `propertyId ASC + partyId ASC`                 |
+| `property_tax_documents`     | `propertyId ASC + createdAt DESC`              |
+| `property_tax_history`       | `propertyId ASC + recordedAtIso DESC`          |
+
+Index نهایی باید با Queryهای واقعی پیاده‌شده در Firestore Store تطبیق داشته باشد؛ اضافه‌کردن Index بدون مصرف واقعی مجاز نیست.
+
+### **Firestore Rules**
+
+فایل:
+
+`firestore.rules`
+
+در حال حاضر Default Deny در خطوط 1 تا 7 وجود دارد.
+
+برای شفافیت امنیتی، Matchهای صریح Backend-only نیز برای ۱۴ Collection بالا اضافه شوند.
+
+هیچ Client مستقیم نتواند:
+
+- Tax Record ایجاد کند.
+- Tax Obligation را تغییر دهد.
+- Payment Confirmation ثبت کند.
+- Exemption را تأیید کند.
+- Tax Dispute را Resolve کند.
+- History را پاک کند.
+- Idempotency Record را تغییر دهد.
+
+تمام این عملیات از Backend Admin SDK انجام شوند.
+
+فایل `firebase-blueprint.json` نیز با همین ۱۴ Collection هماهنگ شود.
+
+## **۱۰. اصلاح مسیر دسترسی و Reporting**
+
+در `authorityTaxRecordAndAssessmentService.ts:25–50` تابع `assertPropertyTaxAccess` از Store فعلی به‌صورت Sync استفاده می‌کند.
+
+این تابع باید با Repository جدید Async شود.
+
+همچنین در:
+
+`exemptionDisputeAndReportingService.ts:410–424`
+
+گزارش مالیاتی با دریافت تمام داده‌های مرتبط از Store ساخته می‌شود.
+
+در نسخه Firestore:
+
+- Queryها باید بر اساس Property محدود شوند.
+- نتایج با Limit و Cursor قابل‌کنترل باشند.
+- اگر برای محاسبه Summary نیاز به تمام رکوردهاست، صفحه‌بندی داخلی باید تا پایان داده‌ها ادامه پیدا کند.
+- هیچ نتیجه‌ای به‌خاطر سقف ثابت ۵۰ یا ۵۰۰ سند، بی‌صدا حذف نشود.
+- نبود رکورد مالیاتی به معنی صفر بودن بدهی نیست.
+
+قواعد README در این بخش حفظ شوند.
+
+## **۱۱. فایل‌های اصلی مرحله ۲۳**
+
+| فایل                                                                     | عملیات                                    |
+| ------------------------------------------------------------------------ | ----------------------------------------- |
+| `server/modules/property-tax/store.ts`                                   | تبدیل کلاس فعلی به Interface و UnitOfWork |
+| `server/modules/property-tax/firestoreStore.ts`                          | مخزن جدید Firestore                       |
+| `server/modules/property-tax/index.ts`                                   | جداسازی Factory تولیدی و تستی             |
+| `server/modules/property-tax/types.ts`                                   | قرارداد Idempotency جدید                  |
+| `server/modules/property-tax/authorityTaxRecordAndAssessmentService.ts`  | Refactor به Store Async                   |
+| `server/modules/property-tax/obligationBillPaymentAndDeadlineService.ts` | Refactor به Transaction جدید              |
+| `server/modules/property-tax/exemptionDisputeAndReportingService.ts`     | Refactor به Transaction جدید              |
+| `server/modules/property-tax/__tests__/propertyTax.test.ts`              | استفاده از Test Factory صریح              |
+| `firestore.rules`                                                        | قواعد Backend-only                        |
+| `firestore.indexes.json`                                                 | Indexهای Query                            |
+| `firebase-blueprint.json`                                                | ثبت ۱۴ Collection                         |
+
+فایل جدید تست:
+
+`tests/property-tax-firestore-store.test.ts`
+
+فایل Emulator:
+
+`tests/property-tax-firestore-store.emulator.test.ts`
+
+## **۱۲. آزمون‌های پذیرش**
+
+مجموعاً **۳۰ تست جدید** در محدوده زیر:
+
+شناسه‌ها: `PTSTORE-001` تا `PTSTORE-030`
+
+| شناسه       | سناریو                         | معیار قبولی           |
+| ----------- | ------------------------------ | --------------------- |
+| PTSTORE-001 | Factory تولیدی بدون Firestore  | Fail-Closed           |
+| PTSTORE-002 | Firestore در دسترس نیست        | 503                   |
+| PTSTORE-003 | نبود Property Registry Adapter | 503                   |
+| PTSTORE-004 | نبود Legal Regulatory Adapter  | 503                   |
+| PTSTORE-005 | نبود Payments Adapter          | 503                   |
+| PTSTORE-006 | نبود Media Adapter             | 503                   |
+| PTSTORE-007 | نبود Notifications Adapter     | 503                   |
+| PTSTORE-008 | Fake Adapter در Production     | ممنوع                 |
+| PTSTORE-009 | Test Adapter صریح              | فقط در تست            |
+| PTSTORE-010 | ثبت Authority                  | ماندگاری در Firestore |
+| PTSTORE-011 | ثبت Tax Record                 | ماندگاری بین دو Store |
+| PTSTORE-012 | ثبت Assessment                 | ماندگاری بین دو Store |
+| PTSTORE-013 | ثبت Obligation                 | ماندگاری بین دو Store |
+| PTSTORE-014 | ثبت Bill                       | ماندگاری بین دو Store |
+| PTSTORE-015 | ثبت Municipal Charge           | ماندگاری بین دو Store |
+| PTSTORE-016 | ثبت Payment Reference          | ماندگاری              |
+| PTSTORE-017 | ثبت Deadline                   | ماندگاری              |
+| PTSTORE-018 | ثبت Exemption و Dispute        | ماندگاری              |
+| PTSTORE-019 | ثبت Party و Document           | ماندگاری              |
+| PTSTORE-020 | ثبت History                    | ترتیب صحیح            |
+| PTSTORE-021 | Idempotency پس از Restart      | حفظ رکورد             |
+| PTSTORE-022 | Replay همان Key و Payload      | بازگشت همان شناسه     |
+| PTSTORE-023 | همان Key با Payload متفاوت     | 409                   |
+| PTSTORE-024 | Rollback چند Collection        | بدون داده نیمه‌کاره   |
+| PTSTORE-025 | Read-before-Write              | جلوگیری از خطا        |
+| PTSTORE-026 | CAS با Revision قدیمی          | 409                   |
+| PTSTORE-027 | Update هم‌زمان دو Store        | فقط یک Commit معتبر   |
+| PTSTORE-028 | Query بیش از ۵۰۰ رکورد         | بدون حذف بی‌صدای داده |
+| PTSTORE-029 | Firestore Rules                | منع Client Write      |
+| PTSTORE-030 | Blueprint و Index              | تطبیق با Query واقعی  |
+
+تست‌های فعلی `propertyTax.test.ts` نیز باید بعد از اصلاح Factory و Store همچنان موفق باشند.
+
+### **آزمون‌های چندنمونه‌ای**
+
+موارد زیر الزاماً با Firestore Emulator آزمایش شوند:
+
+- ثبت یک رکورد و خواندن آن از Store دوم.
+- Update هم‌زمان یک Assessment با Revision یکسان.
+- دو ثبت Idempotency با Key یکسان.
+- شکست Transaction چندمجموعه‌ای.
+- Rollback هم‌زمان History و Tax Record.
+
+## **۱۳. دستورات تحویل**
+
+تست‌های واحد و Regression:
+
+```
+npx tsx --test \
+  server/modules/property-tax/__tests__/propertyTax.test.ts \
+  tests/property-tax-firestore-store.test.ts
+```
+
+تست Firestore Emulator:
+
+```
+firebase emulators:exec \
+  --project demo-radar-property-tax \
+  --only firestore \
+  "npx tsx --test tests/property-tax-firestore-store.emulator.test.ts"
+```
+
+کنترل TypeScript:
+
+```
+npm run typecheck
+```
+
+کنترل معماری:
+
+```
+npm run arch:check
+```
+
+کنترل Rules:
+
+```
+npm run test:rules:static
+npm run test:rules
+```
+
+## **۱۴. موارد خارج از محدوده**
+
+در مرحله ۲۳ انجام نشوند:
+
+- اتصال APIهای عمومی Property Tax.
+- ثبت Route در `server.ts`.
+- طراحی دوباره جدول نرخ‌های قانونی مالیات.
+- محاسبه رسمی مالیات از روی مدل Valuation پلتفرم.
+- اجرای واقعی پرداخت.
+- اتصال مجدد Payment Confirmation به Gateway.
+- اتصال Deadline Reminder به Outbox.
+- ارسال Email، SMS و Push.
+- بازنویسی چرخه اعتراض مالیاتی.
+- تغییر Property Rights.
+- ایجاد Microservice جدید.
+- افزودن Redis یا Queue موازی.
+
+این موارد در مرحله‌های جداگانه بررسی می‌شوند.
+
+به‌خصوص دو موضوع Payment Confirmation و Deadline Outbox به مرحله ۲۴ منتقل می‌شوند؛ در آن مرحله باید هم‌زمانی ثبت پرداخت، Payload Hash، جلوگیری از Lost Update و اتصال Reminder به Outbox مرجع بررسی شود.
+
+## **۱۵. ترتیب اجرای پیشنهادی**
+
+1. **بخش اول: جداسازی Store تستی و Production**
+
+   ایجاد `PropertyTaxStore` و `PropertyTaxUnitOfWork` و حذف Factory پیش‌فرض ناامن.
+2. **بخش دوم: Firestore Persistence**
+
+   ایجاد مخزن جدید برای تمام ۱۴ Collection.
+3. **بخش سوم: Refactor Serviceها**
+
+   انتقال تمام Getterها و Queryها به قرارداد Async.
+4. **بخش چهارم: Transaction و Idempotency**
+
+   ثبت اتمیک Record، History و Idempotency.
+5. **بخش پنجم: Adapter Hardening**
+
+   حذف تمام پاسخ‌های موفقیت‌ساز پیش‌فرض و الزام Dependency واقعی.
+6. **بخش ششم: Rules و Indexes**
+
+   تکمیل Blueprint و Firestore Security.
+7. **بخش هفتم: Emulator و Regression**
+
+   اجرای ۳۰ تست جدید و تمام تست‌های موجود Domain.
+
+## **۱۶. معیار تکمیل مرحله**
+
+مرحله ۲۳ فقط وقتی تکمیل‌شده محسوب شود که:
+
+1. هیچ Record مالیاتی در Production فقط در Map باقی نماند.
+2. هر ۱۴ Collection به Firestore متصل باشند.
+3. Transaction واقعی و مشترک برای Record و History وجود داشته باشد.
+4. Idempotency بین چند Instance پایدار باشد.
+5. هیچ Default Fake Adapter موفقیت ساختگی تولید نکند.
+6. Factory تولیدی هرگز InMemory Store را انتخاب نکند.
+7. Queryهای Property و History از Firestore انجام شوند.
+8. CAS و Rollback واقعی در Emulator تأیید شوند.
+9. تمام ۳۰ تست جدید موفق باشند.
+10. تست‌های فعلی Domain بدون Regression پاس شوند.
+
+## **وضعیت رسمی نقشه راه**
+
+**مرحله ۲۳**
+
+`RT-SOCIAL-IMPL-023-PROPERTY-TAX-FIRESTORE-DURABLE-CORE`
+
+**عنوان:** تبدیل ماژول Property Tax به مخزن پایدار Firestore و حذف Adapterهای موفقیت‌ساز پیش‌فرض
+
+تعداد آزمون‌های پذیرش جدید: ۳۰
+
+تدوین‌شده و ثبت‌شده
+
+اجرا و تأیید: انجام نشده
+
+وابستگی مستقیم: آمادگی زیرساخت Firestore و Admin SDK
+
+مرحله بعدی: `RT-SOCIAL-IMPL-024`
+
+### **ادامه نقشه راه**
+
+مرحله ۲۴ باید روی دو مسئله مستقل متمرکز باشد:
+
+1. اصلاح چرخه تأیید و ثبت پرداخت مالیاتی، جلوگیری از Lost Update و Idempotency واقعی.
+2. اتصال Deadline Reminderهای مالیاتی به `no_domain_event_outbox` مرحله ۲۰.
+
+این موضوعات نباید با بازسازی Store یا Adapterهای مرحله ۲۳ مخلوط شوند.
+
+**مرجع پروژه:** فایل ثبت‌شده در Library با شناسه `libfile_685ab25df3948191b9dda4ad5dcc32c9` مجدداً بازیابی و بررسی شد. SHA-256 نسخه بررسی‌شده:
+
+```
+29f478df9dfd272300fcd7db499ed848573fcd0a0780fcdd782cf26edd2e2079
+```
+
+مرحله ۲۳ با شناسه، محدوده فایل‌ها، قراردادهای داده و ۳۰ آزمون پذیرش در حافظه ثبت شد. در مرحله ۲۴ دیگر نباید مخزن Firestore، UnitOfWork، CAS یا Factory امن مرحله ۲۳ دوباره طراحی شوند.

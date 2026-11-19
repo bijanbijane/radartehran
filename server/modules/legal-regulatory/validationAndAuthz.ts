@@ -1,9 +1,5 @@
 import type { Request } from 'express';
 import {
-  verifyAdminApiAuthorization,
-  verifyAuthenticatedUserHeader,
-} from '../../../src/utils/serverAdminAndTelegramSecurity';
-import {
   ComplianceRequirementRecord,
   GeographicJurisdictionScope,
   LegalRegulatoryActorContext,
@@ -20,9 +16,13 @@ export type LegalRegulatoryErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT_OR_DUPLICATE'
+  | 'IDEMPOTENCY_KEY_REUSED'
   | 'CONCURRENT_MODIFICATION_CONFLICT'
   | 'INVALID_LIFECYCLE_TRANSITION'
   | 'AUTHORITATIVE_AI_VIOLATION'
+  | 'SNAPSHOT_INCONSISTENT'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'RATE_LIMIT_EXCEEDED'
   | 'CROSS_MODULE_WRITE_PROHIBITED'
   | 'PERSISTENCE_UNAVAILABLE';
 
@@ -211,37 +211,8 @@ export function assertAdminOrReviewerActor(
 }
 
 export async function resolveActorContextFromExpressRequest(req: Request): Promise<LegalRegulatoryActorContext> {
-  const headersMap = req.headers as Record<string, string | string[]>;
-  const adminCheck = await verifyAdminApiAuthorization(headersMap);
-  if (adminCheck.authorized) {
-    const reviewerHeader = req.headers['x-legal-actor-id'];
-    const actorId =
-      typeof reviewerHeader === 'string' && reviewerHeader.trim().length > 0
-        ? reviewerHeader.trim()
-        : 'system-admin-key';
-    return {
-      actorId,
-      role: 'REGULATORY_ADMIN',
-      isAuthenticated: true,
-    };
-  }
-
-  const userCheck = await verifyAuthenticatedUserHeader(headersMap);
-  if (userCheck.authenticated && userCheck.uid) {
-    const roleHeader = req.headers['x-legal-actor-role'];
-    const isReviewer = roleHeader === 'LEGAL_REVIEWER' && adminCheck.authorized;
-    return {
-      actorId: userCheck.uid,
-      role: isReviewer ? 'LEGAL_REVIEWER' : 'AUTHENTICATED_USER',
-      isAuthenticated: true,
-    };
-  }
-
-  return {
-    actorId: 'anonymous-public-reader',
-    role: 'PUBLIC_READER',
-    isAuthenticated: false,
-  };
+  const { resolveLegalRegulatoryActor } = await import('./actorResolver');
+  return resolveLegalRegulatoryActor(req);
 }
 
 export function isPrivilegedRegulatoryViewer(actor?: LegalRegulatoryActorContext): boolean {
@@ -288,4 +259,103 @@ export function toPublicComplianceRequirement(
   }
   const { internalReviewerNotes: _notes, ...publicView } = requirement;
   return publicView;
+}
+
+const PROTOTYPE_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+export const PUBLIC_REDACTED_FIELD_NAMES = new Set([
+  'internalReviewerNotes',
+  'restrictedAuditMetadata',
+  'privateReviewerNotes',
+  'ownerPrivateData',
+  'internalAuditMetadata',
+  'internalActorMetadata',
+  'privatePropertyAddress',
+  'privateContactInformation',
+  'internalStorageReferences',
+  'privateDocumentReferences',
+  'exactLocationPrivate',
+  'postalCode',
+  'exactUnitAddress',
+  'ownerUid',
+  'authorizedRepresentatives',
+]);
+
+export function assertSafeEntityId(raw: unknown, fieldName: string, maxLength = 128): string {
+  if (typeof raw !== 'string') {
+    throw new LegalRegulatoryError('VALIDATION_ERROR', `Field '${fieldName}' must be a valid identifier string.`, 400);
+  }
+  const trimmed = raw.trim();
+  if (
+    trimmed.length === 0 ||
+    trimmed.length > maxLength ||
+    /[\s/\\]/.test(trimmed) ||
+    trimmed.includes('..') ||
+    /[\u0000-\u001F\u007F]/.test(trimmed)
+  ) {
+    throw new LegalRegulatoryError(
+      'VALIDATION_ERROR',
+      `Field '${fieldName}' must be a safe non-empty identifier (1-${maxLength} chars).`,
+      400,
+    );
+  }
+  return trimmed;
+}
+
+export function assertSafeJsonPayload(value: unknown, maxDepth = 8, maxArrayLength = 100): void {
+  const walk = (node: unknown, depth: number): void => {
+    if (depth > maxDepth) {
+      throw new LegalRegulatoryError('VALIDATION_ERROR', `Request payload exceeds maximum nesting depth of ${maxDepth}.`, 400);
+    }
+    if (typeof node === 'number') {
+      if (!Number.isFinite(node)) {
+        throw new LegalRegulatoryError('VALIDATION_ERROR', 'Numeric payload values must be finite numbers (NaN/Infinity prohibited).', 400);
+      }
+      return;
+    }
+    if (node === null || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      if (node.length > maxArrayLength) {
+        throw new LegalRegulatoryError('VALIDATION_ERROR', `Payload array exceeds maximum length of ${maxArrayLength}.`, 400);
+      }
+      for (const item of node) walk(item, depth + 1);
+      return;
+    }
+    for (const key of Object.keys(node as Record<string, unknown>)) {
+      if (PROTOTYPE_POLLUTION_KEYS.has(key)) {
+        throw new LegalRegulatoryError('VALIDATION_ERROR', `Forbidden payload key '${key}' rejected.`, 400);
+      }
+      walk((node as Record<string, unknown>)[key], depth + 1);
+    }
+  };
+  walk(value, 0);
+}
+
+export function assertAllowedObjectFields(
+  obj: Record<string, unknown>,
+  allowedFields: ReadonlySet<string>,
+  operationLabel: string,
+): void {
+  for (const key of Object.keys(obj)) {
+    if (PROTOTYPE_POLLUTION_KEYS.has(key) || !allowedFields.has(key)) {
+      throw new LegalRegulatoryError(
+        'VALIDATION_ERROR',
+        `Unknown or unsupported field '${key}' for '${operationLabel}'.`,
+        400,
+      );
+    }
+  }
+}
+
+export function redactPrivateFieldsDeep<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => redactPrivateFieldsDeep(item)) as unknown as T;
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (PUBLIC_REDACTED_FIELD_NAMES.has(k)) continue;
+    out[k] = redactPrivateFieldsDeep(v);
+  }
+  return out as T;
 }

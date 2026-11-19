@@ -1,0 +1,1053 @@
+# **مرحله ۲۲: ایمن‌سازی درخواست مجوز، احراز سمت متقاضی و اتصال مهلت‌های قانونی به Outbox**
+
+**شناسه:** `RT-SOCIAL-IMPL-022-PROPERTY-PERMITS-STANDING-TRANSACTIONAL-DEADLINE-OUTBOX`
+
+**عنوان انگلیسی:** `Permit Applicant Standing, Atomic Application Submission & Deadline Outbox`
+
+**اولویت:** P1 ــ امنیت حقوقی، یکپارچگی داده و اعلان‌های عملیاتی
+
+
+
+تدوین و ثبت شد
+
+وابسته به مراحل ۱۸ و ۲۰
+
+
+
+**هدف:** اصلاح سه نقص مهم در ماژول مجوزهای ملکی:
+
+1. جلوگیری از پذیرفته‌شدن درخواست مجوز بدون احراز واقعی سمت متقاضی.
+2. اتمیک‌کردن ثبت و ارسال درخواست مجوز، Idempotency، Audit و جلوگیری از درخواست فعال تکراری.
+3. اتصال Reminder مهلت‌های قانونی به Notification Outbox مرجع، بدون ارسال مستقیم یا موفقیت ساختگی.
+
+این مرحله فقط ماژول `property-permits` را پوشش می‌دهد. بازطراحی کامل سامانه مجوزها یا ایجاد API عمومی جدید در محدوده آن نیست.
+
+## **۱. یافته‌های مستقیم از نسخه فعلی**
+
+### **۱.۱. نقص امنیتی جدی در احراز مالکیت و سمت متقاضی**
+
+فایل:
+
+`server/modules/property-permits/adapters.ts`
+
+در خطوط 99 تا 131 تابع `createDefaultPropertyPermitsAdapters` ساخته می‌شود.
+
+رفتار پیش‌فرض فعلی در خطوط 104 تا 111:
+
+```
+propertyAndOwnership: overrides.propertyAndOwnership ?? {
+  async verifyApplicantStanding() {
+    return {
+      propertyExists: true,
+      hasVerifiedOrDocumentedStanding: true,
+      standingSummary:
+        'Default adapter standing check passed.'
+    };
+  },
+},
+```
+
+یعنی اگر Integration واقعی Property Rights به ماژول تزریق نشده باشد، سیستم باز هم اعلام می‌کند که:
+
+- ملک وجود دارد.
+- متقاضی دارای سمت تأییدشده یا مستند است.
+
+این رفتار یک **Fail-open واقعی** است؛ چون هیچ استعلام مالکیت یا سمت انجام نمی‌شود.
+
+در نتیجه، استفاده از Factory پیش‌فرض می‌تواند امکان ثبت درخواست مجوز برای ملکی را فراهم کند که ارتباط متقاضی با آن اثبات نشده است.
+
+### **۱.۲. کنترل ناقص محدوده جغرافیایی Authority**
+
+فایل:
+
+`server/modules/property-permits/validationAndAuthz.ts`
+
+تابع:
+
+`assertAuthorityEmpoweredForCategoryAndJurisdiction`
+
+در خطوط 49 تا 83 قرار دارد.
+
+در وضعیت فعلی:
+
+- تطبیق City بررسی می‌شود.
+- District فقط در صورت وجود `subjectRef.districtCode` بررسی می‌شود.
+- `neighborhoodIdsOrSlugs` اصلاً در این تابع کنترل نمی‌شوند.
+
+بنابراین اگر یک Authority فقط در District شماره ۲ مجوز داشته باشد، حذف District از درخواست می‌تواند کنترل محدوده را دور بزند.
+
+این مسئله باید اصلاح شود؛ نبود اطلاعات جغرافیایی نباید به‌معنی مجازبودن درخواست تلقی شود.
+
+### **۱.۳. ثبت Application و Audit اتمیک نیست**
+
+فایل:
+
+`server/modules/property-permits/authorityAndApplicationService.ts`
+
+محدوده:
+
+`133–179`
+
+تابع `createPermitApplication` ابتدا Application را ذخیره می‌کند و سپس Audit Event را می‌نویسد.
+
+در صورت شکست ذخیره Audit، Application باقی می‌ماند، ولی تاریخچه عملیات ناقص است.
+
+مشکل مهم‌تر در:
+
+`authorityAndApplicationService.ts:228–282`
+
+تابع `recordApplicationSubmission` است.
+
+ترتیب فعلی:
+
+1. بررسی Idempotency خارج از Transaction.
+2. خواندن Application.
+3. جست‌وجوی درخواست‌های فعال تکراری.
+4. تغییر Workflow به SUBMITTED.
+5. ذخیره Application.
+6. ذخیره Idempotency Record.
+7. ثبت Audit Event.
+
+هیچ تضمین اتمیکی بین این عملیات وجود ندارد.
+
+همچنین `idempotencyKey` اختیاری است و `PermitIdempotencyRecord` در `types.ts:434–439` فاقد `payloadHash` است.
+
+بنابراین درخواست تکراری با همان کلید ولی Payload متفاوت نیز به‌درستی قابل تشخیص نیست.
+
+### **۱.۴. جلوگیری از درخواست فعال تکراری در برابر رقابت هم‌زمان کافی نیست**
+
+در:
+
+`server/modules/property-permits/firestoreStore.ts:91–106`
+
+تابع `findActiveSubmittedApplications` ابتدا حداکثر ۵۰ سند را دریافت می‌کند و سپس وضعیت آن‌ها را در حافظه فیلتر می‌کند.
+
+این روش دو مشکل دارد:
+
+- اگر ۵۰ سند اول شامل درخواست فعال نباشند ولی سند فعال بعدی وجود داشته باشد، آن سند دیده نمی‌شود.
+- دو درخواست هم‌زمان برای یک ملک و دسته مجوز می‌توانند هر دو بررسی را پشت سر بگذارند.
+
+برای تضمین یکتایی، Query به‌تنهایی کافی نیست؛ باید یک Unique Lock تراکنشی نیز وجود داشته باشد.
+
+### **۱.۵. Reminder مهلت‌ها در مسیر مستقل و غیرقابل‌اتکا اجرا می‌شود**
+
+فایل:
+
+`server/modules/property-permits/inspectionsFeesAndDeadlinesService.ts`
+
+محدوده:
+
+`300–342`
+
+تابع `registerDeadline` ابتدا Deadline را ذخیره می‌کند:
+
+```
+await this.store.saveDeadline(deadline);
+```
+
+سپس در صورت DUE_SOON یا OVERDUE، Adapter اعلان را اجرا می‌کند.
+
+در `adapters.ts:126–130`، Default Notification Adapter فقط یک No-op است.
+
+در نتیجه، Deadline ثبت می‌شود، اما Reminder ممکن است بدون هیچ خطای قابل‌مشاهده‌ای از بین برود.
+
+علاوه بر آن، ذخیره Deadline و درخواست اعلان در یک Transaction نیستند.
+
+### **۱.۶. Factory نیز امکان استفاده تصادفی از Memory Store دارد**
+
+در:
+
+`server/modules/property-permits/index.ts:60–72`
+
+Factory پیش‌فرض این رفتار را دارد:
+
+```
+options.store ??
+(
+  options.useFirestore
+    ? new FirestorePropertyPermitsStore()
+    : new InMemoryPropertyPermitsStore()
+);
+```
+
+یعنی اگر برنامه‌نویس `useFirestore` را تعیین نکند، سیستم InMemory Store می‌سازد.
+
+این رفتار برای Production مناسب نیست.
+
+### **۱.۷. وضعیت زیرساخت Firestore**
+
+کالکشن‌های موجود:
+
+```
+permit_issuing_authorities
+permit_applications
+permit_records
+permit_conditions
+permit_amendments_renewals
+permit_inspections
+permit_fees
+permit_deadlines
+permit_audit_events
+permit_idempotency_keys
+```
+
+در نسخه فعلی، Index و Rule صریحی برای این کالکشن‌ها در فایل‌های سراسری مشاهده نشد.
+
+همچنین Store فعلی در `store.ts:24–67` هیچ قرارداد `runTransaction` ندارد.
+
+## **۲. تصمیم معماری: احراز سمت از منبع معتبر**
+
+ماژول Property Permits نباید خودش درباره مالکیت تصمیم‌گیری مستقل کند.
+
+منبع خواندن اطلاعات سمت متقاضی باید ماژول موجود زیر باشد:
+
+```
+server/modules/property-rights/
+```
+
+این ماژول در نسخه فعلی ساختارهایی مانند موارد زیر دارد:
+
+- `OwnershipInterestRecord`
+- `OwnershipEvidenceRecord`
+- `OwnershipDisputeRecord`
+- `MultiDimensionalStatusVector`
+
+شواهد دقیق:
+
+| فایل                                           | مختصات  |
+| ---------------------------------------------- | ------- |
+| `property-rights/types.ts`                     | 104–129 |
+| `property-rights/types.ts`                     | 48–65   |
+| `property-rights/types.ts`                     | 262–289 |
+| `property-rights/ownershipAndSharesService.ts` | 275–314 |
+| `property-rights/store.ts`                     | 23–40   |
+| `property-rights/firestoreStore.ts`            | 101–109 |
+
+اما یک نکته امنیتی مهم وجود دارد: `FirestorePropertyRightsStore` در صورت نبود اتصال Firestore می‌تواند به Store حافظه‌ای داخلی خود برگردد؛ در `firestoreStore.ts:18–35`.
+
+بنابراین اتصال Permit به Property Rights نباید صرفاً به یک Store با Fallback متکی باشد. Reader مورد استفاده برای احراز سمت باید وجود اتصال Firestore واقعی را اثبات کند و در صورت نبود آن Fail-Closed شود.
+
+## **۳. ساخت Adapter احراز سمت متقاضی**
+
+فایل جدید:
+
+`server/modules/property-permits/propertyRightsStandingAdapter.ts`
+
+قرارداد فعلی:
+
+`PermitsPropertyAndOwnershipAdapter`
+
+در `adapters.ts:16–27` قرار دارد.
+
+این قرارداد باید اطلاعات کافی برای ثبت منشأ احراز سمت در Application را بازگرداند.
+
+نمونه:
+
+```
+export interface ApplicantStandingAssessment {
+  propertyExists: boolean;
+
+  hasVerifiedOrDocumentedStanding: boolean;
+
+  standingLevel:
+    | 'VERIFIED'
+    | 'DOCUMENTED'
+    | 'UNVERIFIED';
+
+  sourceModule: 'PROPERTY_RIGHTS';
+
+  sourceRecordIds: string[];
+
+  evidenceIds: string[];
+
+  assessedAtIso: string;
+
+  standingSummary: string;
+}
+```
+
+### **۳.۱. قواعد PROPERTY_OWNER**
+
+فقط وقتی سمت قابل‌قبول است که:
+
+1. `propertyId` رکورد با ملک درخواست برابر باشد.
+2. `partyId` با `applicantPartyId` برابر باشد.
+3. وضعیت Verification برابر `VERIFIED` یا `DOCUMENTED` باشد.
+4. Legal Status متناسب با سطح Verification باشد.
+5. تاریخ شروع اعتبار گذشته یا برابر زمان بررسی باشد.
+6. تاریخ انقضا یا خاتمه اعتبار سپری نشده باشد.
+7. رکورد Terminated یا Superseded نباشد.
+8. `activeDisputeIds` خالی باشد.
+9. شناسه Evidence معتبر وجود داشته باشد.
+10. سهم مالکیت، در صورت استفاده برای احراز سمت مالک یا شریک، صفر یا نامشخص نباشد.
+
+برای رکوردهای تأییدشده:
+
+```
+verificationStatus = VERIFIED
+legalStatus = INDEPENDENTLY_VERIFIED_INTEREST
+```
+
+برای رکورد مستندنشده به‌صورت مستقل اما دارای مدرک قابل‌قبول:
+
+```
+verificationStatus = DOCUMENTED
+legalStatus = DOCUMENTED_UNVERIFIED_INTEREST
+```
+
+این دو وضعیت نباید در Application یکسان نمایش داده شوند.
+
+**نکته:** Documented Standing به‌معنی سند مالکیت رسمی یا مالکیت حقوقی قطعی نیست. وضعیت مستند باید به‌صورت مستقل در Application ذخیره شود.
+
+### **۳.۲. قواعد CO_OWNER**
+
+برای `CO_OWNER` همان کنترل‌های مالکیت اعمال شوند، اما سهم و نوع رابطه نیز در ارزیابی حفظ شود.
+
+نباید صرفاً از روی نام شخص یا رابطه اعلام‌شده در فرم، وضعیت شریک مالک ایجاد شود.
+
+### **۳.۳. نماینده، توسعه‌دهنده و پیمانکار**
+
+برای این سه رابطه:
+
+```
+AUTHORIZED_REPRESENTATIVE
+DEVELOPER_WITH_MANDATE
+CONTRACTOR_WITH_AUTHORIZATION
+```
+
+صرف وجود یک سند `POWER_OF_ATTORNEY_VEKALATNAMEH` کافی نیست.
+
+باید احراز شود:
+
+- سند به شخص یا شرکت موردنظر مربوط است.
+- شناسه نماینده یا پیمانکار مشخص است.
+- اختیار مربوط به همان ملک است.
+- اعتبار زمانی سند برقرار است.
+- نوع عملیات مجاز در دامنه اختیار قرار دارد.
+- سند لغو یا منقضی نشده است.
+
+در نسخه فعلی، Resolver کاملی که تمام این ارتباط‌ها را اثبات کند مشاهده نشده است.
+
+بنابراین یک Adapter مستقل با این قرارداد آماده شود:
+
+```
+export interface PermitMandateResolver {
+  verifyMandate(params: {
+    propertyId: string;
+    principalPartyId: string;
+    representativePartyId: string;
+    relationship: ApplicantRelationshipType;
+    permitCategory: PermitCategoryCode;
+  }): Promise<{
+    valid: boolean;
+    mandateReferenceId?: string;
+    evidenceIds: string[];
+    expiresAtIso?: string;
+    reason?: string;
+  }>;
+}
+```
+
+در نبود این Adapter یا در نبود مدرک کافی، درخواست باید با 403 رد شود.
+
+## **۴. ثبت Snapshot احراز سمت در Application**
+
+در فایل:
+
+`server/modules/property-permits/types.ts`
+
+به `PermitApplicationRecord` در محدوده خطوط 185 تا 210 فیلد زیر اضافه شود:
+
+```
+interface ApplicantStandingSnapshot {
+  standingLevel: 'VERIFIED' | 'DOCUMENTED';
+
+  sourceModule: 'PROPERTY_RIGHTS';
+
+  sourceRecordIds: string[];
+
+  evidenceIds: string[];
+
+  assessedAtIso: string;
+}
+```
+
+و:
+
+```
+applicantStandingSnapshot: ApplicantStandingSnapshot;
+```
+
+این Snapshot برای Audit و بررسی بعدی حفظ می‌شود.
+
+هیچ‌گونه نام کامل، شناسه ملی یا اطلاعات محرمانه Party در این Snapshot اضافه نشود.
+
+## **۵. اصلاح کنترل محدوده Authority**
+
+فایل:
+
+`server/modules/property-permits/validationAndAuthz.ts`
+
+تابع:
+
+`assertAuthorityEmpoweredForCategoryAndJurisdiction`
+
+در خطوط 49 تا 83 اصلاح شود.
+
+### **قواعد جدید**
+
+**District:**
+
+اگر Authority دارای District محدود است:
+
+- `subjectRef.districtCode` باید موجود باشد.
+- مقدار آن باید در `districtCodes` ثبت‌شده Authority باشد.
+- نبود District نباید مجاز تلقی شود.
+
+**Neighborhood:**
+
+اگر Authority دارای Neighborhood محدود است:
+
+- `subjectRef.neighborhoodIdOrSlug` باید موجود باشد.
+- مقدار Canonical آن باید با محدوده ثبت‌شده Authority تطبیق داشته باشد.
+- مقایسه باید از خروجی Canonical Geography انجام شود، نه رشته خام غیرقابل‌اعتماد.
+
+### **جدول نتیجه**
+
+| وضعیت                                                    | نتیجه |
+| -------------------------------------------------------- | ----- |
+| Authority فقط یک شهر دارد و City تطبیق دارد              | ادامه |
+| Authority محدود به District و District درخواست خالی است  | رد    |
+| District با محدوده Authority متفاوت است                  | رد    |
+| Authority محدود به Neighborhood و مقدار درخواست خالی است | رد    |
+| Neighborhood خارج از محدوده است                          | رد    |
+| Authority غیرفعال است                                    | رد    |
+| Category در اختیارات Authority نیست                      | رد    |
+
+### **کد خطا**
+
+```
+JURISDICTION_MISMATCH
+AUTHORITY_NOT_EMPOWERED_FOR_CATEGORY
+AUTHORITY_NOT_ACTIVE
+CANONICAL_GEO_REFERENCE_REQUIRED
+```
+
+همچنین در Factory تولیدی، Authorityهای `isSyntheticTestFixture=true` نباید قابل استفاده باشند.
+
+## **۶. ایجاد Transaction واقعی برای Property Permits**
+
+فایل:
+
+`server/modules/property-permits/store.ts`
+
+قرارداد Store باید گسترش یابد:
+
+```
+export interface PropertyPermitsStore {
+  runTransaction<T>(
+    work: (
+      tx: PropertyPermitsUnitOfWork
+    ) => Promise<T>
+  ): Promise<T>;
+
+  // Existing Store methods...
+}
+```
+
+قرارداد `PropertyPermitsUnitOfWork` باید عملیات زیر را پوشش دهد:
+
+- Read Authority
+- Read Application
+- Query درخواست‌های فعال
+- Read و Write Idempotency
+- Read و Write Active Application Lock
+- Create و Update Application
+- Append Audit Event
+- Create Deadline
+- ثبت Outbox با همان Transaction Context
+
+### **پیاده‌سازی در Firestore**
+
+فایل:
+
+`server/modules/property-permits/firestoreStore.ts`
+
+از `db.runTransaction` واقعی استفاده شود.
+
+همه Readها باید پیش از نخستین Write اجرا شوند.
+
+استفاده از `db.collection().doc().set()` مستقل در Callback تراکنش ممنوع است.
+
+### **InMemory Store**
+
+در:
+
+`server/modules/property-permits/store.ts`
+
+پیاده‌سازی Transaction تستی باید:
+
+- Snapshot پیش از شروع عملیات ایجاد کند.
+- تمام عملیات نوشتن را تا پایان تراکنش Stage کند.
+- در صورت خطا Rollback انجام دهد.
+- Read-after-Write را تشخیص دهد و تست را Fail کند.
+
+## **۷. اصلاح createPermitApplication**
+
+فایل:
+
+`authorityAndApplicationService.ts`
+
+محدوده:
+
+`133–179`
+
+ترتیب جدید:
+
+1. Authentication و Actor Context معتبر.
+2. اعتبارسنجی ورودی.
+3. دریافت Canonical Property Reference.
+4. دریافت Authority.
+5. بررسی شهر، District و Neighborhood.
+6. بررسی Category و Authority Empowerment.
+7. احراز سمت واقعی متقاضی.
+8. بررسی محدودیت و وضعیت نمایندگی در صورت لزوم.
+9. ورود به Firestore Transaction.
+10. خواندن مجدد Authority برای بررسی Active بودن در لحظه Commit.
+11. ایجاد Application.
+12. ثبت `applicantStandingSnapshot`.
+13. ثبت Audit Event.
+14. Commit.
+
+Application و Audit باید با هم ثبت شوند.
+
+اگر یکی از دو عملیات شکست بخورد، هیچ‌کدام نباید باقی بمانند.
+
+## **۸. اصلاح Idempotency در ثبت درخواست**
+
+فایل:
+
+`server/modules/property-permits/authorityAndApplicationService.ts`
+
+تابع:
+
+`recordApplicationSubmission`
+
+در خطوط 228 تا 282.
+
+### **۸.۱. اجباری‌کردن Idempotency Key**
+
+در محیط Production، این فیلد دیگر اختیاری نباشد:
+
+```
+idempotencyKey: string;
+```
+
+شناسه سند Idempotency باید Hash شده باشد:
+
+```
+const idempotencyDocumentId = sha256(
+  `${actor.actorId}|SUBMIT_APPLICATION|${idempotencyKey}`
+);
+```
+
+از قرار دادن مستقیم کلید خام کاربر در Document Path جلوگیری شود.
+
+### **۸.۲. افزودن Payload Hash**
+
+در `PermitIdempotencyRecord`:
+
+```
+interface PermitIdempotencyRecord {
+  key: string;
+
+  operation:
+    | 'SUBMIT_APPLICATION'
+    | 'REGISTER_PERMIT';
+
+  targetId: string;
+
+  actorId: string;
+
+  payloadHash: string;
+
+  createdAt: string;
+}
+```
+
+رفتار:
+
+| وضعیت                           | پاسخ             |
+| ------------------------------- | ---------------- |
+| همان Key و همان Payload         | همان Application |
+| همان Key و Payload متفاوت       | 409              |
+| Key خالی                        | 400              |
+| Application ناموجود             | 404              |
+| Application متعلق به کاربر دیگر | 403              |
+
+### **۸.۳. جلوگیری قطعی از درخواست فعال تکراری**
+
+یک سند Lock در کالکشن جدید زیر ایجاد شود:
+
+```
+permit_active_application_keys/{lockId}
+```
+
+شناسه:
+
+```
+const lockId = sha256(
+  `${propertyId}|${permitCategory}|${issuingAuthorityId}`
+);
+```
+
+قرارداد:
+
+```
+interface ActivePermitApplicationLock {
+  propertyId: string;
+
+  permitCategory: PermitCategoryCode;
+
+  issuingAuthorityId: string;
+
+  applicationId: string;
+
+  workflowStatus: ApplicationWorkflowStatus;
+
+  revision: number;
+
+  updatedAtIso: string;
+}
+```
+
+در یک تراکنش:
+
+1. Idempotency Record خوانده شود.
+2. Application خوانده شود.
+3. Lock مربوطه خوانده شود.
+4. درخواست‌های فعال قبلی بررسی شوند.
+5. وضعیت Lock با Application مرجع تطبیق داده شود.
+6. در صورت وجود درخواست فعال دیگر، 409 برگردد.
+7. Lock و Application و Idempotency و Audit ثبت شوند.
+
+اگر Lock به Application ناموجود یا ناسازگار اشاره کند، عملیات باید متوقف شود؛ جایگزینی خودکار Lock ناسالم ممنوع است.
+
+### **۸.۴. آزادسازی Lock**
+
+Lock باید در همان Transaction تغییر وضعیت‌های زیر نیز اصلاح شود:
+
+- `APPROVED`
+- `REJECTED`
+- `WITHDRAWN`
+- `CLOSED`
+
+بنابراین دو مسیر زیر نیز باید به Transaction متصل شوند:
+
+`authorityAndApplicationService.ts:360–391`
+
+`authorityAndApplicationService.ts:393–409`
+
+تغییر وضعیت به `ACKNOWLEDGED`، `UNDER_REVIEW`، `ADDITIONAL_INFORMATION_REQUIRED` و `RESUBMITTED` نباید Lock را آزاد کند.
+
+## **۹. اتصال Deadline Reminder به Outbox مرجع**
+
+فایل فعلی:
+
+`server/modules/property-permits/inspectionsFeesAndDeadlinesService.ts`
+
+تابع `registerDeadline` در خطوط 300 تا 342، تنها نقطه واقعی تولید Reminder این ماژول است.
+
+Default Notification Adapter در `adapters.ts:126–130` حذف شود.
+
+به‌جای آن از قرارداد مرحله ۲۰ استفاده شود:
+
+```
+server/modules/core/notificationOutboxContracts.ts
+server/modules/notification-orchestration/domainNotificationOutbox.ts
+```
+
+کالکشن جدید Outbox ایجاد نشود.
+
+### **۹.۱. دو Event مجاز**
+
+در `domainEventCatalog.ts` این دو Event اضافه شوند:
+
+| وضعیت Deadline | Event Type                 | Priority  |
+| -------------- | -------------------------- | --------- |
+| `DUE_SOON`     | `permit.deadline.due_soon` | IMPORTANT |
+| `OVERDUE`      | `permit.deadline.overdue`  | URGENT    |
+
+قرارداد مشترک:
+
+| فیلد          | مقدار                          |
+| ------------- | ------------------------------ |
+| Source Domain | `EMP_69_PROPERTY_PERMITS`      |
+| Category      | `DOCUMENT_STATUS_UPDATES`      |
+| Template      | `tpl_permit_deadline_reminder` |
+| Channel       | `IN_APP`                       |
+| Promotional   | `false`                        |
+
+در این نام‌گذاری، `EMP_68` متعلق به زیرساخت Notification Orchestration است؛ بنابراین برای دامنه جدید مجوزها شناسه `EMP_69` تعریف شود.
+
+### **۹.۲. متغیرهای مجاز Notification**
+
+```
+{
+  deadlineId: string;
+  deadlineTitle: string;
+  deadlineClassification: string;
+  urgencyStatus: 'DUE_SOON' | 'OVERDUE';
+  dueDateIso: string;
+  targetType: string;
+}
+```
+
+اطلاعات شخصی، متن خصوصی پرونده، اطلاعات مالکیت و مدارک متقاضی نباید داخل Event قرار بگیرند.
+
+### **۹.۳. کنترل گیرنده**
+
+در حال حاضر `recipientPartyId` از ورودی Deadline دریافت می‌شود.
+
+اما Party ID لزوماً همان UID حساب کاربری نیست.
+
+بنابراین Adapter جدید:
+
+```
+export interface PermitsNotificationRecipientResolver {
+  resolveRecipientUid(
+    partyId: string
+  ): Promise<string | null>;
+}
+```
+
+باید Party را به UID معتبر حساب تبدیل کند.
+
+همچنین Party موردنظر باید از اشخاص مجاز پرونده یا Deadline باشد.
+
+مثلاً:
+
+- Application: متقاضی یا نماینده مجاز.
+- Permit: دارنده ثبت‌شده مجاز.
+- Condition: شخص مسئول شرط.
+- Inspection و Fee: اشخاص مجاز مرتبط با پرونده مادر.
+
+ارسال UID دلخواه از ورودی کلاینت ممنوع است.
+
+اگر Recipient قابل احراز نباشد، Reminder تولید نشود و وضعیت Unresolved ثبت شود؛ UID را حدس نزنید.
+
+### **۹.۴. اتمیک‌کردن Deadline و Outbox**
+
+ترتیب:
+
+1. خواندن هدف Deadline.
+2. اعتبارسنجی Target Type.
+3. استخراج Property ID از منبع اصلی.
+4. تطبیق Property ID با درخواست.
+5. بررسی Recipient مجاز.
+6. تبدیل Party به UID.
+7. ایجاد Deadline.
+8. محاسبه Urgency.
+9. در صورت DUE_SOON یا OVERDUE، ثبت Outbox با همان Transaction.
+10. Commit.
+
+اگر Outbox شکست بخورد، Deadline نیز نباید به‌صورت ناقص ثبت شود؛ مشروط به اینکه ثبت Reminder برای آن درخواست الزامی باشد.
+
+اگر Reminder اصلاً درخواست نشده باشد، Deadline بدون Event قابل ثبت است.
+
+### **محدودیت مهم**
+
+`UPCOMING` نباید با Reminder فوری نمایش داده شود.
+
+این مرحله سیستم زمان‌بندی دوره‌ای یا Cron برای ارسال Reminderهای آینده نمی‌سازد. فقط همان رفتار واقعی فعلی `registerDeadline` را به Outbox پایدار تبدیل می‌کند.
+
+## **۱۰. اصلاح Factory تولیدی**
+
+فایل:
+
+`server/modules/property-permits/index.ts`
+
+در حال حاضر Store پیش‌فرض InMemory است.
+
+برای جلوگیری از این رفتار:
+
+- انتخاب Store باید صریح باشد.
+- Production فقط Firestore Store را بپذیرد.
+- نبود Firestore باید Fail-Closed شود.
+- Property Ownership Adapter در Production اجباری باشد.
+- Mandate Resolver برای روابط نمایندگی اجباری باشد.
+- Notification Outbox و Recipient Resolver در صورت فعال‌بودن Reminder الزامی باشند.
+- Test Store فقط با انتخاب صریح محیط تست قابل استفاده باشد.
+
+نمونه:
+
+```
+const permitsModule =
+  createPropertyPermitsModuleFacade({
+    useFirestore: true,
+    adapters: {
+      propertyAndOwnership:
+        productionStandingAdapter,
+      mandateResolver:
+        productionMandateResolver,
+      notificationRecipient:
+        notificationRecipientResolver,
+    },
+    notificationOutbox,
+  });
+```
+
+Factory در صورت نبود هر وابستگی لازم باید خطای مشخص بدهد.
+
+**در این مرحله Property Permits به&#x20;**`server.ts`**&#x20;متصل نمی‌شود؛ چون در نسخه بررسی‌شده Router و Bootstrap تولیدی این ماژول وجود ندارند.**
+
+## **۱۱. اصلاح Firestore Index و Rules**
+
+### **فایل&#x20;**`firestore.indexes.json`
+
+Index جدید برای بررسی درخواست‌های فعال:
+
+```
+{
+  "collectionGroup": "permit_applications",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "subjectRef.propertyId",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "permitCategory",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "issuingAuthorityId",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "workflowStatus",
+      "order": "ASCENDING"
+    }
+  ]
+}
+```
+
+Unique Lock با شناسه مستقیم Document خوانده می‌شود و نیازی به Index جداگانه ندارد.
+
+Outbox نیز باید از Indexهای مرحله ۲۰ استفاده کند.
+
+### **فایل&#x20;**`firestore.rules`
+
+برای کالکشن‌های زیر دسترسی مستقیم Client بسته بماند:
+
+```
+permit_applications
+permit_idempotency_keys
+permit_audit_events
+permit_active_application_keys
+permit_deadlines
+```
+
+همچنین مسیرهای زیر Backend-only باشند:
+
+```
+no_domain_event_outbox
+```
+
+تمام عملیات از Admin SDK انجام شوند.
+
+## **۱۲. فایل‌های اصلی مرحله ۲۲**
+
+| فایل                                                                    | عملیات                                         |
+| ----------------------------------------------------------------------- | ---------------------------------------------- |
+| `server/modules/property-permits/adapters.ts`                           | حذف Default Standing مثبت و Notification No-op |
+| `server/modules/property-permits/propertyRightsStandingAdapter.ts`      | Adapter احراز سمت جدید                         |
+| `server/modules/property-permits/store.ts`                              | تعریف UnitOfWork و Transaction                 |
+| `server/modules/property-permits/firestoreStore.ts`                     | Transaction واقعی و Unique Lock                |
+| `server/modules/property-permits/types.ts`                              | Standing Snapshot و Payload Hash               |
+| `server/modules/property-permits/validationAndAuthz.ts`                 | اصلاح District و Neighborhood                  |
+| `server/modules/property-permits/authorityAndApplicationService.ts`     | Atomic Create/Submit و آزادسازی Lock           |
+| `server/modules/property-permits/inspectionsFeesAndDeadlinesService.ts` | Atomic Deadline و Outbox                       |
+| `server/modules/property-permits/index.ts`                              | Factory سخت‌گیرانه Production                  |
+| `server/modules/notification-orchestration/types.ts`                    | افزودن `EMP_69_PROPERTY_PERMITS`               |
+| `server/modules/notification-orchestration/domainEventCatalog.ts`       | دو Reminder Event                              |
+| `firestore.rules`                                                       | Backend-only                                   |
+| `firestore.indexes.json`                                                | Composite Index                                |
+| `firebase-blueprint.json`                                               | ثبت Schema و Lock                              |
+| `tests/property-permits-standing-and-transaction.test.ts`               | تست‌های واحد                                   |
+| `tests/property-permits-application-deadline-outbox.emulator.test.ts`   | تست Firestore                                  |
+
+## **۱۳. آزمون‌های پذیرش**
+
+دو فایل تست جدید:
+
+```
+tests/property-permits-standing-and-transaction.test.ts
+
+tests/property-permits-application-deadline-outbox.emulator.test.ts
+```
+
+تعداد: **۳۴ آزمون جدید**
+
+| شناسه         | سناریو                                 | معیار قبولی                 |
+| ------------- | -------------------------------------- | --------------------------- |
+| PERMITINT-001 | Default Standing Adapter               | Fail-Closed                 |
+| PERMITINT-002 | Property ناموجود                       | 404                         |
+| PERMITINT-003 | Owner با Verification معتبر            | مجاز                        |
+| PERMITINT-004 | Co-owner با Standing مستند و Evidence  | مجاز مشروط                  |
+| PERMITINT-005 | Ownership Dispute فعال                 | رد                          |
+| PERMITINT-006 | Interest منقضی یا خاتمه‌یافته          | رد                          |
+| PERMITINT-007 | سهم مالکیت صفر یا نامشخص               | رد                          |
+| PERMITINT-008 | Representative بدون Mandate معتبر      | رد                          |
+| PERMITINT-009 | عدم تطابق Property یا Party            | رد                          |
+| PERMITINT-010 | Authority غیرفعال                      | رد                          |
+| PERMITINT-011 | District محدود و District خالی         | رد                          |
+| PERMITINT-012 | District خارج از محدوده                | رد                          |
+| PERMITINT-013 | Neighborhood محدود و خالی              | رد                          |
+| PERMITINT-014 | Neighborhood خارج از محدوده            | رد                          |
+| PERMITINT-015 | Synthetic Authority در Production      | رد                          |
+| PERMITINT-016 | Create Application و Audit             | اتمیک                       |
+| PERMITINT-017 | ثبت Standing Snapshot                  | صحیح                        |
+| PERMITINT-018 | عدم ذخیره PII در Snapshot              | موفق                        |
+| PERMITINT-019 | Submission بدون Idempotency Key        | رد                          |
+| PERMITINT-020 | Retry با همان Payload                  | همان Application            |
+| PERMITINT-021 | همان Key با Payload متفاوت             | 409                         |
+| PERMITINT-022 | دو Submission هم‌زمان                  | فقط یکی موفق                |
+| PERMITINT-023 | وجود Application فعال قبلی             | 409                         |
+| PERMITINT-024 | Lock ناسالم یا Stale                   | Fail-Closed                 |
+| PERMITINT-025 | شکست Audit                             | Rollback Application        |
+| PERMITINT-026 | Deadline با Target نامعتبر             | رد                          |
+| PERMITINT-027 | عدم تطابق Property ID                  | رد                          |
+| PERMITINT-028 | DUE_SOON و OVERDUE                     | Outbox اتمیک                |
+| PERMITINT-029 | Party ID بدون UID معتبر                | عدم ارسال                   |
+| PERMITINT-030 | سایر Urgencyها                         | عدم تولید Reminder غیرضروری |
+| PERMITINT-031 | شکست Outbox                            | Rollback Deadline           |
+| PERMITINT-032 | Retry ثبت Deadline                     | بدون Event تکراری           |
+| PERMITINT-033 | Factory بدون Firestore یا Adapter لازم | Fail-Closed                 |
+| PERMITINT-034 | Firestore Rules                        | منع دسترسی مستقیم Client    |
+
+علاوه بر این، تمام ۳۰ سناریوی تست قبلی باید با Adapterهای تستی صریح همچنان موفق باشند.
+
+## **۱۴. دستورات اجرای تست**
+
+تست‌های Domain:
+
+```
+npx tsx --test \
+  server/modules/property-permits/__tests__/propertyPermits.test.ts \
+  tests/property-permits-standing-and-transaction.test.ts
+```
+
+تست Firestore Emulator:
+
+```
+firebase emulators:exec \
+  --project demo-radar-property-permits \
+  --only firestore \
+  "npx tsx --test tests/property-permits-application-deadline-outbox.emulator.test.ts"
+```
+
+کنترل TypeScript:
+
+```
+npm run typecheck
+```
+
+کنترل معماری:
+
+```
+npm run arch:check
+```
+
+کنترل Rules:
+
+```
+npm run test:rules:static
+npm run test:rules
+```
+
+تست‌های هم‌زمانی باید با دو Store مستقل در Firestore Emulator اجرا شوند؛ موفقیت InMemory Mutex اثبات‌کننده صحت تراکنش چندنمونه‌ای نیست.
+
+## **۱۵. محدوده‌ای که در مرحله ۲۲ تغییر نمی‌کند**
+
+در این مرحله انجام نشوند:
+
+- ساخت Router یا فعال‌سازی API تولیدی Property Permits.
+- تغییر موتور Property Rights.
+- ایجاد Registry جدید مالکیت.
+- تبدیل مدرک عادی به سند مالکیت رسمی.
+- بازنویسی تمام ۲۱ عملیات ماژول مجوزها.
+- اتصال مستقیم Email، SMS یا Push.
+- ساخت Notification Outbox موازی.
+- ساخت Worker یا Queue جدید.
+- انتقال ماژول Property Tax یا Dispute Resolution.
+- حذف داده‌های قدیمی مجوزها.
+- ایجاد Microservice جدید.
+
+## **۱۶. ترتیب اجرای پیشنهادی**
+
+1. **بخش اول: امنیت احراز سمت**
+
+   حذف Adapter مثبت پیش‌فرض و اتصال Read-only به Property Rights و Canonical Property Registry.
+2. **بخش دوم: اصلاح محدوده Authority**
+
+   کنترل اجباری District و Neighborhood و رد داده جغرافیایی ناقص.
+3. **بخش سوم: Transaction Store**
+
+   ساخت UnitOfWork و Transaction واقعی برای Firestore.
+4. **بخش چهارم: Application Integrity**
+
+   اتمیک‌کردن Create و Submission و Idempotency و Audit و Unique Lock.
+5. **بخش پنجم: Deadline Outbox**
+
+   تبدیل Reminder قدیمی به رویداد پایدار و تراکنشی در Outbox مرحله ۲۰.
+6. **بخش ششم: آزمون و تحویل**
+
+   اجرای ۳۴ تست جدید، ۳۰ تست Regression و آزمون هم‌زمانی Firestore.
+
+## **۱۷. معیار نهایی تکمیل**
+
+مرحله فقط زمانی تکمیل‌شده محسوب شود که:
+
+1. هیچ Applicant بدون Standing معتبر نتواند Application بسازد.
+2. مالکیت و سمت نمایندگی از داده واقعی و قابل‌ردیابی استخراج شوند.
+3. Authority محدود به منطقه نتواند از طریق حذف District یا Neighborhood دور زده شود.
+4. Application و Audit در عملیات Create اتمیک باشند.
+5. Submission و Idempotency و Audit و Unique Lock در یک Transaction ثبت شوند.
+6. در شرایط ارسال هم‌زمان برای یک ملک و دسته مجوز، فقط یک Application فعال پذیرفته شود.
+7. Request Retry باعث ایجاد رکورد تکراری نشود.
+8. Deadline و Outbox در یک Transaction ثبت شوند.
+9. Party ID بدون UID معتبر به گیرنده اعلان تبدیل نشود.
+10. هیچ Default Adapter موفقیت ساختگی تولید نکند.
+11. هیچ مسیر Production از InMemory Store استفاده نکند.
+12. هر ۳۴ تست جدید و ۳۰ تست قبلی موفق باشند.
+
+## **وضعیت رسمی نقشه راه**
+
+**مرحله ۲۲**
+
+`RT-SOCIAL-IMPL-022-PROPERTY-PERMITS-STANDING-TRANSACTIONAL-DEADLINE-OUTBOX`
+
+**عنوان:** ایمن‌سازی احراز سمت متقاضی، تراکنشی‌سازی ثبت درخواست مجوز و اتصال مهلت‌های قانونی به Outbox
+
+**تست‌های پذیرش جدید:** ۳۴
+
+تدوین‌شده و ثبت‌شده
+
+**اجرا و تأیید:** انجام نشده
+
+**وابستگی:** مراحل ۱۸ و ۲۰
+
+**مرحله بعدی:** `RT-SOCIAL-IMPL-023`
+
+### **نکته درباره مرجع پروژه**
+
+فایل مرجع از Library با همان شناسه قبلی بازیابی و SHA-256 آن تطبیق داده شد:
+
+```
+29f478df9dfd272300fcd7db499ed848573fcd0a0780fcdd782cf26edd2e2079
+```
+
+مرحله ۲۲ با شناسه، محدوده، مسیر فایل‌ها، قراردادهای داده و تست‌های بالا در حافظه ثبت شد.
+
+**مرحله ۲۳ نباید دوباره احراز سمت متقاضی، Unique Lock درخواست مجوز، Transaction ثبت Application یا Reminder Outbox را طراحی کند.** دامنه بعدی باید از ماژول دیگری مانند Property Tax یا Dispute Resolution انتخاب شود و بر اساس کد واقعی همان بخش تدوین گردد.

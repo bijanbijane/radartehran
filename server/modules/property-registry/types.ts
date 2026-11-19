@@ -263,6 +263,48 @@ export interface PropertyRegistryRepositoryAdapter {
   getHistoryRecords: (assetId: string) => Promise<StoredAssetHistoryRecord[]>;
 }
 
+export interface PropertyContextAuthorizationSnapshot {
+  propertyId: string;
+  category: PropertyAssetCategory;
+  cityId: string;
+  districtNumber?: number;
+  neighborhoodId: string;
+  areaSqm: number;
+  landAreaSqm?: number;
+  constructionYear?: number;
+  totalFloors?: number;
+  status: AssetRecordStatus;
+}
+
+export type PropertyContextReadAuthorizationResult =
+  | {
+      status: 'FOUND';
+      authorized: true;
+      snapshot: PropertyContextAuthorizationSnapshot;
+    }
+  | {
+      status: 'NOT_FOUND';
+      authorized: false;
+      snapshot: null;
+    }
+  | {
+      status: 'FORBIDDEN';
+      authorized: false;
+      snapshot: null;
+    };
+
+export interface PropertyOwnershipAuthorizationReader {
+  /**
+   * Read-only verification of registered owner, co-owner, or active non-expired
+   * representative/delegated access for `(propertyId, actorId)` at `nowIso`.
+   */
+  isActorAuthorizedForProperty(input: {
+    propertyId: string;
+    actorId: string;
+    nowIso: string;
+  }): Promise<boolean>;
+}
+
 export interface PropertyRegistryModuleDependencies {
   tokenVerifier: FirebaseTokenVerifierAdapter;
   adminStore: DelegatedAdminStoreAdapter;
@@ -272,6 +314,7 @@ export interface PropertyRegistryModuleDependencies {
   repository: PropertyRegistryRepositoryAdapter;
   geographyAdapter: GeographyReferenceAdapter;
   bargainsAdapter?: BargainsListingConsumerAdapter;
+  ownershipAuthorizationReader?: PropertyOwnershipAuthorizationReader;
   primaryAdminEmails?: string[];
   nowFn?: () => number;
 }

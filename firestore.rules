@@ -767,5 +767,46 @@ service cloud.firestore {
     match /socialFeedIndexJobs/{jobId} {
       allow read, write: if false;
     }
+
+    // Stage 29 (RT-SOCIAL-IMPL-029): Legal & Regulatory durable transactional collections (server-only via Admin SDK)
+    match /legal_regulatory_sources_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_regulatory_documents_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_regulatory_provisions_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_applicability_rules_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_change_records_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_conflict_records_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_compliance_requirements_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_ai_suggestions_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_regulatory_audit_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    match /legal_regulatory_idempotency_v1/{docId} {
+      allow read, write: if false;
+    }
   }
 }

@@ -497,6 +497,158 @@
         "formulaVersion",
         "projectionVersion"
       ]
+    },
+    "LegalRegulatorySource": {
+      "title": "LegalRegulatorySource",
+      "description": "Authoritative legal or regulatory source record (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "officialTitleFa": { "type": "string" },
+        "issuingAuthority": { "type": "string" },
+        "sourceCategory": { "type": "string" },
+        "reliabilityTier": { "type": "string" },
+        "verificationStatus": { "type": "string" },
+        "version": { "type": "number" },
+        "createdAtIso": { "type": "string" },
+        "updatedAtIso": { "type": "string" }
+      },
+      "required": ["id", "officialTitleFa", "issuingAuthority", "sourceCategory", "reliabilityTier", "verificationStatus", "version", "createdAtIso", "updatedAtIso"]
+    },
+    "LegalRegulatoryDocument": {
+      "title": "LegalRegulatoryDocument",
+      "description": "Structured legal or regulatory document linked to an official source (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sourceId": { "type": "string" },
+        "documentCode": { "type": "string" },
+        "titleFa": { "type": "string" },
+        "lifecycleStatus": { "type": "string" },
+        "version": { "type": "number" },
+        "createdAtIso": { "type": "string" },
+        "updatedAtIso": { "type": "string" }
+      },
+      "required": ["id", "sourceId", "documentCode", "titleFa", "lifecycleStatus", "version", "createdAtIso", "updatedAtIso"]
+    },
+    "LegalRegulatoryProvision": {
+      "title": "LegalRegulatoryProvision",
+      "description": "Versioned legal provision with optimistic concurrency and provenance (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sourceId": { "type": "string" },
+        "documentId": { "type": "string" },
+        "articleNumber": { "type": "string" },
+        "titleFa": { "type": "string" },
+        "lifecycleStatus": { "type": "string" },
+        "version": { "type": "number" },
+        "createdAtIso": { "type": "string" },
+        "updatedAtIso": { "type": "string" }
+      },
+      "required": ["id", "sourceId", "documentId", "articleNumber", "titleFa", "lifecycleStatus", "version", "createdAtIso", "updatedAtIso"]
+    },
+    "LegalApplicabilityRule": {
+      "title": "LegalApplicabilityRule",
+      "description": "Deterministic legal applicability rule mapping property attributes to provisions (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "provisionId": { "type": "string" },
+        "ruleNameFa": { "type": "string" },
+        "priority": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "version": { "type": "number" },
+        "createdAtIso": { "type": "string" },
+        "updatedAtIso": { "type": "string" }
+      },
+      "required": ["id", "provisionId", "ruleNameFa", "priority", "isActive", "version", "createdAtIso", "updatedAtIso"]
+    },
+    "LegalChangeRecord": {
+      "title": "LegalChangeRecord",
+      "description": "Immutable regulatory amendment, repeal, or supersession history record (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "targetProvisionId": { "type": "string" },
+        "changeType": { "type": "string" },
+        "previousVersion": { "type": "number" },
+        "newVersion": { "type": "number" },
+        "effectiveDateIso": { "type": "string" },
+        "createdAtIso": { "type": "string" }
+      },
+      "required": ["id", "targetProvisionId", "changeType", "previousVersion", "newVersion", "effectiveDateIso", "createdAtIso"]
+    },
+    "LegalConflictRecord": {
+      "title": "LegalConflictRecord",
+      "description": "Registered conflict or precedence ruling between regulatory provisions (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "primaryProvisionId": { "type": "string" },
+        "conflictingProvisionId": { "type": "string" },
+        "resolutionStatus": { "type": "string" },
+        "version": { "type": "number" },
+        "createdAtIso": { "type": "string" },
+        "updatedAtIso": { "type": "string" }
+      },
+      "required": ["id", "primaryProvisionId", "conflictingProvisionId", "resolutionStatus", "version", "createdAtIso", "updatedAtIso"]
+    },
+    "LegalComplianceRequirement": {
+      "title": "LegalComplianceRequirement",
+      "description": "Actionable compliance requirement derived from verified provisions (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "provisionId": { "type": "string" },
+        "titleFa": { "type": "string" },
+        "severity": { "type": "string" },
+        "version": { "type": "number" },
+        "createdAtIso": { "type": "string" },
+        "updatedAtIso": { "type": "string" }
+      },
+      "required": ["id", "provisionId", "titleFa", "severity", "version", "createdAtIso", "updatedAtIso"]
+    },
+    "LegalAiSuggestion": {
+      "title": "LegalAiSuggestion",
+      "description": "Strictly non-authoritative AI legal summary awaiting human review (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "provisionId": { "type": "string" },
+        "isAuthoritative": { "type": "boolean" },
+        "reviewStatus": { "type": "string" },
+        "createdAtIso": { "type": "string" }
+      },
+      "required": ["id", "provisionId", "isAuthoritative", "reviewStatus", "createdAtIso"]
+    },
+    "LegalRegulatoryAudit": {
+      "title": "LegalRegulatoryAudit",
+      "description": "Append-only transactional audit trail for legal-regulatory mutations (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "action": { "type": "string" },
+        "actorId": { "type": "string" },
+        "actorRole": { "type": "string" },
+        "targetEntityType": { "type": "string" },
+        "targetEntityId": { "type": "string" },
+        "timestampIso": { "type": "string" }
+      },
+      "required": ["id", "action", "actorId", "actorRole", "targetEntityType", "targetEntityId", "timestampIso"]
+    },
+    "LegalRegulatoryIdempotency": {
+      "title": "LegalRegulatoryIdempotency",
+      "description": "SHA-256 keyed transactional idempotency ledger with canonical request hash (server-only via Admin SDK)",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "operation": { "type": "string" },
+        "actorId": { "type": "string" },
+        "requestHash": { "type": "string" },
+        "createdAtIso": { "type": "string" }
+      },
+      "required": ["key", "operation", "actorId", "requestHash", "createdAtIso"]
     }
   },
   "firestore": {
@@ -591,6 +743,46 @@
     "/socialFeedIndexJobs/{jobId}": {
       "schema": { "$ref": "#/entities/SocialFeedIndexJob" },
       "description": "Server-only paged index rebuild job status documents (allow read, write: if false)"
+    },
+    "/legal_regulatory_sources_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalRegulatorySource" },
+      "description": "Server-only authoritative legal/regulatory sources (allow read, write: if false)"
+    },
+    "/legal_regulatory_documents_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalRegulatoryDocument" },
+      "description": "Server-only legal/regulatory documents linked to sources (allow read, write: if false)"
+    },
+    "/legal_regulatory_provisions_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalRegulatoryProvision" },
+      "description": "Server-only versioned legal provisions with optimistic concurrency (allow read, write: if false)"
+    },
+    "/legal_applicability_rules_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalApplicabilityRule" },
+      "description": "Server-only deterministic legal applicability rules (allow read, write: if false)"
+    },
+    "/legal_change_records_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalChangeRecord" },
+      "description": "Server-only atomic regulatory change history records (allow read, write: if false)"
+    },
+    "/legal_conflict_records_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalConflictRecord" },
+      "description": "Server-only regulatory provision conflict records (allow read, write: if false)"
+    },
+    "/legal_compliance_requirements_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalComplianceRequirement" },
+      "description": "Server-only regulatory compliance requirements (allow read, write: if false)"
+    },
+    "/legal_ai_suggestions_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalAiSuggestion" },
+      "description": "Server-only non-authoritative AI legal summary records (allow read, write: if false)"
+    },
+    "/legal_regulatory_audit_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalRegulatoryAudit" },
+      "description": "Server-only atomic legal-regulatory audit log records (allow read, write: if false)"
+    },
+    "/legal_regulatory_idempotency_v1/{docId}": {
+      "schema": { "$ref": "#/entities/LegalRegulatoryIdempotency" },
+      "description": "Server-only SHA-256 keyed idempotency ledger with request hash verification (allow read, write: if false)"
     }
   }
 }

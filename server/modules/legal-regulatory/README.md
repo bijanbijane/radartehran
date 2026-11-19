@@ -39,14 +39,15 @@ This module owns the following Firestore collections exclusively:
 
 ---
 
-## 3. Authorization & Public vs. Restricted Access Rules
+## 3. Authorization, API Integration & Reliability (`RT-SOCIAL-IMPL-030`)
 
-- **Administrative & Reviewer Mutations**: Creating, amending, repealing, or verifying sources, documents, provisions, applicability rules, conflicts, compliance requirements, or AI summaries requires `role: 'REGULATORY_ADMIN' | 'LEGAL_REVIEWER'` (`assertAdminOrReviewerActor`). Unauthenticated callers receive `401 UNAUTHENTICATED`; authenticated non-admin callers receive `403 FORBIDDEN`.
-- **Public View Redaction**: Public and standard user reads pass through `toPublicRegulatorySource`, `toPublicRegulatoryProvision`, and `toPublicComplianceRequirement`, which strip `internalReviewerNotes` and `restrictedAuditMetadata`.
-- **Unverified Draft Isolation**: Unverified sources and provisions (`verificationStatus === 'UNVERIFIED'` or `lifecycleStatus === 'DRAFT_UNVERIFIED'`) are excluded from public searches and rejected on direct public reads (`403 FORBIDDEN`).
+- **Official Express Router (`/api/v1/legal-regulatory`)**: Mounted once in `server.ts` via `registerLegalRegulatoryRoutes(app, { checkRateLimit, getClientIp })` with exact 14 endpoints aligned 3-way across Express Router, `LEGAL_REGULATORY_ROUTE_SPECS`, and `src/utils/expressRouteCatalog.ts` (`REGISTERED_API_ROUTES`).
+- **Server-Verified Identity (`actorResolver.ts`)**: Extracts actor UID exclusively from `src/utils/serverAdminAndTelegramSecurity.ts` (`verifyAdminRequest` / `verifyFirebaseUserRequest`). Spoofable headers (`x-legal-actor-id`, `x-legal-actor-role`) and static tokens (`server-secret-admin`, `system-admin-key`) are ignored. `LEGAL_REVIEWER` remains fail-closed (`403`) until a dedicated server-side reviewer role registry is integrated.
+- **Read-Only Property Registry Authorization (`30-B`)**: Evaluating a registered `propertyId` requires an authenticated actor (`401` otherwise) and server-side ownership or active non-expired representative verification via `FirestoreReadOnlyPropertyRegistryAdapter` / `PropertyRegistryService.authorizePropertyContextRead`. Backend `REGULATORY_ADMIN` role alone never grants access to private properties. Caller attributes cannot override the authoritative Property Registry snapshot.
+- **Idempotency, Redaction & Rate Limits (`30-C`)**: All 9 mutating `POST` routes require `Idempotency-Key` (`1..255` chars), serialize concurrent in-flight calls, and reject unknown fields, prototype pollution, and payloads exceeding `1 MiB` (`413`). Public reads and property profile outputs apply `redactPrivateFieldsDeep`; private/mutating/error responses set `Cache-Control: private, no-store` and `Pragma: no-cache`. Rate limits (`30/60/20/10/5` req/min) fail closed (`503`) in production if unconfigured.
 
 ---
 
 ## 4. Synthetic Test Fixtures Notice
 
-All statutory references, article numbers, and URLs used in `__tests__/legalRegulatory.test.ts` are marked with `isSyntheticTestFixture: true` in their provenance metadata and represent controlled test fixtures for verifying domain rules, versioning, and applicability logic.
+All statutory references, article numbers, and URLs used in `__tests__/` are marked with `isSyntheticTestFixture: true` in their provenance metadata and represent controlled test fixtures for verifying domain rules, versioning, applicability, authorization, and API reliability.
