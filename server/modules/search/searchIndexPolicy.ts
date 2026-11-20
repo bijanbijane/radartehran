@@ -1,0 +1,1 @@
+export { isAllowDemoSearchDataEnabled } from '../../../src/features/search/services/searchDemoDataPolicy';

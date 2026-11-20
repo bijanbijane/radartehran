@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 import { isValidIranianMobile, cleanIranianMobile } from '../src/utils/security';
 import type { BuyerAlertLeadItem } from '../src/types/models';
 
@@ -384,7 +385,7 @@ import('../src/utils/areaUnit').then((areaMod) => {
   const srvSponsorBargainRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverSponsorAndBargainRoutes.ts'), 'utf8');
   const srvUtilityRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverUtilityRoutes.ts'), 'utf8');
   const firebaseRootSrc = fs.readFileSync(path.join(process.cwd(), 'src/firebase.ts'), 'utf8');
-  const serverEntrySrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
+  const serverEntrySrc = readServerEntrySource(process.cwd());
   const appCheckUtilSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/appCheck.ts'), 'utf8');
   const srvStoragePortabilitySrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverStoragePortabilityAndTracing.ts'), 'utf8');
   const areaUnitToggleSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AreaUnitToggle.tsx'), 'utf8');

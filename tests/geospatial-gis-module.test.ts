@@ -1,11 +1,28 @@
+import path from 'node:path';
+import os from 'node:os';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CoreApiError } from '../server/modules/core';
 import { createMarketIntelligenceService } from '../server/modules/market-intelligence';
 import { createGeospatialService } from '../server/modules/geospatial';
+import type { GeospatialModuleDependencies } from '../server/modules/geospatial/types';
+import { resetGeospatialRepositoryForTests } from '../server/modules/geospatial/geospatialRepository';
+import { setRepositoryBaseDirForTests } from '../server/modules/shared/atomicJsonRepository';
+
+function createIsolatedGeospatialService(deps: GeospatialModuleDependencies = {}) {
+  const tmp = path.join(os.tmpdir(), `gis-mod-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  setRepositoryBaseDirForTests(tmp);
+  resetGeospatialRepositoryForTests();
+  return createGeospatialService(deps);
+}
+
+function releaseGeospatialTestRepository(): void {
+  setRepositoryBaseDirForTests(null);
+  resetGeospatialRepositoryForTests();
+}
 
 test('Employee 61 — 1. Coordinate normalization, lat/lng reversal detection, hierarchy & polygon validation', async () => {
-  const gis = createGeospatialService();
+  const gis = createIsolatedGeospatialService();
 
   // Valid coordinate with precision rounding provenance
   const validCoord = gis.normalizeCoordinate(35.805123456, 51.451987654, {
@@ -61,10 +78,11 @@ test('Employee 61 — 1. Coordinate normalization, lat/lng reversal detection, h
   });
   assert.equal(selfIntersecting.valid, false);
   assert.ok(selfIntersecting.issues.some((i) => i.code === 'SELF_INTERSECTION'));
+  releaseGeospatialTestRepository();
 });
 
 test('Employee 61 — 2. Boundary versioning, MultiPolygon, point-in-polygon resolution & boundary-edge ambiguity', async () => {
-  const gis = createGeospatialService();
+  const gis = createIsolatedGeospatialService();
 
   // Create v1 boundary for Niavaran (hoodId: 1)
   const bndV1 = await gis.upsertNeighborhoodBoundary({
@@ -89,6 +107,7 @@ test('Employee 61 — 2. Boundary versioning, MultiPolygon, point-in-polygon res
       ],
     },
     sourceProvenance: 'tehran_municipality_gis_2025',
+    autoApprove: true,
   });
   assert.equal(bndV1.version, 1);
   assert.equal(bndV1.status, 'ACTIVE');
@@ -117,6 +136,7 @@ test('Employee 61 — 2. Boundary versioning, MultiPolygon, point-in-polygon res
       ],
     },
     sourceProvenance: 'tehran_municipality_gis_2026',
+    autoApprove: true,
   });
   assert.equal(bndV2.version, 2);
   const allVersions = gis.listBoundaryVersions('hood:tehran:1');
@@ -141,10 +161,11 @@ test('Employee 61 — 2. Boundary versioning, MultiPolygon, point-in-polygon res
   const outsideRes = gis.resolvePointToGeography(35.70, 51.35);
   assert.equal(outsideRes.resolved, false);
   assert.equal(outsideRes.status, 'OUTSIDE_KNOWN_BOUNDARIES');
+  releaseGeospatialTestRepository();
 });
 
 test('Employee 61 — 3. Spatial property search (radius, bbox, corridor, clustering), query limits & privacy', () => {
-  const gis = createGeospatialService();
+  const gis = createIsolatedGeospatialService();
 
   // Index 4 published verified listings + 1 draft listing
   gis.indexListingForSpatialSearch({
@@ -270,6 +291,7 @@ test('Employee 61 — 3. Spatial property search (radius, bbox, corridor, cluste
       }),
     (err: unknown) => err instanceof CoreApiError && err.status === 400,
   );
+  releaseGeospatialTestRepository();
 });
 
 test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 integration, imports & observability', async () => {
@@ -282,7 +304,7 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
     { id: 'm3', sourceRecordId: 'tx3', sourceCategory: 'VERIFIED_TRANSACTION', cityId: 'tehran', hoodId: 1, hoodName: 'نیاوران', propertyCategory: 'residential', transactionType: 'sale', sqm: 95, completedPriceMillion: 14820, observedAtIso: '2026-11-03T00:00:00.000Z' },
   ]);
 
-  const gis = createGeospatialService({
+  const gis = createIsolatedGeospatialService({
     marketIntelligenceService: miService,
   });
 
@@ -360,6 +382,31 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   assert.equal(committed.importedBoundariesCount, 1);
   assert.equal(committed.importedPoisCount, 3);
 
+  await gis.upsertNeighborhoodBoundary({
+    actorUid: 'admin_gis',
+    entityId: 'hood:tehran:1',
+    cityId: 'tehran',
+    districtId: 'd1',
+    hoodId: 1,
+    level: 'neighborhood',
+    nameFa: 'نیاوران',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [51.44, 35.80],
+          [51.48, 35.80],
+          [51.48, 35.83],
+          [51.44, 35.83],
+          [51.44, 35.80],
+        ],
+      ],
+    },
+    sourceProvenance: 'official_gis_import',
+    autoApprove: true,
+  });
+  assert.ok(gis.getActiveBoundary('hood:tehran:1'));
+
   // Duplicate POI prevention
   const dupPoi = gis.upsertPointOfInterest({
     nameFa: 'پارک نیاوران',
@@ -377,7 +424,7 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
     cityId: 'tehran',
   });
   assert.equal(valVector.hoodId, 1);
-  assert.equal(valVector.boundaryVersion, 1);
+  assert.equal(valVector.boundaryVersion, 2);
   assert.ok(valVector.overallAccessibilityIndex > 0);
   assert.ok(valVector.reproducibleHash.length >= 16);
 
@@ -415,4 +462,5 @@ test('Employee 61 — 4. POIs, location context, overlays, Employee 59 & 60 inte
   const obs = gis.getObservabilityMetrics();
   assert.ok(obs.geocodingErrorsCount >= 1);
   assert.ok(obs.cacheMissesCount >= 1);
+  releaseGeospatialTestRepository();
 });

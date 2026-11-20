@@ -20,7 +20,8 @@ import {
   SearchSynonymRecord,
   ZeroResultSuggestion,
 } from '../models/search.types';
-import { ALL_CITY_SEARCH_DOCUMENTS, DEFAULT_RANKING_POLICIES, sanitizeDocumentLocationForCaller } from './searchDomainAdapters';
+import { DEFAULT_RANKING_POLICIES, sanitizeDocumentLocationForCaller } from './searchDomainAdapters';
+import { isDocumentEligibleForPublicIndex } from './publicIndexEligibility';
 import { buildSearchPlan, getPlaceHierarchyForCity, INITIAL_SYNONYM_REGISTRY } from './searchNormalizerAndPlanner';
 
 export interface SearchCallerContext {
@@ -82,12 +83,13 @@ export class SearchIndexAndOrchestratorEngine {
   private indexJobs: SearchIndexJob[] = [];
   private zeroResultLogs: Array<{ query: string; scope: SearchScope; timestamp: string }> = [];
 
-  constructor(initialDocs: SearchDocument[] = ALL_CITY_SEARCH_DOCUMENTS) {
+  constructor(initialDocs: SearchDocument[] = []) {
     initialDocs.forEach((doc) => this.documents.set(doc.id, { ...doc }));
-    this.indexJobs.push({
-      id: 'idx-job-boot-1', jobType: 'FULL_REINDEX', scope: 'ALL', status: 'COMPLETED',
-      documentsProcessed: initialDocs.length, lagMs: 42, startedAt: '2026-04-12T06:00:00Z', completedAt: '2026-04-12T06:00:01Z',
-    });
+  }
+
+  public replaceIndexDocuments(nextDocs: SearchDocument[]): void {
+    this.documents.clear();
+    nextDocs.forEach((doc) => this.documents.set(doc.id, { ...doc }));
   }
 
   public upsertDocument(doc: SearchDocument): { applied: boolean; reason: string } {
@@ -107,19 +109,15 @@ export class SearchIndexAndOrchestratorEngine {
     return { deleted: true };
   }
 
-  public triggerReindex(scope: SearchScope = 'ALL'): SearchIndexJob {
-    const job: SearchIndexJob = {
-      id: `idx-job-${Date.now()}`, jobType: scope === 'ALL' ? 'FULL_REINDEX' : 'SCOPE_REINDEX', scope, status: 'COMPLETED',
-      documentsProcessed: Array.from(this.documents.values()).filter((d) => scope === 'ALL' || d.scope === scope).length,
-      lagMs: 28, startedAt: new Date().toISOString(), completedAt: new Date().toISOString(),
-    };
-    this.indexJobs.unshift(job);
-    return job;
+  public triggerReindex(_scope: SearchScope = 'ALL'): SearchIndexJob {
+    throw new Error('Use POST /api/admin/search/reindex for durable reindex jobs');
   }
 
   public executeSearch(params: {
     requestId?: string; rawQuery: string; scope?: SearchScope; explicitFilters?: SearchFilterSet;
     sort?: SearchSortOption; caller?: SearchCallerContext; degradedScopes?: SearchScope[];
+    resultLimit?: number;
+    paginationCursor?: string;
   }): SearchExecutionResponse {
     const startMs = Date.now();
     const requestId = params.requestId || `req-${startMs}`;
@@ -132,6 +130,7 @@ export class SearchIndexAndOrchestratorEngine {
 
     const degradedSet = new Set<SearchScope>(params.degradedScopes || []);
     const allVisibleDocs = Array.from(this.documents.values())
+      .filter((doc) => isDocumentEligibleForPublicIndex(doc))
       .filter((doc) => canCallerAccessSearchDocument(doc, caller))
       .filter((doc) => !degradedSet.has(doc.scope))
       .map((doc) => sanitizeDocumentLocationForCaller(doc, caller));
@@ -163,15 +162,17 @@ export class SearchIndexAndOrchestratorEngine {
     }
 
     this.sortScoredItems(scoredItems, sort);
+    const resultLimit = params.resultLimit && params.resultLimit > 0 ? params.resultLimit : scoredItems.length;
+    const pagedResults = scoredItems.slice(0, resultLimit);
     if (scoredItems.length === 0 && plan.normalizedQuery.trim().length > 0) {
       this.zeroResultLogs.unshift({ query: plan.rawQuery, scope: activeScope, timestamp: new Date().toISOString() });
     }
 
     const facets = this.computeFacets(scoredItems.map((i) => i.document), groupedCounts);
-    const zeroResultAssistant = scoredItems.length === 0 ? this.buildZeroResultAssistant(plan.rawQuery, appliedFilters) : undefined;
+    const zeroResultAssistant = pagedResults.length === 0 ? this.buildZeroResultAssistant(plan.rawQuery, appliedFilters) : undefined;
 
     return {
-      requestId, plan, activeScope, appliedFilters, sort, totalCount: scoredItems.length, results: scoredItems,
+      requestId, plan, activeScope, appliedFilters, sort, totalCount: scoredItems.length, results: pagedResults,
       groupedCounts, facets,
       partialSourceFailure: degradedSet.size > 0
         ? { degradedSources: Array.from(degradedSet), warningFa: `بعضی منابع (${Array.from(degradedSet).join('، ')}) در دسترس نبودند؛ نتایج منابع دیگر نمایش داده شده است.` }
@@ -298,11 +299,12 @@ export class SearchIndexAndOrchestratorEngine {
     };
   }
 
-  public getAdminDiagnostics() {
+  public getAdminDiagnostics(recentJobs: SearchIndexJob[] = this.indexJobs) {
     return {
       totalIndexedDocuments: Array.from(this.documents.values()).filter((d) => d.visibility !== 'DELETED').length,
       tombstoneCount: this.tombstones.size, synonyms: this.synonyms, rankingPolicies: Object.values(this.rankingPolicies),
-      recentIndexJobs: this.indexJobs.slice(0, 10), zeroResultQueries: this.zeroResultLogs.slice(0, 15),
+      recentIndexJobs: recentJobs.slice(0, 10), zeroResultJobs: recentJobs,
+      zeroResultQueries: this.zeroResultLogs.slice(0, 15),
     };
   }
 
@@ -312,5 +314,3 @@ export class SearchIndexAndOrchestratorEngine {
     return created;
   }
 }
-
-export const defaultSearchEngine = new SearchIndexAndOrchestratorEngine();

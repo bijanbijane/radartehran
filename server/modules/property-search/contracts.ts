@@ -29,9 +29,18 @@ export interface ListingDataSourceAdapter {
     neighborhoodIds?: number[];
     limit: number;
     offset?: number;
+    minAskingPriceMillion?: number;
+    maxAskingPriceMillion?: number;
+    minAreaSqm?: number;
+    maxAreaSqm?: number;
+    bedroomsMin?: number;
+    constructionStatus?: string;
+    verifiedOnly?: boolean;
+    boundingBox?: { minLat: number; maxLat: number; minLng: number; maxLng: number };
   }): Promise<{
     listings: SearchPropertyItem[];
     totalEstimated: number;
+    sourceExhausted?: boolean;
   }>;
 
   getListingById(id: string): Promise<SearchPropertyItem | null>;

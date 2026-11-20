@@ -213,7 +213,7 @@ export interface SavedSearchRecord {
   channels: Array<'IN_APP' | 'EMAIL' | 'SMS' | 'PUSH'>;
   status: 'ACTIVE' | 'PAUSED';
   persistenceScope?: 'SESSION_LOCAL' | 'SERVER_SYNCED';
-  notificationStatus?: 'DISABLED' | 'LOCAL_REQUEST_PENDING' | 'CONFIRMED_BY_SERVICE';
+  notificationStatus?: 'DISABLED' | 'LOCAL_REQUEST_PENDING' | 'CONFIRMED_BY_SERVICE' | 'ALERT_NOT_CONFIGURED' | 'SUBSCRIPTION_REQUIRED';
   matchedCount: number;
   unreadChangesCount: number;
   lastCheckedAt: string;

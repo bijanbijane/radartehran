@@ -1,4 +1,5 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
+/** OP-DEC-001 FX parity: formatMillionTomanAsIntlCurrency (via ExperienceModeToggle / AreaUnitToggle). */
 import React, { useId, useRef } from 'react';
 import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';

@@ -5,6 +5,7 @@
  */
 
 import * as fs from 'fs';
+import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 import {
   calculateDetailedValuation,
   calculateLandShare,
@@ -471,7 +472,7 @@ export async function runFiftyStepAudit(): Promise<void> {
   assertStep(42, 'Config', '.firebaserc targets gen-lang-client-0713157837', fbRc.projects?.default === 'gen-lang-client-0713157837', 'Project id verified');
 
   // Step 43: server.ts mounts express and vite middlewares
-  const serverSrc = fs.readFileSync('server.ts', 'utf8');
+  const serverSrc = readServerEntrySource(process.cwd());
   assertStep(43, 'Server', 'server.ts configured with Express and Vite middleware', serverSrc.includes('.middlewares') && (serverSrc.includes('app.listen') || serverSrc.includes('server.listen')), 'Server full-stack entry verified');
 
   // Step 44: index.html contains proper SEO metadata, og:title, and viewport

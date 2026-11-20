@@ -1,19 +1,14 @@
-import crypto from 'crypto';
 import { CoreApiError } from '../core';
 import { defaultGeographyService } from '../geography';
 import {
   boundingBoxesOverlap,
   calculateGeodesicDistanceMeters,
-  classifyPointInPolygon,
   normalizeAndValidateCoordinate,
-  simplifyPolygonGeometry,
   validatePolygonGeometry,
 } from './coordinateAndPolygonEngine';
 import {
   buildValuationLocationFeatureVector,
   computeLocationContextIndicators,
-  computePoiDedupeKey,
-  executeBoundedSpatialSearch,
 } from './poiAndSpatialSearchEngine';
 import type {
   BoundaryVersionRecord,
@@ -23,31 +18,59 @@ import type {
   GeospatialObservabilityMetrics,
   LocationContextIndicators,
   NormalizedCoordinateResult,
-  PoiCategory,
   PointOfInterestRecord,
   PointResolutionResult,
-  PolygonGeometry,
   SpatialPublishableListing,
   SpatialSearchQuery,
   SpatialSearchResult,
   ValuationLocationFeatureVector,
   Wgs84Coordinate,
 } from './types';
+import {
+  createGeospatialPersistHook,
+  hydrateGeospatialRuntimeFromRepository,
+} from './geospatialRuntimePersistence';
+import { executePublicSpatialListingSearch } from './geospatialPublicListingSearch';
+import {
+  detectActiveBoundaryBboxOverlaps,
+  pickActiveBoundaryVersion,
+  pickLatestBoundaryVersion,
+} from './geospatialBoundaryReadModel';
+import { executeUpsertNeighborhoodBoundary, type UpsertNeighborhoodBoundaryParams } from './geospatialBoundaryMutations';
+import { resolvePointInBoundaryStore } from './geospatialPointResolution';
+import {
+  executeFindNearbyPointsOfInterest,
+  executeUpsertPointOfInterest,
+  type UpsertPoiParams,
+} from './geospatialPoiOperations';
+import { executeGetGeographicOverlay, executeUpsertGeographicOverlay } from './geospatialOverlayAccess';
+import { executeForwardGeocode, type GeocodeCacheEntry } from './geospatialForwardGeocode';
+import { executeImportGeographicDataset, type ImportGeographicDatasetParams } from './geospatialDatasetImport';
 
 export function createGeospatialService(deps: GeospatialModuleDependencies = {}) {
   const geoService = deps.geographyService ?? defaultGeographyService;
   const nowFn = deps.now ?? (() => new Date());
 
-  // Versioned boundaries keyed by entityId -> array of all historical versions (never deleted)
   const boundaryHistoryByEntity = new Map<string, BoundaryVersionRecord[]>();
   const poiStore = new Map<string, PointOfInterestRecord>();
   const poiDedupeIndex = new Map<string, string>();
   const spatialListingsByCity = new Map<string, Map<string, SpatialPublishableListing>>();
   const overlayStore = new Map<string, GeographicOverlayLayer>();
   const overlayCache = new Map<string, GeographicOverlayLayer>();
-  const geocodeCache = new Map<string, { formattedAddressFa: string; coordinates: Wgs84Coordinate; provider: string }>();
+  const geocodeCache = new Map<string, GeocodeCacheEntry>();
   const importBatches = new Map<string, GeospatialImportBatchResult>();
   const activeBoundaryLocks = new Set<string>();
+
+  const runtimeMaps = {
+    boundaryHistoryByEntity,
+    poiStore,
+    poiDedupeIndex,
+    spatialListingsByCity,
+    overlayStore,
+    importBatches,
+  };
+  hydrateGeospatialRuntimeFromRepository(runtimeMaps);
+  const persistRuntime = createGeospatialPersistHook(runtimeMaps);
 
   const metrics: GeospatialObservabilityMetrics = {
     spatialQueriesCount: 0,
@@ -82,259 +105,49 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     return geoService.validateHierarchyRelationship(normChild, normParent);
   }
 
-  async function upsertNeighborhoodBoundary(params: {
-    actorUid: string;
-    entityId: string;
-    cityId: string;
-    districtId?: string;
-    hoodId?: number;
-    subNeighborhoodId?: string;
-    level: BoundaryVersionRecord['level'];
-    nameFa: string;
-    nameEn?: string;
-    historicalNames?: string[];
-    geometry: PolygonGeometry;
-    sourceProvenance: string;
-    autoApprove?: boolean;
-  }): Promise<BoundaryVersionRecord> {
-    if (activeBoundaryLocks.has(params.entityId)) {
-      throw new CoreApiError('CONFLICT', 409, `Concurrent boundary update in progress for '${params.entityId}'.`);
-    }
-    activeBoundaryLocks.add(params.entityId);
-    try {
-      const validation = validatePolygonGeometry(params.geometry);
-      if (!validation.valid || !validation.boundingBox) {
-        metrics.invalidGeometryEventsCount += 1;
-        throw new CoreApiError('VALIDATION_FAILED', 400, 'Invalid polygon geometry.', {
-          issues: validation.issues,
-        });
-      }
-
-      const history = boundaryHistoryByEntity.get(params.entityId) ?? [];
-      const prevActive = history.find((b) => b.status === 'ACTIVE');
-      if (prevActive && params.autoApprove !== false) {
-        prevActive.status = 'SUPERSEDED';
-      }
-
-      const nextVersion = history.length + 1;
-      const nowIso = nowFn().toISOString();
-      const record: BoundaryVersionRecord = {
-        id: `bnd_${params.entityId.replace(/[^a-zA-Z0-9_-]/g, '_')}_v${nextVersion}`,
-        entityId: params.entityId,
-        cityId: params.cityId,
-        districtId: params.districtId,
-        hoodId: params.hoodId,
-        subNeighborhoodId: params.subNeighborhoodId,
-        level: params.level,
-        nameFa: params.nameFa,
-        nameEn: params.nameEn,
-        historicalNames: params.historicalNames,
-        version: nextVersion,
-        status: params.autoApprove === false ? 'PENDING_REVIEW' : 'ACTIVE',
-        geometry: structuredClone(params.geometry),
-        simplifiedGeometry: simplifyPolygonGeometry(params.geometry, 2),
-        boundingBox: validation.boundingBox,
-        sourceProvenance: params.sourceProvenance,
-        createdByUid: params.actorUid,
-        createdAtIso: nowIso,
-        reviewedByUid: params.autoApprove === false ? undefined : params.actorUid,
-        reviewedAtIso: params.autoApprove === false ? undefined : nowIso,
-        previousVersionId: prevActive?.id,
-      };
-
-      history.push(record);
-      boundaryHistoryByEntity.set(params.entityId, history);
-      invalidateGeoCaches(params.cityId);
-      return structuredClone(record);
-    } finally {
-      activeBoundaryLocks.delete(params.entityId);
-    }
+  async function upsertNeighborhoodBoundary(params: UpsertNeighborhoodBoundaryParams) {
+    return executeUpsertNeighborhoodBoundary({
+      input: params,
+      boundaryHistoryByEntity,
+      activeBoundaryLocks,
+      metrics,
+      nowIso: nowFn().toISOString(),
+      invalidateGeoCaches,
+      persistRuntime,
+    });
   }
 
   function getActiveBoundary(entityId: string): BoundaryVersionRecord | null {
-    const history = boundaryHistoryByEntity.get(entityId) ?? [];
-    const active = history.find((b) => b.status === 'ACTIVE') ?? history[history.length - 1];
-    return active ? structuredClone(active) : null;
+    return pickActiveBoundaryVersion(boundaryHistoryByEntity.get(entityId) ?? []);
   }
 
-  function listBoundaryVersions(entityId: string): BoundaryVersionRecord[] {
-    return structuredClone(boundaryHistoryByEntity.get(entityId) ?? []);
+  function getLatestBoundaryVersion(entityId: string): BoundaryVersionRecord | null {
+    return pickLatestBoundaryVersion(boundaryHistoryByEntity.get(entityId) ?? []);
   }
 
-  function detectBoundaryOverlaps(cityId: string, level: BoundaryVersionRecord['level'] = 'neighborhood'): Array<{
-    entityA: string;
-    entityB: string;
-  }> {
-    const activeList: BoundaryVersionRecord[] = [];
-    for (const history of boundaryHistoryByEntity.values()) {
-      const act = history.find((b) => b.status === 'ACTIVE' && b.cityId === cityId && b.level === level);
-      if (act) activeList.push(act);
-    }
-    const overlaps: Array<{ entityA: string; entityB: string }> = [];
-    for (let i = 0; i < activeList.length; i++) {
-      for (let j = i + 1; j < activeList.length; j++) {
-        if (boundingBoxesOverlap(activeList[i].boundingBox, activeList[j].boundingBox)) {
-          overlaps.push({ entityA: activeList[i].entityId, entityB: activeList[j].entityId });
-        }
-      }
-    }
-    return overlaps;
+  function detectBoundaryOverlaps(cityId: string, level: BoundaryVersionRecord['level'] = 'neighborhood') {
+    return detectActiveBoundaryBboxOverlaps(boundaryHistoryByEntity, cityId, level, boundingBoxesOverlap);
   }
 
   function resolvePointToGeography(rawLat: unknown, rawLng: unknown): PointResolutionResult {
-    const norm = normalizeAndValidateCoordinate(rawLat, rawLng);
-    if (!norm.valid || !norm.coordinate) {
-      metrics.pointResolutionFailuresCount += 1;
-      throw new CoreApiError('VALIDATION_FAILED', 400, norm.errorMessage ?? 'Invalid coordinates.');
-    }
-    const pt = norm.coordinate;
-
-    const insideMatches: Array<{ record: BoundaryVersionRecord; classification: 'INSIDE' | 'ON_EDGE' }> = [];
-
-    for (const history of boundaryHistoryByEntity.values()) {
-      const active = history.find((b) => b.status === 'ACTIVE');
-      if (!active) continue;
-      const bb = active.boundingBox;
-      if (pt.lat < bb.minLat - 0.001 || pt.lat > bb.maxLat + 0.001 || pt.lng < bb.minLng - 0.001 || pt.lng > bb.maxLng + 0.001) {
-        continue;
-      }
-      const cls = classifyPointInPolygon(pt, active.geometry);
-      if (cls === 'INSIDE' || cls === 'ON_EDGE') {
-        insideMatches.push({ record: active, classification: cls });
-      }
-    }
-
-    if (insideMatches.length === 0) {
-      metrics.pointResolutionFailuresCount += 1;
-      return {
-        resolved: false,
-        status: 'OUTSIDE_KNOWN_BOUNDARIES',
-        confidence: 'none',
-        candidateBoundaryIds: [],
-      };
-    }
-
-    // Separate sub_neighborhood vs neighborhood matches
-    const hoodMatches = insideMatches.filter((m) => m.record.level === 'neighborhood');
-    const subMatches = insideMatches.filter((m) => m.record.level === 'sub_neighborhood');
-
-    // Deterministic tie-breaking: sort by hoodId / entityId ascending
-    hoodMatches.sort((a, b) => (a.record.hoodId ?? 9999) - (b.record.hoodId ?? 9999));
-    subMatches.sort((a, b) => a.record.entityId.localeCompare(b.record.entityId));
-
-    const primary = hoodMatches[0] ?? insideMatches[0];
-    const sub = subMatches[0]?.record;
-
-    const isEdge = primary.classification === 'ON_EDGE';
-    const isAmbiguousOverlap = hoodMatches.filter((m) => m.classification === 'INSIDE').length > 1;
-
-    return {
-      resolved: true,
-      status: isEdge
-        ? 'RESOLVED_ON_EDGE'
-        : isAmbiguousOverlap
-          ? 'AMBIGUOUS_OVERLAP'
-          : 'RESOLVED_INSIDE',
-      confidence: isEdge || isAmbiguousOverlap ? 'medium' : 'high',
-      cityId: primary.record.cityId,
-      districtId: primary.record.districtId,
-      hoodId: primary.record.hoodId,
-      hoodNameFa: primary.record.nameFa,
-      subNeighborhoodId: sub?.subNeighborhoodId ?? primary.record.subNeighborhoodId,
-      boundaryVersionId: primary.record.id,
-      boundaryVersion: primary.record.version,
-      sourceProvenance: primary.record.sourceProvenance,
-      candidateBoundaryIds: insideMatches.map((m) => m.record.id),
-    };
+    return resolvePointInBoundaryStore({ boundaryHistoryByEntity, metrics, rawLat, rawLng });
   }
 
-  function upsertPointOfInterest(params: {
-    id?: string;
-    nameFa: string;
-    nameEn?: string;
-    category: PoiCategory;
-    coordinates: Wgs84Coordinate;
-    cityId: string;
-    districtId?: string;
-    hoodId?: number;
-    sourceProvenance: string;
-    verificationStatus?: PointOfInterestRecord['verificationStatus'];
-    publicVisible?: boolean;
-    attributes?: Record<string, string | number | boolean>;
-  }): { record: PointOfInterestRecord; isDuplicate: boolean } {
-    const coordCheck = normalizeAndValidateCoordinate(params.coordinates.lat, params.coordinates.lng);
-    if (!coordCheck.valid || !coordCheck.coordinate) {
-      throw new CoreApiError('VALIDATION_FAILED', 400, coordCheck.errorMessage ?? 'Invalid POI coordinates.');
-    }
-
-    const dedupeKey = computePoiDedupeKey({
-      cityId: params.cityId,
-      category: params.category,
-      nameFa: params.nameFa,
-      coordinates: coordCheck.coordinate,
+  function upsertPointOfInterest(params: UpsertPoiParams) {
+    return executeUpsertPointOfInterest({
+      input: params,
+      poiStore,
+      poiDedupeIndex,
+      nowIso: nowFn().toISOString(),
+      invalidateGeoCaches,
+      persistRuntime,
     });
-
-    const existingId = poiDedupeIndex.get(dedupeKey);
-    if (existingId && poiStore.has(existingId)) {
-      return {
-        record: structuredClone(poiStore.get(existingId)!),
-        isDuplicate: true,
-      };
-    }
-
-    const record: PointOfInterestRecord = {
-      id: params.id ?? `poi_${crypto.randomBytes(6).toString('hex')}`,
-      nameFa: params.nameFa.trim(),
-      nameEn: params.nameEn?.trim(),
-      category: params.category,
-      coordinates: coordCheck.coordinate,
-      cityId: params.cityId,
-      districtId: params.districtId,
-      hoodId: params.hoodId,
-      sourceProvenance: params.sourceProvenance,
-      verificationStatus: params.verificationStatus ?? 'VERIFIED',
-      publicVisible: params.publicVisible ?? true,
-      attributes: params.attributes ?? {},
-      lastValidatedAtIso: nowFn().toISOString(),
-      dedupeKey,
-    };
-
-    poiStore.set(record.id, record);
-    poiDedupeIndex.set(dedupeKey, record.id);
-    invalidateGeoCaches(record.cityId);
-    return { record: structuredClone(record), isDuplicate: false };
   }
 
-  function findNearbyPointsOfInterest(params: {
-    cityId: string;
-    center: Wgs84Coordinate;
-    radiusMeters: number;
-    categories?: PoiCategory[];
-    includeUnverifiedOrPrivate?: boolean;
-  }): Array<PointOfInterestRecord & { distanceMeters: number; distanceUnit: 'meters' }> {
-    if (params.radiusMeters <= 0 || params.radiusMeters > 25_000) {
-      throw new CoreApiError('VALIDATION_FAILED', 400, 'radiusMeters must be between 1 and 25000.');
-    }
-    const results: Array<PointOfInterestRecord & { distanceMeters: number; distanceUnit: 'meters' }> = [];
-    for (const poi of poiStore.values()) {
-      if (poi.cityId !== params.cityId) continue;
-      if (!params.includeUnverifiedOrPrivate && (!poi.publicVisible || poi.verificationStatus !== 'VERIFIED')) {
-        continue;
-      }
-      if (params.categories && params.categories.length > 0 && !params.categories.includes(poi.category)) {
-        continue;
-      }
-      const dist = calculateGeodesicDistanceMeters(params.center, poi.coordinates);
-      if (dist <= params.radiusMeters) {
-        results.push({
-          ...structuredClone(poi),
-          distanceMeters: dist,
-          distanceUnit: 'meters',
-        });
-      }
-    }
-    results.sort((a, b) => a.distanceMeters - b.distanceMeters);
-    return results;
+  function findNearbyPointsOfInterest(
+    params: Parameters<typeof executeFindNearbyPointsOfInterest>[0],
+  ): ReturnType<typeof executeFindNearbyPointsOfInterest> {
+    return executeFindNearbyPointsOfInterest({ ...params, poiStore });
   }
 
   function indexListingForSpatialSearch(listing: SpatialPublishableListing): void {
@@ -354,12 +167,7 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     const startMs = Date.now();
     metrics.spatialQueriesCount += 1;
     try {
-      const cityMap = spatialListingsByCity.get(query.cityId);
-      const indexedListings = cityMap ? Array.from(cityMap.values()) : [];
-      return executeBoundedSpatialSearch({
-        query,
-        indexedListingsByCity: indexedListings,
-      });
+      return executePublicSpatialListingSearch(spatialListingsByCity, query);
     } finally {
       metrics.totalQueryLatencyMs += Math.max(1, Date.now() - startMs);
     }
@@ -406,40 +214,19 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
   }
 
   function upsertGeographicOverlay(layer: GeographicOverlayLayer): GeographicOverlayLayer {
-    overlayStore.set(layer.layerId, structuredClone(layer));
-    overlayCache.delete(layer.layerId);
-    return structuredClone(layer);
+    return executeUpsertGeographicOverlay(layer, overlayStore, overlayCache);
   }
 
-  function getGeographicOverlay(params: {
-    layerId: string;
-    isAdminCaller: boolean;
-  }): GeographicOverlayLayer {
-    const cached = overlayCache.get(params.layerId);
-    if (cached) {
-      if (cached.visibilityPolicy === 'ADMIN_ONLY' && !params.isAdminCaller) {
-        throw new CoreApiError('FORBIDDEN', 403, 'Access to administrative geographic overlay is restricted.');
-      }
-      metrics.cacheHitsCount += 1;
-      return structuredClone(cached);
-    }
-
-    metrics.cacheMissesCount += 1;
-    const layer = overlayStore.get(params.layerId);
-    if (!layer) {
-      throw new CoreApiError('NOT_FOUND', 404, `Geographic overlay '${params.layerId}' not found.`);
-    }
-    if (layer.visibilityPolicy === 'ADMIN_ONLY' && !params.isAdminCaller) {
-      throw new CoreApiError('FORBIDDEN', 403, 'Access to administrative geographic overlay is restricted.');
-    }
-    overlayCache.set(params.layerId, structuredClone(layer));
-    return structuredClone(layer);
+  function getGeographicOverlay(params: { layerId: string; isAdminCaller: boolean }): GeographicOverlayLayer {
+    return executeGetGeographicOverlay({
+      ...params,
+      overlayStore,
+      overlayCache,
+      metrics,
+    });
   }
 
-  function getSpatialMarketSummary(params: {
-    cityId: string;
-    hoodId: number;
-  }) {
+  function getSpatialMarketSummary(params: { cityId: string; hoodId: number }) {
     if (!deps.marketIntelligenceService) {
       throw new CoreApiError('CONFLICT', 409, 'MarketIntelligenceService integration is not configured.');
     }
@@ -467,152 +254,27 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     };
   }
 
-  async function importGeographicDataset(params: {
-    actorUid: string;
-    idempotencyKey: string;
-    dryRun?: boolean;
-    sourceProvenance: string;
-    boundaries?: Array<{
-      entityId: string;
-      cityId: string;
-      districtId?: string;
-      hoodId?: number;
-      level: BoundaryVersionRecord['level'];
-      nameFa: string;
-      geometry: PolygonGeometry;
-    }>;
-    pois?: Array<{
-      nameFa: string;
-      category: PoiCategory;
-      coordinates: Wgs84Coordinate;
-      cityId: string;
-      hoodId?: number;
-    }>;
-  }): Promise<GeospatialImportBatchResult> {
-    if (!params.dryRun && importBatches.has(params.idempotencyKey)) {
-      return structuredClone(importBatches.get(params.idempotencyKey)!);
-    }
-
-    const failedRecords: Array<{ index: number; reason: string }> = [];
-    let importedBoundariesCount = 0;
-    let importedPoisCount = 0;
-    let duplicateSkippedCount = 0;
-    let conflictCount = 0;
-
-    const boundaries = params.boundaries ?? [];
-    for (let i = 0; i < boundaries.length; i++) {
-      const b = boundaries[i];
-      const val = validatePolygonGeometry(b.geometry);
-      if (!val.valid) {
-        failedRecords.push({ index: i, reason: val.issues.map((x) => x.message).join('; ') });
-        metrics.importFailuresCount += 1;
-        continue;
-      }
-      if (boundaryHistoryByEntity.has(b.entityId)) {
-        conflictCount += 1;
-      }
-      if (!params.dryRun) {
-        await upsertNeighborhoodBoundary({
-          actorUid: params.actorUid,
-          entityId: b.entityId,
-          cityId: b.cityId,
-          districtId: b.districtId,
-          hoodId: b.hoodId,
-          level: b.level,
-          nameFa: b.nameFa,
-          geometry: b.geometry,
-          sourceProvenance: params.sourceProvenance,
-          autoApprove: true,
-        });
-      }
-      importedBoundariesCount += 1;
-    }
-
-    const pois = params.pois ?? [];
-    for (let i = 0; i < pois.length; i++) {
-      const p = pois[i];
-      const check = normalizeAndValidateCoordinate(p.coordinates.lat, p.coordinates.lng);
-      if (!check.valid || !check.coordinate) {
-        failedRecords.push({ index: boundaries.length + i, reason: check.errorMessage ?? 'Invalid POI coordinate' });
-        metrics.importFailuresCount += 1;
-        continue;
-      }
-      const dedupeKey = computePoiDedupeKey({
-        cityId: p.cityId,
-        category: p.category,
-        nameFa: p.nameFa,
-        coordinates: check.coordinate,
-      });
-      if (poiDedupeIndex.has(dedupeKey)) {
-        duplicateSkippedCount += 1;
-        continue;
-      }
-      if (!params.dryRun) {
-        upsertPointOfInterest({
-          nameFa: p.nameFa,
-          category: p.category,
-          coordinates: check.coordinate,
-          cityId: p.cityId,
-          hoodId: p.hoodId,
-          sourceProvenance: params.sourceProvenance,
-        });
-      }
-      importedPoisCount += 1;
-    }
-
-    const result: GeospatialImportBatchResult = {
-      batchId: `gis_imp_${crypto.randomBytes(6).toString('hex')}`,
-      idempotencyKey: params.idempotencyKey,
-      dryRun: Boolean(params.dryRun),
-      status: params.dryRun
-        ? 'PREVIEW_READY'
-        : failedRecords.length > 0
-          ? 'PARTIAL_WITH_FAILURES'
-          : 'COMMITTED',
-      importedBoundariesCount,
-      importedPoisCount,
-      duplicateSkippedCount,
-      conflictCount,
-      failedRecords,
-      sourceProvenance: params.sourceProvenance,
-      processedAtIso: nowFn().toISOString(),
-    };
-
-    if (!params.dryRun) {
-      importBatches.set(params.idempotencyKey, result);
-    }
-    return structuredClone(result);
+  async function importGeographicDataset(params: ImportGeographicDatasetParams) {
+    return executeImportGeographicDataset({
+      input: params,
+      boundaryHistoryByEntity,
+      poiDedupeIndex,
+      importBatches,
+      metrics,
+      nowIso: nowFn().toISOString(),
+      upsertNeighborhoodBoundary,
+      upsertPointOfInterest,
+      persistRuntime,
+    });
   }
 
   async function forwardGeocode(addressText: string) {
-    const key = addressText.trim();
-    if (!key) {
-      throw new CoreApiError('VALIDATION_FAILED', 400, 'addressText is required.');
-    }
-    const cached = geocodeCache.get(key);
-    if (cached) {
-      metrics.cacheHitsCount += 1;
-      return { status: 'OK' as const, cached: true, ...cached };
-    }
-    metrics.cacheMissesCount += 1;
-    const providerRes = await geoService.forwardGeocode(key);
-    if (providerRes.status !== 'SUCCESS' || !providerRes.location) {
-      metrics.geocodingErrorsCount += 1;
-      const normalizedStatus =
-        providerRes.status === 'UNAVAILABLE' ? ('PROVIDER_UNAVAILABLE' as const) : providerRes.status;
-      return {
-        status: normalizedStatus,
-        cached: false,
-        errorMessage: providerRes.error ?? 'Geocoding provider unavailable or returned no match.',
-      };
-    }
-    const entry = {
-      formattedAddressFa: providerRes.formattedAddressFa ?? key,
-      coordinates: providerRes.location,
-      provider: 'authorized_geography_provider',
-    };
-    geocodeCache.set(key, entry);
-    return { status: 'OK' as const, cached: false, ...entry };
+    return executeForwardGeocode({
+      addressText,
+      geocodeCache,
+      metrics,
+      geographyService: geoService,
+    });
   }
 
   return {
@@ -626,7 +288,8 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     }),
     upsertNeighborhoodBoundary,
     getActiveBoundary,
-    listBoundaryVersions,
+    getLatestBoundaryVersion,
+    listBoundaryVersions: (entityId: string) => structuredClone(boundaryHistoryByEntity.get(entityId) ?? []),
     detectBoundaryOverlaps,
     resolvePointToGeography,
     upsertPointOfInterest,
@@ -643,5 +306,4 @@ export function createGeospatialService(deps: GeospatialModuleDependencies = {})
     getObservabilityMetrics: (): GeospatialObservabilityMetrics => structuredClone(metrics),
   };
 }
-
 export type GeospatialService = ReturnType<typeof createGeospatialService>;

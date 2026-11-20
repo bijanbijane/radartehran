@@ -1,0 +1,39 @@
+{
+  "name": "radartehran-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tehran Radar React SPA, Vite build, and Cloudflare Worker edge bundle",
+  "scripts": {
+    "dev": "vite --config ../../vite.config.ts",
+    "dev:split": "RADAR_DEV_SPLIT=1 VITE_DEV_PORT=5173 vite --config ../../vite.config.ts",
+    "build": "node ./scripts/build-production.mjs",
+    "preview": "vite preview --config ../../vite.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "cf:build": "npm run cf:build --workspace=radartehran",
+    "test:worker": "npm run test:worker --workspace=radartehran"
+  },
+  "dependencies": {
+    "d3-scale": "^4.0.2",
+    "firebase": "^12.12.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/d3-scale": "^4.0.9",
+    "@types/leaflet": "^1.9.16",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^5.0.4",
+    "autoprefixer": "^10.4.21",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

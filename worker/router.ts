@@ -6,6 +6,7 @@
  */
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
 import { findMigrationRegisterEntry } from './migrationRegister';
+import { executeSafeStranglerFallback } from './stranglerFallback';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
@@ -37,6 +38,18 @@ export async function dispatchWorkerApiOrSeoRequest(
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
   if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED') {
     const { entry } = registeredMatch;
+    const proxied = await executeSafeStranglerFallback({
+      request: ctx.request,
+      env: ctx.env,
+      correlationId: ctx.correlationId,
+    });
+    if (proxied.status !== 502 && proxied.status !== 508) {
+      return {
+        response: proxied,
+        routePattern: `${entry.method} ${entry.path}`,
+        migrationStatus: 'STRANGLER_PROXY',
+      };
+    }
     const response = jsonWorkerResponse(ctx, 501, {
       status: 'error',
       code: 'ROUTE_NOT_YET_MIGRATED_TO_WORKER',

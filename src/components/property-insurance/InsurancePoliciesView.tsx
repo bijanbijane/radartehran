@@ -1,16 +1,16 @@
 /**
- * @file server/modules/property-insurance/InsurancePoliciesView.tsx
- * @description Component and view-model presenter inside `server/modules/property-insurance/`
+ * @file src/components/property-insurance/InsurancePoliciesView.tsx
+ * @description Frontend ownership of property insurance policy UI (RT-INFRA-001).
  * to list and inspect details of insurance policies, coverages, verbatim exclusions,
  * financial premium breakdowns, and verification limitations associated with a canonical property.
  */
 
 import React, { useMemo, useState } from 'react';
-import type { PropertyHazardContextSummary } from './contracts/externalAdapters';
+import type { PropertyHazardContextSummary } from '../../../server/modules/property-insurance/contracts/externalAdapters';
 import {
   evaluatePolicyCoverageStatusWithLimitations,
   type PolicyCoverageEvaluationReport,
-} from './coverage/policyAndClaimStateMachineEngine';
+} from '../../../server/modules/property-insurance/coverage/policyAndClaimStateMachineEngine';
 import type {
   InsuranceClaimRecord,
   InsurancePolicyCategory,
@@ -19,7 +19,7 @@ import type {
   PolicyCoverageRecord,
   PolicyExclusionOrLimitationRecord,
   PolicyRenewalRecord,
-} from './domain/types';
+} from '../../../server/modules/property-insurance/domain/types';
 
 export interface InsurancePolicyDetailViewModel {
   policy: InsurancePolicyRecord;

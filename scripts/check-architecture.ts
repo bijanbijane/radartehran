@@ -39,8 +39,12 @@ export function collectSourceFiles(rootDir: string): string[] {
   const seen = new Set<string>();
   const resolvedRoot = path.resolve(rootDir);
   const topServer = path.join(resolvedRoot, 'server.ts');
+  const apiServer = path.join(resolvedRoot, 'apps/api/server.ts');
   if (fs.existsSync(topServer)) {
     seen.add('server.ts');
+  }
+  if (fs.existsSync(apiServer)) {
+    seen.add('apps/api/server.ts');
   }
 
   const walk = (dirRel: string) => {

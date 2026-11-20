@@ -33,7 +33,10 @@ export class BoundedTelemetryAggregationEngine {
     return `${dateKey}:${cityId}:${hoodId}:${eventType}:${windowStartMs}`;
   }
 
-  public aggregateEvent(event: TelemetryEventPayload): void {
+  public aggregateEvent(event: TelemetryEventPayload): boolean {
+    if (event.privacyClassification === 'RESTRICTED_OPERATIONAL') {
+      return false;
+    }
     const hoodId = event.hoodId || 0;
     const cityId = event.cityId || 'national';
     const dateKey = event.provenance.tehranDateKey;
@@ -77,6 +80,7 @@ export class BoundedTelemetryAggregationEngine {
         list.push(metricVal);
       }
     }
+    return true;
   }
 
   public aggregateBatch(events: readonly TelemetryEventPayload[]): number {
@@ -97,6 +101,9 @@ export class BoundedTelemetryAggregationEngine {
     for (const bucket of this.aggregationBuckets.values()) {
       const distinctSessionsCount = bucket.sessions.size;
       const isKAnonymityPreserved = distinctSessionsCount >= this.kAnonymityThreshold;
+      if (!isKAnonymityPreserved) {
+        continue;
+      }
 
       const sumMetrics: Record<string, number> = {};
       const avgMetrics: Record<string, number> = {};

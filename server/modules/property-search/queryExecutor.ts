@@ -21,29 +21,24 @@ import type {
   SponsoredSearchPlacement,
 } from './types';
 import { normalizePersianText } from './validation';
+import {
+  CURSOR_VERSION,
+  buildQueryFingerprint,
+  decodeStableSearchCursor,
+  encodeStableSearchCursor,
+  sortTupleForItem,
+  InvalidSearchCursorError,
+  StaleSearchCursorError,
+} from './propertySearchStableCursor';
 
-interface DecodedCursor {
-  offset: number;
+/** @deprecated Offset cursors removed — use stable signed cursors */
+export function encodeCursor(_offset: number): string {
+  throw new InvalidSearchCursorError('Offset cursors are no longer supported');
 }
 
-export function encodeCursor(offset: number): string {
-  const payload = JSON.stringify({ offset });
-  return Buffer.from(payload, 'utf8').toString('base64url');
-}
-
-export function decodeCursor(cursorStr?: string): DecodedCursor {
-  if (!cursorStr) return { offset: 0 };
-  try {
-    const raw = Buffer.from(cursorStr, 'base64url').toString('utf8');
-    const parsed = JSON.parse(raw);
-    const offset = Number(parsed.offset);
-    if (Number.isInteger(offset) && offset >= 0) {
-      return { offset };
-    }
-  } catch {
-    // Malformed cursor defaults safely to offset 0
-  }
-  return { offset: 0 };
+/** @deprecated */
+export function decodeCursor(_cursorStr?: string): { offset: number } {
+  throw new InvalidSearchCursorError('Offset cursors are no longer supported');
 }
 
 /**
@@ -322,12 +317,20 @@ export async function executePropertySearchPipeline(
 
   // 2. Query listings from data source with a bounded limit
   const fetchLimit = Math.min(Math.max(request.limit ?? 20, 100), 500);
-  const { listings } = await deps.listingDataSource.queryApprovedListings({
+  const { listings, totalEstimated, sourceExhausted: adapterExhausted } = await deps.listingDataSource.queryApprovedListings({
     category: filters.category,
     dealType: filters.dealType,
     cityId: filters.cityId,
     neighborhoodIds: filters.neighborhoodIds,
     limit: fetchLimit,
+    minAskingPriceMillion: filters.minAskingPriceMillion,
+    maxAskingPriceMillion: filters.maxAskingPriceMillion,
+    minAreaSqm: filters.minAreaSqm,
+    maxAreaSqm: filters.maxAreaSqm,
+    bedroomsMin: filters.bedroomsMin,
+    constructionStatus: filters.constructionStatus,
+    verifiedOnly: filters.verifiedOnly,
+    boundingBox: filters.boundingBox,
   });
 
   // 3. Optional valuation enrichment for comparative analytical ranking
@@ -370,12 +373,32 @@ export async function executePropertySearchPipeline(
   const sortMode = request.sort ?? 'newest';
   const sorted = sortSearchResults(matched, sortMode, filters);
 
-  // 6. Pagination via cursor
-  const { offset } = decodeCursor(request.cursor);
+  // 6. Stable cursor pagination
   const limit = Math.min(request.limit ?? 20, 100);
-  const pagedItems = sorted.slice(offset, offset + limit);
-  const hasMore = offset + limit < sorted.length;
-  const nextCursor = hasMore ? encodeCursor(offset + limit) : undefined;
+  const queryFingerprint = buildQueryFingerprint(filters, sortMode);
+  let startIdx = 0;
+  if (request.cursor) {
+    const decoded = decodeStableSearchCursor(request.cursor, queryFingerprint);
+    const anchorIdx = sorted.findIndex((item) => item.id === decoded.stableRecordId);
+    if (anchorIdx < 0) throw new StaleSearchCursorError('Cursor position not found in current result set');
+    startIdx = anchorIdx + 1;
+  }
+  const pagedItems = sorted.slice(startIdx, startIdx + limit);
+  const hasMore = startIdx + limit < sorted.length;
+  const last = pagedItems[pagedItems.length - 1];
+  const nextCursor =
+    hasMore && last
+      ? encodeStableSearchCursor({
+          ...sortTupleForItem(last, sortMode),
+          queryFingerprint,
+          sortMode,
+          sourceWatermark: String(totalEstimated ?? sorted.length),
+          cursorVersion: CURSOR_VERSION,
+        })
+      : undefined;
+  const sourceExhausted = Boolean(adapterExhausted) || listings.length >= fetchLimit;
+  const countAccuracy = sourceExhausted ? 'BOUNDED_PARTIAL_TOTAL' : 'EXACT_TOTAL';
+  const totalEstimatedCount = sourceExhausted ? sorted.length : Math.max(sorted.length, totalEstimated ?? sorted.length);
 
   // 7. Aggregations over all matched results
   const aggregations = buildSearchResultAggregations(sorted);
@@ -398,7 +421,9 @@ export async function executePropertySearchPipeline(
   return {
     items: pagedItems,
     sponsoredPlacements: sponsoredPlacements && sponsoredPlacements.length > 0 ? sponsoredPlacements : undefined,
-    totalEstimatedCount: sorted.length,
+    totalEstimatedCount,
+    countAccuracy,
+    sourceExhausted,
     nextCursor,
     hasMore,
     appliedSort: sortMode,

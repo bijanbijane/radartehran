@@ -1020,7 +1020,8 @@ async function runSuite(): Promise<void> {
     assert.equal(jCompleted.leaseExpiresAt, null, 'transitionJournalOperation must clear leaseExpiresAt on completed status');
     assert.equal(jCompleted.lastErrorCode, null, 'transitionJournalOperation must clear lastErrorCode on completed status');
 
-    const serverMainSrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
+    const { readServerEntrySource } = await import('./helpers/readServerEntrySource.ts');
+    const serverMainSrc = readServerEntrySource(process.cwd());
     const identityGovSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/identityLifecycleAndBackendGovernance.ts'), 'utf8');
     assert.ok(
       pubBargainsSrc.includes('await ensureBucketLoaded()') &&

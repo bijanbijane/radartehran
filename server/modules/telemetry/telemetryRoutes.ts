@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import { verifyAdminApiAuthorization } from '../../../src/utils/serverAdminAndTelegramSecurity';
-import { TelemetryDataProcessingService } from './telemetryService';
+import { TELEMETRY_MAX_BATCH_SIZE, TelemetryDataProcessingService } from './telemetryService';
 import type { IngestibleTelemetryBatchItem } from './telemetryTypes';
 import { formatTelemetryBenchmarkIntl } from './telemetryTypes';
 
@@ -76,6 +76,17 @@ export function registerTelemetryModuleRoutes(app: Express, options?: TelemetryM
         ? rawBody.events
         : [rawBody as IngestibleTelemetryBatchItem];
 
+    if (items.length > TELEMETRY_MAX_BATCH_SIZE) {
+      res.status(413).json({
+        status: 'error',
+        code: 'TELEMETRY_BATCH_TOO_LARGE',
+        message: `حداکثر ${TELEMETRY_MAX_BATCH_SIZE} رویداد در هر درخواست مجاز است.`,
+        receivedCount: items.length,
+        maxBatchSize: TELEMETRY_MAX_BATCH_SIZE,
+      });
+      return;
+    }
+
     const outcome = service.ingestBatch(items, {
       clientIp: ip,
       userAgent: String(req.headers['user-agent'] || ''),
@@ -91,13 +102,24 @@ export function registerTelemetryModuleRoutes(app: Express, options?: TelemetryM
     });
   });
 
-  app.get('/api/v2/telemetry/aggregates', (_req: Request, res: Response) => {
+  app.get('/api/v2/telemetry/aggregates', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'public, max-age=120');
-    const aggregates = service.getAggregatedMetrics();
+    const aggregates = service.getPublicAggregatedMetrics();
     res.status(200).json({
       status: 'ok',
       aggregatesCount: aggregates.length,
+      kAnonymityThreshold: 15,
       aggregates,
+    });
+  });
+
+  app.get('/api/admin/telemetry/aggregates/restricted', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!(await ensureTelemetryAdminAuthorized(req, res, options))) return;
+    res.status(501).json({
+      status: 'error',
+      code: 'RESTRICTED_AGGREGATE_STORE_NOT_ENABLED',
+      message: 'خروجی تجمیع محدود هنوز به مخزن پایدار متصل نشده است.',
     });
   });
 

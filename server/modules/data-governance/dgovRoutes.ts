@@ -15,6 +15,14 @@ import {
   persistServerDgovEngine,
   recordCorrectionProposalInDgov,
 } from './dgovRepository';
+import { registerDgovAdminRoutes } from './dgovAdminRoutes';
+import {
+  toPublicDataClaimDTO,
+  toPublicEntityVersion,
+  toPublicLineageEdge,
+  toPublicReconciliationSummary,
+  toPublicCorrectionProposal,
+} from './publicDgovReadModels';
 
 const ALL_HOODS = getAllMultiCityNeighborhoods();
 
@@ -90,12 +98,23 @@ export function registerDataGovernanceRoutes(
     res.status(out.ok ? 200 : 400).json(out);
   });
 
+  registerDgovAdminRoutes(app, deps);
+
   app.get('/api/v1/data-governance/claims', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
     const eng = getServerDgovEngine();
+    const claims = eng.getClaims().map(toPublicDataClaimDTO).filter(Boolean);
+    const reconciliationCases = eng
+      .getReconciliationCases()
+      .map(toPublicReconciliationSummary)
+      .filter(Boolean);
     res.status(200).json({
-      claims: eng.getClaims(),
-      reconciliationCases: eng.getReconciliationCases(),
-      auditLogs: eng.getAuditLogs().slice(0, 50),
+      schemaVersion: 'public-dgov-claims-v1',
+      claims,
+      reconciliationCases,
+      auditLogs: [],
+      disclosureFa:
+        'خروجی عمومی؛ شناسه‌های داخلی، سوابق ممیزی و اطلاعات شناسایی‌کنندهٔ اشخاص منتشر نمی‌شود.',
     });
   });
 
@@ -107,16 +126,28 @@ export function registerDataGovernanceRoutes(
   });
 
   app.get('/api/v1/data-governance/lineage/:type/:id', (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=120');
     const id = String(req.params.id || '').trim();
     if (!id) { res.status(400).json({ errorFa: 'شناسه موجودیت الزامی است.' }); return; }
     const details = getServerDgovEngine().getLineageDetailsForEntity(id);
-    res.status(200).json({ entityId: id, edges: details.edges, details });
+    const edges = details.edges.map(toPublicLineageEdge);
+    res.status(200).json({
+      schemaVersion: 'public-dgov-lineage-v1',
+      entityId: id,
+      edges,
+      transformationCount: edges.length,
+    });
   });
 
   app.get('/api/v1/data-governance/versions/:type/:id', (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=120');
     const id = String(req.params.id || '').trim();
     if (!id) { res.status(400).json({ errorFa: 'شناسه موجودیت الزامی است.' }); return; }
-    res.status(200).json({ entityId: id, versions: getServerDgovEngine().getEntityVersions(id) });
+    const versions = getServerDgovEngine()
+      .getEntityVersions(id)
+      .map(toPublicEntityVersion)
+      .filter(Boolean);
+    res.status(200).json({ schemaVersion: 'public-dgov-versions-v1', entityId: id, versions });
   });
 
   app.get('/api/v1/data-governance/provenance/:id', (req: Request, res: Response) => {
@@ -138,7 +169,16 @@ export function registerDataGovernanceRoutes(
   });
 
   app.get('/api/v1/data-corrections', (_req: Request, res: Response) => {
-    res.status(200).json({ proposals: getServerDgovEngine().getCorrectionProposals() });
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    const proposals = getServerDgovEngine()
+      .getCorrectionProposals()
+      .map(toPublicCorrectionProposal)
+      .filter(Boolean);
+    res.status(200).json({
+      schemaVersion: 'public-dgov-corrections-v1',
+      proposals,
+      disclosureFa: 'فقط پیشنهادهای منتشرشدهٔ عمومی؛ هویت پیشنهاددهنده و یادداشت‌های بازبین منتشر نمی‌شود.',
+    });
   });
 
   app.post('/api/v1/data-governance/corrections', async (req: Request, res: Response) => {

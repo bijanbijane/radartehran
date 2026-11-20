@@ -254,8 +254,33 @@ export const UNMOUNTED_ENTERPRISE_DOMAIN_MODULES: ReadonlyArray<{
   { domainId: 'valuation', employeeTask: 'Employee 59', sourceDir: 'server/modules/valuation', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 hedonic valuation & AVM governance migration' },
   { domainId: 'market-intelligence', employeeTask: 'Employee 60', sourceDir: 'server/modules/market-intelligence', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 neighborhood analytics & market trends migration' },
   { domainId: 'geospatial', employeeTask: 'Employee 61', sourceDir: 'server/modules/geospatial', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 GIS & spatial intelligence migration' },
-  { domainId: 'data-governance', employeeTask: 'Employee 62', sourceDir: 'server/modules/data-governance', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 MDM & data quality governance migration' },
   { domainId: 'document-management', employeeTask: 'Employee 63', sourceDir: 'server/modules/document-management', mountClassification: 'UNMOUNTED_DOMAIN_MODULE', migrationPlan: 'Phase 4 D1 + R2 digital records & contract lifecycle migration' },
+];
+
+/** Domains mounted via the global search/governance gateway (not unmounted enterprise modules). */
+export const MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY_MODULES: ReadonlyArray<{
+  domainId: string;
+  employeeTask: string;
+  sourceDir: string;
+  mountClassification: 'MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY';
+  migrationPlan: string;
+}> = [
+  {
+    domainId: 'analytics-research',
+    employeeTask: 'Employee 60-analytics',
+    sourceDir: 'server/modules/analytics-research',
+    mountClassification: 'MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY',
+    migrationPlan:
+      'Mounted in Express via registerGlobalSearchGovernanceAndAnalyticsRoutes (server.ts); RT-INFRA-001 corrected UNMOUNTED drift.',
+  },
+  {
+    domainId: 'data-governance',
+    employeeTask: 'Employee 62',
+    sourceDir: 'server/modules/data-governance',
+    mountClassification: 'MOUNTED_VIA_GLOBAL_SEARCH_GATEWAY',
+    migrationPlan:
+      'Mounted in Express via registerGlobalSearchGovernanceAndAnalyticsRoutes (server.ts); D1 migration tracked separately from mount status (RT-INFRA-001).',
+  },
 ];
 
 /**

@@ -44,14 +44,6 @@ export {
   type PropertyInsuranceStoreTransaction,
   type PropertyInsuranceTransactionRunner,
 };
-export {
-  InsurancePoliciesView,
-  buildInsurancePolicyDetailViewModel,
-  filterAndSortPropertyInsurancePolicies,
-  type InsurancePoliciesViewProps,
-  type InsurancePolicyDetailViewModel,
-} from "./InsurancePoliciesView";
-
 export function createPropertyInsuranceService(
   deps:
     | PropertyInsuranceServiceDependencies

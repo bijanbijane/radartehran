@@ -5,12 +5,13 @@ import { MULTI_CITY_CONFIGS, type CityId } from '../../../data/multiCityData';
 import { toPersianNum } from '../../../data/neighborhoods';
 import { transitionModuleContext } from '../../../interaction-system/interactionEngines';
 import type { SavedSearchAlertFrequency, SearchBoundingBox, SearchExecutionResponse, SearchFilterSet, SearchScope, SearchSortOption, SearchViewMode } from '../models/search.types';
-import { decodeSearchUrlState, getPlaceHierarchyForCity, mergeSearchUrlStateIntoSearch } from '../services/searchNormalizerAndPlanner';
-import { defaultSearchEngine } from '../services/searchOrchestratorEngine';
+import { decodeSearchUrlState, getPlaceHierarchyForCity } from '../services/searchNormalizerAndPlanner';
+import { createInitialEmptySearchResponse, postCanonicalSearchQuery } from '../api/searchQueryClient';
 import { defaultSearchWorkspaceService } from '../services/searchWorkspaceService';
 import { SearchResultsAndDiscoveryGrid } from './SearchResultsAndDiscoveryGrid';
-import { commitManagedHistoryTransition, isPopStateRestorationActive } from '../../../navigation/url/historySingleWriter';
-import { sanitizeNavigationHash } from '../../../navigation/url/navigationUrlContract';
+import { GlobalSearchLoadErrorBanner, syncSearchHistoryUrl } from './globalSearchHistoryUrl';
+
+export { syncSearchHistoryUrl } from './globalSearchHistoryUrl';
 
 export interface GlobalSearchWorkspaceProps {
   activeCity?: CityId;
@@ -28,32 +29,6 @@ const SCOPE_TABS: Array<{ id: SearchScope; labelFa: string }> = [
   { id: 'SERVICES', labelFa: 'خدمات' }, { id: 'KNOWLEDGE', labelFa: 'دانش و پژوهش' },
   { id: 'COMMUNITY', labelFa: 'جامعه' }, { id: 'MAP', labelFa: 'نقشه و مکان' },
 ];
-
-export function syncSearchHistoryUrl(
-  historyObj: Pick<History, 'pushState' | 'replaceState'> | undefined,
-  pathname: string,
-  currentSearch: string,
-  nextState: { q: string; scope: SearchScope; sort: SearchSortOption; viewMode: SearchViewMode; filters: SearchFilterSet },
-  mode: 'push' | 'replace',
-  isPopStateRestore = false,
-  currentHash = '',
-): { committedUrl: string; methodCalled: 'pushState' | 'replaceState' | 'none' } {
-  const normalizedCurrentSearch = currentSearch ? (currentSearch.startsWith('?') ? currentSearch : `?${currentSearch}`) : '';
-  const safeHash = sanitizeNavigationHash(currentHash);
-  const currentUrl = `${pathname}${normalizedCurrentSearch}${safeHash}`;
-  if (isPopStateRestore || isPopStateRestorationActive() || !historyObj) return { committedUrl: currentUrl, methodCalled: 'none' };
-  const mergedQs = mergeSearchUrlStateIntoSearch(normalizedCurrentSearch, nextState);
-  const nextUrl = `${pathname}${mergedQs ? `?${mergedQs}` : ''}${safeHash}`;
-  const res = commitManagedHistoryTransition({
-    domain: 'search_query',
-    mode,
-    targetUrl: nextUrl,
-    isPopStateRestore,
-    historyObj,
-    locationObj: { pathname, search: normalizedCurrentSearch, hash: safeHash },
-  });
-  return { committedUrl: res.finalUrl, methodCalled: res.method };
-}
 
 export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
   activeCity = 'tehran', activeNeighborhoodId, activeNeighborhoodName, viewportBounds = null,
@@ -76,6 +51,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
   const [saveAlertFreq, setSaveAlertFreq] = useState<SavedSearchAlertFrequency>('OFF');
   const [savedBannerFa, setSavedBannerFa] = useState<string | null>(null);
   const [degradedScopes, setDegradedScopes] = useState<SearchScope[]>([]);
+  const [searchLoadErrorFa, setSearchLoadErrorFa] = useState<string | null>(null);
   const pendingHistoryModeRef = useRef<'push' | 'replace'>('replace');
   const isPopStateRestoreRef = useRef<boolean>(false);
   const searchBoxRef = useRef<HTMLDivElement | null>(null);
@@ -123,13 +99,12 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
 
   const latestReqCounter = useRef(0);
   const [searchResponse, setSearchResponse] = useState<SearchExecutionResponse>(() =>
-    defaultSearchEngine.executeSearch({
-      requestId: 'req-init',
-      rawQuery: initialQuery || initialDecoded.q || '',
-      scope: initialDecoded.scope || 'ALL',
-      explicitFilters: { ...initialDecoded.filters, cityId: activeCity },
-      sort: initialDecoded.sort || 'RELEVANCE',
-    })
+    createInitialEmptySearchResponse(
+      initialQuery || initialDecoded.q || '',
+      initialDecoded.scope || 'ALL',
+      { ...initialDecoded.filters, cityId: activeCity },
+      initialDecoded.sort || 'RELEVANCE',
+    )
   );
 
   const prevCityRef = useRef<CityId>(activeCity);
@@ -142,7 +117,22 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
     setDraftFilters((prev) => ({ ...prev, ...resetSpatial }));
     setAppliedFilters(cleanedFilters);
     latestReqCounter.current += 1;
-    setSearchResponse(defaultSearchEngine.executeSearch({ requestId: `req-city-${latestReqCounter.current}`, rawQuery, scope: activeScope, explicitFilters: cleanedFilters, sort, degradedScopes }));
+    void postCanonicalSearchQuery({
+      requestId: `req-city-${latestReqCounter.current}`,
+      query: rawQuery,
+      scope: activeScope,
+      filters: cleanedFilters,
+      sort,
+      degradedScopes,
+    })
+      .then((res) => {
+        setSearchLoadErrorFa(null);
+        setSearchResponse(res);
+      })
+      .catch((err) => {
+        if (err instanceof Error && (err.message === 'STALE_SEARCH_RESPONSE' || err.name === 'AbortError')) return;
+        setSearchLoadErrorFa('بارگذاری نتایج جست‌وجو ناموفق بود. اتصال شبکه یا سرور API را بررسی کنید.');
+      });
   }, [activeCity]);
 
   const suggestions = defaultSearchWorkspaceService.getAutocompleteSuggestions(rawQuery, activeCity);
@@ -159,20 +149,22 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
     latestReqCounter.current += 1;
     const reqId = `req-${latestReqCounter.current}`;
     const scopedFilters: SearchFilterSet = { ...nextFilters, cityId: activeCity };
-    const res = defaultSearchEngine.executeSearch({
+    void postCanonicalSearchQuery({
       requestId: reqId,
-      rawQuery: nextQuery,
+      query: nextQuery,
       scope: nextScope,
-      explicitFilters: scopedFilters,
+      filters: scopedFilters,
       sort: nextSort,
       degradedScopes: nextDegraded,
-    });
-    setSearchResponse(res);
-    if (nextQuery.trim()) {
-      defaultSearchWorkspaceService.recordSearchHistory({
-        rawQuery: nextQuery, scope: nextScope, filters: scopedFilters, resultCount: res.totalCount,
+    })
+      .then((res) => {
+        setSearchLoadErrorFa(null);
+        setSearchResponse(res);
+      })
+      .catch((err) => {
+        if (err instanceof Error && (err.message === 'STALE_SEARCH_RESPONSE' || err.name === 'AbortError')) return;
+        setSearchLoadErrorFa('بارگذاری نتایج جست‌وجو ناموفق بود. اتصال شبکه یا سرور API را بررسی کنید.');
       });
-    }
     const modeToUse = historyModeOverride || pendingHistoryModeRef.current;
     pendingHistoryModeRef.current = 'replace';
     if (typeof window !== 'undefined') {
@@ -301,6 +293,8 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
           ))}
         </div>
       </div>
+
+      {searchLoadErrorFa ? <GlobalSearchLoadErrorBanner messageFa={searchLoadErrorFa} /> : null}
 
       <div ref={searchBoxRef} className="relative">
         <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus-within:border-[#176B63]">

@@ -214,6 +214,19 @@ export default defineConfig(({ mode }) => {
     server: {
       // Task 448: Explicit allowedHosts list instead of unrestricted `allowedHosts: true`
       allowedHosts,
+      port: Number(env.VITE_DEV_PORT || process.env.VITE_DEV_PORT) || undefined,
+      proxy:
+        env.RADAR_DEV_SPLIT === '1' ||
+        env.VITE_RADAR_DEV_SPLIT === '1' ||
+        process.env.RADAR_DEV_SPLIT === '1'
+          ? {
+              '/api': {
+                target: env.VITE_API_PROXY_TARGET || process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3001',
+                changeOrigin: true,
+                secure: false,
+              },
+            }
+          : undefined,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: {
         ignored: [

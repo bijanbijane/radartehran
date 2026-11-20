@@ -227,8 +227,8 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
     const summary = getMigrationProgressSummary();
     assert.equal(summary.totalCatalogRoutes, REGISTERED_API_ROUTES.length + 1);
     assert.equal(summary.verifiedWorkerRoutes, 29);
-    assert.equal(summary.unmountedEnterpriseModules, 10);
-    assert.equal(UNMOUNTED_ENTERPRISE_DOMAIN_MODULES.length, 10);
+    assert.equal(summary.unmountedEnterpriseModules, 9);
+    assert.equal(UNMOUNTED_ENTERPRISE_DOMAIN_MODULES.length, 9);
 
     // Parameterized route matching check
     const dossierMatch = findMigrationRegisterEntry(

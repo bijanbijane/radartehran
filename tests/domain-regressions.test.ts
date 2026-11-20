@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 import {
   calculateDetailedValuation,
   calculateLandShare,
@@ -1372,7 +1373,7 @@ function runDomainRegressionTests(): void {
   );
 
   // 56. Server System Health & Models Cleanliness under <=290 line bounds
-  const serverMainSrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf-8');
+  const serverMainSrc = readServerEntrySource(process.cwd());
   const modelsTypeDefSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/models.ts'), 'utf-8');
   assert(
     '56. Enforces removal of casperHubConfigured telemetry from server.ts and models.ts under <=290 line bounds',
