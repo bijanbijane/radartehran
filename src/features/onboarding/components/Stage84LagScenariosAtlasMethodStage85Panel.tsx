@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage84LagScenariosAtlasMethodStage85Panel.tsx — Stage 84 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateLagScenariosAndGovernance } from '../services/urbanMacroeconomicsStage84Engine';
 import {
   STAGE84_ACCEPTANCE_TESTS_72,
@@ -35,12 +36,12 @@ export const Stage84LagScenariosAtlasMethodStage85Panel: React.FC<Props> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
           <label className="flex items-center gap-2 text-slate-300">
             <span>تأخیر زمانی تحلیل Lag (ماه):</span>
-            <input
-              type="number"
+            <NumericDraftInput
               min={0}
               max={24}
+              fallback={0}
               value={lagMonths}
-              onChange={(e) => setLagMonths(Math.min(24, Math.max(0, Number(e.target.value) || 0)))}
+              onValueChange={setLagMonths}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>

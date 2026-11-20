@@ -1,11 +1,11 @@
 /** @file src/features/valuation/components/ValuationInputSteps.tsx — Stage 89 Structured Inputs with Field-Level Origin, Selective Ad Extraction & Validation */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Building2, Sparkles, Wrench } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { getNeighborhoodDeepInsight } from '../../../data/neighborhoodInsights';
 import { getCurrentJalaliYear, HEDONIC_RENOVATION_OPTIONS } from '../../../data/hedonicPricingEngine';
-import { clampNumber } from '../../../utils/security';
 import { extractValuationSpecsFromAdText } from '../services/valuationWorkspaceService';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   INPUT_ORIGIN_LABELS_FA,
   LOCATION_PRECISION_LABELS_FA,
@@ -56,6 +56,8 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
 }) => {
   const [adText, setAdText] = useState('');
   const [extractMsg, setExtractMsg] = useState('');
+  const extractTimerRef = useRef<number | null>(null);
+  useEffect(() => () => { if (extractTimerRef.current !== null) window.clearTimeout(extractTimerRef.current); }, []);
   const currentYear = getCurrentJalaliYear();
   const microHoods = getNeighborhoodDeepInsight(selectedHood).microHoods;
   const isResidential =
@@ -73,7 +75,8 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
     const { patch, summaryFa } = extractValuationSpecsFromAdText(adText, input, selectedHood.buyPerSqm);
     onChange(patch);
     setExtractMsg(summaryFa);
-    setTimeout(() => setExtractMsg(''), 4200);
+    if (extractTimerRef.current !== null) window.clearTimeout(extractTimerRef.current);
+    extractTimerRef.current = window.setTimeout(() => { extractTimerRef.current = null; setExtractMsg(''); }, 4200);
   };
 
   const fieldErrors = validation?.fieldErrors || {};
@@ -212,19 +215,19 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
                 <label className="text-[11px] text-[#586760] block mb-1">متراژ (متر)</label>
-                <input type="number" min={30} max={600} data-testid="valuation-sqm-input" value={input.sqm} onChange={(e) => setFieldUser('sqm', { sqm: clampNumber(Number(e.target.value), 30, 600, 85) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={30} max={600} fallback={85} aria-label="متراژ واحد" data-testid="valuation-sqm-input" value={input.sqm} onValueChange={(nextSqm) => setFieldUser('sqm', { sqm: nextSqm })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
               </div>
               <div>
                 <label className="text-[11px] text-[#586760] block mb-1">سال ساخت</label>
-                <input type="number" min={1340} max={currentYear} value={input.buildYear} onChange={(e) => setFieldUser('buildYear', { buildYear: clampNumber(Number(e.target.value), 1340, currentYear, 1398) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={1340} max={currentYear} fallback={1398} aria-label="سال ساخت" value={input.buildYear} onValueChange={(nextYear) => setFieldUser('buildYear', { buildYear: nextYear })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
               </div>
               <div>
                 <label className="text-[11px] text-[#586760] block mb-1">طبقه واحد (همکف=۰)</label>
-                <input type="number" min={-2} max={60} value={input.floor} onChange={(e) => { const f = clampNumber(Number(e.target.value), -2, 60, 3); setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, Math.max(1, f)) }); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={-2} max={60} fallback={3} aria-label="طبقه واحد" value={input.floor} onValueChange={(f) => setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, Math.max(1, f)) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
               </div>
               <div>
                 <label className="text-[11px] text-[#586760] block mb-1">کل طبقات</label>
-                <input type="number" min={1} max={60} value={input.totalFloors} onChange={(e) => { const tf = clampNumber(Number(e.target.value), 1, 60, 5); setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) }); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <NumericDraftInput min={1} max={60} fallback={5} aria-label="کل طبقات" value={input.totalFloors} onValueChange={(tf) => setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
               </div>
             </div>
             {(fieldErrors.sqm || fieldErrors.buildYear || fieldErrors.floor || fieldErrors.totalFloors) && (

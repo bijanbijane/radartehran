@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage84DashboardInflationFxCyclesPanel.tsx — Stage 84 Tabs 1 & 2 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateInflationFxAndCycles } from '../services/urbanMacroeconomicsStage84Engine';
 import {
   STAGE84_ATLAS_LAYERS_9,
@@ -101,45 +102,49 @@ export const Stage84DashboardInflationFxCyclesPanel: React.FC<Props> = ({
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
         <label className="flex items-center gap-1.5">
           <span>شوک فرضی ارز (%):</span>
-          <input
-            type="number"
+          <NumericDraftInput
+            allowDecimal
             min={0}
             max={200}
+            fallback={0}
             value={fxShockPct}
-            onChange={(e) => setFxShockPct(Number(e.target.value) || 0)}
+            onValueChange={setFxShockPct}
             className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
           />
         </label>
         <label className="flex items-center gap-1.5">
           <span>مبلغ وام (م.م.ت):</span>
-          <input
-            type="number"
+          <NumericDraftInput
+            allowDecimal
             min={0.5}
+            max={100000}
             step={0.5}
+            fallback={1}
             value={loanBillion}
-            onChange={(e) => setLoanBillion(Number(e.target.value) || 1)}
+            onValueChange={setLoanBillion}
             className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
           />
         </label>
         <label className="flex items-center gap-1.5">
           <span>نرخ تسهیلات (%):</span>
-          <input
-            type="number"
+          <NumericDraftInput
+            allowDecimal
             min={1}
             max={60}
+            fallback={24}
             value={annualInterestPct}
-            onChange={(e) => setAnnualInterestPct(Number(e.target.value) || 24)}
+            onValueChange={setAnnualInterestPct}
             className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
           />
         </label>
         <label className="flex items-center gap-1.5">
           <span>مدت (سال):</span>
-          <input
-            type="number"
+          <NumericDraftInput
             min={1}
             max={30}
+            fallback={10}
             value={termYears}
-            onChange={(e) => setTermYears(Number(e.target.value) || 10)}
+            onValueChange={setTermYears}
             className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
           />
         </label>

@@ -84,11 +84,17 @@ export function mapCommunityErrorFa(status: number, code?: string, serverMsg?: s
   return serverMsg || 'خطا در ارتباط با سرور جامعه کاربران؛ لطفاً دوباره تلاش کنید.';
 }
 
+function withQuery(base: string, qs: URLSearchParams): string {
+  const s = qs.toString();
+  return s ? `${base}?${s}` : base;
+}
+
 async function fetchJsonSafe<T>(
   url: string,
   init: RequestInit,
   extract: (body: Record<string, unknown>) => T,
 ): Promise<CommunityApiCallResult<T>> {
+  if (init.signal?.aborted) return { ok: false, status: 0, errorFa: 'ABORTED' };
   try {
     const res = await fetch(url, init);
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
@@ -107,7 +113,7 @@ async function fetchJsonSafe<T>(
       hasMore: Boolean(body.hasMore),
     };
   } catch (err) {
-    if ((err as Error)?.name === 'AbortError') return { ok: false, status: 0, errorFa: 'ABORTED' };
+    if (init.signal?.aborted || (err as Error)?.name === 'AbortError') return { ok: false, status: 0, errorFa: 'ABORTED' };
     return { ok: false, status: 503, errorFa: COMMUNITY_NETWORK_ERROR_FA };
   }
 }
@@ -155,7 +161,7 @@ export function getCommunityDiscussions(params?: {
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.cursor) qs.set('cursor', params.cursor);
   return fetchJsonSafe<CommunityDiscussionPost[]>(
-    `/api/v1/community/posts?${qs.toString()}`,
+    withQuery('/api/v1/community/posts', qs),
     { headers: { Accept: 'application/json' }, signal: params?.signal },
     (b) => (Array.isArray(b.items) ? (b.items as CommunityDiscussionPost[]) : []),
   );
@@ -182,7 +188,7 @@ export function getCommunityQuestions(params?: {
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.cursor) qs.set('cursor', params.cursor);
   return fetchJsonSafe<CommunityQuestionItem[]>(
-    `/api/v1/community/questions?${qs.toString()}`,
+    withQuery('/api/v1/community/questions', qs),
     { headers: { Accept: 'application/json' }, signal: params?.signal },
     (b) => (Array.isArray(b.items) ? (b.items as CommunityQuestionItem[]) : []),
   );
@@ -205,7 +211,7 @@ export function getCommunityCorrections(params?: {
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.cursor) qs.set('cursor', params.cursor);
   return fetchJsonSafe<DataCorrectionProposal[]>(
-    `/api/v1/community/contributions?${qs.toString()}`,
+    withQuery('/api/v1/community/contributions', qs),
     { headers: { Accept: 'application/json' }, signal: params?.signal },
     (b) => (Array.isArray(b.items) ? (b.items as DataCorrectionProposal[]) : []),
   );
@@ -226,7 +232,7 @@ export function getCommunityResearchProposals(params?: {
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.cursor) qs.set('cursor', params.cursor);
   return fetchJsonSafe<ResearchTopicProposal[]>(
-    `/api/v1/community/research-proposals?${qs.toString()}`,
+    withQuery('/api/v1/community/research-proposals', qs),
     { headers: { Accept: 'application/json' }, signal: params?.signal },
     (b) => (Array.isArray(b.items) ? (b.items as ResearchTopicProposal[]) : []),
   );
@@ -247,7 +253,7 @@ export async function getCommunityMembers(params?: {
   if (params?.includeSeeds === false) qs.set('includeSeeds', 'false');
   const auth = params?.currentUser ? await buildProtectedHeaders(params.currentUser) : { ok: false, headers: {} };
   return fetchJsonSafe<{ items: CommunityProfile[]; total: number; limit: number }>(
-    `/api/v1/community/profiles?${qs.toString()}`,
+    withQuery('/api/v1/community/profiles', qs),
     { headers: { Accept: 'application/json', ...(auth.ok ? auth.headers : {}) }, signal: params?.signal },
     (b) => ({
       items: Array.isArray(b.items) ? (b.items as CommunityProfile[]) : [],

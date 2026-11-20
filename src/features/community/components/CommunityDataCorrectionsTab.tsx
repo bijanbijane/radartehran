@@ -66,9 +66,24 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
   const [suggestedFa, setSuggestedFa] = useState(() => String(savedDraft?.suggestedFa || ''));
   const [observedDateFa, setObservedDateFa] = useState(() => String(savedDraft?.observedDateFa || 'امروز'));
   const [evidenceFa, setEvidenceFa] = useState(() => String(savedDraft?.evidenceFa || ''));
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const hoodChoices = neighborhoods.length > 0 ? neighborhoods : [selectedHood];
+  const visibleHoodOptions = React.useMemo(() => {
+    const top = hoodChoices.slice(0, 40);
+    const current = hoodChoices.find((h) => h.id === hoodId);
+    if (current && !top.some((h) => h.id === current.id)) {
+      return [current, ...top];
+    }
+    return top;
+  }, [hoodChoices, hoodId]);
+
+  useEffect(() => {
+    if (hoodChoices.length > 0 && !hoodChoices.some((h) => h.id === hoodId)) {
+      setHoodId(selectedHood.id);
+    }
+  }, [hoodChoices, hoodId, selectedHood.id]);
 
   useEffect(() => {
     if (titleFa || evidenceFa || suggestedFa || currentValueFa) {
@@ -78,25 +93,32 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const chosen = hoodChoices.find((h) => h.id === hoodId) || selectedHood;
-    const res = await onSubmitProposal({
-      neighborhoodId: chosen.id,
-      neighborhoodNameFa: chosen.name,
-      category,
-      titleFa,
-      currentValueFa,
-      evidenceSummaryFa: evidenceFa,
-      suggestedValueFa: suggestedFa,
-      observedDateFa,
-    });
-    if (res.ok) {
-      setTitleFa('');
-      setCurrentValueFa('');
-      setEvidenceFa('');
-      setSuggestedFa('');
-      setFeedback({ ok: true, msg: 'گزارش اصلاح داده با پیش‌نمایش مقدار فعلی/پیشنهادی در صف اعتبارسنجی ثبت شد.' });
-    } else {
-      setFeedback({ ok: false, msg: res.errorFa || 'خطا در ثبت گزارش' });
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const chosen = hoodChoices.find((h) => h.id === hoodId) || selectedHood;
+      const res = await onSubmitProposal({
+        neighborhoodId: chosen.id,
+        neighborhoodNameFa: chosen.name,
+        category,
+        titleFa,
+        currentValueFa,
+        evidenceSummaryFa: evidenceFa,
+        suggestedValueFa: suggestedFa,
+        observedDateFa,
+      });
+      if (res.ok) {
+        saveDataCorrectionDraft(null);
+        setTitleFa('');
+        setCurrentValueFa('');
+        setEvidenceFa('');
+        setSuggestedFa('');
+        setFeedback({ ok: true, msg: 'گزارش اصلاح داده با پیش‌نمایش مقدار فعلی/پیشنهادی در صف اعتبارسنجی ثبت شد.' });
+      } else {
+        setFeedback({ ok: false, msg: res.errorFa || 'خطا در ثبت گزارش' });
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -133,51 +155,51 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
             <label htmlFor="corr-hood-select" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">محله هدف</label>
-            <select id="corr-hood-select" value={hoodId} onChange={(e) => setHoodId(Number(e.target.value))} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
-              {hoodChoices.slice(0, 40).map((h) => (<option key={h.id} value={h.id}>{h.name} ({h.zone})</option>))}
+            <select id="corr-hood-select" value={hoodId} onChange={(e) => { setHoodId(Number(e.target.value)); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
+              {visibleHoodOptions.map((h) => (<option key={h.id} value={h.id}>{h.name} ({h.zone})</option>))}
             </select>
           </div>
           <div>
             <label htmlFor="corr-cat-select" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">دسته خطای داده</label>
-            <select id="corr-cat-select" value={category} onChange={(e) => setCategory(e.target.value as DataCorrectionCategory)} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
+            <select id="corr-cat-select" value={category} onChange={(e) => { setCategory(e.target.value as DataCorrectionCategory); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
               {(Object.keys(DATA_CORRECTION_CATEGORY_LABELS_FA) as DataCorrectionCategory[]).map((k) => (<option key={k} value={k}>{DATA_CORRECTION_CATEGORY_LABELS_FA[k]}</option>))}
             </select>
           </div>
           <div>
             <label htmlFor="corr-date-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">تاریخ مشاهده میدانی</label>
-            <input id="corr-date-input" type="text" value={observedDateFa} onChange={(e) => setObservedDateFa(e.target.value)} placeholder="مثلاً ۱۴۰۵/۰۱/۲۰" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+            <input id="corr-date-input" type="text" value={observedDateFa} onChange={(e) => { setObservedDateFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۱۴۰۵/۰۱/۲۰" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
           </div>
         </div>
 
         <div>
           <label htmlFor="corr-title-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">عنوان خطا یا اصلاح</label>
-          <input id="corr-title-input" type="text" value={titleFa} onChange={(e) => setTitleFa(e.target.value)} placeholder="مثلاً تغییر دسترسی خروجی مترو یا اصلاح مرز غربی محله" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+          <input id="corr-title-input" type="text" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً تغییر دسترسی خروجی مترو یا اصلاح مرز غربی محله" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label htmlFor="corr-curr-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">مقدار یا وضعیت فعلی در سامانه</label>
-            <input id="corr-curr-input" type="text" value={currentValueFa} onChange={(e) => setCurrentValueFa(e.target.value)} placeholder="مثلاً فاصله پیاده درج‌شده ۱۲ دقیقه" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+            <input id="corr-curr-input" type="text" value={currentValueFa} onChange={(e) => { setCurrentValueFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً فاصله پیاده درج‌شده ۱۲ دقیقه" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
           </div>
           <div>
             <label htmlFor="corr-val-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">مقدار پیشنهادی مستند</label>
-            <input id="corr-val-input" type="text" value={suggestedFa} onChange={(e) => setSuggestedFa(e.target.value)} placeholder="مثلاً ۶ دقیقه پس از بازگشایی گذر شرقی" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+            <input id="corr-val-input" type="text" value={suggestedFa} onChange={(e) => { setSuggestedFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۶ دقیقه پس از بازگشایی گذر شرقی" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
           </div>
         </div>
 
         <div>
           <label htmlFor="corr-evidence-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">شواهد میدانی و توضیح دقیق (بدون شماره تماس یا لینک)</label>
-          <textarea id="corr-evidence-input" rows={2} value={evidenceFa} onChange={(e) => setEvidenceFa(e.target.value)} placeholder="جزئیات مشاهده میدانی، نشانی تقاطع عمومی و دلیل مغایرت..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+          <textarea id="corr-evidence-input" rows={2} value={evidenceFa} onChange={(e) => { setEvidenceFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="جزئیات مشاهده میدانی، نشانی تقاطع عمومی و دلیل مغایرت..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
         </div>
 
         {feedback && (
-          <div data-testid="community-correction-feedback" className={`p-2.5 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
+          <div role={feedback.ok ? 'status' : 'alert'} data-testid="community-correction-feedback" className={`p-2.5 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
             {feedback.msg}
           </div>
         )}
 
-        <button type="submit" data-testid="submit-data-correction-btn" className="px-4 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white font-bold cursor-pointer">
-          ارسال به صف راستی‌آزمایی داده
+        <button type="submit" disabled={submitting} data-testid="submit-data-correction-btn" className="px-4 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white font-bold cursor-pointer disabled:opacity-50">
+          {submitting ? 'در حال ارسال...' : 'ارسال به صف راستی‌آزمایی داده'}
         </button>
       </form>
 

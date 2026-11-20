@@ -58,10 +58,37 @@ export function normalizeDigitsToAscii(input: string): string {
 }
 
 export function parseOptionalNumber(input: string): number | null {
-  const cleaned = normalizeDigitsToAscii(input || '').replace(/[,٬\s]/g, '').trim();
+  const cleaned = normalizeDigitsToAscii(input || '')
+    .replace(/\u066B/g, '.')
+    .replace(/[,٬،\s_]/g, '')
+    .trim();
   if (!cleaned) return null;
+  if (!/^\d*(\.\d+)?$/.test(cleaned)) return null;
   const num = Number(cleaned);
   return Number.isFinite(num) && num >= 0 ? num : null;
+}
+
+export function isMalformedOptionalNumber(input: string): boolean {
+  return input.trim().length > 0 && parseOptionalNumber(input) === null;
+}
+
+export function validatePropertyFilterErrors(draft: PropertyFilterDraft): string[] {
+  const errors: string[] = [];
+  const checks: Array<[string, string]> = [
+    ['حداقل متراژ', draft.areaMin],
+    ['حداکثر متراژ', draft.areaMax],
+    ['حداقل قیمت', draft.priceMinMillion],
+    ['حداکثر قیمت', draft.priceMaxMillion],
+    ['حداکثر ودیعه', draft.depositMaxMillion],
+    ['حداکثر اجاره', draft.rentMaxMillion],
+    ['حداقل سال ساخت', draft.buildYearMin],
+  ];
+  for (const [label, raw] of checks) {
+    if (isMalformedOptionalNumber(raw)) {
+      errors.push(`مقدار فیلد «${label}» باید عدد معتبر باشد.`);
+    }
+  }
+  return errors;
 }
 
 export function createDefaultPropertyFilters(initialTx: 'all' | TransactionType = 'all'): PropertyFilterDraft {

@@ -2,7 +2,10 @@
 import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { getCurrentJalaliYear } from '../../../data/hedonicPricingEngine';
 import { sanitizeInput } from '../../../utils/security';
-import { normalizeDigitsToAscii } from '../filters/PropertyFilterDraft';
+import {
+  isValidIranianContactPhone,
+  parseLocalizedNumber,
+} from '../../../utils/forms/formInputHelpers';
 import type { ListingEntity } from '../types/listing.types';
 import type { ListingAnomalyFlag, ListingSubmissionDraft } from '../types/listing-history.types';
 
@@ -53,8 +56,7 @@ export function createEmptySubmissionDraft(
 }
 
 function parseAsciiNum(raw: string): number {
-  const n = Number(normalizeDigitsToAscii(raw || '').replace(/[,٬\s]/g, '').trim());
-  return Number.isFinite(n) ? n : NaN;
+  return parseLocalizedNumber(raw || '');
 }
 
 export function validateSubmissionStep(draft: ListingSubmissionDraft, step: number): StepValidationResult {
@@ -73,14 +75,20 @@ export function validateSubmissionStep(draft: ListingSubmissionDraft, step: numb
     }
     if (draft.propertyType !== 'land') {
       const year = parseAsciiNum(draft.buildYearJalali);
-      if (!Number.isFinite(year) || year < 1340 || year > maxYear + 1) {
-        errors.buildYearJalali = `سال ساخت باید بین ۱۳۴۰ تا ${maxYear} باشد.`;
+      if (!Number.isFinite(year) || !Number.isInteger(year) || year < 1340 || year > maxYear + 1) {
+        errors.buildYearJalali = `سال ساخت باید بین ۱۳۴۰ تا ${maxYear + 1} باشد.`;
+      }
+      const rooms = parseAsciiNum(draft.roomsCount);
+      if (!Number.isFinite(rooms) || !Number.isInteger(rooms) || rooms < 0 || rooms > 20) {
+        errors.roomsCount = 'تعداد اتاق خواب باید عدد صحیح بین ۰ تا ۲۰ باشد.';
       }
       const floor = parseAsciiNum(draft.floorNumber);
       const total = parseAsciiNum(draft.totalFloors);
       if (draft.propertyType === 'apartment' || draft.propertyType === 'office') {
-        if (!Number.isFinite(floor) || floor < -2 || floor > 60) errors.floorNumber = 'طبقه نامعتبر است.';
-        if (!Number.isFinite(total) || total < 1 || (Number.isFinite(floor) && floor > total)) {
+        if (!Number.isFinite(floor) || !Number.isInteger(floor) || floor < -2 || floor > 60) {
+          errors.floorNumber = 'طبقه نامعتبر است.';
+        }
+        if (!Number.isFinite(total) || !Number.isInteger(total) || total < 1 || (Number.isFinite(floor) && floor > total)) {
           errors.totalFloors = 'تعداد کل طبقات نمی‌تواند کمتر از طبقه واحد باشد.';
         }
       }
@@ -112,12 +120,25 @@ export function validateSubmissionStep(draft: ListingSubmissionDraft, step: numb
 
   if (step === 7) {
     if (draft.publisherName.trim().length < 2) errors.publisherName = 'نام آگهی‌دهنده الزامی است.';
-    const phone = normalizeDigitsToAscii(draft.publisherPhone).replace(/\D/g, '');
-    if (phone.length < 10 || phone.length > 11) errors.publisherPhone = 'شماره تماس ۱۰ یا ۱۱ رقمی معتبر وارد کنید.';
+    if (!isValidIranianContactPhone(draft.publisherPhone)) {
+      errors.publisherPhone = 'شماره تماس معتبر موبایل یا ثابت (با کد شهر) وارد کنید.';
+    }
     if (!draft.agreeToVerification) errors.agreeToVerification = 'پذیرش شفافیت و راستی‌آزمایی پیش از انتشار الزامی است.';
   }
 
   return { valid: Object.keys(errors).length === 0, errors };
+}
+
+export function validateAllSubmissionSteps(
+  draft: ListingSubmissionDraft,
+): { valid: boolean; firstInvalidStep: number | null; errors: Record<string, string> } {
+  for (const stepNum of [2, 3, 5, 6, 7]) {
+    const res = validateSubmissionStep(draft, stepNum);
+    if (!res.valid) {
+      return { valid: false, firstInvalidStep: stepNum, errors: res.errors };
+    }
+  }
+  return { valid: true, firstInvalidStep: null, errors: {} };
 }
 
 export function evaluatePriceAnomalies(
@@ -178,3 +199,25 @@ export function optimisticUpdateListing(
     },
   };
 }
+
+export function clearPropertyTypeIncompatibleErrors(
+  errors: Record<string, string>,
+  propertyType: ListingSubmissionDraft['propertyType'],
+): Record<string, string> {
+  if (propertyType === 'land') {
+    const next = { ...errors };
+    delete next.buildYearJalali;
+    delete next.roomsCount;
+    delete next.floorNumber;
+    delete next.totalFloors;
+    return next;
+  }
+  if (propertyType === 'villa_house' || propertyType === 'commercial') {
+    const next = { ...errors };
+    delete next.floorNumber;
+    delete next.totalFloors;
+    return next;
+  }
+  return errors;
+}
+

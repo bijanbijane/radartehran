@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react'; import { Users, Kanban, ShieldCheck, Workflow, PhoneCall, Eye, EyeOff, GitMerge, Send, X } from 'lucide-react'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood, aggregateMarketMetricsForScalars } from '../data/realMarketPriceAggregator'; import { computeCrmDashboardMetrics, normalizeCrmSearchToken, maskCustomerPhoneForRole, buildCustomer360Profile, type CrmCustomerRecord, type CrmLeadRecord, type CrmInteractionRecord, type AgentTaskRecord } from '../utils/agencyCrmWorkflowAndReportingEngine'; import { evaluateGranularAgencyPermission, evaluateCustomerPropertyMatch, appendCounterOfferImmutable, evaluateTransactionDocumentReadiness, calculateAgencyCommissionAllocation, type AgencySystemRole, type NegotiationOfferVersion } from '../utils/agencyEnterpriseOperationsAndGovernanceEngine'; import { evaluateMultiLevelApprovalDecision, evaluateSlaAndEscalationState, computeAgentWorkloadCapacity, synchronizeOperationsQueue, evaluateDeclarativeBusinessRules, transitionOutboxDispatchAttempt, type ApprovalRequestRecord, type AgencyBusinessCalendarConfig, type TransactionalOutboxRecord } from '../utils/agencyAutomationOutboxAndSlaEngine';
-import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, executeControlledCrmRecordMerge, evaluateOutboundMessageEligibilityAndIdempotency, type CrmMergeableRecord, type TrackedOutboundMessage } from '../utils/agencyDeduplicationAndMessagingGovernance'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; export interface AgencyCrmAndAutomationStudioModalProps { isOpen: boolean; onClose: () => void; } type StudioTabId = 'crm_360_dedup' | 'pipeline_ops_queue' | 'approvals_sla_capacity' | 'workflow_inbox_outbox'; const INITIAL_CUSTOMERS: CrmCustomerRecord[] = [
+import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, executeControlledCrmRecordMerge, evaluateOutboundMessageEligibilityAndIdempotency, type CrmMergeableRecord, type TrackedOutboundMessage } from '../utils/agencyDeduplicationAndMessagingGovernance'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { classifyFeedbackTone } from '../utils/forms/formInputHelpers'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; export interface AgencyCrmAndAutomationStudioModalProps { isOpen: boolean; onClose: () => void; } type StudioTabId = 'crm_360_dedup' | 'pipeline_ops_queue' | 'approvals_sla_capacity' | 'workflow_inbox_outbox'; const INITIAL_CUSTOMERS: CrmCustomerRecord[] = [
   { customerId: 'cust-101', organizationId: 'org-tehran-prime', fullName: 'کیوان رضایی', phone: '09121112233', email: 'keyvan@example.com', category: 'BUYER', relationshipStatus: 'QUALIFIED', assignedAgentId: 'agent-1', registeredAtIso: '2026-04-10T09:00:00Z', budgetCapToman: 14_500_000_000, preferredHoodIds: [1, 3], savedListingIds: ['lst-201'] }, { customerId: 'cust-102', organizationId: 'org-tehran-prime', fullName: 'سارا محمدی', phone: '09124445566', email: null, category: 'TENANT', relationshipStatus: 'ACTIVE', assignedAgentId: 'agent-2', registeredAtIso: '2026-04-18T11:30:00Z', budgetCapToman: null, preferredHoodIds: [5], savedListingIds: [] }, { customerId: 'cust-103', organizationId: 'org-tehran-prime', fullName: 'کیوان رضایی (ورودی تکراری)', phone: '09121112233', email: null, category: 'INVESTOR', relationshipStatus: 'NEW', assignedAgentId: 'agent-1', registeredAtIso: '2026-04-22T14:00:00Z' }, ]; const INITIAL_LEADS: CrmLeadRecord[] = [
   { leadId: 'lead-301', organizationId: 'org-tehran-prime', customerId: 'cust-101', customerName: 'کیوان رضایی', phone: '09121112233', interestedListingId: 'lst-201', sourceChannel: 'DIRECT_INQUIRY', status: 'QUALIFIED', assignedAgentId: 'agent-1', priority: 'HIGH', createdAtIso: '2026-04-12T10:00:00Z' }, { leadId: 'lead-302', organizationId: 'org-tehran-prime', customerId: 'cust-102', customerName: 'سارا محمدی', phone: '09124445566', interestedListingId: 'lst-205', sourceChannel: 'PRICE_ALERT', status: 'ACTIVE', assignedAgentId: 'agent-2', priority: 'MEDIUM', createdAtIso: '2026-04-19T12:00:00Z' }, ]; const INITIAL_TASKS: AgentTaskRecord[] = [ { taskId: 'tsk-601', organizationId: 'org-tehran-prime', title: 'پیگیری نظر نهایی پس از بازدید سعادت‌آباد', assigneeAgentId: 'agent-1', dueAtIso: '2026-04-20T12:00:00Z', priority: 'HIGH', relatedCustomerId: 'cust-101', relatedListingId: 'lst-201', category: 'FOLLOW_UP', status: 'PENDING' }, { taskId: 'tsk-602', organizationId: 'org-tehran-prime', title: 'استعلام کد رهگیری پیش‌نویس اجاره ونک', assigneeAgentId: 'agent-2', dueAtIso: '2026-11-05T12:00:00Z', priority: 'MEDIUM', relatedCustomerId: 'cust-102', relatedListingId: 'lst-205', category: 'CONTRACT_PREP', status: 'IN_PROGRESS' }, ]; const AGENCY_CALENDAR: AgencyBusinessCalendarConfig = { calendarId: 'cal-tehran-1405', workspaceId: 'org-tehran-prime', version: 3, timezone: 'Asia/Tehran', workingDaysOfWeek: [6, 0, 1, 2, 3], workStartHour: 8, workEndHour: 17, holidayDatesIso: ['2026-05-04'], exceptionalWorkingDatesIso: ['2026-05-08'],
 }; export const AgencyCrmAndAutomationStudioModal: React.FC<AgencyCrmAndAutomationStudioModalProps> = ({ isOpen, onClose }) => { const [areaUnit] = useAreaUnit(); const [currency] = useIntlCurrency(); const [locale] = useRadarLocale(); const showIntl = currency !== 'IRT'; const dialogRef = useDialogFocus(isOpen, onClose); const [activeTab, setActiveTab] = useState<StudioTabId>('crm_360_dedup'); const [actorRole, setActorRole] = useState<AgencySystemRole>('WORKSPACE_ADMIN'); const [actorUserId, setActorUserId] = useState<'mgr-1' | 'agent-1'>('mgr-1'); const [searchQuery, setSearchQuery] = useState(''); const [selectedCustomerId, setSelectedCustomerId] = useState('cust-101');
   const [revealPhones, setRevealPhones] = useState(false); const [interactions, setInteractions] = useState<CrmInteractionRecord[]>([ { interactionId: 'int-501', organizationId: 'org-tehran-prime', customerId: 'cust-101', interactionType: 'PHONE_CALL', occurredAtIso: '2026-04-24T15:30:00Z', assignedAgentId: 'agent-1', subject: 'هماهنگی بازدید حضوری سعادت‌آباد', description: 'مدارک بودجه نقدی تایید شد.', outcome: 'تعیین وقت بازدید فردا ساعت ۱۴', relatedListingId: 'lst-201' }, ]); const [newInteractionSubject, setNewInteractionSubject] = useState(''); const [mergeOutcomeFa, setMergeOutcomeFa] = useState<string | null>(null); const [offers, setOffers] = useState<NegotiationOfferVersion[]>([ { revisionNumber: 1, offerId: 'off-1', parentOfferId: null, caseId: 'case-101', proposerRole: 'BUYER', proposedAmountToman: 13_200_000_000, conditionsFa: '۳ میلیارد نقد همزمان با مبایعه‌نامه، الباقی طی ۴۵ روز', status: 'PENDING', createdAtIso: '2026-04-25T10:00:00Z' },
-    { revisionNumber: 2, offerId: 'off-2', parentOfferId: 'off-1', caseId: 'case-101', proposerRole: 'SELLER', proposedAmountToman: 13_650_000_000, conditionsFa: '۴ میلیارد همزمان با امضا، تسویه کامل در محضر', status: 'PENDING', createdAtIso: '2026-04-26T10:00:00Z' }, ]); const [approvalReq, setApprovalReq] = useState<ApprovalRequestRecord>({ approvalId: 'apr-901', workspaceId: 'org-tehran-prime', operationType: 'COMMISSION_OVERRIDE', targetResourceId: 'deal-saadat-201', makerUserId: 'agent-1', requiredLevels: 1, currentLevel: 0, status: 'PENDING', justificationFa: 'تخفیف ۱۵٪ کارمزد به دلیل خرید همزمان دو واحد توسط سرمایه‌گذار', beforeSummaryFa: 'کارمزد استاندارد: ۱۳۶.۵ میلیون تومان', afterSummaryFa: 'کارمزد اصلاح‌شده: ۱۱۶ میلیون تومان', decisions: [], expiresAtMs: Date.now() + 86_400_000 * 5, }); const [rejectionReason, setRejectionReason] = useState(''); const [approvalFeedbackFa, setApprovalFeedbackFa] = useState<string | null>(null); const [consentGranted, setConsentGranted] = useState(true); const [idempotencyKeyInput, setIdempotencyKeyInput] = useState('msg-visit-confirm-101'); const [sentMessages, setSentMessages] = useState<TrackedOutboundMessage[]>([]); const [msgFeedbackFa, setMsgFeedbackFa] = useState<string | null>(null); const [outboxRec, setOutboxRec] = useState<TransactionalOutboxRecord>({ outboxId: 'obx-501', workspaceId: 'org-tehran-prime', eventId: 'evt-deal-won-401', idempotencyKey: 'idem-evt-401', status: 'PENDING', attemptCount: 1, maxAttempts: 3, createdAtMs: Date.now() - 120_000, lastAttemptAtMs: Date.now() - 60_000, lockedByWorkerId: null, lastError: 'ACK_TIMEOUT_AFTER_DISPATCH', }); const dashboardMetrics = useMemo(() => computeCrmDashboardMetrics({ organizationId: 'org-tehran-prime', customers: INITIAL_CUSTOMERS, leads: INITIAL_LEADS, tasks: INITIAL_TASKS }), []); const mergeableRecords: CrmMergeableRecord[] = useMemo(() => [
+    { revisionNumber: 2, offerId: 'off-2', parentOfferId: 'off-1', caseId: 'case-101', proposerRole: 'SELLER', proposedAmountToman: 13_650_000_000, conditionsFa: '۴ میلیارد همزمان با امضا، تسویه کامل در محضر', status: 'PENDING', createdAtIso: '2026-04-26T10:00:00Z' }, ]); const [interactionError, setInteractionError] = useState(''); const [approvalReq, setApprovalReq] = useState<ApprovalRequestRecord>({ approvalId: 'apr-901', workspaceId: 'org-tehran-prime', operationType: 'COMMISSION_OVERRIDE', targetResourceId: 'deal-saadat-201', makerUserId: 'agent-1', requiredLevels: 1, currentLevel: 0, status: 'PENDING', justificationFa: 'تخفیف ۱۵٪ کارمزد به دلیل خرید همزمان دو واحد توسط سرمایه‌گذار', beforeSummaryFa: 'کارمزد استاندارد: ۱۳۶.۵ میلیون تومان', afterSummaryFa: 'کارمزد اصلاح‌شده: ۱۱۶ میلیون تومان', decisions: [], expiresAtMs: Date.now() + 86_400_000 * 5, }); const [rejectionReason, setRejectionReason] = useState(''); const [approvalFeedbackFa, setApprovalFeedbackFa] = useState<string | null>(null); const [consentGranted, setConsentGranted] = useState(true); const [idempotencyKeyInput, setIdempotencyKeyInput] = useState('msg-visit-confirm-101'); const [sentMessages, setSentMessages] = useState<TrackedOutboundMessage[]>([]); const [msgFeedbackFa, setMsgFeedbackFa] = useState<string | null>(null); const [outboxRec, setOutboxRec] = useState<TransactionalOutboxRecord>({ outboxId: 'obx-501', workspaceId: 'org-tehran-prime', eventId: 'evt-deal-won-401', idempotencyKey: 'idem-evt-401', status: 'PENDING', attemptCount: 1, maxAttempts: 3, createdAtMs: Date.now() - 120_000, lastAttemptAtMs: Date.now() - 60_000, lockedByWorkerId: null, lastError: 'ACK_TIMEOUT_AFTER_DISPATCH', }); const dashboardMetrics = useMemo(() => computeCrmDashboardMetrics({ organizationId: 'org-tehran-prime', customers: INITIAL_CUSTOMERS, leads: INITIAL_LEADS, tasks: INITIAL_TASKS }), []); const mergeableRecords: CrmMergeableRecord[] = useMemo(() => [
     { recordId: 'cust-101', workspaceId: 'org-tehran-prime', fullName: 'کیوان رضایی', phone: '09121112233', email: 'keyvan@example.com', assignedAgentId: 'agent-1', interestedListingIds: ['lst-201'], interactionIds: ['int-501'], taskIds: ['tsk-601'], visitIds: ['vw-701'], activeDealIds: ['opp-401'] }, { recordId: 'cust-103', workspaceId: 'org-tehran-prime', fullName: 'کیوان رضایی (ورودی تکراری)', phone: '09121112233', email: null, assignedAgentId: 'agent-1', interestedListingIds: ['lst-209'], interactionIds: ['int-509'], taskIds: [], visitIds: ['vw-702'], activeDealIds: [] },
   ], []); const duplicateSignals = useMemo(() => evaluateAgencyDuplicateLeadSignals({ workspaceId: 'org-tehran-prime', records: mergeableRecords }), [mergeableRecords]); const filteredCustomers = useMemo(() => { const q = normalizeCrmSearchToken(searchQuery);
     return INITIAL_CUSTOMERS.filter((c) => !q || normalizeCrmSearchToken(`${c.fullName} ${c.phone} ${c.customerId}`).includes(q));
@@ -39,16 +39,21 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
       decision, reasonFa: rejectionReason, nowMs: Date.now(), });
     setApprovalReq(res.updatedRequest); setApprovalFeedbackFa(res.explanationFa); };
   const handleSendTrackedMessage = () => {
+    const cleanKey = idempotencyKeyInput.trim();
+    if (!cleanKey) {
+      setMsgFeedbackFa('لطفاً کلید یکتای Idempotency را برای جلوگیری از ارسال تکراری وارد کنید.');
+      return;
+    }
     const check = evaluateOutboundMessageEligibilityAndIdempotency({
       workspaceId: 'org-tehran-prime', customerId: 'cust-101',
       channel: { channelId: 'ch-sms-1', workspaceId: 'org-tehran-prime', channelType: 'SMS', enabled: true, hasServerSideSecretReference: true, status: 'READY' },
       consent: { customerId: 'cust-101', workspaceId: 'org-tehran-prime', channelType: 'SMS', status: consentGranted ? 'GRANTED' : 'WITHDRAWN', source: 'EXPLICIT_FORM_OPT_IN', updatedAtMs: Date.now() },
-      idempotencyKey: idempotencyKeyInput.trim(), existingMessages: sentMessages, nowMs: Date.now(),
+      idempotencyKey: cleanKey, existingMessages: sentMessages, nowMs: Date.now(),
     });
-    if (!check.canDispatch) { setMsgFeedbackFa(check.explanationFa); return; }
+    if (!check.canDispatch) { setMsgFeedbackFa(`خطا: ${check.explanationFa}`); return; }
     const nextMsg: TrackedOutboundMessage = {
       messageId: `msg-${Date.now()}`, workspaceId: 'org-tehran-prime', customerId: 'cust-101',
-      channelType: 'SMS', idempotencyKey: idempotencyKeyInput.trim(), providerMessageId: `prv-${Date.now()}`,
+      channelType: 'SMS', idempotencyKey: cleanKey, providerMessageId: `prv-${Date.now()}`,
       deliveryState: 'DELIVERED', sentAtMs: Date.now(), updatedAtMs: Date.now(),
     };
     setSentMessages((prev) => [nextMsg, ...prev]);
@@ -133,13 +138,21 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                   )}
                   <form
                     onSubmit={(e) => {
-                      e.preventDefault(); if (!newInteractionSubject.trim()) return;
+                      e.preventDefault();
+                      if (!newInteractionSubject.trim()) {
+                        setInteractionError('لطفاً خلاصه تماس یا جلسه را وارد کنید.');
+                        return;
+                      }
+                      setInteractionError('');
                       setInteractions((prev) => [{ interactionId: `int-${Date.now()}`, organizationId: 'org-tehran-prime', customerId: selectedCustomer.customerId, interactionType: 'PHONE_CALL', occurredAtIso: new Date().toISOString(), assignedAgentId: 'agent-1', subject: newInteractionSubject.trim(), description: 'ثبت در تایم‌لاین مشتری', outcome: 'تعیین گام بعدی' }, ...prev]);
                       setNewInteractionSubject(''); }}
-                    className="flex gap-2"
+                    className="space-y-1.5"
                   >
-                    <input type="text" aria-label="خلاصه تماس تلفنی یا جلسه حضوری جدید" value={newInteractionSubject} onChange={(e) => setNewInteractionSubject(e.target.value)} placeholder="ثبت خلاصه تماس تلفنی یا جلسه حضوری جدید (۱۲۰۴)..." className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" />
-                    <button type="submit" className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white"><PhoneCall className="h-3.5 w-3.5" /> ثبت تعامل</button>
+                    <div className="flex gap-2">
+                      <input type="text" aria-invalid={Boolean(interactionError)} aria-label="خلاصه تماس تلفنی یا جلسه حضوری جدید" value={newInteractionSubject} onChange={(e) => { setNewInteractionSubject(e.target.value); if (interactionError) setInteractionError(''); }} placeholder="ثبت خلاصه تماس تلفنی یا جلسه حضوری جدید (۱۲۰۴)..." className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" />
+                      <button type="submit" className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white cursor-pointer"><PhoneCall className="h-3.5 w-3.5" /> ثبت تعامل</button>
+                    </div>
+                    {interactionError && <div role="alert" className="text-[11px] font-bold text-rose-300">{interactionError}</div>}
                   </form>
                   <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -255,12 +268,30 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
           )} {activeTab === 'workflow_inbox_outbox' && ( <div className="space-y-4">
               <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                 <h3 className="mb-2 font-bold text-emerald-400">صندوق ارتباطات مشتری، مدیریت رضایت (Consent) و تضمین Idempotency (۱۲۴۰–۱۲۴۳)</h3>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center gap-1.5 text-slate-200"><input type="checkbox" checked={consentGranted} onChange={(e) => setConsentGranted(e.target.checked)} aria-label="رضایت صریح مشتری جهت ارسال پیامک" /> رضایت صریح مشتری (cust-101) فعال است</label>
-                  <input type="text" aria-label="کلید Idempotency ارسال پیام" value={idempotencyKeyInput} onChange={(e) => setIdempotencyKeyInput(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" dir="ltr" />
-                  <button type="button" onClick={handleSendTrackedMessage} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white"><Send className="h-3.5 w-3.5" /> ارسال پیام</button>
-                </div>
-                {msgFeedbackFa && <div className="mt-2 rounded bg-slate-900 p-2 text-[11px] text-sky-300">{msgFeedbackFa}</div>} </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendTrackedMessage();
+                  }}
+                  className="flex flex-wrap items-center gap-3"
+                >
+                  <label className="inline-flex items-center gap-1.5 text-slate-200"><input type="checkbox" checked={consentGranted} onChange={(e) => { setConsentGranted(e.target.checked); if (msgFeedbackFa) setMsgFeedbackFa(null); }} aria-label="رضایت صریح مشتری جهت ارسال پیامک" /> رضایت صریح مشتری (cust-101) فعال است</label>
+                  <input type="text" aria-invalid={msgFeedbackFa ? classifyFeedbackTone(msgFeedbackFa) === 'error' : false} aria-label="کلید Idempotency ارسال پیام" value={idempotencyKeyInput} onChange={(e) => { setIdempotencyKeyInput(e.target.value); if (msgFeedbackFa) setMsgFeedbackFa(null); }} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" dir="ltr" />
+                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white cursor-pointer"><Send className="h-3.5 w-3.5" /> ارسال پیام</button>
+                </form>
+                {msgFeedbackFa && (
+                  <div
+                    role={classifyFeedbackTone(msgFeedbackFa) === 'error' ? 'alert' : 'status'}
+                    className={`mt-2 rounded p-2 text-[11px] font-bold ${
+                      classifyFeedbackTone(msgFeedbackFa) === 'error'
+                        ? 'bg-rose-950/60 text-rose-300 border border-rose-500/40'
+                        : 'bg-slate-900 text-emerald-300 border border-emerald-500/30'
+                    }`}
+                  >
+                    {msgFeedbackFa}
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                   <h3 className="mb-2 font-bold text-sky-400">موتور قواعد شرطی کسب‌وکار (۱۲۲۴ و ۱۲۲۸)</h3>

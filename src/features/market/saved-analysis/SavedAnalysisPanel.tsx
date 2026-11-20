@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BookmarkPlus, Copy, Download, Trash2, X } from 'lucide-react';
+import { useDialogFocus } from '../../../components/useDialogFocus';
 import type { SavedMarketAnalysis } from '../types/market.types';
 
 export interface SavedAnalysisPanelProps {
@@ -22,35 +24,65 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
   onClose,
 }) => {
   const [titleInput, setTitleInput] = useState('');
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dialogRef = useDialogFocus(true, onClose);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) {
+        clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = titleInput.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setTitleError('لطفاً یک عنوان برای ذخیره تحلیل وارد کنید.');
+      return;
+    }
+    setTitleError(null);
     onSaveCurrent(trimmed);
     setTitleInput('');
   };
 
   const handleCopyShare = async () => {
     try {
-      await navigator.clipboard?.writeText(shareLinkText);
+      if (!navigator.clipboard?.writeText) {
+        setCopied(false);
+        return;
+      }
+      await navigator.clipboard.writeText(shareLinkText);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
+        setCopied(false);
+        copyTimerRef.current = null;
+      }, 1800);
     } catch {
-      setCopied(true);
+      setCopied(false);
     }
   };
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="تحلیل‌های ذخیره‌شده و خروجی بازار"
       data-testid="market-saved-dialog"
-      className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4"
+      onClick={onClose}
+      className="fixed inset-0 z-[9500] bg-slate-950/60 flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 p-5 space-y-4 text-xs">
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 p-5 space-y-4 text-xs"
+      >
         <div className="flex items-center justify-between border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
           <strong className="text-sm font-black text-[#182522] dark:text-white">
             ذخیره تحلیل، اشتراک‌گذاری و خروجی مجاز
@@ -65,23 +97,34 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="flex gap-2">
-          <input
-            type="text"
-            value={titleInput}
-            onChange={(e) => setTitleInput(e.target.value)}
-            placeholder="نام تحلیل فعلی (مثلاً: مقایسه مسکونی پونک ۶ ماهه)"
-            aria-label="نام تحلیل برای ذخیره"
-            className="flex-1 min-h-[40px] px-3 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-950 text-[#182522] dark:text-white"
-          />
-          <button
-            type="submit"
-            data-testid="market-save-submit-btn"
-            className="min-h-[40px] px-3.5 rounded-lg bg-[#176B63] text-white font-bold flex items-center gap-1.5 cursor-pointer"
-          >
-            <BookmarkPlus className="w-4 h-4" />
-            <span>ذخیره</span>
-          </button>
+        <form onSubmit={handleSave} className="space-y-1.5">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={titleInput}
+              onChange={(e) => {
+                setTitleInput(e.target.value);
+                if (titleError) setTitleError(null);
+              }}
+              placeholder="نام تحلیل فعلی (مثلاً: مقایسه مسکونی پونک ۶ ماهه)"
+              aria-label="نام تحلیل برای ذخیره"
+              aria-invalid={Boolean(titleError)}
+              className="flex-1 min-h-[40px] px-3 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-950 text-[#182522] dark:text-white"
+            />
+            <button
+              type="submit"
+              data-testid="market-save-submit-btn"
+              className="min-h-[40px] px-3.5 rounded-lg bg-[#176B63] text-white font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <BookmarkPlus className="w-4 h-4" />
+              <span>ذخیره</span>
+            </button>
+          </div>
+          {titleError && (
+            <div role="alert" className="text-[11px] font-bold text-rose-700 dark:text-rose-300">
+              {titleError}
+            </div>
+          )}
         </form>
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -150,4 +193,6 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

@@ -52,15 +52,49 @@ export function useUnifiedSearch(options: UseUnifiedSearchOptions = {}) {
   const [hoveredResultId, setHoveredResultId] = useState<string | null>(null);
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
 
+  const reqSeqRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const nextUserId = options.userId ?? null;
+    const nextWorkspaceId = options.workspaceId ?? 'personal';
+    const nextPermVersion = options.permissionVersion ?? 1;
+    setRequest((prev) => {
+      if (
+        prev.userId === nextUserId &&
+        prev.workspaceId === nextWorkspaceId &&
+        prev.permissionVersion === nextPermVersion
+      ) {
+        return prev;
+      }
+      return createCanonicalSearchRequest({
+        ...prev,
+        userId: nextUserId,
+        workspaceId: nextWorkspaceId,
+        permissionVersion: nextPermVersion,
+      });
+    });
+  }, [options.userId, options.workspaceId, options.permissionVersion]);
+
   const execute = useCallback(async (nextReq: SearchRequest) => {
+    const seq = ++reqSeqRef.current;
     setIsLoading(true);
     try {
       const res = await coordinatorRef.current!.executeSearch(nextReq);
-      if (res) {
+      if (res && isMountedRef.current && seq === reqSeqRef.current) {
         setResponse(res);
       }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current && seq === reqSeqRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

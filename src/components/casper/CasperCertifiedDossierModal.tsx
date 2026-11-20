@@ -10,6 +10,7 @@ import type { IranianDeedType } from '../../utils/deedLegitimacyShieldEngine';
 import { evaluateDeedImpact } from '../../utils/deedLegitimacyShieldEngine';
 import { computeLiquidityDepthAndTom } from '../../utils/liquidityDepthAndTomEngine';
 import { computeInflationAdjustedPrice } from '../../utils/fxInflationDriftEngine';
+import { useDialogFocus } from '../useDialogFocus';
 
 export interface CasperCertifiedDossierModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function CasperCertifiedDossierModal({
   floor = 2,
   hasElevator = true,
 }: CasperCertifiedDossierModalProps): React.ReactElement | null {
+  const dialogRef = useDialogFocus(isOpen, onClose);
   const serialSeed = useId();
 
   const area = targetSqm > 0 ? targetSqm : 80;
@@ -92,7 +94,9 @@ export function CasperCertifiedDossierModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 print:border-none print:shadow-none print:p-0 print:max-w-none"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 outline-none print:border-none print:shadow-none print:p-0 print:max-w-none"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >

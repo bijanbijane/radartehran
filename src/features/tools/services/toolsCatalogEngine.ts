@@ -13,6 +13,7 @@ import type { Stage2ActiveTab } from '../../../components/stage2/Stage2MasterWid
 import type { ExpansionModalType } from '../../../components/ExpansionModulesModal';
 import type { SuperModuleTabId } from '../../../components/FutureSuperModulesModal';
 import { validateSqmAmount } from '../../../utils/security';
+import { normalizeDigitsToAscii } from '../../../utils/forms/formInputHelpers';
 
 export type ToolCategoryId = 'decision' | 'financial' | 'legal' | 'urban';
 
@@ -197,7 +198,8 @@ export function validateContractTotalMillion(rawInput: string | number): {
   value: number | null;
   errorFa: string | null;
 } {
-  const text = typeof rawInput === 'number' ? (Number.isFinite(rawInput) ? String(rawInput) : '') : String(rawInput ?? '').trim();
+  const rawText = typeof rawInput === 'number' ? (Number.isFinite(rawInput) ? String(rawInput) : '') : String(rawInput ?? '').trim();
+  const text = normalizeDigitsToAscii(rawText).replace(/[,٬\s_]/g, '');
   if (!text) {
     return { valid: false, value: null, errorFa: 'لطفاً مبلغ کل معامله را بر حسب میلیون تومان وارد کنید.' };
   }

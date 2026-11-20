@@ -313,12 +313,12 @@ export async function fetchAuthoritativeCityBoundaries(
 }
 export function getZoomAdaptivePolygonStyle(zoom: number, isSelected: boolean, strokeColor: string, fillColor: string): ZoomAdaptivePolygonStyle {
   const z = Number.isFinite(zoom) ? zoom : 12;
-  const weight = z <= 11 ? (isSelected ? 2.4 : 0.8) : z === 12 ? (isSelected ? 3.0 : 1.1) : z === 13 ? (isSelected ? 3.6 : 1.5) : z === 14 ? (isSelected ? 4.2 : 2.1) : (isSelected ? 4.8 : 2.6);
-  const opacity = z <= 11 ? (isSelected ? 0.92 : 0.28) : z === 12 ? (isSelected ? 0.95 : 0.42) : z === 13 ? (isSelected ? 0.97 : 0.58) : 0.85;
+  const weight = z <= 11 ? (isSelected ? 2.6 : 0.8) : z === 12 ? (isSelected ? 3.2 : 1.1) : z === 13 ? (isSelected ? 3.8 : 1.5) : z === 14 ? (isSelected ? 4.4 : 2.1) : (isSelected ? 5.0 : 2.6);
+  const opacity = z <= 11 ? (isSelected ? 0.94 : 0.28) : z === 12 ? (isSelected ? 0.96 : 0.42) : z === 13 ? (isSelected ? 0.98 : 0.58) : 0.85;
   const fillOpacity = z <= 11 ? (isSelected ? 0.16 : 0.02) : z === 12 ? (isSelected ? 0.18 : 0.04) : z <= 14 ? (isSelected ? 0.16 : 0.06) : (isSelected ? 0.12 : 0.05);
   const dashArray = isSelected ? undefined : z <= 11 ? '2, 4' : z <= 13 ? '4, 4' : '6, 5';
   return {
-    color: strokeColor, weight, opacity: isSelected ? 0.98 : opacity, dashArray,
+    color: isSelected ? '#0ea5e9' : strokeColor, weight, opacity: isSelected ? 0.98 : opacity, dashArray,
     fillColor, fillOpacity, lineJoin: 'round', lineCap: 'round', smoothFactor: z <= 12 ? 1.0 : 0.75,
   };
 }

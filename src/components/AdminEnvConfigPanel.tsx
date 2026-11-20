@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'; import { CheckCircle2, Cloud, Lock, RefreshCw, Save, Send, Server, ShieldCheck, Sparkles, } from 'lucide-react'; import { auth } from '../firebase'; import { toPersianNum } from '../data/neighborhoods'; import { AreaUnit, convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, IntlCurrencyCode } from '../utils/areaUnit'; import type { ObjectStorageProviderId } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export interface AdminEnvConfigPanelProps { areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; } interface PublicRuntimeEnvReport { status: 'ok'; lastUpdatedIso: string | null; mutableSafeKeys?: string[]; protectedStartupKeys?: string[]; gemini: { configured: boolean; model: string;
+import React, { useEffect, useState } from 'react'; import { CheckCircle2, Cloud, Lock, RefreshCw, Save, Send, Server, ShieldCheck, Sparkles, } from 'lucide-react'; import { auth } from '../firebase'; import { toPersianNum } from '../data/neighborhoods'; import { AreaUnit, convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, IntlCurrencyCode } from '../utils/areaUnit'; import type { ObjectStorageProviderId } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { NumericDraftInput } from './ui/NumericDraftInput'; export interface AdminEnvConfigPanelProps { areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; } interface PublicRuntimeEnvReport { status: 'ok'; lastUpdatedIso: string | null; mutableSafeKeys?: string[]; protectedStartupKeys?: string[]; gemini: { configured: boolean; model: string;
     deploymentManaged?: boolean; }; telegram: { botTokenConfigured: boolean; channelId: string; deploymentManagedToken?: boolean; }; firebase: { projectId: string; firestoreDatabaseId: string; adminEmail: string; adminSecretConfigured: boolean; deploymentManaged?: boolean; };
   objectStorage: { provider: ObjectStorageProviderId; endpoint: string; bucket: string; region: string; accessKeyConfigured: boolean; secretKeyConfigured: boolean; publicBaseUrl: string; maxImageMb: number; maxVideoMb: number; deploymentManagedCredentials?: boolean; }; }
 export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: propIntlCurrency }: AdminEnvConfigPanelProps = {}): React.ReactElement { const [hookAreaUnit] = useAreaUnit(); const [hookIntlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const areaUnit = propAreaUnit ?? hookAreaUnit; const intlCurrency = propIntlCurrency ?? hookIntlCurrency; const sampleUnitPrice = convertPricePerSqmToUnit(120, areaUnit); const sample85mTotalMillions = 120 * 85; const sampleMonthlyRentMillions = 45; const [report, setReport] = useState<PublicRuntimeEnvReport | null>(null); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false);
@@ -133,7 +133,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
               <label className="block text-slate-600 dark:text-slate-300 mb-1">مدل پیش‌فرض پردازش (GEMINI_MODEL):</label>
               <select aria-label="مدل پیش‌فرض پردازش هوش مصنوعی"
                 value={geminiModel}
-                onChange={(e) => setGeminiModel(e.target.value)}
+                onChange={(e) => { setGeminiModel(e.target.value); setStatusMsg(null); setErrorMsg(null); }}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
               >
                 <option value="gemini-2.5-flash">gemini-2.5-flash (پیشنهادی - سریع و دقیق)</option>
@@ -157,7 +157,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
                 type="text" aria-label="شناسه کانال یا گروه مقصد تلگرام"
                 dir="ltr"
                 value={telegramChannelId}
-                onChange={(e) => setTelegramChannelId(e.target.value)}
+                onChange={(e) => { setTelegramChannelId(e.target.value); setStatusMsg(null); setErrorMsg(null); }}
                 placeholder="@TehranHousingRadar یا -100123456789"
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-mono"
               />
@@ -179,7 +179,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
               <label className="block text-slate-600 dark:text-slate-300 mb-1">سرویس‌دهنده استوریج (PROVIDER):</label>
               <select aria-label="سرویس‌دهنده آبجکت استوریج"
                 value={storageProvider}
-                onChange={(e) => setStorageProvider(e.target.value as ObjectStorageProviderId)}
+                onChange={(e) => { setStorageProvider(e.target.value as ObjectStorageProviderId); setStatusMsg(null); setErrorMsg(null); }}
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold"
               >
                 <option value="arvancloud">ArvanCloud S3 (ابر آروان)</option>
@@ -196,7 +196,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
                 type="text" aria-label="منطقه دیتاسنتر استوریج"
                 dir="ltr"
                 value={storageRegion}
-                onChange={(e) => setStorageRegion(e.target.value)}
+                onChange={(e) => { setStorageRegion(e.target.value); setStatusMsg(null); setErrorMsg(null); }}
                 placeholder="ir-thr-at1"
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-mono"
               />
@@ -207,7 +207,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
                 type="text" aria-label="دامنه عمومی CDN استوریج"
                 dir="ltr"
                 value={storagePublicUrl}
-                onChange={(e) => setStoragePublicUrl(e.target.value)}
+                onChange={(e) => { setStoragePublicUrl(e.target.value); setStatusMsg(null); setErrorMsg(null); }}
                 placeholder="https://cdn.example.ir"
                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-mono"
               />
@@ -216,16 +216,26 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           <div className="grid grid-cols-2 gap-3 max-w-md">
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">سقف عکس (MB):</label>
-              <input
-                type="number" aria-label="سقف حجم عکس به مگابایت"
-                min={1} max={25} value={maxImageMb} onChange={(e) => setMaxImageMb(Number(e.target.value))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
+              <NumericDraftInput
+                aria-label="سقف حجم عکس به مگابایت"
+                min={1}
+                max={25}
+                fallback={5}
+                value={maxImageMb}
+                onValueChange={(val) => { setMaxImageMb(val); setStatusMsg(null); setErrorMsg(null); }}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
               />
             </div>
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">سقف ویدیو (MB):</label>
-              <input
-                type="number" aria-label="سقف حجم ویدیو به مگابایت"
-                min={5} max={200} value={maxVideoMb} onChange={(e) => setMaxVideoMb(Number(e.target.value))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
+              <NumericDraftInput
+                aria-label="سقف حجم ویدیو به مگابایت"
+                min={5}
+                max={200}
+                fallback={50}
+                value={maxVideoMb}
+                onValueChange={(val) => { setMaxVideoMb(val); setStatusMsg(null); setErrorMsg(null); }}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold tabular-nums"
               />
             </div>
           </div>

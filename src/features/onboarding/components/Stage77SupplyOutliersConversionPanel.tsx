@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage77SupplyOutliersConversionPanel.tsx — Stage 77 Tabs 1 & 2 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateRentalSupplyOutliersAndConversion } from '../services/rentalMarketStage77Engine';
 import {
   STAGE77_FILTERS_16,
@@ -112,34 +113,37 @@ export const Stage77SupplyOutliersConversionPanel: React.FC<Props> = ({
           </label>
           <label className="flex items-center gap-1.5">
             <span>نرخ تبدیل سالانه r (%):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={5}
               max={100}
+              fallback={30}
               value={annualRatePct}
-              onChange={(e) => setAnnualRatePct(Number(e.target.value) || 30)}
+              onValueChange={setAnnualRatePct}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>ودیعه (م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
               max={10000}
+              fallback={0}
               value={depositD}
-              onChange={(e) => setDepositD(Number(e.target.value) || 0)}
+              onValueChange={setDepositD}
               className="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>اجاره (م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
               max={500}
+              fallback={0}
               value={monthlyRentRm}
-              onChange={(e) => setMonthlyRentRm(Number(e.target.value) || 0)}
+              onValueChange={setMonthlyRentRm}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>

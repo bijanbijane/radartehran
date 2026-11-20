@@ -15,7 +15,13 @@ import {
   reconcileNeighborhoodLayers,
   updateNeighborhoodMarkerPresentation,
 } from '../src/components/map/neighborhoodLayerReconciler';
-import { computeDeclutteredMarkerTiers } from '../src/components/mapZoomLodAndDeclutter';
+import {
+  buildNeighborhoodLodDivIconConfig,
+  buildNeighborhoodRichTooltipHtml,
+  computeDeclutteredMarkerTiers,
+  estimateLodPillSize,
+  formatCompactNeighborhoodName,
+} from '../src/components/mapZoomLodAndDeclutter';
 import {
   createEmptyWorkRouteAndLandmarkRefs,
   reconcileWorkRouteAndLandmarks,
@@ -209,3 +215,56 @@ test('Stage 50.3: reconcileWorkRouteAndLandmarks preserves metric km distance ev
   );
   setStoredAreaUnit('sqm');
 });
+
+test('Stage 50.4: dynamic LOD pill sizing, clean compact label formatting, and tooltip bidi/header guards', () => {
+  assert.equal(formatCompactNeighborhoodName('گیشا (کوی نصر)'), 'گیشا');
+  assert.equal(formatCompactNeighborhoodName('شهر قدس (قلعه حسن‌خان)'), 'شهر قدس');
+  assert.equal(formatCompactNeighborhoodName('فاطمی و بلوار کشاورز'), 'فاطمی');
+  assert.ok(!formatCompactNeighborhoodName('شهر قدس (قلعه حسن‌خان)').includes('('));
+
+  const wideConfig = buildNeighborhoodLodDivIconConfig({
+    hood: { ...EVALUATED_HOODS[0], name: 'دهکده المپیک' },
+    tier: 'compact_chip',
+    zoom: 12,
+    isSelected: false,
+    hasSponsor: true,
+    isDarkMap: false,
+    pillBg: '#059669',
+    stroke: '#10b981',
+    shortPriceLabel: '۳٬۵۰۰م',
+    fullPriceLabel: '۳٬۵۰۰م رهن',
+  });
+  const estimated = estimateLodPillSize({
+    tier: 'compact_chip',
+    hoodName: 'دهکده المپیک',
+    shortPriceLabel: '۳٬۵۰۰م',
+    hasSponsor: true,
+  });
+  assert.deepEqual(wideConfig.iconSize, [estimated.w, estimated.h]);
+  assert.ok(wideConfig.iconSize[0] > 95, 'Compact chip iconSize must dynamically expand beyond legacy 82px cap for wide Persian labels');
+
+  // With dynamic priceLabelsById, two wide pills 105px apart must NOT both render as overlapping compact chips
+  const wideHoodA = { ...EVALUATED_HOODS[0], id: 901, name: 'شهرک اکباتان', lat: 0, lng: 0 };
+  const wideHoodB = { ...EVALUATED_HOODS[1], id: 902, name: 'سعادت‌آباد', lat: 0, lng: 105 };
+  const labelsMap = new Map<number, { shortPriceLabel: string; fullPriceLabel: string }>([
+    [901, { shortPriceLabel: '۵٬۰۵۰م', fullPriceLabel: '۵٬۰۵۰م رهن' }],
+    [902, { shortPriceLabel: '۷٬۹۰۰م', fullPriceLabel: '۷٬۹۰۰م رهن' }],
+  ]);
+  const pixelMap = { latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng, y: lat }) };
+  const dynamicTiers = computeDeclutteredMarkerTiers(pixelMap, [wideHoodA, wideHoodB], 12, null, () => true, labelsMap);
+  assert.equal(dynamicTiers.get(901), 'compact_chip');
+  assert.equal(dynamicTiers.get(902), 'dot', 'Colliding wide pill at 105px must demote to dot');
+
+  // Tooltip header should not emit nested parentheses when zone already contains parens
+  const tooltipHtml = buildNeighborhoodRichTooltipHtml({
+    hood: { ...EVALUATED_HOODS[0], name: 'پونک', zone: 'غرب (منطقه ۵)' },
+    activeCity: 'tehran',
+    mode: 'rent',
+    safeSqmPill: 80,
+    scaledRahnPill: 5100,
+    isDarkMap: false,
+  });
+  assert.ok(!tooltipHtml.includes('((منطقه ۵))') && !tooltipHtml.includes('منطقه ۵))'));
+  assert.ok(tooltipHtml.includes('dir="ltr"'));
+});
+

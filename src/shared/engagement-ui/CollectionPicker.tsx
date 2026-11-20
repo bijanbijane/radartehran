@@ -22,11 +22,16 @@ export const CollectionPicker: React.FC<CollectionPickerProps> = ({
   onCreateCollection,
 }) => {
   const [newCollectionName, setNewCollectionName] = useState('');
+  const [nameError, setNameError] = useState('');
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = newCollectionName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setNameError('لطفاً نام مجموعه را وارد کنید.');
+      return;
+    }
+    setNameError('');
     onCreateCollection?.(trimmed);
     setNewCollectionName('');
   };
@@ -60,21 +65,28 @@ export const CollectionPicker: React.FC<CollectionPickerProps> = ({
       )}
 
       {onCreateCollection && (
-        <form onSubmit={handleCreate} className="flex items-center gap-1.5 pt-1 border-t border-slate-800">
-          <input
-            type="text"
-            value={newCollectionName}
-            onChange={(e) => setNewCollectionName(e.target.value)}
-            placeholder="نام مجموعه جدید..."
-            aria-label="نام مجموعه جدید"
-            className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-100"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sky-500 cursor-pointer"
-          >
-            ایجاد
-          </button>
+        <form onSubmit={handleCreate} className="space-y-1 pt-1 border-t border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              aria-invalid={Boolean(nameError)}
+              value={newCollectionName}
+              onChange={(e) => {
+                setNewCollectionName(e.target.value);
+                if (nameError) setNameError('');
+              }}
+              placeholder="نام مجموعه جدید..."
+              aria-label="نام مجموعه جدید"
+              className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-100"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sky-500 cursor-pointer"
+            >
+              ایجاد
+            </button>
+          </div>
+          {nameError && <div role="alert" className="text-[11px] font-bold text-rose-400">{nameError}</div>}
         </form>
       )}
     </div>

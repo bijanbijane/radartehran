@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Check, Copy, Download, Image as ImageIcon, Loader2, Share2, X } from 'lucide-react';
 import { BubbleReport, EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples, formatNeighborhoodPriceTruthFa } from '../data/realMarketPriceAggregator';
@@ -85,6 +85,8 @@ export function ShareModal({
   const monthlyRent80mMillions = Math.round((selectedHood?.rahn80m ?? 1000) * 0.03);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [storyGeneratedSuccess, setStoryGeneratedSuccess] = useState(false);
+  const storyTimerRef = useRef<number | null>(null);
+  useEffect(() => () => { if (storyTimerRef.current !== null) window.clearTimeout(storyTimerRef.current); }, []);
   const dialogRef = useDialogFocus(open, onClose);
 
   if (!open) return null;
@@ -106,7 +108,8 @@ export function ShareModal({
       await generateStoryImage(selectedHood, marketReport, bestIndicator, activeCityNameFa, hostLabel, areaUnit, intlCurrency, locale);
       setStoryGeneratedSuccess(true);
       recordDiagnosticEvent('ShareModal', `Generated story PNG for ${selectedHood.name}`, 'success');
-      setTimeout(() => setStoryGeneratedSuccess(false), 3000);
+      if (storyTimerRef.current !== null) window.clearTimeout(storyTimerRef.current);
+      storyTimerRef.current = window.setTimeout(() => { storyTimerRef.current = null; setStoryGeneratedSuccess(false); }, 3000);
     } catch (err) {
       recordDiagnosticEvent('ShareModal', `Story PNG generation failed: ${String(err)}`, 'fallback');
     } finally {

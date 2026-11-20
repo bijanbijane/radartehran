@@ -1,5 +1,9 @@
 /** @file src/features/services/services/serviceWorkflowService.ts — Pure + Persisted Service Request, Proposal, Review, Complaint & Provider Onboarding Engine */
 import { sanitizeInput } from '../../../utils/security';
+import {
+  isValidIranianContactPhone,
+  parseLocalizedNumber,
+} from '../../../utils/forms/formInputHelpers';
 import { CANONICAL_SERVICE_DEFINITIONS, mapCanonicalToLegacyCategory } from './serviceTaxonomyAndVerification';
 import type {
   ServiceCanonicalCategory,
@@ -46,6 +50,58 @@ export interface ServiceRequestDraftPayload {
   categorySpecificDetails: Record<string, string>;
   contactConsentAccepted: boolean;
   savedAtIso?: string;
+}
+
+export function validateServiceWizardStep(
+  draft: ServiceRequestDraftPayload,
+  stepIndex: number,
+): { valid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+  if (stepIndex === 0 && !draft.canonicalCategory) {
+    errors.canonicalCategory = 'لطفاً دسته خدمت موردنظر را انتخاب کنید.';
+  }
+  if (stepIndex === 1 && !draft.serviceId) {
+    errors.serviceId = 'لطفاً خدمت دقیق موردنظر را انتخاب کنید.';
+  }
+  if (stepIndex === 2 && draft.neighborhoodName.trim().length < 2) {
+    errors.neighborhoodName = 'لطفاً نام محله را با حداقل ۲ کاراکتر وارد کنید.';
+  }
+  if (stepIndex === 3 && draft.areaSqm.trim().length > 0) {
+    const parsedArea = parseLocalizedNumber(draft.areaSqm);
+    if (!Number.isFinite(parsedArea) || parsedArea < 10 || parsedArea > 50000) {
+      errors.areaSqm = 'متراژ ملک باید عددی معتبر بین ۱۰ تا ۵۰٬۰۰۰ متر مربع باشد.';
+    }
+  }
+  if (stepIndex === 4 && draft.projectSummary.trim().length < 8) {
+    errors.projectSummary = 'لطفاً شرح نیاز را حداقل در ۸ کاراکتر توضیح دهید.';
+  }
+  if (stepIndex === 5 && draft.budgetRangeFa.trim().length === 0 && draft.preferredScheduleFa.trim().length === 0) {
+    errors.budgetRangeFa = 'حداقل بازه بودجه یا زمان مطلوب را مشخص کنید.';
+  }
+  if (stepIndex === 6) {
+    if (draft.requesterName.trim().length < 2) {
+      errors.requesterName = 'لطفاً نام متقاضی را با حداقل ۲ کاراکتر وارد کنید.';
+    }
+    if (!isValidIranianContactPhone(draft.requesterPhone)) {
+      errors.requesterPhone = 'شماره تماس معتبر موبایل (۰۹...) یا ثابت با کد شهر وارد کنید.';
+    }
+    if (!draft.contactConsentAccepted) {
+      errors.contactConsentAccepted = 'تایید حریم خصوصی و ارسال اطلاعات تماس پیش از ثبت الزامی است.';
+    }
+  }
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+export function validateAllServiceWizardSteps(
+  draft: ServiceRequestDraftPayload,
+): { valid: boolean; firstInvalidStep: number | null; errors: Record<string, string> } {
+  for (let idx = 0; idx <= 6; idx += 1) {
+    const res = validateServiceWizardStep(draft, idx);
+    if (!res.valid) {
+      return { valid: false, firstInvalidStep: idx, errors: res.errors };
+    }
+  }
+  return { valid: true, firstInvalidStep: null, errors: {} };
 }
 
 export function loadServiceRequestDraft(): ServiceRequestDraftPayload | null {

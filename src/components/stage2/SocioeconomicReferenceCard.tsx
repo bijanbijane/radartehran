@@ -114,12 +114,16 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     const base = buildFallbackRollup(resolvedId, resolvedName, resolvedPrice, cityKey, hood, intlCurrency);
     setRollup(base);
-    fetch(`/api/v1/reference/hood/${resolvedId}/rollup?cityId=${encodeURIComponent(cityKey)}&intlCurrency=${encodeURIComponent(intlCurrency)}`)
+    fetch(
+      `/api/v1/reference/hood/${resolvedId}/rollup?cityId=${encodeURIComponent(cityKey)}&intlCurrency=${encodeURIComponent(intlCurrency)}`,
+      { signal: controller.signal },
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!active || !data?.rollup) return;
+        if (!active || controller.signal.aborted || !data?.rollup) return;
         const r = data.rollup;
         const cityHoods = (MULTI_CITY_CONFIGS[cityKey as keyof typeof MULTI_CITY_CONFIGS] || MULTI_CITY_CONFIGS.tehran)?.neighborhoods || INITIAL_NEIGHBORHOODS;
         const liveMedian = r.medianPriceSqm || base.medianPriceMillionToman;
@@ -159,7 +163,10 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
         });
       })
       .catch(() => { /* keep fallback */ });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, [resolvedId, resolvedName, resolvedPrice, cityKey, hood, intlCurrency]);
 
   const bubbleGapPct = Math.round(((rollup.medianPriceMillionToman - rollup.estimatedFairDealMillionToman) / Math.max(1, rollup.estimatedFairDealMillionToman)) * 100);

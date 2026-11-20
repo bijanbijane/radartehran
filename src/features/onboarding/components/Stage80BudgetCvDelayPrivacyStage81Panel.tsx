@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage80BudgetCvDelayPrivacyStage81Panel.tsx — Stage 80 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateBudgetCvLccAndPrivacy } from '../services/constructionEconomicsStage80Engine';
 import {
   STAGE80_ACCEPTANCE_TESTS_56,
@@ -41,41 +42,49 @@ export const Stage80BudgetCvDelayPrivacyStage81Panel: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
           <label className="flex items-center gap-1.5">
             <span>بودجه مصوب B (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={1}
+              max={1000000}
+              fallback={50}
               value={approvedBudgetBillion}
-              onChange={(e) => setApprovedBudgetBillion(Number(e.target.value) || 50)}
+              onValueChange={setApprovedBudgetBillion}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>هزینه واقعی A (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={1000000}
+              fallback={0}
               value={actualSpentBillion}
-              onChange={(e) => setActualSpentBillion(Number(e.target.value) || 0)}
+              onValueChange={setActualSpentBillion}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>نگهداری سالانه Ct (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={100000}
+              fallback={0}
               value={annualMaintBillion}
-              onChange={(e) => setAnnualMaintBillion(Number(e.target.value) || 0)}
+              onValueChange={setAnnualMaintBillion}
               className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>تنزیل LCC (%):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={5}
+              max={100}
+              fallback={25}
               value={lccDiscountPct}
-              onChange={(e) => setLccDiscountPct(Number(e.target.value) || 25)}
+              onValueChange={setLccDiscountPct}
               className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>

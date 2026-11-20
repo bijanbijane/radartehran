@@ -4,6 +4,7 @@ import { ArrowUpDown, Columns2, List, Map as MapIcon, Search, SlidersHorizontal,
 import { toPersianNum } from '../../../data/neighborhoods';
 import {
   buildActiveFilterChips,
+  normalizeFiltersForPropertyType,
   type AppliedPropertyFilters,
   type PropertyFilterDraft,
   type PropertySortKey,
@@ -67,8 +68,8 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
   };
 
   const handlePropertyTypeQuickSelect = (pt: 'all' | PropertyType) => {
-    const next = { ...draft, propertyType: pt };
-    onUpdateDraft({ propertyType: pt });
+    const next = normalizeFiltersForPropertyType(draft, pt);
+    onUpdateDraft(next);
     onApply(next);
   };
 

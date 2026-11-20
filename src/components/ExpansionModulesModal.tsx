@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'; import { Calculator, CheckCircle2, Copy, RefreshCw, Send, X } from 'lucide-react'; import { Neighborhood, toPersianNum } from '../data/neighborhoods'; import { calculateOfficialCommissionAndNotary, CityId } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, createExecutionTimer, recordDiagnosticEvent } from '../utils/security'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { ContractLegalAdvisorView } from './ContractLegalAdvisorView'; import { useDialogFocus } from './useDialogFocus'; export type ExpansionModalType = 'commission' | 'contract' | 'telegram' | null; export interface ExpansionModulesModalProps { activeModal: ExpansionModalType; onClose: () => void; selectedHood: Neighborhood; activeCity?: CityId; defaultMode: 'rent' | 'buy'; defaultBuyBudgetMillion: number; defaultDepositMillion: number; defaultMonthlyRentMillion: number; defaultSqm?: number; }
+import React, { useState, useEffect, useMemo } from 'react'; import { Calculator, CheckCircle2, Copy, RefreshCw, Send, X } from 'lucide-react'; import { Neighborhood, toPersianNum } from '../data/neighborhoods'; import { calculateOfficialCommissionAndNotary, CityId } from '../data/multiCityData'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaValue, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, createExecutionTimer, recordDiagnosticEvent } from '../utils/security'; import { validateTelegramPostText } from '../utils/forms/formInputHelpers'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { ContractLegalAdvisorView } from './ContractLegalAdvisorView'; import { useDialogFocus } from './useDialogFocus'; import { NumericDraftInput } from './ui/NumericDraftInput'; export type ExpansionModalType = 'commission' | 'contract' | 'telegram' | null; export interface ExpansionModulesModalProps { activeModal: ExpansionModalType; onClose: () => void; selectedHood: Neighborhood; activeCity?: CityId; defaultMode: 'rent' | 'buy'; defaultBuyBudgetMillion: number; defaultDepositMillion: number; defaultMonthlyRentMillion: number; defaultSqm?: number; }
 function formatTomanReadable(toman: number): string { const safeToman = Number.isFinite(toman) ? Math.max(0, toman) : 0; const million = Math.round((safeToman / 1_000_000) * 10) / 10; if (million >= 1000) { const billion = Math.round((million / 1000) * 100) / 100; return `${toPersianNum(billion)} میلیارد تومان (${toPersianNum(Math.round(million))} میلیون)`;
   } return `${toPersianNum(million)} میلیون تومان`;
 } export function ExpansionModulesModal({ activeModal, onClose, selectedHood, activeCity = 'tehran', defaultMode, defaultBuyBudgetMillion, defaultDepositMillion, defaultMonthlyRentMillion, defaultSqm = 85, }: ExpansionModulesModalProps) { const [areaUnit] = useAreaUnit(); const [locale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency(); const dialogRef = useDialogFocus(Boolean(activeModal), onClose); const [commDealType, setCommDealType] = useState<'buy' | 'rent'>(defaultMode); const [commSqm, setCommSqm] = useState<number>(defaultSqm || 85); const [commPricePerSqm, setCommPricePerSqm] = useState<number>(selectedHood?.baseBuyPerSqm ?? selectedHood?.buyPerSqm ?? 135); const [commDeposit, setCommDeposit] = useState<number>(defaultDepositMillion || selectedHood?.rahn80m || 1500); const [commMonthlyRent, setCommMonthlyRent] = useState<number>(defaultMonthlyRentMillion || 15); const [copiedCommission, setCopiedCommission] = useState<boolean>(false); useEffect(() => { if (selectedHood) { setCommPricePerSqm(selectedHood?.baseBuyPerSqm ?? selectedHood.buyPerSqm); setCommDeposit(selectedHood.rahn80m); }
@@ -22,10 +22,10 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
       `• جمع کل قابل پرداخت ${commDealType === 'buy' ? 'فروشنده' : 'موجر'}: ${fmtFee(commResult.totalSellerPayableToman)}`,
     ]; navigator.clipboard?.writeText(lines.join('\n')).catch(() => {}); setCopiedCommission(true); setTimeout(() => setCopiedCommission(false), 2000); }; const [telegramText, setTelegramText] = useState<string>(''); const [loadingTelegram, setLoadingTelegram] = useState<boolean>(false); const [copiedTelegram, setCopiedTelegram] = useState<boolean>(false); const [sendingTelegram, setSendingTelegram] = useState<boolean>(false); const [tgSendStatus, setTgSendStatus] = useState<{ type: 'success' | 'error'; text: string; } | null>(null); const fetchTelegramDigest = async (cityToFetch: CityId = activeCity) => { const finishTimer = createExecutionTimer('ExpansionModulesModal', 'fetchTelegramDigest'); setLoadingTelegram(true); const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 8000); try {
       const res = await fetch(`/api/telegram-digest?city=${encodeURIComponent(cityToFetch)}`, {
-        signal: controller.signal, }); if (res.ok) { const data = await res.json(); if (data?.telegramText) { setTelegramText(data.telegramText); finishTimer('success'); } }
+        signal: controller.signal, }); if (res.ok) { const data = await res.json(); if (data?.telegramText) { setTelegramText(data.telegramText); setTgSendStatus(null); finishTimer('success'); } }
     } catch { finishTimer('fallback'); } finally { clearTimeout(timeoutId); setLoadingTelegram(false); } }; useEffect(() => { if (activeModal === 'telegram') {
       fetchTelegramDigest(activeCity); }
-  }, [activeModal, activeCity]); const handleSendToTelegramWebhook = async (e: React.FormEvent) => { e.preventDefault(); if (sendingTelegram) return; setSendingTelegram(true); setTgSendStatus(null);
+  }, [activeModal, activeCity]); const handleSendToTelegramWebhook = async (e: React.FormEvent) => { e.preventDefault(); if (sendingTelegram) return; const tgErr = validateTelegramPostText(telegramText); if (tgErr) { setTgSendStatus({ type: 'error', text: tgErr }); return; } setSendingTelegram(true); setTgSendStatus(null);
     const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); try { const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : '';
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (idToken) headers.Authorization = `Bearer ${idToken}`;
@@ -95,17 +95,17 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-4">
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">متراژ ملک ({formatAreaValue(commSqm, areaUnit)}):</label>
-                  <input
-                    type="number" aria-label="متراژ ملک" min={25} max={1000} value={commSqm}
-                    onChange={(e) => setCommSqm(clampNumber(e.target.value, 20, 1000, 85))}
+                  <NumericDraftInput
+                    aria-label="متراژ ملک" min={20} max={1000} fallback={85} value={commSqm}
+                    onValueChange={setCommSqm}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-slate-900 dark:text-white tabular-nums"
                   />
                 </div>
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">قیمت هر متر (معادل {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(uCommPrice)} م{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(uCommPrice, intlCurrency, locale)}` : ''}):</label>
-                  <input
-                    type="number" aria-label="قیمت هر متر" min={10} max={2000} value={commPricePerSqm}
-                    onChange={(e) => setCommPricePerSqm(clampNumber(e.target.value, 5, 2000, 135))}
+                  <NumericDraftInput
+                    aria-label="قیمت هر متر" min={5} max={2000} fallback={135} value={commPricePerSqm}
+                    onValueChange={setCommPricePerSqm}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
                 </div>
@@ -120,17 +120,17 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">مبلغ ودیعه / رهن (میلیون تومان{commDeposit > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commDeposit, intlCurrency, locale)}` : ''}):</label>
-                  <input
-                    type="number" aria-label="مبلغ ودیعه" min={0} max={50000} value={commDeposit}
-                    onChange={(e) => setCommDeposit(clampNumber(e.target.value, 0, 50000, 500))}
+                  <NumericDraftInput
+                    aria-label="مبلغ ودیعه" min={0} max={50000} fallback={500} value={commDeposit}
+                    onValueChange={setCommDeposit}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums"
                   />
                 </div>
                 <div>
                   <label className="block text-slate-600 dark:text-slate-300 mb-1">اجاره ماهانه (میلیون تومان{commMonthlyRent > 0 && intlCurrency !== 'IRT' ? ` • ${formatMillionTomanAsIntlCurrency(commMonthlyRent, intlCurrency, locale)}` : ''}):</label>
-                  <input
-                    type="number" aria-label="اجاره ماهانه" min={0} max={2000} value={commMonthlyRent}
-                    onChange={(e) => setCommMonthlyRent(clampNumber(e.target.value, 0, 2000, 15))}
+                  <NumericDraftInput
+                    aria-label="اجاره ماهانه" min={0} max={2000} fallback={15} value={commMonthlyRent}
+                    onValueChange={setCommMonthlyRent}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-extrabold text-slate-900 dark:text-white tabular-nums"
                   />
                 </div>
@@ -246,7 +246,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 </button>
               </div>
               <textarea
-                aria-label="متن آماده پست تلگرام" rows={10} value={telegramText} onChange={(e) => setTelegramText(e.target.value)}
+                aria-label="متن آماده پست تلگرام" rows={10} value={telegramText} onChange={(e) => { setTgSendStatus(null); setTelegramText(e.target.value); }}
                 className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-slate-900 dark:text-white leading-relaxed font-medium focus:outline-none focus:border-emerald-600"
               />
               <button
@@ -270,7 +270,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 توکن ربات و شناسه کانال مقصد صرفاً در متغیرهای محیطی امن سرور نگهداری می‌شوند و از سمت مرورگر ارسال نمی‌گردند.
               </p>
               {tgSendStatus && (
-                <div className={`p-2.5 rounded-xl font-semibold ${tgSendStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'}`}>
+                <div role={tgSendStatus.type === 'error' ? 'alert' : 'status'} className={`p-2.5 rounded-xl font-semibold border ${tgSendStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'}`}>
                   {tgSendStatus.text} </div>
               )} <button
                 type="submit" disabled={sendingTelegram} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"

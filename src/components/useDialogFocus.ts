@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { isTopmostModalDialogElement } from '../utils/interactions/dialogStack';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 
 const FOCUSABLE_SELECTOR =
@@ -19,6 +20,9 @@ function isElementFocusableVisible(el: HTMLElement): boolean {
   return true;
 }
 
+let activeScrollLockCount = 0;
+let savedBaseBodyOverflow: string | null = null;
+
 /**
  * Lightweight WCAG 2.1 AA dialog focus & scroll-lock management hook.
  * Saves trigger element focus & document body overflow on open, focuses initial dialog target,
@@ -34,7 +38,6 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
   const [locale] = useRadarLocale();
   const containerRef = useRef<T | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const previousOverflowRef = useRef<string | null>(null);
   const onCloseRef = useRef<(() => void) | undefined>(onClose);
   const escapeDisabledRef = useRef<boolean>(Boolean(options?.escapeDisabled));
   onCloseRef.current = onClose;
@@ -52,8 +55,11 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     if (!open || typeof document === 'undefined') return;
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    previousOverflowRef.current = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    if (activeScrollLockCount === 0) {
+      savedBaseBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
+    activeScrollLockCount += 1;
 
     const container = containerRef.current;
     if (container) {
@@ -69,6 +75,9 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' && e.key !== 'Tab') return;
+      const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
+      if (!isTopmostModalDialogElement(containerRef.current, openDialogs)) return;
       if (e.key === 'Escape') {
         if (!escapeDisabledRef.current && onCloseRef.current) {
           e.preventDefault();
@@ -76,7 +85,7 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
         }
         return;
       }
-      if (e.key !== 'Tab' || !containerRef.current) return;
+      if (!containerRef.current) return;
       const focusables = Array.from(
         containerRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
       ).filter(isElementFocusableVisible);
@@ -107,7 +116,11 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       if (typeof document !== 'undefined') {
-        document.body.style.overflow = previousOverflowRef.current ?? '';
+        activeScrollLockCount = Math.max(0, activeScrollLockCount - 1);
+        if (activeScrollLockCount === 0) {
+          document.body.style.overflow = savedBaseBodyOverflow ?? '';
+          savedBaseBodyOverflow = null;
+        }
         const prev = previousFocusRef.current;
         if (prev && prev.isConnected && typeof prev.focus === 'function') {
           prev.focus();
@@ -119,7 +132,6 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
           }
         }
       }
-      previousOverflowRef.current = null;
       previousFocusRef.current = null;
     };
   }, [open]);

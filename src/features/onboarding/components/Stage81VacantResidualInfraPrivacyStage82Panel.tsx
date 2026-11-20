@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage81VacantResidualInfraPrivacyStage82Panel.tsx — Stage 81 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateVacantRlvInfraAndPrivacy } from '../services/urbanLandMarketStage81Engine';
 import {
   STAGE81_ACCEPTANCE_TESTS_60,
@@ -43,51 +44,61 @@ export const Stage81VacantResidualInfraPrivacyStage82Panel: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
           <label className="flex items-center gap-1.5">
             <span>GDV (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={10}
+              max={1000000}
+              fallback={300}
               value={gdvBillion}
-              onChange={(e) => setGdvBillion(Number(e.target.value) || 300)}
+              onValueChange={setGdvBillion}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>Cd (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={1000000}
+              fallback={0}
               value={cdBillion}
-              onChange={(e) => setCdBillion(Number(e.target.value) || 0)}
+              onValueChange={setCdBillion}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>Cf (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={1000000}
+              fallback={0}
               value={cfBillion}
-              onChange={(e) => setCfBillion(Number(e.target.value) || 0)}
+              onValueChange={setCfBillion}
               className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>Co (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={1000000}
+              fallback={0}
               value={coBillion}
-              onChange={(e) => setCoBillion(Number(e.target.value) || 0)}
+              onValueChange={setCoBillion}
               className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>سود P (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={1000000}
+              fallback={0}
               value={profitPBillion}
-              onChange={(e) => setProfitPBillion(Number(e.target.value) || 0)}
+              onValueChange={setProfitPBillion}
               className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>

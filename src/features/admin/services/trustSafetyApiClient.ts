@@ -36,6 +36,7 @@ export async function listTrustSafetyCases(
   signal?: AbortSignal,
 ): Promise<{ ok: boolean; cases: TrustSafetyCaseItem[]; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
+  if (signal?.aborted) return { ok: false, cases: [] };
   if (!auth.Authorization) return { ok: false, cases: [], errorFa: 'نشست مدیر تایید نشده است.' };
   const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
   try {
@@ -44,7 +45,7 @@ export async function listTrustSafetyCases(
     if (!res.ok) return { ok: false, cases: [], errorFa: body.messageFa || body.code || 'خطا در دریافت پرونده‌های ایمنی' };
     return { ok: true, cases: Array.isArray(body.cases) ? body.cases : [] };
   } catch (err) {
-    if ((err as Error)?.name === 'AbortError') return { ok: false, cases: [] };
+    if (signal?.aborted || (err as Error)?.name === 'AbortError') return { ok: false, cases: [] };
     return { ok: false, cases: [], errorFa: 'عدم دسترسی به سرویس Trust & Safety' };
   }
 }
@@ -52,12 +53,16 @@ export async function listTrustSafetyCases(
 export async function claimTrustSafetyCase(caseId: string, currentUser?: User | null): Promise<{ ok: boolean; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
   if (!auth.Authorization) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
-  const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/claim`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-claim'), ...auth },
-  });
-  const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
-  return res.ok ? { ok: true } : { ok: false, errorFa: body.messageFa || body.code || 'خطا در قفل‌گذاری پرونده' };
+  try {
+    const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/claim`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-claim'), ...auth },
+    });
+    const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
+    return res.ok ? { ok: true } : { ok: false, errorFa: body.messageFa || body.code || 'خطا در قفل‌گذاری پرونده' };
+  } catch {
+    return { ok: false, errorFa: 'خطا در ارتباط با سرویس Trust & Safety برای قفل‌گذاری پرونده.' };
+  }
 }
 
 export async function applyTrustSafetyDecision(
@@ -68,13 +73,17 @@ export async function applyTrustSafetyDecision(
 ): Promise<{ ok: boolean; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
   if (!auth.Authorization) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
-  const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/decision`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-dec'), ...auth },
-    body: JSON.stringify({ decision, reasonFa }),
-  });
-  const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
-  return res.ok ? { ok: true } : { ok: false, errorFa: body.messageFa || body.code || 'ثبت تصمیم ناموفق بود.' };
+  try {
+    const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-dec'), ...auth },
+      body: JSON.stringify({ decision, reasonFa }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
+    return res.ok ? { ok: true } : { ok: false, errorFa: body.messageFa || body.code || 'ثبت تصمیم ناموفق بود.' };
+  } catch {
+    return { ok: false, errorFa: 'خطا در ارتباط با سرور هنگام ثبت تصمیم نظارتی.' };
+  }
 }
 
 export async function resolveTrustSafetyAppeal(
@@ -85,11 +94,15 @@ export async function resolveTrustSafetyAppeal(
 ): Promise<{ ok: boolean; errorFa?: string }> {
   const auth = await getBearerHeader(currentUser);
   if (!auth.Authorization) return { ok: false, errorFa: 'احراز هویت الزامی است.' };
-  const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/appeal-resolve`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-app'), ...auth },
-    body: JSON.stringify({ decision, reviewerNoteFa }),
-  });
-  const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
-  return res.ok ? { ok: true } : { ok: false, errorFa: body.messageFa || body.code || 'رسیدگی به اعتراض ناموفق بود.' };
+  try {
+    const res = await fetch(`/api/v1/trust-safety/cases/${encodeURIComponent(caseId)}/appeal-resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': createCommunityIdempotencyKey('ts-app'), ...auth },
+      body: JSON.stringify({ decision, reviewerNoteFa }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { messageFa?: string; code?: string };
+    return res.ok ? { ok: true } : { ok: false, errorFa: body.messageFa || body.code || 'رسیدگی به اعتراض ناموفق بود.' };
+  } catch {
+    return { ok: false, errorFa: 'خطا در ارتباط با سرور هنگام رسیدگی به اعتراض.' };
+  }
 }

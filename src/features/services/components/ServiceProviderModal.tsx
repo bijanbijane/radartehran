@@ -1,7 +1,9 @@
 /** @file src/features/services/components/ServiceProviderModal.tsx — Provider Identity, 4-Track Verification, Pricing & Reviews */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, Info, MapPin, Phone, ShieldAlert, X } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
+import { useDialogFocus } from '../../../components/useDialogFocus';
 import {
   CANONICAL_CATEGORY_LABELS_FA,
   type ProviderReviewRecord,
@@ -26,7 +28,31 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
 }) => {
   const [disputeReason, setDisputeReason] = useState<ServiceDisputeRecord['reason']>('misleading_credential');
   const [disputeDetails, setDisputeDetails] = useState('');
+  const [disputeError, setDisputeError] = useState('');
   const [disputeSent, setDisputeSent] = useState(false);
+  const disputeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dialogRef = useDialogFocus(Boolean(provider), onClose);
+  const providerId = provider?.identity.id ?? null;
+
+  useEffect(() => {
+    setDisputeReason('misleading_credential');
+    setDisputeDetails('');
+    setDisputeError('');
+    setDisputeSent(false);
+    if (disputeTimerRef.current !== null) {
+      clearTimeout(disputeTimerRef.current);
+      disputeTimerRef.current = null;
+    }
+  }, [providerId]);
+
+  useEffect(() => {
+    return () => {
+      if (disputeTimerRef.current !== null) {
+        clearTimeout(disputeTimerRef.current);
+        disputeTimerRef.current = null;
+      }
+    };
+  }, []);
 
   if (!provider) return null;
 
@@ -34,21 +60,35 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
   const primaryOffering = provider.offerings[0];
 
   const handleDispute = () => {
-    if (disputeDetails.trim().length < 8) return;
-    onSubmitDispute(provider.identity.id, disputeReason, disputeDetails);
+    if (disputeDetails.trim().length < 8) {
+      setDisputeError('لطفاً توضیح مغایرت را حداقل در ۸ کاراکتر بنویسید.');
+      return;
+    }
+    setDisputeError('');
+    onSubmitDispute(provider.identity.id, disputeReason, disputeDetails.trim());
     setDisputeDetails('');
     setDisputeSent(true);
-    setTimeout(() => setDisputeSent(false), 3000);
+    if (disputeTimerRef.current !== null) clearTimeout(disputeTimerRef.current);
+    disputeTimerRef.current = setTimeout(() => {
+      setDisputeSent(false);
+      disputeTimerRef.current = null;
+    }, 3000);
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9500] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-label={`جزئیات ${provider.identity.displayName}`}
+      onClick={onClose}
     >
-      <div className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-[16px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 p-5 space-y-4 text-xs">
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-[16px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 p-5 space-y-4 text-xs"
+      >
         <div className="flex items-start justify-between gap-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
           <div>
             <span className="text-[10.5px] font-bold text-[#176B63]">
@@ -149,7 +189,13 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
           ثبت درخواست خدمت از این مجموعه
         </button>
 
-        <div className="pt-3 border-t border-[#DCE3DF] dark:border-slate-800 space-y-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleDispute();
+          }}
+          className="pt-3 border-t border-[#DCE3DF] dark:border-slate-800 space-y-2"
+        >
           <div className="font-bold text-[#182522] dark:text-white flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5 text-[#B3261E]" />
             <span>گزارش مغایرت اطلاعات یا شکایت خصوصی خدماتی</span>
@@ -158,7 +204,11 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             <select
               aria-label="علت گزارش مغایرت"
               value={disputeReason}
-              onChange={(e) => setDisputeReason(e.target.value as ServiceDisputeRecord['reason'])}
+              onChange={(e) => {
+                setDisputeReason(e.target.value as ServiceDisputeRecord['reason']);
+                if (disputeError) setDisputeError('');
+                if (disputeSent) setDisputeSent(false);
+              }}
               className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
             >
               <option value="misleading_credential">ادعای نادرست صلاحیت/پروانه</option>
@@ -168,27 +218,34 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             </select>
             <input
               type="text"
+              aria-invalid={Boolean(disputeError)}
               value={disputeDetails}
-              onChange={(e) => setDisputeDetails(e.target.value)}
+              onChange={(e) => {
+                setDisputeDetails(e.target.value);
+                if (disputeError) setDisputeError('');
+                if (disputeSent) setDisputeSent(false);
+              }}
               placeholder="توضیح کوتاه مغایرت (حداقل ۸ حرف)..."
               className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
             />
           </div>
-          <div className="flex items-center justify-between">
-            {disputeSent ? (
-              <span className="text-[#176B4C] font-bold flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> گزارش شما به‌صورت خصوصی برای تیم بررسی ثبت شد.</span>
+          <div className="flex items-center justify-between gap-2">
+            {disputeError ? (
+              <span role="alert" className="text-[#B3261E] dark:text-rose-300 font-bold">{disputeError}</span>
+            ) : disputeSent ? (
+              <span role="status" className="text-[#176B4C] font-bold flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> گزارش شما به‌صورت خصوصی برای تیم بررسی ثبت شد.</span>
             ) : <span />}
             <button
-              type="button"
-              onClick={handleDispute}
-              disabled={disputeDetails.trim().length < 8}
-              className="px-3 py-1.5 rounded-[8px] border border-[#B3261E] text-[#B3261E] font-bold cursor-pointer disabled:opacity-40"
+              type="submit"
+              className="px-3 py-1.5 rounded-[8px] border border-[#B3261E] text-[#B3261E] font-bold cursor-pointer shrink-0"
             >
               ثبت گزارش مغایرت
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { FileCheck2, GitMerge, Languages, ShieldAlert } from 'lucide-react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   RT_FE_FORM_WORKFLOW_017_SPEC_ID, RT_FE_STAGE18_BRIDGE_SPEC_ID,
   RT_FORM_LAYERS_8, RT_FORM_REGISTRY_SAMPLE_7, RT_FORM_ADMIN_RISK_5,
@@ -120,7 +121,16 @@ export const RtFeFormWorkflow017Subpanel: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <label className="text-slate-300">قیمت کل فروش (میلیون تومان):</label>
-              <input type="number" aria-label="قیمت کل فروش" value={salePriceToman} onChange={(e) => setSalePriceToman(Number(e.target.value))} className="w-28 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-white" dir="ltr" />
+              <NumericDraftInput
+                aria-label="قیمت کل فروش"
+                min={0}
+                max={100000000}
+                fallback={35000}
+                value={salePriceToman}
+                onValueChange={setSalePriceToman}
+                className="w-28 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-white"
+                dir="ltr"
+              />
             </div>
             <div data-testid="rt-fe-form-validation-verdict" className="rounded bg-slate-950 p-2.5 space-y-1 text-[11px]">
               <div className={validationOut.canSubmit ? 'text-emerald-300 font-bold' : 'text-rose-300 font-bold'}>

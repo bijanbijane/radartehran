@@ -3,10 +3,11 @@
  * @description Casper Negotiation Playbook Modal - Generates custom 3-argument negotiation scripts
  * to empower buyers and renters against inflated listing prices in meeting rooms.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Copy, Check, X, ShieldAlert, Sparkles, Scale, FileText } from 'lucide-react';
 import { toPersianNum } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import { useDialogFocus } from '../useDialogFocus';
 
 export interface CasperNegotiationPlaybookModalProps {
   isOpen: boolean;
@@ -31,7 +32,25 @@ export function CasperNegotiationPlaybookModal({
   targetSqm,
   intlCurrency = 'IRT',
 }: CasperNegotiationPlaybookModalProps): React.ReactElement | null {
+  const dialogRef = useDialogFocus(isOpen, onClose);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCopied(false);
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = null;
+      }
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -50,14 +69,16 @@ export function CasperNegotiationPlaybookModal({
 ۳. در صورت توافق بر روی مبلغ ${toPersianNum(totalOfferBillion)} میلیارد، نقدینگی بنده در قالب چک تضمینی و حساب امانی حاضر و آماده امضای فوری در دفترخانه است. سقف غیرقابل تغییر بودجه من برای این واحد ${toPersianNum(totalWalkAwayBillion)} میلیارد تومان است.`;
 
   const handleCopy = async () => {
+    if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
     try {
       await navigator.clipboard.writeText(scriptText);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      copyTimerRef.current = window.setTimeout(() => {
+        setCopied(false);
+        copyTimerRef.current = null;
+      }, 2500);
     } catch {
-      // Fallback
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      setCopied(false);
     }
   };
 
@@ -70,7 +91,9 @@ export function CasperNegotiationPlaybookModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 outline-none"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >

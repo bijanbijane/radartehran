@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
+import { useDialogFocus } from '../../../components/useDialogFocus';
 import type { AppliedMarketFilters, MarketFilterDraft, MarketGeoLevel, MarketPeriodId, PropertySubType } from '../types/market.types';
 import { MARKET_TYPE_CAPABILITIES } from './MarketFilterDraft';
 
@@ -23,6 +25,7 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
 }) => {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const mobileSheetRef = useDialogFocus(mobileSheetOpen, () => setMobileSheetOpen(false));
   const cap = MARKET_TYPE_CAPABILITIES[draft.marketType];
 
   const renderFilterControls = (mobileMode: boolean) => (
@@ -214,52 +217,62 @@ export const MarketFilterPanel: React.FC<MarketFilterPanelProps> = ({
 
       <div className="hidden sm:block">{renderFilterControls(false)}</div>
 
-      {mobileSheetOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="فیلترهای پیشرفته بازار املاک"
-          data-testid="market-mobile-filter-sheet"
-          className="fixed inset-0 z-[70] bg-slate-950/60 flex items-end justify-center sm:hidden"
-        >
-          <div className="w-full max-h-[82vh] overflow-y-auto rounded-t-2xl bg-white dark:bg-slate-900 border-t border-[#DCE3DF] dark:border-slate-700 p-4 pb-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
-              <strong className="text-sm font-black text-[#182522] dark:text-white">فیلترهای تحلیل بازار</strong>
-              <button
-                type="button"
-                aria-label="بستن پنل فیلتر"
-                onClick={() => setMobileSheetOpen(false)}
-                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            {renderFilterControls(true)}
-            <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-[#DCE3DF] dark:border-slate-800 flex items-center gap-2 pt-3 pb-1">
-              <button
-                type="button"
-                onClick={() => {
-                  onReset();
-                  setMobileSheetOpen(false);
-                }}
-                className="flex-1 min-h-[44px] rounded-lg border border-[#C5D0CA] dark:border-slate-700 text-xs font-bold text-[#34433E] dark:text-slate-200"
-              >
-                بازنشانی
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onApply();
-                  setMobileSheetOpen(false);
-                }}
-                className="flex-[2] min-h-[44px] rounded-lg bg-[#176B63] text-white text-xs font-bold"
-              >
-                اعمال و مشاهده نتایج
-              </button>
+      {mobileSheetOpen && (() => {
+        const sheetNode = (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="فیلترهای پیشرفته بازار املاک"
+            data-testid="market-mobile-filter-sheet"
+            onClick={() => setMobileSheetOpen(false)}
+            className="fixed inset-0 z-[9500] bg-slate-950/60 flex items-end justify-center sm:hidden"
+          >
+            <div
+              ref={mobileSheetRef}
+              tabIndex={-1}
+              dir="rtl"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-h-[82dvh] overflow-y-auto rounded-t-2xl bg-white dark:bg-slate-900 border-t border-[#DCE3DF] dark:border-slate-700 p-4 pb-[calc(1.5rem+var(--safe-bottom))] space-y-4 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
+                <strong className="text-sm font-black text-[#182522] dark:text-white">فیلترهای تحلیل بازار</strong>
+                <button
+                  type="button"
+                  aria-label="بستن پنل فیلتر"
+                  onClick={() => setMobileSheetOpen(false)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-200 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {renderFilterControls(true)}
+              <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-[#DCE3DF] dark:border-slate-800 flex items-center gap-2 pt-3 pb-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onReset();
+                    setMobileSheetOpen(false);
+                  }}
+                  className="flex-1 min-h-[44px] rounded-lg border border-[#C5D0CA] dark:border-slate-700 text-xs font-bold text-[#34433E] dark:text-slate-200 cursor-pointer"
+                >
+                  بازنشانی
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onApply();
+                    setMobileSheetOpen(false);
+                  }}
+                  className="flex-[2] min-h-[44px] rounded-lg bg-[#176B63] text-white text-xs font-bold cursor-pointer"
+                >
+                  اعمال و مشاهده نتایج
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+        return typeof document !== 'undefined' ? createPortal(sheetNode, document.body) : sheetNode;
+      })()}
     </section>
   );
 };

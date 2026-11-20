@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import {
   AuthLifecycleState,
   AuthUserSnapshot,
@@ -43,35 +43,38 @@ export const AuthProvider: React.FC<{
     return client.subscribe((next) => setState(next));
   }, [client]);
 
-  const identity = resolveIdentity(user);
-  const profile = resolveProfile(identity);
-  const access = resolveRoleAndPermissions(identity, profile, workspaceOverride);
+  const access = useMemo(() => {
+    const identity = resolveIdentity(user);
+    const profile = resolveProfile(identity);
+    return resolveRoleAndPermissions(identity, profile, workspaceOverride);
+  }, [user, workspaceOverride]);
 
-  const switchRole = (role: AppRole, workspaceId?: string) => {
-    if (user) {
-      setUser({ ...user, customClaims: { ...user.customClaims, role } });
-    }
+  const switchRole = useCallback((role: AppRole, workspaceId?: string) => {
+    setUser((prev) => (prev ? { ...prev, customClaims: { ...prev.customClaims, role } } : prev));
     setWorkspaceOverride(workspaceId);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setWorkspaceOverride(undefined);
     client.logout('provider_logout');
-  };
+  }, [client]);
+
+  const contextValue = useMemo<AuthContextValue>(
+    () => ({
+      state,
+      user,
+      activeRole: access.activeRole,
+      permissions: access.permissions,
+      workspaceId: access.workspaceId,
+      switchRole,
+      logout,
+    }),
+    [state, user, access.activeRole, access.permissions, access.workspaceId, switchRole, logout],
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        state,
-        user,
-        activeRole: access.activeRole,
-        permissions: access.permissions,
-        workspaceId: access.workspaceId,
-        switchRole,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

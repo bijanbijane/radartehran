@@ -53,13 +53,25 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
     { id: 'home', labelFa: 'صفحه نخست رادار', labelEn: 'Home', descFa: 'نمای خلاصه و ارزیابی آگهی', Icon: Home },
   ];
 
+  React.useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   return (
     <>
       {open && (
         <div
           aria-hidden="true"
           onClick={onClose}
-          className="lg:hidden fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px]"
+          className="lg:hidden fixed inset-0 z-[39] bg-slate-950/40 backdrop-blur-[2px]"
         />
       )}
       <div
@@ -72,7 +84,7 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
         }}
         style={{ bottom: 'calc(4.25rem + var(--safe-bottom))' }}
         className={`lg:hidden fixed inset-x-3 z-[41] max-h-[72dvh] overflow-y-auto p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/98 dark:bg-slate-900/98 shadow-2xl backdrop-blur-md space-y-3.5 transition-all duration-150 ${
-          open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none'
+          open ? 'visible opacity-100 translate-y-0 pointer-events-auto' : 'invisible opacity-0 translate-y-2 pointer-events-none'
         }`}
       >
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">

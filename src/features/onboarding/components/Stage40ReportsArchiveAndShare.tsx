@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage40ReportsArchiveAndShare.tsx — RPT-15..18 Archive, Versions & Secure Share */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   applyReportMetadataOrVersionUpdate,
   evaluateReportSharePermissions,
@@ -121,7 +122,7 @@ export const Stage40ReportsArchiveAndShare: React.FC<Props> = ({
             </select>
             <label className="flex items-center gap-1 text-[11px] text-slate-300">
               <span>انقضا (روز):</span>
-              <input type="number" min={1} max={90} value={expiryDays} onChange={(e) => setExpiryDays(Number(e.target.value))} className="w-14 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white" />
+              <NumericDraftInput min={1} max={90} fallback={7} value={expiryDays} onValueChange={setExpiryDays} className="w-14 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white" />
             </label>
             <button type="button" data-testid="stage40-apply-share-btn" onClick={handleApplyShare} className="rounded bg-cyan-600 px-2.5 py-1 text-[11px] font-bold text-white">
               اعمال کنترل دسترسی

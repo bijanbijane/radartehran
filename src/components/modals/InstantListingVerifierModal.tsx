@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ShieldAlert, Sparkles, CheckCircle2, AlertTriangle, HelpCircle,
   Copy, Check, X, PhoneCall, ChevronRight, Zap
@@ -112,9 +113,9 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
     copyTimerRef.current = window.setTimeout(() => { copyTimerRef.current = null; setCopied(false); }, 2000);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm" dir="rtl">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="آنتی‌ویروس و کارشناسی فوری آگهی مسکن" className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+  const modalContent = (
+    <div onClick={onClose} className="fixed inset-0 z-[9500] flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm" dir="rtl">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="آنتی‌ویروس و کارشناسی فوری آگهی مسکن" onClick={(e) => e.stopPropagation()} className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850">
           <div className="flex items-center gap-2">
@@ -139,7 +140,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
         <div className="p-3.5 sm:p-4 overflow-y-auto space-y-3.5 text-xs flex-1">
           {/* Input Box */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <label htmlFor="ad-text-input" className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                 متن یا لینک آگهی (دیوار یا شیپور) را قرار دهید:
               </label>
@@ -148,8 +149,8 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 <select
                   aria-label="انتخاب محله مبنا"
                   value={selectedHoodName}
-                  onChange={(e) => setSelectedHoodName(e.target.value)}
-                  className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-bold"
+                  onChange={(e) => { setScanError(null); setHoodMismatchWarningFa(null); setSelectedHoodName(e.target.value); }}
+                  className="max-w-[160px] truncate rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-bold"
                 >
                   {(() => {
                     const list = evaluatedNeighborhoods.length > 0 ? evaluatedNeighborhoods : INITIAL_NEIGHBORHOODS;
@@ -163,7 +164,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
               id="ad-text-input"
               rows={3}
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => { setScanError(null); setHoodMismatchWarningFa(null); setInputText(e.target.value); }}
               placeholder={`مثال (${cityNameFa}): ۹۵ متر ۲ خواب طبقه ۴ بدون آسانسور متری ۱۴۰ میلیون...`}
               className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-rose-500 text-xs"
             />
@@ -173,14 +174,14 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 <span className="text-[10px] text-slate-400">تست سریع با نمونه:</span>
                 <button
                   type="button"
-                  onClick={() => { setInputText(SAMPLE_TEXT_SAADAT); setSelectedHoodName('سعادت‌آباد'); }}
+                  onClick={() => { setScanError(null); setHoodMismatchWarningFa(null); setInputText(SAMPLE_TEXT_SAADAT); setSelectedHoodName('سعادت‌آباد'); }}
                   className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
                 >
                   نمونه ۱ (سعادت‌آباد)
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setInputText(SAMPLE_TEXT_PUNAK); setSelectedHoodName('پونک'); }}
+                  onClick={() => { setScanError(null); setHoodMismatchWarningFa(null); setInputText(SAMPLE_TEXT_PUNAK); setSelectedHoodName('پونک'); }}
                   className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
                 >
                   نمونه ۲ (پونک - بدون آسانسور)
@@ -305,4 +306,6 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

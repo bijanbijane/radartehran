@@ -33,7 +33,9 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
   const [appeals, setAppeals] = useState<ModerationAppeal[]>([]);
   const [appealTargetId, setAppealTargetId] = useState('');
   const [appealReasonFa, setAppealReasonFa] = useState('');
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [submittingAppeal, setSubmittingAppeal] = useState(false);
+  const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [appealFeedback, setAppealFeedback] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const draftCorrection = loadDataCorrectionDraft();
@@ -57,7 +59,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
         setMyContributions(actRes.data.myContributions);
         setAppeals(actRes.data.myAppeals);
       } else if (actRes.errorFa) {
-        setFeedback(actRes.errorFa);
+        setFeedback({ tone: 'error', text: actRes.errorFa });
       }
       if (topicsRes.ok && topicsRes.data) setTopics(topicsRes.data);
       setLoading(false);
@@ -94,9 +96,9 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
     const res = await updateCommunityPrivacySettings({ visibility }, currentUser);
     if (res.ok && res.data) {
       setProfile(res.data);
-      setFeedback('سطح نمایش نمایه عمومی جامعه در سرور به‌روزرسانی شد.');
+      setFeedback({ tone: 'success', text: 'سطح نمایش نمایه عمومی جامعه در سرور به‌روزرسانی شد.' });
     } else {
-      setFeedback(res.errorFa || 'خطا در به‌روزرسانی تنظیمات حریم خصوصی');
+      setFeedback({ tone: 'error', text: res.errorFa || 'خطا در به‌روزرسانی تنظیمات حریم خصوصی' });
     }
   };
 
@@ -105,27 +107,41 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
     const res = await updateCommunityPrivacySettings({ [key]: !profile[key] }, currentUser);
     if (res.ok && res.data) {
       setProfile(res.data);
+      setFeedback(null);
     } else if (res.errorFa) {
-      setFeedback(res.errorFa);
+      setFeedback({ tone: 'error', text: res.errorFa });
     }
   };
 
   const handleAppealSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await submitCommunityAppeal(
-      {
-        moderationActionId: 'mod-act-latest',
-        targetId: appealTargetId || myContributions[0]?.id || 'post-review',
-        argumentFa: appealReasonFa,
-      },
-      currentUser,
-    );
-    if (res.ok && res.data) {
-      setAppeals((prev) => [res.data!, ...prev]);
-      setAppealReasonFa('');
-      setFeedback('درخواست بازبینی و اعتراض شما در سرور برای تیم نظارت ثبت شد.');
-    } else {
-      setFeedback(res.errorFa || 'خطا در ثبت درخواست');
+    if (submittingAppeal) return;
+    const trimmedReason = appealReasonFa.trim();
+    if (trimmedReason.length < 5) {
+      setAppealFeedback({ tone: 'error', text: 'لطفاً دلیل درخواست بازبینی را (حداقل ۵ کاراکتر) وارد کنید.' });
+      return;
+    }
+    setSubmittingAppeal(true);
+    setAppealFeedback(null);
+    try {
+      const res = await submitCommunityAppeal(
+        {
+          moderationActionId: 'mod-act-latest',
+          targetId: appealTargetId.trim() || myContributions[0]?.id || 'post-review',
+          argumentFa: trimmedReason,
+        },
+        currentUser,
+      );
+      if (res.ok && res.data) {
+        setAppeals((prev) => [res.data!, ...prev]);
+        setAppealReasonFa('');
+        setAppealTargetId('');
+        setAppealFeedback({ tone: 'success', text: 'درخواست بازبینی و اعتراض شما در سرور برای تیم نظارت ثبت شد.' });
+      } else {
+        setAppealFeedback({ tone: 'error', text: res.errorFa || 'خطا در ثبت درخواست' });
+      }
+    } finally {
+      setSubmittingAppeal(false);
     }
   };
 
@@ -192,8 +208,15 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
         </div>
 
         {feedback && (
-          <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 font-bold">
-            {feedback}
+          <div
+            role={feedback.tone === 'error' ? 'alert' : 'status'}
+            className={`p-2.5 rounded-xl font-bold ${
+              feedback.tone === 'error'
+                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
+                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800'
+            }`}
+          >
+            {feedback.text}
           </div>
         )}
       </section>
@@ -230,10 +253,22 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
             <span>ثبت اعتراض و پیگیری تصمیمات نظارت</span>
           </h3>
           <form onSubmit={handleAppealSubmit} className="space-y-2">
-            <input type="text" aria-label="شناسه مطلب یا تصمیم نظارتی" value={appealTargetId} onChange={(e) => setAppealTargetId(e.target.value)} placeholder="شناسه مطلب (اختیاری)" className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
-            <textarea rows={2} aria-label="دلیل درخواست بازبینی" value={appealReasonFa} onChange={(e) => setAppealReasonFa(e.target.value)} placeholder="دلایل و شواهد خود را برای بازبینی تصمیم ناظر بنویسید..." className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
-            <button type="submit" data-testid="submit-community-appeal-btn" className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
-              ارسال درخواست بازبینی
+            <input type="text" aria-label="شناسه مطلب یا تصمیم نظارتی" value={appealTargetId} onChange={(e) => { setAppealTargetId(e.target.value); if (appealFeedback) setAppealFeedback(null); }} placeholder="شناسه مطلب (اختیاری)" className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+            <textarea rows={2} aria-label="دلیل درخواست بازبینی" value={appealReasonFa} onChange={(e) => { setAppealReasonFa(e.target.value); if (appealFeedback) setAppealFeedback(null); }} placeholder="دلایل و شواهد خود را برای بازبینی تصمیم ناظر بنویسید..." className="w-full p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+            {appealFeedback && (
+              <div
+                role={appealFeedback.tone === 'error' ? 'alert' : 'status'}
+                className={`p-2 rounded-lg font-bold text-[11px] ${
+                  appealFeedback.tone === 'error'
+                    ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800'
+                }`}
+              >
+                {appealFeedback.text}
+              </div>
+            )}
+            <button type="submit" disabled={submittingAppeal} data-testid="submit-community-appeal-btn" className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer disabled:opacity-50">
+              {submittingAppeal ? 'در حال ارسال...' : 'ارسال درخواست بازبینی'}
             </button>
           </form>
           {appeals.length > 0 && (

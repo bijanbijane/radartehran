@@ -1,5 +1,5 @@
 /** @file src/features/onboarding/components/Stage47GovernanceAndEditorialPanel.tsx — Stage 47 Source Provenance, Editorial Queue, Search & Stage 48 Preview */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   evaluateScheduledReviewDue,
   evaluateUserDocumentPublicationRights,
@@ -36,6 +36,11 @@ export const Stage47GovernanceAndEditorialPanel: React.FC<{
     'در لوله‌کشی پلی‌پروپیلن و پنج‌لایه، فشار تست حداقل ۱.۵ برابر فشار کاری و به مدت حداقل ۲ ساعت ثبت گردد.',
   );
   const [revisionPreview, setRevisionPreview] = useState<ReturnType<typeof proposeExpertContentRevision> | null>(null);
+
+  useEffect(() => {
+    setReportSectionFa(activeGuide.tableOfContentsFa[0] || 'بخش ۱');
+    setRevisionPreview(null);
+  }, [activeGuide.guideId]);
 
   const pubRights = evaluateUserDocumentPublicationRights({
     uploadedByUser: true,

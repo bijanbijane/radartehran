@@ -7,6 +7,7 @@ import { useExchangeRateSnapshot } from '../../features/commerce/services/exchan
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { updateMapAdvancedOverlayState, useMapAdvancedOverlayState } from '../mapAdvancedLayers';
 import { InspectorDrawerSkeleton } from '../NeighborhoodLoadingSkeletons';
+import { FeatureErrorBoundary } from '../FeatureErrorBoundary';
 import { resolveProductViewRouterShellClasses } from '../../utils/productViewRouterShellClasses';
 import { ModuleSecondaryNav } from '../navigation/ModuleSecondaryNav';
 import { resolveActiveCityDisplayName, resolveEffectiveSubTab, resolveSecondaryTabsForView } from '../navigation/viewRouterHelpers';
@@ -58,12 +59,8 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   const activeDealUnit = convertPricePerSqmToUnit(rawDealSqm, areaUnit), activeDealRaw = convertPricePerSqmToUnitRaw(rawDealSqm, areaUnit);
   const axisAreaSuffix = formatAreaUnitLabel(areaUnit);
   const activeDealLabel = intlCurrency !== 'IRT' ? `${formatMillionTomanAsIntlCurrency(activeDealRaw, intlCurrency, radarLocale, rateState.snapshot)} / ${axisAreaSuffix}` : `${toPersianNum(activeDealUnit)} میلیون تومان / ${axisAreaSuffix}`;
-  const secondaryTabs = resolveSecondaryTabsForView(primaryView);
-  const effectiveSubTab = resolveEffectiveSubTab(primaryView, ui.activeSubTab);
-  const navigateTo = (view: PrimaryViewId, subTab?: ModuleSubTabId) => {
-    ui.setActiveSubTab?.(subTab);
-    ui.setPrimaryView(view);
-  };
+  const secondaryTabs = resolveSecondaryTabsForView(primaryView); const effectiveSubTab = resolveEffectiveSubTab(primaryView, ui.activeSubTab);
+  const navigateTo = (view: PrimaryViewId, subTab?: ModuleSubTabId) => { ui.setActiveSubTab?.(subTab); ui.setPrimaryView(view); };
 
   const mapAxisBar = (
     <div className={`${homeContentFirst ? 'hidden lg:block ' : ''}sticky top-0 z-20 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-1.5 space-y-1`}>
@@ -255,16 +252,18 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   } else if (primaryView === 'admin') {
     return (
       <div className="w-full h-full overflow-y-auto pointer-events-auto bg-[#F8F9FA] dark:bg-slate-950">
-        <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>
-          <ProductAdminMonitoringView
-            ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} allNeighborhoods={p.allNeighborhoods} activeCity={p.activeCity}
-            totalLiveBargainsCount={evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0)}
-            featureFlags={p.featureFlags} currentUser={p.currentUser} isVerifiedAdmin={p.isVerifiedAdmin}
-            crudActions={p.crudActions} handleDeepWebSync={p.handleDeepWebSync || (() => {})}
-            mapTileStyle={p.mapTileStyle} setMapTileStyle={p.setMapTileStyle}
-            activeSection={ui.adminSection} onChangeSection={ui.setAdminSection} onBackToMap={() => navigateTo('map')}
-          />
-        </React.Suspense>
+        <FeatureErrorBoundary sectionName="پنل نظارت و مدیریت" resetKey={ui.adminSection}>
+          <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>
+            <ProductAdminMonitoringView
+              ui={ui} evaluatedNeighborhoods={evaluatedNeighborhoods} allNeighborhoods={p.allNeighborhoods} activeCity={p.activeCity}
+              totalLiveBargainsCount={evaluatedNeighborhoods.reduce((acc, h) => acc + (h.bargains?.length || 0), 0)}
+              featureFlags={p.featureFlags} currentUser={p.currentUser} isVerifiedAdmin={p.isVerifiedAdmin}
+              crudActions={p.crudActions} handleDeepWebSync={p.handleDeepWebSync || (() => {})}
+              mapTileStyle={p.mapTileStyle} setMapTileStyle={p.setMapTileStyle}
+              activeSection={ui.adminSection} onChangeSection={ui.setAdminSection} onBackToMap={() => navigateTo('map')}
+            />
+          </React.Suspense>
+        </FeatureErrorBoundary>
       </div>
     );
   }
@@ -272,14 +271,12 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   if (!content) return null;
   const { shellBg, splitShell } = resolveProductViewRouterShellClasses(splitMapMode, homeContentFirst);
   return (
-    <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-all duration-200 ${shellBg} lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitShell}`}>
+    <div className={`overflow-y-auto pb-20 lg:pb-8 pointer-events-auto transition-[background-color,box-shadow] duration-200 min-w-0 ${shellBg} lg:border-l border-slate-200/80 dark:border-slate-800 shadow-2xl ${splitShell}`}>
       {mapAxisBar}
-      <ModuleSecondaryNav
-        primaryView={primaryView} subTab={effectiveSubTab} tabs={secondaryTabs}
-        onSelectSubTab={(t) => ui.setActiveSubTab?.(t)} onNavigateView={navigateTo}
-        locale={radarLocale} cityName={resolveActiveCityDisplayName(p.activeCity, isEn)} hoodName={selectedHood.name}
-      />
-      <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>{content}</React.Suspense>
+      <ModuleSecondaryNav primaryView={primaryView} subTab={effectiveSubTab} tabs={secondaryTabs} onSelectSubTab={(t) => ui.setActiveSubTab?.(t)} onNavigateView={navigateTo} locale={radarLocale} cityName={resolveActiveCityDisplayName(p.activeCity, isEn)} hoodName={selectedHood.name} />
+      <FeatureErrorBoundary sectionName="بخش محتوای رادار" resetKey={`${primaryView}-${effectiveSubTab || 'default'}`}>
+        <React.Suspense fallback={<div className="p-4"><InspectorDrawerSkeleton /></div>}>{content}</React.Suspense>
+      </FeatureErrorBoundary>
     </div>
   );
 };

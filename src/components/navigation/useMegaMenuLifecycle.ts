@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CityId } from '../../types/models';
 import type { PrimaryViewId, RadarLocale } from '../../utils/areaUnit';
 
-export const MEGA_MENU_HOVER_CLOSE_DELAY_MS = 300;
+export const MEGA_MENU_HOVER_CLOSE_DELAY_MS = 340;
 
 export type MegaMenuCloseReason =
   | 'escape'

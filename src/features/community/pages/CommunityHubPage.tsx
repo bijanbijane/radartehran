@@ -41,6 +41,12 @@ import { CommunityQuestionsTab } from '../components/CommunityQuestionsTab';
 import { CommunityTopicsAndSpatialTab } from '../components/CommunityTopicsAndSpatialTab';
 import { CommunityMembersAndGuidelinesTab } from '../components/CommunityMembersAndGuidelinesTab';
 import { CommunityResearchProposalsTab } from '../components/CommunityResearchProposalsTab';
+import {
+  COMMUNITY_HUB_TABS,
+  mapSubTabToHubTab,
+  pushMemberProfileUrl,
+  readMemberUsernameFromPath,
+} from '../utils/communityHubNavHelpers';
 
 export interface CommunityHubPageProps {
   activeSubTab?: ContributionsSubTabId;
@@ -55,30 +61,6 @@ export interface CommunityHubPageProps {
   onOpenListingVerifier: () => void;
 }
 
-const HUB_TABS: Array<{ id: CommunityHubTabId; labelFa: string }> = [
-  { id: 'overview', labelFa: 'خانه جامعه' },
-  { id: 'discussions', labelFa: 'گفت‌وگوها' },
-  { id: 'questions', labelFa: 'پرسش و پاسخ' },
-  { id: 'data_contribution', labelFa: 'اصلاح داده' },
-  { id: 'topics', labelFa: 'موضوعات' },
-  { id: 'neighborhoods', labelFa: 'محله و بازار' },
-  { id: 'research_proposals', labelFa: 'پیشنهاد پژوهش' },
-  { id: 'members', labelFa: 'اعضا' },
-  { id: 'guidelines', labelFa: 'آیین‌نامه' },
-];
-
-function mapSubTabToHubTab(subTab?: ContributionsSubTabId): CommunityHubTabId {
-  if (subTab === 'discussions' || subTab === 'points') return 'discussions';
-  if (subTab === 'questions') return 'questions';
-  if (subTab === 'submit' || subTab === 'contributions' || subTab === 'reports' || subTab === 'verify') return 'data_contribution';
-  if (subTab === 'topics') return 'topics';
-  if (subTab === 'neighborhoods' || subTab === 'market') return 'neighborhoods';
-  if (subTab === 'research') return 'research_proposals';
-  if (subTab === 'members') return 'members';
-  if (subTab === 'guidelines' || subTab === 'help') return 'guidelines';
-  return 'overview';
-}
-
 export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
   activeSubTab,
   activeCity,
@@ -90,14 +72,20 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
   onOpenResidentVoteTab,
   onOpenListingVerifier,
 }) => {
-  const [activeTab, setActiveTab] = useState<CommunityHubTabId>(() => mapSubTabToHubTab(activeSubTab));
+  const [selectedUsername, setSelectedUsernameState] = useState<string | null>(() => readMemberUsernameFromPath());
+  const [activeTab, setActiveTab] = useState<CommunityHubTabId>(() =>
+    readMemberUsernameFromPath() ? 'members' : mapSubTabToHubTab(activeSubTab),
+  );
   const [includeSeeds, setIncludeSeeds] = useState(true);
-  const [selectedUsername, setSelectedUsername] = useState<string | null>(null);
   const [toastFa, setToastFa] = useState<string | null>(null);
   const [toastKind, setToastKind] = useState<'success' | 'error'>('success');
   const showToast = (msg: string | null, kind: 'success' | 'error' = 'success') => {
     setToastFa(msg);
     setToastKind(kind);
+  };
+  const setSelectedUsername = (username: string | null) => {
+    setSelectedUsernameState(username);
+    pushMemberProfileUrl(username);
   };
 
   const {
@@ -129,8 +117,18 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
   }, [activeSubTab]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPopState = () => {
+      const nextUser = readMemberUsernameFromPath();
+      setSelectedUsernameState(nextUser);
+      if (nextUser) setActiveTab('members');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
     setToastFa(null);
-    setSelectedUsername(null);
   }, [currentUser?.uid]);
 
   const currentUserProfile = useMemo(
@@ -184,7 +182,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
         </div>
 
         <nav aria-label="بخش‌های جامعه کاربران" className="flex flex-wrap gap-1.5 text-xs">
-          {HUB_TABS.map((tab) => (
+          {COMMUNITY_HUB_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"

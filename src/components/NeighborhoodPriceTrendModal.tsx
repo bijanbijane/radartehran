@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowDownRight, ArrowUpRight, Building2, Calendar, LineChart as LineChartIcon, Maximize2, Table2, TrendingUp, X } from 'lucide-react';
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BubbleReport, EvaluatedNeighborhood, Neighborhood, toPersianNum } from '../data/neighborhoods';
@@ -67,8 +68,8 @@ export function NeighborhoodPriceTrendModal({
 
   if (!open) return null;
 
-  return (
-    <div dir={isEn ? 'ltr' : 'rtl'} role="dialog" aria-modal="true" aria-labelledby="neighborhood-price-trend-modal-title" className="fixed inset-0 z-[1250] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn" onClick={onClose}>
+  const modalContent = (
+    <div dir={isEn ? 'ltr' : 'rtl'} role="dialog" aria-modal="true" aria-labelledby="neighborhood-price-trend-modal-title" className="fixed inset-0 z-[9500] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn" onClick={onClose}>
       <div ref={dialogRef} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-[20px] shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="px-4 py-3 sm:px-6 sm:py-3.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -253,4 +254,6 @@ export function NeighborhoodPriceTrendModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }

@@ -1,5 +1,5 @@
 /** @file src/features/valuation/pages/ValuationWorkspacePage.tsx — Stages 89–96 Multi-City Account-Scoped Valuation Workspace */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { Calculator, RefreshCw } from 'lucide-react';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
@@ -65,6 +65,12 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
     );
   });
   const [copied, setCopied] = useState(false);
+  const noticeTimerRef = useRef<number | null>(null);
+  const copyTimerRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+    if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+  }, []);
 
   // Stage 94.3: Ensure selected neighborhood belongs to activeCity when city switches
   useEffect(() => {
@@ -133,7 +139,8 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
       persistSavedValuationReports(next, null);
       setStatusNoticeFa('گزارش روی این دستگاه ذخیره شد (برای همگام‌سازی ابری وارد حساب شوید).');
     }
-    setTimeout(() => setStatusNoticeFa(''), 3800);
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => { noticeTimerRef.current = null; setStatusNoticeFa(''); }, 3800);
   };
 
   const handleDeleteReport = async (id: string) => {
@@ -143,7 +150,8 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
       const delRes = await deleteValuationReport(id, currentUser);
       if (!delRes.ok) {
         setStatusNoticeFa(delRes.errorFa || 'حذف گزارش از حساب کاربری انجام نشد؛ آیتم حفظ شد.');
-        setTimeout(() => setStatusNoticeFa(''), 3800);
+        if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+        noticeTimerRef.current = window.setTimeout(() => { noticeTimerRef.current = null; setStatusNoticeFa(''); }, 3800);
         return;
       }
     }
@@ -163,7 +171,8 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
     if (!txt) return;
     navigator.clipboard?.writeText(txt).catch(() => {});
     setCopied(true);
-    setTimeout(() => setCopied(false), 2200);
+    if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => { copyTimerRef.current = null; setCopied(false); }, 2200);
   };
 
   const cityNameFa = MULTI_CITY_CONFIGS[resolvedCity]?.nameFa || 'تهران';

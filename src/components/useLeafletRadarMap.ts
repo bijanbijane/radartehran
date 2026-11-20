@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EvaluatedNeighborhood, LocalLandmark, MapTileServerId, WorkHub } from '../data/neighborhoods';
 import { CityId, MULTI_CITY_CONFIGS } from '../data/multiCityData';
 import { AuthoritativeBoundaryRecord, clientGeoJsonLruCache, fetchAuthoritativeCityBoundaries } from '../utils/neighborhoodBoundaries';
@@ -91,7 +91,9 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const hasUrlHood = Boolean(urlParams && (urlParams.has('hood') || urlParams.has('compare')));
     const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
-    const initCenter: [number, number] = selectedHood && (hasUrlHood || activeCityHoodIds.has(selectedHood.id)) ? [selectedHood.lat, selectedHood.lng] : cityCfg.center;
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    const rawCenter: [number, number] = selectedHood && (hasUrlHood || activeCityHoodIds.has(selectedHood.id)) ? [selectedHood.lat, selectedHood.lng] : cityCfg.center;
+    const initCenter: [number, number] = [rawCenter[0], rawCenter[1] + (isDesktop ? 0.055 : 0)];
     const initZoom = selectedHood && hasUrlHood ? 13 : cityCfg.defaultZoom;
 
     return mountLeafletMapLifecycle({
@@ -122,7 +124,8 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     if (mountedCityRef.current === activeCity) return;
     mountedCityRef.current = activeCity;
     const cfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
-    mapInstanceRef.current?.setView?.(cfg.center, cfg.defaultZoom, { animate: true });
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    mapInstanceRef.current?.setView?.([cfg.center[0], cfg.center[1] + (isDesktop ? 0.055 : 0)], cfg.defaultZoom, { animate: true });
   }, [activeCity]);
 
   useEffect(() => {
@@ -150,7 +153,8 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const prevCityRef = useRef(activeCity);
   useEffect(() => {
     let cancelled = false;
-    if (prevCityRef.current !== activeCity) { prevCityRef.current = activeCity; setOsmBoundariesByHood({}); }
+    const cityChanged = prevCityRef.current !== activeCity;
+    if (cityChanged) { prevCityRef.current = activeCity; setOsmBoundariesByHood({}); }
     const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
     const sourceList = cityCfg.neighborhoods || [];
     if (!sourceList.length) return undefined;
@@ -158,12 +162,14 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     const isVbInCity = vb ? (cityCfg.center[0] <= vb.north + 0.5 && cityCfg.center[0] >= vb.south - 0.5 && cityCfg.center[1] <= vb.east + 0.5 && cityCfg.center[1] >= vb.west - 0.5) : false;
     const { batch } = planViewportBoundaryFetchBatch({
       allNeighborhoods: sourceList.map((n) => ({ id: n.id, name: n.name, lat: n.lat, lng: n.lng, radius: n.radius })),
-      viewportBounds: isVbInCity ? vb : null, loadedHoodIds: osmBoundariesByHood, lowBandwidthOrMobileMode: advancedOverlayState.lowBandwidthGeoLazyMode,
+      viewportBounds: isVbInCity ? vb : null, loadedHoodIds: cityChanged ? {} : osmBoundariesByHood, lowBandwidthOrMobileMode: advancedOverlayState.lowBandwidthGeoLazyMode,
     });
     if (!batch.length) return undefined;
-    fetchAuthoritativeCityBoundaries(activeCity, cityCfg.nameFa, batch).then((boundaries) => {
-      if (!cancelled && Object.keys(boundaries).length > 0) setOsmBoundariesByHood((prev) => ({ ...prev, ...boundaries }));
-    });
+    fetchAuthoritativeCityBoundaries(activeCity, cityCfg.nameFa, batch)
+      .then((boundaries) => {
+        if (!cancelled && Object.keys(boundaries).length > 0) setOsmBoundariesByHood((prev) => ({ ...prev, ...boundaries }));
+      })
+      .catch(() => undefined);
     return () => { cancelled = true; };
   }, [activeCity, viewportEpoch, advancedOverlayState.lowBandwidthGeoLazyMode]);
 
@@ -211,7 +217,7 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     });
     markersMapRef.current = nextMarkersMap;
     timer('success');
-  }, [deferredMapNeighborhoods, mapZoomLevel, statusFilter, osmBoundariesByHood, activeCity, activeCityHoodIds, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, isMapLoaded]);
+  }, [deferredMapNeighborhoods, mapZoomLevel, selectedHoodId, viewportEpoch, statusFilter, osmBoundariesByHood, activeCity, activeCityHoodIds, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, isMapLoaded]);
 
   useEffect(() => {
     const map = mapInstanceRef.current, L = window.L;
@@ -259,9 +265,10 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     reconcileWorkRouteAndLandmarks({ L: window.L, map: mapInstanceRef.current, refs: workLandmarkRefs.current, selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks });
   }, [selectedWorkHub, selectedHood, showLandmarkPins, hoodLandmarks, isMapLoaded]);
 
-  const handleFocusLandmarkOnMap = (lm: LocalLandmark) => {
-    if (mapInstanceRef.current && selectedHood) mapInstanceRef.current.flyTo([selectedHood.lat + lm.latOffset, selectedHood.lng + lm.lngOffset], 15, { duration: 0.7 });
-  };
+  const handleFocusLandmarkOnMap = useCallback((lm: LocalLandmark) => {
+    const hood = selectedHoodRef.current;
+    if (mapInstanceRef.current && hood) mapInstanceRef.current.flyTo([hood.lat + lm.latOffset, hood.lng + lm.lngOffset], 15, { duration: 0.7 });
+  }, []);
 
   return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded };
 }

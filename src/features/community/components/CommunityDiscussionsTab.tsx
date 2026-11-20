@@ -54,6 +54,9 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [abuseReason, setAbuseReason] = useState<CommunityAbuseReason>('spam_promo');
   const [abuseDetails, setAbuseDetails] = useState('');
+  const [submittingPost, setSubmittingPost] = useState(false);
+  const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null);
+  const [savingEditId, setSavingEditId] = useState<string | null>(null);
 
   const orderedPosts = useMemo(() => {
     const visible = posts.filter((p) => p.status !== 'hidden');
@@ -63,13 +66,36 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await onSubmitPost({ titleFa, bodyFa, topicId });
-    if (res.ok) {
-      setTitleFa('');
-      setBodyFa('');
-      setFeedback({ ok: true, msg: 'گفت‌وگوی شما با برچسب مکانی محله منتشر شد.' });
-    } else {
-      setFeedback({ ok: false, msg: res.errorFa || 'خطا در ثبت گفت‌وگو' });
+    if (submittingPost) return;
+    setSubmittingPost(true);
+    try {
+      const res = await onSubmitPost({ titleFa, bodyFa, topicId });
+      if (res.ok) {
+        setTitleFa('');
+        setBodyFa('');
+        setFeedback({ ok: true, msg: 'گفت‌وگوی شما با برچسب مکانی محله منتشر شد.' });
+      } else {
+        setFeedback({ ok: false, msg: res.errorFa || 'خطا در ثبت گفت‌وگو' });
+      }
+    } finally {
+      setSubmittingPost(false);
+    }
+  };
+
+  const handleReplySubmit = async (postId: string, parentTarget: string | null) => {
+    if (submittingReplyId === postId) return;
+    const body = replyDrafts[postId] || '';
+    setSubmittingReplyId(postId);
+    try {
+      const res = await onReplyPost(postId, body, parentTarget);
+      if (res.ok) {
+        setReplyDrafts((prev) => ({ ...prev, [postId]: '' }));
+        setReplyParentByPost((prev) => ({ ...prev, [postId]: null }));
+      } else {
+        setFeedback({ ok: false, msg: res.errorFa || 'خطا' });
+      }
+    } finally {
+      setSubmittingReplyId(null);
     }
   };
 
@@ -95,15 +121,15 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
             <option value="topic-buy-sell">خرید و فروش</option>
           </select>
         </div>
-        <input type="text" aria-label="عنوان گفت‌وگو" value={titleFa} onChange={(e) => setTitleFa(e.target.value)} placeholder="عنوان دقیق گفت‌وگو (مثلاً وضعیت ترافیک و جای پارک بلوار عدل...)" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100" />
-        <textarea rows={2} aria-label="متن گفت‌وگو" value={bodyFa} onChange={(e) => setBodyFa(e.target.value)} placeholder="دیدگاه مستند و محترمانه خود را بنویسید؛ درج شماره تماس و لینک تبلیغاتی مجاز نیست." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100" />
+        <input type="text" aria-label="عنوان گفت‌وگو" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="عنوان دقیق گفت‌وگو (مثلاً وضعیت ترافیک و جای پارک بلوار عدل...)" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100" />
+        <textarea rows={2} aria-label="متن گفت‌وگو" value={bodyFa} onChange={(e) => { setBodyFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="دیدگاه مستند و محترمانه خود را بنویسید؛ درج شماره تماس و لینک تبلیغاتی مجاز نیست." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100" />
         {feedback && (
-          <div className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
+          <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
             {feedback.msg}
           </div>
         )}
-        <button type="submit" data-testid="submit-discussion-btn" className="px-4 py-2 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer">
-          انتشار گفت‌وگو
+        <button type="submit" disabled={submittingPost} data-testid="submit-discussion-btn" className="px-4 py-2 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50">
+          {submittingPost ? 'در حال انتشار...' : 'انتشار گفت‌وگو'}
         </button>
       </form>
 
@@ -151,7 +177,24 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-2 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900" />
                   <textarea rows={2} value={editBody} onChange={(e) => setEditBody(e.target.value)} className="w-full p-2 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900" />
                   <div className="flex gap-2">
-                    <button type="button" onClick={async () => { const res = await onEditPost(post.id, editTitle, editBody); if (res.ok) setEditingId(null); else setFeedback({ ok: false, msg: res.errorFa || 'خطا' }); }} className="px-3 py-1 rounded bg-[#176B63] text-white font-bold cursor-pointer">ذخیره ویرایش با سابقه</button>
+                    <button
+                      type="button"
+                      disabled={savingEditId === post.id}
+                      onClick={async () => {
+                        if (savingEditId === post.id) return;
+                        setSavingEditId(post.id);
+                        try {
+                          const res = await onEditPost(post.id, editTitle, editBody);
+                          if (res.ok) setEditingId(null);
+                          else setFeedback({ ok: false, msg: res.errorFa || 'خطا' });
+                        } finally {
+                          setSavingEditId(null);
+                        }
+                      }}
+                      className="px-3 py-1 rounded bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50"
+                    >
+                      ذخیره ویرایش با سابقه
+                    </button>
                     <button type="button" onClick={() => setEditingId(null)} className="px-3 py-1 rounded border border-[#DCE3DF] dark:border-slate-700 cursor-pointer">انصراف</button>
                   </div>
                 </div>
@@ -206,7 +249,7 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                           <div className="flex items-center justify-between gap-2">
                             <CommunityAuthorBadges profile={rep.authorProfile} onSelectUsername={onSelectAuthor} />
                             {!isLocked && (
-                              <button type="button" onClick={() => setReplyParentByPost({ ...replyParentByPost, [post.id]: parentTarget === rep.id ? null : rep.id })} className="text-[10.5px] font-bold text-[#176B63] dark:text-emerald-400 cursor-pointer shrink-0">
+                              <button type="button" onClick={() => setReplyParentByPost((prev) => ({ ...prev, [post.id]: parentTarget === rep.id ? null : rep.id }))} className="text-[10.5px] font-bold text-[#176B63] dark:text-emerald-400 cursor-pointer shrink-0">
                                 {parentTarget === rep.id ? 'لغو پاسخ سطح ۲' : 'پاسخ به این نظر'}
                               </button>
                             )}
@@ -231,8 +274,30 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
 
               {!isLocked && (
                 <div className="flex gap-2 pt-1">
-                  <input type="text" aria-label={`پاسخ به ${post.titleFa}`} value={replyDrafts[post.id] || ''} onChange={(e) => setReplyDrafts({ ...replyDrafts, [post.id]: e.target.value })} placeholder={parentTarget ? 'پاسخ سطح ۲ در ادامه نظر انتخاب‌شده...' : 'پاسخ یا تجربه تکمیلی خود را بنویسید...'} className="flex-1 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
-                  <button type="button" onClick={async () => { const res = await onReplyPost(post.id, replyDrafts[post.id] || '', parentTarget); if (res.ok) { setReplyDrafts({ ...replyDrafts, [post.id]: '' }); setReplyParentByPost({ ...replyParentByPost, [post.id]: null }); } else setFeedback({ ok: false, msg: res.errorFa || 'خطا' }); }} className="px-3.5 py-2 rounded-[8px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer whitespace-nowrap">
+                  <input
+                    type="text"
+                    aria-label={`پاسخ به ${post.titleFa}`}
+                    value={replyDrafts[post.id] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setReplyDrafts((prev) => ({ ...prev, [post.id]: val }));
+                      if (feedback) setFeedback(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        void handleReplySubmit(post.id, parentTarget);
+                      }
+                    }}
+                    placeholder={parentTarget ? 'پاسخ سطح ۲ در ادامه نظر انتخاب‌شده...' : 'پاسخ یا تجربه تکمیلی خود را بنویسید...'}
+                    className="flex-1 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+                  />
+                  <button
+                    type="button"
+                    disabled={submittingReplyId === post.id}
+                    onClick={() => { void handleReplySubmit(post.id, parentTarget); }}
+                    className="px-3.5 py-2 rounded-[8px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer whitespace-nowrap disabled:opacity-50"
+                  >
                     ارسال پاسخ
                   </button>
                 </div>

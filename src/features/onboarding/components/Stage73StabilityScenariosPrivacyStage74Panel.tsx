@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage73StabilityScenariosPrivacyStage74Panel.tsx — Stage 73 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateStabilityScenariosAndPrivacy } from '../services/populationMobilityStage73Engine';
 import {
   STAGE73_ACCEPTANCE_TESTS_40,
@@ -64,12 +65,12 @@ export const Stage73StabilityScenariosPrivacyStage74Panel: React.FC<Props> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
         <label className="flex items-center gap-2 text-slate-300">
           <span>حداقل آستانه انتشار آماری (خانوار):</span>
-          <input
-            type="number"
+          <NumericDraftInput
             min={10}
             max={200}
+            fallback={30}
             value={minThreshold}
-            onChange={(e) => setMinThreshold(Number(e.target.value) || 30)}
+            onValueChange={setMinThreshold}
             className="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
           />
         </label>

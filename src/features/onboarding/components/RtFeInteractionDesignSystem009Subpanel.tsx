@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   RT_FE_INTERACTION_DESIGN_SYSTEM_009_SPEC_ID,
   RT_FE_IDS_PROTECTION_LEVELS_5,
@@ -127,19 +128,23 @@ export const RtFeInteractionDesignSystem009Subpanel: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-1 text-slate-300">
                   آخرین درخواست ارسالی (#):
-                  <input
-                    type="number"
+                  <NumericDraftInput
+                    min={1}
+                    max={99999}
+                    fallback={1}
                     value={latestSeq}
-                    onChange={(e) => setLatestSeq(Number(e.target.value) || 1)}
+                    onValueChange={setLatestSeq}
                     className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 font-mono text-white"
                   />
                 </label>
                 <label className="flex items-center gap-1 text-slate-300">
                   پاسخ دریافتی (#):
-                  <input
-                    type="number"
+                  <NumericDraftInput
+                    min={1}
+                    max={99999}
+                    fallback={1}
                     value={incomingSeq}
-                    onChange={(e) => setIncomingSeq(Number(e.target.value) || 1)}
+                    onValueChange={setIncomingSeq}
                     className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 font-mono text-white"
                   />
                 </label>

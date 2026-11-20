@@ -49,8 +49,8 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
         </div>
 
         {comparisonRows.length < 4 && candidates.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <Plus className="w-3.5 h-3.5 text-[#176B63]" />
+          <div className="flex items-center gap-1.5 min-w-0 w-full sm:w-auto max-w-full">
+            <Plus className="w-3.5 h-3.5 text-[#176B63] shrink-0" />
             <select
               aria-label="افزودن محله به مقایسه"
               value=""
@@ -58,7 +58,7 @@ export const GeographicComparison: React.FC<GeographicComparisonProps> = ({
                 const id = Number(e.target.value);
                 if (id > 0) onAddCompareHood(id);
               }}
-              className="min-h-[36px] px-2.5 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-[#182522] dark:text-white"
+              className="min-w-0 w-full sm:max-w-[260px] truncate min-h-[36px] px-2.5 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-[#182522] dark:text-white"
             >
               <option value="">+ افزودن محله برای مقایسه...</option>
               {candidates.map((c) => (

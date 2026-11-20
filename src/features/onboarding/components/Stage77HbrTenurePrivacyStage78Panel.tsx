@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage77HbrTenurePrivacyStage78Panel.tsx — Stage 77 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateHbrResidualTenureAndPrivacy } from '../services/rentalMarketStage77Engine';
 import {
   STAGE77_ACCEPTANCE_TESTS_45,
@@ -40,23 +41,25 @@ export const Stage77HbrTenurePrivacyStage78Panel: React.FC<Props> = ({
           <div className="flex flex-wrap items-center gap-3 text-slate-300">
             <label className="flex items-center gap-1.5">
               <span>درآمد فرضی خانوار (م.ت):</span>
-              <input
-                type="number"
+              <NumericDraftInput
+                allowDecimal
                 min={1}
                 max={500}
+                fallback={60}
                 value={incomeYh}
-                onChange={(e) => setIncomeYh(Number(e.target.value) || 60)}
+                onValueChange={setIncomeYh}
                 className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
               />
             </label>
             <label className="flex items-center gap-1.5">
               <span>هزینه ماهانه مسکن Ch (م.ت):</span>
-              <input
-                type="number"
+              <NumericDraftInput
+                allowDecimal
                 min={1}
                 max={300}
+                fallback={28}
                 value={housingCostCh}
-                onChange={(e) => setHousingCostCh(Number(e.target.value) || 28)}
+                onValueChange={setHousingCostCh}
                 className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
               />
             </label>

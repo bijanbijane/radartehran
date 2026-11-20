@@ -1,5 +1,5 @@
 /** @file src/features/community/hooks/useCommunityHubData.ts — Stage 4b Unified Community Hub Data Hook with AbortController, Retry & Cursor Pagination */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
 import {
   getCommunityCorrections,
@@ -35,13 +35,19 @@ export function useCommunityHubData(params: { currentUser?: User | null; include
   const [errorFa, setErrorFa] = useState<string | null>(null);
   const [reloadNonce, setReloadNonce] = useState(0);
 
+  const epochRef = useRef(0);
+  const loadMoreAbortRef = useRef<AbortController | null>(null);
+
   const reload = useCallback(() => {
     setReloadNonce((n) => n + 1);
   }, []);
 
   useEffect(() => {
+    const epoch = ++epochRef.current;
+    loadMoreAbortRef.current?.abort();
     const ctrl = new AbortController();
     setLoading(true);
+    setLoadingMore(false);
     setErrorFa(null);
     Promise.all([
       getCommunityTopics(currentUser, ctrl.signal),
@@ -52,7 +58,7 @@ export function useCommunityHubData(params: { currentUser?: User | null; include
       getCommunityMembers({ includeSeeds, currentUser, limit: 24, signal: ctrl.signal }),
       currentUser?.uid ? getMyCommunityActivity(currentUser, ctrl.signal) : Promise.resolve(null),
     ]).then(([tRes, dRes, qRes, cRes, rRes, mRes, meRes]) => {
-      if (ctrl.signal.aborted) return;
+      if (ctrl.signal.aborted || epoch !== epochRef.current) return;
       if (tRes.ok && tRes.data) setTopics(tRes.data);
       if (dRes.ok && dRes.data) {
         setPosts(dRes.data);
@@ -70,13 +76,21 @@ export function useCommunityHubData(params: { currentUser?: User | null; include
       if (firstErr?.errorFa) setErrorFa(firstErr.errorFa);
       setLoading(false);
     });
-    return () => ctrl.abort();
+    return () => {
+      ctrl.abort();
+      loadMoreAbortRef.current?.abort();
+    };
   }, [currentUser?.uid, includeSeeds, reloadNonce]);
 
   const loadMorePosts = useCallback(async () => {
     if (!hasMorePosts || !postsCursor || loadingMore) return;
+    loadMoreAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    loadMoreAbortRef.current = ctrl;
+    const epoch = epochRef.current;
     setLoadingMore(true);
-    const res = await getCommunityDiscussions({ includeSeeds, limit: 20, cursor: postsCursor });
+    const res = await getCommunityDiscussions({ includeSeeds, limit: 20, cursor: postsCursor, signal: ctrl.signal });
+    if (ctrl.signal.aborted || epoch !== epochRef.current) return;
     if (res.ok && res.data) {
       setPosts((prev) => {
         const seen = new Set(prev.map((p) => p.id));

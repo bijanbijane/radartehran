@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles, AlertTriangle, Lock } from 'lucide-react';
 import { auth } from '../../firebase';
@@ -6,6 +6,7 @@ import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborho
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import { validateCrowdClaimDraft } from '../../utils/forms/formInputHelpers';
 import {
   buildCrowdClaimRequestBody,
   buildCrowdVoteRequestBody,
@@ -117,13 +118,34 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     return () => unsubscribe();
   }, []);
 
+  const fetchAbortRef = useRef<AbortController | null>(null);
+  const fetchSeqRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      fetchAbortRef.current?.abort();
+    };
+  }, []);
+
   const fetchClaims = useCallback(async () => {
+    fetchAbortRef.current?.abort();
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
+    const seq = ++fetchSeqRef.current;
+
     setLoading(true);
     const seed = buildSeedClaims(hoodId, hoodName, cityKey, basePriceSqm, hood, intlCurrency);
     try {
-      const res = await fetch(`/api/v1/claims/hood/${hoodId}?cityId=${encodeURIComponent(cityKey)}`);
+      const res = await fetch(`/api/v1/claims/hood/${hoodId}?cityId=${encodeURIComponent(cityKey)}`, {
+        signal: controller.signal,
+      });
+      if (!isMountedRef.current || seq !== fetchSeqRef.current || controller.signal.aborted) return;
       if (res.ok) {
         const data = await res.json();
+        if (!isMountedRef.current || seq !== fetchSeqRef.current || controller.signal.aborted) return;
         const mapDoc = (d: Record<string, unknown>): CrowdClaimItem => ({
           id: String(d.claimId || d.id || ''), hoodId, hoodName, cityKey,
           authorId: String(d.authorUid || 'usr_1'), authorDisplayName: String(d.authorDisplayName || 'شهروند رادار'),
@@ -144,20 +166,43 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
       } else {
         setVerifiedRefs(seed.verified); setClaims(seed.all); setLeaderboard(seed.leaders);
       }
-    } catch {
+    } catch (err) {
+      if (!isMountedRef.current || seq !== fetchSeqRef.current || controller.signal.aborted || (err as Error)?.name === 'AbortError') return;
       setVerifiedRefs(seed.verified); setClaims(seed.all); setLeaderboard(seed.leaders);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current && seq === fetchSeqRef.current) {
+        setLoading(false);
+      }
     }
   }, [basePriceSqm, cityKey, hood, hoodId, hoodName, intlCurrency]);
 
-  useEffect(() => { fetchClaims(); }, [fetchClaims]);
+  useEffect(() => {
+    setShowForm(false);
+    setTitle('');
+    setBody('');
+    setSubmitMessage(null);
+    setErrorMessage(null);
+    setVotedIds({});
+  }, [hoodId, cityKey]);
+
+  useEffect(() => {
+    void fetchClaims();
+    return () => {
+      fetchAbortRef.current?.abort();
+    };
+  }, [fetchClaims]);
 
   const canMutate = authReady && Boolean(currentUser);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting || !title.trim() || !body.trim()) return;
+    if (submitting) return;
+    const validation = validateCrowdClaimDraft(title, body);
+    if (!validation.ok) {
+      setSubmitMessage(null);
+      setErrorMessage('error' in validation ? validation.error : 'لطفاً فیلدهای گزارش را تکمیل کنید.');
+      return;
+    }
     setSubmitMessage(null);
     setErrorMessage(null);
     const authHeaders = await getCrowdAuthorizedHeaders(currentUser);
@@ -284,25 +329,25 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         </div>
       )}
       {submitMessage && (
-        <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2"><CheckCircle2 className="w-4 h-4 shrink-0" /><span>{submitMessage}</span></div>
+        <div role="status" className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2"><CheckCircle2 className="w-4 h-4 shrink-0" /><span>{submitMessage}</span></div>
       )}
       {errorMessage && (
-        <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2"><AlertTriangle className="w-4 h-4 shrink-0" /><span>{errorMessage}</span></div>
+        <div role="alert" className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2"><AlertTriangle className="w-4 h-4 shrink-0" /><span>{errorMessage}</span></div>
       )}
       {showForm && canMutate && (
-        <form onSubmit={handleSubmit} className="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
+        <form noValidate onSubmit={handleSubmit} className="bg-slate-50 dark:bg-slate-800/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نام نمایشی</label>
-              <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)} placeholder="مثلاً: علی (ساکن محله)" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+              <input type="text" value={authorName} onChange={(e) => { setAuthorName(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="مثلاً: علی (ساکن محله)" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">دسته‌بندی موضوعی</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">{Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+              <select value={category} onChange={(e) => { setCategory(e.target.value); if (errorMessage) setErrorMessage(null); }} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">{Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">نوع گزارش</label>
-              <select value={claimType} onChange={(e) => setClaimType(e.target.value as 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE')} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+              <select value={claimType} onChange={(e) => { setClaimType(e.target.value as 'VERIFIED_FACT_CANDIDATE' | 'SUBJECTIVE_EXPERIENCE'); if (errorMessage) setErrorMessage(null); }} className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                 <option value="VERIFIED_FACT_CANDIDATE">سناریوی فرضی مذاکره / فکت مستند ملکی</option>
                 <option value="SUBJECTIVE_EXPERIENCE">تجربه سکونت / کیفیت کوچه و جای پارک</option>
               </select>
@@ -310,13 +355,13 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
           </div>
           <div>
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">عنوان گزارش / نام کوچه یا خیابان</label>
-            <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثلاً: قیمت معامله طبقه سوم در خیابان اصلی یا وضعیت پارک شبانه" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            <input type="text" aria-invalid={Boolean(errorMessage) && title.trim().length < 4} value={title} onChange={(e) => { setTitle(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="مثلاً: قیمت معامله طبقه سوم در خیابان اصلی یا وضعیت پارک شبانه" className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </div>
           <div>
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">شرح دقیق و مستند</label>
-            <textarea rows={2} required value={body} onChange={(e) => setBody(e.target.value)} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
+            <textarea rows={2} aria-invalid={Boolean(errorMessage) && body.trim().length < 8} value={body} onChange={(e) => { setBody(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </div>
-          <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
+          <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
         </form>
       )}
       {verifiedRefs.length > 0 && (

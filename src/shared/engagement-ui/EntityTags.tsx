@@ -13,11 +13,17 @@ export interface EntityTagsProps {
 
 export const EntityTags: React.FC<EntityTagsProps> = ({ tags, onAddTag }) => {
   const [input, setInput] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    onAddTag?.(input.trim());
+    const trimmed = input.trim();
+    if (!trimmed) {
+      setError('لطفاً نام برچسب را وارد کنید.');
+      return;
+    }
+    setError('');
+    onAddTag?.(trimmed);
     setInput('');
   };
 
@@ -35,21 +41,28 @@ export const EntityTags: React.FC<EntityTagsProps> = ({ tags, onAddTag }) => {
         ))}
       </div>
       {onAddTag && (
-        <form onSubmit={handleSubmit} className="flex items-center gap-1.5">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="افزودن برچسب شخصی..."
-            aria-label="افزودن برچسب شخصی"
-            className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-100"
-          />
-          <button
-            type="submit"
-            className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700"
-          >
-            ثبت برچسب
-          </button>
+        <form onSubmit={handleSubmit} className="space-y-1">
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              aria-invalid={Boolean(error)}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                if (error) setError('');
+              }}
+              placeholder="افزودن برچسب شخصی..."
+              aria-label="افزودن برچسب شخصی"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-100"
+            />
+            <button
+              type="submit"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700 cursor-pointer"
+            >
+              ثبت برچسب
+            </button>
+          </div>
+          {error && <div role="alert" className="text-[11px] font-bold text-rose-400">{error}</div>}
         </form>
       )}
     </div>

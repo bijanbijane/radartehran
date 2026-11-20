@@ -18,6 +18,7 @@ import {
   hasMapViewportMovedSignificantly,
   removeAppliedFilterChip,
 } from '../../interaction-system/interactionEngines';
+import { parseLocalizedNumber } from '../../utils/forms/formInputHelpers';
 
 export const InteractionQaLabTab: React.FC = () => {
   const [filters, setFilters] = useState(() => createDualFilterState({ dealType: 'buy', hasParking: true }));
@@ -191,8 +192,11 @@ export const InteractionQaLabTab: React.FC = () => {
               aria-label="متراژ آزمایش خطا"
               value={valSqm}
               onChange={(e) => {
-                setValSqm(e.target.value);
-                setRequestKey(createIdempotentRequestKey({ hoodId: 5, sqm: Number(e.target.value) || 95, buildYear: 1398, attemptNonce: 'demo1' }));
+                const raw = e.target.value;
+                setValSqm(raw);
+                const parsed = parseLocalizedNumber(raw);
+                const validSqm = Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 95;
+                setRequestKey(createIdempotentRequestKey({ hoodId: 5, sqm: validSqm, buildYear: 1398, attemptNonce: 'demo1' }));
               }}
               className="w-24 px-2.5 py-1.5 rounded-[8px] border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] tabular-nums"
             />

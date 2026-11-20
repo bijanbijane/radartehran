@@ -48,7 +48,7 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
 }) => {
   const [reviewTextByReq, setReviewTextByReq] = useState<Record<string, string>>({});
   const [reviewScoreByReq, setReviewScoreByReq] = useState<Record<string, 1 | 2 | 3 | 4 | 5>>({});
-  const [reviewMsg, setReviewMsg] = useState<string | null>(null);
+  const [reviewMsg, setReviewMsg] = useState<{ requestId: string; tone: 'success' | 'error'; text: string } | null>(null);
 
   if (requests.length === 0) {
     return (
@@ -63,8 +63,15 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
   return (
     <div className="space-y-4 text-xs" data-testid="service-requests-tracker">
       {reviewMsg && (
-        <div className="p-3 rounded-[10px] bg-[#EAF3F0] dark:bg-emerald-950/40 text-[#14534E] dark:text-emerald-200 font-bold">
-          {reviewMsg}
+        <div
+          role={reviewMsg.tone === 'error' ? 'alert' : 'status'}
+          className={`p-3 rounded-[10px] font-bold ${
+            reviewMsg.tone === 'error'
+              ? 'bg-rose-50 dark:bg-rose-950/40 text-[#B3261E] dark:text-rose-200 border border-rose-200 dark:border-rose-800'
+              : 'bg-[#EAF3F0] dark:bg-emerald-950/40 text-[#14534E] dark:text-emerald-200'
+          }`}
+        >
+          {reviewMsg.text}
         </div>
       )}
       {requests.map((req) => {
@@ -172,7 +179,23 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
 
             {/* Verified Request-Tied Review */}
             {canReview && !existingReview && (
-              <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[#DCE3DF] dark:border-slate-700 space-y-2">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const res = onSubmitReview({
+                    requestId: req.id,
+                    overallScore: reviewScoreByReq[req.id] || 5,
+                    commentFa: reviewTextByReq[req.id] || '',
+                  });
+                  if (res.ok) {
+                    setReviewTextByReq((p) => ({ ...p, [req.id]: '' }));
+                    setReviewMsg({ requestId: req.id, tone: 'success', text: 'بازخورد معتبر شما ثبت و به پروفایل متخصص متصل شد.' });
+                  } else {
+                    setReviewMsg({ requestId: req.id, tone: 'error', text: res.errorFa || 'خطا در ثبت نظر' });
+                  }
+                }}
+                className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[#DCE3DF] dark:border-slate-700 space-y-2"
+              >
                 <div className="font-bold text-[#182522] dark:text-white flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 text-amber-500" />
                   <span>ثبت بازخورد متصل به درخواست معتبر (نظرات منفی معتبر نیز حفظ می‌شوند)</span>
@@ -181,7 +204,10 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                   <select
                     aria-label="امتیاز کلی"
                     value={reviewScoreByReq[req.id] || 5}
-                    onChange={(e) => setReviewScoreByReq((p) => ({ ...p, [req.id]: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 }))}
+                    onChange={(e) => {
+                      if (reviewMsg?.requestId === req.id) setReviewMsg(null);
+                      setReviewScoreByReq((p) => ({ ...p, [req.id]: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 }));
+                    }}
                     className="p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700"
                   >
                     <option value={5}>۵ از ۵ (عالی)</option>
@@ -192,27 +218,23 @@ export const ServiceRequestsAndProposalsTab: React.FC<ServiceRequestsAndProposal
                   </select>
                   <input
                     type="text"
+                    aria-invalid={reviewMsg?.requestId === req.id && reviewMsg.tone === 'error'}
                     value={reviewTextByReq[req.id] || ''}
-                    onChange={(e) => setReviewTextByReq((p) => ({ ...p, [req.id]: e.target.value }))}
+                    onChange={(e) => {
+                      if (reviewMsg?.requestId === req.id) setReviewMsg(null);
+                      setReviewTextByReq((p) => ({ ...p, [req.id]: e.target.value }));
+                    }}
                     placeholder="تجربه واقعی خود از شفافیت، زمان‌بندی و کیفیت خدمت را بنویسید..."
                     className="flex-1 min-w-[200px] p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700"
                   />
                   <button
-                    type="button"
-                    onClick={() => {
-                      const res = onSubmitReview({
-                        requestId: req.id,
-                        overallScore: reviewScoreByReq[req.id] || 5,
-                        commentFa: reviewTextByReq[req.id] || '',
-                      });
-                      setReviewMsg(res.ok ? 'بازخورد معتبر شما ثبت و به پروفایل متخصص متصل شد.' : res.errorFa || 'خطا در ثبت نظر');
-                    }}
+                    type="submit"
                     className="px-3 py-1.5 rounded-[8px] bg-[#182522] text-white font-bold cursor-pointer"
                   >
                     ثبت نظر معتبر
                   </button>
                 </div>
-              </div>
+              </form>
             )}
 
             {existingReview && (

@@ -5,14 +5,11 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ShieldCheck, Scale, AlertTriangle, Copy, Check, FileText, Clock, HelpCircle } from 'lucide-react';
 import { toPersianNum as toPersianDigits } from '../../data/neighborhoods';
 import { calculateContractShield, STAGING_PROFILES, type StagingProfileId } from '../../utils/contractRoomShieldEngine';
-import {
-  CONTRACT_SHIELD_MAX_MILLION,
-  CONTRACT_SHIELD_MIN_MILLION,
-  validateContractTotalMillion,
-} from '../../features/tools/services/toolsCatalogEngine';
+import { validateContractTotalMillion } from '../../features/tools/services/toolsCatalogEngine';
 import { formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { useDialogFocus } from '../useDialogFocus';
@@ -160,9 +157,9 @@ export function ContractRoomShieldModal({
 
   const copiedId = copyFeedback.status === 'copied' ? copyFeedback.id : null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm" dir="rtl">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl text-slate-100 overflow-hidden font-sans">
+  const modalContent = (
+    <div onClick={onClose} className="fixed inset-0 z-[9500] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm" dir="rtl">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl text-slate-100 overflow-hidden font-sans">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/90">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
@@ -188,10 +185,9 @@ export function ContractRoomShieldModal({
               <div className="relative w-44 sm:w-48">
                 <input
                   id="total-price-input"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   dir="ltr"
-                  min={CONTRACT_SHIELD_MIN_MILLION}
-                  max={CONTRACT_SHIELD_MAX_MILLION}
                   aria-invalid={!validation.valid}
                   aria-describedby={!validation.valid ? `${baseUid}-price-err` : undefined}
                   value={totalInputText}
@@ -386,4 +382,6 @@ export function ContractRoomShieldModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }

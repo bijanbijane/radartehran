@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Brain, ShieldCheck, TrendingUp, AlertTriangle, Scale,
   Gauge, Activity, ArrowRight, CheckCircle2, Sliders, X,
 } from 'lucide-react';
 import { EvaluatedNeighborhood, toPersianNum } from '../data/neighborhoods';
-import { formatMillionTomanAsIntlCurrency, getStoredIntlCurrency, getStoredRadarLocale } from '../utils/areaUnit';
+import { formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import { useDialogFocus } from './useDialogFocus';
 
 export interface CasperDecisionSuiteModalProps {
   isOpen: boolean;
@@ -21,11 +23,18 @@ type MacroScenario = 'currency_shock' | 'stagflation_freeze' | 'equilibrium';
 export function CasperDecisionSuiteModal({
   isOpen, onClose, selectedHood, evaluatedNeighborhoods, onSelectNeighborhood, userBudgetMillion = 9500,
 }: CasperDecisionSuiteModalProps) {
+  const dialogRef = useDialogFocus(isOpen, onClose);
   const [activeDilemma, setActiveDilemma] = useState<DilemmaId>('macro_stress');
   const [scenario, setScenario] = useState<MacroScenario>('currency_shock');
   const [simulatedBudget, setSimulatedBudget] = useState<number>(userBudgetMillion);
-  const intlCurrency = getStoredIntlCurrency();
-  const locale = getStoredRadarLocale();
+  const [intlCurrency] = useIntlCurrency();
+  const [locale] = useRadarLocale();
+
+  useEffect(() => {
+    if (isOpen && userBudgetMillion > 0) {
+      setSimulatedBudget(userBudgetMillion);
+    }
+  }, [isOpen, userBudgetMillion]);
 
   // 1. Counterfactual Macro Stress Simulator Calculations
   const stressMetrics = useMemo(() => {
@@ -76,8 +85,19 @@ export function CasperDecisionSuiteModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-lg animate-fadeIn" role="dialog" aria-modal="true" aria-labelledby="casper-modal-title">
-      <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto no-scrollbar rounded-2xl casper-neon-card border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.15)] p-5 space-y-4 text-slate-100">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-lg animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="casper-modal-title"
+      onClick={onClose}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto no-scrollbar rounded-2xl casper-neon-card bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.15)] p-5 space-y-4 text-slate-900 dark:text-slate-100 outline-none"
+      >
         {/* Header with Epistemic Badge */}
         <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">

@@ -38,10 +38,19 @@ export default function App() {
     if (typeof window === 'undefined') return undefined;
 
     const handlePreloadError = () => {
-      const lastReload = sessionStorage.getItem('radar_chunk_reload_ts');
       const now = Date.now();
+      let lastReload: string | null = null;
+      try {
+        lastReload = sessionStorage.getItem('radar_chunk_reload_ts');
+      } catch {
+        lastReload = null;
+      }
       if (!lastReload || now - Number(lastReload) > 15_000) {
-        sessionStorage.setItem('radar_chunk_reload_ts', String(now));
+        try {
+          sessionStorage.setItem('radar_chunk_reload_ts', String(now));
+        } catch {
+          // Ignore Storage SecurityError in sandboxed iframes or strict private browsing
+        }
         window.location.reload();
       }
     };

@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage66ThermalSoilScenarioStage67Panel.tsx — Stage 66 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateThermalUrbanPressureScenarioAndIndexGuards } from '../services/environmentalSustainabilityEngine';
 import {
   STAGE66_ACCEPTANCE_TESTS_24,
@@ -128,13 +129,14 @@ export const Stage66ThermalSoilScenarioStage67Panel: React.FC<Props> = ({
             <option value="احیای آبراههها">احیای آبراهه‌ها</option>
             <option value="افزایش سطوح نفوذپذیر">افزایش سطوح نفوذپذیر</option>
           </select>
-          <input
-            type="number"
+          <NumericDraftInput
             aria-label="مساحت پیشنهادی فضای سبز (متر مربع)"
             value={proposedGreenAreaSqm}
             min={500}
+            max={1000000}
             step={500}
-            onChange={(e) => setProposedGreenAreaSqm(Math.max(500, Number(e.target.value) || 500))}
+            fallback={500}
+            onValueChange={setProposedGreenAreaSqm}
             className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
           />
           <select

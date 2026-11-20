@@ -84,15 +84,32 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
   const [applied, setApplied] = useState<AppliedPropertyFilters>(() => commitPropertyFilterDraft(draft));
 
   useEffect(() => {
-    if (p.activeSubTab === 'buy') {
-      const next = { ...draft, transactionType: 'sale' as const, propertyType: 'all' as const };
-      setDraft(next); setApplied(commitPropertyFilterDraft(next));
+    setSelectedListingId(null);
+    if (p.activeSubTab === 'all') {
+      setDraft((prev) => {
+        const next: PropertyFilterDraft = { ...prev, transactionType: 'all', propertyType: 'all' };
+        setApplied(commitPropertyFilterDraft(next));
+        return next;
+      });
+    } else if (p.activeSubTab === 'buy') {
+      setDraft((prev) => {
+        const next: PropertyFilterDraft = { ...prev, transactionType: 'sale', propertyType: 'all' };
+        setApplied(commitPropertyFilterDraft(next));
+        return next;
+      });
     } else if (p.activeSubTab === 'rent') {
-      const next = { ...draft, transactionType: 'rent' as const, propertyType: 'all' as const };
-      setDraft(next); setApplied(commitPropertyFilterDraft(next));
+      setDraft((prev) => {
+        const next: PropertyFilterDraft = { ...prev, transactionType: 'rent', propertyType: 'all' };
+        setApplied(commitPropertyFilterDraft(next));
+        return next;
+      });
     } else if (p.activeSubTab === 'commercial' || p.activeSubTab === 'office') {
-      const next = { ...draft, propertyType: p.activeSubTab };
-      setDraft(next); setApplied(commitPropertyFilterDraft(next));
+      const targetPt = p.activeSubTab;
+      setDraft((prev) => {
+        const next: PropertyFilterDraft = { ...prev, propertyType: targetPt };
+        setApplied(commitPropertyFilterDraft(next));
+        return next;
+      });
     }
   }, [p.activeSubTab]);
 

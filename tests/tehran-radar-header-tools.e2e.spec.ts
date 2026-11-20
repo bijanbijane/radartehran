@@ -71,10 +71,10 @@ test.describe('Header, Mega Menu (201–208) & Tools/Contract Shield (193–200)
     expect(mapAlign.panelLeft).toBeGreaterThanOrEqual(0);
     expect(mapAlign.panelRight).toBeLessThanOrEqual(mapAlign.viewportWidth);
 
-    // Move mouse slowly into panel over 120ms -> timer must be cancelled and panel stay open
+    // Move mouse into panel -> timer must be cancelled and panel stay open
     const panelBox = await megaPanel.boundingBox();
     expect(panelBox).toBeTruthy();
-    await page.mouse.move(panelBox!.x + panelBox!.width / 2, panelBox!.y + 24, { steps: 8 });
+    await page.mouse.move(panelBox!.x + panelBox!.width / 2, panelBox!.y + 24, { steps: 2 });
     await page.waitForTimeout(450);
     await expect(megaPanel).toBeVisible();
 

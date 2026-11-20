@@ -9,6 +9,7 @@ import {
   formatMillionTomanAsIntlCurrency,
 } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
+import { NumericDraftInput } from '../ui/NumericDraftInput';
 import {
   evaluateHedonicModelSync,
   type HedonicEstimationRequest,
@@ -200,11 +201,11 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-slate-500 dark:text-slate-400">طبقه واحد</label>
-              <input type="text" aria-label="طبقه واحد" inputMode="numeric" value={floorNumber} onChange={(e) => setFloorNumber(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
+              <NumericDraftInput aria-label="طبقه واحد" min={0} max={60} fallback={3} value={floorNumber} onValueChange={setFloorNumber} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
             <div>
               <label className="block text-xs text-slate-500 dark:text-slate-400">تعداد اتاق خواب</label>
-              <input type="text" aria-label="تعداد اتاق خواب" inputMode="numeric" value={bedrooms} onChange={(e) => setBedrooms(normalizeFinancialInput(e.target.value))} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
+              <NumericDraftInput aria-label="تعداد اتاق خواب" min={0} max={10} fallback={2} value={bedrooms} onValueChange={setBedrooms} className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm text-slate-900 dark:text-white" />
             </div>
           </div>
 

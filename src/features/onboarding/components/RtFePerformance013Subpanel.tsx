@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, Cpu, Gauge, Layers, Zap } from 'lucide-react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   RT_FE_PERFORMANCE_ARCHITECTURE_013_SPEC_ID,
   RT_FE_FPA_8_DOMAINS,
@@ -113,37 +114,59 @@ export const RtFePerformance013Subpanel: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <label className="space-y-1">
               <span className="text-slate-600 dark:text-slate-400">LCP (ms) ≤ {RT_FE_FPA_CWV_TARGETS.lcpMaxMs}</span>
-              <input
-                type="number" aria-label="مقدار LCP بر حسب میلی‌ثانیه" value={simLcpMs}
-                onChange={(e) => { setMode('SYNTHETIC_LOCAL'); setSimLcpMs(Number(e.target.value) || 0); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white" dir="ltr"
+              <NumericDraftInput
+                min={0}
+                max={60000}
+                fallback={0}
+                aria-label="مقدار LCP بر حسب میلی‌ثانیه"
+                value={simLcpMs}
+                onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimLcpMs(next); }}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                dir="ltr"
               />
             </label>
             <label className="space-y-1">
               <span className="text-slate-600 dark:text-slate-400">INP (ms) ≤ {RT_FE_FPA_CWV_TARGETS.inpMaxMs}</span>
-              <input
-                type="number" aria-label="مقدار INP بر حسب میلی‌ثانیه" value={simInpMs}
-                onChange={(e) => { setMode('SYNTHETIC_LOCAL'); setSimInpMs(Number(e.target.value) || 0); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white" dir="ltr"
+              <NumericDraftInput
+                min={0}
+                max={60000}
+                fallback={0}
+                aria-label="مقدار INP بر حسب میلی‌ثانیه"
+                value={simInpMs}
+                onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimInpMs(next); }}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                dir="ltr"
               />
             </label>
             <label className="space-y-1">
               <span className="text-slate-600 dark:text-slate-400">CLS ≤ {RT_FE_FPA_CWV_TARGETS.clsMax}</span>
-              <input
-                type="number" step="0.01" aria-label="مقدار CLS" value={simCls}
-                onChange={(e) => { setMode('SYNTHETIC_LOCAL'); setSimCls(Number(e.target.value) || 0); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white" dir="ltr"
+              <NumericDraftInput
+                allowDecimal
+                step={0.01}
+                min={0}
+                max={5}
+                fallback={0}
+                aria-label="مقدار CLS"
+                value={simCls}
+                onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimCls(next); }}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                dir="ltr"
               />
             </label>
             <label className="space-y-1">
               <span className="text-slate-600 dark:text-slate-400">Long Tasks (&gt;50ms)</span>
-              <input
-                type="number" aria-label="تعداد Long Task مستقل" value={simLongTaskCount}
-                onChange={(e) => { setMode('SYNTHETIC_LOCAL'); setSimLongTaskCount(Math.max(0, Number(e.target.value) || 0)); }}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white" dir="ltr"
+              <NumericDraftInput
+                min={0}
+                max={1000}
+                fallback={0}
+                aria-label="تعداد Long Task مستقل"
+                value={simLongTaskCount}
+                onValueChange={(next) => { setMode('SYNTHETIC_LOCAL'); setSimLongTaskCount(next); }}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left text-slate-900 dark:text-white"
+                dir="ltr"
               />
             </label>
           </div>
@@ -179,18 +202,28 @@ export const RtFePerformance013Subpanel: React.FC = () => {
             </label>
             <label className="space-y-1">
               <span className="text-slate-600 dark:text-slate-400">Zoom نقشه</span>
-              <input
-                type="number" min={8} max={18} aria-label="سطح بزرگنمایی نقشه"
-                value={zoomLevel} onChange={(e) => setZoomLevel(Number(e.target.value) || 12)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left" dir="ltr"
+              <NumericDraftInput
+                min={8}
+                max={18}
+                fallback={12}
+                aria-label="سطح بزرگنمایی نقشه"
+                value={zoomLevel}
+                onValueChange={setZoomLevel}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left"
+                dir="ltr"
               />
             </label>
             <label className="space-y-1">
               <span className="text-slate-600 dark:text-slate-400">تعداد Marker</span>
-              <input
-                type="number" aria-label="تعداد نشانگرهای نقشه"
-                value={markerCount} onChange={(e) => setMarkerCount(Number(e.target.value) || 0)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left" dir="ltr"
+              <NumericDraftInput
+                min={0}
+                max={100000}
+                fallback={0}
+                aria-label="تعداد نشانگرهای نقشه"
+                value={markerCount}
+                onValueChange={setMarkerCount}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-2 py-1.5 font-mono text-left"
+                dir="ltr"
               />
             </label>
           </div>

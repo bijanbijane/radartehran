@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react'; import { KeyRound, Lock, X } from 'lucide-react'; import { BuyerAlertLeadItem, MapTileServerId, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { FeatureFlags, ServerAuditLogEntry, SystemHealthData } from '../types/models'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, getDiagnosticSnapshots, recordDiagnosticEvent, } from '../utils/security'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; import { AdminOverviewAndModerationTabs } from './AdminOverviewAndModerationTabs'; import { AdminSecurityAndBackupTabs } from './AdminSecurityAndBackupTabs'; import { AdminMapProviderConfigPanel } from './AdminMapProviderConfigPanel'; export type AdminTabId = 'crm' | 'leads' | 'bargains' | 'prices' | 'security' | 'backup'; export type { ServerAuditLogEntry, SystemHealthData };
-export interface AdminModalProps { open: boolean; asPageView?: boolean; onClose: () => void; adminUnlocked: boolean; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; adminPassError: string; onAdminLogin: (e: React.FormEvent) => void; adminTab: AdminTabId; setAdminTab: React.Dispatch<React.SetStateAction<AdminTabId>>; sponsorRequests: SponsorCrmRequestItem[]; buyerLeads: BuyerAlertLeadItem[]; totalLiveBargainsCount: number; neighborhoods: Neighborhood[]; activeCity?: CityId; onAdminApproveSponsor: (req: SponsorCrmRequestItem) => void; onAdminDeleteSponsorRequest: (reqId: string) => void; onDownloadBuyerLeadsCsv: () => void; onAdminDeleteBargain: (hoodId: number, bargainId: string) => void; onAdminApproveBargain?: (hoodId: number, bargainId: string) => void; adminEditHoodId: number; setAdminEditHoodId: React.Dispatch<React.SetStateAction<number>>; adminEditBuySqm: number;
-  setAdminEditBuySqm: React.Dispatch<React.SetStateAction<number>>; adminEditRahn80m: number; setAdminEditRahn80m: React.Dispatch<React.SetStateAction<number>>; adminPriceSavedMsg: string; onAdminQuickPriceSave: (e: React.FormEvent) => void; deepSyncing: boolean; onDeepWebSync: () => void; newAdminPassword: string;
-  setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; adminPassChangeMsg: string;
+import React, { useState, useEffect, useMemo } from 'react'; import { KeyRound, Lock, X } from 'lucide-react'; import { BuyerAlertLeadItem, MapTileServerId, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { FeatureFlags, ServerAuditLogEntry, SystemHealthData } from '../types/models'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, getDiagnosticSnapshots, recordDiagnosticEvent, } from '../utils/security'; import { validateTelegramPostText } from '../utils/forms/formInputHelpers'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; import { AdminOverviewAndModerationTabs } from './AdminOverviewAndModerationTabs'; import { AdminSecurityAndBackupTabs } from './AdminSecurityAndBackupTabs'; import { AdminMapProviderConfigPanel } from './AdminMapProviderConfigPanel'; export type AdminTabId = 'crm' | 'leads' | 'bargains' | 'prices' | 'security' | 'backup'; export type { ServerAuditLogEntry, SystemHealthData };
+export interface AdminModalProps { open: boolean; asPageView?: boolean; onClose: () => void; adminUnlocked: boolean; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; adminPassError: string; setAdminPassError?: React.Dispatch<React.SetStateAction<string>>; onAdminLogin: (e: React.FormEvent) => void; adminTab: AdminTabId; setAdminTab: React.Dispatch<React.SetStateAction<AdminTabId>>; sponsorRequests: SponsorCrmRequestItem[]; buyerLeads: BuyerAlertLeadItem[]; totalLiveBargainsCount: number; neighborhoods: Neighborhood[]; activeCity?: CityId; onAdminApproveSponsor: (req: SponsorCrmRequestItem) => void; onAdminDeleteSponsorRequest: (reqId: string) => void; onDownloadBuyerLeadsCsv: () => void; onAdminDeleteBargain: (hoodId: number, bargainId: string) => void; onAdminApproveBargain?: (hoodId: number, bargainId: string) => void; adminEditHoodId: number; setAdminEditHoodId: React.Dispatch<React.SetStateAction<number>>; adminEditBuySqm: number;
+  setAdminEditBuySqm: React.Dispatch<React.SetStateAction<number>>; adminEditRahn80m: number; setAdminEditRahn80m: React.Dispatch<React.SetStateAction<number>>; adminPriceSavedMsg: string; setAdminPriceSavedMsg?: React.Dispatch<React.SetStateAction<string>>; onAdminQuickPriceSave: (e: React.FormEvent) => void; deepSyncing: boolean; onDeepWebSync: () => void; newAdminPassword: string;
+  setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; adminPassChangeMsg: string; setAdminPassChangeMsg?: React.Dispatch<React.SetStateAction<string>>;
   onAdminChangePassword: (e: React.FormEvent) => void; systemHealth: SystemHealthData | null; loadingSystemHealth: boolean; onRefreshSystemHealth: () => void; featureFlags: FeatureFlags; onToggleFeatureFlag: (key: keyof FeatureFlags) => void; onDownloadFullBackupJson: () => void;
   onRestoreFullBackupJson: (e: React.ChangeEvent<HTMLInputElement>) => void; backupStatusMsg: { type: 'success' | 'error'; text: string } | null; isVerifiedAdmin?: boolean; currentUserEmail?: string | null;
   onGoogleSignIn?: () => void; onExtendSponsor30Days?: (hoodId: number) => void; onReleaseHoodSponsor?: (hoodId: number) => void; mapTileStyle?: MapTileServerId; onSelectMapTileStyle?: (style: MapTileServerId) => void; onRetryNeshan?: () => void; isFallbackActive?: boolean; }
 export function AdminModal(props: AdminModalProps) { const { open, asPageView = false, onClose, adminUnlocked, setAdminUnlocked, adminPassInput,
-    setAdminPassInput, adminPassError, onAdminLogin, adminTab, setAdminTab, sponsorRequests, buyerLeads, totalLiveBargainsCount, neighborhoods, activeCity = 'tehran', onAdminApproveSponsor, onAdminDeleteSponsorRequest, onDownloadBuyerLeadsCsv, onAdminDeleteBargain, onAdminApproveBargain, adminEditHoodId,
-    setAdminEditHoodId, adminEditBuySqm, setAdminEditBuySqm, adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg, onAdminQuickPriceSave, deepSyncing, onDeepWebSync, newAdminPassword, setNewAdminPassword, adminPassChangeMsg, onAdminChangePassword, systemHealth, loadingSystemHealth,
+    setAdminPassInput, adminPassError, setAdminPassError, onAdminLogin, adminTab, setAdminTab, sponsorRequests, buyerLeads, totalLiveBargainsCount, neighborhoods, activeCity = 'tehran', onAdminApproveSponsor, onAdminDeleteSponsorRequest, onDownloadBuyerLeadsCsv, onAdminDeleteBargain, onAdminApproveBargain, adminEditHoodId,
+    setAdminEditHoodId, adminEditBuySqm, setAdminEditBuySqm, adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg, setAdminPriceSavedMsg, onAdminQuickPriceSave, deepSyncing, onDeepWebSync, newAdminPassword, setNewAdminPassword, adminPassChangeMsg, setAdminPassChangeMsg, onAdminChangePassword, systemHealth, loadingSystemHealth,
     onRefreshSystemHealth, featureFlags, onToggleFeatureFlag, onDownloadFullBackupJson, onRestoreFullBackupJson, backupStatusMsg, isVerifiedAdmin = false, currentUserEmail = null, onGoogleSignIn,
     onExtendSponsor30Days, onReleaseHoodSponsor, mapTileStyle, onSelectMapTileStyle, onRetryNeshan, isFallbackActive,
   } = props; const dialogRef = useDialogFocus(open, onClose); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const unitEditBuy = convertPricePerSqmToUnit(adminEditBuySqm || 120, areaUnit);
@@ -47,6 +47,11 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
   const handleAdminSendTelegram = async (e: React.FormEvent) => {
     e.preventDefault();
     if (adminTgSending || !isVerifiedAdmin) return;
+    const tgErr = validateTelegramPostText(adminTelegramText);
+    if (tgErr) {
+      setAdminTgStatus({ type: 'error', text: tgErr });
+      return;
+    }
     setAdminTgSending(true);
     setAdminTgStatus(null);
     const controller = new AbortController();
@@ -187,8 +192,9 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                   </div>
                   <input
                     type="password" aria-label="رمز قفل جلسه پنل مدیریت"
+                    aria-invalid={Boolean(adminPassError)}
                     value={adminPassInput}
-                    onChange={(e) => setAdminPassInput(e.target.value)}
+                    onChange={(e) => { setAdminPassError?.(''); setAdminPassInput(e.target.value); }}
                     placeholder="رمز قفل جلسه (اختیاری در صورت تنظیم)..."
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600"
                   />
@@ -223,6 +229,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                   type="button"
                   onClick={() => {
                     setAdminTab(t.id);
+                    setAdminTgStatus(null);
                     if (t.id === 'security') onRefreshSystemHealth();
                   }}
                   className={`py-2 px-2.5 rounded-[9px] transition cursor-pointer ${
@@ -244,10 +251,10 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                 onAdminDeleteBargain={onAdminDeleteBargain} onAdminApproveBargain={onAdminApproveBargain} adminEditHoodId={adminEditHoodId}
                 setAdminEditHoodId={setAdminEditHoodId} adminEditBuySqm={adminEditBuySqm}
                 setAdminEditBuySqm={setAdminEditBuySqm} adminEditRahn80m={adminEditRahn80m}
-                setAdminEditRahn80m={setAdminEditRahn80m} adminPriceSavedMsg={adminPriceSavedMsg}
+                setAdminEditRahn80m={setAdminEditRahn80m} adminPriceSavedMsg={adminPriceSavedMsg} setAdminPriceSavedMsg={setAdminPriceSavedMsg}
                 onAdminQuickPriceSave={onAdminQuickPriceSave} deepSyncing={deepSyncing}
                 onDeepWebSync={onDeepWebSync} newAdminPassword={newAdminPassword}
-                setNewAdminPassword={setNewAdminPassword} adminPassChangeMsg={adminPassChangeMsg}
+                setNewAdminPassword={setNewAdminPassword} adminPassChangeMsg={adminPassChangeMsg} setAdminPassChangeMsg={setAdminPassChangeMsg}
                 onAdminChangePassword={onAdminChangePassword} onExtendSponsor30Days={onExtendSponsor30Days}
                 onReleaseHoodSponsor={onReleaseHoodSponsor} isVerifiedAdmin={isVerifiedAdmin}
               />
@@ -267,7 +274,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
                 onRestoreFullBackupJson={onRestoreFullBackupJson} backupStatusMsg={backupStatusMsg}
                 neighborhoods={neighborhoods} totalLiveBargainsCount={totalLiveBargainsCount}
                 sponsorRequests={sponsorRequests} buyerLeads={buyerLeads} adminTelegramText={adminTelegramText}
-                setAdminTelegramText={setAdminTelegramText} loadAdminTelegramDigest={loadAdminTelegramDigest}
+                setAdminTelegramText={(v) => { setAdminTgStatus(null); setAdminTelegramText(v); }} loadAdminTelegramDigest={loadAdminTelegramDigest}
                 handleAdminSendTelegram={handleAdminSendTelegram} adminTgSending={adminTgSending} adminTgStatus={adminTgStatus} isVerifiedAdmin={isVerifiedAdmin} />
             )} </div>
         )} </div>

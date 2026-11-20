@@ -3,7 +3,7 @@
  * @description Unified React Provider for AccessContext, ActiveWorkspace, and PermissionVersion.
  */
 
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { AccessContext, CanonicalBaseRole, ResourceTargetContext } from '../core/AccessContext';
 import type { AccessDecision, ActionUiVisibilityState } from '../core/AccessDecision';
 import type { CanonicalPermissionCode } from '../core/Permission';
@@ -45,6 +45,8 @@ export const AccessContextProvider: React.FC<AccessContextProviderProps> = ({
   });
 
   const [lastInvalidatedAtMs, setLastInvalidatedAtMs] = useState<number>(0);
+  const contextRef = useRef<AccessContext>(context);
+  contextRef.current = context;
 
   const checkAccess = useCallback(
     (
@@ -63,42 +65,47 @@ export const AccessContextProvider: React.FC<AccessContextProviderProps> = ({
   );
 
   const switchWorkspace = useCallback((nextWorkspaceId: string | null, nextRole: CanonicalBaseRole) => {
-    setContext((prev) => {
-      triggerPermissionInvalidation({
-        reason: 'WORKSPACE_SWITCHED',
-        userId: prev.userId,
-        workspaceId: prev.activeWorkspaceId,
-        currentPermissionVersion: prev.permissionVersion,
-      });
-      setLastInvalidatedAtMs(Date.now());
-      return switchAccessWorkspaceContext(prev, nextWorkspaceId, nextRole);
+    const prev = contextRef.current;
+    const next = switchAccessWorkspaceContext(prev, nextWorkspaceId, nextRole);
+    contextRef.current = next;
+    setContext(next);
+    triggerPermissionInvalidation({
+      reason: 'WORKSPACE_SWITCHED',
+      userId: prev.userId,
+      workspaceId: prev.activeWorkspaceId,
+      currentPermissionVersion: prev.permissionVersion,
     });
+    setLastInvalidatedAtMs(Date.now());
   }, []);
 
   const recordStepUpVerification = useCallback(() => {
-    setContext((prev) => ({
-      ...prev,
-      stepUpVerifiedAtMs: Date.now(),
-      permissionVersion: prev.permissionVersion + 1,
-    }));
+    setContext((prev) => {
+      const next = {
+        ...prev,
+        stepUpVerifiedAtMs: Date.now(),
+        permissionVersion: prev.permissionVersion + 1,
+      };
+      contextRef.current = next;
+      return next;
+    });
   }, []);
 
   const bumpPermissionVersion = useCallback((): number => {
-    let nextVer = 1;
-    setContext((prev) => {
-      nextVer = prev.permissionVersion + 1;
-      triggerPermissionInvalidation({
-        reason: 'ROLE_CHANGED',
-        userId: prev.userId,
-        workspaceId: prev.activeWorkspaceId,
-        currentPermissionVersion: prev.permissionVersion,
-      });
-      setLastInvalidatedAtMs(Date.now());
-      return {
-        ...prev,
-        permissionVersion: nextVer,
-      };
+    const prev = contextRef.current;
+    const nextVer = prev.permissionVersion + 1;
+    const next: AccessContext = {
+      ...prev,
+      permissionVersion: nextVer,
+    };
+    contextRef.current = next;
+    setContext(next);
+    triggerPermissionInvalidation({
+      reason: 'ROLE_CHANGED',
+      userId: prev.userId,
+      workspaceId: prev.activeWorkspaceId,
+      currentPermissionVersion: prev.permissionVersion,
     });
+    setLastInvalidatedAtMs(Date.now());
     return nextVer;
   }, []);
 

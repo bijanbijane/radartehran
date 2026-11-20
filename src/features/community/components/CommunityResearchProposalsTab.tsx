@@ -1,5 +1,5 @@
 /** @file src/features/community/components/CommunityResearchProposalsTab.tsx — Stage 25 Community Research Topic Proposals Linked to Stage 24 Knowledge Center */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpenCheck, Lightbulb, ThumbsUp } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
@@ -27,17 +27,33 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
   const [titleFa, setTitleFa] = useState('');
   const [questionFa, setQuestionFa] = useState('');
   const [hoodNameFa, setHoodNameFa] = useState(defaultHoodName);
+  const [hoodTouched, setHoodTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  useEffect(() => {
+    if (!hoodTouched) {
+      setHoodNameFa(defaultHoodName);
+    }
+  }, [defaultHoodName, hoodTouched]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await onSubmitProposal({ titleFa, questionFa, neighborhoodNameFa: hoodNameFa });
-    if (res.ok) {
-      setTitleFa('');
-      setQuestionFa('');
-      setFeedback({ ok: true, msg: 'پیشنهاد پژوهش شما ثبت شد و برای اولویت‌بندی تحریریه پایگاه دانش نمایش داده می‌شود.' });
-    } else {
-      setFeedback({ ok: false, msg: res.errorFa || 'خطا' });
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await onSubmitProposal({ titleFa, questionFa, neighborhoodNameFa: hoodNameFa });
+      if (res.ok) {
+        setTitleFa('');
+        setQuestionFa('');
+        setHoodTouched(false);
+        setHoodNameFa(defaultHoodName);
+        setFeedback({ ok: true, msg: 'پیشنهاد پژوهش شما ثبت شد و برای اولویت‌بندی تحریریه پایگاه دانش نمایش داده می‌شود.' });
+      } else {
+        setFeedback({ ok: false, msg: res.errorFa || 'خطا' });
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -62,17 +78,17 @@ export const CommunityResearchProposalsTab: React.FC<Props> = ({
           <span>پیشنهاد موضوع پژوهش جدید</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <input type="text" aria-label="عنوان پژوهش پیشنهادی" value={titleFa} onChange={(e) => setTitleFa(e.target.value)} placeholder="عنوان پژوهش (مثلاً اثر خط مترو بر اجاره...)" className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
-          <input type="text" aria-label="محدوده جغرافیایی" value={hoodNameFa} onChange={(e) => setHoodNameFa(e.target.value)} placeholder="محله یا منطقه" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+          <input type="text" aria-label="عنوان پژوهش پیشنهادی" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="عنوان پژوهش (مثلاً اثر خط مترو بر اجاره...)" className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+          <input type="text" aria-label="محدوده جغرافیایی" value={hoodNameFa} onChange={(e) => { setHoodNameFa(e.target.value); setHoodTouched(true); if (feedback) setFeedback(null); }} placeholder="محله یا منطقه" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
         </div>
-        <textarea rows={2} aria-label="سؤال پژوهشی" value={questionFa} onChange={(e) => setQuestionFa(e.target.value)} placeholder="سؤال دقیق تحلیلی و داده‌ای که می‌خواهید بررسی شود..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+        <textarea rows={2} aria-label="سؤال پژوهشی" value={questionFa} onChange={(e) => { setQuestionFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="سؤال دقیق تحلیلی و داده‌ای که می‌خواهید بررسی شود..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
         {feedback && (
-          <div className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
+          <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
             {feedback.msg}
           </div>
         )}
-        <button type="submit" data-testid="submit-research-proposal-btn" className="px-4 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer">
-          ثبت پیشنهاد پژوهش
+        <button type="submit" disabled={submitting} data-testid="submit-research-proposal-btn" className="px-4 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50">
+          {submitting ? 'در حال ثبت...' : 'ثبت پیشنهاد پژوهش'}
         </button>
       </form>
 

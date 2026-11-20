@@ -173,13 +173,13 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
   const failedCount = testResults.filter((r) => r.status === 'FAIL').length;
   if (isDismissed && errors.length === 0) {
     return (
-      <button type="button" onClick={() => { setIsDismissed(false); try { localStorage.setItem('radar_hide_dev_overlay', 'false'); } catch {} }} className="hidden lg:flex fixed bottom-16 lg:bottom-3 left-3 z-[95] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer" title="دیباگر سیستم" aria-label="دیباگر سیستم">
+      <button type="button" onClick={() => { setIsDismissed(false); try { localStorage.setItem('radar_hide_dev_overlay', 'false'); } catch {} }} className="hidden lg:flex fixed bottom-16 lg:bottom-3 left-3 z-[44] w-6 h-6 rounded-full bg-slate-900/30 hover:bg-slate-900 text-slate-400 hover:text-white items-center justify-center opacity-25 hover:opacity-100 transition cursor-pointer" title="دیباگر سیستم" aria-label="دیباگر سیستم">
         <Bug className="w-3 h-3" />
       </button>
     );
   }
   return (
-    <div dir="rtl" className="fixed bottom-[148px] lg:bottom-3 left-3 z-[95] max-w-[95vw] sm:max-w-xl font-sans select-none">
+    <div dir="rtl" className="fixed bottom-[148px] lg:bottom-3 left-3 z-[44] max-w-[95vw] sm:max-w-xl font-sans select-none">
       {!isOpen ? (
         <div className="flex items-center gap-1.5 bg-slate-900/95 text-white px-3 py-2 rounded-2xl shadow-2xl border border-slate-700/90 backdrop-blur-md text-xs">
           <button type="button" onClick={() => setIsOpen(true)} aria-label="باز کردن دیباگر زنده سیستم" className="flex items-center gap-2 font-extrabold cursor-pointer hover:text-emerald-300 transition">

@@ -3,13 +3,14 @@
  * @description Editor for entity-specific WatchRules enforcing supported WatchConditionType per EntityType (Stage 8).
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   getSupportedWatchConditionsForEntity,
   type EngagementEntityRef,
   type WatchConditionType,
   type WatchRule,
 } from '../../platform/entity-engagement';
+import { NumericDraftInput } from '../../components/ui/NumericDraftInput';
 
 export interface WatchRuleEditorProps {
   entity: EngagementEntityRef;
@@ -33,7 +34,13 @@ export const WatchRuleEditor: React.FC<WatchRuleEditorProps> = ({
     supported[0]?.conditionType || 'status_change'
   );
   const [thresholdPercent, setThresholdPercent] = useState<number>(3);
-  const [cooldownMinutes, setCooldownMinutes] = useState<number>(60);
+  const [cooldownMinutes] = useState<number>(60);
+
+  useEffect(() => {
+    if (!supported.some((d) => d.conditionType === selectedCondition)) {
+      setSelectedCondition(supported[0]?.conditionType || 'status_change');
+    }
+  }, [entity.entityType, selectedCondition, supported]);
 
   const activeDesc = supported.find((d) => d.conditionType === selectedCondition);
 
@@ -56,14 +63,14 @@ export const WatchRuleEditor: React.FC<WatchRuleEditorProps> = ({
         </select>
 
         {activeDesc?.requiresThreshold && (
-          <input
-            type="number"
+          <NumericDraftInput
             min={1}
             max={90}
+            fallback={3}
             value={thresholdPercent}
-            onChange={(e) => setThresholdPercent(Number(e.target.value))}
+            onValueChange={setThresholdPercent}
             aria-label="آستانه درصد تغییر"
-            className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100"
+            className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 tabular-nums"
           />
         )}
 
@@ -73,7 +80,7 @@ export const WatchRuleEditor: React.FC<WatchRuleEditorProps> = ({
           onClick={() =>
             onSaveRule({
               conditionType: selectedCondition,
-              thresholdPercent: activeDesc?.requiresThreshold ? thresholdPercent : undefined,
+              thresholdPercent: activeDesc?.requiresThreshold ? Math.min(90, Math.max(1, Math.round(thresholdPercent || 3))) : undefined,
               cooldownMinutes,
             })
           }

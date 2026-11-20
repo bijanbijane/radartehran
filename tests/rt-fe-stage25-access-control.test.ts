@@ -91,7 +91,7 @@ describe('RT-FE-USER-ACCESS-CONTROL-025 — Comprehensive Stage 25 Acceptance Su
       it(`resolves deterministic effective permissions for role "${roleId}"`, () => {
         assert.ok(ROLE_DEFINITIONS[roleId]);
         const perms = getEffectiveRolePermissions([roleId]);
-        assert.ok(Array.isArray(perms));
+        assert.ok(perms instanceof Set);
         for (const p of perms) {
           assert.equal(parsePermissionCode(p).valid, true);
         }

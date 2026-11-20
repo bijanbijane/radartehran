@@ -36,15 +36,15 @@ export function SmartSuggestModal({
   const [areaUnit] = useAreaUnit(); const [locale] = useRadarLocale(); const [intlCurrency] = useIntlCurrency();
   const isEn = locale === 'en';
   const safeList = useMemo(() => (Array.isArray(smartSuggestedNeighborhoods) ? smartSuggestedNeighborhoods : []), [smartSuggestedNeighborhoods]);
-  if (!open) return null;
-
-  const safeRahn = clampNumber(totalRahnEquivalent, 10, 100000, 1200);
   const effectiveMaxPerSqm = useMemo(() => {
     const greenMax = safeList.filter((h) => h.status === 'green').length > 0
       ? Math.max(...safeList.filter((h) => h.status === 'green').map((h) => h.buyPerSqm))
       : maxAffordablePerSqm;
     return Math.max(maxAffordablePerSqm, greenMax);
   }, [safeList, maxAffordablePerSqm]);
+  if (!open) return null;
+
+  const safeRahn = clampNumber(totalRahnEquivalent, 10, 100000, 1200);
   const safeBuySqm = clampNumber(effectiveMaxPerSqm, 10, 5000, 110);
   const safeTargetSqm = clampNumber(targetSqm, 30, 350, 80);
 

@@ -4,7 +4,7 @@
  * Composes Hero + Map Preview, Quick Access, Market Snapshot, Curated Neighborhoods, Research, Services, Methodology & Footer.
  */
 import React, { useState, useMemo } from 'react';
-import { SlidersHorizontal, ChevronLeft, Scale } from 'lucide-react';
+import { SlidersHorizontal, ChevronLeft, Scale, X } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../utils/areaUnit';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
@@ -156,14 +156,21 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
               </button>
             ))}
           </div>
-          <input
-            type="text"
-            value={homeQuery}
-            onChange={(e) => { setHomeQuery(e.target.value); setHomePage(1); }}
-            placeholder="فیلتر سریع نام محله..."
-            aria-label="فیلتر محله‌های منتخب"
-            className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-[#182522] dark:text-slate-100 focus:outline-none focus:border-[#176B63]"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={homeQuery}
+              onChange={(e) => { setHomeQuery(e.target.value); setHomePage(1); }}
+              placeholder="فیلتر سریع نام محله..."
+              aria-label="فیلتر محله‌های منتخب"
+              className="px-3 pl-7 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-[#182522] dark:text-slate-100 focus:outline-none focus:border-[#176B63]"
+            />
+            {homeQuery && (
+              <button type="button" aria-label="پاک کردن فیلتر محله‌ها" onClick={() => { setHomeQuery(''); setHomePage(1); }} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {featuredHoods.length === 0 ? (

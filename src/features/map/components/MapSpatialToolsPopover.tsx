@@ -2,7 +2,7 @@
  * @file src/features/map/components/MapSpatialToolsPopover.tsx
  * @description Stage 15 (RT-UI-MAP-001) & Stage 16 (RT-UI-LAYERS-001) Interactive Spatial Tools & Layer Catalog Panel.
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Ruler, PenTool, ShieldAlert, CheckCircle2, X, Layers, Eye, EyeOff, Trash2, Info } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { activateMapToolbarMode, buildDynamicLayerLegend, computeGeodesicMeasurement, validateDrawnPolygonWGS84 } from '../services/mapExperienceEngine';
@@ -37,6 +37,17 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
   ]);
   const [compatibilityMsg, setCompatibilityMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        p.onClose();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [p.onClose]);
+
   const modeState = useMemo(() => activateMapToolbarMode('explore', activeMode), [activeMode]);
   const samplePoints = polygonPreset === 'valid' ? SAMPLE_VALID_POLYGON : SAMPLE_SELF_INTERSECTING_POLYGON;
   const polygonCheck = useMemo(() => validateDrawnPolygonWGS84(samplePoints), [samplePoints]);
@@ -55,7 +66,7 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
     <div
       role="dialog" aria-label="ابزارهای ترسیم، اندازه‌گیری و کاتالوگ لایه‌ها (RT-UI-MAP-001 & RT-UI-LAYERS-001)"
       data-testid="map-spatial-tools-popover"
-      className="pointer-events-auto w-80 sm:w-88 max-w-[calc(100vw-4.5rem)] rounded-2xl border border-[#DCE3DF] dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3.5 space-y-3 text-xs max-h-[calc(100dvh-10rem)] overflow-y-auto"
+      className="pointer-events-auto w-80 sm:w-88 max-w-[calc(100vw-5.25rem)] rounded-2xl border border-[#DCE3DF] dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3.5 space-y-3 text-xs max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto"
     >
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
         <div role="tablist" aria-label="تب‌های ابزار مکانی و کاتالوگ لایه" className="flex items-center gap-1">

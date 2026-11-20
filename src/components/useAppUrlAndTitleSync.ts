@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { EvaluatedNeighborhood, Neighborhood, CityId } from '../data/neighborhoods';
 import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
@@ -29,7 +29,6 @@ export function buildAllCityHoods(): { cityId: CityId; hood: Neighborhood }[] {
   return getAllMultiCityNeighborhoods().map((hood) => ({ cityId: resolveCityIdForNeighborhood(hood.id), hood }));
 }
 
-let lastTrackedRouteKey = '';
 
 export function applyUrlParamsFromLocation(
   pathname: string,
@@ -177,14 +176,22 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
   const [intlCurrency] = useIntlCurrency();
   const [locale] = useRadarLocale();
 
+  const paramsRef = useRef(p);
+  paramsRef.current = p;
+  const lastTrackedRouteKeyRef = useRef('');
+  const isPopStateSyncRef = useRef(false);
+
   useEffect(() => {
     const allCityHoods = buildAllCityHoods();
     const applyUrlParams = (flyMap: boolean) => {
-      applyUrlParamsFromLocation(window.location.pathname, window.location.search, flyMap, p, allCityHoods);
+      applyUrlParamsFromLocation(window.location.pathname, window.location.search, flyMap, paramsRef.current, allCityHoods);
     };
 
     applyUrlParams(false);
-    const handlePopState = () => applyUrlParams(true);
+    const handlePopState = () => {
+      isPopStateSyncRef.current = true;
+      applyUrlParams(true);
+    };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -201,13 +208,17 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       const intlSuffix = '';
       const viewSuffix = primaryView && primaryView !== 'map' ? `&view=${primaryView}` : '';
       const leveragePart = `${useLoanBooster ? '&loan=1' : ''}${deductTenantRahnInBuy ? '&rahnDeduct=1' : ''}${buildingAgeSegment && buildingAgeSegment !== 'new' ? `&age=${buildingAgeSegment}` : ''}`;
-      const budgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}${leveragePart}` : `${hubPart}${leveragePart}`) + intlSuffix + viewSuffix;
+      const baseBudgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}${leveragePart}` : `${hubPart}${leveragePart}`) + intlSuffix;
+      const budgetSuffix = baseBudgetSuffix + viewSuffix;
 
       const routeKey = `${primaryView || 'map'}:${activeSubTab || ''}`;
-      const isRouteChange = lastTrackedRouteKey !== '' && lastTrackedRouteKey !== routeKey;
-      lastTrackedRouteKey = routeKey;
+      const fromPopState = isPopStateSyncRef.current;
+      isPopStateSyncRef.current = false;
+      const isRouteChange = !fromPopState && lastTrackedRouteKeyRef.current !== '' && lastTrackedRouteKeyRef.current !== routeKey;
+      lastTrackedRouteKeyRef.current = routeKey;
 
       const commitHistoryUrl = (nextUrl: string) => {
+        if (fromPopState) return;
         if (`${window.location.pathname}${window.location.search}` === nextUrl) return;
         if (isRouteChange && typeof window.history?.pushState === 'function') window.history.pushState(null, '', nextUrl);
         else if (typeof window.history?.replaceState === 'function') window.history.replaceState(null, '', nextUrl);
@@ -257,8 +268,16 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           commitHistoryUrl(adminPath);
           return;
         }
-        if (viewId !== 'map' && !datedHood && viewId !== 'home') {
-          const canonicalPath = buildCanonicalPathForDestination(viewId, activeSubTab);
+        if (viewId !== 'map' && viewId !== 'home') {
+          const currentPath = normalizePathname(window.location.pathname);
+          const preserveMemberProfilePath =
+            viewId === 'contributions' &&
+            activeSubTab === 'members' &&
+            currentPath.startsWith('/community/members/') &&
+            currentPath.length > '/community/members/'.length;
+          const canonicalPath = preserveMemberProfilePath
+            ? currentPath
+            : buildCanonicalPathForDestination(viewId, activeSubTab);
           const sp = new URLSearchParams();
           if (activeCity !== 'tehran') sp.set('city', activeCity);
           sp.set('hood', String(selectedHood.id));
@@ -275,8 +294,8 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           description: desc, url: canonicalQuery.startsWith('/') ? `https://radartehran.ir${canonicalQuery}` : `https://radartehran.ir/${canonicalQuery}`,
           geo: { '@type': 'GeoCoordinates', latitude: selectedHood.lat, longitude: selectedHood.lng },
         });
-        const extra = budgetSuffix.replace(/^&/, '');
-        const nextUrl = datedHood ? `${datedHood.path}${extra ? `?${extra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
+        const datedExtra = (viewId === 'home' ? baseBudgetSuffix : budgetSuffix).replace(/^&/, '');
+        const nextUrl = datedHood ? `${datedHood.path}${datedExtra ? `?${datedExtra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
         commitHistoryUrl(nextUrl);
       }
     } catch { /* Ignore History API errors in restricted iframe contexts */ }

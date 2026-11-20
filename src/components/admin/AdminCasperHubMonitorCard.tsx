@@ -126,7 +126,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
       </div>
 
       {errorMsg && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2">
+        <div role="alert" className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-amber-700" />
           <span>{errorMsg}</span>
         </div>
@@ -212,7 +212,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
               aria-label="عنوان یادداشت یا چک‌پوینت کسپر هاب"
               placeholder="عنوان یادداشت یا چک‌پوینت (حداکثر ۲۴۰ کاراکتر)"
               value={noteTitle}
-              onChange={(e) => setNoteTitle(e.target.value)}
+              onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteTitle(e.target.value); }}
               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100"
             />
           </div>
@@ -220,7 +220,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
             <select
               aria-label="دسته‌بندی نوع یادداشت کسپر هاب"
               value={noteType}
-              onChange={(e) => setNoteType(e.target.value)}
+              onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteType(e.target.value); }}
               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-900 dark:text-slate-100 font-bold"
             >
               <option value="checkpoint">چک‌پوینت (Checkpoint)</option>
@@ -237,7 +237,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
           aria-label="شرح کامل یادداشت یا چک‌پوینت کسپر هاب"
           placeholder="شرح کامل، تصمیم اتخاذشده و شواهد راستی‌آزمایی (حداکثر ۴۰۰۰ کاراکتر)"
           value={noteSummary}
-          onChange={(e) => setNoteSummary(e.target.value)}
+          onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteSummary(e.target.value); }}
           className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-900 dark:text-slate-100 leading-relaxed"
         />
 
@@ -249,7 +249,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
                 key={lvl}
                 type="button"
                 aria-label={`سطح اهمیت ${lvl}`}
-                onClick={() => setNoteImportance(lvl)}
+                onClick={() => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteImportance(lvl); }}
                 className={`px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition ${
                   noteImportance === lvl
                     ? 'bg-indigo-600 text-white'
@@ -267,7 +267,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
               aria-label="برچسب‌های یادداشت کسپر هاب"
               placeholder="برچسب‌ها (با ویرگول جدا کنید)"
               value={noteTags}
-              onChange={(e) => setNoteTags(e.target.value)}
+              onChange={(e) => { setErrorMsg(null); setNoteSuccessMsg(null); setNoteTags(e.target.value); }}
               className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200"
             />
             <button

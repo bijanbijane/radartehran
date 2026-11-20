@@ -22,6 +22,7 @@ export interface ProductGlobalHeaderProps {
   appleTheme: 'light' | 'dark';
   onToggleAppleTheme: () => void;
   onOpenSearch?: () => void;
+  isSearchOpen?: boolean;
   onMegaMenuAction?: (actionId: NonNullable<MegaMenuEntry['actionId']>) => void;
   searchQuery?: string;
   activePlaceLabelFa?: string;
@@ -47,7 +48,7 @@ const BRAND_BY_CITY: Record<CityId, { fa: string; en: string }> = {
 
 export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   primaryView, activeSubTab, onSelectPrimaryView, activeCity, onSwitchCity, appleTheme,
-  onToggleAppleTheme, onOpenSearch, onMegaMenuAction, searchQuery, activePlaceLabelFa,
+  onToggleAppleTheme, onOpenSearch, isSearchOpen, onMegaMenuAction, searchQuery, activePlaceLabelFa,
   currentUser, unreadNotificationsCount,
 }) => {
   const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
@@ -185,13 +186,17 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           {onOpenSearch && (
             <button
               type="button"
+              data-global-search-trigger="true"
+              aria-expanded={isSearchOpen}
               onClick={onOpenSearch}
               aria-label={isEn ? 'Search platform' : 'جست‌وجوی سراسری'}
               title={isEn ? 'Search (/)' : 'جست‌وجوی سراسری (/)'}
               className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer whitespace-nowrap"
             >
               <Search className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-              <span className="hidden 2xl:inline max-w-[90px] truncate">{searchQuery?.trim() || (isEn ? 'Search...' : 'جست‌وجو...')}</span>
+              {primaryView !== 'map' && (
+                <span className="hidden 2xl:inline max-w-[90px] truncate">{searchQuery?.trim() || (isEn ? 'Search...' : 'جست‌وجو...')}</span>
+              )}
             </button>
           )}
           <button
@@ -227,25 +232,25 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             <span className="hidden 2xl:inline max-w-[84px] truncate">{currentUser?.displayName?.split(' ')[0] || (isEn ? 'Account' : 'حساب من')}</span>
           </button>
 
-          <div className="hidden xl:flex items-center gap-1">
+          <div className="hidden 2xl:flex items-center gap-1">
             <div className="hidden 2xl:inline-flex"><ExperienceModeToggle compact /></div>
             <AreaUnitToggle compact showIntlControls className="flex-nowrap" />
           </div>
 
-          <div ref={mobileDisplayRef} className="relative xl:hidden">
+          <div ref={mobileDisplayRef} className="relative 2xl:hidden">
             <button
               type="button"
               data-testid="mobile-unit-currency-btn"
               aria-expanded={mobileDisplayOpen}
               aria-label={isEn ? 'Area unit and currency settings' : 'تنظیم واحد مساحت و ارز'}
               onClick={() => setMobileDisplayOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[10.5px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[10.5px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer whitespace-nowrap"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
+              <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span>{isEn ? 'Unit/FX' : 'واحد/ارز'}</span>
             </button>
             {mobileDisplayOpen && (
-              <div role="dialog" aria-label={isEn ? 'Unit, currency & mode settings' : 'تنظیمات واحد، ارز و حالت تجربه'} className="absolute left-0 top-10 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-3 space-y-2.5 z-50 text-xs">
+              <div role="dialog" aria-label={isEn ? 'Unit, currency & mode settings' : 'تنظیمات واحد، ارز و حالت تجربه'} className="absolute end-0 top-10 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-3 space-y-2.5 z-50 text-xs">
                 <div className="font-black text-slate-800 dark:text-white">{isEn ? 'Display Unit & Currency' : 'تنظیم واحد نمایش و ارز'}</div>
                 <AreaUnitToggle compact showIntlControls />
                 <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">

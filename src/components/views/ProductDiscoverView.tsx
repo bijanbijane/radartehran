@@ -172,7 +172,19 @@ export function ProductDiscoverView(p: ProductDiscoverViewProps): React.ReactEle
         </div>
       </div>
 
-      <GlobalSearchWorkspace />
+      <GlobalSearchWorkspace
+        activeCity={activeCity}
+        activeNeighborhoodId={p.selectedHood.id}
+        activeNeighborhoodName={p.selectedHood.name}
+        viewportBounds={viewportBounds}
+        onSelectNeighborhoodId={(hoodId) => {
+          const found = p.evaluatedNeighborhoods.find((h) => String(h.id) === String(hoodId));
+          if (found) {
+            p.onSelectNeighborhood(found);
+            p.onOpenInspector(found);
+          }
+        }}
+      />
       <PublicDataProvenanceCard entityId={resolveGovernanceEntityId(activeCity, p.selectedHood.id)} neighborhoodNameFa={p.selectedHood.name} sampleCount={selectedProvenanceStats.agg.eligibleObservedCount} uniqueEntityCount={null} observedSampleCount={selectedProvenanceStats.agg.observedSampleCount} syntheticSampleCount={selectedProvenanceStats.syntheticCount} />
       <CasperInstantVerdictCard evaluatedNeighborhoods={p.evaluatedNeighborhoods} selectedHood={p.selectedHood} onSelectNeighborhood={p.onSelectNeighborhood} targetSqm={p.targetSqm} onOpenInspector={p.onOpenInspector} />
 

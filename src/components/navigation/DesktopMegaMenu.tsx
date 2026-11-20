@@ -84,8 +84,9 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
       aria-label={isEn ? 'More platform modules' : 'سایر بخش‌ها و خدمات تخصصی'}
       onMouseEnter={onMouseEnterMenu}
       onMouseLeave={onMouseLeaveMenu}
-      className="absolute top-full inset-x-4 max-w-5xl mx-auto z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl p-4 sm:p-5 animate-fadeIn"
+      className="absolute top-full inset-x-4 max-w-5xl mx-auto z-50 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl animate-fadeIn before:content-[''] before:absolute before:inset-x-0 before:-top-3 before:h-3"
     >
+      <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto p-4 sm:p-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {DESKTOP_MEGA_MENU_GROUPS.map((group) => {
           const GroupIcon = GROUP_ICONS[group.id];
@@ -166,6 +167,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
         >
           {isEn ? 'Close (Esc)' : 'بستن (Esc)'}
         </button>
+      </div>
       </div>
     </div>
   );

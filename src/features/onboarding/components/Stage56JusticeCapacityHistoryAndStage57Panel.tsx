@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage56JusticeCapacityHistoryAndStage57Panel.tsx — Stage 56 Justice, Capacity, History, Scenarios & Stage 57 Preview */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   evaluateCapacityJusticeAndHistory,
   simulateInfrastructureScenario,
@@ -86,11 +87,14 @@ export const Stage56JusticeCapacityHistoryAndStage57Panel: React.FC<Props> = ({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="space-y-1">
             <span className="text-slate-400">تغییر جمعیت فرضی (٪):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
+              min={-50}
+              max={200}
+              fallback={0}
               value={popDelta}
-              onChange={(e) => {
-                setPopDelta(Number(e.target.value) || 0);
+              onValueChange={(next) => {
+                setPopDelta(next);
                 onFeedbackFa('پارامتر جمعیت در شبیه‌ساز فرضی زیرساخت به‌روزرسانی شد.');
               }}
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-slate-100"
@@ -98,21 +102,23 @@ export const Stage56JusticeCapacityHistoryAndStage57Panel: React.FC<Props> = ({
           </label>
           <label className="space-y-1">
             <span className="text-slate-400">افزودن مرکز درمانی فرضی:</span>
-            <input
-              type="number"
+            <NumericDraftInput
               min={0}
+              max={50}
+              fallback={0}
               value={addedClinics}
-              onChange={(e) => setAddedClinics(Number(e.target.value) || 0)}
+              onValueChange={setAddedClinics}
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-slate-100"
             />
           </label>
           <label className="space-y-1">
             <span className="text-slate-400">افزودن خط حمل‌ونقل فرضی:</span>
-            <input
-              type="number"
+            <NumericDraftInput
               min={0}
+              max={50}
+              fallback={0}
               value={addedTransit}
-              onChange={(e) => setAddedTransit(Number(e.target.value) || 0)}
+              onValueChange={setAddedTransit}
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-slate-100"
             />
           </label>

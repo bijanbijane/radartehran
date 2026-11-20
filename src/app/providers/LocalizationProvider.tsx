@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { LocaleCode, Direction, getDirectionForLocale } from '../../platform/localization';
 
 export interface LocalizationContextValue {
@@ -18,10 +18,13 @@ export const LocalizationProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ initialLocale = 'fa-IR', children }) => {
   const [locale, setLocale] = useState<LocaleCode>(initialLocale);
-  const direction = getDirectionForLocale(locale);
+  const value = useMemo<LocalizationContextValue>(
+    () => ({ locale, direction: getDirectionForLocale(locale), setLocale }),
+    [locale],
+  );
 
   return (
-    <LocalizationContext.Provider value={{ locale, direction, setLocale }}>
+    <LocalizationContext.Provider value={value}>
       {children}
     </LocalizationContext.Provider>
   );

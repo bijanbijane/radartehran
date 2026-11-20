@@ -24,10 +24,14 @@ export interface UseNotificationCenterOptions {
 export function useNotificationCenter(options: UseNotificationCenterOptions) {
   const { userId, workspaceId, permissionVersion = 1 } = options;
 
-  const inboxServiceRef = useRef(new NotificationInboxService());
-  const prefsServiceRef = useRef(new NotificationPreferencesService());
-  const realtimeRef = useRef(new NotificationRealtimeAdapter());
-  const syncBusRef = useRef(new NotificationSyncBus());
+  const inboxServiceRef = useRef<NotificationInboxService | null>(null);
+  if (!inboxServiceRef.current) inboxServiceRef.current = new NotificationInboxService();
+  const prefsServiceRef = useRef<NotificationPreferencesService | null>(null);
+  if (!prefsServiceRef.current) prefsServiceRef.current = new NotificationPreferencesService();
+  const realtimeRef = useRef<NotificationRealtimeAdapter | null>(null);
+  if (!realtimeRef.current) realtimeRef.current = new NotificationRealtimeAdapter();
+  const syncBusRef = useRef<NotificationSyncBus | null>(null);
+  if (!syncBusRef.current) syncBusRef.current = new NotificationSyncBus();
 
   const [filter, setFilter] = useState<NotificationInboxFilter>({
     status: 'all',
@@ -43,7 +47,7 @@ export function useNotificationCenter(options: UseNotificationCenterOptions) {
 
   useEffect(() => {
     if (options.initialNotifications && options.initialNotifications.length > 0) {
-      inboxServiceRef.current.ingestNotifications(
+      inboxServiceRef.current!.ingestNotifications(
         userId,
         workspaceId,
         options.initialNotifications,
@@ -54,8 +58,8 @@ export function useNotificationCenter(options: UseNotificationCenterOptions) {
   }, [userId, workspaceId, permissionVersion, options.initialNotifications, bump]);
 
   useEffect(() => {
-    const unsub = realtimeRef.current.onReceive((batch) => {
-      inboxServiceRef.current.ingestNotifications(userId, workspaceId, batch, permissionVersion);
+    const unsub = realtimeRef.current!.onReceive((batch) => {
+      inboxServiceRef.current!.ingestNotifications(userId, workspaceId, batch, permissionVersion);
       bump();
     });
     return () => {
@@ -63,16 +67,20 @@ export function useNotificationCenter(options: UseNotificationCenterOptions) {
     };
   }, [userId, workspaceId, permissionVersion, bump]);
 
+  useEffect(() => () => {
+    realtimeRef.current?.dispose();
+  }, []);
+
   const updateStatus = useCallback(
     async (ids: string[], nextStatus: NotificationStatus) => {
-      const res = await inboxServiceRef.current.updateStatus({
+      const res = await inboxServiceRef.current!.updateStatus({
         userId,
         workspaceId,
         permissionVersion,
         notificationIds: ids,
         nextStatus,
       });
-      syncBusRef.current.publish({
+      syncBusRef.current!.publish({
         type: 'STATUS_UPDATED',
         userId,
         workspaceId,
@@ -86,12 +94,12 @@ export function useNotificationCenter(options: UseNotificationCenterOptions) {
   );
 
   const markAllAsRead = useCallback(async () => {
-    const res = await inboxServiceRef.current.markAllAsRead({
+    const res = await inboxServiceRef.current!.markAllAsRead({
       userId,
       workspaceId,
       permissionVersion,
     });
-    syncBusRef.current.publish({
+    syncBusRef.current!.publish({
       type: 'MARK_ALL_READ',
       userId,
       workspaceId,
@@ -101,10 +109,10 @@ export function useNotificationCenter(options: UseNotificationCenterOptions) {
   }, [userId, workspaceId, permissionVersion, bump]);
 
   const clearForSecurityTransition = useCallback(() => {
-    inboxServiceRef.current.getStateStore().clearAllForSecurityTransition();
-    inboxServiceRef.current.getCache().clearAll();
-    prefsServiceRef.current.clearAllForSecurityTransition();
-    realtimeRef.current.dispose();
+    inboxServiceRef.current!.getStateStore().clearAllForSecurityTransition();
+    inboxServiceRef.current!.getCache().clearAll();
+    prefsServiceRef.current!.clearAllForSecurityTransition();
+    realtimeRef.current!.dispose();
     bump();
   }, [bump]);
 

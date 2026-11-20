@@ -23,9 +23,4 @@
     user-select: none;
     -webkit-user-select: none;
   }
-
-  .app-viewport-locked {
-    overflow: hidden;
-    height: 100dvh;
-  }
 }

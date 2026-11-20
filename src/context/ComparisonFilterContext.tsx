@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
 import { normalizeFinancialInput } from '../utils/persianFinancials';
-import { formatAreaShort, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from '../utils/areaUnit';
+import { formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { useAreaUnit, useIntlCurrency } from '../components/AreaUnitToggle';
 
 export interface ReverseBudgetFilterState {
   totalBudgetMillion: number;
@@ -76,6 +77,9 @@ export const ComparisonFilterProvider: React.FC<{ children: React.ReactNode }> =
     ]
   );
 
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+
   const value = useMemo<ComparisonFilterContextValue>(
     () => ({
       totalBudgetMillion,
@@ -85,8 +89,8 @@ export const ComparisonFilterProvider: React.FC<{ children: React.ReactNode }> =
       maxBuildingAgeYears,
       comparedHoodIds,
       revisionKey,
-      totalBudgetIntlText: formatMillionTomanAsIntlCurrency(totalBudgetMillion, getStoredIntlCurrency()),
-      desiredAreaFormatted: formatAreaShort(desiredAreaSqm, getStoredAreaUnit()),
+      totalBudgetIntlText: formatMillionTomanAsIntlCurrency(totalBudgetMillion, intlCurrency),
+      desiredAreaFormatted: formatAreaShort(desiredAreaSqm, areaUnit),
       setBudgetFilter,
       toggleComparedHood,
       clearComparison,
@@ -99,6 +103,8 @@ export const ComparisonFilterProvider: React.FC<{ children: React.ReactNode }> =
       maxBuildingAgeYears,
       comparedHoodIds,
       revisionKey,
+      areaUnit,
+      intlCurrency,
       setBudgetFilter,
       toggleComparedHood,
       clearComparison,

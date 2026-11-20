@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage51AccessProximityAndDensityPanel.tsx — Stage 51 Distance vs Access, Coverage, Density & Intra-Neighborhood Grid */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   evaluateDensityClustersAndAutocorrelation,
   evaluateIntraNeighborhoodLandUseAndServiceGap,
@@ -76,12 +77,12 @@ export const Stage51AccessProximityAndDensityPanel: React.FC<{
             <div className="flex flex-wrap items-center gap-3 text-[10.5px]">
               <label className="flex items-center gap-1 text-slate-300">
                 <span>آستانه دسترسی (دقیقه):</span>
-                <input
-                  type="number"
+                <NumericDraftInput
                   min={5}
                   max={45}
+                  fallback={15}
                   value={thresholdMinutes}
-                  onChange={(e) => setThresholdMinutes(Number(e.target.value))}
+                  onValueChange={setThresholdMinutes}
                   className="w-14 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-center text-white"
                 />
               </label>

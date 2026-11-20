@@ -222,7 +222,7 @@ export const ExperienceModeToggle: React.FC<ExperienceModeToggleProps> = ({ comp
         type="button"
         onClick={() => setMode('simple')}
         aria-pressed={mode === 'simple'}
-        className={`font-bold transition-all rounded-lg ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
+        className={`font-bold transition-all rounded-lg cursor-pointer ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
           mode === 'simple'
             ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
             : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -234,7 +234,7 @@ export const ExperienceModeToggle: React.FC<ExperienceModeToggleProps> = ({ comp
         type="button"
         onClick={() => setMode('pro')}
         aria-pressed={mode === 'pro'}
-        className={`font-bold transition-all rounded-lg ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
+        className={`font-bold transition-all rounded-lg cursor-pointer ${compact ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px]' : 'px-2.5 py-1 text-xs'} ${
           mode === 'pro'
             ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
             : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'

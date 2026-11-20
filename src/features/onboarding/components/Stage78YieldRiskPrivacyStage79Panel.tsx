@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage78YieldRiskPrivacyStage79Panel.tsx — Stage 78 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateYieldCycleAndPrivacy } from '../services/salesLiquidityStage78Engine';
 import {
   STAGE78_ACCEPTANCE_TESTS_48,
@@ -43,49 +44,61 @@ export const Stage78YieldRiskPrivacyStage79Panel: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
           <label className="flex items-center gap-1.5">
             <span>خرید (م.م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={1}
+              max={1000000}
+              fallback={20}
               value={purchaseBillion}
-              onChange={(e) => setPurchaseBillion(Number(e.target.value) || 20)}
+              onValueChange={setPurchaseBillion}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>اجاره سالانه (م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={1000000}
+              fallback={0}
               value={annualRentMillion}
-              onChange={(e) => setAnnualRentMillion(Number(e.target.value) || 0)}
+              onValueChange={setAnnualRentMillion}
               className="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>هزینه سالانه (م.ت):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
+              max={1000000}
+              fallback={0}
               value={annualCostMillion}
-              onChange={(e) => setAnnualCostMillion(Number(e.target.value) || 0)}
+              onValueChange={setAnnualCostMillion}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>بازده اسمی (%):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
+              min={-50}
+              max={500}
+              fallback={0}
               value={nominalReturnPct}
-              onChange={(e) => setNominalReturnPct(Number(e.target.value) || 0)}
+              onValueChange={setNominalReturnPct}
               className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>تورم (%):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
+              min={0}
+              max={500}
+              fallback={0}
               value={inflationPct}
-              onChange={(e) => setInflationPct(Number(e.target.value) || 0)}
+              onValueChange={setInflationPct}
               className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>

@@ -1,11 +1,15 @@
 /** @file src/features/properties/filters/PropertyFilterPanel.tsx — Responsive Drawer / Mobile Bottom Sheet Filters */
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Check, RotateCcw, ShieldCheck, X } from 'lucide-react';
+import { useDialogFocus } from '../../../components/useDialogFocus';
 import {
+  isMalformedOptionalNumber,
   normalizeFiltersForPropertyType,
   supportsElevatorFilter,
   supportsRoomsFilter,
   validatePropertyFilterDraft,
+  validatePropertyFilterErrors,
   type PropertyFilterDraft,
 } from './PropertyFilterDraft';
 import { PROPERTY_TYPE_LABELS_FA, type AmenityValue, type PropertyType } from '../types/property.types';
@@ -36,14 +40,25 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
   onApply,
   onReset,
 }) => {
+  const dialogRef = useDialogFocus(open, onClose);
+  const [attemptedApply, setAttemptedApply] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) setAttemptedApply(false);
+  }, [open]);
+
   if (!open) return null;
 
   const warnings = validatePropertyFilterDraft(draft);
+  const errors = validatePropertyFilterErrors(draft);
   const showRooms = supportsRoomsFilter(draft.propertyType);
   const showElevator = supportsElevatorFilter(draft.propertyType);
   const isRent = draft.transactionType === 'rent' || draft.transactionType === 'full_deposit';
 
-  const patch = (p: Partial<PropertyFilterDraft>) => onUpdateDraft({ ...draft, ...p });
+  const patch = (p: Partial<PropertyFilterDraft>) => {
+    if (attemptedApply) setAttemptedApply(false);
+    onUpdateDraft({ ...draft, ...p });
+  };
 
   const renderTriState = (label: string, key: 'parking' | 'elevator' | 'storage') => (
     <div className="space-y-1.5">
@@ -67,15 +82,17 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
     </div>
   );
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="فیلترهای پیشرفته جست‌وجوی ملک"
-      className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-[2px] flex items-end sm:items-center justify-center sm:p-4"
+      className="fixed inset-0 z-[9500] bg-black/45 backdrop-blur-[2px] flex items-end sm:items-center justify-center sm:p-4"
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
         className="w-full sm:max-w-xl bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl border border-[#DCE3DF] dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
@@ -92,7 +109,21 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
           </button>
         </div>
 
-        <div className="p-4 space-y-4 overflow-y-auto text-xs">
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (errors.length > 0) {
+              setAttemptedApply(true);
+              return;
+            }
+            setAttemptedApply(false);
+            onApply();
+            onClose();
+          }}
+          className="flex flex-col flex-1 min-h-0"
+        >
+        <div className="p-4 space-y-4 overflow-y-auto text-xs flex-1">
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-[#34433E] dark:text-slate-300 block">نوع ملک (فیلترهای مرتبط پویا نمایش داده می‌شوند)</label>
             <div className="flex flex-wrap gap-1.5">
@@ -100,7 +131,10 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                 <button
                   key={pt}
                   type="button"
-                  onClick={() => onUpdateDraft(normalizeFiltersForPropertyType(draft, pt))}
+                  onClick={() => {
+                    if (attemptedApply) setAttemptedApply(false);
+                    onUpdateDraft(normalizeFiltersForPropertyType(draft, pt));
+                  }}
                   className={`px-2.5 py-1.5 rounded-[8px] border text-[11px] font-bold cursor-pointer ${
                     draft.propertyType === pt
                       ? 'bg-[#176B63] text-white border-[#176B63]'
@@ -119,6 +153,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
               <input
                 type="text"
                 inputMode="numeric"
+                aria-invalid={isMalformedOptionalNumber(draft.areaMin)}
                 value={draft.areaMin}
                 onChange={(e) => patch({ areaMin: e.target.value })}
                 placeholder="مثلاً ۶۰"
@@ -130,6 +165,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
               <input
                 type="text"
                 inputMode="numeric"
+                aria-invalid={isMalformedOptionalNumber(draft.areaMax)}
                 value={draft.areaMax}
                 onChange={(e) => patch({ areaMax: e.target.value })}
                 placeholder="مثلاً ۱۵۰"
@@ -145,6 +181,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                 <input
                   type="text"
                   inputMode="numeric"
+                  aria-invalid={isMalformedOptionalNumber(draft.priceMinMillion)}
                   value={draft.priceMinMillion}
                   onChange={(e) => patch({ priceMinMillion: e.target.value })}
                   placeholder="مثلاً ۵۰۰۰"
@@ -156,6 +193,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                 <input
                   type="text"
                   inputMode="numeric"
+                  aria-invalid={isMalformedOptionalNumber(draft.priceMaxMillion)}
                   value={draft.priceMaxMillion}
                   onChange={(e) => patch({ priceMaxMillion: e.target.value })}
                   placeholder="مثلاً ۵۰۰۰۰"
@@ -170,6 +208,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                 <input
                   type="text"
                   inputMode="numeric"
+                  aria-invalid={isMalformedOptionalNumber(draft.depositMaxMillion)}
                   value={draft.depositMaxMillion}
                   onChange={(e) => patch({ depositMaxMillion: e.target.value })}
                   placeholder="مثلاً ۴۰۰۰"
@@ -181,6 +220,7 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
                 <input
                   type="text"
                   inputMode="numeric"
+                  aria-invalid={isMalformedOptionalNumber(draft.rentMaxMillion)}
                   value={draft.rentMaxMillion}
                   onChange={(e) => patch({ rentMaxMillion: e.target.value })}
                   placeholder="مثلاً ۸۰"
@@ -240,6 +280,12 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
             </label>
           </div>
 
+          {attemptedApply && errors.length > 0 && (
+            <div role="alert" className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-[11px] font-bold text-[#B3261E] dark:text-rose-200">
+              {errors.join(' · ')}
+            </div>
+          )}
+
           {warnings.length > 0 && (
             <div className="p-2.5 rounded-lg bg-[#FFF4E5] border border-[#F4D3A1] text-[11px] text-[#875000]">
               {warnings.join(' · ')}
@@ -250,23 +296,25 @@ export const PropertyFilterPanel: React.FC<PropertyFilterPanelProps> = ({
         <div className="px-4 py-3 border-t border-[#DCE3DF] dark:border-slate-800 bg-[#F8F9FA] dark:bg-slate-950 flex items-center justify-between gap-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
-            onClick={() => { onReset(); onClose(); }}
+            onClick={() => { setAttemptedApply(false); onReset(); onClose(); }}
             className="min-h-[42px] px-3.5 rounded-[9px] border border-[#DCE3DF] dark:border-slate-700 text-xs font-bold text-[#48534F] dark:text-slate-300 flex items-center gap-1.5 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>بازنشانی</span>
           </button>
           <button
-            type="button"
+            type="submit"
             data-testid="apply-property-filters-btn"
-            onClick={() => { onApply(); onClose(); }}
             className="flex-1 min-h-[42px] px-4 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Check className="w-4 h-4" />
             <span>اعمال فیلترها</span>
           </button>
         </div>
+        </form>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

@@ -1,6 +1,8 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { BookOpen, ShieldCheck, X } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
+import { useDialogFocus } from '../../../components/useDialogFocus';
 import {
   DATA_KIND_LABELS_FA,
   MARKET_METHODOLOGIES,
@@ -20,6 +22,7 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
   isModal = false,
   onClose,
 }) => {
+  const dialogRef = useDialogFocus(Boolean(isModal), () => onClose?.());
   const body = (
     <div className="space-y-5 text-xs text-[#34433E] dark:text-slate-300">
       <div className="flex items-start justify-between gap-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
@@ -116,17 +119,25 @@ export const MethodologyPanel: React.FC<MethodologyPanelProps> = ({
     );
   }
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="روش‌شناسی مرکز تحلیل بازار"
       data-testid="market-methodology-dialog"
-      className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4"
+      onClick={onClose}
+      className="fixed inset-0 z-[9500] bg-slate-950/60 flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 p-5">
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 p-5"
+      >
         {body}
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

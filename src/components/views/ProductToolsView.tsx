@@ -153,7 +153,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
               : `مجموعه ${fmtCount(toolCounts.total)} ابزار کارشناسی قیمت، شبیه‌ساز مالی، راهنمای چانه‌زنی و بررسی حقوقی معاملات ملک در ${fmtCount(toolCategories.length)} گام`}
           </p>
         </div>
-        <div className="p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs space-y-2 min-w-[260px]">
+        <div className="p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs space-y-2 w-full sm:w-auto sm:min-w-[260px]">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">محله هدف محاسبات (قابل تغییر از نقشه):</span>
             {onOpenInspector && (
@@ -234,19 +234,20 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       )}
 
       <div className="space-y-8">
-        {filteredCategories.map((cat) => (
+        {filteredCategories.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
+            <p className="text-sm font-extrabold text-slate-900 dark:text-white">{isEn ? 'No matching tools found.' : 'ابزاری مطابق عبارت جست‌وجو یافت نشد.'}</p>
+            <button type="button" onClick={() => { setToolQuery(''); setActiveCat('all'); }} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer">{isEn ? 'Reset search & category' : 'بازنشانی جستجو و نمایش همه ابزارها'}</button>
+          </div>
+        ) : filteredCategories.map((cat) => (
           <section key={cat.id} className="space-y-3.5">
-            <h2 className={`text-xs font-bold text-slate-400 flex items-center gap-2 ${isEn ? 'uppercase tracking-wider' : 'tracking-normal'}`}>
-              <span>{cat.category}</span>
-            </h2>
+            <h2 className={`text-xs font-bold text-slate-400 flex items-center gap-2 ${isEn ? 'uppercase tracking-wider' : 'tracking-normal'}`}><span>{cat.category}</span></h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {cat.items.map((tool) => {
                 const IconC = tool.icon;
                 return (
                   <button key={tool.id} type="button" onClick={() => dispatchToolAction(tool.id)} className="p-5 rounded-2xl text-start w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-600 dark:hover:border-emerald-400 hover:shadow-md transition cursor-pointer flex items-start gap-4 group focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none">
-                    <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 transition shrink-0">
-                      <IconC className="w-5 h-5 stroke-[2]" />
-                    </span>
+                    <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 transition shrink-0"><IconC className="w-5 h-5 stroke-[2]" /></span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
                         <h3 className="font-extrabold text-slate-900 dark:text-white text-sm transition truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-400">{tool.title}</h3>
@@ -261,22 +262,8 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           </section>
         ))}
       </div>
-
-      {showVerifierModal && (
-        <React.Suspense fallback={null}>
-          <InstantListingVerifierModal isOpen={showVerifierModal} onClose={() => setShowVerifierModal(false)} initialHoodName={selectedHood?.name} cityKey={activeCity || 'tehran'} evaluatedNeighborhoods={evaluatedNeighborhoods} />
-        </React.Suspense>
-      )}
-      {showContractShieldModal && (
-        <React.Suspense fallback={null}>
-          <ContractRoomShieldModal
-            isOpen={showContractShieldModal}
-            onClose={() => setShowContractShieldModal(false)}
-            initialTotalMillion={initialContractTotalMillion}
-            contextKey={`${selectedHood?.id ?? 0}-${safeTargetSqm}`}
-          />
-        </React.Suspense>
-      )}
+      {showVerifierModal && <React.Suspense fallback={null}><InstantListingVerifierModal isOpen={showVerifierModal} onClose={() => setShowVerifierModal(false)} initialHoodName={selectedHood?.name} cityKey={activeCity || 'tehran'} evaluatedNeighborhoods={evaluatedNeighborhoods} /></React.Suspense>}
+      {showContractShieldModal && <React.Suspense fallback={null}><ContractRoomShieldModal isOpen={showContractShieldModal} onClose={() => setShowContractShieldModal(false)} initialTotalMillion={initialContractTotalMillion} contextKey={`${selectedHood?.id ?? 0}-${safeTargetSqm}`} /></React.Suspense>}
     </div>
   );
 }

@@ -3,10 +3,11 @@ import { Compass, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, Building2, KeyR
 import { EvaluatedNeighborhood, WORK_HUBS, WorkHub, toPersianNum } from '../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../data/realMarketPriceAggregator';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
-import { clampNumber, recordDiagnosticEvent } from '../utils/security';
+import { recordDiagnosticEvent } from '../utils/security';
 import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { useDialogFocus } from './useDialogFocus';
 import { compareEvaluatedNeighborhoodsForSuggestion, explainNeighborhoodRecommendation } from './useEvaluatedNeighborhoods';
+import { NumericDraftInput } from './ui/NumericDraftInput';
 
 export interface OnboardingWizardModalProps {
   open: boolean; onClose: (selectedFromWizard?: EvaluatedNeighborhood) => void; evaluatedNeighborhoods: EvaluatedNeighborhood[];
@@ -126,7 +127,7 @@ export function OnboardingWizardModal({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{isEn ? 'Target Area:' : 'متراژ دلخواه شما:'}</span>
                   <div className="flex items-center gap-2">
-                    <input type="number" aria-label={isEn ? 'Target area' : 'متراژ دلخواه'} min={30} max={400} value={targetSqm} onChange={(e) => setTargetSqm(clampNumber(Number(e.target.value), 30, 400, 80))} className="w-20 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
+                    <NumericDraftInput aria-label={isEn ? 'Target area' : 'متراژ دلخواه'} min={30} max={400} fallback={80} value={targetSqm} onValueChange={setTargetSqm} className="w-20 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">{areaUnit === 'sqft' ? formatAreaShort(targetSqm, 'sqft') : `${toPersianNum(targetSqm)} متر`}</span>
                   </div>
                 </div>
@@ -156,7 +157,7 @@ export function OnboardingWizardModal({
                   <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4.5 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{isEn ? 'Cash Budget (Million):' : 'کل بودجه نقدی در دسترس شما:'}</span>
-                      <input type="number" aria-label={isEn ? 'Cash budget' : 'بودجه نقدی خرید'} min={500} max={150000} step={500} value={buyTotalBudget} onChange={(e) => setBuyTotalBudget(clampNumber(Number(e.target.value), 500, 150000, 10500))} className="w-28 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
+                      <NumericDraftInput aria-label={isEn ? 'Cash budget' : 'بودجه نقدی خرید'} min={500} max={150000} step={500} fallback={10500} value={buyTotalBudget} onValueChange={setBuyTotalBudget} className="w-28 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {[2500, 3500, 5000, 10000, 20000].map((preset) => (
@@ -188,7 +189,7 @@ export function OnboardingWizardModal({
                         {isEn ? 'Available Deposit:' : 'ودیعه در دسترس (پیش):'}
                         {showIntl && <span className="font-normal text-[10px] text-emerald-700 dark:text-emerald-400 block" dir="ltr">{formatMillionTomanAsIntlCurrency(deposit, currency, locale)}</span>}
                       </span>
-                      <input type="number" aria-label={isEn ? 'Available deposit' : 'ودیعه در دسترس'} min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(clampNumber(Number(e.target.value), 50, 15000, 500))} className="w-24 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
+                      <NumericDraftInput aria-label={isEn ? 'Available deposit' : 'ودیعه در دسترس'} min={50} max={15000} step={50} fallback={500} value={deposit} onValueChange={setDeposit} className="w-24 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
                     </div>
                     <input type="range" aria-label={isEn ? 'Available deposit slider' : 'اسلایدر ودیعه در دسترس'} min={50} max={15000} step={50} value={deposit} onChange={(e) => setDeposit(Number(e.target.value))} className="w-full accent-emerald-600 cursor-pointer" />
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200/70 dark:border-slate-700">
@@ -196,7 +197,7 @@ export function OnboardingWizardModal({
                         {isEn ? 'Monthly Rent Budget (Million):' : 'اجاره ماهانه قابل پرداخت (میلیون تومان):'}
                         {showIntl && <span className="font-normal text-[10px] text-emerald-700 dark:text-emerald-400 block" dir="ltr">{formatMillionTomanAsIntlCurrency(monthlyRent, currency, locale)}</span>}
                       </span>
-                      <input type="number" aria-label={isEn ? 'Monthly rent budget' : 'اجاره ماهانه قابل پرداخت'} min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(clampNumber(Number(e.target.value), 0, 300, 0))} className="w-24 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
+                      <NumericDraftInput aria-label={isEn ? 'Monthly rent budget' : 'اجاره ماهانه قابل پرداخت'} min={0} max={300} step={1} fallback={0} value={monthlyRent} onValueChange={setMonthlyRent} className="w-24 px-2 py-1 text-center font-bold text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-hidden" />
                     </div>
                     <input type="range" aria-label={isEn ? 'Monthly rent slider' : 'اسلایدر اجاره ماهانه'} min={0} max={300} step={1} value={monthlyRent} onChange={(e) => setMonthlyRent(Number(e.target.value))} className="w-full accent-teal-600 cursor-pointer" />
                     <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/70 dark:border-slate-700">

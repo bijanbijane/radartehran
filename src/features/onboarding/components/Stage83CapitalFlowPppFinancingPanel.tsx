@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage83CapitalFlowPppFinancingPanel.tsx — Stage 83 Tabs 1 & 2 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateCapitalFlowAndPpp } from '../services/urbanInvestmentStage83Engine';
 import {
   STAGE83_FILTERS_12,
@@ -86,12 +87,13 @@ export const Stage83CapitalFlowPppFinancingPanel: React.FC<Props> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/70 p-3">
         <label className="flex items-center gap-2 text-slate-300">
           <span>نسبت بدهی در ساختار سرمایه (%):</span>
-          <input
-            type="number"
+          <NumericDraftInput
+            allowDecimal
             min={0}
             max={100}
+            fallback={0}
             value={debtSharePct}
-            onChange={(e) => setDebtSharePct(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+            onValueChange={setDebtSharePct}
             className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
           />
         </label>

@@ -6,6 +6,13 @@ export function isSponsorActive( sponsor?: NeighborhoodSponsor | null, enableSpo
 ): boolean { if (!sponsor || typeof sponsor.name !== 'string' || !sponsor.name.trim()) return false; if (enableSponsorBilling && sponsor.expiresAtIso) { const expMs = new Date(sponsor.expiresAtIso).getTime(); if (!Number.isNaN(expMs) && expMs < Date.now()) { return false; }
   }
   return true; }
+export function isFeaturedMapSponsor(
+  sponsor?: NeighborhoodSponsor | null,
+  enableSponsorBilling: boolean = false
+): boolean {
+  if (!isSponsorActive(sponsor, enableSponsorBilling)) return false;
+  return sponsor?.planType === 'paid_1m' || sponsor?.planType === 'paid_3m';
+}
 export interface NeighborhoodTrafficInfo { liveStatus: string; liveSeverity: 'heavy' | 'semi' | 'smooth'; peakHours: string; seasonalAnalysis: string; bottlenecks: string;
   trafficScore: number; // 1 to 10 (10 = smoothest traffic)
 }

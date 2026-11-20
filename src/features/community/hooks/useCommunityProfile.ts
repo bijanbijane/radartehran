@@ -68,6 +68,12 @@ export function useCommunityProfile({
   const profileReqSeqRef = useRef<number>(0);
   const timelineReqSeqRef = useRef<number>(0);
   const followPendingRef = useRef<boolean>(false);
+  const loadMoreAbortRef = useRef<AbortController | null>(null);
+  const currentUserRef = useRef<User | null>(currentUser);
+  currentUserRef.current = currentUser;
+  const fallbackProfileRef = useRef<CommunityProfile | null>(fallbackProfile);
+  fallbackProfileRef.current = fallbackProfile;
+  const viewerUid = currentUser?.uid ?? null;
 
   const setActiveKind = useCallback((kind: 'all' | ProfileContributionKind) => {
     setActiveKindState(kind);
@@ -88,7 +94,7 @@ export function useCommunityProfile({
   // 1. Load authoritative profile + follow status from server API (with AbortController & sequence guard)
   useEffect(() => {
     if (!username) {
-      setProfile(fallbackProfile);
+      setProfile(fallbackProfileRef.current);
       setProfileLoading(false);
       setProfileErrorFa(null);
       setIsFollowing(false);
@@ -101,7 +107,8 @@ export function useCommunityProfile({
     setProfileErrorFa(null);
 
     (async () => {
-      const res = await getCommunityMember(username, { currentUser, signal: controller.signal });
+      const activeUser = currentUserRef.current;
+      const res = await getCommunityMember(username, { currentUser: activeUser, signal: controller.signal });
       if (controller.signal.aborted || seq !== profileReqSeqRef.current) return;
 
       if (!res.ok || !res.data) {
@@ -116,8 +123,8 @@ export function useCommunityProfile({
       setProfile(loadedProfile);
       setProfileLoading(false);
 
-      if (currentUser?.uid && loadedProfile.userId && currentUser.uid !== loadedProfile.userId) {
-        const statusRes = await getCommunityUserFollowStatus(loadedProfile.userId, currentUser, controller.signal);
+      if (activeUser?.uid && loadedProfile.userId && activeUser.uid !== loadedProfile.userId) {
+        const statusRes = await getCommunityUserFollowStatus(loadedProfile.userId, activeUser, controller.signal);
         if (!controller.signal.aborted && seq === profileReqSeqRef.current && statusRes.ok && statusRes.data) {
           setIsFollowing(Boolean(statusRes.data.isFollowing));
         }
@@ -129,7 +136,7 @@ export function useCommunityProfile({
     return () => {
       controller.abort();
     };
-  }, [username, currentUser, reloadNonce, fallbackProfile]);
+  }, [username, viewerUid, reloadNonce]);
 
   // 2. Load first page of contribution timeline whenever username or activeKind changes
   useEffect(() => {
@@ -153,7 +160,7 @@ export function useCommunityProfile({
         kind: activeKind,
         limit: pageSize,
         cursor: null,
-        currentUser,
+        currentUser: currentUserRef.current,
         signal: controller.signal,
       });
       if (controller.signal.aborted || seq !== timelineReqSeqRef.current) return;
@@ -177,11 +184,15 @@ export function useCommunityProfile({
 
     return () => {
       controller.abort();
+      loadMoreAbortRef.current?.abort();
     };
-  }, [username, activeKind, pageSize, currentUser, reloadNonce]);
+  }, [username, activeKind, pageSize, viewerUid, reloadNonce]);
 
   const loadMoreContributions = useCallback(async () => {
     if (!username || !nextCursor || contributionsLoadingMore || contributionsLoading) return;
+    loadMoreAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadMoreAbortRef.current = controller;
     const seq = timelineReqSeqRef.current;
     setContributionsLoadingMore(true);
     setContributionsErrorFa(null);
@@ -190,10 +201,11 @@ export function useCommunityProfile({
       kind: activeKind,
       limit: pageSize,
       cursor: nextCursor,
-      currentUser,
+      currentUser: currentUserRef.current,
+      signal: controller.signal,
     });
 
-    if (seq !== timelineReqSeqRef.current) return;
+    if (controller.signal.aborted || seq !== timelineReqSeqRef.current) return;
     setContributionsLoadingMore(false);
 
     if (!res.ok || !res.data) {
@@ -210,12 +222,15 @@ export function useCommunityProfile({
     });
     setNextCursor(res.data.nextCursor);
     setHasMoreContributions(res.data.hasMore);
-  }, [username, nextCursor, contributionsLoadingMore, contributionsLoading, activeKind, pageSize, currentUser]);
+  }, [username, nextCursor, contributionsLoadingMore, contributionsLoading, activeKind, pageSize]);
 
   const toggleUserFollow = useCallback(async () => {
-    if (!profile || !currentUser?.uid || currentUser.uid === profile.userId) return;
+    const activeUser = currentUserRef.current;
+    if (!profile || !activeUser?.uid || activeUser.uid === profile.userId) return;
     if (followPendingRef.current) return;
 
+    const targetUserId = profile.userId;
+    const capturedProfileSeq = profileReqSeqRef.current;
     followPendingRef.current = true;
     setFollowPending(true);
     setFollowErrorFa(null);
@@ -226,24 +241,26 @@ export function useCommunityProfile({
     const optimisticFollowersCount = Math.max(0, prevFollowersCount + (optimisticFollowing ? 1 : -1));
 
     setIsFollowing(optimisticFollowing);
-    setProfile((prev) => (prev ? { ...prev, followersCount: optimisticFollowersCount } : prev));
+    setProfile((prev) => (prev && prev.userId === targetUserId ? { ...prev, followersCount: optimisticFollowersCount } : prev));
 
     try {
       const res = optimisticFollowing
-        ? await followCommunityUser(profile.userId, currentUser)
-        : await unfollowCommunityUser(profile.userId, currentUser);
+        ? await followCommunityUser(targetUserId, activeUser)
+        : await unfollowCommunityUser(targetUserId, activeUser);
+
+      if (capturedProfileSeq !== profileReqSeqRef.current) return;
 
       if (!res.ok || !res.data) {
         // Rollback optimistic state on server failure (FOLLOW-022)
         setIsFollowing(prevFollowing);
-        setProfile((prev) => (prev ? { ...prev, followersCount: prevFollowersCount } : prev));
+        setProfile((prev) => (prev && prev.userId === targetUserId ? { ...prev, followersCount: prevFollowersCount } : prev));
         setFollowErrorFa(res.errorFa || 'خطا در تغییر وضعیت دنبال‌کردن کاربر.');
         return;
       }
 
       setIsFollowing(res.data.isFollowing);
       setProfile((prev) =>
-        prev
+        prev && prev.userId === targetUserId
           ? {
               ...prev,
               followersCount: res.data!.followersCount,
@@ -254,7 +271,7 @@ export function useCommunityProfile({
       followPendingRef.current = false;
       setFollowPending(false);
     }
-  }, [profile, currentUser, isFollowing]);
+  }, [profile, isFollowing]);
 
   return {
     profile,

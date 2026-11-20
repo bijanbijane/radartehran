@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage48CostScheduleAndScenariosPanel.tsx — Stage 48 Renovation Cost, Schedule, Maintenance, Area & Scenarios */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   calculateGeometricAreaWithProvenance,
   calculateRenovationEstimateAndDiff,
@@ -100,7 +101,7 @@ export const Stage48CostScheduleAndScenariosPanel: React.FC<{
             <span>{renovationCalc.outOfScopeWarningFa}</span>
             <label className="flex items-center gap-1 text-slate-300">
               <span>درصد ذخیره:</span>
-              <input type="number" min={0} max={30} value={reservePercent} onChange={(e) => setReservePercent(Number(e.target.value) || 0)} className="w-12 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-white" />
+              <NumericDraftInput min={0} max={30} fallback={0} value={reservePercent} onValueChange={setReservePercent} className="w-12 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-white" />
             </label>
           </div>
         </div>
@@ -133,9 +134,9 @@ export const Stage48CostScheduleAndScenariosPanel: React.FC<{
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-bold text-white">محاسبه‌گر متراژ و تبدیل واحد با تفکیک مساحت هندسی از مساحت سند (DT-22 · Test 10):</span>
             <div className="flex items-center gap-2">
-              <input aria-label="عرض به متر" type="number" value={widthM} onChange={(e) => setWidthM(Number(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-white" />
+              <NumericDraftInput aria-label="عرض به متر" allowDecimal min={0.5} max={1000} fallback={8.5} value={widthM} onValueChange={setWidthM} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-white" />
               <span>×</span>
-              <input aria-label="طول به متر" type="number" value={lengthM} onChange={(e) => setLengthM(Number(e.target.value))} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-white" />
+              <NumericDraftInput aria-label="طول به متر" allowDecimal min={0.5} max={1000} fallback={12} value={lengthM} onValueChange={setLengthM} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-white" />
             </div>
           </div>
           {areaResult.valid ? (

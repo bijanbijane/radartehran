@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   RT_FE_DATA_ARCHITECTURE_012_SPEC_ID,
   RT_DATA_RESPONSIBILITY_LAYERS_6,
@@ -163,11 +164,11 @@ export const RtFeDataArchitecture012Subpanel: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-1.5 text-slate-300">
                 نسخه کلاینت:
-                <input type="number" value={clientVersion} onChange={(e) => setClientVersion(Number(e.target.value) || 1)} className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-0.5 font-mono text-white" />
+                <NumericDraftInput min={1} max={9999} fallback={1} value={clientVersion} onValueChange={setClientVersion} className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-0.5 font-mono text-white" />
               </label>
               <label className="flex items-center gap-1.5 text-slate-300">
                 نسخه سرور:
-                <input type="number" value={serverVersion} onChange={(e) => setServerVersion(Number(e.target.value) || 1)} className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-0.5 font-mono text-white" />
+                <NumericDraftInput min={1} max={9999} fallback={1} value={serverVersion} onValueChange={setServerVersion} className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-0.5 font-mono text-white" />
               </label>
               <select
                 aria-label="نوع عملیات تغییر داده"

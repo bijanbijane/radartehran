@@ -52,8 +52,18 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
         setOpen(false);
       }
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+      }
+    };
     document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [open]);
 
   const state = loadCommsWorkspaceState(uid);
@@ -89,7 +99,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
         {unreadCount > 0 && (
           <span
             data-testid="header-notification-badge"
-            className="absolute top-0.5 right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-600 text-white text-[9.5px] font-black flex items-center justify-center tabular-nums"
+            className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-600 text-white ring-2 ring-white dark:ring-slate-900 text-[9.5px] font-black flex items-center justify-center tabular-nums"
           >
             {toPersianNum(unreadCount)}
           </span>
@@ -101,7 +111,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
           role="dialog"
           aria-label="پیش‌نمایش اعلان‌ها"
           data-testid="header-notification-popover"
-          className="fixed sm:absolute top-14 sm:top-10 inset-x-2 sm:inset-x-auto sm:end-0 w-auto sm:w-[360px] max-w-[calc(100vw-16px)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl z-50 overflow-hidden text-xs"
+          className="fixed sm:absolute top-[60px] sm:top-10 inset-x-2 sm:inset-x-auto sm:end-0 w-auto sm:w-[360px] max-w-[calc(100vw-16px)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl z-50 overflow-hidden text-xs"
         >
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
             <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">

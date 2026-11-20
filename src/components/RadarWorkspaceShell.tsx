@@ -52,6 +52,8 @@ export function RadarWorkspaceShell() {
   const toggleAppleTheme = () => setAppleTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   const ui = useAppUiState(initialUrlState);
   const anatomyTabsRef = useRef<HTMLDivElement | null>(null);
+  const searchFocusTimerRef = useRef<number | null>(null);
+  useEffect(() => () => { if (searchFocusTimerRef.current !== null) window.clearTimeout(searchFocusTimerRef.current); }, []);
   const buyAgeMultiplier = buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.88 : 0.76;
   const rentAgeMultiplier = buildingAgeSegment === 'new' ? 1.0 : buildingAgeSegment === 'mid' ? 0.90 : 0.80;
   const { currentUser, cloudBargainsByHood, cloudSponsorsByHood, connectionStatus } = useRadarCloudSync({
@@ -85,7 +87,12 @@ export function RadarWorkspaceShell() {
     const firstId = targetHoodId ?? (cityId === 'tehran' ? 5 : cfg.neighborhoods[0]?.id || 101);
     const secondId = cityId === 'tehran' ? 14 : cfg.neighborhoods[1]?.id || firstId;
     ui.setSelectedHoodId(firstId); ui.setCompareId1(firstId); ui.setCompareId2(secondId); ui.setBargainHoodId(firstId); ui.setSponsorHoodId(firstId); ui.setAlertHoodId(firstId);
-    if (mapInstanceRef.current) { try { mapInstanceRef.current.flyTo(targetCenter || cfg.center, targetZoom || cfg.defaultZoom, { duration: 0.9 }); } catch { /* ignore */ } }
+    if (mapInstanceRef.current) {
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+      const baseCenter = targetCenter || cfg.center;
+      const adjustedCenter: [number, number] = [baseCenter[0], baseCenter[1] + (isDesktop && ui.primaryView === 'map' ? 0.055 : 0)];
+      try { mapInstanceRef.current.flyTo(adjustedCenter, targetZoom || cfg.defaultZoom, { duration: 0.9 }); } catch { /* ignore */ }
+    }
   };
   const handleSelectNeighborhood = (hood: EvaluatedNeighborhood) => {
     const ownerCity = resolveCityIdForNeighborhood(hood.id);
@@ -94,8 +101,10 @@ export function RadarWorkspaceShell() {
     ui.setVoteStatus(null); closeFloatingMapPanels();
     if (mapInstanceRef.current && typeof hood.lat === 'number' && !Number.isNaN(hood.lat)) {
       const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-      const [latOffset, lngOffset] = [!isDesktop && ui.primaryView !== 'map' ? -0.022 : 0, isDesktop ? (ui.primaryView !== 'map' ? 0.032 : 0.014) : 0];
-      try { mapInstanceRef.current.flyTo([hood.lat + latOffset, hood.lng + lngOffset], 13, { duration: 0.7 }); } catch { /* ignore */ }
+      const [latOffset, lngOffset] = [!isDesktop && ui.primaryView !== 'map' ? -0.022 : 0, isDesktop ? (ui.primaryView !== 'map' ? 0.032 : 0.055) : 0];
+      const currentZoom = typeof mapInstanceRef.current.getZoom === 'function' ? mapInstanceRef.current.getZoom() : 12;
+      const targetZoom = Math.max(13, Number.isFinite(currentZoom) ? currentZoom : 13);
+      try { mapInstanceRef.current.flyTo([hood.lat + latOffset, hood.lng + lngOffset], targetZoom, { duration: 0.7 }); } catch { /* ignore */ }
     }
   };
   const toggleFavoriteHood = (id: number) => setFavoriteHoodIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -166,13 +175,22 @@ export function RadarWorkspaceShell() {
   });
 
   return (
-    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-screen overflow-hidden bg-[#F6F8F6] dark:bg-slate-950 text-[#182522] dark:text-slate-100 flex flex-col">
+    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-full overflow-hidden bg-[#F6F8F6] dark:bg-slate-950 text-[#182522] dark:text-slate-100 flex flex-col">
       {ui.primaryView !== 'admin' && (
         <ProductGlobalHeader
           primaryView={ui.primaryView} activeSubTab={ui.activeSubTab} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
           onSelectPrimaryView={(v, sub) => { ui.setMobileSheetOpen(false); closeFloatingMapPanels(); ui.setActiveSubTab(sub); ui.setPrimaryView(v); }}
           appleTheme={appleTheme} onToggleAppleTheme={toggleAppleTheme} searchQuery={ui.searchQuery}
-          onOpenSearch={() => { closeFloatingMapPanels('search'); ui.setShowSearchDropdown((p) => { const next = !p; if (next) setTimeout(() => (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(), 30); return next; }); }}
+          isSearchOpen={ui.showSearchDropdown}
+          onOpenSearch={() => {
+            if (searchFocusTimerRef.current !== null) { window.clearTimeout(searchFocusTimerRef.current); searchFocusTimerRef.current = null; }
+            closeFloatingMapPanels('search');
+            ui.setShowSearchDropdown((p) => {
+              const next = !p;
+              if (next) searchFocusTimerRef.current = window.setTimeout(() => { searchFocusTimerRef.current = null; (document.querySelector('input[aria-label="جست‌وجوی محله"]') as HTMLInputElement | null)?.focus(); }, 30);
+              return next;
+            });
+          }}
           onMegaMenuAction={(act) => {
             if (act === 'visited') ui.setShowVisitedModal(true); else if (act === 'onboarding') ui.setShowOnboardingModal(true);
             else if (act === 'seo') ui.setShowSeoDrawer(true); else if (act === 'listing_verifier') ui.setShowListingVerifierModal(true);
@@ -181,7 +199,7 @@ export function RadarWorkspaceShell() {
           activePlaceLabelFa={findProvinceForHood(ui.selectedHoodId)?.capitalFa} currentUser={currentUser}
         />
       )}
-      <div id={ui.primaryView === 'map' ? 'radar-main-content' : undefined} tabIndex={ui.primaryView === 'map' ? -1 : undefined} role="region" aria-label="نقشه تعاملی محله‌ها" className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : 'top-[56px]'} z-0 focus:outline-none`}>
+      <div id={ui.primaryView === 'map' ? 'radar-main-content' : undefined} tabIndex={ui.primaryView === 'map' ? -1 : undefined} role="region" aria-label="نقشه تعاملی محله‌ها" className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : ui.primaryView === 'map' ? 'top-[56px]' : 'top-[56px] lg:top-[68px]'} z-0 focus:outline-none`}>
         <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC]" />
         {!isMapLoaded && (
           <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[#F6F8F6]/70 dark:bg-slate-900/60 backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
@@ -263,17 +281,21 @@ export function RadarWorkspaceShell() {
         onFlyToHood={() => { if (mapInstanceRef.current && selectedHood) mapInstanceRef.current.flyTo([selectedHood.lat, selectedHood.lng], 12.5, { duration: 0.5 }); }}
         onOpenOnboarding={() => ui.setShowOnboardingModal(true)} onOpenVisitedLog={() => ui.setShowVisitedModal(true)}
       />
-      {showReverseBudgetModal && (<Suspense fallback={null}>
-        <ReverseBudgetDiscoveryModal
-          isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)} initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm} initialMaxAgeYears={buildingAgeSegment === 'new' ? 5 : buildingAgeSegment === 'mid' ? 12 : 20} useLoanBooster={ui.useLoanBooster} deductTenantRahnInBuy={deductTenantRahnInBuy}
-          neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm, rahn80m: h.rahn80m, overallScore: h.overallScore, bargains: h.bargains }))}
-          onSelectNeighborhood={(id, budgetMillion, areaSqm, ageYears) => {
-            const found = evaluatedNeighborhoods.find((h) => String(h.id) === id);
-            if (typeof budgetMillion === 'number' && budgetMillion > 0) setBuyTotalBudget(budgetMillion);
-            if (typeof areaSqm === 'number' && areaSqm >= 35) setTargetSqm(areaSqm); if (typeof ageYears === 'number') setBuildingAgeSegment(ageYears <= 5 ? 'new' : ageYears <= 15 ? 'mid' : 'older');
-            if (found) { setMode('buy'); handleSelectNeighborhood(found); ui.setMobileSheetOpen(true); }
-          }} />
-      </Suspense>)}
+      {showReverseBudgetModal && (
+        <FeatureErrorBoundary sectionName="کشف محله بر اساس بودجه" resetKey={ui.activeCity} onDismissModal={() => setShowReverseBudgetModal(false)}>
+          <Suspense fallback={null}>
+            <ReverseBudgetDiscoveryModal
+              isOpen={showReverseBudgetModal} onClose={() => setShowReverseBudgetModal(false)} initialBudgetMillion={buyTotalBudget} initialAreaSqm={targetSqm} initialMaxAgeYears={buildingAgeSegment === 'new' ? 5 : buildingAgeSegment === 'mid' ? 12 : 20} useLoanBooster={ui.useLoanBooster} deductTenantRahnInBuy={deductTenantRahnInBuy}
+              neighborhoods={evaluatedNeighborhoods.map((h) => ({ id: String(h.id), nameFa: h.name, districtNumber: (h.id % 22) + 1, zoneLabel: h.zone, avgPricePerSqmMillion: h.baseBuyPerSqm ?? h.buyPerSqm, rahn80m: h.rahn80m, overallScore: h.overallScore, bargains: h.bargains }))}
+              onSelectNeighborhood={(id, budgetMillion, areaSqm, ageYears) => {
+                const found = evaluatedNeighborhoods.find((h) => String(h.id) === id);
+                if (typeof budgetMillion === 'number' && budgetMillion > 0) setBuyTotalBudget(budgetMillion);
+                if (typeof areaSqm === 'number' && areaSqm >= 35) setTargetSqm(areaSqm); if (typeof ageYears === 'number') setBuildingAgeSegment(ageYears <= 5 ? 'new' : ageYears <= 15 ? 'mid' : 'older');
+                if (found) { setMode('buy'); handleSelectNeighborhood(found); ui.setMobileSheetOpen(true); }
+              }} />
+          </Suspense>
+        </FeatureErrorBoundary>
+      )}
       <FeatureErrorBoundary sectionName="پنجره‌ها و ابزارهای تخصصی" resetKey={ui.activeCity}>
         <AppModalsPortal
           ui={ui} mode={mode} setMode={setMode} totalRahnEquivalent={totalRahnEquivalent} maxAffordablePerSqm={maxAffordablePerSqm} smartSuggestedNeighborhoods={smartSuggestedNeighborhoods}

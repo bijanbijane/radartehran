@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   evaluateAlertTriggerQualification,
   shouldDeliverNotificationInQuietHours,
@@ -34,6 +35,7 @@ export const Stage39AlertBuilderAndPrefs: React.FC<Props> = ({
   const [frequency, setFrequency] = useState<AlertDeliveryFrequency>('daily_digest');
   const [cooldownHours, setCooldownHours] = useState(24);
   const [testHour, setTestHour] = useState(23);
+  const [titleError, setTitleError] = useState<string>('');
 
   const previewRule: AlertRuleSpec = {
     ruleId: `rule-preview-${subjectKind}`,
@@ -69,7 +71,21 @@ export const Stage39AlertBuilderAndPrefs: React.FC<Props> = ({
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" dir="rtl">
       {/* ALT-06 Alert Builder */}
-      <div data-testid="stage39-alert-builder" className="rounded-xl border border-slate-800 bg-slate-950/80 p-3.5 text-xs space-y-2.5">
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          const trimmed = subjectTitleFa.trim();
+          if (trimmed.length < 2) {
+            setTitleError('عنوان موضوع پایش باید حداقل ۲ کاراکتر باشد.');
+            return;
+          }
+          setTitleError('');
+          onCreateAlertRule({ ...previewRule, subjectTitleFa: trimmed, ruleId: `rule-${Date.now()}` });
+        }}
+        data-testid="stage39-alert-builder"
+        className="rounded-xl border border-slate-800 bg-slate-950/80 p-3.5 text-xs space-y-2.5"
+      >
         <div className="font-bold text-white">سازنده مرحله‌ای هشدار (ALT-06) + پیش‌نمایش صداقت داده</div>
         <div className="flex flex-wrap gap-1">
           {SUBJECT_KINDS.map((k) => (
@@ -92,18 +108,22 @@ export const Stage39AlertBuilderAndPrefs: React.FC<Props> = ({
             <input
               type="text"
               value={subjectTitleFa}
-              onChange={(e) => setSubjectTitleFa(e.target.value)}
+              aria-invalid={Boolean(titleError)}
+              onChange={(e) => {
+                setSubjectTitleFa(e.target.value);
+                if (titleError) setTitleError('');
+              }}
               className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white"
             />
           </label>
           <label className="text-[11px] text-slate-300">
             آستانه تغییر (٪):
-            <input
-              type="number"
+            <NumericDraftInput
               min={1}
               max={50}
+              fallback={5}
               value={thresholdPct}
-              onChange={(e) => setThresholdPct(Number(e.target.value))}
+              onValueChange={setThresholdPct}
               className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white"
             />
           </label>
@@ -122,28 +142,32 @@ export const Stage39AlertBuilderAndPrefs: React.FC<Props> = ({
           </label>
           <label className="text-[11px] text-slate-300">
             زمان خنک‌سازی (Cooldown ساعت):
-            <input
-              type="number"
+            <NumericDraftInput
               min={1}
               max={168}
+              fallback={24}
               value={cooldownHours}
-              onChange={(e) => setCooldownHours(Number(e.target.value))}
+              onValueChange={setCooldownHours}
               className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white"
             />
           </label>
         </div>
+        {titleError && (
+          <div role="alert" className="rounded border border-rose-500/40 bg-rose-950/30 p-2 text-[11px] text-rose-200">
+            {titleError}
+          </div>
+        )}
         <div className="rounded border border-amber-500/30 bg-amber-950/20 p-2 text-[11px] text-amber-200">
           پیش‌نمایش خروجی شرط: {sampleEval.safeWordingFa}
         </div>
         <button
-          type="button"
+          type="submit"
           data-testid="create-alert-rule-btn"
-          onClick={() => onCreateAlertRule({ ...previewRule, ruleId: `rule-${Date.now()}` })}
           className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-500"
         >
           ثبت نمایشی قاعده هشدار
         </button>
-      </div>
+      </form>
 
       {/* ALT-13 & ALT-14 Preferences & Quiet Hours */}
       <div data-testid="stage39-preferences-panel" className="rounded-xl border border-slate-800 bg-slate-950/80 p-3.5 text-xs space-y-2.5">
@@ -176,12 +200,12 @@ export const Stage39AlertBuilderAndPrefs: React.FC<Props> = ({
           <span>ساعات سکوت: {settings.quietHoursStartHour}:00 تا {settings.quietHoursEndHour}:00</span>
           <label className="flex items-center gap-1">
             <span>ساعت تست ارسال:</span>
-            <input
-              type="number"
+            <NumericDraftInput
               min={0}
               max={23}
+              fallback={23}
               value={testHour}
-              onChange={(e) => setTestHour(Number(e.target.value))}
+              onValueChange={setTestHour}
               className="w-14 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white"
             />
           </label>

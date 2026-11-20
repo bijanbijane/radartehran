@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { Bell, CheckCircle2, ShieldAlert, Smartphone, X } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle2, ShieldAlert, Smartphone, X } from 'lucide-react';
 import { Neighborhood, toPersianNum } from '../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator';
-import { isValidIranianMobile, sanitizeInput } from '../utils/security';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { classifyFeedbackTone, isValidNormalizedIranianMobile, sanitizeLiveText } from '../utils/forms/formInputHelpers';
 import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { BuyerPriceThresholdManagerSection, PriceThresholdMatchItem, PriceThresholdSubscription, useBuyerPriceThresholdAlerts } from './buyerPriceThresholdAlerts';
 import { useDialogFocus } from './useDialogFocus';
@@ -23,6 +23,7 @@ export interface BuyerAlertPwaLegalModalsProps {
   alertMaxBudget: string;
   setAlertMaxBudget: React.Dispatch<React.SetStateAction<string>>;
   alertSubmitMsg: string;
+  setAlertSubmitMsg?: React.Dispatch<React.SetStateAction<string>>;
   onRegisterBuyerAlert: (e: React.FormEvent) => void;
   isSavingBuyerAlert?: boolean;
   showPwaModal: boolean;
@@ -40,7 +41,7 @@ export interface BuyerAlertPwaLegalModalsProps {
 export function BuyerAlertPwaLegalModals({
   showBuyerAlertModal, setShowBuyerAlertModal, neighborhoods, alertFullName, setAlertFullName, alertPhone, setAlertPhone,
   alertHoodId, setAlertHoodId, alertDealType, setAlertDealType, alertMaxBudget, setAlertMaxBudget,
-  alertSubmitMsg, onRegisterBuyerAlert, isSavingBuyerAlert = false, showPwaModal, setShowPwaModal,
+  alertSubmitMsg, setAlertSubmitMsg, onRegisterBuyerAlert, isSavingBuyerAlert = false, showPwaModal, setShowPwaModal,
   showLegalModal, setShowLegalModal, thresholdSubscriptions, thresholdMatches, onAddThresholdSubscription, onRemoveThresholdSubscription,
 }: BuyerAlertPwaLegalModalsProps) {
   const [areaUnit] = useAreaUnit();
@@ -59,7 +60,8 @@ export function BuyerAlertPwaLegalModals({
   const activeMatches = thresholdMatches ?? fallbackThresholds.allMatches;
   const handleAddSub = onAddThresholdSubscription ?? fallbackThresholds.addSubscription;
   const handleRemoveSub = onRemoveThresholdSubscription ?? fallbackThresholds.removeSubscription;
-  const mobileHintValid = useMemo(() => (!alertPhone.trim() ? true : isValidIranianMobile(alertPhone)), [alertPhone]);
+  const mobileHintValid = useMemo(() => (!alertPhone.trim() ? true : isValidNormalizedIranianMobile(alertPhone)), [alertPhone]);
+  const alertMsgTone = useMemo(() => classifyFeedbackTone(alertSubmitMsg), [alertSubmitMsg]);
 
   return (
     <>
@@ -89,7 +91,7 @@ export function BuyerAlertPwaLegalModals({
                 allMatches={activeMatches} onAddSubscription={handleAddSub} onRemoveSubscription={handleRemoveSub}
               />
             </div>
-            <form onSubmit={onRegisterBuyerAlert} className="space-y-3 text-xs">
+            <form noValidate onSubmit={onRegisterBuyerAlert} className="space-y-3 text-xs">
               <div className="apple-grouped-card bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/90 dark:border-emerald-800/60 p-3 text-emerald-900 dark:text-emerald-300 leading-relaxed rounded-xl">
                 درخواست شما برای دریافت هشدار در صورت ثبت فایل واجد شرایط ذخیره می‌شود. ارسال خودکار پیامک در حال حاضر فعال نیست و ثبت درخواست به‌معنای تضمین یافتن ملک در زمان مشخص نیست.
               </div>
@@ -98,8 +100,8 @@ export function BuyerAlertPwaLegalModals({
                   <div>
                     <label className="block text-slate-600 dark:text-slate-300 mb-1">نام و نام خانوادگی:</label>
                     <input
-                      type="text" aria-label="نام و نام خانوادگی" required maxLength={80} value={alertFullName}
-                      onChange={(e) => setAlertFullName(sanitizeInput(e.target.value, 80))}
+                      type="text" aria-label="نام و نام خانوادگی" aria-invalid={alertMsgTone === 'error' && alertFullName.trim().length < 2} required maxLength={80} value={alertFullName}
+                      onChange={(e) => { setAlertSubmitMsg?.(''); setAlertFullName(sanitizeLiveText(e.target.value, 80)); }}
                       placeholder="مثلاً: علی محمدی"
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
                     />
@@ -110,8 +112,8 @@ export function BuyerAlertPwaLegalModals({
                       {!mobileHintValid && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">موبایل ۱۱ رقمی (09...)</span>}
                     </label>
                     <input
-                      type="tel" aria-label="شماره موبایل" required maxLength={15} dir="ltr" value={alertPhone}
-                      onChange={(e) => setAlertPhone(sanitizeInput(e.target.value, 15))}
+                      type="tel" aria-label="شماره موبایل" aria-invalid={!mobileHintValid && alertPhone.trim().length > 0} required maxLength={18} dir="ltr" value={alertPhone}
+                      onChange={(e) => { setAlertSubmitMsg?.(''); setAlertPhone(sanitizeLiveText(e.target.value, 18)); }}
                       placeholder="0912xxxxxxx"
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-emerald-700 dark:text-emerald-400 font-bold tabular-nums focus:outline-none focus:border-emerald-600"
                     />
@@ -121,7 +123,7 @@ export function BuyerAlertPwaLegalModals({
                   <div>
                     <label className="block text-slate-600 dark:text-slate-300 mb-1">محله مورد نظر:</label>
                     <select
-                      aria-label="محله مورد نظر" value={alertHoodId} onChange={(e) => setAlertHoodId(Number(e.target.value))}
+                      aria-label="محله مورد نظر" value={alertHoodId} onChange={(e) => { setAlertSubmitMsg?.(''); setAlertHoodId(Number(e.target.value)); }}
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
                     >
                       {safeNeighborhoods.map((n) => {
@@ -138,7 +140,7 @@ export function BuyerAlertPwaLegalModals({
                   <div>
                     <label className="block text-slate-600 dark:text-slate-300 mb-1">نوع معامله:</label>
                     <select
-                      aria-label="نوع معامله" value={alertDealType} onChange={(e) => setAlertDealType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید')}
+                      aria-label="نوع معامله" value={alertDealType} onChange={(e) => { setAlertSubmitMsg?.(''); setAlertDealType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید'); }}
                       className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600"
                     >
                       <option value="خرید">خرید آپارتمان زیر قیمت</option>
@@ -157,15 +159,28 @@ export function BuyerAlertPwaLegalModals({
                   </label>
                   <input
                     type="text" aria-label="حداکثر بودجه مد نظر" maxLength={90} value={alertMaxBudget}
-                    onChange={(e) => setAlertMaxBudget(sanitizeInput(e.target.value, 90))}
+                    onChange={(e) => { setAlertSubmitMsg?.(''); setAlertMaxBudget(sanitizeLiveText(e.target.value, 90)); }}
                     placeholder="مثلاً: ۱۰ میلیارد خرید یا ۱.۵ میلیارد رهن کامل"
                     className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600"
                   />
                 </div>
               </div>
               {alertSubmitMsg && (
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold leading-relaxed flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div
+                  role={alertMsgTone === 'error' ? 'alert' : 'status'}
+                  className={`p-3 rounded-xl border font-semibold leading-relaxed flex items-center gap-2 ${
+                    alertMsgTone === 'error'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
+                      : alertMsgTone === 'info'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                  }`}
+                >
+                  {alertMsgTone === 'error' ? (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  )}
                   <span>{alertSubmitMsg}</span>
                 </div>
               )}

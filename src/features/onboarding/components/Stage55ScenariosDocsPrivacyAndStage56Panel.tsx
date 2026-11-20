@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage55ScenariosDocsPrivacyAndStage56Panel.tsx — Stage 55 Scenarios, Docs, History, Privacy & Stage 56 Preview */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   auditDocumentAndPrivacyAccess,
   simulateHypotheticalDevelopmentScenarios,
@@ -75,33 +76,34 @@ export const Stage55ScenariosDocsPrivacyAndStage56Panel: React.FC<Props> = ({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="space-y-1">
               <span className="text-slate-400">مساحت زمین فرضی (متر مربع):</span>
-              <input
-                type="number"
+              <NumericDraftInput
                 min={50}
+                max={100000}
+                fallback={100}
                 value={lotAreaSqm}
-                onChange={(e) => setLotAreaSqm(Number(e.target.value) || 100)}
+                onValueChange={setLotAreaSqm}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-slate-100"
               />
             </label>
             <label className="space-y-1">
               <span className="text-slate-400">تراکم مبنای فرضی (٪):</span>
-              <input
-                type="number"
+              <NumericDraftInput
                 min={60}
                 max={600}
+                fallback={180}
                 value={baseFarPercent}
-                onChange={(e) => setBaseFarPercent(Number(e.target.value) || 180)}
+                onValueChange={setBaseFarPercent}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-slate-100"
               />
             </label>
             <label className="space-y-1">
               <span className="text-slate-400">طبقات فرضی:</span>
-              <input
-                type="number"
+              <NumericDraftInput
                 min={1}
                 max={20}
+                fallback={1}
                 value={hypotheticalFloors}
-                onChange={(e) => setHypotheticalFloors(Number(e.target.value) || 1)}
+                onValueChange={setHypotheticalFloors}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-slate-100"
               />
             </label>

@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react'; import { CreditCard, Phone, Receipt } from 'lucide-react'; import { Neighborhood, getHoodMonthlySponsorTariff, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, createExecutionTimer, isValidAgencyPhone, sanitizeInput, } from '../utils/security'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import React, { useMemo, useState } from 'react'; import { CreditCard, Phone, Receipt } from 'lucide-react'; import { Neighborhood, getHoodMonthlySponsorTariff, isSponsorActive, toPersianNum, } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, isValidAgencyPhone, sanitizeInput, } from '../utils/security'; import { classifyFeedbackTone, sanitizeLiveText } from '../utils/forms/formInputHelpers'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { NumericDraftInput } from './ui/NumericDraftInput';
 export interface AgencySponsorReservationTabProps { safeNeighborhoods: Neighborhood[]; targetBargainHood: Neighborhood; sponsorHoodId: number; setSponsorHoodId: React.Dispatch<React.SetStateAction<number>>;
   sponsorAgencyName: string; setSponsorAgencyName: React.Dispatch<React.SetStateAction<string>>; sponsorPhone: string; setSponsorPhone: React.Dispatch<React.SetStateAction<string>>; sponsorSpecialty: string; setSponsorSpecialty: React.Dispatch<React.SetStateAction<string>>; sponsorExpYears: number;
-  setSponsorExpYears: React.Dispatch<React.SetStateAction<number>>; sponsorSubmitMsg: string; onReserveSponsor: (e: React.FormEvent) => void; enableSponsorBilling?: boolean; sponsorPlanMonths?: 1 | 3; setSponsorPlanMonths?: React.Dispatch<React.SetStateAction<1 | 3>>; sponsorTrackingCode?: string;
+  setSponsorExpYears: React.Dispatch<React.SetStateAction<number>>; sponsorSubmitMsg: string; setSponsorSubmitMsg?: React.Dispatch<React.SetStateAction<string>>; onReserveSponsor: (e: React.FormEvent) => void; enableSponsorBilling?: boolean; sponsorPlanMonths?: 1 | 3; setSponsorPlanMonths?: React.Dispatch<React.SetStateAction<1 | 3>>; sponsorTrackingCode?: string;
   setSponsorTrackingCode?: React.Dispatch<React.SetStateAction<string>>; }
 export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHood, sponsorHoodId, setSponsorHoodId, sponsorAgencyName, setSponsorAgencyName, sponsorPhone,
-  setSponsorPhone, sponsorSpecialty, setSponsorSpecialty, sponsorExpYears, setSponsorExpYears, sponsorSubmitMsg,
+  setSponsorPhone, sponsorSpecialty, setSponsorSpecialty, sponsorExpYears, setSponsorExpYears, sponsorSubmitMsg, setSponsorSubmitMsg,
   onReserveSponsor, enableSponsorBilling = true, sponsorPlanMonths = 1,
   setSponsorPlanMonths, sponsorTrackingCode = '',
   setSponsorTrackingCode,
@@ -75,20 +75,20 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
     onReserveSponsor(e);
   };
   const effectiveMessage = localPhoneError || sponsorSubmitMsg;
-  const isErrorMsg = Boolean(localPhoneError) || effectiveMessage.includes('لطفاً');
+  const isErrorMsg = Boolean(localPhoneError) || classifyFeedbackTone(effectiveMessage) === 'error';
   return (
     <div className="space-y-4 text-xs">
       <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-3 text-slate-700 dark:text-slate-300 leading-relaxed">
         در هر یک از محله‌ها، <strong>فقط یک دفتر مشاور املاک معتبر</strong> به عنوان «کارشناس
         رسمی محله» در پایین کارنامه همان محله نمایش داده می‌شود.
       </div>
-      <form onSubmit={handleFormSubmit} className="space-y-3">
+      <form noValidate onSubmit={handleFormSubmit} className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-slate-600 dark:text-slate-400 mb-1">انتخاب محله جهت رزرو:</label>
             <select
               aria-label="انتخاب محله جهت رزرو" value={sponsorHoodId}
-              onChange={(e) => setSponsorHoodId(Number(e.target.value))}
+              onChange={(e) => { setLocalPhoneError(''); setSponsorSubmitMsg?.(''); setSponsorHoodId(Number(e.target.value)); }}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:border-emerald-600"
             >
               {safeNeighborhoods.map((n) => (
@@ -103,12 +103,14 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
             <label className="block text-slate-600 dark:text-slate-400 mb-1">نام دفتر مشاور املاک:</label>
             <input
               type="text" aria-label="نام دفتر مشاور املاک"
+              aria-invalid={Boolean(localPhoneError && sanitizeInput(sponsorAgencyName, 90).length < 2)}
               required
               maxLength={90}
               value={sponsorAgencyName}
               onChange={(e) => {
                 setLocalPhoneError('');
-                setSponsorAgencyName(sanitizeInput(e.target.value, 90));
+                setSponsorSubmitMsg?.('');
+                setSponsorAgencyName(sanitizeLiveText(e.target.value, 90));
               }}
               placeholder="مثلاً: دپارتمان املاک بزرگ پونک"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600"
@@ -126,12 +128,14 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
             <div className="relative">
               <input
                 type="text" aria-label="شماره تماس مستقیم"
+                aria-invalid={!phoneIsValid}
                 required
                 maxLength={30}
                 value={sponsorPhone}
                 onChange={(e) => {
                   setLocalPhoneError('');
-                  setSponsorPhone(sanitizeInput(e.target.value, 30));
+                  setSponsorSubmitMsg?.('');
+                  setSponsorPhone(sanitizeLiveText(e.target.value, 30));
                 }}
                 placeholder="021-4444xxxx"
                 className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 tabular-nums focus:outline-none ${
@@ -149,19 +153,20 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
               type="text" aria-label="تخصص دفتر در محله"
               maxLength={110}
               value={sponsorSpecialty}
-              onChange={(e) => setSponsorSpecialty(sanitizeInput(e.target.value, 110))}
+              onChange={(e) => { setSponsorSubmitMsg?.(''); setSponsorSpecialty(sanitizeLiveText(e.target.value, 110)); }}
               placeholder="مثلاً: فایل‌های شخصی و نوساز"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-600"
             />
           </div>
           <div>
             <label className="block text-slate-600 dark:text-slate-400 mb-1">سابقه فعالیت (سال):</label>
-            <input
-              type="number" aria-label="سابقه فعالیت به سال"
+            <NumericDraftInput
+              aria-label="سابقه فعالیت به سال"
               min={1}
               max={50}
+              fallback={10}
               value={sponsorExpYears}
-              onChange={(e) => setSponsorExpYears(clampNumber(e.target.value, 1, 50, 10))}
+              onValueChange={(v) => { setSponsorSubmitMsg?.(''); setSponsorExpYears(v); }}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-slate-100 tabular-nums focus:outline-none focus:border-emerald-600"
             />
           </div>
@@ -233,7 +238,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
                   value={sponsorTrackingCode}
                   onChange={(e) =>
                     setSponsorTrackingCode &&
-                    setSponsorTrackingCode(sanitizeInput(e.target.value, 50))
+                    setSponsorTrackingCode(sanitizeLiveText(e.target.value, 50))
                   }
                   placeholder="مثلاً: TR-8849201"
                   dir="ltr"
@@ -249,6 +254,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
         )}
         {effectiveMessage && (
           <div
+            role={isErrorMsg ? 'alert' : 'status'}
             className={`p-3 rounded-2xl border font-semibold ${
               isErrorMsg
                 ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'

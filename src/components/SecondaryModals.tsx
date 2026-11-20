@@ -23,6 +23,7 @@ export interface SecondaryModalsProps {
   alertPhone: string; setAlertPhone: React.Dispatch<React.SetStateAction<string>>; alertHoodId: number; setAlertHoodId: React.Dispatch<React.SetStateAction<number>>;
   alertDealType: 'خرید' | 'اجاره'; setAlertDealType: React.Dispatch<React.SetStateAction<'خرید' | 'اجاره'>>;
   alertMaxBudget: string; setAlertMaxBudget: React.Dispatch<React.SetStateAction<string>>; alertSubmitMsg: string;
+  setAlertSubmitMsg?: React.Dispatch<React.SetStateAction<string>>;
   onRegisterBuyerAlert: (e: React.FormEvent) => void; isSavingBuyerAlert?: boolean; showPwaModal: boolean;
   setShowPwaModal: React.Dispatch<React.SetStateAction<boolean>>; showLegalModal: boolean; setShowLegalModal: React.Dispatch<React.SetStateAction<boolean>>;
   thresholdSubscriptions?: PriceThresholdSubscription[]; thresholdMatches?: PriceThresholdMatchItem[];
@@ -35,7 +36,7 @@ export function SecondaryModals({
   lastSyncNotice, syncingPulse, onFetchMarketPulse, deepSyncing, onDeepWebSync, showSeoDrawer, setShowSeoDrawer, selectedHoodId,
   onOpenSeoComparison, onTriggerPwaInstall, showBuyerAlertModal, setShowBuyerAlertModal, neighborhoods, alertFullName,
   setAlertFullName, alertPhone, setAlertPhone, alertHoodId, setAlertHoodId, alertDealType, setAlertDealType, alertMaxBudget,
-  setAlertMaxBudget, alertSubmitMsg, onRegisterBuyerAlert, isSavingBuyerAlert = false, showPwaModal, setShowPwaModal,
+  setAlertMaxBudget, alertSubmitMsg, setAlertSubmitMsg, onRegisterBuyerAlert, isSavingBuyerAlert = false, showPwaModal, setShowPwaModal,
   showLegalModal, setShowLegalModal, thresholdSubscriptions, thresholdMatches, onAddThresholdSubscription, onRemoveThresholdSubscription,
 }: SecondaryModalsProps) {
   const [seoSortBy, setSeoSortBy] = useState<'default' | 'cheapest_buy' | 'cheapest_rent' | 'highest_score' | 'nearest_metro'>('default');
@@ -277,7 +278,7 @@ export function SecondaryModals({
         </div>
       )}
       <BuyerAlertPwaLegalModals
-        showBuyerAlertModal={showBuyerAlertModal} setShowBuyerAlertModal={setShowBuyerAlertModal} neighborhoods={neighborhoods} alertFullName={alertFullName} setAlertFullName={setAlertFullName} alertPhone={alertPhone} setAlertPhone={setAlertPhone} alertHoodId={alertHoodId} setAlertHoodId={setAlertHoodId} alertDealType={alertDealType} setAlertDealType={setAlertDealType} alertMaxBudget={alertMaxBudget} setAlertMaxBudget={setAlertMaxBudget} alertSubmitMsg={alertSubmitMsg} onRegisterBuyerAlert={onRegisterBuyerAlert} isSavingBuyerAlert={isSavingBuyerAlert} showPwaModal={showPwaModal} setShowPwaModal={setShowPwaModal} showLegalModal={showLegalModal} setShowLegalModal={setShowLegalModal} thresholdSubscriptions={thresholdSubscriptions} thresholdMatches={thresholdMatches} onAddThresholdSubscription={onAddThresholdSubscription} onRemoveThresholdSubscription={onRemoveThresholdSubscription} />
+        showBuyerAlertModal={showBuyerAlertModal} setShowBuyerAlertModal={setShowBuyerAlertModal} neighborhoods={neighborhoods} alertFullName={alertFullName} setAlertFullName={setAlertFullName} alertPhone={alertPhone} setAlertPhone={setAlertPhone} alertHoodId={alertHoodId} setAlertHoodId={setAlertHoodId} alertDealType={alertDealType} setAlertDealType={setAlertDealType} alertMaxBudget={alertMaxBudget} setAlertMaxBudget={setAlertMaxBudget} alertSubmitMsg={alertSubmitMsg} setAlertSubmitMsg={setAlertSubmitMsg} onRegisterBuyerAlert={onRegisterBuyerAlert} isSavingBuyerAlert={isSavingBuyerAlert} showPwaModal={showPwaModal} setShowPwaModal={setShowPwaModal} showLegalModal={showLegalModal} setShowLegalModal={setShowLegalModal} thresholdSubscriptions={thresholdSubscriptions} thresholdMatches={thresholdMatches} onAddThresholdSubscription={onAddThresholdSubscription} onRemoveThresholdSubscription={onRemoveThresholdSubscription} />
     </>
   );
 }

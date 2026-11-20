@@ -18,8 +18,10 @@ import {
 } from '../types/listing.types';
 import type { ListingSubmissionDraft } from '../types/listing-history.types';
 import {
+  clearPropertyTypeIncompatibleErrors,
   createEmptySubmissionDraft,
   evaluatePriceAnomalies,
+  validateAllSubmissionSteps,
   validateSubmissionStep,
 } from '../moderation/ListingValidation';
 import { assessDuplicateSubmission } from '../moderation/DuplicateDetection';
@@ -68,6 +70,11 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
   const [step, setStep] = useState<number>(draft.stepIndex || 1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [savedNotice, setSavedNotice] = useState<string>('');
+  const saveNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (saveNoticeTimerRef.current !== null) clearTimeout(saveNoticeTimerRef.current);
+  }, []);
 
   useEffect(() => {
     const syncAccountDraft = () => {
@@ -100,6 +107,38 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
       : draft;
     const next: ListingSubmissionDraft = { ...baseDraft, ...patch, ownerUid: scopeUid, stepIndex: step };
     setDraft(next);
+    const patchedKeys = Object.keys(patch);
+    setErrors((prev) => {
+      if (Object.keys(prev).length === 0) return prev;
+      let changed = false;
+      let nextErrors = { ...prev };
+      for (const k of patchedKeys) {
+        if (k in nextErrors) {
+          delete nextErrors[k];
+          changed = true;
+        }
+      }
+      if ('propertyType' in patch && patch.propertyType) {
+        const pruned = clearPropertyTypeIncompatibleErrors(nextErrors, patch.propertyType);
+        if (Object.keys(pruned).length !== Object.keys(nextErrors).length) {
+          nextErrors = pruned;
+          changed = true;
+        }
+      }
+      if ('floorNumber' in patch && 'totalFloors' in nextErrors) {
+        delete nextErrors.totalFloors;
+        changed = true;
+      }
+      if ('priceType' in patch || 'transactionType' in patch) {
+        for (const pk of ['saleTotalBillion', 'depositMillion', 'monthlyRentMillion']) {
+          if (pk in nextErrors) {
+            delete nextErrors[pk];
+            changed = true;
+          }
+        }
+      }
+      return changed ? nextErrors : prev;
+    });
     saveSubmissionDraft(next, scopeUid);
   };
 
@@ -118,7 +157,11 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
     const scopeUid = resolveEffectiveUid(currentUserUid);
     const stamped = saveSubmissionDraft({ ...draft, ownerUid: scopeUid, stepIndex: step }, scopeUid);
     setSavedNotice(`پیش‌نویس در ${new Date(stamped.lastSavedAtIso).toLocaleTimeString('fa-IR')} ذخیره شد`);
-    setTimeout(() => setSavedNotice(''), 2500);
+    if (saveNoticeTimerRef.current !== null) clearTimeout(saveNoticeTimerRef.current);
+    saveNoticeTimerRef.current = setTimeout(() => {
+      setSavedNotice('');
+      saveNoticeTimerRef.current = null;
+    }, 2500);
   };
 
   const handleSubmit = () => {
@@ -130,9 +173,14 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
       setErrors({ publisherName: 'حساب کاربری تغییر کرده است. لطفاً پیش‌نویس حساب فعلی را بررسی کنید.' });
       return;
     }
-    const res = validateSubmissionStep(draft, 7);
+    const res = validateAllSubmissionSteps(draft);
     setErrors(res.errors);
-    if (!res.valid) return;
+    if (!res.valid) {
+      if (res.firstInvalidStep && res.firstInvalidStep !== step) {
+        setStep(res.firstInvalidStep);
+      }
+      return;
+    }
     const created = submitDraftAsPropertyListing({ ...draft, ownerUid: scopeUid }, targetHood, duplicateAssessment, scopeUid);
     trackPropertyEvent('property_submitted', { status: created.listing.status, dup: duplicateAssessment.level });
     onSubmitted(created);
@@ -168,7 +216,12 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
           <button
             key={s.id}
             type="button"
-            onClick={() => { if (s.id < step) setStep(s.id); }}
+            onClick={() => {
+              if (s.id < step) {
+                setErrors({});
+                setStep(s.id);
+              }
+            }}
             className={`px-2.5 py-1 rounded-[7px] text-[11px] font-bold whitespace-nowrap cursor-pointer ${
               s.id === step
                 ? 'bg-[#176B63] text-white'
@@ -182,6 +235,15 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
         ))}
       </div>
 
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (step < 7) handleNext();
+          else handleSubmit();
+        }}
+        className="space-y-4"
+      >
       <div className="space-y-4 text-xs">
         {step === 1 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -237,12 +299,13 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
               <input
                 type="text"
                 data-testid="submit-street-input"
+                aria-invalid={Boolean(errors.street)}
                 value={draft.street}
                 onChange={(e) => update({ street: e.target.value })}
                 placeholder="مثال: بلوار ۲۴ متری، فرعی دنج..."
                 className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
               />
-              {errors.street && <span className="text-[#B3261E] text-[11px] block mt-1">{errors.street}</span>}
+              {errors.street && <span role="alert" className="text-[#B3261E] text-[11px] block mt-1">{errors.street}</span>}
             </div>
             <div>
               <label className="font-bold block mb-1">سطح نمایش موقعیت روی نقشه (حریم خصوصی)</label>
@@ -264,29 +327,31 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 tabular-nums">
             <div>
               <label className="font-bold block mb-1">متراژ (متر مربع)</label>
-              <input type="text" data-testid="submit-area-input" value={draft.areaSqm} onChange={(e) => update({ areaSqm: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
-              {errors.areaSqm && <span className="text-[#B3261E] text-[11px]">{errors.areaSqm}</span>}
+              <input type="text" data-testid="submit-area-input" aria-invalid={Boolean(errors.areaSqm)} value={draft.areaSqm} onChange={(e) => update({ areaSqm: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+              {errors.areaSqm && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.areaSqm}</span>}
             </div>
             {draft.propertyType !== 'land' && (
               <>
                 <div>
                   <label className="font-bold block mb-1">سال ساخت (شمسی)</label>
-                  <input type="text" value={draft.buildYearJalali} onChange={(e) => update({ buildYearJalali: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
-                  {errors.buildYearJalali && <span className="text-[#B3261E] text-[11px]">{errors.buildYearJalali}</span>}
+                  <input type="text" aria-invalid={Boolean(errors.buildYearJalali)} value={draft.buildYearJalali} onChange={(e) => update({ buildYearJalali: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+                  {errors.buildYearJalali && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.buildYearJalali}</span>}
                 </div>
                 <div>
                   <label className="font-bold block mb-1">تعداد اتاق خواب</label>
-                  <input type="text" value={draft.roomsCount} onChange={(e) => update({ roomsCount: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+                  <input type="text" aria-invalid={Boolean(errors.roomsCount)} value={draft.roomsCount} onChange={(e) => update({ roomsCount: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+                  {errors.roomsCount && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.roomsCount}</span>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="font-bold block mb-1">طبقه</label>
-                    <input type="text" value={draft.floorNumber} onChange={(e) => update({ floorNumber: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+                    <input type="text" aria-invalid={Boolean(errors.floorNumber)} value={draft.floorNumber} onChange={(e) => update({ floorNumber: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+                    {errors.floorNumber && <span role="alert" className="text-[#B3261E] text-[10px] block mt-0.5">{errors.floorNumber}</span>}
                   </div>
                   <div>
                     <label className="font-bold block mb-1">کل طبقات</label>
-                    <input type="text" value={draft.totalFloors} onChange={(e) => update({ totalFloors: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
-                    {errors.totalFloors && <span className="text-[#B3261E] text-[10px]">{errors.totalFloors}</span>}
+                    <input type="text" aria-invalid={Boolean(errors.totalFloors)} value={draft.totalFloors} onChange={(e) => update({ totalFloors: e.target.value })} className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+                    {errors.totalFloors && <span role="alert" className="text-[#B3261E] text-[10px] block mt-0.5">{errors.totalFloors}</span>}
                   </div>
                 </div>
               </>
@@ -307,22 +372,23 @@ export const ListingSubmissionPage: React.FC<ListingSubmissionPageProps> = ({
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-[#DCE3DF] dark:border-slate-800">
-        <button type="button" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))} className="px-3.5 py-2 rounded-[9px] border border-[#DCE3DF] dark:border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer disabled:opacity-40">
+        <button type="button" disabled={step === 1} onClick={() => { setErrors({}); setStep((s) => Math.max(1, s - 1)); }} className="px-3.5 py-2 rounded-[9px] border border-[#DCE3DF] dark:border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer disabled:opacity-40">
           <ArrowRight className="w-3.5 h-3.5" />
           <span>گام قبل</span>
         </button>
         {step < 7 ? (
-          <button type="button" data-testid="submit-wizard-next-btn" onClick={handleNext} className="px-4 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white text-xs font-bold flex items-center gap-1 cursor-pointer">
+          <button type="submit" data-testid="submit-wizard-next-btn" className="px-4 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white text-xs font-bold flex items-center gap-1 cursor-pointer">
             <span>گام بعد</span>
             <ArrowLeft className="w-3.5 h-3.5" />
           </button>
         ) : (
-          <button type="button" data-testid="submit-wizard-publish-btn" onClick={handleSubmit} className="px-5 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <button type="submit" data-testid="submit-wizard-publish-btn" className="px-5 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
             {duplicateAssessment.actionPolicy === 'queue_manual_review' ? <ShieldCheck className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
             <span>ثبت نهایی فایل</span>
           </button>
         )}
       </div>
+      </form>
     </div>
   );
 };

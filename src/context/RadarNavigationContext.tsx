@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatMillionTomanAsIntlCurrency, getStoredIntlCurrency } from '../utils/areaUnit';
 
 export function formatNavigationCurrencyHint(millionToman: number): string {
@@ -70,37 +70,52 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
   // [RULE-15] Focus trapping is disabled in PEEK/HALF modes so the map stays interactive
   const isFocusTrapEnabled = activeModalId !== null || sheetDetent === 'FULL';
 
+  const activeModalIdRef = useRef(activeModalId);
+  activeModalIdRef.current = activeModalId;
+  const sheetDetentRef = useRef(sheetDetent);
+  sheetDetentRef.current = sheetDetent;
+
   // Sync state to URL Search Params without triggering full page reload [RULE-16]
   useEffect(() => {
     if (typeof window === 'undefined' || !hasExplicitNavChangeRef.current) return;
-    const params = new URLSearchParams(window.location.search);
-    if (selectedHoodId) params.set('hood', selectedHoodId);
-    else params.delete('hood');
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (selectedHoodId) params.set('hood', selectedHoodId);
+      else params.delete('hood');
 
-    params.set('mode', marketMode.toLowerCase());
-    if (activeTab !== 'OVERVIEW') params.set('tab', activeTab);
-    else params.delete('tab');
+      params.set('mode', marketMode.toLowerCase());
+      if (activeTab !== 'OVERVIEW') params.set('tab', activeTab);
+      else params.delete('tab');
 
-    const nextUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({ selectedHoodId, sheetDetent, activeModalId }, '', nextUrl);
+      const qs = params.toString();
+      const nextUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+      window.history.replaceState({ selectedHoodId, sheetDetent, activeModalId }, '', nextUrl);
+    } catch { /* Ignore History API errors in restricted iframe contexts */ }
   }, [selectedHoodId, marketMode, activeTab, sheetDetent, activeModalId]);
 
   // Intercept hardware Back button to close modal/drawer instead of exiting the PWA [RULE-16]
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handlePopState = () => {
-      if (activeModalId !== null) {
+      if (activeModalIdRef.current !== null) {
         setActiveModalId(null);
         return;
       }
-      if (sheetDetent !== 'CLOSED') {
+      if (sheetDetentRef.current !== 'CLOSED') {
         setSheetDetent('CLOSED');
         setSelectedHoodId(null);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [activeModalId, sheetDetent]);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+  }, []);
 
   const selectNeighborhood = useCallback(
     (hoodId: string | null, initialDetent: InspectorSheetDetent = 'HALF') => {
@@ -154,26 +169,44 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
     setActiveToast(null);
   }, []);
 
+  const contextValue = useMemo<RadarNavigationState>(
+    () => ({
+      selectedHoodId,
+      sheetDetent,
+      marketMode,
+      activeTab,
+      activeModalId,
+      activeToast,
+      isFocusTrapEnabled,
+      selectNeighborhood,
+      setSheetDetent,
+      setMarketMode,
+      setActiveTab,
+      openModal,
+      closeModal,
+      pushToast,
+      dismissToast,
+    }),
+    [
+      selectedHoodId,
+      sheetDetent,
+      marketMode,
+      activeTab,
+      activeModalId,
+      activeToast,
+      isFocusTrapEnabled,
+      selectNeighborhood,
+      setMarketMode,
+      setActiveTab,
+      openModal,
+      closeModal,
+      pushToast,
+      dismissToast,
+    ],
+  );
+
   return (
-    <RadarNavigationContext.Provider
-      value={{
-        selectedHoodId,
-        sheetDetent,
-        marketMode,
-        activeTab,
-        activeModalId,
-        activeToast,
-        isFocusTrapEnabled,
-        selectNeighborhood,
-        setSheetDetent,
-        setMarketMode,
-        setActiveTab,
-        openModal,
-        closeModal,
-        pushToast,
-        dismissToast,
-      }}
-    >
+    <RadarNavigationContext.Provider value={contextValue}>
       {children}
     </RadarNavigationContext.Provider>
   );

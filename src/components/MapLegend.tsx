@@ -2,7 +2,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
   onToggle: () => void; /** فیلتر وضعیت بودجه فعلی (`all | green | yellow | red`) */
   statusFilter: StatusFilterValue; /** تابع تغییر فیلتر وضعیت بودجه */
   onChangeStatusFilter: (next: StatusFilterValue) => void; /** لنز رنگی فعال نقشه (`budget | bubble | air | traffic`) */
-  mapLens: MapLensValue; counts: { green: number; yellow: number; red: number; }; totalCount: number; hideOnMobileSheet?: boolean; } export function MapLegend({ open, onToggle, statusFilter, onChangeStatusFilter, mapLens, counts, totalCount, hideOnMobileSheet = false, }: MapLegendProps) { const overlayState = useMapAdvancedOverlayState(); const providerState = useMapProviderRuntimeState(); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [radarLocale] = useRadarLocale(); const legendCopy = getRadarLegendCopy(radarLocale); const areaUnitLabel = formatAreaUnitLabel(areaUnit); const referenceIntlSample = formatMillionTomanAsIntlCurrency(10_000, intlCurrency, radarLocale); const statusItems: { id: Exclude<StatusFilterValue, 'all'>; title: string; meaning: string; dotClass: string; activeClass: string; count: number; Icon: React.ComponentType<{ className?: string }>; }[] = [
+  mapLens: MapLensValue; counts: { green: number; yellow: number; red: number; }; totalCount: number; hideOnMobileSheet?: boolean; } export function MapLegend({ open, onToggle, statusFilter, onChangeStatusFilter, mapLens, counts, totalCount, hideOnMobileSheet = false, }: MapLegendProps) { const legendSectionRef = React.useRef<HTMLElement | null>(null); React.useEffect(() => { if (!open) return; const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onToggle(); } }; const onMouseDown = (e: MouseEvent) => { if (legendSectionRef.current && !legendSectionRef.current.contains(e.target as Node)) onToggle(); }; document.addEventListener('keydown', onKeyDown); document.addEventListener('mousedown', onMouseDown); return () => { document.removeEventListener('keydown', onKeyDown); document.removeEventListener('mousedown', onMouseDown); }; }, [open, onToggle]); const overlayState = useMapAdvancedOverlayState(); const providerState = useMapProviderRuntimeState(); const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [radarLocale] = useRadarLocale(); const legendCopy = getRadarLegendCopy(radarLocale); const areaUnitLabel = formatAreaUnitLabel(areaUnit); const referenceIntlSample = formatMillionTomanAsIntlCurrency(10_000, intlCurrency, radarLocale); const statusItems: { id: Exclude<StatusFilterValue, 'all'>; title: string; meaning: string; dotClass: string; activeClass: string; count: number; Icon: React.ComponentType<{ className?: string }>; }[] = [
     { id: 'green', title: legendCopy.greenTitle, meaning: mapLens === 'heatmap'
           ? 'قیمت متری پایین‌تر از میانه شهر'
           : mapLens === 'bubble'
@@ -28,17 +28,18 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           : mapLens === 'traffic'
               ? 'امتیاز ترافیک کمتر از ۶'
               : 'بیش از ۱۵٪ بالاتر از بودجه واردشده', dotClass: 'bg-rose-500', activeClass: 'bg-rose-50 dark:bg-rose-950/60 border-rose-500 dark:border-rose-500 text-rose-900 dark:text-rose-200', count: counts.red, Icon: XCircle, }, ]; return ( <section
+      ref={legendSectionRef}
       aria-label="راهنمای علائم و رنگ‌های نقشه (Legend)"
-      className={`fixed bottom-[180px] lg:bottom-14 left-3 lg:left-4 z-30 flex-col items-end pointer-events-none ${hideOnMobileSheet ? 'hidden lg:flex' : 'flex'}`}
+      className={`fixed bottom-[186px] lg:bottom-14 left-3 lg:left-4 ${open ? 'z-[43]' : 'z-30'} max-w-[calc(100vw-1.5rem)] flex-col items-end pointer-events-none ${hideOnMobileSheet ? 'hidden lg:flex' : 'flex'}`}
     > {open && (
-        <div role="region" aria-label="جزئیات راهنمای نقشه و فیلتر رنگ‌ها" className="mb-2 w-72 sm:w-80 apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl p-3 space-y-2.5 text-xs pointer-events-auto shadow-2xl">
-          <div className="flex items-center justify-between px-1 pb-1.5 border-b border-slate-200/70 dark:border-slate-800"> <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5" title={`${areaUnitLabel} · ${referenceIntlSample}`}>
-              <Layers className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" /> <span>{legendCopy.legendHeaderTitle}</span>
+        <div role="region" aria-label="جزئیات راهنمای نقشه و فیلتر رنگ‌ها" className="mb-2 ml-13 sm:ml-14 w-72 sm:w-80 max-w-[calc(100vw-4.75rem)] max-h-[calc(100dvh-19rem-var(--safe-bottom))] lg:max-h-[calc(100dvh-9rem)] overflow-y-auto apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl p-3 space-y-2.5 text-xs pointer-events-auto shadow-2xl">
+          <div className="flex items-start justify-between gap-1.5 px-1 pb-1.5 border-b border-slate-200/70 dark:border-slate-800"> <div className="font-extrabold text-slate-900 dark:text-white flex flex-wrap items-center gap-1 min-w-0" title={`${areaUnitLabel} · ${referenceIntlSample}`}>
+              <Layers className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" /> <span>{legendCopy.legendHeaderTitle}</span>
               <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">({formatAreaShort(80, areaUnit)} · ۱۰ م.ت{intlCurrency !== 'IRT' ? ` ≈ ${referenceIntlSample}` : ''})</span>
-            </div> {statusFilter !== 'all' && (
+            </div> <div className="flex items-center gap-1 shrink-0">{statusFilter !== 'all' && (
               <button type="button" onClick={() => onChangeStatusFilter('all')} className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer">
                 نمایش همه ({toPersianNum(totalCount)})
-              </button> )}
+              </button> )}<button type="button" onClick={onToggle} aria-label="بستن راهنمای نقشه" className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">✕</button></div>
           </div>
           <MapProviderStatusBadge />
           <div className="apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-2 space-y-1">
@@ -126,15 +127,15 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
         </div>
       )}
       <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-1.5">
-        <div dir="ltr" className="hidden sm:flex apple-vibrancy-bar dark:bg-slate-900/90 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold text-slate-700 dark:text-slate-200 items-center gap-1.5 border border-slate-200/60 dark:border-slate-800" title={providerState.fallbackNotice || providerState.statusBadgeText}>
-          <span className={`w-2 h-2 rounded-full shrink-0 ${providerState.statusMode === 'neshan_active' ? 'bg-emerald-500' : providerState.statusMode === 'osm_fallback' ? 'bg-amber-500' : 'bg-sky-500'}`} />
-          <span className="truncate max-w-[195px]">{providerState.statusBadgeText}</span>
-          {providerState.statusMode === 'osm_fallback' && (
+        {!open && providerState.statusMode === 'osm_fallback' && (
+          <div dir="ltr" className="hidden sm:flex apple-vibrancy-bar dark:bg-slate-900/90 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold text-slate-700 dark:text-slate-200 items-center gap-1.5 border border-slate-200/60 dark:border-slate-800" title={providerState.fallbackNotice || providerState.statusBadgeText}>
+            <span className="w-2 h-2 rounded-full shrink-0 bg-amber-500" />
+            <span className="truncate max-w-[195px]">{providerState.statusBadgeText}</span>
             <button type="button" onClick={() => triggerManualNeshanRetry()} className="px-1.5 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-extrabold transition cursor-pointer shrink-0">
               تلاش مجدد نشان
             </button>
-          )}
-        </div>
+          </div>
+        )}
         {overlayState.comparisonArc.active &&
           overlayState.comparisonArc.hoodA &&
           overlayState.comparisonArc.hoodB && (
@@ -143,12 +144,6 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
               <span className="text-indigo-200 font-black">×</span>
             </button>
           )}
-        <button type="button" aria-pressed={overlayState.showMetroLines} onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !overlayState.showMetroLines })} className={`px-2.5 py-2 rounded-xl text-[11px] font-bold transition cursor-pointer border ${overlayState.showMetroLines ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-transparent dark:border-slate-800'}`} title="نمایش یا مخفی‌سازی خطوط مترو روی نقشه">
-          {legendCopy.metroPillLabel}
-        </button>
-        <button type="button" aria-pressed={overlayState.showTrafficZones} onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !overlayState.showTrafficZones })} className={`px-2.5 py-2 rounded-xl text-[11px] font-bold transition cursor-pointer border ${overlayState.showTrafficZones ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border-transparent dark:border-slate-800'}`} title="نمایش یا مخفی‌سازی محدوده طرح ترافیک و کنترل آلودگی هوا">
-          {legendCopy.trafficPillLabel}
-        </button>
         <button type="button" aria-expanded={open} onClick={onToggle} className="flex items-center gap-1.5 apple-vibrancy-bar dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 border border-transparent dark:border-slate-800 transition cursor-pointer">
           <span className="flex items-center gap-1" aria-hidden="true">
             <span className="w-2 h-2 rounded-full bg-emerald-500" /><span className="w-2 h-2 rounded-full bg-amber-500" /><span className="w-2 h-2 rounded-full bg-rose-500" />

@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage78SalesGapDomLiquidityPanel.tsx — Stage 78 Tabs 1 & 2 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateSalesGapDomAndLiquidity } from '../services/salesLiquidityStage78Engine';
 import {
   STAGE78_FILTERS_17,
@@ -86,43 +87,50 @@ export const Stage78SalesGapDomLiquidityPanel: React.FC<Props> = ({
           <div className="flex flex-wrap items-center gap-3 text-slate-300">
             <label className="flex items-center gap-1.5">
               <span>قیمت پیشنهادی Pa (م.م.ت):</span>
-              <input
-                type="number"
+              <NumericDraftInput
+                allowDecimal
                 min={0.5}
+                max={100000}
                 step={0.5}
+                fallback={12}
                 value={askingBillionPa}
-                onChange={(e) => setAskingBillionPa(Number(e.target.value) || 12)}
+                onValueChange={setAskingBillionPa}
                 className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
               />
             </label>
             <label className="flex items-center gap-1.5">
               <span>معامله Pt (م.م.ت):</span>
-              <input
-                type="number"
+              <NumericDraftInput
+                allowDecimal
                 min={0.5}
+                max={100000}
                 step={0.5}
+                fallback={11}
                 value={dealBillionPt}
-                onChange={(e) => setDealBillionPt(Number(e.target.value) || 11)}
+                onValueChange={setDealBillionPt}
                 className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
               />
             </label>
             <label className="flex items-center gap-1.5">
               <span>نگهداری ماهانه (م.ت):</span>
-              <input
-                type="number"
+              <NumericDraftInput
+                allowDecimal
                 min={0}
+                max={100000}
+                fallback={0}
                 value={monthlyHoldMillion}
-                onChange={(e) => setMonthlyHoldMillion(Number(e.target.value) || 0)}
+                onValueChange={setMonthlyHoldMillion}
                 className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
               />
             </label>
             <label className="flex items-center gap-1.5">
               <span>انتظار (ماه):</span>
-              <input
-                type="number"
+              <NumericDraftInput
                 min={1}
+                max={240}
+                fallback={1}
                 value={waitMonths}
-                onChange={(e) => setWaitMonths(Number(e.target.value) || 1)}
+                onValueChange={setWaitMonths}
                 className="w-14 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
               />
             </label>

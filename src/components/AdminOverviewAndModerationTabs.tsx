@@ -8,8 +8,9 @@ import {
   buildNeighborhoodListingSamples,
 } from '../data/realMarketPriceAggregator';
 import { FeatureFlags } from '../types/models';
-import { clampNumber } from '../utils/security';
+import { classifyFeedbackTone } from '../utils/forms/formInputHelpers';
 import { AdminMonetizationCard } from './AdminMonetizationCard';
+import { NumericDraftInput } from './ui/NumericDraftInput';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 import type { AdminTabId } from './AdminModal';
@@ -34,12 +35,14 @@ export interface AdminOverviewAndModerationTabsProps {
   adminEditRahn80m: number;
   setAdminEditRahn80m: React.Dispatch<React.SetStateAction<number>>;
   adminPriceSavedMsg: string;
+  setAdminPriceSavedMsg?: React.Dispatch<React.SetStateAction<string>>;
   onAdminQuickPriceSave: (e: React.FormEvent) => void;
   deepSyncing: boolean;
   onDeepWebSync: () => void;
   newAdminPassword: string;
   setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>;
   adminPassChangeMsg: string;
+  setAdminPassChangeMsg?: React.Dispatch<React.SetStateAction<string>>;
   onAdminChangePassword: (e: React.FormEvent) => void;
   onExtendSponsor30Days?: (hoodId: number) => void;
   onReleaseHoodSponsor?: (hoodId: number) => void;
@@ -54,9 +57,9 @@ export function AdminOverviewAndModerationTabs(
     buyerLeads, totalLiveBargainsCount, onAdminApproveSponsor,
     onAdminDeleteSponsorRequest, onDownloadBuyerLeadsCsv, onAdminDeleteBargain, onAdminApproveBargain,
     adminEditHoodId, setAdminEditHoodId, adminEditBuySqm, setAdminEditBuySqm,
-    adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg,
+    adminEditRahn80m, setAdminEditRahn80m, adminPriceSavedMsg, setAdminPriceSavedMsg,
     onAdminQuickPriceSave, deepSyncing, onDeepWebSync, newAdminPassword,
-    setNewAdminPassword, adminPassChangeMsg, onAdminChangePassword,
+    setNewAdminPassword, adminPassChangeMsg, setAdminPassChangeMsg, onAdminChangePassword,
     onExtendSponsor30Days, onReleaseHoodSponsor, isVerifiedAdmin,
   } = props;
   const [areaUnit] = useAreaUnit();
@@ -234,6 +237,7 @@ export function AdminOverviewAndModerationTabs(
             value={adminEditHoodId}
             onChange={(e) => {
               const nextId = Number(e.target.value);
+              setAdminPriceSavedMsg?.('');
               setAdminEditHoodId(nextId);
               const found = neighborhoods.find((n) => n.id === nextId);
               if (found) {
@@ -251,16 +255,30 @@ export function AdminOverviewAndModerationTabs(
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-slate-600 dark:text-slate-300 mb-1">میانگین هر متر خرید (میلیون · سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForScalars(adminEditHoodId, neighborhoods.find((n) => n.id === adminEditHoodId)?.name || 'تهران', adminEditBuySqm).estimatedDealPricePerSqm, areaUnit))} م · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((adminEditBuySqm * 80) / 1000).toFixed(1))} میلیارد){areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(adminEditBuySqm, 'sqft'))} م/ft²` : ''}{fxTag(convertPricePerSqmToUnit(adminEditBuySqm, areaUnit))}:</label>
-            <input type="number" aria-label="میانگین هر متر خرید محله" min={10} max={5000} value={adminEditBuySqm} onChange={(e) => setAdminEditBuySqm(clampNumber(e.target.value, 10, 5000, 130))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums" />
+            <NumericDraftInput aria-label="میانگین هر متر خرید محله" min={10} max={5000} fallback={130} value={adminEditBuySqm} onValueChange={(v) => { setAdminPriceSavedMsg?.(''); setAdminEditBuySqm(v); }} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums" />
           </div>
           <div>
             <label className="block text-slate-600 dark:text-slate-300 mb-1">رهن کامل {formatAreaShort(80, areaUnit)} (میلیون){fxTag(adminEditRahn80m)}: <span className="text-[10.5px] text-slate-500 dark:text-slate-400">(اجاره ماهانه: {toPersianNum(Math.round(adminEditRahn80m * 0.03))} م{fxTag(Math.round(adminEditRahn80m * 0.03))})</span></label>
-            <input type="number" aria-label="رهن کامل ۸۰ متری محله" min={0} max={100000} value={adminEditRahn80m} onChange={(e) => setAdminEditRahn80m(clampNumber(e.target.value, 0, 100000, 1400))} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-extrabold tabular-nums" />
+            <NumericDraftInput aria-label="رهن کامل ۸۰ متری محله" min={0} max={100000} fallback={1400} value={adminEditRahn80m} onValueChange={(v) => { setAdminPriceSavedMsg?.(''); setAdminEditRahn80m(v); }} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-extrabold tabular-nums" />
           </div>
         </div>
-        {adminPriceSavedMsg && (
-          <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-200 font-semibold">{adminPriceSavedMsg}</div>
-        )}
+        {adminPriceSavedMsg && (() => {
+          const tone = classifyFeedbackTone(adminPriceSavedMsg);
+          return (
+            <div
+              role={tone === 'error' ? 'alert' : 'status'}
+              className={`p-2.5 rounded-xl border font-semibold ${
+                tone === 'error'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-200'
+                  : tone === 'info'
+                    ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/60 text-sky-800 dark:text-sky-200'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-200'
+              }`}
+            >
+              {adminPriceSavedMsg}
+            </div>
+          );
+        })()}
         <button type="submit" className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer">
           ذخیره فوری قیمت محله
         </button>
@@ -284,10 +302,26 @@ export function AdminOverviewAndModerationTabs(
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">احراز هویت اصلی از طریق Google Auth انجام می‌شود؛ این رمز صرفاً برای قفل صفحه‌نمایش در همین نشست فعال است و روی سرور ذخیره نمی‌شود.</p>
           <div className="flex gap-2">
-            <input type="password" aria-label="رمز قفل نشست فعلی پنل مدیریت" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} placeholder="رمز قفل نشست (حداقل ۴ کاراکتر)..." className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100" />
+            <input type="password" aria-label="رمز قفل نشست فعلی پنل مدیریت" aria-invalid={classifyFeedbackTone(adminPassChangeMsg) === 'error'} value={newAdminPassword} onChange={(e) => { setAdminPassChangeMsg?.(''); setNewAdminPassword(e.target.value); }} placeholder="رمز قفل نشست (حداقل ۴ کاراکتر)..." className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100" />
             <button type="submit" className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold cursor-pointer">تنظیم قفل</button>
           </div>
-          {adminPassChangeMsg && <div className="text-emerald-700 dark:text-emerald-400 font-semibold">{adminPassChangeMsg}</div>}
+          {adminPassChangeMsg && (() => {
+            const tone = classifyFeedbackTone(adminPassChangeMsg);
+            return (
+              <div
+                role={tone === 'error' ? 'alert' : 'status'}
+                className={`font-semibold ${
+                  tone === 'error'
+                    ? 'text-rose-700 dark:text-rose-400'
+                    : tone === 'info'
+                      ? 'text-sky-700 dark:text-sky-400'
+                      : 'text-emerald-700 dark:text-emerald-400'
+                }`}
+              >
+                {adminPassChangeMsg}
+              </div>
+            );
+          })()}
         </form>
       </div>
     </div>

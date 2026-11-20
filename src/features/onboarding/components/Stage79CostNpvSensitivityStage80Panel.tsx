@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage79CostNpvSensitivityStage80Panel.tsx — Stage 79 Tabs 3 & 4 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateNpvCostAndPrivacy } from '../services/investmentOpportunityStage79Engine';
 import {
   STAGE79_ACCEPTANCE_TESTS_52,
@@ -39,23 +40,25 @@ export const Stage79CostNpvSensitivityStage80Panel: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
           <label className="flex items-center gap-1.5">
             <span>نرخ تنزیل (%):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={5}
               max={80}
+              fallback={28}
               value={discountRatePct}
-              onChange={(e) => setDiscountRatePct(Number(e.target.value) || 28)}
+              onValueChange={setDiscountRatePct}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
           <label className="flex items-center gap-1.5">
             <span>تغییر هزینه ساخت (%):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={50}
               max={200}
+              fallback={100}
               value={costMultiplierPct}
-              onChange={(e) => setCostMultiplierPct(Number(e.target.value) || 100)}
+              onValueChange={setCostMultiplierPct}
               className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>

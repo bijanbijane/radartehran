@@ -14,10 +14,10 @@ import {
 } from '../data/hedonicPricingEngine';
 import { clampNumber } from '../utils/security';
 import {
-  normalizeFinancialInput,
   formatMillionToVerbalPersian,
 } from '../utils/persianFinancials';
 import { useAreaUnit, useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
+import { NumericDraftInput } from './ui/NumericDraftInput';
 import {
   convertPricePerSqmToUnit,
   formatAreaShort,
@@ -120,37 +120,37 @@ export function HedonicInlineWidget({
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
           <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">متراژ ({formatAreaValue(sqm, areaUnit, true)})</label>
-          <input
-            type="number"
+          <NumericDraftInput
             aria-label="متراژ واحد"
             min={35}
             max={400}
+            fallback={85}
             value={sqm}
-            onChange={(e) => setSqm(clampNumber(normalizeFinancialInput(e.target.value), 35, 400, 85))}
+            onValueChange={setSqm}
             className="radar-tabular-num w-full font-black text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
           />
         </div>
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
           <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">سال ساخت</label>
-          <input
-            type="number"
+          <NumericDraftInput
             aria-label="سال ساخت"
             min={1370}
             max={1405}
+            fallback={1398}
             value={buildYear}
-            onChange={(e) => setBuildYear(clampNumber(normalizeFinancialInput(e.target.value), 1370, 1405, 1398))}
+            onValueChange={setBuildYear}
             className="radar-tabular-num w-full font-black text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
           />
         </div>
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
           <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1">طبقه واحد</label>
-          <input
-            type="number"
+          <NumericDraftInput
             aria-label="طبقه واحد"
             min={-1}
             max={25}
+            fallback={3}
             value={floor}
-            onChange={(e) => setFloor(clampNumber(normalizeFinancialInput(e.target.value), -1, 25, 3))}
+            onValueChange={setFloor}
             className="radar-tabular-num w-full font-black text-slate-900 dark:text-white bg-transparent text-xs text-center focus:outline-none tabular-nums"
           />
         </div>

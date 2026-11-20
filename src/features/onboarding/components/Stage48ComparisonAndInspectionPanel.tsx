@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage48ComparisonAndInspectionPanel.tsx — Stage 48 Property/Neighborhood/Service Comparison & Observation Checklist */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   compareNeighborhoodsWeightedTool,
   comparePropertiesDecisionTool,
@@ -132,11 +133,11 @@ export const Stage48ComparisonAndInspectionPanel: React.FC<{
             <div className="flex items-center gap-3 text-[10.5px]">
               <label className="flex items-center gap-1 text-slate-300">
                 <span>وزن حمل‌ونقل:</span>
-                <input type="number" min={1} max={5} value={transitWeight} onChange={(e) => setTransitWeight(Number(e.target.value) || 1)} className="w-12 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white" />
+                <NumericDraftInput min={1} max={5} fallback={1} value={transitWeight} onValueChange={setTransitWeight} className="w-12 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white" />
               </label>
               <label className="flex items-center gap-1 text-slate-300">
                 <span>وزن آموزشی:</span>
-                <input type="number" min={1} max={5} value={schoolWeight} onChange={(e) => setSchoolWeight(Number(e.target.value) || 1)} className="w-12 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white" />
+                <NumericDraftInput min={1} max={5} fallback={1} value={schoolWeight} onValueChange={setSchoolWeight} className="w-12 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white" />
               </label>
             </div>
             <div className="space-y-1">
@@ -155,7 +156,7 @@ export const Stage48ComparisonAndInspectionPanel: React.FC<{
             <div className="font-bold text-white">تفکیک «شرط الزامی» از «امتیاز ترجیحی» (DT-24 · §14.3):</div>
             <label className="flex items-center justify-between text-slate-300">
               <span>سقف بودجه الزامی (میلیون تومان):</span>
-              <input type="number" value={mandatoryBudgetM} onChange={(e) => setMandatoryBudgetM(Number(e.target.value) || 20000)} className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-white" />
+              <NumericDraftInput min={100} max={10000000} fallback={20000} value={mandatoryBudgetM} onValueChange={setMandatoryBudgetM} className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-white" />
             </label>
             <div className="rounded border border-slate-800 bg-slate-900 p-2 text-[10.5px] space-y-1">
               <div className="text-emerald-300">گزینه‌های واجد شرط الزامی: <strong>{mandatoryFilterRes.rankedEligibleIds.join(' ، ') || 'هیچ موردی'}</strong></div>

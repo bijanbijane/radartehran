@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; import { Cpu, Database, Play, Server, ShieldCheck } from 'lucide-react'; import { toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { MANDATORY_PAYMENT_SIMULATION_BANNER, type AuthorizedMcpToolName } from '../utils/dataCommerceMcpAndMonetization'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { AdminUnifiedControlPlanePanel } from './admin/AdminUnifiedControlPlanePanel'; interface AdminMcpAndPortabilitySandboxPanelProps { cloudflareAndPortability: any | null; monetizationSummary: any | null; aiRoutingAuditTrail: any[]; }
+import React, { useState } from 'react'; import { Cpu, Database, Play, Server, ShieldCheck } from 'lucide-react'; import { toPersianNum } from '../data/neighborhoods'; import type { CityId } from '../data/multiCityData'; import { MANDATORY_PAYMENT_SIMULATION_BANNER, type AuthorizedMcpToolName } from '../utils/dataCommerceMcpAndMonetization'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { NumericDraftInput } from './ui/NumericDraftInput'; import { AdminUnifiedControlPlanePanel } from './admin/AdminUnifiedControlPlanePanel'; interface AdminMcpAndPortabilitySandboxPanelProps { cloudflareAndPortability: any | null; monetizationSummary: any | null; aiRoutingAuditTrail: any[]; }
 
 const MCP_TOOLS_SPEC: ReadonlyArray<{ id: AuthorizedMcpToolName; labelFa: string; descFa: string; }> = [ { id: 'compute_hedonic_valuation', labelFa: 'ارزش‌گذاری قطعی هدانیک (compute_hedonic_valuation)', descFa: 'فراخوانی مستقیم موتور قطعی هدانیک (FAST_SALE_FACTOR=0.95) بدون دخالت LLM در محاسبه عدد.', }, { id: 'get_neighborhood_statistics', labelFa: 'شاخص آماری محله (get_neighborhood_statistics)', descFa: 'دریافت قیمت خرید، رهن ۸۰ متری، امتیاز امنیت و مترو برای محله انتخاب‌شده (Zero PII).', }, { id: 'search_approved_market_data', labelFa: 'فیلتر محلات بر اساس سقف بودجه (search_approved_market_data)', descFa: 'جست‌وجوی محلات مجاز بر اساس سقف قیمت هر متر مربع در کلان‌شهر انتخابی.', }, { id: 'compare_market_indicators', labelFa: 'مقایسه دو محله (compare_market_indicators)', descFa: 'محاسبه اختلاف قیمت خرید و رهن میان دو محله منتخب.', }, ];
 export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, monetizationSummary, aiRoutingAuditTrail, }: AdminMcpAndPortabilitySandboxPanelProps): React.ReactElement { const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const [selectedTool, setSelectedTool] = useState<AuthorizedMcpToolName>('compute_hedonic_valuation'); const [city, setCity] = useState<CityId>('tehran'); const [hoodId, setHoodId] = useState<number>(1); const [secondHoodId, setSecondHoodId] = useState<number>(2); const [sqm, setSqm] = useState<number>(90); const [buildingAge, setBuildingAge] = useState<number>(4); const [maxBuyPerSqm, setMaxBuyPerSqm] = useState<number>(160); const [mcpResult, setMcpResult] = useState<any | null>(null); const [isExecuting, setIsExecuting] = useState<boolean>(false); const [aiWorkflow, setAiWorkflow] = useState<string>('valuation_explanation'); const [aiGatewayResult, setAiGatewayResult] = useState<any | null>(null);
@@ -68,37 +68,40 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله اول</label>
-              <input
-                type="number" aria-label="شناسه محله اول MCP"
+              <NumericDraftInput
+                aria-label="شناسه محله اول MCP"
                 min={1}
                 max={999}
+                fallback={1}
                 value={hoodId}
-                onChange={(e) => setHoodId(Number(e.target.value) || 1)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
+                onValueChange={setHoodId}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
               />
             </div>
             {selectedTool === 'compute_hedonic_valuation' && (
               <>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">متراژ ({formatAreaUnitLabel(areaUnit)}: {formatAreaShort(sqm, areaUnit)})</label>
-                  <input
-                    type="number" aria-label="متراژ ملک MCP"
+                  <NumericDraftInput
+                    aria-label="متراژ ملک MCP"
                     min={25}
                     max={1000}
+                    fallback={90}
                     value={sqm}
-                    onChange={(e) => setSqm(Number(e.target.value) || 85)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
+                    onValueChange={setSqm}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">سن بنا (سال)</label>
-                  <input
-                    type="number" aria-label="سن بنا MCP"
+                  <NumericDraftInput
+                    aria-label="سن بنا MCP"
                     min={0}
                     max={50}
+                    fallback={4}
                     value={buildingAge}
-                    onChange={(e) => setBuildingAge(Number(e.target.value) || 0)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
+                    onValueChange={setBuildingAge}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
                   />
                 </div>
               </>
@@ -108,26 +111,28 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
                 <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">
                   سقف قیمت هر متر (میلیون تومان · کل {formatAreaShort(80, areaUnit)}: {toPersianNum(((maxBuyPerSqm * 80) / 1000).toFixed(1))} میلیارد{areaUnit === 'sqft' ? ` ≈ ${toPersianNum(convertPricePerSqmToUnit(maxBuyPerSqm, 'sqft'))} م/ft²` : ''}{intlCurrency !== 'IRT' ? ` / ${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(maxBuyPerSqm, areaUnit), intlCurrency, locale)}` : ''})
                 </label>
-                <input
-                  type="number" aria-label="سقف قیمت هر متر MCP"
+                <NumericDraftInput
+                  aria-label="سقف قیمت هر متر MCP"
                   min={20}
                   max={900}
+                  fallback={160}
                   value={maxBuyPerSqm}
-                  onChange={(e) => setMaxBuyPerSqm(Number(e.target.value) || 160)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
+                  onValueChange={setMaxBuyPerSqm}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
                 />
               </div>
             )}
             {selectedTool === 'compare_market_indicators' && (
               <div className="col-span-2">
                 <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">شناسه محله دوم</label>
-                <input
-                  type="number" aria-label="شناسه محله دوم MCP"
+                <NumericDraftInput
+                  aria-label="شناسه محله دوم MCP"
                   min={1}
                   max={999}
+                  fallback={2}
                   value={secondHoodId}
-                  onChange={(e) => setSecondHoodId(Number(e.target.value) || 2)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100"
+                  onValueChange={setSecondHoodId}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 tabular-nums"
                 />
               </div>
             )}

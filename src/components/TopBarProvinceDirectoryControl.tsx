@@ -104,10 +104,11 @@ export function TopBarProvinceAndCityDirectoryControl({
         ))}
       </div>
 
-      {/* سلکتور دسته‌بندی‌شده ۳۱ استان و تمام شهرها و محله‌ها */}
-      <div className="relative hidden sm:flex items-center">
+      {/* سلکتور دسته‌بندی‌شده ۳۱ استان و تمام شهرها و محله‌ها (فقط در صورت عدم وجود مودال ۳۱ استان) */}
+      <div className={onOpenProvinceModal ? 'sr-only' : 'relative hidden sm:flex items-center'}>
         <select
           aria-label="فهرست‌بندی استان‌ها و شهرهای ایران"
+          tabIndex={onOpenProvinceModal ? -1 : 0}
           value={`hood:${selectedHoodId}`}
           onChange={(e) => {
             const val = e.target.value;
@@ -138,12 +139,13 @@ export function TopBarProvinceAndCityDirectoryControl({
         <button
           type="button"
           onClick={onOpenProvinceModal}
+          aria-label={`فهرست ۳۱ استان (${activeProvince.nameFa})`}
           className="px-2 sm:px-2.5 py-1.5 rounded-[9px] bg-slate-900 dark:bg-emerald-600 hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 shadow-xs transition shrink-0 cursor-pointer whitespace-nowrap"
           title="مشاهده فهرست‌بندی کامل ۳۱ استان، شهرها و محله‌های سراسر ایران"
         >
           <Compass className="w-3.5 h-3.5 stroke-[2] shrink-0" />
           <span className="hidden sm:inline">۳۱ استان</span>
-          <span className="sm:hidden max-w-[56px] truncate">{activeProvince.nameFa}</span>
+          <span className="sm:hidden max-w-[64px] truncate">{activeProvince.nameFa}</span>
         </button>
       )}
     </div>

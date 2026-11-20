@@ -2136,7 +2136,7 @@ async function runSuite(): Promise<void> {
     const hedonicModalSrc = readComp('src/components/HedonicValuationModal.tsx');
     assert.equal(hedonicModalSrc.includes('id="hedonic-hood-select" aria-label="انتخاب محله جهت کارشناسی هوشمند"'), true, 'HedonicValuationModal hood select must have accessible aria-label');
     assert.equal(hedonicModalSrc.includes('aria-label="پارکینگ سندی"') && hedonicModalSrc.includes('aria-label="آسانسور"') && hedonicModalSrc.includes('aria-label="انباری سندی"'), true, 'HedonicValuationModal amenities checkboxes must have accessible aria-labels');
-    assert.equal(hedonicModalSrc.includes('id="hedonic-asking-input" type="number" step="0.1" aria-label="قیمت اعلامی فروشنده به میلیارد تومان"'), true, 'HedonicValuationModal asking price input must have accessible aria-label');
+    assert.equal(hedonicModalSrc.includes('id="hedonic-asking-input"') && hedonicModalSrc.includes('aria-label="قیمت اعلامی فروشنده به میلیارد تومان"'), true, 'HedonicValuationModal asking price input must have accessible aria-label');
 
     const compareModalSrc = readComp('src/components/CompareModal.tsx');
     assert.equal(compareModalSrc.includes('aria-label={`انتخاب محله ${compHood1.name}`}') && compareModalSrc.includes('aria-label={`انتخاب محله ${compHood2.name}`}'), true, 'CompareModal neighborhood selection buttons must have accessible aria-labels');

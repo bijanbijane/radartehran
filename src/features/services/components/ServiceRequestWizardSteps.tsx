@@ -124,7 +124,9 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
         <div>
           <label className="font-bold block mb-1">متراژ تقریبی (متر مربع)</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            dir="ltr"
             value={draft.areaSqm}
             onChange={(e) => patch({ areaSqm: e.target.value })}
             className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 tabular-nums"

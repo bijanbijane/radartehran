@@ -1,8 +1,10 @@
 /** @file src/features/properties/detail/PropertyDetailSections.tsx — Modular Sections for Property Detail View */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckCircle2, Clock, Flag, HelpCircle, MapPin, Phone, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { formatAreaShort, type AreaUnit } from '../../../utils/areaUnit';
+import { useDialogFocus } from '../../../components/useDialogFocus';
 import {
   AMENITY_VALUE_LABELS_FA,
   DOCUMENT_TYPE_LABELS_FA,
@@ -172,6 +174,15 @@ export const PublisherAndReportBox: React.FC<{
   const [reason, setReason] = useState<ListingReportReason>('wrong_price');
   const [details, setDetails] = useState('');
   const [reported, setReported] = useState(false);
+  const reportDialogRef = useDialogFocus(reportOpen, () => setReportOpen(false));
+
+  useEffect(() => {
+    setShowPhone(false);
+    setReportOpen(false);
+    setReason('wrong_price');
+    setDetails('');
+    setReported(false);
+  }, [listing.listingId]);
 
   return (
     <div className="space-y-3 text-xs">
@@ -206,48 +217,51 @@ export const PublisherAndReportBox: React.FC<{
         <span>{reported ? 'گزارش مغایرت ثبت شد' : 'گزارش خطا یا مغایرت این فایل'}</span>
       </button>
 
-      {reportOpen && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-[75] bg-black/50 flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
-          <div dir="rtl" onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 text-[#B3261E]" />
-                <span>گزارش مغایرت یا مشکل فایل</span>
-              </h3>
-              <button type="button" onClick={() => setReportOpen(false)} aria-label="بستن" className="cursor-pointer"><X className="w-4 h-4" /></button>
+      {reportOpen && (() => {
+        const dialogNode = (
+          <div role="dialog" aria-modal="true" aria-label="گزارش مغایرت یا مشکل فایل" className="fixed inset-0 z-[9500] bg-black/50 flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
+            <div ref={reportDialogRef} tabIndex={-1} dir="rtl" onClick={(e) => e.stopPropagation()} className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-[#B3261E]" />
+                  <span>گزارش مغایرت یا مشکل فایل</span>
+                </h3>
+                <button type="button" onClick={() => setReportOpen(false)} aria-label="بستن" className="cursor-pointer"><X className="w-4 h-4" /></button>
+              </div>
+              <p className="text-[11px] text-[#586760] dark:text-slate-400">
+                موضوع: {listing.title} ({TRANSACTION_TYPE_LABELS_FA[listing.transactionType]})
+              </p>
+              <div className="space-y-1.5">
+                {(Object.keys(LISTING_REPORT_REASON_LABELS_FA) as ListingReportReason[]).map((k) => (
+                  <label key={k} className="flex items-center gap-2 p-2 rounded-lg border border-[#DCE3DF] dark:border-slate-700 cursor-pointer">
+                    <input type="radio" name="report_reason" checked={reason === k} onChange={() => setReason(k)} className="accent-[#176B63]" />
+                    <span>{LISTING_REPORT_REASON_LABELS_FA[k]}</span>
+                  </label>
+                ))}
+              </div>
+              <textarea
+                rows={3}
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                placeholder="توضیح تکمیلی برای بررسی تیم نظارت (اختیاری)..."
+                className="w-full p-2.5 rounded-lg bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  onReportSubmitted(reason, details);
+                  setReported(true);
+                  setReportOpen(false);
+                }}
+                className="w-full py-2.5 rounded-[9px] bg-[#B3261E] text-white font-bold cursor-pointer"
+              >
+                ثبت گزارش بررسی
+              </button>
             </div>
-            <p className="text-[11px] text-[#586760] dark:text-slate-400">
-              موضوع: {listing.title} ({TRANSACTION_TYPE_LABELS_FA[listing.transactionType]})
-            </p>
-            <div className="space-y-1.5">
-              {(Object.keys(LISTING_REPORT_REASON_LABELS_FA) as ListingReportReason[]).map((k) => (
-                <label key={k} className="flex items-center gap-2 p-2 rounded-lg border border-[#DCE3DF] dark:border-slate-700 cursor-pointer">
-                  <input type="radio" name="report_reason" checked={reason === k} onChange={() => setReason(k)} className="accent-[#176B63]" />
-                  <span>{LISTING_REPORT_REASON_LABELS_FA[k]}</span>
-                </label>
-              ))}
-            </div>
-            <textarea
-              rows={3}
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder="توضیح تکمیلی برای بررسی تیم نظارت (اختیاری)..."
-              className="w-full p-2.5 rounded-lg bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-xs"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                onReportSubmitted(reason, details);
-                setReported(true);
-                setReportOpen(false);
-              }}
-              className="w-full py-2.5 rounded-[9px] bg-[#B3261E] text-white font-bold cursor-pointer"
-            >
-              ثبت گزارش بررسی
-            </button>
           </div>
-        </div>
-      )}
+        );
+        return typeof document !== 'undefined' ? createPortal(dialogNode, document.body) : dialogNode;
+      })()}
     </div>
   );
 };

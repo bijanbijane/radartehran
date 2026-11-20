@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage49AlertsAndMonitorsPanel.tsx — Stage 49 Alert Center, Deduplication, Rule Builder & Active Monitors */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import {
   classifyDuplicateOrRepostedListing,
   deduplicateAndGroupRelatedEvents,
@@ -25,6 +26,7 @@ export const Stage49AlertsAndMonitorsPanel: React.FC<{
   onFeedbackFa: (msg: string) => void;
 }> = ({ section, alerts, monitors, feedbacks, onUpdateAlert, onUpdateMonitor, onAddFeedback, onFeedbackFa }) => {
   const [correctionNoteFa, setCorrectionNoteFa] = useState('اصلاح مبلغ به ۲۲٬۱۰۰ م.ت پس از بررسی مجدد منبع');
+  const [correctionError, setCorrectionError] = useState<{ alertId: string; text: string } | null>(null);
   const [candidateLat, setCandidateLat] = useState(35.782);
   const [candidateLng, setCandidateLng] = useState(51.375);
 
@@ -96,27 +98,56 @@ export const Stage49AlertsAndMonitorsPanel: React.FC<{
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <input aria-label="توضیح اصلاح هشدار" value={correctionNoteFa} onChange={(e) => setCorrectionNoteFa(e.target.value)} className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white text-[10.5px]" />
-                <button
-                  type="button"
-                  data-testid={`mm-confirm-correction-${alt.alertId}`}
-                  onClick={() => {
-                    const res = manageAlertCorrectionAndMonitorLifecycle({
-                      alert: alt,
-                      monitor: monitors[0],
-                      confirmErrorCorrectionTextFa: correctionNoteFa,
-                      feedbackCount: feedbacks.length,
+              <form
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const trimmed = correctionNoteFa.trim();
+                  if (trimmed.length < 3) {
+                    setCorrectionError({
+                      alertId: alt.alertId,
+                      text: 'توضیح اصلاح هشدار باید حداقل ۳ کاراکتر باشد.',
                     });
-                    onUpdateAlert(res.updatedAlert);
-                    onAddFeedback(res.feedback);
-                    onFeedbackFa(`گزارش خطای ${res.feedback.feedbackId} تأیید شد؛ هشدار اصلاح گردید و مقدار قبلی در تاریخچه حفظ شد.`);
-                  }}
-                  className="rounded bg-teal-700 px-2.5 py-1 font-bold text-white cursor-pointer"
-                >
-                  تأیید گزارش خطا و ثبت اصلاح (Tests 13–14)
-                </button>
-              </div>
+                    return;
+                  }
+                  setCorrectionError(null);
+                  const res = manageAlertCorrectionAndMonitorLifecycle({
+                    alert: alt,
+                    monitor: monitors[0],
+                    confirmErrorCorrectionTextFa: trimmed,
+                    feedbackCount: feedbacks.length,
+                  });
+                  onUpdateAlert(res.updatedAlert);
+                  onAddFeedback(res.feedback);
+                  onFeedbackFa(`گزارش خطای ${res.feedback.feedbackId} تأیید شد؛ هشدار اصلاح گردید و مقدار قبلی در تاریخچه حفظ شد.`);
+                }}
+                className="space-y-1.5 pt-1"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    aria-label="توضیح اصلاح هشدار"
+                    aria-invalid={correctionError?.alertId === alt.alertId}
+                    value={correctionNoteFa}
+                    onChange={(e) => {
+                      setCorrectionNoteFa(e.target.value);
+                      if (correctionError) setCorrectionError(null);
+                    }}
+                    className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white text-[10.5px]"
+                  />
+                  <button
+                    type="submit"
+                    data-testid={`mm-confirm-correction-${alt.alertId}`}
+                    className="rounded bg-teal-700 px-2.5 py-1 font-bold text-white cursor-pointer"
+                  >
+                    تأیید گزارش خطا و ثبت اصلاح (Tests 13–14)
+                  </button>
+                </div>
+                {correctionError?.alertId === alt.alertId && (
+                  <div role="alert" className="text-[10.5px] font-bold text-rose-300">
+                    {correctionError.text}
+                  </div>
+                )}
+              </form>
             </div>
           ))}
         </div>
@@ -183,7 +214,16 @@ export const Stage49AlertsAndMonitorsPanel: React.FC<{
           <div className="flex items-center gap-2 text-[10px]">
             <label className="flex items-center gap-1 text-slate-300">
               <span>عرض جغرافیایی رویداد:</span>
-              <input type="number" step="0.005" value={candidateLat} onChange={(e) => setCandidateLat(Number(e.target.value))} className="w-20 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white" />
+              <NumericDraftInput
+                allowDecimal
+                min={20}
+                max={45}
+                step={0.005}
+                fallback={35.782}
+                value={candidateLat}
+                onValueChange={setCandidateLat}
+                className="w-20 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-white"
+              />
             </label>
             <button type="button" onClick={() => setCandidateLat(35.72)} className="rounded bg-slate-800 px-2 py-0.5 text-amber-300 cursor-pointer">تست نقطه خارج از چندضلعی</button>
           </div>

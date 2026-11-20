@@ -1,5 +1,5 @@
 /** @file src/components/navigation/MapToolRail.tsx — Dedicated Spatial Map Tool Rail & Context Panel (RT-UI-NAV-001 Section 8) */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeftRight, Bookmark, Check, Layers, LineChart, Navigation,
   SlidersHorizontal, TrafficCone, TrainFront, Trash2, X,
@@ -82,13 +82,38 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
   const [customViewLabel, setCustomViewLabel] = useState('');
   const { showMetroLines, showTrafficZones, comparisonArc } = useMapAdvancedOverlayState();
 
+  const railRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const sync = () => setSavedViews(readSavedMapViews());
     window.addEventListener('radar-saved-views-updated', sync);
     return () => window.removeEventListener('radar-saved-views-updated', sync);
   }, []);
 
-  if (!p.visible) return null;
+  useEffect(() => {
+    if (!p.openPanel && !p.showSpatialTools) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        p.onChangeOpenPanel(null);
+        p.onChangeShowSpatialTools(false);
+      }
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      if (railRef.current && !railRef.current.contains(e.target as Node)) {
+        p.onChangeOpenPanel(null);
+        p.onChangeShowSpatialTools(false);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onMouseDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onMouseDown);
+    };
+  }, [p.openPanel, p.showSpatialTools, p.onChangeOpenPanel, p.onChangeShowSpatialTools]);
+
+  if (!p.visible || !p.selectedHood) return null;
 
   const snap = {
     openPanel: p.openPanel,
@@ -149,16 +174,12 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
     : (CITY_TRAFFIC_ZONES[p.activeCity]?.titleFa || 'محدوده طرح ترافیک');
 
   return (
-    <div data-testid="map-tool-rail" className="fixed left-3 top-[152px] sm:top-[124px] z-20 flex flex-row-reverse items-start gap-2 pointer-events-none">
+    <div ref={railRef} data-testid="map-tool-rail" className={`fixed left-3 top-[164px] sm:top-[160px] lg:top-[124px] ${p.openPanel || p.showSpatialTools ? 'z-[35]' : 'z-20'} flex flex-row-reverse items-start gap-2 pointer-events-none`}>
       {/* Vertical Map Tool Rail (48px width, 40px tools, 8px vertical gap) */}
       <div role="toolbar" aria-label={isEn ? 'Map Tools' : 'ابزارهای تعاملی نقشه'} className="pointer-events-auto w-12 flex flex-col items-center gap-2 apple-vibrancy-bar p-1 rounded-[12px] border border-slate-200/80 dark:border-slate-700/80 shadow-lg">
         <button type="button" onClick={() => handleToggleRailPanel('layers')} aria-expanded={p.openPanel === 'layers'} title={isEn ? 'Map Layers' : 'لایه‌های نقشه'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('layers')}`}>
           <Layers className="w-4 h-4" aria-hidden="true" />
           <span className="text-[9px] font-bold leading-none">{isEn ? 'Layers' : 'لایه‌ها'}</span>
-        </button>
-        <button type="button" onClick={() => { p.onChangeOpenPanel(null); p.onChangeShowSpatialTools(false); p.onToggleFilterPopover(); }} title={isEn ? 'Budget & Property Filters' : 'فیلترها و بودجه'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('filters')}`}>
-          <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-          <span className="text-[9px] font-bold leading-none">{isEn ? 'Filter' : 'فیلترها'}</span>
         </button>
         <button type="button" onClick={() => handleToggleRailPanel('analysis')} aria-expanded={p.openPanel === 'analysis'} title={isEn ? 'Area Analytics' : 'تحلیل محله'} className={`w-10 h-10 rounded-[8px] border flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${stateClass('analysis')}`}>
           <LineChart className="w-4 h-4" aria-hidden="true" />
@@ -180,42 +201,26 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
 
       {/* Single Context Panel (Closing panel keeps active layers/lenses intact) */}
       {p.openPanel === 'layers' && (
-        <div role="dialog" aria-label={isEn ? 'Map Layers & Overlays' : 'لایه‌ها و نمای نقشه'} className="pointer-events-auto w-64 max-w-[calc(100vw-4.5rem)] max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-3 text-xs">
+        <div role="dialog" aria-label={isEn ? 'Map Layers & Overlays' : 'لایه‌ها و نمای نقشه'} className="pointer-events-auto w-64 max-w-[calc(100vw-5.25rem)] max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="font-black text-slate-900 dark:text-white">{isEn ? 'Map Layers' : 'لایه‌های تحلیلی نقشه'}</span>
+            <span className="font-black text-slate-900 dark:text-white">{isEn ? 'Urban GIS Overlays' : 'لایه‌های زیرساخت شهری'}</span>
             <button type="button" onClick={() => p.onChangeOpenPanel(null)} aria-label="بستن پنل لایه‌ها" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
           </div>
-          <div className="space-y-1">
-            {LENS_BUTTONS.map((lens) => (
-              <button key={lens.id} type="button" aria-pressed={p.mapLens === lens.id} onClick={() => p.setMapLens(lens.id)} className={`w-full px-2.5 py-1.5 rounded-lg text-start font-bold flex items-center justify-between transition cursor-pointer ${p.mapLens === lens.id ? 'bg-emerald-600 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
-                <span>{isEn ? lens.labelEn : lens.labelFa}</span>
-                {p.mapLens === lens.id && <Check className="w-3.5 h-3.5" />}
-              </button>
-            ))}
-          </div>
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-            <div className="text-[10.5px] font-bold text-slate-500">{isEn ? 'Urban Overlays' : 'لایه‌های شهری'}</div>
-            <button type="button" aria-pressed={showMetroLines} onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !showMetroLines })} className={`w-full px-2.5 py-1.5 rounded-lg border text-start font-bold cursor-pointer transition flex items-center gap-1.5 ${showMetroLines ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}>
-              <TrainFront className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">{metroLabel}</span>
+          <div className="space-y-1.5">
+            <button type="button" aria-pressed={showMetroLines} onClick={() => updateMapAdvancedOverlayState({ showMetroLines: !showMetroLines })} className={`w-full px-2.5 py-2 rounded-lg border text-start font-bold cursor-pointer transition flex items-center justify-between gap-1.5 ${showMetroLines ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              <span className="flex items-center gap-1.5 min-w-0"><TrainFront className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{metroLabel}</span></span>
+              {showMetroLines && <Check className="w-3.5 h-3.5 shrink-0" />}
             </button>
-            <button type="button" aria-pressed={showTrafficZones} onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !showTrafficZones })} className={`w-full px-2.5 py-1.5 rounded-lg border text-start font-bold cursor-pointer transition flex items-center gap-1.5 ${showTrafficZones ? 'bg-rose-600 text-white border-transparent' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}>
-              <TrafficCone className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">{trafficLabel}</span>
+            <button type="button" aria-pressed={showTrafficZones} onClick={() => updateMapAdvancedOverlayState({ showTrafficZones: !showTrafficZones })} className={`w-full px-2.5 py-2 rounded-lg border text-start font-bold cursor-pointer transition flex items-center justify-between gap-1.5 ${showTrafficZones ? 'bg-rose-600 text-white border-transparent' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              <span className="flex items-center gap-1.5 min-w-0"><TrafficCone className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{trafficLabel}</span></span>
+              {showTrafficZones && <Check className="w-3.5 h-3.5 shrink-0" />}
             </button>
-            <div className="grid grid-cols-3 gap-1 pt-1">
-              {(['neshan', 'osm', 'satellite'] as const).map((tile) => (
-                <button key={tile} type="button" onClick={() => p.setMapTileStyle(tile)} className={`py-1 rounded-md text-[10px] font-bold border cursor-pointer ${p.mapTileStyle === tile ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
-                  {tile === 'neshan' ? 'نشان' : tile === 'osm' ? 'OSM' : 'ماهواره'}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       )}
 
       {p.openPanel === 'analysis' && (
-        <div role="dialog" aria-label={isEn ? 'Spatial Analytics Panel' : 'تحلیل سریع محدوده'} className="pointer-events-auto w-64 max-w-[calc(100vw-4.5rem)] max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
+        <div role="dialog" aria-label={isEn ? 'Spatial Analytics Panel' : 'تحلیل سریع محدوده'} className="pointer-events-auto w-64 max-w-[calc(100vw-5.25rem)] max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
             <span className="font-black text-slate-900 dark:text-white">محله {p.selectedHood.name}</span>
             <button type="button" onClick={() => p.onChangeOpenPanel(null)} aria-label="بستن پنل تحلیل" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
@@ -226,7 +231,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
             <div>رهن کامل برآوردی ({formatAreaShort(safeTargetSqm, areaUnit)}): <strong>{rahnValueText}</strong></div>
           </div>
           <div className="grid grid-cols-1 gap-1.5 pt-1">
-            <button type="button" onClick={() => { p.onOpenInspectorDrawer(); p.onChangeOpenPanel(null); }} className="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer">
+            <button type="button" onClick={() => { p.onOpenInspectorDrawer(); p.onChangeOpenPanel(null); }} className="lg:hidden w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer">
               باز کردن کارنامه کامل محله
             </button>
             <button type="button" onClick={() => { p.onOpenPriceTrendModal(); p.onChangeOpenPanel(null); }} className="w-full py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold cursor-pointer">
@@ -248,7 +253,7 @@ export const MapToolRail: React.FC<MapToolRailProps> = (p) => {
       )}
 
       {p.openPanel === 'save_view' && (
-        <div role="dialog" aria-label={isEn ? 'Saved Map Views' : 'نماهای ذخیره‌شده نقشه'} className="pointer-events-auto w-68 max-w-[calc(100vw-4.5rem)] max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
+        <div role="dialog" aria-label={isEn ? 'Saved Map Views' : 'نماهای ذخیره‌شده نقشه'} className="pointer-events-auto w-68 max-w-[calc(100vw-5.25rem)] max-h-[calc(100dvh-15rem)] lg:max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl p-3 space-y-2.5 text-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
             <span className="font-black text-slate-900 dark:text-white">{isEn ? 'Saved Views' : 'ذخیره و بازیابی نمای نقشه'}</span>
             <button type="button" onClick={() => p.onChangeOpenPanel(null)} aria-label="بستن پنل نماها" className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><X className="w-3.5 h-3.5" /></button>

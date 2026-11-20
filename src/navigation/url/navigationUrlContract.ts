@@ -26,8 +26,17 @@ export interface ParsedNavigationLocation {
   viewId: RouteDestinationId;
   subTab?: ModuleSubTabId;
   areaSlug?: string;
+  memberUsername?: string;
   isUnknownPath: boolean;
   isLegacyTehranPath: boolean;
+}
+
+function safeDecodeSegment(raw: string): string | null {
+  try {
+    return decodeURIComponent(raw).trim();
+  } catch {
+    return null;
+  }
 }
 
 export function normalizePathname(pathname: string): string {
@@ -51,15 +60,20 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
 
   // Dynamic /areas/:slug neighborhood scorecard route
   if (normPath.startsWith('/areas/')) {
-    const slug = decodeURIComponent(normPath.slice('/areas/'.length)).trim();
+    const slug = safeDecodeSegment(normPath.slice('/areas/'.length));
     if (slug) {
       return { viewId: 'discover', areaSlug: slug, isUnknownPath: false, isLegacyTehranPath: false };
     }
+    return { viewId: 'not_found', isUnknownPath: true, isLegacyTehranPath: false };
   }
 
   // Dynamic /community/members/:username member profile route (§25.2)
   if (normPath.startsWith('/community/members/')) {
-    return { viewId: 'contributions', subTab: 'members', isUnknownPath: false, isLegacyTehranPath: false };
+    const username = safeDecodeSegment(normPath.slice('/community/members/'.length));
+    if (!username) {
+      return { viewId: 'not_found', isUnknownPath: true, isLegacyTehranPath: false };
+    }
+    return { viewId: 'contributions', subTab: 'members', memberUsername: username, isUnknownPath: false, isLegacyTehranPath: false };
   }
 
   // Exact registry path or alias match

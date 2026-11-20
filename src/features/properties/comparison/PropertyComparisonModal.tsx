@@ -1,8 +1,10 @@
 /** @file src/features/properties/comparison/PropertyComparisonModal.tsx — Semantic Multi-Listing Comparison Matrix */
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { toPersianNum } from '../../../data/neighborhoods';
 import { formatAreaShort, type AreaUnit } from '../../../utils/areaUnit';
+import { useDialogFocus } from '../../../components/useDialogFocus';
 import { AMENITY_VALUE_LABELS_FA, DOCUMENT_TYPE_LABELS_FA, PROPERTY_TYPE_LABELS_FA } from '../types/property.types';
 import { TRANSACTION_TYPE_LABELS_FA, type PropertyListingRecord } from '../types/listing.types';
 
@@ -23,21 +25,24 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
   onRemoveItem,
   onOpenDetail,
 }) => {
+  const dialogRef = useDialogFocus(open, onClose);
   if (!open) return null;
 
   const hasSale = items.some((r) => r.listing.transactionType === 'sale' || r.listing.transactionType === 'presale');
   const hasRent = items.some((r) => r.listing.transactionType === 'rent' || r.listing.transactionType === 'full_deposit');
   const mixedTransactionWarning = hasSale && hasRent;
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="مقایسه ساختاریافته فایل‌های ملکی"
-      className="fixed inset-0 z-[75] bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-5"
+      className="fixed inset-0 z-[9500] bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-5"
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl border border-[#DCE3DF] dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
@@ -152,4 +157,6 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

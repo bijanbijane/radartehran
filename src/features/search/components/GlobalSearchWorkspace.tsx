@@ -75,6 +75,18 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
   const [degradedScopes, setDegradedScopes] = useState<SearchScope[]>([]);
   const pendingHistoryModeRef = useRef<'push' | 'replace'>('replace');
   const isPopStateRestoreRef = useRef<boolean>(false);
+  const searchBoxRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!suggestOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setSuggestOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [suggestOpen]);
 
   const cityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
   const cityPlaces = useMemo(() => getPlaceHierarchyForCity(activeCity), [activeCity]);
@@ -283,7 +295,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
         </div>
       </div>
 
-      <div className="relative">
+      <div ref={searchBoxRef} className="relative">
         <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus-within:border-[#176B63]">
           <Search className="w-4 h-4 text-[#176B63] shrink-0" />
           <input

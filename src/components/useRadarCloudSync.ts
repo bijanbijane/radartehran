@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react'; import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth'; import { collection, doc, getDoc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore'; import { auth, db, handleFirestoreError, OperationType, updateFirestoreSnapshotMetadata } from '../firebase'; import { BargainListing, BUYER_ALERTS_STORAGE_KEY, BuyerAlertLeadItem, INITIAL_NEIGHBORHOODS, isAuthorizedAdminUser, Neighborhood, NeighborhoodSponsor, ResidentVoteDoc, SPONSOR_CRM_STORAGE_KEY, SponsorCrmRequestItem } from '../data/neighborhoods'; import { chunkHoodIdsForInQuery, CLOUD_COLLECTION_LISTENER_LIMIT, isPubliclyVisibleBargainStatus, sponsorFromNeighborhoodOverride } from '../utils/publicSponsorSync'; import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { activateCloudListener, cloudSyncConnectionStatus, createCloudSyncListenerHealth, deactivateCloudListener, noteCloudListenerError, noteCloudListenerSnapshot, noteExplicitCloudReconnect, type CloudSyncListenerId } from '../utils/firestoreConnectionState'; import { FeatureFlags, safeJsonParse } from '../utils/security'; import { normalizeListingTimestampIso, sortBargainListingsByCreatedAt } from '../utils/listingTimestampAndMediaQuality'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { activeCloudOverrideHoodIds } from './useMarketPulseSync';
+import React, { useEffect, useMemo, useRef, useState } from 'react'; import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth'; import { collection, doc, getDoc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore'; import { auth, db, handleFirestoreError, OperationType, updateFirestoreSnapshotMetadata } from '../firebase'; import { BargainListing, BUYER_ALERTS_STORAGE_KEY, BuyerAlertLeadItem, INITIAL_NEIGHBORHOODS, isAuthorizedAdminUser, Neighborhood, NeighborhoodSponsor, ResidentVoteDoc, SPONSOR_CRM_STORAGE_KEY, SponsorCrmRequestItem } from '../data/neighborhoods'; import { chunkHoodIdsForInQuery, CLOUD_COLLECTION_LISTENER_LIMIT, isPubliclyVisibleBargainStatus, sponsorFromNeighborhoodOverride } from '../utils/publicSponsorSync'; import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { activateCloudListener, cloudSyncConnectionStatus, createCloudSyncListenerHealth, deactivateCloudListener, noteCloudListenerError, noteCloudListenerSnapshot, noteExplicitCloudReconnect, type CloudSyncListenerId } from '../utils/firestoreConnectionState'; import { FeatureFlags, safeJsonParse } from '../utils/security'; import { normalizeListingTimestampIso, sortBargainListingsByCreatedAt } from '../utils/listingTimestampAndMediaQuality'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { activeCloudOverrideHoodIds } from './useMarketPulseSync';
 export interface UseRadarCloudSyncParams { activeCity?: string; hasUrlBudgetParams?: boolean; setMode: React.Dispatch<React.SetStateAction<'rent' | 'buy'>>; setDeposit: React.Dispatch<React.SetStateAction<number>>; setMonthlyRent: React.Dispatch<React.SetStateAction<number>>; setBuyTotalBudget: React.Dispatch<React.SetStateAction<number>>; setTargetSqm: React.Dispatch<React.SetStateAction<number>>; setWorkHubId: React.Dispatch<React.SetStateAction<string>>; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; setCloudVotes: React.Dispatch<React.SetStateAction<ResidentVoteDoc[]>>; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setHasDelegatedAdminDoc: React.Dispatch<React.SetStateAction<boolean>>; }
 export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { activeCity = 'tehran', hasUrlBudgetParams, setMode, setDeposit, setMonthlyRent, setBuyTotalBudget, setTargetSqm, setWorkHubId, setFavoriteHoodIds, setFeatureFlags, setNeighborhoods, setCloudVotes, setSponsorRequests, setBuyerLeads, setHasDelegatedAdminDoc, } = params; const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null); const [authReady, setAuthReady] = useState<boolean>(false); const [isDelegatedAdmin, setIsDelegatedAdmin] = useState<boolean>(false); const listenerHealthRef = useRef(createCloudSyncListenerHealth()); const [listenerHealth, setListenerHealth] = useState(listenerHealthRef.current); const [reconnectGeneration, setReconnectGeneration] = useState(0); const publishListenerHealth = (next: ReturnType<typeof noteCloudListenerSnapshot>) => { const prev = listenerHealthRef.current; listenerHealthRef.current = next; if (prev.active.join('|') !== next.active.join('|') || prev.failed.join('|') !== next.failed.join('|') || prev.succeeded.join('|') !== next.succeeded.join('|')) setListenerHealth(next); }; const markCloudListenerActive = (id: CloudSyncListenerId) => publishListenerHealth(activateCloudListener(listenerHealthRef.current, id)); const markCloudListenerInactive = (id: CloudSyncListenerId) => publishListenerHealth(deactivateCloudListener(listenerHealthRef.current, id)); const markCloudListenerSnapshot = (id: CloudSyncListenerId) => publishListenerHealth(noteCloudListenerSnapshot(listenerHealthRef.current, id)); const markCloudListenerError = (id: CloudSyncListenerId) => publishListenerHealth(noteCloudListenerError(listenerHealthRef.current, id)); const [cloudBargainsByHood, setCloudBargainsByHood] = useState<Record<number, BargainListing[]>>({}); const [cloudSponsorsByHood, setCloudSponsorsByHood] = useState<Record<number, NeighborhoodSponsor>>({}); const reqSponsorsByHoodRef = useRef<Record<number, NeighborhoodSponsor>>({}); const ovSponsorsByHoodRef = useRef<Record<number, NeighborhoodSponsor>>({}); const releasedOverrideIdsRef = useRef<Set<number>>(new Set());
   const syncMergedCloudSponsors = () => { const merged: Record<number, NeighborhoodSponsor> = { ...reqSponsorsByHoodRef.current }; for (const id of releasedOverrideIdsRef.current) delete merged[id]; Object.assign(merged, ovSponsorsByHoodRef.current); setCloudSponsorsByHood((prev) => (Object.keys(prev).length === 0 && Object.keys(merged).length === 0 ? prev : merged)); };
-  const previousUidRef = useRef<string | null>(null); const isMountedRef = useRef<boolean>(true); const activeCityRef = useRef<string>(activeCity); activeCityRef.current = activeCity; useEffect(() => { isMountedRef.current = true; const unsubAuth = onAuthStateChanged(auth, async (user) => {
-      if (!isMountedRef.current) return; const nextUid = user?.uid ?? null; const switchedAccount = previousUidRef.current !== null && previousUidRef.current !== nextUid; previousUidRef.current = nextUid; setCurrentUser(user); setAuthReady(true); if (!user || switchedAccount) { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); setCloudVotes([]); setBuyerLeads([]); setSponsorRequests([]); reqSponsorsByHoodRef.current = {}; syncMergedCloudSponsors(); try { localStorage.removeItem(BUYER_ALERTS_STORAGE_KEY); localStorage.removeItem(SPONSOR_CRM_STORAGE_KEY); } catch { /* ignore */ }
-        if (!user) return; } if (user.emailVerified) { try { const adminSnap = await getDoc(doc(db, 'admins', user.uid)); updateFirestoreSnapshotMetadata(adminSnap.metadata); const delegated = adminSnap.exists() && isAuthorizedAdminUser(user, adminSnap.data() as any); if (isMountedRef.current) { setIsDelegatedAdmin(delegated); setHasDelegatedAdminDoc(delegated); } } catch { if (isMountedRef.current) { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); } } } else { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); }
+  const previousUidRef = useRef<string | null>(null); const authSeqRef = useRef<number>(0); const isMountedRef = useRef<boolean>(true); const activeCityRef = useRef<string>(activeCity); activeCityRef.current = activeCity; useEffect(() => { isMountedRef.current = true; const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      if (!isMountedRef.current) return; const authSeq = ++authSeqRef.current; const nextUid = user?.uid ?? null; const switchedAccount = previousUidRef.current !== null && previousUidRef.current !== nextUid; previousUidRef.current = nextUid; setCurrentUser(user); setAuthReady(true); if (!user || switchedAccount) { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); setCloudVotes([]); setBuyerLeads([]); setSponsorRequests([]); reqSponsorsByHoodRef.current = {}; syncMergedCloudSponsors(); try { localStorage.removeItem(BUYER_ALERTS_STORAGE_KEY); localStorage.removeItem(SPONSOR_CRM_STORAGE_KEY); } catch { /* ignore */ }
+        if (!user) return; } if (user.emailVerified) { try { const adminSnap = await getDoc(doc(db, 'admins', user.uid)); if (!isMountedRef.current || authSeq !== authSeqRef.current) return; updateFirestoreSnapshotMetadata(adminSnap.metadata); const delegated = adminSnap.exists() && isAuthorizedAdminUser(user, adminSnap.data() as any); setIsDelegatedAdmin(delegated); setHasDelegatedAdminDoc(delegated); } catch { if (isMountedRef.current && authSeq === authSeqRef.current) { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); } } } else { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); }
       const prefPath = `userPreferences/${user.uid}`;
-      try { const snap = await getDoc(doc(db, 'userPreferences', user.uid)); updateFirestoreSnapshotMetadata(snap.metadata); if (!isMountedRef.current || !snap.exists()) return; const data = snap.data(); if (!hasUrlBudgetParams) { if (data.mode === 'rent' || data.mode === 'buy') setMode(data.mode); if (typeof data.deposit === 'number' && data.deposit >= 0 && data.deposit <= 100000) setDeposit(data.deposit); if (typeof data.monthlyRent === 'number' && data.monthlyRent >= 0 && data.monthlyRent <= 1000) setMonthlyRent(data.monthlyRent); if (typeof data.buyTotalBudget === 'number' && data.buyTotalBudget >= 500 && data.buyTotalBudget <= 1000000) setBuyTotalBudget(data.buyTotalBudget); if (typeof data.targetSqm === 'number' && data.targetSqm >= 20 && data.targetSqm <= 1000) setTargetSqm(data.targetSqm); if (typeof data.workHubId === 'string' && data.workHubId.length >= 1 && data.workHubId.length <= 40) setWorkHubId(data.workHubId); }
+      try { const snap = await getDoc(doc(db, 'userPreferences', user.uid)); if (!isMountedRef.current || authSeq !== authSeqRef.current) return; updateFirestoreSnapshotMetadata(snap.metadata); if (!snap.exists()) return; const data = snap.data(); if (!hasUrlBudgetParams) { if (data.mode === 'rent' || data.mode === 'buy') setMode(data.mode); if (typeof data.deposit === 'number' && data.deposit >= 0 && data.deposit <= 100000) setDeposit(data.deposit); if (typeof data.monthlyRent === 'number' && data.monthlyRent >= 0 && data.monthlyRent <= 1000) setMonthlyRent(data.monthlyRent); if (typeof data.buyTotalBudget === 'number' && data.buyTotalBudget >= 500 && data.buyTotalBudget <= 1000000) setBuyTotalBudget(data.buyTotalBudget); if (typeof data.targetSqm === 'number' && data.targetSqm >= 20 && data.targetSqm <= 1000) setTargetSqm(data.targetSqm); if (typeof data.workHubId === 'string' && data.workHubId.length >= 1 && data.workHubId.length <= 40) setWorkHubId(data.workHubId); }
         if (Array.isArray(data.favoriteHoodIds)) { const cleanFavs = data.favoriteHoodIds.filter((id: unknown): id is number => typeof id === 'number' && Number.isInteger(id) && id >= 1 && id <= 999).slice(0, 50); setFavoriteHoodIds((prevGuest) => Array.from(new Set([...prevGuest, ...cleanFavs])).slice(0, 50)); }
-      } catch (err) { try { handleFirestoreError(err, OperationType.GET, prefPath); } catch { /* Non-fatal fallback */ }
+      } catch (err) { if (!isMountedRef.current || authSeq !== authSeqRef.current) return; try { handleFirestoreError(err, OperationType.GET, prefPath); } catch { /* Non-fatal fallback */ }
       } }); markCloudListenerActive('featureFlags'); const unsubFlags = onSnapshot( doc(db, 'appConfig', 'featureFlags'), { includeMetadataChanges: true }, (snap) => { if (!isMountedRef.current || !activeCityRef.current) return; updateFirestoreSnapshotMetadata(snap.metadata); markCloudListenerSnapshot('featureFlags'); if (!snap.exists()) return;
         const d = snap.data(); setFeatureFlags({ enableCommissionCalc: Boolean(d.enableCommissionCalc ?? true), enableMultiCity: Boolean(d.enableMultiCity ?? true),
           enableSponsorBilling: Boolean(d.enableSponsorBilling ?? false), enableAiContractCheck: Boolean(d.enableAiContractCheck ?? true), enableTelegramFeed: Boolean(d.enableTelegramFeed ?? true), enableAiValuation: Boolean(d.enableAiValuation ?? true),
@@ -30,10 +30,12 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
     const votesQuery = isVerifiedAdmin
       ? query(collection(db, 'votes'), where('hoodId', '>=', 1), where('hoodId', '<=', 999), orderBy('hoodId'), limit(CLOUD_COLLECTION_LISTENER_LIMIT))
       : query(collection(db, 'votes'), where('userId', '==', currentUser.uid), where('hoodId', '>=', 1), where('hoodId', '<=', 999), orderBy('hoodId'), limit(CLOUD_COLLECTION_LISTENER_LIMIT));
+    let cancelled = false;
     const unsubVotes = onSnapshot(
       votesQuery,
       { includeMetadataChanges: true },
       (snapshot) => {
+        if (cancelled) return;
         updateFirestoreSnapshotMetadata(snapshot.metadata); markCloudListenerSnapshot('votes');
         const docs: ResidentVoteDoc[] = [];
         snapshot.forEach((docSnap) => {
@@ -55,11 +57,12 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
         setCloudVotes((prev) => (prev.length === 0 && docs.length === 0 ? prev : docs));
       },
       (err) => {
+        if (cancelled) return;
         markCloudListenerError('votes'); setCloudVotes([]);
         try { handleFirestoreError(err, OperationType.LIST, 'votes'); } catch { /* Graceful fallback */ }
       }
     );
-    return () => unsubVotes();
+    return () => { cancelled = true; unsubVotes(); };
   }, [authReady, currentUser, isDelegatedAdmin, reconnectGeneration, setCloudVotes]);
   useEffect(() => {
     if (!authReady) { markCloudListenerInactive('bargains'); return; }
@@ -142,6 +145,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
       unsubSponsors = onSnapshot(
         sponsorsQuery,
         (snapshot) => {
+          if (isCancelled) return;
           markCloudListenerSnapshot('sponsors');
           const reqs: SponsorCrmRequestItem[] = [];
           const activeSponsors: Record<number, NeighborhoodSponsor> = {};
@@ -179,6 +183,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
           syncMergedCloudSponsors();
         },
         (err) => {
+          if (isCancelled) return;
           setSponsorRequests([]); markCloudListenerError('sponsors'); reqSponsorsByHoodRef.current = {}; syncMergedCloudSponsors();
           if (unsubSponsors) { unsubSponsors(); unsubSponsors = null; }
           try { handleFirestoreError(err, OperationType.LIST, 'sponsorRequests'); } catch { /* Non-fatal */ }
@@ -188,6 +193,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
       unsubAlerts = onSnapshot(
         alertsQuery,
         (snapshot) => {
+          if (isCancelled) return;
           markCloudListenerSnapshot('buyerAlerts');
           const leads: BuyerAlertLeadItem[] = [];
           snapshot.forEach((docSnap) => {
@@ -206,6 +212,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
           setBuyerLeads((prev) => (prev.length === 0 && leads.length === 0 ? prev : leads));
         },
         (err) => {
+          if (isCancelled) return;
           setBuyerLeads([]); markCloudListenerError('buyerAlerts');
           if (unsubAlerts) { unsubAlerts(); unsubAlerts = null; }
           try { handleFirestoreError(err, OperationType.LIST, 'buyerAlerts'); } catch { /* Non-fatal */ }
@@ -281,7 +288,10 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { act
   }, []);
   const connectionStatus: 'LIVE_SYNC' | 'CACHED_OFFLINE' | 'RECONNECTING' =
     cloudSyncConnectionStatus({ authReady, navigatorOnLine: typeof navigator === 'undefined' || navigator.onLine !== false, health: listenerHealth });
-  const cloudSyncUnitContext = { areaUnit, unitLabel: formatAreaUnitLabel(areaUnit), intlCurrency, sampleUnitPrice: convertPricePerSqmToUnit(100, areaUnit), sampleIntlText: formatMillionTomanAsIntlCurrency(100, intlCurrency, locale) };
+  const cloudSyncUnitContext = useMemo(
+    () => ({ areaUnit, unitLabel: formatAreaUnitLabel(areaUnit), intlCurrency, sampleUnitPrice: convertPricePerSqmToUnit(100, areaUnit), sampleIntlText: formatMillionTomanAsIntlCurrency(100, intlCurrency, locale) }),
+    [areaUnit, intlCurrency, locale],
+  );
   return { currentUser, authReady, connectionStatus, cloudBargainsByHood, setCloudBargainsByHood, cloudSponsorsByHood, cloudSyncUnitContext, safeJsonParse };
 }
 export { useMarketSync, useSponsorSync, useUserCacheSync, pruneLocalCache, type ConnectionStatusState } from './useMarketPulseSync';

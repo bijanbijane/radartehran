@@ -1,4 +1,4 @@
-import { EvaluatedNeighborhood, isSponsorActive, toPersianNum } from '../../data/neighborhoods';
+import { EvaluatedNeighborhood, isFeaturedMapSponsor, toPersianNum } from '../../data/neighborhoods';
 import { CityId } from '../../data/multiCityData';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode, type RadarLocale } from '../../utils/areaUnit';
 import { AuthoritativeBoundaryRecord, getZoomAdaptivePolygonStyle, resolveNeighborhoodGeoJsonForLod } from '../../utils/neighborhoodBoundaries';
@@ -42,6 +42,7 @@ export interface NeighborhoodMarkerEntry {
   hood: EvaluatedNeighborhood;
   cityId?: CityId;
   scopedKey?: string;
+  baseZIndex?: number;
 }
 
 export type MarkerLayerEntry = NeighborhoodMarkerEntry;
@@ -158,7 +159,7 @@ export function updateNeighborhoodMarkerPresentation(params: {
     refs.polygonsByHood.forEach((entry, id) => {
       const isSelected = id === selectedHoodId;
       const { stroke, fill } = getLensPalette(entry.hood, mapLens, d3PriceScale);
-      const nextStyleKey = `${stroke}|${fill}|${currentZoom}|${isSelected ? 1 : 0}`;
+      const nextStyleKey = `${activeCity}|${stroke}|${fill}|${currentZoom}|${isSelected ? 1 : 0}`;
       entry.stroke = stroke;
       entry.fill = fill;
       if (entry.styleKey !== nextStyleKey) {
@@ -166,6 +167,7 @@ export function updateNeighborhoodMarkerPresentation(params: {
         entry.styleKey = nextStyleKey;
         updated++;
       } else retained++;
+      if (isSelected) entry.layer?.bringToFront?.();
     });
     return { created: 0, updated, removed: 0, retained };
   });
@@ -175,22 +177,24 @@ export function updateNeighborhoodMarkerPresentation(params: {
     refs.markersByHood.forEach((entry, id) => {
       const hood = entry.hood;
       const isSelected = id === selectedHoodId;
-      const hasSponsor = isSponsorActive(hood.sponsor, enableSponsorBilling);
+      const hasSponsor = isFeaturedMapSponsor(hood.sponsor, enableSponsorBilling);
       const palette = getLensPalette(hood, mapLens, d3PriceScale);
       const scaledRahnPill = Math.round(hood.rahn80m * (safeSqmPill / 80) * rentAgeMultiplier);
       const { shortPriceLabel, fullPriceLabel } = buildMarkerPriceLabels(hood, mapLens, mode, scaledRahnPill, areaUnit, intlCurrency, locale);
-      const nextIconKey = `${id}|${hood.lat}|${hood.lng}|${currentZoom}|${entry.lodTier}|${isSelected ? 1 : 0}|${hasSponsor ? 1 : 0}|${themeKey}|${palette.pillBg}|${shortPriceLabel}|${fullPriceLabel}`;
+      const nextIconKey = `${activeCity}|${id}|${hood.lat}|${hood.lng}|${currentZoom}|${entry.lodTier}|${isSelected ? 1 : 0}|${hasSponsor ? 1 : 0}|${themeKey}|${palette.pillBg}|${shortPriceLabel}|${fullPriceLabel}`;
       const nextTooltipKey = `${id}|${activeCity}|${mode}|${safeSqmPill}|${scaledRahnPill}|${themeKey}|${areaUnit}|${intlCurrency}|${hood.buyPerSqm}|${hood.bargains?.length ?? 0}`;
+      const baseZ = isSelected ? 1000 : hasSponsor ? 250 : 0;
       let changed = false;
       entry.stroke = palette.stroke;
       entry.fill = palette.fill;
       entry.pillBg = palette.pillBg;
       entry.hasSponsor = hasSponsor;
       entry.lastThemeKey = themeKey;
+      entry.baseZIndex = baseZ;
       if (entry.lastIconKey !== nextIconKey) {
         const cfg = buildNeighborhoodLodDivIconConfig({ hood, tier: entry.lodTier, zoom: currentZoom, isSelected, hasSponsor, isDarkMap, pillBg: palette.pillBg, stroke: palette.stroke, shortPriceLabel, fullPriceLabel });
-        entry.marker?.setIcon?.(L.divIcon({ className: 'custom-hood-pill price-pill-icon', html: cfg.html, iconSize: cfg.iconSize, iconAnchor: cfg.iconAnchor }));
-        entry.marker?.setZIndexOffset?.(isSelected ? 1000 : hasSponsor ? 250 : 0);
+        entry.marker?.setIcon?.(L.divIcon({ className: 'leaflet-div-icon custom-hood-pill price-pill-icon', html: cfg.html, iconSize: cfg.iconSize, iconAnchor: cfg.iconAnchor }));
+        entry.marker?.setZIndexOffset?.(baseZ);
         entry.lastIconKey = nextIconKey;
         changed = true;
       }
@@ -263,7 +267,7 @@ export function ensureSelectedMarkerExists(params: {
   const palette = getLensPalette(selectedHood, mapLens, d3PriceScale);
   const safeSqmPill = Math.max(25, targetSqm || 75);
   const scaledRahnPill = Math.round(selectedHood.rahn80m * (safeSqmPill / 80) * rentAgeMultiplier);
-  const hasSponsor = isSponsorActive(selectedHood.sponsor, enableSponsorBilling);
+  const hasSponsor = isFeaturedMapSponsor(selectedHood.sponsor, enableSponsorBilling);
   const tier: MarkerVisualTier = currentZoom >= 14 ? 'detailed_pill' : 'standard_pill';
   const { shortPriceLabel, fullPriceLabel } = buildMarkerPriceLabels(selectedHood, mapLens, mode, scaledRahnPill, areaUnit, intlCurrency, locale);
   const themeKey = `${isDarkMap ? 1 : 0}|${locale}`;
@@ -278,17 +282,20 @@ export function ensureSelectedMarkerExists(params: {
     const layer = typeof L.geoJSON === 'function' ? L.geoJSON(geoJsonFeature, { style: () => style }).addTo(map) : L.polygon(coords, style).addTo(map);
     const pEntry: PolygonLayerEntry = { layer, geometryKey, styleKey: `${activeCity}|${palette.stroke}|${palette.fill}|${currentZoom}|1`, stroke: palette.stroke, fill: palette.fill, hood: selectedHood, cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, selectedHood.id) };
     layer.on?.('click', () => onSelectNeighborhood(pEntry.hood));
+    layer.bringToFront?.();
     refs.polygonsByHood.set(selectedHood.id, pEntry);
   }
   const cfg = buildNeighborhoodLodDivIconConfig({ hood: selectedHood, tier, zoom: currentZoom, isSelected: true, hasSponsor, isDarkMap, pillBg: palette.pillBg, stroke: palette.stroke, shortPriceLabel, fullPriceLabel });
-  const marker = L.marker([selectedHood.lat, selectedHood.lng], { icon: L.divIcon({ className: 'custom-hood-pill price-pill-icon', html: cfg.html, iconSize: cfg.iconSize, iconAnchor: cfg.iconAnchor }), zIndexOffset: 1000 }).addTo(map);
+  const marker = L.marker([selectedHood.lat, selectedHood.lng], { icon: L.divIcon({ className: 'leaflet-div-icon custom-hood-pill price-pill-icon', html: cfg.html, iconSize: cfg.iconSize, iconAnchor: cfg.iconAnchor }), zIndexOffset: 1000 }).addTo(map);
   marker.bindTooltip?.(buildNeighborhoodRichTooltipHtml({ hood: selectedHood, activeCity, mode, safeSqmPill, scaledRahnPill, isDarkMap }), { direction: 'top', interactive: true, offset: [0, -10] });
   const mEntry: NeighborhoodMarkerEntry = {
     marker, lat: selectedHood.lat, lng: selectedHood.lng, lodTier: tier, pillBg: palette.pillBg, hasSponsor, stroke: palette.stroke, fill: palette.fill, hood: selectedHood,
-    cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, selectedHood.id),
+    cityId: activeCity, scopedKey: formatNeighborhoodLayerKey(activeCity, selectedHood.id), baseZIndex: 1000,
     lastThemeKey: themeKey, lastIconKey: `${activeCity}|${selectedHood.id}|${selectedHood.lat}|${selectedHood.lng}|${currentZoom}|${tier}|1|${hasSponsor ? 1 : 0}|${themeKey}|${palette.pillBg}|${shortPriceLabel}|${fullPriceLabel}`,
     lastTooltipKey: `${selectedHood.id}|${activeCity}|${mode}|${safeSqmPill}|${scaledRahnPill}|${themeKey}|${areaUnit}|${intlCurrency}|${selectedHood.buyPerSqm}|${selectedHood.bargains?.length ?? 0}`,
   };
   marker.on?.('click', () => onSelectNeighborhood(mEntry.hood));
+  marker.on?.('mouseover', () => marker.setZIndexOffset?.(2500));
+  marker.on?.('mouseout', () => marker.setZIndexOffset?.(mEntry.baseZIndex ?? 1000));
   refs.markersByHood.set(selectedHood.id, mEntry);
 }

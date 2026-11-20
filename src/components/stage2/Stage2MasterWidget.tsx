@@ -200,15 +200,15 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
                 id={`stage2-tab-${tab.id}`}
                 aria-controls={`stage2-panel-${tab.id}`}
                 aria-selected={isActive}
+                tabIndex={isActive ? 0 : -1}
                 aria-label={tab.label}
                 onClick={() => setActiveTab(tab.id)}
                 onKeyDown={(e) => {
-                  if (e.key === 'ArrowRight') {
-                    const next = (idx - 1 + domainTabs.length) % domainTabs.length;
-                    setActiveTab(domainTabs[next].id);
-                  } else if (e.key === 'ArrowLeft') {
-                    const next = (idx + 1) % domainTabs.length;
-                    setActiveTab(domainTabs[next].id);
+                  const nextIdx = e.key === 'ArrowRight' ? (idx - 1 + domainTabs.length) % domainTabs.length : e.key === 'ArrowLeft' ? (idx + 1) % domainTabs.length : -1;
+                  if (nextIdx >= 0) {
+                    e.preventDefault();
+                    setActiveTab(domainTabs[nextIdx].id);
+                    e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIdx]?.focus();
                   }
                 }}
                 className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${

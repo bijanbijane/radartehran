@@ -29,6 +29,11 @@ interface ScopedParams {
   permissionVersion?: number;
 }
 
+interface EntityScopedParams extends ScopedParams {
+  entityType: EntityType;
+  entityId: string;
+}
+
 export class CollectionService {
   constructor(private readonly stateStore: CollectionStateStore = new CollectionStateStore()) {}
 
@@ -36,18 +41,24 @@ export class CollectionService {
     return this.stateStore;
   }
 
-  private activateScope(params: ScopedParams) {
+  private getScopedBucket(params: ScopedParams) {
     this.stateStore.setContext(params.userId, params.workspaceId, params.permissionVersion ?? 1);
     return this.stateStore.getBucket();
   }
 
-  public createCollection(params: ScopedParams & {
-    name: string;
-    description?: string;
-    visibility?: EngagementVisibilityScope;
-    accessContext?: AccessContext;
-  }): { ok: boolean; collection?: PersonalCollection; errorFa?: string } {
-    const bucket = this.activateScope(params);
+  private buildNoteKey(params: EntityScopedParams): string {
+    return `note:${params.userId}:${params.workspaceId}:${params.entityType}:${params.entityId}`;
+  }
+
+  public createCollection(
+    params: ScopedParams & {
+      name: string;
+      description?: string;
+      visibility?: EngagementVisibilityScope;
+      accessContext?: AccessContext;
+    }
+  ): { ok: boolean; collection?: PersonalCollection; errorFa?: string } {
+    const bucket = this.getScopedBucket(params);
     const visibility = params.visibility ?? 'private';
     const validation = validateCollectionCreation({
       rawName: params.name,
@@ -74,24 +85,26 @@ export class CollectionService {
     return { ok: true, collection };
   }
 
-  public renameCollection(params: ScopedParams & {
-    collectionId: string;
-    newName: string;
-  }): { ok: boolean; collection?: PersonalCollection; errorFa?: string } {
-    const bucket = this.activateScope(params);
+  public renameCollection(
+    params: ScopedParams & { collectionId: string; newName: string }
+  ): { ok: boolean; collection?: PersonalCollection; errorFa?: string } {
+    const bucket = this.getScopedBucket(params);
     const existing = bucket.collections.get(params.collectionId);
     if (!existing) return { ok: false, errorFa: 'مجموعه مورد نظر یافت نشد.' };
+
     const cleanName = normalizeCollectionName(params.newName);
     if (!cleanName) return { ok: false, errorFa: 'نام مجموعه نمی‌تواند خالی باشد.' };
+
     const updated: PersonalCollection = { ...existing, name: cleanName, updatedAt: new Date().toISOString() };
     bucket.collections.set(existing.id, updated);
     return { ok: true, collection: updated };
   }
 
   public deleteCollection(params: ScopedParams & { collectionId: string }): boolean {
-    const bucket = this.activateScope(params);
+    const bucket = this.getScopedBucket(params);
     const existed = bucket.collections.delete(params.collectionId);
     if (existed) {
+      // Deleting a collection removes its memberships without deleting the underlying entities or favorites
       for (const [key, m] of bucket.memberships.entries()) {
         if (m.collectionId === params.collectionId) bucket.memberships.delete(key);
       }
@@ -99,11 +112,10 @@ export class CollectionService {
     return existed;
   }
 
-  public addEntityToCollection(params: ScopedParams & {
-    collectionId: string;
-    entity: Partial<EngagementEntityRef>;
-  }): { ok: boolean; membership?: CollectionMembership; errorFa?: string } {
-    const bucket = this.activateScope(params);
+  public addEntityToCollection(
+    params: ScopedParams & { collectionId: string; entity: Partial<EngagementEntityRef> }
+  ): { ok: boolean; membership?: CollectionMembership; errorFa?: string } {
+    const bucket = this.getScopedBucket(params);
     const collection = bucket.collections.get(params.collectionId);
     if (!collection) return { ok: false, errorFa: 'مجموعه انتخاب‌شده یافت نشد.' };
 
@@ -131,12 +143,8 @@ export class CollectionService {
     return { ok: true, membership };
   }
 
-  public removeEntityFromCollection(params: ScopedParams & {
-    collectionId: string;
-    entityType: EntityType;
-    entityId: string;
-  }): boolean {
-    const bucket = this.activateScope(params);
+  public removeEntityFromCollection(params: EntityScopedParams & { collectionId: string }): boolean {
+    const bucket = this.getScopedBucket(params);
     const membershipId = `mem:${params.collectionId}:${params.entityType}:${params.entityId}`;
     const existed = bucket.memberships.delete(membershipId);
     if (existed) {
@@ -152,13 +160,10 @@ export class CollectionService {
     return existed;
   }
 
-  public assignTagToEntity(params: ScopedParams & {
-    entityType: EntityType;
-    entityId: string;
-    rawTagName: string;
-    colorToken?: string;
-  }): { ok: boolean; tag?: EntityTag; errorFa?: string } {
-    const bucket = this.activateScope(params);
+  public assignTagToEntity(
+    params: EntityScopedParams & { rawTagName: string; colorToken?: string }
+  ): { ok: boolean; tag?: EntityTag; errorFa?: string } {
+    const bucket = this.getScopedBucket(params);
     const { displayName, normalizedName } = normalizeTagName(params.rawTagName);
     if (!normalizedName) return { ok: false, errorFa: 'نام برچسب نمی‌تواند خالی باشد.' };
 
@@ -188,31 +193,32 @@ export class CollectionService {
     return { ok: true, tag };
   }
 
-  public listTagsForEntity(params: ScopedParams & { entityType: EntityType; entityId: string }): EntityTag[] {
-    const bucket = this.activateScope(params);
-    const tagIds = Array.from(bucket.tagAssignments.values())
+  public listTagsForEntity(params: EntityScopedParams): EntityTag[] {
+    const bucket = this.getScopedBucket(params);
+    return Array.from(bucket.tagAssignments.values())
       .filter((a) => a.entityType === params.entityType && a.entityId === params.entityId)
-      .map((a) => a.tagId);
-    return tagIds.map((id) => bucket.tags.get(id)).filter((t): t is EntityTag => Boolean(t));
+      .map((a) => bucket.tags.get(a.tagId))
+      .filter((t): t is EntityTag => Boolean(t));
   }
 
-  public upsertPersonalNote(params: ScopedParams & {
-    entityType: EntityType;
-    entityId: string;
-    rawContent: string;
-    visibility?: EngagementVisibilityScope;
-    accessContext?: AccessContext;
-  }): { ok: boolean; note?: EntityPersonalNote; errorFa?: string } {
-    const bucket = this.activateScope(params);
+  public upsertPersonalNote(
+    params: EntityScopedParams & {
+      rawContent: string;
+      visibility?: EngagementVisibilityScope;
+      accessContext?: AccessContext;
+    }
+  ): { ok: boolean; note?: EntityPersonalNote; errorFa?: string } {
+    const bucket = this.getScopedBucket(params);
     const visibility = params.visibility ?? 'private';
     if (params.accessContext) {
       const perm = canPerformEngagementAction('note_write', visibility, params.accessContext);
       if (!perm.allowed) return { ok: false, errorFa: perm.reasonFa };
     }
+
     const check = validateAndSanitizePersonalNote(params.rawContent);
     if (!check.valid) return { ok: false, errorFa: check.errorFa };
 
-    const noteKey = `note:${params.userId}:${params.workspaceId}:${params.entityType}:${params.entityId}`;
+    const noteKey = this.buildNoteKey(params);
     const existing = bucket.notes.get(noteKey);
     const now = new Date().toISOString();
     const note: EntityPersonalNote = {
@@ -230,18 +236,11 @@ export class CollectionService {
     return { ok: true, note };
   }
 
-  public deletePersonalNote(params: ScopedParams & { entityType: EntityType; entityId: string }): boolean {
-    const bucket = this.activateScope(params);
-    const noteKey = `note:${params.userId}:${params.workspaceId}:${params.entityType}:${params.entityId}`;
-    return bucket.notes.delete(noteKey);
+  public deletePersonalNote(params: EntityScopedParams): boolean {
+    return this.getScopedBucket(params).notes.delete(this.buildNoteKey(params));
   }
 
-  public getPersonalNote(params: ScopedParams & {
-    entityType: EntityType;
-    entityId: string;
-  }): EntityPersonalNote | null {
-    const bucket = this.activateScope(params);
-    const noteKey = `note:${params.userId}:${params.workspaceId}:${params.entityType}:${params.entityId}`;
-    return bucket.notes.get(noteKey) ?? null;
+  public getPersonalNote(params: EntityScopedParams): EntityPersonalNote | null {
+    return this.getScopedBucket(params).notes.get(this.buildNoteKey(params)) ?? null;
   }
 }

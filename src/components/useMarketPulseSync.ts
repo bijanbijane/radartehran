@@ -4,7 +4,7 @@
  * با حفظ قیمت‌های سفارشی مدیر و لغو درخواست‌های قدیمی هنگام تغییر شهر.
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import {
   INITIAL_NEIGHBORHOODS,
@@ -78,22 +78,44 @@ export function useMarketPulseSync({
   allExpansionSeeds,
   setNeighborhoods,
 }: UseMarketPulseSyncParams) {
+  const pulseAbortRef = useRef<AbortController | null>(null);
+  const pulseSeqRef = useRef<number>(0);
+  const deepSyncAbortRef = useRef<AbortController | null>(null);
+  const deepSyncSeqRef = useRef<number>(0);
+  const isMountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      pulseAbortRef.current?.abort();
+      deepSyncAbortRef.current?.abort();
+    };
+  }, []);
+
   const fetchMarketPulse = useCallback(
     async (forceRefresh = false, cityOverride?: CityId) => {
       const targetCity = cityOverride || ui.activeCity;
       activeCityRef.current = targetCity;
+      pulseAbortRef.current?.abort();
+      const controller = new AbortController();
+      pulseAbortRef.current = controller;
+      const seq = ++pulseSeqRef.current;
       ui.setSyncingPulse(true);
       try {
         const headers: Record<string, string> = {};
         if (forceRefresh && currentUser) {
           try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ }
         }
+        if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current) return;
         const res = await fetch(
           `/api/market-pulse?city=${encodeURIComponent(targetCity)}${forceRefresh ? '&refresh=1' : ''}`,
-          { headers }
+          { headers, signal: controller.signal }
         );
+        if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current) return;
         if (res.ok && activeCityRef.current === targetCity) {
           const data: MarketPulseData = await res.json();
+          if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current || activeCityRef.current !== targetCity) return;
           ui.setMarketPulse(data);
           if (Array.isArray(data.hoodLiveSnapshots) && data.hoodLiveSnapshots.length > 0) {
             const snapshotMap = new Map(data.hoodLiveSnapshots.map((s) => [Number(s.id), s]));
@@ -121,20 +143,37 @@ export function useMarketPulseSync({
             ui.setLastSyncNotice(`بروزرسانی زنده از سرور انجام شد (${data.lastUpdatedTimeFa} · واحد ${unitLabel}${intlBadge})`);
           }
         }
-      } catch { /* fallback to cache */ } finally { ui.setSyncingPulse(false); }
+      } catch { /* fallback to cache or aborted */ } finally {
+        if (isMountedRef.current && seq === pulseSeqRef.current) {
+          ui.setSyncingPulse(false);
+        }
+      }
     },
     [ui.activeCity, currentUser, allExpansionSeeds, activeCityRef, setNeighborhoods]
   );
 
   const handleDeepWebSync = useCallback(async () => {
+    const targetCity = ui.activeCity;
+    deepSyncAbortRef.current?.abort();
+    const controller = new AbortController();
+    deepSyncAbortRef.current = controller;
+    const seq = ++deepSyncSeqRef.current;
     ui.setDeepSyncing(true);
     ui.setLastSyncNotice('در حال استعلام زنده از منابع رایگان وب (AQICN، دیوار و شیپور)...');
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (currentUser) { try { headers.Authorization = `Bearer ${await currentUser.getIdToken()}`; } catch { /* ignore */ } }
-      const res = await fetch('/api/market-pulse/deep-sync', { method: 'POST', headers, body: JSON.stringify({ city: ui.activeCity }) });
+      if (controller.signal.aborted || !isMountedRef.current || seq !== deepSyncSeqRef.current) return;
+      const res = await fetch('/api/market-pulse/deep-sync', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ city: targetCity }),
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted || !isMountedRef.current || seq !== deepSyncSeqRef.current || activeCityRef.current !== targetCity) return;
       if (res.ok) {
         const result = await res.json();
+        if (controller.signal.aborted || !isMountedRef.current || seq !== deepSyncSeqRef.current || activeCityRef.current !== targetCity) return;
         const pulseData = result.pulse || result;
         if (pulseData?.status === 'ok') ui.setMarketPulse(pulseData);
         if (Array.isArray(pulseData?.hoodLiveSnapshots) && pulseData.hoodLiveSnapshots.length > 0) {
@@ -164,15 +203,23 @@ export function useMarketPulseSync({
             ? ` · ${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, getStoredRadarLocale())}/${unitLabel}`
             : '';
         ui.setLastSyncNotice(`تکمیل شد: ${sourceSummary} (واحد ${unitLabel}${intlBadge})`);
+      } else if (res.status === 401 || res.status === 403) {
+        ui.setLastSyncNotice('دسترسی همگام‌سازی عمیق نیازمند نشست مدیر تأییدشده است.');
+      } else if (res.status === 429) {
+        ui.setLastSyncNotice('محدودیت نرخ درخواست فعال است؛ چند لحظه بعد دوباره تلاش کنید.');
       } else {
         ui.setLastSyncNotice('بروزرسانی با الگوریتم پشتیبان سرور انجام شد.');
       }
-    } catch {
-      ui.setLastSyncNotice('خطا در ارتباط با سرور همگام‌سازی؛ داده‌های کش محلی فعال است.');
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError' && isMountedRef.current && seq === deepSyncSeqRef.current) {
+        ui.setLastSyncNotice('خطا در ارتباط با سرور همگام‌سازی؛ داده‌های کش محلی فعال است.');
+      }
     } finally {
-      ui.setDeepSyncing(false);
+      if (isMountedRef.current && seq === deepSyncSeqRef.current) {
+        ui.setDeepSyncing(false);
+      }
     }
-  }, [ui.activeCity, currentUser, setNeighborhoods]);
+  }, [ui.activeCity, currentUser, activeCityRef, setNeighborhoods]);
 
   useEffect(() => {
     activeCityRef.current = ui.activeCity;
@@ -180,7 +227,10 @@ export function useMarketPulseSync({
     void fetchMarketPulse(false, ui.activeCity);
     // [RULE-02] Stale-While-Revalidate (SWR) polling interval (5 minutes = 300_000ms)
     const interval = setInterval(() => void fetchMarketPulse(false, ui.activeCity), 300_000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      pulseAbortRef.current?.abort();
+    };
   }, [ui.activeCity, fetchMarketPulse, activeCityRef]);
 
   return { fetchMarketPulse, handleDeepWebSync };

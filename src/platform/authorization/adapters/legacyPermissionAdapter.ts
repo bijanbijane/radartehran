@@ -29,6 +29,7 @@ const LEGACY_PERMISSION_MAP: Record<string, CanonicalPermissionCode> = {
   'admin:system_config': 'admin:update:global',
   'admin:security_audit': 'admin:export:global',
   'admin:backup_restore': 'admin:manage:global',
+  'ADMIN_PANEL': 'admin:read:global',
 };
 
 export function mapLegacyPermissionToCanonical(legacyCode: string): CanonicalPermissionCode | null {

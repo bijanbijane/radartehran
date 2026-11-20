@@ -26,11 +26,16 @@ export interface UseEntityEngagementOptions {
 export function useEntityEngagement(options: UseEntityEngagementOptions) {
   const { userId, workspaceId, permissionVersion = 1 } = options;
 
-  const favoriteServiceRef = useRef(new FavoriteService());
-  const followServiceRef = useRef(new FollowService());
-  const collectionServiceRef = useRef(new CollectionService());
-  const watchRuleServiceRef = useRef(new WatchRuleService());
-  const syncRef = useRef(new EngagementSyncCoordinator());
+  const favoriteServiceRef = useRef<FavoriteService | null>(null);
+  if (!favoriteServiceRef.current) favoriteServiceRef.current = new FavoriteService();
+  const followServiceRef = useRef<FollowService | null>(null);
+  if (!followServiceRef.current) followServiceRef.current = new FollowService();
+  const collectionServiceRef = useRef<CollectionService | null>(null);
+  if (!collectionServiceRef.current) collectionServiceRef.current = new CollectionService();
+  const watchRuleServiceRef = useRef<WatchRuleService | null>(null);
+  if (!watchRuleServiceRef.current) watchRuleServiceRef.current = new WatchRuleService();
+  const syncRef = useRef<EngagementSyncCoordinator | null>(null);
+  if (!syncRef.current) syncRef.current = new EngagementSyncCoordinator();
 
   const [, setVersionTick] = useState(0);
   const bump = useCallback(() => setVersionTick((v) => v + 1), []);
@@ -43,13 +48,13 @@ export function useEntityEngagement(options: UseEntityEngagementOptions) {
 
   const toggleFavorite = useCallback(
     async (entity: EngagementEntityRef) => {
-      const res = await favoriteServiceRef.current.toggleFavorite({
+      const res = await favoriteServiceRef.current!.toggleFavorite({
         userId,
         workspaceId,
         permissionVersion,
         entity,
       });
-      syncRef.current.broadcast({
+      syncRef.current!.broadcast({
         eventType: 'FAVORITE_CHANGED',
         userId,
         workspaceId,
@@ -65,14 +70,14 @@ export function useEntityEngagement(options: UseEntityEngagementOptions) {
 
   const setFollowStatus = useCallback(
     async (entity: EngagementEntityRef, status: FollowStatus) => {
-      const res = await followServiceRef.current.setFollowStatus({
+      const res = await followServiceRef.current!.setFollowStatus({
         userId,
         workspaceId,
         permissionVersion,
         entity,
         status,
       });
-      syncRef.current.broadcast({
+      syncRef.current!.broadcast({
         eventType: 'FOLLOW_CHANGED',
         userId,
         workspaceId,
@@ -88,7 +93,7 @@ export function useEntityEngagement(options: UseEntityEngagementOptions) {
 
   const createCollection = useCallback(
     (name: string, description?: string, visibility: EngagementVisibilityScope = 'private') => {
-      const res = collectionServiceRef.current.createCollection({
+      const res = collectionServiceRef.current!.createCollection({
         userId,
         workspaceId,
         permissionVersion,
@@ -109,7 +114,7 @@ export function useEntityEngagement(options: UseEntityEngagementOptions) {
       rawContent: string,
       visibility: EngagementVisibilityScope = 'private'
     ) => {
-      const res = collectionServiceRef.current.upsertPersonalNote({
+      const res = collectionServiceRef.current!.upsertPersonalNote({
         userId,
         workspaceId,
         permissionVersion,
@@ -131,7 +136,7 @@ export function useEntityEngagement(options: UseEntityEngagementOptions) {
       thresholdPercent?: number,
       cooldownMinutes = 60
     ) => {
-      const res = watchRuleServiceRef.current.upsertWatchRule({
+      const res = watchRuleServiceRef.current!.upsertWatchRule({
         userId,
         workspaceId,
         permissionVersion,
@@ -147,10 +152,10 @@ export function useEntityEngagement(options: UseEntityEngagementOptions) {
   );
 
   const clearForSecurityTransition = useCallback(() => {
-    favoriteServiceRef.current.getStateStore().clearAllForSecurityTransition();
-    followServiceRef.current.getStateStore().clearAllForSecurityTransition();
-    collectionServiceRef.current.getStateStore().clearAllForSecurityTransition();
-    watchRuleServiceRef.current.clearAllForSecurityTransition();
+    favoriteServiceRef.current!.getStateStore().clearAllForSecurityTransition();
+    followServiceRef.current!.getStateStore().clearAllForSecurityTransition();
+    collectionServiceRef.current!.getStateStore().clearAllForSecurityTransition();
+    watchRuleServiceRef.current!.clearAllForSecurityTransition();
     bump();
   }, [bump]);
 

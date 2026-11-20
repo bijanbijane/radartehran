@@ -1,15 +1,15 @@
-import React, { useMemo, useState } from 'react'; import { AlertTriangle, Award, CheckCircle2, ShieldCheck, Sparkles, X, } from 'lucide-react'; import type { CityId } from '../types/models'; import { Neighborhood, toPersianNum, } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples, extractListingSpecsFromText, type ExtractedListingSpecs } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { clampNumber, recordDiagnosticEvent, sanitizeInput, validateSqmAmount, } from '../utils/security'; import type { ListingMediaObject } from '../utils/objectStorage'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { ListingMediaStorageUploader } from './ListingMediaStorageUploader'; import { AgencySponsorReservationTab } from './AgencySponsorReservationTab'; import { useDialogFocus } from './useDialogFocus'; export interface AgencyModalProps { open: boolean; onClose: () => void; agencyModalTab: 'submit_bargain' | 'reserve_sponsor'; setAgencyModalTab: React.Dispatch<React.SetStateAction<'submit_bargain' | 'reserve_sponsor'>>; neighborhoods: Neighborhood[]; bargainHoodId: number; setBargainHoodId: React.Dispatch<React.SetStateAction<number>>; bargainType: 'خرید' | 'اجاره'; setBargainType: React.Dispatch<React.SetStateAction<'خرید' | 'اجاره'>>;
-  bargainSqm: number; setBargainSqm: React.Dispatch<React.SetStateAction<number>>; bargainProposedPrice: number; setBargainProposedPrice: React.Dispatch<React.SetStateAction<number>>; bargainStreet: string; setBargainStreet: React.Dispatch<React.SetStateAction<string>>; bargainTitle: string; setBargainTitle: React.Dispatch<React.SetStateAction<string>>; targetBargainHood: Neighborhood; liveBargainCheck: { benchmark: number; maxAllowedFor10Percent: number; discountPercent: number; isEligible: boolean; buyerProfitMillion: number; }; bargainSubmitMsg: { type: 'success' | 'error'; text: string } | null; onSubmitBargainListing: (e: React.FormEvent) => void; sponsorHoodId: number; setSponsorHoodId: React.Dispatch<React.SetStateAction<number>>; sponsorAgencyName: string;
+import React, { useMemo, useState } from 'react'; import { AlertTriangle, Award, CheckCircle2, ShieldCheck, Sparkles, X, } from 'lucide-react'; import type { CityId } from '../types/models'; import { Neighborhood, toPersianNum, } from '../data/neighborhoods'; import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples, extractListingSpecsFromText, type ExtractedListingSpecs } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { recordDiagnosticEvent } from '../utils/security'; import { classifyFeedbackTone, computeBargainDefaultForDealType, sanitizeLiveText } from '../utils/forms/formInputHelpers'; import type { ListingMediaObject } from '../utils/objectStorage'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { ListingMediaStorageUploader } from './ListingMediaStorageUploader'; import { AgencySponsorReservationTab } from './AgencySponsorReservationTab'; import { useDialogFocus } from './useDialogFocus'; import { NumericDraftInput } from './ui/NumericDraftInput'; export interface AgencyModalProps { open: boolean; onClose: () => void; agencyModalTab: 'submit_bargain' | 'reserve_sponsor'; setAgencyModalTab: React.Dispatch<React.SetStateAction<'submit_bargain' | 'reserve_sponsor'>>; neighborhoods: Neighborhood[]; bargainHoodId: number; setBargainHoodId: React.Dispatch<React.SetStateAction<number>>; bargainType: 'خرید' | 'اجاره'; setBargainType: React.Dispatch<React.SetStateAction<'خرید' | 'اجاره'>>;
+  bargainSqm: number; setBargainSqm: React.Dispatch<React.SetStateAction<number>>; bargainProposedPrice: number; setBargainProposedPrice: React.Dispatch<React.SetStateAction<number>>; bargainStreet: string; setBargainStreet: React.Dispatch<React.SetStateAction<string>>; bargainTitle: string; setBargainTitle: React.Dispatch<React.SetStateAction<string>>; targetBargainHood: Neighborhood; liveBargainCheck: { benchmark: number; maxAllowedFor10Percent: number; discountPercent: number; isEligible: boolean; buyerProfitMillion: number; }; bargainSubmitMsg: { type: 'success' | 'error'; text: string } | null; setBargainSubmitMsg?: React.Dispatch<React.SetStateAction<{ type: 'success' | 'error'; text: string } | null>>; onSubmitBargainListing: (e: React.FormEvent) => void; sponsorHoodId: number; setSponsorHoodId: React.Dispatch<React.SetStateAction<number>>; sponsorAgencyName: string;
   setSponsorAgencyName: React.Dispatch<React.SetStateAction<string>>; sponsorPhone: string; setSponsorPhone: React.Dispatch<React.SetStateAction<string>>; sponsorSpecialty: string;
-  setSponsorSpecialty: React.Dispatch<React.SetStateAction<string>>; sponsorExpYears: number; setSponsorExpYears: React.Dispatch<React.SetStateAction<number>>; sponsorSubmitMsg: string; onReserveSponsor: (e: React.FormEvent) => void; enableSponsorBilling?: boolean;
+  setSponsorSpecialty: React.Dispatch<React.SetStateAction<string>>; sponsorExpYears: number; setSponsorExpYears: React.Dispatch<React.SetStateAction<number>>; sponsorSubmitMsg: string; setSponsorSubmitMsg?: React.Dispatch<React.SetStateAction<string>>; onReserveSponsor: (e: React.FormEvent) => void; enableSponsorBilling?: boolean;
   sponsorPlanMonths?: 1 | 3; setSponsorPlanMonths?: React.Dispatch<React.SetStateAction<1 | 3>>; sponsorTrackingCode?: string; setSponsorTrackingCode?: React.Dispatch<React.SetStateAction<string>>; activeCity?: CityId; bargainUploadedMedia?: ListingMediaObject[]; setBargainUploadedMedia?: React.Dispatch<React.SetStateAction<ListingMediaObject[]>>; }
 export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, neighborhoods, bargainHoodId, setBargainHoodId, bargainType, setBargainType,
-  bargainSqm, setBargainSqm, bargainProposedPrice, setBargainProposedPrice, bargainStreet, setBargainStreet, bargainTitle, setBargainTitle, targetBargainHood, liveBargainCheck, bargainSubmitMsg, onSubmitBargainListing,
-  sponsorHoodId, setSponsorHoodId, sponsorAgencyName, setSponsorAgencyName, sponsorPhone, setSponsorPhone, sponsorSpecialty, setSponsorSpecialty, sponsorExpYears, setSponsorExpYears, sponsorSubmitMsg, onReserveSponsor,
+  bargainSqm, setBargainSqm, bargainProposedPrice, setBargainProposedPrice, bargainStreet, setBargainStreet, bargainTitle, setBargainTitle, targetBargainHood, liveBargainCheck, bargainSubmitMsg, setBargainSubmitMsg, onSubmitBargainListing,
+  sponsorHoodId, setSponsorHoodId, sponsorAgencyName, setSponsorAgencyName, sponsorPhone, setSponsorPhone, sponsorSpecialty, setSponsorSpecialty, sponsorExpYears, setSponsorExpYears, sponsorSubmitMsg, setSponsorSubmitMsg, onReserveSponsor,
   enableSponsorBilling = true, sponsorPlanMonths = 1, setSponsorPlanMonths, sponsorTrackingCode = '', setSponsorTrackingCode, activeCity = 'tehran', bargainUploadedMedia, setBargainUploadedMedia, }: AgencyModalProps) { const dialogRef = useDialogFocus(open, onClose); const [areaUnit] = useAreaUnit(); const [currency] = useIntlCurrency(); const [locale] = useRadarLocale(); const showIntl = currency !== 'IRT';
   const [internalMedia, setInternalMedia] = useState<ListingMediaObject[]>([]); const mediaList = bargainUploadedMedia ?? internalMedia; const setMediaList = setBargainUploadedMedia ?? setInternalMedia;
   const [adRawText, setAdRawText] = useState(''); const [nlpMsg, setNlpMsg] = useState(''); const [extractedSpecs, setExtractedSpecs] = useState<ExtractedListingSpecs | null>(null);
-  const handleNlpExtract = () => { if (!adRawText.trim()) return;
+  const handleNlpExtract = () => { if (!adRawText.trim()) { setExtractedSpecs(null); setNlpMsg('لطفاً ابتدا متن آگهی را وارد کنید تا مشخصات استخراج شود.'); return; }
     const baseBench = (targetBargainHood as { baseBuyPerSqm?: number }).baseBuyPerSqm ?? targetBargainHood.buyPerSqm ?? 100;
     const specs = extractListingSpecsFromText(adRawText, baseBench); setExtractedSpecs(specs);
     if (specs.sqm >= 30 && specs.sqm <= 500) setBargainSqm(specs.sqm);
@@ -17,6 +17,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
     else if (bargainType === 'اجاره' && specs.totalMillion > 0) setBargainProposedPrice(Math.round(specs.totalMillion));
     const am = [specs.hasParking ? 'پارکینگ' : '', specs.hasElevator ? 'آسانسور' : '', specs.hasStorage ? 'انباری' : ''].filter(Boolean).join('، ');
     setBargainTitle(`آپارتمان ${toPersianNum(specs.sqm)} متری طبقه ${toPersianNum(specs.floor)}${am ? ` با ${am}` : ''}`);
+    setBargainSubmitMsg?.(null);
     setNlpMsg(`مشخصات (${toPersianNum(specs.sqm)}م، ط${toPersianNum(specs.floor)}) استخراج شد`);
   };
   const safeNeighborhoods = useMemo(() => { return Array.isArray(neighborhoods) ? neighborhoods.filter((n) => n && typeof n.id === 'number' && n.name) : []; }, [neighborhoods]); if (!open) return null; if (safeNeighborhoods.length === 0 || !targetBargainHood) { return ( <div
@@ -63,7 +64,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
           <button
             type="button"
             onClick={() => { recordDiagnosticEvent('AgencyModal', 'switchTab:submit_bargain', 'success');
-              setAgencyModalTab('submit_bargain'); }}
+              setSponsorSubmitMsg?.(''); setAgencyModalTab('submit_bargain'); }}
             className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${
               agencyModalTab === 'submit_bargain'
                 ? 'apple-segmented-pill-active dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold'
@@ -75,7 +76,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
           <button
             type="button"
             onClick={() => { recordDiagnosticEvent('AgencyModal', 'switchTab:reserve_sponsor', 'success');
-              setAgencyModalTab('reserve_sponsor');
+              setBargainSubmitMsg?.(null); setAgencyModalTab('reserve_sponsor');
             }}
             className={`py-2 px-3 rounded-[8px] transition cursor-pointer ${
               agencyModalTab === 'reserve_sponsor'
@@ -102,13 +103,20 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   استخراج هوشمند از متن آگهی دیوار / شیپور:
                 </span>
-                {nlpMsg && <span className="font-bold text-emerald-700 dark:text-emerald-400">{nlpMsg}</span>}
+                {nlpMsg && (
+                  <span
+                    role={classifyFeedbackTone(nlpMsg) === 'error' ? 'alert' : 'status'}
+                    className={`font-bold ${classifyFeedbackTone(nlpMsg) === 'error' ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}
+                  >
+                    {nlpMsg}
+                  </span>
+                )}
               </div>
               <div className="flex gap-1.5">
                 <input
                   type="text" aria-label="متن آگهی جهت استخراج هوشمند"
                   value={adRawText}
-                  onChange={(e) => setAdRawText(e.target.value)}
+                  onChange={(e) => { setNlpMsg(''); setAdRawText(e.target.value); }}
                   placeholder="متن آگهی را پیست کنید (مثلاً: ۷۵ متر طبقه ۲ با پارکینگ متری ۱۱۰ م...)"
                   className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-600"
                 />
@@ -134,7 +142,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             <div className="apple-grouped-card dark:bg-slate-800/60 dark:border-slate-800 p-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">انتخاب محله:</label>
-                <select aria-label="انتخاب محله" value={bargainHoodId} onChange={(e) => setBargainHoodId(Number(e.target.value))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
+                <select aria-label="انتخاب محله" value={bargainHoodId} onChange={(e) => { const nextId = Number(e.target.value); setBargainSubmitMsg?.(null); setBargainHoodId(nextId); const foundHood = safeNeighborhoods.find((n) => n.id === nextId); if (foundHood) { setBargainProposedPrice(computeBargainDefaultForDealType({ buyPerSqm: foundHood.buyPerSqm, rentPerMonth: foundHood.rahn80m ? foundHood.rahn80m / 100 : undefined }, bargainType).proposedPrice); } }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[10px] px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
                   {safeNeighborhoods.map((n) => {
                     const uVal = bargainType === 'اجاره' ? n.rahn80m : Number(convertPricePerSqmToUnit(n.buyPerSqm, areaUnit).toFixed(1));
                     const fx = showIntl ? ` · ${formatMillionTomanAsIntlCurrency(uVal, currency, locale)}` : '';
@@ -148,14 +156,14 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               </div>
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">نوع معامله:</label>
-                <select aria-label="نوع معامله" value={bargainType} onChange={(e) => setBargainType(e.target.value === 'اجاره' ? 'اجاره' : 'خرید')} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
+                <select aria-label="نوع معامله" value={bargainType} onChange={(e) => { const nextType = e.target.value === 'اجاره' ? 'اجاره' : 'خرید'; setBargainSubmitMsg?.(null); setBargainType(nextType); setBargainProposedPrice(computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, nextType).proposedPrice); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-600">
                   <option value="خرید">فروش ملک (خرید)</option>
                   <option value="اجاره">رهن و اجاره</option>
                 </select>
               </div>
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">متراژ واحد (متر مربع — معادل {formatAreaShort(bargainSqm, areaUnit)}):</label>
-                <input type="number" aria-label="متراژ واحد" min={30} max={500} value={bargainSqm} onChange={(e) => setBargainSqm(validateSqmAmount(e.target.value, 80))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
+                <NumericDraftInput aria-label="متراژ واحد" min={30} max={500} fallback={80} value={bargainSqm} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainSqm(v); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-bold tabular-nums focus:outline-none focus:border-emerald-600" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -173,13 +181,13 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                         return `مبلغ رهن کامل پیشنهادی (میانگین ${formatAreaShort(bargainSqm, areaUnit)} ${targetBargainHood.name}: ${toPersianNum(scaledRahn)} میلیون · اجاره: ${toPersianNum(Math.round(scaledRahn * 0.03))} م${showIntl ? ` · ${formatMillionTomanAsIntlCurrency(scaledRahn, currency, locale)}` : ''}):`;
                       })()}
                 </label>
-                <input type="number" aria-label="قیمت پیشنهادی" min={10} max={50000} value={bargainProposedPrice} onChange={(e) => setBargainProposedPrice(clampNumber(e.target.value, 1, 50000, 100))} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums focus:outline-none focus:border-emerald-600" />
+                <NumericDraftInput aria-label="قیمت پیشنهادی" min={10} max={bargainType === 'اجاره' ? 200000 : 10000} fallback={computeBargainDefaultForDealType({ buyPerSqm: targetBargainHood.buyPerSqm, rentPerMonth: targetBargainHood.rahn80m ? targetBargainHood.rahn80m / 100 : undefined }, bargainType).proposedPrice} value={bargainProposedPrice} onValueChange={(v) => { setBargainSubmitMsg?.(null); setBargainProposedPrice(v); }} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums focus:outline-none focus:border-emerald-600" />
                 <div className="flex flex-wrap items-center justify-between gap-1.5 mt-1.5 text-[11px]">
                   <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => setBargainProposedPrice(liveBargainCheck.maxAllowedFor10Percent)} className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold transition cursor-pointer">
+                    <button type="button" onClick={() => { setBargainSubmitMsg?.(null); setBargainProposedPrice(liveBargainCheck.maxAllowedFor10Percent); }} className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold transition cursor-pointer">
                       اعمال ۱۰٪ تخفیف ({toPersianNum(liveBargainCheck.maxAllowedFor10Percent)} م{showIntl ? ` · ${formatMillionTomanAsIntlCurrency(liveBargainCheck.maxAllowedFor10Percent, currency, locale)}` : ''})
                     </button>
-                    <button type="button" onClick={() => setBargainProposedPrice(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85)))} className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold transition cursor-pointer">
+                    <button type="button" onClick={() => { setBargainSubmitMsg?.(null); setBargainProposedPrice(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85))); }} className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold transition cursor-pointer">
                       اعمال ۱۵٪ تخفیف ({toPersianNum(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85)))} م{showIntl ? ` · ${formatMillionTomanAsIntlCurrency(Math.max(10, Math.floor((liveBargainCheck.maxAllowedFor10Percent / 0.9) * 0.85)), currency, locale)}` : ''})
                     </button>
                   </div>
@@ -196,12 +204,12 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               </div>
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 mb-1">نام خیابان یا فرعی در محله:</label>
-                <input type="text" aria-label="نام خیابان یا فرعی در محله" maxLength={100} value={bargainStreet} onChange={(e) => setBargainStreet(sanitizeInput(e.target.value, 100))} placeholder={`مثلاً: فرعی دنج ${targetBargainHood.name}`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+                <input type="text" aria-label="نام خیابان یا فرعی در محله" maxLength={100} value={bargainStreet} onChange={(e) => { setBargainSubmitMsg?.(null); setBargainStreet(sanitizeLiveText(e.target.value, 100)); }} placeholder={`مثلاً: فرعی دنج ${targetBargainHood.name}`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
               </div>
             </div>
             <div>
               <label className="block text-slate-600 dark:text-slate-300 mb-1">عنوان و مشخصات ملک:</label>
-              <input type="text" aria-label="عنوان و مشخصات ملک" maxLength={140} value={bargainTitle} onChange={(e) => setBargainTitle(sanitizeInput(e.target.value, 140))} placeholder={`مثلاً: آپارتمان ${formatAreaShort(bargainSqm, areaUnit)} ۲ خواب، فول امکانات`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
+              <input type="text" aria-label="عنوان و مشخصات ملک" maxLength={140} value={bargainTitle} onChange={(e) => { setBargainSubmitMsg?.(null); setBargainTitle(sanitizeLiveText(e.target.value, 140)); }} placeholder={`مثلاً: آپارتمان ${formatAreaShort(bargainSqm, areaUnit)} ۲ خواب، فول امکانات`} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-600" />
             </div>
             <ListingMediaStorageUploader hoodId={bargainHoodId} hoodName={targetBargainHood.name} sqm={bargainSqm} city={activeCity} uploadedMedia={mediaList} onChangeMedia={setMediaList} />
             <div
@@ -247,6 +255,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             </div>
             {bargainSubmitMsg && (
               <div
+                role={bargainSubmitMsg.type === 'error' ? 'alert' : 'status'}
                 className={`p-3 rounded-2xl border font-semibold ${
                   bargainSubmitMsg.type === 'success'
                     ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
@@ -277,7 +286,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             sponsorSpecialty={sponsorSpecialty}
             setSponsorSpecialty={setSponsorSpecialty}
             sponsorExpYears={sponsorExpYears}
-            setSponsorExpYears={setSponsorExpYears} sponsorSubmitMsg={sponsorSubmitMsg} onReserveSponsor={onReserveSponsor} enableSponsorBilling={enableSponsorBilling} sponsorPlanMonths={sponsorPlanMonths} setSponsorPlanMonths={setSponsorPlanMonths} sponsorTrackingCode={sponsorTrackingCode} setSponsorTrackingCode={setSponsorTrackingCode} />
+            setSponsorExpYears={setSponsorExpYears} sponsorSubmitMsg={sponsorSubmitMsg} setSponsorSubmitMsg={setSponsorSubmitMsg} onReserveSponsor={onReserveSponsor} enableSponsorBilling={enableSponsorBilling} sponsorPlanMonths={sponsorPlanMonths} setSponsorPlanMonths={setSponsorPlanMonths} sponsorTrackingCode={sponsorTrackingCode} setSponsorTrackingCode={setSponsorTrackingCode} />
         )} </div>
     </div>
   ); }

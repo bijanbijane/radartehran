@@ -4,12 +4,13 @@
  * @description CASPER Unified Decision Quality & Executive Deal Readiness Synthesis Card.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Target, Sparkles, Award, ArrowUpLeft, ShieldCheck, Copy, Check, AlertTriangle } from 'lucide-react';
 import { resolveNeighborhood, synthesizeExecutiveDecisionReport, UnifiedDecisionSynthesisReport } from '../../cells/decision-epistemology/unifiedDecisionSynthesisEngine';
 import { type Neighborhood, toPersianNum } from '../../data/neighborhoods';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
+import { NumericDraftInput } from '../ui/NumericDraftInput';
 
 export interface UnifiedDecisionSynthesisCardProps {
   hoodId?: number; hoodName?: string; cityKey?: string; basePriceSqm?: number;
@@ -25,7 +26,9 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
   const [scenarioMode, setScenarioMode] = useState<'FAIR' | 'MARKET' | 'BUBBLE' | 'CUSTOM'>('MARKET');
   const [userCustomAskingSqm, setUserCustomAskingSqm] = useState<number>(0);
   const [copiedPlaybook, setCopiedPlaybook] = useState<boolean>(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current); }, []);
   useEffect(() => { if (initialTargetSqm && initialTargetSqm > 0) setTargetSqm(initialTargetSqm); }, [initialTargetSqm]);
   useEffect(() => { setUserCustomAskingSqm(0); }, [hoodId, cityKey]);
 
@@ -90,7 +93,7 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
           ))}
           {scenarioMode === 'CUSTOM' && (
             <div className="flex items-center gap-1">
-              <input type="number" aria-label="قیمت پیشنهادی هر متر مربع به میلیون تومان" value={userCustomAskingSqm || ''} onChange={(e) => setUserCustomAskingSqm(Math.max(1, Number(e.target.value)))} placeholder="متری (م.ت)" className="w-20 px-2 py-0.5 text-[11px] font-bold rounded-md border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white tabular-nums" />
+              <NumericDraftInput min={1} max={10000} fallback={aggMetrics.askingPricePerSqm} nullable aria-label="قیمت پیشنهادی هر متر مربع به میلیون تومان" value={userCustomAskingSqm || null} onNullableValueChange={(v) => setUserCustomAskingSqm(v ?? 0)} placeholder="متری (م.ت)" className="w-20 px-2 py-0.5 text-[11px] font-bold rounded-md border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white tabular-nums" />
               <span className="text-[10px] text-slate-400">م.ت/متر</span>
             </div>
           )}
@@ -175,7 +178,8 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
             onClick={() => {
               navigator.clipboard?.writeText(pb.copyableActionSheetFa).catch(() => {});
               setCopiedPlaybook(true);
-              setTimeout(() => setCopiedPlaybook(false), 2000);
+              if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+              copyTimerRef.current = setTimeout(() => { setCopiedPlaybook(false); copyTimerRef.current = null; }, 2000);
             }}
             className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
           >

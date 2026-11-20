@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useComparisonFilter } from '../../context/ComparisonFilterContext';
 import {
   normalizeFinancialInput,
@@ -7,6 +8,7 @@ import {
   calculateTehranAgeFactor,
 } from '../../utils/persianFinancials';
 import { useDialogFocus } from '../useDialogFocus';
+import { NumericDraftInput } from '../ui/NumericDraftInput';
 import { useAreaUnit, useExchangeRateSnapshot, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import type { BargainListing } from '../../data/neighborhoods';
@@ -114,21 +116,20 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
   if (!isOpen) return null;
   const fmt = new Intl.NumberFormat(isEn ? 'en-US' : 'fa-IR');
 
-  return (
+  const modalContent = (
     <div
       dir={isEn ? 'ltr' : 'rtl'}
       role="dialog"
       aria-modal="true"
       aria-label={isEn ? 'Reverse Housing Budget Finder' : 'کاشف معکوس بودجه مسکن'}
       onClick={onClose}
-      style={{ zIndex: 'var(--z-modal-backdrop, 60)' }}
-      className="fixed inset-0 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[9500] flex items-center justify-center bg-slate-950/70 p-3 sm:p-4 backdrop-blur-sm animate-fadeIn"
     >
       <div
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-slate-900 dark:text-white shadow-2xl outline-none"
+        className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 text-slate-900 dark:text-white shadow-2xl outline-none"
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
@@ -156,12 +157,15 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
             <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
               {isEn ? 'Total Buy Budget (Million Toman):' : 'بودجه کل خرید شما (میلیون تومان):'}
             </label>
-            <input
-              type="text"
-              inputMode="decimal"
+            <NumericDraftInput
               aria-label={isEn ? 'Total Buy Budget (Million Toman)' : 'بودجه کل خرید شما (میلیون تومان)'}
+              min={0}
+              max={500000}
+              step={500}
+              allowDecimal
+              fallback={initialBudgetMillion || 5000}
               value={totalBudgetMillion}
-              onChange={(e) => setBudgetFilter({ totalBudgetMillion: normalizeFinancialInput(e.target.value) })}
+              onValueChange={(next) => setBudgetFilter({ totalBudgetMillion: next })}
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-base font-black text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -278,4 +282,6 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

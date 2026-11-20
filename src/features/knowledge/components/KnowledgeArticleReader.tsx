@@ -106,6 +106,14 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
     setViewingHistoricalVersion(false);
   }, [publication]);
 
+  useEffect(() => {
+    setNoticeFa(null); setErrorFa(null); setShowCorrForm(false);
+    const d = loadKnowledgeCorrectionLocalDraft(publication.id);
+    setCorrType(d?.correctionType || 'data_error'); setTargetSection(d?.targetSection || 'tier-2-ind');
+    setTargetIndicatorId(d?.targetIndicatorId || ''); setCorrNote(d?.noteFa || '');
+    setEvidenceDesc(d?.evidenceDescriptionFa || ''); setSourceUrl(d?.sourceUrl || '');
+  }, [publication.id]);
+
   const effectiveSources =
     linkedSources && linkedSources.length > 0
       ? linkedSources

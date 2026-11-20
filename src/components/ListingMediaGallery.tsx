@@ -4,10 +4,12 @@
  */
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Database, Film, Image as ImageIcon, X } from 'lucide-react';
 import type { BargainListing } from '../types/models';
 import { toPersianNum } from '../data/neighborhoods';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import { useDialogFocus } from './useDialogFocus';
 import {
   AreaUnit,
   IntlCurrencyCode,
@@ -38,6 +40,7 @@ export function ListingMediaGallery({
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
+  const lightboxRef = useDialogFocus(Boolean(selectedImageUrl), () => setSelectedImageUrl(null));
   const [hookUnit] = useAreaUnit();
   const [hookCurrency] = useIntlCurrency();
   const [radarLocale] = useRadarLocale();
@@ -160,44 +163,48 @@ export function ListingMediaGallery({
         </div>
       )}
 
-      {selectedImageUrl && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`پیش‌نمایش تصویر ${listing.title}`}
-          tabIndex={-1}
-          onKeyDown={(e) => { if (e.key === 'Escape') setSelectedImageUrl(null); }}
-          onClick={() => setSelectedImageUrl(null)}
-          className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50"
-        >
+      {selectedImageUrl && (() => {
+        const previewNode = (
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl max-w-lg w-full p-3 space-y-2 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`پیش‌نمایش تصویر ${listing.title}`}
+            dir="rtl"
+            onClick={() => setSelectedImageUrl(null)}
+            className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-[9500]"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-              <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
-                {listing.title} — فایل آبجکت استوریج
-              </span>
-              <button
-                type="button"
-                aria-label="بستن پیش‌نمایش تصویر"
-                onClick={() => setSelectedImageUrl(null)}
-                className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <div
+              ref={lightboxRef}
+              tabIndex={-1}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-3 space-y-2 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                  {listing.title} — فایل آبجکت استوریج
+                </span>
+                <button
+                  type="button"
+                  aria-label="بستن پیش‌نمایش تصویر"
+                  onClick={() => setSelectedImageUrl(null)}
+                  className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <img
+                src={resolveImgSrc(selectedImageUrl)}
+                onError={() =>
+                  setFailedUrls((prev) => ({ ...prev, [selectedImageUrl]: true }))
+                }
+                alt={listing.title}
+                className="w-full max-h-[70vh] object-contain rounded-xl bg-slate-950"
+              />
             </div>
-            <img
-              src={resolveImgSrc(selectedImageUrl)}
-              onError={() =>
-                setFailedUrls((prev) => ({ ...prev, [selectedImageUrl]: true }))
-              }
-              alt={listing.title}
-              className="w-full max-h-[70vh] object-contain rounded-xl bg-slate-950"
-            />
           </div>
-        </div>
-      )}
+        );
+        return typeof document !== 'undefined' ? createPortal(previewNode, document.body) : previewNode;
+      })()}
     </div>
   );
 }

@@ -99,12 +99,13 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
               <input
                 type="text"
                 data-testid="submit-price-billion-input"
+                aria-invalid={Boolean(errors.saleTotalBillion)}
                 value={draft.saleTotalBillion}
                 onChange={(e) => onUpdate({ saleTotalBillion: e.target.value })}
                 placeholder="مثال: ۲۸.۵"
                 className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 tabular-nums"
               />
-              {errors.saleTotalBillion && <span className="text-[#B3261E] text-[11px]">{errors.saleTotalBillion}</span>}
+              {errors.saleTotalBillion && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.saleTotalBillion}</span>}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
@@ -112,21 +113,24 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
                 <label className="font-bold block mb-1">ودیعه (میلیون تومان)</label>
                 <input
                   type="text"
+                  aria-invalid={Boolean(errors.depositMillion)}
                   value={draft.depositMillion}
                   onChange={(e) => onUpdate({ depositMillion: e.target.value })}
                   className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 tabular-nums"
                 />
-                {errors.depositMillion && <span className="text-[#B3261E] text-[11px]">{errors.depositMillion}</span>}
+                {errors.depositMillion && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.depositMillion}</span>}
               </div>
               {draft.transactionType === 'rent' && (
                 <div>
                   <label className="font-bold block mb-1">اجاره ماهانه (میلیون تومان)</label>
                   <input
                     type="text"
+                    aria-invalid={Boolean(errors.monthlyRentMillion)}
                     value={draft.monthlyRentMillion}
                     onChange={(e) => onUpdate({ monthlyRentMillion: e.target.value })}
                     className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 tabular-nums"
                   />
+                  {errors.monthlyRentMillion && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.monthlyRentMillion}</span>}
                 </div>
               )}
             </div>
@@ -149,24 +153,26 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
           <input
             type="text"
             data-testid="submit-title-input"
+            aria-invalid={Boolean(errors.title)}
             value={draft.title}
             onChange={(e) => onUpdate({ title: e.target.value })}
             placeholder="مثال: آپارتمان ۸۵ متری ۲ خواب بازسازی‌شده، سعادت‌آباد"
             className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
           />
-          {errors.title && <span className="text-[#B3261E] text-[11px]">{errors.title}</span>}
+          {errors.title && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.title}</span>}
         </div>
         <div>
           <label className="font-bold block mb-1">توضیحات دقیق ویژگی‌ها و وضعیت تخلیه/سند</label>
           <textarea
             rows={4}
             data-testid="submit-desc-input"
+            aria-invalid={Boolean(errors.description)}
             value={draft.description}
             onChange={(e) => onUpdate({ description: e.target.value })}
             placeholder="شرایط نورگیر، مشاعات، بازسازی، وضعیت مستأجر و نکات واقعی ملک..."
             className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
           />
-          {errors.description && <span className="text-[#B3261E] text-[11px]">{errors.description}</span>}
+          {errors.description && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.description}</span>}
         </div>
       </div>
     );
@@ -192,23 +198,25 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
           <input
             type="text"
             data-testid="submit-name-input"
+            aria-invalid={Boolean(errors.publisherName)}
             value={draft.publisherName}
             onChange={(e) => onUpdate({ publisherName: e.target.value })}
             className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
           />
-          {errors.publisherName && <span className="text-[#B3261E] text-[10.5px]">{errors.publisherName}</span>}
+          {errors.publisherName && <span role="alert" className="text-[#B3261E] text-[10.5px] block mt-0.5">{errors.publisherName}</span>}
         </div>
         <div>
           <label className="font-bold block mb-1">شماره تماس استعلام</label>
           <input
             type="text"
             data-testid="submit-phone-input"
+            aria-invalid={Boolean(errors.publisherPhone)}
             value={draft.publisherPhone}
             onChange={(e) => onUpdate({ publisherPhone: e.target.value })}
             placeholder="09120000000"
             className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 tabular-nums"
           />
-          {errors.publisherPhone && <span className="text-[#B3261E] text-[10.5px]">{errors.publisherPhone}</span>}
+          {errors.publisherPhone && <span role="alert" className="text-[#B3261E] text-[10.5px] block mt-0.5">{errors.publisherPhone}</span>}
         </div>
       </div>
 
@@ -228,13 +236,14 @@ export const ListingSubmissionSteps4To7: React.FC<ListingSubmissionSteps4To7Prop
       <label className="flex items-center gap-2 p-3 rounded-[9px] bg-[#F1F4F2] dark:bg-slate-800 cursor-pointer font-bold">
         <input
           type="checkbox"
+          aria-invalid={Boolean(errors.agreeToVerification)}
           checked={draft.agreeToVerification}
           onChange={(e) => onUpdate({ agreeToVerification: e.target.checked })}
           className="accent-[#176B63]"
         />
         <span>صحت اطلاعات را تأیید می‌کنم و می‌دانم پس از انتشار تحت پایش تازگی و گزارش کاربران قرار دارد.</span>
       </label>
-      {errors.agreeToVerification && <span className="text-[#B3261E] text-[11px]">{errors.agreeToVerification}</span>}
+      {errors.agreeToVerification && <span role="alert" className="text-[#B3261E] text-[11px] block mt-0.5">{errors.agreeToVerification}</span>}
     </div>
   );
 };

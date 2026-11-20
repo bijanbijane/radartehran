@@ -54,6 +54,22 @@
   }
 }
 
+@keyframes radarFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .animate-fadeIn,
+  .animate-fade-in {
+    animation: radarFadeIn 0.2s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
+  }
+}
+
 .ios-sheet-enter {
   animation: iosSheetPopup 0.24s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
 }
@@ -99,6 +115,25 @@ html[data-apple-theme='dark'] body .apple-grouped-card.text-slate-700,
 html[data-apple-theme='dark'] body .apple-grouped-card .text-slate-800,
 html[data-apple-theme='dark'] body .apple-grouped-card .text-slate-700 {
   color: #e5e5ea;
+}
+
+html[data-apple-theme='dark'] body .apple-inspector-panel,
+html[data-apple-theme='dark'] body .apple-window-sheet {
+  background-color: rgba(15, 23, 42, 0.96);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
+}
+
+html[data-apple-theme='dark'] body .apple-vibrancy-bar {
+  background-color: rgba(15, 23, 42, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
+}
+
+html[data-apple-theme='dark'] body .apple-grouped-card {
+  background-color: rgba(30, 41, 59, 0.72);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f5f5f7;
 }
 
 html[data-apple-theme='dark'] body .apple-vibrancy-bar:hover {
@@ -281,12 +316,6 @@ html[data-apple-theme='dark'] body .apple-inspector-panel textarea {
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
 }
 
-input[type='range'] {
-  accent-color: var(--apple-accent-blue);
-  height: 5px;
-  border-radius: 9999px;
-}
-
 /* Leaflet Canvas & Tile Layer Overrides (High specificity without forced overrides) */
 html body .leaflet-container {
   font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
@@ -295,6 +324,7 @@ html body .leaflet-container {
   height: 100%;
   z-index: 0;
   outline: none;
+  direction: ltr;
 }
 
 [data-apple-theme='dark'] .leaflet-tile-pane {
@@ -310,11 +340,18 @@ html body .leaflet-tooltip {
   padding: 10px 12px;
   box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.14);
   direction: rtl;
+  text-align: right;
+  left: 0;
+  right: auto;
   pointer-events: auto;
 }
 
 html body .leaflet-tooltip-top:before {
   border-top-color: rgba(255, 255, 255, 0.96);
+}
+
+html body .leaflet-tooltip-bottom:before {
+  border-bottom-color: rgba(255, 255, 255, 0.96);
 }
 
 .leaflet-tooltip .hood-tooltip-copy-btn {
@@ -425,6 +462,10 @@ html[data-apple-theme='dark'] body .leaflet-tooltip-top:before {
   border-top-color: rgba(28, 28, 30, 0.95);
 }
 
+html[data-apple-theme='dark'] body .leaflet-tooltip-bottom:before {
+  border-bottom-color: rgba(28, 28, 30, 0.95);
+}
+
 html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-cell,
 html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-action-btn,
 html[data-apple-theme='dark'] body .leaflet-tooltip .hood-tooltip-copy-btn {
@@ -483,17 +524,23 @@ html[data-apple-theme='dark'] body .leaflet-control-attribution {
   background: rgba(235, 235, 245, 0.48);
 }
 
-html body .leaflet-div-icon.price-pill-icon {
+html body .leaflet-div-icon.price-pill-icon,
+html body .leaflet-div-icon.gold-bargain-pin,
+html body .leaflet-div-icon.macro-city-cluster-pin,
+html body .gold-bargain-pin,
+html body .macro-city-cluster-pin {
   background: transparent;
   border: none;
   pointer-events: auto;
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease;
 }
 
-html body .leaflet-div-icon.price-pill-icon:hover {
-  transform: translateY(-2px) scale(1.05);
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.22));
-  z-index: 950;
+html body .leaflet-div-icon.price-pill-icon [data-hood-pill] {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, box-shadow 0.18s ease;
+}
+
+html body .leaflet-div-icon.price-pill-icon:hover [data-hood-pill] {
+  transform: translateY(-2px) scale(1.06);
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.24));
 }
 
 @keyframes pulse-gold-ring {
@@ -594,7 +641,7 @@ html body .leaflet-control-attribution {
 
 @media (max-width: 1023px) {
   html body .leaflet-bottom {
-    bottom: 142px;
+    bottom: 162px;
   }
   html body .leaflet-control-zoom {
     display: none;
@@ -604,7 +651,10 @@ html body .leaflet-control-attribution {
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
+  accent-color: #059669;
   background: transparent;
+  height: 6px;
+  border-radius: 9999px;
 }
 input[type='range']::-webkit-slider-runnable-track {
   height: 6px;
@@ -612,7 +662,16 @@ input[type='range']::-webkit-slider-runnable-track {
   background: #e2e8f0;
   transition: background 0.2s ease;
 }
+input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  transition: background 0.2s ease;
+}
 [data-apple-theme='dark'] input[type='range']::-webkit-slider-runnable-track {
+  background: #1e293b;
+}
+[data-apple-theme='dark'] input[type='range']::-moz-range-track {
   background: #1e293b;
 }
 input[type='range']::-webkit-slider-thumb {
@@ -628,6 +687,16 @@ input[type='range']::-webkit-slider-thumb {
   margin-top: -6px;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #059669;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(5, 150, 105, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
 input[type='range']:active::-webkit-slider-thumb {
   transform: scale(1.15);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(5, 150, 105, 0.25);
@@ -635,8 +704,22 @@ input[type='range']:active::-webkit-slider-thumb {
 
 @media (min-width: 1024px) {
   html body .leaflet-bottom.leaflet-left {
-    bottom: 60px;
+    bottom: 108px;
     left: 16px;
+  }
+  html body .leaflet-bottom.leaflet-right {
+    bottom: 10px;
+    right: 332px;
+  }
+}
+@media (min-width: 1280px) {
+  html body .leaflet-bottom.leaflet-right {
+    right: 374px;
+  }
+}
+@media (min-width: 1536px) {
+  html body .leaflet-bottom.leaflet-right {
+    right: 386px;
   }
 }
 

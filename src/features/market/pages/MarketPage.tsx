@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood, type MarketPulseData } from '../../../data/neighborhoods';
 import { convertPricePerSqmToUnit, formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../../../utils/areaUnit';
@@ -69,6 +69,31 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedItems, setSavedItems] = useState<SavedMarketAnalysis[]>(() => loadSavedMarketAnalyses());
   const [stage2Tab, setStage2Tab] = useState<Stage2ActiveTab>('HOUSING_CYCLE');
+  const prevCityRef = useRef<string>(p.activeCity);
+
+  useEffect(() => {
+    if (prevCityRef.current !== p.activeCity) {
+      prevCityRef.current = p.activeCity;
+      const nextCompare = p.evaluatedNeighborhoods.filter((h) => h.id !== p.selectedHood.id).slice(0, 2).map((h) => h.id);
+      setCompareHoodIds(nextCompare);
+      setDraft((prev) => {
+        const next = { ...prev, zoneName: p.selectedHood.zone };
+        setApplied(commitMarketDraft(next));
+        return next;
+      });
+    }
+  }, [p.activeCity, p.evaluatedNeighborhoods, p.selectedHood.id, p.selectedHood.zone]);
+
+  useEffect(() => {
+    if (p.activeSubTab === 'rent') {
+      setDraft((prev) => {
+        if (prev.transactionType === 'rent') return prev;
+        const next: MarketFilterDraft = { ...prev, transactionType: 'rent' };
+        setApplied(commitMarketDraft(next));
+        return next;
+      });
+    }
+  }, [p.activeSubTab]);
 
   const availableZones = useMemo(() => Array.from(new Set(p.evaluatedNeighborhoods.map((h) => h.zone).filter(Boolean))), [p.evaluatedNeighborhoods]);
   const dirty = useMemo(() => isDraftDirty(draft, applied), [draft, applied]);

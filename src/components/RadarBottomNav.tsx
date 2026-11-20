@@ -74,7 +74,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
       <nav
         aria-label={isEn ? 'Mobile Primary Navigation' : 'نوار پیمایش موبایل'}
         data-currency-sample={currencyBadge}
-        className="lg:hidden fixed bottom-0 inset-x-0 flex flex-col pb-[var(--safe-bottom)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 z-40 text-[11px] text-slate-600 dark:text-slate-400 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]"
+        className="lg:hidden fixed bottom-0 inset-x-0 flex flex-col pb-[var(--safe-bottom)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 z-[43] text-[11px] text-slate-600 dark:text-slate-400 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]"
       >
         <div className="grid min-h-[64px] shrink-0 grid-cols-5 items-end">
           {navItems.map((item) => {

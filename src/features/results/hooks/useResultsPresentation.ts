@@ -32,34 +32,44 @@ export function useResultsPresentation(options: UseResultsPresentationOptions) {
   const [sort, setSort] = useState<ResultSortSpec>({ field: 'totalPrice', direction: 'desc' });
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(() => clampPageSize(options.initialPageSize ?? DEFAULT_RESULT_PAGE_SIZE));
-  const [, setVersionTick] = useState(0);
+  const [versionTick, setVersionTick] = useState(0);
 
-  const selectionControllerRef = useRef(new ResultSelectionController(options.datasetContextKey ?? 'default'));
-  const comparisonControllerRef = useRef(new ResultComparisonController());
+  const selectionControllerRef = useRef<ResultSelectionController | null>(null);
+  if (!selectionControllerRef.current) {
+    selectionControllerRef.current = new ResultSelectionController(options.datasetContextKey ?? 'default');
+  }
+  const comparisonControllerRef = useRef<ResultComparisonController | null>(null);
+  if (!comparisonControllerRef.current) {
+    comparisonControllerRef.current = new ResultComparisonController();
+  }
 
+  const datasetKey = options.datasetContextKey ?? 'default';
   // Sync dataset context so incompatible filter/city switches clear stale selections while renderer switches preserve them
-  selectionControllerRef.current.syncWithDatasetContext(options.datasetContextKey ?? 'default');
+  selectionControllerRef.current.syncWithDatasetContext(datasetKey);
 
   const sortedItems = useMemo(
     () => sortResultItemsClientSide(options.initialItems, sort),
     [options.initialItems, sort]
   );
 
+  const totalPages = Math.max(1, Math.ceil(sortedItems.length / pageSize));
+  const effectivePage = Math.min(Math.max(1, page), totalPages);
+
   const pagedItems = useMemo(() => {
-    const start = (page - 1) * pageSize;
+    const start = (effectivePage - 1) * pageSize;
     return sortedItems.slice(start, start + pageSize);
-  }, [sortedItems, page, pageSize]);
+  }, [sortedItems, effectivePage, pageSize]);
 
   const paginationModel = useMemo(
     () =>
       buildResultPaginationModel({
         mode: 'offset',
-        page,
+        page: effectivePage,
         pageSize,
         receivedCount: pagedItems.length,
         totalCount: sortedItems.length,
       }),
-    [page, pageSize, pagedItems.length, sortedItems.length]
+    [effectivePage, pageSize, pagedItems.length, sortedItems.length]
   );
 
   const changePresentationMode = useCallback((nextMode: ResultPresentationMode) => {
@@ -82,45 +92,51 @@ export function useResultsPresentation(options: UseResultsPresentationOptions) {
   }, []);
 
   const toggleSelectItem = useCallback((item: ResultItem) => {
-    selectionControllerRef.current.toggleOne(item);
+    selectionControllerRef.current!.toggleOne(item);
     setVersionTick((t) => t + 1);
   }, []);
 
   const selectCurrentPage = useCallback(() => {
-    selectionControllerRef.current.selectCurrentPage(pagedItems);
+    selectionControllerRef.current!.selectCurrentPage(pagedItems);
     setVersionTick((t) => t + 1);
   }, [pagedItems]);
 
   const clearSelection = useCallback(() => {
-    selectionControllerRef.current.clearSelection();
+    selectionControllerRef.current!.clearSelection();
     setVersionTick((t) => t + 1);
   }, []);
 
   const addToComparison = useCallback((item: ResultItem) => {
-    const res = comparisonControllerRef.current.addEntity(item);
+    const res = comparisonControllerRef.current!.addEntity(item);
     setVersionTick((t) => t + 1);
     return res;
   }, []);
 
   const removeFromComparison = useCallback((entityId: string) => {
-    const res = comparisonControllerRef.current.removeEntity(entityId);
+    const res = comparisonControllerRef.current!.removeEntity(entityId);
     setVersionTick((t) => t + 1);
     return res;
   }, []);
 
   const clearComparison = useCallback(() => {
-    comparisonControllerRef.current.clearAll();
+    comparisonControllerRef.current!.clearAll();
     setVersionTick((t) => t + 1);
   }, []);
 
-  const selectedIdsSet = new Set(selectionControllerRef.current.getState().selectedIds);
-  const comparisonItems = comparisonControllerRef.current.getItems();
+  const selectedIdsSet = useMemo(
+    () => new Set(selectionControllerRef.current!.getState().selectedIds),
+    [versionTick, datasetKey]
+  );
+  const comparisonItems = useMemo(
+    () => comparisonControllerRef.current!.getItems(),
+    [versionTick]
+  );
   const primaryEntityType: ResultEntityType = options.initialItems[0]?.entityType ?? 'property';
 
   return {
     mode,
     sort,
-    page,
+    page: effectivePage,
     pageSize,
     sortedItems,
     pagedItems,

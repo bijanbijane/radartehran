@@ -15,8 +15,8 @@ import {
 } from '../data/neighborhoodInsights';
 import {
   convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency,
-  getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale,
 } from '../utils/areaUnit';
+import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import type { useAppUiState } from './useAppUiState';
 
 export const FEATURE_FLAGS_STORAGE_KEY = 'tehran_radar_feature_flags_v1';
@@ -113,18 +113,31 @@ export function useAppPersistenceAndDerivedState({
     ui.setHoodCustomDeposit(
       Math.round(selectedHood.rahn80m * (Math.max(25, targetSqm || 75) / 80) * rentAgeMultiplier * 0.5)
     );
+  }, [selectedHood?.id, selectedHood?.rahn80m, targetSqm, rentAgeMultiplier]);
+
+  useEffect(() => {
     const currentEditHood = neighborhoods.find((n) => n.id === ui.adminEditHoodId) || selectedHood;
+    if (!currentEditHood) return;
     ui.setAdminEditBuySqm(currentEditHood.buyPerSqm);
     ui.setAdminEditRahn80m(currentEditHood.rahn80m);
-  }, [selectedHood?.id, selectedHood?.rahn80m, targetSqm, rentAgeMultiplier, ui.adminEditHoodId]);
+  }, [ui.adminEditHoodId, selectedHood?.id, neighborhoods]);
 
   const targetBargainHood = useMemo(
     () => evaluatedNeighborhoods.find((n) => n.id === ui.bargainHoodId) || evaluatedNeighborhoods[0],
     [evaluatedNeighborhoods, ui.bargainHoodId]
   );
 
-  const areaUnit = getStoredAreaUnit(), intlCurrency = getStoredIntlCurrency(), locale = getStoredRadarLocale();
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [locale] = useRadarLocale();
   const liveBargainCheck = useMemo(() => {
+    const unitShortLabel = formatAreaUnitLabel(areaUnit);
+    if (!targetBargainHood) {
+      return {
+        avgBenchmark: 0, maxAllowedFor10Percent: 0, discountPercent: 0, isEligible: false,
+        buyerProfitMillion: 0, unitShortLabel, avgBenchmarkUnitPrice: 0, buyerProfitIntlText: null,
+      };
+    }
     const avgBenchmark =
       ui.bargainType === 'خرید'
         ? (targetBargainHood.baseBuyPerSqm ?? targetBargainHood.buyPerSqm)
@@ -137,7 +150,6 @@ export function useAppPersistenceAndDerivedState({
       ui.bargainType === 'خرید'
         ? Math.max(0, Math.round((avgBenchmark - ui.bargainProposedPrice) * ui.bargainSqm))
         : Math.max(0, Math.round(avgBenchmark - ui.bargainProposedPrice));
-    const unitShortLabel = formatAreaUnitLabel(areaUnit);
     const avgBenchmarkUnitPrice =
       ui.bargainType === 'خرید' ? convertPricePerSqmToUnit(avgBenchmark, areaUnit) : avgBenchmark;
     const buyerProfitIntlText =
@@ -156,7 +168,7 @@ export function useAppPersistenceAndDerivedState({
         ? Math.round((h.baseBuyPerSqm ?? h.buyPerSqm) * 0.85)
         : Math.round(h.rahn80m * (ui.bargainSqm / 80) * 0.85)
     );
-  }, [ui.bargainHoodId, ui.bargainType, ui.bargainSqm]);
+  }, [ui.bargainHoodId, ui.bargainType, ui.bargainSqm, evaluatedNeighborhoods]);
 
   const totalLiveBargainsCount = useMemo(
     () => evaluatedNeighborhoods.reduce((acc, n) => acc + (n.bargains?.length || 0), 0),
@@ -164,6 +176,7 @@ export function useAppPersistenceAndDerivedState({
   );
 
   const calculatedHoodMonthlyRent = useMemo(() => {
+    if (!selectedHood) return 0;
     const safeSqm = Math.max(25, targetSqm || 75);
     const scaledRahn = Math.round(selectedHood.rahn80m * (safeSqm / 80) * rentAgeMultiplier);
     return Math.max(0, Math.round(((scaledRahn - ui.hoodCustomDeposit) * 3) / 100));
@@ -180,6 +193,15 @@ export function useAppPersistenceAndDerivedState({
   }, [mode, targetSqm, totalRahnEquivalent, maxAffordablePerSqm]);
 
   const localAnalysis = useMemo(() => {
+    if (!selectedHood) {
+      return {
+        annualYieldPercent: 0,
+        prRatio: 0,
+        budgetVerdict: '',
+        commuteVerdict: '',
+        negotiationTip: '',
+      };
+    }
     const effectiveUserBuyPerSqm =
       selectedHood.diffPercent <= 0
         ? Math.max(maxAffordablePerSqm, Math.round(selectedHood.buyPerSqm * (1 - selectedHood.diffPercent / 100)))

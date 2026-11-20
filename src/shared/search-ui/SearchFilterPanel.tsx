@@ -10,6 +10,7 @@ import {
   type AreaUnit,
   type SearchFilter,
 } from '../../platform/search';
+import { parseLocalizedNumber } from '../../utils/forms/formInputHelpers';
 
 export interface SearchFilterPanelProps {
   filters: readonly SearchFilter[];
@@ -57,9 +58,17 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
         <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">فیلترهای دقیق</h3>
         <button
           type="button"
-          onClick={onResetFilters}
+          onClick={() => {
+            if (numericTimerRef.current) {
+              clearTimeout(numericTimerRef.current);
+              numericTimerRef.current = null;
+            }
+            setMaxPriceMillion('');
+            setMinArea('');
+            onResetFilters();
+          }}
           aria-label="بازنشانی فیلترهای این بخش"
-          className="min-h-[44px] px-2 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+          className="min-h-[44px] px-2 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 cursor-pointer"
         >
           بازنشانی فیلترها ({filters.length})
         </button>
@@ -99,15 +108,16 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
             سقف بودجه خرید (میلیون تومان)
           </label>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="numeric"
+            dir="ltr"
             value={maxPriceMillion}
             aria-label="سقف بودجه خرید به میلیون تومان"
             placeholder="مثلاً ۱۲۰۰۰ میلیون تومان"
             onChange={(e) => {
               const raw = e.target.value;
               setMaxPriceMillion(raw);
-              const num = Number(raw);
+              const num = parseLocalizedNumber(raw);
               if (Number.isFinite(num) && num > 0) {
                 scheduleNumericFilter({
                   id: buildStableFilterId('totalPrice', 'lte'),
@@ -129,15 +139,16 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
             حداقل متراژ ({areaUnit === 'sqm' ? 'مترمربع' : 'فوت‌مربع'})
           </label>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="numeric"
+            dir="ltr"
             value={minArea}
             aria-label={`حداقل متراژ به ${areaUnit === 'sqm' ? 'مترمربع' : 'فوت‌مربع'}`}
             placeholder={areaUnit === 'sqm' ? 'مثلاً ۸۵ مترمربع' : 'مثلاً ۹۱۵ فوت‌مربع'}
             onChange={(e) => {
               const raw = e.target.value;
               setMinArea(raw);
-              const num = Number(raw);
+              const num = parseLocalizedNumber(raw);
               if (Number.isFinite(num) && num > 0) {
                 scheduleNumericFilter({
                   id: buildStableFilterId('area', 'gte'),

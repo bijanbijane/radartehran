@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage72BuyRentCostPressurePanel.tsx — Stage 72 Tabs 1 & 2 Panel */
 import React, { useState } from 'react';
+import { NumericDraftInput } from '../../../components/ui/NumericDraftInput';
 import { evaluateBuyRentAndCostPressure } from '../services/housingAffordabilityStage72Engine';
 import {
   STAGE72_ANCILLARY_COST_CATEGORIES_7,
@@ -67,12 +68,13 @@ export const Stage72BuyRentCostPressurePanel: React.FC<Props> = ({
 
           <label className="flex items-center gap-2 text-slate-300">
             <span>درآمد نشست شما (م.ت، ۰=مرجع):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               min={0}
               max={500}
+              fallback={0}
               value={userMonthlyIncomeMillion}
-              onChange={(e) => setUserMonthlyIncomeMillion(Number(e.target.value) || 0)}
+              onValueChange={setUserMonthlyIncomeMillion}
               className="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>
@@ -121,13 +123,14 @@ export const Stage72BuyRentCostPressurePanel: React.FC<Props> = ({
           </label>
           <label className="flex items-center gap-2">
             <span>نرخ تبدیل هر ۱۰۰ م.ت ودیعه (م.ت اجاره):</span>
-            <input
-              type="number"
+            <NumericDraftInput
+              allowDecimal
               step={0.1}
               min={1}
               max={10}
+              fallback={3}
               value={conversionRatePer100M}
-              onChange={(e) => setConversionRatePer100M(Number(e.target.value) || 3)}
+              onValueChange={setConversionRatePer100M}
               className="w-20 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
             />
           </label>

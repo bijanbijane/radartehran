@@ -72,12 +72,14 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
           setBargainStreet={ui.setBargainStreet} bargainTitle={ui.bargainTitle}
           setBargainTitle={ui.setBargainTitle} targetBargainHood={p.targetBargainHood}
           liveBargainCheck={p.liveBargainCheck} bargainSubmitMsg={ui.bargainSubmitMsg}
+          setBargainSubmitMsg={ui.setBargainSubmitMsg}
           onSubmitBargainListing={p.handleSubmitBargainListing} sponsorHoodId={ui.sponsorHoodId}
           setSponsorHoodId={ui.setSponsorHoodId} sponsorAgencyName={ui.sponsorAgencyName}
           setSponsorAgencyName={ui.setSponsorAgencyName} sponsorPhone={ui.sponsorPhone}
           setSponsorPhone={ui.setSponsorPhone} sponsorSpecialty={ui.sponsorSpecialty}
           setSponsorSpecialty={ui.setSponsorSpecialty} sponsorExpYears={ui.sponsorExpYears}
           setSponsorExpYears={ui.setSponsorExpYears} sponsorSubmitMsg={ui.sponsorSubmitMsg}
+          setSponsorSubmitMsg={ui.setSponsorSubmitMsg}
           onReserveSponsor={p.handleReserveSponsor} enableSponsorBilling={p.featureFlags.enableSponsorBilling}
           sponsorPlanMonths={ui.sponsorPlanMonths} setSponsorPlanMonths={ui.setSponsorPlanMonths}
           sponsorTrackingCode={ui.sponsorTrackingCode} setSponsorTrackingCode={ui.setSponsorTrackingCode}
@@ -125,7 +127,7 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
           open={ui.showAdminModal} onClose={() => ui.setShowAdminModal(false)}
           adminUnlocked={ui.adminUnlocked} setAdminUnlocked={ui.setAdminUnlocked}
           adminPassInput={ui.adminPassInput} setAdminPassInput={ui.setAdminPassInput}
-          adminPassError={ui.adminPassError} onAdminLogin={p.handleAdminLogin}
+          adminPassError={ui.adminPassError} setAdminPassError={ui.setAdminPassError} onAdminLogin={p.handleAdminLogin}
           adminTab={ui.adminTab} setAdminTab={ui.setAdminTab}
           sponsorRequests={ui.sponsorRequests} buyerLeads={ui.buyerLeads}
           totalLiveBargainsCount={p.totalLiveBargainsCount}
@@ -141,10 +143,10 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
           adminEditHoodId={ui.adminEditHoodId} setAdminEditHoodId={ui.setAdminEditHoodId}
           adminEditBuySqm={ui.adminEditBuySqm} setAdminEditBuySqm={ui.setAdminEditBuySqm}
           adminEditRahn80m={ui.adminEditRahn80m} setAdminEditRahn80m={ui.setAdminEditRahn80m}
-          adminPriceSavedMsg={ui.adminPriceSavedMsg} onAdminQuickPriceSave={p.handleAdminQuickPriceSave}
+          adminPriceSavedMsg={ui.adminPriceSavedMsg} setAdminPriceSavedMsg={ui.setAdminPriceSavedMsg} onAdminQuickPriceSave={p.handleAdminQuickPriceSave}
           deepSyncing={ui.deepSyncing} onDeepWebSync={p.handleDeepWebSync}
           newAdminPassword={ui.newAdminPassword} setNewAdminPassword={ui.setNewAdminPassword}
-          adminPassChangeMsg={ui.adminPassChangeMsg} onAdminChangePassword={p.handleAdminChangePassword}
+          adminPassChangeMsg={ui.adminPassChangeMsg} setAdminPassChangeMsg={ui.setAdminPassChangeMsg} onAdminChangePassword={p.handleAdminChangePassword}
           systemHealth={ui.systemHealth} loadingSystemHealth={ui.loadingSystemHealth}
           onRefreshSystemHealth={fetchSystemHealth} featureFlags={p.featureFlags}
           onToggleFeatureFlag={p.handleToggleFeatureFlag} onDownloadFullBackupJson={p.handleDownloadFullBackupJson}
@@ -173,7 +175,7 @@ export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; con
           alertHoodId={ui.alertHoodId} setAlertHoodId={ui.setAlertHoodId}
           alertDealType={ui.alertDealType} setAlertDealType={ui.setAlertDealType}
           alertMaxBudget={ui.alertMaxBudget} setAlertMaxBudget={ui.setAlertMaxBudget}
-          alertSubmitMsg={ui.alertSubmitMsg} onRegisterBuyerAlert={p.handleRegisterBuyerAlert}
+          alertSubmitMsg={ui.alertSubmitMsg} setAlertSubmitMsg={ui.setAlertSubmitMsg} onRegisterBuyerAlert={p.handleRegisterBuyerAlert}
           isSavingBuyerAlert={p.isSavingBuyerAlert}
           showPwaModal={ui.showPwaModal} setShowPwaModal={ui.setShowPwaModal}
           showLegalModal={ui.showLegalModal} setShowLegalModal={ui.setShowLegalModal}

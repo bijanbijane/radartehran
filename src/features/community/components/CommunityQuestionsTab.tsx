@@ -40,6 +40,8 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
   const [topicId, setTopicId] = useState('topic-legal-contracts');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all');
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, { body: string; source: string }>>({});
+  const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const [submittingAnswerId, setSubmittingAnswerId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const similarSuggestions = useMemo(() => findSimilarQuestionTitles(titleFa, questions), [titleFa, questions]);
@@ -56,13 +58,35 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await onSubmitQuestion({ titleFa, bodyFa, topicId });
-    if (res.ok) {
-      setTitleFa('');
-      setBodyFa('');
-      setFeedback({ ok: true, msg: 'پرسش شما با ساختار استاندارد ثبت شد و آماده دریافت پاسخ‌های مستند است.' });
-    } else {
-      setFeedback({ ok: false, msg: res.errorFa || 'خطا در ثبت پرسش' });
+    if (submittingQuestion) return;
+    setSubmittingQuestion(true);
+    try {
+      const res = await onSubmitQuestion({ titleFa, bodyFa, topicId });
+      if (res.ok) {
+        setTitleFa('');
+        setBodyFa('');
+        setFeedback({ ok: true, msg: 'پرسش شما با ساختار استاندارد ثبت شد و آماده دریافت پاسخ‌های مستند است.' });
+      } else {
+        setFeedback({ ok: false, msg: res.errorFa || 'خطا در ثبت پرسش' });
+      }
+    } finally {
+      setSubmittingQuestion(false);
+    }
+  };
+
+  const handleAnswerSubmit = async (questionId: string) => {
+    if (submittingAnswerId === questionId) return;
+    const current = answerDrafts[questionId] || { body: '', source: '' };
+    setSubmittingAnswerId(questionId);
+    try {
+      const res = await onSubmitAnswer(questionId, current.body, current.source);
+      if (res.ok) {
+        setAnswerDrafts((prev) => ({ ...prev, [questionId]: { body: '', source: '' } }));
+      } else {
+        setFeedback({ ok: false, msg: res.errorFa || 'خطا' });
+      }
+    } finally {
+      setSubmittingAnswerId(null);
     }
   };
 
@@ -86,7 +110,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           type="text"
           aria-label="عنوان پرسش"
           value={titleFa}
-          onChange={(e) => setTitleFa(e.target.value)}
+          onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }}
           placeholder="سؤال دقیق خود را در یک جمله روشن بنویسید..."
           className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100"
         />
@@ -104,17 +128,17 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           rows={2}
           aria-label="شرح کامل مسئله"
           value={bodyFa}
-          onChange={(e) => setBodyFa(e.target.value)}
+          onChange={(e) => { setBodyFa(e.target.value); if (feedback) setFeedback(null); }}
           placeholder="شرایط ملک، متن مبهم قرارداد یا متغیرهای کلیدی را بدون درج نام یا شماره تماس بنویسید..."
           className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100"
         />
         {feedback && (
-          <div className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
+          <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
             {feedback.msg}
           </div>
         )}
-        <button type="submit" data-testid="submit-question-btn" className="px-4 py-2 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer">
-          ثبت پرسش تخصصی
+        <button type="submit" disabled={submittingQuestion} data-testid="submit-question-btn" className="px-4 py-2 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50">
+          {submittingQuestion ? 'در حال ثبت...' : 'ثبت پرسش تخصصی'}
         </button>
       </form>
 
@@ -187,7 +211,17 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                   type="text"
                   aria-label={`پاسخ به پرسش ${q.titleFa}`}
                   value={draft.body}
-                  onChange={(e) => setAnswerDrafts({ ...answerDrafts, [q.id]: { ...draft, body: e.target.value } })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAnswerDrafts((prev) => ({ ...prev, [q.id]: { ...(prev[q.id] || { body: '', source: '' }), body: val } }));
+                    if (feedback) setFeedback(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void handleAnswerSubmit(q.id);
+                    }
+                  }}
                   placeholder="پاسخ فنی یا حقوقی مستند بنویسید..."
                   className="sm:col-span-7 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
                 />
@@ -195,18 +229,25 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                   type="text"
                   aria-label="منبع قانونی یا مرجع"
                   value={draft.source}
-                  onChange={(e) => setAnswerDrafts({ ...answerDrafts, [q.id]: { ...draft, source: e.target.value } })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAnswerDrafts((prev) => ({ ...prev, [q.id]: { ...(prev[q.id] || { body: '', source: '' }), source: val } }));
+                    if (feedback) setFeedback(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void handleAnswerSubmit(q.id);
+                    }
+                  }}
                   placeholder="مرجع یا ماده قانونی (اختیاری)"
                   className="sm:col-span-3 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
                 />
                 <button
                   type="button"
-                  onClick={async () => {
-                    const res = await onSubmitAnswer(q.id, draft.body, draft.source);
-                    if (res.ok) setAnswerDrafts({ ...answerDrafts, [q.id]: { body: '', source: '' } });
-                    else setFeedback({ ok: false, msg: res.errorFa || 'خطا' });
-                  }}
-                  className="sm:col-span-2 px-3 py-2 rounded-[8px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer"
+                  disabled={submittingAnswerId === q.id}
+                  onClick={() => { void handleAnswerSubmit(q.id); }}
+                  className="sm:col-span-2 px-3 py-2 rounded-[8px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer disabled:opacity-50"
                 >
                   ارسال پاسخ
                 </button>

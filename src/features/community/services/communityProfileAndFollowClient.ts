@@ -39,6 +39,7 @@ async function fetchHelperJson<T>(
   init: RequestInit,
   extract: (body: Record<string, unknown>) => T,
 ): Promise<CommunityApiCallResult<T>> {
+  if (init.signal?.aborted) return { ok: false, status: 0, errorFa: 'ABORTED' };
   try {
     const res = await fetch(url, init);
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
@@ -57,7 +58,7 @@ async function fetchHelperJson<T>(
       hasMore: Boolean(body.hasMore),
     };
   } catch (err) {
-    if ((err as Error)?.name === 'AbortError') return { ok: false, status: 0, errorFa: 'ABORTED' };
+    if (init.signal?.aborted || (err as Error)?.name === 'AbortError') return { ok: false, status: 0, errorFa: 'ABORTED' };
     return { ok: false, status: 503, errorFa: COMMUNITY_NETWORK_ERROR_FA };
   }
 }
@@ -77,8 +78,10 @@ export async function getCommunityProfileContributions(
   if (params?.limit) qs.set('limit', String(params.limit));
   if (params?.cursor) qs.set('cursor', params.cursor);
   const auth = params?.currentUser ? await buildOptionalAuthHeaders(params.currentUser) : { ok: false, headers: {} };
+  const queryStr = qs.toString();
+  const baseUrl = `/api/v1/community/profiles/${encodeURIComponent(username)}/contributions`;
   return fetchHelperJson<ProfileContributionPage>(
-    `/api/v1/community/profiles/${encodeURIComponent(username)}/contributions?${qs.toString()}`,
+    queryStr ? `${baseUrl}?${queryStr}` : baseUrl,
     { headers: { Accept: 'application/json', ...(auth.ok ? auth.headers : {}) }, signal: params?.signal },
     (b) => ({
       items: Array.isArray(b.items) ? (b.items as ProfileContributionItem[]) : [],

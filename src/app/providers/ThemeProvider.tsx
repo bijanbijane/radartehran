@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import { ThemeMode, getThemeTokens, ThemeDefinition } from '../../design-system';
 
 export interface ThemeContextValue {
@@ -28,17 +28,20 @@ export const ThemeProvider: React.FC<{
     }
   }, [mode]);
 
-  const toggleMode = () => setMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  const toggleMode = useCallback(() => setMode((prev) => (prev === 'dark' ? 'light' : 'dark')), []);
+
+  const value = useMemo<ThemeContextValue>(
+    () => ({
+      mode,
+      tokens: getThemeTokens(mode),
+      setMode,
+      toggleMode,
+    }),
+    [mode, toggleMode],
+  );
 
   return (
-    <ThemeContext.Provider
-      value={{
-        mode,
-        tokens: getThemeTokens(mode),
-        setMode,
-        toggleMode,
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
