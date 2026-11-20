@@ -31,9 +31,9 @@ export function sanitizePlainUserText(raw: string, maxLength: number): string {
     .replace(/javascript:/gi, '')
     .replace(/on\w+\s*=/gi, '');
 
-  const trimmed = withoutTags.trim();
+  const trimmed = withoutTags.replace(/\s+/g, ' ').trim();
   if (trimmed.length > maxLength) {
-    return trimmed.slice(0, maxLength);
+    return trimmed.slice(0, maxLength).trim();
   }
   return trimmed;
 }

@@ -50,7 +50,7 @@ export const NeighborhoodIntelligenceProfilePanel: React.FC<NeighborhoodIntellig
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 dark:bg-indigo-950/70 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-            <FileText className="w-3.5 h-3.5" /> شناسنامه جامع محله (RT-UI-NEIGHBORHOOD-001)
+            <FileText className="w-3.5 h-3.5" /> شناسنامه جامع محله
           </span>
           <span className="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
             {profile.boundary.statusLabelFa} · {profile.boundary.version}

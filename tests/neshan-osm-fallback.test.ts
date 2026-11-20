@@ -229,6 +229,30 @@ async function runSuite(): Promise<void> {
     controller.retryNeshan();
     assert.equal(controller.getEffectiveProvider(), 'neshan');
 
+    // Individual tile error applies one-time OSM per-tile fallback without blank hole
+    const neshanLayer = controller.getActiveBaseLayer();
+    const addedClasses = new Set<string>();
+    const fakeTile: any = {
+      status: null,
+      src: 'https://tile2.neshan.org/301234421282452628050.png',
+      dataset: {},
+      style: { visibility: 'hidden', opacity: '0' },
+      classList: { add: (cls: string) => addedClasses.add(cls) },
+    };
+    neshanLayer._events.tileerror({ tile: fakeTile, coords: { z: 12, x: 2632, y: 1611 } });
+    assert.equal(fakeTile.dataset.osmFallbackApplied, '1');
+    assert.equal(fakeTile.src, 'https://tile.openstreetmap.org/12/2632/1611.png');
+    assert.equal(typeof fakeTile.onload, 'function');
+    fakeTile.onload();
+    assert.equal(addedClasses.has('leaflet-tile-loaded'), true);
+    assert.equal(fakeTile.style.visibility, 'visible');
+    assert.equal(fakeTile.style.opacity, '1');
+
+    // Second error on same tile does NOT re-trigger fallback loop
+    fakeTile.src = 'unchanged';
+    neshanLayer._events.tileerror({ tile: fakeTile, coords: { z: 12, x: 2632, y: 1611 } });
+    assert.equal(fakeTile.src, 'unchanged');
+
     controller.destroy();
   });
 

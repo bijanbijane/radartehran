@@ -5,8 +5,20 @@ import { ensureLeafletLoaded, retryLeafletLoad } from '../../utils/leafletLoader
 import { recordDiagnosticEvent } from '../../utils/security';
 import { createLeafletBaseTileController, type BaseTileControllerInstance } from '../mapBaseTileController';
 import { updateMapAdvancedOverlayState } from '../mapAdvancedLayers';
-import { mountNeighborhoodTooltipTrendOnOpen, unmountNeighborhoodTooltipTrendOnClose } from './NeighborhoodTooltipMarketTrend';
 import { getMapInstanceRegistry } from '../../platform/geo/leaflet/MapInstanceRegistry';
+
+type TooltipTrendModule = typeof import('./NeighborhoodTooltipMarketTrend');
+let tooltipTrendModulePromise: Promise<TooltipTrendModule> | null = null;
+let loadedTooltipTrendModule: TooltipTrendModule | null = null;
+function loadTooltipTrendModule(): Promise<TooltipTrendModule> {
+  if (!tooltipTrendModulePromise) {
+    tooltipTrendModulePromise = import('./NeighborhoodTooltipMarketTrend').then((mod) => {
+      loadedTooltipTrendModule = mod;
+      return mod;
+    });
+  }
+  return tooltipTrendModulePromise;
+}
 
 export interface MountLeafletLifecycleParams {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -116,11 +128,19 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
     handleTooltipOpen = (evt: any) => {
       if (!resolveHoodById) return;
       const el = evt?.tooltip?.getElement?.() || mapContainerRef.current;
-      mountNeighborhoodTooltipTrendOnOpen(el, resolveHoodById);
+      if (loadedTooltipTrendModule) {
+        loadedTooltipTrendModule.mountNeighborhoodTooltipTrendOnOpen(el, resolveHoodById);
+      } else {
+        void loadTooltipTrendModule().then((mod) => {
+          if (!unmounted && el?.isConnected) {
+            mod.mountNeighborhoodTooltipTrendOnOpen(el, resolveHoodById);
+          }
+        }).catch(() => { /* fallback static SVG */ });
+      }
     };
     handleTooltipClose = (evt: any) => {
       const el = evt?.tooltip?.getElement?.();
-      unmountNeighborhoodTooltipTrendOnClose(el);
+      loadedTooltipTrendModule?.unmountNeighborhoodTooltipTrendOnClose(el);
     };
 
     map.on?.('zoomend', handleZoomEnd);
@@ -181,7 +201,7 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
 
   return () => {
     unmounted = true;
-    unmountNeighborhoodTooltipTrendOnClose();
+    loadedTooltipTrendModule?.unmountNeighborhoodTooltipTrendOnClose();
     if (typeof window !== 'undefined') window.removeEventListener('pageshow', handlePageShow);
     if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
     if (initialInvalidateTimer) { clearTimeout(initialInvalidateTimer); initialInvalidateTimer = null; }

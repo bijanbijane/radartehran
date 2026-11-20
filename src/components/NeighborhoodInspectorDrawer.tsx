@@ -19,7 +19,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               <div className="flex items-center gap-2"> <h2 className="text-sm font-black text-slate-900 dark:text-white truncate">محله {selectedHood.name}</h2>
                 <span className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-extrabold text-[11px] tabular-nums shrink-0">{toPersianNum(selectedHood.overallScore)} / ۱۰</span> </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 tabular-nums truncate">
-                خرید: {areaUnit === 'sqft' ? 'هر ft²' : 'متری'} <strong className="text-slate-800 dark:text-slate-100">{toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}</strong> (سناریو v6.4 (غیرثبتی): {toPersianNum(convertPricePerSqmToUnit(hoodAggMetrics.estimatedDealPricePerSqm, areaUnit))} م) · رهن ({formatAreaShort(80, areaUnit)}):{' '}
+                خرید: {areaUnit === 'sqft' ? 'هر ft²' : 'متری'} <strong className="text-slate-800 dark:text-slate-100">{toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}</strong> · رهن ({formatAreaShort(80, areaUnit)}):{' '}
                 <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(selectedHood.rahn80m)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : ''}</strong>
               </div>
             </button>
@@ -68,7 +68,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   const isCurrent = favHood.id === selectedHood.id; const favUnitBuy = convertPricePerSqmToUnit(favHood.buyPerSqm, areaUnit); const favMetricText = mode === 'rent' ? `رهن (${formatAreaShort(80, areaUnit)}): ${toPersianNum(favHood.rahn80m)} م${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(favHood.rahn80m, intlCurrency, radarLocale)}` : ''}` : `${toPersianNum(favUnitBuy)}م${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(favUnitBuy, intlCurrency, radarLocale)}` : ''}`; return ( <div key={favHood.id} className={`flex items-center gap-1 px-2 py-1 rounded-[9px] text-[11px] font-bold border transition ${isCurrent ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50'}`}>
                       <button type="button" onClick={() => { if (isOtherCity && onSwitchCity) onSwitchCity(favCityId, favHood.id); onSelectNeighborhood(favHood as EvaluatedNeighborhood); }} className="cursor-pointer flex items-center gap-1">
                         <span>{isOtherCity ? `${MULTI_CITY_CONFIGS[favCityId]?.nameFa || ''} · ${favHood.name}` : favHood.name}</span>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 tabular-nums">({favMetricText})</span>
+                        <span className={`text-[10px] tabular-nums ${isCurrent ? 'text-emerald-300 dark:text-emerald-700' : 'text-emerald-600 dark:text-emerald-400'}`}>({favMetricText})</span>
                       </button>
                       <button type="button" onClick={() => onToggleFavoriteHood(favHood.id)} title="حذف" className="text-slate-400 hover:text-rose-600 mr-0.5 cursor-pointer">
                         <X className="w-3 h-3 stroke-[1.75]" />
@@ -79,9 +79,9 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             </div> )}
           <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800">
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <span>{selectedHood.zone}</span><span aria-hidden="true">·</span>
-                <span className={selectedHood.status === 'green' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : selectedHood.status === 'yellow' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                <span className="whitespace-nowrap">{selectedHood.zone}</span><span aria-hidden="true">·</span>
+                <span className={`whitespace-nowrap ${selectedHood.status === 'green' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : selectedHood.status === 'yellow' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}`}>
                   {selectedHood.status === 'green' ? 'متناسب با بودجه' : `${toPersianNum(selectedHood.diffPercent)}٪ بالاتر از بودجه`}
                 </span>
               </div>
@@ -131,14 +131,14 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               <div className="text-[10px] text-slate-400 mt-0.5 tabular-nums">{selectedHood.distKm !== null ? (isEn ? `Direct distance to ${selectedWorkHub.name}: ${selectedHood.distKm} km` : `فاصله مستقیم تا ${selectedWorkHub.name}: ${toPersianNum(selectedHood.distKm)} کیلومتر`) : `${isEn ? 'Base' : 'پایه'} ${formatAreaShort(80, areaUnit, !isEn)}: ${toPersianNum(selectedHood.rahn80m)} ${isEn ? 'M' : 'م'}${intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : ''}`}</div>
             </div>
           </div>
-          <div ref={anatomyTabsRef} role="tablist" aria-label={radarLocale === 'en' ? 'Neighborhood information' : 'بخش‌های کارنامه محله'} aria-orientation="horizontal" className="flex gap-1 overflow-x-auto no-scrollbar apple-segmented dark:bg-slate-800 p-1 rounded-[10px] mb-2.5 text-xs font-bold">
+          <div ref={anatomyTabsRef} role="tablist" aria-label={radarLocale === 'en' ? 'Neighborhood information' : 'بخش‌های کارنامه محله'} aria-orientation="horizontal" className="flex flex-wrap gap-1 apple-segmented dark:bg-slate-800 p-1 rounded-[10px] mb-2.5 text-[11px] font-bold">
             {[
               { id: 'scorecard' as const, label: inspectorCopy.scorecardTab }, { id: 'market' as const, label: inspectorCopy.marketTab },
               { id: 'bargains' as const, label: `${inspectorCopy.bargainsTabPrefix} (${toPersianNum((selectedHood?.bargains || []).length)})` },
               { id: 'reviews' as const, label: inspectorCopy.reviewsTab },
               { id: 'vote' as const, label: inspectorCopy.voteTab }, ].map((t, idx, arr) => { const isActive = activeTab === t.id; return ( <button
                   key={t.id} id={`inspector-tab-${t.id}`} type="button" role="tab" aria-selected={isActive} aria-controls={`inspector-panel-${t.id}`} tabIndex={isActive ? 0 : -1} data-testid={`inspector-tab-${t.id}`} onClick={() => setActiveTab(t.id)} onKeyDown={(event) => { const nextIndex = event.key === 'ArrowLeft' ? (idx + 1) % arr.length : event.key === 'ArrowRight' ? (idx + arr.length - 1) % arr.length : event.key === 'Home' ? 0 : event.key === 'End' ? arr.length - 1 : -1; if (nextIndex >= 0) { event.preventDefault(); setActiveTab(arr[nextIndex].id); event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus(); } }}
-                  className={`min-h-11 shrink-0 rounded-[8px] px-2.5 text-center whitespace-nowrap transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${isActive ? 'apple-segmented-pill-active dark:bg-slate-900 dark:text-white font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                  className={`flex-1 basis-auto min-h-11 rounded-[8px] px-2 text-center whitespace-nowrap transition cursor-pointer focus-visible:outline-2 focus-visible:outline-emerald-600 ${isActive ? 'apple-segmented-pill-active dark:bg-slate-900 dark:text-white font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                 >
                   {t.label}
                 </button>
@@ -248,7 +248,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             <details className="my-3.5 rounded-xl border border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-900/70">
               <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-slate-800 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:text-slate-200">
                 <span>تحلیل پیشرفته و مقایسه</span>
-                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Stage 2 · ماتریس محله‌ها</span>
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">چرخه بازار · ماتریس محله‌ها</span>
               </summary>
               <div className="space-y-3 border-t border-slate-200 p-3 dark:border-slate-800">
               <Stage2MasterWidget

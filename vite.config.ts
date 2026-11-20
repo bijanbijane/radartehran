@@ -112,6 +112,20 @@ export default defineConfig(({ mode }) => {
             if (id.includes('src/cells/')) {
               return 'engine-decision-cells';
             }
+            if (
+              id.includes('vite/preload-helper') ||
+              id.includes('src/firebase') ||
+              id.includes('src/context/') ||
+              (id.includes('src/utils/') && !id.includes('src/utils/casper/')) ||
+              id.includes('src/navigation/') ||
+              id.includes('src/features/account/services/accountStorageScope') ||
+              id.includes('src/features/account/services/accountSettingsStorageService') ||
+              id.includes('src/components/useEvaluatedNeighborhoods') ||
+              id.includes('src/components/SearchHistory') ||
+              id.includes('src/components/mapAdvancedLayers')
+            ) {
+              return 'app-core-shared';
+            }
             if (id.includes('src/features/onboarding/components/')) {
               if (/Stage3\d/.test(id)) return 'onboarding-ui-34-39';
               if (/Stage4[0-4]/.test(id)) return 'onboarding-ui-40-44';
@@ -153,10 +167,17 @@ export default defineConfig(({ mode }) => {
             if (id.includes('src/features/community/')) {
               return 'feature-community';
             }
-            if (id.includes('src/features/services/') || id.includes('src/features/communications/')) {
+            if (id.includes('src/features/communications/')) {
+              return 'feature-communications';
+            }
+            if (id.includes('src/features/services/')) {
               return 'feature-services';
             }
-            if (id.includes('src/features/account/')) {
+            if (
+              id.includes('src/features/account/') &&
+              !id.includes('accountStorageScope') &&
+              !id.includes('accountSettingsStorageService')
+            ) {
               return 'feature-account';
             }
             if (id.includes('src/features/search/') || id.includes('src/features/discovery/')) {

@@ -322,6 +322,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
   const drawerSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/NeighborhoodInspectorDrawer.tsx'), 'utf-8');
   const thresholdAlertsSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/buyerPriceThresholdAlerts.tsx'), 'utf-8');
   const leafletMapHookSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/useLeafletRadarMap.ts'), 'utf-8');
+  const leafletMapLifecycleSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/map/leafletMapLifecycle.ts'), 'utf-8');
   const leafletLoaderSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/leafletLoader.ts'), 'utf-8');
   const viteConfigSrc = fs.readFileSync(path.resolve(process.cwd(), 'vite.config.ts'), 'utf-8');
   const mainSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/main.tsx'), 'utf-8');
@@ -335,8 +336,10 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     'buyerPriceThresholdAlerts must lazy-load BuyerAlertPriceSparkline on demand'
   );
   assert.ok(
-    !leafletMapHookSrc.includes('setInterval(') && leafletMapHookSrc.includes('retryLeafletLoad()'),
-    'useLeafletRadarMap must use bounded retryLeafletLoad() recovery without unbounded setInterval polling'
+    !leafletMapHookSrc.includes('setInterval(') &&
+      !leafletMapLifecycleSrc.includes('setInterval(') &&
+      (leafletMapHookSrc.includes('retryLeafletLoad') || leafletMapLifecycleSrc.includes('retryLeafletLoad')),
+    'useLeafletRadarMap and leafletMapLifecycle must use bounded retryLeafletLoad() recovery without unbounded setInterval polling'
   );
   assert.ok(
     leafletLoaderSrc.includes("'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'"),

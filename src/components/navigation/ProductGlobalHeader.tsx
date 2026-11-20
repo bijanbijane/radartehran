@@ -269,6 +269,15 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
         </div>
       </div>
 
+      {megaMenuOpen && (
+        <div
+          aria-hidden="true"
+          onMouseEnter={cancelCloseMega}
+          onMouseLeave={scheduleCloseMega}
+          className={`hidden lg:block absolute inset-x-4 max-w-5xl mx-auto bottom-0 z-40 ${primaryView === 'map' ? 'h-[15px]' : 'h-[15px] lg:h-[21px]'}`}
+        />
+      )}
+
       <DesktopMegaMenu
         open={megaMenuOpen} onClose={closeMegaMenu} onMouseEnterMenu={cancelCloseMega} onMouseLeaveMenu={scheduleCloseMega}
         triggerRef={moreButtonRef} panelId={megaMenuPanelId}

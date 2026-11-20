@@ -270,29 +270,46 @@ export function renderNeighborhoodGeoJSONOnLeaflet(
   if (onClick && typeof layer.on === 'function') layer.on('click', onClick);
   return layer;
 }
+const inFlightBoundaryBatches = new Map<string, Promise<Record<number, AuthoritativeBoundaryRecord>>>();
+const resolvedBoundaryBatches = new Map<string, { expiresAt: number; data: Record<number, AuthoritativeBoundaryRecord> }>();
 export async function fetchAuthoritativeCityBoundaries(
   city: string, cityNameFa: string, neighborhoods: readonly BoundaryNeighborhoodInput[],
 ): Promise<Record<number, AuthoritativeBoundaryRecord>> {
-  try {
-    const resp = await fetch('/api/neighborhood-boundaries/resolve', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(8000),
-      body: JSON.stringify({
-        city, cityNameFa,
-        neighborhoods: neighborhoods.slice(0, 120).map((n) => ({ id: n.id, name: (n.name || '').slice(0, 80), lat: n.lat, lng: n.lng, radius: n.radius })),
-      }),
-    });
-    if (!resp.ok) return {};
-    const data = await resp.json();
-    const rawMap = data?.boundaries && typeof data.boundaries === 'object' && !Array.isArray(data.boundaries) ? (data.boundaries as Record<string, unknown>) : {};
-    const safeBoundaries: Record<number, AuthoritativeBoundaryRecord> = {};
-    for (const [k, v] of Object.entries(rawMap)) {
-      const id = Number(k);
-      if (Number.isSafeInteger(id) && id >= 1 && id <= 9999 && v && typeof v === 'object' && !Array.isArray(v) && Array.isArray((v as AuthoritativeBoundaryRecord).coordinates)) {
-        safeBoundaries[id] = v as AuthoritativeBoundaryRecord;
+  const sliced = neighborhoods.slice(0, 120);
+  const batchKey = `${city}:${sliced.map((n) => n.id).sort((a, b) => a - b).join(',')}`;
+  const cached = resolvedBoundaryBatches.get(batchKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+  const existing = inFlightBoundaryBatches.get(batchKey);
+  if (existing) return existing;
+  const request = (async (): Promise<Record<number, AuthoritativeBoundaryRecord>> => {
+    try {
+      const resp = await fetch('/api/neighborhood-boundaries/resolve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(8000),
+        body: JSON.stringify({
+          city, cityNameFa,
+          neighborhoods: sliced.map((n) => ({ id: n.id, name: (n.name || '').slice(0, 80), lat: n.lat, lng: n.lng, radius: n.radius })),
+        }),
+      });
+      if (!resp.ok) return {};
+      const data = await resp.json();
+      const rawMap = data?.boundaries && typeof data.boundaries === 'object' && !Array.isArray(data.boundaries) ? (data.boundaries as Record<string, unknown>) : {};
+      const safeBoundaries: Record<number, AuthoritativeBoundaryRecord> = {};
+      for (const [k, v] of Object.entries(rawMap)) {
+        const id = Number(k);
+        if (Number.isSafeInteger(id) && id >= 1 && id <= 9999 && v && typeof v === 'object' && !Array.isArray(v) && Array.isArray((v as AuthoritativeBoundaryRecord).coordinates)) {
+          safeBoundaries[id] = v as AuthoritativeBoundaryRecord;
+        }
       }
-    }
-    return safeBoundaries;
-  } catch { return {}; }
+      if (Object.keys(safeBoundaries).length > 0) {
+        if (resolvedBoundaryBatches.size >= 24) resolvedBoundaryBatches.clear();
+        resolvedBoundaryBatches.set(batchKey, { expiresAt: Date.now() + 60_000, data: safeBoundaries });
+      }
+      return safeBoundaries;
+    } catch { return {}; }
+    finally { inFlightBoundaryBatches.delete(batchKey); }
+  })();
+  inFlightBoundaryBatches.set(batchKey, request);
+  return request;
 }
 export function getZoomAdaptivePolygonStyle(zoom: number, isSelected: boolean, strokeColor: string, fillColor: string): ZoomAdaptivePolygonStyle {
   const z = Number.isFinite(zoom) ? zoom : 12;

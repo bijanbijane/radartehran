@@ -199,9 +199,9 @@ export function getAuthoritativeDistrictBenchmark(districtId: number): CbiDistri
  */
 export function formatDistrictBenchmarkSummary(
   districtId: number,
-  currency: IntlCurrencyCode = 'IRT',
-  locale: RadarLocale = 'fa'
+  _currency: IntlCurrencyCode = 'IRT',
+  _locale: RadarLocale = 'fa'
 ): string {
   const bm = getAuthoritativeDistrictBenchmark(districtId);
-  return `منطقه ${bm.districtId}: میانگین معامله متری ${bm.avgPricePerSqmMillion} م.ت (${formatMillionTomanAsIntlCurrency(bm.avgPricePerSqmMillion, currency, locale)})`;
+  return `منطقه ${bm.districtId}: میانگین معامله متری ${bm.avgPricePerSqmMillion} م.ت (${formatMillionTomanAsIntlCurrency(bm.avgPricePerSqmMillion, 'IRT', 'fa')})`;
 }

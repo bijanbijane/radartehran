@@ -92,6 +92,32 @@ export function createLeafletBaseTileController(arg1: any, arg2?: any, arg3?: an
       const classified = classifyNeshanHttpError(evt?.tile?.status ?? null);
       healthMonitor.recordError(gen, classified.httpStatus);
       updateRuntimeState({ lastErrorClassification: classified });
+      const tileEl = evt?.tile as HTMLImageElement | undefined;
+      const coords = evt?.coords as { x?: number; y?: number; z?: number } | undefined;
+      if (
+        tileEl &&
+        coords &&
+        Number.isFinite(coords.x) &&
+        Number.isFinite(coords.y) &&
+        Number.isFinite(coords.z) &&
+        tileEl.dataset &&
+        tileEl.dataset.osmFallbackApplied !== '1'
+      ) {
+        tileEl.dataset.osmFallbackApplied = '1';
+        const fallbackUrl = OFFICIAL_OSM_TILE_URL
+          .replace('{z}', String(coords.z))
+          .replace('{x}', String(coords.x))
+          .replace('{y}', String(coords.y));
+        tileEl.onload = () => {
+          tileEl.classList?.add('leaflet-tile-loaded');
+          if (tileEl.style) {
+            tileEl.style.visibility = 'visible';
+            tileEl.style.opacity = '1';
+          }
+        };
+        tileEl.onerror = null;
+        tileEl.src = fallbackUrl;
+      }
     });
     baseLayer.on('tileabort', () => {
       healthMonitor.recordAbort(gen);

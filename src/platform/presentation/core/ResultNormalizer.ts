@@ -90,7 +90,7 @@ export function normalizeResultItem(raw: Partial<ResultItem> & { id: string; ent
     status: raw.status || 'active',
     permissions: {
       canOpen: raw.permissions?.canOpen ?? true,
-      canCompare: raw.permissions?.canCompare ?? entityType !== 'service',
+      canCompare: raw.permissions?.canCompare ?? true,
       canSelect: raw.permissions?.canSelect ?? true,
     },
   };

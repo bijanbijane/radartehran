@@ -232,7 +232,7 @@ async function seedPropertyInMockDb(
 // GROUP 1 (LR-API-001..008): Authentication & Actor Identity (8 Tests)
 // ============================================================================
 
-test('LR-API-001: Anonymous request resolves to PUBLIC_READER without authentication', async () => {
+test('LR-30A-001 [LR-API-001]: Anonymous request resolves to PUBLIC_READER without authentication', async () => {
   const actor = await resolveLegalRegulatoryActor(
     { headers: {} } as express.Request,
     createMockAuthDeps(),
@@ -242,7 +242,7 @@ test('LR-API-001: Anonymous request resolves to PUBLIC_READER without authentica
   assert.equal(actor.actorId, 'anonymous-public-reader');
 });
 
-test('LR-API-002: Spoofed x-legal-actor-id header is completely ignored for admin identity', async () => {
+test('LR-30A-002 [LR-API-002]: Spoofed x-legal-actor-id header is completely ignored for admin identity', async () => {
   const actor = await resolveLegalRegulatoryActor(
     {
       headers: {
@@ -257,7 +257,7 @@ test('LR-API-002: Spoofed x-legal-actor-id header is completely ignored for admi
   assert.notEqual(actor.actorId, 'spoofed-evil-uid');
 });
 
-test('LR-API-003: Spoofed x-legal-actor-id header is completely ignored for regular authenticated user', async () => {
+test('LR-30A-003 [LR-API-003]: Spoofed x-legal-actor-id header is completely ignored for regular authenticated user', async () => {
   const actor = await resolveLegalRegulatoryActor(
     {
       headers: {
@@ -271,7 +271,7 @@ test('LR-API-003: Spoofed x-legal-actor-id header is completely ignored for regu
   assert.equal(actor.actorId, 'uid_user_owner_a');
 });
 
-test('LR-API-004: Static admin token returning server-secret-admin is rejected and never yields REGULATORY_ADMIN', async () => {
+test('LR-30A-004 [LR-API-004]: Static admin token returning server-secret-admin is rejected and never yields REGULATORY_ADMIN', async () => {
   const actor = await resolveLegalRegulatoryActor(
     {
       headers: {
@@ -287,7 +287,7 @@ test('LR-API-004: Static admin token returning server-secret-admin is rejected a
   assert.notEqual(actor.actorId, 'server-secret-admin');
 });
 
-test('LR-API-005: Unauthenticated request with x-legal-actor-id and x-legal-actor-role headers stays PUBLIC_READER', async () => {
+test('LR-30A-005 [LR-API-005]: Unauthenticated request with x-legal-actor-id and x-legal-actor-role headers stays PUBLIC_READER', async () => {
   const actor = await resolveLegalRegulatoryActor(
     {
       headers: {
@@ -301,7 +301,7 @@ test('LR-API-005: Unauthenticated request with x-legal-actor-id and x-legal-acto
   assert.equal(actor.isAuthenticated, false);
 });
 
-test('LR-API-006: Auth service 503 outage propagates fail-closed 503 PERSISTENCE_UNAVAILABLE', async () => {
+test('LR-30A-006 [LR-API-006]: Auth service 503 outage propagates fail-closed 503 PERSISTENCE_UNAVAILABLE', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/sources', {
@@ -315,7 +315,7 @@ test('LR-API-006: Auth service 503 outage propagates fail-closed 503 PERSISTENCE
   }
 });
 
-test('LR-API-007: Created regulatory source records verified server admin UID and ignores header actor spoofing', async () => {
+test('LR-30A-007 [LR-API-007]: Created regulatory source records verified server admin UID and ignores header actor spoofing', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/sources', {
@@ -334,7 +334,7 @@ test('LR-API-007: Created regulatory source records verified server admin UID an
   }
 });
 
-test('LR-API-008: Invalid bearer token falls back to unauthenticated and fails with 401 on protected endpoint', async () => {
+test('LR-30A-008 [LR-API-008]: Invalid bearer token falls back to unauthenticated and fails with 401 on protected endpoint', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/property-profile/evaluate', {
@@ -352,7 +352,7 @@ test('LR-API-008: Invalid bearer token falls back to unauthenticated and fails w
 // GROUP 2 (LR-API-009..016): Authorization & Role (8 Tests)
 // ============================================================================
 
-test('LR-API-009: Regular user attempting to spoof REGULATORY_ADMIN via header is rejected with 403', async () => {
+test('LR-30A-009 [LR-API-009]: Regular user attempting to spoof REGULATORY_ADMIN via header is rejected with 403', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/sources', {
@@ -370,7 +370,7 @@ test('LR-API-009: Regular user attempting to spoof REGULATORY_ADMIN via header i
   }
 });
 
-test('LR-API-010: Regular user attempting to spoof LEGAL_REVIEWER via header is rejected with 403 (fail-closed)', async () => {
+test('LR-30A-010 [LR-API-010]: Regular user attempting to spoof LEGAL_REVIEWER via header is rejected with 403 (fail-closed)', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/sources', {
@@ -388,7 +388,7 @@ test('LR-API-010: Regular user attempting to spoof LEGAL_REVIEWER via header is 
   }
 });
 
-test('LR-API-011: Admin sending x-legal-actor-role=LEGAL_REVIEWER remains strictly REGULATORY_ADMIN (header ignored)', async () => {
+test('LR-30A-011 [LR-API-011]: Admin sending x-legal-actor-role=LEGAL_REVIEWER remains strictly REGULATORY_ADMIN (header ignored)', async () => {
   const actor = await resolveLegalRegulatoryActor(
     {
       headers: {
@@ -401,7 +401,7 @@ test('LR-API-011: Admin sending x-legal-actor-role=LEGAL_REVIEWER remains strict
   assert.equal(actor.role, 'REGULATORY_ADMIN');
 });
 
-test('LR-API-012: Unauthenticated POST /sources returns 401 UNAUTHENTICATED', async () => {
+test('LR-30A-012 [LR-API-012]: Unauthenticated POST /sources returns 401 UNAUTHENTICATED', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/sources', {
@@ -415,7 +415,7 @@ test('LR-API-012: Unauthenticated POST /sources returns 401 UNAUTHENTICATED', as
   }
 });
 
-test('LR-API-013: Unauthenticated POST /sources/:id/verify returns 401 UNAUTHENTICATED', async () => {
+test('LR-30A-013 [LR-API-013]: Unauthenticated POST /sources/:id/verify returns 401 UNAUTHENTICATED', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/sources/src_1/verify', {
@@ -428,7 +428,7 @@ test('LR-API-013: Unauthenticated POST /sources/:id/verify returns 401 UNAUTHENT
   }
 });
 
-test('LR-API-014: Regular user calling POST /provisions returns 403 FORBIDDEN', async () => {
+test('LR-30A-014 [LR-API-014]: Regular user calling POST /provisions returns 403 FORBIDDEN', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/provisions', {
@@ -442,7 +442,7 @@ test('LR-API-014: Regular user calling POST /provisions returns 403 FORBIDDEN', 
   }
 });
 
-test('LR-API-015: Regular user calling POST /ai-summaries returns 403 FORBIDDEN', async () => {
+test('LR-30A-015 [LR-API-015]: Regular user calling POST /ai-summaries returns 403 FORBIDDEN', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/ai-summaries', {
@@ -455,7 +455,7 @@ test('LR-API-015: Regular user calling POST /ai-summaries returns 403 FORBIDDEN'
   }
 });
 
-test('LR-API-016: Unauthenticated POST /property-profile/evaluate returns 401 UNAUTHENTICATED', async () => {
+test('LR-30A-016 [LR-API-016]: Unauthenticated POST /property-profile/evaluate returns 401 UNAUTHENTICATED', async () => {
   const h = await createHttpHarness();
   try {
     const res = await h.req('POST', '/property-profile/evaluate', {
@@ -472,7 +472,7 @@ test('LR-API-016: Unauthenticated POST /property-profile/evaluate returns 401 UN
 // GROUP 3 (LR-API-017..030): All 14 Official Endpoints End-to-End & Validation
 // ============================================================================
 
-test('LR-API-017: [EP 01] GET /provisions/search returns paginated verified provisions and rejects invalid limit', async () => {
+test('LR-30A-017 [LR-API-017]: [EP 01] GET /provisions/search returns paginated verified provisions and rejects invalid limit', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep01');
@@ -488,7 +488,7 @@ test('LR-API-017: [EP 01] GET /provisions/search returns paginated verified prov
   }
 });
 
-test('LR-API-018: [EP 02] GET /sources/:sourceId returns verified source publicly and 404 for unknown ID', async () => {
+test('LR-30A-018 [LR-API-018]: [EP 02] GET /sources/:sourceId returns verified source publicly and 404 for unknown ID', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep02');
@@ -504,7 +504,7 @@ test('LR-API-018: [EP 02] GET /sources/:sourceId returns verified source publicl
   }
 });
 
-test('LR-API-019: [EP 03] POST /sources creates source atomically and rejects invalid empty officialTitleFa', async () => {
+test('LR-30A-019 [LR-API-019]: [EP 03] POST /sources creates source atomically and rejects invalid empty officialTitleFa', async () => {
   const h = await createHttpHarness();
   try {
     const ok = await h.req('POST', '/sources', {
@@ -525,7 +525,7 @@ test('LR-API-019: [EP 03] POST /sources creates source atomically and rejects in
   }
 });
 
-test('LR-API-020: [EP 04] POST /sources/:sourceId/verify verifies pending source and enforces expectedVersion CAS', async () => {
+test('LR-30A-020 [LR-API-020]: [EP 04] POST /sources/:sourceId/verify verifies pending source and enforces expectedVersion CAS', async () => {
   const h = await createHttpHarness();
   try {
     const createRes = await h.req('POST', '/sources', {
@@ -553,7 +553,7 @@ test('LR-API-020: [EP 04] POST /sources/:sourceId/verify verifies pending source
   }
 });
 
-test('LR-API-021: [EP 05] POST /documents creates document under source and returns 404 for unknown parent source', async () => {
+test('LR-30A-021 [LR-API-021]: [EP 05] POST /documents creates document under source and returns 404 for unknown parent source', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep05');
@@ -587,7 +587,7 @@ test('LR-API-021: [EP 05] POST /documents creates document under source and retu
   }
 });
 
-test('LR-API-022: [EP 06] GET /provisions/:provisionId returns verified provision publicly and 404 when missing', async () => {
+test('LR-30A-022 [LR-API-022]: [EP 06] GET /provisions/:provisionId returns verified provision publicly and 404 when missing', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep06');
@@ -602,7 +602,7 @@ test('LR-API-022: [EP 06] GET /provisions/:provisionId returns verified provisio
   }
 });
 
-test('LR-API-023: [EP 07] GET /provisions/:provisionId/as-of resolves date snapshot and requires asOfDateIso', async () => {
+test('LR-30A-023 [LR-API-023]: [EP 07] GET /provisions/:provisionId/as-of resolves date snapshot and requires asOfDateIso', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep07');
@@ -619,7 +619,7 @@ test('LR-API-023: [EP 07] GET /provisions/:provisionId/as-of resolves date snaps
   }
 });
 
-test('LR-API-024: [EP 08] POST /provisions creates provision and validates document-source ownership', async () => {
+test('LR-30A-024 [LR-API-024]: [EP 08] POST /provisions creates provision and validates document-source ownership', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep08a');
@@ -644,7 +644,7 @@ test('LR-API-024: [EP 08] POST /provisions creates provision and validates docum
   }
 });
 
-test('LR-API-025: [EP 09] POST /provisions/:provisionId/changes bumps provision version atomically and appends history', async () => {
+test('LR-30A-025 [LR-API-025]: [EP 09] POST /provisions/:provisionId/changes bumps provision version atomically and appends history', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep09');
@@ -667,7 +667,7 @@ test('LR-API-025: [EP 09] POST /provisions/:provisionId/changes bumps provision 
   }
 });
 
-test('LR-API-026: [EP 10] POST /conflicts registers conflict between two provisions and rejects self-conflict', async () => {
+test('LR-30A-026 [LR-API-026]: [EP 10] POST /conflicts registers conflict between two provisions and rejects self-conflict', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep10a');
@@ -699,7 +699,7 @@ test('LR-API-026: [EP 10] POST /conflicts registers conflict between two provisi
   }
 });
 
-test('LR-API-027: [EP 11] POST /applicability-rules creates rule linked to provision and source', async () => {
+test('LR-30A-027 [LR-API-027]: [EP 11] POST /applicability-rules creates rule linked to provision and source', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep11');
@@ -722,7 +722,7 @@ test('LR-API-027: [EP 11] POST /applicability-rules creates rule linked to provi
   }
 });
 
-test('LR-API-028: [EP 12] POST /compliance-requirements creates requirement and enforces non-empty requiredEvidenceTypes', async () => {
+test('LR-30A-028 [LR-API-028]: [EP 12] POST /compliance-requirements creates requirement and enforces non-empty requiredEvidenceTypes', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep12');
@@ -769,7 +769,7 @@ test('LR-API-028: [EP 12] POST /compliance-requirements creates requirement and 
   }
 });
 
-test('LR-API-029: [EP 13] POST /property-profile/evaluate supports general non-personal evaluation and rejects empty payload', async () => {
+test('LR-30A-029 [LR-API-029]: [EP 13] POST /property-profile/evaluate supports general non-personal evaluation and rejects empty payload', async () => {
   const h = await createHttpHarness();
   try {
     const ok = await h.req('POST', '/property-profile/evaluate', {
@@ -789,7 +789,7 @@ test('LR-API-029: [EP 13] POST /property-profile/evaluate supports general non-p
   }
 });
 
-test('LR-API-030: [EP 14] POST /ai-summaries records non-authoritative AI suggestion for admin', async () => {
+test('LR-30A-030 [LR-API-030]: [EP 14] POST /ai-summaries records non-authoritative AI suggestion for admin', async () => {
   const h = await createHttpHarness();
   try {
     await seedSourceDocProvision(h, 'ep14');
