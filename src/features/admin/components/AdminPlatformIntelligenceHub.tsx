@@ -38,6 +38,13 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
   const [marketSummary, setMarketSummary] = useState<{ clustersCount: number; sampleConf: string; priceKind: string; txStatus: string } | null>(null);
   const [feedbackFa, setFeedbackFa] = useState<string | null>(null);
   const [errorFa, setErrorFa] = useState<string | null>(null);
+  const [busyActionKey, setBusyActionKey] = useState<string | null>(null);
+
+  const runHubAction = async (key: string, fn: () => Promise<void>) => {
+    if (busyActionKey) return;
+    setBusyActionKey(key);
+    try { await fn(); } catch { setErrorFa('خطا در ارتباط با سرور هنگام اجرای عملیات مدیریتی.'); } finally { setBusyActionKey(null); }
+  };
 
   const loadHub = async (signal?: AbortSignal) => {
     if (!isVerifiedAdmin || !currentUser) return;
@@ -154,11 +161,12 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
               </div>
               <button
                 type="button"
-                onClick={async () => {
+                disabled={busyActionKey !== null}
+                onClick={() => runHubAction('consistency', async () => {
                   const res = await runConsistencyCheck(currentUser);
                   setFeedbackFa(res.ok && res.data ? `کنترل سازگاری متقابل: ${res.data.report.consistent ? 'پاک' : 'دارای مغایرت'} (${toPersianNum(res.data.report.checkedPosts)} پست)` : (res.errorFa || 'خطا'));
-                }}
-                className="mt-1.5 px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold text-[10.5px] cursor-pointer"
+                })}
+                className="mt-1.5 px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold text-[10.5px] cursor-pointer disabled:opacity-50"
               >
                 اجرای کنترل سازگاری
               </button>
@@ -179,8 +187,8 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                 <div className="text-[10.5px] text-slate-500">طرح بازگشت: {sug.reversalPlanFa}</div>
               </div>
               <div className="flex gap-1.5">
-                <button type="button" onClick={async () => { const r = await reviewIntelligenceDecision(sug.id, 'APPROVED', currentUser); if (r.ok) { setFeedbackFa('تصمیم انسانی تایید شد.'); await loadHub(); } }} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer">تایید انسانی</button>
-                <button type="button" onClick={async () => { const r = await reviewIntelligenceDecision(sug.id, 'REJECTED', currentUser); if (r.ok) { setFeedbackFa('تصمیم انسانی رد شد.'); await loadHub(); } }} className="px-2.5 py-1 rounded-lg border border-rose-500 text-rose-700 font-bold cursor-pointer">رد</button>
+                <button type="button" disabled={busyActionKey !== null} onClick={() => runHubAction(`approve:${sug.id}`, async () => { const r = await reviewIntelligenceDecision(sug.id, 'APPROVED', currentUser); if (r.ok) { setFeedbackFa('تصمیم انسانی تایید شد.'); await loadHub(); } else setErrorFa(r.errorFa || 'خطا در تایید تصمیم.'); })} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer disabled:opacity-50">تایید انسانی</button>
+                <button type="button" disabled={busyActionKey !== null} onClick={() => runHubAction(`reject:${sug.id}`, async () => { const r = await reviewIntelligenceDecision(sug.id, 'REJECTED', currentUser); if (r.ok) { setFeedbackFa('تصمیم انسانی رد شد.'); await loadHub(); } else setErrorFa(r.errorFa || 'خطا در رد تصمیم.'); })} className="px-2.5 py-1 rounded-lg border border-rose-500 text-rose-700 font-bold cursor-pointer disabled:opacity-50">رد</button>
               </div>
             </div>
           ))}
@@ -202,23 +210,26 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
               <button
                 type="button"
                 data-testid="hub-killswitch-btn"
-                onClick={async () => {
+                disabled={busyActionKey !== null}
+                onClick={() => runHubAction('killswitch', async () => {
                   const next = !autoState?.killSwitchEngaged;
                   const res = await toggleAutomationKillSwitch(next, currentUser);
                   if (res.ok) { setFeedbackFa(next ? 'Kill Switch فعال شد.' : 'اتوماسیون مجدداً باز شد.'); await loadHub(); }
-                }}
-                className={`px-3 py-1.5 rounded-lg font-bold text-white cursor-pointer ${autoState?.killSwitchEngaged ? 'bg-emerald-600' : 'bg-rose-600'}`}
+                  else setErrorFa(res.errorFa || 'تغییر وضعیت Kill Switch ناموفق بود.');
+                })}
+                className={`px-3 py-1.5 rounded-lg font-bold text-white cursor-pointer disabled:opacity-50 ${autoState?.killSwitchEngaged ? 'bg-emerald-600' : 'bg-rose-600'}`}
               >
                 {autoState?.killSwitchEngaged ? 'غیرفعال‌سازی Kill Switch' : 'توقف اضطراری (Kill Switch)'}
               </button>
               <button
                 type="button"
-                onClick={async () => {
+                disabled={busyActionKey !== null}
+                onClick={() => runHubAction('sandboxA1', async () => {
                   const res = await submitSandboxAutomationTask(currentUser);
                   setFeedbackFa(res.ok ? 'وظیفه سندباکس A1 در صف ثبت شد.' : `مسدود شد: ${res.data?.code || res.errorFa}`);
                   await loadHub();
-                }}
-                className="px-3 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer"
+                })}
+                className="px-3 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50"
               >
                 اجرای تست A1
               </button>
@@ -263,11 +274,12 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                 </div>
                 <button
                   type="button"
-                  onClick={async () => {
+                  disabled={busyActionKey !== null}
+                  onClick={() => runHubAction(`pilot:${p.providerId}`, async () => {
                     const out = await triggerGatewaySandboxPilot(p.providerId, currentUser);
                     setFeedbackFa(out.ok && out.data?.envelope ? `پاسخ سندباکس ${out.data.envelope.envelopeId} ثبت شد.` : (out.errorFa || 'خطا'));
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold shrink-0 cursor-pointer"
+                  })}
+                  className="px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold shrink-0 cursor-pointer disabled:opacity-50"
                 >
                   تست سندباکس
                 </button>

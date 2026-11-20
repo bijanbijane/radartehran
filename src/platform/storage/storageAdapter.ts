@@ -196,18 +196,39 @@ export class SafeStorageAdapter {
   }
 
   remove(key: string): void {
-    getActiveStorageBackend().removeItem(this.buildKey(key));
+    const fullKey = this.buildKey(key);
+    memoryFallbackMap.delete(fullKey);
+    try {
+      getActiveStorageBackend().removeItem(fullKey);
+    } catch {
+      // ignore storage errors
+    }
   }
 
   clearAll(): void {
     const backend = getActiveStorageBackend();
     const prefix = `rt:v1:${this.namespace}:`;
     const toRemove: string[] = [];
-    for (let i = 0; i < backend.length; i++) {
-      const k = backend.key(i);
-      if (k && k.startsWith(prefix)) toRemove.push(k);
+    try {
+      for (let i = 0; i < backend.length; i++) {
+        const k = backend.key(i);
+        if (k && k.startsWith(prefix)) toRemove.push(k);
+      }
+    } catch {
+      // ignore storage enumeration errors
     }
-    toRemove.forEach((k) => backend.removeItem(k));
+    for (const k of toRemove) {
+      try {
+        backend.removeItem(k);
+      } catch {
+        // isolate per-key removal errors
+      }
+    }
+    for (const memKey of Array.from(memoryFallbackMap.keys())) {
+      if (memKey.startsWith(prefix)) {
+        memoryFallbackMap.delete(memKey);
+      }
+    }
   }
 
   evictExpired(): number {

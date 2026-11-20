@@ -30,24 +30,25 @@ export function getTrendingNeighborhoods(
 
 export function useGlobalSearchShortcut(onOpenDropdown: () => void): void {
   useEffect(() => {
+    let focusTimer: number | null = null;
     const handleGlobalKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const isInputFocused = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
-      const hasOpenModal = Boolean(document.querySelector('[role="dialog"][aria-modal="true"]'));
-      if (hasOpenModal) return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (!isInputFocused && e.key === '/')) {
         e.preventDefault();
         onOpenDropdown();
-        const tryFocus = () => {
-          const searchEl = document.querySelector<HTMLInputElement>('input[aria-label="جست‌وجوی محله"]');
-          if (searchEl) searchEl.focus();
-        };
+        const tryFocus = () => { document.querySelector<HTMLInputElement>('input[aria-label="جست‌وجوی محله"]')?.focus(); };
         tryFocus();
-        window.setTimeout(tryFocus, 40);
+        if (focusTimer !== null) window.clearTimeout(focusTimer);
+        focusTimer = window.setTimeout(() => { focusTimer = null; tryFocus(); }, 40);
       }
     };
     window.addEventListener('keydown', handleGlobalKey);
-    return () => window.removeEventListener('keydown', handleGlobalKey);
+    return () => {
+      if (focusTimer !== null) window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleGlobalKey);
+    };
   }, [onOpenDropdown]);
 }
 

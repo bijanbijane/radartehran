@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage44AgreementAndObligationsPanel.tsx — Stage 44 Agreement Versions, Diff & Party Obligations */
 import React, { useState } from 'react';
+import { parseLocalizedNumber } from '../../../utils/forms/formInputHelpers';
 import {
   approveAgreementVersion,
   dossierActiveVersion,
@@ -26,19 +27,37 @@ export const Stage44AgreementAndObligationsPanel: React.FC<Stage44AgreementAndOb
   const [revAmountToman, setRevAmountToman] = useState(String(activeVersion.amountToman + 300_000));
   const [revScopeNote, setRevScopeNote] = useState('بررسی رطوبت‌سنجی دیوارهای ضلع شمالی و عایق پشت‌بام');
   const [revReasonFa, setRevReasonFa] = useState('درخواست متقاضی برای بازدید تکمیلی عایق‌کاری');
+  const [revError, setRevError] = useState<string | null>(null);
 
   const handleProposeRevision = (e: React.FormEvent) => {
     e.preventDefault();
-    const numeric = Number(revAmountToman.replace(/[^0-9]/g, ''));
+    const numeric = Math.round(parseLocalizedNumber(revAmountToman));
     if (!Number.isFinite(numeric) || numeric <= 0) {
-      onFeedbackFa('مبلغ پیشنهادی نسخه جدید باید عددی معتبر به تومان باشد.');
+      const msg = 'مبلغ پیشنهادی نسخه جدید باید عددی معتبر و مثبت به تومان باشد.';
+      setRevError(msg);
+      onFeedbackFa(msg);
       return;
     }
+    const cleanScope = revScopeNote.trim();
+    if (cleanScope.length < 3) {
+      const msg = 'لطفاً بند جدید دامنه کار را با حداقل ۳ کاراکتر وارد کنید.';
+      setRevError(msg);
+      onFeedbackFa(msg);
+      return;
+    }
+    const cleanReason = revReasonFa.trim();
+    if (cleanReason.length < 3) {
+      const msg = 'لطفاً دلیل تغییر توافق را با حداقل ۳ کاراکتر وارد کنید.';
+      setRevError(msg);
+      onFeedbackFa(msg);
+      return;
+    }
+    setRevError(null);
     const next = proposeAgreementRevision({
       dossier,
       newAmountToman: numeric,
-      newScopeNoteFa: revScopeNote,
-      reasonFa: revReasonFa,
+      newScopeNoteFa: cleanScope,
+      reasonFa: cleanReason,
       actorNameFa: dossier.provider.displayNameFa,
     });
     onUpdateDossier(next);
@@ -182,16 +201,17 @@ export const Stage44AgreementAndObligationsPanel: React.FC<Stage44AgreementAndOb
           </div>
         </div>
 
-        <form onSubmit={handleProposeRevision} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
+        <form noValidate onSubmit={handleProposeRevision} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
           <div className="text-xs font-bold text-white">پیشنهاد اصلاح مبلغ/دامنه (ایجاد نسخه جدید با الزام تأیید مجدد)</div>
           <label className="block text-[11px] text-slate-300 space-y-1">
             <span>مبلغ پایه جدید (تومان):</span>
             <input
               type="text"
               aria-label="مبلغ پایه جدید توافق به تومان"
+              aria-invalid={Boolean(revError)}
               data-testid="txn-revise-amount-input"
               value={revAmountToman}
-              onChange={(e) => setRevAmountToman(e.target.value)}
+              onChange={(e) => { setRevAmountToman(e.target.value); if (revError) setRevError(null); }}
               className="w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white"
             />
           </label>
@@ -200,8 +220,9 @@ export const Stage44AgreementAndObligationsPanel: React.FC<Stage44AgreementAndOb
             <input
               type="text"
               aria-label="بند جدید دامنه توافق"
+              aria-invalid={Boolean(revError)}
               value={revScopeNote}
-              onChange={(e) => setRevScopeNote(e.target.value)}
+              onChange={(e) => { setRevScopeNote(e.target.value); if (revError) setRevError(null); }}
               className="w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white"
             />
           </label>
@@ -210,11 +231,13 @@ export const Stage44AgreementAndObligationsPanel: React.FC<Stage44AgreementAndOb
             <input
               type="text"
               aria-label="دلیل اصلاح توافق"
+              aria-invalid={Boolean(revError)}
               value={revReasonFa}
-              onChange={(e) => setRevReasonFa(e.target.value)}
+              onChange={(e) => { setRevReasonFa(e.target.value); if (revError) setRevError(null); }}
               className="w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white"
             />
           </label>
+          {revError && <div role="alert" className="text-[11px] font-bold text-rose-300">{revError}</div>}
           <button
             type="submit"
             data-testid="txn-propose-revision-btn"

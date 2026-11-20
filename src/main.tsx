@@ -1,63 +1,69 @@
-import React from 'react'; import { createRoot } from 'react-dom/client'; import App from './App.tsx'; import './index.css'; import { recordDiagnosticEvent, safeLocalStorageRemove, sanitizeInput, } from './utils/security'; import { registerRadarServiceWorker } from './utils/pwaOfflineSupport'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './utils/areaUnit'; interface RootErrorBoundaryProps { children: React.ReactNode; } interface RootErrorBoundaryState { hasError: boolean; errorMsg: string; retryCount: number; }
-class RootErrorBoundary extends React.Component<
-  RootErrorBoundaryProps, RootErrorBoundaryState
-> { constructor(props: RootErrorBoundaryProps) { super(props); this.state = { hasError: false, errorMsg: '', retryCount: 0, }; } static getDerivedStateFromError(error: Error): Partial<RootErrorBoundaryState> { const safeMsg = sanitizeInput(error?.message || 'خطای غیرمنتظره در رندر رابط کاربری', 240);
-    return { hasError: true, errorMsg: safeMsg, }; }
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void { try { const rawMessage = String(error?.message || ''); recordDiagnosticEvent( 'RootErrorBoundary',
-        `Caught UI crash [${formatAreaUnitLabel(getStoredAreaUnit())}]: ${sanitizeInput(rawMessage, 120)}`,
-        'fallback'
-      ); console.error('RootErrorBoundary caught error:', error, errorInfo); const isDuplicateReactHookError = rawMessage.includes("reading 'use") ||
-        rawMessage.includes('Invalid hook call') || rawMessage.includes('resolveDispatcher'); if (isDuplicateReactHookError && typeof window !== 'undefined') { const recoveryKey = 'tehran_radar_vite_hook_recovery_v3';
-        const alreadyAttempted = window.sessionStorage?.getItem(recoveryKey); if (!alreadyAttempted) { window.sessionStorage?.setItem(recoveryKey, '1'); void (async () => { try { if ('caches' in window) { const keys = await window.caches.keys(); await Promise.all(keys.map((k) => window.caches.delete(k)));
-              }
-              if ('serviceWorker' in navigator) { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map((r) => r.update())); }
-            } catch { } finally { window.location.reload(); }
-          })(); } }
-    } catch { }
+import React from 'react'; import { createRoot } from 'react-dom/client'; import App from './App.tsx'; import './index.css'; import { recordDiagnosticEvent, sanitizeInput } from './utils/security'; import { registerRadarServiceWorker } from './utils/pwaOfflineSupport'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency } from './utils/areaUnit'; import { executeSafeTemporaryCacheReset } from './platform/storage/safeCacheReset'; import { executeHookErrorAutoRecovery, type AutoRecoveryOutcome } from './platform/recovery/hookErrorAutoRecovery'; import { getCacheStorage, getTemporaryStorage } from './platform/storage/storageAdapter'; import { clientGeoJsonLruCache } from './utils/neighborhoodBoundaries';
+interface RootErrorBoundaryProps { children: React.ReactNode; }
+interface RootErrorBoundaryState { hasError: boolean; errorMsg: string; retryCount: number; autoRecoveryOutcome: AutoRecoveryOutcome | null; }
+class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErrorBoundaryState> {
+  constructor(props: RootErrorBoundaryProps) { super(props); this.state = { hasError: false, errorMsg: '', retryCount: 0, autoRecoveryOutcome: null }; }
+  static getDerivedStateFromError(error: Error): Partial<RootErrorBoundaryState> {
+    return { hasError: true, errorMsg: sanitizeInput(error?.message || 'خطای غیرمنتظره در رندر رابط کاربری', 240) };
+  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    const rawMessage = String(error?.message || '');
+    try { recordDiagnosticEvent('RootErrorBoundary', `Caught UI crash [${formatAreaUnitLabel(getStoredAreaUnit())}]: ${sanitizeInput(rawMessage, 120)}`, 'fallback'); } catch { /* Fail-safe diagnostic logging */ }
+    try { console.error('RootErrorBoundary caught error:', error, errorInfo); } catch { /* Fail-safe console logging */ }
+    if (typeof window === 'undefined') return;
+    void executeHookErrorAutoRecovery(rawMessage, {
+      windowObj: window,
+      navigatorObj: typeof navigator !== 'undefined' ? navigator : null,
+      onDiagnostic: (diag) => { recordDiagnosticEvent('RootErrorBoundary', sanitizeInput(diag.message, 180), diag.severity); },
+    })
+      .then((result) => {
+        if (result.requiresManualRecovery && result.outcome !== 'not_applicable') {
+          try { this.setState({ autoRecoveryOutcome: result.outcome }); } catch { /* Ignore if unmounted */ }
+        }
+      })
+      .catch(() => {
+        try {
+          recordDiagnosticEvent('RootErrorBoundary', 'Auto-recovery promise rejected unexpectedly; presenting manual recovery controls', 'fallback');
+          this.setState({ autoRecoveryOutcome: 'manual_fallback_storage_unavailable' });
+        } catch { /* Fail-safe fallback */ }
+      });
   }
   private handleNonDestructiveRetry = (): void => {
     try {
       recordDiagnosticEvent('RootErrorBoundary', 'User triggered non-destructive retry', 'success');
-      this.setState((prev) => ({ hasError: false, errorMsg: '', retryCount: prev.retryCount + 1 }));
+      this.setState((prev) => ({ hasError: false, errorMsg: '', retryCount: prev.retryCount + 1, autoRecoveryOutcome: null }));
     } catch { window.location.reload(); }
   };
   private handleFullCacheReset = (): void => {
     void (async () => {
+      let cacheResetStatus: string = 'success';
       try {
-        const keysToClear = new Set<string>([
-          'tehran_neighborhoods_radar_v1',
-          'tehran_neighborhoods_radar_v2',
-          'tehran_radar_feature_flags_v1',
-          'tehran_radar_feature_flags_v2',
-          'tehran_radar_favorites_v1',
-          'tehran_radar_visited_homes_v1',
-          'tehran_radar_visited_apartments_v1',
-        ]);
-        if (typeof window !== 'undefined' && window.localStorage) {
-          for (let i = 0; i < window.localStorage.length; i++) {
-            const k = window.localStorage.key(i);
-            if (k && (k.startsWith('tehran_radar_') || k.startsWith('tehran_neighborhoods_'))) {
-              keysToClear.add(k);
-            }
-          }
-        }
-        for (const key of keysToClear) {
-          safeLocalStorageRemove(key);
-        }
-        if (typeof window !== 'undefined' && 'caches' in window) {
-          const cacheKeys = await window.caches.keys();
-          await Promise.all(cacheKeys.map((k) => window.caches.delete(k)));
-        }
-        recordDiagnosticEvent('RootErrorBoundary', 'User triggered full v1/v2 cache reset', 'fallback');
+        const result = await executeSafeTemporaryCacheReset({
+          clearMemoryCaches: [() => getCacheStorage().clearAll(), () => getTemporaryStorage().clearAll(), () => clientGeoJsonLruCache.clear()],
+        });
+        cacheResetStatus = result.browserCacheStatus;
+        recordDiagnosticEvent(
+          'RootErrorBoundary',
+          `Safe temporary cache reset completed (cacheStatus=${result.browserCacheStatus}, removedLocal=${result.removedLocalStorageKeys.length}, removedCaches=${result.removedBrowserCaches.length}, preservedCaches=${result.preservedBrowserCaches.length}, failedCaches=${result.failedBrowserCaches.length}, preservedKeys=${result.preservedLocalStorageKeys.length}, partialFailure=${result.partialFailure})`,
+          result.partialFailure ? 'fallback' : 'success'
+        );
       } catch {
+        cacheResetStatus = 'complete_failure';
+        recordDiagnosticEvent('RootErrorBoundary', 'Safe temporary cache reset encountered unexpected error', 'fallback');
       } finally {
-        window.location.href = window.location.pathname;
+        if (cacheResetStatus === 'complete_failure') {
+          try { this.setState({ errorMsg: 'پاکسازی Cache Storage با خطا مواجه شد؛ صفحه مجدداً بارگذاری می‌شود.' }); } catch { /* ignore */ }
+        }
+        if (typeof window !== 'undefined' && typeof window.location?.reload === 'function') window.location.reload();
       }
     })();
   };
   render(): React.ReactNode {
     if (this.state.hasError) {
       const refCurrencySample = formatMillionTomanAsIntlCurrency(10_000, getStoredIntlCurrency());
+      const showStorageManualNotice =
+        this.state.autoRecoveryOutcome === 'manual_fallback_storage_unavailable' ||
+        this.state.autoRecoveryOutcome === 'manual_fallback_marker_write_failed';
       return (
         <div
           dir="rtl"
@@ -75,6 +81,11 @@ class RootErrorBoundary extends React.Component<
             <p className="text-xs text-slate-600 leading-relaxed">
               در بارگذاری موقت یکی از بخش‌ها اختلالی رخ داد. می‌توانید بدون حذف اطلاعات دوباره تلاش کنید یا حافظه موقت مرورگر را بازنشانی نمایید.
             </p>
+            {showStorageManualNotice && (
+              <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-relaxed">
+                حافظه نشست مرورگر (Session Storage) در دسترس نیست؛ برای جلوگیری از بارگذاری مکرر، بازیابی خودکار متوقف شد. لطفاً از دکمه‌های بازیابی دستی زیر استفاده کنید.
+              </p>
+            )}
             {this.state.errorMsg && (
               <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-[11px] text-slate-500 font-mono truncate">
                 {this.state.errorMsg}

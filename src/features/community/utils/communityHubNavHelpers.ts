@@ -1,6 +1,8 @@
 /** @file src/features/community/utils/communityHubNavHelpers.ts — Tab & Member URL helpers for CommunityHubPage */
 import type { ContributionsSubTabId } from '../../../navigation/registry/route.types';
 import type { CommunityHubTabId } from '../types/community.types';
+import { sanitizePublicNavigationQuery } from '../../../navigation/url/navigationUrlContract';
+import { commitManagedHistoryTransition } from '../../../navigation/url/historySingleWriter';
 
 export const COMMUNITY_HUB_TABS: Array<{ id: CommunityHubTabId; labelFa: string }> = [
   { id: 'overview', labelFa: 'خانه جامعه' },
@@ -26,6 +28,18 @@ export function mapSubTabToHubTab(subTab?: ContributionsSubTabId): CommunityHubT
   return 'overview';
 }
 
+export function mapHubTabToSubTab(tab: CommunityHubTabId): ContributionsSubTabId {
+  if (tab === 'discussions' || tab === 'social_discussion') return 'discussions';
+  if (tab === 'questions' || tab === 'expert_qa') return 'questions';
+  if (tab === 'data_contribution') return 'contributions';
+  if (tab === 'topics') return 'topics';
+  if (tab === 'neighborhoods') return 'neighborhoods';
+  if (tab === 'research_proposals') return 'research';
+  if (tab === 'members') return 'members';
+  if (tab === 'guidelines') return 'guidelines';
+  return 'overview';
+}
+
 export function readMemberUsernameFromPath(): string | null {
   if (typeof window === 'undefined') return null;
   const cleaned = window.location.pathname.replace(/\/+$/, '');
@@ -40,10 +54,15 @@ export function readMemberUsernameFromPath(): string | null {
 
 export function pushMemberProfileUrl(username: string | null): void {
   if (typeof window === 'undefined') return;
-  try {
-    const targetPath = username ? `/community/members/${encodeURIComponent(username)}` : '/community/members';
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState(null, '', targetPath);
-    }
-  } catch { /* ignore restricted history contexts */ }
+  const targetPath = username ? `/community/members/${encodeURIComponent(username)}` : '/community/members';
+  if (window.location.pathname === targetPath) return;
+  const safeQs = sanitizePublicNavigationQuery(
+    new URLSearchParams(window.location.search.startsWith('?') ? window.location.search.slice(1) : window.location.search),
+  ).toString();
+  const targetUrl = `${targetPath}${safeQs ? `?${safeQs}` : ''}`;
+  commitManagedHistoryTransition({
+    domain: 'page_route',
+    mode: 'push',
+    targetUrl,
+  });
 }

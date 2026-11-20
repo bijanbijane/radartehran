@@ -7,9 +7,6 @@
 import React from 'react';
 import { toPersianNum } from '../data/neighborhoods';
 import {
-  AREA_UNIT_STORAGE_KEY,
-  RADAR_CURRENCY_STORAGE_KEY,
-  RADAR_LOCALE_STORAGE_KEY,
   convertPricePerSqmToUnit,
   formatAreaShort,
   formatAreaUnitLabel,
@@ -18,7 +15,10 @@ import {
   getStoredIntlCurrency,
   getStoredRadarLocale,
 } from '../utils/areaUnit';
-import { recordDiagnosticEvent, safeLocalStorageRemove, sanitizeInput } from '../utils/security';
+import { recordDiagnosticEvent, sanitizeInput } from '../utils/security';
+import { executeSafeTemporaryCacheReset } from '../platform/storage/safeCacheReset';
+import { getCacheStorage, getTemporaryStorage } from '../platform/storage/storageAdapter';
+import { clientGeoJsonLruCache } from '../utils/neighborhoodBoundaries';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import {
   LiveDiagnosticOverlay,
@@ -99,40 +99,28 @@ class RenderPhaseErrorBoundary extends React.Component<
   };
 
   private handleFullCacheReset = (): void => {
-    try {
-      const preservedUserKeys = new Set<string>([
-        'tehran_radar_favorites_v1',
-        'tehran_radar_visited_homes_v1',
-        'tehran_radar_my_portfolio_v1',
-        'tehran_radar_recent_searches_v1',
-        AREA_UNIT_STORAGE_KEY,
-        RADAR_LOCALE_STORAGE_KEY,
-        RADAR_CURRENCY_STORAGE_KEY,
-      ]);
-      const keysToClear = new Set<string>([
-        'tehran_neighborhoods_radar_v1',
-        'tehran_neighborhoods_radar_v2',
-        'tehran_radar_feature_flags_v1',
-        'tehran_radar_feature_flags_v2',
-      ]);
-      if (typeof window !== 'undefined' && window.localStorage) {
-        for (let i = 0; i < window.localStorage.length; i++) {
-          const k = window.localStorage.key(i);
-          if (k && !preservedUserKeys.has(k) && (k.startsWith('tehran_radar_') || k.startsWith('tehran_neighborhoods_'))) {
-            keysToClear.add(k);
-          }
+    void (async () => {
+      try {
+        const result = await executeSafeTemporaryCacheReset({
+          clearMemoryCaches: [
+            () => getCacheStorage().clearAll(),
+            () => getTemporaryStorage().clearAll(),
+            () => clientGeoJsonLruCache.clear(),
+          ],
+        });
+        recordDiagnosticEvent(
+          'DualLayerErrorTrap',
+          `Safe temporary cache reset completed (removedLocal=${result.removedLocalStorageKeys.length}, removedCaches=${result.removedBrowserCaches.length}, preservedKeys=${result.preservedLocalStorageKeys.length}, partialFailure=${result.partialFailure})`,
+          result.partialFailure ? 'fallback' : 'success'
+        );
+      } catch {
+        // Ignore storage errors in restricted sandboxes
+      } finally {
+        if (typeof window !== 'undefined' && typeof window.location?.reload === 'function') {
+          window.location.reload();
         }
       }
-      for (const key of keysToClear) {
-        safeLocalStorageRemove(key);
-      }
-    } catch {
-      // Ignore storage errors in restricted sandboxes
-    } finally {
-      if (typeof window !== 'undefined') {
-        window.location.href = window.location.pathname;
-      }
-    }
+    })();
   };
 
   render(): React.ReactNode {

@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage45MilestonesAndProgressPanel.tsx — Stage 45 Milestones Map, Progress Reports & Evidence Documents */
 import React, { useState } from 'react';
+import { parseLocalizedNumber } from '../../../utils/forms/formInputHelpers';
 import { formatTomanCurrency } from '../services/serviceTransactionEngine';
 import {
   canMemberAccessDeliveryResource,
@@ -29,9 +30,11 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
   const [selectedMsId, setSelectedMsId] = useState(project.milestones[1]?.milestoneId || project.milestones[0]?.milestoneId || '');
   const [reportText, setReportText] = useState('اجرای عایق رطوبتی سرویس‌ها و تکمیل نقشه خط لوله‌کشی گرم و سرد.');
   const [declaredPct, setDeclaredPct] = useState('65');
+  const [progressError, setProgressError] = useState<string | null>(null);
   const [simulateOffline, setSimulateOffline] = useState(false);
   const [docTitle, setDocTitle] = useState('تصویر کلکتور جدید طبقه اول');
   const [docCategory, setDocCategory] = useState<ProjectDocumentCategory>('تصاویر حین اجرا');
+  const [docError, setDocError] = useState<string | null>(null);
   const [revisionReason, setRevisionReason] = useState('لطفاً نتیجه تست فشار ۴ بار لوله‌کشی هم ضمیمه شود.');
 
   const summary = computeProjectProgressSummary(project);
@@ -40,12 +43,31 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
 
   const handleSubmitProgress = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanReport = reportText.trim();
+    if (cleanReport.length < 3) {
+      const msg = 'لطفاً شرح فعالیت انجام‌شده را با حداقل ۳ کاراکتر وارد کنید.';
+      setProgressError(msg);
+      onFeedbackFa(msg);
+      return;
+    }
+    let parsedPercent: number | undefined;
+    if (declaredPct.trim() !== '') {
+      const n = Math.round(parseLocalizedNumber(declaredPct));
+      if (!Number.isFinite(n) || n < 0 || n > 100) {
+        const msg = 'درصد پیشرفت اعلام‌شده باید عددی بین ۰ تا ۱۰۰ باشد.';
+        setProgressError(msg);
+        onFeedbackFa(msg);
+        return;
+      }
+      parsedPercent = n;
+    }
+    setProgressError(null);
     const res = submitMilestoneProgressReport({
       project,
       milestoneId: selectedMsId,
       authorFa: project.providerNameFa,
-      activitySummaryFa: reportText,
-      declaredPercent: Number(declaredPct) || undefined,
+      activitySummaryFa: cleanReport,
+      declaredPercent: parsedPercent,
       networkOnline: !simulateOffline,
     });
     if (res.ok) {
@@ -57,9 +79,17 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
 
   const handleUploadDoc = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanTitle = docTitle.trim();
+    if (cleanTitle.length < 2) {
+      const msg = 'لطفاً عنوان مستند پروژه را وارد کنید.';
+      setDocError(msg);
+      onFeedbackFa(msg);
+      return;
+    }
+    setDocError(null);
     const res = uploadProjectDocumentSafely({
       project,
-      titleFa: docTitle,
+      titleFa: cleanTitle,
       category: docCategory,
       milestoneId: selectedMsId,
       uploadedByFa: project.providerNameFa,
@@ -175,7 +205,7 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <form onSubmit={handleSubmitProgress} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
+          <form noValidate onSubmit={handleSubmitProgress} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-white">ثبت گزارش پیشرفت برای «{activeMs?.titleFa}»</span>
               <label className="flex items-center gap-1 text-[10px] text-amber-300 cursor-pointer">
@@ -185,19 +215,21 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
             </div>
             <textarea
               aria-label="شرح فعالیت انجام‌شده"
+              aria-invalid={Boolean(progressError)}
               data-testid="del-progress-report-input"
               rows={2}
               value={reportText}
-              onChange={(e) => setReportText(e.target.value)}
+              onChange={(e) => { setReportText(e.target.value); if (progressError) setProgressError(null); }}
               className="w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-white"
             />
             <div className="flex items-center gap-2">
               <label className="text-slate-300">درصد اعلام‌شده:</label>
-              <input type="text" aria-label="درصد اعلام‌شده" value={declaredPct} onChange={(e) => setDeclaredPct(e.target.value)} className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
+              <input type="text" aria-label="درصد اعلام‌شده" aria-invalid={Boolean(progressError)} value={declaredPct} onChange={(e) => { setDeclaredPct(e.target.value); if (progressError) setProgressError(null); }} className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
               <button type="submit" data-testid="del-submit-progress-btn" className="mr-auto rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
                 ثبت در تاریخچه پیشرفت
               </button>
             </div>
+            {progressError && <div role="alert" className="text-[10.5px] font-bold text-rose-300">{progressError}</div>}
             <div className="space-y-1 pt-1">
               {project.progressReports.map((r) => (
                 <div key={r.reportId} className="rounded border border-slate-800 bg-slate-900/60 p-2 text-[10px] text-slate-300">
@@ -238,16 +270,19 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
       <div className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-2.5 text-amber-200">
         تفکیک شواهد (بخش ۷ و ۹): تصویر یا فایل ثبت‌شده به‌تنهایی اثبات قطعی کیفیت اجرا نیست؛ رابط میان «تصویر ثبت‌شده»، «مستند بررسی‌شده» و «نتیجه تأییدشده» تفکیک می‌گذارد.
       </div>
-      <form onSubmit={handleUploadDoc} className="grid grid-cols-1 md:grid-cols-3 gap-2 rounded-lg border border-slate-800 bg-slate-950/80 p-3">
-        <input type="text" aria-label="عنوان مستند پروژه" value={docTitle} onChange={(e) => setDocTitle(e.target.value)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" />
-        <select aria-label="دسته‌بندی مستند" value={docCategory} onChange={(e) => setDocCategory(e.target.value as ProjectDocumentCategory)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-white">
-          {(['تصاویر قبل از اجرا', 'تصاویر حین اجرا', 'تصاویر پس از اجرا', 'گزارش فنی', 'نقشه', 'فاکتور مصالح', 'صورت‌جلسه', 'مستندات تحویل'] as const).map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <button type="submit" data-testid="del-upload-doc-btn" className="rounded-lg bg-cyan-600 hover:bg-cyan-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
-          بارگذاری مستند محرمانه پروژه
-        </button>
+      <form noValidate onSubmit={handleUploadDoc} className="space-y-1.5 rounded-lg border border-slate-800 bg-slate-950/80 p-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input type="text" aria-label="عنوان مستند پروژه" aria-invalid={Boolean(docError)} value={docTitle} onChange={(e) => { setDocTitle(e.target.value); if (docError) setDocError(null); }} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" />
+          <select aria-label="دسته‌بندی مستند" value={docCategory} onChange={(e) => setDocCategory(e.target.value as ProjectDocumentCategory)} className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-white">
+            {(['تصاویر قبل از اجرا', 'تصاویر حین اجرا', 'تصاویر پس از اجرا', 'گزارش فنی', 'نقشه', 'فاکتور مصالح', 'صورت‌جلسه', 'مستندات تحویل'] as const).map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <button type="submit" data-testid="del-upload-doc-btn" className="rounded-lg bg-cyan-600 hover:bg-cyan-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
+            بارگذاری مستند محرمانه پروژه
+          </button>
+        </div>
+        {docError && <div role="alert" className="text-[10.5px] font-bold text-rose-300">{docError}</div>}
       </form>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {project.documents.map((doc) => (

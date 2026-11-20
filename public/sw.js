@@ -224,15 +224,26 @@ self.addEventListener('install', (event) => {
   );
 });
 
+function isRadarOwnedSwCache(name) {
+  return (
+    typeof name === 'string' &&
+    /^tehran-radar-(?:shell|assets|data)-v[0-9a-z._-]+$/i.test(name)
+  );
+}
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames
-          .filter((name) => !ACTIVE_CACHES.includes(name))
-          .map((staleName) => caches.delete(staleName))
-      );
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.allSettled(
+          cacheNames
+            .filter((name) => isRadarOwnedSwCache(name) && !ACTIVE_CACHES.includes(name))
+            .map((staleName) => caches.delete(staleName))
+        );
+      } catch {
+        // Never block SW claim on cache enumeration failure
+      }
       await self.clients.claim();
     })()
   );

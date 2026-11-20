@@ -72,37 +72,39 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
     return () => ctrl.abort();
   }, [isVerifiedAdmin, currentUser?.uid]);
 
-  const handleDataDecision = async (id: string, titleFa: string, status: 'approved' | 'applied' | 'rejected') => {
-    if (!canModerate) { onFeedback('نقش فعلی مجوز ممیزی داده را ندارد.'); return; }
-    const actionType = status === 'approved' ? 'approve_data' : status === 'applied' ? 'apply_data_version' : 'reject_data';
+  const runModerationAction = async (id: string, fn: () => Promise<void>) => {
+    if (!canModerate) { onFeedback('نقش فعلی مجوز ممیزی و نظارت را ندارد.'); return; }
+    if (busyId === id) return;
     setBusyId(id);
-    const res = await submitAdminCommunityModerationAction(
-      { targetType: 'data_correction', targetId: id, actionType, reasonFa: moderatorNoteFa, actorRole: activeRole },
-      currentUser,
-    );
-    setBusyId(null);
-    if (!res.ok) {
-      onFeedback(res.errorFa || 'ثبت تصمیم در سرور ناموفق بود.');
-      return;
-    }
-    await reloadQueue();
-    appendAdminAuditLog({
-      actorRole: activeRole,
-      actorLabelFa: 'ممیز داده‌های جامعه',
-      actionCode: status === 'applied' ? 'COMMUNITY_DATA_APPLIED' : status === 'approved' ? 'COMMUNITY_CORRECTION_APPROVED' : 'COMMUNITY_CORRECTION_REJECTED',
-      targetType: 'listing',
-      targetId: id,
-      reasonFa: moderatorNoteFa,
-      severity: status === 'rejected' ? 'warning' : 'info',
-    });
-    onFeedback(
-      status === 'applied'
-        ? `اصلاح داده «${titleFa}» در نسخه داده پایه اعمال شد.`
-        : status === 'approved'
-          ? `اصلاح داده «${titleFa}» تأیید شد (آماده اعمال در داده پایه).`
-          : `اصلاح داده «${titleFa}» رد شد.`,
-    );
+    try { await fn(); } catch { onFeedback('خطای ارتباط با سرور در ثبت تصمیم نظارتی.'); } finally { setBusyId(null); }
   };
+
+  const handleDataDecision = (id: string, titleFa: string, status: 'approved' | 'applied' | 'rejected') =>
+    runModerationAction(id, async () => {
+      const actionType = status === 'approved' ? 'approve_data' : status === 'applied' ? 'apply_data_version' : 'reject_data';
+      const res = await submitAdminCommunityModerationAction(
+        { targetType: 'data_correction', targetId: id, actionType, reasonFa: moderatorNoteFa, actorRole: activeRole },
+        currentUser,
+      );
+      if (!res.ok) { onFeedback(res.errorFa || 'ثبت تصمیم در سرور ناموفق بود.'); return; }
+      await reloadQueue();
+      appendAdminAuditLog({
+        actorRole: activeRole,
+        actorLabelFa: 'ممیز داده‌های جامعه',
+        actionCode: status === 'applied' ? 'COMMUNITY_DATA_APPLIED' : status === 'approved' ? 'COMMUNITY_CORRECTION_APPROVED' : 'COMMUNITY_CORRECTION_REJECTED',
+        targetType: 'listing',
+        targetId: id,
+        reasonFa: moderatorNoteFa,
+        severity: status === 'rejected' ? 'warning' : 'info',
+      });
+      onFeedback(
+        status === 'applied'
+          ? `اصلاح داده «${titleFa}» در نسخه داده پایه اعمال شد.`
+          : status === 'approved'
+            ? `اصلاح داده «${titleFa}» تأیید شد (آماده اعمال در داده پایه).`
+            : `اصلاح داده «${titleFa}» رد شد.`,
+      );
+    });
 
   return (
     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3 text-xs" data-testid="admin-community-moderation-queue">
@@ -150,8 +152,8 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!canModerate) return;
+                  disabled={!canModerate || busyId === rep.id}
+                  onClick={() => runModerationAction(rep.id, async () => {
                     const res = await submitAdminCommunityModerationAction(
                       { targetType: rep.targetType, targetId: rep.targetId, actionType: 'hide', reasonFa: moderatorNoteFa, actorRole: activeRole },
                       currentUser,
@@ -160,15 +162,15 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     await reloadQueue();
                     appendAdminAuditLog({ actorRole: activeRole, actorLabelFa: 'ناظر جامعه', actionCode: 'COMMUNITY_POST_HIDDEN', targetType: 'listing', targetId: rep.targetId, reasonFa: moderatorNoteFa, severity: 'warning' });
                     onFeedback(`محتوای ${rep.targetId} پنهان و گزارش ثبت شد.`);
-                  }}
-                  className="px-2 py-0.5 rounded bg-rose-600 text-white font-bold cursor-pointer"
+                  })}
+                  className="px-2 py-0.5 rounded bg-rose-600 text-white font-bold cursor-pointer disabled:opacity-50"
                 >
                   پنهان‌سازی
                 </button>
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!canModerate) return;
+                  disabled={!canModerate || busyId === rep.id}
+                  onClick={() => runModerationAction(rep.id, async () => {
                     const res = await submitAdminCommunityModerationAction(
                       { targetType: rep.targetType, targetId: rep.targetId, actionType: 'lock', reasonFa: moderatorNoteFa, actorRole: activeRole },
                       currentUser,
@@ -176,15 +178,15 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     if (!res.ok) { onFeedback(res.errorFa || 'خطا'); return; }
                     await reloadQueue();
                     onFeedback(`موضوع ${rep.targetId} قفل شد.`);
-                  }}
-                  className="px-2 py-0.5 rounded bg-amber-600 text-white font-bold inline-flex items-center gap-1 cursor-pointer"
+                  })}
+                  className="px-2 py-0.5 rounded bg-amber-600 text-white font-bold inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
                 >
                   <Lock className="w-3 h-3" /><span>قفل</span>
                 </button>
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!canModerate) return;
+                  disabled={!canModerate || busyId === rep.id}
+                  onClick={() => runModerationAction(rep.id, async () => {
                     const res = await submitAdminCommunityModerationAction(
                       { targetType: rep.targetType, targetId: rep.id, actionType: 'dismiss_report', reasonFa: moderatorNoteFa, actorRole: activeRole },
                       currentUser,
@@ -192,8 +194,8 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     if (!res.ok) { onFeedback(res.errorFa || 'خطا'); return; }
                     await reloadQueue();
                     onFeedback('گزارش تخلف رد و مختومه شد.');
-                  }}
-                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer"
+                  })}
+                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer disabled:opacity-50"
                 >
                   رد گزارش
                 </button>
@@ -214,8 +216,8 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!canModerate) return;
+                  disabled={!canModerate || busyId === ap.id}
+                  onClick={() => runModerationAction(ap.id, async () => {
                     const res = await resolveAdminCommunityAppeal(
                       { appealId: ap.id, decision: 'overturned', reviewerNoteFa: moderatorNoteFa },
                       currentUser,
@@ -224,15 +226,15 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     await reloadQueue();
                     appendAdminAuditLog({ actorRole: activeRole, actorLabelFa: 'مرجع بازبینی', actionCode: 'COMMUNITY_APPEAL_OVERTURNED', targetType: 'listing', targetId: ap.targetId, reasonFa: moderatorNoteFa, severity: 'info' });
                     onFeedback(`اعتراض ${ap.id} پذیرفته شد و تصمیم قبلی لغو گردید.`);
-                  }}
-                  className="px-2 py-0.5 rounded bg-emerald-600 text-white font-bold cursor-pointer"
+                  })}
+                  className="px-2 py-0.5 rounded bg-emerald-600 text-white font-bold cursor-pointer disabled:opacity-50"
                 >
                   پذیرش اعتراض
                 </button>
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!canModerate) return;
+                  disabled={!canModerate || busyId === ap.id}
+                  onClick={() => runModerationAction(ap.id, async () => {
                     const res = await resolveAdminCommunityAppeal(
                       { appealId: ap.id, decision: 'upheld', reviewerNoteFa: moderatorNoteFa },
                       currentUser,
@@ -240,8 +242,8 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     if (!res.ok) { onFeedback(res.errorFa || 'خطا'); return; }
                     await reloadQueue();
                     onFeedback(`تصمیم نظارتی در مورد ${ap.id} ابقا شد.`);
-                  }}
-                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer"
+                  })}
+                  className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer disabled:opacity-50"
                 >
                   ابقای تصمیم
                 </button>
@@ -268,13 +270,13 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
               <div className="flex flex-wrap items-center gap-1">
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!canModerate) return;
+                  disabled={!canModerate || busyId === sc.id}
+                  onClick={() => runModerationAction(sc.id, async () => {
                     const out = await claimTrustSafetyCase(sc.id, currentUser);
                     onFeedback(out.ok ? `پرونده ${sc.id} به شما تخصیص یافت.` : (out.errorFa || 'خطا'));
                     if (out.ok) await reloadQueue();
-                  }}
-                  className="px-2 py-0.5 rounded bg-indigo-600 text-white font-bold cursor-pointer"
+                  })}
+                  className="px-2 py-0.5 rounded bg-indigo-600 text-white font-bold cursor-pointer disabled:opacity-50"
                 >
                   تخصیص پرونده
                 </button>
@@ -282,13 +284,13 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                   <button
                     key={dec}
                     type="button"
-                    onClick={async () => {
-                      if (!canModerate) return;
+                    disabled={!canModerate || busyId === sc.id}
+                    onClick={() => runModerationAction(sc.id, async () => {
                       const out = await applyTrustSafetyDecision(sc.id, dec, moderatorNoteFa || 'بررسی نظارتی', currentUser);
                       onFeedback(out.ok ? `تصمیم ${dec} ثبت شد.` : (out.errorFa || 'خطا'));
                       if (out.ok) await reloadQueue();
-                    }}
-                    className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer"
+                    })}
+                    className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 font-bold cursor-pointer disabled:opacity-50"
                   >
                     {dec}
                   </button>

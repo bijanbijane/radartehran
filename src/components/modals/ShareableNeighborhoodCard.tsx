@@ -101,15 +101,16 @@ export const ShareableNeighborhoodCard: React.FC<ShareableCardProps> = ({
       ctx.font = '30px Vazirmatn, Tahoma, sans-serif';
       ctx.fillText(`استخراج‌شده از سامانه رادار ${cityNameFa} • بدون نیاز به ثبت‌نام`, 960, 1220);
 
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `radar-${hoodNameFa}.png`;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-      }, 'image/png');
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `radar-${hoodNameFa}.png`;
+      link.click();
+      window.setTimeout(() => { try { URL.revokeObjectURL(url); } catch { /* noop */ } }, 5000);
+    } catch {
+      // Export failed gracefully without locking button state
     } finally {
       setIsExporting(false);
     }

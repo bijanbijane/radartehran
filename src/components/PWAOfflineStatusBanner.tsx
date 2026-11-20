@@ -67,18 +67,34 @@ export function PWAOfflineStatusBanner({
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
+    let isMounted = true;
+    let reconnectTimer: number | null = null;
+    const clearReconnectTimer = () => {
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+
     setIsStandalone(window.matchMedia('(display-mode: standalone)').matches);
 
     const handleOnline = () => {
       setIsOnline(true);
       setShowReconnectedToast(true);
-      setTimeout(() => setShowReconnectedToast(false), 3800);
+      clearReconnectTimer();
+      reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = null;
+        if (isMounted) setShowReconnectedToast(false);
+      }, 3800);
     };
     const handleOffline = () => {
+      clearReconnectTimer();
       setIsOnline(false);
       setShowReconnectedToast(false);
     };
-    const handleSwReady = () => setSwReady(true);
+    const handleSwReady = () => {
+      if (isMounted) setSwReady(true);
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -86,11 +102,13 @@ export function PWAOfflineStatusBanner({
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready
-        .then(() => setSwReady(true))
+        .then(() => { if (isMounted) setSwReady(true); })
         .catch(() => {});
     }
 
     return () => {
+      isMounted = false;
+      clearReconnectTimer();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('radar-sw-ready', handleSwReady);

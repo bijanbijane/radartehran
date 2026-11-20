@@ -43,6 +43,7 @@ import { CommunityMembersAndGuidelinesTab } from '../components/CommunityMembers
 import { CommunityResearchProposalsTab } from '../components/CommunityResearchProposalsTab';
 import {
   COMMUNITY_HUB_TABS,
+  mapHubTabToSubTab,
   mapSubTabToHubTab,
   pushMemberProfileUrl,
   readMemberUsernameFromPath,
@@ -113,7 +114,13 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
   const cityNameFa = MULTI_CITY_CONFIGS[resolvedCity]?.nameFa || 'تهران';
 
   useEffect(() => {
-    if (activeSubTab) setActiveTab(mapSubTabToHubTab(activeSubTab));
+    const memberFromPath = readMemberUsernameFromPath();
+    setSelectedUsernameState(memberFromPath);
+    if (memberFromPath) {
+      setActiveTab('members');
+      return;
+    }
+    setActiveTab(mapSubTabToHubTab(activeSubTab));
   }, [activeSubTab]);
 
   useEffect(() => {
@@ -144,6 +151,14 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
   const openMemberProfile = (username: string) => {
     setSelectedUsername(username);
     setActiveTab('members');
+    onNavigateView('contributions', 'members');
+  };
+
+  const selectCommunityTab = (nextTab: CommunityHubTabId) => {
+    setSelectedUsernameState(null);
+    setActiveTab(nextTab);
+    setToastFa(null);
+    onNavigateView('contributions', mapHubTabToSubTab(nextTab));
   };
 
   const requireAuthResult = () => ({ ok: false, errorFa: COMMUNITY_AUTH_REQUIRED_FA });
@@ -188,8 +203,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
               type="button"
               data-testid={`community-tab-${tab.id}`}
               onClick={() => {
-                setActiveTab(tab.id);
-                setToastFa(null);
+                selectCommunityTab(tab.id);
                 trackCommunityEvent('community_tab_switch', { tab: tab.id });
               }}
               className={`px-3 py-1.5 rounded-[9px] font-bold cursor-pointer whitespace-nowrap shrink-0 transition ${
@@ -271,7 +285,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
           corrections={corrections}
           topics={topics}
           followedTopicIds={followedTopicIds}
-          onSwitchTab={(t) => { setActiveTab(t); setToastFa(null); }}
+          onSwitchTab={(t) => selectCommunityTab(t)}
           onSelectAuthor={openMemberProfile}
         />
       )}
@@ -471,10 +485,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
           selectedUsername={selectedUsername}
           onSelectUsername={setSelectedUsername}
           currentUser={currentUser}
-          onNavigateToContribution={(targetTab) => {
-            setActiveTab(targetTab);
-            setToastFa(null);
-          }}
+          onNavigateToContribution={(targetTab) => selectCommunityTab(targetTab)}
         />
       )}
     </div>

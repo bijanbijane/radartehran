@@ -257,8 +257,7 @@ export function HedonicValuationResultsColumn({
           disabled={downloadingPng}
           onClick={async () => {
             setDownloadingPng(true);
-            await downloadHedonicValuationCardPng(valuation);
-            setDownloadingPng(false);
+            try { await downloadHedonicValuationCardPng(valuation); } catch { /* handled safely */ } finally { setDownloadingPng(false); }
           }}
           className="flex-1 py-2.5 px-3 rounded-xl bg-slate-900 dark:bg-white hover:opacity-90 text-white dark:text-slate-900 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-60"
         >

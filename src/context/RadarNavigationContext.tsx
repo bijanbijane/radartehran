@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { formatMillionTomanAsIntlCurrency, getStoredIntlCurrency } from '../utils/areaUnit';
+import {
+  buildOverlayPreservingUrl,
+  commitManagedHistoryTransition,
+  isPopStateRestorationActive,
+  readCurrentFullUrl,
+} from '../navigation/url/historySingleWriter';
 
 export function formatNavigationCurrencyHint(millionToman: number): string {
   return formatMillionTomanAsIntlCurrency(millionToman, getStoredIntlCurrency());
@@ -51,11 +57,16 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
     return new URLSearchParams(window.location.search).get('mode')?.toUpperCase() === 'RENT' ? 'RENT' : 'BUY';
   });
 
-  const [activeTab, setActiveTabState] = useState<InspectorTabId>('OVERVIEW');
+  const [activeTab, setActiveTabState] = useState<InspectorTabId>(() => {
+    if (typeof window === 'undefined') return 'OVERVIEW';
+    const raw = new URLSearchParams(window.location.search).get('inspectorTab')?.toUpperCase();
+    return raw === 'HEDONIC' || raw === 'TRENDS' || raw === 'REVIEWS' ? raw : 'OVERVIEW';
+  });
   const [activeModalId, setActiveModalId] = useState<string | null>(null);
   const [activeToast, setActiveToast] = useState<ToastMessage | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const hasExplicitNavChangeRef = useRef<boolean>(false);
+  const isPopStateSyncRef = useRef<boolean>(false);
 
   const setMarketMode = useCallback((mode: MarketMode) => {
     hasExplicitNavChangeRef.current = true;
@@ -75,28 +86,37 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
   const sheetDetentRef = useRef(sheetDetent);
   sheetDetentRef.current = sheetDetent;
 
-  // Sync state to URL Search Params without triggering full page reload [RULE-16]
+  // Overlay-only URL sync: NEVER mutates pathname, core query params (city/hood/mode/tab), or hash [RT-FE-BUGFIX-008]
   useEffect(() => {
     if (typeof window === 'undefined' || !hasExplicitNavChangeRef.current) return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (selectedHoodId) params.set('hood', selectedHoodId);
-      else params.delete('hood');
+    if (isPopStateSyncRef.current || isPopStateRestorationActive()) {
+      isPopStateSyncRef.current = false;
+      return;
+    }
+    const nextUrl = buildOverlayPreservingUrl(window.location, activeTab);
+    commitManagedHistoryTransition({
+      domain: 'overlay',
+      mode: 'replace',
+      targetUrl: nextUrl,
+      state: { __radarOverlay: activeModalId !== null, selectedHoodId, sheetDetent, activeModalId, activeTab },
+    });
+  }, [activeTab]);
 
-      params.set('mode', marketMode.toLowerCase());
-      if (activeTab !== 'OVERVIEW') params.set('tab', activeTab);
-      else params.delete('tab');
-
-      const qs = params.toString();
-      const nextUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-      window.history.replaceState({ selectedHoodId, sheetDetent, activeModalId }, '', nextUrl);
-    } catch { /* Ignore History API errors in restricted iframe contexts */ }
-  }, [selectedHoodId, marketMode, activeTab, sheetDetent, activeModalId]);
-
-  // Intercept hardware Back button to close modal/drawer instead of exiting the PWA [RULE-16]
+  // Restore overlay/inspector state on popstate WITHOUT triggering any history writeback [RT-FE-BUGFIX-008]
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handlePopState = () => {
+      isPopStateSyncRef.current = true;
+      queueMicrotask(() => {
+        isPopStateSyncRef.current = false;
+      });
+      const rawInspectorTab = new URLSearchParams(window.location.search).get('inspectorTab')?.toUpperCase();
+      const restoredTab: InspectorTabId =
+        rawInspectorTab === 'HEDONIC' || rawInspectorTab === 'TRENDS' || rawInspectorTab === 'REVIEWS'
+          ? rawInspectorTab
+          : 'OVERVIEW';
+      setActiveTabState(restoredTab);
+
       if (activeModalIdRef.current !== null) {
         setActiveModalId(null);
         return;
@@ -122,18 +142,21 @@ export const RadarNavigationProvider: React.FC<{ children: React.ReactNode }> = 
       hasExplicitNavChangeRef.current = true;
       setSelectedHoodId(hoodId);
       setSheetDetent(hoodId ? initialDetent : 'CLOSED');
-      if (hoodId && typeof window !== 'undefined') {
-        window.history.pushState({ hoodId }, '');
-      }
     },
     []
   );
 
   const openModal = useCallback((modalId: string) => {
     hasExplicitNavChangeRef.current = true;
+    const alreadyOpen = activeModalIdRef.current === modalId;
     setActiveModalId(modalId);
-    if (typeof window !== 'undefined') {
-      window.history.pushState({ modalId }, '');
+    if (!alreadyOpen && typeof window !== 'undefined') {
+      commitManagedHistoryTransition({
+        domain: 'overlay',
+        mode: 'push_overlay_state',
+        targetUrl: readCurrentFullUrl(window.location),
+        state: { __radarOverlay: true, modalId },
+      });
     }
   }, []);
 

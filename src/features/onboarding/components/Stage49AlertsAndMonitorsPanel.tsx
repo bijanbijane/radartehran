@@ -25,7 +25,8 @@ export const Stage49AlertsAndMonitorsPanel: React.FC<{
   onAddFeedback: (fb: AlertFeedbackReport) => void;
   onFeedbackFa: (msg: string) => void;
 }> = ({ section, alerts, monitors, feedbacks, onUpdateAlert, onUpdateMonitor, onAddFeedback, onFeedbackFa }) => {
-  const [correctionNoteFa, setCorrectionNoteFa] = useState('اصلاح مبلغ به ۲۲٬۱۰۰ م.ت پس از بررسی مجدد منبع');
+  const defaultCorrectionNoteFa = 'اصلاح مبلغ به ۲۲٬۱۰۰ م.ت پس از بررسی مجدد منبع';
+  const [correctionNotesByAlertId, setCorrectionNotesByAlertId] = useState<Record<string, string>>({});
   const [correctionError, setCorrectionError] = useState<{ alertId: string; text: string } | null>(null);
   const [candidateLat, setCandidateLat] = useState(35.782);
   const [candidateLng, setCandidateLng] = useState(51.375);
@@ -102,7 +103,8 @@ export const Stage49AlertsAndMonitorsPanel: React.FC<{
                 noValidate
                 onSubmit={(e) => {
                   e.preventDefault();
-                  const trimmed = correctionNoteFa.trim();
+                  const currentNote = correctionNotesByAlertId[alt.alertId] ?? defaultCorrectionNoteFa;
+                  const trimmed = currentNote.trim();
                   if (trimmed.length < 3) {
                     setCorrectionError({
                       alertId: alt.alertId,
@@ -127,10 +129,11 @@ export const Stage49AlertsAndMonitorsPanel: React.FC<{
                   <input
                     aria-label="توضیح اصلاح هشدار"
                     aria-invalid={correctionError?.alertId === alt.alertId}
-                    value={correctionNoteFa}
+                    value={correctionNotesByAlertId[alt.alertId] ?? defaultCorrectionNoteFa}
                     onChange={(e) => {
-                      setCorrectionNoteFa(e.target.value);
-                      if (correctionError) setCorrectionError(null);
+                      const nextVal = e.target.value;
+                      setCorrectionNotesByAlertId((prev) => ({ ...prev, [alt.alertId]: nextVal }));
+                      if (correctionError?.alertId === alt.alertId) setCorrectionError(null);
                     }}
                     className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white text-[10.5px]"
                   />

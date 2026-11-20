@@ -11,7 +11,7 @@ import { FeatureErrorBoundary } from '../FeatureErrorBoundary';
 import { resolveProductViewRouterShellClasses } from '../../utils/productViewRouterShellClasses';
 import { ModuleSecondaryNav } from '../navigation/ModuleSecondaryNav';
 import { resolveActiveCityDisplayName, resolveEffectiveSubTab, resolveSecondaryTabsForView } from '../navigation/viewRouterHelpers';
-import type { AccountSubTabId, KnowledgeSubTabId, MarketSubTabId, ModuleSubTabId, PropertiesSubTabId, SavedMapViewItem, ToolsSubTabId } from '../../navigation/registry/route.types';
+import type { AccountSubTabId, ContributionsSubTabId, KnowledgeSubTabId, MarketSubTabId, ModuleSubTabId, PropertiesSubTabId, SavedMapViewItem, ToolsSubTabId } from '../../navigation/registry/route.types';
 
 const ProductHomeView = React.lazy(() => import('./ProductHomeView').then((m) => ({ default: m.ProductHomeView })));
 const ProductDiscoverView = React.lazy(() => import('./ProductDiscoverView').then((m) => ({ default: m.ProductDiscoverView })));
@@ -239,7 +239,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
   } else if (primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'not_found') {
     content = (
       <ProductSecondaryHubView
-        viewKind={primaryView} activeSubTab={effectiveSubTab as KnowledgeSubTabId} activeCity={p.activeCity}
+        viewKind={primaryView} activeSubTab={effectiveSubTab as KnowledgeSubTabId | ContributionsSubTabId} activeCity={p.activeCity}
         currentUser={p.currentUser} isVerifiedAdmin={p.isVerifiedAdmin} selectedHood={selectedHood}
         evaluatedNeighborhoods={evaluatedNeighborhoods} onSelectNeighborhood={handleSelectNeighborhood} onNavigateView={navigateTo}
         onOpenHedonic={() => ui.setShowHedonicModal(true)} onOpenListingVerifier={() => ui.setShowListingVerifierModal(true)}

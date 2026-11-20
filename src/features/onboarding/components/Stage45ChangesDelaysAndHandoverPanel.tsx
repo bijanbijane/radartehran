@@ -1,5 +1,6 @@
 /** @file src/features/onboarding/components/Stage45ChangesDelaysAndHandoverPanel.tsx — Stage 45 Scope Changes, Delays, Quality Checklist & Final Handover */
 import React, { useState } from 'react';
+import { parseLocalizedNumber } from '../../../utils/forms/formInputHelpers';
 import { formatTomanCurrency } from '../services/serviceTransactionEngine';
 import {
   canMemberAccessDeliveryResource,
@@ -26,19 +27,36 @@ export const Stage45ChangesDelaysAndHandoverPanel: React.FC<Stage45ChangesDelays
 }) => {
   const [changeDesc, setChangeDesc] = useState('بازسازی قرنیز و کف‌سازی بالکن غربی به متراژ ۸ متر مربع');
   const [changeCostToman, setChangeCostToman] = useState('1200000');
+  const [changeError, setChangeError] = useState<string | null>(null);
   const [delayDays, setDelayDays] = useState('2');
   const [delayCategory, setDelayCategory] = useState<DelayCauseCategory>('تأخیر در تأمین مصالح');
+  const [delayError, setDelayError] = useState<string | null>(null);
   const [handoverDecision, setHandoverDecision] = useState<HandoverDecisionType>('پذیرش نهایی');
 
   const handleRequestChange = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanDesc = changeDesc.trim();
+    if (cleanDesc.length < 3) {
+      const msg = 'لطفاً شرح تغییر دامنه کار را با حداقل ۳ کاراکتر وارد کنید.';
+      setChangeError(msg);
+      onFeedbackFa(msg);
+      return;
+    }
+    const parsedCost = changeCostToman.trim() === '' ? 0 : Math.round(parseLocalizedNumber(changeCostToman));
+    if (!Number.isFinite(parsedCost) || parsedCost < 0) {
+      const msg = 'برآورد اثر مالی تغییر باید عددی معتبر و غیرمنفی به تومان باشد.';
+      setChangeError(msg);
+      onFeedbackFa(msg);
+      return;
+    }
+    setChangeError(null);
     const next = submitScopeChangeRequest({
       project,
       milestoneId: project.milestones[2]?.milestoneId || project.milestones[0].milestoneId,
-      descriptionFa: changeDesc,
+      descriptionFa: cleanDesc,
       reasonFa: 'درخواست تکمیلی کارفرما در حین اجرای مرحله',
       proposedByFa: project.applicantNameFa,
-      estimatedCostImpactToman: Number(changeCostToman) || 0,
+      estimatedCostImpactToman: parsedCost,
       estimatedTimeImpactDays: 2,
     });
     onUpdateProject(next);
@@ -47,13 +65,21 @@ export const Stage45ChangesDelaysAndHandoverPanel: React.FC<Stage45ChangesDelays
 
   const handleReportDelay = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedDays = Math.round(parseLocalizedNumber(delayDays));
+    if (!Number.isFinite(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+      const msg = 'تعداد روز تأخیر باید عددی معتبر بین ۱ تا ۳۶۵ روز باشد.';
+      setDelayError(msg);
+      onFeedbackFa(msg);
+      return;
+    }
+    setDelayError(null);
     const next = reportProjectDelay({
       project,
       milestoneId: project.milestones[2]?.milestoneId || project.milestones[0].milestoneId,
-      delayDays: Number(delayDays) || 1,
+      delayDays: parsedDays,
       causeCategory: delayCategory,
       reportedByFa: project.providerNameFa,
-      impactFa: 'تأخیر احتمالی ۲ روزه در اتمام مرحله ۳ نسبت به موعد مرجع ۱۸ آبان',
+      impactFa: `تأخیر احتمالی ${parsedDays} روزه در اتمام مرحله ۳ نسبت به موعد مرجع ۱۸ آبان`,
       newProjectedDateFa: '۲۰ آبان ۱۴۰۵',
     });
     onUpdateProject(next);
@@ -82,16 +108,17 @@ export const Stage45ChangesDelaysAndHandoverPanel: React.FC<Stage45ChangesDelays
   if (section === 'changes_delays') {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-[11px]" data-testid="del-changes-delays-panel">
-        <form onSubmit={handleRequestChange} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
+        <form noValidate onSubmit={handleRequestChange} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
           <div className="text-xs font-bold text-white">ثبت درخواست تغییر دامنه کار (بدون تغییر خودکار قیمت — DEL-12)</div>
-          <input type="text" aria-label="شرح تغییر پروژه" value={changeDesc} onChange={(e) => setChangeDesc(e.target.value)} className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" />
+          <input type="text" aria-label="شرح تغییر پروژه" aria-invalid={Boolean(changeError)} value={changeDesc} onChange={(e) => { setChangeDesc(e.target.value); if (changeError) setChangeError(null); }} className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" />
           <div className="flex items-center gap-2">
             <label className="text-slate-300">برآورد اثر مالی (تومان):</label>
-            <input type="text" aria-label="برآورد اثر مالی تغییر به تومان" value={changeCostToman} onChange={(e) => setChangeCostToman(e.target.value)} className="w-32 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
+            <input type="text" aria-label="برآورد اثر مالی تغییر به تومان" aria-invalid={Boolean(changeError)} value={changeCostToman} onChange={(e) => { setChangeCostToman(e.target.value); if (changeError) setChangeError(null); }} className="w-32 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
             <button type="submit" data-testid="del-submit-change-btn" className="mr-auto rounded bg-cyan-600 px-2.5 py-1 font-bold text-slate-950 cursor-pointer">
               ثبت تغییر
             </button>
           </div>
+          {changeError && <div role="alert" className="text-[10.5px] font-bold text-rose-300">{changeError}</div>}
           <div className="space-y-1">
             {project.changeRequests.map((c) => (
               <div key={c.changeId} className="rounded border border-amber-600/40 bg-amber-950/20 p-2 text-[10px]">
@@ -102,19 +129,20 @@ export const Stage45ChangesDelaysAndHandoverPanel: React.FC<Stage45ChangesDelays
           </div>
         </form>
 
-        <form onSubmit={handleReportDelay} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
+        <form noValidate onSubmit={handleReportDelay} className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 space-y-2">
           <div className="text-xs font-bold text-white">ثبت تأخیر و موانع اجرایی (تفکیک ادعا از بررسی — DEL-11)</div>
           <div className="flex gap-2">
-            <select aria-label="دسته‌بندی مانع" value={delayCategory} onChange={(e) => setDelayCategory(e.target.value as DelayCauseCategory)} className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white">
+            <select aria-label="دسته‌بندی مانع" value={delayCategory} onChange={(e) => { setDelayCategory(e.target.value as DelayCauseCategory); if (delayError) setDelayError(null); }} className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white">
               {(['تأخیر در تأمین مصالح', 'آماده نبودن محل اجرا', 'تغییر درخواست مشتری', 'شرایط فنی پیش‌بینی‌نشده', 'تأخیر نیروی اجرایی', 'محدودیت دسترسی', 'شرایط خارج از کنترل طرفین', 'سایر موارد'] as const).map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
-            <input type="text" aria-label="تعداد روز تأخیر" value={delayDays} onChange={(e) => setDelayDays(e.target.value)} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
+            <input type="text" aria-label="تعداد روز تأخیر" aria-invalid={Boolean(delayError)} value={delayDays} onChange={(e) => { setDelayDays(e.target.value); if (delayError) setDelayError(null); }} className="w-16 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
             <button type="submit" data-testid="del-submit-delay-btn" className="rounded bg-amber-500 px-2.5 py-1 font-bold text-slate-950 cursor-pointer">
               ثبت مانع
             </button>
           </div>
+          {delayError && <div role="alert" className="text-[10.5px] font-bold text-rose-300">{delayError}</div>}
           <div className="space-y-1">
             {project.delays.map((d) => (
               <div key={d.delayId} className="rounded border border-slate-800 bg-slate-900/70 p-2 text-[10px]">
