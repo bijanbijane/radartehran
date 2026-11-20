@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData'; import { sanitizeInput, validateCityParam } from './security'; import { getValidatedServerConfig, verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { pushAuditLog } from './serverMarketPulseEngine'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { evaluateCloudflareRuntimePortability } from './cloudflarePortabilityAndCapabilities'; import { OFFICIAL_AI_MODEL_REGISTRY, MANDATORY_AI_SIMULATION_BANNER, globalAiRoutingManager, buildCloudflareAiGatewayEndpoint, parseNaturalPersianHousingQuery, type RadarAiWorkflowId, } from './aiModelRegistryAndGateway'; import { runLiveGeminiGatewayInference } from './serverAiGatewayLive'; import { RADAR_COMMERCIAL_PRODUCTS, REFERENCE_EXCHANGE_RATE, AUTHORIZED_MCP_TOOL_DESCRIPTORS, auditDatasetCommercialEligibility, buildX402PaymentChallenge, verifyX402PaymentHeaders, globalMonetizationLedger,
+import type { Express, Request, Response } from 'express'; import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods'; import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData'; import { sanitizeInput } from './security'; import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from './geo/cityGeospatialResolver'; import { getValidatedServerConfig, verifyAdminApiAuthorization } from './serverAdminAndTelegramSecurity'; import { pushAuditLog } from './serverMarketPulseEngine'; import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard'; import { evaluateCloudflareRuntimePortability } from './cloudflarePortabilityAndCapabilities'; import { OFFICIAL_AI_MODEL_REGISTRY, MANDATORY_AI_SIMULATION_BANNER, globalAiRoutingManager, buildCloudflareAiGatewayEndpoint, parseNaturalPersianHousingQuery, type RadarAiWorkflowId, } from './aiModelRegistryAndGateway'; import { runLiveGeminiGatewayInference } from './serverAiGatewayLive'; import { RADAR_COMMERCIAL_PRODUCTS, REFERENCE_EXCHANGE_RATE, AUTHORIZED_MCP_TOOL_DESCRIPTORS, auditDatasetCommercialEligibility, buildX402PaymentChallenge, verifyX402PaymentHeaders, globalMonetizationLedger,
   executeAuthorizedMcpTool, } from './dataCommerceMcpAndMonetization'; import { readAndReconcileExecutionState } from './rmepExecutionStateEngine'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; const registeredAiCommerceApps = new WeakSet<Express>(); export function registerAiAndCommerceRoutes( app: Express, deps: { checkRateLimit: (ip: string, bucket: RateBucketType, max: number, windowMs: number) => boolean; getClientIp: (req: Request) => string; }
 ): void { if (registeredAiCommerceApps.has(app)) return; registeredAiCommerceApps.add(app); const { checkRateLimit, getClientIp } = deps; app.get('/api/admin/rmep-status', (req: Request, res: Response) => { void (async () => { res.setHeader('Cache-Control', 'no-store'); const auth = await verifyAdminApiAuthorization( req.headers as Record<string, string | string[] | undefined> ); if (!auth.authorized) { recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error',
         code: auth.reason, message: 'مشاهده وضعیت اجرای مهندسی RMEP-001 نیازمند احراز هویت مدیر سیستم است.', }); return; } const rmep = readAndReconcileExecutionState();
@@ -110,9 +110,14 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
       });
       return;
     }
+    const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: 'tehran' });
+    if (!cityCheck.ok) {
+      res.status(400).json({ status: 'error', code: cityCheck.code, message: cityCheck.messageFa });
+      return;
+    }
+    const city = cityCheck.cityId;
     if (req.query.simulate === '1') {
       const sim = globalMonetizationLedger.runPaymentSimulation(requestedDataset);
-      const city = validateCityParam(req.query.city, 'tehran');
       const hoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city].neighborhoods;
       res.status(200).json({
         status: 'ok',
@@ -147,7 +152,6 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
       RADAR_COMMERCIAL_PRODUCTS.find((p) => p.productId === requestedDataset) ||
       RADAR_COMMERCIAL_PRODUCTS[0];
     globalMonetizationLedger.recordAuthorizedPayment(product.pricePerRequestUsdMicros);
-    const city = validateCityParam(req.query.city, 'tehran');
     const hoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city].neighborhoods;
     res.status(200).json({
       status: 'ok',
@@ -272,9 +276,27 @@ import type { Express, Request, Response } from 'express'; import { INITIAL_NEIG
       return;
     }
     const hoodId = Math.max(1, Number(req.params.hoodId) || 1);
-    const city = validateCityParam(req.query.city, 'tehran');
+    const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: 'tehran' });
+    if (!cityCheck.ok) {
+      res.status(400).json({ status: 'error', code: cityCheck.code, message: cityCheck.messageFa });
+      return;
+    }
+    const city = cityCheck.cityId;
+    if (!cityCheck.wasOmitted) {
+      const ownership = validateCityNeighborhoodOwnership(city, hoodId, resolveCityIdForNeighborhood);
+      if (!ownership.ok) {
+        res.status(400).json({ status: 'error', code: ownership.code, message: ownership.messageFa });
+        return;
+      }
+    }
     const hoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city].neighborhoods;
-    const hood = hoods.find((h) => h.id === hoodId) || getAllMultiCityNeighborhoods().find((h) => h.id === hoodId) || hoods[0];
+    const hood = cityCheck.wasOmitted
+      ? (hoods.find((h) => h.id === hoodId) || getAllMultiCityNeighborhoods().find((h) => h.id === hoodId))
+      : hoods.find((h) => h.id === hoodId);
+    if (!hood) {
+      res.status(404).json({ status: 'error', code: 'UNKNOWN_NEIGHBORHOOD', message: 'محله درخواستی یافت نشد.' });
+      return;
+    }
     const productId = 'tehran_neighborhood_price_index_v1';
     if (req.query.simulate === '1') {
       const sim = globalMonetizationLedger.runPaymentSimulation(productId);

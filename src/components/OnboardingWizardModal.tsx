@@ -63,7 +63,7 @@ export function OnboardingWizardModal({
             <div>
               <div className="flex items-center gap-2">
                 <h2 id="onboarding-wizard-title" className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                  {isEn ? 'Smart Housing Radar Setup' : 'تنظیم سریع رادار مسکن هوشمند'}
+                  {isEn ? 'RadarTehran Quick Setup' : 'تنظیم سریع رادارتهران'}
                 </h2>
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                   {isEn ? 'Wizard' : 'راهنمای ورود'}

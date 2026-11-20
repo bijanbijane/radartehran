@@ -115,7 +115,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
           <BrainCircuit className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
-              موتور تصمیم‌گیری چندمعیاره و تفکیک معرفتی داده (استاندارد کسپر) — {hoodName}
+              موتور تصمیم‌گیری چندمعیاره و تفکیک اعتبار داده — {hoodName}
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
               تفکیک صریح «داده مشاهده‌شده»، «ادعای آگهی»، «تخمین مدل v6.4» و «متغیرهای نامعلوم میدانی» + سپر ضدسوگیری شناختی

@@ -1,5 +1,5 @@
-import "dotenv/config"; import express from "express"; import fs from "fs"; import http from "http"; import os from "os"; import path from "path"; import { createServer as createViteServer } from "vite"; import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS, type CityId } from "./src/data/multiCityData"; import type { SystemHealthData } from "./src/types/models"; import { validateCityParam } from "./src/utils/security"; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from "./src/utils/areaUnit"; import { registerOsmTileProxyRoute } from "./src/utils/osmTileProxy"; import { registerObjectStorageRoutes } from "./src/utils/serverObjectStorage"; import { registerBoundaryProtocolRoutes } from "./src/utils/serverBoundaryProtocol"; import { registerSeoAndSitemapRoutes, injectDynamicSeoMeta } from "./src/utils/serverSeoAndSitemap"; import { getRuntimeEnvConfig, getAdminSafeRuntimeConfigView, updateRuntimeEnvConfig } from "./src/utils/serverRuntimeEnvStore"; import { getValidatedServerConfig, SUPPORTED_CITY_IDS, verifyAdminApiAuthorization } from "./src/utils/serverAdminAndTelegramSecurity";
-import { cachedMarketPulseByCity, deepSyncedOverrides, serverAuditLogs, openMeteoLastOk, CITY_AIR_STATIONS, lastAirQualityFetchMs, lastAirQualityFetchSucceeded, airQualityStationSuccessCount, airQualityLastOkByCity, airQualityLastSuccessMsByCity, loadDiskPersistedCache, saveDiskPersistedCache, pushAuditLog, executeDeepMonitoringCycle, getOrUpdateMarketPulse } from "./src/utils/serverMarketPulseEngine"; import { registerUtilityRoutes } from "./src/utils/serverUtilityRoutes"; import { registerSponsorAndBargainRoutes } from "./src/utils/serverSponsorAndBargainRoutes"; import { registerBackupAndChunkUploadRoutes } from "./src/utils/serverBackupAndChunkUploadRoutes"; import { registerPublisherAndPlatformRoutes } from "./src/utils/serverPublisherBargains"; import { registerAiAndCommerceRoutes } from "./src/utils/serverAiAndCommerceRoutes"; import { buildOpenApiSpecification, resolveServerHttpTimeouts } from "./src/utils/serverConfigValidator"; import { flushServerTelemetryToS3Now, startTelemetryFlushTimer, stopTelemetryFlushTimer } from "./src/utils/productAnalyticsEngine"; import { getCasperHubConfigStatus } from "./server/modules/casper-hub/casperHubClient"; import { registerCommunityRoutes } from "./server/modules/community/communityRoutes"; import { registerCommunicationsRoutes } from "./server/modules/communications/commsRoutes"; import { registerKnowledgeRoutes } from "./server/modules/knowledge/knowledgeRoutes"; import { registerGlobalSearchGovernanceAndAnalyticsRoutes } from "./server/modules/search/globalSearchAndGovernanceGateway";
+import "dotenv/config"; import express from "express"; import fs from "fs"; import http from "http"; import os from "os"; import path from "path"; import { createServer as createViteServer } from "vite"; import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS, type CityId } from "./src/data/multiCityData"; import type { SystemHealthData } from "./src/types/models"; import { resolveCityParamOrReject } from "./src/utils/geo/cityGeospatialResolver"; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from "./src/utils/areaUnit"; import { registerOsmTileProxyRoute } from "./src/utils/osmTileProxy"; import { registerObjectStorageRoutes } from "./src/utils/serverObjectStorage"; import { registerBoundaryProtocolRoutes } from "./src/utils/serverBoundaryProtocol"; import { registerSeoAndSitemapRoutes, injectDynamicSeoMeta } from "./src/utils/serverSeoAndSitemap"; import { getRuntimeEnvConfig, getAdminSafeRuntimeConfigView, updateRuntimeEnvConfig } from "./src/utils/serverRuntimeEnvStore"; import { getValidatedServerConfig, SUPPORTED_CITY_IDS, verifyAdminApiAuthorization } from "./src/utils/serverAdminAndTelegramSecurity";
+import { cachedMarketPulseByCity, deepSyncedOverrides, serverAuditLogs, openMeteoLastOk, CITY_AIR_STATIONS, lastAirQualityFetchMs, lastAirQualityFetchSucceeded, airQualityStationSuccessCount, airQualityLastOkByCity, airQualityLastSuccessMsByCity, loadDiskPersistedCache, saveDiskPersistedCache, pushAuditLog, executeDeepMonitoringCycle, getOrUpdateMarketPulse } from "./src/utils/serverMarketPulseEngine"; import { registerUtilityRoutes } from "./src/utils/serverUtilityRoutes"; import { registerSponsorAndBargainRoutes } from "./src/utils/serverSponsorAndBargainRoutes"; import { registerBackupAndChunkUploadRoutes } from "./src/utils/serverBackupAndChunkUploadRoutes"; import { registerPublisherAndPlatformRoutes } from "./src/utils/serverPublisherBargains"; import { registerAiAndCommerceRoutes } from "./src/utils/serverAiAndCommerceRoutes"; import { buildOpenApiSpecification, resolveServerHttpTimeouts } from "./src/utils/serverConfigValidator"; import { flushServerTelemetryToS3Now, startTelemetryFlushTimer, stopTelemetryFlushTimer } from "./src/utils/productAnalyticsEngine"; import { registerCommunityRoutes } from "./server/modules/community/communityRoutes"; import { registerCommunicationsRoutes } from "./server/modules/communications/commsRoutes"; import { registerKnowledgeRoutes } from "./server/modules/knowledge/knowledgeRoutes"; import { registerGlobalSearchGovernanceAndAnalyticsRoutes } from "./server/modules/search/globalSearchAndGovernanceGateway";
 import { checkRateLimit, classifyStaticAssetCachePolicy, compressPayloadIfAccepted, createDeliveryAndAbuseMiddleware, getClientIp, getRateLimitTelemetry, isStaticAssetPath, recordAbuseSignal, resolveApiCacheControlHeader } from "./src/utils/serverDeliveryAndAbuseGuard"; import { globalBackendLifecycle } from "./src/utils/identityLifecycleAndBackendGovernance"; import { registerAccountAdminRoutes } from "./server/modules/account-admin/accountAdminRoutes"; import { registerTrustSafetyV1Routes } from "./server/modules/trust-safety/mountTrustSafetyRoutes"; import { registerUnifiedPlatformWave1Routes } from "./server/modules/platform-foundation/unifiedPlatformRoutes"; import { registerLegalRegulatoryRoutes } from "./server/modules/legal-regulatory/routes"; import { flushAllRepositoriesSync } from "./server/modules/shared/atomicJsonRepository"; let activeHttpServer: http.Server | null = null; let backgroundMonitoringTimer: ReturnType<typeof setInterval> | null = null; let fatalExitScheduled = false; function shutdownAfterFatalError(label: string, reason: unknown): void { console.error(label, reason); if (activeHttpServer?.listening) { pushAuditLog("WARN", `خطای زمان اجرای پس‌زمینه مهار شد (${label})`); return; } if (fatalExitScheduled) return; fatalExitScheduled = true; if (backgroundMonitoringTimer) clearInterval(backgroundMonitoringTimer); stopTelemetryFlushTimer(); void globalBackendLifecycle.initiateGracefulShutdown(() => { saveDiskPersistedCache(); flushAllRepositoriesSync(); void flushServerTelemetryToS3Now().catch(() => undefined); }); if (activeHttpServer) { activeHttpServer.close(() => process.exit(1)); setTimeout(() => process.exit(1), 3000).unref(); } else { process.exit(1); } } function handleGracefulShutdownSignal(signal: "SIGTERM" | "SIGINT"): void { if (fatalExitScheduled) return; fatalExitScheduled = true;
   pushAuditLog("INFO", `دریافت سیگنال خاموش‌سازی امن سرور (${signal})؛ تخلیهٔ کش و بستن اتصالات...`);
   if (backgroundMonitoringTimer) clearInterval(backgroundMonitoringTimer); stopTelemetryFlushTimer(); void globalBackendLifecycle.initiateGracefulShutdown(() => { saveDiskPersistedCache(); flushAllRepositoriesSync(); void flushServerTelemetryToS3Now().catch(() => undefined); }); if (activeHttpServer) { activeHttpServer.close(() => process.exit(0)); setTimeout(() => process.exit(0), 4000).unref(); } else { process.exit(0); } }
@@ -116,10 +116,9 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
           ])
         ),
         geminiConfigured: cfg.geminiConfigured,
-        casperHubConfigured: getCasperHubConfigStatus().configured,
       },
       securityMetrics: {
-        payloadLimit: "250kb", generalRateLimit: "180 req / min", heavySyncRateLimit: "3 req / 10 min",
+        payloadLimit: "128kb", generalRateLimit: "180 req / min", heavySyncRateLimit: "3 req / 10 min",
         activeTrackedIps: getRateLimitTelemetry().activeTrackedIps,
         totalBlockedRequests: getRateLimitTelemetry().totalBlockedRequests,
       },
@@ -132,7 +131,12 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
   app.get("/api/market-pulse", async (req, res) => {
     res.setHeader("Cache-Control", resolveApiCacheControlHeader(req));
     try {
-      const city = validateCityParam(req.query.city, "tehran");
+      const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: "tehran" });
+      if (!cityCheck.ok) {
+        res.status(400).json({ status: "error", code: cityCheck.code, message: cityCheck.messageFa });
+        return;
+      }
+      const city = cityCheck.cityId;
       const requestedRefresh = req.query.refresh === "1";
       if (requestedRefresh) {
         const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
@@ -147,7 +151,7 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
         if (!checkRateLimit(ip, "sync", 3, 10 * 60 * 1000)) {
           const cached = cachedMarketPulseByCity[city];
           if (cached) {
-            res.status(200).json({ ...cached, cacheStatus: "HIT" });
+            res.status(200).json({ ...cached, city, cacheStatus: "HIT" });
             return;
           }
           res.setHeader("Retry-After", "600");
@@ -158,7 +162,7 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
         }
       }
       const pulse = await getOrUpdateMarketPulse(city, requestedRefresh);
-      res.status(200).json(pulse);
+      res.status(200).json({ ...pulse, city });
     } catch {
       res.status(500).json({ status: "error", code: "MARKET_PULSE_FAILED", message: "خطا در دریافت نبض بازار مسکن." });
     }
@@ -183,9 +187,14 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
       return;
     }
     try {
-      const city = validateCityParam(req.body?.city ?? req.query.city, "tehran");
+      const cityCheck = resolveCityParamOrReject(req.body?.city ?? req.query.city, { allowOmittedDefault: "tehran" });
+      if (!cityCheck.ok) {
+        res.status(400).json({ status: "error", code: cityCheck.code, message: cityCheck.messageFa });
+        return;
+      }
+      const city = cityCheck.cityId;
       const pulse = await executeDeepMonitoringCycle(city, true);
-      res.status(200).json({ ...pulse, pulse });
+      res.status(200).json({ ...pulse, city, pulse });
     } catch {
       pushAuditLog("WARN", "اجرای همگامسازی عمیق بازار با خطا مواجه شد.");
       res.status(500).json({
@@ -197,7 +206,9 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
   app.get("/api/air-quality", async (req, res) => {
     try {
       if (!checkRateLimit(getClientIp(req), "general", 60, 60 * 1000)) { res.status(429).json({ status: "error", code: "RATE_LIMIT_EXCEEDED", message: "تعداد درخواست‌ها بیش از حد مجاز است." }); return; }
-      const city = validateCityParam(req.query.city, "tehran"); const pulse = await getOrUpdateMarketPulse(city, false);
+      const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: "tehran" });
+      if (!cityCheck.ok) { res.status(400).json({ status: "error", code: cityCheck.code, message: cityCheck.messageFa }); return; }
+      const city = cityCheck.cityId; const pulse = await getOrUpdateMarketPulse(city, false);
       const cityZones = CITY_AIR_STATIONS[city] || CITY_AIR_STATIONS.tehran; const totalStations = Object.keys(cityZones).length;
       const successfulStations = airQualityStationSuccessCount[city] ?? 0;
       const sourceStatus = lastAirQualityFetchSucceeded[city] === true ? "LIVE_OR_PARTIAL" : lastAirQualityFetchMs[city] ? "STALE" : "SEED";
@@ -243,7 +254,8 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
     });
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    const serveProdIndex = (req: express.Request, res: express.Response, notFoundMsg: string) => {
+    const serveProdIndex = (req: express.Request, res: express.Response, notFoundMsg: string, next?: express.NextFunction) => {
+      if (req.path.startsWith("/api/")) { if (next) return next(); res.status(404).setHeader("Cache-Control", "no-store").json({ status: "error", code: "API_ROUTE_NOT_FOUND", message: "مسیر API درخواستی وجود ندارد." }); return; }
       if (isStaticAssetPath(req.path)) {
         res.status(404).setHeader("Cache-Control", "no-store").send("Asset Not Found");
         return;
@@ -259,19 +271,20 @@ async function startServer() { console.log("[DIAGNOSTIC BOOTSTRAP] Initializing 
       res.status(404).send(notFoundMsg);
     };
     app.get("/", (req, res) => serveProdIndex(req, res, "Build artifacts not found"));
-    app.use(
-      express.static(distPath, {
-        setHeaders: (res, filePath) => {
-          const relPath = "/" + path.relative(distPath, filePath).replace(/\\/g, "/");
-          const policy = classifyStaticAssetCachePolicy(relPath);
-          res.setHeader("Cache-Control", policy.cacheControl);
-        },
-      })
-    );
-    app.get("*all", (req, res) => serveProdIndex(req, res, "Not Found"));
+    app.use(express.static(distPath, { setHeaders: (res, filePath) => { const relPath = "/" + path.relative(distPath, filePath).replace(/\\/g, "/"); res.setHeader("Cache-Control", classifyStaticAssetCachePolicy(relPath).cacheControl); } }));
+    app.get("*", (req, res, next) => serveProdIndex(req, res, "Not Found", next));
   }
+  app.use("/api", (_req, res) => { res.setHeader("Cache-Control", "no-store"); res.status(404).json({ status: "error", code: "API_ROUTE_NOT_FOUND", message: "مسیر API درخواستی وجود ندارد." }); });
   app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    if (err instanceof SyntaxError && "status" in err && (err as { status: number }).status === 400) {
+    const errObj = typeof err === "object" && err !== null ? (err as { status?: number; statusCode?: number; type?: string }) : null;
+    if (errObj && (errObj.status === 413 || errObj.statusCode === 413 || errObj.type === "entity.too.large")) {
+      if (!res.headersSent) {
+        res.setHeader("Cache-Control", "no-store");
+        res.status(413).json({ status: "error", code: "PAYLOAD_TOO_LARGE", message: "حجم بدنه درخواست بیش از حد مجاز است." });
+      }
+      return;
+    }
+    if (err instanceof SyntaxError && errObj?.status === 400) {
       if (!res.headersSent) {
         res.setHeader("Cache-Control", "no-store");
         res.status(400).json({ status: "error", code: "INVALID_JSON_BODY", message: "ساختار بدنه درخواست نامعتبر است." });

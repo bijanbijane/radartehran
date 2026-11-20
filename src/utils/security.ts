@@ -214,7 +214,7 @@ export function buildSponsorWhatsAppUrl(
   const cleanBudget = sanitizeInput(budgetSummary, 80);
   const dealLabel = mode === 'rent' ? 'رهن و اجاره' : 'خرید آپارتمان';
   const intlNote = intlCurrency !== 'IRT' && referenceValuationMillionToman > 0 ? ` [${formatAreaUnitLabel(areaUnit)} | ${formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en')}]` : '';
-  const message = `سلام، از طریق سامانه «رادار مسکن» جهت استعلام فایلهای ${dealLabel} در محله ${cleanHood} (${cleanBudget})${intlNote} پیام میدهم.`;
+  const message = `سلام، از طریق سامانه «رادارتهران» جهت استعلام فایلهای ${dealLabel} در محله ${cleanHood} (${cleanBudget})${intlNote} پیام میدهم.`;
   const digits = normalizeDigitsToEnglish(phone).replace(/[^0-9]/g, '');
   return /^0\d{9,10}$/.test(digits)
     ? `https://wa.me/98${digits.slice(1)}?text=${encodeURIComponent(message)}`

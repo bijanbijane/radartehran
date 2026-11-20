@@ -111,9 +111,12 @@ export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesO
     });
   });
 
-  app.get('/api/knowledge/publications/:id/status', (req: Request, res: Response) => {
+  app.get('/api/knowledge/publications/:id/status', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    const pub = getServerPublicationBySlugOrId(req.params.id, { includeNonPublic: true });
+    const adminAuth = req.headers.authorization
+      ? await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>)
+      : { authorized: false };
+    const pub = getServerPublicationBySlugOrId(req.params.id, { includeNonPublic: Boolean(adminAuth.authorized) });
     if (!pub) {
       res.status(404).json({ status: 'error', code: 'PUBLICATION_NOT_FOUND' });
       return;
@@ -282,7 +285,7 @@ export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesO
       return;
     }
     const toStatus = req.body?.toStatus as KnowledgePublicationStatus;
-    const actorUserId = String(req.body?.actorUserId || 'admin-release-manager');
+    const actorUserId = auth.email || auth.uid || 'admin-release-manager';
     const actorRole = (req.body?.actorRole || 'release_manager') as KnowledgeEditorialRole;
     const reasonFa = String(req.body?.reasonFa || '');
 
@@ -322,7 +325,7 @@ export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesO
       changelogFa: String(req.body?.changelogFa || ''),
       titleFa: req.body?.titleFa ? String(req.body.titleFa) : undefined,
       summaryFa: req.body?.summaryFa ? String(req.body.summaryFa) : undefined,
-      actorUserId: String(req.body?.actorUserId || 'admin-release-manager'),
+      actorUserId: auth.email || auth.uid || 'admin-release-manager',
       actorRole: (req.body?.actorRole || 'release_manager') as KnowledgeEditorialRole,
     });
     if (!result.ok) {
@@ -342,7 +345,7 @@ export function registerKnowledgeRoutes(app: Express, options?: KnowledgeRoutesO
     const result = transitionServerKnowledgeCorrectionStatus({
       correctionId: req.params.id,
       nextStatus: req.body?.nextStatus as KnowledgeCorrectionStatus,
-      actorUserId: String(req.body?.actorUserId || 'admin-reviewer'),
+      actorUserId: auth.email || auth.uid || 'admin-reviewer',
       noteFa: String(req.body?.noteFa || ''),
       appliedInVersion: req.body?.appliedInVersion ? String(req.body.appliedInVersion) : undefined,
     });

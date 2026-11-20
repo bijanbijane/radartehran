@@ -57,14 +57,21 @@ export function registerAccountAdminRoutes(
       requestedMode === 'listings_owner' || requestedMode === 'service_provider' || requestedMode === 'personal'
         ? requestedMode
         : curr.activeWorkspaceMode;
+    type RoleCap = 'seeker' | 'owner' | 'advisor' | 'provider';
+    const allowedRoles = new Set<RoleCap>(['seeker', 'owner', 'advisor', 'provider']);
+    const rawRoles: unknown[] = Array.isArray(req.body?.activeRoles) ? req.body.activeRoles : [];
+    const sanitizedRoles: RoleCap[] = Array.from(
+      new Set<RoleCap>(rawRoles.filter((r): r is RoleCap => typeof r === 'string' && allowedRoles.has(r as RoleCap))),
+    ).slice(0, 4);
+    const reqPurpose = req.body?.preferredPurpose;
     const next = {
       ...curr,
       displayName: sanitizeInput(String(req.body?.displayName ?? curr.displayName), 60) || curr.displayName,
       preferredCityId: typeof req.body?.preferredCityId === 'string' ? sanitizeInput(req.body.preferredCityId, 24) : curr.preferredCityId,
-      preferredPurpose: req.body?.preferredPurpose === 'rent' || req.body?.preferredPurpose === 'invest' ? req.body.preferredPurpose : curr.preferredPurpose,
+      preferredPurpose: reqPurpose === 'buy' || reqPurpose === 'rent' || reqPurpose === 'invest' ? reqPurpose : curr.preferredPurpose,
       activeWorkspaceMode: validWorkspaceMode,
       // Authoritative tier stays server-side; self-declared roles stay strictly descriptive
-      activeRoles: Array.isArray(req.body?.activeRoles) ? req.body.activeRoles.slice(0, 4) : curr.activeRoles,
+      activeRoles: sanitizedRoles.length > 0 ? sanitizedRoles : curr.activeRoles,
       version: curr.version + 1,
       updatedAtIso: new Date().toISOString(),
     };
@@ -94,7 +101,22 @@ export function registerAccountAdminRoutes(
       profileVisibility: 'masked_for_requests' as const, sharePhoneOnlyAfterConsent: true, receiveMarketingUpdates: false,
       storeSearchHistoryLocally: true, privacySafeTelemetryEnabled: true, updatedAtIso: new Date().toISOString(),
     };
-    const next = { ...curr, ...(req.body || {}), updatedAtIso: new Date().toISOString() };
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? (req.body as Record<string, unknown>) : {};
+    const next = {
+      profileVisibility:
+        body.profileVisibility === 'private' || body.profileVisibility === 'masked_for_requests'
+          ? body.profileVisibility
+          : curr.profileVisibility,
+      sharePhoneOnlyAfterConsent:
+        typeof body.sharePhoneOnlyAfterConsent === 'boolean' ? body.sharePhoneOnlyAfterConsent : curr.sharePhoneOnlyAfterConsent,
+      receiveMarketingUpdates:
+        typeof body.receiveMarketingUpdates === 'boolean' ? body.receiveMarketingUpdates : curr.receiveMarketingUpdates,
+      storeSearchHistoryLocally:
+        typeof body.storeSearchHistoryLocally === 'boolean' ? body.storeSearchHistoryLocally : curr.storeSearchHistoryLocally,
+      privacySafeTelemetryEnabled:
+        typeof body.privacySafeTelemetryEnabled === 'boolean' ? body.privacySafeTelemetryEnabled : curr.privacySafeTelemetryEnabled,
+      updatedAtIso: new Date().toISOString(),
+    };
     state.privacyByUid[auth.uid] = next;
     saveAccountAdminState();
     res.status(200).json({ status: 'ok', privacy: next });
@@ -169,11 +191,16 @@ export function registerAccountAdminRoutes(
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     const principal = resolveAuthoritativeAdminPrincipal({ uid: auth.uid, email: auth.email, authReason: auth.reason });
+    const allowedAuditTargets = new Set(['listing', 'provider', 'complaint', 'market_data', 'feature_flag', 'security_op'] as const);
+    const rawTargetType = typeof req.body?.targetType === 'string' ? req.body.targetType : 'security_op';
+    const targetType = allowedAuditTargets.has(rawTargetType as 'listing' | 'provider' | 'complaint' | 'market_data' | 'feature_flag' | 'security_op')
+      ? (rawTargetType as 'listing' | 'provider' | 'complaint' | 'market_data' | 'feature_flag' | 'security_op')
+      : 'security_op';
     const entry = appendServerAdminAuditLog({
       actorRole: principal.role,
       actorLabelFa: auth.email || principal.labelFa,
       actionCode: sanitizeInput(String(req.body?.actionCode || 'ADMIN_EVENT'), 64),
-      targetType: (req.body?.targetType || 'security_op') as 'listing' | 'provider' | 'complaint' | 'market_data' | 'feature_flag' | 'security_op',
+      targetType,
       targetId: sanitizeInput(String(req.body?.targetId || ''), 80),
       reasonFa: sanitizeInput(String(req.body?.reasonFa || ''), 240),
       severity: req.body?.severity === 'critical' || req.body?.severity === 'warning' ? req.body.severity : 'info',

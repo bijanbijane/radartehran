@@ -28,8 +28,6 @@
     "dist",
     "node_modules",
     "server/modules/**/__tests__",
-    "server/modules/**/tests",
-    "tests/casper-hub-client.test.ts",
-    "tests/casper-hub-integration.test.ts"
+    "server/modules/**/tests"
   ]
 }

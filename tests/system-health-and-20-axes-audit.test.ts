@@ -1,14 +1,13 @@
 /**
  * @file tests/system-health-and-20-axes-audit.test.ts
  * @description End-to-end unit & composite failure tests for the Settings System Health Dashboard
- * (Firebase, Casper Hub, Cloud Databases) and the 20 debugging axes (Failure UX, Resource Leaks,
+ * (Firebase & Cloud Databases) and the 20 debugging axes (Failure UX, Resource Leaks,
  * Concurrency Deduplication, Config Drift, and Composite Network/Auth/DB Failure Scenarios).
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   classifyLatencyBand,
-  computeCompositeSystemHealth,
   executeLiveSystemHealthProbes,
 } from '../src/features/account/services/systemHealthProbeService';
 
@@ -32,7 +31,7 @@ describe('Settings System Health Dashboard & 20-Axis Composite Failure Audit', (
     });
   });
 
-  it('probes Firebase, Casper Hub, and Cloud Databases with measured latency (ms) when all services are online', async () => {
+  it('probes Firebase and Cloud Databases with measured latency (ms) when all services are online', async () => {
     const snapshot = await executeLiveSystemHealthProbes({
       browserOnline: true,
       probeFirebaseFn: async () => ({
@@ -50,7 +49,8 @@ describe('Settings System Health Dashboard & 20-Axis Composite Failure Audit', (
               probe: 'readiness',
               state: 'ready',
               services: {
-                casperHub: { reachable: true, configured: true, agentId: 'CASPER-05' },
+                firebase: { configured: true },
+                cloudDatabase: { d1Ready: true, objectStorageReady: true },
               },
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -72,10 +72,9 @@ describe('Settings System Health Dashboard & 20-Axis Composite Failure Audit', (
     assert.equal(snapshot.overallScorePct, 100);
     assert.equal(snapshot.services.firebase.status, 'online');
     assert.equal(snapshot.services.firebase.latencyMs, 38);
-    assert.equal(snapshot.services.casperHub.status, 'online');
-    assert.ok(typeof snapshot.services.casperHub.latencyMs === 'number' && snapshot.services.casperHub.latencyMs >= 1);
     assert.equal(snapshot.services.cloudDatabase.status, 'online');
     assert.ok(snapshot.services.cloudDatabase.detailFa.includes('Cloudflare R2 + D1'));
+    assert.ok(!('casperHub' in snapshot.services), 'casperHub must be completely removed from system health services');
     assert.ok(typeof snapshot.averageLatencyMs === 'number' && snapshot.averageLatencyMs >= 1);
   });
 
@@ -96,10 +95,9 @@ describe('Settings System Health Dashboard & 20-Axis Composite Failure Audit', (
     assert.equal(offlineSnapshot.overallScorePct, 0);
     assert.equal(offlineSnapshot.averageLatencyMs, null);
     assert.equal(offlineSnapshot.services.firebase.status, 'offline');
-    assert.equal(offlineSnapshot.services.casperHub.status, 'offline');
     assert.equal(offlineSnapshot.services.cloudDatabase.status, 'offline');
 
-    // Composite partial degradation: Firebase in local cache mode + Casper Hub standby + Object storage timeout
+    // Composite partial degradation: Firebase in local cache mode + Object storage timeout
     const degradedSnapshot = await executeLiveSystemHealthProbes({
       browserOnline: true,
       probeFirebaseFn: async () => ({
@@ -114,7 +112,7 @@ describe('Settings System Health Dashboard & 20-Axis Composite Failure Audit', (
           return new Response(
             JSON.stringify({
               ok: true,
-              services: { casperHub: { reachable: true, configured: false } },
+              services: { firebase: { configured: true }, cloudDatabase: { d1Ready: true } },
             }),
             { status: 200 },
           );
@@ -125,7 +123,6 @@ describe('Settings System Health Dashboard & 20-Axis Composite Failure Audit', (
 
     assert.equal(degradedSnapshot.overallStatus, 'degraded');
     assert.equal(degradedSnapshot.services.firebase.status, 'degraded');
-    assert.equal(degradedSnapshot.services.casperHub.status, 'degraded');
     assert.equal(degradedSnapshot.services.cloudDatabase.status, 'degraded');
     assert.equal(degradedSnapshot.overallScorePct, 65);
   });

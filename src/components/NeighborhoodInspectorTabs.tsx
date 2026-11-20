@@ -32,7 +32,7 @@ export function NeighborhoodInspectorTabs(props: NeighborhoodInspectorTabsProps)
         <div className="p-2.5 rounded-xl bg-gradient-to-l from-indigo-50/90 to-emerald-50/90 dark:from-indigo-950/40 dark:to-emerald-950/40 border border-indigo-200/60 dark:border-indigo-800/40 flex flex-wrap items-center justify-between gap-2 shadow-xs">
           <div className="flex items-start gap-2 min-w-0 flex-1">
             <span className="p-1 rounded-lg bg-indigo-600 text-white shrink-0 mt-0.5"><Sparkles className="w-3.5 h-3.5" /></span>
-            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-snug">سنتز ارزش کسپر: <strong className="text-indigo-700 dark:text-indigo-300">نسبت کیفیت به قیمت {toPersianNum(selectedHood.overallScore)}/۱۰</strong> (متری {toPersianNum(selectedHood.buyPerSqm)} م)</div>
+            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-snug">جمع‌بندی ارزش محله: <strong className="text-indigo-700 dark:text-indigo-300">نسبت کیفیت به قیمت {toPersianNum(selectedHood.overallScore)}/۱۰</strong> (متری {toPersianNum(selectedHood.buyPerSqm)} م)</div>
           </div>
           <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600/15 text-emerald-800 dark:text-emerald-300">{selectedHood.overallScore >= 8 ? 'مازاد رفاه بالا' : 'تعادل بازار'}</span>
         </div>

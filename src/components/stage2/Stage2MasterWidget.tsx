@@ -55,7 +55,7 @@ const STAGE2_DOMAINS: { id: Stage2DomainId; label: string }[] = [
 ];
 
 const STAGE2_TABS: { id: Stage2ActiveTab; domain: Stage2DomainId; label: string; shortLabel: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'DECISION_SYNTHESIS', domain: 'SYNTHESIS', label: 'حکم نهایی و آمادگی معامله (کسپر)', shortLabel: 'حکم نهایی کسپر', icon: Award },
+  { id: 'DECISION_SYNTHESIS', domain: 'SYNTHESIS', label: 'حکم نهایی و آمادگی معامله', shortLabel: 'حکم نهایی', icon: Award },
   { id: 'EPISTEMIC_PROVENANCE', domain: 'SYNTHESIS', label: 'تفکیک معرفتی و منشأ داده', shortLabel: 'تفکیک معرفتی', icon: Scale },
   { id: 'SPATIAL_CONTAGION', domain: 'SYNTHESIS', label: 'سرایت فضایی و شاخص آکرلوف', shortLabel: 'سرایت و آکرلوف', icon: Network },
   { id: 'PARETO_REGRET', domain: 'ARBITRAGE', label: 'ماتریس پشیمانی و آربیتراژ پارتو', shortLabel: 'پشیمانی و پارتو', icon: Compass },
@@ -186,7 +186,7 @@ export const Stage2MasterWidget: React.FC<Stage2MasterWidgetProps> = ({
 
         <div
           role="tablist"
-          aria-label="زبانه‌های موتور تصمیم‌یار معرفتی کسپر"
+          aria-label="زبانه‌های موتور تصمیم‌یار مسکن"
           className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700"
         >
           {domainTabs.map((tab, idx) => {

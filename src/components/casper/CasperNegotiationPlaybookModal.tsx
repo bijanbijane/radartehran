@@ -86,7 +86,7 @@ export function CasperNegotiationPlaybookModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="سلاح چانه‌زنی کسپر پای میز نشست"
+      aria-label="راهنمای چانه‌زنی پای میز نشست"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn"
       onClick={onClose}
     >
@@ -105,7 +105,7 @@ export function CasperNegotiationPlaybookModal({
             </div>
             <div>
               <h2 className="text-base font-black text-slate-900 dark:text-white">
-                سلاح چانه‌زنی کسپر پای میز نشست
+                راهنمای چانه‌زنی پای میز نشست
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 استدلال مستند فنی برای شکستن حباب قیمت آگهی در محله {hoodName}
@@ -176,7 +176,7 @@ export function CasperNegotiationPlaybookModal({
         {/* Action Buttons */}
         <div className="flex items-center justify-between gap-3 pt-2">
           <p className="text-[11px] text-slate-400">
-            قانون طلایی کسپر: پیشنهاد اول را شما تعیین کنید تا لنگر مذاکره به نفع شما قفل شود.
+            قانون طلایی مذاکره: پیشنهاد اول را شما تعیین کنید تا لنگر مذاکره به نفع شما قفل شود.
           </p>
           <button
             type="button"

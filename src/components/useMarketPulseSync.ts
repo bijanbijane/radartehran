@@ -115,8 +115,9 @@ export function useMarketPulseSync({
         if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current) return;
         if (res.ok && activeCityRef.current === targetCity) {
           const data: MarketPulseData = await res.json();
-          if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current || activeCityRef.current !== targetCity) return;
-          ui.setMarketPulse(data);
+          const payloadCity = typeof (data as { city?: unknown }).city === 'string' ? (data as { city?: string }).city : targetCity;
+          if (controller.signal.aborted || !isMountedRef.current || seq !== pulseSeqRef.current || activeCityRef.current !== targetCity || payloadCity !== targetCity) return;
+          ui.setMarketPulse({ ...data, city: targetCity } as MarketPulseData);
           if (Array.isArray(data.hoodLiveSnapshots) && data.hoodLiveSnapshots.length > 0) {
             const snapshotMap = new Map(data.hoodLiveSnapshots.map((s) => [Number(s.id), s]));
             const customIds = new Set<number>(activeCloudOverrideHoodIds);
@@ -223,6 +224,7 @@ export function useMarketPulseSync({
 
   useEffect(() => {
     activeCityRef.current = ui.activeCity;
+    ui.setMarketPulse((prev) => (prev && (prev as { city?: string }).city === ui.activeCity ? prev : null));
     pruneLocalCache(50);
     void fetchMarketPulse(false, ui.activeCity);
     // [RULE-02] Stale-While-Revalidate (SWR) polling interval (5 minutes = 300_000ms)

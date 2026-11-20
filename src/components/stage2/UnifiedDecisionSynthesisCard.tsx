@@ -241,7 +241,7 @@ export const UnifiedDecisionSynthesisCard: React.FC<UnifiedDecisionSynthesisCard
       <div className="p-2.5 rounded-lg bg-indigo-50/30 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-2">
         <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong>رهنمود مهندسی کسپر:</strong> تصمیم‌گیری عقلانی در مسکن حاصل برهم‌کنش ریاضی سناریوی فرضی مذاکره (v6.4 · غیرثبتی)، نقدشوندگی، تقارن اطلاعاتی و رژیم تورم کلان است. با کلیک روی هر یک از ۶ ضلع بالا، وارد میز کار تخصصی همان مدل شوید.
+          <strong>رهنمود تحلیلی رادار:</strong> تصمیم‌گیری عقلانی در مسکن حاصل برهم‌کنش ریاضی سناریوی فرضی مذاکره (v6.4 · غیرثبتی)، نقدشوندگی، تقارن اطلاعاتی و رژیم تورم کلان است. با کلیک روی هر یک از ۶ ضلع بالا، وارد میز کار تخصصی همان مدل شوید.
         </p>
       </div>
     </div>

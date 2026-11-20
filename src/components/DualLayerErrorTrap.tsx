@@ -155,7 +155,7 @@ class RenderPhaseErrorBoundary extends React.Component<
               !
             </div>
             <h2 className="text-lg font-extrabold text-rose-700 dark:text-rose-400">
-              محافظ خطای رندر (رادار مسکن تهران)
+              محافظ خطای رندر (رادارتهران)
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
               واحد فعال: {formatAreaUnitLabel(activeUnit)} ({toPersianNum(refUnitBuy)} م) · ارز: {activeCurrency}

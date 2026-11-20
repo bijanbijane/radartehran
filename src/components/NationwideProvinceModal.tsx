@@ -269,7 +269,7 @@ export function NationwideProvinceModal({
         {/* Footer */}
         <div className="p-3 bg-slate-50/80 dark:bg-slate-900 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
           <span>
-            پوشش جامع ۳۱ استان و {toPersianNum(allNationwideHoods.length)} محله و شهر فعال در سامانه رادار مسکن کشور
+            پوشش جامع ۳۱ استان و {toPersianNum(allNationwideHoods.length)} محله و شهر فعال در سامانه رادارتهران
           </span>
           <button
             type="button"

@@ -70,7 +70,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
   const handleSelectHood2 = (rawVal: string) => { const newId = validateNeighborhoodId(rawVal, 5); if (newId === compareId1) setCompareId1(compareId2); setCompareId2(newId); };
   const handleCopySummary = async () => {
     try {
-      const summaryText = `رادار مسکن: مقایسه ${compHood1.name} با ${compHood2.name}\n` +
+      const summaryText = `رادارتهران: مقایسه ${compHood1.name} با ${compHood2.name}\n` +
         `• بودجه: ${toPersianNum(activeBudgetMillion)} م.ت\n` +
         `• متراژ قابل تامین: ${formatAreaValue(summaryStats.sqm1, areaUnit)} در برابر ${formatAreaValue(summaryStats.sqm2, areaUnit)} (اختلاف: ${formatAreaValue(summaryStats.diffSqm, areaUnit)})\n` +
         `• قیمت متری: ${toPersianNum(summaryStats.uSpread)} م.ت اختلاف\n` +

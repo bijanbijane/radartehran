@@ -374,7 +374,7 @@ export function ContractRoomShieldModal({
         </div>
 
         <div className="px-5 py-3 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between text-xs text-slate-400">
-          <span>رادار مسکن · سنگر بی‌طرف خریدار</span>
+          <span>رادارتهران · سنگر بی‌طرف خریدار</span>
           <button type="button" onClick={onClose} className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium transition-colors cursor-pointer">
             بستن پنجره
           </button>

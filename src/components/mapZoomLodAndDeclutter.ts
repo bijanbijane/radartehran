@@ -16,152 +16,109 @@ export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], 
     };
   });
 }
+export function formatCompactNeighborhoodName(name: string): string {
+  const cleaned = String(name || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+  const primary = cleaned.split(/\s+و\s+|[/،]/)[0]?.trim() || cleaned;
+  return primary.length > 14 ? `${primary.slice(0, 13)}…` : primary;
+}
+export function estimateLodPillSize(params: {
+  tier: MarkerVisualTier; hoodName: string; shortPriceLabel?: string; fullPriceLabel?: string; hasSponsor?: boolean;
+}): { w: number; h: number } {
+  const { tier, hoodName, shortPriceLabel = '', fullPriceLabel = '', hasSponsor = false } = params;
+  if (tier === 'dot') return { w: 20, h: 20 };
+  if (tier === 'compact_chip') {
+    const labelLen = formatCompactNeighborhoodName(hoodName).length + shortPriceLabel.length;
+    return { w: Math.max(82, Math.ceil(labelLen * 6.2 + (hasSponsor ? 14 : 0) + 22)), h: 21 };
+  }
+  if (tier === 'detailed_pill') {
+    const labelLen = hoodName.length + (fullPriceLabel || shortPriceLabel).length;
+    return { w: Math.max(148, Math.ceil(labelLen * 6.6 + (hasSponsor ? 16 : 0) + 76)), h: 26 };
+  }
+  const labelLen = hoodName.length + shortPriceLabel.length;
+  return { w: Math.max(100, Math.ceil(labelLen * 6.6 + (hasSponsor ? 15 : 0) + 26)), h: 23 };
+}
 export function computeDeclutteredMarkerTiers(
-  map: any,
-  visibleHoods: EvaluatedNeighborhood[],
-  zoom: number,
-  selectedHoodId: number | null,
-  isSponsorCheck: (hood: EvaluatedNeighborhood) => boolean
+  map: any, visibleHoods: EvaluatedNeighborhood[], zoom: number, selectedHoodId: number | null,
+  isSponsorCheck: (hood: EvaluatedNeighborhood) => boolean,
+  priceLabelsById?: Map<number, { shortPriceLabel: string; fullPriceLabel: string }>
 ): Map<number, MarkerVisualTier> {
   const result = new Map<number, MarkerVisualTier>();
-  if (zoom < 12) {
-    for (const h of visibleHoods) {
-      result.set(h.id, 'dot');
-    }
-    return result;
-  }
+  if (zoom < 12) { for (const h of visibleHoods) result.set(h.id, 'dot'); return result; }
   const prioritized = [...visibleHoods].sort((a, b) => {
-    if (a.id === selectedHoodId) return -1;
-    if (b.id === selectedHoodId) return 1;
-    const spA = isSponsorCheck(a) ? 1 : 0;
-    const spB = isSponsorCheck(b) ? 1 : 0;
-    if (spA !== spB) return spB - spA;
-    return b.overallScore - a.overallScore;
+    if (a.id === selectedHoodId) return -1; if (b.id === selectedHoodId) return 1;
+    const spA = isSponsorCheck(a) ? 1 : 0; const spB = isSponsorCheck(b) ? 1 : 0;
+    return spA !== spB ? spB - spA : b.overallScore - a.overallScore;
   });
   const placedBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
-  const markerSizes: Record<Exclude<MarkerVisualTier, 'dot'>, { w: number; h: number }> = {
-    compact_chip: { w: 82, h: 21 },
-    standard_pill: { w: 100, h: 23 },
-    detailed_pill: { w: 148, h: 26 },
-  };
-  const horizontalGap = 8;
-  const verticalGap = 6;
+  const horizontalGap = 8, verticalGap = 6;
   const canPlaceBox = (x: number, y: number, w: number, h: number): boolean => {
     for (const box of placedBoxes) {
-      if (Math.abs(x - box.x) * 2 < w + box.w && Math.abs(y - box.y) * 2 < h + box.h) {
-        return false;
-      }
+      if (Math.abs(x - box.x) * 2 < w + box.w && Math.abs(y - box.y) * 2 < h + box.h) return false;
     }
     return true;
   };
-  const markerBox = (tier: Exclude<MarkerVisualTier, 'dot'>) => ({
-    w: markerSizes[tier].w + horizontalGap,
-    h: markerSizes[tier].h + verticalGap,
-  });
-  const registerMarker = (x: number, y: number, tier: Exclude<MarkerVisualTier, 'dot'>) => {
-    const box = markerBox(tier);
-    placedBoxes.push({ x, y, ...box });
+  const markerBox = (hood: EvaluatedNeighborhood, tier: Exclude<MarkerVisualTier, 'dot'>, hasSponsor: boolean) => {
+    const lbl = priceLabelsById?.get(hood.id);
+    const sz = lbl
+      ? estimateLodPillSize({ tier, hoodName: hood.name, shortPriceLabel: lbl.shortPriceLabel, fullPriceLabel: lbl.fullPriceLabel, hasSponsor })
+      : tier === 'compact_chip' ? { w: 82, h: 21 } : tier === 'standard_pill' ? { w: 100, h: 23 } : { w: 148, h: 26 };
+    return { w: sz.w + horizontalGap, h: sz.h + verticalGap };
   };
   for (const hood of prioritized) {
     const isSelected = hood.id === selectedHoodId;
+    const hasSponsor = isSponsorCheck(hood);
     let pt = { x: hood.lng * 1000, y: hood.lat * 1000 };
     try {
       if (map && typeof map.latLngToContainerPoint === 'function') {
         const p = map.latLngToContainerPoint([hood.lat, hood.lng]);
-        if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) {
-          pt = { x: p.x, y: p.y };
-        }
+        if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) pt = { x: p.x, y: p.y };
       }
-    } catch {
-    }
+    } catch { }
     if (isSelected) {
       const tier: MarkerVisualTier = zoom >= 14 ? 'detailed_pill' : 'standard_pill';
-      registerMarker(pt.x, pt.y, tier);
-      result.set(hood.id, tier);
-      continue;
+      const box = markerBox(hood, tier, hasSponsor);
+      placedBoxes.push({ x: pt.x, y: pt.y, ...box });
+      result.set(hood.id, tier); continue;
     }
-    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = zoom < 13
-      ? ['compact_chip']
-      : zoom < 14
-        ? ['standard_pill', 'compact_chip']
-        : ['detailed_pill', 'standard_pill', 'compact_chip'];
+    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = zoom < 13 ? ['compact_chip'] : zoom < 14 ? ['standard_pill', 'compact_chip'] : ['detailed_pill', 'standard_pill', 'compact_chip'];
     let placed = false;
     for (const tier of candidateTiers) {
-      const box = markerBox(tier);
+      const box = markerBox(hood, tier, hasSponsor);
       if (!canPlaceBox(pt.x, pt.y, box.w, box.h)) continue;
-      registerMarker(pt.x, pt.y, tier);
-      result.set(hood.id, tier);
-      placed = true;
-      break;
+      placedBoxes.push({ x: pt.x, y: pt.y, ...box });
+      result.set(hood.id, tier); placed = true; break;
     }
     if (!placed) result.set(hood.id, 'dot');
   }
   return result;
 }
 export function buildNeighborhoodLodDivIconConfig(params: {
-  hood: EvaluatedNeighborhood;
-  tier: MarkerVisualTier;
-  zoom: number;
-  isSelected: boolean;
-  hasSponsor: boolean;
-  isDarkMap: boolean;
-  pillBg: string;
-  stroke: string;
-  shortPriceLabel: string;
-  fullPriceLabel: string;
+  hood: EvaluatedNeighborhood; tier: MarkerVisualTier; zoom: number; isSelected: boolean; hasSponsor: boolean;
+  isDarkMap: boolean; pillBg: string; stroke: string; shortPriceLabel: string; fullPriceLabel: string;
 }): { html: string; iconSize: [number, number]; iconAnchor: [number, number] } {
-  const {
-    hood, tier, zoom, isSelected, hasSponsor, isDarkMap,
-    pillBg, stroke, shortPriceLabel, fullPriceLabel,
-  } = params;
+  const { hood, tier, zoom, isSelected, hasSponsor, isDarkMap, pillBg, stroke, shortPriceLabel, fullPriceLabel } = params;
   const safeHoodName = escapeHtmlAttr(hood.name);
   const safeShortPrice = escapeHtmlAttr(shortPriceLabel);
   const safeFullPrice = escapeHtmlAttr(fullPriceLabel);
   const safeSponsorName = escapeHtmlAttr(hood.sponsor?.name || '');
   if (tier === 'dot' || zoom < 12) {
     const dotSize = isSelected ? 16 : zoom <= 10 ? 10 : 12;
-    const ringBorder = isSelected
-      ? isDarkMap ? '2.5px solid #38bdf8' : '2.5px solid #0f172a'
-      : hasSponsor
-      ? '2px solid #fbbf24'
-      : isDarkMap
-      ? '2px solid rgba(255,255,255,0.92)'
-      : '2px solid #ffffff';
-    const dotShadow = isSelected
-      ? '0 0 14px rgba(16,185,129,0.95), 0 0 0 4px rgba(56,189,248,0.35)'
-      : `0 2px 6px rgba(0,0,0,0.45), 0 0 0 2px ${stroke}33`;
+    const ringBorder = isSelected ? (isDarkMap ? '2.5px solid #38bdf8' : '2.5px solid #0f172a') : hasSponsor ? '2px solid #fbbf24' : isDarkMap ? '2px solid rgba(255,255,255,0.92)' : '2px solid #ffffff';
+    const dotShadow = isSelected ? '0 0 14px rgba(16,185,129,0.95), 0 0 0 4px rgba(56,189,248,0.35)' : `0 2px 6px rgba(0,0,0,0.45), 0 0 0 2px ${stroke}33`;
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" data-lod-tier="dot" style="display:inline-block;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${pillBg};border:${ringBorder};box-shadow:${dotShadow};transition:transform 0.15s ease;"></span>
-        <span class="hood-text-label" style="display:none;opacity:0;">${safeHoodName}</span>
-        <span class="hood-price-label" style="display:none;opacity:0;"></span>
-      </div>`,
-      iconSize: [dotSize + 8, dotSize + 8],
-      iconAnchor: [(dotSize + 8) / 2, (dotSize + 8) / 2],
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="dot" style="display:inline-block;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${pillBg};border:${ringBorder};box-shadow:${dotShadow};transition:transform 0.15s ease;"></span><span class="hood-text-label" style="display:none;opacity:0;">${safeHoodName}</span><span class="hood-price-label" style="display:none;opacity:0;"></span></div>`,
+      iconSize: [dotSize + 8, dotSize + 8], iconAnchor: [(dotSize + 8) / 2, (dotSize + 8) / 2],
     };
   }
-  const sponsorStar = hasSponsor
-    ? `<span title="دارای کارشناس رسمی محله: ${safeSponsorName}" style="color:#fbbf24;margin-left:2px;font-size:10px;">★</span>`
-    : '';
-  const borderRule = isSelected
-    ? isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a'
-    : hasSponsor ? '1.5px solid #fbbf24'
-    : isDarkMap ? '1px solid rgba(255,255,255,0.7)' : '1px solid rgba(255,255,255,0.55)';
-  const shadowRule = isSelected
-    ? '0 0 16px rgba(16,185,129,0.85)'
-    : '0 2px 7px rgba(15,23,42,0.32)';
+  const sponsorStar = hasSponsor ? `<span title="دارای کارشناس رسمی محله: ${safeSponsorName}" style="color:#fbbf24;margin-left:2px;font-size:10px;">★</span>` : '';
+  const borderRule = isSelected ? (isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a') : hasSponsor ? '1.5px solid #fbbf24' : isDarkMap ? '1px solid rgba(255,255,255,0.7)' : '1px solid rgba(255,255,255,0.55)';
+  const shadowRule = isSelected ? '0 0 16px rgba(16,185,129,0.85)' : '0 2px 7px rgba(15,23,42,0.32)';
+  const sz = estimateLodPillSize({ tier, hoodName: hood.name, shortPriceLabel, fullPriceLabel, hasSponsor });
   if (tier === 'compact_chip') {
-    const truncatedName = hood.name.length > 10 ? `${hood.name.slice(0, 9)}…` : hood.name;
-    const safeTruncName = escapeHtmlAttr(truncatedName);
+    const safeTruncName = escapeHtmlAttr(formatCompactNeighborhoodName(hood.name));
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" data-lod-tier="compact" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.8px;font-weight:800;color:#ffffff;background:${pillBg}e6;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">
-          ${sponsorStar}<span class="hood-text-label">${safeTruncName}</span>
-          <span class="hood-price-label" style="opacity:0.92;font-weight:700;font-size:9.2px;border-right:1px solid rgba(255,255,255,0.3);padding-right:3px;">${safeShortPrice}</span>
-        </span>
-      </div>`,
-      iconSize: [82, 21],
-      iconAnchor: [41, 10],
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="compact" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.8px;font-weight:800;color:#ffffff;background:${pillBg}e6;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeTruncName}</span><span class="hood-price-label" style="opacity:0.92;font-weight:700;font-size:9.2px;border-right:1px solid rgba(255,255,255,0.3);padding-right:3px;">${safeShortPrice}</span></span></div>`,
+      iconSize: [sz.w, sz.h], iconAnchor: [Math.round(sz.w / 2), Math.round(sz.h / 2)],
     };
   }
   if (tier === 'detailed_pill') {
@@ -169,26 +126,13 @@ export function buildNeighborhoodLodDivIconConfig(params: {
     const safeGrowth = escapeHtmlAttr(`${growth6m > 0 ? '+' : ''}${toPersianNum(growth6m)}٪`);
     const safeMetro = escapeHtmlAttr(`مترو ${toPersianNum(hood.metro)}`);
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-        <span data-hood-pill="${hood.id}" data-lod-tier="detailed" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.8px;font-weight:800;color:#ffffff;background:${pillBg}f0;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">
-          ${sponsorStar}<span class="hood-text-label">${safeHoodName}</span>
-          <span class="hood-price-label" style="opacity:0.94;font-weight:700;border-right:1px solid rgba(255,255,255,0.3);padding-right:4px;">${safeFullPrice}</span>
-          <span class="hood-price-label" style="font-size:9.2px;background:rgba(0,0,0,0.22);padding:0.5px 4.5px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span>
-        </span>
-      </div>`,
-      iconSize: [148, 26],
-      iconAnchor: [74, 13],
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="detailed" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.8px;font-weight:800;color:#ffffff;background:${pillBg}f0;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="opacity:0.94;font-weight:700;border-right:1px solid rgba(255,255,255,0.3);padding-right:4px;">${safeFullPrice}</span><span class="hood-price-label" style="font-size:9.2px;background:rgba(0,0,0,0.22);padding:0.5px 4.5px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span></span></div>`,
+      iconSize: [sz.w, sz.h], iconAnchor: [Math.round(sz.w / 2), Math.round(sz.h / 2)],
     };
   }
   return {
-    html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;">
-      <span data-hood-pill="${hood.id}" data-lod-tier="standard" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3.5px;padding:2px 7.5px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.3px;font-weight:800;color:#ffffff;background:${pillBg}eb;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">
-        ${sponsorStar}<span class="hood-text-label">${safeHoodName}</span>
-        <span class="hood-price-label" style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:3.5px;">${safeShortPrice}</span>
-      </span>
-    </div>`,
-    iconSize: [100, 23],
-    iconAnchor: [50, 11],
+    html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="standard" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3.5px;padding:2px 7.5px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.3px;font-weight:800;color:#ffffff;background:${pillBg}eb;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:3.5px;">${safeShortPrice}</span></span></div>`,
+    iconSize: [sz.w, sz.h], iconAnchor: [Math.round(sz.w / 2), Math.round(sz.h / 2)],
   };
 }
 export function buildNeighborhoodRichTooltipHtml(params: {
@@ -201,10 +145,11 @@ export function buildNeighborhoodRichTooltipHtml(params: {
   const total80mMillions = Number(((hood.buyPerSqm * 80) / 1000).toFixed(1)); const monthlyRent80mMillions = Math.round(hood.rahn80m * 0.03);
   const safeBuyFx = intlCurrency !== 'IRT' ? escapeHtmlAttr(` (${formatMillionTomanAsIntlCurrency(unitPrice, intlCurrency, locale)})`) : ''; const safeRahnFx = intlCurrency !== 'IRT' ? escapeHtmlAttr(` (${formatMillionTomanAsIntlCurrency(scaledRahnPill, intlCurrency, locale)})`) : '';
   const titleColor = isDarkMap ? '#34d399' : '#047857'; const scoreBg = isDarkMap ? 'rgba(16,185,129,0.22)' : '#ecfdf5'; const scoreColor = isDarkMap ? '#6ee7b7' : '#065f46'; const bodyTextColor = isDarkMap ? '#e2e8f0' : '#1e293b';
+  const headerZoneText = safeZone.includes('(') ? ` · ${safeZone}` : ` (${safeZone})`;
   return `<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;text-align:right;min-width:215px;padding:3px 2px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(148,163,184,0.25);padding-bottom:4px;margin-bottom:5px;">
-      <strong style="font-size:12.5px;color:${titleColor};">محله ${safeHoodName} (${safeZone})</strong>
-      <span style="background:${scoreBg};color:${scoreColor};padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:800;">${toPersianNum(hood.overallScore)} / ۱۰</span>
+      <strong style="font-size:12.5px;color:${titleColor};">محله ${safeHoodName}${headerZoneText}</strong>
+      <span dir="ltr" style="background:${scoreBg};color:${scoreColor};padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:800;">${toPersianNum(hood.overallScore)} / ۱۰</span>
     </div>
     <div style="font-size:11px;line-height:1.65;color:${bodyTextColor};">
       <div>میانگین خرید (${safeUnitLabel}): <strong>${toPersianNum(unitPrice)} میلیون${safeBuyFx}</strong> (کل: ${toPersianNum(total80mMillions)} میلیارد)</div>

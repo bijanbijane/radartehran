@@ -248,7 +248,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
           <div className="space-y-0.5">
             <div className="font-extrabold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
               <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>پیشنهاد آربیتراژ ایزوکرون کسپر برای شاغلان «{report.commute.workHubName}»: محله {sub.hoodName}</span>
+              <span>پیشنهاد آربیتراژ ایزوکرون رادار برای شاغلان «{report.commute.workHubName}»: محله {sub.hoodName}</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300">
               صرفه‌جویی خالص <strong>{toPersianNum(sub.monthlyTcohSavingsMillion)} م.ت در ماه</strong> در هزینه کل سکونت و تردد + آزادسازی <strong>{toPersianNum(sub.capitalFreed80mMillion)} م.ت</strong> سرمایه خرید {toPersianNum(targetSqm)} متر (زمان تردد: {toPersianNum(sub.oneWayMinutes)} دقیقه).

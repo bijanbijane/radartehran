@@ -84,7 +84,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
           </div>
           <div>
             <h4 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span>تخصیص بهینه دارایی مارکوویتز و پوشش ریسک ابرتورم (کسپر)</span>
+              <span>تخصیص بهینه دارایی مارکوویتز و پوشش ریسک ابرتورم</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">{dossier.hoodName}</span>
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">ماتریس همبستگی ۴ دارایی کلان (مسکن، سکه، دلار و درآمد ثابت ۳۰٪) در اقتصاد ایران</p>
@@ -220,7 +220,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
         </div>
 
         <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-2.5 rounded-md border border-slate-100 dark:border-slate-800">
-          💡 <strong>تحلیل کسپر:</strong> {activeEvaluation.strategicGuidanceFa}
+          💡 <strong>تحلیل رادار:</strong> {activeEvaluation.strategicGuidanceFa}
         </p>
       </div>
 

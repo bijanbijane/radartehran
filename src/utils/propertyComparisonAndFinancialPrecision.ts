@@ -212,8 +212,8 @@ export function buildPublicStructuredDataJsonLd(input: {
     '@context': 'https://schema.org',
     '@type': input.neighborhoodNameFa ? 'Place' : 'WebApplication',
     name: input.neighborhoodNameFa
-      ? `محله ${escapeHtmlAttr(input.neighborhoodNameFa)} (${escapeHtmlAttr(input.cityNameFa)}) — رادار مسکن`
-      : `رادار هوشمند مسکن ${escapeHtmlAttr(input.cityNameFa)}`,
+      ? `محله ${escapeHtmlAttr(input.neighborhoodNameFa)} (${escapeHtmlAttr(input.cityNameFa)}) — رادارتهران`
+      : `رادارتهران | ${escapeHtmlAttr(input.cityNameFa)}`,
     description: input.neighborhoodNameFa
       ? `شاخص‌های قیمت پیشنهادی مسکن، کیفیت هوا و دسترسی محله ${escapeHtmlAttr(input.neighborhoodNameFa)} در ${escapeHtmlAttr(input.cityNameFa)}.`
       : 'سامانه تحلیل مکانی بازار مسکن، مقایسه محلات و ۵۲ ابزار محاسباتی خرید و اجاره.',

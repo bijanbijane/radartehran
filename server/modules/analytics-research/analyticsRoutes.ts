@@ -110,13 +110,25 @@ export function registerAnalyticsResearchRoutes(
     });
   });
 
+  const escapeCsvCell = (raw: unknown): string => {
+    const str = String(raw ?? '');
+    const neutralized = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+    return `"${neutralized.replace(/"/g, '""')}"`;
+  };
+  const sanitizeExportFileName = (rawPlaceId: string | null, fmt: 'csv' | 'json'): string => {
+    const slug = (rawPlaceId || 'market').replace(/[^a-zA-Z0-9_-]/g, '_').replace(/^_+|_+$/g, '').slice(0, 48) || 'market';
+    return `radar-analytics-${slug}.${fmt}`;
+  };
+
   app.post('/api/v1/analytics/exports', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     const placeId = typeof req.body?.placeId === 'string' ? sanitizeInput(req.body.placeId, 64).trim() : null;
     const format = req.body?.format === 'json' ? 'json' : 'csv';
-    const classification = (req.body?.classification || 'PUBLIC') as 'PUBLIC' | 'INTERNAL' | 'RESTRICTED';
+    const rawClassification = req.body?.classification;
+    const classification: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED' =
+      rawClassification === 'INTERNAL' || rawClassification === 'RESTRICTED' ? rawClassification : 'PUBLIC';
     const callerRole: 'PUBLIC_USER' | 'RESEARCHER' | 'ADMIN' = adminAuth.authorized
       ? 'ADMIN'
       : auth.authorized
@@ -139,12 +151,22 @@ export function registerAnalyticsResearchRoutes(
       return;
     }
     const exportId = `exp-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-    const fileName = `radar-analytics-${placeId || 'market'}.${format}`;
+    const fileName = sanitizeExportFileName(placeId, format);
     const contentText = format === 'json'
       ? JSON.stringify({ exportId, placeId, exportedAtIso: new Date().toISOString(), snapshot, periodComparison }, null, 2)
       : [
           'placeId,placeNameFa,metricCode,medianMillionTomanPerSqm,sampleCount,uniqueEntities,boundaryVersion,qualityStatus,limitations',
-          `${snapshot.geography.placeId},"${snapshot.geography.placeNameFa}",${snapshot.metricCode},${snapshot.value ?? ''},${sampleCount},${snapshot.distribution?.uniqueEntityCount ?? 0},${snapshot.geography.boundaryVersion},${snapshot.qualityStatus},"${snapshot.limitationsFa.join(' | ')}"`,
+          [
+            escapeCsvCell(snapshot.geography.placeId),
+            escapeCsvCell(snapshot.geography.placeNameFa),
+            escapeCsvCell(snapshot.metricCode),
+            escapeCsvCell(snapshot.value ?? ''),
+            escapeCsvCell(sampleCount),
+            escapeCsvCell(snapshot.distribution?.uniqueEntityCount ?? 0),
+            escapeCsvCell(snapshot.geography.boundaryVersion),
+            escapeCsvCell(snapshot.qualityStatus),
+            escapeCsvCell(snapshot.limitationsFa.join(' | ')),
+          ].join(','),
         ].join('\n');
     const state = getAnalyticsState();
     state.exportJobs.unshift({
@@ -161,16 +183,40 @@ export function registerAnalyticsResearchRoutes(
     });
   });
 
-  app.get('/api/v1/analytics/exports/:exportId/download', (req: Request, res: Response) => {
-    const job = getAnalyticsState().exportJobs.find((j) => j.exportId === req.params.exportId);
-    if (!job || job.status !== 'READY') {
-      res.status(404).json({ ok: false, errorFa: 'فایل خروجی تحلیلی یافت نشد یا منقضی شده است.' });
-      return;
+  app.get('/api/v1/analytics/exports/:exportId/download', async (req: Request, res: Response) => {
+    try {
+      const job = getAnalyticsState().exportJobs.find((j) => j.exportId === req.params.exportId);
+      if (!job || job.status !== 'READY') {
+        res.status(404).json({ ok: false, errorFa: 'فایل خروجی تحلیلی یافت نشد یا منقضی شده است.' });
+        return;
+      }
+      if (job.datasetClassification !== 'PUBLIC') {
+        const headers = req.headers as Record<string, string | string[] | undefined>;
+        const adminAuth = await verifyAdminApiAuthorization(headers);
+        if (job.datasetClassification === 'RESTRICTED') {
+          if (!adminAuth.authorized) {
+            recordAbuseSignal(deps.getIp(req), 'auth_failure');
+            res.status(adminAuth.statusCode).json({ ok: false, errorFa: 'دانلود خروجی محدود فقط برای مدیر مجاز است.' });
+            return;
+          }
+        } else {
+          const userAuth = await verifyAuthenticatedUserHeader(headers);
+          const isOwner = Boolean(userAuth.authorized && userAuth.uid && userAuth.uid === job.requestedByUid);
+          if (!adminAuth.authorized && !isOwner) {
+            recordAbuseSignal(deps.getIp(req), 'auth_failure');
+            res.status(userAuth.authorized ? 403 : 401).json({ ok: false, errorFa: 'دسترسی به این فایل خروجی داخلی مجاز نیست.' });
+            return;
+          }
+        }
+      }
+      const safeHeaderFileName = String(job.fileName || 'radar-analytics-export.csv').replace(/[^a-zA-Z0-9._-]/g, '_');
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Content-Type', job.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${safeHeaderFileName}"`);
+      res.status(200).send(job.contentText);
+    } catch {
+      if (!res.headersSent) res.status(500).json({ ok: false, errorFa: 'خطا در دانلود فایل خروجی تحلیلی.' });
     }
-    res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('Content-Type', job.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${job.fileName}"`);
-    res.status(200).send(job.contentText);
   });
 
   app.get('/api/v1/research/workspace', async (req: Request, res: Response) => {

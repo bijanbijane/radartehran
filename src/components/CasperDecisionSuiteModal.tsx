@@ -106,7 +106,7 @@ export function CasperDecisionSuiteModal({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 id="casper-modal-title" className="text-base font-black text-slate-900 dark:text-white">دستیار تصمیم‌گیری کسپر (CASPER Engine)</h3>
+                <h3 id="casper-modal-title" className="text-base font-black text-slate-900 dark:text-white">دستیار تصمیم‌گیری هوشمند مسکن</h3>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300">v6.4 معرفت‌شناختی</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">آزمون فرضیات، شبیه‌سازی استرس رکود و خنثی‌سازی خطاهای شناختی</p>
@@ -164,7 +164,7 @@ export function CasperDecisionSuiteModal({
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-2.5">
               <div className="flex items-center justify-between text-xs font-black">
                 <span className="text-slate-900 dark:text-white">نتیجه شبیه‌سازی در سناریوی {stressMetrics.scenarioName}</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10.5px]">تست استرس کسپر</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10.5px]">تست استرس قیمت</span>
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1 text-xs tabular-nums">
                 <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
@@ -206,7 +206,7 @@ export function CasperDecisionSuiteModal({
               </div>
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed bg-white/70 dark:bg-slate-900/70 p-3 rounded-lg border border-slate-200/50 dark:border-slate-800">
-              💡 <strong>تحلیل اقتصادسنجی کسپر:</strong> نسبت رهن به خرید در این محله معادل <strong>{toPersianNum(((selectedHood.rahn80m / (selectedHood.buyPerSqm * 80)) * 100).toFixed(1))}٪</strong> است. در نسبت‌های زیر ۱۸٪، خرید قطعی ارزش مازاد بالاتری دارد.
+              💡 <strong>تحلیل اقتصادسنجی رادار:</strong> نسبت رهن به خرید در این محله معادل <strong>{toPersianNum(((selectedHood.rahn80m / (selectedHood.buyPerSqm * 80)) * 100).toFixed(1))}٪</strong> است. در نسبت‌های زیر ۱۸٪، خرید قطعی ارزش مازاد بالاتری دارد.
             </div>
           </div>
         )}

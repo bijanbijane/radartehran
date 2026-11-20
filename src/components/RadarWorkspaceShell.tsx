@@ -7,7 +7,8 @@ import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeigh
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
 import { FloatingTopBar } from './FloatingTopBar';
 import { NeighborhoodInspectorDrawer } from './NeighborhoodInspectorDrawer';
-import { useLeafletRadarMap } from './useLeafletRadarMap';
+import { useLeafletRadarMap, type MapNavigationIntent } from './useLeafletRadarMap';
+import { getCityServiceCoverage, SUPPORTED_CITY_IDS, CITY_DISPLAY_NAMES, CANONICAL_BRAND_FA } from '../utils/geo/cityGeospatialResolver';
 import { useRadarCloudSync } from './useRadarCloudSync';
 import { useEvaluatedNeighborhoods } from './useEvaluatedNeighborhoods';
 import { useRadarCrudActions } from './useRadarCrudActions';
@@ -80,24 +81,49 @@ export function RadarWorkspaceShell() {
     if (except !== 'rail') ui.setMapRailPanel(null);
     if (except !== 'spatial') ui.setShowSpatialTools(false);
   };
-  const handleSwitchCity = (cityId: CityId, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => {
-    closeFloatingMapPanels();
-    activeCityRef.current = cityId; ui.setActiveCity(cityId); setWorkHubId('none');
+  const navigationIntentRef = useRef<MapNavigationIntent>('initial_mount');
+  const applyCityContextTransition = (cityId: CityId, intent: MapNavigationIntent, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => {
+    const cityChanged = activeCityRef.current !== cityId;
+    navigationIntentRef.current = intent;
+    if (intent !== 'manual_map_pan') closeFloatingMapPanels();
+    activeCityRef.current = cityId;
+    ui.setActiveCity(cityId);
+    ui.setInvalidCityParam(null);
+    if (cityChanged) ui.setSearchQuery('');
+    if (intent !== 'manual_map_pan') ui.setGeoContextResolution(null);
+    setWorkHubId('none');
+    if (getCityServiceCoverage(cityId).capabilities.trafficZones === 'NOT_SUPPORTED') {
+      ui.setOnlyOutsideTrafficZone(false);
+    }
     const cfg = MULTI_CITY_CONFIGS[cityId];
     const firstId = targetHoodId ?? (cityId === 'tehran' ? 5 : cfg.neighborhoods[0]?.id || 101);
     const secondId = cityId === 'tehran' ? 14 : cfg.neighborhoods[1]?.id || firstId;
-    ui.setSelectedHoodId(firstId); ui.setCompareId1(firstId); ui.setCompareId2(secondId); ui.setBargainHoodId(firstId); ui.setSponsorHoodId(firstId); ui.setAlertHoodId(firstId);
-    if (mapInstanceRef.current) {
+    ui.setSelectedHoodId(firstId); ui.setCompareId1(firstId); ui.setCompareId2(secondId);
+    if (!ui.showAgencyModal) { ui.setBargainHoodId(firstId); ui.setSponsorHoodId(firstId); }
+    if (!ui.showBuyerAlertModal) ui.setAlertHoodId(firstId);
+    if (intent !== 'manual_map_pan' && mapInstanceRef.current && (!cityChanged || targetCenter || targetZoom)) {
       const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
       const baseCenter = targetCenter || cfg.center;
       const adjustedCenter: [number, number] = [baseCenter[0], baseCenter[1] + (isDesktop && ui.primaryView === 'map' ? 0.055 : 0)];
-      try { mapInstanceRef.current.flyTo(adjustedCenter, targetZoom || cfg.defaultZoom, { duration: 0.9 }); } catch { /* ignore */ }
+      try { mapInstanceRef.current.flyTo(adjustedCenter, targetZoom || cfg.defaultZoom, { duration: 0.85 }); } catch { /* ignore */ }
     }
   };
+  const handleSwitchCity = (cityId: CityId, targetHoodId?: number, targetCenter?: [number, number], targetZoom?: number) => {
+    applyCityContextTransition(cityId, 'explicit_city_select', targetHoodId, targetCenter, targetZoom);
+  };
+  const handleMapAutoSwitchCity = (cityId: CityId) => {
+    applyCityContextTransition(cityId, 'manual_map_pan');
+  };
   const handleSelectNeighborhood = (hood: EvaluatedNeighborhood) => {
+    navigationIntentRef.current = 'programmatic_hood_jump';
     const ownerCity = resolveCityIdForNeighborhood(hood.id);
-    if (ownerCity !== activeCityRef.current) { activeCityRef.current = ownerCity; ui.setActiveCity(ownerCity); setWorkHubId('none'); }
-    ui.setSelectedHoodId(hood.id); ui.setBargainHoodId(hood.id); ui.setSponsorHoodId(hood.id); ui.setAlertHoodId(hood.id);
+    if (ownerCity !== activeCityRef.current) {
+      activeCityRef.current = ownerCity; ui.setActiveCity(ownerCity); ui.setInvalidCityParam(null); ui.setGeoContextResolution(null); setWorkHubId('none');
+      if (getCityServiceCoverage(ownerCity).capabilities.trafficZones === 'NOT_SUPPORTED') ui.setOnlyOutsideTrafficZone(false);
+    }
+    ui.setSelectedHoodId(hood.id);
+    if (!ui.showAgencyModal && !ui.showBuyerAlertModal) { ui.setBargainHoodId(hood.id); ui.setSponsorHoodId(hood.id); ui.setAlertHoodId(hood.id); }
+    else { if (!ui.showAgencyModal) { ui.setBargainHoodId(hood.id); ui.setSponsorHoodId(hood.id); } if (!ui.showBuyerAlertModal) ui.setAlertHoodId(hood.id); }
     ui.setVoteStatus(null); closeFloatingMapPanels();
     if (mapInstanceRef.current && typeof hood.lat === 'number' && !Number.isNaN(hood.lat)) {
       const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
@@ -120,6 +146,7 @@ export function RadarWorkspaceShell() {
     deferredMapNeighborhoods: nationwideFilteredNeighborhoods, selectedHoodId: ui.selectedHoodId, selectedHood,
     mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter: ui.statusFilter, mapLens: ui.mapLens,
     showGoldPins: ui.showGoldPins, showLandmarkPins: ui.showLandmarkPins, hoodLandmarks, featureFlags,
+    navigationIntentRef, onMapAutoSwitchCity: handleMapAutoSwitchCity, onGeoContextStatusChange: ui.setGeoContextResolution,
     onSelectNeighborhood: handleSelectNeighborhood,
     onOpenModalQuick: (hoodId, action) => {
       closeFloatingMapPanels();
@@ -147,6 +174,7 @@ export function RadarWorkspaceShell() {
     primaryView: ui.primaryView, setPrimaryView: ui.setPrimaryView,
     activeSubTab: ui.activeSubTab, setActiveSubTab: ui.setActiveSubTab, setAdminSection: ui.setAdminSection, mapInstanceRef,
     hasUrlBudgetParams: Boolean(initialUrlState.hasUrlBudgetParams), useLoanBooster: ui.useLoanBooster, setUseLoanBooster: ui.setUseLoanBooster, deductTenantRahnInBuy, setDeductTenantRahnInBuy, buildingAgeSegment, setBuildingAgeSegment,
+    invalidCityParam: ui.invalidCityParam, setInvalidCityParam: ui.setInvalidCityParam, navigationIntentRef,
   });
 
   const crudActions = useRadarCrudActions({
@@ -196,7 +224,7 @@ export function RadarWorkspaceShell() {
             else if (act === 'seo') ui.setShowSeoDrawer(true); else if (act === 'listing_verifier') ui.setShowListingVerifierModal(true);
             else if (act === 'reverse_budget') setShowReverseBudgetModal(true);
           }}
-          activePlaceLabelFa={findProvinceForHood(ui.selectedHoodId)?.capitalFa} currentUser={currentUser}
+          activePlaceLabelFa={findProvinceForHood(ui.selectedHoodId)?.capitalFa} invalidCityParam={ui.invalidCityParam} currentUser={currentUser}
         />
       )}
       <div id={ui.primaryView === 'map' ? 'radar-main-content' : undefined} tabIndex={ui.primaryView === 'map' ? -1 : undefined} role="region" aria-label="نقشه تعاملی محله‌ها" className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : ui.primaryView === 'map' ? 'top-[56px]' : 'top-[56px] lg:top-[68px]'} z-0 focus:outline-none`}>
@@ -210,8 +238,39 @@ export function RadarWorkspaceShell() {
           </div>
         )}
       </div>
+      {ui.invalidCityParam && (
+        <div className="fixed inset-0 top-[56px] lg:top-[68px] z-[55] bg-slate-950/45 backdrop-blur-[3px] flex items-start justify-center pt-10 sm:pt-16 px-3">
+          <div role="alert" data-testid="invalid-city-banner" className="max-w-xl w-full rounded-2xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 shadow-2xl p-4 sm:p-5 space-y-3 text-xs">
+            <div className="text-sm font-black text-amber-800 dark:text-amber-300">
+              شهر درخواستی «{ui.invalidCityParam}» در {CANONICAL_BRAND_FA} پشتیبانی نمی‌شود
+            </div>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+              برای جلوگیری از نمایش اطلاعات اشتباه، سامانه به‌صورت خودکار به تهران تغییر نکرد. لطفاً یکی از کلان‌شهرهای فعال زیر را انتخاب کنید:
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              {SUPPORTED_CITY_IDS.map((cid) => (
+                <button key={cid} type="button" onClick={() => handleSwitchCity(cid)} className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-emerald-700 dark:hover:bg-emerald-200 transition cursor-pointer">
+                  {CITY_DISPLAY_NAMES[cid].fa}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {!ui.invalidCityParam && (ui.geoContextResolution?.status === 'outside_city_boundaries' || ui.geoContextResolution?.status === 'ambiguous') && (
+        <div role="status" data-testid="geo-context-banner" className="fixed left-1/2 -translate-x-1/2 bottom-20 lg:bottom-6 z-[45] max-w-md w-[calc(100vw-1.5rem)] rounded-xl border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-[11px]">
+          <span className="font-bold text-slate-700 dark:text-slate-200">
+            {ui.geoContextResolution.status === 'ambiguous'
+              ? 'مرکز نقشه در مرز هم‌پوشان شهری قرار دارد؛ شهر فعال تغییر نکرد.'
+              : 'مرکز نقشه خارج از محدودهٔ کلان‌شهرهای پشتیبانی‌شده است.'}
+          </span>
+          <button type="button" onClick={() => handleSwitchCity(ui.activeCity)} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold shrink-0 cursor-pointer">
+            بازگشت به {CITY_DISPLAY_NAMES[ui.activeCity].fa}
+          </button>
+        </div>
+      )}
       <FloatingTopBar
-        primaryView={ui.primaryView} activeCity={ui.activeCity} featureFlags={featureFlags} onSwitchCity={handleSwitchCity} searchQuery={ui.searchQuery} setSearchQuery={ui.setSearchQuery}
+        primaryView={ui.primaryView} activeCity={ui.activeCity} invalidCityParam={ui.invalidCityParam} featureFlags={featureFlags} onSwitchCity={handleSwitchCity} searchQuery={ui.searchQuery} setSearchQuery={ui.setSearchQuery}
         showSearchDropdown={ui.showSearchDropdown} setShowSearchDropdown={ui.setShowSearchDropdown} evaluatedNeighborhoods={evaluatedNeighborhoods} selectedHood={selectedHood}
         selectedHoodId={ui.selectedHoodId} onSelectNeighborhood={handleSelectNeighborhood} setMobileSheetOpen={ui.setMobileSheetOpen} onLocateNearestHood={crudActions.handleLocateNearestHood}
         mobileFilterOpen={ui.mobileFilterOpen} setMobileFilterOpen={ui.setMobileFilterOpen} showToolsPopover={ui.showToolsPopover} setShowToolsPopover={ui.setShowToolsPopover} onBeforeOpenFloatingPanel={(panel) => closeFloatingMapPanels(panel)}

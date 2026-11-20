@@ -1,6 +1,6 @@
 /**
  * @file src/features/account/services/systemHealthProbeService.ts
- * @description Pure & injectable live health probing engine for Firebase, Casper Hub, and Cloud Databases.
+ * @description Pure & injectable live health probing engine for Firebase and Cloud Databases.
  * Enforces request deduplication (Axis 6/12), AbortController timeouts (Axis 11/12), and truthful status classification (Axis 2/20).
  */
 
@@ -8,7 +8,7 @@ export type ServiceConnectivityStatus = 'online' | 'degraded' | 'offline';
 export type LatencyHealthBand = 'excellent' | 'normal' | 'slow' | 'unreachable';
 
 export interface ServiceHealthProbeResult {
-  id: 'firebase' | 'casperHub' | 'cloudDatabase';
+  id: 'firebase' | 'cloudDatabase';
   titleFa: string;
   subtitleEn: string;
   status: ServiceConnectivityStatus;
@@ -30,7 +30,6 @@ export interface SystemHealthDashboardSnapshot {
   checkedAtIso: string;
   services: {
     firebase: ServiceHealthProbeResult;
-    casperHub: ServiceHealthProbeResult;
     cloudDatabase: ServiceHealthProbeResult;
   };
 }
@@ -54,7 +53,6 @@ export function classifyLatencyBand(latencyMs: number | null, status: ServiceCon
 export function computeCompositeSystemHealth(
   services: {
     firebase: ServiceHealthProbeResult;
-    casperHub: ServiceHealthProbeResult;
     cloudDatabase: ServiceHealthProbeResult;
   },
   browserOnline: boolean,
@@ -87,13 +85,12 @@ export function computeCompositeSystemHealth(
       checkedAtIso,
       services: {
         firebase: makeOffline(services.firebase),
-        casperHub: makeOffline(services.casperHub),
         cloudDatabase: makeOffline(services.cloudDatabase),
       },
     };
   }
 
-  const list = [services.firebase, services.casperHub, services.cloudDatabase];
+  const list = [services.firebase, services.cloudDatabase];
   const scoreMap: Record<ServiceConnectivityStatus, number> = {
     online: 100,
     degraded: 65,
@@ -227,26 +224,7 @@ export async function executeLiveSystemHealthProbes(
       id: 'firebase', titleFa: 'سرویس ابری Firebase (Firestore و Auth)', subtitleEn: 'Google Cloud Firestore & Firebase Authentication',
       status: fbStatus, latencyMs: fbLatency, latencyBand: fbBand.band, latencyBadgeFa: fbBand.badgeFa,
       statusLabelFa: fbStatus === 'online' ? 'آنلاین (متصل)' : fbStatus === 'degraded' ? 'آماده (کش محلی / جایگزین)' : 'آفلاین (قطع ارتباط)',
-      endpointLabel: 'Firestore DB · gen-lang-client-0713157837', detailFa: fbProbe.detailFa, checkedAtIso: nowIso,
-    };
-
-    const servicesObj = readinessRes.data && typeof readinessRes.data.services === 'object' && readinessRes.data.services !== null
-      ? (readinessRes.data.services as Record<string, Record<string, unknown>>) : null;
-    const casperMeta = servicesObj?.casperHub ?? null;
-    const casperStatus: ServiceConnectivityStatus = readinessRes.ok ? (casperMeta?.configured === false ? 'degraded' : 'online') : 'offline';
-    const casperLatency = casperStatus === 'offline' ? null : readinessRes.latencyMs;
-    const casperBand = classifyLatencyBand(casperLatency, casperStatus);
-    const casperResult: ServiceHealthProbeResult = {
-      id: 'casperHub', titleFa: 'شبکه هوش مصنوعی کسپر هاب (CASPER HUB)', subtitleEn: 'Cloudflare Worker · CASPER-05 Epistemic Gateway',
-      status: casperStatus, latencyMs: casperLatency, latencyBand: casperBand.band, latencyBadgeFa: casperBand.badgeFa,
-      statusLabelFa: casperStatus === 'online' ? 'آنلاین (متصل به هاب)' : casperStatus === 'degraded' ? 'آماده (پروکسی سرور فعال)' : 'آفلاین (عدم پاسخ هاب)',
-      endpointLabel: 'casper-hub-api.bijanbijane-1.workers.dev (CASPER-05)',
-      detailFa: casperStatus === 'online'
-        ? 'ارتباط امن سروری با کسپر هاب و هماهنگ‌ساز ایجنت CASPER-05 برقرار است.'
-        : casperStatus === 'degraded'
-          ? 'گیت‌وی سرور فعال است؛ توکن محیطی CASPER_HUB_TOKEN در حالت آماده پیکربندی قرار دارد.'
-          : 'عدم دسترسی به گیت‌وی کسپر هاب در بررسی لحظه‌ای.',
-      checkedAtIso: nowIso,
+      endpointLabel: 'Cloud Firestore & Firebase Auth', detailFa: fbProbe.detailFa, checkedAtIso: nowIso,
     };
 
     const dbOk = storageRes.ok || readinessRes.ok;
@@ -260,16 +238,16 @@ export async function executeLiveSystemHealthProbes(
       id: 'cloudDatabase', titleFa: 'دیتابیس‌های ابری و استوریج (Cloud DB & D1/R2)', subtitleEn: 'Cloudflare D1 SQL · Object Storage · Market Cache',
       status: dbStatus, latencyMs: dbLatency, latencyBand: dbBand.band, latencyBadgeFa: dbBand.badgeFa,
       statusLabelFa: dbStatus === 'online' ? 'آنلاین (سالم و آماده)' : dbStatus === 'degraded' ? 'پایدار (ظرفیت محدود)' : 'آفلاین (خطای دسترسی)',
-      endpointLabel: `CASPER_HUB_DB (D1) · ${providerLabelFa}`,
+      endpointLabel: `Cloud D1 & Object Storage · ${providerLabelFa}`,
       detailFa: dbStatus === 'online'
-        ? `دیتابیس D1، مخزن آبجکت استوریج (${providerLabelFa}) و کش نبض بازار بدون خطا فعال هستند.`
+        ? `دیتابیس ابری، مخزن آبجکت استوریج (${providerLabelFa}) و کش نبض بازار بدون خطا فعال هستند.`
         : dbStatus === 'degraded'
           ? 'بخشی از سرویس‌های ذخیره‌سازی ابری با تأخیر یا در حالت کش محلی پاسخ می‌دهند.'
           : 'خطا در برقراری ارتباط با لایه دیتابیس و ذخیره‌سازی ابری.',
       checkedAtIso: nowIso,
     };
 
-    return computeCompositeSystemHealth({ firebase: firebaseResult, casperHub: casperResult, cloudDatabase: cloudDbResult }, browserOnline);
+    return computeCompositeSystemHealth({ firebase: firebaseResult, cloudDatabase: cloudDbResult }, browserOnline);
   };
 
   if (isDefaultCall) {

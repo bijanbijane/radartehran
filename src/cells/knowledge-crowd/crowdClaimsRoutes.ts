@@ -6,7 +6,9 @@
  */
 import type { Express, Request, Response } from 'express';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
-import { isValidFirestoreDocId, sanitizeInput, validateCityParam } from '../../utils/security';
+import { resolveCityIdForNeighborhood } from '../../data/multiCityData';
+import { isValidFirestoreDocId, sanitizeInput } from '../../utils/security';
+import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from '../../utils/geo/cityGeospatialResolver';
 import { verifyFirebaseUserAuthorization } from '../../utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../utils/serverDeliveryAndAbuseGuard';
 import { IdempotencyLedger } from '../../utils/serverIdempotencyAndConcurrency';
@@ -160,6 +162,16 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
         res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID', message: 'شناسه محله معتبر نیست.' });
         return;
       }
+      const cityRes = resolveCityParamOrReject(body.cityId, { allowOmittedDefault: 'tehran' });
+      if (!cityRes.ok) {
+        res.status(400).json({ status: 'error', code: cityRes.code, message: cityRes.messageFa });
+        return;
+      }
+      const postOwnership = validateCityNeighborhoodOwnership(cityRes.cityId, hoodId, resolveCityIdForNeighborhood);
+      if (postOwnership.code === 'CITY_NEIGHBORHOOD_MISMATCH') {
+        res.status(400).json({ status: 'error', code: postOwnership.code, message: postOwnership.messageFa });
+        return;
+      }
       if (narrativeText.length < 5) {
         res
           .status(400)
@@ -203,7 +215,7 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
       const claim = await submitCrowdClaim({
         claimId: typeof body.claimId === 'string' ? body.claimId : undefined,
         targetLevel,
-        cityId: typeof body.cityId === 'string' ? body.cityId : 'tehran',
+        cityId: cityRes.cityId,
         hoodId,
         streetName: streetName || 'کوچه اصلی',
         coords,
@@ -263,12 +275,22 @@ export function registerCrowdClaimsRoutes(app: Express, options?: CrowdClaimsRou
       return;
     }
     const streetName = typeof req.query.streetName === 'string' ? req.query.streetName : undefined;
-    const cityId = typeof req.query.cityId === 'string' ? req.query.cityId : undefined;
-    const result = queryNeighborhoodCrowdClaims(hoodId, streetName, cityId);
+    const cityRes = resolveCityParamOrReject(req.query.cityId, { allowOmittedDefault: 'tehran' });
+    if (!cityRes.ok) {
+      res.status(400).json({ status: 'error', code: cityRes.code, message: cityRes.messageFa });
+      return;
+    }
+    const getOwnership = validateCityNeighborhoodOwnership(cityRes.cityId, hoodId, resolveCityIdForNeighborhood);
+    if (getOwnership.code === 'CITY_NEIGHBORHOOD_MISMATCH') {
+      res.status(400).json({ status: 'error', code: getOwnership.code, message: getOwnership.messageFa });
+      return;
+    }
+    const explicitCityId = req.query.cityId !== undefined ? cityRes.cityId : undefined;
+    const result = queryNeighborhoodCrowdClaims(hoodId, streetName, explicitCityId);
     res.status(200).json({
       status: 'ok',
       hoodId: result.hoodId,
-      cityId: cityId ? validateCityParam(cityId, 'tehran') : 'tehran',
+      cityId: cityRes.cityId,
       streetNameFilterNormalized: result.streetNameFilterNormalized,
       VERIFIED_REFERENCE: result.verifiedReferenceClaims,
       STAGE_COMMUNITY: result.communityStageClaims,

@@ -12,11 +12,14 @@ import type { BaseTileControllerInstance } from './mapBaseTileController';
 import { createExecutionTimer } from '../utils/diagnostics';
 import { profileLayerReconciliation } from './map/mapRenderProfiler';
 import { clearOverlayGroupRef, type MetroLineEntry, type TrafficZoneEntry } from './map/advancedOverlayReconcilers';
-import { mountLeafletMapLifecycle } from './map/leafletMapLifecycle';
+import { mountLeafletMapLifecycle, type MapViewportSettledEvent } from './map/leafletMapLifecycle';
 import { clearNeighborhoodReconcilerLayers, createEmptyReconcilerRefs, ensureSelectedMarkerExists, reconcileGoldPinsLayer, reconcileNeighborhoodLayers, selectVisibleMapNeighborhoods, updateNeighborhoodMarkerPresentation, updateSelectionPillsInPlace } from './map/neighborhoodLayerReconciler';
 import { clearWorkRouteAndLandmarkLayers, createEmptyWorkRouteAndLandmarkRefs, reconcileWorkRouteAndLandmarks } from './map/workRouteAndLandmarkLayers';
+import { resolveCityFromCoordinates, type CityResolutionResult } from '../utils/geo/cityGeospatialResolver';
 
 declare global { interface Window { L: any; } }
+
+export type MapNavigationIntent = 'initial_mount' | 'explicit_city_select' | 'manual_map_pan' | 'programmatic_hood_jump' | 'history_restore';
 
 export interface UseLeafletRadarMapParams {
   activeCity: CityId; mapTileStyle: MapTileServerId; setMapTileStyle: React.Dispatch<React.SetStateAction<MapTileServerId>>;
@@ -26,13 +29,16 @@ export interface UseLeafletRadarMapParams {
   showGoldPins: boolean; showLandmarkPins: boolean; hoodLandmarks: LocalLandmark[]; featureFlags: FeatureFlags;
   onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void;
   onOpenModalQuick: (hoodId: number, action: 'anatomy' | 'hedonic' | 'bargains' | 'compare' | 'share') => void;
+  navigationIntentRef?: React.MutableRefObject<MapNavigationIntent>;
+  onMapAutoSwitchCity?: (cityId: CityId, resolution: CityResolutionResult) => void;
+  onGeoContextStatusChange?: (resolution: CityResolutionResult) => void;
 }
 
 const readDomDarkClass = (): boolean => typeof document !== 'undefined' && document.documentElement.classList.contains('apple-dark');
 const getIsDarkMap = (mapTileStyle: MapTileServerId, domDark: boolean): boolean => mapTileStyle === 'carto_dark' || mapTileStyle === 'satellite' || domDark;
 
 export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
-  const { activeCity, mapTileStyle, setMapTileStyle, deferredMapNeighborhoods, selectedHoodId, selectedHood, mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter, mapLens, showGoldPins, showLandmarkPins, hoodLandmarks, featureFlags, onSelectNeighborhood, onOpenModalQuick } = params;
+  const { activeCity, mapTileStyle, setMapTileStyle, deferredMapNeighborhoods, selectedHoodId, selectedHood, mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter, mapLens, showGoldPins, showLandmarkPins, hoodLandmarks, featureFlags, onSelectNeighborhood, onOpenModalQuick, navigationIntentRef, onMapAutoSwitchCity, onGeoContextStatusChange } = params;
   const [areaUnit] = useAreaUnit(), [intlCurrency] = useIntlCurrency(), [locale] = useRadarLocale();
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -50,6 +56,19 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const markersMapRef = useRef<Record<number, { circle: any; marker: any; stroke: string; fill: string; pillBg: string; hasSponsor: boolean }>>({});
   const reconcilerRefs = useRef(createEmptyReconcilerRefs());
   const workLandmarkRefs = useRef(createEmptyWorkRouteAndLandmarkRefs());
+  const programmaticMoveRef = useRef<boolean>(false);
+  const programmaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const markProgrammaticMove = useCallback((durationMs = 900) => {
+    programmaticMoveRef.current = true;
+    if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
+    programmaticTimerRef.current = setTimeout(() => {
+      programmaticTimerRef.current = null;
+      programmaticMoveRef.current = false;
+    }, durationMs);
+  }, []);
+
+  useEffect(() => () => { if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current); }, []);
 
   const [mapZoomLevel, setMapZoomLevel] = useState<number>(12);
   const [viewportEpoch, setViewportEpoch] = useState<number>(0);
@@ -59,8 +78,11 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const [osmBoundariesByHood, setOsmBoundariesByHood] = useState<Record<number, AuthoritativeBoundaryRecord>>({});
 
   const isDarkMap = getIsDarkMap(mapTileStyle, isDarkTheme);
+  const activeCityRef = useRef<CityId>(activeCity); activeCityRef.current = activeCity;
   const onSelectNeighborhoodRef = useRef(onSelectNeighborhood); onSelectNeighborhoodRef.current = onSelectNeighborhood;
   const onOpenModalQuickRef = useRef(onOpenModalQuick); onOpenModalQuickRef.current = onOpenModalQuick;
+  const onMapAutoSwitchCityRef = useRef(onMapAutoSwitchCity); onMapAutoSwitchCityRef.current = onMapAutoSwitchCity;
+  const onGeoContextStatusChangeRef = useRef(onGeoContextStatusChange); onGeoContextStatusChangeRef.current = onGeoContextStatusChange;
   const selectedHoodIdRef = useRef(selectedHoodId); selectedHoodIdRef.current = selectedHoodId;
   const selectedHoodRef = useRef(selectedHood); selectedHoodRef.current = selectedHood;
   const neighborhoodsRef = useRef(deferredMapNeighborhoods); neighborhoodsRef.current = deferredMapNeighborhoods;
@@ -98,10 +120,20 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
 
     return mountLeafletMapLifecycle({
       mapContainerRef, mapInstanceRef, tileLayerRef, initCenter, initZoom, initialTileStyle: mapTileStyle,
+      programmaticMoveRef,
       onSelectPreferredStyle: (next) => setMapTileStyle(next),
       onMapLoaded: () => setIsMapLoaded(true),
       onZoomChange: (nextZoom) => setMapZoomLevel((prev) => (prev === nextZoom ? prev : nextZoom)),
-      onViewportSettled: () => setViewportEpoch((c) => c + 1),
+      onViewportSettled: (evt?: MapViewportSettledEvent) => {
+        setViewportEpoch((c) => c + 1);
+        if (evt?.isUserPan && !evt.isZoomOnly) {
+          const resolution = resolveCityFromCoordinates(evt.lat, evt.lng, { currentCityId: activeCityRef.current });
+          onGeoContextStatusChangeRef.current?.(resolution);
+          if (resolution.status === 'resolved' && resolution.cityId !== activeCityRef.current) {
+            onMapAutoSwitchCityRef.current?.(resolution.cityId, resolution);
+          }
+        }
+      },
       onOpenModalQuick: (hoodId, action) => onOpenModalQuickRef.current(hoodId, action),
       resolveHoodById: (hoodId) => neighborhoodsRef.current.find((h) => h.id === hoodId) || (selectedHoodRef.current?.id === hoodId ? selectedHoodRef.current : undefined),
       onTeardownLayers: (map) => {
@@ -123,10 +155,19 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   useEffect(() => {
     if (mountedCityRef.current === activeCity) return;
     mountedCityRef.current = activeCity;
+    if (navigationIntentRef?.current === 'manual_map_pan' || navigationIntentRef?.current === 'programmatic_hood_jump') {
+      return;
+    }
     const cfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-    mapInstanceRef.current?.setView?.([cfg.center[0], cfg.center[1] + (isDesktop ? 0.055 : 0)], cfg.defaultZoom, { animate: true });
-  }, [activeCity]);
+    const nextCenter: [number, number] = [cfg.center[0], cfg.center[1] + (isDesktop ? 0.055 : 0)];
+    markProgrammaticMove(1050);
+    if (typeof mapInstanceRef.current?.flyTo === 'function') {
+      mapInstanceRef.current.flyTo(nextCenter, cfg.defaultZoom, { duration: 0.85 });
+    } else {
+      mapInstanceRef.current?.setView?.(nextCenter, cfg.defaultZoom, { animate: true });
+    }
+  }, [activeCity, markProgrammaticMove, navigationIntentRef]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
@@ -153,9 +194,10 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   const prevCityRef = useRef(activeCity);
   useEffect(() => {
     let cancelled = false;
-    const cityChanged = prevCityRef.current !== activeCity;
-    if (cityChanged) { prevCityRef.current = activeCity; setOsmBoundariesByHood({}); }
-    const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
+    const targetCity = activeCity;
+    const cityChanged = prevCityRef.current !== targetCity;
+    if (cityChanged) { prevCityRef.current = targetCity; setOsmBoundariesByHood({}); }
+    const cityCfg = MULTI_CITY_CONFIGS[targetCity] || MULTI_CITY_CONFIGS.tehran;
     const sourceList = cityCfg.neighborhoods || [];
     if (!sourceList.length) return undefined;
     const vb = advancedOverlayState.viewportBounds;
@@ -165,9 +207,11 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
       viewportBounds: isVbInCity ? vb : null, loadedHoodIds: cityChanged ? {} : osmBoundariesByHood, lowBandwidthOrMobileMode: advancedOverlayState.lowBandwidthGeoLazyMode,
     });
     if (!batch.length) return undefined;
-    fetchAuthoritativeCityBoundaries(activeCity, cityCfg.nameFa, batch)
+    fetchAuthoritativeCityBoundaries(targetCity, cityCfg.nameFa, batch)
       .then((boundaries) => {
-        if (!cancelled && Object.keys(boundaries).length > 0) setOsmBoundariesByHood((prev) => ({ ...prev, ...boundaries }));
+        if (!cancelled && activeCityRef.current === targetCity && Object.keys(boundaries).length > 0) {
+          setOsmBoundariesByHood((prev) => ({ ...prev, ...boundaries }));
+        }
       })
       .catch(() => undefined);
     return () => { cancelled = true; };

@@ -231,7 +231,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
         </p>
 
         <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/50 text-[10.5px] text-indigo-950 dark:text-indigo-200 font-medium">
-          <strong className="font-bold">تاکتیک اجرایی کسپر در جلسه قرارداد: </strong>
+          <strong className="font-bold">تاکتیک اجرایی در جلسه قرارداد: </strong>
           {prospectTheory.stagedPaymentTacticFa}
         </div>
       </div>

@@ -270,6 +270,7 @@ export function createDeliveryAndAbuseMiddleware(options?: { getAppUrl?: () => s
         return;
       }
     }
+    if (req.path === '/api/healthz' || req.path === '/api/health/liveness' || req.path === '/api/health/readiness') { next(); return; }
     if (req.path.startsWith('/api/')) {
       if (hasAuthenticationHeaders(req) || req.path.startsWith('/api/admin/')) {
         res.setHeader('Vary', 'Origin, Authorization, X-Admin-Token, Accept-Encoding');

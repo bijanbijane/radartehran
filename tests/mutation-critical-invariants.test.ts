@@ -11,9 +11,8 @@ import { INITIAL_NEIGHBORHOODS, type EvaluatedNeighborhood } from '../src/data/n
 import { convertAreaFromSqm, formatMillionTomanAsIntlCurrency } from '../src/utils/areaUnit';
 import { escapeHtmlAttr, buildExternalDivarUrl, isValidIranianMobile } from '../src/utils/security';
 import { parseSingleByteRange } from '../src/utils/serverObjectStorage';
-import { validateObjectStorageEndpoint } from '../src/utils/serverConfigValidator';
+import { validateObjectStorageEndpoint, detectEnvironmentConfigDrift } from '../src/utils/serverConfigValidator';
 import { evaluateCasperNeighborhoodDecision } from '../src/cells/socioeconomic-intelligence/casperDecisionEngine';
-import { resolveCasperHubBaseUrl, DEFAULT_CASPER_HUB_URL } from '../server/modules/casper-hub/casperHubClient';
 import { computeSavageMinimaxRegretMatrix } from '../src/cells/decision-epistemology/paretoRegretEngine';
 import { synthesizeExecutiveDecisionReport } from '../src/cells/decision-epistemology/unifiedDecisionSynthesisEngine';
 import { computeDixitPindyckRealOption } from '../src/cells/decision-epistemology/realOptionsLiquidityEngine';
@@ -171,16 +170,14 @@ const scenarios: MutantScenario<any>[] = [
   },
   {
     id: 'MUT-12',
-    targetModule: 'server/modules/casper-hub/casperHubClient.ts',
-    description: 'Allow IPv6-mapped loopback SSRF target in resolveCasperHubBaseUrl',
-    realImpl: resolveCasperHubBaseUrl,
-    mutantImpl: (env: Record<string, string | undefined>) => env.CASPER_HUB_URL || DEFAULT_CASPER_HUB_URL,
-    oracle: (resolver) => {
-      assert.equal(
-        resolver({ CASPER_HUB_URL: 'https://[::ffff:127.0.0.1]:8080', CASPER_HUB_TOKEN: 'chub_test_token_12345678' }),
-        DEFAULT_CASPER_HUB_URL,
-        'IPv6 loopback must be rejected and fall back to DEFAULT_CASPER_HUB_URL'
-      );
+    targetModule: 'src/utils/serverConfigValidator.ts',
+    description: 'Ignore lingering removed CASPER_HUB_TOKEN/URL env config in detectEnvironmentConfigDrift',
+    realImpl: detectEnvironmentConfigDrift,
+    mutantImpl: (_env: Record<string, string | undefined>) => ({ valid: true, drifts: [] }),
+    oracle: (detector) => {
+      const result = detector({ CASPER_HUB_TOKEN: 'legacy-token-123456' });
+      assert.equal(result.valid, false, 'Removed Casper Hub env vars must trigger config drift');
+      assert.ok(result.drifts.includes('REMOVED_CASPER_HUB_CONFIG_PRESENT'));
     },
   },
   {

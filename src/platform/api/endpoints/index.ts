@@ -2,9 +2,7 @@
 export const PLATFORM_API_ENDPOINTS = {
   marketPulse: '/api/market-pulse',
   systemHealth: '/api/system-health',
-  accountExport: '/api/account/export',
+  accountExport: '/api/account/export-data',
   accountDelete: '/api/account/delete',
-  casperHubNotes: '/api/casper-hub/notes',
-  casperHubShortlist: '/api/casper-hub/shortlist',
-  valuationVerify: '/api/listing-verdict',
+  valuationVerify: '/api/listing-verdict/comparables',
 } as const;

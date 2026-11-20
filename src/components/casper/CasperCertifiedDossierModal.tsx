@@ -72,7 +72,7 @@ export function CasperCertifiedDossierModal({
 
   const trackingCode = useMemo(() => {
     const hex = Math.abs(serialSeed.split('').reduce((acc, c) => acc * 31 + c.charCodeAt(0), 17)).toString(16).toUpperCase();
-    return `CASPER-1405-${hex.slice(0, 6)}`;
+    return `RADAR-1405-${hex.slice(0, 6)}`;
   }, [serialSeed]);
 
   if (!isOpen) return null;
@@ -89,7 +89,7 @@ export function CasperCertifiedDossierModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="کارنامه رسمی کارشناسی و اعتبار قیمت کسپر"
+      aria-label="کارنامه رسمی کارشناسی و اعتبار قیمت رادار"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn"
       onClick={onClose}
     >

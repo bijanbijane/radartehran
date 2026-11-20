@@ -632,13 +632,43 @@ service cloud.firestore {
     // === Stage 3 Social Community Collections (Server-Mediated & Least-Privilege Client Rules) ===
     function isValidSocialPost(data) {
       return data.keys().hasAll(['id', 'recordKind', 'ownerUserId', 'status', 'createdAtIso']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
         data.ownerUserId is string &&
         data.ownerUserId == request.auth.uid &&
         data.recordKind in ['discussion', 'question', 'correction', 'research_proposal'] &&
-        data.status is string && data.status.size() <= 40 &&
+        data.status is string && data.status.size() >= 1 && data.status.size() <= 40 &&
+        data.createdAtIso is string && data.createdAtIso.size() <= 64 &&
         (!('titleFa' in data) || (data.titleFa is string && data.titleFa.size() <= 160)) &&
         (!('bodyFa' in data) || (data.bodyFa is string && data.bodyFa.size() <= 600)) &&
-        (!('isDeleted' in data) || data.isDeleted == false);
+        (!('isDeleted' in data) || data.isDeleted is bool) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 10)) &&
+        (!('isPinned' in data) || data.isPinned == false) &&
+        (!('verifiedByAdmin' in data) || data.verifiedByAdmin == false) &&
+        !('moderatedBy' in data);
+    }
+
+    function isValidSocialComment(data) {
+      return data.keys().hasAll(['id', 'postId', 'ownerUserId', 'bodyFa']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.postId is string && isValidId(data.postId) &&
+        data.ownerUserId is string && data.ownerUserId == request.auth.uid &&
+        data.bodyFa is string && data.bodyFa.size() >= 1 && data.bodyFa.size() <= 600 &&
+        (!('status' in data) || (data.status is string && data.status.size() <= 40)) &&
+        (!('isDeleted' in data) || data.isDeleted is bool) &&
+        !('moderatedBy' in data);
+    }
+
+    function isValidSocialProfile(data, userId) {
+      return data.userId == userId &&
+        data.userId == request.auth.uid &&
+        data.visibility in ['public', 'members_only', 'private'] &&
+        (!('displayNameFa' in data) || (data.displayNameFa is string && data.displayNameFa.size() <= 80)) &&
+        (!('username' in data) || (data.username is string && data.username.size() <= 64)) &&
+        (!('bioFa' in data) || (data.bioFa is string && data.bioFa.size() <= 400)) &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 512)) &&
+        !('role' in data) && !('isAdmin' in data) && !('isExpert' in data) &&
+        !('verifiedBadge' in data) && !('isVerified' in data) &&
+        !('reputationScore' in data) && !('moderationStatus' in data) && !('trustTier' in data);
     }
 
     match /socialPosts/{postId} {
@@ -649,15 +679,28 @@ service cloud.firestore {
           (existing().status != 'hidden' && existing().isDeleted != true)
         );
       allow list: if isAdmin() || (existing().status != 'hidden' && existing().isDeleted != true);
-      allow create: if isVerifiedUser() && isValidId(postId) && isValidSocialPost(incoming());
+      allow create: if isVerifiedUser() &&
+        isValidId(postId) &&
+        isValidSocialPost(incoming()) &&
+        incoming().status in ['active', 'open', 'submitted'] &&
+        (!('isDeleted' in incoming()) || incoming().isDeleted == false);
       allow update: if isValidId(postId) &&
         (
           isAdmin() ||
           (
             isVerifiedUser() &&
+            isValidSocialPost(incoming()) &&
             existing().ownerUserId == request.auth.uid &&
+            existing().status != 'hidden' &&
+            existing().isDeleted != true &&
             incoming().ownerUserId == existing().ownerUserId &&
-            incoming().recordKind == existing().recordKind
+            incoming().recordKind == existing().recordKind &&
+            incoming().createdAtIso == existing().createdAtIso &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['titleFa', 'bodyFa', 'tags', 'updatedAtIso', 'revisionHistory', 'isDeleted', 'status']) &&
+            (
+              incoming().status == existing().status ||
+              (incoming().status == 'deleted' && incoming().get('isDeleted', false) == true)
+            )
           )
         );
       allow delete: if isAdmin() && isValidId(postId);
@@ -669,11 +712,26 @@ service cloud.firestore {
       allow list: if isAdmin() || (existing().status != 'hidden' && existing().isDeleted != true);
       allow create: if isVerifiedUser() &&
         isValidId(commentId) &&
-        incoming().keys().hasAll(['id', 'postId', 'ownerUserId', 'bodyFa']) &&
-        incoming().ownerUserId == request.auth.uid &&
-        incoming().bodyFa is string && incoming().bodyFa.size() >= 1 && incoming().bodyFa.size() <= 600;
-      allow update: if isAdmin() ||
-        (isVerifiedUser() && existing().ownerUserId == request.auth.uid && incoming().ownerUserId == existing().ownerUserId);
+        isValidSocialComment(incoming()) &&
+        (!('status' in incoming()) || incoming().status == 'active') &&
+        (!('isDeleted' in incoming()) || incoming().isDeleted == false);
+      allow update: if isValidId(commentId) &&
+        (
+          isAdmin() ||
+          (
+            isVerifiedUser() &&
+            isValidSocialComment(incoming()) &&
+            existing().ownerUserId == request.auth.uid &&
+            existing().status != 'hidden' &&
+            existing().isDeleted != true &&
+            incoming().postId == existing().postId &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['bodyFa', 'updatedAtIso', 'isDeleted', 'status']) &&
+            (
+              incoming().get('status', 'active') == existing().get('status', 'active') ||
+              (incoming().get('status', '') == 'deleted' && incoming().get('isDeleted', false) == true)
+            )
+          )
+        );
       allow delete: if isAdmin() && isValidId(commentId);
     }
 
@@ -720,18 +778,20 @@ service cloud.firestore {
       allow list: if isAdmin() || existing().visibility == 'public';
       allow create: if isVerifiedUser() &&
         isValidId(userId) &&
-        request.auth.uid == userId &&
-        incoming().userId == request.auth.uid &&
-        incoming().visibility in ['public', 'members_only', 'private'] &&
+        isValidSocialProfile(incoming(), userId) &&
         (!('followersCount' in incoming()) || incoming().followersCount == 0) &&
         (!('followingCount' in incoming()) || incoming().followingCount == 0);
-      allow update: if isVerifiedUser() &&
-        isValidId(userId) &&
-        request.auth.uid == userId &&
-        incoming().userId == request.auth.uid &&
-        incoming().visibility in ['public', 'members_only', 'private'] &&
-        (!('followersCount' in incoming()) || incoming().followersCount == existing().get('followersCount', 0)) &&
-        (!('followingCount' in incoming()) || incoming().followingCount == existing().get('followingCount', 0));
+      allow update: if isValidId(userId) &&
+        (
+          isAdmin() ||
+          (
+            isVerifiedUser() &&
+            isValidSocialProfile(incoming(), userId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayNameFa', 'username', 'bioFa', 'avatarUrl', 'visibility', 'neighborhoods', 'updatedAtIso', 'cityId', 'preferences']) &&
+            (!('followersCount' in incoming()) || incoming().followersCount == existing().get('followersCount', 0)) &&
+            (!('followingCount' in incoming()) || incoming().followingCount == existing().get('followingCount', 0))
+          )
+        );
       allow delete: if isAdmin() && isValidId(userId);
     }
 

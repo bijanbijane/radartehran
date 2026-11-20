@@ -83,7 +83,7 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <Scale className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
             <h4 className="text-xs font-black tracking-tight">
-              موتور تصمیم‌یار، سپر شناختی و راستی‌آزمایی معرفتی کسپر (CASPER v4.2 · همگام با v6.4)
+              موتور تصمیم‌یار، سپر خطای شناختی و راستی‌آزمایی داده (نسخه v6.4)
             </h4>
           </div>
           <div className="flex items-center gap-2 text-[11px] font-bold tabular-nums">

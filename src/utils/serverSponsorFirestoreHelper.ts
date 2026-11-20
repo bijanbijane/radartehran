@@ -193,6 +193,33 @@ export async function commitSponsorApprovalViaRest(params: {
   await runRestCommit(bearer, writes, fetchFn);
 }
 
+export async function commitSponsorExtendViaRest(params: {
+  hoodId: number;
+  buyPerSqm: number;
+  rahn80m: number;
+  sponsor: OverrideSponsorFirestorePayload;
+  manualLockUntilMs: number;
+}, rawAuthHeader?: string | string[], fetchFn: typeof fetch = fetch): Promise<void> {
+  const bearer = extractBearerToken(rawAuthHeader);
+  await runRestCommit(bearer, [
+    {
+      update: {
+        name: `${FS_DOC_PREFIX}/neighborhoodOverrides/${params.hoodId}`,
+        fields: {
+          hoodId: toFsValue(params.hoodId),
+          buyPerSqm: toFsValue(params.buyPerSqm),
+          rahn80m: toFsValue(params.rahn80m),
+          sponsor: toFsValue(params.sponsor),
+          overrideSource: toFsValue('ADMIN_MANUAL'),
+          manualLockUntilMs: toFsValue(params.manualLockUntilMs),
+        },
+      },
+      updateMask: { fieldPaths: ['hoodId', 'buyPerSqm', 'rahn80m', 'sponsor', 'overrideSource', 'manualLockUntilMs'] },
+      updateTransforms: [{ fieldPath: 'updatedAt', setToServerValue: 'REQUEST_TIME' }],
+    },
+  ], fetchFn);
+}
+
 export async function commitSponsorReleaseViaRest(params: {
   hoodId: number;
   buyPerSqm: number;

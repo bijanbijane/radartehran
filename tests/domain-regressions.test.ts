@@ -1349,72 +1349,50 @@ function runDomainRegressionTests(): void {
     'WS-CASPER-17 Urban Affordability and Stage 2 epistemic parity assertion failed',
   );
 
-  // 54. WS-CASPER-18: CASPER HUB Server-Side Cloudflare D1 Integration & Property Insurance State Machine Resilience
-  const casperHubClientSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubClient.ts'), 'utf-8');
-  const casperHubRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubRoutes.ts'), 'utf-8');
+  // 54. De-Casperification & Property Insurance State Machine Resilience
   const propInsStateMachineSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/property-insurance/coverage/policyAndClaimStateMachineEngine.ts'), 'utf-8');
   assert(
-    '54. WS-CASPER-18 enforces server-side CASPER HUB client (account-scoped .bijanbijane-1.workers.dev SSRF guard, redirect: manual, Bearer token auth, UUIDv5 Idempotency-Key header on /v1/notes), mounts /api/casper-hub/* in serverUtilityRoutes, and verifies policyAndClaimStateMachineEngine fail-closed settlement parity',
-    casperHubClientSrc.includes("export const DEFAULT_CASPER_HUB_URL = 'https://casper-hub-api.bijanbijane-1.workers.dev';") &&
-      casperHubClientSrc.includes("host.endsWith('.bijanbijane-1.workers.dev')") &&
-      casperHubClientSrc.includes("redirect: 'manual'") &&
-      casperHubClientSrc.includes('Authorization: `Bearer ${token}`') &&
-      casperHubClientSrc.includes("'Idempotency-Key': resolvedKey") &&
-      casperHubRoutesSrc.includes("app.get('/api/casper-hub/whoami'") &&
-      casperHubRoutesSrc.includes("app.get('/api/casper-hub/bootstrap'") &&
-      casperHubRoutesSrc.includes("app.get('/api/casper-hub/changes'") &&
-      casperHubRoutesSrc.includes("app.post('/api/casper-hub/notes'") &&
-      casperHubRoutesSrc.includes("recordAbuseSignal(ip, 'auth_failure')") &&
-      serverUtilRoutesSrc.includes('registerCasperHubRoutes(app, { checkRateLimit, getClientIp, verifyAdminAuth });') &&
+    '54. Enforces complete Casper Hub backend/route removal and verifies policyAndClaimStateMachineEngine fail-closed settlement parity',
+    !fs.existsSync(path.join(process.cwd(), 'server/modules/casper-hub')) &&
+      !serverUtilRoutesSrc.includes('registerCasperHubRoutes') &&
       propInsStateMachineSrc.includes('export function evaluatePolicyCoverageStatusWithLimitations') &&
       propInsStateMachineSrc.includes('INVALID_SETTLEMENT_AMOUNTS'),
-    'WS-CASPER-18 CASPER HUB integration & Property Insurance state machine assertion failed',
+    'Casper Hub removal & Property Insurance state machine assertion failed',
   );
 
-  // 55. WS-CASPER-19: Admin UI Observability, Auth Lifecycle Reactivity & Casper Hub Monitor Card Parity
+  // 55. Admin UI Cleanliness & <=290 line constraint
   const adminSecTabsSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/AdminSecurityAndBackupTabs.tsx'), 'utf-8');
-  const monitorCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx'), 'utf-8');
   assert(
-    '55. WS-CASPER-19 enforces AdminCasperHubMonitorCard lazy mounting in AdminSecurityAndBackupTabs, auth.onAuthStateChanged subscription, and <=290 line constraint',
-    adminSecTabsSrc.includes("const AdminCasperHubMonitorCard = React.lazy(() => import('./admin/AdminCasperHubMonitorCard')") &&
-      adminSecTabsSrc.includes('<AdminCasperHubMonitorCard />') &&
-      monitorCardSrc.includes('auth.onAuthStateChanged') &&
-      monitorCardSrc.includes('data-testid="admin-casper-hub-monitor-card"') &&
-      monitorCardSrc.split(/\r?\n/).length <= 290 &&
+    '55. Enforces complete removal of AdminCasperHubMonitorCard and CASPER HUB badge from AdminSecurityAndBackupTabs under <=290 line constraint',
+    !fs.existsSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx')) &&
+      !adminSecTabsSrc.includes('AdminCasperHubMonitorCard') &&
+      !adminSecTabsSrc.includes('CASPER HUB:') &&
       adminSecTabsSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-19 Admin UI Observability & Monitor Card Parity assertion failed',
+    'Admin UI Casper Hub removal assertion failed',
   );
 
-  // 56. WS-CASPER-20: SWR Read-Cache with Causal Invalidation, System Health Integration & Badge Parity
+  // 56. Server System Health & Models Cleanliness under <=290 line bounds
   const serverMainSrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf-8');
   const modelsTypeDefSrc = fs.readFileSync(path.join(process.cwd(), 'src/types/models.ts'), 'utf-8');
   assert(
-    '56. WS-CASPER-20 enforces SWR read-cache with causal invalidation in CasperHubClient, system-health casperHubConfigured telemetry, and Admin UI badge parity under <=290 line bounds',
-    casperHubClientSrc.includes('private readonly readCache = new Map') &&
-      casperHubClientSrc.includes('this.readCache.clear()') &&
-      casperHubClientSrc.includes('clearCache(): void') &&
-      serverMainSrc.includes('casperHubConfigured: getCasperHubConfigStatus().configured') &&
-      modelsTypeDefSrc.includes('casperHubConfigured?: boolean;') &&
-      adminSecTabsSrc.includes('CASPER HUB:') &&
-      casperHubClientSrc.split(/\r?\n/).length <= 290 &&
+    '56. Enforces removal of casperHubConfigured telemetry from server.ts and models.ts under <=290 line bounds',
+    !serverMainSrc.includes('casperHubConfigured') &&
+      !serverMainSrc.includes('casper-hub') &&
+      !modelsTypeDefSrc.includes('casperHubConfigured') &&
       modelsTypeDefSrc.split(/\r?\n/).length <= 290 &&
       adminSecTabsSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-20 SWR Read Cache & System Health Integration assertion failed',
+    'Server & models Casper Hub removal assertion failed',
   );
 
-  // 57. WS-CASPER-22 & WS-CASPER-23: Full Bidirectional Observability, D1 relevant_notes Feed Parity, Expired Cache Key Eviction & Sentinel WorkHub Filtering
-  const updatedMonitorCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx'), 'utf-8');
+  // 57. Sentinel WorkHub Filtering & De-Casperified Readiness Probe
+  const readinessSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/serverPublisherBargains.ts'), 'utf-8');
   assert(
-    '57. WS-CASPER-22 & WS-CASPER-23 enforce bidirectional observability with D1 relevant_notes feed in AdminCasperHubMonitorCard, expired SWR key deletion in CasperHubClient, and sentinel WorkHub filtering in Isochrone engine/card under <= 290 line ceiling',
-    updatedMonitorCardSrc.includes('data-testid="casper-hub-recent-notes"') &&
-      updatedMonitorCardSrc.includes('bootJson?.data?.relevant_notes ?? bootJson?.data?.notes') &&
-      updatedMonitorCardSrc.includes('setRecentNotes') &&
-      updatedMonitorCardSrc.includes('CasperHubNoteRecord') &&
-      casperHubClientSrc.includes('this.readCache.delete(cacheKey)') &&
+    '57. Enforces sentinel WorkHub filtering in Isochrone engine/card and zero Casper Hub exposure in /api/health/readiness',
+    !readinessSrc.includes('casperHub') &&
+      !readinessSrc.includes('CASPER_HUB_TOKEN') &&
       p17UrbanAffSrc.includes("rawHubs.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null)") &&
-      p17UrbanCardSrc.includes("raw.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null)") &&
-      updatedMonitorCardSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-22 & WS-CASPER-23 Bidirectional Observability & Root-Cause Invariant assertion failed',
+      p17UrbanCardSrc.includes("raw.filter((h) => h.id !== 'none' && h.lat !== null && h.lng !== null)"),
+    'WorkHub filtering & readiness de-Casperification assertion failed',
   );
 
   // 58. WS-CASPER-26: Dixit-Pindyck targetSqm scaling & yield-on-cost dynamics, unclamped PIR/RIR, zero-floor break-even commute, and Stage2MasterWidget forwarding
@@ -1537,39 +1515,32 @@ function runDomainRegressionTests(): void {
     'WS-CASPER-33 multi-alternative econometric refinement assertion failed',
   );
 
-  // 65. WS-CASPER-34: Authorized Local Epistemic Ledger Fallback (LOCAL_LEDGER_FALLBACK) in casperHubRoutes.ts and observability parity in AdminCasperHubMonitorCard.tsx
-  const p34CasperHubRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubRoutes.ts'), 'utf-8');
-  const p34AdminMonitorCardSrc = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminCasperHubMonitorCard.tsx'), 'utf-8');
+  // 65. Route Catalog & Env Example De-Casperification Invariant
+  const envExampleSrc = fs.readFileSync(path.join(process.cwd(), '.env.example'), 'utf-8');
+  const routeCatalogSrc = fs.readFileSync(path.join(process.cwd(), 'src/utils/expressRouteCatalog.ts'), 'utf-8');
   assert(
-    '65. WS-CASPER-34 enforces LOCAL_LEDGER_FALLBACK in casperHubRoutes.ts with pre-flight validateCasperHubNotePayload & UUIDv5 deduplication, and local-ledger-fallback badge parity in AdminCasperHubMonitorCard.tsx under <=290 lines',
-    p34CasperHubRoutesSrc.includes("mode: 'LOCAL_LEDGER_FALLBACK'") &&
-      p34CasperHubRoutesSrc.includes('export function resetCasperHubLocalLedgerForTests(): void') &&
-      p34CasperHubRoutesSrc.includes('const validation = validateCasperHubNotePayload(rawBody);') &&
-      p34CasperHubRoutesSrc.includes('const resolvedKey = deriveDeterministicNoteIdempotencyKey(normalized, headerIdempotencyKey || undefined);') &&
-      p34AdminMonitorCardSrc.includes("whoami?.database === 'local-ledger-fallback'") &&
-      p34CasperHubRoutesSrc.split(/\r?\n/).length <= 290 &&
-      p34AdminMonitorCardSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-34 Local Epistemic Ledger Fallback assertion failed',
+    '65. Enforces zero Casper Hub env variables in .env.example and zero /api/casper-hub routes in expressRouteCatalog.ts',
+    !envExampleSrc.includes('CASPER_HUB_TOKEN') &&
+      !envExampleSrc.includes('CASPER_HUB_URL') &&
+      !routeCatalogSrc.includes('/api/casper-hub/'),
+    'Env & route catalog de-Casperification assertion failed',
   );
 
-  // 66. WS-CASPER-35: Continuous Improvement — Proportional deal-price scaling & Persian numerals in epistemicDecisionEngine.ts, and CASPER_HUB_REQUEST_FAILED fallback + multi-agent attribution in casperHubRoutes.ts
+  // 66. Proportional deal-price scaling & Persian numerals in epistemicDecisionEngine.ts
   assert(
-    '66. WS-CASPER-35 enforces pScale deal-price scaling & Persian numerals in epistemicDecisionEngine.ts, and CASPER_HUB_REQUEST_FAILED fallback + resolvedAuthorAgent in casperHubRoutes.ts under <=290 lines',
+    '66. Enforces pScale deal-price scaling & Persian numerals in epistemicDecisionEngine.ts under <=290 lines',
     p30EpistemicEngineSrc.includes('const pScale = buyPerSqm / Math.max(1, hoodBaseBuy);') &&
       p30EpistemicEngineSrc.includes('پیشنهاد شما (${toPersianNum(discountPct)}٪ تخفیف)') &&
-      p34CasperHubRoutesSrc.includes("result.errorCode === 'CASPER_HUB_REQUEST_FAILED'") &&
-      p34CasperHubRoutesSrc.includes("const resolvedAuthorAgent = /^CASPER-0[1-9]$/.test(rawAgent) ? rawAgent : 'CASPER-05';") &&
-      p30EpistemicEngineSrc.split(/\r?\n/).length <= 290 &&
-      p34CasperHubRoutesSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-35 continuous improvement assertion failed',
+      p30EpistemicEngineSrc.split(/\r?\n/).length <= 290,
+    'Epistemic decision continuous improvement assertion failed',
   );
 
-  // 67. WS-CASPER-36: Epistemic Mathematical Refinements — Persian numerals in spatialContagionEngine.ts, dynamic IQR volatilitySigma in realOptionsLiquidityEngine.ts, and empirical future growth momentum in unifiedDecisionSynthesisEngine.ts
+  // 67. Epistemic Mathematical Refinements — Persian numerals in spatialContagionEngine.ts, dynamic IQR volatilitySigma in realOptionsLiquidityEngine.ts, and empirical future growth momentum in unifiedDecisionSynthesisEngine.ts
   const p36SpatialEngineSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/spatialContagionEngine.ts'), 'utf-8');
   const p36RealOptionsSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/realOptionsLiquidityEngine.ts'), 'utf-8');
   const p36UnifiedSynthesisSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts'), 'utf-8');
   assert(
-    '67. WS-CASPER-36 enforces Persian numerals in spatialContagionEngine.ts, dynamic IQR volatilitySigma in realOptionsLiquidityEngine.ts, and empirical future growth momentum in unifiedDecisionSynthesisEngine.ts under <=290 lines',
+    '67. Enforces Persian numerals in spatialContagionEngine.ts, dynamic IQR volatilitySigma in realOptionsLiquidityEngine.ts, and empirical future growth momentum in unifiedDecisionSynthesisEngine.ts under <=290 lines',
     p36SpatialEngineSrc.includes('λ=${toPersianNum(lambda)}') &&
       p36SpatialEngineSrc.includes('پراکندگی قیمتی (${toPersianNum(iqrSpreadPct)}٪)') &&
       p36RealOptionsSrc.includes('const dynamicSigma = Number(Math.min(0.38, (resolvedPrice > 160 ? 0.26 : resolvedPrice > 110 ? 0.21 : 0.17) + iqrSpreadRatio * 0.22).toFixed(3));') &&
@@ -1578,22 +1549,19 @@ function runDomainRegressionTests(): void {
       p36SpatialEngineSrc.split(/\r?\n/).length <= 290 &&
       p36RealOptionsSrc.split(/\r?\n/).length <= 290 &&
       p36UnifiedSynthesisSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-36 epistemic mathematical refinements assertion failed',
+    'Epistemic mathematical refinements assertion failed',
   );
 
-  // 68. WS-CASPER-37: Root-Cause Remediation — safeTargetSqm bounds in unifiedDecisionSynthesisEngine.ts & macroPortfolioArbitrageEngine.ts, and bounded FIFO localIdempotencyLedger eviction in casperHubRoutes.ts
+  // 68. Root-Cause Remediation — safeTargetSqm bounds in unifiedDecisionSynthesisEngine.ts & macroPortfolioArbitrageEngine.ts
   const p37UnifiedSynthesisSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/unifiedDecisionSynthesisEngine.ts'), 'utf-8');
   const p37MacroPortfolioSrc = fs.readFileSync(path.join(process.cwd(), 'src/cells/decision-epistemology/macroPortfolioArbitrageEngine.ts'), 'utf-8');
-  const p37CasperHubRoutesSrc = fs.readFileSync(path.join(process.cwd(), 'server/modules/casper-hub/casperHubRoutes.ts'), 'utf-8');
   assert(
-    '68. WS-CASPER-37 enforces safeTargetSqm defensive guards in synthesis & macro portfolio, and bounded FIFO eviction in casperHubRoutes under <=290 lines',
+    '68. Enforces safeTargetSqm defensive guards in synthesis & macro portfolio under <=290 lines',
     p37UnifiedSynthesisSrc.includes('const safeTargetSqm = Math.max(20, targetSqm || 80);') &&
       p37MacroPortfolioSrc.includes('const safeSqm = Math.max(20, targetSqm || 80);') &&
-      p37CasperHubRoutesSrc.includes('if (localIdempotencyLedger.size >= 100)') &&
       p37UnifiedSynthesisSrc.split(/\r?\n/).length <= 290 &&
-      p37MacroPortfolioSrc.split(/\r?\n/).length <= 290 &&
-      p37CasperHubRoutesSrc.split(/\r?\n/).length <= 290,
-    'WS-CASPER-37 root-cause bounds assertion failed',
+      p37MacroPortfolioSrc.split(/\r?\n/).length <= 290,
+    'Root-cause bounds assertion failed',
   );
 
   console.log('\n=======================================================');

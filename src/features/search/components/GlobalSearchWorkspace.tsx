@@ -118,16 +118,6 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
     setRecommendations(defaultSearchWorkspaceService.getDiscoveryRecommendations(discoveryContext));
   }, [discoveryContext]);
 
-  const prevCityRef = useRef<CityId>(activeCity);
-  useEffect(() => {
-    if (prevCityRef.current !== activeCity) {
-      prevCityRef.current = activeCity;
-      pendingHistoryModeRef.current = 'push';
-      setDraftFilters((prev) => ({ ...prev, cityId: activeCity, neighborhoodId: undefined, districtNumber: undefined }));
-      setAppliedFilters((prev) => ({ ...prev, cityId: activeCity, neighborhoodId: undefined, districtNumber: undefined }));
-    }
-  }, [activeCity]);
-
   const latestReqCounter = useRef(0);
   const [searchResponse, setSearchResponse] = useState<SearchExecutionResponse>(() =>
     defaultSearchEngine.executeSearch({
@@ -138,6 +128,19 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
       sort: initialDecoded.sort || 'RELEVANCE',
     })
   );
+
+  const prevCityRef = useRef<CityId>(activeCity);
+  useEffect(() => {
+    if (prevCityRef.current === activeCity) return;
+    prevCityRef.current = activeCity;
+    pendingHistoryModeRef.current = 'replace';
+    const resetSpatial = { cityId: activeCity, neighborhoodId: undefined, districtNumber: undefined, boundingBox: undefined, polygon: undefined, nearPoint: undefined };
+    const cleanedFilters: SearchFilterSet = { ...appliedFilters, ...resetSpatial };
+    setDraftFilters((prev) => ({ ...prev, ...resetSpatial }));
+    setAppliedFilters(cleanedFilters);
+    latestReqCounter.current += 1;
+    setSearchResponse(defaultSearchEngine.executeSearch({ requestId: `req-city-${latestReqCounter.current}`, rawQuery, scope: activeScope, explicitFilters: cleanedFilters, sort, degradedScopes }));
+  }, [activeCity]);
 
   const suggestions = defaultSearchWorkspaceService.getAutocompleteSuggestions(rawQuery, activeCity);
 

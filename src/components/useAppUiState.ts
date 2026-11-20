@@ -11,6 +11,7 @@ import { resolveRouteFromLocation } from '../navigation/url/navigationUrlContrac
 import type { AdminSectionId, ModuleSubTabId } from '../navigation/registry/route.types';
 import type { MapContextPanelId } from '../navigation/map/mapToolRailConfig';
 import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import type { CityResolutionResult } from '../utils/geo/cityGeospatialResolver';
 
 export function useAppUiState(initialUrlState: any) {
   const [areaUnit] = useAreaUnit();
@@ -92,6 +93,8 @@ export function useAppUiState(initialUrlState: any) {
   const [sponsorSubmitMsg, setSponsorSubmitMsg] = useState<string>('');
 
   const [activeCity, setActiveCity] = useState<CityId>(initialUrlState.initialCity || 'tehran');
+  const [invalidCityParam, setInvalidCityParam] = useState<string | null>(initialUrlState.invalidCityParam || null);
+  const [geoContextResolution, setGeoContextResolution] = useState<CityResolutionResult | null>(null);
   const [showNationwideProvinceModal, setShowNationwideProvinceModal] = useState<boolean>(false);
   const [showPriceTrendModal, setShowPriceTrendModal] = useState<boolean>(false);
   const [expansionModalType, setExpansionModalType] = useState<ExpansionModalType>(null);
@@ -260,6 +263,7 @@ export function useAppUiState(initialUrlState: any) {
     sponsorSpecialty, setSponsorSpecialty, sponsorExpYears, setSponsorExpYears,
     sponsorPlanMonths, setSponsorPlanMonths, sponsorTrackingCode, setSponsorTrackingCode,
     sponsorSubmitMsg, setSponsorSubmitMsg, activeCity, setActiveCity,
+    invalidCityParam, setInvalidCityParam, geoContextResolution, setGeoContextResolution,
     showNationwideProvinceModal, setShowNationwideProvinceModal,
     showPriceTrendModal, setShowPriceTrendModal,
     expansionModalType, setExpansionModalType, showSuperModulesModal, setShowSuperModulesModal,

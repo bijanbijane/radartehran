@@ -168,7 +168,7 @@ export function LiveDiagnosticOverlay(props?: { areaUnit?: AreaUnit; intlCurrenc
     setTestResults(results);
     setLastRunTimeFa(new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     setIsRunningTests(false);
-  }, []);
+  }, [areaUnit, intlCurrency]);
   const passedCount = testResults.filter((r) => r.status === 'PASS').length;
   const failedCount = testResults.filter((r) => r.status === 'FAIL').length;
   if (isDismissed && errors.length === 0) {

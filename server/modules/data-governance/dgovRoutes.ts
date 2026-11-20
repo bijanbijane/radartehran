@@ -1,7 +1,8 @@
 /** @file server/modules/data-governance/dgovRoutes.ts — Authoritative Server Data Governance & Provenance APIs */
 import type { Express, Request, Response } from 'express';
-import { getAllMultiCityNeighborhoods } from '../../../src/data/multiCityData';
-import { sanitizeInput, validateCityParam } from '../../../src/utils/security';
+import { getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../../../src/data/multiCityData';
+import { sanitizeInput } from '../../../src/utils/security';
+import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from '../../../src/utils/geo/cityGeospatialResolver';
 import { verifyAdminApiAuthorization, verifyAuthenticatedUserHeader } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
 import { serverPublishedBargains } from '../../../src/utils/serverPublisherBargains';
@@ -156,8 +157,18 @@ export function registerDataGovernanceRoutes(
       res.status(400).json({ ok: false, errorFa: 'شناسه محله، مقدار پیشنهادی و دلیل مستند (حداقل ۶ کاراکتر) الزامی است.' });
       return;
     }
-    const cityId = validateCityParam(req.body?.cityId, 'tehran');
-    void cityId;
+    const cityRes = resolveCityParamOrReject(req.body?.cityId, { allowOmittedDefault: 'tehran' });
+    if (!cityRes.ok) {
+      res.status(400).json({ ok: false, code: cityRes.code, errorFa: cityRes.messageFa });
+      return;
+    }
+    if (/^\d+$/.test(entityId)) {
+      const ownership = validateCityNeighborhoodOwnership(cityRes.cityId, Number(entityId), resolveCityIdForNeighborhood);
+      if (ownership.code === 'CITY_NEIGHBORHOOD_MISMATCH') {
+        res.status(400).json({ ok: false, code: ownership.code, errorFa: ownership.messageFa });
+        return;
+      }
+    }
     const isVerified = Boolean(auth.authorized && auth.uid);
     const recorded = recordCorrectionProposalInDgov({
       entityId,

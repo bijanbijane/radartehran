@@ -217,7 +217,6 @@ export interface SystemHealthData {
     openMeteoStatus: 'OK' | 'FALLBACK';
     airQualityByCity?: Record<string, { status: 'OK' | 'FALLBACK'; lastSuccessMs: number | null }>;
     geminiConfigured: boolean;
-    casperHubConfigured?: boolean;
   };
   securityMetrics: {
     payloadLimit: string; generalRateLimit: string; heavySyncRateLimit: string;

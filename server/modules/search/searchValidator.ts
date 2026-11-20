@@ -1,4 +1,5 @@
-import { sanitizeInput, validateCityParam } from '../../../src/utils/security';
+import { sanitizeInput } from '../../../src/utils/security';
+import { parseStrictCityId } from '../../../src/utils/geo/cityGeospatialResolver';
 import type { SearchQueryParams, SearchQueryValidationResult, SearchSortField, SearchDealMode, SearchPropertyType } from './searchTypes';
 
 const ALLOWED_SORT_FIELDS: ReadonlySet<SearchSortField> = new Set([
@@ -37,7 +38,15 @@ export function validateAndSanitizeSearchQuery(raw: Record<string, unknown>): Se
   }
   const query = sanitizeInput(normalizePersianSearchQuery(rawQuery), 120);
 
-  const cityId = raw.cityId !== undefined ? validateCityParam(raw.cityId, 'tehran') : undefined;
+  let cityId: SearchQueryParams['cityId'];
+  if (raw.cityId !== undefined && raw.cityId !== null && String(raw.cityId).trim() !== '') {
+    const parsedCity = parseStrictCityId(raw.cityId);
+    if (!parsedCity) {
+      errors.push('شناسه شهر درخواستی پشتیبانی نمی‌شود.');
+    } else {
+      cityId = parsedCity;
+    }
+  }
 
   let hoodId: number | undefined;
   if (raw.hoodId !== undefined && raw.hoodId !== null && raw.hoodId !== '') {

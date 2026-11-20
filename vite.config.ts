@@ -120,6 +120,7 @@ export default defineConfig(({ mode }) => {
               id.includes('src/navigation/') ||
               id.includes('src/features/account/services/accountStorageScope') ||
               id.includes('src/features/account/services/accountSettingsStorageService') ||
+              id.includes('src/components/ui/') ||
               id.includes('src/components/useEvaluatedNeighborhoods') ||
               id.includes('src/components/SearchHistory') ||
               id.includes('src/components/mapAdvancedLayers')

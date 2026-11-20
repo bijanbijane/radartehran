@@ -50,7 +50,7 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
       <section aria-labelledby="home-quick-access-heading" data-testid="home-quick-access-section" className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 id="home-quick-access-heading" className="text-lg sm:text-xl font-extrabold text-[#182522] dark:text-white">از کجا شروع کنیم؟</h2>
-          <span className="text-xs text-[#34433E] dark:text-slate-400">۶ مسیر اصلی ورود به رادار {activeCityNameFa}</span>
+          <span className="text-xs text-[#34433E] dark:text-slate-400">۶ مسیر اصلی ورود به رادارتهران ({activeCityNameFa})</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {HOME_QUICK_ACCESS_ITEMS.map((item) => (
@@ -229,10 +229,10 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
         </div>
       </section>
 
-      <footer aria-label={`فوتر صفحه خانه رادار ${activeCityNameFa}`} data-testid="home-quiet-footer" className="pt-6 border-t border-[#DCE3DF] dark:border-slate-800 space-y-6 text-xs text-[#34433E] dark:text-slate-400">
+      <footer aria-label="فوتر صفحه خانه رادارتهران" data-testid="home-quiet-footer" className="pt-6 border-t border-[#DCE3DF] dark:border-slate-800 space-y-6 text-xs text-[#34433E] dark:text-slate-400">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div className="space-y-2">
-            <div className="font-bold text-[#182522] dark:text-white">رادار {activeCityNameFa}</div>
+            <div className="font-bold text-[#182522] dark:text-white">رادارتهران</div>
             <ul className="space-y-1.5">
               <li><button type="button" onClick={() => p.onNavigateView('knowledge', 'guide')} className="hover:text-[#176B63] cursor-pointer">درباره و معرفی محصول</button></li>
               <li><button type="button" onClick={() => p.onNavigateView('contributions', 'submit')} className="hover:text-[#176B63] cursor-pointer">مشارکت و ارتباط</button></li>
@@ -263,7 +263,7 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
           </div>
         </div>
         <div className="pt-4 border-t border-[#DCE3DF]/60 dark:border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-500">
-          <span>رادار {activeCityNameFa} — دروازه شناخت مکانی، تحلیل بازار و اطلاعات شهری (نسخه RT-UI-HOME-001)</span>
+          <span>رادارتهران — دروازه شناخت مکانی، تحلیل بازار و اطلاعات شهری ({activeCityNameFa} · نسخه RT-UI-HOME-001)</span>
           <span>تمامی شاخص‌ها با ذکر منبع، بازه زمانی و سطح اعتبار داده منتشر می‌شوند.</span>
         </div>
       </footer>

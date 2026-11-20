@@ -203,14 +203,32 @@ export function buildSearchPlan(
   const extractedFilters: SearchFilterSet = activeCity ? { cityId: activeCity } : {};
   const cityPlaces = getPlaceHierarchyForCity(activeCity || 'tehran');
 
-  for (const place of cityPlaces) {
-    if ([place.canonicalName, ...place.aliases].some((term) => term.length >= 2 && q.includes(term))) {
-      recognizedEntities.push({ text: place.canonicalName, canonicalName: place.canonicalName, entityType: 'PLACE', entityId: place.id, confidence: 0.96 });
-      extractedFilters.neighborhoodId = place.id;
-      extractedFilters.neighborhoodName = place.canonicalName;
-      if (place.district !== undefined) extractedFilters.districtNumber = place.district;
-      break;
+  const isWordChar = (ch: string | undefined): boolean => Boolean(ch && /[\u0600-\u06FF\u200cA-Za-z0-9]/.test(ch));
+  const matchesTermAtWordBoundary = (haystack: string, needle: string): boolean => {
+    if (needle.length < 2 || /^\d+$/.test(needle)) return false;
+    let start = 0;
+    while (start <= haystack.length - needle.length) {
+      const idx = haystack.indexOf(needle, start);
+      if (idx === -1) return false;
+      if (!isWordChar(haystack[idx - 1]) && !isWordChar(haystack[idx + needle.length])) return true;
+      start = idx + 1;
     }
+    return false;
+  };
+  let bestPlaceMatch: { place: CanonicalPlaceEntry; termLen: number } | null = null;
+  for (const place of cityPlaces) {
+    for (const term of [place.canonicalName, ...place.aliases]) {
+      if (matchesTermAtWordBoundary(q, term) && (!bestPlaceMatch || term.length > bestPlaceMatch.termLen)) {
+        bestPlaceMatch = { place, termLen: term.length };
+      }
+    }
+  }
+  if (bestPlaceMatch) {
+    const place = bestPlaceMatch.place;
+    recognizedEntities.push({ text: place.canonicalName, canonicalName: place.canonicalName, entityType: 'PLACE', entityId: place.id, confidence: 0.96 });
+    extractedFilters.neighborhoodId = place.id;
+    extractedFilters.neighborhoodName = place.canonicalName;
+    if (place.district !== undefined) extractedFilters.districtNumber = place.district;
   }
 
   const districtMatch = q.match(/منطقه\s*([0-9]{1,2})/);

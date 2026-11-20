@@ -70,7 +70,7 @@ class RootErrorBoundary extends React.Component<
               !
             </div>
             <h2 className="text-lg font-extrabold text-emerald-700">
-              رادار مسکن و محله‌های تهران
+              رادارتهران
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed">
               در بارگذاری موقت یکی از بخش‌ها اختلالی رخ داد. می‌توانید بدون حذف اطلاعات دوباره تلاش کنید یا حافظه موقت مرورگر را بازنشانی نمایید.

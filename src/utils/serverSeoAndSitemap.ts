@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from 'express'; import { toPersianNum } from '../data/neighborhoods'; import { getAllMultiCityNeighborhoods, getValidatedCityConfig, resolveCityIdForNeighborhood, } from '../data/multiCityData'; import { validateCityParam } from './security';
+import type { Express, Request, Response } from 'express'; import { toPersianNum } from '../data/neighborhoods'; import { getAllMultiCityNeighborhoods, getValidatedCityConfig, resolveCityIdForNeighborhood, } from '../data/multiCityData'; import { CANONICAL_BRAND_FA, formatBrandCityTitle, parseStrictCityId } from './geo/cityGeospatialResolver';
 import { seoForDatedCompare, seoForDatedHood, seoFromPublicPath, tehranSitemapEntries } from '../data/neighborhoodListingSamples';
 import { getValidatedServerConfig, buildOpenApiSpecification } from './serverConfigValidator'; import { resolveCanonicalBaseUrl } from './serverDeliveryAndAbuseGuard'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; const toPersianDigits = toPersianNum;
 /**
@@ -30,8 +30,9 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
     const baseUrl = resolveBaseUrl(req); const allHoods = getAllMultiCityNeighborhoods(); const displayAreaUnitLabel = formatAreaUnitLabel(areaUnit);
     const compareParam = typeof req.query.compare === 'string' ? req.query.compare : '';
     const hoodParam = typeof req.query.hood === 'string' ? Number(req.query.hood) : 0;
-    const cityParam =
-      typeof req.query.city === 'string' ? validateCityParam(req.query.city, 'tehran') : null;
+    const rawCityQuery = typeof req.query.city === 'string' ? req.query.city.trim() : '';
+    const cityParam = rawCityQuery ? parseStrictCityId(rawCityQuery) : null;
+    const hasInvalidCityParam = Boolean(rawCityQuery && !cityParam);
     const applyMetaSwap = (
       title: string,
       desc: string,
@@ -78,6 +79,13 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
       const canonicalUrl = `${baseUrl}${pathCard.path}`;
       return applyMetaSwap(pathCard.title, pathCard.description, canonicalUrl, { '@context': 'https://schema.org', '@type': 'WebPage', name: pathCard.title, description: pathCard.description, url: canonicalUrl });
     }
+    if (hasInvalidCityParam) {
+      return applyMetaSwap(
+        `شهر پشتیبانی‌نشده | ${CANONICAL_BRAND_FA}`,
+        'شناسه شهر درخواستی در سامانه رادارتهران پشتیبانی نمی‌شود. لطفاً یکی از کلان‌شهرهای فعال را انتخاب کنید.',
+        `${baseUrl}/`,
+      );
+    }
     if (/^\d{1,4}-\d{1,4}$/.test(compareParam)) {
       const [id1, id2] = compareParam.split('-').map((x) => Number(x.trim()));
       const h1 = allHoods.find((h) => h.id === id1);
@@ -87,7 +95,8 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
         const cityPrefix = resolvedCity !== 'tehran' ? `city=${resolvedCity}&` : '';
         const dated = resolvedCity === 'tehran' ? seoForDatedCompare(h1.id, h2.id) : null;
         const canonicalUrl = dated ? `${baseUrl}${dated.path}` : `${baseUrl}/?${cityPrefix}compare=${h1.id}-${h2.id}`;
-        const title = dated?.title ?? `مقایسه محله ${h1.name} و ${h2.name} | قیمت مسکن، رهن و کیفیت زندگی | رادار تهران`;
+        const brandWithCity = formatBrandCityTitle(getValidatedCityConfig(resolvedCity).nameFa);
+        const title = dated?.title ?? `مقایسه محله ${h1.name} و ${h2.name} | قیمت مسکن، رهن و کیفیت زندگی | ${brandWithCity}`;
         const desc = dated?.description ?? `مقایسه تحلیلی محله ${h1.name} (متری ${toPersianDigits(h1.buyPerSqm)} م، رهن ${toPersianDigits(h1.rahn80m)} م) با محله ${h2.name} (متری ${toPersianDigits(h2.buyPerSqm)} م، رهن ${toPersianDigits(h2.rahn80m)} م) به همراه نمودار روند و ترافیک.`;
         return applyMetaSwap(title, desc, canonicalUrl, {
           '@context': 'https://schema.org',
@@ -118,7 +127,8 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
         const cityPrefix = resolvedCity !== 'tehran' ? `city=${resolvedCity}&` : '';
         const dated = resolvedCity === 'tehran' ? seoForDatedHood(h.id) : null;
         const canonicalUrl = dated ? `${baseUrl}${dated.path}` : `${baseUrl}/?${cityPrefix}hood=${h.id}`;
-        const title = dated?.title ?? `قیمت مسکن، رهن و کارنامه محله ${h.name} (${h.zone}) | رادار تهران`;
+        const brandWithCity = formatBrandCityTitle(getValidatedCityConfig(resolvedCity).nameFa);
+        const title = dated?.title ?? `قیمت مسکن، رهن و کارنامه محله ${h.name} (${h.zone}) | ${brandWithCity}`;
         const desc = dated?.description ?? `برآورد قیمت خرید آپارتمان در ${h.name}: متری ${toPersianDigits(h.buyPerSqm)} میلیون تومان | رهن کامل ۸۰ متری: ${toPersianDigits(h.rahn80m)} میلیون تومان | بررسی ترافیک، هوا و مدارس ${h.name}.`;
         return applyMetaSwap(title, desc, canonicalUrl, {
           '@context': 'https://schema.org',
@@ -136,8 +146,8 @@ export function injectDynamicSeoMeta(html: string, req: Request, areaUnit: AreaU
     }
     if (cityParam && cityParam !== 'tehran') {
       const cityCfg = getValidatedCityConfig(cityParam);
-      const title = `رادار مسکن و اجاره ${cityCfg.nameFa} | نقشه قیمت و کیفیت زندگی محله‌ها`;
-      const desc = `بررسی قیمت خرید، رهن و اجاره، کیفیت هوا و ترافیک در ${toPersianDigits(cityCfg.neighborhoods.length)} محله شاخص ${cityCfg.nameFa}.`;
+      const title = `${formatBrandCityTitle(cityCfg.nameFa)} | نقشه قیمت مسکن، رهن و کیفیت زندگی محله‌ها`;
+      const desc = `بررسی قیمت خرید، رهن و اجاره، کیفیت هوا و ترافیک در ${toPersianDigits(cityCfg.neighborhoods.length)} محله شاخص ${cityCfg.nameFa} در سامانه ${CANONICAL_BRAND_FA}.`;
       return applyMetaSwap(title, desc, `${baseUrl}/?city=${cityParam}`, {
         '@context': 'https://schema.org',
         '@type': 'Place',
@@ -167,8 +177,8 @@ const registeredSeoApps = new WeakSet<Express>(); export function registerSeoAnd
       );
     const manifest = {
       id: '/',
-      name: 'رادار محله‌های تهران | ابزار تحلیل قیمت مسکن و کیفیت زندگی',
-      short_name: 'رادار تهران',
+      name: 'رادارتهران | سامانه تحلیل مکانی مسکن و محله‌ها',
+      short_name: 'رادارتهران',
       description:
         'مقایسهٔ محله‌ها، بررسی داده‌های موجود بازار مسکن و استفاده از محاسبه‌گرهای مقدماتی خرید، اجاره و هزینه‌های ملکی.',
       dir: 'rtl',

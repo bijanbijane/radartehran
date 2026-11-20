@@ -19,6 +19,8 @@ import {
   verifyAuthenticatedUserHeader,
 } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import { recordAbuseSignal } from '../../../src/utils/serverDeliveryAndAbuseGuard';
+import { resolveCityParamOrReject } from '../../../src/utils/geo/cityGeospatialResolver';
+import { MULTI_CITY_CONFIGS } from '../../../src/data/multiCityData';
 import { registerDataGovernanceRoutes } from '../data-governance/dgovRoutes';
 import { registerAnalyticsResearchRoutes } from '../analytics-research/analyticsRoutes';
 
@@ -37,66 +39,110 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   const getIp = deps?.getClientIp || ((req: Request) => req.ip || '127.0.0.1');
   const checkLimit = deps?.checkRateLimit || (() => true);
 
-  app.get(['/api/v1/search', '/api/search'], (req: Request, res: Response) => {
-    if (!checkLimit(getIp(req), 'v1-search', 90, 60_000)) {
-      res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های جست‌وجو بیش از حد مجاز است.' });
-      return;
+  const resolveOptionalAuthUid = async (req: Request): Promise<string | null> => {
+    if (!req.headers.authorization) return null;
+    const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
+    return auth.authorized && auth.uid ? auth.uid : null;
+  };
+
+  app.get(['/api/v1/search', '/api/search'], async (req: Request, res: Response) => {
+    try {
+      if (!checkLimit(getIp(req), 'v1-search', 90, 60_000)) {
+        res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های جست‌وجو بیش از حد مجاز است.' });
+        return;
+      }
+      const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: 'tehran' });
+      if (!cityCheck.ok) { res.status(400).json({ errorCode: cityCheck.code, messageFa: cityCheck.messageFa }); return; }
+      const rawQuery = typeof req.query.q === 'string' ? req.query.q : '';
+      const valid = validateRawSearchQuery(rawQuery);
+      if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
+      const scope = (typeof req.query.scope === 'string' ? req.query.scope : 'ALL') as SearchScope;
+      const sort = (typeof req.query.sort === 'string' ? req.query.sort : 'RELEVANCE') as SearchSortOption;
+      const verifiedUid = await resolveOptionalAuthUid(req);
+      const explicitFilters = cityCheck.wasOmitted ? undefined : { cityId: cityCheck.cityId };
+      const searchOut = defaultSearchEngine.executeSearch({ rawQuery, scope, sort, explicitFilters, caller: { isAuthenticated: Boolean(verifiedUid) } });
+      res.status(200).json({ ...searchOut, cityId: cityCheck.wasOmitted ? undefined : cityCheck.cityId });
+    } catch {
+      if (!res.headersSent) res.status(500).json({ errorCode: 'SEARCH_FAILED', messageFa: 'خطا در اجرای جست‌وجو.' });
     }
-    const rawQuery = typeof req.query.q === 'string' ? req.query.q : '';
-    const valid = validateRawSearchQuery(rawQuery);
-    if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
-    const scope = (typeof req.query.scope === 'string' ? req.query.scope : 'ALL') as SearchScope;
-    const sort = (typeof req.query.sort === 'string' ? req.query.sort : 'RELEVANCE') as SearchSortOption;
-    res.status(200).json(defaultSearchEngine.executeSearch({ rawQuery, scope, sort, caller: { isAuthenticated: Boolean(req.headers.authorization) } }));
   });
 
-  app.post('/api/v1/search/query', (req: Request, res: Response) => {
-    if (!checkLimit(getIp(req), 'v1-search-query', 90, 60_000)) {
-      res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های جست‌وجو بیش از حد مجاز است.' });
-      return;
+  app.post('/api/v1/search/query', async (req: Request, res: Response) => {
+    try {
+      if (!checkLimit(getIp(req), 'v1-search-query', 90, 60_000)) {
+        res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های جست‌وجو بیش از حد مجاز است.' });
+        return;
+      }
+      const body = req.body || {};
+      const rawQuery = typeof body.q === 'string' ? body.q : '';
+      const valid = validateRawSearchQuery(rawQuery);
+      if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
+      const nextFilters = { ...(body.filters || {}) };
+      if (nextFilters.cityId !== undefined && nextFilters.cityId !== null && String(nextFilters.cityId).trim() !== '') {
+        const cityCheck = resolveCityParamOrReject(nextFilters.cityId);
+        if (!cityCheck.ok) { res.status(400).json({ errorCode: cityCheck.code, messageFa: cityCheck.messageFa }); return; }
+        nextFilters.cityId = cityCheck.cityId;
+      }
+      if (nextFilters.polygon) {
+        const geoValid = validateUserPolygonGeometry(nextFilters.polygon);
+        if (!geoValid.valid) { res.status(400).json({ errorCode: geoValid.errorCode, messageFa: geoValid.messageFa }); return; }
+      }
+      const verifiedUid = await resolveOptionalAuthUid(req);
+      res.status(200).json(defaultSearchEngine.executeSearch({
+        requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
+        rawQuery, scope: body.scope || 'ALL', explicitFilters: nextFilters, sort: body.sort || 'RELEVANCE',
+        caller: { isAuthenticated: Boolean(verifiedUid) },
+      }));
+    } catch {
+      if (!res.headersSent) res.status(500).json({ errorCode: 'SEARCH_FAILED', messageFa: 'خطا در اجرای جست‌وجو.' });
     }
-    const body = req.body || {};
-    const rawQuery = typeof body.q === 'string' ? body.q : '';
-    const valid = validateRawSearchQuery(rawQuery);
-    if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
-    if (body.filters?.polygon) {
-      const geoValid = validateUserPolygonGeometry(body.filters.polygon);
-      if (!geoValid.valid) { res.status(400).json({ errorCode: geoValid.errorCode, messageFa: geoValid.messageFa }); return; }
-    }
-    res.status(200).json(defaultSearchEngine.executeSearch({
-      requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
-      rawQuery, scope: body.scope || 'ALL', explicitFilters: body.filters || {}, sort: body.sort || 'RELEVANCE',
-      caller: { isAuthenticated: Boolean(req.headers.authorization) },
-    }));
   });
 
-  app.get(['/api/v1/search/suggest', '/api/search/suggestions'], (req: Request, res: Response) => {
-    if (!checkLimit(getIp(req), 'v1-search-suggest', 120, 60_000)) {
-      res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های تکمیل خودکار بیش از حد مجاز است.' });
-      return;
+  app.get(['/api/v1/search/suggest', '/api/search/suggestions'], async (req: Request, res: Response) => {
+    try {
+      if (!checkLimit(getIp(req), 'v1-search-suggest', 120, 60_000)) {
+        res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های تکمیل خودکار بیش از حد مجاز است.' });
+        return;
+      }
+      const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: 'tehran' });
+      if (!cityCheck.ok) { res.status(400).json({ errorCode: cityCheck.code, messageFa: cityCheck.messageFa }); return; }
+      const q = typeof req.query.q === 'string' ? req.query.q : '';
+      const verifiedUid = await resolveOptionalAuthUid(req);
+      res.status(200).json({ cityId: cityCheck.cityId, suggestions: defaultSearchWorkspaceService.getAutocompleteSuggestions(q, cityCheck.cityId, verifiedUid) });
+    } catch {
+      if (!res.headersSent) res.status(500).json({ errorCode: 'SUGGEST_FAILED', messageFa: 'خطا در دریافت پیشنهادهای جست‌وجو.' });
     }
-    const q = typeof req.query.q === 'string' ? req.query.q : '';
-    res.status(200).json({ suggestions: defaultSearchWorkspaceService.getAutocompleteSuggestions(q) });
   });
 
   app.get(['/api/v1/search/facets', '/api/search/filters'], (req: Request, res: Response) => {
+    const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: 'tehran' });
+    if (!cityCheck.ok) { res.status(400).json({ errorCode: cityCheck.code, messageFa: cityCheck.messageFa }); return; }
     const q = typeof req.query.q === 'string' ? req.query.q : '';
-    const out = defaultSearchEngine.executeSearch({ rawQuery: q });
-    res.status(200).json({ facets: out.facets, groupedCounts: out.groupedCounts });
+    const out = defaultSearchEngine.executeSearch({ rawQuery: q, explicitFilters: cityCheck.wasOmitted ? undefined : { cityId: cityCheck.cityId } });
+    res.status(200).json({ cityId: cityCheck.wasOmitted ? undefined : cityCheck.cityId, facets: out.facets, groupedCounts: out.groupedCounts });
   });
 
-  app.get('/api/v1/search/recommendations', (req: Request, res: Response) => {
-    const hood = typeof req.query.hood === 'string' ? req.query.hood : 'سعادت‌آباد';
-    res.status(200).json({
-      recommendations: defaultSearchWorkspaceService.getDiscoveryRecommendations(hood),
-      privacy: defaultSearchWorkspaceService.getPrivacySettings(),
-    });
+  app.get('/api/v1/search/recommendations', async (req: Request, res: Response) => {
+    try {
+      const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: 'tehran' });
+      if (!cityCheck.ok) { res.status(400).json({ errorCode: cityCheck.code, messageFa: cityCheck.messageFa }); return; }
+      const defaultHoodName = MULTI_CITY_CONFIGS[cityCheck.cityId]?.neighborhoods[0]?.name || 'سعادت‌آباد';
+      const hood = typeof req.query.hood === 'string' && req.query.hood.trim() ? req.query.hood : defaultHoodName;
+      const verifiedUid = await resolveOptionalAuthUid(req);
+      res.status(200).json({
+        cityId: cityCheck.cityId,
+        recommendations: defaultSearchWorkspaceService.getDiscoveryRecommendations({ cityId: cityCheck.cityId, neighborhoodName: hood, userId: verifiedUid }),
+        privacy: defaultSearchWorkspaceService.getPrivacySettings(),
+      });
+    } catch {
+      if (!res.headersSent) res.status(500).json({ errorCode: 'RECOMMENDATIONS_FAILED', messageFa: 'خطا در دریافت پیشنهادها.' });
+    }
   });
 
   app.get(['/api/v1/saved-searches', '/api/search/saved'], async (req: Request, res: Response) => {
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
-    res.status(200).json({ items: defaultSearchWorkspaceService.getSavedSearches() });
+    res.status(200).json({ items: defaultSearchWorkspaceService.getSavedSearches(auth.uid) });
   });
 
   app.post(['/api/v1/saved-searches', '/api/search/saved'], async (req: Request, res: Response) => {
@@ -104,6 +150,7 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
     const body = req.body || {};
     const created = defaultSearchWorkspaceService.createSavedSearch({
+      userId: auth.uid,
       titleFa: String(body.titleFa || body.query || 'جست‌وجوی ذخیره‌شده'),
       query: String(body.query || ''), scope: (body.scope || 'ALL') as SearchScope,
       filters: body.filters || {}, alertFrequency: body.alertFrequency || 'OFF',
@@ -114,13 +161,13 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   app.get('/api/v1/search-history', async (req: Request, res: Response) => {
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
-    res.status(200).json({ items: defaultSearchWorkspaceService.getSearchHistory(), privacy: defaultSearchWorkspaceService.getPrivacySettings() });
+    res.status(200).json({ items: defaultSearchWorkspaceService.getSearchHistory(auth.uid), privacy: defaultSearchWorkspaceService.getPrivacySettings() });
   });
 
   app.delete('/api/v1/search-history', async (req: Request, res: Response) => {
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
-    defaultSearchWorkspaceService.clearSearchHistory();
+    defaultSearchWorkspaceService.clearSearchHistory(auth.uid);
     res.status(200).json({ cleared: true });
   });
 
@@ -152,12 +199,14 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
     const body = req.body || {};
+    const cityCheck = resolveCityParamOrReject(body.cityId, { allowOmittedDefault: 'tehran' });
+    if (!cityCheck.ok) { res.status(400).json({ status: 'error', code: cityCheck.code, message: cityCheck.messageFa }); return; }
     const created = defaultPersonalizationEngine.saveItem(auth.uid, {
       entityType: body.entityType || 'PROPERTY',
       entityId: String(body.entityId || ''),
       titleFa: String(body.titleFa || 'مورد ذخیره‌شده'),
       subtitleFa: String(body.subtitleFa || ''),
-      cityId: String(body.cityId || 'tehran'),
+      cityId: cityCheck.cityId,
       targetLifecycleStatus: 'ACTIVE',
     });
     res.status(201).json({ item: created });

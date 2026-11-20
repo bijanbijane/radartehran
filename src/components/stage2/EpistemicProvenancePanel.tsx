@@ -87,7 +87,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
       <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/70 rounded-xl p-3 flex items-start gap-2.5">
         <Scale className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
         <div className="text-[11px] leading-relaxed text-indigo-950 dark:text-indigo-200">
-          <span className="font-bold">منشور معرفتی و حاکمیت کاربر (CASPER Charter): </span>
+          <span className="font-bold">اصول شفافیت داده و حاکمیت کاربر: </span>
           {am.humanAgencyPrincipleFa}
         </div>
       </div>
@@ -130,7 +130,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
           <div className="flex items-center gap-1.5">
             <Brain className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
-              سپر خطاهای شناختی و اقتصاد رفتاری کسپر (Cognitive & Behavioral Debiasing Shield)
+              سپر خطاهای شناختی و اقتصاد رفتاری (Cognitive & Behavioral Debiasing Shield)
             </h4>
           </div>
           <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300">

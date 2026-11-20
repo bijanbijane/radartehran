@@ -209,7 +209,7 @@ export function buildNeighborhoodEpistemicDossier(input: {
   ];
 
   const accountabilityManifest: AlgorithmicAccountabilityManifest = {
-    algorithmId: 'RADAR-HEDONIC-MAD-V6.4', version: '6.4.3-CASPER',
+    algorithmId: 'RADAR-HEDONIC-MAD-V6.4', version: '6.4.3',
     purposeFa: 'کاهش عدم تقارن اطلاعاتی میان خریدار/مستأجر و فروشنده/موجر از طریق تفکیک قیمت تابلو از سناریوی فرضی مذاکره.',
     inputVariablesFa: ['میانه قیمت پایه محله (فیلتر MAD)', 'متراژ، سن بنا، طبقه، آسانسور، پارکینگ و انباری', 'کیفیت بازسازی، نورگیری و نوع سند', 'رژیم نقدشوندگی محله (HOT / BALANCED / FROZEN) و نسبت P/R'],
     assumptionsFa: ['بنای مرجع محله بر اساس واحد استاندارد ۸۰ تا ۱۰۰ متری، ۵ سال ساخت با امکانات کامل سنجیده شده است.', `شکاف فرضی قیمت اعلامی تا سناریوی مذاکره در وضعیت فعلی محله ${toPersianNum(Math.max(0, Math.round((1 - agg.askToDealRatio) * 100)))}٪ است و معامله ثبت‌شده نیست.`],

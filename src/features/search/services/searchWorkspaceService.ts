@@ -24,6 +24,7 @@ export interface DiscoveryContext {
   neighborhoodId?: number;
   neighborhoodName?: string;
   includeDemoSamples?: boolean;
+  userId?: string | null;
 }
 
 export interface MeaningfulChangeCandidate {
@@ -101,12 +102,15 @@ export class SearchWorkspaceStateManager {
     const trimmed = params.rawQuery.trim();
     if (!trimmed || containsSensitivePersonalPattern(trimmed)) return null;
     const norm = normalizePersianSearchQuery(trimmed);
+    const userId = params.userId || 'usr-current';
     const entry: SearchHistoryEntry = {
-      id: `hist-${Date.now()}`, userId: params.userId || 'usr-current', rawQuery: trimmed,
+      id: `hist-${Date.now()}`, userId, rawQuery: trimmed,
       normalizedQuery: norm.normalizedQuery, scope: params.scope, filters: params.filters || {},
       resultCount: params.resultCount, createdAt: new Date().toISOString(),
     };
-    this.searchHistory = [entry, ...this.searchHistory.filter((item) => item.normalizedQuery !== norm.normalizedQuery)].slice(0, 25);
+    const otherUsers = this.searchHistory.filter((item) => item.userId !== userId);
+    const sameUser = this.searchHistory.filter((item) => item.userId === userId && item.normalizedQuery !== norm.normalizedQuery);
+    this.searchHistory = [entry, ...sameUser.slice(0, 24), ...otherUsers];
     return entry;
   }
 
@@ -224,23 +228,26 @@ export class SearchWorkspaceStateManager {
     return { shouldNotify: false, reasonFa: 'بدون تغییر معنادار', updatedState: existing };
   }
 
-  public getAutocompleteSuggestions(rawPrefix: string, activeCity: CityId = 'tehran'): SearchSuggestionItem[] {
+  public getAutocompleteSuggestions(rawPrefix: string, activeCity: CityId = 'tehran', userId?: string | null): SearchSuggestionItem[] {
     const norm = normalizePersianSearchQuery(rawPrefix);
     const q = norm.normalizedQuery;
     const suggestions: SearchSuggestionItem[] = [];
     const cityPlaces = getPlaceHierarchyForCity(activeCity);
     const cityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
     const topPlace = cityPlaces[0]?.canonicalName || 'سعادت‌آباد';
+    const scopedUserId = userId === undefined ? 'usr-current' : userId;
 
-    for (const h of this.searchHistory.slice(0, 2)) {
-      if (!q || h.normalizedQuery.includes(q) || h.rawQuery.includes(q)) {
-        suggestions.push({ id: `sug-recent-${h.id}`, category: 'RECENT', titleFa: h.rawQuery, subtitleFa: 'جست‌وجوی اخیر شما', scope: h.scope, queryText: h.rawQuery });
+    if (scopedUserId) {
+      for (const h of this.searchHistory.filter((item) => item.userId === scopedUserId).slice(0, 2)) {
+        if (!q || h.normalizedQuery.includes(q) || h.rawQuery.includes(q)) {
+          suggestions.push({ id: `sug-recent-${h.id}`, category: 'RECENT', titleFa: h.rawQuery, subtitleFa: 'جست‌وجوی اخیر شما', scope: h.scope, queryText: h.rawQuery });
+        }
       }
-    }
 
-    for (const s of this.savedSearches.filter((item) => !item.filters.cityId || item.filters.cityId === activeCity).slice(0, 2)) {
-      if (!q || s.titleFa.includes(q) || s.query.includes(q)) {
-        suggestions.push({ id: `sug-saved-${s.id}`, category: 'SAVED', titleFa: s.titleFa, subtitleFa: 'جست‌وجوی ذخیره‌شده (موقت نشست)', scope: s.scope, queryText: s.query });
+      for (const s of this.savedSearches.filter((item) => item.userId === scopedUserId && (!item.filters.cityId || item.filters.cityId === activeCity)).slice(0, 2)) {
+        if (!q || s.titleFa.includes(q) || s.query.includes(q)) {
+          suggestions.push({ id: `sug-saved-${s.id}`, category: 'SAVED', titleFa: s.titleFa, subtitleFa: 'جست‌وجوی ذخیره‌شده (موقت نشست)', scope: s.scope, queryText: s.query });
+        }
       }
     }
 
@@ -312,7 +319,10 @@ export class SearchWorkspaceStateManager {
         metricBadgeFa: `رهن ۸۰م: ${targetHood.rahn80m} میلیون`,
       });
     }
-    const citySaved = this.savedSearches.find((s) => !s.filters.cityId || s.filters.cityId === cityId);
+    const scopedUserId = ctx.userId === undefined ? 'usr-current' : ctx.userId;
+    const citySaved = scopedUserId
+      ? this.savedSearches.find((s) => s.userId === scopedUserId && (!s.filters.cityId || s.filters.cityId === cityId))
+      : undefined;
     if (citySaved) {
       allCards.push({
         id: `rec-saved-match-${cityId}`,

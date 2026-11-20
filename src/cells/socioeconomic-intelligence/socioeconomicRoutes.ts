@@ -9,7 +9,9 @@
 import type { Express, Request, Response } from 'express';
 import type { HedonicRenovationStatus } from '../../data/hedonicPricingEngine';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from '../../utils/areaUnit';
-import { sanitizeInput, validateCityParam } from '../../utils/security';
+import { resolveCityIdForNeighborhood } from '../../data/multiCityData';
+import { sanitizeInput } from '../../utils/security';
+import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from '../../utils/geo/cityGeospatialResolver';
 import {
   computeServerValuationSeal,
   type RawPriceObservation,
@@ -60,7 +62,17 @@ export function registerSocioeconomicRoutes(
         res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' });
         return;
       }
-      const cityId = validateCityParam(req.query.cityId, 'tehran');
+      const cityRes = resolveCityParamOrReject(req.query.cityId, { allowOmittedDefault: 'tehran' });
+      if (!cityRes.ok) {
+        res.status(400).json({ status: 'error', code: cityRes.code, message: cityRes.messageFa });
+        return;
+      }
+      const cityId = cityRes.cityId;
+      const ownership = validateCityNeighborhoodOwnership(cityId, hoodId, resolveCityIdForNeighborhood);
+      if (ownership.code === 'CITY_NEIGHBORHOOD_MISMATCH') {
+        res.status(400).json({ status: 'error', code: ownership.code, message: ownership.messageFa });
+        return;
+      }
       const periodKey = typeof req.query.periodKey === 'string' && req.query.periodKey.trim()
         ? sanitizeInput(req.query.periodKey, 24)
         : getDefaultRollupPeriodKey();
@@ -119,8 +131,19 @@ export function registerSocioeconomicRoutes(
         ? (body.intlCurrency as IntlCurrencyCode)
         : 'USD';
 
+      const cityRes = resolveCityParamOrReject(body.cityId, { allowOmittedDefault: 'tehran' });
+      if (!cityRes.ok) {
+        res.status(400).json({ status: 'error', code: cityRes.code, message: cityRes.messageFa });
+        return;
+      }
+      const ownership = validateCityNeighborhoodOwnership(cityRes.cityId, hoodId, resolveCityIdForNeighborhood);
+      if (ownership.code === 'CITY_NEIGHBORHOOD_MISMATCH') {
+        res.status(400).json({ status: 'error', code: ownership.code, message: ownership.messageFa });
+        return;
+      }
+
       const seal = computeServerValuationSeal({
-        cityId: typeof body.cityId === 'string' ? body.cityId : 'tehran',
+        cityId: cityRes.cityId,
         hoodId,
         sqm,
         buildYear,
@@ -174,8 +197,18 @@ export function registerSocioeconomicRoutes(
     }
     try {
       const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
-      const cityId = validateCityParam(body.cityId, 'tehran');
+      const cityRes = resolveCityParamOrReject(body.cityId, { allowOmittedDefault: 'tehran' });
+      if (!cityRes.ok) {
+        res.status(400).json({ status: 'error', code: cityRes.code, message: cityRes.messageFa });
+        return;
+      }
+      const cityId = cityRes.cityId;
       const hoodId = Math.max(1, Math.trunc(Number(body.hoodId) || 1));
+      const ownership = validateCityNeighborhoodOwnership(cityId, hoodId, resolveCityIdForNeighborhood);
+      if (ownership.code === 'CITY_NEIGHBORHOOD_MISMATCH') {
+        res.status(400).json({ status: 'error', code: ownership.code, message: ownership.messageFa });
+        return;
+      }
       const periodKey = typeof body.periodKey === 'string' && body.periodKey.trim()
         ? sanitizeInput(body.periodKey, 24)
         : getDefaultRollupPeriodKey();

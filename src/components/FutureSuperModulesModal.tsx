@@ -116,7 +116,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100">
-                  جعبه ابزار جامع ۵۲گانه پراپ‌تک مسکن (رادار {MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'})
+                  جعبه ابزار جامع ۵۲گانه پراپ‌تک مسکن (رادارتهران | {MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'})
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold">
                   نسخه جامع سازمانی

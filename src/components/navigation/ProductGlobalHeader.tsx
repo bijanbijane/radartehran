@@ -3,6 +3,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, SlidersHorizontal, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
+import { CANONICAL_BRAND_EN, CANONICAL_BRAND_FA } from '../../utils/geo/cityGeospatialResolver';
 import { PrimaryViewId, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
 import { AreaUnitToggle, ExperienceModeToggle, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
 import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
@@ -26,6 +27,7 @@ export interface ProductGlobalHeaderProps {
   onMegaMenuAction?: (actionId: NonNullable<MegaMenuEntry['actionId']>) => void;
   searchQuery?: string;
   activePlaceLabelFa?: string;
+  invalidCityParam?: string | null;
   currentUser?: FirebaseUser | null;
   unreadNotificationsCount?: number;
 }
@@ -38,18 +40,10 @@ const CITIES: { id: CityId; labelFa: string; labelEn: string }[] = [
   { id: 'isfahan', labelFa: 'اصفهان', labelEn: 'Isfahan' },
 ];
 
-const BRAND_BY_CITY: Record<CityId, { fa: string; en: string }> = {
-  tehran: { fa: 'رادار تهران', en: 'Tehran Radar' },
-  karaj: { fa: 'رادار کرج', en: 'Karaj Radar' },
-  mashhad: { fa: 'رادار مشهد', en: 'Mashhad Radar' },
-  isfahan: { fa: 'رادار اصفهان', en: 'Isfahan Radar' },
-  shiraz: { fa: 'رادار شیراز', en: 'Shiraz Radar' },
-};
-
 export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   primaryView, activeSubTab, onSelectPrimaryView, activeCity, onSwitchCity, appleTheme,
   onToggleAppleTheme, onOpenSearch, isSearchOpen, onMegaMenuAction, searchQuery, activePlaceLabelFa,
-  currentUser, unreadNotificationsCount,
+  invalidCityParam, currentUser, unreadNotificationsCount,
 }) => {
   const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
   const rateState = useExchangeRateSnapshot();
@@ -70,8 +64,10 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
 
   const fxSampleHint = intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(100, intlCurrency, radarLocale, rateState.snapshot) : '';
   const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
-  const cityBrand = { fa: `رادار ${cityCfg.nameFa}`, en: BRAND_BY_CITY[activeCity]?.en || 'Tehran Radar' };
-  const activeCityName = isEn ? (CITIES.find((c) => c.id === activeCity)?.labelEn || 'Tehran') : (activePlaceLabelFa || cityCfg.nameFa || 'تهران');
+  const brandLabel = isEn ? CANONICAL_BRAND_EN : CANONICAL_BRAND_FA;
+  const activeCityName = invalidCityParam
+    ? (isEn ? 'Unsupported City' : 'شهر پشتیبانی‌نشده')
+    : (isEn ? (CITIES.find((c) => c.id === activeCity)?.labelEn || 'Tehran') : (activePlaceLabelFa || cityCfg.nameFa || 'تهران'));
   const navigationItems = getProductNavigationItems(radarLocale);
   const primaryNavItems = (['map', 'discover', 'intelligence', 'properties', 'tools'] as const)
     .map((id) => navigationItems.find((item) => item.id === id))
@@ -105,15 +101,17 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             data-testid="global-nav-home"
             aria-current={primaryView === 'home' ? 'page' : undefined}
             onClick={() => { closeMegaMenu(); onSelectPrimaryView('home'); }}
-            title={fxSampleHint ? `۱۰۰ میلیون تومان ≈ ${fxSampleHint}` : isEn ? `${cityBrand.en} Home` : `صفحه نخست ${cityBrand.fa}`}
+            title={fxSampleHint ? `۱۰۰ میلیون تومان ≈ ${fxSampleHint}` : isEn ? `${brandLabel} | ${activeCityName} Home` : `صفحه نخست ${brandLabel} | ${activeCityName}`}
             className="flex items-center gap-2 group text-start focus-visible:outline-2 focus-visible:outline-emerald-600 rounded-lg cursor-pointer"
           >
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition ${primaryView === 'home' ? 'bg-emerald-600 text-white' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 group-hover:bg-emerald-700'}`}>
               <MapIcon className="w-4 h-4 stroke-[2.2]" aria-hidden="true" />
             </div>
-            <div className="hidden min-[380px]:block">
-              <span className="font-black text-xs sm:text-sm tracking-tight text-slate-900 dark:text-white whitespace-nowrap block">
-                {isEn ? cityBrand.en : cityBrand.fa}
+            <div className="block">
+              <span data-testid="global-brand-name" className="font-black text-[11px] sm:text-sm tracking-tight text-slate-900 dark:text-white whitespace-nowrap flex items-center gap-1">
+                <span>{brandLabel}</span>
+                <span className="text-slate-300 dark:text-slate-600 font-normal" aria-hidden="true">|</span>
+                <span data-testid="global-active-city-label" className={`font-extrabold text-[10.5px] sm:text-xs ${invalidCityParam ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>{activeCityName}</span>
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden 2xl:block whitespace-nowrap">
                 {isEn ? `${activeCityName} Spatial Atlas` : `هوش مکانی ${activeCityName}`}
@@ -261,26 +259,14 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={onToggleAppleTheme}
-            aria-label={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')}
-            title={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')}
-            data-testid="theme-toggle-btn"
-            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-          >
+          <button type="button" onClick={onToggleAppleTheme} aria-label={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')} title={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')} data-testid="theme-toggle-btn" className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
             {appleTheme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
           </button>
         </div>
       </div>
 
       {megaMenuOpen && (
-        <div
-          aria-hidden="true"
-          onMouseEnter={cancelCloseMega}
-          onMouseLeave={scheduleCloseMega}
-          className={`hidden lg:block absolute inset-x-4 max-w-5xl mx-auto bottom-0 z-40 ${primaryView === 'map' ? 'h-[15px]' : 'h-[15px] lg:h-[21px]'}`}
-        />
+        <div aria-hidden="true" onMouseEnter={cancelCloseMega} onMouseLeave={scheduleCloseMega} className={`hidden lg:block absolute inset-x-4 max-w-5xl mx-auto bottom-0 z-40 ${primaryView === 'map' ? 'h-[15px]' : 'h-[15px] lg:h-[21px]'}`} />
       )}
 
       <DesktopMegaMenu

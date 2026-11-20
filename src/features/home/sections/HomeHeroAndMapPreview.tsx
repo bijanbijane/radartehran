@@ -102,7 +102,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
               نقشه، اطلاعات محله‌ها، داده‌های بازار و املاک را کنار هم بررسی کنید.
             </p>
             <p className="text-xs sm:text-sm text-[#34433E] dark:text-slate-400 leading-[1.75]">
-              رادار {activeCityNameFa} بستری برای شناخت مکانی و تحلیلی بازار املاک و اطلاعات شهری است.
+              رادارتهران بستری برای شناخت مکانی و تحلیلی بازار املاک و اطلاعات شهری در {activeCityNameFa} و کلان‌شهرهای ایران است.
             </p>
           </div>
 

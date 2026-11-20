@@ -1,14 +1,13 @@
 /**
  * @file src/features/account/components/SystemHealthDashboardCard.tsx
  * @description Live System Health Dashboard in Settings showing real-time Online/Offline status
- * and measured response latency (ms) for Firebase, Casper Hub, and Cloud Databases.
+ * and measured response latency (ms) for Firebase and Cloud Databases.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
   CheckCircle2,
   Cloud,
-  Cpu,
   Database,
   RefreshCw,
   WifiOff,
@@ -91,12 +90,11 @@ export const SystemHealthDashboardCard: React.FC = () => {
 
   const getServiceIcon = (id: ServiceHealthProbeResult['id']) => {
     if (id === 'firebase') return <Cloud className="w-4 h-4 text-teal-600 dark:text-teal-400" />;
-    if (id === 'casperHub') return <Cpu className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />;
     return <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   };
 
   const servicesList: ServiceHealthProbeResult[] = snapshot
-    ? [snapshot.services.firebase, snapshot.services.casperHub, snapshot.services.cloudDatabase]
+    ? [snapshot.services.firebase, snapshot.services.cloudDatabase]
     : [];
 
   return (
@@ -131,7 +129,7 @@ export const SystemHealthDashboardCard: React.FC = () => {
               )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              پایش زنده وضعیت اتصال و زمان پاسخ‌دهی (Latency) برای Firebase، کسپر هاب و دیتابیس‌های ابری
+              پایش زنده وضعیت اتصال و زمان پاسخ‌دهی (Latency) برای Firebase و دیتابیس‌های ابری
             </p>
           </div>
         </div>
@@ -183,8 +181,8 @@ export const SystemHealthDashboardCard: React.FC = () => {
         </div>
       )}
 
-      {/* Three Service Cards: Firebase, Casper Hub, Cloud Databases */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {/* Two Service Cards: Firebase & Cloud Databases */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {servicesList.map((srv) => (
           <div
             key={srv.id}

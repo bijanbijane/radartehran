@@ -2,8 +2,9 @@ import crypto from 'node:crypto';
 import type { Express, Request, Response } from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getHoodMonthlySponsorTariff, INITIAL_NEIGHBORHOODS, type Neighborhood } from '../data/neighborhoods';
-import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods } from '../data/multiCityData';
-import { sanitizeInput, validateCityParam, validateNeighborhoodId, isValidIranMobilePhone, isValidFirestoreDocId, computeCanonicalSponsorPricing, computeSponsorExpirationIso, computeExtendedSponsorExpirationIso, computeCanonicalBargainFinancials, isValidBargainStateTransition, sanitizeSponsorRecord } from './security';
+import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
+import { sanitizeInput, validateNeighborhoodId, isValidIranMobilePhone, isValidFirestoreDocId, computeCanonicalSponsorPricing, computeSponsorExpirationIso, computeExtendedSponsorExpirationIso, computeCanonicalBargainFinancials, isValidBargainStateTransition, sanitizeSponsorRecord } from './security';
+import { resolveCityParamOrReject, validateCityNeighborhoodOwnership } from './geo/cityGeospatialResolver';
 import { verifyAuthenticatedUserHeader, verifyAdminApiAuthorization, verifyFirebaseAppCheckHeader, getFirebaseAdminFirestoreForServer, executeAuthorizedAdminFirestoreOperation } from './serverAdminAndTelegramSecurity';
 import { recordLiveAdminSecurityAudit } from './serverForensicsAndIncidentResponse';
 import { recordAbuseSignal, type RateBucketType } from './serverDeliveryAndAbuseGuard';
@@ -17,6 +18,7 @@ import {
   buildBargainModerationFirestorePayload,
   commitSponsorReserveViaRest,
   commitSponsorApprovalViaRest,
+  commitSponsorExtendViaRest,
   commitSponsorReleaseViaRest,
   commitBargainModerationViaRest,
   isMissingAdminCredentialsError,
@@ -38,9 +40,26 @@ const sponsorIdempotencyMap = new Map<string, { response: Record<string, unknown
 const MAX_SPONSOR_IDEMPOTENCY_ENTRIES = 250; const SPONSOR_IDEMPOTENCY_TTL_MS = 15 * 60 * 1000; const registeredSponsorBargainApps = new WeakSet<Express>();
 function pruneSponsorIdempotencyMap(nowMs = Date.now()): void { for (const [k, v] of sponsorIdempotencyMap.entries()) { if (nowMs - v.createdAtMs >= SPONSOR_IDEMPOTENCY_TTL_MS) sponsorIdempotencyMap.delete(k); } while (sponsorIdempotencyMap.size >= MAX_SPONSOR_IDEMPOTENCY_ENTRIES) { const oldestKey = sponsorIdempotencyMap.keys().next().value; if (!oldestKey) break; sponsorIdempotencyMap.delete(oldestKey); } }
 const ALLOWED_SPONSOR_RESERVE_KEYS: ReadonlySet<string> = new Set(['hoodId', 'hoodName', 'city', 'agencyName', 'phone', 'specialty', 'experienceYears', 'planMonths']);
-function resolveServerNeighborhood(rawCity: unknown, rawHoodId: unknown): { hoodId: number | null; matchedHood?: Neighborhood } { const city = validateCityParam(rawCity, 'tehran'); const cityHoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city]?.neighborhoods || []; const allHoods = getAllMultiCityNeighborhoods(); const hoodId = validateNeighborhoodId(rawHoodId, allHoods.map((h) => h.id)); const matchedHood = hoodId ? (cityHoods.find((h) => h.id === hoodId) || allHoods.find((h) => h.id === hoodId)) : undefined; return { hoodId, matchedHood }; }
+function resolveServerNeighborhood(rawCity: unknown, rawHoodId: unknown): { ok: boolean; errorCode?: 'INVALID_CITY_ID' | 'MISSING_CITY_ID' | 'CITY_NEIGHBORHOOD_MISMATCH' | 'UNKNOWN_NEIGHBORHOOD'; errorMessageFa?: string; hoodId: number | null; matchedHood?: Neighborhood } {
+  const cityCheck = resolveCityParamOrReject(rawCity, { allowOmittedDefault: 'tehran' });
+  if (!cityCheck.ok) return { ok: false, errorCode: cityCheck.code, errorMessageFa: cityCheck.messageFa, hoodId: null };
+  const city = cityCheck.cityId;
+  const cityHoods = city === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[city]?.neighborhoods || [];
+  const allHoods = getAllMultiCityNeighborhoods();
+  const hoodId = validateNeighborhoodId(rawHoodId, allHoods.map((h) => h.id));
+  if (!hoodId) return { ok: false, errorCode: 'UNKNOWN_NEIGHBORHOOD', errorMessageFa: 'محله انتخاب‌شده معتبر نیست.', hoodId: null };
+  if (!cityCheck.wasOmitted) {
+    const ownership = validateCityNeighborhoodOwnership(city, hoodId, resolveCityIdForNeighborhood);
+    if (!ownership.ok) return { ok: false, errorCode: ownership.code, errorMessageFa: ownership.messageFa, hoodId: null };
+  }
+  const matchedHood = cityCheck.wasOmitted
+    ? (cityHoods.find((h) => h.id === hoodId) || allHoods.find((h) => h.id === hoodId))
+    : cityHoods.find((h) => h.id === hoodId);
+  return { ok: Boolean(matchedHood), hoodId, matchedHood };
+}
 export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBargainRoutesDeps, ): void { if (registeredSponsorBargainApps.has(app)) return; registeredSponsorBargainApps.add(app); const { checkRateLimit, getClientIp } = deps; registerBackupAndChunkUploadRoutes(app, { checkRateLimit, getClientIp });
-  app.post('/api/sponsors/reserve', (req: Request, res: Response) => { void (async () => {
+  const runSafeAsync = (res: Response, fn: () => Promise<void>) => { void fn().catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_SERVER_ERROR', message: 'خطای داخلی در پردازش درخواست رخ داد.' }); }); };
+  app.post('/api/sponsors/reserve', (req: Request, res: Response) => { runSafeAsync(res, async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const ip = getClientIp(req); if (!checkRateLimit(ip, 'lead', 10, 10 * 60 * 1000)) { res.status(429).json({ status: 'error', code: 'SPONSOR_RATE_LIMIT_EXCEEDED', message: 'تعداد درخواست‌های رزرو اسپانسر بیش از حد مجاز است.' }); return; }
       const appCheck = await verifyFirebaseAppCheckHeader(req.headers as Record<string, string | string[] | undefined>, process.env); if (!appCheck.allowed) { res.status(appCheck.statusCode).json({ status: 'error', code: appCheck.reason, message: 'توکن App Check معتبر نیست.' }); return; }
       const userAuth = await verifyAuthenticatedUserHeader(req.headers, process.env); if (!userAuth.authenticated || !userAuth.uid || !userAuth.email) { recordAbuseSignal(ip, 'auth_failure'); res.status(userAuth.statusCode).json({ status: 'error', code: userAuth.reason, message: 'برای ثبت درخواست اسپانسرینگ، ورود با حساب کاربری تاییدشده الزامی است.' }); return; }
@@ -48,7 +67,9 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       for (const k of Object.keys(req.body as Record<string, unknown>)) { if (!ALLOWED_SPONSOR_RESERVE_KEYS.has(k)) { res.status(400).json({ status: 'error', code: 'FORBIDDEN_CLIENT_PRICING_OR_STATUS_FIELD', message: `ارسال فیلد غیرمجاز (${sanitizeInput(k, 24)}) از سمت کلاینت مسدود است؛ تعرفه و انقضا فقط روی سرور محاسبه می‌شود.` }); return; } }
       const idemHeader = typeof req.headers['idempotency-key'] === 'string' ? req.headers['idempotency-key'].trim().slice(0, 64) : ''; const payloadFingerprint = idemHeader ? computeCanonicalPayloadFingerprint(req.body) : '';
       if (idemHeader) { const cached = sponsorIdempotencyMap.get(`${userAuth.uid}:${idemHeader}`); if (cached && Date.now() - cached.createdAtMs < 15 * 60 * 1000) { if (cached.payloadFingerprint !== payloadFingerprint) { res.status(409).json({ status: 'error', error: 'idempotency_key_reused_with_different_request', code: 'IDEMPOTENCY_PAYLOAD_MISMATCH', message: 'Use a new Idempotency-Key for a new request.' }); return; } res.status(200).json({ ...cached.response, replayed: true }); return; } }
-      const { hoodId, matchedHood } = resolveServerNeighborhood(req.body.city, req.body.hoodId); const agencyName = sanitizeInput(req.body.agencyName || '', 80).replace(/[<>]/g, ''); const phone = sanitizeInput(req.body.phone || '', 20); const specialty = sanitizeInput(req.body.specialty || '', 100).replace(/[<>]/g, ''); const expRaw = Number(req.body.experienceYears); const experienceYears = Number.isFinite(expRaw) ? Math.min(60, Math.max(1, Math.round(expRaw))) : 5;
+      const resolvedHood = resolveServerNeighborhood(req.body.city, req.body.hoodId);
+      if (!resolvedHood.ok && (resolvedHood.errorCode === 'INVALID_CITY_ID' || resolvedHood.errorCode === 'CITY_NEIGHBORHOOD_MISMATCH')) { res.status(400).json({ status: 'error', code: resolvedHood.errorCode, message: resolvedHood.errorMessageFa }); return; }
+      const { hoodId, matchedHood } = resolvedHood; const agencyName = sanitizeInput(req.body.agencyName || '', 80).replace(/[<>]/g, ''); const phone = sanitizeInput(req.body.phone || '', 20); const specialty = sanitizeInput(req.body.specialty || '', 100).replace(/[<>]/g, ''); const expRaw = Number(req.body.experienceYears); const experienceYears = Number.isFinite(expRaw) ? Math.min(60, Math.max(1, Math.round(expRaw))) : 5;
       if (!hoodId || !matchedHood || agencyName.length < 2 || specialty.length < 2 || !isValidIranMobilePhone(phone)) { res.status(400).json({ status: 'error', code: 'INVALID_SPONSOR_INPUT', message: 'اطلاعات دفتر املاک، محله یا شماره تماس معتبر نیست.' }); return; }
       const discountPct = await getServerCampaignDiscountPercent(); const pricing = computeCanonicalSponsorPricing(getHoodMonthlySponsorTariff(matchedHood, discountPct), req.body.planMonths); const trackingCode = `SP-${hoodId}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`; const requestId = `${userAuth.uid}_hood_${hoodId}`; const createdAtIso = new Date().toISOString();
       const firestoreSponsorDoc = buildSponsorRequestFirestoreDoc({ hoodId, hoodName: matchedHood.name, agencyName, phone, specialty, experienceYears, monthlyTariffMillion: pricing.monthlyTariffMillion, planMonths: pricing.planMonths, totalPayableMillion: pricing.totalPayableMillion, trackingCode, status: 'pending' });
@@ -78,10 +99,10 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       const responsePayload = { status: 'ok', request: responseRequest, replayed: false };
       if (idemHeader) { pruneSponsorIdempotencyMap(Date.now()); sponsorIdempotencyMap.set(`${userAuth.uid}:${idemHeader}`, { response: responsePayload, payloadFingerprint, createdAtMs: Date.now() }); }
       res.status(200).json(responsePayload);
-    })();
+    });
   });
   app.post('/api/admin/sponsors/approve', (req: Request, res: Response) => {
-    void (async () => {
+    runSafeAsync(res, async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const requestId = typeof req.body?.requestId === 'string' ? req.body.requestId.trim() : ''; const hoodId = Number(req.body?.hoodId); const planMonths: 1 | 3 = req.body?.planMonths === 3 ? 3 : 1;
@@ -112,31 +133,42 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       });
       if (committed.ok === false) { res.status(503).json({ status: 'error', code: committed.code, message: committed.messageFa }); return; }
       res.status(200).json({ status: 'ok', hoodId, expiresAtIso, sponsor: overrideSponsor });
-    })();
+    });
   });
   app.post('/api/admin/sponsors/extend', (req: Request, res: Response) => {
-    void (async () => {
+    runSafeAsync(res, async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const hoodId = Number(req.body?.hoodId); if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) { res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return; }
       const currentExpiresAtIso = typeof req.body?.currentExpiresAtIso === 'string' ? req.body.currentExpiresAtIso : null; const expiresAtIso = computeExtendedSponsorExpirationIso(currentExpiresAtIso, Date.now(), 30);
+      const seedHood = resolveServerNeighborhood(req.body?.city, hoodId).matchedHood; const lockUntilMs = Date.now() + 7 * 86400000;
       try {
-        const db = getFirebaseAdminFirestoreForServer(process.env); const hoodRef = db.collection('neighborhoodOverrides').doc(String(hoodId)); const seedHood = resolveServerNeighborhood(req.body?.city, hoodId).matchedHood;
+        const db = getFirebaseAdminFirestoreForServer(process.env); const hoodRef = db.collection('neighborhoodOverrides').doc(String(hoodId));
         if (typeof db.runTransaction === 'function') {
           await db.runTransaction(async (tx) => {
             const snap = await tx.get(hoodRef); const prevSponsor = (snap.data()?.sponsor || {}) as Record<string, unknown>; const baseFields = snap?.exists ? {} : { buyPerSqm: seedHood?.buyPerSqm ?? 100, rahn80m: Math.max(50, seedHood?.rahn80m ?? 1000) };
             const cleanSponsor = buildOverrideSponsorFirestorePayload({ ...prevSponsor, expiresAtIso }, 1, expiresAtIso);
-            tx.set(hoodRef, { hoodId, ...baseFields, sponsor: cleanSponsor, overrideSource: 'ADMIN_MANUAL', manualLockUntilMs: Date.now() + 7 * 86400000, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+            tx.set(hoodRef, { hoodId, ...baseFields, sponsor: cleanSponsor, overrideSource: 'ADMIN_MANUAL', manualLockUntilMs: lockUntilMs, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
           });
         } else { await hoodRef.set({ hoodId, buyPerSqm: seedHood?.buyPerSqm ?? 100, rahn80m: Math.max(50, seedHood?.rahn80m ?? 1000), sponsor: buildOverrideSponsorFirestorePayload({ expiresAtIso }, 1, expiresAtIso), overrideSource: 'ADMIN_MANUAL', updatedAt: FieldValue.serverTimestamp() }, { merge: true }); }
         const srCol = db.collection('sponsorRequests'); if (typeof srCol?.where === 'function') { const srSnap = await srCol.where('hoodId', '==', hoodId).where('status', '==', 'approved').get(); for (const d of srSnap.docs) await d.ref.set({ expiresAtIso }, { merge: true }); }
-      } catch { res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'تمدید اسپانسر در پایگاه داده انجام نشد.' }); return; }
+      } catch (err) {
+        let extendedViaRest = false;
+        if (isMissingAdminCredentialsError(err)) {
+          try {
+            const fallbackSponsor = buildOverrideSponsorFirestorePayload({ ...(req.body?.sponsor || {}), expiresAtIso }, 1, expiresAtIso);
+            await commitSponsorExtendViaRest({ hoodId, buyPerSqm: seedHood?.buyPerSqm ?? 100, rahn80m: Math.max(50, seedHood?.rahn80m ?? 1000), sponsor: fallbackSponsor, manualLockUntilMs: lockUntilMs }, req.headers.authorization);
+            extendedViaRest = true;
+          } catch { extendedViaRest = false; }
+        }
+        if (!extendedViaRest) { res.status(503).json({ status: 'error', code: 'SPONSOR_PERSIST_FAILED', message: 'تمدید اسپانسر در پایگاه داده انجام نشد.' }); return; }
+      }
       recordLiveAdminSecurityAudit({ action: 'SPONSOR_EXTEND_30D', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: `HOOD_${hoodId}_${expiresAtIso}` });
       res.status(200).json({ status: 'ok', hoodId, expiresAtIso });
-    })();
+    });
   });
   app.post('/api/admin/sponsors/release', (req: Request, res: Response) => {
-    void (async () => {
+    runSafeAsync(res, async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const hoodId = Number(req.body?.hoodId); if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) { res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return; }
@@ -156,21 +188,23 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       }
       recordLiveAdminSecurityAudit({ action: 'SPONSOR_RELEASE', actorUid: auth.actorUid || 'admin', actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: `HOOD_${hoodId}` });
       res.status(200).json({ status: 'ok', hoodId, released: true });
-    })();
+    });
   });
   app.post('/api/bargains/validate-financials', (req: Request, res: Response) => {
-    void (async () => {
+    runSafeAsync(res, async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const ip = getClientIp(req); if (!checkRateLimit(ip, 'general', 30, 60 * 1000)) { res.status(429).json({ status: 'error', code: 'BARGAIN_VALIDATE_RATE_LIMIT' }); return; }
       const userAuth = await verifyAuthenticatedUserHeader(req.headers, process.env); if (!userAuth.authenticated) { recordAbuseSignal(ip, 'auth_failure'); res.status(userAuth.statusCode).json({ status: 'error', code: userAuth.reason }); return; }
-      const { matchedHood } = resolveServerNeighborhood(req.body?.city, req.body?.hoodId); if (!matchedHood) { res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return; }
+      const resolvedHood = resolveServerNeighborhood(req.body?.city, req.body?.hoodId);
+      if (!resolvedHood.ok && (resolvedHood.errorCode === 'INVALID_CITY_ID' || resolvedHood.errorCode === 'CITY_NEIGHBORHOOD_MISMATCH')) { res.status(400).json({ status: 'error', code: resolvedHood.errorCode, message: resolvedHood.errorMessageFa }); return; }
+      const { matchedHood } = resolvedHood; if (!matchedHood) { res.status(400).json({ status: 'error', code: 'INVALID_HOOD_ID' }); return; }
       const dealType: 'خرید' | 'رهن و اجاره' = req.body?.dealType === 'رهن و اجاره' || req.body?.dealType === 'اجاره' ? 'رهن و اجاره' : 'خرید';
       const calc = computeCanonicalBargainFinancials({ dealType, sqm: Number(req.body?.sqm), offeredTotalMillion: Number(req.body?.offeredTotalMillion), benchmarkBuyPerSqm: matchedHood.buyPerSqm, benchmarkRahn80m: matchedHood.rahn80m });
       if (!calc.valid) { res.status(400).json({ status: 'error', code: calc.code || 'INVALID_BARGAIN_FINANCIALS' }); return; }
       res.status(200).json({ status: 'ok', financials: calc });
-    })();
+    });
   });
   app.post('/api/admin/bargains/approve', (req: Request, res: Response) => {
-    void (async () => {
+    runSafeAsync(res, async () => {
       res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate'); const auth = await verifyAdminApiAuthorization(req.headers, process.env);
       if (!auth.authorized) { if (auth.statusCode === 401 || auth.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
       const bargainId = typeof req.body?.bargainId === 'string' ? req.body.bargainId.trim() : ''; const rawTargetStatus = req.body?.status === undefined ? 'approved' : req.body?.status;
@@ -194,6 +228,6 @@ export function registerSponsorAndBargainRoutes( app: Express, deps: SponsorBarg
       if (mutated) { await persistObjectStoreIndexNow().catch(() => {}); }
       recordLiveAdminSecurityAudit({ action: `BARGAIN_MODERATION_${targetStatus.toUpperCase()}`, actorUid: adminUid, actorEmail: auth.actorEmail || 'admin', outcome: 'allowed', reason: bargainId });
       res.status(200).json({ status: 'ok', bargainId, moderationStatus: targetStatus, approvedAtIso });
-    })();
+    });
   });
 }

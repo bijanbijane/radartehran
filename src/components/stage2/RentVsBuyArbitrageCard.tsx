@@ -97,7 +97,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
           </div>
           <div>
             <h4 className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span>مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد» (کسپر)</span>
+              <span>مدل تعادلی خرید در برابر «اجاره + سرمایه‌گذاری مازاد»</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">{dossier.hoodName}</span>
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">نقد دوگانه باور سنتی «اجاره‌نشینی هدر دادن پول است» و «توهم پولی فیشر در اعداد اسمی»</p>

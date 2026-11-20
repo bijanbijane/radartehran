@@ -88,7 +88,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-black text-slate-900 dark:text-white">حکم آنی کسپر برای {selectedHood.name}</span>
+              <span className="text-xs font-black text-slate-900 dark:text-white">حکم آنی رادار برای {selectedHood.name}</span>
               <span
                 data-testid="casper-verdict-badge"
                 data-verdict={decision.decisionVerdict}
@@ -188,7 +188,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
       {/* Bottom Action Strip: Advice & Modals Triggers */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-          💡 <span className="text-slate-900 dark:text-white font-bold">توصیه عملیاتی کسپر:</span> {toPersianNum(decision.verdictSummaryFa)}
+          💡 <span className="text-slate-900 dark:text-white font-bold">توصیه عملیاتی رادار:</span> {toPersianNum(decision.verdictSummaryFa)}
         </p>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
           <button

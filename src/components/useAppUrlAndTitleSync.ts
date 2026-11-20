@@ -10,6 +10,8 @@ import { buildCanonicalPathForDestination, normalizePathname, resolveRouteFromLo
 import type { AdminSectionId, ModuleSubTabId, RouteDestinationId } from '../navigation/registry/route.types';
 import { matchesPersianSearch } from '../utils/security';
 import { updateSeoHeadMeta } from './navigation/urlSyncHelpers';
+import { CANONICAL_BRAND_FA, formatBrandCityTitle, parseStrictCityId } from '../utils/geo/cityGeospatialResolver';
+import type { MapNavigationIntent } from './useLeafletRadarMap';
 
 export interface UseAppUrlAndTitleSyncParams {
   activeCity: CityId; setActiveCity: (c: CityId) => void; selectedHood?: EvaluatedNeighborhood;
@@ -23,6 +25,8 @@ export interface UseAppUrlAndTitleSyncParams {
   mapInstanceRef: React.MutableRefObject<any>; hasUrlBudgetParams: boolean;
   useLoanBooster?: boolean; setUseLoanBooster?: (v: boolean) => void; deductTenantRahnInBuy?: boolean; setDeductTenantRahnInBuy?: (v: boolean) => void;
   buildingAgeSegment?: 'new' | 'mid' | 'older'; setBuildingAgeSegment?: (v: 'new' | 'mid' | 'older') => void;
+  invalidCityParam?: string | null; setInvalidCityParam?: (v: string | null) => void;
+  navigationIntentRef?: React.MutableRefObject<MapNavigationIntent>;
 }
 
 export function buildAllCityHoods(): { cityId: CityId; hood: Neighborhood }[] {
@@ -71,7 +75,15 @@ export function applyUrlParamsFromLocation(
     if (setActiveSubTab) setActiveSubTab(navLoc.subTab);
     if (navLoc.viewId === 'admin' && setAdminSection && navLoc.subTab) setAdminSection(navLoc.subTab as AdminSectionId);
   }
-  if (!search) return { compareAccepted: false, compareRejectedCrossCity: false };
+  if (!search) {
+    p.setInvalidCityParam?.(null);
+    if (flyMap && !publicPath && !navLoc.areaSlug) {
+      setActiveCity('tehran');
+      const tehranCfg = MULTI_CITY_CONFIGS.tehran;
+      if (mapInstanceRef.current && tehranCfg) mapInstanceRef.current.flyTo(tehranCfg.center, tehranCfg.defaultZoom, { duration: 0.6 });
+    }
+    return { compareAccepted: false, compareRejectedCrossCity: false };
+  }
 
   const intlParams = parseUrlIntlParams(search);
   if (intlParams.lang) setStoredRadarLocale(intlParams.lang);
@@ -80,9 +92,12 @@ export function applyUrlParamsFromLocation(
 
   const params = new URLSearchParams(search);
   const rawCity = params.get('city')?.trim().toLowerCase();
-  const validCityParam = rawCity && ['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz'].includes(rawCity)
-    ? (rawCity as CityId)
-    : undefined;
+  const validCityParam = rawCity ? (parseStrictCityId(rawCity) ?? undefined) : undefined;
+  if (rawCity && !validCityParam) {
+    p.setInvalidCityParam?.(rawCity.slice(0, 64));
+    return { compareAccepted: false, compareRejectedCrossCity: false };
+  }
+  p.setInvalidCityParam?.(null);
   const compareParam = params.get('compare');
   const hoodParam = params.get('hood');
 
@@ -95,6 +110,10 @@ export function applyUrlParamsFromLocation(
       if (list.length > 1) setCompareId2(list[1].id);
       if (flyMap && mapInstanceRef.current && cityCfg) mapInstanceRef.current.flyTo(cityCfg.center, cityCfg.defaultZoom, { duration: 0.6 });
     }
+  } else if (flyMap && !hoodParam && !compareParam && !publicPath && !navLoc.areaSlug) {
+    setActiveCity('tehran');
+    const tehranCfg = MULTI_CITY_CONFIGS.tehran;
+    if (mapInstanceRef.current && tehranCfg) mapInstanceRef.current.flyTo(tehranCfg.center, tehranCfg.defaultZoom, { duration: 0.6 });
   }
 
   let compareAccepted = false;
@@ -119,7 +138,7 @@ export function applyUrlParamsFromLocation(
     } else {
       compareRejectedCrossCity = true;
       setShowCompareModal(false);
-      const fallbackCity = validCityParam || valid1?.cityId || 'tehran';
+      const fallbackCity = validCityParam || valid1?.cityId || p.activeCity || 'tehran';
       setActiveCity(fallbackCity);
       const cityCfg = MULTI_CITY_CONFIGS[fallbackCity];
       const list = fallbackCity === 'tehran' ? INITIAL_NEIGHBORHOODS : cityCfg?.neighborhoods || INITIAL_NEIGHBORHOODS;
@@ -190,6 +209,7 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
     applyUrlParams(false);
     const handlePopState = () => {
       isPopStateSyncRef.current = true;
+      if (paramsRef.current.navigationIntentRef) paramsRef.current.navigationIntentRef.current = 'history_restore';
       applyUrlParams(true);
     };
     window.addEventListener('popstate', handlePopState);
@@ -200,8 +220,18 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
     try {
       const docEl = document.documentElement;
       if (docEl) { docEl.lang = locale === 'en' ? 'en' : 'fa'; docEl.dir = locale === 'en' ? 'ltr' : 'rtl'; }
+      if (p.invalidCityParam) {
+        updateSeoHeadMeta(
+          `شهر پشتیبانی‌نشده | ${CANONICAL_BRAND_FA}`,
+          `شهر درخواستی «${p.invalidCityParam}» در سامانه ${CANONICAL_BRAND_FA} پشتیبانی نمی‌شود.`,
+          window.location.pathname || '/',
+          { '@context': 'https://schema.org', '@type': 'WebPage', name: 'Unsupported City' },
+        );
+        return;
+      }
       const activeProvinceFa = findProvinceForHood(showCompareModal ? (compHood1?.id ?? -1) : (selectedHood?.id ?? -1))?.capitalFa;
       const cityNameFa = activeProvinceFa || MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
+      const brandWithCity = formatBrandCityTitle(cityNameFa, locale === 'en' ? 'en' : 'fa');
       const cityPrefix = activeCity !== 'tehran' ? `city=${activeCity}&` : '';
       const keepBudget = hasUrlBudgetParams || window.location.search.includes('dep=') || window.location.search.includes('buy=');
       const hubPart = workHubId && workHubId !== 'none' ? `&hub=${encodeURIComponent(workHubId)}` : '';
@@ -211,10 +241,11 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       const baseBudgetSuffix = (keepBudget ? `&mode=${mode}&dep=${deposit}&rent=${monthlyRent}&buy=${buyTotalBudget}&sqm=${targetSqm}${hubPart}${leveragePart}` : `${hubPart}${leveragePart}`) + intlSuffix;
       const budgetSuffix = baseBudgetSuffix + viewSuffix;
 
-      const routeKey = `${primaryView || 'map'}:${activeSubTab || ''}`;
+      const isManualPan = paramsRef.current.navigationIntentRef?.current === 'manual_map_pan';
+      const routeKey = `${primaryView || 'map'}:${activeSubTab || ''}:${isManualPan ? 'pan' : activeCity}`;
       const fromPopState = isPopStateSyncRef.current;
       isPopStateSyncRef.current = false;
-      const isRouteChange = !fromPopState && lastTrackedRouteKeyRef.current !== '' && lastTrackedRouteKeyRef.current !== routeKey;
+      const isRouteChange = !fromPopState && !isManualPan && lastTrackedRouteKeyRef.current !== '' && lastTrackedRouteKeyRef.current !== routeKey;
       lastTrackedRouteKeyRef.current = routeKey;
 
       const commitHistoryUrl = (nextUrl: string) => {
@@ -237,8 +268,8 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         const datedCompare = activeCity === 'tehran' ? seoForDatedCompare(compHood1.id, compHood2.id) : null;
         const unitP1 = convertPricePerSqmToUnit(compHood1.buyPerSqm, areaUnit);
         const intlTag = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitP1, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)})` : '';
-        const title = datedCompare?.title ?? `مقایسه محله ${compHood1.name} و ${compHood2.name}${intlTag} | قیمت مسکن و کیفیت زندگی | رادار ${cityNameFa}`;
-        const desc = datedCompare?.description ?? `مقایسه تحلیلی محله ${compHood1.name} (متری ${compHood1.buyPerSqm} م، رهن ${compHood1.rahn80m} م) با محله ${compHood2.name} (متری ${compHood2.buyPerSqm} م، رهن ${compHood2.rahn80m} م) در رادار ${cityNameFa}.`;
+        const title = datedCompare?.title ?? `مقایسه محله ${compHood1.name} و ${compHood2.name}${intlTag} | قیمت مسکن و کیفیت زندگی | ${brandWithCity}`;
+        const desc = datedCompare?.description ?? `مقایسه تحلیلی محله ${compHood1.name} (متری ${compHood1.buyPerSqm} م، رهن ${compHood1.rahn80m} م) با محله ${compHood2.name} (متری ${compHood2.buyPerSqm} م، رهن ${compHood2.rahn80m} م) در ${brandWithCity}.`;
         const canonicalQuery = datedCompare?.path ?? `?${cityPrefix}compare=${compHood1.id}-${compHood2.id}`;
         updateSeoHeadMeta(title, desc, canonicalQuery, {
           '@context': 'https://schema.org', '@type': 'ItemList', name: title, description: desc,
@@ -254,17 +285,17 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         const datedHood = activeCity === 'tehran' ? seoForDatedHood(selectedHood.id) : null;
         const unitBuy = convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit);
         const intlTag = intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(unitBuy, intlCurrency, locale)} / ${formatAreaUnitLabel(areaUnit)})` : '';
-        const title = datedHood?.title ?? `قیمت مسکن، اجاره و کارنامه محله ${selectedHood.name}${intlTag} | رادار ${cityNameFa}`;
+        const title = datedHood?.title ?? `قیمت مسکن، اجاره و کارنامه محله ${selectedHood.name}${intlTag} | ${brandWithCity}`;
         const desc = datedHood?.description ?? `برآورد قیمت خرید آپارتمان در محله ${selectedHood.name} (${selectedHood.zone}): متری ${selectedHood.buyPerSqm} میلیون تومان | رهن کامل ۸۰ متری: ${selectedHood.rahn80m} میلیون تومان | ترافیک، هوا و مترو.`;
         const viewId = (primaryView || 'map') as RouteDestinationId;
 
         if (viewId === 'not_found') {
-          updateSeoHeadMeta(`صفحه یافت نشد | رادار ${cityNameFa}`, desc, window.location.pathname || '/404', { '@context': 'https://schema.org', '@type': 'WebPage', name: '404' });
+          updateSeoHeadMeta(`صفحه یافت نشد | ${brandWithCity}`, desc, window.location.pathname || '/404', { '@context': 'https://schema.org', '@type': 'WebPage', name: '404' });
           return;
         }
         if (viewId === 'admin') {
           const adminPath = buildCanonicalPathForDestination('admin', activeSubTab);
-          updateSeoHeadMeta(`محیط مدیریت سیستم | رادار ${cityNameFa}`, 'پنل عملیاتی و امنیتی رادار تهران', adminPath, { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Admin Shell' });
+          updateSeoHeadMeta(`محیط مدیریت سیستم | ${brandWithCity}`, `پنل عملیاتی و امنیتی ${CANONICAL_BRAND_FA}`, adminPath, { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Admin Shell' });
           commitHistoryUrl(adminPath);
           return;
         }
@@ -299,5 +330,5 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
         commitHistoryUrl(nextUrl);
       }
     } catch { /* Ignore History API errors in restricted iframe contexts */ }
-  }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, activeSubTab, areaUnit, intlCurrency, locale, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment]);
+  }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, p.invalidCityParam, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, activeSubTab, areaUnit, intlCurrency, locale, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment]);
 }

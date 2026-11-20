@@ -47,33 +47,29 @@ const OFFLINE_MAP_TILE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="256
 </svg>`;
 
 /**
- * Offline JSON fallback for /api/market-pulse when no prior response is cached.
+ * City-scoped honest offline JSON response for /api/market-pulse or /api/air-quality
+ * when no prior cached response exists for the exact requested city (zero Tehran cross-city fallback).
  */
-function createOfflineMarketPulseResponse() {
+function createOfflineMarketPulseResponse(requestedCity) {
   const nowIso = new Date().toISOString();
+  const safeCity = typeof requestedCity === 'string' && requestedCity.trim() ? requestedCity.trim().toLowerCase() : null;
   const payload = {
-    status: 'ok',
-    cacheStatus: 'OFFLINE_SW_FALLBACK',
+    status: 'offline_unavailable',
+    city: safeCity,
+    cacheStatus: 'OFFLINE_CITY_UNCACHED',
     offlineFallback: true,
     lastUpdatedIso: nowIso,
-    lastUpdatedTimeFa: 'حالت آفلاین (داده‌های پایه محلی فعال)',
+    lastUpdatedTimeFa: 'حالت آفلاین (دادهٔ زندهٔ این شهر هنوز کش نشده است)',
     nextScheduledTimeFa: 'پس از اتصال مجدد به اینترنت',
-    airQuality: {
-      tehranAverageAqi: 92,
-      tehranPm25: 31,
-      statusLabel: 'قابل قبول (ذخیره آفلاین)',
-      dataStatus: 'fallback',
-    },
-    marketSummary: {
-      tehranAverageBuyPerSqm: 138,
-    },
-    tehranTrafficSummary: 'حالت آفلاین — کاوش محله‌ها از روی داده‌های ذخیره‌شده در دستگاه',
+    airQuality: null,
+    marketSummary: null,
     hoodLiveSnapshots: [],
   };
   return new Response(JSON.stringify(payload), {
-    status: 200,
+    status: 503,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
       'X-Radar-Offline': '1',
     },
   });
@@ -107,7 +103,11 @@ function isPrivateOrSensitiveRequest(request, url) {
     pathname.startsWith('/api/telegram-') ||
     pathname.startsWith('/api/v1/mcp') ||
     pathname.startsWith('/api/mcp') ||
-    pathname.startsWith('/api/v1/rmep')
+    pathname.startsWith('/api/v1/rmep') ||
+    pathname.startsWith('/api/v1/saved-searches') ||
+    pathname.startsWith('/api/v1/search-history') ||
+    pathname.startsWith('/api/v1/personalization/') ||
+    pathname.startsWith('/api/search/saved')
   ) {
     return true;
   }
@@ -346,7 +346,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Public read-only Market Pulse & Air Quality APIs: Network-First with Offline Cache / Fallback
+  // 2. Public read-only Market Pulse & Air Quality APIs: Network-First with strictly city-scoped offline cache
   if (
     url.origin === self.location.origin &&
     (url.pathname === '/api/market-pulse' || url.pathname === '/api/air-quality') &&
@@ -362,11 +362,9 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         } catch {
-          const cachedResponse =
-            (await dataCache.match(request)) ||
-            (await dataCache.match('/api/market-pulse?city=tehran'));
+          const cachedResponse = await dataCache.match(request);
           if (cachedResponse) return cachedResponse;
-          return createOfflineMarketPulseResponse();
+          return createOfflineMarketPulseResponse(url.searchParams.get('city'));
         }
       })()
     );

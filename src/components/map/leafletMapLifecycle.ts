@@ -20,6 +20,14 @@ function loadTooltipTrendModule(): Promise<TooltipTrendModule> {
   return tooltipTrendModulePromise;
 }
 
+export interface MapViewportSettledEvent {
+  lat: number;
+  lng: number;
+  zoom: number;
+  isUserPan: boolean;
+  isZoomOnly: boolean;
+}
+
 export interface MountLeafletLifecycleParams {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
   mapInstanceRef: React.MutableRefObject<any>;
@@ -30,9 +38,10 @@ export interface MountLeafletLifecycleParams {
   onSelectPreferredStyle: (next: MapTileServerId) => void;
   onMapLoaded: () => void;
   onZoomChange: (zoom: number) => void;
-  onViewportSettled: () => void;
+  onViewportSettled: (evt?: MapViewportSettledEvent) => void;
   onOpenModalQuick: (hoodId: number, action: 'anatomy' | 'hedonic' | 'bargains' | 'compare' | 'share') => void;
   onTeardownLayers: (map: any) => void;
+  programmaticMoveRef?: React.MutableRefObject<boolean>;
   resolveHoodById?: (hoodId: number) => EvaluatedNeighborhood | undefined;
   loadLeaflet?: () => Promise<unknown>;
   retryLoadLeaflet?: () => Promise<unknown>;
@@ -42,7 +51,7 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
   const {
     mapContainerRef, mapInstanceRef, tileLayerRef, initCenter, initZoom, initialTileStyle,
     onSelectPreferredStyle, onMapLoaded, onZoomChange, onViewportSettled, onOpenModalQuick, onTeardownLayers,
-    resolveHoodById, loadLeaflet = ensureLeafletLoaded, retryLoadLeaflet = retryLeafletLoad,
+    programmaticMoveRef, resolveHoodById, loadLeaflet = ensureLeafletLoaded, retryLoadLeaflet = retryLeafletLoad,
   } = params;
 
   let unmounted = false;
@@ -51,12 +60,16 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
   let moveDebounce: ReturnType<typeof setTimeout> | null = null;
   let attachedMap: any = null;
   let attachedContainer: HTMLElement | null = null;
+  let handleDragStart: (() => void) | null = null;
+  let handleZoomStart: (() => void) | null = null;
   let handleZoomEnd: (() => void) | null = null;
   let handleMoveEnd: (() => void) | null = null;
   let handleResize: (() => void) | null = null;
   let handleTooltipOpen: ((e: any) => void) | null = null;
   let handleTooltipClose: ((e: any) => void) | null = null;
   let handleMapActionClick: ((e: MouseEvent) => void) | null = null;
+  let userDragPending = false;
+  let zoomStartCenter: { lat: number; lng: number } | null = null;
   const registryContainerId = 'tehran-radar-primary-map';
 
   const handlePageShow = () => {
@@ -74,6 +87,14 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
         });
       }
     } catch { /* ignore */ }
+  };
+
+  const readSettledEvent = (map: any, isUserPan: boolean, isZoomOnly: boolean): MapViewportSettledEvent => {
+    const center = map.getCenter?.();
+    const lat = typeof center?.lat === 'number' && Number.isFinite(center.lat) ? center.lat : initCenter[0];
+    const lng = typeof center?.lng === 'number' && Number.isFinite(center.lng) ? center.lng : initCenter[1];
+    const zoom = typeof map.getZoom === 'function' && Number.isFinite(map.getZoom()) ? map.getZoom() : initZoom;
+    return { lat, lng, zoom, isUserPan, isZoomOnly };
   };
 
   const initMap = () => {
@@ -96,35 +117,56 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
 
     onZoomChange(map.getZoom?.() || 12);
     syncViewportBoundsToStore(map);
-    onViewportSettled();
+    onViewportSettled(readSettledEvent(map, false, false));
 
     initialInvalidateTimer = setTimeout(() => {
       initialInvalidateTimer = null;
       if (unmounted || mapInstanceRef.current !== map) return;
       map.invalidateSize?.();
       syncViewportBoundsToStore(map);
-      onViewportSettled();
+      onViewportSettled(readSettledEvent(map, false, false));
     }, 100);
 
-    const onDebouncedMoveOrResize = () => {
+    const onDebouncedMoveOrResize = (fromZoom: boolean) => {
       if (unmounted || mapInstanceRef.current !== map) return;
       if (moveDebounce) clearTimeout(moveDebounce);
+      const capturedDrag = userDragPending;
+      const capturedZoomOrigin = zoomStartCenter;
       moveDebounce = setTimeout(() => {
         moveDebounce = null;
+        userDragPending = false;
+        zoomStartCenter = null;
         if (unmounted || mapInstanceRef.current !== map) return;
-        onViewportSettled();
+        const center = map.getCenter?.();
+        const centerDelta = capturedZoomOrigin && center
+          ? Math.hypot(Number(center.lat) - capturedZoomOrigin.lat, Number(center.lng) - capturedZoomOrigin.lng)
+          : Infinity;
+        const isZoomOnly = Boolean(fromZoom && !capturedDrag && centerDelta < 0.002);
+        const isProgrammatic = Boolean(programmaticMoveRef?.current);
+        const isUserPan = Boolean(capturedDrag && !isProgrammatic && !isZoomOnly);
+        onViewportSettled(readSettledEvent(map, isUserPan, isZoomOnly));
         syncViewportBoundsToStore(map);
         tileLayerRef.current?.updateAttributionForViewport();
-      }, 120);
+      }, 140);
     };
 
+    handleDragStart = () => {
+      if (unmounted || mapInstanceRef.current !== map) return;
+      if (programmaticMoveRef) programmaticMoveRef.current = false;
+      userDragPending = true;
+    };
+    handleZoomStart = () => {
+      if (unmounted || mapInstanceRef.current !== map) return;
+      const c = map.getCenter?.();
+      zoomStartCenter = c && Number.isFinite(c.lat) && Number.isFinite(c.lng) ? { lat: c.lat, lng: c.lng } : null;
+    };
     handleZoomEnd = () => {
       if (unmounted || mapInstanceRef.current !== map) return;
       onZoomChange(map.getZoom?.() || 12);
-      onDebouncedMoveOrResize();
+      onDebouncedMoveOrResize(true);
     };
-    handleMoveEnd = () => onDebouncedMoveOrResize();
-    handleResize = () => onDebouncedMoveOrResize();
+    handleMoveEnd = () => onDebouncedMoveOrResize(false);
+    handleResize = () => onDebouncedMoveOrResize(false);
     handleTooltipOpen = (evt: any) => {
       if (!resolveHoodById) return;
       const el = evt?.tooltip?.getElement?.() || mapContainerRef.current;
@@ -143,6 +185,8 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
       loadedTooltipTrendModule?.unmountNeighborhoodTooltipTrendOnClose(el);
     };
 
+    map.on?.('dragstart', handleDragStart);
+    map.on?.('zoomstart', handleZoomStart);
     map.on?.('zoomend', handleZoomEnd);
     map.on?.('moveend', handleMoveEnd);
     map.on?.('resize', handleResize);
@@ -208,6 +252,8 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
     if (moveDebounce) { clearTimeout(moveDebounce); moveDebounce = null; }
     const map = mapInstanceRef.current || attachedMap;
     if (map) {
+      if (handleDragStart) map.off?.('dragstart', handleDragStart);
+      if (handleZoomStart) map.off?.('zoomstart', handleZoomStart);
       if (handleZoomEnd) map.off?.('zoomend', handleZoomEnd);
       if (handleMoveEnd) map.off?.('moveend', handleMoveEnd);
       if (handleResize) map.off?.('resize', handleResize);
