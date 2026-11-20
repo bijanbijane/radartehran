@@ -128,7 +128,7 @@ export interface WorkerAppCheckContext {
   readonly allowed: boolean;
   readonly mode: AppCheckMode;
   readonly appId?: string;
-  readonly statusCode: 200 | 401 | 403;
+  readonly statusCode: 200 | 401 | 403 | 503;
   readonly reason: string;
 }
 

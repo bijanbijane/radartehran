@@ -9,6 +9,8 @@ import { decodeSearchUrlState, getPlaceHierarchyForCity, mergeSearchUrlStateInto
 import { defaultSearchEngine } from '../services/searchOrchestratorEngine';
 import { defaultSearchWorkspaceService } from '../services/searchWorkspaceService';
 import { SearchResultsAndDiscoveryGrid } from './SearchResultsAndDiscoveryGrid';
+import { commitManagedHistoryTransition, isPopStateRestorationActive } from '../../../navigation/url/historySingleWriter';
+import { sanitizeNavigationHash } from '../../../navigation/url/navigationUrlContract';
 
 export interface GlobalSearchWorkspaceProps {
   activeCity?: CityId;
@@ -34,22 +36,23 @@ export function syncSearchHistoryUrl(
   nextState: { q: string; scope: SearchScope; sort: SearchSortOption; viewMode: SearchViewMode; filters: SearchFilterSet },
   mode: 'push' | 'replace',
   isPopStateRestore = false,
+  currentHash = '',
 ): { committedUrl: string; methodCalled: 'pushState' | 'replaceState' | 'none' } {
   const normalizedCurrentSearch = currentSearch ? (currentSearch.startsWith('?') ? currentSearch : `?${currentSearch}`) : '';
-  const currentUrl = `${pathname}${normalizedCurrentSearch}`;
-  if (isPopStateRestore || !historyObj) return { committedUrl: currentUrl, methodCalled: 'none' };
+  const safeHash = sanitizeNavigationHash(currentHash);
+  const currentUrl = `${pathname}${normalizedCurrentSearch}${safeHash}`;
+  if (isPopStateRestore || isPopStateRestorationActive() || !historyObj) return { committedUrl: currentUrl, methodCalled: 'none' };
   const mergedQs = mergeSearchUrlStateIntoSearch(normalizedCurrentSearch, nextState);
-  const nextUrl = `${pathname}${mergedQs ? `?${mergedQs}` : ''}`;
-  if (nextUrl === currentUrl) return { committedUrl: nextUrl, methodCalled: 'none' };
-  if (mode === 'push' && typeof historyObj.pushState === 'function') {
-    historyObj.pushState(null, '', nextUrl);
-    return { committedUrl: nextUrl, methodCalled: 'pushState' };
-  }
-  if (typeof historyObj.replaceState === 'function') {
-    historyObj.replaceState(null, '', nextUrl);
-    return { committedUrl: nextUrl, methodCalled: 'replaceState' };
-  }
-  return { committedUrl: nextUrl, methodCalled: 'none' };
+  const nextUrl = `${pathname}${mergedQs ? `?${mergedQs}` : ''}${safeHash}`;
+  const res = commitManagedHistoryTransition({
+    domain: 'search_query',
+    mode,
+    targetUrl: nextUrl,
+    isPopStateRestore,
+    historyObj,
+    locationObj: { pathname, search: normalizedCurrentSearch, hash: safeHash },
+  });
+  return { committedUrl: res.finalUrl, methodCalled: res.method };
 }
 
 export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
@@ -180,6 +183,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
         { q: nextQuery, scope: nextScope, sort: nextSort, viewMode: nextViewMode, filters: scopedFilters },
         modeToUse,
         isPopStateRestoreRef.current,
+        window.location.hash,
       );
     }
     isPopStateRestoreRef.current = false;

@@ -1,12 +1,11 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
-import React, { useEffect, useId, useRef, useState } from 'react';
-import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, SlidersHorizontal, Sun, User } from 'lucide-react';
+import React, { useId, useRef } from 'react';
+import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { CANONICAL_BRAND_EN, CANONICAL_BRAND_FA } from '../../utils/geo/cityGeospatialResolver';
-import { PrimaryViewId, formatMillionTomanAsIntlCurrency } from '../../utils/areaUnit';
-import { AreaUnitToggle, ExperienceModeToggle, useIntlCurrency, useRadarLocale } from '../AreaUnitToggle';
-import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
+import { PrimaryViewId } from '../../utils/areaUnit';
+import { ExperienceModeToggle, useRadarLocale } from '../AreaUnitToggle';
 import { getProductNavigationItems } from './primaryNavigation';
 import { DesktopMegaMenu } from './DesktopMegaMenu';
 import { useMegaMenuLifecycle } from './useMegaMenuLifecycle';
@@ -45,13 +44,10 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   onToggleAppleTheme, onOpenSearch, isSearchOpen, onMegaMenuAction, searchQuery, activePlaceLabelFa,
   invalidCityParam, currentUser, unreadNotificationsCount,
 }) => {
-  const [radarLocale] = useRadarLocale(), [intlCurrency] = useIntlCurrency();
-  const rateState = useExchangeRateSnapshot();
+  const [radarLocale] = useRadarLocale();
   const isEn = radarLocale === 'en';
   const megaMenuPanelId = `desktop-mega-menu-panel-${useId().replace(/:/g, '')}`;
-  const [mobileDisplayOpen, setMobileDisplayOpen] = useState(false);
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
-  const mobileDisplayRef = useRef<HTMLDivElement | null>(null);
 
   const {
     megaMenuOpen,
@@ -62,7 +58,6 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
     closeMegaMenu,
   } = useMegaMenuLifecycle({ activeCity, radarLocale, primaryView });
 
-  const fxSampleHint = intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(100, intlCurrency, radarLocale, rateState.snapshot) : '';
   const cityCfg = MULTI_CITY_CONFIGS[activeCity] || MULTI_CITY_CONFIGS.tehran;
   const brandLabel = isEn ? CANONICAL_BRAND_EN : CANONICAL_BRAND_FA;
   const activeCityName = invalidCityParam
@@ -73,17 +68,6 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
     .map((id) => navigationItems.find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const isMoreActive = primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'home';
-
-  useEffect(() => {
-    if (!mobileDisplayOpen || typeof window === 'undefined') return undefined;
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileDisplayOpen(false); };
-    const onMouseDown = (e: MouseEvent) => {
-      if (mobileDisplayRef.current && !mobileDisplayRef.current.contains(e.target as Node)) setMobileDisplayOpen(false);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    document.addEventListener('mousedown', onMouseDown);
-    return () => { window.removeEventListener('keydown', onKeyDown); document.removeEventListener('mousedown', onMouseDown); };
-  }, [mobileDisplayOpen]);
 
   return (
     <header className="sticky top-0 z-[45] w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
@@ -101,7 +85,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             data-testid="global-nav-home"
             aria-current={primaryView === 'home' ? 'page' : undefined}
             onClick={() => { closeMegaMenu(); onSelectPrimaryView('home'); }}
-            title={fxSampleHint ? `۱۰۰ میلیون تومان ≈ ${fxSampleHint}` : isEn ? `${brandLabel} | ${activeCityName} Home` : `صفحه نخست ${brandLabel} | ${activeCityName}`}
+            title={isEn ? `${brandLabel} | ${activeCityName} Home` : `صفحه نخست ${brandLabel} | ${activeCityName}`}
             className="flex items-center gap-2 group text-start focus-visible:outline-2 focus-visible:outline-emerald-600 rounded-lg cursor-pointer"
           >
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition ${primaryView === 'home' ? 'bg-emerald-600 text-white' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 group-hover:bg-emerald-700'}`}>
@@ -231,32 +215,7 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
           </button>
 
           <div className="hidden 2xl:flex items-center gap-1">
-            <div className="hidden 2xl:inline-flex"><ExperienceModeToggle compact /></div>
-            <AreaUnitToggle compact showIntlControls className="flex-nowrap" />
-          </div>
-
-          <div ref={mobileDisplayRef} className="relative 2xl:hidden">
-            <button
-              type="button"
-              data-testid="mobile-unit-currency-btn"
-              aria-expanded={mobileDisplayOpen}
-              aria-label={isEn ? 'Area unit and currency settings' : 'تنظیم واحد مساحت و ارز'}
-              onClick={() => setMobileDisplayOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-[10.5px] font-bold text-slate-700 dark:text-slate-200 cursor-pointer whitespace-nowrap"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span>{isEn ? 'Unit/FX' : 'واحد/ارز'}</span>
-            </button>
-            {mobileDisplayOpen && (
-              <div role="dialog" aria-label={isEn ? 'Unit, currency & mode settings' : 'تنظیمات واحد، ارز و حالت تجربه'} className="absolute end-0 top-10 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-3 space-y-2.5 z-50 text-xs">
-                <div className="font-black text-slate-800 dark:text-white">{isEn ? 'Display Unit & Currency' : 'تنظیم واحد نمایش و ارز'}</div>
-                <AreaUnitToggle compact showIntlControls />
-                <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-500">{isEn ? 'View Mode:' : 'حالت نمایش:'}</span>
-                  <ExperienceModeToggle compact />
-                </div>
-              </div>
-            )}
+            <ExperienceModeToggle compact />
           </div>
 
           <button type="button" onClick={onToggleAppleTheme} aria-label={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')} title={appleTheme === 'dark' ? (isEn ? 'Light mode' : 'حالت روز') : (isEn ? 'Dark mode' : 'حالت شب')} data-testid="theme-toggle-btn" className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">

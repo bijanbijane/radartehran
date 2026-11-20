@@ -9,6 +9,8 @@ export const SOCIAL_COLLECTIONS = {
   reports: 'socialReports',
   moderationCases: 'socialModerationCases',
   moderationEvents: 'socialModerationEvents',
+  moderationAppeals: 'socialModerationAppeals',
+  activeReportLocks: 'socialActiveReportLocks',
   outbox: 'socialOutbox',
   profiles: 'socialProfiles',
   idempotency: 'socialIdempotency',
@@ -72,6 +74,7 @@ export interface CommunityQueryPage<T extends Record<string, unknown>> {
 
 export interface CommunityTransaction {
   get<T extends Record<string, unknown>>(col: SocialCollectionName, docId: string): Promise<(T & { id: string }) | null>;
+  query?<T extends Record<string, unknown>>(col: SocialCollectionName, options?: CommunityQueryOptions): Promise<Array<T & { id: string }>>;
   set<T extends Record<string, unknown>>(col: SocialCollectionName, docId: string, data: T): void;
   update(col: SocialCollectionName, docId: string, patch: Record<string, unknown>): void;
   delete(col: SocialCollectionName, docId: string): void;
@@ -219,6 +222,15 @@ export class FirestoreAdminCommunityStore implements CommunityDatabaseStore {
             const snap = await fsTx.get(db.collection(col).doc(docId));
             return snap.exists ? ({ ...(snap.data() as T), id: snap.id }) : null;
           },
+          query: async <T extends Record<string, unknown>>(col: SocialCollectionName, options: CommunityQueryOptions = {}) => {
+            let ref: FirebaseFirestore.Query = db.collection(col);
+            for (const f of options.filters ?? []) ref = ref.where(f.field, f.op, f.value);
+            const orders = options.orderBy?.length ? options.orderBy : options.orderByField ? [{ field: options.orderByField, direction: options.orderDirection ?? 'desc' as const }] : [];
+            for (const o of orders) ref = ref.orderBy(o.field, o.direction);
+            if (options.limit) ref = ref.limit(clampCommunityLimit(options.limit));
+            const snap = await fsTx.get(ref);
+            return snap.docs.map((d) => ({ ...(d.data() as T), id: d.id }));
+          },
           set: (col, docId, data) => {
             fsTx.set(db.collection(col).doc(docId), data);
           },
@@ -364,25 +376,57 @@ export class MockFirestoreCommunityStore implements CommunityDatabaseStore {
   async runTransaction<R>(fn: (tx: CommunityTransaction) => Promise<R>): Promise<R> {
     const execute = async (): Promise<R> => {
       this.assertAvailable();
-      const stagedOps: Array<() => void> = [];
+      let phase: 'READ_PHASE' | 'WRITE_PHASE' = 'READ_PHASE';
+      // Capture consistent snapshot at transaction start for reads & atomic rollback
+      const snapshot = new Map<SocialCollectionName, Map<string, Record<string, unknown>>>();
+      for (const [col, map] of this.collections.entries()) {
+        const cloned = new Map<string, Record<string, unknown>>();
+        for (const [k, v] of map.entries()) cloned.set(k, deepClone(v));
+        snapshot.set(col, cloned);
+      }
+      const assertReadPhase = () => {
+        if (phase === 'WRITE_PHASE') {
+          throw new CommunityHttpError(500, 'TRANSACTION_READ_AFTER_WRITE', 'در تراکنش Firestore خواندن پس از نوشتن مجاز نیست (TRANSACTION_READ_AFTER_WRITE).');
+        }
+      };
+      const enterWritePhase = () => { phase = 'WRITE_PHASE'; };
+      const stagedOps: Array<(target: Map<SocialCollectionName, Map<string, Record<string, unknown>>>) => void> = [];
+      const getTargetCol = (target: Map<SocialCollectionName, Map<string, Record<string, unknown>>>, col: SocialCollectionName) => {
+        let m = target.get(col);
+        if (!m) { m = new Map(); target.set(col, m); }
+        return m;
+      };
       const tx: CommunityTransaction = {
         get: async <T extends Record<string, unknown>>(col: SocialCollectionName, docId: string) => {
           this.assertAvailable();
-          const raw = this.colMap(col).get(docId);
+          assertReadPhase();
+          const raw = snapshot.get(col)?.get(docId);
           return raw ? ({ ...(deepClone(raw) as T), id: docId }) : null;
         },
+        query: async <T extends Record<string, unknown>>(col: SocialCollectionName, options: CommunityQueryOptions = {}) => {
+          this.assertAvailable();
+          assertReadPhase();
+          const filters = options.filters ?? [];
+          const docs = Array.from((snapshot.get(col) ?? new Map()).entries())
+            .map(([id, data]) => ({ ...(deepClone(data) as T), id }))
+            .filter((item) => filters.every((f) => matchesFilter(item, f)));
+          const limit = options.limit ? clampCommunityLimit(options.limit) : docs.length;
+          return docs.slice(0, limit);
+        },
         set: (col, docId, data) => {
-          stagedOps.push(() => {
-            this.colMap(col).set(docId, { ...deepClone(data), id: docId });
-          });
+          enterWritePhase();
+          const cloned = { ...deepClone(data), id: docId };
+          stagedOps.push((t) => { getTargetCol(t, col).set(docId, cloned); });
         },
         update: (col, docId, patch) => {
-          stagedOps.push(() => {
-            const map = this.colMap(col);
+          enterWritePhase();
+          const clonedPatch = deepClone(patch);
+          stagedOps.push((t) => {
+            const map = getTargetCol(t, col);
             const cur = map.get(docId);
             if (!cur) throw new CommunityHttpError(404, 'DOCUMENT_NOT_FOUND', 'سند موردنظر یافت نشد.');
             const copy = deepClone(cur);
-            for (const [k, v] of Object.entries(patch)) {
+            for (const [k, v] of Object.entries(clonedPatch)) {
               if (k.includes('.')) setNestedField(copy, k, deepClone(v));
               else copy[k] = deepClone(v);
             }
@@ -390,17 +434,18 @@ export class MockFirestoreCommunityStore implements CommunityDatabaseStore {
           });
         },
         delete: (col, docId) => {
-          stagedOps.push(() => {
-            this.colMap(col).delete(docId);
-          });
+          enterWritePhase();
+          stagedOps.push((t) => { getTargetCol(t, col).delete(docId); });
         },
         incrementNumeric: (col, docId, deltas) => {
-          stagedOps.push(() => {
-            const map = this.colMap(col);
+          enterWritePhase();
+          const clonedDeltas = { ...deltas };
+          stagedOps.push((t) => {
+            const map = getTargetCol(t, col);
             const cur = map.get(docId);
             if (!cur) throw new CommunityHttpError(404, 'DOCUMENT_NOT_FOUND', 'سند برای به‌روزرسانی شمارنده یافت نشد.');
             const copy = deepClone(cur);
-            for (const [dotField, delta] of Object.entries(deltas)) {
+            for (const [dotField, delta] of Object.entries(clonedDeltas)) {
               const prev = Number(getNestedField(copy, dotField) ?? 0);
               setNestedField(copy, dotField, Math.max(0, prev + delta));
             }
@@ -409,15 +454,14 @@ export class MockFirestoreCommunityStore implements CommunityDatabaseStore {
         },
       };
       const result = await fn(tx);
-      for (const op of stagedOps) op();
+      // Atomic commit onto cloned snapshot; if any staged op fails, original this.collections remains untouched
+      for (const op of stagedOps) op(snapshot);
+      this.collections = snapshot;
       return result;
     };
 
     const next = this.txChain.then(execute, execute);
-    this.txChain = next.then(
-      () => undefined,
-      () => undefined,
-    );
+    this.txChain = next.then(() => undefined, () => undefined);
     return next;
   }
 

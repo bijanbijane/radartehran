@@ -56,6 +56,11 @@ export const CANONICAL_D1_MIGRATIONS = Object.freeze([
     relativePath: 'migrations/d1/0002_upload_sessions_legal_holds_and_rate_limits.sql',
     expectedSha256: '19b161ad2212f51d83f2e7e706bb41d6c807da72ae7b538d9f11e7b6b5ae88ab',
   },
+  {
+    fileName: '0003_media_objects_and_queue_execution_leases.sql',
+    relativePath: 'migrations/d1/0003_media_objects_and_queue_execution_leases.sql',
+    expectedSha256: '439ddae35f082807198b6412063c7728552945f9edaf63cf61e76aff0d9aa0c0',
+  },
 ]);
 
 export const EXPECTED_SCHEMA_TABLES = Object.freeze([
@@ -68,6 +73,9 @@ export const EXPECTED_SCHEMA_TABLES = Object.freeze([
   'legal_holds',
   'strong_rate_limits',
   'queue_idempotency_keys',
+  'media_objects',
+  'queue_job_executions',
+  'auth_revocation_events',
 ]);
 
 export const EXPECTED_SCHEMA_INDEXES = Object.freeze([
@@ -77,6 +85,12 @@ export const EXPECTED_SCHEMA_INDEXES = Object.freeze([
   'idx_legal_holds_active',
   'idx_strong_rate_limits_reset',
   'idx_queue_idem_processed',
+  'idx_media_objects_owner_state',
+  'idx_media_objects_target',
+  'idx_media_objects_lifecycle_updated',
+  'idx_queue_job_exec_status_lease',
+  'idx_queue_job_exec_type_updated',
+  'idx_auth_revocation_uid_created',
 ]);
 
 export function assertNoArbitraryTargetFlags(rawArgs) {

@@ -69,15 +69,18 @@ export async function verifyAuthenticatedUserHeader(
       decoded = await customVerifyIdToken(idToken);
     } else {
       const authClient = getAuth(getFirebaseAdminApp(config.firebaseProjectId, env));
-      try {
-        decoded = await authClient.verifyIdToken(idToken, true);
-      } catch (revErr: unknown) {
-        const code = typeof (revErr as { code?: unknown })?.code === 'string' ? (revErr as { code: string }).code : '';
-        if (code === 'auth/id-token-revoked' || code === 'auth/user-disabled' || code === 'auth/id-token-expired' || code === 'auth/argument-error') throw revErr;
-        decoded = await authClient.verifyIdToken(idToken, false);
-      }
+      decoded = await authClient.verifyIdToken(idToken, true);
     }
-  } catch {
+  } catch (verifyErr: unknown) {
+    const code = typeof (verifyErr as { code?: unknown })?.code === 'string' ? (verifyErr as { code: string }).code : '';
+    const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr || '');
+    if (code === 'auth/id-token-revoked') return { authorized: false, authenticated: false, statusCode: 401, reason: 'TOKEN_REVOKED' };
+    if (code === 'auth/user-disabled') return { authorized: false, authenticated: false, statusCode: 401, reason: 'USER_ACCOUNT_DISABLED' };
+    if (code === 'auth/id-token-expired' || code === 'auth/argument-error' || code === 'auth/invalid-id-token') {
+      return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_OR_REVOKED_FIREBASE_TOKEN' };
+    }
+    const isTransient = code === 'auth/internal-error' || code === 'app/network-error' || code === 'app/invalid-credential' || /ETIMEDOUT|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|503|UNAVAILABLE|network|timeout|credential/i.test(msg);
+    if (isTransient) return { authorized: false, authenticated: false, statusCode: 503, reason: 'FIREBASE_AUTH_DEPENDENCY_UNAVAILABLE' };
     return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_OR_REVOKED_FIREBASE_TOKEN' };
   }
   if (decoded.aud !== config.firebaseProjectId || decoded.iss !== `https://securetoken.google.com/${config.firebaseProjectId}`) {

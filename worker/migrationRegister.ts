@@ -37,6 +37,18 @@ const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'GET /api/v1/telemetry/policy',
 ]);
 
+const GROUP_5_VERIFIED_STORAGE_PATHS = new Set<string>([
+  'GET /api/object-storage/status',
+  'POST /api/object-storage/upload',
+  'POST /api/object-storage/upload-init',
+  'POST /api/object-storage/upload-chunk',
+  'POST /api/object-storage/upload-complete',
+  'GET /api/object-storage/file/:objectId',
+  'DELETE /api/object-storage/file/:objectId',
+  'POST /api/object-storage/attach-to-bargain',
+  'POST /api/object-storage/cleanup-bargain/:bargainId',
+]);
+
 const ALIAS_ROUTES: Readonly<Record<string, string>> = {
   'POST /api/market-pulse/deep-sync': 'POST /api/sync-real-prices',
   'GET /api/admin/runtime-config': 'GET /api/admin/env-config',
@@ -91,6 +103,17 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
   }
 
   if (route.sourceFile === 'src/utils/serverObjectStorage.ts' || route.path.startsWith('/api/object-storage/')) {
+    if (GROUP_5_VERIFIED_STORAGE_PATHS.has(key)) {
+      return {
+        migrationGroup: 'GROUP_5_OBJECT_STORAGE_AND_MEDIA',
+        workerHandlerModule: 'worker/routes/objectStorageRoutes.ts',
+        status: 'VERIFIED',
+        activeRuntime: 'cloudflare_worker',
+        dependencies: ['worker/routes/objectStorageRoutes.ts', 'worker/storage/r2StorageAdapter.ts', 'worker/db/d1SchemaAndMigrations.ts'],
+        stateStorageTouchpoints: ['Cloudflare R2 (MEDIA_BUCKET)', 'Cloudflare D1 (media_objects, upload_sessions, legal_holds)'],
+        externalApiTouchpoints: ['Cloudflare R2'],
+      };
+    }
     return {
       migrationGroup: 'GROUP_5_OBJECT_STORAGE_AND_MEDIA',
       workerHandlerModule: null,
@@ -99,7 +122,7 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       dependencies: ['src/utils/serverObjectStorage.ts', 'src/utils/objectStorageUpload.ts'],
       stateStorageTouchpoints: ['.object-storage-bucket/', 'Firestore object_storage_metadata'],
       externalApiTouchpoints: ['S3/R2 Compatible Object Storage'],
-      blockerReason: 'Requires Phase 3 Cloudflare R2 bucket binding and Web Crypto multipart/streaming adapter.',
+      blockerReason: 'Admin storage audit & reconciliation endpoints remain on legacy Express until operator cutover.',
     };
   }
 

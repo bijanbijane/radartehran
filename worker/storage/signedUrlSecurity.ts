@@ -1,10 +1,7 @@
 /**
  * @file worker/storage/signedUrlSecurity.ts
- * @description Secure signed URL generation, HMAC-SHA256 verification,
- * replay protection, method restriction, and path-traversal prevention.
- *
- * Implements Cloudflare Worker-mediated signed URL generation using Web Crypto.
- * Does not expose internal R2 keys or cloud provider secrets.
+ * @description Canonical constant-time HMAC-SHA256 signed URL generation and verification
+ * for Cloudflare Worker R2 media access. Single source of truth for signed URL primitives.
  */
 
 export interface SignedUrlOptions {
@@ -36,37 +33,100 @@ const DEFAULT_EXPIRATION_SECONDS = 900; // 15 minutes
 const MAX_EXPIRATION_SECONDS = 3600; // 1 hour max
 
 /**
- * Constant-time hex string comparison to prevent timing attacks.
+ * Constant-time string comparison to prevent timing side-channel attacks.
  */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+export function timingSafeEqualHex(a: string, b: string): boolean {
+  const normA = a.toLowerCase();
+  const normB = b.toLowerCase();
+  const maxLen = Math.max(normA.length, normB.length);
+  let diff = normA.length ^ normB.length;
+  for (let i = 0; i < maxLen; i += 1) {
+    const charA = i < normA.length ? normA.charCodeAt(i) : 0;
+    const charB = i < normB.length ? normB.charCodeAt(i) : 0;
+    diff |= charA ^ charB;
   }
-  return diff === 0;
+  return diff === 0 && normA.length > 0;
 }
 
-async function computeHmacSignature(message: string, secret: string): Promise<string> {
+/**
+ * Canonical Web Crypto HMAC-SHA256 hex digest generator shared by all Worker storage signers.
+ */
+export async function computeHmacSha256Hex(message: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
     enc.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign']
+    ['sign'],
   );
   const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(message));
   return Array.from(new Uint8Array(sigBuf), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
- * Generate a cryptographically signed storage access URL.
+ * Generate a canonical signed file-access URL bound to `objectId` (never exposing internal R2 keys).
+ */
+export async function createCanonicalObjectSignedUrl(params: {
+  objectId: string;
+  method?: 'GET';
+  expiresInSeconds?: number;
+  signingSecret: string;
+  nowSeconds?: number;
+}): Promise<{ signedPath: string; expiresAtSeconds: number; signatureHex: string }> {
+  if (!params.signingSecret || params.signingSecret.length < 16) {
+    throw new Error('SIGNING_SECRET_INSUFFICIENT_ENTROPY');
+  }
+  const objectId = params.objectId.trim();
+  if (!objectId || !/^[a-zA-Z0-9_-]{6,120}$/.test(objectId)) {
+    throw new Error('INVALID_OBJECT_ID');
+  }
+  const method = params.method || 'GET';
+  const nowSec = params.nowSeconds ?? Math.floor(Date.now() / 1000);
+  const duration = Math.min(MAX_EXPIRATION_SECONDS, Math.max(30, Math.trunc(params.expiresInSeconds ?? DEFAULT_EXPIRATION_SECONDS)));
+  const exp = nowSec + duration;
+  const canonicalMessage = `v2:${method}:${objectId}:${exp}`;
+  const signatureHex = await computeHmacSha256Hex(canonicalMessage, params.signingSecret);
+  const signedPath = `/api/object-storage/file/${encodeURIComponent(objectId)}?exp=${exp}&sig=${signatureHex}`;
+  return { signedPath, expiresAtSeconds: exp, signatureHex };
+}
+
+/**
+ * Verify a canonical signed file-access request bound to `objectId` using constant-time comparison.
+ */
+export async function verifyCanonicalObjectSignedUrl(params: {
+  objectId: string;
+  method: string;
+  expSeconds: number;
+  signatureHex: string;
+  signingSecret: string;
+  nowSeconds?: number;
+}): Promise<{ valid: boolean; errorCode?: string }> {
+  if (!params.signingSecret || params.signingSecret.length < 16) {
+    return { valid: false, errorCode: 'SIGNING_SECRET_MISSING' };
+  }
+  if (params.method.toUpperCase() !== 'GET') {
+    return { valid: false, errorCode: 'HTTP_METHOD_NOT_PERMITTED' };
+  }
+  const nowSec = params.nowSeconds ?? Math.floor(Date.now() / 1000);
+  if (!Number.isFinite(params.expSeconds) || params.expSeconds < nowSec) {
+    return { valid: false, errorCode: 'SIGNED_URL_EXPIRED' };
+  }
+  const canonicalMessage = `v2:GET:${params.objectId.trim()}:${Math.trunc(params.expSeconds)}`;
+  const expectedSig = await computeHmacSha256Hex(canonicalMessage, params.signingSecret);
+  if (!timingSafeEqualHex(expectedSig, params.signatureHex.trim())) {
+    return { valid: false, errorCode: 'INVALID_SIGNATURE' };
+  }
+  return { valid: true };
+}
+
+/**
+ * Generate a cryptographically signed storage access URL (storage-key scoped contract).
  */
 export async function createSignedStorageUrl(
   baseUrl: string,
   options: SignedUrlOptions,
-  signingSecret: string
+  signingSecret: string,
 ): Promise<string> {
   if (!signingSecret || signingSecret.length < 16) {
     throw new Error('SIGNING_SECRET_INSUFFICIENT_ENTROPY');
@@ -83,7 +143,7 @@ export async function createSignedStorageUrl(
   const uid = options.expectedOwnerUid ? options.expectedOwnerUid.trim() : '';
 
   const message = `${method}:${key}:${exp}:${uid}`;
-  const sig = await computeHmacSignature(message, signingSecret);
+  const sig = await computeHmacSha256Hex(message, signingSecret);
 
   const cleanBase = baseUrl.replace(/\/+$/, '');
   const params = new URLSearchParams();
@@ -102,7 +162,7 @@ export async function createSignedStorageUrl(
 export async function verifySignedStorageUrl(
   urlOrParams: URL | URLSearchParams,
   currentMethod: string,
-  signingSecret: string
+  signingSecret: string,
 ): Promise<SignedUrlValidationResult> {
   if (!signingSecret) {
     return { valid: false, errorCode: 'SIGNING_SECRET_MISSING', errorMessage: 'Server signing key unconfigured.' };
@@ -138,9 +198,9 @@ export async function verifySignedStorageUrl(
   }
 
   const message = `${allowedMethod}:${key}:${exp}:${uid || ''}`;
-  const expectedSig = await computeHmacSignature(message, signingSecret);
+  const expectedSig = await computeHmacSha256Hex(message, signingSecret);
 
-  if (!timingSafeEqual(expectedSig, clientSig)) {
+  if (!timingSafeEqualHex(expectedSig, clientSig)) {
     return { valid: false, errorCode: 'INVALID_SIGNATURE', errorMessage: 'Signature mismatch or tampering detected.' };
   }
 

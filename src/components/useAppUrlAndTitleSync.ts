@@ -3,10 +3,11 @@ import type { EvaluatedNeighborhood, Neighborhood, CityId } from '../data/neighb
 import { INITIAL_NEIGHBORHOODS } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, parseUrlIntlParams, setStoredAreaUnit, setStoredIntlCurrency, setStoredRadarLocale } from '../utils/areaUnit';
-import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import { SHOW_INTL_UNIT_CURRENCY_CONTROLS, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { parseTehranPublicPath, seoForDatedCompare, seoForDatedHood } from '../data/neighborhoodListingSamples';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
-import { buildCanonicalPathForDestination, normalizePathname, resolveRouteFromLocation, sanitizePublicNavigationQuery } from '../navigation/url/navigationUrlContract';
+import { buildCanonicalPathForDestination, buildSynchronizedNavigationUrl, normalizePathname, resolveRouteFromLocation, sanitizeNavigationHash } from '../navigation/url/navigationUrlContract';
+import { beginPopStateRestoration, commitManagedHistoryTransition, endPopStateRestoration, isPopStateRestorationActive, mergePreservedQueryIntoUrl } from '../navigation/url/historySingleWriter';
 import type { AdminSectionId, ModuleSubTabId, RouteDestinationId } from '../navigation/registry/route.types';
 import { matchesPersianSearch } from '../utils/security';
 import { updateSeoHeadMeta } from './navigation/urlSyncHelpers';
@@ -77,6 +78,7 @@ export function applyUrlParamsFromLocation(
   }
   if (!search) {
     p.setInvalidCityParam?.(null);
+    if (flyMap && publicPath?.kind !== 'compare') setShowCompareModal(false);
     if (flyMap && !publicPath && !navLoc.areaSlug) {
       setActiveCity('tehran');
       const tehranCfg = MULTI_CITY_CONFIGS.tehran;
@@ -85,10 +87,12 @@ export function applyUrlParamsFromLocation(
     return { compareAccepted: false, compareRejectedCrossCity: false };
   }
 
-  const intlParams = parseUrlIntlParams(search);
-  if (intlParams.lang) setStoredRadarLocale(intlParams.lang);
-  if (intlParams.currency) setStoredIntlCurrency(intlParams.currency);
-  if (intlParams.unit) setStoredAreaUnit(intlParams.unit);
+  if (SHOW_INTL_UNIT_CURRENCY_CONTROLS) {
+    const intlParams = parseUrlIntlParams(search);
+    if (intlParams.lang) setStoredRadarLocale(intlParams.lang);
+    if (intlParams.currency) setStoredIntlCurrency(intlParams.currency);
+    if (intlParams.unit) setStoredAreaUnit(intlParams.unit);
+  }
 
   const params = new URLSearchParams(search);
   const rawCity = params.get('city')?.trim().toLowerCase();
@@ -148,6 +152,8 @@ export function applyUrlParamsFromLocation(
         setCompareId2(list[1].id);
       }
     }
+  } else if (flyMap && publicPath?.kind !== 'compare') {
+    setShowCompareModal(false);
   }
 
   if (hoodParam && !compareAccepted) {
@@ -201,6 +207,11 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
   const isPopStateSyncRef = useRef(false);
 
   useEffect(() => {
+    if (!SHOW_INTL_UNIT_CURRENCY_CONTROLS) {
+      setStoredRadarLocale('fa');
+      setStoredIntlCurrency('IRT');
+      setStoredAreaUnit('sqm');
+    }
     const allCityHoods = buildAllCityHoods();
     const applyUrlParams = (flyMap: boolean) => {
       applyUrlParamsFromLocation(window.location.pathname, window.location.search, flyMap, paramsRef.current, allCityHoods);
@@ -208,9 +219,13 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
 
     applyUrlParams(false);
     const handlePopState = () => {
+      const epoch = beginPopStateRestoration();
       isPopStateSyncRef.current = true;
       if (paramsRef.current.navigationIntentRef) paramsRef.current.navigationIntentRef.current = 'history_restore';
       applyUrlParams(true);
+      queueMicrotask(() => {
+        endPopStateRestoration(epoch);
+      });
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -242,17 +257,31 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
       const budgetSuffix = baseBudgetSuffix + viewSuffix;
 
       const isManualPan = paramsRef.current.navigationIntentRef?.current === 'manual_map_pan';
-      const routeKey = `${primaryView || 'map'}:${activeSubTab || ''}:${isManualPan ? 'pan' : activeCity}`;
-      const fromPopState = isPopStateSyncRef.current;
+      const baseRouteKey = `${primaryView || 'map'}:${activeSubTab || ''}`;
+      const routeKey = `${baseRouteKey}${showCompareModal ? ':compare' : ''}`;
+      const fromPopState = isPopStateSyncRef.current || isPopStateRestorationActive();
       isPopStateSyncRef.current = false;
-      const isRouteChange = !fromPopState && !isManualPan && lastTrackedRouteKeyRef.current !== '' && lastTrackedRouteKeyRef.current !== routeKey;
+      const prevRouteKey = lastTrackedRouteKeyRef.current;
+      const prevWasCompare = prevRouteKey.endsWith(':compare');
+      const prevBaseRouteKey = prevWasCompare ? prevRouteKey.slice(0, -':compare'.length) : prevRouteKey;
+      const leavingCompareSameRoute = prevWasCompare && !showCompareModal && prevBaseRouteKey === baseRouteKey;
+      const isRouteChange = !fromPopState && !isManualPan && prevRouteKey !== '' && prevRouteKey !== routeKey && !leavingCompareSameRoute;
       lastTrackedRouteKeyRef.current = routeKey;
 
-      const commitHistoryUrl = (nextUrl: string) => {
+      const currentPath = normalizePathname(window.location.pathname);
+      const currentSearch = window.location.search;
+      const currentHash = sanitizeNavigationHash(window.location.hash);
+
+      const commitHistoryUrl = (nextUrl: string, forceReplace = false) => {
         if (fromPopState) return;
-        if (`${window.location.pathname}${window.location.search}` === nextUrl) return;
-        if (isRouteChange && typeof window.history?.pushState === 'function') window.history.pushState(null, '', nextUrl);
-        else if (typeof window.history?.replaceState === 'function') window.history.replaceState(null, '', nextUrl);
+        const shouldPush = isRouteChange && !forceReplace;
+        const pathChanged = normalizePathname(nextUrl) !== currentPath;
+        commitManagedHistoryTransition({
+          domain: shouldPush || pathChanged ? 'page_route' : 'core_query',
+          mode: shouldPush ? 'push' : 'replace',
+          targetUrl: nextUrl,
+          isPopStateRestore: fromPopState,
+        });
       };
 
       const isSameCityCompare = Boolean(
@@ -279,8 +308,9 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           ],
         });
         const extra = budgetSuffix.replace(/^&/, '');
-        const nextUrl = datedCompare ? `${datedCompare.path}${extra ? `?${extra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
-        commitHistoryUrl(nextUrl);
+        const baseCompareUrl = datedCompare ? `${datedCompare.path}${extra ? `?${extra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
+        const mergedCompareUrl = mergePreservedQueryIntoUrl(baseCompareUrl, currentSearch, !isRouteChange);
+        commitHistoryUrl(!isRouteChange && currentHash ? `${mergedCompareUrl}${currentHash}` : mergedCompareUrl);
       } else if (selectedHood) {
         const datedHood = activeCity === 'tehran' ? seoForDatedHood(selectedHood.id) : null;
         const unitBuy = convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit);
@@ -300,7 +330,6 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           return;
         }
         if (viewId !== 'map' && viewId !== 'home') {
-          const currentPath = normalizePathname(window.location.pathname);
           const preserveMemberProfilePath =
             viewId === 'contributions' &&
             activeSubTab === 'members' &&
@@ -309,13 +338,18 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           const canonicalPath = preserveMemberProfilePath
             ? currentPath
             : buildCanonicalPathForDestination(viewId, activeSubTab);
-          const sp = new URLSearchParams();
-          if (activeCity !== 'tehran') sp.set('city', activeCity);
-          sp.set('hood', String(selectedHood.id));
-          if (keepBudget) { sp.set('mode', mode); sp.set('dep', String(deposit)); sp.set('rent', String(monthlyRent)); sp.set('buy', String(buyTotalBudget)); sp.set('sqm', String(targetSqm)); }
-          const safeQuery = sanitizePublicNavigationQuery(sp).toString();
+          const nextUrl = buildSynchronizedNavigationUrl({
+            canonicalPath,
+            currentSearch,
+            currentHash,
+            isRouteChange: isRouteChange && !preserveMemberProfilePath,
+            activeCity,
+            selectedHoodId: selectedHood.id,
+            keepBudget,
+            budget: { mode, deposit, monthlyRent, buyTotalBudget, targetSqm },
+          });
           updateSeoHeadMeta(title, desc, canonicalPath, { '@context': 'https://schema.org', '@type': 'Place', name: `محله ${selectedHood.name} (${selectedHood.zone})`, description: desc });
-          commitHistoryUrl(safeQuery ? `${canonicalPath}?${safeQuery}` : canonicalPath);
+          commitHistoryUrl(nextUrl, preserveMemberProfilePath);
           return;
         }
 
@@ -326,8 +360,9 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           geo: { '@type': 'GeoCoordinates', latitude: selectedHood.lat, longitude: selectedHood.lng },
         });
         const datedExtra = (viewId === 'home' ? baseBudgetSuffix : budgetSuffix).replace(/^&/, '');
-        const nextUrl = datedHood ? `${datedHood.path}${datedExtra ? `?${datedExtra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
-        commitHistoryUrl(nextUrl);
+        const baseHoodUrl = datedHood ? `${datedHood.path}${datedExtra ? `?${datedExtra}` : ''}` : `/${canonicalQuery}${budgetSuffix}`;
+        const mergedHoodUrl = mergePreservedQueryIntoUrl(baseHoodUrl, currentSearch, !isRouteChange);
+        commitHistoryUrl(!isRouteChange && currentHash ? `${mergedHoodUrl}${currentHash}` : mergedHoodUrl);
       }
     } catch { /* Ignore History API errors in restricted iframe contexts */ }
   }, [selectedHood, showCompareModal, compHood1, compHood2, activeCity, p.invalidCityParam, hasUrlBudgetParams, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, primaryView, activeSubTab, areaUnit, intlCurrency, locale, useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment]);

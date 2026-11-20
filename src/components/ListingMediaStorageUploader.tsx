@@ -1,160 +1,76 @@
-import React, { useEffect, useState } from 'react'; import { CheckCircle2, Database, Film, Image as ImageIcon, Loader2, Sparkles, Trash2, UploadCloud, } from 'lucide-react'; import { auth } from '../firebase'; import type { CityId } from '../types/models'; import { toPersianNum } from '../data/neighborhoods'; import { AreaUnit, IntlCurrencyCode, convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { ALLOWED_IMAGE_MIMES, ALLOWED_VIDEO_MIMES, ListingMediaObject, ObjectStorageStatusPayload, compressImageFileInBrowser, fetchObjectStorageStatus, fileNameForUploadMime, generateSamplePropertyPhotoBase64, generateSamplePropertyVideoBase64, readFileAsBase64, uploadMediaToObjectStorage, } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export interface ListingMediaStorageUploaderProps { hoodId: number; hoodName: string; sqm: number; estimatedMillionToman?: number; city?: CityId; uploadedMedia: ListingMediaObject[]; onChangeMedia: React.Dispatch<React.SetStateAction<ListingMediaObject[]>>; areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; }
-export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMillionToman, city = 'tehran', uploadedMedia, onChangeMedia, areaUnit: areaUnitProp, intlCurrency: intlCurrencyProp, }: ListingMediaStorageUploaderProps) { const [hookUnit] = useAreaUnit(); const [hookCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const areaUnit = areaUnitProp ?? hookUnit; const intlCurrency = intlCurrencyProp ?? hookCurrency; const effectiveTotalMillions = typeof estimatedMillionToman === 'number' && estimatedMillionToman > 0 ? estimatedMillionToman : Math.max(100, sqm * 115); const unitPrice = convertPricePerSqmToUnit(Math.max(10, Math.round(effectiveTotalMillions / Math.max(1, sqm))), areaUnit); const estMonthlyRentMillions = Math.max(5, Math.round(effectiveTotalMillions * 0.0038)); const [storageStatus, setStorageStatus] = useState<ObjectStorageStatusPayload | null>(null); const [uploading, setUploading] = useState(false); const [uploadProgress, setUploadProgress] = useState<number | null>(null); const [uploadStatusText, setUploadStatusText] = useState<string>(''); const [uploadError, setUploadError] = useState<string | null>(null); useEffect(() => { let active = true; fetchObjectStorageStatus().then((st) => { if (active && st) setStorageStatus(st); }); return () => { active = false; }; }, [uploadedMedia.length]); const imageItems = uploadedMedia.filter((m) => m.mediaType === 'image'); const videoItem = uploadedMedia.find((m) => m.mediaType === 'video'); const uploadOneFile = async (
-    file: File, mediaType: 'image' | 'video', idToken: string
-  ): Promise<ListingMediaObject> => { const allowed = mediaType === 'video' ? ALLOWED_VIDEO_MIMES : ALLOWED_IMAGE_MIMES; if (!allowed.includes(file.type)) { throw new Error(
-        mediaType === 'video'
-          ? 'فرمت ویدیو باید MP4 یا WebM باشد.'
-          : 'فرمت تصویر باید JPG، PNG یا WebP باشد.'
-      ); }
-    const timestamp = Date.now(); const uuid = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID().replace(/-/g, '').slice(0, 10)
-      : Math.random().toString(36).substring(2, 10);
+import React, { useEffect, useRef, useState } from 'react'; import { CheckCircle2, Database, Film, Image as ImageIcon, Loader2, Sparkles, Trash2, UploadCloud, } from 'lucide-react'; import { app, auth } from '../firebase'; import type { CityId } from '../types/models'; import { toPersianNum } from '../data/neighborhoods'; import { AreaUnit, IntlCurrencyCode, convertPricePerSqmToUnit, formatAreaShort, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { getOptionalClientAppCheckHeaders } from '../utils/clientAppCheck'; import { ALLOWED_IMAGE_MIMES, ALLOWED_VIDEO_MIMES, ListingMediaObject, ObjectStorageStatusPayload, compressImageFileInBrowser, fetchObjectStorageStatus, fileNameForUploadMime, generateSamplePropertyPhotoBase64, generateSamplePropertyVideoBase64, uploadMediaChunkedToObjectStorage, uploadMediaToObjectStorage, } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export interface ListingMediaStorageUploaderProps { hoodId: number; hoodName: string; sqm: number; estimatedMillionToman?: number; city?: CityId; uploadedMedia: ListingMediaObject[]; onChangeMedia: React.Dispatch<React.SetStateAction<ListingMediaObject[]>>; areaUnit?: AreaUnit; intlCurrency?: IntlCurrencyCode; }
+export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMillionToman, city = 'tehran', uploadedMedia, onChangeMedia, areaUnit: areaUnitProp, intlCurrency: intlCurrencyProp, }: ListingMediaStorageUploaderProps) { const [hookUnit] = useAreaUnit(); const [hookCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const areaUnit = areaUnitProp ?? hookUnit; const intlCurrency = intlCurrencyProp ?? hookCurrency; const effectiveTotalMillions = typeof estimatedMillionToman === 'number' && estimatedMillionToman > 0 ? estimatedMillionToman : Math.max(100, sqm * 115); const unitPrice = convertPricePerSqmToUnit(Math.max(10, Math.round(effectiveTotalMillions / Math.max(1, sqm))), areaUnit); const estMonthlyRentMillions = Math.max(5, Math.round(effectiveTotalMillions * 0.0038)); const [storageStatus, setStorageStatus] = useState<ObjectStorageStatusPayload | null>(null); const [uploading, setUploading] = useState(false); const [uploadProgress, setUploadProgress] = useState<number | null>(null); const [uploadStatusText, setUploadStatusText] = useState<string>(''); const [uploadError, setUploadError] = useState<string | null>(null); const abortRef = useRef<AbortController | null>(null); useEffect(() => { let active = true; fetchObjectStorageStatus().then((st) => { if (active && st) setStorageStatus(st); }); return () => { active = false; abortRef.current?.abort(); }; }, [uploadedMedia.length]); const imageItems = uploadedMedia.filter((m) => m.mediaType === 'image'); const videoItem = uploadedMedia.find((m) => m.mediaType === 'video'); const uploadOneFile = async (
+    file: File, mediaType: 'image' | 'video', idToken: string, appCheckHeaders: Record<string, string>, signal: AbortSignal
+  ): Promise<ListingMediaObject> => { const allowed = mediaType === 'video' ? ALLOWED_VIDEO_MIMES : ALLOWED_IMAGE_MIMES; if (!allowed.includes(file.type)) { throw new Error(mediaType === 'video' ? 'فرمت ویدیو باید MP4 یا WebM باشد.' : 'فرمت تصویر باید JPG، PNG یا WebP باشد.'); }
+    const timestamp = Date.now(); const uuid = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID().replace(/-/g, '').slice(0, 10) : Math.random().toString(36).substring(2, 10);
     const standardBaseName = `${hoodId}-${timestamp}-${uuid}`;
-    setUploadProgress(15); setUploadStatusText( mediaType === 'video'
-        ? 'در حال خواندن و اعتبارسنجی ویدیو...'
-        : 'در حال فشرده‌سازی خودکار تصویر (WebP)...'
-    ); let dataBase64: string; let finalMimeType = file.type; if (mediaType === 'video') { const maxBytes = (storageStatus?.maxVideoMb ?? 50) * 1024 * 1024; if (file.size > maxBytes) { throw new Error(
-          `حجم ویدیو بیش از سقف مجاز ${toPersianNum(storageStatus?.maxVideoMb ?? 50)} مگابایت است.`
-        ); }
-      dataBase64 = await readFileAsBase64(file); setUploadProgress(25); } else { const compressed = await compressImageFileInBrowser(file); dataBase64 = compressed.dataBase64; finalMimeType = compressed.mimeType; setUploadProgress(30); }
+    let uploadBlob: Blob = file; let finalMimeType = file.type;
+    if (mediaType === 'video') {
+      const maxBytes = (storageStatus?.maxVideoMb ?? 50) * 1024 * 1024;
+      if (file.size > maxBytes) throw new Error(`حجم ویدیو بیش از سقف مجاز ${toPersianNum(storageStatus?.maxVideoMb ?? 50)} مگابایت است.`);
+    } else {
+      setUploadProgress(15); setUploadStatusText('در حال فشرده‌سازی خودکار تصویر (WebP)...');
+      const compressed = await compressImageFileInBrowser(file); finalMimeType = compressed.mimeType;
+      const bin = atob(compressed.dataBase64); const u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) u8[i] = bin.charCodeAt(i);
+      uploadBlob = new Blob([u8], { type: finalMimeType });
+    }
     const standardFileName = fileNameForUploadMime(standardBaseName, finalMimeType);
-    setUploadStatusText(`در حال ارسال فایل به سطل ذخیره‌سازی (${standardFileName})...`);
-    return new Promise<ListingMediaObject>((resolve, reject) => { if (typeof XMLHttpRequest === 'undefined') { uploadMediaToObjectStorage({ fileName: standardFileName, mimeType: finalMimeType, mediaType,
-          dataBase64, hoodId, city, idToken,
-        })
-          .then((res) => { setUploadProgress(100); resolve(res);
-          })
-          .catch(reject); return;
-      }
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/object-storage/upload');
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.setRequestHeader('Authorization', `Bearer ${idToken}`);
-      if (xhr.upload) {
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable && event.total > 0) {
-            const percent = Math.round(30 + (event.loaded / event.total) * 65);
-            setUploadProgress(Math.min(98, Math.max(30, percent)));
-          }
-        };
-      }
-      xhr.onload = () => {
-        try {
-          const res = JSON.parse(xhr.responseText || '{}');
-          if (xhr.status >= 200 && xhr.status < 300 && res?.status === 'ok' && res?.mediaObject) {
-            setUploadProgress(100);
-            resolve(res.mediaObject as ListingMediaObject);
-          } else {
-            reject(new Error(res?.message || 'خطا در آپلود فایل روی آبجکت استوریج'));
-          }
-        } catch {
-          reject(new Error('خطا در پردازش پاسخ سرور ذخیره‌سازی'));
-        }
-      };
-      xhr.onerror = () => reject(new Error('خطای ارتباط با سرور هنگام آپلود فایل'));
-      xhr.send(JSON.stringify({ fileName: standardFileName, mimeType: finalMimeType, mediaType, dataBase64, hoodId, city }));
+    return uploadMediaChunkedToObjectStorage({
+      blob: uploadBlob, fileName: standardFileName, mimeType: finalMimeType, mediaType, hoodId, city, idToken, appCheckHeaders, signal,
+      onProgress: (pct, stage) => { setUploadProgress(pct); setUploadStatusText(stage); },
     });
   };
-  const handleFileSelect = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    mediaType: 'image' | 'video'
-  ) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setUploadError(null);
-    setUploading(true);
-    setUploadProgress(5);
-    setUploadStatusText('آماده‌سازی فایل جهت بارگذاری...');
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, mediaType: 'image' | 'video') => {
+    const files = e.target.files; if (!files || files.length === 0) return;
+    setUploadError(null); setUploading(true); setUploadProgress(5); setUploadStatusText('آماده‌سازی فایل جهت بارگذاری...');
+    const controller = new AbortController(); abortRef.current = controller;
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser || !currentUser.emailVerified) {
-        throw new Error('برای آپلود عکس یا ویدیو ابتدا وارد حساب کاربری تأییدشده شوید.');
-      }
-      const idToken = await currentUser.getIdToken();
+      if (!currentUser || !currentUser.emailVerified) throw new Error('برای آپلود عکس یا ویدیو ابتدا وارد حساب کاربری تأییدشده شوید.');
+      const [idToken, appCheckHeaders] = await Promise.all([currentUser.getIdToken(), getOptionalClientAppCheckHeaders(app)]);
       for (const file of Array.from(files)) {
-        if (mediaType === 'image' && imageItems.length >= 5) {
-          throw new Error('حداکثر ۵ تصویر برای هر آگهی در آبجکت استوریج قابل ثبت است.');
-        }
-        const uploaded = await uploadOneFile(file, mediaType, idToken);
-        onChangeMedia((prev) =>
-          mediaType === 'video'
-            ? [...prev.filter((item) => item.mediaType !== 'video'), uploaded]
-            : [...prev.slice(0, 4), uploaded]
-        );
+        if (mediaType === 'image' && imageItems.length >= 5) throw new Error('حداکثر ۵ تصویر برای هر آگهی در آبجکت استوریج قابل ثبت است.');
+        const uploaded = await uploadOneFile(file, mediaType, idToken, appCheckHeaders, controller.signal);
+        onChangeMedia((prev) => mediaType === 'video' ? [...prev.filter((item) => item.mediaType !== 'video'), uploaded] : [...prev.slice(0, 4), uploaded]);
       }
     } catch (err: any) {
-      setUploadError(err?.message || 'خطا در آپلود فایل روی آبجکت استوریج');
+      setUploadError(err?.name === 'AbortError' ? 'آپلود توسط کاربر لغو شد.' : (err?.message || 'خطا در آپلود فایل روی آبجکت استوریج'));
     } finally {
-      setUploading(false);
-      setUploadProgress(null);
-      setUploadStatusText('');
-      e.target.value = '';
+      abortRef.current = null; setUploading(false); setUploadProgress(null); setUploadStatusText(''); e.target.value = '';
     }
   };
   const handleQuickDemoUpload = async () => {
-    setUploadError(null);
-    setUploading(true);
-    setUploadProgress(20);
-    setUploadStatusText('در حال تولید فایل‌های نمونه در استوریج...');
+    setUploadError(null); setUploading(true); setUploadProgress(20); setUploadStatusText('در حال تولید فایل‌های نمونه در استوریج...');
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser || !currentUser.emailVerified) {
-        throw new Error('برای آپلود نمونه، ابتدا وارد حساب کاربری تأییدشده شوید.');
-      }
-      const idToken = await currentUser.getIdToken();
-      const photoB64 = generateSamplePropertyPhotoBase64(hoodName, sqm);
-      setUploadProgress(45);
-      const uploadedPhoto = await uploadMediaToObjectStorage({
-        fileName: `${hoodId}-${Date.now()}-sample.jpg`,
-        mimeType: 'image/jpeg',
-        mediaType: 'image',
-        dataBase64: photoB64,
-        hoodId,
-        city,
-        idToken,
-      });
+      if (!currentUser || !currentUser.emailVerified) throw new Error('برای آپلود نمونه، ابتدا وارد حساب کاربری تأییدشده شوید.');
+      const [idToken, appCheckHeaders] = await Promise.all([currentUser.getIdToken(), getOptionalClientAppCheckHeaders(app)]);
+      const photoB64 = generateSamplePropertyPhotoBase64(hoodName, sqm); setUploadProgress(45);
+      const uploadedPhoto = await uploadMediaToObjectStorage({ fileName: `${hoodId}-${Date.now()}-sample.jpg`, mimeType: 'image/jpeg', mediaType: 'image', dataBase64: photoB64, hoodId, city, idToken, appCheckHeaders });
       setUploadProgress(75);
       const videoB64 = generateSamplePropertyVideoBase64();
-      const uploadedVideo = await uploadMediaToObjectStorage({
-        fileName: `${hoodId}-${Date.now()}-sample.mp4`,
-        mimeType: 'video/mp4',
-        mediaType: 'video',
-        dataBase64: videoB64,
-        hoodId,
-        city,
-        idToken,
-      });
+      const uploadedVideo = await uploadMediaToObjectStorage({ fileName: `${hoodId}-${Date.now()}-sample.mp4`, mimeType: 'video/mp4', mediaType: 'video', dataBase64: videoB64, hoodId, city, idToken, appCheckHeaders });
       setUploadProgress(100);
-      onChangeMedia((prev) => [
-        ...prev.filter((m) => m.mediaType === 'image').slice(0, 4),
-        uploadedPhoto,
-        uploadedVideo,
-      ]);
+      onChangeMedia((prev) => [...prev.filter((m) => m.mediaType === 'image').slice(0, 4), uploadedPhoto, uploadedVideo]);
     } catch (err: any) {
       setUploadError(err?.message || 'خطا در تولید و ذخیره نمونه روی آبجکت استوریج');
     } finally {
-      setUploading(false);
-      setUploadProgress(null);
-      setUploadStatusText('');
+      setUploading(false); setUploadProgress(null); setUploadStatusText('');
     }
   };
   const handleRemoveItem = async (id: string) => {
     setUploadError(null);
     const currentUser = auth.currentUser;
-    if (!currentUser) {
-      setUploadError('برای حذف فایل از فضای ذخیره‌سازی باید وارد حساب کاربری خود باشید.');
-      return;
-    }
+    if (!currentUser) { setUploadError('برای حذف فایل از فضای ذخیره‌سازی باید وارد حساب کاربری خود باشید.'); return; }
     try {
-      const idToken = await currentUser.getIdToken();
+      const [idToken, appCheckHeaders] = await Promise.all([currentUser.getIdToken(), getOptionalClientAppCheckHeaders(app)]);
       const response = await fetch(`/api/object-storage/file/${encodeURIComponent(id)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${idToken}` },
+        headers: { Authorization: `Bearer ${idToken}`, ...appCheckHeaders },
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok || result?.status !== 'ok') {
-        throw new Error(result?.message || 'حذف فایل از سرور انجام نشد.');
-      }
+      if (!response.ok || result?.status !== 'ok') throw new Error(result?.message || 'حذف فایل از سرور انجام نشد.');
       onChangeMedia((prev) => prev.filter((item) => item.id !== id));
     } catch (err: any) {
       setUploadError(err?.message || 'خطا در حذف فایل از فضای ذخیره‌سازی.');

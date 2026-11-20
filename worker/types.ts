@@ -138,9 +138,17 @@ export interface WorkerEnv {
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
   readonly FIREBASE_PROJECT_ID?: string;
+  readonly FIREBASE_APP_CHECK_MODE?: 'disabled' | 'monitor' | 'enforced';
+  readonly FIREBASE_APP_CHECK_APP_ID?: string;
+  readonly FIREBASE_APP_CHECK_DEBUG_ALLOWLIST?: string;
   readonly ADMIN_EMAIL?: string;
   readonly ADMIN_API_SECRET?: string;
   readonly VALUATION_SEAL_SECRET?: string;
+  readonly R2_MEDIA_BUCKET_NAME?: string;
+  readonly R2_SIGNING_SECRET?: string;
+  readonly OBJECT_STORAGE_SIGNING_SECRET?: string;
+  readonly OBJECT_STORAGE_MAX_IMAGE_MB?: string;
+  readonly OBJECT_STORAGE_MAX_VIDEO_MB?: string;
   readonly STRANGLER_FALLBACK_ENABLED?: string;
   readonly STRANGLER_ORIGIN_URL?: string;
   readonly MEDIA_BUCKET?: R2Bucket;

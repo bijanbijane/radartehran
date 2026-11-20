@@ -122,6 +122,72 @@ CREATE TABLE IF NOT EXISTS queue_idempotency_keys (
 
 CREATE INDEX IF NOT EXISTS idx_queue_idem_processed ON queue_idempotency_keys(job_type, processed_at_iso);`,
   },
+  {
+    version: '0003',
+    name: '0003_media_objects_and_queue_execution_leases',
+    fileName: '0003_media_objects_and_queue_execution_leases.sql',
+    checksumSha256: '439ddae35f082807198b6412063c7728552945f9edaf63cf61e76aff0d9aa0c0',
+    sql: `-- Canonical Staging & Edge D1 Migration 0003: Media Objects Metadata, Queue Execution Leases & Auth Revocation Audit
+-- Authoritative Migration Ledger: d1_migrations (managed by Wrangler D1 Migrations)
+CREATE TABLE IF NOT EXISTS media_objects (
+  object_id TEXT PRIMARY KEY,
+  owner_uid TEXT NOT NULL,
+  bucket_name TEXT NOT NULL,
+  storage_key TEXT NOT NULL UNIQUE,
+  city_id TEXT NOT NULL DEFAULT 'tehran',
+  hood_id INTEGER NOT NULL DEFAULT 1,
+  media_type TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  sha256_checksum TEXT NOT NULL,
+  target_type TEXT,
+  target_id TEXT,
+  lifecycle_state TEXT NOT NULL,
+  deletion_state TEXT NOT NULL DEFAULT 'ACTIVE',
+  legal_hold INTEGER NOT NULL DEFAULT 0,
+  retention_until TEXT,
+  created_at_iso TEXT NOT NULL,
+  updated_at_iso TEXT NOT NULL,
+  deleted_at_iso TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_objects_owner_state ON media_objects(owner_uid, lifecycle_state, deletion_state);
+CREATE INDEX IF NOT EXISTS idx_media_objects_target ON media_objects(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_media_objects_lifecycle_updated ON media_objects(lifecycle_state, updated_at_iso);
+
+CREATE TABLE IF NOT EXISTS queue_job_executions (
+  idempotency_key TEXT PRIMARY KEY,
+  job_type TEXT NOT NULL,
+  message_id TEXT NOT NULL,
+  correlation_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  lease_owner TEXT,
+  lease_expires_at_ms INTEGER,
+  last_error_code TEXT,
+  last_error_message TEXT,
+  result_json TEXT,
+  created_at_iso TEXT NOT NULL,
+  updated_at_iso TEXT NOT NULL,
+  completed_at_iso TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_queue_job_exec_status_lease ON queue_job_executions(status, lease_expires_at_ms);
+CREATE INDEX IF NOT EXISTS idx_queue_job_exec_type_updated ON queue_job_executions(job_type, updated_at_iso);
+
+CREATE TABLE IF NOT EXISTS auth_revocation_events (
+  event_id TEXT PRIMARY KEY,
+  uid TEXT NOT NULL,
+  action TEXT NOT NULL,
+  valid_since_seconds INTEGER,
+  actor_uid TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  created_at_iso TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_revocation_uid_created ON auth_revocation_events(uid, created_at_iso);`,
+  },
 ] as const;
 
 export interface NeighborhoodProjectionRow {
@@ -151,6 +217,56 @@ export interface D1UploadSessionRecord {
   received_bytes: number;
   completed: number;
   created_at_ms: number;
+}
+
+export interface D1MediaObjectRecord {
+  object_id: string;
+  owner_uid: string;
+  bucket_name: string;
+  storage_key: string;
+  city_id: string;
+  hood_id: number;
+  media_type: 'image' | 'video';
+  mime_type: string;
+  size_bytes: number;
+  sha256_checksum: string;
+  target_type: string | null;
+  target_id: string | null;
+  lifecycle_state: 'PENDING_UPLOAD' | 'ACTIVE' | 'FAILED_UPLOAD' | 'PENDING_DELETE' | 'DELETED';
+  deletion_state: 'ACTIVE' | 'PENDING_PHYSICAL_DELETE' | 'PHYSICALLY_DELETED';
+  legal_hold: number;
+  retention_until: string | null;
+  created_at_iso: string;
+  updated_at_iso: string;
+  deleted_at_iso: string | null;
+}
+
+export interface D1QueueJobExecutionRecord {
+  idempotency_key: string;
+  job_type: string;
+  message_id: string;
+  correlation_id: string;
+  status: 'PENDING' | 'PROCESSING' | 'RETRYABLE_FAILURE' | 'PERMANENT_FAILURE' | 'COMPLETED';
+  attempt_count: number;
+  lease_owner: string | null;
+  lease_expires_at_ms: number | null;
+  last_error_code: string | null;
+  last_error_message: string | null;
+  result_json: string | null;
+  created_at_iso: string;
+  updated_at_iso: string;
+  completed_at_iso: string | null;
+}
+
+export interface D1AuthRevocationEventRecord {
+  event_id: string;
+  uid: string;
+  action: 'REVOKE_BEFORE' | 'DISABLE_USER' | 'REENABLE_USER';
+  valid_since_seconds: number | null;
+  actor_uid: string;
+  reason: string;
+  idempotency_key: string;
+  created_at_iso: string;
 }
 
 /**
@@ -261,11 +377,21 @@ export async function inspectD1OperationalDiagnostics(db: D1Database | undefined
   let latestQueue: { job_type: string; processed_at_iso: string } | null = null;
   try {
     latestQueue = await db
-      .prepare('SELECT job_type, processed_at_iso FROM queue_idempotency_keys WHERE status = ?1 ORDER BY processed_at_iso DESC LIMIT 1')
+      .prepare('SELECT job_type, completed_at_iso AS processed_at_iso FROM queue_job_executions WHERE status = ?1 AND completed_at_iso IS NOT NULL ORDER BY completed_at_iso DESC LIMIT 1')
       .bind('COMPLETED')
       .first<{ job_type: string; processed_at_iso: string }>();
   } catch {
     latestQueue = null;
+  }
+  if (!latestQueue) {
+    try {
+      latestQueue = await db
+        .prepare('SELECT job_type, processed_at_iso FROM queue_idempotency_keys WHERE status = ?1 ORDER BY processed_at_iso DESC LIMIT 1')
+        .bind('COMPLETED')
+        .first<{ job_type: string; processed_at_iso: string }>();
+    } catch {
+      latestQueue = null;
+    }
   }
 
   return {
@@ -363,151 +489,4 @@ export function buildD1SessionBookmarkHeader(bookmark: string | null | undefined
   };
 }
 
-export function createLocalD1DatabaseSimulator(): D1Database {
-  const d1Migrations = new Map<string, { id: number; name: string; applied_at: string }>();
-  const hoodProjections = new Map<string, NeighborhoodProjectionRow>();
-  const watermarks = new Map<string, { watermark_key: string; watermark_value: string; updated_at_iso: string }>();
-  const uploadSessions = new Map<string, D1UploadSessionRecord>();
-  const uploadChunks = new Map<string, { session_id: string; chunk_index: number; chunk_base64: string; byte_length: number }>();
-  const legalHolds = new Map<string, { resource_id: string; resource_type: string; reason: string; active: number }>();
-  const rateLimits = new Map<string, { bucket_key: string; counter: number; window_reset_ms: number }>();
-  const queueKeys = new Map<string, { idempotency_key: string; job_type: string; processed_at_iso: string; status: string }>();
-
-  const makeStatement = (sql: string, boundValues: unknown[] = []): D1PreparedStatement => ({
-    bind(...values: unknown[]) {
-      return makeStatement(sql, values);
-    },
-    async first<T = Record<string, unknown>>(): Promise<T | null> {
-      const normalized = sql.replace(/\s+/g, ' ').trim();
-      if (normalized.startsWith('SELECT id, name, applied_at FROM d1_migrations WHERE name')) {
-        return (d1Migrations.get(String(boundValues[0])) as unknown as T) ?? null;
-      }
-      if (normalized.startsWith('SELECT watermark_value FROM sync_watermarks')) {
-        return (watermarks.get(String(boundValues[0])) as unknown as T) ?? null;
-      }
-      if (normalized.startsWith('SELECT * FROM upload_sessions WHERE session_id')) {
-        return (uploadSessions.get(String(boundValues[0])) as unknown as T) ?? null;
-      }
-      if (normalized.startsWith('SELECT active, reason FROM legal_holds')) {
-        return (legalHolds.get(String(boundValues[0])) as unknown as T) ?? null;
-      }
-      if (normalized.startsWith('SELECT counter, window_reset_ms FROM strong_rate_limits')) {
-        return (rateLimits.get(String(boundValues[0])) as unknown as T) ?? null;
-      }
-      if (normalized.startsWith('SELECT status FROM queue_idempotency_keys')) {
-        return (queueKeys.get(String(boundValues[0])) as unknown as T) ?? null;
-      }
-      if (normalized.startsWith('SELECT job_type, processed_at_iso FROM queue_idempotency_keys')) {
-        const completed = Array.from(queueKeys.values()).filter((q) => q.status === String(boundValues[0]));
-        completed.sort((a, b) => b.processed_at_iso.localeCompare(a.processed_at_iso));
-        return (completed[0] as unknown as T) ?? null;
-      }
-      return null;
-    },
-    async all<T = Record<string, unknown>>(): Promise<{ results: T[]; success: boolean }> {
-      const normalized = sql.replace(/\s+/g, ' ').trim();
-      if (normalized.startsWith('SELECT id, name, applied_at FROM d1_migrations')) {
-        return { results: Array.from(d1Migrations.values()) as unknown as T[], success: true };
-      }
-      if (normalized.startsWith('SELECT watermark_key, watermark_value, updated_at_iso FROM sync_watermarks')) {
-        return { results: Array.from(watermarks.values()) as unknown as T[], success: true };
-      }
-      if (normalized.startsWith('SELECT * FROM neighborhood_projections')) {
-        const [cityId, maxBuy, minScore, limit] = boundValues;
-        const rows = Array.from(hoodProjections.values())
-          .filter(
-            (r) =>
-              r.city_id === String(cityId) &&
-              r.buy_per_sqm_million <= Number(maxBuy) &&
-              r.investment_score >= Number(minScore),
-          )
-          .sort((a, b) => a.buy_per_sqm_million - b.buy_per_sqm_million)
-          .slice(0, Number(limit) || 50);
-        return { results: rows as unknown as T[], success: true };
-      }
-      if (normalized.startsWith('SELECT chunk_index, chunk_base64, byte_length FROM upload_session_chunks')) {
-        const sessionId = String(boundValues[0]);
-        const chunks = Array.from(uploadChunks.values())
-          .filter((c) => c.session_id === sessionId)
-          .sort((a, b) => a.chunk_index - b.chunk_index);
-        return { results: chunks as unknown as T[], success: true };
-      }
-      return { results: [], success: true };
-    },
-    async run(): Promise<{ success: boolean; meta?: { changes?: number } }> {
-      const normalized = sql.replace(/\s+/g, ' ').trim();
-      if (normalized.startsWith('INSERT INTO d1_migrations')) {
-        const [name, applied_at] = boundValues.map(String);
-        d1Migrations.set(name, { id: d1Migrations.size + 1, name, applied_at });
-      } else if (normalized.startsWith('INSERT INTO neighborhood_projections')) {
-        const row: NeighborhoodProjectionRow = {
-          city_id: String(boundValues[0]),
-          hood_id: Number(boundValues[1]),
-          name_fa: String(boundValues[2]),
-          district: Number(boundValues[3]),
-          buy_per_sqm_million: Number(boundValues[4]),
-          deal_per_sqm_million: Number(boundValues[5]),
-          rahn_80m_million: Number(boundValues[6]),
-          aqi: Number(boundValues[7]),
-          investment_score: Number(boundValues[8]),
-          firestore_version_iso: String(boundValues[9]),
-          projected_at_iso: String(boundValues[10]),
-        };
-        hoodProjections.set(`${row.city_id}:${row.hood_id}`, row);
-      } else if (normalized.startsWith('INSERT OR REPLACE INTO sync_watermarks')) {
-        const [watermark_key, watermark_value, updated_at_iso] = boundValues.map(String);
-        watermarks.set(watermark_key, { watermark_key, watermark_value, updated_at_iso });
-      } else if (normalized.startsWith('INSERT OR REPLACE INTO upload_sessions')) {
-        const [session_id, owner_uid, city_id, hood_id, media_type, mime_type, file_name, total_chunks, max_bytes, received_bytes, completed, created_at_ms] = boundValues;
-        uploadSessions.set(String(session_id), {
-          session_id: String(session_id),
-          owner_uid: String(owner_uid),
-          city_id: String(city_id),
-          hood_id: Number(hood_id),
-          media_type: media_type === 'video' ? 'video' : 'image',
-          mime_type: String(mime_type),
-          file_name: String(file_name),
-          total_chunks: Number(total_chunks),
-          max_bytes: Number(max_bytes),
-          received_bytes: Number(received_bytes),
-          completed: Number(completed),
-          created_at_ms: Number(created_at_ms),
-        });
-      } else if (normalized.startsWith('INSERT INTO upload_session_chunks')) {
-        const [session_id, chunk_index, chunk_base64, byte_length] = boundValues;
-        uploadChunks.set(`${session_id}:${chunk_index}`, { session_id: String(session_id), chunk_index: Number(chunk_index), chunk_base64: String(chunk_base64), byte_length: Number(byte_length) });
-      } else if (normalized.startsWith('DELETE FROM upload_sessions')) {
-        const sid = String(boundValues[0]);
-        uploadSessions.delete(sid);
-        for (const k of uploadChunks.keys()) if (k.startsWith(`${sid}:`)) uploadChunks.delete(k);
-      } else if (normalized.startsWith('INSERT OR REPLACE INTO legal_holds')) {
-        const [resource_id, resource_type, reason, active] = boundValues;
-        legalHolds.set(String(resource_id), { resource_id: String(resource_id), resource_type: String(resource_type), reason: String(reason), active: Number(active) });
-      } else if (normalized.startsWith('INSERT OR REPLACE INTO strong_rate_limits')) {
-        const [bucket_key, counter, window_reset_ms] = boundValues;
-        rateLimits.set(String(bucket_key), { bucket_key: String(bucket_key), counter: Number(counter), window_reset_ms: Number(window_reset_ms) });
-      } else if (normalized.startsWith('INSERT OR REPLACE INTO queue_idempotency_keys')) {
-        const [idempotency_key, job_type, processed_at_iso, status] = boundValues.map(String);
-        queueKeys.set(idempotency_key, { idempotency_key, job_type, processed_at_iso, status });
-      }
-      return { success: true, meta: { changes: 1 } };
-    },
-  });
-
-  return {
-    prepare(query: string) {
-      return makeStatement(query);
-    },
-    async batch(statements: D1PreparedStatement[]) {
-      const out = [];
-      for (const stmt of statements) {
-        await stmt.run();
-        out.push({ success: true });
-      }
-      return out;
-    },
-    async exec(_query: string) {
-      return { count: 1, duration: 1 };
-    },
-  };
-}
+export { createLocalD1DatabaseSimulator } from './localD1Simulator';

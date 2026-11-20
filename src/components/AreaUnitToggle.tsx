@@ -28,13 +28,18 @@ import {
 
 export { useExchangeRateSnapshot };
 
+/** Global UI lock: keep interface strictly Persian (fa), Square Meters (m²), and Toman (IRT). */
+export const SHOW_INTL_UNIT_CURRENCY_CONTROLS = false;
+
 export function useAreaUnit(): [AreaUnit, (next: AreaUnit) => void, () => AreaUnit] {
   const unit = useSyncExternalStore(subscribeAreaUnit, getStoredAreaUnit, () => 'sqm' as AreaUnit);
+  if (!SHOW_INTL_UNIT_CURRENCY_CONTROLS) return ['sqm', setStoredAreaUnit, toggleStoredAreaUnit];
   return [unit, setStoredAreaUnit, toggleStoredAreaUnit];
 }
 
 export function useRadarLocale(): [SupportedRadarLocale, (next: RadarLocale) => void] {
   const locale = useSyncExternalStore(subscribeAreaUnit, getStoredRadarLocale, () => 'fa' as const);
+  if (!SHOW_INTL_UNIT_CURRENCY_CONTROLS) return ['fa', setStoredRadarLocale];
   return [locale, setStoredRadarLocale];
 }
 
@@ -44,6 +49,7 @@ export function useLocaleResolutionState(): LocaleResolutionResult {
 
 export function useIntlCurrency(): [IntlCurrencyCode, (next: IntlCurrencyCode) => void] {
   const currency = useSyncExternalStore(subscribeAreaUnit, getStoredIntlCurrency, () => 'IRT' as IntlCurrencyCode);
+  if (!SHOW_INTL_UNIT_CURRENCY_CONTROLS) return ['IRT', setStoredIntlCurrency];
   return [currency, setStoredIntlCurrency];
 }
 
@@ -61,7 +67,12 @@ interface AreaUnitToggleProps {
 
 const UNSUPPORTED_CURRENCY_TOOLTIP = 'نرخ مرجع معتبر برای این ارز ثبت نشده است';
 
-export const AreaUnitToggle: React.FC<AreaUnitToggleProps> = ({
+export const AreaUnitToggle: React.FC<AreaUnitToggleProps> = (props) => {
+  if (!SHOW_INTL_UNIT_CURRENCY_CONTROLS) return null;
+  return <AreaUnitToggleControls {...props} />;
+};
+
+const AreaUnitToggleControls: React.FC<AreaUnitToggleProps> = ({
   compact = false,
   showIntlControls = false,
   hideAreaUnitOnMobile = false,

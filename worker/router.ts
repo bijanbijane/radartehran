@@ -1,16 +1,14 @@
 /**
  * @file worker/router.ts
- * @description Modular Cloudflare Worker router for Tehran Radar (Phase 1 & Phase 2).
- * Separates route dispatch, strangler migration boundary enforcement, and structured observability
- * from the Worker entrypoint (`worker/index.ts`).
+ * @description Modular Cloudflare Worker router for Tehran Radar.
+ * Enforces the Migration Control Register (`worker/migrationRegister.ts`) as the single
+ * authoritative dispatch gate before executing Worker route handlers.
  */
-import {
-  buildWorkerJsonHeaders,
-  jsonWorkerResponse,
-} from './contextAndSecurity';
+import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
 import { findMigrationRegisterEntry } from './migrationRegister';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
+import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
 import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagnosticsRoutes';
 import type { WorkerRequestContext } from './types';
 
@@ -21,7 +19,7 @@ export interface WorkerRouteDispatchResult {
 }
 
 export async function dispatchWorkerApiOrSeoRequest(
-  ctx: WorkerRequestContext
+  ctx: WorkerRequestContext,
 ): Promise<WorkerRouteDispatchResult | null> {
   const { method, pathname } = ctx;
 
@@ -35,19 +33,7 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
-  // Group 5/6 D1+R2 Bound Object Storage & Admin Worker Diagnostics
-  if (pathname.startsWith('/api/')) {
-    const storageOrAdminDiagRes = await handleStorageAndAdminWorkerRoute(ctx);
-    if (storageOrAdminDiagRes) {
-      return {
-        response: storageOrAdminDiagRes,
-        routePattern: `${method} ${pathname}`,
-        migrationStatus: 'VERIFIED',
-      };
-    }
-  }
-
-  // Check Migration Control Register first to enforce strangler rollback / gate controls
+  // Authoritative Migration Control Register check FIRST — zero route bypasses
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
   if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED') {
     const { entry } = registeredMatch;
@@ -88,11 +74,31 @@ export async function dispatchWorkerApiOrSeoRequest(
   // Group 1B: Stateless Intelligence, Commerce, MCP, Valuation Seal, Telemetry Policy
   const group1BResponse = await handleIntelligenceAndCommerceRoute(
     ctx,
-    registeredMatch?.params || {}
+    registeredMatch?.params || {},
   );
   if (group1BResponse) {
     return {
       response: group1BResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Group 5: Canonical R2 + D1 Object Storage & Media Lifecycle
+  const group5Response = await handleObjectStorageRoute(ctx, registeredMatch?.params || {});
+  if (group5Response) {
+    return {
+      response: group5Response,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Group 6: Worker-native Admin Diagnostics
+  const group6DiagResponse = await handleStorageAndAdminWorkerRoute(ctx);
+  if (group6DiagResponse) {
+    return {
+      response: group6DiagResponse,
       routePattern: registeredMatch?.entry.path || pathname,
       migrationStatus: 'VERIFIED',
     };

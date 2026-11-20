@@ -177,7 +177,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         </div>
 
         {activePrefSection === 'DISPLAY' && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" data-testid="prefs-display-panel">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" data-testid="prefs-display-panel">
             <div>
               <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">قالب نمایش اعداد (شناسه فنی دست‌نخورده می‌ماند):</label>
               <select
@@ -189,18 +189,6 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
               >
                 <option value="fa">اعداد فارسی (۱۴٬۹۰۰)</option>
                 <option value="en">اعداد لاتین (14,900)</option>
-              </select>
-            </div>
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-200 block mb-1">واحد پول رسمی سامانه:</label>
-              <select
-                aria-label="واحد نمایش قیمت"
-                data-testid="pref-select-currency-unit"
-                value="toman"
-                onChange={() => setPrefs(defaultPersonalizationEngine.updatePreferences(userId, { display: { currencyUnit: 'toman' } }))}
-                className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold"
-              >
-                <option value="toman">تومان (میلیون تومان)</option>
               </select>
             </div>
             <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">

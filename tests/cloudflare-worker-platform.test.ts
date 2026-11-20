@@ -9,6 +9,11 @@ import {
   verifyFirebaseIdTokenOnEdge,
 } from '../worker/auth/firebaseEdgeAuth';
 import {
+  GOOGLE_FIREBASE_APP_CHECK_JWKS_URL,
+  injectMockJwksKeysForTests,
+  resetJwksCacheForTests,
+} from '../worker/auth/jwksClient';
+import {
   AUTHORITATIVE_D1_MIGRATIONS_TABLE,
   buildD1SessionBookmarkHeader,
   createLocalD1DatabaseSimulator,
@@ -197,15 +202,37 @@ async function runSuite(): Promise<void> {
       exp: nowSec + 1800,
       auth_time: nowSec - 60,
     });
+    resetJwksCacheForTests();
+    injectMockJwksKeysForTests(GOOGLE_FIREBASE_APP_CHECK_JWKS_URL, {
+      'test-appcheck-kid-1': keyPair.publicKey,
+    });
+    const validAppCheckJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-appcheck-kid-1', {
+      iss: 'https://firebaseappcheck.googleapis.com/935427453422',
+      aud: ['projects/935427453422', 'projects/gen-lang-client-0713157837'],
+      sub: '1:935427453422:web:25817d32df713f2a68deff',
+      app_id: '1:935427453422:web:25817d32df713f2a68deff',
+      iat: nowSec - 30,
+      exp: nowSec + 1800,
+    });
     const verified = await verifyFirebaseIdTokenOnEdge({
       authorizationHeader: `Bearer ${validAdminJwt}`,
-      appCheckHeader: 'eyJhbGciOiJSUzI1NiJ9.eyJhcHAiOiJyYWRhciJ9.c2ln',
-      env,
+      appCheckHeader: validAppCheckJwt,
+      env: { ...env, FIREBASE_APP_CHECK_MODE: 'enforced' },
       nowSeconds: nowSec,
     });
     assert.equal(verified.authenticated, true);
     assert.equal(verified.isAdmin, true);
     assert.equal(verified.appCheckVerified, true);
+
+    const forgedAppCheck = await verifyFirebaseIdTokenOnEdge({
+      authorizationHeader: `Bearer ${validAdminJwt}`,
+      appCheckHeader: 'eyJhbGciOiJSUzI1NiJ9.eyJhcHAiOiJyYWRhciJ9.c2ln',
+      env: { ...env, FIREBASE_APP_CHECK_MODE: 'enforced' },
+      nowSeconds: nowSec,
+    });
+    assert.equal(forgedAppCheck.authenticated, false);
+    assert.equal(forgedAppCheck.appCheckVerified, false);
+    assert.equal(forgedAppCheck.statusCode, 401);
 
     const expiredJwt = await signTestFirebaseJwt(keyPair.privateKey, 'test-kid-1', {
       iss: 'https://securetoken.google.com/gen-lang-client-0713157837',
@@ -263,7 +290,7 @@ async function runSuite(): Promise<void> {
     ] as const) {
       const mig = await runD1MigrationsIdempotently(db);
       assert.equal(mig.ledgerTable, 'd1_migrations');
-      assert.equal(mig.appliedVersions.length, 2, `Expected 2 D1 migrations on ${engineLabel}`);
+      assert.equal(mig.appliedVersions.length, 3, `Expected 3 D1 migrations on ${engineLabel}`);
       const migSecond = await runD1MigrationsIdempotently(db);
       assert.equal(migSecond.appliedVersions.length, 0, `Idempotent re-run must apply 0 duplicate migrations on ${engineLabel}`);
 
@@ -687,11 +714,12 @@ async function runSuite(): Promise<void> {
     assert.equal(diagJson.operationalVisibility.d1Status, 'bound');
     assert.equal(diagJson.operationalVisibility.r2Status, 'bound');
     assert.equal(diagJson.operationalVisibility.migrationStatus.ledgerTable, 'd1_migrations');
-    assert.equal(diagJson.operationalVisibility.migrationStatus.appliedCount, 2);
-    assert.equal(diagJson.operationalVisibility.migrationStatus.expectedCount, 2);
+    assert.equal(diagJson.operationalVisibility.migrationStatus.appliedCount, 3);
+    assert.equal(diagJson.operationalVisibility.migrationStatus.expectedCount, 3);
     assert.equal(diagJson.operationalVisibility.migrationStatus.allCanonicalMigrationsApplied, true);
     assert.equal(diagJson.operationalVisibility.migrationStatus.migrations[0].fileName, '0001_core_projections_and_watermarks.sql');
     assert.equal(diagJson.operationalVisibility.migrationStatus.migrations[1].fileName, '0002_upload_sessions_legal_holds_and_rate_limits.sql');
+    assert.equal(diagJson.operationalVisibility.migrationStatus.migrations[2].fileName, '0003_media_objects_and_queue_execution_leases.sql');
     assert.equal(diagJson.operationalVisibility.safePerformanceMetrics.cpuTimeMs, null);
 
     // Verify 3-tier separated workflows & Section 7 D1 migration isolation security invariants
@@ -808,7 +836,7 @@ async function runSuite(): Promise<void> {
     assert.equal(unmigratedJson.ok, false);
     assert.equal(unmigratedJson.code, 'REQUIRED_D1_MIGRATION_PENDING');
     assert.equal(unmigratedJson.migrationReadiness.allCanonicalMigrationsApplied, false);
-    assert.equal(unmigratedJson.migrationReadiness.pendingMigrations.length, 2);
+    assert.equal(unmigratedJson.migrationReadiness.pendingMigrations.length, 3);
 
     const migratedReadinessRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),

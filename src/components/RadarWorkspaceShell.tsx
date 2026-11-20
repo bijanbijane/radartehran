@@ -21,6 +21,7 @@ import { FeatureErrorBoundary } from './FeatureErrorBoundary';
 import { useMarketPulseSync } from './useMarketPulseSync';
 import { FEATURE_FLAGS_STORAGE_KEY, useAppPersistenceAndDerivedState } from './useAppPersistenceAndDerivedState';
 import { formatAreaShort, formatMillionTomanAsIntlCurrency, getRadarLocaleDirection, getStoredAreaUnit, getStoredIntlCurrency, getStoredRadarLocale, subscribeAreaUnit } from '../utils/areaUnit';
+import { SHOW_INTL_UNIT_CURRENCY_CONTROLS } from './AreaUnitToggle';
 import { ProductGlobalHeader } from './navigation/ProductGlobalHeader';
 import { MapToolRail } from './navigation/MapToolRail';
 import { ProductViewRouter } from './views/ProductViewRouter';
@@ -32,7 +33,9 @@ const ReverseBudgetDiscoveryModal = lazy(() => import('./modals/ReverseBudgetDis
 export function RadarWorkspaceShell() {
   const [, setIntlTick] = useState(0);
   useEffect(() => subscribeAreaUnit(() => setIntlTick((t) => t + 1)), []);
-  const areaUnit = getStoredAreaUnit(), intlCurrency = getStoredIntlCurrency(), radarLocale = getStoredRadarLocale();
+  const areaUnit = SHOW_INTL_UNIT_CURRENCY_CONTROLS ? getStoredAreaUnit() : 'sqm';
+  const intlCurrency = SHOW_INTL_UNIT_CURRENCY_CONTROLS ? getStoredIntlCurrency() : 'IRT';
+  const radarLocale = SHOW_INTL_UNIT_CURRENCY_CONTROLS ? getStoredRadarLocale() : 'fa';
   const initialUrlState = useMemo(() => parseInitialUrlParams(), []);
   const allExpansionSeeds = useMemo(() => getAllMultiCityNeighborhoods().filter((n) => n.id >= 100 && !(n.id >= 500 && n.id <= 599)), []);
   const activeCityRef = useRef<CityId>(initialUrlState.initialCity || 'tehran');

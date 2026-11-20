@@ -1,4 +1,15 @@
+/**
+ * @file worker/auth/firebaseEdgeAuth.ts
+ * @description Canonical Edge Firebase ID Token verifier with fail-closed D1 revocation
+ * enforcement, canonical D1 revocation write path + audit log, and cryptographic App Check verification.
+ */
 import type { D1Database, KVNamespace, WorkerEnv } from '../types';
+import {
+  isWorkerProductionEnvironment,
+  resolveWorkerAppCheckMode,
+  verifyWorkerAppCheck,
+} from './appCheckVerifier';
+import type { AppCheckMode } from './types';
 
 export interface VerifiedFirebaseEdgePrincipal {
   authenticated: boolean;
@@ -11,7 +22,11 @@ export interface VerifiedFirebaseEdgePrincipal {
   issuedAtSeconds: number | null;
   expiresAtSeconds: number | null;
   appCheckVerified: boolean;
-  statusCode: 200 | 401 | 403;
+  appCheckMode?: AppCheckMode;
+  appCheckStatusCode?: 200 | 401 | 403 | 503;
+  appCheckReason?: string;
+  appCheckAppId?: string;
+  statusCode: 200 | 401 | 403 | 503;
   reasonCode: string;
 }
 
@@ -19,6 +34,24 @@ export interface FirebaseJwkKey extends JsonWebKey {
   kid: string;
   alg?: string;
   use?: string;
+}
+
+export interface RevocationCheckResult {
+  revoked: boolean;
+  unavailable?: boolean;
+  reason?: string;
+}
+
+export type RevocationActionType = 'REVOKE_BEFORE' | 'DISABLE_USER' | 'REENABLE_USER';
+
+export interface RecordUserRevocationResult {
+  applied: boolean;
+  idempotentReplay: boolean;
+  watermarkKey: string;
+  watermarkValue: string | null;
+  eventId: string;
+  statusCode: 200 | 400 | 503;
+  reason: string;
 }
 
 interface CachedJwksState {
@@ -51,7 +84,7 @@ function decodeBase64UrlToUint8Array(base64Url: string): Uint8Array {
   const padded = base64Url.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((base64Url.length + 3) % 4);
   const binary = atob(padded);
   const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
+  for (let i = 0; i < binary.length; i += 1) {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
@@ -71,13 +104,13 @@ async function resolvePublicCryptoKeyByKid(
   kid: string,
   kv?: KVNamespace,
   forceRefresh = false,
-): Promise<CryptoKey | null> {
+): Promise<{ key: CryptoKey | null; dependencyError?: boolean }> {
   if (testOverrideJwks.has(kid)) {
-    return testOverrideJwks.get(kid) ?? null;
+    return { key: testOverrideJwks.get(kid) ?? null };
   }
   const now = Date.now();
   if (!forceRefresh && cachedJwks && cachedJwks.expiresAtMs > now && cachedJwks.keysByKid.has(kid)) {
-    return cachedJwks.keysByKid.get(kid) ?? null;
+    return { key: cachedJwks.keysByKid.get(kid) ?? null };
   }
 
   let rawJwksJson: string | null = null;
@@ -96,7 +129,7 @@ async function resolvePublicCryptoKeyByKid(
         method: 'GET',
         headers: { Accept: 'application/json' },
       });
-      if (!response.ok) return null;
+      if (!response.ok) return { key: null, dependencyError: true };
       const cacheControl = response.headers.get('cache-control') || '';
       const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
       if (maxAgeMatch) {
@@ -107,7 +140,7 @@ async function resolvePublicCryptoKeyByKid(
         await kv.put('v1:auth:firebase_jwks', rawJwksJson, { expirationTtl: maxAgeSeconds }).catch(() => {});
       }
     } catch {
-      return null;
+      return { key: null, dependencyError: true };
     }
   }
 
@@ -129,45 +162,210 @@ async function resolvePublicCryptoKeyByKid(
       keysByKid: map,
       expiresAtMs: now + maxAgeSeconds * 1000,
     };
-    return map.get(kid) ?? null;
+    return { key: map.get(kid) ?? null };
   } catch {
-    return null;
+    return { key: null, dependencyError: true };
   }
 }
 
+/**
+ * Fail-closed revocation check against D1 `sync_watermarks` (`revoked_uid:{uid}`).
+ * - If `!db` or query throws -> fails closed with `unavailable: true` (callers MUST return HTTP 503).
+ * - Watermark value `'DISABLED'` rejects all tokens for this UID.
+ * - Numeric watermark is interpreted as Unix **seconds** (`valid_since_sec`); tokens with `iat < valid_since_sec` are rejected.
+ */
 export async function isTokenRevokedOrUserDisabled(
   uid: string,
   issuedAtSeconds: number,
   db?: D1Database,
-): Promise<{ revoked: boolean; reason?: string }> {
-  if (!db) return { revoked: false };
+): Promise<RevocationCheckResult> {
+  if (!db) {
+    return {
+      revoked: true,
+      unavailable: true,
+      reason: 'AUTH_REVOCATION_STORE_UNAVAILABLE',
+    };
+  }
   try {
     const row = await db
       .prepare('SELECT watermark_value FROM sync_watermarks WHERE watermark_key = ?1')
       .bind(`revoked_uid:${uid}`)
       .first<{ watermark_value: string }>();
-    if (!row || !row.watermark_value) return { revoked: false };
-    if (row.watermark_value === 'DISABLED') {
+    if (!row || !row.watermark_value) {
+      return { revoked: false };
+    }
+    const rawValue = String(row.watermark_value).trim();
+    if (rawValue === 'DISABLED') {
       return { revoked: true, reason: 'USER_ACCOUNT_DISABLED' };
     }
-    const validSinceSeconds = Number(row.watermark_value);
-    if (Number.isFinite(validSinceSeconds) && issuedAtSeconds < validSinceSeconds) {
+    const parsedNumeric = Number(rawValue);
+    if (!Number.isFinite(parsedNumeric) || parsedNumeric <= 0) {
+      return {
+        revoked: true,
+        unavailable: true,
+        reason: 'AUTH_REVOCATION_WATERMARK_CORRUPTED',
+      };
+    }
+    // Normalize defensively if a legacy writer stored milliseconds (> 1e12).
+    const validSinceSeconds = parsedNumeric > 1_000_000_000_000 ? Math.floor(parsedNumeric / 1000) : Math.floor(parsedNumeric);
+    const normalizedIatSeconds = issuedAtSeconds > 1_000_000_000_000 ? Math.floor(issuedAtSeconds / 1000) : Math.floor(issuedAtSeconds);
+    if (normalizedIatSeconds < validSinceSeconds) {
       return { revoked: true, reason: 'TOKEN_REVOKED_BEFORE_VALID_SINCE' };
     }
     return { revoked: false };
   } catch {
-    return { revoked: false };
+    return {
+      revoked: true,
+      unavailable: true,
+      reason: 'AUTH_REVOCATION_CHECK_FAILED',
+    };
+  }
+}
+
+/**
+ * Canonical D1 write path for revoking tokens, disabling, or re-enabling a user.
+ * Writes idempotently to `auth_revocation_events` and updates `sync_watermarks` (`revoked_uid:{uid}`).
+ */
+export async function recordUserRevocationInD1(params: {
+  db: D1Database | undefined;
+  uid: string;
+  action: RevocationActionType;
+  validSinceSeconds?: number;
+  actorUid: string;
+  reason: string;
+  idempotencyKey: string;
+  nowMs?: number;
+}): Promise<RecordUserRevocationResult> {
+  const uid = String(params.uid || '').trim();
+  const actorUid = String(params.actorUid || '').trim();
+  const idempotencyKey = String(params.idempotencyKey || '').trim();
+  const watermarkKey = `revoked_uid:${uid}`;
+
+  if (!params.db) {
+    return {
+      applied: false,
+      idempotentReplay: false,
+      watermarkKey,
+      watermarkValue: null,
+      eventId: '',
+      statusCode: 503,
+      reason: 'AUTH_REVOCATION_STORE_UNAVAILABLE',
+    };
+  }
+  if (!uid || uid.length > 128 || !actorUid || !idempotencyKey) {
+    return {
+      applied: false,
+      idempotentReplay: false,
+      watermarkKey,
+      watermarkValue: null,
+      eventId: '',
+      statusCode: 400,
+      reason: 'INVALID_REVOCATION_PARAMETERS',
+    };
+  }
+
+  const nowMs = params.nowMs ?? Date.now();
+  const nowSec = Math.floor(nowMs / 1000);
+  const nowIso = new Date(nowMs).toISOString();
+  const validSinceSeconds =
+    params.action === 'REVOKE_BEFORE'
+      ? Math.max(1, Math.floor(params.validSinceSeconds ?? nowSec))
+      : null;
+  const watermarkValue =
+    params.action === 'DISABLE_USER'
+      ? 'DISABLED'
+      : params.action === 'REVOKE_BEFORE'
+        ? String(validSinceSeconds)
+        : null;
+  const eventId = `rev_${nowMs}_${Math.random().toString(36).slice(2, 10)}`;
+
+  try {
+    const existing = await params.db
+      .prepare('SELECT event_id FROM auth_revocation_events WHERE idempotency_key = ?1')
+      .bind(idempotencyKey)
+      .first<{ event_id: string }>();
+    if (existing?.event_id) {
+      return {
+        applied: true,
+        idempotentReplay: true,
+        watermarkKey,
+        watermarkValue,
+        eventId: existing.event_id,
+        statusCode: 200,
+        reason: 'REVOCATION_IDEMPOTENT_REPLAY',
+      };
+    }
+
+    await params.db
+      .prepare(
+        `INSERT OR IGNORE INTO auth_revocation_events (
+          event_id, uid, action, valid_since_seconds, actor_uid, reason, idempotency_key, created_at_iso
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+      )
+      .bind(
+        eventId,
+        uid,
+        params.action,
+        validSinceSeconds,
+        actorUid,
+        String(params.reason || 'ADMIN_REVOCATION').slice(0, 240),
+        idempotencyKey,
+        nowIso,
+      )
+      .run();
+
+    if (params.action === 'REENABLE_USER') {
+      await params.db
+        .prepare('DELETE FROM sync_watermarks WHERE watermark_key = ?1')
+        .bind(watermarkKey)
+        .run();
+    } else if (watermarkValue !== null) {
+      await params.db
+        .prepare(
+          'INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)',
+        )
+        .bind(watermarkKey, watermarkValue, nowIso)
+        .run();
+    }
+
+    return {
+      applied: true,
+      idempotentReplay: false,
+      watermarkKey,
+      watermarkValue,
+      eventId,
+      statusCode: 200,
+      reason: 'REVOCATION_RECORDED',
+    };
+  } catch {
+    return {
+      applied: false,
+      idempotentReplay: false,
+      watermarkKey,
+      watermarkValue: null,
+      eventId: '',
+      statusCode: 503,
+      reason: 'AUTH_REVOCATION_WRITE_FAILED',
+    };
   }
 }
 
 export async function verifyFirebaseIdTokenOnEdge(params: {
   authorizationHeader: string | null | undefined;
   appCheckHeader?: string | null | undefined;
+  appCheckDebugHeader?: string | null | undefined;
+  request?: Request;
   env: WorkerEnv;
   nowSeconds?: number;
   requireVerifiedEmail?: boolean;
+  sensitiveRoute?: boolean;
+  appCheckFetchFn?: typeof fetch;
 }): Promise<VerifiedFirebaseEdgePrincipal> {
-  const unauthenticated = (reasonCode: string, statusCode: 401 | 403 = 401): VerifiedFirebaseEdgePrincipal => ({
+  const unauthenticated = (
+    reasonCode: string,
+    statusCode: 401 | 403 | 503 = 401,
+    extra?: Partial<VerifiedFirebaseEdgePrincipal>,
+  ): VerifiedFirebaseEdgePrincipal => ({
     authenticated: false,
     uid: null,
     email: null,
@@ -180,6 +378,7 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     appCheckVerified: false,
     statusCode,
     reasonCode,
+    ...extra,
   });
 
   const rawAuth = String(params.authorizationHeader || '').trim();
@@ -240,11 +439,14 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     return unauthenticated('JWT_AUTH_TIME_INVALID', 401);
   }
 
-  let cryptoKey = await resolvePublicCryptoKeyByKid(header.kid, params.env.RADAR_KV, false);
-  if (!cryptoKey) {
-    cryptoKey = await resolvePublicCryptoKeyByKid(header.kid, params.env.RADAR_KV, true);
+  let keyResolution = await resolvePublicCryptoKeyByKid(header.kid, params.env.RADAR_KV, false);
+  if (!keyResolution.key && !keyResolution.dependencyError) {
+    keyResolution = await resolvePublicCryptoKeyByKid(header.kid, params.env.RADAR_KV, true);
   }
-  if (!cryptoKey) {
+  if (keyResolution.dependencyError) {
+    return unauthenticated('JWKS_DEPENDENCY_UNAVAILABLE', 503);
+  }
+  if (!keyResolution.key) {
     return unauthenticated('JWKS_KEY_NOT_FOUND', 401);
   }
 
@@ -252,7 +454,7 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
   const signatureBytes = decodeBase64UrlToUint8Array(segments[2]);
   const signatureValid = await crypto.subtle.verify(
     'RSASSA-PKCS1-v1_5',
-    cryptoKey,
+    keyResolution.key,
     signatureBytes,
     signedContent,
   );
@@ -261,6 +463,9 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
   }
 
   const revocation = await isTokenRevokedOrUserDisabled(payload.sub, iat, params.env.DB);
+  if (revocation.unavailable) {
+    return unauthenticated(revocation.reason || 'AUTH_REVOCATION_STORE_UNAVAILABLE', 503);
+  }
   if (revocation.revoked) {
     return unauthenticated(revocation.reason || 'TOKEN_REVOKED', 401);
   }
@@ -276,8 +481,52 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     emailVerified &&
     Boolean(email && (PRIMARY_ADMIN_EMAILS.has(email) || email === configuredAdminEmail));
 
-  const rawAppCheck = String(params.appCheckHeader || '').trim();
-  const appCheckVerified = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(rawAppCheck);
+  // Real cryptographic Firebase App Check verification (never structural 3-part regex).
+  const appCheckMode = resolveWorkerAppCheckMode(params.env, {
+    sensitiveRoute: params.sensitiveRoute ?? true,
+  });
+  const isProd = isWorkerProductionEnvironment(params.env);
+  const debugAllowlist = String(params.env.FIREBASE_APP_CHECK_DEBUG_ALLOWLIST || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  let appCheckRequest = params.request;
+  if (!appCheckRequest) {
+    const syntheticHeaders = new Headers();
+    if (params.appCheckHeader) syntheticHeaders.set('x-firebase-appcheck', params.appCheckHeader);
+    if (params.appCheckDebugHeader) syntheticHeaders.set('x-firebase-appcheck-debug', params.appCheckDebugHeader);
+    appCheckRequest = new Request('https://radartehran.ir/_internal/app-check', { headers: syntheticHeaders });
+  }
+
+  // If mode is 'disabled' AND a token header was explicitly supplied, still verify cryptographically
+  // so `appCheckVerified` truthfully reflects cryptographic validity rather than regex shape.
+  const hasSuppliedAppCheckToken = Boolean(appCheckRequest.headers.get('x-firebase-appcheck')?.trim());
+  const effectiveAppCheckEvalMode: AppCheckMode =
+    appCheckMode === 'disabled' && hasSuppliedAppCheckToken ? 'monitor' : appCheckMode;
+
+  const appCheckResult = await verifyWorkerAppCheck(appCheckRequest, {
+    mode: effectiveAppCheckEvalMode,
+    isProduction: isProd,
+    expectedAppId: params.env.FIREBASE_APP_CHECK_APP_ID,
+    expectedProjectId: projectId,
+    debugAllowlist,
+    nowSeconds: nowSec,
+    fetchFn: params.appCheckFetchFn,
+  });
+
+  if (!appCheckResult.allowed) {
+    const failureStatus: 401 | 403 | 503 =
+      appCheckResult.statusCode === 503 ? 503 : appCheckResult.statusCode === 403 ? 403 : 401;
+    return unauthenticated(appCheckResult.reason, failureStatus, {
+      appCheckMode,
+      appCheckStatusCode: appCheckResult.statusCode,
+      appCheckReason: appCheckResult.reason,
+      appCheckVerified: false,
+    });
+  }
+
+  const appCheckVerified = appCheckResult.reason === 'APP_CHECK_VERIFIED';
 
   return {
     authenticated: true,
@@ -290,6 +539,10 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     issuedAtSeconds: iat,
     expiresAtSeconds: exp,
     appCheckVerified,
+    appCheckMode,
+    appCheckStatusCode: appCheckResult.statusCode,
+    appCheckReason: appCheckResult.reason,
+    appCheckAppId: appCheckResult.appId,
     statusCode: 200,
     reasonCode: 'VERIFIED',
   };

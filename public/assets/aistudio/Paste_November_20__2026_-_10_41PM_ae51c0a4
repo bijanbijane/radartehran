@@ -1,0 +1,1257 @@
+# دستور اجرایی اصلاح باگ‌های بحرانی زیرساخت رادار تهران
+
+**شناسه بسته اصلاحی:** `RT-TEAMWORK-CRITICAL-REMEDIATION-001`
+
+**عنوان:** اصلاح یکپارچگی پردازش صف، همگرایی مسیرهای ذخیره‌سازی رسانه، امنیت احراز هویت و پایداری داده در Cloudflare Worker
+
+**سطح اولویت:** Critical / P0 / P1
+
+**مبنای اجرا:** ZIP نسخه تیم‌ورک رادار تهران، بدون جایگزینی نسخه مرجع یا درخواست ZIP جدید.
+
+**نوع عملیات:** Code Remediation / Backend Reliability / Security Hardening / Data Integrity
+
+**محدودیت:** این دستور مجوز Deploy به Production، اجرای Migration روی دیتابیس عملیاتی یا تغییر مخرب اطلاعات موجود نیست.
+
+---
+
+# 1. الزامات عمومی و قواعد اجرای کار
+
+پیش از هرگونه تغییر، فایل‌های زیر را مطالعه کن:
+
+1. `AGENTS.md`
+2. `ARCHITECTURE.md`
+3. `architecture-baseline.json`
+4. `docs/engineering/RMEP-001/PERSISTENT-ENGINEERING-MEMORY.md`
+5. `docs/engineering/RMEP-001/EXECUTION-STATE.json`
+
+سپس وضعیت واقعی Git را بررسی کن:
+
+```bash
+git status --short
+git branch --show-current
+```
+
+الزامات:
+
+- هیچ تغییر موجود و تأییدنشده‌ای را بازنویسی یا حذف نکن.
+- اصلاحات را به‌صورت مرحله‌ای و با حفظ سازگاری API انجام بده.
+- از Refactor گسترده و خارج از دامنه این بسته خودداری کن.
+- توابع سالم و رفتارهای موجود را بدون ضرورت تغییر نده.
+- دو پیاده‌سازی موازی برای یک قابلیت عملیاتی باقی نگذار.
+- هیچ Handler، Adapter یا Service جایگزین صوری که صرفاً پاسخ موفق تولید کند ایجاد نکن.
+- تمام عملیات حساس باید نتیجه واقعی و قابل اثبات داشته باشند.
+- تمام عملیات نوشتن داده باید idempotent و در برابر retry مقاوم باشند.
+- هر تغییر Schema باید از طریق Migration افزایشی و سازگار انجام شود.
+- هیچ شناسه منبع Cloudflare، نام دامنه، Secret یا Credential را حدس نزن.
+- برای هیچ قابلیت ناقص، وضعیت `ACTIVE` یا `COMPLETED` ثبت نکن.
+
+**اصل معماری:** تا زمانی که یک مسیر عملیاتی از ورودی تا اثر پایدار داده به‌صورت کامل پیاده‌سازی و آزمایش نشده است، نباید به‌عنوان قابلیت آماده Worker معرفی شود.
+
+---
+
+# 2. اصلاح بحرانی شماره یک: بازسازی کامل Queue Execution
+
+**شناسه:** `RT-TEAMWORK-CRITICAL-001-QUEUE-EXECUTION`
+
+**اولویت:** P0
+
+**هدف:** حذف اجرای خالی Jobها، جلوگیری از ACK موفقیت کاذب، اصلاح قرارداد پیام و ایجاد پردازش پایدار، قابل بازیابی و Idempotent.
+
+## فایل‌های هدف
+
+| مسیر دقیق | محدوده مورد بررسی |
+|---|---|
+| `worker/index.ts` | خطوط 204–240 |
+| `worker/queues/queueAndCronProcessor.ts` | خطوط 3–173 |
+| `worker/queues/inventory.ts` | خطوط 1–152 |
+| `worker/types.ts` | تعریف Worker Environment |
+| `migrations/d1/0002_upload_sessions_legal_holds_and_rate_limits.sql` | ساختار فعلی Idempotency |
+| `worker/db/d1SchemaAndMigrations.ts` | ثبت Migrationها و شبیه‌ساز D1 |
+| `tests/cloudflare-worker-platform.test.ts` | تست ورودی واقعی Worker |
+| `tests/cloudflare-phase6-queues-and-cron.test.ts` | تست‌های فعلی صف و زمان‌بندی |
+
+## 2.1. حذف Queue Handler خالی
+
+در فایل:
+
+`worker/index.ts`
+
+در بخش `queue()`، تابع فعلی زیر باید حذف و با Dispatcher عملیاتی جایگزین شود:
+
+```ts
+executeJob: async (_envelope) => {
+  // Empty implementation
+},
+```
+
+یک ماژول مستقل ایجاد کن:
+
+`worker/queues/jobDispatcher.ts`
+
+وظیفه این ماژول:
+
+- دریافت Queue Envelope معتبر.
+- تشخیص `jobType`.
+- انتخاب Handler واقعی و ثبت‌شده.
+- اعتبارسنجی Payload متناسب با نوع عملیات.
+- اجرای Service واقعی.
+- بازگرداندن نتیجه ساختاریافته.
+- تفکیک خطاهای Retryable از Permanent.
+- جلوگیری از اعلام موفقیت قبل از تکمیل عملیات اصلی.
+
+هر Handler باید یک قرارداد مشخص داشته باشد:
+
+```ts
+interface QueueJobHandler<TPayload = unknown> {
+  execute(
+    payload: TPayload,
+    context: QueueExecutionContext
+  ): Promise<QueueExecutionResult>;
+}
+```
+
+نام Interface می‌تواند با قراردادهای فعلی پروژه هماهنگ شود، اما رفتار اجرایی آن الزامی است.
+
+**ممنوع:** تعریف Handler خالی، `return true` ثابت، Promise موفق بدون عملیات، Mock موفقیت در محیط اجرایی یا ثبت `COMPLETED` پس از اجرای تابع فاقد منطق.
+
+اگر برای Job خاصی Handler عملیاتی وجود ندارد، آن Job را از Registry قابل اجرا و برنامه زمان‌بندی خارج کن تا زمانی که Service واقعی آن پیاده‌سازی شود.
+
+## 2.2. ایجاد یک قرارداد واحد Queue
+
+در حال حاضر بین این دو فایل اختلاف قرارداد وجود دارد:
+
+- `worker/queues/queueAndCronProcessor.ts`
+- `worker/queues/inventory.ts`
+
+در فایل اول انواع مجاز مانند موارد زیر تعریف شده‌اند:
+
+```text
+market_pulse_refresh
+firestore_d1_projection_sync
+r2_orphan_media_reconcile
+telegram_digest_broadcast
+telemetry_archive_flush
+```
+
+اما Registry دوم دارای نام‌هایی مانند موارد زیر است:
+
+```text
+market_pulse_deep_monitoring
+telemetry_batch_flush
+media_orphan_cleanup
+expired_chunk_upload_session_cleanup
+```
+
+این اختلاف باید به‌طور کامل رفع شود.
+
+یک Registry canonical تعریف کن که تمام اجزای زیر از آن استفاده کنند:
+
+1. Type Definition
+2. Envelope Validator
+3. Job Dispatcher
+4. Queue Producer
+5. Cron Scheduler
+6. Retry Policy
+7. Dead-Letter Routing
+8. Queue Tests
+
+قرارداد Envelope باید حداقل شامل فیلدهای زیر باشد:
+
+```ts
+interface CanonicalQueueEnvelope<TPayload = unknown> {
+  schemaVersion: string;
+  messageId: string;
+  idempotencyKey: string;
+  jobType: string;
+  createdAtIso: string;
+  correlationId: string;
+  payload: TPayload;
+}
+```
+
+فقط `jobType`هایی مجاز باشند که:
+
+- Schema معتبر دارند.
+- Handler واقعی دارند.
+- Retry Policy مشخص دارند.
+- Idempotency Strategy دارند.
+- حداقل یک تست اجرایی واقعی دارند.
+
+## 2.3. اصلاح وضعیت پردازش Idempotency
+
+در فایل:
+
+`worker/queues/queueAndCronProcessor.ts`
+
+منطق فعلی ثبت وضعیت `COMPLETED` پس از بازگشت تابع اجرا باید بازسازی شود.
+
+مشکل وضعیت فعلی این است که:
+
+1. تابع اجرا فراخوانی می‌شود.
+2. بدون تضمین اجرای عملیات اصلی ممکن است به‌صورت موفق برگردد.
+3. وضعیت `COMPLETED` ثبت می‌شود.
+4. پیام ACK می‌شود.
+
+این توالی باید به یک ماشین وضعیت پایدار تبدیل شود:
+
+```text
+PENDING
+   |
+   v
+PROCESSING
+   |
+   +------> RETRYABLE_FAILURE
+   |
+   +------> PERMANENT_FAILURE
+   |
+   v
+COMPLETED
+```
+
+برای Claim کردن Job از یک عملیات اتمیک مبتنی بر D1 استفاده کن.
+
+موارد ضروری:
+
+- کلید `idempotencyKey` باید Unique باشد.
+- Claim هم‌زمان یک Job توسط چند Consumer نباید موجب اجرای هم‌زمان ناخواسته شود.
+- وضعیت `PROCESSING` باید Lease معتبر داشته باشد.
+- Jobهای دارای Lease منقضی‌شده باید قابلیت بازیابی داشته باشند.
+- وضعیت `COMPLETED` فقط بعد از تأیید اثر پایدار عملیات ثبت شود.
+- Handlerها باید در برابر اجرای مجدد مقاوم باشند.
+- افزایش Attempt باید پایدار باشد.
+- خطاهای موقت باید قابل Retry باشند.
+- خطاهای دائمی باید به DLQ هدایت شوند.
+
+برای وضعیت Queue یک Migration افزایشی جدید طراحی کن. در صورت نیاز جدول مستقل اجرای Job ایجاد شود؛ از بازنویسی Migrationهای قبلاً اعمال‌شده خودداری کن.
+
+**نکته مهم:** تضمین `exactly-once` میان D1 و سرویس‌های خارجی را ادعا نکن. معماری باید مبتنی بر At-least-once Delivery، Durable Idempotency، Lease و Recovery باشد.
+
+## 2.4. اصلاح رفتار ACK و DLQ
+
+در تابع:
+
+`processRadarQueueBatch()`
+
+این رفتارها الزامی هستند:
+
+- پیام معتبر پس از اجرای واقعی و ثبت پایدار نتیجه ACK شود.
+- پیام نامعتبر در صورت وجود DLQ به DLQ منتقل شود.
+- پیام نامعتبر در صورت نبود DLQ نباید بی‌صدا ACK شود.
+- اگر ذخیره وضعیت اجرای Job در D1 شکست خورد، پیام نباید موفق تلقی شود.
+- خطای Retryable باید به Retry منجر شود.
+- خطای Permanent باید به DLQ منتقل شود.
+- اگر انتقال به DLQ شکست خورد، پیام نباید بدون ثبت نتیجه از دست برود.
+
+## 2.5. اصلاح Scheduler و Cron
+
+در فایل:
+
+`worker/index.ts`
+
+تابع:
+
+`scheduled()`
+
+باید بازسازی شود.
+
+پیام‌های فعلی دارای فیلدهای ناقص و نام‌های Job ناسازگار هستند.
+
+هر پیام تولیدشده باید پیش از ارسال توسط همان Validator canonical بررسی شود.
+
+فقط Jobهای دارای Handler واقعی زمان‌بندی شوند.
+
+پیکربندی Cron در:
+
+`wrangler.jsonc`
+
+نیز باید با Registry نهایی هماهنگ باشد.
+
+زمان‌بندی‌های موجود در `worker/queues/inventory.ts` و تابع `convertUtcScheduledTimeToTehranWallClock()` باید به یک تعریف رسمی و بدون تعارض تبدیل شوند.
+
+برای برنامه زمان‌بندی تهران، این دو آزمون مشخص الزامی هستند:
+
+```text
+00:30 UTC = 04:00 Tehran
+18:30 UTC = 22:00 Tehran
+```
+
+ساعت‌ها و روزهای اجرای واقعی باید دقیقاً مطابق سیاست مورد تأیید پروژه تنظیم شوند. هیچ Job ناقصی نباید صرفاً برای پرشدن Cron فعال شود.
+
+---
+
+# 3. اصلاح بحرانی شماره دو: یکپارچه‌سازی کامل Object Storage و Upload Pipeline
+
+**شناسه:** `RT-TEAMWORK-CRITICAL-002-MEDIA-ROUTE-CONVERGENCE`
+
+**اولویت:** P1
+
+**هدف:** حذف مسیرهای موازی، فعال‌کردن مسیر واقعی Upload، ایجاد محدودیت منابع، ثبت Metadata پایدار در D1 و تکمیل عملیات Download و Delete.
+
+## فایل‌های هدف
+
+| مسیر دقیق | محدوده مورد بررسی |
+|---|---|
+| `worker/router.ts` | خطوط 12–75 |
+| `worker/routes/storageAndAdminDiagnosticsRoutes.ts` | خطوط 90–244 |
+| `worker/routes/edgePlatformAndStorageRoutes.ts` | خطوط 122–341 |
+| `worker/storage/r2StorageAdapter.ts` | خطوط 82–219 |
+| `worker/migrationRegister.ts` | خطوط 93–103 |
+| `src/components/ListingMediaStorageUploader.tsx` | خطوط 16–83 |
+| `src/utils/objectStorage.ts` | خطوط 193–245 |
+| `src/utils/expressRouteCatalog.ts` | خطوط 32–39 |
+| `src/utils/serverBackupAndChunkUploadRoutes.ts` | خطوط 18–240 |
+| `migrations/d1/0001_core_projections_and_watermarks.sql` | Schema فعلی |
+| `migrations/d1/0002_upload_sessions_legal_holds_and_rate_limits.sql` | Schema فعلی |
+| `worker/db/d1SchemaAndMigrations.ts` | خطوط 19–154 |
+
+## 3.1. ایجاد یک Object Storage Handler مستقل و canonical
+
+یک فایل مستقل ایجاد کن:
+
+`worker/routes/objectStorageRoutes.ts`
+
+این فایل باید مالک رسمی مسیرهای رسانه در Worker باشد.
+
+مسیرهای لازم:
+
+```text
+POST   /api/object-storage/upload
+POST   /api/object-storage/upload-init
+POST   /api/object-storage/upload-chunk
+POST   /api/object-storage/upload-complete
+
+GET    /api/object-storage/status
+GET    /api/object-storage/file/:objectId
+
+DELETE /api/object-storage/file/:objectId
+
+POST   /api/object-storage/attach-to-bargain
+POST   /api/object-storage/cleanup-bargain/:bargainId
+```
+
+هر مسیر فقط زمانی وارد Registry فعال Worker شود که Handler واقعی، Authorization، Persistence و تست انتها‌به‌انتها داشته باشد.
+
+در فایل:
+
+`worker/router.ts`
+
+Handler رسمی Object Storage باید به Router اصلی Worker متصل شود.
+
+در فایل:
+
+`worker/routes/storageAndAdminDiagnosticsRoutes.ts`
+
+منطق اختصاصی رسانه از منطق Diagnostics و Admin جدا شود. این فایل می‌تواند مسئولیت‌های غیررسانه‌ای فعلی خود را حفظ کند.
+
+در فایل:
+
+`worker/routes/edgePlatformAndStorageRoutes.ts`
+
+تمام منطق تکراری Object Storage حذف یا به Handler canonical منتقل شود؛ اما مسیرهای غیررسانه‌ای موجود، مانند Market Pulse، بدون دلیل حذف نشوند.
+
+**هدف:** تنها یک پیاده‌سازی اجرایی برای Upload، Download، Delete و مدیریت رسانه وجود داشته باشد.
+
+## 3.2. همگرایی فرانت‌اند با API واقعی Worker
+
+در وضعیت فعلی:
+
+`src/components/ListingMediaStorageUploader.tsx`
+
+از این مسیر استفاده می‌کند:
+
+```text
+POST /api/object-storage/upload
+```
+
+اما مسیر فعال Worker عمدتاً Upload تکه‌ای را می‌شناسد.
+
+همچنین فایل:
+
+`src/utils/objectStorage.ts`
+
+از مسیر مستقیم Upload استفاده می‌کند.
+
+این دو مسیر فرانت‌اند باید به API canonical واحد تبدیل شوند.
+
+برای فایل‌های بزرگ، خصوصاً ویدئو، از Chunked Upload استفاده کن.
+
+الزام مهم: فرانت‌اند نباید کل فایل 50 مگابایتی را ابتدا به یک رشته Base64 کامل تبدیل کند.
+
+در فایل `ListingMediaStorageUploader.tsx`:
+
+- فایل با `Blob.slice()` به تکه‌ها تقسیم شود.
+- هر تکه مستقل خوانده و ارسال شود.
+- بعد از موفقیت هر تکه، وضعیت Progress به‌روزرسانی شود.
+- در صورت شکست، امکان Retry کنترل‌شده وجود داشته باشد.
+- در صورت Cancel، نشست و منابع موقت پاک‌سازی شوند.
+- پس از ارسال تمام تکه‌ها، Complete فراخوانی شود.
+- فقط پاسخ تأییدشده از Worker به‌عنوان Upload موفق در UI ثبت شود.
+
+اندازه پیشنهادی هر Chunk برابر 2 MiB از داده خام فایل است.
+
+توجه: Base64 حجم درخواست را افزایش می‌دهد؛ اندازه Payload نهایی JSON باید زیر محدودیت تعیین‌شده API باقی بماند.
+
+حداکثر ظرفیت مورد انتظار باید با محدودیت فعلی فرانت‌اند و سیاست پروژه سازگار باشد:
+
+```text
+Image: 10 MiB
+Video: 50 MiB
+Maximum chunks: 30
+Maximum raw chunk size: 2 MiB
+```
+
+مسیر مستقیم `/api/object-storage/upload` در صورت نیاز به سازگاری با Clientهای قدیمی، باید به‌عنوان Adapter صریح به جریان canonical متصل شود؛ نه اینکه یک پیاده‌سازی ذخیره‌سازی مستقل داشته باشد.
+
+## 3.3. اعمال محدودیت‌های امنیتی Upload
+
+از منطق معتبر و کنترل‌های موجود در:
+
+`src/utils/serverBackupAndChunkUploadRoutes.ts`
+
+به‌عنوان مرجع رفتار مورد انتظار استفاده کن.
+
+سپس همین کنترل‌ها را با D1 و معماری توزیع‌شده Worker پیاده‌سازی کن.
+
+مقادیر مورد انتظار:
+
+| محدودیت | مقدار |
+|---|---:|
+| حداکثر نشست فعال هر کاربر | 2 |
+| حداکثر نشست فعال کل | 25 |
+| عمر نشست ناقص | 15 دقیقه |
+| حداکثر اندازه Chunk | 2 MiB |
+| حداکثر تعداد Chunk | 30 |
+| حجم مجاز تصویر | 10 MiB |
+| حجم مجاز ویدئو | 50 MiB |
+
+کنترل‌های اجباری:
+
+1. `chunkIndex` باید عدد صحیح و غیرمنفی باشد.
+2. `chunkIndex` باید کوچک‌تر از `total_chunks` باشد.
+3. `total_chunks` باید با محدوده مجاز تطبیق داشته باشد.
+4. Chunk تکراری نباید بدون سیاست Idempotency مشخص پذیرفته شود.
+5. Base64 باید به‌صورت Strict و Canonical اعتبارسنجی شود.
+6. اندازه هر Chunk باید پیش از ذخیره کنترل شود.
+7. مجموع حجم دریافتی باید پیش از ذخیره هر Chunk بررسی شود.
+8. `received_bytes` باید به‌صورت اتمیک به‌روزرسانی شود.
+9. مجموع اندازه نهایی نباید از `max_bytes` عبور کند.
+10. مالکیت نشست در هر درخواست بررسی شود.
+11. وضعیت انقضا پیش از پردازش بررسی شود.
+12. نشست‌های منقضی و Chunkهای وابسته باید پاک‌سازی شوند.
+13. تعداد نشست‌های فعال هر کاربر و کل سامانه باید با کنترل اتمیک D1 محدود شود.
+14. Rate Limit باید در سطح توزیع‌شده و پایدار اعمال شود؛ نه فقط در حافظه یک Worker Isolate.
+
+حداکثر نرخ‌های فعلی Express نیز باید در قرارداد حفظ یا با سیاست امنیتی مستند جایگزین شوند:
+
+```text
+Upload Init:     30 requests/minute
+Upload Chunk:   180 requests/minute
+Upload Complete: 30 requests/minute
+```
+
+**ممنوع:** دریافت تعداد نامحدود Chunk، تخصیص حافظه براساس حجم داده بدون اعتبارسنجی قبلی یا اتکا به کنترل‌های سمت فرانت‌اند.
+
+## 3.4. جلوگیری از Memory Exhaustion
+
+در فایل:
+
+`worker/routes/storageAndAdminDiagnosticsRoutes.ts`
+
+قبل از ساخت:
+
+```ts
+new Uint8Array(totalLength)
+```
+
+تمام شرایط زیر باید بررسی شده باشند:
+
+- تعداد واقعی Chunkها با `total_chunks` برابر باشد.
+- تمام Indexها از صفر تا `total_chunks - 1` موجود باشند.
+- هیچ Index خارج از محدوده وجود نداشته باشد.
+- مجموع حجم Chunkها معتبر باشد.
+- مجموع حجم از سقف نوع فایل تجاوز نکند.
+- تمام Chunkها به همان نشست متعلق باشند.
+- نشست هنوز معتبر باشد.
+
+در صورت امکان، از روش Assemble با مصرف حافظه کنترل‌شده استفاده کن.
+
+اگر محدودیت‌های R2 یا Runtime اجازه Stream را می‌دهند، مسیر Stream-based بر تجمیع غیرضروری کل فایل در حافظه ترجیح دارد.
+
+## 3.5. ثبت پایدار Metadata در D1
+
+در وضعیت فعلی، ذخیره در R2 انجام می‌شود اما رکورد canonical رسانه در D1 ایجاد نمی‌شود.
+
+از مسیر Migration رسمی پروژه استفاده کن.
+
+Migration جدید:
+
+`migrations/d1/0003_media_objects_and_queue_execution_leases.sql`
+
+این Migration باید به‌صورت Forward-only ایجاد شود.
+
+Migrationهای قبلی زیر را پس از اعمال عملیاتی بازنویسی نکن:
+
+```text
+migrations/d1/0001_core_projections_and_watermarks.sql
+migrations/d1/0002_upload_sessions_legal_holds_and_rate_limits.sql
+```
+
+جدول `media_objects` باید حداقل اطلاعات زیر را پوشش دهد:
+
+```text
+object_id
+owner_uid
+bucket_name
+storage_key
+media_type
+mime_type
+size_bytes
+sha256_checksum
+target_type
+target_id
+lifecycle_state
+deletion_state
+legal_hold
+retention_until
+created_at
+updated_at
+deleted_at
+```
+
+برای `object_id` و `storage_key` قیود مناسب و Unique اعمال کن.
+
+Indexهای لازم برای جست‌وجوی مالک، وضعیت فایل و اتصال رسانه به موجودیت‌های تجاری ایجاد شوند.
+
+همچنین Migration جدید باید سازوکار Lease و وضعیت پردازش Queue را در صورت انتخاب جدول مستقل اضافه کند.
+
+در فایل:
+
+`worker/db/d1SchemaAndMigrations.ts`
+
+موارد زیر به‌روزرسانی شوند:
+
+- Registry مربوط به `D1_MIGRATIONS`
+- Checksum Migration جدید
+- Migration Version
+- اجرای Idempotent Migration
+- D1 Local Simulator
+- تست ایجاد و بازیابی Schema
+
+**مهم:** فایل زیر Migration اصلی Wrangler نیست و نباید به‌جای مسیر canonical استفاده شود:
+
+`worker/db/migrations/0001_initial_schema.sql`
+
+Schema جایگزین موجود در آن صرفاً می‌تواند برای بررسی مفهومی استفاده شود.
+
+## 3.6. یکپارچگی R2 و D1
+
+در فایل:
+
+`worker/storage/r2StorageAdapter.ts`
+
+تابع:
+
+`storeValidatedMediaInR2()`
+
+باید در یک چرخه پایدار R2/D1 قرار گیرد.
+
+از آنجا که عملیات R2 و D1 یک تراکنش توزیع‌شده مشترک ندارند، الگوی Saga و Recovery پیاده‌سازی کن.
+
+چرخه پیشنهادی:
+
+```text
+PENDING_UPLOAD
+       |
+       v
+D1 Metadata Reservation
+       |
+       v
+R2 Object Write
+       |
+       v
+D1 Metadata Confirmation
+       |
+       v
+ACTIVE
+```
+
+در صورت شکست هر مرحله:
+
+- وضعیت ناقص باید قابل تشخیص باشد.
+- هیچ رکورد `ACTIVE` بدون Object معتبر R2 وجود نداشته باشد.
+- Object یتیم قابل شناسایی و بازیابی یا پاک‌سازی باشد.
+- Retry عملیات نباید فایل تکراری ایجاد کند.
+- کلید ذخیره‌سازی باید پایدار و قابل ردیابی باشد.
+
+نام باکت نباید در کد به‌صورت ثابت روی مقدار staging قرار گیرد.
+
+Binding مربوط به R2 باید از Worker Environment دریافت شود.
+
+مقادیر محیطی باید در `worker/types.ts` به‌صورت Type-safe تعریف شوند.
+
+از این مقادیر ثابت اجتناب کن:
+
+```text
+radartehran-staging-media
+```
+
+## 3.7. تکمیل Download و Signed URL
+
+در Worker باید مسیر زیر واقعاً عملیاتی شود:
+
+```text
+GET /api/object-storage/file/:objectId
+```
+
+الزامات:
+
+- ابتدا Metadata معتبر فایل در D1 خوانده شود.
+- مالکیت و وضعیت فایل بررسی شود.
+- فایل از R2 با Storage Key معتبر استخراج شود.
+- کلید R2 نباید از پارامتر قابل دستکاری درخواست به‌صورت مستقیم پذیرفته شود.
+- اعتبار Signed URL و زمان انقضا بررسی شود.
+- پشتیبانی HTTP Range حفظ شود.
+- پاسخ 206 و 416 مطابق وضعیت واقعی Range تولید شود.
+- MIME Type و Content Length معتبر باشند.
+- فایل حذف‌شده یا دارای وضعیت نامعتبر قابل دریافت نباشد.
+
+دو پیاده‌سازی امضای URL در پروژه وجود دارد:
+
+```text
+worker/storage/r2StorageAdapter.ts
+worker/storage/signedUrlSecurity.ts
+```
+
+یکی را به‌عنوان مرجع رسمی انتخاب کن و از دو الگوریتم موازی جلوگیری کن.
+
+## 3.8. تکمیل Delete و Legal Hold
+
+مسیر زیر باید عملیاتی شود:
+
+```text
+DELETE /api/object-storage/file/:objectId
+```
+
+سیاست دسترسی:
+
+- مالک فایل مجاز به حذف فایل خود باشد.
+- مدیر فقط با مجوز معتبر و Audit Trail امکان حذف داشته باشد.
+- وجود Legal Hold حذف را متوقف کند.
+- نبود D1 یا خطا در بررسی Legal Hold نباید به مجازشدن حذف منجر شود.
+- حذف باید دارای Tombstone یا وضعیت پایدار باشد.
+- حذف R2 و به‌روزرسانی D1 باید قابل Retry باشند.
+- حذف تکراری باید رفتار Idempotent داشته باشد.
+- اطلاعات لازم برای ممیزی حذف حفظ شوند.
+
+---
+
+# 4. اصلاح بحرانی شماره سه: بازسازی Token Revocation و Fail-Closed Authentication
+
+**شناسه:** `RT-TEAMWORK-CRITICAL-003-AUTH-REVOCATION`
+
+**اولویت:** P1
+
+**هدف:** جلوگیری از پذیرش توکن در صورت عدم امکان بررسی ابطال آن و حذف مسیرهای Fallback ناامن.
+
+## فایل‌های هدف
+
+| مسیر دقیق | محدوده |
+|---|---|
+| `worker/auth/firebaseEdgeAuth.ts` | خطوط 138–296 |
+| `worker/auth/types.ts` | تعریف وضعیت Authentication |
+| `worker/index.ts` | انتقال محیط احراز هویت |
+| `src/utils/serverAdminAndTelegramSecurity.ts` | خطوط 66–82 |
+| `worker/db/d1SchemaAndMigrations.ts` | Schema و Persistence |
+
+## 4.1. اصلاح Fail-Open در Worker
+
+در تابع:
+
+`isTokenRevokedOrUserDisabled()`
+
+رفتارهای زیر باید حذف شوند:
+
+```ts
+if (!db) return { revoked: false };
+```
+
+و:
+
+```ts
+catch {
+  return { revoked: false };
+}
+```
+
+عدم وجود D1 یا شکست بررسی Revocation به‌هیچ‌وجه به‌معنای معتبر بودن توکن نیست.
+
+رفتار صحیح:
+
+| وضعیت | نتیجه |
+|---|---|
+| توکن معتبر و کاربر فعال | ادامه احراز هویت |
+| توکن منقضی | 401 |
+| توکن ابطال‌شده | 401 |
+| کاربر غیرفعال | 403 |
+| نبود مخزن معتبر Revocation | 503 |
+| خطای ارتباط با مخزن Revocation | 503 |
+| خطای غیرقابل تشخیص در بررسی امنیتی | Fail-Closed |
+
+Type مربوط به `VerifiedFirebaseEdgePrincipal` باید برای نمایش وضعیت Dependency Failure توسعه یابد.
+
+در صورت نیاز `statusCode` از Union فعلی به Union شامل 503 تغییر کند.
+
+هیچ مسیر حساس نباید با خطای مخزن ابطال به وضعیت دسترسی مجاز منتقل شود.
+
+## 4.2. ایجاد مسیر واقعی ثبت Revocation
+
+در کد فعلی خواندن کلید زیر دیده می‌شود:
+
+```text
+revoked_uid:{uid}
+```
+
+اما مسیر عملیاتی قطعی برای نوشتن و به‌روزرسانی آن در نسخه بررسی‌شده پیدا نشده است.
+
+تمام عملیات مرتبط با این موارد را در Backend جست‌وجو کن:
+
+- Firebase refresh-token revocation
+- Account disable
+- Administrative user suspension
+- Account security reset
+- Privilege revocation
+
+یک مسیر canonical برای ثبت وضعیت ابطال ایجاد یا به Service موجود متصل کن.
+
+ثبت وضعیت باید دارای ویژگی‌های زیر باشد:
+
+- `uid` معتبر
+- زمان ابطال با واحد مشخص و ثابت
+- سازگاری کامل با الگوریتم مقایسه زمان در Worker
+- Write پایدار
+- Idempotency
+- Audit Trail
+- بازیابی خطا
+- تست مستقل
+
+اگر عملیات Firebase موفق و ثبت وضعیت D1 ناموفق شد، درخواست‌های حساس نباید با اعتماد به وضعیت قدیمی مجاز شناخته شوند.
+
+## 4.3. اصلاح Fallback ناامن Express
+
+در فایل:
+
+`src/utils/serverAdminAndTelegramSecurity.ts`
+
+بخش مربوط به:
+
+```ts
+verifyIdToken(idToken, true)
+```
+
+و Fallback زیر:
+
+```ts
+verifyIdToken(idToken, false)
+```
+
+باید اصلاح شود.
+
+الگوی فعلی که در خطاهای ناشناخته Verification بدون Revocation Check دوباره توکن را می‌پذیرد، باید حذف شود.
+
+طبقه‌بندی صحیح:
+
+- Invalid / Expired / Revoked / Disabled: رد احراز هویت.
+- خطای موقت سرویس Firebase یا Dependency: پاسخ 503.
+- خطای ناشناخته: رد دسترسی یا پاسخ موقت کنترل‌شده؛ نه پذیرش بدون Revocation Check.
+
+هیچ fallback امنیتی نباید سطح کنترل امنیتی را کاهش دهد.
+
+---
+
+# 5. اصلاح شماره چهارم: فعال‌سازی اعتبارسنجی واقعی App Check
+
+**شناسه:** `RT-TEAMWORK-CRITICAL-004-APPCHECK-INTEGRITY`
+
+**اولویت:** P1 / Security Hardening
+
+## فایل‌های هدف
+
+```text
+worker/auth/firebaseEdgeAuth.ts
+worker/auth/appCheckVerifier.ts
+worker/auth/types.ts
+worker/types.ts
+src/utils/clientAppCheck.ts
+src/firebase.ts
+src/utils/firebaseAppCheckSecurity901To920.ts
+src/components/ListingMediaStorageUploader.tsx
+src/utils/objectStorage.ts
+```
+
+## الزامات
+
+در فایل:
+
+`worker/auth/firebaseEdgeAuth.ts`
+
+اعتبارسنجی ساختاری Regex نباید جایگزین اعتبارسنجی واقعی App Check باشد.
+
+تابع موجود:
+
+`verifyWorkerAppCheck()`
+
+در فایل:
+
+`worker/auth/appCheckVerifier.ts`
+
+باید در مسیر اجرایی Worker به کار گرفته شود.
+
+سه Mode باید رفتار مشخص داشته باشند:
+
+```text
+disabled
+monitor
+enforced
+```
+
+سیاست Production برای مسیرهای حساس باید `enforced` باشد.
+
+سیاست Staging می‌تواند در دوره آزمایش `monitor` باشد؛ اما باید صریح و مستند تنظیم شود.
+
+در مسیر فرانت‌اند:
+
+- از `getOptionalClientAppCheckHeaders()` استفاده شود.
+- هدر `X-Firebase-AppCheck` در درخواست‌های Fetch و XHR ارسال شود.
+- برای حالتی که Worker در Mode اجباری است، نبود Token نباید با هدر خالی و ارسال درخواست ادامه پیدا کند.
+- Policy موجود در `src/utils/firebaseAppCheckSecurity901To920.ts` به مسیر واقعی Storage متصل شود.
+
+در فایل:
+
+`worker/types.ts`
+
+تعریف Environment با Mode و مقادیر لازم به‌صورت Type-safe تکمیل شود.
+
+تست‌های زیر الزامی هستند:
+
+1. Token معتبر.
+2. Token دارای امضای نامعتبر.
+3. Token منقضی.
+4. Token نامعتبر با ساختار JWT صحیح.
+5. Token غایب در حالت Enforced.
+6. Token غایب در حالت Monitor.
+7. تلاش برای استفاده از Debug Token در Production.
+
+صرفاً سه‌بخشی بودن رشته نباید موجب `appCheckVerified === true` شود.
+
+---
+
+# 6. اصلاح شماره پنجم: رفع Production Configuration و Release Gate
+
+**شناسه:** `RT-TEAMWORK-CRITICAL-005-PRODUCTION-READINESS`
+
+**اولویت:** P1
+
+فایل اصلی:
+
+`wrangler.jsonc`
+
+در بخش Staging و Production، تمام Bindingها و Variableهای لازم باید بررسی و اعتبارسنجی شوند.
+
+Bindingهای موردنیاز بر اساس قابلیت فعال‌شده عبارت‌اند از:
+
+```text
+DB
+MEDIA_BUCKET
+RADAR_KV
+RADAR_QUEUE
+RADAR_DLQ
+```
+
+برای Production هیچ Resource ID یا دامنه‌ای را حدس نزن.
+
+مقادیر فعلی نمونه مانند:
+
+```text
+https://radartehran.example.com
+```
+
+نباید به‌عنوان دامنه عملیاتی معتبر تلقی شوند.
+
+الزامات:
+
+- تعریف صحیح D1 Binding.
+- تعریف صحیح R2 Binding.
+- تعریف KV Binding در صورت استفاده واقعی.
+- تعریف Queue Producer و Consumer.
+- تعریف Cron فقط برای Jobهای دارای Handler.
+- کنترل کامل Environment Variables.
+- بررسی APP_URL و دامنه عملیاتی واقعی.
+- اعتبارسنجی وجود تمام Dependencyها قبل از شروع عملیات حساس.
+- عدم شروع عملیات نوشتن داده در محیط ناقص.
+
+فایل‌های زیر نیز در صورت تغییر Environment باید هماهنگ شوند:
+
+```text
+.env.example
+src/utils/serverRuntimeEnvStore.ts
+docs/deployment.md
+worker/types.ts
+```
+
+در `worker/migrationRegister.ts` فقط مسیرهایی مجاز به ورود به وضعیت فعال هستند که واقعاً در Worker پیاده‌سازی شده و تست عملیاتی دارند.
+
+سایر مسیرها باید تا زمان تکمیل، `BLOCKED` باقی بمانند.
+
+---
+
+# 7. اصلاح Registry مهاجرت مسیرها و قراردادهای API
+
+**شناسه:** `RT-TEAMWORK-CRITICAL-006-API-MIGRATION-INTEGRITY`
+
+**فایل‌های هدف:**
+
+```text
+worker/migrationRegister.ts
+worker/router.ts
+src/utils/expressRouteCatalog.ts
+src/utils/serverConfigValidator.ts
+src/utils/apiContractsAndSerializationEngine.ts
+```
+
+در Migration Register، هر Route باید وضعیت مستقل داشته باشد.
+
+وضعیت‌های پیشنهادی:
+
+```text
+ACTIVE_WORKER
+LEGACY_EXPRESS
+BLOCKED
+```
+
+انتقال Route به `ACTIVE_WORKER` فقط پس از تحقق تمام موارد زیر مجاز است:
+
+- Handler کامل.
+- Authentication.
+- Authorization.
+- Validation.
+- Durable Persistence.
+- Error Handling.
+- Audit.
+- Rate Limit.
+- Integration Test.
+- E2E Test.
+
+Routeهای زیر به‌صورت مستقل ارزیابی شوند:
+
+```text
+POST /api/object-storage/upload
+POST /api/object-storage/upload-init
+POST /api/object-storage/upload-chunk
+POST /api/object-storage/upload-complete
+GET  /api/object-storage/file/:objectId
+DELETE /api/object-storage/file/:objectId
+POST /api/object-storage/attach-to-bargain
+POST /api/object-storage/cleanup-bargain/:bargainId
+```
+
+تغییرات API باید با قرارداد Express و فرانت‌اند سازگار باشد.
+
+اگر قرارداد Route تغییر می‌کند، فهرست‌های زیر نیز به‌روزرسانی شوند:
+
+```text
+API_ENDPOINT_CONTRACTS
+RADAR_API_ROUTE_INVENTORY
+```
+
+هیچ Route ناقصی نباید صرفاً برای کاهش تعداد مسیرهای Legacy از وضعیت `BLOCKED` خارج شود.
+
+---
+
+# 8. تست‌های اجباری برای اثبات اصلاحات
+
+**شناسه:** `RT-TEAMWORK-CRITICAL-007-REGRESSION-VERIFICATION`
+
+تست‌ها باید روی ورودی‌های واقعی Worker و قراردادهای واقعی فرانت‌اند اجرا شوند.
+
+Mock کردن تابع داخلی نباید جایگزین تست End-to-End شود.
+
+## 8.1. Queue Tests
+
+در فایل جدید یا تست‌های موجود:
+
+```text
+tests/cloudflare-worker-queue-entrypoint.test.ts
+tests/cloudflare-worker-platform.test.ts
+tests/cloudflare-phase6-queues-and-cron.test.ts
+```
+
+موارد زیر آزمایش شوند:
+
+- اجرای واقعی `workerEntrypoint.queue()`.
+- Job معتبر با Handler واقعی.
+- Job نامعتبر.
+- Job بدون Handler.
+- خطای Retryable.
+- خطای Permanent.
+- نبود DLQ.
+- شکست ذخیره وضعیت در D1.
+- پیام تکراری با Idempotency Key یکسان.
+- پردازش هم‌زمان دو پیام یکسان.
+- Lease منقضی‌شده.
+- بازیابی Job نیمه‌تمام.
+- عدم ACK قبل از ثبت نتیجه.
+- اجرای واقعی Cron و اعتبار Envelope خروجی.
+
+تست موفقیت Queue نباید به دلیل تزریق یک `executeJob` ساختگی موفق شود.
+
+## 8.2. Storage Tests
+
+فایل جدید:
+
+```text
+tests/cloudflare-worker-storage-routes.test.ts
+```
+
+موارد زیر الزامی هستند:
+
+- Upload تصویر معتبر.
+- Upload ویدئوی 50 MiB.
+- Chunk بزرگ‌تر از 2 MiB.
+- Chunk با Index منفی.
+- Chunk با Index خارج از محدوده.
+- تعداد Chunk کمتر از مقدار اعلام‌شده.
+- Chunk تکراری.
+- Base64 خراب.
+- عبور مجموع حجم از سقف فایل.
+- عبور تعداد نشست فعال از سقف مجاز.
+- Upload توسط کاربر غیرمالک.
+- Upload بدون نشست معتبر.
+- Complete روی نشست منقضی‌شده.
+- شکست R2.
+- شکست D1.
+- Recovery پس از شکست یکی از دو مخزن.
+- ثبت صحیح `media_objects`.
+- Download فایل موجود.
+- Download فایل حذف‌شده.
+- Download با Range معتبر.
+- Download با Range نامعتبر.
+- Delete توسط مالک.
+- Delete توسط کاربر غیرمالک.
+- Delete توسط مدیر با مجوز.
+- Delete فایل دارای Legal Hold.
+- شکست D1 هنگام بررسی Legal Hold.
+
+## 8.3. Authentication Tests
+
+فایل جدید:
+
+```text
+tests/cloudflare-worker-auth-failclosed.test.ts
+```
+
+موارد:
+
+- توکن معتبر.
+- توکن منقضی‌شده.
+- توکن ابطال‌شده.
+- کاربر غیرفعال.
+- نبود D1.
+- خطای Query.
+- نبود Revocation Record.
+- ثبت Revocation جدید.
+- عدم پذیرش توکن در شرایط Failure.
+- رفتار صحیح 503.
+- جلوگیری از Fallback ناامن Express.
+
+## 8.4. App Check Tests
+
+موارد:
+
+- امضای معتبر.
+- امضای نامعتبر.
+- انقضای توکن.
+- Header غایب.
+- Header جعلی.
+- Mode برابر `monitor`.
+- Mode برابر `enforced`.
+- Debug Token در Production.
+- دریافت واقعی Header از فرانت‌اند.
+
+---
+
+# 9. هماهنگی Migration، شبیه‌ساز و تست‌های Schema
+
+تمام تغییرات Schema باید در این دو بخش هماهنگ باشند:
+
+```text
+migrations/d1/
+worker/db/d1SchemaAndMigrations.ts
+```
+
+شرط پذیرش:
+
+- Migration جدید مستقل باشد.
+- اجرای تکراری Migration باعث تخریب داده نشود.
+- Migration قبلی دستکاری مخرب نشود.
+- D1 واقعی و Local Simulator رفتار یکسان داشته باشند.
+- تمام Queryهای جدید در SQLite Simulator تست شوند.
+- Indexها و Unique Constraintها آزمایش شوند.
+- Rollback یا Recovery Strategy برای تغییرات عملیاتی مستند باشد.
+
+هیچ Migration روی D1 عملیاتی اجرا نشود؛ مگر با مجوز مستقل و صریح.
+
+---
+
+# 10. مجموعه دستورات اعتبارسنجی
+
+ابتدا دستورات موجود را بررسی کن:
+
+```bash
+npm run
+```
+
+سپس تست‌های هدفمند زیر را اجرا کن:
+
+```bash
+npm run test:worker
+npm run test:auth
+npm run test:queues
+npm run test:r2
+npm run test:d1
+npm run cf:build
+npm run cf:staging:preflight
+```
+
+بعد مجموعه کنترل‌های پایه پروژه:
+
+```bash
+npm run lint
+npm run arch:check
+npm test
+npm run test:contracts
+npm run test:mutation
+npm run test:e2e
+npm run test:smoke
+npm run build
+```
+
+تست‌های اختصاصی زیر نیز باید اجرا شوند:
+
+```bash
+npx tsx tests/stress-50-cycles.test.ts
+
+npx tsx tests/object-storage-upload-auth.test.ts
+
+npx tsx tests/object-storage-security.test.ts
+
+npx tsx tests/object-storage-range.test.ts
+```
+
+اگر هر دستور در Package Scripts ثبت نشده است، عدم وجود آن را گزارش کن؛ تست جایگزین را بدون مستندکردن تفاوت پوشش، معادل تست اصلی معرفی نکن.
+
+هیچ تستی نباید صرفاً به‌دلیل Mock شدن عملیات خارجی، موفقیت واقعی D1، R2، Firebase یا Queue را اثبات‌شده اعلام کند.
+
+برای Dependencyهای واقعی از Simulator یا محیط Staging کنترل‌شده استفاده کن و نتایج را به‌صورت مجزا گزارش بده.
+
+---
+
+# 11. معیارهای پذیرش نهایی
+
+این بسته فقط زمانی تکمیل‌شده محسوب می‌شود که تمام موارد زیر اثبات شوند:
+
+| شناسه | معیار پذیرش |
+|---|---|
+| AC-01 | هیچ Queue Handler خالی در مسیر اجرایی وجود نداشته باشد. |
+| AC-02 | هیچ پیام بدون اجرای عملیات واقعی، `COMPLETED` نشود. |
+| AC-03 | پیام‌های Cron با قرارداد رسمی Queue مطابقت داشته باشند. |
+| AC-04 | پردازش تکراری و هم‌زمان Job موجب اجرای ناخواسته نشود. |
+| AC-05 | پیام در نبود DLQ بی‌صدا ACK نشود. |
+| AC-06 | Upload فرانت‌اند از مسیر فعال Worker عبور کند. |
+| AC-07 | Upload تصویر و ویدئوی 50 MiB با Chunking موفق باشد. |
+| AC-08 | هیچ مسیر Upload امکان عبور از سقف تجمعی حجم را نداشته باشد. |
+| AC-09 | Metadata رسانه در D1 ذخیره و قابل بازیابی باشد. |
+| AC-10 | R2 و D1 وضعیت Lifecycle یکسان و قابل بازیابی داشته باشند. |
+| AC-11 | Download و HTTP Range در Worker عملیاتی باشند. |
+| AC-12 | حذف فایل، Ownership و Legal Hold را رعایت کند. |
+| AC-13 | نبود D1 یا خطای Revocation موجب Fail-Open نشود. |
+| AC-14 | هیچ Fallback احراز هویت بدون بررسی ابطال وجود نداشته باشد. |
+| AC-15 | App Check در مسیرهای حساس واقعاً اعتبارسنجی رمزنگاری‌شده شود. |
+| AC-16 | Migration Register فقط قابلیت‌های کامل را ACTIVE اعلام کند. |
+| AC-17 | هیچ مسیر حساس بدون Rate Limit و Authorization باقی نماند. |
+| AC-18 | تست‌های Regression و Integration مربوطه موفق باشند. |
+| AC-19 | وضعیت Staging و Production از نظر Binding و Dependency به‌صورت صریح تفکیک شده باشد. |
+| AC-20 | هیچ تغییر مخرب یا استقرار Production بدون مجوز انجام نشده باشد. |
+
+---
+
+# 12. مستندات و گزارش تحویل
+
+بعد از تکمیل کار، گزارش اجرایی شامل موارد زیر ارائه کن:
+
+**A. فایل‌های تغییرکرده**
+
+فهرست تمام فایل‌های جدید، اصلاح‌شده و حذف‌شده همراه با دلیل تغییر.
+
+**B. اصلاحات واقعی**
+
+برای هر نقص:
+
+- Root Cause
+- روش اصلاح
+- مسیر کد اصلاح‌شده
+- قرارداد جدید
+- رفتار قبل و بعد
+- نحوه جلوگیری از Regression
+
+**C. Migration**
+
+- شماره و نام Migration
+- جداول و Indexهای ایجادشده
+- تغییرات D1 Schema
+- تغییرات D1 Simulator
+- وضعیت سازگاری با داده‌های قبلی
+
+**D. نتایج تست**
+
+برای هر تست:
+
+- دستور دقیق
+- نتیجه Exit Code
+- تعداد تست موفق
+- تعداد تست ناموفق
+- تست‌های Skipped
+- علت تست‌های اجرا‌نشده
+
+**E. مشکلات باقیمانده**
+
+هر مشکلی که به‌دلیل نبود Resource واقعی، Secret، تنظیمات Dashboard یا سرویس خارجی قابل تکمیل نبوده، جداگانه ثبت شود.
+
+**F. وضعیت انتشار**
+
+وضعیت Production فقط در صورت وجود شواهد واقعی از Bindingها، Domain، Migrationها، Secrets و تست محیط عملیاتی قابل تأیید است.
+
+موفقیت تست محلی یا Staging به‌هیچ‌وجه معادل تأیید Production نیست.
+
+در پایان، وضعیت فایل:
+
+`docs/engineering/RMEP-001/EXECUTION-STATE.json`
+
+و مستند حافظه مهندسی پروژه باید مطابق قواعد موجود و با حفظ سوابق قبلی به‌روزرسانی شوند. هیچ مرحله‌ای بدون شواهد اجرایی تکمیل‌شده علامت‌گذاری نشود.
+
+---
+
+## دستور نهایی اجرایی
+
+این بسته را به‌عنوان یک عملیات اصلاح زیرساختی محدود و اولویت‌دار اجرا کن.
+
+ترتیب اجرا:
+
+1. Queue Execution و تضمین عدم ازدست‌رفتن پیام.
+2. Object Storage و یکپارچگی R2/D1.
+3. Token Revocation و Fail-Closed Authentication.
+4. App Check.
+5. Release Configuration و API Migration Registry.
+6. اجرای Regression، Integration و Stress Tests.
+7. مستندسازی دقیق وضعیت نهایی.
+
+**هیچ قابلیت جدیدی خارج از این دامنه توسعه نده. هیچ مسیر ناقصی را موفق معرفی نکن. هیچ Test Result یا شواهد اجرایی را جعل یا استنتاج نکن. هدف نهایی، حذف نقص‌های واقعی و اثبات سلامت مسیرهای عملیاتی موجود است، نه صرفاً سبزشدن تست‌ها.**

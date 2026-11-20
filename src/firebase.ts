@@ -10,7 +10,7 @@ try { setLogLevel('silent'); } catch {
 /**
  * Initialized Firebase App singleton configured from `firebase-applet-config.json`.
  */
-const app: FirebaseApp = initializeApp(firebaseConfig);
+export const app: FirebaseApp = initializeApp(firebaseConfig);
 initClientAppCheckIfConfigured(app);
 /**
  * Initialized Firestore database instance bound to `firebaseConfig.firestoreDatabaseId`

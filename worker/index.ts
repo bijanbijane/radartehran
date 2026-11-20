@@ -20,7 +20,10 @@ import {
   jsonWorkerResponse,
 } from './contextAndSecurity';
 import {
-  convertUtcScheduledTimeToTehranWallClock,
+  buildCanonicalCronEnvelopes,
+  createCanonicalQueueJobDispatcher,
+} from './queues/jobDispatcher';
+import {
   processRadarQueueBatch,
   type RadarQueueEnvelope,
 } from './queues/queueAndCronProcessor';
@@ -210,9 +213,7 @@ export default {
       batch,
       db: env.DB,
       dlq: env.RADAR_DLQ,
-      executeJob: async (_envelope) => {
-        // Canonical queue consumer bound to RADAR_QUEUE with dead-letter forwarding to RADAR_DLQ
-      },
+      executeJob: createCanonicalQueueJobDispatcher(env),
     });
   },
 
@@ -221,21 +222,15 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
-    const tehranClock = convertUtcScheduledTimeToTehranWallClock(event.scheduledTime);
-    if (tehranClock.matchedScheduleTask !== 'ad_hoc_maintenance' && env.RADAR_QUEUE) {
-      await env.RADAR_QUEUE.send({
-        schemaVersion: '1.0',
-        idempotencyKey: `cron_${tehranClock.matchedScheduleTask}_${event.scheduledTime}`,
-        jobType:
-          tehranClock.matchedScheduleTask === 'morning_market_and_d1_sync'
-            ? 'd1_projection_sync'
-            : 'r2_orphan_sweep',
-        enqueuedAtIso: new Date(event.scheduledTime).toISOString(),
-        payload: {
-          cron: event.cron,
-          tehranFormatted: tehranClock.tehranFormatted,
-        },
-      });
+    if (!env.RADAR_QUEUE) {
+      throw new Error('RADAR_QUEUE_BINDING_MISSING_FOR_SCHEDULED_EVENT');
+    }
+    const envelopes = buildCanonicalCronEnvelopes({
+      cron: event.cron,
+      scheduledTime: event.scheduledTime,
+    });
+    for (const envelope of envelopes) {
+      await env.RADAR_QUEUE.send(envelope);
     }
   },
 };

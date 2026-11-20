@@ -22,21 +22,41 @@
   },
   "vars": {
     "APP_ENV": "development",
-    "APP_URL": "http://localhost:3000"
+    "WORKER_ENV": "development",
+    "APP_URL": "http://localhost:3000",
+    "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+    "FIREBASE_APP_CHECK_MODE": "disabled",
+    "R2_MEDIA_BUCKET_NAME": "radartehran-dev-media"
   },
   "env": {
     "preview": {
       "name": "radartehran-preview",
       "vars": {
         "APP_ENV": "preview",
-        "APP_URL": "https://preview.radartehran.example.com"
+        "WORKER_ENV": "preview",
+        "APP_URL": "https://preview.radartehran.ir",
+        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+        "FIREBASE_APP_CHECK_MODE": "monitor",
+        "R2_MEDIA_BUCKET_NAME": "radartehran-preview-media"
       }
     },
     "staging": {
       "name": "radartehran-staging",
       "vars": {
         "APP_ENV": "staging",
-        "APP_URL": "https://staging.radartehran.example.com"
+        "WORKER_ENV": "staging",
+        "APP_URL": "https://staging.radartehran.ir",
+        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+        "ADMIN_EMAIL": "radio837isf@gmail.com",
+        "FIREBASE_APP_CHECK_MODE": "monitor",
+        "R2_MEDIA_BUCKET_NAME": "radartehran-staging-media"
+      },
+      "triggers": {
+        "crons": [
+          "30 0 * * *",
+          "30 18 * * *",
+          "0 * * * *"
+        ]
       },
       "d1_databases": [
         {
@@ -85,8 +105,14 @@
       "name": "radartehran",
       "vars": {
         "APP_ENV": "production",
-        "APP_URL": "https://radartehran.example.com"
+        "WORKER_ENV": "production",
+        "APP_URL": "https://radartehran.ir",
+        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+        "ADMIN_EMAIL": "radio837isf@gmail.com",
+        "FIREBASE_APP_CHECK_MODE": "enforced"
       }
+      // Production D1, R2, KV, Queue, and R2_MEDIA_BUCKET_NAME bindings are intentionally
+      // omitted until provisioned by an operator with real Cloudflare resource IDs.
     }
   }
 }

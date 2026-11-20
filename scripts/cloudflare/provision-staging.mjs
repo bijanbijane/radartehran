@@ -42,6 +42,11 @@ export const CANONICAL_MIGRATIONS = Object.freeze([
     relativePath: 'migrations/d1/0002_upload_sessions_legal_holds_and_rate_limits.sql',
     expectedSha256: '19b161ad2212f51d83f2e7e706bb41d6c807da72ae7b538d9f11e7b6b5ae88ab',
   },
+  {
+    fileName: '0003_media_objects_and_queue_execution_leases.sql',
+    relativePath: 'migrations/d1/0003_media_objects_and_queue_execution_leases.sql',
+    expectedSha256: '439ddae35f082807198b6412063c7728552945f9edaf63cf61e76aff0d9aa0c0',
+  },
 ]);
 
 export const ALLOWED_STAGING_RESOURCES = Object.freeze({

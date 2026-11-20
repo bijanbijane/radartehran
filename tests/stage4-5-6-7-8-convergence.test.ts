@@ -93,12 +93,20 @@ test('Stage 5: Trust & Safety report dedupe, claim lease lock, soft-delete sync,
   assert.equal(postAfter?.isDeleted, true);
   assert.equal(postAfter?.status, 'hidden');
 
+  // Content owner submits formal appeal before SoD resolution
+  const submittedAppeal = await lifecycle.submitAppeal({
+    caseId: firstRep.moderationCase.id,
+    appellantUid: 'uid_author',
+    reasonFa: 'محتوای من تبلیغاتی نبوده و مستندات محله را دارد.',
+  });
+  assert.equal(submittedAppeal.moderationCase.status, 'APPEALED');
+
   // SoD: Admin 1 cannot resolve appeal on own decision
   await assert.rejects(
     () => lifecycle.resolveAppealWithSoD({
       caseId: firstRep.moderationCase.id,
       reviewerUid: 'admin_one',
-      reviewerRole: 'admin',
+      reviewerRole: 'DELEGATED_ADMIN',
       decision: 'overturned',
       reviewerNoteFa: 'تلاش برای بازبینی تصمیم خود',
     }),
@@ -109,7 +117,7 @@ test('Stage 5: Trust & Safety report dedupe, claim lease lock, soft-delete sync,
   const closed = await lifecycle.resolveAppealWithSoD({
     caseId: firstRep.moderationCase.id,
     reviewerUid: 'admin_two',
-    reviewerRole: 'admin',
+    reviewerRole: 'TRUST_SAFETY_REVIEWER',
     decision: 'overturned',
     reviewerNoteFa: 'پس از بررسی مستقل محتوا تایید و بازگردانی شد.',
   });
