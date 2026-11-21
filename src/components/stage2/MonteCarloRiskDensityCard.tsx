@@ -155,7 +155,7 @@ export const MonteCarloRiskDensityCard: React.FC<MonteCarloRiskDensityCardProps>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-[10px] text-slate-400">میانه بازده واقعی (تعدیل تورم):</div>
-          <div className={`text-sm font-black mt-0.5 ${report.metrics.realMedianReturnPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+          <div className={`text-sm font-black mt-0.5 ${report.metrics.realMedianReturnPct >= 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
             {report.metrics.realMedianReturnPct >= 0 ? '+' : ''}{toPersianNum(report.metrics.realMedianReturnPct)}٪
           </div>
           <div className="text-[9px] text-slate-400">اسمی: {toPersianNum(report.metrics.nominalMedianReturnPct)}٪</div>

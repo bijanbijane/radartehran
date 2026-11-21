@@ -158,6 +158,10 @@ export class SearchWorkspaceFileRepository {
   }
 }
 
+export async function ensureSearchWorkspaceRepositoryHydrated(): Promise<PersistedSearchWorkspaceState> {
+  return workspaceRepo.ensureRemoteHydrated(defaultState);
+}
+
 export function resetSearchWorkspaceRepositoryForTests(): void {
   workspaceRepo.resetInMemoryCacheForTests();
 }

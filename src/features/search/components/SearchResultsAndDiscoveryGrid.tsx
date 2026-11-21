@@ -68,13 +68,13 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
             onClick={() => handleSelectResultEntity(d.id, d.neighborhoodId)}
             className={`p-3.5 rounded-xl border transition-colors flex flex-col justify-between gap-2 cursor-pointer ${
               isSelected
-                ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-[#176B63] ring-1 ring-[#176B63]'
+                ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-[var(--color-brand-600)] ring-1 ring-[var(--color-brand-600)]'
                 : 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
             }`}
           >
             <div className="space-y-1">
               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                <span className="text-[#176B63] dark:text-emerald-300 font-bold text-[10.5px]">
+                <span className="text-[var(--color-brand-600)] dark:text-emerald-300 font-bold text-[10.5px]">
                   {d.entityType} · {d.scope}
                 </span>
                 <span className="text-[10.5px] text-slate-500">
@@ -130,7 +130,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
                   handleSelectResultEntity(d.id, d.neighborhoodId);
                   if (onNavigatePath) onNavigatePath(d.urlPath);
                 }}
-                className="min-h-[36px] px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold text-[11px] cursor-pointer"
+                className="min-h-[36px] px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold text-[11px] cursor-pointer"
               >
                 مشاهده در بخش تخصصی
               </button>
@@ -148,7 +148,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
     >
       <div className="flex items-center justify-between gap-2">
         <strong className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-          <MapPin className="w-4 h-4 text-[#176B63]" />
+          <MapPin className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>موجودیت‌های مکانی همگام با نقشه اصلی ({toPersianNum(spatialResults.length)} مورد دارای مختصات)</span>
         </strong>
         <span className="text-[10.5px] text-slate-500">انتخاب هر پین، موقعیت آن را روی نقشه اصلی فعال می‌کند</span>
@@ -165,7 +165,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
               onClick={() => handleSelectResultEntity(d.id, d.neighborhoodId)}
               className={`min-h-[38px] px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 cursor-pointer ${
                 active
-                  ? 'bg-[#176B63] text-white border-[#176B63]'
+                  ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
                   : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700'
               }`}
             >
@@ -225,7 +225,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
             <button
               type="button"
               onClick={onResetFilters}
-              className="min-h-[40px] px-3 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer"
+              className="min-h-[40px] px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
             >
               {searchResponse.zeroResultAssistant.relaxedFilterLabelFa || 'حذف فیلترها'}
             </button>
@@ -258,7 +258,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
       <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5" data-testid="search-discovery-recommendations">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-[#176B63]" />
+            <Sparkles className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>کشف محتوا و پیشنهادهای مرتبط (با توضیح شفاف علت پیشنهاد)</span>
           </strong>
           <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
@@ -279,7 +279,7 @@ export const SearchResultsAndDiscoveryGrid: React.FC<SearchResultsAndDiscoveryGr
               className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between gap-2"
             >
               <div>
-                <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-[#176B63] dark:text-emerald-300">
+                <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-[var(--color-brand-600)] dark:text-emerald-300">
                   <span className="flex items-center gap-1">
                     <Compass className="w-3 h-3" />
                     {rec.reasonFa}

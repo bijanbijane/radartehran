@@ -1,0 +1,702 @@
+[
+  {
+    "viewport": "desktop",
+    "route": "home",
+    "url": "http://127.0.0.1:3000/",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--home.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "map",
+    "url": "http://127.0.0.1:3000/explore/map",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--map.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "discover",
+    "url": "http://127.0.0.1:3000/areas",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--discover.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "properties",
+    "url": "http://127.0.0.1:3000/properties",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--properties.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "properties-buy",
+    "url": "http://127.0.0.1:3000/properties/buy",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--properties-buy.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "market",
+    "url": "http://127.0.0.1:3000/market",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--market.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "search",
+    "url": "http://127.0.0.1:3000/areas?q=ونک",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--search.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "knowledge",
+    "url": "http://127.0.0.1:3000/knowledge",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--knowledge.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "services",
+    "url": "http://127.0.0.1:3000/services",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--services.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "userspace",
+    "url": "http://127.0.0.1:3000/account",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--userspace.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "contributions",
+    "url": "http://127.0.0.1:3000/contributions",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--contributions.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "tools",
+    "url": "http://127.0.0.1:3000/tools",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--tools.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "admin",
+    "url": "http://127.0.0.1:3000/admin",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/desktop--admin.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "home",
+    "url": "http://127.0.0.1:3000/",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--home.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "map",
+    "url": "http://127.0.0.1:3000/explore/map",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--map.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "discover",
+    "url": "http://127.0.0.1:3000/areas",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--discover.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "properties",
+    "url": "http://127.0.0.1:3000/properties",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--properties.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "properties-buy",
+    "url": "http://127.0.0.1:3000/properties/buy",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--properties-buy.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "market",
+    "url": "http://127.0.0.1:3000/market",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--market.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "search",
+    "url": "http://127.0.0.1:3000/areas?q=ونک",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--search.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "knowledge",
+    "url": "http://127.0.0.1:3000/knowledge",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--knowledge.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "services",
+    "url": "http://127.0.0.1:3000/services",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--services.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "userspace",
+    "url": "http://127.0.0.1:3000/account",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--userspace.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "contributions",
+    "url": "http://127.0.0.1:3000/contributions",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--contributions.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "tools",
+    "url": "http://127.0.0.1:3000/tools",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--tools.png"
+  },
+  {
+    "viewport": "tablet",
+    "route": "admin",
+    "url": "http://127.0.0.1:3000/admin",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/tablet--admin.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "home",
+    "url": "http://127.0.0.1:3000/",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--home.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "map",
+    "url": "http://127.0.0.1:3000/explore/map",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available",
+      "Service firestore is not available",
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--map.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "discover",
+    "url": "http://127.0.0.1:3000/areas",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--discover.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "properties",
+    "url": "http://127.0.0.1:3000/properties",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available",
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--properties.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "properties-buy",
+    "url": "http://127.0.0.1:3000/properties/buy",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available",
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--properties-buy.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "market",
+    "url": "http://127.0.0.1:3000/market",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--market.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "search",
+    "url": "http://127.0.0.1:3000/areas?q=ونک",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--search.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "knowledge",
+    "url": "http://127.0.0.1:3000/knowledge",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--knowledge.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "services",
+    "url": "http://127.0.0.1:3000/services",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--services.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "userspace",
+    "url": "http://127.0.0.1:3000/account",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--userspace.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "contributions",
+    "url": "http://127.0.0.1:3000/contributions",
+    "error": "Error: page.evaluate: Execution context was destroyed, most likely because of a navigation",
+    "errors": [
+      "Service firestore is not available"
+    ]
+  },
+  {
+    "viewport": "mobile",
+    "route": "tools",
+    "url": "http://127.0.0.1:3000/tools",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available",
+      "Service firestore is not available",
+      "Service firestore is not available",
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--tools.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "admin",
+    "url": "http://127.0.0.1:3000/admin",
+    "probe": {
+      "mounted": false,
+      "overflowX": false,
+      "dir": "rtl",
+      "smallTouchTargets": 0,
+      "clippedCards": 0,
+      "title": "رادارتهران | نقشه قیمت مسکن، رهن و اجاره، هوا و ترافیک کلان‌شهرها",
+      "bodyTextLen": 0
+    },
+    "errors": [
+      "Service firestore is not available"
+    ],
+    "screenshot": "/Users/Home/Documents/رادار تهران/رادار تهران/.cache/visual-audit-dsr/mobile--admin.png"
+  }
+]

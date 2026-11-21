@@ -52,7 +52,7 @@ export const Stage34AccessibilitySubpanel: React.FC<Stage34AccessibilitySubpanel
               onAnnounceStatus('تنظیمات فاصله‌گذاری متن WCAG 1.4.12 (خط ۱.۵ برابر، حروف ۰.۱۲em) تغییر کرد.');
             }}
             className={`px-3 py-2 min-h-[44px] rounded-[8px] font-bold cursor-pointer ${
-              wcagTextSpacing ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
+              wcagTextSpacing ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
             }`}
           >
             فاصله‌گذاری استاندارد متن (WCAG 1.4.12)
@@ -66,7 +66,7 @@ export const Stage34AccessibilitySubpanel: React.FC<Stage34AccessibilitySubpanel
               onAnnounceStatus('حالت کاهش حرکت (Reduced Motion) برای حذف انیمیشن‌های غیرضروری تغییر کرد.');
             }}
             className={`px-3 py-2 min-h-[44px] rounded-[8px] font-bold cursor-pointer ${
-              reducedMotion ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
+              reducedMotion ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
             }`}
           >
             کاهش حرکت ({reducedMotion ? 'فعال' : 'عادی'})
@@ -81,21 +81,21 @@ export const Stage34AccessibilitySubpanel: React.FC<Stage34AccessibilitySubpanel
               setSavedDemoProperty(next);
               onAnnounceStatus(resolveBookmarkAccessibleName(next).statusAnnouncementFa);
             }}
-            className="px-3 py-2 min-h-[44px] rounded-[8px] bg-white dark:bg-slate-900 border border-[#176B63] text-[#176B63] dark:text-emerald-300 font-bold cursor-pointer"
+            className="px-3 py-2 min-h-[44px] rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-300 font-bold cursor-pointer"
           >
             {bookmarkA11y.accessibleNameFa}
           </button>
         </div>
         <div className="inline-flex rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
-          <button type="button" onClick={() => setSpatialViewMode('map')} className={`px-3 py-1.5 rounded-[6px] font-bold cursor-pointer ${spatialViewMode === 'map' ? 'bg-[#176B63] text-white' : ''}`}>نمای نقشه</button>
-          <button type="button" data-testid="switch-accessible-list-view" onClick={() => setSpatialViewMode('accessible_list')} className={`px-3 py-1.5 rounded-[6px] font-bold cursor-pointer ${spatialViewMode === 'accessible_list' ? 'bg-[#176B63] text-white' : ''}`}>نمای فهرست جایگزین نقشه (برابری عملکردی)</button>
+          <button type="button" onClick={() => setSpatialViewMode('map')} className={`px-3 py-1.5 rounded-[6px] font-bold cursor-pointer ${spatialViewMode === 'map' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>نمای نقشه</button>
+          <button type="button" data-testid="switch-accessible-list-view" onClick={() => setSpatialViewMode('accessible_list')} className={`px-3 py-1.5 rounded-[6px] font-bold cursor-pointer ${spatialViewMode === 'accessible_list' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>نمای فهرست جایگزین نقشه (برابری عملکردی)</button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Eye className="w-4 h-4 text-[#176B63]" />
+            <Eye className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مسیر جایگزین نقشه و انتخاب مکانی بدون نیاز به Drag (WCAG 2.5.7)</span>
           </h3>
           <div>
@@ -144,7 +144,7 @@ export const Stage34AccessibilitySubpanel: React.FC<Stage34AccessibilitySubpanel
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <HelpCircle className="w-4 h-4 text-[#176B63]" />
+            <HelpCircle className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>کنتراست تاییدشده، زبان ساده آماری و مدیریت فوکوس پس از حذف (بند ۳۷.۱)</span>
           </h3>
           <div className="space-y-1.5">
@@ -183,7 +183,7 @@ export const Stage34AccessibilitySubpanel: React.FC<Stage34AccessibilitySubpanel
                 </button>
               ))}
               {focusDemoItems.length === 0 && (
-                <button type="button" onClick={() => { setFocusDemoItems(['ملک سعادت‌آباد', 'ملک پونک', 'ملک ونک']); setLastFocusTarget('ملک سعادت‌آباد'); }} className="px-2.5 py-1 rounded bg-[#176B63] text-white font-bold cursor-pointer">
+                <button type="button" onClick={() => { setFocusDemoItems(['ملک سعادت‌آباد', 'ملک پونک', 'ملک ونک']); setLastFocusTarget('ملک سعادت‌آباد'); }} className="px-2.5 py-1 rounded bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
                   بازنشانی فهرست نمونه
                 </button>
               )}

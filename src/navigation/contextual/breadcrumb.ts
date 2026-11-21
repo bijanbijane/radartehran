@@ -1,9 +1,8 @@
 /** @file src/navigation/contextual/breadcrumb.ts — Contextual Breadcrumb Builder (RT-UI-NAV-001 Section 7) */
-import { PUBLIC_ROUTES } from '../registry/public.routes';
-import { ADMIN_ROUTES } from '../registry/admin.routes';
+import { UNIFIED_NAVIGATION_ROUTES } from '../registry/unifiedNavigationRegistry';
 import type { BreadcrumbNode, ModuleSubTabId, RouteDestinationId, RouteDefinition } from '../registry/route.types';
 
-const ALL_ROUTES: readonly RouteDefinition[] = [...PUBLIC_ROUTES, ...ADMIN_ROUTES];
+const ALL_ROUTES: readonly RouteDefinition[] = UNIFIED_NAVIGATION_ROUTES;
 
 export interface BuildBreadcrumbsInput {
   viewId: RouteDestinationId;

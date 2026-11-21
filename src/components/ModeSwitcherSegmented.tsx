@@ -92,7 +92,7 @@ export function ModeSwitcherSegmented({
           {shouldSuggestBuy && (
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5" aria-hidden="true">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--color-brand-600)]" />
             </span>
           )}
         </button>
@@ -105,7 +105,7 @@ export function ModeSwitcherSegmented({
           className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-[8px] bg-emerald-50/90 dark:bg-emerald-950/40 hover:bg-emerald-100/90 dark:hover:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-800/70 text-[10.5px] font-bold text-emerald-800 dark:text-emerald-300 text-right transition cursor-pointer animate-in fade-in-0 duration-300"
         >
           <span className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>
               با پس‌انداز {toPersianNum(deposit.toLocaleString('en-US'))} م ({formatMillionTomanAsIntlCurrency(deposit, intlCurrency, locale)}) و اجاره ماهانه {toPersianNum(monthlyRent)} م ({formatMillionTomanAsIntlCurrency(monthlyRent, intlCurrency, locale)})، گزینه‌های خرید نقلی ({formatAreaShort(80, areaUnit)}) یا با وام در دسترس شماست!
             </span>

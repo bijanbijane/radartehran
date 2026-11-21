@@ -783,6 +783,14 @@
     "/legal_regulatory_idempotency_v1/{docId}": {
       "schema": { "$ref": "#/entities/LegalRegulatoryIdempotency" },
       "description": "Server-only SHA-256 keyed idempotency ledger with request hash verification (allow read, write: if false)"
+    },
+    "/media_object_metadata_v2/{objectId}": {
+      "schema": { "type": "object" },
+      "description": "RT-INFRA-007 server-only durable StoredObjectRecord metadata (stored_object_record_v1); client deny-all"
+    },
+    "/radar_repository_snapshots_v1/{docId}": {
+      "schema": { "type": "object" },
+      "description": "RT-INFRA-008 server-only JSON repository snapshot registry (R2 payload pointer)"
     }
   }
 }

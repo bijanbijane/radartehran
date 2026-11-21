@@ -94,7 +94,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
           return (
             <section key={group.id} aria-labelledby={groupTitleId} className="space-y-2 min-w-0">
               <div className="flex items-center gap-1.5 px-2 pb-1.5 border-b border-slate-100 dark:border-slate-800 text-[11px] font-black text-slate-500 dark:text-slate-400">
-                <GroupIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+                <GroupIcon className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" aria-hidden="true" />
                 <h3 id={groupTitleId} className="leading-snug">
                   {isEn ? group.titleEn : group.titleFa}
                 </h3>
@@ -153,7 +153,7 @@ export const DesktopMegaMenu: React.FC<DesktopMegaMenuProps> = ({
       </div>
       <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
         <span className="flex items-center gap-1.5 min-w-0 flex-1">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+          <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" aria-hidden="true" />
           <span className="leading-snug">
             {isEn
               ? 'All modules remain synced with your selected city, neighborhood, and active budget context.'

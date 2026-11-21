@@ -106,7 +106,7 @@ export const HousingCycleRegimeCard: React.FC<HousingCycleRegimeCardProps> = ({
         {cycle.isStagflationaryIllusion ? (
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
         ) : (
-          <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0 mt-0.5" />
         )}
         <div className="space-y-0.5 leading-relaxed">
           <div className="font-extrabold">

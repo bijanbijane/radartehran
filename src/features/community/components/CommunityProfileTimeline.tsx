@@ -67,9 +67,9 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
   onSelectContribution,
 }) => {
   return (
-    <div className="space-y-3 pt-3 border-t border-[#DCE3DF] dark:border-slate-800" data-testid="community-profile-timeline">
+    <div className="space-y-3 pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800" data-testid="community-profile-timeline">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-black text-[#182522] dark:text-white">Timeline مشارکت‌های عمومی کاربر</h3>
+        <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">Timeline مشارکت‌های عمومی کاربر</h3>
         <div className="flex flex-wrap gap-1" role="tablist" aria-label="فیلتر نوع مشارکت">
           {KIND_TABS.map((tab) => (
             <button
@@ -81,8 +81,8 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
               onClick={() => onSelectKind(tab.id)}
               className={`px-2.5 py-1 rounded-[8px] text-[11px] font-bold cursor-pointer transition ${
                 activeKind === tab.id
-                  ? 'bg-[#176B63] text-white'
-                  : 'bg-[#F8F9FA] dark:bg-slate-800 text-[#34433E] dark:text-slate-300 hover:border-[#176B63]'
+                  ? 'bg-[var(--color-brand-600)] text-white'
+                  : 'bg-[#F8F9FA] dark:bg-slate-800 text-[var(--color-text-secondary)] dark:text-slate-300 hover:border-[var(--color-brand-600)]'
               }`}
             >
               {tab.labelFa}
@@ -94,7 +94,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
       {!contributionsVisible && (
         <div
           data-testid="profile-timeline-hidden-privacy"
-          className="p-3.5 rounded-[10px] bg-slate-50 dark:bg-slate-800/60 border border-[#DCE3DF] dark:border-slate-700 text-[11px] text-[#586760] dark:text-slate-400 font-bold"
+          className="p-3.5 rounded-[10px] bg-slate-50 dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 font-bold"
         >
           این کاربر نمایش فهرست مشارکت‌های خود را در تنظیمات حریم خصوصی غیرفعال کرده است.
         </div>
@@ -113,7 +113,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
       {contributionsVisible && loading && (
         <div
           data-testid="profile-timeline-loading"
-          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/40 text-center text-[11px] font-bold text-[#586760] dark:text-slate-400"
+          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/40 text-center text-[11px] font-bold text-[var(--color-text-muted)] dark:text-slate-400"
         >
           در حال دریافت تاریخچه مشارکت‌های کاربر از سرور...
         </div>
@@ -122,7 +122,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
       {contributionsVisible && !loading && !errorFa && items.length === 0 && (
         <div
           data-testid="profile-timeline-empty"
-          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/40 text-center text-[11px] text-[#586760] dark:text-slate-400"
+          className="p-4 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/40 text-center text-[11px] text-[var(--color-text-muted)] dark:text-slate-400"
         >
           مشارکت عمومی قابل‌نمایشی در این دسته‌بندی ثبت نشده است.
         </div>
@@ -137,14 +137,14 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
               <article
                 key={`${item.kind}:${item.id}`}
                 data-testid={`profile-timeline-item-${item.id}`}
-                className="p-3 rounded-[11px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[#DCE3DF] dark:border-slate-800 space-y-1.5"
+                className="p-3 rounded-[11px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-1.5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] border text-[10px] font-bold ${meta.className}`}>
                     <Icon className="w-3 h-3 shrink-0" />
                     <span>{meta.labelFa}</span>
                   </span>
-                  <div className="flex items-center gap-2 text-[10px] text-[#586760] dark:text-slate-400 tabular-nums">
+                  <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)] dark:text-slate-400 tabular-nums">
                     {item.neighborhoodNameFa && <span>محله {item.neighborhoodNameFa}</span>}
                     {typeof item.helpfulCount === 'number' && item.helpfulCount > 0 && (
                       <span>{toPersianNum(item.helpfulCount)} مفید</span>
@@ -156,13 +156,13 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
                 </div>
 
                 {item.titleFa && (
-                  <h4 className="font-black text-xs text-[#182522] dark:text-white">{item.titleFa}</h4>
+                  <h4 className="font-black text-xs text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h4>
                 )}
 
-                <p className="text-[11px] text-[#34433E] dark:text-slate-300 leading-relaxed">{item.excerptFa}</p>
+                <p className="text-[11px] text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{item.excerptFa}</p>
 
                 <div className="flex items-center justify-between gap-2 pt-1">
-                  <span className="text-[10px] font-mono text-[#586760] dark:text-slate-400" dir="ltr">
+                  <span className="text-[10px] font-mono text-[var(--color-text-muted)] dark:text-slate-400" dir="ltr">
                     {item.createdAtIso.slice(0, 10)}
                   </span>
                   {onSelectContribution && (
@@ -170,7 +170,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
                       type="button"
                       data-testid={`profile-timeline-open-${item.id}`}
                       onClick={() => onSelectContribution(item)}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#176B63] dark:text-emerald-400 hover:underline cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer"
                     >
                       <span>مشاهده محتوای اصلی</span>
                       <ExternalLink className="w-3 h-3" />
@@ -190,7 +190,7 @@ export const CommunityProfileTimeline: React.FC<CommunityProfileTimelineProps> =
             data-testid="profile-timeline-load-more"
             disabled={loadingMore}
             onClick={onLoadMore}
-            className="px-3.5 py-1.5 rounded-[8px] border border-[#176B63] text-[#176B63] dark:text-emerald-300 font-bold text-[11px] cursor-pointer disabled:opacity-50"
+            className="px-3.5 py-1.5 rounded-[8px] border border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-300 font-bold text-[11px] cursor-pointer disabled:opacity-50"
           >
             {loadingMore ? 'در حال بارگذاری...' : 'بارگذاری مشارکت‌های بیشتر'}
           </button>

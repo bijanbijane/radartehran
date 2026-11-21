@@ -70,7 +70,7 @@ export function BuyerAlertPwaLegalModals({
           <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5 mb-4">
               <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Bell className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
@@ -179,14 +179,14 @@ export function BuyerAlertPwaLegalModals({
                   {alertMsgTone === 'error' ? (
                     <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                   ) : (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
                   )}
                   <span>{alertSubmitMsg}</span>
                 </div>
               )}
               <button
                 type="submit" disabled={Boolean(isSavingBuyerAlert)} aria-busy={Boolean(isSavingBuyerAlert)}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-xs transition cursor-pointer shadow-xs"
+                className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-xs transition cursor-pointer shadow-xs"
               >
                 {isSavingBuyerAlert ? 'در حال ثبت امن درخواست...' : 'ثبت در لیست هشدار فایل‌های زیر قیمت'}
               </button>
@@ -199,7 +199,7 @@ export function BuyerAlertPwaLegalModals({
           <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <Smartphone className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                   {isEn ? 'Install Tehran Radar Web App' : 'نصب وب‌اپلیکیشن رادار تهران'}
                 </h3>
@@ -218,7 +218,7 @@ export function BuyerAlertPwaLegalModals({
                 <p>در مرورگر سافاری روی دکمه <strong>Share</strong> در نوار پایین بزنید و گزینه <strong>Add to Home Screen</strong> را انتخاب کنید.</p>
               </div>
             </div>
-            <button type="button" onClick={() => setShowPwaModal(false)} className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer">
+            <button type="button" onClick={() => setShowPwaModal(false)} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer">
               {isEn ? 'Got it' : 'متوجه شدم'}
             </button>
           </div>
@@ -229,7 +229,7 @@ export function BuyerAlertPwaLegalModals({
           <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-lg w-full p-5 space-y-3.5 text-xs focus:outline-none shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <ShieldAlert className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                   {isEn ? 'Legal Terms & Disclaimer' : 'چارچوب قانونی و سلب مسئولیت'}
                 </h3>

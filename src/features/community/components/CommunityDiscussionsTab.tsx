@@ -101,40 +101,40 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-4 text-xs" data-testid="community-discussions-tab">
-      <div className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <strong className="text-[#182522] dark:text-white block">تجربه زیسته محله {selectedHood.name} vs شاخص رسمی</strong>
-          <span className="text-[11px] text-[#586760] dark:text-slate-400">برای امتیاز عددی هوا، مترو و امنیت از رأی‌دهی ساختاریافته ساکنان استفاده کنید.</span>
+          <strong className="text-[var(--color-text-primary)] dark:text-white block">تجربه زیسته محله {selectedHood.name} vs شاخص رسمی</strong>
+          <span className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">برای امتیاز عددی هوا، مترو و امنیت از رأی‌دهی ساختاریافته ساکنان استفاده کنید.</span>
         </div>
-        <button type="button" onClick={onOpenResidentVoteTab} className="px-3 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer whitespace-nowrap">
+        <button type="button" onClick={onOpenResidentVoteTab} className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer whitespace-nowrap">
           ثبت رأی کیفیت زیست
         </button>
       </div>
 
-      <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+      <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-black text-[#182522] dark:text-white">آغاز گفت‌وگوی جدید در محله {selectedHood.name}</h2>
-          <select aria-label="موضوع گفت‌وگو" value={topicId} onChange={(e) => setTopicId(e.target.value)} className="p-1.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
+          <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">آغاز گفت‌وگوی جدید در محله {selectedHood.name}</h2>
+          <select aria-label="موضوع گفت‌وگو" value={topicId} onChange={(e) => setTopicId(e.target.value)} className="p-1.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
             <option value="topic-neighborhoods">محله‌ها و زیست‌پذیری</option>
             <option value="topic-tehran-market">بازار مسکن تهران</option>
             <option value="topic-rent-deposit">رهن و اجاره</option>
             <option value="topic-buy-sell">خرید و فروش</option>
           </select>
         </div>
-        <input type="text" aria-label="عنوان گفت‌وگو" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="عنوان دقیق گفت‌وگو (مثلاً وضعیت ترافیک و جای پارک بلوار عدل...)" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100" />
-        <textarea rows={2} aria-label="متن گفت‌وگو" value={bodyFa} onChange={(e) => { setBodyFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="دیدگاه مستند و محترمانه خود را بنویسید؛ درج شماره تماس و لینک تبلیغاتی مجاز نیست." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100" />
+        <input type="text" aria-label="عنوان گفت‌وگو" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="عنوان دقیق گفت‌وگو (مثلاً وضعیت ترافیک و جای پارک بلوار عدل...)" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-100" />
+        <textarea rows={2} aria-label="متن گفت‌وگو" value={bodyFa} onChange={(e) => { setBodyFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="دیدگاه مستند و محترمانه خود را بنویسید؛ درج شماره تماس و لینک تبلیغاتی مجاز نیست." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-100" />
         {feedback && (
           <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
             {feedback.msg}
           </div>
         )}
-        <button type="submit" disabled={submittingPost} data-testid="submit-discussion-btn" className="px-4 py-2 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50">
+        <button type="submit" disabled={submittingPost} data-testid="submit-discussion-btn" className="px-4 py-2 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50">
           {submittingPost ? 'در حال انتشار...' : 'انتشار گفت‌وگو'}
         </button>
       </form>
 
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-[#586760] dark:text-slate-400 tabular-nums">{toPersianNum(orderedPosts.length)} گفت‌وگو قابل مشاهده</span>
+        <span className="text-[11px] font-bold text-[var(--color-text-muted)] dark:text-slate-400 tabular-nums">{toPersianNum(orderedPosts.length)} گفت‌وگو قابل مشاهده</span>
         <div className="inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
           <button type="button" onClick={() => setSortMode('rank')} className={`px-2.5 py-1 rounded-md font-bold cursor-pointer ${sortMode === 'rank' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white' : 'text-slate-500'}`}>رتبه چندعاملی</button>
           <button type="button" onClick={() => setSortMode('recent')} className={`px-2.5 py-1 rounded-md font-bold cursor-pointer ${sortMode === 'recent' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white' : 'text-slate-500'}`}>تازه‌ترین</button>
@@ -149,20 +149,20 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
           const level1Replies = post.replies.filter((r) => !r.parentReplyId && r.status !== 'hidden');
           const parentTarget = replyParentByPost[post.id] || null;
           return (
-            <article key={post.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#586760] dark:text-slate-400">
+            <article key={post.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {post.pinned && <Pin className="w-3.5 h-3.5 text-[#176B63]" />}
+                  {post.pinned && <Pin className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />}
                   {isLocked && <Lock className="w-3.5 h-3.5 text-amber-600" />}
                   <span>محله {post.neighborhoodNameFa} · {post.createdAtFa}</span>
                   {(post.revisionHistory?.length ?? 0) > 0 && <span className="tabular-nums">· ویرایش‌شده ({toPersianNum(post.revisionHistory!.length)})</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => onToggleFollow(post.id)} className={`inline-flex items-center gap-1 font-bold cursor-pointer ${isFollowed ? 'text-[#176B63] dark:text-emerald-400' : 'text-[#586760]'}`}>
+                  <button type="button" onClick={() => onToggleFollow(post.id)} className={`inline-flex items-center gap-1 font-bold cursor-pointer ${isFollowed ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-[var(--color-text-muted)]'}`}>
                     <Bookmark className="w-3.5 h-3.5" /><span>{isFollowed ? 'دنبال‌شده' : 'پیگیری'}</span>
                   </button>
                   {isOwner && !isLocked && (
-                    <button type="button" onClick={() => { setEditingId(editingId === post.id ? null : post.id); setEditTitle(post.titleFa); setEditBody(post.bodyFa); }} className="inline-flex items-center gap-1 text-[#586760] hover:text-[#182522] dark:hover:text-white cursor-pointer">
+                    <button type="button" onClick={() => { setEditingId(editingId === post.id ? null : post.id); setEditTitle(post.titleFa); setEditBody(post.bodyFa); }} className="inline-flex items-center gap-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] dark:hover:text-white cursor-pointer">
                       <Edit3 className="w-3.5 h-3.5" /><span>ویرایش</span>
                     </button>
                   )}
@@ -174,8 +174,8 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
 
               {editingId === post.id ? (
                 <div className="space-y-2 p-3 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70">
-                  <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-2 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900" />
-                  <textarea rows={2} value={editBody} onChange={(e) => setEditBody(e.target.value)} className="w-full p-2 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900" />
+                  <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-2 rounded border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900" />
+                  <textarea rows={2} value={editBody} onChange={(e) => setEditBody(e.target.value)} className="w-full p-2 rounded border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900" />
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -191,23 +191,23 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                           setSavingEditId(null);
                         }
                       }}
-                      className="px-3 py-1 rounded bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50"
+                      className="px-3 py-1 rounded bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50"
                     >
                       ذخیره ویرایش با سابقه
                     </button>
-                    <button type="button" onClick={() => setEditingId(null)} className="px-3 py-1 rounded border border-[#DCE3DF] dark:border-slate-700 cursor-pointer">انصراف</button>
+                    <button type="button" onClick={() => setEditingId(null)} className="px-3 py-1 rounded border border-[var(--color-border-subtle)] dark:border-slate-700 cursor-pointer">انصراف</button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <h3 className="font-black text-sm text-[#182522] dark:text-white">{post.titleFa}</h3>
-                  <p className="text-[#34433E] dark:text-slate-300 leading-relaxed">{post.bodyFa}</p>
+                  <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{post.titleFa}</h3>
+                  <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{post.bodyFa}</p>
                 </>
               )}
 
               <CommunityAuthorBadges profile={post.authorProfile} onSelectUsername={onSelectAuthor} />
 
-              <div className="pt-2 border-t border-[#DCE3DF] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {REACTIONS_LIST.map((rKey) => {
                     const active = post.reactionsByUser?.[currentUserId] === rKey || (rKey === 'helpful' && !post.reactionsByUser && post.helpfulVoterIds.includes(currentUserId));
@@ -217,14 +217,14 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                         key={rKey}
                         type="button"
                         onClick={() => onToggleReaction(post.id, rKey)}
-                        className={`px-2 py-1 rounded-[7px] font-bold tabular-nums border cursor-pointer transition ${active ? 'bg-[#176B63] text-white border-[#176B63]' : 'border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-200 hover:border-[#176B63]'}`}
+                        className={`px-2 py-1 rounded-[7px] font-bold tabular-nums border cursor-pointer transition ${active ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)] dark:text-slate-200 hover:border-[var(--color-brand-600)]'}`}
                       >
                         {REACTION_LABELS_FA[rKey]} ({toPersianNum(count)})
                       </button>
                     );
                   })}
                 </div>
-                <span className="text-[11px] text-[#586760] inline-flex items-center gap-1 tabular-nums">
+                <span className="text-[11px] text-[var(--color-text-muted)] inline-flex items-center gap-1 tabular-nums">
                   <MessageCircle className="w-3.5 h-3.5" /><span>{toPersianNum(post.replies.length)} پاسخ</span>
                 </span>
               </div>
@@ -240,7 +240,7 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
               )}
 
               {level1Replies.length > 0 && (
-                <div className="space-y-2 pr-3 border-r border-[#DCE3DF] dark:border-slate-700">
+                <div className="space-y-2 pr-3 border-r border-[var(--color-border-subtle)] dark:border-slate-700">
                   {level1Replies.map((rep) => {
                     const level2 = post.replies.filter((c) => c.parentReplyId === rep.id && c.status !== 'hidden');
                     return (
@@ -249,19 +249,19 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                           <div className="flex items-center justify-between gap-2">
                             <CommunityAuthorBadges profile={rep.authorProfile} onSelectUsername={onSelectAuthor} />
                             {!isLocked && (
-                              <button type="button" onClick={() => setReplyParentByPost((prev) => ({ ...prev, [post.id]: parentTarget === rep.id ? null : rep.id }))} className="text-[10.5px] font-bold text-[#176B63] dark:text-emerald-400 cursor-pointer shrink-0">
+                              <button type="button" onClick={() => setReplyParentByPost((prev) => ({ ...prev, [post.id]: parentTarget === rep.id ? null : rep.id }))} className="text-[10.5px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 cursor-pointer shrink-0">
                                 {parentTarget === rep.id ? 'لغو پاسخ سطح ۲' : 'پاسخ به این نظر'}
                               </button>
                             )}
                           </div>
-                          <p className="text-[#34433E] dark:text-slate-300">{rep.bodyFa}</p>
+                          <p className="text-[var(--color-text-secondary)] dark:text-slate-300">{rep.bodyFa}</p>
                         </div>
                         {level2.length > 0 && (
-                          <div className="mr-4 space-y-1 pr-3 border-r border-[#DCE3DF] dark:border-slate-700">
+                          <div className="mr-4 space-y-1 pr-3 border-r border-[var(--color-border-subtle)] dark:border-slate-700">
                             {level2.map((sub) => (
                               <div key={sub.id} className="p-2 rounded-[8px] bg-[#F8F9FA]/70 dark:bg-slate-800/40 space-y-0.5">
                                 <CommunityAuthorBadges profile={sub.authorProfile} onSelectUsername={onSelectAuthor} />
-                                <p className="text-[#34433E] dark:text-slate-300">{sub.bodyFa}</p>
+                                <p className="text-[var(--color-text-secondary)] dark:text-slate-300">{sub.bodyFa}</p>
                               </div>
                             ))}
                           </div>
@@ -290,7 +290,7 @@ export const CommunityDiscussionsTab: React.FC<Props> = ({
                       }
                     }}
                     placeholder={parentTarget ? 'پاسخ سطح ۲ در ادامه نظر انتخاب‌شده...' : 'پاسخ یا تجربه تکمیلی خود را بنویسید...'}
-                    className="flex-1 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+                    className="flex-1 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
                   />
                   <button
                     type="button"

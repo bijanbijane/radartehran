@@ -44,25 +44,25 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
 }) => (
   <>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-      <button type="button" onClick={onOpenHedonic} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63] text-start space-y-1.5 cursor-pointer transition">
-        <Calculator className="w-5 h-5 text-[#176B63]" />
-        <div className="font-black text-[#182522] dark:text-white">کارشناسی قیمت هدونیک</div>
-        <p className="text-[11px] text-[#586760]">برآورد قیمت عادلانه و فروش فوری</p>
+      <button type="button" onClick={onOpenHedonic} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1.5 cursor-pointer transition">
+        <Calculator className="w-5 h-5 text-[var(--color-brand-600)]" />
+        <div className="font-black text-[var(--color-text-primary)] dark:text-white">کارشناسی قیمت هدونیک</div>
+        <p className="text-[11px] text-[var(--color-text-muted)]">برآورد قیمت عادلانه و فروش فوری</p>
       </button>
-      <button type="button" onClick={onOpenListingVerifier} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63] text-start space-y-1.5 cursor-pointer transition">
+      <button type="button" onClick={onOpenListingVerifier} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1.5 cursor-pointer transition">
         <ShieldAlert className="w-5 h-5 text-[#B3261E]" />
-        <div className="font-black text-[#182522] dark:text-white">آنتی‌ویروس حباب آگهی</div>
-        <p className="text-[11px] text-[#586760]">تشخیص آگهی طعمه یا قیمت غیرواقعی</p>
+        <div className="font-black text-[var(--color-text-primary)] dark:text-white">آنتی‌ویروس حباب آگهی</div>
+        <p className="text-[11px] text-[var(--color-text-muted)]">تشخیص آگهی طعمه یا قیمت غیرواقعی</p>
       </button>
-      <button type="button" onClick={() => onOpenExpansionModal('contract')} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63] text-start space-y-1.5 cursor-pointer transition">
+      <button type="button" onClick={() => onOpenExpansionModal('contract')} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1.5 cursor-pointer transition">
         <Scale className="w-5 h-5 text-indigo-600" />
-        <div className="font-black text-[#182522] dark:text-white">سپر حقوقی اتاق قرارداد</div>
-        <p className="text-[11px] text-[#586760]">بندهای فسخ، چک صیادی و کمیسیون</p>
+        <div className="font-black text-[var(--color-text-primary)] dark:text-white">سپر حقوقی اتاق قرارداد</div>
+        <p className="text-[11px] text-[var(--color-text-muted)]">بندهای فسخ، چک صیادی و کمیسیون</p>
       </button>
-      <button type="button" onClick={() => onOpenSuperModule('municipality')} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63] text-start space-y-1.5 cursor-pointer transition">
+      <button type="button" onClick={() => onOpenSuperModule('municipality')} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1.5 cursor-pointer transition">
         <Hammer className="w-5 h-5 text-[#875000]" />
-        <div className="font-black text-[#182522] dark:text-white">ضوابط R122 و بازدید</div>
-        <p className="text-[11px] text-[#586760]">تراکم مجاز و چک‌لیست فنی بازدید</p>
+        <div className="font-black text-[var(--color-text-primary)] dark:text-white">ضوابط R122 و بازدید</div>
+        <p className="text-[11px] text-[var(--color-text-muted)]">تراکم مجاز و چک‌لیست فنی بازدید</p>
       </button>
     </div>
 
@@ -73,7 +73,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
       </p>
     </div>
 
-    <div className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3 text-xs">
+    <div className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 text-xs">
       <div className="flex flex-wrap items-center gap-1.5">
         {(Object.keys(CANONICAL_CATEGORY_LABELS_FA) as Array<ServiceCanonicalCategory | 'all'>).map((cat) => (
           <button
@@ -86,7 +86,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
             }}
             className={`px-2.5 py-1.5 rounded-[8px] font-bold cursor-pointer transition whitespace-nowrap ${
               (filters.canonicalCategory || 'all') === cat
-                ? 'bg-[#176B63] text-white'
+                ? 'bg-[var(--color-brand-600)] text-white'
                 : 'bg-[#F8F9FA] dark:bg-slate-800 text-[#48534F] dark:text-slate-300'
             }`}
           >
@@ -97,21 +97,21 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 items-center">
         <div className="relative lg:col-span-2">
-          <Search className="w-4 h-4 text-[#586760] absolute right-2.5 top-2.5" />
+          <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute right-2.5 top-2.5" />
           <input
             type="text"
             data-testid="service-search-input"
             value={filters.searchQuery}
             onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
             placeholder="جست‌وجو بر اساس نام دفتر، محله یا تخصص..."
-            className="w-full pr-8 pl-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full pr-8 pl-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           />
         </div>
         <select
           aria-label="فیلتر محله"
           value={filters.hoodId}
           onChange={(e) => setFilters((prev) => ({ ...prev, hoodId: e.target.value === 'all' ? 'all' : Number(e.target.value) }))}
-          className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
+          className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
         >
           <option value="all">همه محله‌ها</option>
           {evaluatedNeighborhoods.map((h) => (
@@ -122,7 +122,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
           aria-label="مرتب‌سازی"
           value={filters.sortMode || 'recommended'}
           onChange={(e) => setFilters((prev) => ({ ...prev, sortMode: e.target.value as ServiceSortMode }))}
-          className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
+          className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
         >
           <option value="recommended">مرتب‌سازی: منطبق با محله و ارگانیک</option>
           <option value="verified_first">بیشترین مسیر تأیید هویت/صلاحیت</option>
@@ -133,7 +133,7 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
             type="checkbox"
             checked={filters.hideSponsored}
             onChange={(e) => setFilters((prev) => ({ ...prev, hideSponsored: e.target.checked }))}
-            className="accent-[#176B63]"
+            className="accent-[var(--color-brand-600)]"
           />
           <span>مخفی کردن تبلیغات</span>
         </label>
@@ -141,21 +141,21 @@ export const ServicesDirectoryPanel: React.FC<ServicesDirectoryPanelProps> = ({
     </div>
 
     {visibleProviders.length === 0 ? (
-      <div className="p-8 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-center space-y-2 text-xs">
-        <p className="font-bold text-[#182522] dark:text-white">ارائه‌دهنده‌ای با فیلتر انتخاب‌شده در این رسته ثبت نشده است.</p>
-        <p className="text-[#586760]">می‌توانید درخواست خود را از فرم ۷ مرحله‌ای ثبت کنید یا فیلترها را بازنشانی نمایید.</p>
+      <div className="p-8 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-center space-y-2 text-xs">
+        <p className="font-bold text-[var(--color-text-primary)] dark:text-white">ارائه‌دهنده‌ای با فیلتر انتخاب‌شده در این رسته ثبت نشده است.</p>
+        <p className="text-[var(--color-text-muted)]">می‌توانید درخواست خود را از فرم ۷ مرحله‌ای ثبت کنید یا فیلترها را بازنشانی نمایید.</p>
         <div className="flex flex-wrap justify-center gap-2 pt-1">
           <button
             type="button"
             onClick={() => setFilters({ category: 'all', canonicalCategory: 'all', searchQuery: '', hoodId: 'all', onlyWithDeclaredPhone: false, hideSponsored: false })}
-            className="px-3.5 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer"
+            className="px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
           >
             نمایش همه ارائه‌دهندگان
           </button>
           <button
             type="button"
             onClick={onSwitchToWizard}
-            className="px-3.5 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold cursor-pointer"
+            className="px-3.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold cursor-pointer"
           >
             ثبت درخواست آزاد در این رسته
           </button>

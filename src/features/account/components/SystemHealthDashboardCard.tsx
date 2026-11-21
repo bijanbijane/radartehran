@@ -90,7 +90,7 @@ export const SystemHealthDashboardCard: React.FC = () => {
 
   const getServiceIcon = (id: ServiceHealthProbeResult['id']) => {
     if (id === 'firebase') return <Cloud className="w-4 h-4 text-teal-600 dark:text-teal-400" />;
-    return <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+    return <Database className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />;
   };
 
   const servicesList: ServiceHealthProbeResult[] = snapshot

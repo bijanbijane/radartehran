@@ -8,6 +8,15 @@ import {
   type PrimaryViewId,
   type RadarLocale,
 } from '../../utils/areaUnit';
+import {
+  getCanonicalRouteForPrimaryView,
+  PRIMARY_SHELL_VIEW_ORDER,
+} from '../../navigation/registry/primaryNavigationMetadata';
+import {
+  canViewNavigationEntry,
+  type NavigationVisibilityContext,
+} from '../../navigation/registry/navigationVisibility';
+import { guestNavigationVisibilityContext } from '../../navigation/registry/navigationPermissionBridge';
 
 export type NavigationGroup = 'primary' | 'account' | 'administrative';
 
@@ -21,66 +30,90 @@ export interface ProductNavigationItem {
   protected?: boolean;
 }
 
-export function getProductNavigationItems(locale: RadarLocale): ProductNavigationItem[] {
-  const copy = getRadarGlobalNavCopy(locale);
+const ICON_BY_REGISTRY_ID: Record<string, ProductNavigationItem['Icon']> = {
+  home: Home,
+  compass: Compass,
+  map: Map,
+  'trending-up': TrendingUp,
+  'sliders-horizontal': SlidersHorizontal,
+  user: User,
+  'building-2': Building2,
+  'shield-alert': ShieldAlert,
+};
 
-  return [
-    {
-      id: 'home',
-      group: 'primary',
-      label: copy.home,
-      Icon: Home,
-      description: locale === 'en' ? 'Radar Home & Quick Insights' : 'خانه و چشم‌انداز سریع رادار',
-    },
-    {
-      id: 'discover',
-      group: 'primary',
-      label: copy.discover,
-      Icon: Compass,
-      description: locale === 'en' ? 'Explore Neighborhoods' : 'کشف و کارنامه محله‌ها',
-    },
-    {
-      id: 'map',
-      group: 'primary',
-      label: copy.map,
-      Icon: Map,
-      description: locale === 'en' ? 'Interactive Spatial Atlas' : 'اطلس مکانی و نقشه تهران',
-    },
-    {
-      id: 'intelligence',
-      group: 'primary',
-      label: copy.intelligence,
-      Icon: TrendingUp,
-      description: locale === 'en' ? 'Market Pulse & Price Metrics' : 'روند قیمت و نبض بازار',
-    },
-    {
-      id: 'tools',
-      group: 'primary',
-      label: copy.tools,
-      Icon: SlidersHorizontal,
-      description: locale === 'en' ? 'Calculators & Valuation' : 'ارزش‌گذاری و ابزارهای محاسباتی',
-    },
-    {
-      id: 'userspace',
-      group: 'primary',
-      label: copy.userspace,
-      Icon: User,
-      description: locale === 'en' ? 'Saved Searches & Account' : 'نشان‌شده‌ها و تنظیمات حساب',
-    },
-    {
-      id: 'properties',
-      group: 'account',
-      label: copy.properties,
-      Icon: Building2,
-      description: locale === 'en' ? 'Verified Deals & Listings' : 'جست‌وجوی املاک و فایل‌های شکار',
-    },
-    {
-      id: 'admin',
-      group: 'administrative',
-      label: copy.admin,
-      Icon: ShieldAlert,
-      protected: true,
-      description: locale === 'en' ? 'System Monitoring & Security' : 'محیط مستقل مدیریت و پایش',
-    },
-  ];
+const NAV_GROUP_BY_VIEW: Record<PrimaryViewId, NavigationGroup> = {
+  home: 'primary',
+  discover: 'primary',
+  map: 'primary',
+  intelligence: 'primary',
+  tools: 'primary',
+  userspace: 'primary',
+  properties: 'account',
+  admin: 'administrative',
+  services: 'primary',
+  knowledge: 'primary',
+  contributions: 'primary',
+  not_found: 'primary',
+};
+
+const DESCRIPTION_FA: Partial<Record<PrimaryViewId, string>> = {
+  home: 'خانه و چشم‌انداز سریع رادار',
+  discover: 'کشف و کارنامه محله‌ها',
+  map: 'اطلس مکانی و نقشه تهران',
+  intelligence: 'روند قیمت و نبض بازار',
+  tools: 'ارزش‌گذاری و ابزارهای محاسباتی',
+  userspace: 'نشان‌شده‌ها و تنظیمات حساب',
+  properties: 'جست‌وجوی املاک و فایل‌های شکار',
+  admin: 'محیط مستقل مدیریت و پایش',
+};
+
+const DESCRIPTION_EN: Partial<Record<PrimaryViewId, string>> = {
+  home: 'Radar Home & Quick Insights',
+  discover: 'Explore Neighborhoods',
+  map: 'Interactive Spatial Atlas',
+  intelligence: 'Market Pulse & Price Metrics',
+  tools: 'Calculators & Valuation',
+  userspace: 'Saved Searches & Account',
+  properties: 'Verified Deals & Listings',
+  admin: 'System Monitoring & Security',
+};
+
+export function getProductNavigationItems(
+  locale: RadarLocale,
+  visibilityCtx: NavigationVisibilityContext = guestNavigationVisibilityContext(),
+): ProductNavigationItem[] {
+  const copy = getRadarGlobalNavCopy(locale);
+  const isEn = locale === 'en';
+
+  const labelByView: Record<string, string> = {
+    home: copy.home,
+    discover: copy.discover,
+    map: copy.map,
+    intelligence: copy.intelligence,
+    tools: copy.tools,
+    userspace: copy.userspace,
+    properties: copy.properties,
+    admin: copy.admin,
+  };
+
+  const items: ProductNavigationItem[] = [];
+
+  for (const viewId of PRIMARY_SHELL_VIEW_ORDER) {
+    const route = getCanonicalRouteForPrimaryView(viewId);
+    if (!route || !canViewNavigationEntry(route, visibilityCtx)) continue;
+
+    const id = viewId as PrimaryViewId;
+    const Icon = ICON_BY_REGISTRY_ID[route.iconId ?? 'home'] ?? Home;
+
+    items.push({
+      id,
+      group: NAV_GROUP_BY_VIEW[id] ?? 'primary',
+      label: labelByView[viewId] ?? (isEn ? route.titleEn : route.titleFa),
+      Icon,
+      description: isEn ? DESCRIPTION_EN[id] : DESCRIPTION_FA[id],
+      protected: route.requiredPermissions.length > 0,
+    });
+  }
+
+  return items;
 }

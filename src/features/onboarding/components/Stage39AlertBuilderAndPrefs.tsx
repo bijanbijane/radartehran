@@ -163,7 +163,7 @@ export const Stage39AlertBuilderAndPrefs: React.FC<Props> = ({
         <button
           type="submit"
           data-testid="create-alert-rule-btn"
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-500"
+          className="rounded-lg bg-[var(--color-brand-600)] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-500"
         >
           ثبت نمایشی قاعده هشدار
         </button>

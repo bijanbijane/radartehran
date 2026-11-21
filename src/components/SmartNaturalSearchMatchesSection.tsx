@@ -90,7 +90,7 @@ export function SmartNaturalSearchMatchesSection({
     <div className="border-b border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20">
       <div className="px-3 py-1.5 flex flex-wrap items-center justify-between gap-1 text-[11px] font-extrabold text-emerald-900 dark:text-emerald-200 bg-emerald-100/60 dark:bg-emerald-950/50 border-b border-emerald-200/70 dark:border-emerald-900/50">
         <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2]" />
+          <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 stroke-[2]" />
           <span>پیشنهاد هوشمند بر اساس فیلتر کوئری فارسی</span>
         </span>
         <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold tabular-nums">

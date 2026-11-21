@@ -165,7 +165,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
       {/* Cloudflare Runtime Portability & Production vs Simulation Ledger + AI Gateway & Dossier Sandbox */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2.5">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-          <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <Server className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>دفتر کل تفکیک حسابداری (Production vs Simulation) و پرتابلیتی Cloudflare</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -211,7 +211,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
             <button type="button" onClick={() => handleTestNeighborhoodDossier(false)} disabled={isRunningDossier} className="px-2 py-1 rounded-md bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold cursor-pointer">
               تست چالش ۴۰۲ پرونده محله
             </button>
-            <button type="button" onClick={() => handleTestNeighborhoodDossier(true)} disabled={isRunningDossier} className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold cursor-pointer">
+            <button type="button" onClick={() => handleTestNeighborhoodDossier(true)} disabled={isRunningDossier} className="px-2 py-1 rounded-md bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white text-[10px] font-bold cursor-pointer">
               تست شبیه‌سازی پرونده (`?simulate=1`)
             </button>
           </div>
@@ -228,7 +228,7 @@ export function AdminMcpAndPortabilitySandboxPanel({ cloudflareAndPortability, m
           )} </div>
         <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1 text-[11px]">
           <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>وضعیت پرتابلیتی چندابر (Portable-by-Design):</span>
           </div>
           <div className="text-slate-600 dark:text-slate-300">

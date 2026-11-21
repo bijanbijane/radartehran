@@ -125,7 +125,7 @@ export function CleanupProgressSummary({
                   {completedCount > 0 && (
                     <div
                       style={{ width: `${(completedCount / totalOperations) * 100}%` }}
-                      className="h-full bg-emerald-600 transition-all duration-300"
+                      className="h-full bg-[var(--color-brand-600)] transition-all duration-300"
                       title={`تکمیل‌شده (حذف شد): ${completedCount}`}
                     />
                   )}
@@ -152,7 +152,7 @@ export function CleanupProgressSummary({
             <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="font-black text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
                   <span>حذف شد: {toPersianNum(completedCount)} مورد</span>
                 </span>
                 <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">

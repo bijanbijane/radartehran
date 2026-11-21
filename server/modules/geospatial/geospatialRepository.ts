@@ -33,8 +33,34 @@ export function loadGeospatialState(): PersistedGeospatialState {
   return geoRepo.load(defaultState);
 }
 
+export async function ensureGeospatialRepositoryHydrated(): Promise<PersistedGeospatialState> {
+  const { loadRepositorySnapshot, getRepositorySnapshotRegistryMeta } = await import(
+    '../shared/durableRepositorySnapshotStore'
+  );
+  const { isDurableRepositoryProductionMode } = await import('../shared/repositoryPersistencePolicy');
+  const { runGeospatialDurableRecovery } = await import('./geospatialDurableRecovery');
+
+  const hydrated = await geoRepo.ensureRemoteHydrated(defaultState);
+  if (!isDurableRepositoryProductionMode()) return hydrated;
+
+  const remoteRaw = await loadRepositorySnapshot('geospatial-state.json');
+  const meta = await getRepositorySnapshotRegistryMeta('geospatial-state.json');
+  const report = await runGeospatialDurableRecovery({
+    hydratedState: hydrated,
+    remoteSnapshotPresent: Boolean(remoteRaw && remoteRaw.trim()),
+    snapshotRevision: meta?.revision,
+    activateOnSuccess: false,
+  });
+
+  return report.health === 'READY' ? hydrated : defaultState();
+}
+
 export function persistGeospatialState(state: PersistedGeospatialState): void {
   geoRepo.writeImmediate(state);
+}
+
+export async function persistGeospatialStateAwait(state: PersistedGeospatialState): Promise<void> {
+  await geoRepo.writeImmediateAwait(state);
 }
 
 export function resetGeospatialRepositoryForTests(): void {

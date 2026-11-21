@@ -116,7 +116,7 @@ export const Stage40ReportPreviewAndExport: React.FC<Props> = ({ draft, onSaveTo
           {exportNote && <div className="text-[10.5px] text-emerald-300 mt-0.5">{exportNote}</div>}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <button type="button" data-testid="stage40-generate-ok-btn" onClick={() => handleGenerate('ready_to_download')} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-500">
+          <button type="button" data-testid="stage40-generate-ok-btn" onClick={() => handleGenerate('ready_to_download')} className="rounded-lg bg-[var(--color-brand-600)] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-500">
             تولید سند و ذخیره در آرشیو
           </button>
           <button type="button" data-testid="stage40-simulate-fail-btn" onClick={() => handleGenerate('failed')} className="rounded-lg border border-rose-500/40 bg-rose-950/30 px-2.5 py-1.5 text-[11px] font-bold text-rose-300">

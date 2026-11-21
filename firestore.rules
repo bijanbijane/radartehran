@@ -868,5 +868,13 @@ service cloud.firestore {
     match /legal_regulatory_idempotency_v1/{docId} {
       allow read, write: if false;
     }
+
+  match /media_object_metadata_v2/{objectId} {
+    allow read, write: if false;
+  }
+
+    match /radar_repository_snapshots_v1/{docId} {
+      allow read, write: if false;
+    }
   }
 }

@@ -82,7 +82,7 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
     <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-3 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
         <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-slate-100">
-          <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <Database className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>
             ذخیرهٔ عکس و فیلم آگهی ({hoodName} · {formatAreaShort(sqm, areaUnit)} · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(unitPrice)} م · کل: {toPersianNum(effectiveTotalMillions.toLocaleString('en-US'))} م ({formatMillionTomanAsIntlCurrency(effectiveTotalMillions, intlCurrency, locale)}) · اجاره ماهانه: {toPersianNum(estMonthlyRentMillions)} م ({formatMillionTomanAsIntlCurrency(estMonthlyRentMillions, intlCurrency, locale)})) با بهینه‌سازی خودکار تصویر
           </span>
@@ -98,7 +98,7 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-dashed border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-bold cursor-pointer transition">
-          <ImageIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <ImageIcon className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>آپلود عکس ملک (تا {toPersianNum(maxImageMb)}MB · WebP)</span>
           <input type="file" aria-label="آپلود عکس ملک" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading} onChange={(e) => handleFileSelect(e, 'image')} className="hidden" />
         </label>
@@ -107,7 +107,7 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
           <span>آپلود فیلم ملک (تا {toPersianNum(maxVideoMb)}MB)</span>
           <input type="file" aria-label="آپلود فیلم ملک" accept="video/mp4,video/webm,video/quicktime" disabled={uploading} onChange={(e) => handleFileSelect(e, 'video')} className="hidden" />
         </label>
-        <button type="button" disabled={uploading} onClick={handleQuickDemoUpload} className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600/10 dark:bg-emerald-950/60 hover:bg-emerald-600/20 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 font-bold cursor-pointer transition">
+        <button type="button" disabled={uploading} onClick={handleQuickDemoUpload} className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--color-brand-600)]/10 dark:bg-emerald-950/60 hover:bg-[var(--color-brand-600)]/20 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 font-bold cursor-pointer transition">
           {uploading ? (
             <Loader2 className="w-4 h-4 animate-spin text-emerald-700 dark:text-emerald-400 shrink-0" />
           ) : (
@@ -129,7 +129,7 @@ export function ListingMediaStorageUploader({ hoodId, hoodName, sqm, estimatedMi
           </div>
           <div className="w-full bg-emerald-200/60 dark:bg-emerald-900/60 rounded-full h-2 overflow-hidden">
             <div
-              className="bg-emerald-600 h-2 rounded-full transition-all duration-200 ease-out"
+              className="bg-[var(--color-brand-600)] h-2 rounded-full transition-all duration-200 ease-out"
               style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
             />
           </div>

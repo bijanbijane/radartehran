@@ -96,7 +96,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
       <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-3 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
               کالبدشکافی ریاضی شاخص اطمینان محله ({toPersianNum(cd.totalConfidencePct)} از ۱۰۰)
             </h4>
@@ -159,7 +159,7 @@ export const EpistemicProvenancePanel: React.FC<EpistemicProvenancePanelProps> =
       <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/60 rounded-xl p-3 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <Sliders className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">
               شبیه‌ساز پیامد تصمیم و مذاکره خلاف‌واقع (Counterfactual Simulator)
             </h4>

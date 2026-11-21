@@ -115,7 +115,7 @@ export function BuyerPriceThresholdManagerSection({
     <div className="apple-grouped-card dark:bg-slate-800/60 p-3.5 space-y-3 text-xs border border-emerald-200/80 dark:border-emerald-800/70">
       <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-700 pb-2">
         <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-          <BellRing className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <BellRing className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>اشتراک هوشمند سقف قیمت محله (پایش زنده و اعلان پایدار)</span>
         </div>
         <span className="text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
@@ -143,7 +143,7 @@ export function BuyerPriceThresholdManagerSection({
         <div className="sm:col-span-4">
           <button
             type="button" onClick={handleSaveThreshold}
-            className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+            className="w-full py-2 px-3 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2]" />
             <span>افزودن سقف قیمت</span>
@@ -155,7 +155,7 @@ export function BuyerPriceThresholdManagerSection({
       )}
       {justSavedNotice && (
         <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>{justSavedNotice}</span>
         </div>
       )}
@@ -227,7 +227,7 @@ export function PersistentPriceThresholdMatchBanner({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+          <span className="w-7 h-7 rounded-xl bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
             <BellRing className="w-4 h-4 stroke-[2]" />
           </span>
           <div className="min-w-0">
@@ -260,7 +260,7 @@ export function PersistentPriceThresholdMatchBanner({
       <div className="flex items-center justify-between gap-2 pt-1">
         <button
           type="button"
-          onClick={() => onInspectMatchedHood(topMatch.neighborhood)} className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer"
+          onClick={() => onInspectMatchedHood(topMatch.neighborhood)} className="flex-1 py-1.5 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer"
         >
           <MapPin className="w-3.5 h-3.5" />
           <span>مشاهده محله و فایل‌ها</span>

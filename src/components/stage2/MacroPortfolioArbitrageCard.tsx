@@ -192,7 +192,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
 
           <div className="p-2.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1.5">
             <div className="flex justify-between items-center">
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">💵 اسکناس دلار / تتر</span>
+              <span className="font-extrabold text-[var(--color-brand-600)] dark:text-emerald-400">💵 اسکناس دلار / تتر</span>
               <span className="font-bold tabular-nums">{toPersianNum(allocMillion(activeEvaluation.weights.usdWeightPct))} م.ت (٪{toPersianNum(activeEvaluation.weights.usdWeightPct)})</span>
             </div>
             {selectedStrategy === 'custom' && (
@@ -254,7 +254,7 @@ export const MacroPortfolioArbitrageCard: React.FC<MacroPortfolioArbitrageCardPr
           </div>
           <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <span className="text-slate-400 block text-[10px]">جریان نقدی اجاره سالانه مسکن:</span>
-            <strong className="text-emerald-600 dark:text-emerald-400 tabular-nums">+{toPersianNum(swapAnalysis.annualRentalYieldMillion)} میلیون تومان/سال</strong>
+            <strong className="text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums">+{toPersianNum(swapAnalysis.annualRentalYieldMillion)} میلیون تومان/سال</strong>
           </div>
           <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <span className="text-slate-400 block text-[10px]">مزیت خالص ریالی دو ساله:</span>

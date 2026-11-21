@@ -64,10 +64,10 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({ media, title, 
 
   if (validItems.length === 0) {
     return (
-      <div className="aspect-[16/9] max-h-[340px] w-full rounded-[12px] bg-[#F1F4F2] dark:bg-slate-800/70 border border-[#DCE3DF] dark:border-slate-700 flex flex-col items-center justify-center text-center p-6 space-y-1.5">
-        <Building2 className="w-9 h-9 text-[#586760] opacity-70" />
-        <p className="text-xs font-bold text-[#182522] dark:text-slate-200">تصویر تأییدشده‌ای برای این فایل ثبت نشده است</p>
-        <p className="text-[11px] text-[#586760] dark:text-slate-400">
+      <div className="aspect-[16/9] max-h-[340px] w-full rounded-[12px] bg-[var(--color-bg-muted)] dark:bg-slate-800/70 border border-[var(--color-border-subtle)] dark:border-slate-700 flex flex-col items-center justify-center text-center p-6 space-y-1.5">
+        <Building2 className="w-9 h-9 text-[var(--color-text-muted)] opacity-70" />
+        <p className="text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200">تصویر تأییدشده‌ای برای این فایل ثبت نشده است</p>
+        <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
           مشخصات و محدوده ({hoodName}) به‌صورت متنی ثبت شده است؛ پیش از بازدید حضوری می‌توانید استعلام تصویر را از ثبت‌کننده درخواست کنید.
         </p>
       </div>
@@ -83,7 +83,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({ media, title, 
   return (
     <div className="space-y-2">
       <div
-        className="relative aspect-[16/9] max-h-[380px] w-full rounded-[12px] bg-[#F1F4F2] dark:bg-slate-800 overflow-hidden border border-[#DCE3DF] dark:border-slate-700"
+        className="relative aspect-[16/9] max-h-[380px] w-full rounded-[12px] bg-[var(--color-bg-muted)] dark:bg-slate-800 overflow-hidden border border-[var(--color-border-subtle)] dark:border-slate-700"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'ArrowLeft') step(1);
@@ -111,7 +111,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({ media, title, 
               type="button"
               onClick={() => step(-1)}
               aria-label="تصویر قبلی"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-[#182522] flex items-center justify-center shadow cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-[var(--color-text-primary)] flex items-center justify-center shadow cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -119,7 +119,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({ media, title, 
               type="button"
               onClick={() => step(1)}
               aria-label="تصویر بعدی"
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-[#182522] flex items-center justify-center shadow cursor-pointer"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-[var(--color-text-primary)] flex items-center justify-center shadow cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -135,7 +135,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({ media, title, 
               type="button"
               onClick={() => setActiveIndex(i)}
               className={`w-16 h-12 rounded-[8px] overflow-hidden border-2 shrink-0 cursor-pointer ${
-                i === safeIndex ? 'border-[#176B63]' : 'border-transparent opacity-70 hover:opacity-100'
+                i === safeIndex ? 'border-[var(--color-brand-600)]' : 'border-transparent opacity-70 hover:opacity-100'
               }`}
             >
               <img

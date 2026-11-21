@@ -72,7 +72,7 @@ export const RtFePerformance013Subpanel: React.FC = () => {
               معماری عملکرد، بهینه‌سازی و مدیریت منابع فرانت‌اند رادار تهران (مرحله سیزدهم و سی‌ام)
             </h3>
           </div>
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white">۳۱ واحد معماری · ۳۸ خروجی</span>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--color-brand-600)] text-white">۳۱ واحد معماری · ۳۸ خروجی</span>
         </div>
         <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 leading-relaxed">
           ساختار ۸بخشی عملکرد فرانت‌اند شامل اندازه‌گیری واقعی مرورگر (FIELD_RUM با PerformanceObserver مستقل برای Long Task) و تفکیک از شبیه‌ساز آموزشی (SYNTHETIC_LOCAL).
@@ -83,13 +83,13 @@ export const RtFePerformance013Subpanel: React.FC = () => {
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Gauge className="w-4 h-4 text-emerald-600" />
+              <Gauge className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>ارزیاب بودجه Core Web Vitals ({mode === 'FIELD_RUM' ? 'داده واقعی مرورگر FIELD_RUM' : 'شبیه‌ساز SYNTHETIC_LOCAL'})</span>
             </h4>
             <div className="flex items-center gap-1.5">
               <button
                 type="button" data-testid="perf-mode-field-rum" onClick={() => setMode('FIELD_RUM')}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${mode === 'FIELD_RUM' ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${mode === 'FIELD_RUM' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'}`}
               >
                 FIELD_RUM
               </button>
@@ -242,7 +242,7 @@ export const RtFePerformance013Subpanel: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
           <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-2.5 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-emerald-600" />
+            <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
             ۸ حوزه معماری عملکرد فرانت‌اند (FPA-002)
           </h4>
           <div className="space-y-1.5">
@@ -280,7 +280,7 @@ export const RtFePerformance013Subpanel: React.FC = () => {
             <Zap className="w-4 h-4 text-amber-500" />
             فهرست کامل ۳۱ واحد معماری (FPA-001..031) و ۳۸ خروجی (FPA-OUT-001..038)
           </span>
-          <span className="text-emerald-600 dark:text-emerald-400">{showDeliverables ? 'بستن' : 'نمایش کامل'}</span>
+          <span className="text-[var(--color-brand-600)] dark:text-emerald-400">{showDeliverables ? 'بستن' : 'نمایش کامل'}</span>
         </button>
         {showDeliverables && (
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">

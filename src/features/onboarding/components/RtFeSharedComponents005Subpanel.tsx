@@ -237,7 +237,7 @@ export const RtFeSharedComponents005Subpanel: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setLocationState((s) => resolveCascadingLocationSelection(s, { level: 'neighborhood', newId: 'punak' }))}
-                className="rounded bg-emerald-600 px-2.5 py-1 font-bold text-white"
+                className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 font-bold text-white"
               >
                 انتخاب محله پونک
               </button>

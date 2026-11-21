@@ -238,7 +238,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
           <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.gentrificationVelocityScore)}٪</div>
         </div>
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-emerald-600" /><span>سهم اجاره از درآمد</span></div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>سهم اجاره از درآمد</span></div>
           <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mt-1">{toPersianDigits(rollup.rentToIncomeBurdenPct)}٪</div>
         </div>
       </div>
@@ -253,7 +253,7 @@ export const SocioeconomicReferenceCard: React.FC<SocioeconomicReferenceCardProp
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
         <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/40 space-y-1.5">
           <div className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-            <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /><span>ورودی تقاضا به این محله از کجاست؟</span>
+            <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>ورودی تقاضا به این محله از کجاست؟</span>
           </div>
           {rollup.displacementInflowFrom.map((item, idx) => (
             <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">

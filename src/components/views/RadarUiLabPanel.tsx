@@ -33,11 +33,11 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
     <section
       data-testid="radar-ui-lab-panel"
       aria-label="آزمایشگاه اجزای رابط رادار تهران"
-      className="rounded-[16px] border-2 border-[#176B63]/40 bg-[#F6F8F6] dark:bg-slate-950 p-4 sm:p-6 space-y-6"
+      className="rounded-[16px] border-2 border-[var(--color-brand-600)]/40 bg-[var(--color-bg-canvas)] dark:bg-slate-950 p-4 sm:p-6 space-y-6"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
         <div>
-          <span className="text-[13px] font-semibold text-[#176B63] dark:text-emerald-400 block">
+          <span className="text-[13px] font-semibold text-[var(--color-brand-600)] dark:text-emerald-400 block">
             {activeLabTab === 'components'
               ? 'RT-UI-COMP-001 · Section 18'
               : activeLabTab === 'interaction'
@@ -46,18 +46,18 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
                   ? 'RT-UI-VALIDATION-001 & RT-UI-IMPLEMENT-001 · Stages 10–11'
                   : 'RT-UI-ONBOARDING / RESPONSIVE / ACCESSIBILITY / MOTION · Stages 32–35'}
           </span>
-          <h2 className="text-[20px] font-bold text-[#182522] dark:text-white">Radar UI & Interaction QA Lab</h2>
+          <h2 className="text-[20px] font-bold text-[var(--color-text-primary)] dark:text-white">Radar UI & Interaction QA Lab</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div role="group" aria-label="بخش آزمایشگاه" className="inline-flex flex-wrap rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
-            <button type="button" onClick={() => setActiveLabTab('components')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'components' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>اجزای رابط (۸)</button>
-            <button type="button" data-testid="switch-interaction-qa-tab" onClick={() => setActiveLabTab('interaction')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'interaction' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>تعاملات (۹)</button>
-            <button type="button" data-testid="switch-validation-qa-tab" onClick={() => setActiveLabTab('validation')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'validation' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>اعتبارسنجی و پایلوت (۱۰–۱۱)</button>
-            <button type="button" data-testid="switch-onboarding-responsive-qa-tab" onClick={() => setActiveLabTab('onboarding')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'onboarding' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>ورود، واکنش‌گرایی، دسترس‌پذیری و حرکت (۳۲–۳۵)</button>
+          <div role="group" aria-label="بخش آزمایشگاه" className="inline-flex flex-wrap rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
+            <button type="button" onClick={() => setActiveLabTab('components')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'components' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>اجزای رابط (۸)</button>
+            <button type="button" data-testid="switch-interaction-qa-tab" onClick={() => setActiveLabTab('interaction')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'interaction' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>تعاملات (۹)</button>
+            <button type="button" data-testid="switch-validation-qa-tab" onClick={() => setActiveLabTab('validation')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'validation' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>اعتبارسنجی و پایلوت (۱۰–۱۱)</button>
+            <button type="button" data-testid="switch-onboarding-responsive-qa-tab" onClick={() => setActiveLabTab('onboarding')} className={`px-3 py-1 rounded-[6px] text-[12px] font-semibold cursor-pointer ${activeLabTab === 'onboarding' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>ورود، واکنش‌گرایی، دسترس‌پذیری و حرکت (۳۲–۳۵)</button>
           </div>
-          <div role="group" aria-label="نمای آزمایش" className="inline-flex rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
-            <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1 rounded-[6px] text-[13px] font-semibold cursor-pointer ${viewportMode === 'desktop' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>دسکتاپ</button>
-            <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1 rounded-[6px] text-[13px] font-semibold cursor-pointer ${viewportMode === 'mobile' ? 'bg-[#176B63] text-white' : 'text-[#586760]'}`}>موبایل (۳۹۰px)</button>
+          <div role="group" aria-label="نمای آزمایش" className="inline-flex rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5">
+            <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1 rounded-[6px] text-[13px] font-semibold cursor-pointer ${viewportMode === 'desktop' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>دسکتاپ</button>
+            <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1 rounded-[6px] text-[13px] font-semibold cursor-pointer ${viewportMode === 'mobile' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-muted)]'}`}>موبایل (۳۹۰px)</button>
           </div>
           <RadarButton variant="icon" size="sm" accessibleLabel="بستن آزمایشگاه رابط" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -65,7 +65,7 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
         </div>
       </div>
 
-      <div className={`space-y-6 transition-all ${viewportMode === 'mobile' ? 'max-w-[390px] mx-auto border border-[#C5D0CA] dark:border-slate-700 rounded-[20px] p-4 bg-white dark:bg-slate-900' : ''}`}>
+      <div className={`space-y-6 transition-all ${viewportMode === 'mobile' ? 'max-w-[390px] mx-auto border border-[var(--color-border-strong)] dark:border-slate-700 rounded-[20px] p-4 bg-white dark:bg-slate-900' : ''}`}>
         {activeLabTab === 'interaction' ? (
           <InteractionQaLabTab />
         ) : activeLabTab === 'validation' ? (
@@ -75,7 +75,7 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
         ) : (
           <>
         <RadarCard padding="standard" elevated>
-          <h3 className="text-[16px] font-semibold text-[#182522] dark:text-white mb-3">۱. دکمه‌ها و حالت‌های تعاملی (C01 · 6 Variants)</h3>
+          <h3 className="text-[16px] font-semibold text-[var(--color-text-primary)] dark:text-white mb-3">۱. دکمه‌ها و حالت‌های تعاملی (C01 · 6 Variants)</h3>
           <div className="flex flex-wrap items-center gap-2.5">
             <RadarButton variant="primary" leadingIcon={<Calculator className="w-4 h-4" />} loading={loadingDemo} onClick={() => { setLoadingDemo(true); setTimeout(() => setLoadingDemo(false), 900); }}>
               محاسبه ارزش ملک
@@ -89,7 +89,7 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
         </RadarCard>
 
         <RadarCard padding="standard" elevated>
-          <h3 className="text-[16px] font-semibold text-[#182522] dark:text-white mb-3">۲. ورودی‌های استاندارد و کنترل انتخاب (C02 & C04)</h3>
+          <h3 className="text-[16px] font-semibold text-[var(--color-text-primary)] dark:text-white mb-3">۲. ورودی‌های استاندارد و کنترل انتخاب (C02 & C04)</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <RadarInputField
               label="متراژ مفید ملک"
@@ -110,11 +110,11 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
               helperText="ارقام به صورت خودکار به عدد خالص نرمال‌سازی می‌شوند."
             />
           </div>
-          <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-[#DCE3DF] dark:border-slate-800 text-[14px]">
-            <span className="font-medium text-[#34433E] dark:text-slate-300">نوع معامله:</span>
+          <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800 text-[14px]">
+            <span className="font-medium text-[var(--color-text-secondary)] dark:text-slate-300">نوع معامله:</span>
             {(['buy', 'rent'] as const).map((opt) => (
               <label key={opt} className="inline-flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="lab-deal" checked={dealType === opt} onChange={() => setDealType(opt)} className="accent-[#176B63]" />
+                <input type="radio" name="lab-deal" checked={dealType === opt} onChange={() => setDealType(opt)} className="accent-[var(--color-brand-600)]" />
                 <span>{opt === 'buy' ? 'خرید و فروش' : 'رهن و اجاره'}</span>
               </label>
             ))}
@@ -130,7 +130,7 @@ export const RadarUiLabPanel: React.FC<RadarUiLabPanelProps> = ({ onClose, isDev
             credibility="estimated"
           />
           <RadarCard padding="standard">
-            <div className="text-[14px] font-semibold text-[#182522] dark:text-white mb-2">وضعیت‌های اعتبار داده (CMP-15)</div>
+            <div className="text-[14px] font-semibold text-[var(--color-text-primary)] dark:text-white mb-2">وضعیت‌های اعتبار داده (CMP-15)</div>
             <div className="flex flex-wrap gap-2 mb-3">
               <DataCredibilityBadge status="verified" />
               <DataCredibilityBadge status="estimated" />

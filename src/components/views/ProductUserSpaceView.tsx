@@ -151,7 +151,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
       <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--color-brand-600)] text-white flex items-center justify-center font-black text-lg shadow-sm">
               {p.currentUser?.displayName ? p.currentUser.displayName.charAt(0).toUpperCase() : <User className="w-6 h-6 stroke-[2]" />}
             </div>
             <div>
@@ -216,7 +216,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-slate-400 block font-medium">{isEn ? 'Property Visit Log:' : 'دفترچه بازدیدها:'}</span>
-            <strong className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5 block">{toPersianNum(p.visitedHomesCount)} {isEn ? 'recorded visits' : 'ملک ثبت‌شده'}</strong>
+            <strong className="text-sm font-black text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums mt-0.5 block">{toPersianNum(p.visitedHomesCount)} {isEn ? 'recorded visits' : 'ملک ثبت‌شده'}</strong>
           </div>
           <button type="button" onClick={p.onOpenVisitedModal} aria-label={isEn ? 'Open property visit log' : 'مشاهده دفترچه بازدیدها'} className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer">{isEn ? 'Open Log' : 'مشاهده'}</button>
         </div>

@@ -9,6 +9,8 @@ import { decodeSearchUrlState, getPlaceHierarchyForCity } from '../services/sear
 import { createInitialEmptySearchResponse, postCanonicalSearchQuery } from '../api/searchQueryClient';
 import { defaultSearchWorkspaceService } from '../services/searchWorkspaceService';
 import { SearchResultsAndDiscoveryGrid } from './SearchResultsAndDiscoveryGrid';
+import { GlobalSearchNavQuickAccess } from './globalSearchNavQuickAccess';
+import { useGlobalSearchNavQuickAccess } from './useGlobalSearchNavQuickAccess';
 import { GlobalSearchLoadErrorBanner, syncSearchHistoryUrl } from './globalSearchHistoryUrl';
 
 export { syncSearchHistoryUrl } from './globalSearchHistoryUrl';
@@ -136,6 +138,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
   }, [activeCity]);
 
   const suggestions = defaultSearchWorkspaceService.getAutocompleteSuggestions(rawQuery, activeCity);
+  const navQuickAccess = useGlobalSearchNavQuickAccess(rawQuery);
 
   const runCommittedSearch = (
     nextQuery: string,
@@ -266,13 +269,13 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
     <section
       data-testid="global-search-workspace"
       data-active-city={activeCity}
-      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-4 text-xs"
+      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4 text-xs"
       dir="rtl"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <strong className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Search className="w-4 h-4 text-[#176B63]" />
+            <Search className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>درگاه جست‌وجوی سراسری، کشف اطلاعات و پیشنهادهای هوشمند ({cityNameFa})</span>
           </strong>
           <p className="text-[11px] text-slate-500 mt-0.5">
@@ -286,7 +289,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
               type="button"
               data-testid={`search-view-mode-${m.toLowerCase()}`}
               onClick={() => { pendingHistoryModeRef.current = 'push'; setViewMode(m); }}
-              className={`min-h-[38px] px-2.5 py-1 rounded-lg font-bold cursor-pointer ${viewMode === m ? 'bg-[#176B63] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+              className={`min-h-[38px] px-2.5 py-1 rounded-lg font-bold cursor-pointer ${viewMode === m ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
             >
               {m === 'LIST' ? 'فهرست' : m === 'MAP' ? 'نقشه' : 'ترکیبی (فهرست + نقشه)'}
             </button>
@@ -297,8 +300,8 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
       {searchLoadErrorFa ? <GlobalSearchLoadErrorBanner messageFa={searchLoadErrorFa} /> : null}
 
       <div ref={searchBoxRef} className="relative">
-        <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus-within:border-[#176B63]">
-          <Search className="w-4 h-4 text-[#176B63] shrink-0" />
+        <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus-within:border-[var(--color-brand-600)]">
+          <Search className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
           <input
             type="text"
             role="combobox"
@@ -344,6 +347,11 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
               <span>پیشنهادهای دسته‌بندی‌شده ({cityNameFa} · جهت‌نما و Enter)</span>
               <button type="button" onClick={() => setSuggestOpen(false)} className="text-slate-500 hover:underline cursor-pointer">بستن</button>
             </div>
+            <GlobalSearchNavQuickAccess
+              items={navQuickAccess}
+              onCloseSuggestions={() => setSuggestOpen(false)}
+              onSelectPath={onNavigatePath}
+            />
             {suggestions.map((sug, idx) => (
               <div
                 key={sug.id}
@@ -399,7 +407,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             aria-selected={activeScope === tab.id}
             data-testid={`search-scope-tab-${tab.id.toLowerCase()}`}
             onClick={() => { pendingHistoryModeRef.current = 'push'; setActiveScope(tab.id); }}
-            className={`min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 cursor-pointer ${activeScope === tab.id ? 'bg-[#176B63] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+            className={`min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 cursor-pointer ${activeScope === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
           >
             <span>{tab.labelFa}</span>
             <span className="tabular-nums opacity-85">({toPersianNum(searchResponse.groupedCounts[tab.id] ?? 0)})</span>
@@ -410,7 +418,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1"><Filter className="w-3.5 h-3.5 text-[#176B63]" /><span>فیلترها ({filterStatus}):</span></span>
+            <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1"><Filter className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>فیلترها ({filterStatus}):</span></span>
             <select aria-label="فیلتر محله" data-testid="search-filter-neighborhood" value={draftFilters.neighborhoodId || ''} onChange={(e) => { setDraftFilters({ ...draftFilters, neighborhoodId: e.target.value || undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
               <option value="">همه محله‌های {cityNameFa}</option>
               {cityPlaces.map((p) => (
@@ -423,7 +431,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             <select aria-label="تعداد اتاق خواب" data-testid="search-filter-bedrooms" value={draftFilters.bedrooms ? String(draftFilters.bedrooms) : ''} onChange={(e) => { setDraftFilters({ ...draftFilters, bedrooms: e.target.value ? Number(e.target.value) : undefined }); setFilterStatus('DRAFT'); }} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 font-bold">
               <option value="">همه تعداد اتاق</option><option value="1">۱ خوابه</option><option value="2">۲ خوابه</option><option value="3">۳ خوابه</option>
             </select>
-            <button type="button" data-testid="btn-apply-search-filters" onClick={() => { pendingHistoryModeRef.current = 'push'; const nextF = { ...draftFilters, cityId: activeCity }; setAppliedFilters(nextF); setFilterStatus('APPLIED'); runCommittedSearch(rawQuery, activeScope, nextF, sort, viewMode, degradedScopes, 'push'); }} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer">اعمال فیلتر</button>
+            <button type="button" data-testid="btn-apply-search-filters" onClick={() => { pendingHistoryModeRef.current = 'push'; const nextF = { ...draftFilters, cityId: activeCity }; setAppliedFilters(nextF); setFilterStatus('APPLIED'); runCommittedSearch(rawQuery, activeScope, nextF, sort, viewMode, degradedScopes, 'push'); }} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">اعمال فیلتر</button>
             <button
               type="button"
               data-testid="btn-search-in-map-bounds"
@@ -435,7 +443,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
                 setDraftFilters({ ...draftFilters, cityId: activeCity, boundingBox: box });
                 setFilterStatus('DRAFT');
               }}
-              className={`min-h-[38px] px-2.5 py-1.5 rounded-lg border font-bold flex items-center gap-1 ${hasValidViewportBounds ? 'border-[#176B63] text-[#176B63] cursor-pointer' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-60'}`}
+              className={`min-h-[38px] px-2.5 py-1.5 rounded-lg border font-bold flex items-center gap-1 ${hasValidViewportBounds ? 'border-[var(--color-brand-600)] text-[var(--color-brand-600)] cursor-pointer' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-60'}`}
             >
               <MapPin className="w-3.5 h-3.5" /><span>جست‌وجو در این محدوده نقشه</span>
             </button>
@@ -449,7 +457,7 @@ export const GlobalSearchWorkspace: React.FC<GlobalSearchWorkspaceProps> = ({
             <select aria-label="تنظیم اعلان جست‌وجوی ذخیره‌شده" value={saveAlertFreq} onChange={(e) => setSaveAlertFreq(e.target.value as SavedSearchAlertFrequency)} className="min-h-[38px] p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300">
               <option value="OFF">ذخیره بدون اعلان</option><option value="INSTANT">درخواست اعلان فوری</option><option value="DAILY">درخواست خلاصه روزانه</option><option value="WEEKLY">درخواست خلاصه هفتگی</option>
             </select>
-            <button type="button" data-testid="btn-save-current-search" onClick={handleSaveCurrentSearch} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold flex items-center gap-1 cursor-pointer"><BookmarkPlus className="w-3.5 h-3.5" /><span>ذخیره جست‌وجو</span></button>
+            <button type="button" data-testid="btn-save-current-search" onClick={handleSaveCurrentSearch} className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"><BookmarkPlus className="w-3.5 h-3.5" /><span>ذخیره جست‌وجو</span></button>
           </div>
         </div>
         {contextTransitionBannerFa && <div data-testid="search-context-transition-banner" className="text-amber-700 dark:text-amber-300 font-bold">{contextTransitionBannerFa}</div>}

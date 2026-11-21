@@ -150,7 +150,7 @@ export const Stage46IntakeAndEvidencePanel: React.FC<{
                 onUpdateCase(submitCounterpartyResponse({ disputeCase, authorNameFa: 'دفتر فنی مهندس نیازی', stance, explanationFa: responseText }));
                 onFeedbackFa('پاسخ رسمی طرف مقابل در کنار ادعای اولیه ثبت شد.');
               }}
-              className="rounded bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1 font-bold text-slate-950 cursor-pointer"
+              className="rounded bg-[var(--color-brand-600)] hover:bg-emerald-500 px-2.5 py-1 font-bold text-slate-950 cursor-pointer"
             >
               ثبت پاسخ
             </button>

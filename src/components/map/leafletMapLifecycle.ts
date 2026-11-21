@@ -97,11 +97,31 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
     return { lat, lng, zoom, isUserPan, isZoomOnly };
   };
 
+  const purgeStaleLeafletContainer = (container: HTMLElement) => {
+    const stale = container as HTMLElement & { _leaflet_id?: number };
+    if (stale._leaflet_id == null) return;
+    try {
+      getMapInstanceRegistry().unregister(registryContainerId);
+    } catch {
+      /* registry may already be clear */
+    }
+    try {
+      const orphaned = (stale as unknown as { _leaflet?: { remove?: () => void } })._leaflet;
+      orphaned?.remove?.();
+    } catch {
+      /* ignore Leaflet reuse errors during strict-mode double mount */
+    }
+    delete stale._leaflet_id;
+    stale.replaceChildren();
+  };
+
   const initMap = () => {
     const L = typeof window !== 'undefined' ? (window as any).L : undefined;
-    if (unmounted || !L || !mapContainerRef.current || mapInstanceRef.current) return;
+    const container = mapContainerRef.current;
+    if (unmounted || !L || !container || mapInstanceRef.current) return;
+    purgeStaleLeafletContainer(container);
     const mapTimer = createExecutionTimer('Map', 'initMapInstance');
-    const map = L.map(mapContainerRef.current, {
+    const map = L.map(container, {
       center: initCenter, zoom: initZoom, zoomControl: false, preferCanvas: true,
       maxBoundsViscosity: 0.8, inertia: true, inertiaDeceleration: 3000, wheelDebounceTime: 40, wheelPxPerZoomLevel: 120,
     });
@@ -265,11 +285,16 @@ export function mountLeafletMapLifecycle(params: MountLeafletLifecycleParams): (
     onTeardownLayers(map);
     tileLayerRef.current?.destroy();
     tileLayerRef.current = null;
-    getMapInstanceRegistry().unregister(registryContainerId);
-    if (map) {
-      map.remove?.();
-      if (mapInstanceRef.current === map) mapInstanceRef.current = null;
+    try {
+      getMapInstanceRegistry().unregister(registryContainerId);
+    } catch {
+      try {
+        map?.remove?.();
+      } catch {
+        if (attachedContainer) purgeStaleLeafletContainer(attachedContainer);
+      }
     }
+    if (mapInstanceRef.current === map) mapInstanceRef.current = null;
     attachedMap = null;
     attachedContainer = null;
   };

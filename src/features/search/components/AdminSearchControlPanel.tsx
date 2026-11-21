@@ -65,7 +65,7 @@ export const AdminSearchControlPanel: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Search className="w-4 h-4 text-emerald-600" />
+            <Search className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>پنل مدیریت جست‌وجوی سراسری، واژه‌نامه مترادف‌ها و سلامت نمایه (/admin/search)</span>
           </strong>
         </div>
@@ -73,7 +73,7 @@ export const AdminSearchControlPanel: React.FC = () => {
           type="button"
           data-testid="btn-admin-reindex-all"
           onClick={() => void handleTriggerReindex('ALL')}
-          className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold flex items-center gap-1 cursor-pointer"
+          className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>درخواست بازسازی نمایه (Full Reindex)</span>
@@ -109,7 +109,7 @@ export const AdminSearchControlPanel: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
           <strong className="font-black flex items-center gap-1">
-            <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+            <BookOpen className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             واژه‌نامه (فقط خواندنی از API)
           </strong>
           {diag.synonyms.slice(0, 6).map((syn) => (
@@ -120,14 +120,14 @@ export const AdminSearchControlPanel: React.FC = () => {
         </div>
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
           <strong className="font-black flex items-center gap-1">
-            <Sliders className="w-3.5 h-3.5 text-emerald-600" />
+            <Sliders className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             سیاست‌های رتبه‌بندی
           </strong>
           {diag.rankingPolicies.slice(0, 4).map((pol) => (
             <div key={pol.scope} className="text-[10.5px] flex justify-between">
               <span>{pol.scope} ({pol.version})</span>
               <span className="flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-emerald-600" />
+                <Sparkles className="w-3 h-3 text-[var(--color-brand-600)]" />
                 متن {toPersianNum(Math.round(pol.weights.textualRelevance * 100))}٪
               </span>
             </div>

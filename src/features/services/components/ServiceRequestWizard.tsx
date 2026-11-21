@@ -198,19 +198,19 @@ export const ServiceRequestWizard: React.FC<ServiceRequestWizardProps> = ({
     <form
       onSubmit={handleSubmit}
       data-testid="service-request-wizard"
-      className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-4 text-xs"
+      className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4 text-xs"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
         <div>
-          <h2 className="text-base font-black text-[#182522] dark:text-white">ثبت درخواست تخصصی ۷ مرحله‌ای</h2>
-          <p className="text-[11px] text-[#586760] mt-0.5">اطلاعات تماس شما تا پیش از انتخاب یا تأیید حریم خصوصی در اختیار عموم قرار نمی‌گیرد.</p>
+          <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white">ثبت درخواست تخصصی ۷ مرحله‌ای</h2>
+          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">اطلاعات تماس شما تا پیش از انتخاب یا تأیید حریم خصوصی در اختیار عموم قرار نمی‌گیرد.</p>
         </div>
         <button
           type="button"
           onClick={handleSaveDraft}
-          className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+          className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
         >
-          <Save className="w-3.5 h-3.5 text-[#176B63]" />
+          <Save className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
           <span>{draftSavedNotice ? 'پیش‌نویس ذخیره شد' : 'ذخیره پیش‌نویس'}</span>
         </button>
       </div>
@@ -223,10 +223,10 @@ export const ServiceRequestWizard: React.FC<ServiceRequestWizardProps> = ({
             onClick={() => jumpToStep(idx)}
             className={`px-2.5 py-1 rounded-[7px] font-bold cursor-pointer whitespace-nowrap ${
               step === idx
-                ? 'bg-[#176B63] text-white'
+                ? 'bg-[var(--color-brand-600)] text-white'
                 : idx < step
-                ? 'bg-[#EAF3F0] dark:bg-emerald-950/50 text-[#14534E] dark:text-emerald-300'
-                : 'bg-[#F8F9FA] dark:bg-slate-800 text-[#586760]'
+                ? 'bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300'
+                : 'bg-[#F8F9FA] dark:bg-slate-800 text-[var(--color-text-muted)]'
             }`}
           >
             {label}
@@ -250,25 +250,25 @@ export const ServiceRequestWizard: React.FC<ServiceRequestWizardProps> = ({
 
       {error && <div role="alert" className="p-2.5 rounded-[8px] bg-rose-50 dark:bg-rose-950/40 text-[#B3261E] dark:text-rose-200 font-bold">{error}</div>}
 
-      <div className="flex items-center justify-between pt-2 border-t border-[#DCE3DF] dark:border-slate-800">
+      <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
         <button
           type="button"
           disabled={step === 0}
           onClick={() => { setError(''); setStep((s) => Math.max(0, s - 1)); }}
-          className="px-3.5 py-2 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer disabled:opacity-40"
+          className="px-3.5 py-2 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer disabled:opacity-40"
         >
           <ArrowRight className="w-3.5 h-3.5" />
           <span>مرحله قبل</span>
         </button>
 
-        <span className="text-[11px] text-[#586760] tabular-nums">
+        <span className="text-[11px] text-[var(--color-text-muted)] tabular-nums">
           گام {toPersianNum(step + 1)} از {toPersianNum(STEPS_FA.length)}
         </span>
 
         {step < STEPS_FA.length - 1 ? (
           <button
             type="submit"
-            className="px-4 py-2 rounded-[8px] bg-[#176B63] text-white font-bold flex items-center gap-1 cursor-pointer"
+            className="px-4 py-2 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"
           >
             <span>مرحله بعد</span>
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -277,7 +277,7 @@ export const ServiceRequestWizard: React.FC<ServiceRequestWizardProps> = ({
           <button
             type="submit"
             data-testid="wizard-submit-btn"
-            className="px-4 py-2 rounded-[8px] bg-[#176B63] hover:bg-[#14534E] text-white font-bold flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold flex items-center gap-1.5 cursor-pointer"
           >
             <ShieldCheck className="w-4 h-4" />
             <span>ثبت نهایی درخواست</span>

@@ -236,7 +236,7 @@ export const InstantListingVerifierModal: React.FC<InstantListingVerifierModalPr
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'شکاف با میانهٔ امروز:' : 'حباب ثمن کل:'}</span>
-                  <span className={`font-extrabold text-xs ${diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'text-slate-500' : diagnosis.totalBubbleMillion > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  <span className={`font-extrabold text-xs ${diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'text-slate-500' : diagnosis.totalBubbleMillion > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`}>
                     {diagnosis.benchmarkKind === 'UNAVAILABLE' ? 'موجود نیست' : diagnosis.totalBubbleMillion > 0 ? `+${toPersianDigits(diagnosis.totalBubbleMillion)} م` : 'بدون حباب'}
                   </span>
                 </div>

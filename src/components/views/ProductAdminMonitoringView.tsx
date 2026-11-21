@@ -99,7 +99,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   const sampleFx = formatMillionTomanAsIntlCurrency(100, 'IRT', 'fa');
 
   return (
-    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[#F6F8F6] dark:bg-slate-950 flex flex-col">
+    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[var(--color-bg-canvas)] dark:bg-slate-950 flex flex-col">
       {/* Independent Admin Context Top Bar */}
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
@@ -139,7 +139,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
                 onClick={() => handleSelectSection(sec)}
                 className={`w-full text-start px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition cursor-pointer ${
                   active
-                    ? 'bg-emerald-600 text-white shadow-xs'
+                    ? 'bg-[var(--color-brand-600)] text-white shadow-xs'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -176,16 +176,16 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
           )}
 
           {(currentSection === 'overview' || currentSection === 'operations') && (
-            <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2 text-xs">
+            <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-extrabold text-[#182522] dark:text-white">پایش سلامت تجربه کاربری (UX Health Monitor · غیرشخصی)</span>
+                <span className="font-extrabold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (UX Health Monitor · غیرشخصی)</span>
                 <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-[11px]">
                   پایلوت نقشه (RT-PILOT-MAP-001) · S0/S1 Gate: پاک
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {DEFAULT_UI_ROLLOUT_FLAGS.map((flag) => (
-                  <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[#DCE3DF] dark:border-slate-700 text-[10.5px] font-semibold text-[#34433E] dark:text-slate-300">
+                  <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[10.5px] font-semibold text-[var(--color-text-secondary)] dark:text-slate-300">
                     {flag.key}: {flag.enabled ? 'فعال' : 'غیرفعال'}
                   </span>
                 ))}

@@ -78,17 +78,17 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
   return (
     <div className="w-full max-w-[1360px] mx-auto px-4 py-6 pb-24 lg:pb-8 space-y-5 animate-fadeIn" data-testid="property-detail-panel">
       {/* Breadcrumb & Back */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <button
             type="button"
             onClick={onBack}
-            className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1.5 cursor-pointer hover:bg-[#F1F4F2] dark:hover:bg-slate-800"
+            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1.5 cursor-pointer hover:bg-[var(--color-bg-muted)] dark:hover:bg-slate-800"
           >
             <ArrowRight className="w-4 h-4" />
             <span>بازگشت به فهرست</span>
           </button>
-          <span className="text-[#586760] dark:text-slate-400">
+          <span className="text-[var(--color-text-muted)] dark:text-slate-400">
             املاک / {property.hoodName} / {PROPERTY_TYPE_LABELS_FA[property.propertyType]}
           </span>
         </div>
@@ -111,12 +111,12 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
         <div className="lg:col-span-8 space-y-5">
           <PropertyGallery media={property.media} title={listing.title} hoodName={property.hoodName} />
 
-          <section className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-            <div className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400">
+          <section className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
+            <div className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
               {TRANSACTION_TYPE_LABELS_FA[listing.transactionType]} · {PROPERTY_TYPE_LABELS_FA[property.propertyType]} · {property.hoodName}
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#182522] dark:text-white leading-snug">{listing.title}</h1>
-            <p className="text-xs sm:text-sm text-[#34433E] dark:text-slate-300 leading-relaxed">{listing.description}</p>
+            <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] dark:text-white leading-snug">{listing.title}</h1>
+            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{listing.description}</p>
             <DataProvenanceBar
               sourceLabel={
                 listing.sourceKind === 'curated_bargain'
@@ -136,14 +136,14 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
         </div>
 
         <aside className="lg:col-span-4 lg:sticky lg:top-4 space-y-4">
-          <div className="p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-4">
+          <div className="p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4">
             <div>
-              <div className="text-[11px] text-[#586760] dark:text-slate-400">
+              <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
                 {p.priceType === 'negotiable' ? 'قیمت اعلامی (قابل مذاکره)' : p.priceType === 'fixed' ? 'قیمت قطعی اعلامی' : 'وضعیت قیمت'}
               </div>
-              <div className="text-2xl font-black text-[#182522] dark:text-white tabular-nums mt-0.5">{priceSummaryText}</div>
+              <div className="text-2xl font-black text-[var(--color-text-primary)] dark:text-white tabular-nums mt-0.5">{priceSummaryText}</div>
               {p.pricePerSqmMillion && (
-                <div className="text-xs text-[#176B63] dark:text-emerald-400 font-bold tabular-nums mt-1">
+                <div className="text-xs text-[var(--color-brand-600)] dark:text-emerald-400 font-bold tabular-nums mt-1">
                   هر {unitLabel}: {toPersianNum(convertPricePerSqmToUnit(p.pricePerSqmMillion, areaUnit))} میلیون
                   {intlCurrency !== 'IRT' && p.saleTotalMillion
                     ? ` · ${formatMillionTomanAsIntlCurrency(p.saleTotalMillion, intlCurrency, radarLocale)}`
@@ -151,7 +151,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                 </div>
               )}
               {property.areaSqm && (
-                <div className="text-[11px] text-[#586760] dark:text-slate-400 mt-1 tabular-nums">
+                <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 mt-1 tabular-nums">
                   متراژ ثبت‌شده: {formatAreaShort(property.areaSqm, areaUnit)}
                 </div>
               )}
@@ -159,7 +159,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
 
             {listing.marketContext.gapPercentFromV64 !== null && (
               <div className="p-3 rounded-[9px] bg-[#EAF3F0] dark:bg-emerald-950/30 border border-[#B8D7CE] dark:border-emerald-800 text-xs">
-                <span className="text-[#14534E] dark:text-emerald-300 font-bold tabular-nums">
+                <span className="text-[var(--color-brand-700)] dark:text-emerald-300 font-bold tabular-nums">
                   {listing.marketContext.gapPercentFromV64 <= 0
                     ? `${toPersianNum(Math.abs(listing.marketContext.gapPercentFromV64))}٪ پایین‌تر از سناریو v6.4 محله`
                     : `+${toPersianNum(listing.marketContext.gapPercentFromV64)}٪ بالاتر از سناریو v6.4 محله`}
@@ -171,7 +171,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenValuation(record)}
-                className="w-full py-2.5 px-3 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition"
+                className="w-full py-2.5 px-3 rounded-[9px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition"
               >
                 <Calculator className="w-4 h-4" />
                 <span>ارزش‌گذاری هدونیک این ملک</span>
@@ -181,7 +181,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                   type="button"
                   onClick={() => onToggleSave(record)}
                   className={`py-2 px-2.5 rounded-[9px] border font-bold flex items-center justify-center gap-1 cursor-pointer ${
-                    isSaved ? 'bg-[#EAF3F0] border-[#176B63] text-[#176B63]' : 'border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'
+                    isSaved ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200'
                   }`}
                 >
                   <Bookmark className="w-3.5 h-3.5" />
@@ -191,7 +191,7 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
                   type="button"
                   onClick={() => onToggleCompare(listing.listingId)}
                   className={`py-2 px-2.5 rounded-[9px] border font-bold flex items-center justify-center gap-1 cursor-pointer ${
-                    isCompared ? 'bg-[#176B63] border-[#176B63] text-white' : 'border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'
+                    isCompared ? 'bg-[var(--color-brand-600)] border-[var(--color-brand-600)] text-white' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200'
                   }`}
                 >
                   <GitCompare className="w-3.5 h-3.5" />
@@ -207,19 +207,19 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
           </div>
 
           {/* Neighborhood Context Card */}
-          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2.5 text-xs">
-            <h2 className="font-black text-[#182522] dark:text-white">زمینه شهری محله {hood.name}</h2>
+          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5 text-xs">
+            <h2 className="font-black text-[var(--color-text-primary)] dark:text-white">زمینه شهری محله {hood.name}</h2>
             <div className="space-y-1.5 tabular-nums">
               <div className="flex justify-between">
-                <span className="text-[#586760]">امتیاز کلی سکونت</span>
+                <span className="text-[var(--color-text-muted)]">امتیاز کلی سکونت</span>
                 <strong>{toPersianNum(hood.overallScore)} / ۱۰</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#586760]">مترو و دسترسی</span>
+                <span className="text-[var(--color-text-muted)]">مترو و دسترسی</span>
                 <strong>{toPersianNum(hood.metro)} / ۱۰</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#586760]">کیفیت هوا</span>
+                <span className="text-[var(--color-text-muted)]">کیفیت هوا</span>
                 <strong>{toPersianNum(hood.air)} / ۱۰</strong>
               </div>
             </div>
@@ -227,14 +227,14 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
               <button
                 type="button"
                 onClick={() => { onSelectNeighborhood(hood); onOpenInspector(hood); }}
-                className="py-2 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#182522] dark:text-slate-200 cursor-pointer"
+                className="py-2 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
               >
                 کارنامه محله
               </button>
               <button
                 type="button"
                 onClick={() => { onSelectNeighborhood(hood); onNavigateView('map'); }}
-                className="py-2 rounded-[8px] border border-[#B8D7CE] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[#14534E] dark:text-emerald-300 font-bold flex items-center justify-center gap-1 cursor-pointer"
+                className="py-2 rounded-[8px] border border-[#B8D7CE] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold flex items-center justify-center gap-1 cursor-pointer"
               >
                 <MapPin className="w-3.5 h-3.5" />
                 <span>روی نقشه</span>
@@ -246,10 +246,10 @@ export const PropertyDetailPage: React.FC<PropertyDetailPageProps> = ({
 
       {/* Similar Properties (Strictly distinct from Valuation Comparables) */}
       {similarRecords.length > 0 && (
-        <section className="space-y-3 pt-4 border-t border-[#DCE3DF] dark:border-slate-800">
+        <section className="space-y-3 pt-4 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-black text-[#182522] dark:text-white">فایل‌های مشابه برای مرور (Similar Listings)</h2>
-            <span className="text-[11px] text-[#586760] dark:text-slate-400">مرتبط با جست‌وجو؛ مبنای معامله قطعی نیست</span>
+            <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">فایل‌های مشابه برای مرور (Similar Listings)</h2>
+            <span className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">مرتبط با جست‌وجو؛ مبنای معامله قطعی نیست</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
             {similarRecords.map((sim) => (

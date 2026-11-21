@@ -9,7 +9,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
     monthName: bldgMonthName.trim() || 'جاری', totalCleaningThousand: bldgCleaningCost, totalElevatorServiceThousand: bldgElevatorCost, totalSharedWaterPowerThousand: bldgWaterCost, totalReserveFundThousand: bldgReserveFund, totalUnits: bldgUnitsCount, unitNumber: bldgUnitNumber, unitOccupants: bldgOccupants, totalBuildingOccupants: Math.max(bldgOccupants, bldgUnitsCount * 3), unitSqm: valSqm, totalBuildingSqm: valSqm * bldgUnitsCount, }), [bldgCustomName, bldgMonthName, activeHood.name, bldgCleaningCost, bldgElevatorCost, bldgWaterCost, bldgReserveFund, bldgUnitsCount, bldgUnitNumber, bldgOccupants, valSqm]);
   const [lobbyUnits, setLobbyUnits] = useState<number>(10); const [lobbyBudgetMillion, setLobbyBudgetMillion] = useState<number>(650); const lobbyRoiResult = useMemo(() => calculateLobbyUpgradeRoi({ totalBuildingUnits: lobbyUnits, currentUnitAvgPriceBillion: fairTotalMillion / 1000, renovationBudgetMillion: lobbyBudgetMillion, }), [lobbyUnits, fairTotalMillion, lobbyBudgetMillion]);
   if (activeTab === 'tax_inheritance') { return ( <div className="grid grid-cols-1 lg:grid-cols-12 gap-4"> <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"> <Scale className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"> <Scale className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>ماشین‌حساب مالیات اجاره، خانه‌های خالی و عایدی مسکن</span> </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2"> <div><label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-1">متراژ واحد ({formatAreaValue(taxSqm, areaUnit, true)})</label><NumericDraftInput aria-label="متراژ واحد جهت محاسبه مالیات" min={30} max={600} fallback={165} value={taxSqm} onValueChange={setTaxSqm} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100" /></div>
             <div><label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-1">اجاره ماهانه (م){intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(taxRentMillion, intlCurrency, locale)}` : ''}</label><NumericDraftInput aria-label="اجاره ماهانه" min={0} max={500} fallback={25} value={taxRentMillion} onValueChange={setTaxRentMillion} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100" /></div> <div><label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-1">ودیعه (اجاره: {toPersianNum(Math.round(taxRahnMillion * 0.03))} م/ماه){intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(taxRahnMillion, intlCurrency, locale)}` : ''}</label><NumericDraftInput aria-label="مبلغ ودیعه" min={0} max={50000} fallback={600} value={taxRahnMillion} onValueChange={setTaxRahnMillion} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100" /></div>
@@ -44,7 +44,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
         </div>
         <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-            <Scale className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <Scale className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>تقسیم شرعی سهم‌الارث ملک ({formatAreaValue(valSqm, areaUnit, true)} · {toPersianNum((fairTotalMillion / 1000).toFixed(2))} میلیارد{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(fairTotalMillion, intlCurrency, locale)}` : ''} · {areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}{toPersianNum(convertPricePerSqmToUnit(Math.round(fairTotalMillion / Math.max(1, valSqm)), areaUnit))} م · معامله محله: {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(activeHood).estimatedDealPricePerSqm, areaUnit))} م)</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-[10px]">
@@ -108,7 +108,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
         <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <FileCheck className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <FileCheck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>حسابدار هوشمند مدیر ساختمان و صدور صورتحساب</span>
             </span>
             <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">واحد {formatAreaValue(valSqm, areaUnit, true)} از کل {formatAreaValue(valSqm * bldgUnitsCount, areaUnit, true)}</span>
@@ -152,7 +152,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
               <button
                 type="button"
                 onClick={() => { const billText = intlCurrency !== 'IRT' ? `${buildingBillResult.whatsappMessageText}\n🌐 معادل ارزی سهم واحد: ${formatMillionTomanAsIntlCurrency(buildingBillResult.unitTotalBillThousand / 1000, intlCurrency, locale)}` : buildingBillResult.whatsappMessageText; navigator.clipboard?.writeText(billText).catch(() => {}); setCopiedBillNotice(true); if (billCopyTimerRef.current !== null) window.clearTimeout(billCopyTimerRef.current); billCopyTimerRef.current = window.setTimeout(() => { billCopyTimerRef.current = null; setCopiedBillNotice(false); }, 2000); }}
-                className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition"
+                className="w-full py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition"
               >
                 <Copy className="w-3.5 h-3.5 stroke-[1.75]" />
                 <span>{copiedBillNotice ? 'متن صورتحساب کپی شد!' : 'کپی متن صورتحساب برای گروه واتساپ/تلگرام'}</span>
@@ -161,7 +161,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
         </div>
         <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-            <FileText className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <FileText className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>پیش‌نویس‌های متنی استرداد ودیعه، تخلیه و تحویل کلید</span>
           </div>
           <div className="grid grid-cols-3 gap-1">
@@ -170,7 +170,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
               <button
                 key={item.id} type="button" onClick={() => setActiveSanaTemplate(item.id)}
                 className={`py-1.5 px-2 rounded-lg font-bold text-[10px] truncate cursor-pointer transition ${
-                  activeSanaTemplate === item.id ? 'bg-slate-900 dark:bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  activeSanaTemplate === item.id ? 'bg-slate-900 dark:bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                 }`}
               >
                 {item.label}
@@ -193,7 +193,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
                   {sanaNoticeText} </p>
                 <button
                   type="button"
-                  onClick={() => { navigator.clipboard?.writeText(sanaNoticeText).catch(() => {}); setSanaCopiedNotice(true); if (sanaCopyTimerRef.current !== null) window.clearTimeout(sanaCopyTimerRef.current); sanaCopyTimerRef.current = window.setTimeout(() => { sanaCopyTimerRef.current = null; setSanaCopiedNotice(false); }, 2000); }} className="w-full py-2 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer transition text-[11px]"
+                  onClick={() => { navigator.clipboard?.writeText(sanaNoticeText).catch(() => {}); setSanaCopiedNotice(true); if (sanaCopyTimerRef.current !== null) window.clearTimeout(sanaCopyTimerRef.current); sanaCopyTimerRef.current = window.setTimeout(() => { sanaCopyTimerRef.current = null; setSanaCopiedNotice(false); }, 2000); }} className="w-full py-2 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer transition text-[11px]"
                 >
                   <Copy className="w-3.5 h-3.5 stroke-[1.75]" />
                   <span>{sanaCopiedNotice ? 'متن پیش‌نویس کپی شد!' : 'کپی متن پیش‌نویس جهت بازبینی حقوقی'}</span>
@@ -204,7 +204,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
     ); } return ( <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-          <Hammer className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <Hammer className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>محاسبه‌گر بازدهی نوسازی لابی، آسانسور و نما</span>
         </div>
         <div className="grid grid-cols-2 gap-2 text-[10px]">
@@ -237,7 +237,7 @@ import React, { useState, useMemo, useEffect } from 'react'; import { Building2,
       </div>
       <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-          <Building2 className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <Building2 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>راهنمای مشاغل مجاز در ملک مسکونی (بند ۲۴ ماده ۵۵)</span>
         </div>
         <div className="space-y-2">

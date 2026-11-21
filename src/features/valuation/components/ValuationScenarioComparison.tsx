@@ -61,11 +61,11 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
   return (
     <div
       data-testid="valuation-whatif-comparison"
-      className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3 text-xs"
+      className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 text-xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-          <GitCompare className="w-4 h-4 text-[#176B63]" />
+        <span className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+          <GitCompare className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>تحلیل سناریوی فرضی جایگزین (What-If)</span>
         </span>
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-[6px] bg-[#EEF5FC] text-[#1D4E89] dark:bg-sky-950/60 dark:text-sky-300">
@@ -75,11 +75,11 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <div>
-          <label className="text-[10.5px] font-bold text-[#586760] block mb-1">وضعیت نوسازی فرضی</label>
+          <label className="text-[10.5px] font-bold text-[var(--color-text-muted)] block mb-1">وضعیت نوسازی فرضی</label>
           <select
             value={altRenovation}
             onChange={(e) => setAltRenovation(e.target.value as HedonicRenovationStatus)}
-            className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
+            className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
           >
             {HEDONIC_RENOVATION_OPTIONS.map((o) => (
               <option key={o.id} value={o.id}>{o.shortLabel}</option>
@@ -87,11 +87,11 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
           </select>
         </div>
         <div>
-          <label className="text-[10.5px] font-bold text-[#586760] block mb-1">جابجایی فرضی طبقه</label>
+          <label className="text-[10.5px] font-bold text-[var(--color-text-muted)] block mb-1">جابجایی فرضی طبقه</label>
           <select
             value={altFloorDelta}
             onChange={(e) => setAltFloorDelta(Number(e.target.value))}
-            className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
+            className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
           >
             <option value={0}>بدون تغییر طبقه</option>
             <option value={1}>+۱ طبقه بالاتر</option>
@@ -100,8 +100,8 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
           </select>
         </div>
         <div className="flex items-end">
-          <label className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold flex items-center gap-1.5 cursor-pointer">
-            <input type="checkbox" checked={altParking} onChange={(e) => setAltParking(e.target.checked)} className="accent-[#176B63]" />
+          <label className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" checked={altParking} onChange={(e) => setAltParking(e.target.checked)} className="accent-[var(--color-brand-600)]" />
             <span>دارای پارکینگ سندی</span>
           </label>
         </div>
@@ -119,21 +119,21 @@ export const ValuationScenarioComparison: React.FC<ValuationScenarioComparisonPr
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#DCE3DF] dark:border-slate-800 tabular-nums text-center">
+      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 tabular-nums text-center">
         <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
-          <span className="text-[10px] text-[#586760] block">سناریوی پایه (ورودی فعلی)</span>
-          <strong className="font-black text-[#182522] dark:text-white">
+          <span className="text-[10px] text-[var(--color-text-muted)] block">سناریوی پایه (ورودی فعلی)</span>
+          <strong className="font-black text-[var(--color-text-primary)] dark:text-white">
             {isRent ? `${toPersianNum(baseValue)} م رهن` : `${toPersianNum(baseResult.hedonic.hedonicTotalBillion)} م.ت`}
           </strong>
         </div>
         <div className="p-2 rounded-[8px] bg-[#EAF3F0] dark:bg-emerald-950/30">
-          <span className="text-[10px] text-[#14534E] dark:text-emerald-300 block">سناریوی فرضی</span>
-          <strong className="font-black text-[#14534E] dark:text-emerald-300">
+          <span className="text-[10px] text-[var(--color-brand-700)] dark:text-emerald-300 block">سناریوی فرضی</span>
+          <strong className="font-black text-[var(--color-brand-700)] dark:text-emerald-300">
             {isRent ? `${toPersianNum(altValue)} م رهن` : `${toPersianNum(altResult.hedonic.hedonicTotalBillion)} م.ت`}
           </strong>
         </div>
         <div className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800">
-          <span className="text-[10px] text-[#586760] block">تفاوت فرضی</span>
+          <span className="text-[10px] text-[var(--color-text-muted)] block">تفاوت فرضی</span>
           <strong className={`font-black ${deltaPercent >= 0 ? 'text-[#176B4C]' : 'text-[#B3261E]'}`}>
             {deltaPercent > 0 ? '+' : ''}
             {isRent ? `${toPersianNum(deltaMillion)} م` : `${toPersianNum(deltaBillion)} م.ت`} ({deltaPercent > 0 ? '+' : ''}{toPersianNum(deltaPercent)}٪)

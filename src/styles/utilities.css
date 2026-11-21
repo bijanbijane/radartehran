@@ -14,4 +14,32 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .rt-surface {
+    background-color: var(--color-bg-surface);
+    color: var(--color-text-primary);
+  }
+
+  .rt-card {
+    background-color: var(--color-bg-surface);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 2px rgba(24, 37, 34, 0.06);
+  }
+
+  .rt-focus-ring {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  .rt-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rt-motion-safe-transition {
+      transition: none !important;
+    }
+  }
 }

@@ -64,7 +64,7 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
             >
               <div className="flex items-center justify-between text-slate-400">
                 <span className="text-[11px] font-medium">{c.label}</span>
-                <Icon className="w-4 h-4 text-emerald-600" />
+                <Icon className="w-4 h-4 text-[var(--color-brand-600)]" />
               </div>
               <strong className="text-sm font-black text-slate-900 dark:text-white tabular-nums block">
                 {c.value}
@@ -118,7 +118,7 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
         <div className="lg:col-span-7 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
           <div className="flex items-center justify-between">
             <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <History className="w-4 h-4 text-emerald-600" />
+              <History className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>آخرین فعالیت‌های شما در رادار تهران</span>
             </strong>
             <button
@@ -159,19 +159,19 @@ export const AccountOverviewDashboard: React.FC<AccountOverviewDashboardProps> =
           <strong className="text-sm font-black text-slate-900 dark:text-white block">دسترسی سریع ابزارهای شخصی</strong>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => onNavigateView?.('properties')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <Home className="w-4 h-4 text-emerald-600" />
+              <Home className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span className="block">کشف املاک</span>
             </button>
             <button type="button" onClick={() => onNavigateView?.('tools', 'valuation')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <Calculator className="w-4 h-4 text-emerald-600" />
+              <Calculator className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span className="block">ارزش‌گذاری جدید</span>
             </button>
             <button type="button" onClick={() => onNavigateView?.('services')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <Briefcase className="w-4 h-4 text-emerald-600" />
+              <Briefcase className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span className="block">درخواست خدمت</span>
             </button>
             <button type="button" onClick={() => onNavigateView?.('intelligence', 'reports')} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:border-emerald-600 border border-transparent text-start font-bold cursor-pointer space-y-1">
-              <FileCheck className="w-4 h-4 text-emerald-600" />
+              <FileCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span className="block">تحلیل بازار</span>
             </button>
           </div>

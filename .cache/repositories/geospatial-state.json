@@ -1,0 +1,157 @@
+{
+  "boundaryHistoryByEntity": {
+    "hood:tehran:1": [
+      {
+        "id": "bnd_hood_tehran_1_v1",
+        "entityId": "hood:tehran:1",
+        "cityId": "tehran",
+        "hoodId": 1,
+        "level": "neighborhood",
+        "nameFa": "تست",
+        "version": 1,
+        "status": "PENDING_REVIEW",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                51.3,
+                35.7
+              ],
+              [
+                51.3,
+                35.71
+              ],
+              [
+                51.31,
+                35.71
+              ],
+              [
+                51.31,
+                35.7
+              ],
+              [
+                51.3,
+                35.7
+              ]
+            ]
+          ]
+        },
+        "simplifiedGeometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                51.3,
+                35.7
+              ],
+              [
+                51.3,
+                35.71
+              ],
+              [
+                51.31,
+                35.71
+              ],
+              [
+                51.31,
+                35.7
+              ],
+              [
+                51.3,
+                35.7
+              ]
+            ]
+          ]
+        },
+        "boundingBox": {
+          "minLat": 35.7,
+          "maxLat": 35.71,
+          "minLng": 51.3,
+          "maxLng": 51.31
+        },
+        "sourceProvenance": "test",
+        "createdByUid": "creator",
+        "createdAtIso": "2026-11-20T21:09:32.889Z"
+      },
+      {
+        "id": "bnd_hood_tehran_1_v2",
+        "entityId": "hood:tehran:1",
+        "cityId": "tehran",
+        "hoodId": 1,
+        "level": "neighborhood",
+        "nameFa": "تست",
+        "version": 2,
+        "status": "PENDING_REVIEW",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                51.3,
+                35.7
+              ],
+              [
+                51.3,
+                35.71
+              ],
+              [
+                51.31,
+                35.71
+              ],
+              [
+                51.31,
+                35.7
+              ],
+              [
+                51.3,
+                35.7
+              ]
+            ]
+          ]
+        },
+        "simplifiedGeometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                51.3,
+                35.7
+              ],
+              [
+                51.3,
+                35.71
+              ],
+              [
+                51.31,
+                35.71
+              ],
+              [
+                51.31,
+                35.7
+              ],
+              [
+                51.3,
+                35.7
+              ]
+            ]
+          ]
+        },
+        "boundingBox": {
+          "minLat": 35.7,
+          "maxLat": 35.71,
+          "minLng": 51.3,
+          "maxLng": 51.31
+        },
+        "sourceProvenance": "test",
+        "createdByUid": "creator",
+        "createdAtIso": "2026-11-20T21:12:11.686Z"
+      }
+    ]
+  },
+  "poiStore": {},
+  "poiDedupeIndex": {},
+  "spatialListingsByCity": {},
+  "overlayStore": {},
+  "importBatches": {}
+}

@@ -3,6 +3,7 @@
  * Enforces [RULE-01], [RULE-05] (visualViewport dynamic height), and [RULE-18] (PWA chunk reload recovery).
  */
 import { useEffect } from 'react';
+import { AuthProvider } from './app/providers/AuthProvider';
 import { DualLayerErrorTrap } from './components/DualLayerErrorTrap';
 import { RadarNavigationProvider } from './context/RadarNavigationContext';
 import { ComparisonFilterProvider } from './context/ComparisonFilterContext';
@@ -63,11 +64,13 @@ export default function App() {
 
   return (
     <DualLayerErrorTrap>
-      <RadarNavigationProvider>
-        <ComparisonFilterProvider>
-          <RadarWorkspaceShell />
-        </ComparisonFilterProvider>
-      </RadarNavigationProvider>
+      <AuthProvider>
+        <RadarNavigationProvider>
+          <ComparisonFilterProvider>
+            <RadarWorkspaceShell />
+          </ComparisonFilterProvider>
+        </RadarNavigationProvider>
+      </AuthProvider>
     </DualLayerErrorTrap>
   );
 }

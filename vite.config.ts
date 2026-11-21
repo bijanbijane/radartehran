@@ -37,7 +37,18 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
-      dedupe: ['react', 'react-dom'],
+      dedupe: [
+        'react',
+        'react-dom',
+        'firebase',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/app-check',
+        '@firebase/app',
+        '@firebase/auth',
+        '@firebase/component',
+        '@firebase/app-check',
+      ],
     },
     optimizeDeps: {
       include: [
@@ -49,7 +60,11 @@ export default defineConfig(({ mode }) => {
         'd3-scale',
         'firebase/app',
         'firebase/auth',
-        'firebase/firestore',
+        'firebase/app-check',
+        '@firebase/app',
+        '@firebase/auth',
+        '@firebase/component',
+        '@firebase/app-check',
       ],
     },
     build: {
@@ -62,9 +77,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('@firebase/firestore') || id.includes('firebase/firestore')) {
-                return 'vendor-firebase-firestore';
-              }
               if (id.includes('firebase')) {
                 return 'vendor-firebase-auth';
               }

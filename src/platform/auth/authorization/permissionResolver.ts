@@ -69,6 +69,8 @@ const BASELINE_ROLE_PERMISSIONS: Record<RadarRoleId, readonly RadarPermissionId[
   platform_admin: ['map:view', 'neighborhood:read', 'property:read', 'property:write', 'admin:governance', 'admin:dashboard:view', 'admin:moderation:approve', 'admin:permissions:manage', 'admin:impersonation:start'],
 };
 
+export const GUEST_BASELINE_PERMISSIONS: readonly RadarPermissionId[] = BASELINE_ROLE_PERMISSIONS.guest;
+
 export function resolveEffectivePermissions(params: {
   readonly activeRoles: readonly RadarRoleId[];
   readonly backendEnvelope?: BackendPermissionEnvelope | null;

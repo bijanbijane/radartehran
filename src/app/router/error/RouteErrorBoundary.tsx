@@ -50,7 +50,7 @@ export class RouteErrorBoundary extends React.Component<
           <button
             type="button"
             onClick={this.handleReset}
-            className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-500"
+            className="px-4 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white text-xs font-semibold hover:bg-emerald-500"
           >
             تلاش مجدد
           </button>

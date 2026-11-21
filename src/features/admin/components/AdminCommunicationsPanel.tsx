@@ -40,7 +40,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Send className="w-4 h-4 text-emerald-600" />
+            <Send className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مرکز عملیات اعلان‌ها و ارتباطات (Communication Ops)</span>
           </h2>
           <p className="text-[11px] text-slate-500 mt-0.5">
@@ -64,7 +64,7 @@ export const AdminCommunicationsPanel: React.FC<AdminCommunicationsPanelProps> =
             type="button"
             onClick={() => setTab(id)}
             className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer ${
-              tab === id ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+              tab === id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />

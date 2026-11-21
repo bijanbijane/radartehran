@@ -55,7 +55,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-          <Filter className="w-3.5 h-3.5 text-[#176B63]" />
+          <Filter className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
           <span>فیلترها ({filterStatus}):</span>
         </span>
         <select
@@ -106,7 +106,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
           type="button"
           data-testid="btn-apply-search-filters"
           onClick={onApplyFilters}
-          className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer"
+          className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
         >
           اعمال فیلتر
         </button>
@@ -117,7 +117,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
           title={hasValidViewportBounds ? 'افزودن محدوده فعلی نقشه به پیش‌نویس فیلترها' : 'محدوده نقشه هنوز آماده نیست'}
           onClick={onApplyMapBounds}
           className={`min-h-[38px] px-2.5 py-1.5 rounded-lg border font-bold flex items-center gap-1 ${
-            hasValidViewportBounds ? 'border-[#176B63] text-[#176B63] cursor-pointer' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+            hasValidViewportBounds ? 'border-[var(--color-brand-600)] text-[var(--color-brand-600)] cursor-pointer' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
           }`}
         >
           <MapPin className="w-3.5 h-3.5" />
@@ -170,7 +170,7 @@ export const GlobalSearchFilterToolbar: React.FC<GlobalSearchFilterToolbarProps>
           type="button"
           data-testid="btn-save-current-search"
           onClick={onSaveCurrentSearch}
-          className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold flex items-center gap-1 cursor-pointer"
+          className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"
         >
           <BookmarkPlus className="w-3.5 h-3.5" />
           <span>ذخیره جست‌وجو</span>

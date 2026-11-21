@@ -103,7 +103,7 @@ export function CasperCertifiedDossierModal({
         {/* Certificate Header Banner */}
         <div className="flex items-center justify-between border-b-2 border-emerald-600/40 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600/10 border border-emerald-600/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-600)]/10 border border-emerald-600/30 flex items-center justify-center text-[var(--color-brand-600)] dark:text-emerald-400">
               <FileCheck className="w-6 h-6" />
             </div>
             <div>
@@ -111,12 +111,12 @@ export function CasperCertifiedDossierModal({
                 <h2 className="text-base font-black text-slate-900 dark:text-white">
                   کارنامه رسمی کارشناسی قیمت و تحلیل ریسک رادار تهران
                 </h2>
-                <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">
+                <span className="text-[10px] bg-[var(--color-brand-600)] text-white font-bold px-2 py-0.5 rounded-full">
                   معتبر جهت پیوست به مبایعه‌نامه
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
-                کد یکتای رهگیری ثبتی: <strong className="text-emerald-600 dark:text-emerald-400">{trackingCode}</strong>
+                کد یکتای رهگیری ثبتی: <strong className="text-[var(--color-brand-600)] dark:text-emerald-400">{trackingCode}</strong>
               </p>
             </div>
           </div>
@@ -146,7 +146,7 @@ export function CasperCertifiedDossierModal({
           </div>
           <div>
             <span className="text-slate-400 block text-[11px]">قانون الزام ۱۴۰۳:</span>
-            <strong className={deed.spec.isLaw1403Compliant ? 'text-emerald-600' : 'text-rose-600'}>
+            <strong className={deed.spec.isLaw1403Compliant ? 'text-[var(--color-brand-600)]' : 'text-rose-600'}>
               {deed.spec.isLaw1403Compliant ? '✓ دارای انطباق رسمی' : '⚠ نیازمند تبدیل ثبتی'}
             </strong>
           </div>
@@ -155,7 +155,7 @@ export function CasperCertifiedDossierModal({
         {/* Three Valuation Pillars */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-1">
-            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block">
+            <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 block">
               ۱. ارزش ذاتی تسویه منصفانه
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -197,7 +197,7 @@ export function CasperCertifiedDossierModal({
         {/* Legal & Liquidity Explanations */}
         <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
           <p className="flex items-start gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] shrink-0 mt-0.5" />
             <span><strong>تحلیل اصالت حقوقی سند:</strong> {deed.warningSummaryFa}</span>
           </p>
           <p className="flex items-start gap-2">
@@ -215,7 +215,7 @@ export function CasperCertifiedDossierModal({
           <button
             type="button"
             onClick={handlePrint}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-2 cursor-pointer shadow-sm print:hidden"
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white transition flex items-center gap-2 cursor-pointer shadow-sm print:hidden"
           >
             <Printer className="w-4 h-4" />
             چاپ و صدور گواهی PDF

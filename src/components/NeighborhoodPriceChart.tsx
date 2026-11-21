@@ -98,7 +98,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
     <div className="apple-grouped-card dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <TrendingUp className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <TrendingUp className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs truncate">
             {chartView === '12m_buy_rent'
               ? (isEn ? `12M Buy & Rent Trend (${selectedHood.name})` : `روند ۱۲ ماهه قیمت خرید و اجاره (${selectedHood.name})`)
@@ -112,7 +112,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
           <button type="button" onClick={() => setChartView('6m_city')} className={`px-2 py-1 rounded-[6px] transition cursor-pointer ${chartView === '6m_city' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
             {isEn ? '6M City Compare' : 'مقایسه ۶ ماهه'}
           </button>
-          <button type="button" onClick={handleOpenFullModal} title="مشاهده نمودار تمام‌صفحه روند ۱۲ ماهه خرید و اجاره" className="px-2 py-1 rounded-[6px] bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1 transition cursor-pointer">
+          <button type="button" onClick={handleOpenFullModal} title="مشاهده نمودار تمام‌صفحه روند ۱۲ ماهه خرید و اجاره" className="px-2 py-1 rounded-[6px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1 transition cursor-pointer">
             <Maximize2 className="w-3 h-3" />
             <span>{isEn ? 'Expand' : 'بزرگ‌نمایی'}</span>
           </button>
@@ -124,7 +124,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
           <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-300 pb-0.5">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-emerald-600 rounded inline-block" />
+                <span className="w-3 h-0.5 bg-[var(--color-brand-600)] rounded inline-block" />
                 <span className="font-semibold text-slate-800 dark:text-slate-200">{isEn ? `Buy / ${areaUnit === 'sqft' ? 'ft²' : 'm²'}` : `خرید ${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'}`} ({buyGrowth12m > 0 ? '+' : ''}{toPersianNum(buyGrowth12m)}٪ {isEn ? 'YoY' : 'سالانه'})</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -220,7 +220,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
           <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400 pb-0.5">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-emerald-600 rounded inline-block" />
+                <span className="w-3 h-0.5 bg-[var(--color-brand-600)] rounded inline-block" />
                 <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedHood.name} ({hoodGrowth6m > 0 ? '+' : ''}{toPersianNum(hoodGrowth6m)}٪)</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -229,7 +229,7 @@ export function NeighborhoodPriceChart({ selectedHood, marketReport, activeCity 
               </div>
             </div>
             <span className={`inline-flex items-center gap-0.5 text-[10.5px] font-extrabold tabular-nums ${hoodGrowth6m >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              <ArrowUpRight className={`w-3 h-3 ${hoodGrowth6m >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 rotate-90'}`} />
+              <ArrowUpRight className={`w-3 h-3 ${hoodGrowth6m >= 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-500 rotate-90'}`} />
               <span>{hoodGrowth6m > 0 ? '+' : ''}{toPersianNum(hoodGrowth6m)}٪</span>
             </span>
           </div>

@@ -40,8 +40,8 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
               onClick={() => onSelectCategory(cat)}
               className={`p-3 rounded-[10px] border text-start font-bold cursor-pointer ${
                 draft.canonicalCategory === cat
-                  ? 'border-[#176B63] bg-[#EAF3F0]/60 dark:bg-emerald-950/40 text-[#14534E] dark:text-emerald-200'
-                  : 'border-[#DCE3DF] dark:border-slate-800 text-[#182522] dark:text-white'
+                  ? 'border-[var(--color-brand-600)] bg-[#EAF3F0]/60 dark:bg-emerald-950/40 text-[var(--color-brand-700)] dark:text-emerald-200'
+                  : 'border-[var(--color-border-subtle)] dark:border-slate-800 text-[var(--color-text-primary)] dark:text-white'
               }`}
             >
               {CANONICAL_CATEGORY_LABELS_FA[cat]}
@@ -55,18 +55,18 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
     return (
       <div className="space-y-2">
         {categoryServices.map((srv) => (
-          <label key={srv.serviceId} className="block p-3 rounded-[10px] border border-[#DCE3DF] dark:border-slate-800 cursor-pointer">
-            <div className="flex items-center gap-2 font-black text-[#182522] dark:text-white">
+          <label key={srv.serviceId} className="block p-3 rounded-[10px] border border-[var(--color-border-subtle)] dark:border-slate-800 cursor-pointer">
+            <div className="flex items-center gap-2 font-black text-[var(--color-text-primary)] dark:text-white">
               <input
                 type="radio"
                 name="serviceId"
                 checked={draft.serviceId === srv.serviceId}
                 onChange={() => patch({ serviceId: srv.serviceId })}
-                className="accent-[#176B63]"
+                className="accent-[var(--color-brand-600)]"
               />
               <span>{srv.titleFa}</span>
             </div>
-            <p className="text-[11px] text-[#586760] mt-1 pr-5">{srv.summaryFa}</p>
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-1 pr-5">{srv.summaryFa}</p>
           </label>
         ))}
       </div>
@@ -81,7 +81,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
           <select
             value={draft.neighborhoodName}
             onChange={(e) => patch({ neighborhoodName: e.target.value })}
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           >
             {evaluatedNeighborhoods.map((h) => (
               <option key={h.id} value={h.name}>محله {h.name}</option>
@@ -93,7 +93,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
           <select
             value={draft.deliveryMode}
             onChange={(e) => patch({ deliveryMode: e.target.value as ServiceDeliveryMode })}
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           >
             <option value="onsite">حضوری در محل ملک</option>
             <option value="remote">آنلاین / غیرحضوری</option>
@@ -112,7 +112,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
           <select
             value={draft.propertyTypeFa}
             onChange={(e) => patch({ propertyTypeFa: e.target.value })}
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           >
             <option value="آپارتمان مسکونی">آپارتمان مسکونی</option>
             <option value="ویلایی / کلنگی">ویلایی / کلنگی</option>
@@ -129,7 +129,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
             dir="ltr"
             value={draft.areaSqm}
             onChange={(e) => patch({ areaSqm: e.target.value })}
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 tabular-nums"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums"
           />
         </div>
       </div>
@@ -149,7 +149,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
                 patch({ categorySpecificDetails: { ...draft.categorySpecificDetails, [f.key]: e.target.value } })
               }
               placeholder={f.placeholderFa}
-              className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+              className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
             />
           </div>
         ))}
@@ -161,7 +161,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
             value={draft.projectSummary}
             onChange={(e) => patch({ projectSummary: e.target.value })}
             placeholder="مثال: نیاز به بررسی حقوقی مبایعه‌نامه و وضعیت رهن پیش از امضای نهایی..."
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           />
         </div>
       </div>
@@ -177,7 +177,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
             type="text"
             value={draft.budgetRangeFa}
             onChange={(e) => patch({ budgetRangeFa: e.target.value })}
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           />
         </div>
         <div>
@@ -186,7 +186,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
             type="text"
             value={draft.preferredScheduleFa}
             onChange={(e) => patch({ preferredScheduleFa: e.target.value })}
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           />
         </div>
       </div>
@@ -204,7 +204,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
             value={draft.requesterName}
             onChange={(e) => patch({ requesterName: e.target.value })}
             placeholder="نام و نام خانوادگی"
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
           />
         </div>
         <div>
@@ -215,7 +215,7 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
             value={draft.requesterPhone}
             onChange={(e) => patch({ requesterPhone: e.target.value })}
             placeholder="09120000000"
-            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 tabular-nums"
+            className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 tabular-nums"
           />
         </div>
       </div>
@@ -225,20 +225,20 @@ export const ServiceRequestWizardSteps: React.FC<ServiceRequestWizardStepsProps>
         <select
           value={draft.contactPolicy}
           onChange={(e) => patch({ contactPolicy: e.target.value as 'platform_only' | 'shared_after_approval' })}
-          className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+          className="w-full p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
         >
           <option value="shared_after_approval">نمایش شماره فقط پس از تأیید پیشنهاد ارائه‌دهنده</option>
           <option value="platform_only">فقط پیام و پیشنهاد داخل پلتفرم</option>
         </select>
       </div>
 
-      <label className="flex items-start gap-2 p-3 rounded-[9px] bg-[#F1F4F2] dark:bg-slate-800 cursor-pointer font-bold">
+      <label className="flex items-start gap-2 p-3 rounded-[9px] bg-[var(--color-bg-muted)] dark:bg-slate-800 cursor-pointer font-bold">
         <input
           type="checkbox"
           data-testid="wizard-consent"
           checked={draft.contactConsentAccepted}
           onChange={(e) => patch({ contactConsentAccepted: e.target.checked })}
-          className="accent-[#176B63] mt-0.5"
+          className="accent-[var(--color-brand-600)] mt-0.5"
         />
         <span>موافقم اطلاعات این درخواست صرفاً برای دریافت پیشنهاد متخصصان مرتبط استفاده شود.</span>
       </label>

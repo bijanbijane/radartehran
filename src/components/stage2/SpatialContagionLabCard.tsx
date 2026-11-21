@@ -108,7 +108,7 @@ export const SpatialContagionLabCard: React.FC<SpatialContagionLabCardProps> = (
           </div>
           {akerlofLemon.dueDiligenceProtocolFa.map((step, i) => (
             <div key={i} className="flex items-start gap-1.5 text-[10.5px] text-slate-600 dark:text-slate-300">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0 mt-0.5" />
               <span>{step}</span>
             </div>
           ))}

@@ -118,7 +118,7 @@ export const Stage46ReviewAppealAndAdminPanel: React.FC<{
                 onUpdateCase(res.disputeCase);
                 onFeedbackFa(res.messageFa);
               }}
-              className="rounded bg-emerald-600 hover:bg-emerald-500 px-3 py-1 font-bold text-slate-950 cursor-pointer"
+              className="rounded bg-[var(--color-brand-600)] hover:bg-emerald-500 px-3 py-1 font-bold text-slate-950 cursor-pointer"
             >
               ثبت نتیجه رسمی پرونده
             </button>

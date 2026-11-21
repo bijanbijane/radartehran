@@ -98,22 +98,22 @@ export function ProductIntelligenceView(p: ProductIntelligenceViewProps): React.
           baseBuyPerSqm={p.selectedHood.buyPerSqm}
           observedValues={observedPerSqm}
         />
-        <div className="p-3 rounded-xl border border-[#DCE3DF] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="p-3 rounded-xl border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-[#586760] dark:text-slate-400">دسترسی سریع محله:</span>
+            <span className="font-bold text-[var(--color-text-muted)] dark:text-slate-400">دسترسی سریع محله:</span>
             {quickSwitchHoods.map((hood) => (
               <button
                 key={hood.id}
                 type="button"
                 onClick={() => p.onSelectNeighborhood(hood)}
-                className={`px-2 py-1 rounded-md border cursor-pointer ${hood.id === p.selectedHood.id ? 'border-[#176B63] text-[#176B63] font-bold' : 'border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'}`}
+                className={`px-2 py-1 rounded-md border cursor-pointer ${hood.id === p.selectedHood.id ? 'border-[var(--color-brand-600)] text-[var(--color-brand-600)] font-bold' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200'}`}
               >
                 {hood.name}
               </button>
             ))}
           </div>
-          <button type="button" onClick={p.onOpenPriceTrend} className="px-3 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
-            <TrendingUp className="w-3.5 h-3.5 text-[#176B63]" />
+          <button type="button" onClick={p.onOpenPriceTrend} className="px-3 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
+            <TrendingUp className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>
               نمودار کامل روند ({toPersianNum(unitDeal)} م/{areaUnit === 'sqft' ? 'ft²' : 'م'}
               {intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''} · سناریو v6.4)

@@ -164,7 +164,7 @@ export const Stage44InvoicesAndPaymentsPanel: React.FC<Stage44InvoicesAndPayment
               />
             </label>
           </div>
-          <button type="button" data-testid="txn-start-payment-btn" onClick={handleStartPayment} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
+          <button type="button" data-testid="txn-start-payment-btn" onClick={handleStartPayment} className="w-full rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
             ایجاد تراکنش پرداخت
           </button>
 

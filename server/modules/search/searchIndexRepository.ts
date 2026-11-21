@@ -65,8 +65,16 @@ export function loadSearchIndexState(): PersistedSearchIndexState {
   return indexRepo.load(defaultState);
 }
 
+export async function ensureSearchIndexRepositoryHydrated(): Promise<PersistedSearchIndexState> {
+  return indexRepo.ensureRemoteHydrated(defaultState);
+}
+
 export function saveSearchIndexState(next: PersistedSearchIndexState): void {
   indexRepo.writeImmediate(next);
+}
+
+export async function saveSearchIndexStateAwait(next: PersistedSearchIndexState): Promise<void> {
+  await indexRepo.writeImmediateAwait(next);
 }
 
 export function getActiveIndexDocuments(state = loadSearchIndexState()): SearchDocument[] {
@@ -154,6 +162,19 @@ export function commitIndexVersion(job: DurableSearchIndexJob, documents: Search
   state.activeIndexVersion = versionId;
   saveSearchIndexState(state);
   return true;
+}
+
+export async function commitIndexVersionAwait(
+  job: DurableSearchIndexJob,
+  documents: SearchDocument[],
+): Promise<boolean> {
+  if (!commitIndexVersion(job, documents)) return false;
+  try {
+    await saveSearchIndexStateAwait(loadSearchIndexState());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function listRecentJobs(limit = 10): DurableSearchIndexJob[] {

@@ -84,18 +84,18 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       data-testid={`property-card-${listing.listingId}`}
       onMouseEnter={() => onHoverChange?.(listing.listingId)}
       onMouseLeave={() => onHoverChange?.(null)}
-      className={`rounded-[14px] bg-white dark:bg-slate-900 border transition overflow-hidden flex flex-col justify-between ${
+      className={`rt-card rounded-[14px] bg-[var(--color-bg-surface)] dark:bg-slate-900 border transition overflow-hidden flex flex-col justify-between ${
         isHighlighted
-          ? 'border-[#176B63] ring-1 ring-[#176B63]/40'
-          : 'border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63]/60'
+          ? 'border-[var(--color-brand-600)] ring-1 ring-[var(--color-brand-600)]/40'
+          : 'border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)]/60'
       }`}
     >
       {/* Fixed 16:9 media frame OR honest architectural placeholder (no fake stock photos) */}
-      <div className="aspect-[16/9] w-full bg-[#F1F4F2] dark:bg-slate-800/80 relative overflow-hidden border-b border-[#DCE3DF] dark:border-slate-800">
+      <div className="aspect-[16/9] w-full bg-[var(--color-bg-muted)] dark:bg-slate-800/80 relative overflow-hidden border-b border-[var(--color-border-subtle)] dark:border-slate-800">
         {firstValidImage ? (
           <img src={firstValidImage} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center px-4 text-[#586760] dark:text-slate-400">
+          <div className="w-full h-full flex flex-col items-center justify-center text-center px-4 text-[var(--color-text-muted)] dark:text-slate-400">
             <Building2 className="w-7 h-7 opacity-60 mb-1.5" />
             <span className="text-[11px] font-bold">بدون تصویر تأییدشده توسط ثبت‌کننده</span>
             <span className="text-[10px] opacity-75">
@@ -118,7 +118,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
       <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
         <div className="space-y-1.5">
-          <div className="text-[11px] text-[#586760] dark:text-slate-400 font-medium flex items-center justify-between gap-2">
+          <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 font-medium flex items-center justify-between gap-2">
             <span className="truncate">
               {property.hoodName} · {property.street}
             </span>
@@ -130,7 +130,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <button
             type="button"
             onClick={() => onOpenDetail(listing.listingId)}
-            className="text-start text-sm font-black text-[#182522] dark:text-white hover:text-[#176B63] dark:hover:text-emerald-400 transition line-clamp-2 cursor-pointer"
+            className="text-start text-sm font-black text-[var(--color-text-primary)] dark:text-white hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 transition line-clamp-2 cursor-pointer"
           >
             {listing.title}
           </button>
@@ -144,11 +144,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
         </div>
 
-        <div className="pt-2.5 border-t border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+        <div className="pt-2.5 border-t border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
           <div className="flex items-baseline justify-between gap-2 tabular-nums">
             <div>
-              <div className="text-sm font-black text-[#182522] dark:text-white">{priceText.main}</div>
-              <div className="text-[10.5px] text-[#586760] dark:text-slate-400">{priceText.sub}</div>
+              <div className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">{priceText.main}</div>
+              <div className="text-[10.5px] text-[var(--color-text-muted)] dark:text-slate-400">{priceText.sub}</div>
             </div>
             {listing.marketContext.gapPercentFromV64 !== null && (
               <span
@@ -167,7 +167,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               type="button"
               data-testid={`open-detail-${listing.listingId}`}
               onClick={() => onOpenDetail(listing.listingId)}
-              className="flex-1 min-h-[36px] px-2.5 rounded-[8px] bg-[#176B63] hover:bg-[#14534E] text-white font-bold cursor-pointer transition"
+              className="flex-1 min-h-[36px] px-2.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer transition"
             >
               جزئیات کامل ملک
             </button>
@@ -177,9 +177,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 onClick={() => onOpenValuation(record)}
                 aria-label="ارزش‌گذاری این ملک"
                 title="ارزش‌گذاری هدونیک این ملک"
-                className="min-h-[36px] px-2.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200 hover:bg-[#F1F4F2] dark:hover:bg-slate-800 cursor-pointer flex items-center justify-center"
+                className="min-h-[36px] px-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200 hover:bg-[var(--color-bg-muted)] dark:hover:bg-slate-800 cursor-pointer flex items-center justify-center"
               >
-                <Calculator className="w-3.5 h-3.5 text-[#176B63]" />
+                <Calculator className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
               </button>
             )}
             <button
@@ -190,8 +190,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               title="مقایسه ملک"
               className={`min-h-[36px] px-2.5 rounded-[8px] border cursor-pointer flex items-center justify-center ${
                 isCompared
-                  ? 'bg-[#176B63] text-white border-[#176B63]'
-                  : 'border-[#DCE3DF] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                  ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]'
+                  : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
               }`}
             >
               <GitCompare className="w-3.5 h-3.5" />
@@ -204,8 +204,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               title="ذخیره فایل"
               className={`min-h-[36px] px-2.5 rounded-[8px] border cursor-pointer flex items-center justify-center ${
                 isSaved
-                  ? 'bg-[#EAF3F0] border-[#176B63] text-[#176B63]'
-                  : 'border-[#DCE3DF] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                  ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-600)]'
+                  : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
               }`}
             >
               <Bookmark className="w-3.5 h-3.5" />
@@ -215,7 +215,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               onClick={() => onLocateOnMap(record)}
               aria-label="نمایش روی نقشه"
               title="نمایش موقعیت"
-              className="min-h-[36px] px-2.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 text-[#14534E] dark:text-emerald-300 cursor-pointer flex items-center justify-center"
+              className="min-h-[36px] px-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-brand-700)] dark:text-emerald-300 cursor-pointer flex items-center justify-center"
             >
               <MapPin className="w-3.5 h-3.5" />
             </button>

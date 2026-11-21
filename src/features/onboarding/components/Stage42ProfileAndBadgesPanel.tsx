@@ -108,7 +108,7 @@ export const Stage42ProfileAndBadgesPanel: React.FC<Props> = ({
         )}
 
         <div className="flex flex-wrap gap-1.5 pt-1">
-          <button type="button" data-testid="vrf-phone-only-btn" onClick={handlePhoneVerify} className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">
+          <button type="button" data-testid="vrf-phone-only-btn" onClick={handlePhoneVerify} className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 text-[11px] font-bold text-white">
             تأیید فقط شماره تماس
           </button>
           <button type="button" data-testid="vrf-expire-lic-btn" onClick={handleExpireLicense} className="rounded border border-amber-500/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-bold text-amber-200">

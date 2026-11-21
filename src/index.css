@@ -7,6 +7,18 @@
 @theme {
   --font-sans: "Vazirmatn", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "Vazirmatn", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-brand: var(--color-brand-600);
+  --color-brand-hover: var(--color-brand-700);
+  --color-brand-pressed: var(--color-brand-900);
+  --color-canvas: var(--color-bg-canvas);
+  --color-surface: var(--color-bg-surface);
+  --color-muted: var(--color-bg-muted);
+  --color-subtle-border: var(--color-border-subtle);
+  --color-strong-border: var(--color-border-strong);
+  --color-fg: var(--color-text-primary);
+  --color-fg-muted: var(--color-text-muted);
+  --color-fg-secondary: var(--color-text-secondary);
 }
 
 .apple-segmented {
@@ -524,6 +536,14 @@ html[data-apple-theme='dark'] body .leaflet-control-attribution {
   background: rgba(235, 235, 245, 0.48);
 }
 
+/* RT-UI-MAP-PILOT-002: #root must occupy viewport so E2E & a11y trees see a visible mount node (children are mostly position:fixed). */
+#root {
+  min-height: var(--app-height, 100dvh);
+  width: 100%;
+  position: relative;
+  isolation: isolate;
+}
+
 html body .leaflet-div-icon.price-pill-icon,
 html body .leaflet-div-icon.gold-bargain-pin,
 html body .leaflet-div-icon.macro-city-cluster-pin,
@@ -538,9 +558,35 @@ html body .leaflet-div-icon.price-pill-icon [data-hood-pill] {
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), filter 0.18s ease, box-shadow 0.18s ease;
 }
 
-html body .leaflet-div-icon.price-pill-icon:hover [data-hood-pill] {
+html body .leaflet-div-icon.price-pill-icon [data-hood-pill][data-marker-state='selected'] {
+  transform: scale(1.08);
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.32));
+  outline: 2px solid rgba(56, 189, 248, 0.55);
+  outline-offset: 2px;
+}
+
+html body .leaflet-div-icon.price-pill-icon [data-hood-pill][data-marker-state='focused'] {
+  animation: map-marker-focus-pulse 1.4s ease-in-out infinite;
+}
+
+html body .leaflet-div-icon.price-pill-icon:hover [data-hood-pill]:not([data-marker-state='selected']) {
   transform: translateY(-2px) scale(1.06);
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.24));
+}
+
+html body .leaflet-div-icon.price-pill-icon [data-hood-pill][data-marker-state='unavailable'] {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
+@keyframes map-marker-focus-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(56, 189, 248, 0);
+  }
 }
 
 @keyframes pulse-gold-ring {

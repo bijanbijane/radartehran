@@ -112,7 +112,7 @@ export function AdminMonetizationCard({
             <div className="font-extrabold text-sm flex items-center gap-1.5">
               {enableSponsorBilling ? (
                 <>
-                  <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <CreditCard className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
                   <span>💳 حالت فعلی: اشتراک ماهانه فعال (دریافت هزینه طبق تعرفه تعیین‌شده)</span>
                 </>
               ) : (
@@ -135,7 +135,7 @@ export function AdminMonetizationCard({
             className={`px-3.5 py-2 rounded-xl font-extrabold text-xs transition cursor-pointer shadow-xs shrink-0 flex items-center gap-1.5 ${
               enableSponsorBilling
                 ? 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                : 'bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -150,7 +150,7 @@ export function AdminMonetizationCard({
         {/* Campaign Discount Slider (0% to 100%) */}
         <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-700 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <Percent className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <div>
               <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                 تخفیف کمپین سراسری تعرفه تابلو محلات:{' '}

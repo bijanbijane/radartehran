@@ -92,7 +92,7 @@ export const Stage41WorkspaceNotesAndTasks: React.FC<Props> = ({
             <div className="font-bold text-white">یادداشت مشترک و مدیریت تعارض هم‌زمان (WKS-14 & WKS-27 · v{note.version})</div>
             <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} rows={2} aria-label="متن یادداشت مشترک" className="w-full rounded border border-slate-700 bg-slate-900 p-2 text-[11px] text-white" />
             <div className="flex flex-wrap gap-1.5">
-              <button type="button" data-testid="wks-save-note-btn" onClick={() => handleSaveNote(false)} className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">ذخیره یادداشت</button>
+              <button type="button" data-testid="wks-save-note-btn" onClick={() => handleSaveNote(false)} className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 text-[11px] font-bold text-white">ذخیره یادداشت</button>
               <button type="button" data-testid="wks-conflict-note-btn" onClick={() => handleSaveNote(true)} className="rounded border border-amber-500/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-bold text-amber-200">شبیه‌سازی تعارض هم‌زمان</button>
             </div>
           </div>

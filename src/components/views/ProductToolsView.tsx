@@ -141,7 +141,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6 animate-fadeIn" data-testid="product-tools-view">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
-          <span className="text-[11px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400 block mb-1">
+          <span className="text-[11px] font-bold tracking-wider text-[var(--color-brand-600)] dark:text-emerald-400 block mb-1">
             {isEn ? 'Technical & Legal Calculators · Connected to Live Map' : 'محاسبات فنی و حقوقی · متصل به نقشه زنده'}
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -179,7 +179,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         <button type="button" onClick={onOpenReverseBudget} className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/70 text-right hover:border-emerald-500 transition cursor-pointer flex items-center justify-between">
           <div><div className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">گام ۱ · کشف و تطبیق بودجه</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">با بودجه من کجا خانه بخرم؟</div></div>
-          <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+          <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
         </button>
         <button type="button" onClick={onOpenHedonic} className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/70 text-right hover:border-sky-500 transition cursor-pointer flex items-center justify-between">
           <div><div className="text-[10px] font-black text-sky-700 dark:text-sky-400">گام ۲ · کارشناسی قیمت منصفانه</div><div className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">محاسبه قیمت واقعی ملک هدف</div></div>
@@ -201,11 +201,11 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
           {categoryTabs.map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveCat(tab.id)} className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition cursor-pointer ${activeCat === tab.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>{tab.label}</button>
           ))}
-          <button type="button" data-testid="toggle-valuation-workspace-btn" onClick={() => setShowValuationWorkspace((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showValuationWorkspace ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
+          <button type="button" data-testid="toggle-valuation-workspace-btn" onClick={() => setShowValuationWorkspace((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showValuationWorkspace ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-brand-600)] dark:text-emerald-400'}`}>
             میز کار ارزش‌گذاری
           </button>
           {canAccessUiLab && (
-            <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[#176B63] text-white border-transparent' : 'border-[#DCE3DF] dark:border-slate-700 text-[#176B63] dark:text-emerald-400'}`}>
+            <button type="button" data-testid="toggle-radar-ui-lab-btn" onClick={() => setShowUiLab((v) => !v)} className={`px-3 py-1.5 rounded-[8px] font-bold whitespace-nowrap transition cursor-pointer border ${showUiLab ? 'bg-[var(--color-brand-600)] text-white border-transparent' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-brand-600)] dark:text-emerald-400'}`}>
               Radar UI Lab
             </button>
           )}
@@ -237,7 +237,7 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
         {filteredCategories.length === 0 ? (
           <div className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
             <p className="text-sm font-extrabold text-slate-900 dark:text-white">{isEn ? 'No matching tools found.' : 'ابزاری مطابق عبارت جست‌وجو یافت نشد.'}</p>
-            <button type="button" onClick={() => { setToolQuery(''); setActiveCat('all'); }} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer">{isEn ? 'Reset search & category' : 'بازنشانی جستجو و نمایش همه ابزارها'}</button>
+            <button type="button" onClick={() => { setToolQuery(''); setActiveCat('all'); }} className="px-4 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition cursor-pointer">{isEn ? 'Reset search & category' : 'بازنشانی جستجو و نمایش همه ابزارها'}</button>
           </div>
         ) : filteredCategories.map((cat) => (
           <section key={cat.id} className="space-y-3.5">
@@ -247,11 +247,11 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
                 const IconC = tool.icon;
                 return (
                   <button key={tool.id} type="button" onClick={() => dispatchToolAction(tool.id)} className="p-5 rounded-2xl text-start w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-600 dark:hover:border-emerald-400 hover:shadow-md transition cursor-pointer flex items-start gap-4 group focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none">
-                    <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 transition shrink-0"><IconC className="w-5 h-5 stroke-[2]" /></span>
+                    <span className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 group-hover:bg-[var(--color-brand-600)] group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 transition shrink-0"><IconC className="w-5 h-5 stroke-[2]" /></span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
                         <h3 className="font-extrabold text-slate-900 dark:text-white text-sm transition truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-400">{tool.title}</h3>
-                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-[-2px] group-hover:text-emerald-600 transition shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-[-2px] group-hover:text-[var(--color-brand-600)] transition shrink-0" />
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{tool.desc}</p>
                     </div>

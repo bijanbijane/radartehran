@@ -97,7 +97,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
             {/* Smart NLP Ad Extractor */}
             <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/70 rounded-[12px] p-2.5 space-y-1.5">
               <div className="flex items-center justify-between gap-1 text-[11px] font-extrabold text-emerald-950 dark:text-emerald-200">
-                <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> استخراج هوشمند از متن آگهی دیوار یا مشاور:</span>
+                <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" /> استخراج هوشمند از متن آگهی دیوار یا مشاور:</span>
                 {nlpFeedback && <span className="text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full font-bold">{nlpFeedback}</span>}
               </div>
               <div className="flex gap-1.5">
@@ -109,7 +109,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>۱. متراژ ({formatAreaValue(sqm, areaUnit)}):</span></span>
+                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۱. متراژ ({formatAreaValue(sqm, areaUnit)}):</span></span>
                   <div className="flex items-center gap-1">
                     <NumericDraftInput min={30} max={500} fallback={85} aria-label="متراژ ملک" value={sqm} onValueChange={setSqm} className="w-16 px-2 py-1 text-center font-black text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">متر</span>
@@ -120,7 +120,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
               </div>
               <div className="apple-grouped-card dark:bg-slate-950/60 dark:border-slate-800 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>۲. سال ساخت شمسی:</span></span>
+                  <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۲. سال ساخت شمسی:</span></span>
                   <div className="flex items-center gap-1">
                     <NumericDraftInput min={1370} max={1405} fallback={1398} aria-label="سال ساخت ملک" value={buildYear} onValueChange={setBuildYear} className="w-18 px-2 py-1 text-center font-black text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
                     <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold tabular-nums">({valuation.buildingAgeYears === 0 ? 'نوساز' : `${toPersianNum(valuation.buildingAgeYears)} ساله`})</span>
@@ -133,7 +133,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
             {/* 3. Renovation Status */}
             <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Wrench className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>۳. وضعیت نوسازی و کیفیت داخلی:</span></span>
+                <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Wrench className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۳. وضعیت نوسازی و کیفیت داخلی:</span></span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">اثر مستقیم و جبران استهلاک سنی</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -156,7 +156,7 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>۴. طبقه واحد:</span></span>
+                    <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۴. طبقه واحد:</span></span>
                     <div className="flex items-center gap-1">
                       <NumericDraftInput min={-1} max={25} fallback={3} aria-label="طبقه واحد" value={floor} onValueChange={(nextFloor) => { setFloor(nextFloor); if (nextFloor > totalFloors) setTotalFloors(nextFloor); }} className="w-14 px-2 py-0.5 text-center font-black text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none tabular-nums" />
                       <span className="text-[11px] text-slate-600 dark:text-slate-400 font-bold">{floor === 0 ? '(همکف)' : floor < 0 ? '(زیرهمکف)' : `از ${toPersianNum(totalFloors)}`}</span>
@@ -174,15 +174,15 @@ export function HedonicValuationModal({ open, onClose, selectedNeighborhood, all
               </div>
               <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex flex-wrap items-center gap-4 text-xs">
                 <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
-                  <input type="checkbox" aria-label="پارکینگ سندی" checked={hasParking} onChange={(e) => setHasParking(e.target.checked)} className="rounded text-emerald-600" />
+                  <input type="checkbox" aria-label="پارکینگ سندی" checked={hasParking} onChange={(e) => setHasParking(e.target.checked)} className="rounded text-[var(--color-brand-600)]" />
                   <span>پارکینگ سندی</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
-                  <input type="checkbox" aria-label="آسانسور" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} className="rounded text-emerald-600" />
+                  <input type="checkbox" aria-label="آسانسور" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} className="rounded text-[var(--color-brand-600)]" />
                   <span>آسانسور</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
-                  <input type="checkbox" aria-label="انباری سندی" checked={hasStorage} onChange={(e) => setHasStorage(e.target.checked)} className="rounded text-emerald-600" />
+                  <input type="checkbox" aria-label="انباری سندی" checked={hasStorage} onChange={(e) => setHasStorage(e.target.checked)} className="rounded text-[var(--color-brand-600)]" />
                   <span>انباری سندی</span>
                 </label>
               </div>

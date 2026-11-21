@@ -106,7 +106,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
       <div data-testid="admin-content-moderation-workspace" className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <FileWarning className="w-4 h-4 text-emerald-600" />
+            <FileWarning className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>صف ممیزی آگهی‌های ثبت‌شده و گزارش‌های کاربران</span>
           </strong>
           <span className="text-[11px] text-slate-500 tabular-nums">
@@ -171,7 +171,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <button type="button" onClick={() => handleListingAction(rec.listing.listingId, 'published')} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold flex items-center gap-1 cursor-pointer">
+                  <button type="button" onClick={() => handleListingAction(rec.listing.listingId, 'published')} className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer">
                     <CheckCircle2 className="w-3.5 h-3.5" /><span>تأیید انتشار</span>
                   </button>
                   <button type="button" onClick={() => handleListingAction(rec.listing.listingId, 'suspended')} className="px-2.5 py-1 rounded-lg border border-amber-500 text-amber-700 font-bold cursor-pointer">
@@ -218,7 +218,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
                     type="button"
                     disabled={isBusy}
                     onClick={() => handleKnowledgeTransition(pub.id, 'published')}
-                    className="px-2 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50"
                   >
                     انتشار
                   </button>
@@ -305,7 +305,7 @@ export const AdminGovernanceModerationWorkspace: React.FC<AdminGovernanceModerat
                 <button type="button" onClick={() => handleResolveComplaint(c.complaintId, 'under_review')} className="px-2.5 py-1 rounded-lg border border-amber-500 text-amber-700 font-bold cursor-pointer">
                   در دست بررسی
                 </button>
-                <button type="button" onClick={() => handleResolveComplaint(c.complaintId, 'resolved')} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer">
+                <button type="button" onClick={() => handleResolveComplaint(c.complaintId, 'resolved')} className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
                   بستن و حل‌وفصل
                 </button>
               </div>

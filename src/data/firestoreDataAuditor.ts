@@ -1,4 +1,4 @@
-import { collection, getDocs, limit, query, where } from 'firebase/firestore'; import { db, OperationType, recordFirestoreQueryError } from '../firebase'; import { normalizeIranMobilePhone } from './firestoreNeighborhoodMappers'; import { checkDatabaseRelationalAndSchemaIntegrity, type DatabaseIntegrityIssue, type IntegrityIssueCategory } from './firestoreIntegrityChecks'; import type { BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem } from './neighborhoods'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../utils/areaUnit'; export { checkDatabaseRelationalAndSchemaIntegrity }; export type { DatabaseIntegrityIssue, IntegrityIssueCategory }; export type DataAnomalySeverity = 'CRITICAL_NEGATIVE' | 'OUT_OF_RANGE' | 'INCOMPLETE_FIELD' | 'TYPE_MISMATCH'; export interface DocumentValidationIssue { id: string; collection: string; docId: string; field: string; invalidValue: string; severity: DataAnomalySeverity; reasonFa: string; }
+/** RT-DATA-001: Client Firestore forbidden — local/static audit only; live samples via server API when wired. */ import { normalizeIranMobilePhone } from './firestoreNeighborhoodMappers'; import { checkDatabaseRelationalAndSchemaIntegrity, type DatabaseIntegrityIssue, type IntegrityIssueCategory } from './firestoreIntegrityChecks'; import type { BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem } from './neighborhoods'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from '../utils/areaUnit'; export { checkDatabaseRelationalAndSchemaIntegrity }; export type { DatabaseIntegrityIssue, IntegrityIssueCategory }; export type DataAnomalySeverity = 'CRITICAL_NEGATIVE' | 'OUT_OF_RANGE' | 'INCOMPLETE_FIELD' | 'TYPE_MISMATCH'; export interface DocumentValidationIssue { id: string; collection: string; docId: string; field: string; invalidValue: string; severity: DataAnomalySeverity; reasonFa: string; }
 export interface RawDocumentAuditSample { collection: string; docId: string; data: Record<string, unknown>; } export interface FirestoreDataAuditReport { scannedAtFa: string; totalDocumentsScanned: number; invalidDocumentsCount: number; negativeFieldsCount: number; incompleteFieldsCount: number; outOfRangeCount: number; issues: DocumentValidationIssue[]; collectionStats: Record<string, { scanned: number; issues: number }>; }
 const NUMERIC_BOUNDS_BY_FIELD: Record<string, { min: number; max: number; labelFa: string }> = { hoodId: { min: 1, max: 999, labelFa: 'شناسه محله (hoodId)' }, buyPerSqm: { min: 10, max: 5000, labelFa: 'قیمت هر متر مربع (میلیون تومان)' }, rahn80m: { min: 50, max: 50000, labelFa: 'رهن کامل ۸۰ متری (میلیون تومان)' }, sqm: { min: 25, max: 1000, labelFa: 'متراژ واحد (متر مربع)' }, discountPercent: { min: 10, max: 60, labelFa: 'درصد زیر قیمت بازار' }, monthlyTariffMillion: { min: 0, max: 1000, labelFa: 'تعرفه ماهانه حامی (میلیون)' }, totalPayableMillion: { min: 0, max: 5000, labelFa: 'مبلغ کل قرارداد حامی (میلیون)' }, experienceYears: { min: 1, max: 60, labelFa: 'سابقه فعالیت املاک (سال)' }, air: { min: 1, max: 10, labelFa: 'امتیاز کیفیت هوا' }, powerWater: { min: 1, max: 10, labelFa: 'امتیاز پایداری آب و برق' }, internet: { min: 1, max: 10, labelFa: 'امتیاز آنتن‌دهی و اینترنت' }, metro: { min: 1, max: 10, labelFa: 'امتیاز دسترسی مترو و حمل‌ونقل' }, security: { min: 1, max: 10, labelFa: 'امتیاز امنیت شبانه' }, flatTerrain: { min: 1, max: 10, labelFa: 'امتیاز همواری معابر' },
   campaignDiscountPercent: { min: 0, max: 100, labelFa: 'درصد تخفیف کمپین' }, deposit: { min: 0, max: 100000, labelFa: 'بودجه ودیعه' }, monthlyRent: { min: 0, max: 1000, labelFa: 'بودجه اجاره ماهانه' }, buyTotalBudget: { min: 500, max: 1000000, labelFa: 'بودجه کل خرید' }, targetSqm: { min: 20, max: 1000, labelFa: 'متراژ هدف' }, }; const REQUIRED_STRINGS_BY_COLLECTION: Record<string, { field: string; labelFa: string }[]> = { neighborhoods: [{ field: 'name', labelFa: 'نام محله' }, { field: 'zone', labelFa: 'پهنه جغرافیایی' }], bargains: [{ field: 'title', labelFa: 'عنوان آگهی شکار' }, { field: 'priceText', labelFa: 'متن قیمت آگهی' }, { field: 'street', labelFa: 'خیابان / محدوده' }],
@@ -75,23 +75,9 @@ export function auditLocalRadarDatasets(params: { neighborhoods: Neighborhood[];
     issues: allIssues, collectionStats,
   };
 }
-export async function fetchLiveFirestoreSamplesForAudit(isVerifiedAdmin: boolean): Promise<RawDocumentAuditSample[]> {
-  const samples: RawDocumentAuditSample[] = [];
-  const targets = [
-    { name: 'neighborhoodOverrides', maxDocs: 200 },
-    { name: 'bargains', maxDocs: 150 },
-    ...(isVerifiedAdmin ? [{ name: 'votes', maxDocs: 150 }, { name: 'sponsorRequests', maxDocs: 100 }, { name: 'buyerAlerts', maxDocs: 100 }] : []),
-  ];
-  for (const target of targets) {
-    try {
-      const q = query(collection(db, target.name), where('hoodId', '>=', 1), where('hoodId', '<=', 999), limit(target.maxDocs));
-      const snap = await getDocs(q);
-      snap.forEach((docSnap) => samples.push({ collection: target.name, docId: docSnap.id, data: docSnap.data() as Record<string, unknown> }));
-    } catch (err) {
-      recordFirestoreQueryError(err, OperationType.LIST, target.name);
-    }
-  }
-  return samples;
+export async function fetchLiveFirestoreSamplesForAudit(_isVerifiedAdmin?: boolean): Promise<RawDocumentAuditSample[]> {
+  void _isVerifiedAdmin;
+  return [];
 }
 export interface WeeklyInvalidDocTrendPoint {
   dayKey: string;

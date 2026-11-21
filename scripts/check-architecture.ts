@@ -17,7 +17,7 @@ export interface ArchitectureBaselineConfig {
 export interface FileViolation {
   file: string;
   severity: 'ERROR' | 'WARN' | 'LEGACY_TRACKED';
-  code: 'NEW_FILE_OVERSIZED' | 'LEGACY_FILE_GREW' | 'DATASET_EXCEEDED_CAP' | 'DATASET_IMPORTS_UI' | 'UPWARD_DEPENDENCY' | 'SIZE_REVIEW_WARNING' | 'LEGACY_DEBT_NOTICE';
+  code: 'NEW_FILE_OVERSIZED' | 'LEGACY_FILE_GREW' | 'DATASET_EXCEEDED_CAP' | 'DATASET_IMPORTS_UI' | 'UPWARD_DEPENDENCY' | 'SIZE_REVIEW_WARNING' | 'LEGACY_DEBT_NOTICE' | 'CLIENT_FIRESTORE_IMPORT';
   lines: number;
   limit: number;
   message: string;
@@ -117,6 +117,17 @@ export function runArchitectureCheck(options?: {
     const trimmedTrailing = content.replace(/\r?\n$/, '');
     const lines = trimmedTrailing.length === 0 ? 0 : trimmedTrailing.split(/\r?\n/).length;
     const imports = extractImports(content);
+
+    if (relPath.startsWith('src/') && imports.some((imp) => imp === 'firebase/firestore' || imp === '@firebase/firestore')) {
+      errors.push({
+        file: relPath,
+        severity: 'ERROR',
+        code: 'CLIENT_FIRESTORE_IMPORT',
+        lines,
+        limit: 0,
+        message: `RT-DATA-001: '${relPath}' must not import client Firestore SDK. Use Express /api/* via src/platform/data/clientDataPolicy.ts.`,
+      });
+    }
 
     // 1. Check Unidirectional Layer Dependency Boundaries
     // Layer hierarchy: src/types -> src/utils -> src/data -> src/components -> src/App.tsx

@@ -73,7 +73,7 @@ export const Stage42RequestAndReviewerPanel: React.FC<Props> = ({
           </label>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <button type="button" data-testid="vrf-rev-approve-btn" onClick={() => handleReviewerAction('approve')} className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">
+          <button type="button" data-testid="vrf-rev-approve-btn" onClick={() => handleReviewerAction('approve')} className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 text-[11px] font-bold text-white">
             تأیید پرونده
           </button>
           <button type="button" onClick={() => handleReviewerAction('needs_more_info')} className="rounded border border-amber-500/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-bold text-amber-200">

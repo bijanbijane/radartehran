@@ -1,9 +1,8 @@
 /** @file src/navigation/url/navigationUrlContract.ts — Path + Query URL & History Contract (RT-UI-NAV-001 Section 12) */
-import { PUBLIC_ROUTES } from '../registry/public.routes';
-import { ADMIN_ROUTES } from '../registry/admin.routes';
+import { UNIFIED_NAVIGATION_ROUTES } from '../registry/unifiedNavigationRegistry';
 import type { ModuleSubTabId, RouteDestinationId, RouteDefinition } from '../registry/route.types';
 
-const REGISTRY: readonly RouteDefinition[] = [...PUBLIC_ROUTES, ...ADMIN_ROUTES];
+const REGISTRY: readonly RouteDefinition[] = UNIFIED_NAVIGATION_ROUTES;
 
 const VIEW_ALIASES: Record<string, RouteDestinationId> = {
   home: 'home',
@@ -72,6 +71,15 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
       return { viewId: VIEW_ALIASES[queryView], subTab: subParam, isUnknownPath: false, isLegacyTehranPath: true };
     }
     return { viewId: 'home', isUnknownPath: false, isLegacyTehranPath: true };
+  }
+
+  // Legacy /neighborhoods/:slug (IA-002) → discover scorecard slug
+  if (normPath.startsWith('/neighborhoods/')) {
+    const slug = safeDecodeSegment(normPath.slice('/neighborhoods/'.length));
+    if (slug && !slug.includes('/')) {
+      return { viewId: 'discover', areaSlug: slug, isUnknownPath: false, isLegacyTehranPath: false };
+    }
+    return { viewId: 'not_found', isUnknownPath: true, isLegacyTehranPath: false };
   }
 
   // Dynamic /areas/:slug neighborhood scorecard route

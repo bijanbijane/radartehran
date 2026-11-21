@@ -173,7 +173,7 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                 <h3 className="mb-2 font-bold text-sky-400">نرمال‌سازی CRS، تشخیص جابجایی Lat/Lng و تطبیق مرز نسخه‌بندی‌شده (۱۲۹۷–۱۳۰۲)</h3>
                 <div className="flex flex-wrap items-center gap-2">
                   <button type="button" onClick={() => { setCoordFirst(51.3654); setCoordSecond(35.7762); }} className="rounded bg-amber-600/80 px-2.5 py-1 text-[11px] text-white">شبیه‌سازی جابجایی (Lng, Lat)</button>
-                  <button type="button" onClick={() => { setCoordFirst(35.7762); setCoordSecond(51.3654); }} className="rounded bg-emerald-600/80 px-2.5 py-1 text-[11px] text-white">مختصات صحیح تهران</button>
+                  <button type="button" onClick={() => { setCoordFirst(35.7762); setCoordSecond(51.3654); }} className="rounded bg-[var(--color-brand-600)]/80 px-2.5 py-1 text-[11px] text-white">مختصات صحیح تهران</button>
                 </div>
                 <div className="mt-2 rounded bg-slate-900 p-2.5 text-[11px]">
                   <div className={crsCheck.valid ? 'text-emerald-300' : 'text-rose-400'}>{crsCheck.explanationFa}</div>
@@ -185,7 +185,7 @@ export interface BiRiskAndGeospatialIntelligenceStudioModalProps { isOpen: boole
                   <h3 className="font-bold text-emerald-400">دسترسی شعاعی، ورودی مترو و حذف ایستگاه‌های غیرفعال (۱۳۰۳–۱۳۱۲)</h3>
                   <div className="flex gap-1.5">
                     {([500, 1000, 1500] as const).map((r) => (
-                      <button key={r} type="button" onClick={() => setRadiusMeters(r)} className={`rounded px-2.5 py-1 text-[11px] font-semibold ${radiusMeters === r ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}>شعاع {r} متر</button>
+                      <button key={r} type="button" onClick={() => setRadiusMeters(r)} className={`rounded px-2.5 py-1 text-[11px] font-semibold ${radiusMeters === r ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-800 text-slate-300'}`}>شعاع {r} متر</button>
                     ))}
                   </div>
                 </div>

@@ -95,7 +95,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
       {cityMarketStats.medianPricePerSqm !== null && (
         <div className="flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-[9px] bg-slate-100/80 dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-400 tabular-nums">
           <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5 font-bold text-slate-700 dark:text-slate-300">
-            <BarChart3 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <BarChart3 className="w-3 h-3 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>میانه {mode === 'rent' ? 'رهن ' : 'خرید '}{filterRankingByViewport ? 'کادر نقشه' : 'شهر'} ({areaUnit === 'sqft' ? 'ft²' : 'متر'}):</span>
             <strong className="text-slate-900 dark:text-white">{toPersianNum(Number(convertPricePerSqmToUnit(cityMarketStats.medianPricePerSqm, areaUnit).toFixed(1)))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(cityMarketStats.medianPricePerSqm, areaUnit), intlCurrency, radarLocale)})` : ''}</strong>
             <span className="text-slate-400">·</span>
@@ -189,7 +189,7 @@ const RANKING_TABS: { id: QuickRankingCriterionId; label: string; icon: React.Co
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Icon className="w-3 h-3 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <Icon className="w-3 h-3 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
               <span>{tab.label}</span>
             </button>
           );

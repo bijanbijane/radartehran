@@ -68,7 +68,7 @@ export function BuyingPowerSummaryCard({
   return (
     <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800/70 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-800 dark:text-slate-200">
       <div className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
-        <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+        <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
         <span>فرمول قدرت خرید واقعی شما ({formatAreaValue(safeSqm, areaUnit)}):</span>
       </div>
 

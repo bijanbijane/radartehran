@@ -76,7 +76,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
       {/* Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-[var(--color-brand-600)] dark:text-emerald-400 flex items-center justify-center font-bold">
             <Compass className="w-4 h-4" />
           </div>
           <div>
@@ -106,7 +106,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
               <Wallet className="w-3.5 h-3.5 text-emerald-500" />
               <span>درآمد ماهانه خانوار:</span>
             </span>
-            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs">
+            <span className="font-extrabold text-[var(--color-brand-600)] dark:text-emerald-400 text-xs">
               {toPersianNum(monthlyIncomeMillion)} میلیون تومان
             </span>
           </div>
@@ -247,7 +247,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
         <div data-testid="stage2-isochrone-substitute-banner" className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/25 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="space-y-0.5">
             <div className="font-extrabold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-              <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--color-brand-600)] shrink-0" />
               <span>پیشنهاد آربیتراژ ایزوکرون رادار برای شاغلان «{report.commute.workHubName}»: محله {sub.hoodName}</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300">
@@ -259,7 +259,7 @@ export const UrbanAffordabilityIsochroneCard: React.FC<UrbanAffordabilityIsochro
               type="button"
               data-testid="isochrone-substitute-btn"
               onClick={() => onSelectCompareHood(sub.hoodName)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition cursor-pointer shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-[11px] font-bold shadow-xs transition cursor-pointer shrink-0"
             >
               <span>بررسی محله {sub.hoodName}</span>
               <ArrowUpLeft className="w-3.5 h-3.5" />

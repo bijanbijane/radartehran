@@ -79,7 +79,7 @@ export const Stage41WorkspaceSubpanel: React.FC = () => {
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <input type="text" value={newWsName} onChange={(e) => setNewWsName(e.target.value)} placeholder="نام فضای گروهی جدید..." className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-white" />
-            <button type="button" data-testid="wks-create-btn" onClick={handleCreateGroupWorkspace} className="rounded bg-emerald-600 px-2.5 py-1 font-bold text-white">ساخت فضای گروهی</button>
+            <button type="button" data-testid="wks-create-btn" onClick={handleCreateGroupWorkspace} className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 font-bold text-white">ساخت فضای گروهی</button>
           </div>
         </div>
 

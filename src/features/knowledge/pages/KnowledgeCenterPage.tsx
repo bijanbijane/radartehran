@@ -184,13 +184,13 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
 
   return (
     <div data-testid="product-knowledge-view" className="w-full max-w-6xl mx-auto px-4 py-6 space-y-5 animate-fadeIn">
-      <div className="border-b border-[#DCE3DF] dark:border-slate-800 pb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <span className="text-[12px] font-bold text-[#176B63] dark:text-emerald-400 flex items-center gap-1.5 mb-1">
+          <span className="text-[12px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 flex items-center gap-1.5 mb-1">
             <BookOpen className="w-4 h-4" />
             <span>پایگاه دانش، گزارش‌های تحلیلی و روش‌شناسی رادار تهران</span>
           </span>
-          <h1 className="text-2xl font-black text-[#182522] dark:text-white">پژوهش‌های مسکن، راهنماها و شفافیت داده</h1>
+          <h1 className="text-2xl font-black text-[var(--color-text-primary)] dark:text-white">پژوهش‌های مسکن، راهنماها و شفافیت داده</h1>
         </div>
 
         <div className="flex flex-wrap gap-1.5 text-xs">
@@ -206,8 +206,8 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
               }}
               className={`px-3 py-1.5 rounded-[9px] font-bold cursor-pointer whitespace-nowrap transition ${
                 currentTab === tab.id
-                  ? 'bg-[#176B63] text-white'
-                  : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-200'
+                  ? 'bg-[var(--color-brand-600)] text-white'
+                  : 'bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)] dark:text-slate-200'
               }`}
             >
               {tab.labelFa}
@@ -217,7 +217,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
       </div>
 
       {/* Mandatory Epistemic Principle Banner */}
-      <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/60 dark:bg-emerald-950/20 border border-[#DCE3DF] dark:border-emerald-900 text-[11.5px] text-[#14534E] dark:text-emerald-200 flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/60 dark:bg-emerald-950/20 border border-[var(--color-border-subtle)] dark:border-emerald-900 text-[11.5px] text-[var(--color-brand-700)] dark:text-emerald-200 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
@@ -225,7 +225,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           </p>
         </div>
         {(serverUpdatedAtIso || lastFetchedAtIso) && (
-          <span className="text-[10.5px] text-[#586760] shrink-0" dir="ltr">
+          <span className="text-[10.5px] text-[var(--color-text-muted)] shrink-0" dir="ltr">
             Updated: {(serverUpdatedAtIso || lastFetchedAtIso || '').slice(0, 19).replace('T', ' ')}
           </span>
         )}
@@ -257,23 +257,23 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           {currentTab === 'reports' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" data-testid="knowledge-data-briefs">
               {dataBriefs.map((b) => (
-                <div key={b.briefId} className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 flex items-center justify-between gap-3">
+                <div key={b.briefId} className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-3">
                   <div className="space-y-0.5 min-w-0">
-                    <span className="text-[10.5px] font-bold text-[#176B63] dark:text-emerald-400">
+                    <span className="text-[10.5px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
                       {b.titleFa} · {b.periodFa} {b.calculationStatus === 'illustrative' ? '· (مثال آموزشی)' : ''}
                     </span>
-                    <div className="font-bold text-[#182522] dark:text-white truncate">{b.headlineFa}</div>
-                    <div className="text-[10.5px] text-[#586760]">{b.geographyFa} · {b.limitationFa}</div>
+                    <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{b.headlineFa}</div>
+                    <div className="text-[10.5px] text-[var(--color-text-muted)]">{b.geographyFa} · {b.limitationFa}</div>
                   </div>
                   <div className="text-end shrink-0">
-                    <div className="text-base font-black text-[#176B63] dark:text-emerald-400 tabular-nums">{b.metricValueFa}</div>
+                    <div className="text-base font-black text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums">{b.metricValueFa}</div>
                     <button
                       type="button"
                       onClick={() => {
                         const p = serverPubs.find((x) => x.id === b.linkedReportId) || KNOWLEDGE_PUBLICATIONS.find((x) => x.id === b.linkedReportId);
                         if (p && (p.status === 'published' || p.status === 'archived')) setActivePub(p);
                       }}
-                      className="text-[11px] font-bold underline text-[#182522] dark:text-slate-200 cursor-pointer"
+                      className="text-[11px] font-bold underline text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
                     >
                       گزارش کامل ←
                     </button>
@@ -296,23 +296,23 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           )}
 
           {/* Filter & Search Bar */}
-          <div className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          <div className="p-3.5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
             <div className="relative lg:col-span-2">
-              <Search className="w-4 h-4 text-[#586760] absolute right-2.5 top-2.5" />
+              <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute right-2.5 top-2.5" />
               <input
                 type="text"
                 data-testid="knowledge-search-input"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="جست‌وجو در عنوان، محله، فرمول یا نویسنده (مثلاً مترو، پونک)..."
-                className="w-full pr-8 pl-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+                className="w-full pr-8 pl-3 py-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
               />
             </div>
             <select
               aria-label="فیلتر نوع محتوا"
               value={contentType}
               onChange={(e) => setContentType(e.target.value as KnowledgeContentType | 'all')}
-              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
+              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
             >
               {(Object.keys(KNOWLEDGE_CONTENT_TYPE_LABELS_FA) as Array<KnowledgeContentType | 'all'>).map((k) => (
                 <option key={k} value={k}>{KNOWLEDGE_CONTENT_TYPE_LABELS_FA[k]}</option>
@@ -322,7 +322,7 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
               aria-label="وضعیت به‌روزرسانی"
               value={freshness}
               onChange={(e) => setFreshness(e.target.value as KnowledgeFreshnessStatus | 'all')}
-              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold"
+              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold"
             >
               <option value="all">گزارش‌های جاری و دوره‌ای</option>
               <option value="current">جاری (به‌روز)</option>
@@ -339,14 +339,14 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
           )}
 
           {visiblePublications.length === 0 ? (
-            <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-center space-y-2 text-xs">
-              <p className="font-bold text-[#182522] dark:text-white">
+            <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-center space-y-2 text-xs">
+              <p className="font-bold text-[var(--color-text-primary)] dark:text-white">
                 {catalogState === 'loading' ? 'در حال دریافت گزارش‌ها از سرور مرکز دانش...' : 'مطلبی با فیلترهای انتخاب‌شده یافت نشد.'}
               </p>
               <button
                 type="button"
                 onClick={() => { setQuery(''); setContentType('all'); setFreshness('all'); }}
-                className="px-3 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer"
+                className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
               >
                 بازنشانی فیلترها
               </button>
@@ -358,29 +358,29 @@ export const KnowledgeCenterPage: React.FC<KnowledgeCenterPageProps> = ({
                 return (
                   <article
                     key={pub.id}
-                    className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 flex flex-col justify-between space-y-3"
+                    className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-col justify-between space-y-3"
                   >
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10.5px]">
-                        <span className="px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[#14534E] dark:text-emerald-300 font-bold">
+                        <span className="px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold">
                           {pub.categoryLabelFa}
                         </span>
                         <span className={`px-2 py-0.5 rounded border font-bold ${fr.badgeClass}`}>{fr.labelFa}</span>
                       </div>
-                      <h2 className="text-base font-black text-[#182522] dark:text-white leading-[1.5]">{pub.titleFa}</h2>
-                      <p className="text-[#586760] leading-relaxed">{pub.summaryFa}</p>
-                      <div className="text-[11px] text-[#34433E] dark:text-slate-300 pt-1">
+                      <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white leading-[1.5]">{pub.titleFa}</h2>
+                      <p className="text-[var(--color-text-muted)] leading-relaxed">{pub.summaryFa}</p>
+                      <div className="text-[11px] text-[var(--color-text-secondary)] dark:text-slate-300 pt-1">
                         محدوده: <strong>{pub.geographyScopeFa}</strong> · نسخه {pub.version} · شاخص‌ها: {toPersianNum(pub.calculatedIndicators.length)} مورد
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-[#DCE3DF] dark:border-slate-800 flex items-center justify-between gap-2">
-                      <span className="text-[10.5px] text-[#586760]">{pub.publishedAtFa}</span>
+                    <div className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-2">
+                      <span className="text-[10.5px] text-[var(--color-text-muted)]">{pub.publishedAtFa}</span>
                       <button
                         type="button"
                         data-testid={`knowledge-open-${pub.id}`}
                         onClick={() => setActivePub(pub)}
-                        className="px-3.5 py-1.5 rounded-[8px] bg-[#176B63] hover:bg-[#14534E] text-white font-bold cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer"
                       >
                         مطالعه کامل و شاخص‌ها
                       </button>

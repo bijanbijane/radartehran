@@ -92,13 +92,13 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-4 text-xs" data-testid="community-questions-tab">
-      <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+      <form onSubmit={handleCreate} className="p-4 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <HelpCircle className="w-4 h-4 text-[#176B63]" />
+          <h2 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <HelpCircle className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>طرح پرسش تخصصی (حقوقی، شهرسازی، قیمت‌گذاری و محله {selectedHood.name})</span>
           </h2>
-          <select aria-label="حوزه پرسش" value={topicId} onChange={(e) => setTopicId(e.target.value)} className="p-1.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
+          <select aria-label="حوزه پرسش" value={topicId} onChange={(e) => setTopicId(e.target.value)} className="p-1.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
             <option value="topic-legal-contracts">قراردادها و مسائل حقوقی</option>
             <option value="topic-zoning-urban">شهرسازی و ضوابط تراکم</option>
             <option value="topic-valuation">ارزش‌گذاری و قدرالسهم</option>
@@ -112,7 +112,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           value={titleFa}
           onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }}
           placeholder="سؤال دقیق خود را در یک جمله روشن بنویسید..."
-          className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100"
+          className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-100"
         />
 
         {similarSuggestions.length > 0 && (
@@ -130,20 +130,20 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           value={bodyFa}
           onChange={(e) => { setBodyFa(e.target.value); if (feedback) setFeedback(null); }}
           placeholder="شرایط ملک، متن مبهم قرارداد یا متغیرهای کلیدی را بدون درج نام یا شماره تماس بنویسید..."
-          className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-100"
+          className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-100"
         />
         {feedback && (
           <div role={feedback.ok ? 'status' : 'alert'} className={`p-2 rounded-[8px] font-bold ${feedback.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-200' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-200'}`}>
             {feedback.msg}
           </div>
         )}
-        <button type="submit" disabled={submittingQuestion} data-testid="submit-question-btn" className="px-4 py-2 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50">
+        <button type="submit" disabled={submittingQuestion} data-testid="submit-question-btn" className="px-4 py-2 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50">
           {submittingQuestion ? 'در حال ثبت...' : 'ثبت پرسش تخصصی'}
         </button>
       </form>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] font-bold text-[#586760] dark:text-slate-400 tabular-nums">{toPersianNum(filteredQuestions.length)} پرسش ساختاریافته</span>
+        <span className="text-[11px] font-bold text-[var(--color-text-muted)] dark:text-slate-400 tabular-nums">{toPersianNum(filteredQuestions.length)} پرسش ساختاریافته</span>
         <div className="inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
           {([
             { id: 'all', label: 'همه' },
@@ -162,17 +162,17 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
           const isAsker = q.ownerUserId === currentUserId;
           const draft = answerDrafts[q.id] || { body: '', source: '' };
           return (
-            <article key={q.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#586760] dark:text-slate-400">
+            <article key={q.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
                 <span>محله {q.neighborhoodNameFa} · {q.createdAtFa}</span>
-                <span className="font-bold text-[#14534E] dark:text-emerald-300">{Q_STATUS_FA[q.status]}</span>
+                <span className="font-bold text-[var(--color-brand-700)] dark:text-emerald-300">{Q_STATUS_FA[q.status]}</span>
               </div>
-              <h3 className="font-black text-sm text-[#182522] dark:text-white">{q.titleFa}</h3>
-              <p className="text-[#34433E] dark:text-slate-300 leading-relaxed">{q.bodyFa}</p>
+              <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{q.titleFa}</h3>
+              <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{q.bodyFa}</p>
               <CommunityAuthorBadges profile={q.authorProfile} onSelectUsername={onSelectAuthor} />
 
               {q.answers.length > 0 && (
-                <div className="pt-2 border-t border-[#DCE3DF] dark:border-slate-800 space-y-2">
+                <div className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
                   {q.answers.map((ans) => (
                     <div key={ans.id} className="p-3 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/60 space-y-1.5">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] font-bold">
@@ -186,17 +186,17 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                           <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"><Award className="w-3.5 h-3.5" />بررسی‌شده توسط متخصص</span>
                         )}
                         {ans.markers.isOfficiallyVerified && (
-                          <span className="inline-flex items-center gap-1 text-[#14534E] dark:text-emerald-400"><ShieldCheck className="w-3.5 h-3.5" />تأییدشده رسمی رادار</span>
+                          <span className="inline-flex items-center gap-1 text-[var(--color-brand-700)] dark:text-emerald-400"><ShieldCheck className="w-3.5 h-3.5" />تأییدشده رسمی رادار</span>
                         )}
                       </div>
-                      <p className="text-[#182522] dark:text-slate-200 leading-relaxed">{ans.bodyFa}</p>
+                      <p className="text-[var(--color-text-primary)] dark:text-slate-200 leading-relaxed">{ans.bodyFa}</p>
                       {ans.sourceReferenceFa && (
-                        <div className="text-[11px] text-[#586760] dark:text-slate-400">منبع استناد: {ans.sourceReferenceFa}</div>
+                        <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">منبع استناد: {ans.sourceReferenceFa}</div>
                       )}
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                         <CommunityAuthorBadges profile={ans.authorProfile} onSelectUsername={onSelectAuthor} />
                         {isAsker && (
-                          <button type="button" onClick={() => onToggleAskerSelected(q.id, ans.id)} className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400 hover:underline cursor-pointer">
+                          <button type="button" onClick={() => onToggleAskerSelected(q.id, ans.id)} className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
                             {ans.markers.isAskerSelected ? 'لغو انتخاب پاسخ' : 'انتخاب به‌عنوان پاسخ منتخب'}
                           </button>
                         )}
@@ -223,7 +223,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                     }
                   }}
                   placeholder="پاسخ فنی یا حقوقی مستند بنویسید..."
-                  className="sm:col-span-7 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+                  className="sm:col-span-7 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
                 />
                 <input
                   type="text"
@@ -241,7 +241,7 @@ export const CommunityQuestionsTab: React.FC<Props> = ({
                     }
                   }}
                   placeholder="مرجع یا ماده قانونی (اختیاری)"
-                  className="sm:col-span-3 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+                  className="sm:col-span-3 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
                 />
                 <button
                   type="button"

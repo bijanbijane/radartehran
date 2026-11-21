@@ -115,7 +115,7 @@ export const Stage43RequestAndQuotesPanel: React.FC<Props> = ({
       {/* PRM-24 Post-Completion Verified Review */}
       <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 flex flex-wrap items-center gap-2">
         <input type="text" value={reviewText} onChange={(e) => setReviewText(e.target.value)} aria-label="متن ارزیابی پس از خدمت" className="flex-1 min-w-[200px] rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-white" />
-        <button type="button" data-testid="prm-complete-review-btn" onClick={handleMarkCompletedAndReview} className="rounded bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white">
+        <button type="button" data-testid="prm-complete-review-btn" onClick={handleMarkCompletedAndReview} className="rounded bg-[var(--color-brand-600)] px-3 py-1 text-[11px] font-bold text-white">
           تکمیل خدمت و ثبت ارزیابی تعامل تأییدشده
         </button>
       </div>

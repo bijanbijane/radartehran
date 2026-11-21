@@ -35,6 +35,14 @@ export class AuthClient {
     this.transition(user ? 'AUTHENTICATED' : 'UNAUTHENTICATED');
   }
 
+  /** Update cached user snapshot without lifecycle transition (token refresh / claims sync). */
+  updateUserSnapshot(user: AuthUserSnapshot | null): void {
+    this.user = user;
+    for (const sub of this.subscribers) {
+      sub(this.state, this.user);
+    }
+  }
+
   transition(next: AuthLifecycleStatus, meta?: Record<string, unknown>): boolean {
     if (!canTransitionAuthState(this.state, next) && next !== 'INITIALIZING' && next !== 'UNAUTHENTICATED') {
       return false;

@@ -1,0 +1,50 @@
+# Secrets & local config (inject at runtime only)
+.env
+.env.*
+!.env.example
+**/*service-account*.json
+**/*credentials*.json
+**/*.pem
+**/*.p12
+
+# VCS & IDE
+.git
+.gitignore
+.cursor
+.vscode
+**/.DS_Store
+
+# Local installs & build noise
+node_modules
+**/node_modules
+dist
+apps/api/dist
+**/.cache
+**/.cache-data.json
+**/.runtime-config.json
+**/.osm-boundaries-cache.json
+**/.object-storage-bucket
+coverage
+playwright-report
+test-results
+
+# Tests & docs (not required for API runtime image)
+tests
+docs
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+e2e
+playwright.config.ts
+
+# Frontend-only artifacts
+apps/frontend/node_modules
+worker
+wrangler.jsonc
+cloudflare
+.playwright
+
+# Large / irrelevant for API container
+public/assets
+**/*.md
+!apps/api/README.md

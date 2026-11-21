@@ -110,7 +110,7 @@ export function FutureSuperModulesModal(props: FutureSuperModulesModalProps) {
       <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet dark:bg-slate-900 dark:border-slate-700/80 max-w-5xl w-full p-4 sm:p-6 max-h-[94vh] flex flex-col overflow-hidden text-xs focus:outline-none">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 dark:border-slate-700/70 pb-3 mb-3 shrink-0">
           <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
+            <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4 stroke-[1.75]" />
             </span>
             <div>

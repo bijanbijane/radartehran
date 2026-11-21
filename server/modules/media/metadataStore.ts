@@ -134,6 +134,15 @@ export interface MediaMetadataPersistenceStore {
   ): Promise<MediaMetadataRecord>;
   listAllMetadataRecords(): Promise<MediaMetadataRecord[]>;
   listOwnerMetadataRecords(ownerUid: string): Promise<MediaMetadataRecord[]>;
+  listMetadataPage(options?: {
+    cursor?: string;
+    limit?: number;
+  }): Promise<{
+    items: MediaMetadataRecord[];
+    nextCursor: string | null;
+    pageSize: number;
+    partial: boolean;
+  }>;
 
   saveCleanupJob(job: DurableMediaCleanupJob): Promise<DurableMediaCleanupJob>;
   getCleanupJob(jobId: string): Promise<DurableMediaCleanupJob | null>;
@@ -142,6 +151,7 @@ export interface MediaMetadataPersistenceStore {
 
 export function createDurableMediaMetadataStore(options?: {
   durableSnapshotPath?: string;
+  requireDurableFirestore?: boolean;
 }): MediaMetadataPersistenceStore {
   const grantsMap = new Map<string, MediaUploadGrant>();
   const metadataMap = new Map<string, MediaMetadataRecord>();
@@ -191,17 +201,43 @@ export function createDurableMediaMetadataStore(options?: {
       await fs.promises.writeFile(tmp, data, { encoding: 'utf8', mode: 0o600 });
       await fs.promises.rename(tmp, options.durableSnapshotPath);
     }
-    const hasAdminEnv = Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-    if (!hasAdminEnv) return;
-    try {
-      const db = getFirebaseAdminFirestoreForServer(process.env);
-      await db.collection(collectionName).doc(docId).set(JSON.parse(JSON.stringify(payload)), { merge: false });
-    } catch {
-      // Snapshot durability preserved
+    if (!options?.requireDurableFirestore) {
+      const hasAdminEnv = Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      if (!hasAdminEnv) return;
+      try {
+        const db = getFirebaseAdminFirestoreForServer(process.env);
+        await db.collection(collectionName).doc(docId).set(JSON.parse(JSON.stringify(payload)), { merge: false });
+      } catch {
+        /* dev best-effort */
+      }
+      return;
     }
+    const authority = await import('./firestoreMetadataAuthority');
+    if (collectionName === MEDIA_METADATA_COLLECTION && authority.isMediaMetadataRecordPayload(payload)) {
+      await authority.persistMediaMetadataRecordToFirestore(payload);
+      return;
+    }
+    if (collectionName === MEDIA_UPLOAD_GRANTS_COLLECTION) {
+      await authority.persistMediaUploadGrantToFirestore(payload as MediaUploadGrant);
+      return;
+    }
+    if (collectionName === MEDIA_CLEANUP_JOBS_COLLECTION) {
+      await authority.persistMediaCleanupJobToFirestore(payload as DurableMediaCleanupJob);
+      return;
+    }
+    const db = getFirebaseAdminFirestoreForServer(process.env);
+    await db.collection(collectionName).doc(docId).set(JSON.parse(JSON.stringify(payload)), { merge: false });
   }
 
-  return {
+  async function hydrateFromDurableAuthority(): Promise<void> {
+    if (!options?.requireDurableFirestore) return;
+    const authority = await import('./firestoreMetadataAuthority');
+    await authority.hydrateMediaMapsFromFirestore({ metadataMap, grantsMap, cleanupJobsMap });
+  }
+
+  const store = {
+    hydrateFromDurableAuthority,
+
     async saveUploadGrant(grant: MediaUploadGrant): Promise<MediaUploadGrant> {
       return withLock(`grant:${grant.grantId}`, async () => {
         const cloned = structuredClone(grant);
@@ -245,7 +281,15 @@ export function createDurableMediaMetadataStore(options?: {
     },
 
     async getMetadataRecord(objectId: string): Promise<MediaMetadataRecord | null> {
-      const found = metadataMap.get(objectId);
+      let found = metadataMap.get(objectId);
+      if (!found && options?.requireDurableFirestore) {
+        const authority = await import('./firestoreMetadataAuthority');
+        const remote = await authority.fetchMediaMetadataRecordFromFirestore(objectId);
+        if (remote) {
+          metadataMap.set(objectId, remote);
+          found = remote;
+        }
+      }
       return found ? structuredClone(found) : null;
     },
 
@@ -297,6 +341,43 @@ export function createDurableMediaMetadataStore(options?: {
         .map((m) => structuredClone(m));
     },
 
+    async listMetadataPage(pageOpts?: { cursor?: string; limit?: number }) {
+      const pageSize = Math.min(Math.max(pageOpts?.limit ?? 50, 1), 100);
+      const sorted = Array.from(metadataMap.values())
+        .filter((m) => m.state !== 'DELETED')
+        .sort((a, b) => a.objectId.localeCompare(b.objectId));
+      const startIdx =
+        pageOpts?.cursor && sorted.findIndex((m) => m.objectId === pageOpts.cursor) >= 0
+          ? sorted.findIndex((m) => m.objectId === pageOpts.cursor) + 1
+          : 0;
+      const slice = sorted.slice(startIdx, startIdx + pageSize + 1);
+      const items = slice.slice(0, pageSize).map((m) => structuredClone(m));
+      const partial = slice.length > pageSize;
+      const nextCursor = partial && items.length > 0 ? items[items.length - 1]!.objectId : null;
+      if (options?.requireDurableFirestore && pageOpts?.cursor && items.length === 0) {
+        const { listMediaMetadataPageFromFirestore, fetchMediaMetadataRecordFromFirestore } = await import(
+          './firestoreMetadataAuthority'
+        );
+        const remote = await listMediaMetadataPageFromFirestore(pageOpts);
+        const hydrated: MediaMetadataRecord[] = [];
+        for (const row of remote.items) {
+          let rec = metadataMap.get(row.objectId);
+          if (!rec) {
+            rec = (await fetchMediaMetadataRecordFromFirestore(row.objectId)) ?? undefined;
+            if (rec) metadataMap.set(rec.objectId, rec);
+          }
+          if (rec) hydrated.push(structuredClone(rec));
+        }
+        return {
+          items: hydrated,
+          nextCursor: remote.nextCursor,
+          pageSize: remote.pageSize,
+          partial: remote.partial,
+        };
+      }
+      return { items, nextCursor, pageSize, partial };
+    },
+
     async saveCleanupJob(job: DurableMediaCleanupJob): Promise<DurableMediaCleanupJob> {
       return withLock(`job:${job.jobId}`, async () => {
         const cloned = structuredClone(job);
@@ -315,4 +396,6 @@ export function createDurableMediaMetadataStore(options?: {
       return Array.from(cleanupJobsMap.values()).map((j) => structuredClone(j));
     },
   };
+
+  return store;
 }

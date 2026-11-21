@@ -137,7 +137,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-5 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
           <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Lock className="w-4 h-4 text-emerald-600" />
+            <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ماتریس تفکیک مجوزهای نقش (RBAC)</span>
           </strong>
           <div className="space-y-2">
@@ -158,7 +158,7 @@ export const AdminSecurityAndAuditCenter: React.FC<AdminSecurityAndAuditCenterPr
         <div className="lg:col-span-7 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <FileSearch className="w-4 h-4 text-emerald-600" />
+              <FileSearch className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>گزارش ممیزی اقدامات حاکمیتی ({visibleLogs.length})</span>
             </strong>
             <select

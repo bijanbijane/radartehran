@@ -239,6 +239,8 @@ export function updateSelectionPillsInPlace(params: {
     entry.marker?.setZIndexOffset?.(baseZ);
     const pillSpan = (entry.marker?.getElement?.() as HTMLElement | null)?.querySelector?.('[data-hood-pill]') as HTMLElement | null;
     if (pillSpan) {
+      const unavailable = entry.hood?.status === 'red';
+      pillSpan.setAttribute('data-marker-state', isSelected ? 'selected' : unavailable ? 'unavailable' : 'default');
       pillSpan.style.border = isSelected
         ? (isDarkMap ? '2px solid #38bdf8' : '2px solid #0f172a')
         : entry.hasSponsor ? '1.5px solid #fbbf24' : isDarkMap ? '1px solid rgba(255,255,255,0.65)' : '1px solid rgba(255,255,255,0.35)';

@@ -3,7 +3,7 @@ import { SearchIndexAndOrchestratorEngine } from '../../../src/features/search/s
 import { ProductionSearchDocumentSource } from './productionSearchDocumentSource';
 import { isDocumentEligibleForPublicIndex } from './publicIndexEligibility';
 import {
-  commitIndexVersion,
+  commitIndexVersionAwait,
   findJobById,
   loadSearchIndexState,
   updateSearchIndexJob,
@@ -49,7 +49,11 @@ async function runReindexPipeline(engine: SearchIndexAndOrchestratorEngine, jobI
     const projected = docs.filter((doc) => isDocumentEligibleForPublicIndex(doc));
 
     progress('INDEXING', { processedCount: projected.length });
-    commitIndexVersion(job, projected);
+    const committed = await commitIndexVersionAwait(job, projected);
+    if (!committed) {
+      progress('FAILED', { errorCode: 'INDEX_PERSIST_FAILED', processedCount: projected.length });
+      return;
+    }
     engine.replaceIndexDocuments(projected);
 
     progress('VERIFYING', { processedCount: projected.length });

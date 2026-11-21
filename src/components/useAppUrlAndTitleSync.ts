@@ -6,6 +6,8 @@ import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntl
 import { SHOW_INTL_UNIT_CURRENCY_CONTROLS, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
 import { parseTehranPublicPath, seoForDatedCompare, seoForDatedHood } from '../data/neighborhoodListingSamples';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
+import { recordRecentNavigation } from '../navigation/journey/navigationJourneyMemory';
+import { findUnifiedRouteByPath } from '../navigation/registry/unifiedNavigationRegistry';
 import { buildCanonicalPathForDestination, buildSynchronizedNavigationUrl, normalizePathname, resolveRouteFromLocation, sanitizeNavigationHash } from '../navigation/url/navigationUrlContract';
 import { beginPopStateRestoration, commitManagedHistoryTransition, endPopStateRestoration, isPopStateRestorationActive, mergePreservedQueryIntoUrl } from '../navigation/url/historySingleWriter';
 import type { AdminSectionId, ModuleSubTabId, RouteDestinationId } from '../navigation/registry/route.types';
@@ -282,6 +284,11 @@ export function useAppUrlAndTitleSync(p: UseAppUrlAndTitleSyncParams) {
           targetUrl: nextUrl,
           isPopStateRestore: fromPopState,
         });
+        if (shouldPush || pathChanged) {
+          const pathOnly = normalizePathname(nextUrl.split('?')[0] || '/');
+          const routeMeta = findUnifiedRouteByPath(pathOnly);
+          if (routeMeta) recordRecentNavigation(pathOnly, routeMeta.titleFa);
+        }
       };
 
       const isSameCityCompare = Boolean(

@@ -267,7 +267,7 @@ export function BuyerAlertPriceSparkline({
 
       <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 tabular-nums">
         <span className="flex items-center gap-1">
-          <span className="w-2.5 h-0.5 bg-emerald-600 inline-block rounded" />
+          <span className="w-2.5 h-0.5 bg-[var(--color-brand-600)] inline-block rounded" />
           <span>منحنی قیمت ۶ ماه اخیر</span>
         </span>
         <span className="flex items-center gap-1 text-sky-700 dark:text-sky-400 font-semibold">

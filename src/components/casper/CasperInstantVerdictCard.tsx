@@ -17,7 +17,7 @@ import { saveDossierToResilienceCache } from '../../utils/nationalNetworkResilie
 import { useIntlCurrency } from '../AreaUnitToggle';
 
 const VERDICT_THEMES = {
-  OPTIMAL_BUY: { badge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800', icon: 'bg-emerald-600/10 border-emerald-600/20 text-emerald-600 dark:text-emerald-400' },
+  OPTIMAL_BUY: { badge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800', icon: 'bg-[var(--color-brand-600)]/10 border-emerald-600/20 text-[var(--color-brand-600)] dark:text-emerald-400' },
   NEGOTIATE_HARD: { badge: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800', icon: 'bg-indigo-600/10 border-indigo-600/20 text-indigo-600 dark:text-indigo-400' },
   CAUTIOUS_HOLD: { badge: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: 'bg-amber-600/10 border-amber-600/20 text-amber-600 dark:text-amber-400' },
   HIGH_RISK_AVOID: { badge: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800', icon: 'bg-rose-600/10 border-rose-600/20 text-rose-600 dark:text-rose-400' },
@@ -141,7 +141,7 @@ export function CasperInstantVerdictCard({ selectedHood, targetSqm }: CasperInst
         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">کف سناریوی مذاکره (تعدیل روز · غیرثبتی)</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-black text-slate-900 dark:text-white">{toPersianNum(dealTotalBillion)}</span>

@@ -1,4 +1,4 @@
-import { doc, getDoc, type Firestore } from 'firebase/firestore'; import type { BargainListing, CityId } from '../types/models'; import { convertAreaFromSqm, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export type ListingSubmissionStage = | 'idle'
+import type { BargainListing, CityId } from '../types/models'; import { convertAreaFromSqm, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit'; export type ListingSubmissionStage = | 'idle'
   | 'validating'
   | 'committing_firestore'
   | 'reconciling_ambiguous_commit'
@@ -21,24 +21,27 @@ export function releaseBargainSubmissionLock(): void { inFlightBargainSubmission
 export function getActiveSubmissionIdempotencyKey(): string | null { return isBargainSubmissionLocked() ? activeSubmissionIdempotencyKey : null; }
 export function resetBargainSubmissionLockForTests(): void { inFlightBargainSubmissionLock = false; activeSubmissionIdempotencyKey = null; lockAcquiredAtMs = 0; }
 export function formatPublishedBargainIntlSummary(item: Pick<BargainListing, 'sqm'> & { totalPriceMillion?: number }, areaUnit: AreaUnit = getStoredAreaUnit(), referenceCurrency: IntlCurrencyCode = getStoredIntlCurrency()) { const safeSqm = Math.max(20, Number(item.sqm) || 80); return { displayAreaValue: Math.round(convertAreaFromSqm(safeSqm, areaUnit)), displayAreaUnitLabel: formatAreaUnitLabel(areaUnit), totalPriceIntlText: formatMillionTomanAsIntlCurrency(Math.max(0, Number(item.totalPriceMillion ?? 0)), referenceCurrency) }; }
-export async function reconcileAmbiguousBargainCommit( db: Firestore, bargainId: string, expectedUserId: string
-): Promise<{ persisted: boolean; ownerVerified: boolean; status: 'confirmed_persisted' | 'confirmed_absent' | 'outcome_unknown';
-}> { if (!bargainId || !expectedUserId) { return { persisted: false, ownerVerified: false, status: 'confirmed_absent' };
-  }
-  try { const [bargainSnap, ownerSnap] = await Promise.all([
-      getDoc(doc(db, 'bargains', bargainId)),
-      getDoc(doc(db, 'bargainOwners', bargainId)),
-    ]);
-    if (bargainSnap.exists() && ownerSnap.exists()) {
-      const ownerData = ownerSnap.data() as { userId?: string } | undefined;
-      const ownerMatches = ownerData?.userId === expectedUserId;
-      return {
-        persisted: ownerMatches,
-        ownerVerified: ownerMatches,
-        status: ownerMatches ? 'confirmed_persisted' : 'confirmed_absent',
-      };
-    }
+export async function reconcileAmbiguousBargainCommit(
+  _db: unknown,
+  bargainId: string,
+  expectedUserId: string,
+  getIdToken?: () => Promise<string>,
+): Promise<{ persisted: boolean; ownerVerified: boolean; status: 'confirmed_persisted' | 'confirmed_absent' | 'outcome_unknown' }> {
+  if (!bargainId || !expectedUserId || !getIdToken) {
     return { persisted: false, ownerVerified: false, status: 'confirmed_absent' };
+  }
+  try {
+    const token = await getIdToken();
+    const res = await fetch('/api/my-bargains', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+    if (!res.ok) return { persisted: false, ownerVerified: false, status: 'outcome_unknown' };
+    const body = (await res.json()) as { items?: { id: string; ownerUid?: string }[] };
+    const found = (body.items || []).find((x) => x.id === bargainId);
+    const ownerMatches = Boolean(found && found.ownerUid === expectedUserId);
+    return {
+      persisted: ownerMatches,
+      ownerVerified: ownerMatches,
+      status: ownerMatches ? 'confirmed_persisted' : 'confirmed_absent',
+    };
   } catch {
     return { persisted: false, ownerVerified: false, status: 'outcome_unknown' };
   }

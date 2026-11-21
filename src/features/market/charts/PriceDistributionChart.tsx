@@ -38,13 +38,13 @@ export const PriceDistributionChart: React.FC<PriceDistributionChartProps> = ({
     >
       <div className="space-y-3">
         {/* Statistical summary row */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-[11px] tabular-nums bg-[#F6F8F6] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[#DCE3DF]/80 dark:border-slate-800">
-          <div><span className="text-[#586760] block">P10 (کف)</span><strong className="font-bold text-[#182522] dark:text-white">{stats.p10 !== null ? toPersianNum(stats.p10) : '—'}</strong></div>
-          <div><span className="text-[#586760] block">P25</span><strong className="font-bold text-[#182522] dark:text-white">{stats.p25 !== null ? toPersianNum(stats.p25) : '—'}</strong></div>
-          <div><span className="text-[#176B63] dark:text-emerald-400 block font-bold">میانه (P50)</span><strong className="font-black text-[#176B63] dark:text-emerald-300">{stats.median !== null ? toPersianNum(stats.median) : '—'}</strong></div>
-          <div><span className="text-[#586760] block">میانگین</span><strong className="font-bold text-[#182522] dark:text-white">{stats.mean !== null ? toPersianNum(stats.mean) : '—'}</strong></div>
-          <div><span className="text-[#586760] block">P75</span><strong className="font-bold text-[#182522] dark:text-white">{stats.p75 !== null ? toPersianNum(stats.p75) : '—'}</strong></div>
-          <div><span className="text-[#586760] block">P90 / IQR</span><strong className="font-bold text-[#182522] dark:text-white">{stats.p90 !== null ? toPersianNum(stats.p90) : '—'} ({stats.iqr !== null ? toPersianNum(stats.iqr) : '—'})</strong></div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-[11px] tabular-nums bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
+          <div><span className="text-[var(--color-text-muted)] block">P10 (کف)</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p10 !== null ? toPersianNum(stats.p10) : '—'}</strong></div>
+          <div><span className="text-[var(--color-text-muted)] block">P25</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p25 !== null ? toPersianNum(stats.p25) : '—'}</strong></div>
+          <div><span className="text-[var(--color-brand-600)] dark:text-emerald-400 block font-bold">میانه (P50)</span><strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-300">{stats.median !== null ? toPersianNum(stats.median) : '—'}</strong></div>
+          <div><span className="text-[var(--color-text-muted)] block">میانگین</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.mean !== null ? toPersianNum(stats.mean) : '—'}</strong></div>
+          <div><span className="text-[var(--color-text-muted)] block">P75</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p75 !== null ? toPersianNum(stats.p75) : '—'}</strong></div>
+          <div><span className="text-[var(--color-text-muted)] block">P90 / IQR</span><strong className="font-bold text-[var(--color-text-primary)] dark:text-white">{stats.p90 !== null ? toPersianNum(stats.p90) : '—'} ({stats.iqr !== null ? toPersianNum(stats.iqr) : '—'})</strong></div>
         </div>
 
         <div dir="ltr" className="w-full h-[200px] min-w-[240px]">

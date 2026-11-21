@@ -34,7 +34,7 @@ export interface ValuationInputStepsProps {
 const OriginChip: React.FC<{ origin: InputOrigin }> = ({ origin }) => {
   const tone =
     origin === 'user_provided' || origin === 'verified'
-      ? 'bg-[#EAF3F0] text-[#14534E] dark:bg-emerald-950/60 dark:text-emerald-300'
+      ? 'bg-[#EAF3F0] text-[var(--color-brand-700)] dark:bg-emerald-950/60 dark:text-emerald-300'
       : origin === 'system_retrieved'
         ? 'bg-[#EEF5FC] text-[#1D4E89] dark:bg-sky-950/60 dark:text-sky-300'
         : 'bg-[#FFF4E5] text-[#875000] dark:bg-amber-950/50 dark:text-amber-200';
@@ -84,13 +84,13 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
   return (
     <div className="space-y-4 text-xs" data-testid="valuation-input-steps">
       {/* Step 1: Category & Coverage */}
-      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Building2 className="w-4 h-4 text-[#176B63]" />
+          <span className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <Building2 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۱. نوع ملک و هدف ارزش‌گذاری</span>
           </span>
-          <span className="text-[11px] font-bold text-[#176B63] tabular-nums">
+          <span className="text-[11px] font-bold text-[var(--color-brand-600)] tabular-nums">
             کیفیت تکمیل ورودی: {toPersianNum(completenessPercent)}٪
           </span>
         </div>
@@ -105,7 +105,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             data-testid="valuation-category-select"
             value={input.propertyCategory}
             onChange={(e) => onChange({ propertyCategory: e.target.value as ValuationPropertyCategory })}
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#182522] dark:text-white cursor-pointer"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
           >
             {(Object.keys(VALUATION_CATEGORY_LABELS_FA) as ValuationPropertyCategory[]).map((cat) => (
               <option key={cat} value={cat}>{VALUATION_CATEGORY_LABELS_FA[cat]}</option>
@@ -116,7 +116,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             data-testid="valuation-purpose-select"
             value={input.purpose}
             onChange={(e) => onChange({ purpose: e.target.value as ValuationPurpose })}
-            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#182522] dark:text-white cursor-pointer"
+            className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
           >
             {(Object.keys(VALUATION_PURPOSE_LABELS_FA) as ValuationPurpose[]).map((p) => (
               <option key={p} value={p}>{VALUATION_PURPOSE_LABELS_FA[p]}</option>
@@ -126,8 +126,8 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
       </div>
 
       {/* Step 2: Geography, Street Tier & Location Precision */}
-      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
-        <span className="font-black text-[#182522] dark:text-white block">۲. محدوده جغرافیایی و دقت موقعیت مکانی</span>
+      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
+        <span className="font-black text-[var(--color-text-primary)] dark:text-white block">۲. محدوده جغرافیایی و دقت موقعیت مکانی</span>
         <select
           aria-label="محله هدف ارزش‌گذاری"
           data-testid="valuation-hood-select"
@@ -139,7 +139,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
               onChange({ hoodId: found.id });
             }
           }}
-          className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#182522] dark:text-white cursor-pointer"
+          className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white cursor-pointer"
         >
           {evaluatedNeighborhoods.map((h) => (
             <option key={h.id} value={h.id}>محله {h.name} ({h.zone})</option>
@@ -153,8 +153,8 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
               onClick={() => onChange({ streetTier: m.tier as StreetTierId })}
               className={`p-2 rounded-[8px] border text-[11px] font-bold cursor-pointer ${
                 input.streetTier === m.tier
-                  ? 'bg-[#EAF3F0] border-[#176B63] text-[#14534E] dark:bg-emerald-950/50 dark:text-emerald-300'
-                  : 'border-[#DCE3DF] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                  ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)] dark:bg-emerald-950/50 dark:text-emerald-300'
+                  : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
               }`}
             >
               {m.tier === 'luxury' ? 'پهنه اعیانی' : m.tier === 'balanced' ? 'بافت میانی' : 'پهنه اقتصادی'}
@@ -162,14 +162,14 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
           ))}
         </div>
         <div>
-          <label htmlFor="ws-location-precision" className="text-[11px] font-bold text-[#586760] block mb-1">
+          <label htmlFor="ws-location-precision" className="text-[11px] font-bold text-[var(--color-text-muted)] block mb-1">
             سطح دقت مکانی در اختیار مدل
           </label>
           <select
             id="ws-location-precision"
             value={input.locationPrecision}
             onChange={(e) => onChange({ locationPrecision: e.target.value as ValuationLocationPrecision })}
-            className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 text-[11px] font-bold"
+            className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[11px] font-bold"
           >
             {(Object.keys(LOCATION_PRECISION_LABELS_FA) as ValuationLocationPrecision[]).map((lp) => (
               <option key={lp} value={lp}>{LOCATION_PRECISION_LABELS_FA[lp]}</option>
@@ -181,7 +181,7 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
       {isResidential && (
         <>
           <div className="p-3.5 rounded-[12px] bg-[#EAF3F0]/70 dark:bg-emerald-950/30 border border-[#B8D7CE] dark:border-emerald-800 space-y-2">
-            <div className="flex items-center text-[11px] font-bold text-[#14534E] dark:text-emerald-300">
+            <div className="flex items-center text-[11px] font-bold text-[var(--color-brand-700)] dark:text-emerald-300">
               <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> استخراج گزینشی از متن آگهی (فقط فیلدهای ذکرشده در متن)</span>
             </div>
             <div className="flex gap-2">
@@ -191,9 +191,9 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
                 value={adText}
                 onChange={(e) => setAdText(e.target.value)}
                 placeholder="مثال: ۱۰۰ متر طبقه ۳ از ۵ با پارکینگ و آسانسور ساخت ۱۳۹۸..."
-                className="flex-1 px-2.5 py-1.5 rounded-[8px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-xs"
+                className="flex-1 px-2.5 py-1.5 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs"
               />
-              <button type="button" data-testid="valuation-ad-extract-btn" onClick={handleExtractAd} className="px-3 py-1.5 rounded-[8px] bg-[#182522] text-white font-bold cursor-pointer">
+              <button type="button" data-testid="valuation-ad-extract-btn" onClick={handleExtractAd} className="px-3 py-1.5 rounded-[8px] bg-[var(--color-text-primary)] text-white font-bold cursor-pointer">
                 پرکردن خودکار
               </button>
             </div>
@@ -204,9 +204,9 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             )}
           </div>
 
-          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3 tabular-nums">
+          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3 tabular-nums">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-black text-[#182522] dark:text-white">۳. مشخصات فیزیکی واحد (مبنای محاسبه: مترمربع m²)</span>
+              <span className="font-black text-[var(--color-text-primary)] dark:text-white">۳. مشخصات فیزیکی واحد (مبنای محاسبه: مترمربع m²)</span>
               <div className="flex flex-wrap gap-1">
                 <OriginChip origin={input.inputOrigins.sqm} />
                 <OriginChip origin={input.inputOrigins.floor} />
@@ -214,20 +214,20 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div>
-                <label className="text-[11px] text-[#586760] block mb-1">متراژ (متر)</label>
-                <NumericDraftInput min={30} max={600} fallback={85} aria-label="متراژ واحد" data-testid="valuation-sqm-input" value={input.sqm} onValueChange={(nextSqm) => setFieldUser('sqm', { sqm: nextSqm })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">متراژ (متر)</label>
+                <NumericDraftInput min={30} max={600} fallback={85} aria-label="متراژ واحد" data-testid="valuation-sqm-input" value={input.sqm} onValueChange={(nextSqm) => setFieldUser('sqm', { sqm: nextSqm })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
               </div>
               <div>
-                <label className="text-[11px] text-[#586760] block mb-1">سال ساخت</label>
-                <NumericDraftInput min={1340} max={currentYear} fallback={1398} aria-label="سال ساخت" value={input.buildYear} onValueChange={(nextYear) => setFieldUser('buildYear', { buildYear: nextYear })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">سال ساخت</label>
+                <NumericDraftInput min={1340} max={currentYear} fallback={1398} aria-label="سال ساخت" value={input.buildYear} onValueChange={(nextYear) => setFieldUser('buildYear', { buildYear: nextYear })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
               </div>
               <div>
-                <label className="text-[11px] text-[#586760] block mb-1">طبقه واحد (همکف=۰)</label>
-                <NumericDraftInput min={-2} max={60} fallback={3} aria-label="طبقه واحد" value={input.floor} onValueChange={(f) => setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, Math.max(1, f)) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">طبقه واحد (همکف=۰)</label>
+                <NumericDraftInput min={-2} max={60} fallback={3} aria-label="طبقه واحد" value={input.floor} onValueChange={(f) => setFieldUser('floor', { floor: f, totalFloors: Math.max(input.totalFloors, Math.max(1, f)) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
               </div>
               <div>
-                <label className="text-[11px] text-[#586760] block mb-1">کل طبقات</label>
-                <NumericDraftInput min={1} max={60} fallback={5} aria-label="کل طبقات" value={input.totalFloors} onValueChange={(tf) => setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold" />
+                <label className="text-[11px] text-[var(--color-text-muted)] block mb-1">کل طبقات</label>
+                <NumericDraftInput min={1} max={60} fallback={5} aria-label="کل طبقات" value={input.totalFloors} onValueChange={(tf) => setFieldUser('floor', { totalFloors: tf, floor: Math.min(input.floor, tf) })} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold" />
               </div>
             </div>
             {(fieldErrors.sqm || fieldErrors.buildYear || fieldErrors.floor || fieldErrors.totalFloors) && (
@@ -238,10 +238,10 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             )}
           </div>
 
-          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+          <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-                <Wrench className="w-4 h-4 text-[#176B63]" />
+              <span className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+                <Wrench className="w-4 h-4 text-[var(--color-brand-600)]" />
                 <span>۴. وضعیت نوسازی و امکانات سندی</span>
               </span>
               <div className="flex gap-1">
@@ -251,28 +251,28 @@ export const ValuationInputSteps: React.FC<ValuationInputStepsProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-2">
               {HEDONIC_RENOVATION_OPTIONS.map((opt) => (
-                <button key={opt.id} type="button" onClick={() => setFieldUser('renovationStatus', { renovationStatus: opt.id })} className={`p-2.5 rounded-[9px] border text-right cursor-pointer ${input.renovationStatus === opt.id ? 'bg-[#EAF3F0] border-[#176B63] text-[#14534E] font-bold' : 'border-[#DCE3DF] dark:border-slate-700 text-[#48534F] dark:text-slate-300'}`}>
+                <button key={opt.id} type="button" onClick={() => setFieldUser('renovationStatus', { renovationStatus: opt.id })} className={`p-2.5 rounded-[9px] border text-right cursor-pointer ${input.renovationStatus === opt.id ? 'bg-[#EAF3F0] border-[var(--color-brand-600)] text-[var(--color-brand-700)] font-bold' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'}`}>
                   <div className="font-bold">{opt.shortLabel}</div>
                   <div className="text-[10px] opacity-75 line-clamp-1">{opt.label}</div>
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap gap-4 pt-2 border-t border-[#DCE3DF] dark:border-slate-800 font-bold">
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasParking} onChange={(e) => setFieldUser('amenities', { hasParking: e.target.checked })} className="accent-[#176B63]" /><span>پارکینگ سندی</span></label>
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasElevator} onChange={(e) => setFieldUser('amenities', { hasElevator: e.target.checked })} className="accent-[#176B63]" /><span>آسانسور</span></label>
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasStorage} onChange={(e) => setFieldUser('amenities', { hasStorage: e.target.checked })} className="accent-[#176B63]" /><span>انباری سندی</span></label>
+            <div className="flex flex-wrap gap-4 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasParking} onChange={(e) => setFieldUser('amenities', { hasParking: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>پارکینگ سندی</span></label>
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasElevator} onChange={(e) => setFieldUser('amenities', { hasElevator: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>آسانسور</span></label>
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={input.hasStorage} onChange={(e) => setFieldUser('amenities', { hasStorage: e.target.checked })} className="accent-[var(--color-brand-600)]" /><span>انباری سندی</span></label>
             </div>
           </div>
 
           {input.purpose === 'sale' && (
-            <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2">
+            <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <label htmlFor="ws-asking-billion" className="font-black text-[#182522] dark:text-white block">
+                <label htmlFor="ws-asking-billion" className="font-black text-[var(--color-text-primary)] dark:text-white block">
                   ۵. قیمت اعلامی فروشنده برای سنجش شکاف (اختیاری - میلیارد تومان)
                 </label>
                 <OriginChip origin={input.inputOrigins.sellerAsking} />
               </div>
-              <input id="ws-asking-billion" type="text" inputMode="decimal" value={input.sellerAskingBillion} onChange={(e) => setFieldUser('sellerAsking', { sellerAskingBillion: e.target.value })} placeholder="در صورت داشتن قیمت آگهی، به میلیارد تومان وارد کنید (مثلاً ۱۰.۵)" className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold tabular-nums" />
+              <input id="ws-asking-billion" type="text" inputMode="decimal" value={input.sellerAskingBillion} onChange={(e) => setFieldUser('sellerAsking', { sellerAskingBillion: e.target.value })} placeholder="در صورت داشتن قیمت آگهی، به میلیارد تومان وارد کنید (مثلاً ۱۰.۵)" className="w-full p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold tabular-nums" />
               {fieldErrors.sellerAsking && (
                 <div className="text-[10.5px] font-bold text-[#B3261E]">{fieldErrors.sellerAsking}</div>
               )}
