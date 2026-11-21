@@ -47,7 +47,7 @@
       "vars": {
         "APP_ENV": "production",
         "WORKER_ENV": "production",
-        "APP_URL": "https://radartehran.ir"
+        "APP_URL": "https://radartehran-frontend.bijanbijane-1.workers.dev"
       }
     }
   }
