@@ -23,3 +23,5 @@ test-results/
 *.p12
 *.key
 
+.wrangler/
+.cache/account-lifecycle-express-journal.v1.json
