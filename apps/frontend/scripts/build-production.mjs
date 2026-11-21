@@ -22,4 +22,4 @@ function run(command, args, cwd) {
 const tsxBin = path.join(repoRoot, 'node_modules/.bin/tsx');
 const viteBin = path.join(repoRoot, 'node_modules/.bin/vite');
 run(tsxBin, ['scripts/generate-sitemap.ts'], repoRoot);
-run(viteBin, ['build', '--config', 'vite.config.ts'], repoRoot);
+run(viteBin, ['build', '--config', 'apps/frontend/vite.config.ts'], repoRoot);
