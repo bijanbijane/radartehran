@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "radartehran-api",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "vars": {
+    "APP_ENV": "development",
+    "WORKER_ENV": "development",
+    "APP_URL": "http://localhost:8787",
+    "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+    "FIREBASE_APP_CHECK_MODE": "disabled",
+    "R2_MEDIA_BUCKET_NAME": "radartehran-dev-media",
+    "RADAR_SERVE_FRONTEND": "0"
+  },
+  "env": {
+    "staging": {
+      "name": "radartehran-api-staging",
+      "vars": {
+        "APP_ENV": "staging",
+        "WORKER_ENV": "staging",
+        "RADAR_SERVE_FRONTEND": "0"
+      },
+      "triggers": { "crons": ["0 * * * *"] },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "radartehran-staging-db",
+          "database_id": "00000000-0000-0000-0000-000000000001",
+          "migrations_dir": "migrations/d1",
+          "migrations_table": "d1_migrations"
+        }
+      ],
+      "r2_buckets": [
+        { "binding": "MEDIA_BUCKET", "bucket_name": "radartehran-staging-media" }
+      ]
+    }
+  }
+}

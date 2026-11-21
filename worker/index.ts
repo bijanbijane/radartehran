@@ -23,6 +23,7 @@ import {
   buildCanonicalCronEnvelopes,
   createCanonicalQueueJobDispatcher,
 } from './queues/jobDispatcher';
+import { releaseWorkerMutationPermitIfHeld } from './account-lifecycle/writeBlockWorkerGate';
 import {
   processRadarQueueBatch,
   type RadarQueueEnvelope,
@@ -201,6 +202,8 @@ export default {
         correlationId: reqCtx.correlationId,
         message: 'خطای داخلی در پردازش درخواست در لبه شبکه رخ داد.',
       });
+    } finally {
+      await releaseWorkerMutationPermitIfHeld(reqCtx);
     }
   },
 
@@ -222,6 +225,10 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
+    if (event.cron === '0 * * * *' && env.DB) {
+      const { recoverPendingLifecycleDispatch } = await import('./account-lifecycle/workerLifecycleRuntime.ts');
+      await recoverPendingLifecycleDispatch(env, 25);
+    }
     if (!env.RADAR_QUEUE) {
       throw new Error('RADAR_QUEUE_BINDING_MISSING_FOR_SCHEDULED_EVENT');
     }

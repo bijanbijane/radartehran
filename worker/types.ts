@@ -143,6 +143,7 @@ export interface WorkerEnv {
   readonly FIREBASE_APP_CHECK_DEBUG_ALLOWLIST?: string;
   readonly ADMIN_EMAIL?: string;
   readonly ADMIN_API_SECRET?: string;
+  readonly LIFECYCLE_WRITE_ADMISSION_RPC_SECRET?: string;
   readonly VALUATION_SEAL_SECRET?: string;
   readonly R2_MEDIA_BUCKET_NAME?: string;
   readonly R2_SIGNING_SECRET?: string;

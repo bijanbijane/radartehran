@@ -11,6 +11,9 @@ import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
 import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagnosticsRoutes';
+import { handleAccountLifecycleRoute } from './routes/accountLifecycleRoutes';
+import { guardWorkerApiMutationWriteBlock } from './account-lifecycle/workerApiWriteBlockGuard';
+import { handleInternalWriteAdmissionRoute } from './routes/internalWriteAdmissionRoutes';
 import type { WorkerRequestContext } from './types';
 
 export interface WorkerRouteDispatchResult {
@@ -34,7 +37,24 @@ export async function dispatchWorkerApiOrSeoRequest(
     };
   }
 
-  // Authoritative Migration Control Register check FIRST — zero route bypasses
+  const internalAdmission = await handleInternalWriteAdmissionRoute(ctx);
+  if (internalAdmission) {
+    return {
+      response: internalAdmission,
+      routePattern: 'POST /api/internal/v1/lifecycle/write-admission',
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  const writeBlockResponse = await guardWorkerApiMutationWriteBlock(ctx);
+  if (writeBlockResponse) {
+    return {
+      response: writeBlockResponse,
+      routePattern: 'GLOBAL_WRITE_BLOCK',
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
   if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED') {
     const { entry } = registeredMatch;
@@ -71,6 +91,15 @@ export async function dispatchWorkerApiOrSeoRequest(
       response,
       routePattern: `${entry.method} ${entry.path}`,
       migrationStatus: entry.status,
+    };
+  }
+
+  const lifecycleResponse = await handleAccountLifecycleRoute(ctx);
+  if (lifecycleResponse) {
+    return {
+      response: lifecycleResponse,
+      routePattern: ctx.pathname,
+      migrationStatus: 'VERIFIED',
     };
   }
 

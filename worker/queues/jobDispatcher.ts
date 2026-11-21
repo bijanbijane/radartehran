@@ -15,12 +15,15 @@ import {
   type RadarQueueEnvelope,
   type RadarQueueJobType,
 } from './queueAndCronProcessor';
+import { validateLifecycleQueuePayload } from '../account-lifecycle/lifecycleQueueContract.ts';
+import { executeBoundedDeletionStep } from '../account-lifecycle/workerLifecycleRuntime.ts';
 
 export const EXECUTABLE_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
   'firestore_d1_projection_sync',
   'r2_orphan_media_reconcile',
   'expired_chunk_upload_session_cleanup',
   'telemetry_archive_flush',
+  'account_lifecycle_deletion_step',
 ] as const;
 
 export const UPLOAD_SESSION_TTL_MS = 15 * 60 * 1000;
@@ -320,6 +323,31 @@ async function handleTelemetryArchiveFlush(
   };
 }
 
+async function handleAccountLifecycleDeletionStep(
+  envelope: RadarQueueEnvelope,
+  env: WorkerEnv,
+): Promise<QueueJobExecutionResult> {
+  const validated = validateLifecycleQueuePayload(envelope.payload);
+  if (validated.ok === false) {
+    throw new QueueJobExecutionError('INVALID_LIFECYCLE_PAYLOAD', validated.reason, false);
+  }
+  const payload = validated.payload;
+  const result = await executeBoundedDeletionStep({
+    env,
+    jobId: payload.jobId,
+    targetUid: payload.targetUid,
+    leaseOwner: envelope.correlationId,
+    maxBatchesPerInvocation: 3,
+  });
+  return {
+    jobType: 'account_lifecycle_deletion_step',
+    idempotencyKey: envelope.idempotencyKey,
+    executedAtIso: new Date().toISOString(),
+    affectedCount: 1,
+    summary: { jobId: payload.jobId, terminal: result.terminal, state: result.state },
+  };
+}
+
 export function createCanonicalQueueJobDispatcher(
   env: WorkerEnv,
 ): (envelope: RadarQueueEnvelope) => Promise<QueueJobExecutionResult> {
@@ -333,6 +361,8 @@ export function createCanonicalQueueJobDispatcher(
         return handleR2OrphanMediaReconcile(envelope, env);
       case 'telemetry_archive_flush':
         return handleTelemetryArchiveFlush(envelope, env);
+      case 'account_lifecycle_deletion_step':
+        return handleAccountLifecycleDeletionStep(envelope, env);
       default:
         throw new QueueJobExecutionError(
           'UNSUPPORTED_JOB_TYPE',
@@ -367,7 +397,7 @@ export function buildCanonicalCronEnvelopes(params: {
       payload: basePayload,
     };
     const validated = validateQueueEnvelope(candidate);
-    if (!validated.valid) {
+    if (validated.valid === false) {
       throw new Error(`CANONICAL_CRON_ENVELOPE_INVALID:${validated.reason}`);
     }
     return validated.envelope;

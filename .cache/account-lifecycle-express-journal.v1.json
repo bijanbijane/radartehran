@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "2026-05.account-lifecycle-journal.v1",
+  "updatedAtIso": "2026-11-21T14:47:10.964Z",
+  "jobs": {
+    "deljob_uid-test-123_b9963077": {
+      "jobId": "deljob_uid-test-123_b9963077",
+      "targetUid": "uid-test-123",
+      "requestedByUid": "uid-test-123",
+      "reason": "USER_REQUESTED_ERASURE_EXPRESS",
+      "state": "PARTIAL_FAILURE_RETRYABLE",
+      "writeBlockEnforced": true,
+      "domainSteps": {
+        "USER_PROFILE": {
+          "source": "USER_PROFILE",
+          "status": "COMPLETED",
+          "resumableCursor": null,
+          "batchesProcessed": 1,
+          "permanentlyDeletedIds": [],
+          "retainedRecords": [],
+          "attempts": 1,
+          "updatedAtIso": "2026-11-21T14:11:53.465Z"
+        },
+        "FAVORITES_AND_WORKSPACES": {
+          "source": "FAVORITES_AND_WORKSPACES",
+          "status": "COMPLETED",
+          "resumableCursor": null,
+          "batchesProcessed": 1,
+          "permanentlyDeletedIds": [],
+          "retainedRecords": [],
+          "attempts": 1,
+          "updatedAtIso": "2026-11-21T14:11:53.465Z"
+        },
+        "BUYER_ALERTS": {
+          "source": "BUYER_ALERTS",
+          "status": "COMPLETED",
+          "resumableCursor": null,
+          "batchesProcessed": 1,
+          "permanentlyDeletedIds": [
+            "lead_0"
+          ],
+          "retainedRecords": [],
+          "attempts": 1,
+          "updatedAtIso": "2026-11-21T14:11:53.464Z"
+        },
+        "BARGAIN_LISTINGS": {
+          "source": "BARGAIN_LISTINGS",
+          "status": "COMPLETED",
+          "resumableCursor": null,
+          "batchesProcessed": 1,
+          "permanentlyDeletedIds": [
+            "brg_user_one"
+          ],
+          "retainedRecords": [],
+          "attempts": 1,
+          "updatedAtIso": "2026-11-21T14:11:53.464Z"
+        },
+        "SPONSOR_RECORDS": {
+          "source": "SPONSOR_RECORDS",
+          "status": "COMPLETED",
+          "resumableCursor": null,
+          "batchesProcessed": 1,
+          "permanentlyDeletedIds": [],
+          "retainedRecords": [],
+          "attempts": 1,
+          "updatedAtIso": "2026-11-21T14:11:53.465Z"
+        },
+        "CROWD_CLAIMS": {
+          "source": "CROWD_CLAIMS",
+          "status": "COMPLETED",
+          "resumableCursor": null,
+          "batchesProcessed": 1,
+          "permanentlyDeletedIds": [
+            null
+          ],
+          "retainedRecords": [],
+          "attempts": 1,
+          "updatedAtIso": "2026-11-21T14:11:53.466Z"
+        },
+        "MEDIA_METADATA": {
+          "source": "MEDIA_METADATA",
+          "status": "COMPLETED",
+          "resumableCursor": null,
+          "batchesProcessed": 0,
+          "permanentlyDeletedIds": [],
+          "retainedRecords": [],
+          "attempts": 0,
+          "updatedAtIso": "2026-11-21T14:11:53.466Z"
+        }
+      },
+      "mediaStep": {
+        "status": "COMPLETED",
+        "resumableCursor": null,
+        "deletedObjectIds": [],
+        "pendingRetryObjectIds": [],
+        "attempts": 1,
+        "updatedAtIso": "2026-11-21T14:11:53.465Z"
+      },
+      "authStep": {
+        "status": "FAILED_RETRYABLE",
+        "deletedAtIso": null,
+        "attempts": 4500,
+        "updatedAtIso": "2026-11-21T14:47:10.964Z",
+        "lastError": "AUTH_DELETE_REQUIRES_ADMIN_OR_CLIENT"
+      },
+      "totalAttempts": 4500,
+      "createdAtIso": "2026-11-21T14:11:53.461Z",
+      "updatedAtIso": "2026-11-21T14:47:10.964Z",
+      "completedAtIso": null,
+      "lastFailureReason": "Firebase Auth identity deletion failed: AUTH_DELETE_REQUIRES_ADMIN_OR_CLIENT",
+      "revision": 16509
+    }
+  },
+  "activeJobIdByUid": {
+    "uid-test-123": "deljob_uid-test-123_b9963077"
+  },
+  "writeBlocksByUid": {
+    "uid-test-123": {
+      "targetUid": "uid-test-123",
+      "state": "WRITE_BLOCKED_DELETION_IN_PROGRESS",
+      "activeDeletionJobId": "deljob_uid-test-123_b9963077",
+      "blockedAtIso": "2026-11-21T14:11:53.461Z",
+      "updatedAtIso": "2026-11-21T14:47:10.964Z",
+      "reason": "Executing deletion job deljob_uid-test-123_b9963077",
+      "revision": 4501
+    }
+  }
+}

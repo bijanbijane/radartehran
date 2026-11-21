@@ -9,7 +9,8 @@ export type RadarQueueJobType =
   | 'firestore_d1_projection_sync'
   | 'r2_orphan_media_reconcile'
   | 'expired_chunk_upload_session_cleanup'
-  | 'telemetry_archive_flush';
+  | 'telemetry_archive_flush'
+  | 'account_lifecycle_deletion_step';
 
 export interface RadarQueueEnvelope<TPayload = Record<string, unknown>> {
   schemaVersion: '1.0';
@@ -34,6 +35,7 @@ export const VALID_JOB_TYPES = new Set<RadarQueueJobType>([
   'r2_orphan_media_reconcile',
   'expired_chunk_upload_session_cleanup',
   'telemetry_archive_flush',
+  'account_lifecycle_deletion_step',
 ]);
 
 export const DEFAULT_JOB_LEASE_DURATION_MS = 60_000;
@@ -152,7 +154,7 @@ export async function processRadarQueueBatch(params: {
     const nowIso = new Date(nowMs).toISOString();
     const validation = validateQueueEnvelope(msg.body);
 
-    if (!validation.valid) {
+    if (validation.valid === false) {
       const forwarded = await routeToDlqFailClosed({
         dlq: params.dlq,
         record: {

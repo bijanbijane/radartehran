@@ -23,6 +23,7 @@ import {
   resolveStorageLimits,
 } from './objectStorageHelpers';
 import { handleChunkedAndDirectUploadRoutes } from './objectStorageUploadHandlers';
+import { enforceWorkerMutationWriteBlock } from '../account-lifecycle/writeBlockWorkerGate.ts';
 
 async function authenticateUploadCaller(ctx: WorkerRequestContext) {
   return verifyFirebaseIdTokenOnEdge({
@@ -248,7 +249,9 @@ export async function handleObjectStorageRoute(
     });
   }
   const bucketRes = resolveWorkerMediaBucketName(env);
-  if (!bucketRes.ok) return jsonWorkerResponse(ctx, 503, { status: 'error', code: bucketRes.code });
+  if (bucketRes.ok === false) {
+    return jsonWorkerResponse(ctx, 503, { status: 'error', code: bucketRes.code });
+  }
 
   const auth = await authenticateUploadCaller(ctx);
   if (!auth.authenticated || !auth.uid) {
@@ -257,6 +260,9 @@ export async function handleObjectStorageRoute(
       code: auth.reasonCode || 'UNAUTHORIZED',
     });
   }
+
+  const writeBlockResponse = await enforceWorkerMutationWriteBlock(ctx, auth.uid);
+  if (writeBlockResponse) return writeBlockResponse;
 
   const uploadResponse = await handleChunkedAndDirectUploadRoutes({
     ctx,

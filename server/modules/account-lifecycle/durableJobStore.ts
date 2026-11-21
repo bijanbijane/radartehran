@@ -17,12 +17,18 @@ import path from 'node:path';
 import { getFirebaseAdminFirestoreForServer } from '../../../src/utils/serverAdminAndTelegramSecurity';
 import {
   AccountLifecycleError,
-  ALL_USER_OWNED_DOMAIN_SOURCES,
   DurableAccountDeletionJob,
   DurableUserWriteBlockRecord,
-  DomainDeletionStepJournal,
-  UserOwnedDomainSource,
 } from './types.ts';
+import { AccountLifecycleStoreError } from './storeContract.ts';
+import type { DurableAccountLifecycleStore } from './storeContract.ts';
+
+export type NodeJournalAccountLifecycleStoreOptions = {
+  durableJournalPath?: string;
+  enableFirestoreSync?: boolean;
+};
+
+export { type DurableAccountLifecycleStore };
 
 export const ACCOUNT_DELETION_JOBS_COLLECTION = 'account_deletion_jobs_v2';
 export const ACCOUNT_WRITE_BLOCKS_COLLECTION = 'account_write_blocks_v2';
@@ -35,55 +41,18 @@ interface DurableLifecycleJournalSnapshot {
   writeBlocksByUid: Record<string, DurableUserWriteBlockRecord>;
 }
 
-export interface DurableAccountLifecycleStore {
-  getWriteBlock(targetUid: string): Promise<DurableUserWriteBlockRecord | null>;
-  upsertWriteBlock(record: DurableUserWriteBlockRecord): Promise<DurableUserWriteBlockRecord>;
-  assertUserWritePermitted(targetUid: string): Promise<void>;
-
-  getJobById(jobId: string): Promise<DurableAccountDeletionJob | null>;
-  getLatestJobForUser(targetUid: string): Promise<DurableAccountDeletionJob | null>;
-  createOrGetActiveJob(job: DurableAccountDeletionJob): Promise<{
-    job: DurableAccountDeletionJob;
-    createdNew: boolean;
-  }>;
-  saveJobProgress(
-    jobId: string,
-    expectedRevision: number,
-    updater: (current: DurableAccountDeletionJob) => DurableAccountDeletionJob,
-  ): Promise<DurableAccountDeletionJob>;
-  listAllJobs(): Promise<DurableAccountDeletionJob[]>;
-}
-
 function cloneDeep<T>(val: T): T {
   return JSON.parse(JSON.stringify(val)) as T;
 }
 
-export function createInitialDomainSteps(nowIso: string): Record<UserOwnedDomainSource, DomainDeletionStepJournal> {
-  const steps = {} as Record<UserOwnedDomainSource, DomainDeletionStepJournal>;
-  for (const source of ALL_USER_OWNED_DOMAIN_SOURCES) {
-    steps[source] = {
-      source,
-      status: 'PENDING',
-      resumableCursor: null,
-      batchesProcessed: 0,
-      permanentlyDeletedIds: [],
-      retainedRecords: [],
-      attempts: 0,
-      updatedAtIso: nowIso,
-    };
-  }
-  return steps;
-}
+export { createInitialDomainSteps } from './deletionJobBootstrap.ts';
 
 export class FirestoreAndJournalAccountLifecycleStore implements DurableAccountLifecycleStore {
   private readonly durableJournalPath: string;
   private readonly enableFirestoreSync: boolean;
   private mutationQueue: Promise<unknown> = Promise.resolve();
 
-  constructor(options?: {
-    durableJournalPath?: string;
-    enableFirestoreSync?: boolean;
-  }) {
+  constructor(options?: NodeJournalAccountLifecycleStoreOptions) {
     this.durableJournalPath =
       options?.durableJournalPath ??
       path.resolve(process.cwd(), '.cache', 'account-lifecycle-journal.v1.json');
@@ -128,14 +97,14 @@ export class FirestoreAndJournalAccountLifecycleStore implements DurableAccountL
         activeJobIdByUid: parsed.activeJobIdByUid ?? {},
         writeBlocksByUid: parsed.writeBlocksByUid ?? {},
       };
-    } catch {
-      return {
-        schemaVersion: '2026-05.account-lifecycle-journal.v1',
-        updatedAtIso: new Date().toISOString(),
-        jobs: {},
-        activeJobIdByUid: {},
-        writeBlocksByUid: {},
-      };
+    } catch (err) {
+      throw new AccountLifecycleStoreError(
+        'STORE_SNAPSHOT_CORRUPT',
+        `Account lifecycle journal at "${this.durableJournalPath}" is unreadable or corrupt: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        503,
+      );
     }
   }
 
