@@ -37,6 +37,14 @@ const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'GET /api/v1/telemetry/policy',
 ]);
 
+const GROUP_2_VERIFIED_IRNI_COMPATIBILITY_PATHS = new Set<string>([
+  'GET /api/v1/reference/irni/provinces',
+  'GET /api/v1/reference/irni/counties',
+  'GET /api/v1/reference/irni/cities',
+  'GET /api/v1/reference/irni/neighborhoods',
+  'GET /api/v1/reference/irni/neighborhoods/:id',
+]);
+
 const GROUP_2_VERIFIED_IRNI_RPC_PATHS = new Set<string>([
   'GET /api/v2/reference/irni/canonical/metadata',
   'GET /api/v2/reference/irni/canonical/entities',
@@ -153,6 +161,21 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       stateStorageTouchpoints: ['.object-storage-bucket/', 'Firestore object_storage_metadata'],
       externalApiTouchpoints: ['S3/R2 Compatible Object Storage'],
       blockerReason: 'Admin storage audit & reconciliation endpoints remain on legacy Express until operator cutover.',
+    };
+  }
+
+  if (GROUP_2_VERIFIED_IRNI_COMPATIBILITY_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_2_PUBLIC_MARKET_AND_GEO_READS',
+      workerHandlerModule: 'worker/routes/irniReferenceRoutes.ts',
+      status: 'VERIFIED',
+      activeRuntime: 'cloudflare_worker',
+      dependencies: [
+        'worker/irni/irniNeighborhoodClient.ts',
+        'worker/irni/irniTypes.ts',
+      ],
+      stateStorageTouchpoints: ['Dedicated KV namespace cache prefix v1:irni_ref:; no D1 access'],
+      externalApiTouchpoints: ['Configured IRNI HTTPS read-only reference API'],
     };
   }
 
