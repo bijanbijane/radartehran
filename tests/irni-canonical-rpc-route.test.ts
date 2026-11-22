@@ -106,6 +106,13 @@ describe('canonical IRNI v2 HTTP read adapter', () => {
     }
   });
 
+  it('does not throw when a registered canonical route contains malformed percent encoding', () => {
+    const malformedPath = PREFIX + '/entities/%E0%A4%A';
+    assert.doesNotThrow(() => {
+      assert.equal(findMigrationRegisterEntry('GET', malformedPath), null);
+    });
+  });
+
   it('keeps legacy HTTPS DTO compatibility routes registered separately from canonical RPC', () => {
     const legacyPaths = [
       '/api/v1/reference/irni/provinces',
