@@ -373,4 +373,90 @@ describe('IRNI v1 geographic RPC client — fail-closed binding and contract gua
       'IRNI_RPC_INVALID_RESPONSE',
     );
   });
+
+  it('rejects resolution, page, and relationship envelopes whose revision or checksum differs from verified metadata', async () => {
+    const wrongResolutionRevision = new IrniGeographicRpcClient({
+      binding: createBinding({
+        resolveIdentifier: async () =>
+          persistenceOk({
+            queryIdentifier: 'radar:city-hood:v1:tehran:5',
+            resolved: true,
+            canonicalGeographicEntityId: approvedEntity().geographicEntityId,
+            resolutionPath: 'LEGACY_ALIAS',
+            registryRevision: 9,
+          }),
+      }),
+    });
+    const resolution = await wrongResolutionRevision.resolveIdentifier({
+      kind: 'RADAR_LEGACY_ALIAS',
+      alias: {
+        legacySystemCode: 'TEHRAN_RADAR',
+        legacyIdentifierValue: 'radar:city-hood:v1:tehran:5',
+      },
+    }, 8);
+    assert.equal(resolution.ok, false);
+    assert.equal(resolution.ok ? undefined : resolution.error.code, 'VERSION_CONFLICT');
+
+    const wrongPageRevision = new IrniGeographicRpcClient({
+      binding: createBinding({
+        listApprovedEntitiesPaginated: async () =>
+          persistenceOk({
+            registryRevision: 9,
+            registryChecksum: VALID_CHECKSUM,
+            page: {
+              items: [approvedEntity()],
+              nextCursor: null,
+              previousCursor: null,
+              hasMore: false,
+              pageSize: 1,
+              totalMatchedCount: 1,
+              appliedSort: { field: 'canonicalNameFa', direction: 'ASC' },
+            },
+          }),
+      }),
+    });
+    const pageRevision = await wrongPageRevision.listApprovedEntitiesPaginated({}, {}, 8);
+    assert.equal(pageRevision.ok, false);
+    assert.equal(pageRevision.ok ? undefined : pageRevision.error.code, 'VERSION_CONFLICT');
+
+    const wrongPageChecksum = new IrniGeographicRpcClient({
+      binding: createBinding({
+        listApprovedEntitiesPaginated: async () =>
+          persistenceOk({
+            registryRevision: 8,
+            registryChecksum: 'b'.repeat(64),
+            page: {
+              items: [approvedEntity()],
+              nextCursor: null,
+              previousCursor: null,
+              hasMore: false,
+              pageSize: 1,
+              totalMatchedCount: 1,
+              appliedSort: { field: 'canonicalNameFa', direction: 'ASC' },
+            },
+          }),
+      }),
+    });
+    const pageChecksum = await wrongPageChecksum.listApprovedEntitiesPaginated({}, {}, 8);
+    assert.equal(pageChecksum.ok, false);
+    assert.equal(failureCode(pageChecksum), 'IRNI_RPC_REGISTRY_UNVERIFIED');
+
+    const wrongRelationshipChecksum = new IrniGeographicRpcClient({
+      binding: createBinding({
+        listApprovedRelationshipsForEntity: async () =>
+          persistenceOk({
+            registryRevision: 8,
+            registryChecksum: 'c'.repeat(64),
+            relationships: [],
+          }),
+      }),
+    });
+    const relationshipChecksum = await wrongRelationshipChecksum.listApprovedRelationshipsForEntity(
+      approvedEntity().geographicEntityId,
+      8,
+    );
+    assert.equal(relationshipChecksum.ok, false);
+    assert.equal(failureCode(relationshipChecksum), 'IRNI_RPC_REGISTRY_UNVERIFIED');
+  });
+
 });
