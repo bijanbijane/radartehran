@@ -106,6 +106,23 @@ describe('canonical IRNI v2 HTTP read adapter', () => {
     }
   });
 
+  it('keeps legacy HTTPS DTO compatibility routes registered separately from canonical RPC', () => {
+    const legacyPaths = [
+      '/api/v1/reference/irni/provinces',
+      '/api/v1/reference/irni/counties',
+      '/api/v1/reference/irni/cities',
+      '/api/v1/reference/irni/neighborhoods',
+      '/api/v1/reference/irni/neighborhoods/legacy-id',
+    ];
+
+    for (const path of legacyPaths) {
+      const match = findMigrationRegisterEntry('GET', path);
+      assert.ok(match, 'Expected legacy compatibility route to be registered: ' + path);
+      assert.equal(match.entry.status, 'VERIFIED');
+      assert.equal(match.entry.workerHandlerModule, 'worker/routes/irniReferenceRoutes.ts');
+    }
+  });
+
   it('fails closed with 503 when the IRNI Service Binding is absent', async () => {
     const response = await handleIrniCanonicalRpcRoute(
       makeContext('GET', PREFIX + '/metadata'),
