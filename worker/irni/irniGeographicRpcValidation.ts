@@ -17,8 +17,22 @@ import type {
 
 export const IRNI_GEOGRAPHIC_RPC_CONTRACT_VERSION = '1.0.0' as const;
 
+const ACCEPTED_VERIFICATION_STATUSES = new Set([
+  'VERIFIED_OFFICIAL_PRIMARY',
+  'VERIFIED_OFFICIAL_DERIVED',
+  'VERIFIED_INTERNATIONAL_STANDARD',
+  'VERIFIED_SECONDARY_GAZETTEER',
+]);
+
+const RADAR_LEGACY_IDENTIFIER_PATTERNS: readonly RegExp[] = Object.freeze([
+  /^radar:city-hood:v1:[a-z][a-z0-9_-]{0,63}:[1-9][0-9]{0,8}$/,
+  /^radar:geography-catalog:v1:hood%3A[a-z][a-z0-9_-]{0,63}%3A[1-9][0-9]{0,8}$/,
+  /^radar:urban-intelligence:v1:[a-z][a-z0-9_-]{0,63}%3Ahood%3A[1-9][0-9]{0,8}$/,
+]);
+
+
 type RecordValue = Record<string, unknown>;
-type DataValidator<T> = (value: unknown) => value is T;
+export type DataValidator<T> = (value: unknown) => value is T;
 
 export function isRecord(value: unknown): value is RecordValue {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -30,6 +44,14 @@ export function hasOwn(value: RecordValue, key: string): boolean {
 
 export function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value.trim() === value;
+}
+
+export function isVersionedRadarLegacyIdentifier(value: unknown): value is string {
+  return (
+    isNonEmptyString(value) &&
+    value.length <= 256 &&
+    RADAR_LEGACY_IDENTIFIER_PATTERNS.some((pattern) => pattern.test(value))
+  );
 }
 
 function isStringOrNull(value: unknown): value is string | null {
