@@ -351,25 +351,25 @@ export class IrniGeographicRpcClient {
     );
   }
 
-  private async assertReadableRevision<T>(
+  private async assertReadableRevision(
     expectedRegistryRevision: number,
-  ): Promise<IrniGeographicPersistenceResult<IrniGeographicRegistryMetadata> | null> {
+  ): Promise<IrniGeographicPersistenceError | null> {
     if (!isPositiveSafeInteger(expectedRegistryRevision)) {
-      return unavailable<T>(
+      return unavailable<never>(
         'IRNI_RPC_INVALID_PARAMETERS',
         'نسخه رجیستری مورد انتظار باید یک عدد صحیح مثبت و امن باشد.',
         false,
-      ) as IrniGeographicPersistenceResult<IrniGeographicRegistryMetadata>;
+      ).error;
     }
 
     const metadata = await this.getApprovedRegistryMetadata();
-    if (!metadata.ok) return metadata;
+    if (!metadata.ok) return metadata.error;
 
     if (
       metadata.value.contractState !== 'ACTIVE' ||
       metadata.value.integrityVerified !== true
     ) {
-      return unavailable<IrniGeographicRegistryMetadata>(
+      return unavailable<never>(
         metadata.value.contractState === 'ACTIVE'
           ? 'IRNI_RPC_REGISTRY_UNVERIFIED'
           : 'IRNI_RPC_CONTRACT_MISMATCH',
@@ -380,14 +380,14 @@ export class IrniGeographicRpcClient {
           integrityVerified: metadata.value.integrityVerified,
           registryRevision: metadata.value.registryRevision,
         },
-      );
+      ).error;
     }
 
     if (metadata.value.registryRevision !== expectedRegistryRevision) {
-      return versionConflict<IrniGeographicRegistryMetadata>(
+      return versionConflict<never>(
         expectedRegistryRevision,
         metadata.value.registryRevision,
-      );
+      ).error;
     }
 
     return null;
@@ -405,10 +405,8 @@ export class IrniGeographicRpcClient {
       );
     }
 
-    const gate = await this.assertReadableRevision<IrniCanonicalGeographicEntity>(
-      expectedRegistryRevision,
-    );
-    if (gate) return gate as IrniGeographicPersistenceResult<IrniCanonicalGeographicEntity>;
+    const gate = await this.assertReadableRevision(expectedRegistryRevision);
+    if (gate) return { ok: false, error: gate };
 
     return this.invoke(
       () => this.binding!.getApprovedEntityByCanonicalId(
@@ -431,10 +429,8 @@ export class IrniGeographicRpcClient {
       );
     }
 
-    const gate = await this.assertReadableRevision<IrniGeographicIdResolutionResult>(
-      expectedRegistryRevision,
-    );
-    if (gate) return gate as IrniGeographicPersistenceResult<IrniGeographicIdResolutionResult>;
+    const gate = await this.assertReadableRevision(expectedRegistryRevision);
+    if (gate) return { ok: false, error: gate };
 
     return this.invoke(
       () => this.binding!.resolveIdentifier(query, expectedRegistryRevision),
@@ -455,10 +451,8 @@ export class IrniGeographicRpcClient {
       );
     }
 
-    const gate = await this.assertReadableRevision<IrniGeographicEntityPage>(
-      expectedRegistryRevision,
-    );
-    if (gate) return gate as IrniGeographicPersistenceResult<IrniGeographicEntityPage>;
+    const gate = await this.assertReadableRevision(expectedRegistryRevision);
+    if (gate) return { ok: false, error: gate };
 
     return this.invoke(
       () => this.binding!.listApprovedEntitiesPaginated(
@@ -482,10 +476,8 @@ export class IrniGeographicRpcClient {
       );
     }
 
-    const gate = await this.assertReadableRevision<IrniGeographicRelationshipSnapshot>(
-      expectedRegistryRevision,
-    );
-    if (gate) return gate as IrniGeographicPersistenceResult<IrniGeographicRelationshipSnapshot>;
+    const gate = await this.assertReadableRevision(expectedRegistryRevision);
+    if (gate) return { ok: false, error: gate };
 
     return this.invoke(
       () => this.binding!.listApprovedRelationshipsForEntity(
