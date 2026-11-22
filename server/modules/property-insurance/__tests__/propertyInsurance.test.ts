@@ -477,7 +477,7 @@ describe('Property Insurance Module - Comprehensive Test Suite', () => {
       coverageStartIso: '2026-01-01T00:00:00.000Z', coverageEndIso: '2027-01-01T00:00:00.000Z', insuredPropertyCanonicalIds: ['prop-1'],
       policyholderIsConfirmedPropertyOwner: true, financialStructure: { outstandingPremiumAmount: 0 }, sourceProvenance: { sourceType: 'POLICYHOLDER_SUBMISSION' },
     };
-    const covs: any[] = [{ coverageId: 'cov-eq', coverageCategory: 'EARTHQUAKE', insuredAssetCanonicalIds: ['prop-1'], effectiveStartIso: '2026-01-01T00:00:00.000Z', effectiveEndIso: '2027-01-01T00:00:00.000Z' }];
+    const covs: any[] = [{ coverageId: 'cov-eq', policyId: 'pol-1', coverageCategory: 'EARTHQUAKE', insuredAssetCanonicalIds: ['prop-1'], effectiveStartIso: '2026-01-01T00:00:00.000Z', effectiveEndIso: '2027-01-01T00:00:00.000Z', coverageLimitAmount: 1_000_000, deductibleMethod: 'FIXED_AMOUNT', deductibleValue: 0 }];
     const exs: any[] = [{ limitationId: 'lim-wait-30', policyId: 'pol-1', limitationCategory: 'WAITING_PERIOD', excludedRiskCategories: ['EARTHQUAKE', 'FLOOD'], affectedAssetCanonicalIds: [], waitingPeriodDays: 30 }];
     const withinWait = evaluatePolicyCoverageStatusWithLimitations({ policy: basePolicy, coverages: covs, exclusions: exs, asOfIso: '2026-01-10T00:00:00.000Z', queryRiskCategory: 'EARTHQUAKE', queryAssetCanonicalId: 'prop-1', incidentDateIso: '2026-01-10T00:00:00.000Z' });
     assert.equal(withinWait.queriedRiskEvaluation.applicabilityConclusion, 'EXCLUDED_BY_EXPLICIT_LIMITATION');
