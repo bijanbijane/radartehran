@@ -94,18 +94,24 @@ export class IrniGeographicRpcClient {
 
   private async assertReadableRevision(
     expectedRegistryRevision: number,
-  ): Promise<IrniGeographicPersistenceError | null> {
+  ): Promise<
+    | { readonly ok: true; readonly metadata: IrniGeographicRegistryMetadata }
+    | { readonly ok: false; readonly error: IrniGeographicPersistenceError }
+  > {
     if (!isPositiveSafeInteger(expectedRegistryRevision)) {
-      return failureError(
-        'VALIDATION_FAILURE',
-        'نسخه رجیستری مورد انتظار باید یک عدد صحیح مثبت و امن باشد.',
-        false,
-        { failureCode: 'IRNI_RPC_INVALID_PARAMETERS' },
-      );
+      return {
+        ok: false,
+        error: failureError(
+          'VALIDATION_FAILURE',
+          'نسخه رجیستری مورد انتظار باید یک عدد صحیح مثبت و امن باشد.',
+          false,
+          { failureCode: 'IRNI_RPC_INVALID_PARAMETERS' },
+        ),
+      };
     }
 
     const metadata = await this.getApprovedRegistryMetadata();
-    if (!metadata.ok) return metadata.error;
+    if (!metadata.ok) return { ok: false, error: metadata.error };
 
     if (
       metadata.value.contractState !== 'ACTIVE' ||
@@ -115,32 +121,82 @@ export class IrniGeographicRpcClient {
         metadata.value.contractState === 'ACTIVE'
           ? 'IRNI_RPC_REGISTRY_UNVERIFIED'
           : 'IRNI_RPC_CONTRACT_MISMATCH';
-      return failureError(
-        'STORAGE_UNAVAILABLE',
-        'قرارداد RPC مرجع جغرافیایی IRNI فعال و یکپارچگی رجیستری تأیید نشده است؛ خواندن داده مسدود شد.',
-        true,
-        {
-          failureCode,
-          contractState: metadata.value.contractState,
-          integrityVerified: metadata.value.integrityVerified,
-          registryRevision: metadata.value.registryRevision,
-        },
-      );
+      return {
+        ok: false,
+        error: failureError(
+          'STORAGE_UNAVAILABLE',
+          'قرارداد RPC مرجع جغرافیایی IRNI فعال و یکپارچگی رجیستری تأیید نشده است؛ خواندن داده مسدود شد.',
+          true,
+          {
+            failureCode,
+            contractState: metadata.value.contractState,
+            integrityVerified: metadata.value.integrityVerified,
+            registryRevision: metadata.value.registryRevision,
+          },
+        ),
+      };
     }
 
     if (metadata.value.registryRevision !== expectedRegistryRevision) {
-      return failureError(
-        'VERSION_CONFLICT',
-        'نسخه رجیستری جغرافیایی IRNI در فاصله درخواست تغییر کرده است؛ صفحه‌بندی باید از نسخه واحد آغاز شود.',
-        true,
-        {
-          expectedRegistryRevision,
-          actualRegistryRevision: metadata.value.registryRevision,
-        },
-      );
+      return {
+        ok: false,
+        error: failureError(
+          'VERSION_CONFLICT',
+          'نسخه رجیستری جغرافیایی IRNI در فاصله درخواست تغییر کرده است؛ صفحه‌بندی باید از نسخه واحد آغاز شود.',
+          true,
+          {
+            expectedRegistryRevision,
+            actualRegistryRevision: metadata.value.registryRevision,
+          },
+        ),
+      };
     }
 
-    return null;
+    return { ok: true, metadata: metadata.value };
+  }
+
+  private enforceSnapshotIdentity<T extends {
+    readonly registryRevision: number;
+    readonly registryChecksum: string;
+  }>(
+    result: IrniGeographicPersistenceResult<T>,
+    expectedMetadata: IrniGeographicRegistryMetadata,
+  ): IrniGeographicPersistenceResult<T> {
+    if (!result.ok) return result;
+
+    if (result.value.registryRevision !== expectedMetadata.registryRevision) {
+      return {
+        ok: false,
+        error: failureError(
+          'VERSION_CONFLICT',
+          'نسخه صفحه یا روابط دریافتی با نسخه رجیستری تأییدشده یکسان نیست؛ پاسخ رد شد.',
+          true,
+          {
+            expectedRegistryRevision: expectedMetadata.registryRevision,
+            actualRegistryRevision: result.value.registryRevision,
+          },
+        ),
+      };
+    }
+
+    if (result.value.registryChecksum !== expectedMetadata.registryChecksum) {
+      return {
+        ok: false,
+        error: failureError(
+          'STORAGE_UNAVAILABLE',
+          'Checksum صفحه یا روابط دریافتی با checksum رجیستری تأییدشده یکسان نیست؛ پاسخ رد شد.',
+          false,
+          {
+            failureCode: 'IRNI_RPC_REGISTRY_UNVERIFIED',
+            registryRevision: expectedMetadata.registryRevision,
+            expectedRegistryChecksum: expectedMetadata.registryChecksum,
+            actualRegistryChecksum: result.value.registryChecksum,
+          },
+        ),
+      };
+    }
+
+    return result;
   }
 
   public async getApprovedEntityByCanonicalId(
@@ -156,7 +212,7 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (gate) return { ok: false, error: gate };
+    if (!gate.ok) return { ok: false, error: gate.error };
 
     return this.invoke(
       () => this.binding!.getApprovedEntityByCanonicalId(
@@ -180,12 +236,30 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (gate) return { ok: false, error: gate };
+    if (!gate.ok) return { ok: false, error: gate.error };
 
-    return this.invoke(
+    const result = await this.invoke(
       () => this.binding!.resolveIdentifier(query, expectedRegistryRevision),
       isResolution,
     );
+    if (!result.ok) return result;
+
+    if (result.value.registryRevision !== gate.metadata.registryRevision) {
+      return {
+        ok: false,
+        error: failureError(
+          'VERSION_CONFLICT',
+          'نتیجه حل شناسه متعلق به revision مورد انتظار نیست؛ پاسخ رد شد.',
+          true,
+          {
+            expectedRegistryRevision: gate.metadata.registryRevision,
+            actualRegistryRevision: result.value.registryRevision,
+          },
+        ),
+      };
+    }
+
+    return result;
   }
 
   public async listApprovedEntitiesPaginated(
@@ -202,9 +276,9 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (gate) return { ok: false, error: gate };
+    if (!gate.ok) return { ok: false, error: gate.error };
 
-    return this.invoke(
+    const result = await this.invoke(
       () => this.binding!.listApprovedEntitiesPaginated(
         filter,
         page,
@@ -212,6 +286,7 @@ export class IrniGeographicRpcClient {
       ),
       isEntityPage,
     );
+    return this.enforceSnapshotIdentity(result, gate.metadata);
   }
 
   public async listApprovedRelationshipsForEntity(
@@ -227,15 +302,16 @@ export class IrniGeographicRpcClient {
     }
 
     const gate = await this.assertReadableRevision(expectedRegistryRevision);
-    if (gate) return { ok: false, error: gate };
+    if (!gate.ok) return { ok: false, error: gate.error };
 
-    return this.invoke(
+    const result = await this.invoke(
       () => this.binding!.listApprovedRelationshipsForEntity(
         geographicEntityId,
         expectedRegistryRevision,
       ),
       isRelationshipSnapshot,
     );
+    return this.enforceSnapshotIdentity(result, gate.metadata);
   }
 
   private isValidIdentifierQuery(query: IrniGeographicIdentifierQuery): boolean {
