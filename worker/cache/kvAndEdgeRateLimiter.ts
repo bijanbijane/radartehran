@@ -149,7 +149,7 @@ export type RateLimitConsistencyTier = 'edge_approximate' | 'strong_durable';
 
 export async function evaluateTieredWorkerRateLimit(params: {
   tier: RateLimitConsistencyTier;
-  action: 'public_read' | 'map_tile' | 'buyer_lead' | 'media_upload' | 'account_auth' | 'admin_mutation';
+  action: 'public_read' | 'map_tile' | 'buyer_lead' | 'media_upload' | 'account_auth' | 'admin_mutation' | 'research_ingest';
   subjectKey: string;
   maxRequests: number;
   windowSeconds: number;
