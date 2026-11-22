@@ -1,40 +1,49 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "radartehran-api",
-  "main": "./worker/index.ts",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-03-01",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
   "observability": { "enabled": true },
   "vars": {
-    "APP_ENV": "development",
-    "WORKER_ENV": "development",
-    "APP_URL": "http://localhost:8787",
+    "APP_ENV": "production",
+    "WORKER_ENV": "production",
+    "APP_URL": "https://radartehran-frontend.bijanbijane-1.workers.dev",
     "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
-    "FIREBASE_APP_CHECK_MODE": "disabled",
-    "R2_MEDIA_BUCKET_NAME": "radartehran-dev-media",
-    "RADAR_SERVE_FRONTEND": "0"
+    "RESEARCH_HMAC_KEY_VERSION": "v1",
+    "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
+    "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
+    "GEO_REGISTRY_EXPECTED_ID_ALGORITHM": "IRGEO1-SHA256-FULL-V1"
   },
-  "env": {
-    "staging": {
-      "name": "radartehran-api-staging",
-      "vars": {
-        "APP_ENV": "staging",
-        "WORKER_ENV": "staging",
-        "RADAR_SERVE_FRONTEND": "0"
-      },
-      "triggers": { "crons": ["0 * * * *"] },
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "radartehran-staging-db",
-          "database_id": "00000000-0000-0000-0000-000000000001",
-          "migrations_dir": "migrations/d1",
-          "migrations_table": "d1_migrations"
-        }
-      ],
-      "r2_buckets": [
-        { "binding": "MEDIA_BUCKET", "bucket_name": "radartehran-staging-media" }
-      ]
+  "d1_databases": [
+    {
+      "binding": "USER_DB",
+      "database_name": "radar-user-db",
+      "database_id": "fbb98e6b-5200-4047-b4bc-15a51c06aa84",
+      "migrations_dir": "migrations/user-d1",
+      "migrations_table": "d1_migrations"
+    },
+    {
+      "binding": "DB",
+      "database_name": "radar-user-db",
+      "database_id": "fbb98e6b-5200-4047-b4bc-15a51c06aa84",
+      "migrations_dir": "migrations/user-d1",
+      "migrations_table": "d1_migrations"
+    },
+    {
+      "binding": "RESEARCH_DB",
+      "database_name": "radar-researcher-db",
+      "database_id": "a04f9716-fb95-44da-841c-b54be252db70",
+      "migrations_dir": "migrations/research-d1",
+      "migrations_table": "d1_migrations"
+    },
+    {
+      "binding": "NEIGHBORHOOD_DB",
+      "database_name": "radar-neighborhood-db",
+      "database_id": "f335efe8-37ac-4c7d-a057-bc9f4480f6c6",
+      "migrations_dir": "migrations/neighborhood-d1",
+      "migrations_table": "d1_migrations"
     }
-  }
+  ]
 }
