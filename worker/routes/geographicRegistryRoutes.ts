@@ -563,7 +563,7 @@ async function handlePublisherRoute(ctx: WorkerRequestContext, db: D1Database): 
     return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'IRNI_PUBLISH_SECRET_NOT_CONFIGURED' });
   }
   const signed = await verifySignedPayload(ctx.request, secret);
-  if (!signed.ok) return jsonWorkerResponse(ctx, signed.status, { status: 'error', code: signed.code });
+  if (signed.ok === false) return jsonWorkerResponse(ctx, signed.status, { status: 'error', code: signed.code });
   if (path.endsWith('/start')) return publishStart(ctx, db, signed.payload, signed.nonce);
   if (path.endsWith('/batch')) return publishBatch(ctx, db, signed.payload, signed.nonce);
   return publishFinalize(ctx, db, signed.payload, signed.nonce);
