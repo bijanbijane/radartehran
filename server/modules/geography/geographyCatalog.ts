@@ -28,6 +28,7 @@ const LEGACY_CITY_PROVINCE_BY_ID: Readonly<Record<string, string>> = Object.free
 /** Returns null for unknown cities instead of fabricating a Tehran parent. */
 export function resolveLegacyCityProvinceId(cityId: string): string | null {
   const normalized = String(cityId || '').trim().toLowerCase();
+  if (!Object.prototype.hasOwnProperty.call(LEGACY_CITY_PROVINCE_BY_ID, normalized)) return null;
   const provinceId = LEGACY_CITY_PROVINCE_BY_ID[normalized];
   return provinceId ? `province:${provinceId}` : null;
 }
