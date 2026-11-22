@@ -9,6 +9,11 @@ on:
     paths:
       - "worker/irni/irniGeographicRpc*.ts"
       - "worker/types.ts"
+      - "worker/routes/irniCanonicalRpcRoutes.ts"
+      - "worker/router.ts"
+      - "worker/migrationRegister.ts"
+      - "src/utils/expressRouteCatalog.ts"
+      - "tests/irni-canonical-rpc-route.test.ts"
       - "tests/irni-geographic-rpc-client.test.ts"
       - "tsconfig.irni-geographic-rpc.json"
       - "package.json"
