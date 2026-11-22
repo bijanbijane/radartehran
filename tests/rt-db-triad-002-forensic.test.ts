@@ -639,7 +639,27 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RPC_SECRET }), null);
         assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_HMAC_SECRET }), null);
         assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, IRNI_API_TOKEN: TEST_RECEIPT_SECRET }), null);
+        for (const conflictingSecret of [
+          { ADMIN_API_SECRET: TEST_RECEIPT_SECRET },
+          { R2_SIGNING_SECRET: TEST_RECEIPT_SECRET },
+          { OBJECT_STORAGE_SIGNING_SECRET: TEST_RECEIPT_SECRET },
+          { VALUATION_SEAL_SECRET: TEST_RECEIPT_SECRET },
+          { RESEARCH_HMAC_PREVIOUS_SECRETS: JSON.stringify({ v1: TEST_RECEIPT_SECRET }) },
+        ]) {
+          assert.equal(
+            resolveLifecycleReceiptHmacSecret({ ...env, ...conflictingSecret }),
+            null,
+            'Lifecycle receipt key must not collide with any configured application secret',
+          );
+        }
         await assert.rejects(() => hashUidForComplianceReceipt(uid, ''), /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING/);
+        const minimumUtf8Secret = 'ا'.repeat(16);
+        assert.equal(new TextEncoder().encode(minimumUtf8Secret).byteLength, 32);
+        assert.equal((await hashUidForComplianceReceipt(uid, minimumUtf8Secret)).length, 64);
+        await assert.rejects(
+          () => hashUidForComplianceReceipt(uid, 'ا'.repeat(15)),
+          /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING/,
+        );
         assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET));
         assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_HMAC_SECRET));
         assert.equal(del2.receiptHash, expectedKeyedHash);

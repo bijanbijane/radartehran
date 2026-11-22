@@ -176,7 +176,7 @@ export function resolveLifecycleReceiptHmacSecret(env: WorkerEnv): string | null
 export async function hashUidForComplianceReceipt(uid: string, receiptSecret: string): Promise<string> {
   const canonical = `rt-lifecycle-receipt-uid:${uid.trim()}`;
   const cleanSecret = String(receiptSecret || '').trim();
-  if (cleanSecret.length < 32) {
+  if (new TextEncoder().encode(cleanSecret).byteLength < 32) {
     throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
   }
   return computeHmacSha256Hex(cleanSecret, canonical);

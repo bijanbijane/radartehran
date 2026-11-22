@@ -56,7 +56,7 @@
   //   - RESEARCH_HMAC_SECRET
   //   - RESEARCH_HMAC_PREVIOUS_SECRETS (optional JSON map for key rotation during erasure)
   //   - INTERNAL_LIFECYCLE_RPC_SECRET
-  //   - LIFECYCLE_RECEIPT_HMAC_SECRET (dedicated, >=32 chars, distinct from all other secrets)
+  //   - LIFECYCLE_RECEIPT_HMAC_SECRET (dedicated, >=32 UTF-8 bytes, distinct from all other secrets)
   //   - IRNI_API_TOKEN (blocked until external IRNI contract is delivered)
   "vars": {
     "APP_ENV": "production",
