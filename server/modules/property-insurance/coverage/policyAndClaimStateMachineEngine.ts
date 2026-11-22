@@ -261,7 +261,7 @@ export function evaluatePolicyCoverageStatusWithLimitations(input: {
       addUnique(queryLimitations, 'ASSET_NOT_LISTED_AS_INSURED_UNDER_POLICY');
     } else {
       matchedCoverages = input.coverages.filter((coverage) => {
-        if (coverage.policyId && coverage.policyId !== policy.policyId) return false;
+        if (coverage.policyId !== policy.policyId) return false;
         if (coverage.coverageCategory !== riskCategory) return false;
         if (
           assetCanonicalId &&
@@ -280,7 +280,7 @@ export function evaluatePolicyCoverageStatusWithLimitations(input: {
         applicabilityConclusion = 'NOT_COVERED_NO_EXPLICIT_COVERAGE_ITEM';
       } else {
         const matchingLimitation = input.exclusions.find((limitation) => {
-          if (limitation.policyId && limitation.policyId !== policy.policyId) return false;
+          if (limitation.policyId !== policy.policyId) return false;
           if (!limitation.excludedRiskCategories?.includes(riskCategory)) return false;
           if (!limitationAppliesToAsset(limitation, assetCanonicalId ?? undefined)) return false;
 

@@ -200,7 +200,14 @@ test('Restored property insurance state machine enforces monotonic policy/claim 
     coverages: [
       {
         coverageId: 'cov-1',
+        policyId: 'pol-test-1',
         coverageCategory: 'FIRE',
+        insuredAssetCanonicalIds: [],
+        effectiveStartIso: '2026-01-01T00:00:00.000Z',
+        effectiveEndIso: '2027-01-01T00:00:00.000Z',
+        coverageLimitAmount: 1_000_000,
+        deductibleMethod: 'FIXED_AMOUNT',
+        deductibleValue: 0,
       } as never,
     ],
     exclusions: [],
