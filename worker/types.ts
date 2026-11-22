@@ -164,6 +164,8 @@ export interface WorkerEnv {
   readonly RESEARCH_HMAC_PREVIOUS_SECRETS?: string;
   readonly RESEARCH_K_ANONYMITY_MIN_COHORT?: string;
   readonly INTERNAL_LIFECYCLE_RPC_SECRET?: string;
+  /** Dedicated HMAC key for lifecycle receipt UID digests; must not be shared with RPC or research keys. */
+  readonly LIFECYCLE_RECEIPT_HMAC_SECRET?: string;
   readonly IRNI_API_BASE_URL?: string;
   readonly IRNI_API_TOKEN?: string;
   readonly IRNI_API_HEADER_NAME?: string;

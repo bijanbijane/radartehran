@@ -143,16 +143,27 @@ export async function deriveAllSubjectKeysForErasure(params: {
   return { ok: true, keys: Array.from(byKey.values()) };
 }
 
+const MIN_LIFECYCLE_RECEIPT_HMAC_SECRET_BYTES = 32;
+
 /**
- * Produces a keyed HMAC-SHA256 compliance digest of UID (when server secret is available;
- * domain-separated SHA-256 fallback only in secret-free unit contexts).
- * Classified as a sensitive pseudonymous compliance digest — NEVER treated as full anonymization.
+ * Validates the dedicated lifecycle-receipt key. It is intentionally independent from
+ * RESEARCH_HMAC_SECRET and INTERNAL_LIFECYCLE_RPC_SECRET.
+ */
+export function requireLifecycleReceiptHmacSecret(secret?: string): string {
+  const cleanSecret = String(secret || '').trim();
+  if (new TextEncoder().encode(cleanSecret).byteLength < MIN_LIFECYCLE_RECEIPT_HMAC_SECRET_BYTES) {
+    throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
+  }
+  return cleanSecret;
+}
+
+/**
+ * Produces a keyed HMAC-SHA256 compliance digest of UID using the dedicated lifecycle key.
+ * This is a sensitive pseudonymous compliance digest — NEVER treated as full anonymization.
+ * There is no unkeyed hash fallback.
  */
 export async function hashUidForComplianceReceipt(uid: string, receiptSecret?: string): Promise<string> {
   const canonical = `rt-lifecycle-receipt-uid:${uid.trim()}`;
-  const cleanSecret = String(receiptSecret || '').trim();
-  if (cleanSecret.length >= 16) {
-    return computeHmacSha256Hex(cleanSecret, canonical);
-  }
-  return computeSha256Hex(canonical);
+  const cleanSecret = requireLifecycleReceiptHmacSecret(receiptSecret);
+  return computeHmacSha256Hex(cleanSecret, canonical);
 }

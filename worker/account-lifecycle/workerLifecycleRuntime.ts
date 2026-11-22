@@ -14,7 +14,11 @@
  */
 import { recordUserRevocationInD1 } from '../auth/firebaseEdgeAuth';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
-import { deriveAllSubjectKeysForErasure, hashUidForComplianceReceipt } from '../research/pseudonymizer';
+import {
+  deriveAllSubjectKeysForErasure,
+  hashUidForComplianceReceipt,
+  requireLifecycleReceiptHmacSecret,
+} from '../research/pseudonymizer';
 import { executeResearchSubjectErasure } from '../research/researchService';
 import type { D1Database, WorkerEnv } from '../types';
 import { blockUserWritesInD1, countActiveMutationPermitsInD1 } from './d1MutationPermit';
@@ -76,6 +80,7 @@ export async function processPendingResearchErasureOutbox(params: {
   readonly pending: number;
   readonly erasedEventsTotal: number;
 }> {
+  const receiptSecret = requireLifecycleReceiptHmacSecret(params.receiptSecret);
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
@@ -183,9 +188,9 @@ export async function processPendingResearchErasureOutbox(params: {
         .bind(jobId)
         .first<{ uid: string }>();
 
-      const uidHash = jobRow?.uid
-        ? await hashUidForComplianceReceipt(jobRow.uid, params.receiptSecret)
-        : `unknown_${jobId}`;
+      // A missing parent job/UID must never be replaced with a fabricated receipt identity.
+      if (!jobRow?.uid) continue;
+      const uidHash = await hashUidForComplianceReceipt(jobRow.uid, receiptSecret);
       const receiptId = `rcpt_res_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
       await params.userDb
@@ -254,7 +259,24 @@ export async function executeAccountDeletionLifecycle(params: {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
-  const receiptSecret = params.env.INTERNAL_LIFECYCLE_RPC_SECRET || params.env.RESEARCH_HMAC_SECRET;
+  let receiptSecret: string;
+  try {
+    receiptSecret = requireLifecycleReceiptHmacSecret(params.env.LIFECYCLE_RECEIPT_HMAC_SECRET);
+  } catch {
+    return {
+      ok: false,
+      statusCode: 503,
+      jobId: '',
+      status: 'FAILED',
+      idempotentReplay: false,
+      userDbDeletedRecords: 0,
+      outboxItemsQueued: 0,
+      outboxItemsCompleted: 0,
+      researchEventsErased: 0,
+      receiptHash: null,
+      code: 'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING',
+    };
+  }
 
   // 1. Idempotency check (with resumable PENDING_PERMIT_DRAIN support)
   let resumedJobId: string | null = null;

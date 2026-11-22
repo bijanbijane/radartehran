@@ -72,6 +72,7 @@ import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../wo
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
 const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
+const TEST_LIFECYCLE_RECEIPT_HMAC_SECRET = 'rt_triad_002_lifecycle_receipt_hmac_secret_0123456789abcdef';
 const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
@@ -516,6 +517,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         R2_MEDIA_BUCKET_NAME: 'radar-tehran-media',
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_LIFECYCLE_RECEIPT_HMAC_SECRET,
         FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
         FIREBASE_APP_CHECK_MODE: 'disabled',
       };
@@ -546,6 +548,20 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         // 1. Acquire active mutation permit before deletion starts
         const permit = await acquireMutationPermitInD1({ userDb: userSqlite.db, uid, operationName: 'media_upload' });
         assert.equal(permit.ok, true);
+
+        // A lifecycle receipt key must be independent; RPC/research keys alone cannot authorize deletion.
+        const envWithoutReceiptKey: WorkerEnv = { ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: undefined };
+        const deniedWithoutReceiptKey = await executeAccountDeletionLifecycle({
+          env: envWithoutReceiptKey,
+          uid,
+          actorUid: uid,
+          idempotencyKey: 'del_missing_receipt_key_01',
+        });
+        assert.equal(deniedWithoutReceiptKey.ok, false);
+        assert.equal(deniedWithoutReceiptKey.statusCode, 503);
+        assert.equal(deniedWithoutReceiptKey.code, 'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
+        const jobsBeforeAuthorizedDelete = userSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM account_deletion_jobs').get() as { cnt: number };
+        assert.equal(jobsBeforeAuthorizedDelete.cnt, 0, 'Missing receipt key must fail before creating deletion jobs');
 
         // 2. Start deletion -> enters PENDING_PERMIT_DRAIN (409) & activates account_write_blocks
         const del1 = await executeAccountDeletionLifecycle({
@@ -618,9 +634,13 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         assert.equal(reqsLeft.cnt, 0);
 
         // 6. Verify receipt uid_hash is keyed HMAC-SHA256 (NOT plain unsalted SHA-256!)
-        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET);
-        const unkeyedHash = await hashUidForComplianceReceipt(uid);
-        assert.notEqual(expectedKeyedHash, unkeyedHash);
+        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_LIFECYCLE_RECEIPT_HMAC_SECRET);
+        assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET));
+        assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_HMAC_SECRET));
+        await assert.rejects(
+          () => hashUidForComplianceReceipt(uid),
+          /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING/,
+        );
         assert.equal(del2.receiptHash, expectedKeyedHash);
       } finally {
         clearTestJwksForEdgeAuth();
