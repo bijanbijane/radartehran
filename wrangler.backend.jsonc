@@ -11,6 +11,8 @@
     "WORKER_ENV": "production",
     "APP_URL": "https://radartehran-frontend.bijanbijane-1.workers.dev",
     "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
+    "FIREBASE_APP_CHECK_MODE": "enforced",
+    "ADMIN_EMAIL": "radio837isf@gmail.com",
     "RESEARCH_HMAC_KEY_VERSION": "v1",
     "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
     "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
