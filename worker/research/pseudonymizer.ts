@@ -144,15 +144,39 @@ export async function deriveAllSubjectKeysForErasure(params: {
 }
 
 /**
- * Produces a keyed HMAC-SHA256 compliance digest of UID (when server secret is available;
- * domain-separated SHA-256 fallback only in secret-free unit contexts).
- * Classified as a sensitive pseudonymous compliance digest — NEVER treated as full anonymization.
+ * Resolves a dedicated lifecycle receipt key. It must not be reused for RPC,
+ * research pseudonymization, rotated research keys, or other application secrets.
  */
-export async function hashUidForComplianceReceipt(uid: string, receiptSecret?: string): Promise<string> {
+export function resolveLifecycleReceiptHmacSecret(env: WorkerEnv): string | null {
+  const candidate = String(env.LIFECYCLE_RECEIPT_HMAC_SECRET || '').trim();
+  if (candidate.length < 32) return null;
+
+  const otherSecrets = [
+    env.INTERNAL_LIFECYCLE_RPC_SECRET,
+    env.RESEARCH_HMAC_SECRET,
+    env.ADMIN_API_SECRET,
+    env.R2_SIGNING_SECRET,
+    env.OBJECT_STORAGE_SIGNING_SECRET,
+    env.VALUATION_SEAL_SECRET,
+  ].map((value) => String(value || '').trim()).filter(Boolean);
+
+  if (otherSecrets.includes(candidate)) return null;
+  if (parsePreviousResearchHmacSecrets(env.RESEARCH_HMAC_PREVIOUS_SECRETS).some((entry) => entry.secret === candidate)) {
+    return null;
+  }
+  return candidate;
+}
+
+/**
+ * Produces a keyed HMAC-SHA256 compliance digest of UID using the dedicated
+ * lifecycle receipt secret. Missing or weak keys fail closed; no unkeyed hash
+ * fallback is permitted.
+ */
+export async function hashUidForComplianceReceipt(uid: string, receiptSecret: string): Promise<string> {
   const canonical = `rt-lifecycle-receipt-uid:${uid.trim()}`;
   const cleanSecret = String(receiptSecret || '').trim();
-  if (cleanSecret.length >= 16) {
-    return computeHmacSha256Hex(cleanSecret, canonical);
+  if (cleanSecret.length < 32) {
+    throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
   }
-  return computeSha256Hex(canonical);
+  return computeHmacSha256Hex(cleanSecret, canonical);
 }

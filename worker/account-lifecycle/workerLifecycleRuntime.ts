@@ -14,7 +14,7 @@
  */
 import { recordUserRevocationInD1 } from '../auth/firebaseEdgeAuth';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
-import { deriveAllSubjectKeysForErasure, hashUidForComplianceReceipt } from '../research/pseudonymizer';
+import { deriveAllSubjectKeysForErasure, hashUidForComplianceReceipt, resolveLifecycleReceiptHmacSecret } from '../research/pseudonymizer';
 import { executeResearchSubjectErasure } from '../research/researchService';
 import type { D1Database, WorkerEnv } from '../types';
 import { blockUserWritesInD1, countActiveMutationPermitsInD1 } from './d1MutationPermit';
@@ -69,7 +69,7 @@ export async function processPendingResearchErasureOutbox(params: {
   researchDb?: D1Database;
   jobId?: string;
   nowMs?: number;
-  receiptSecret?: string;
+  receiptSecret: string;
 }): Promise<{
   readonly attempted: number;
   readonly completed: number;
@@ -78,6 +78,8 @@ export async function processPendingResearchErasureOutbox(params: {
 }> {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
+  const receiptSecret = String(params.receiptSecret || '').trim();
+  if (receiptSecret.length < 32) throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
 
   const outboxRowsRes = params.jobId
     ? await params.userDb
@@ -184,7 +186,7 @@ export async function processPendingResearchErasureOutbox(params: {
         .first<{ uid: string }>();
 
       const uidHash = jobRow?.uid
-        ? await hashUidForComplianceReceipt(jobRow.uid, params.receiptSecret)
+        ? await hashUidForComplianceReceipt(jobRow.uid, receiptSecret)
         : `unknown_${jobId}`;
       const receiptId = `rcpt_res_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
@@ -253,8 +255,6 @@ export async function executeAccountDeletionLifecycle(params: {
   const userDb = userDbRes.db;
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
-
-  const receiptSecret = params.env.INTERNAL_LIFECYCLE_RPC_SECRET || params.env.RESEARCH_HMAC_SECRET;
 
   // 1. Idempotency check (with resumable PENDING_PERMIT_DRAIN support)
   let resumedJobId: string | null = null;
@@ -335,6 +335,24 @@ export async function executeAccountDeletionLifecycle(params: {
       researchEventsErased: 0,
       receiptHash: null,
       code: 'LEGAL_HOLD_ACTIVE',
+    };
+  }
+
+  // Compliance receipts must use a dedicated key before any deletion mutation begins.
+  const receiptSecret = resolveLifecycleReceiptHmacSecret(params.env);
+  if (!receiptSecret) {
+    return {
+      ok: false,
+      statusCode: 503,
+      jobId: resumedJobId ?? '',
+      status: resumedJobId ? 'PENDING_PERMIT_DRAIN' : 'FAILED',
+      idempotentReplay: Boolean(resumedJobId),
+      userDbDeletedRecords: 0,
+      outboxItemsQueued: 0,
+      outboxItemsCompleted: 0,
+      researchEventsErased: 0,
+      receiptHash: null,
+      code: 'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING',
     };
   }
 

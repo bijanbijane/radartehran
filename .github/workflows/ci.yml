@@ -57,6 +57,7 @@ jobs:
       - name: Gate C — Automated Unit, Security, Rules, Contract, Mutation, Roadmap & Insights Suite
         run: |
           npm test
+          npm run test:triad
           npm run test:roadmap
           npm run test:contracts
           npm run test:mutation

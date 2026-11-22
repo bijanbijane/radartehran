@@ -24,6 +24,7 @@ import {
 import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
+import { resolveLifecycleReceiptHmacSecret } from '../research/pseudonymizer';
 import type { WorkerRequestContext } from '../types';
 
 async function authenticateAccountCaller(ctx: WorkerRequestContext, sensitiveRoute = false) {
@@ -259,10 +260,14 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
       if (!auth.isAdmin) {
         return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'ADMIN_FORBIDDEN' });
       }
+      const receiptSecret = resolveLifecycleReceiptHmacSecret(env);
+      if (!receiptSecret) {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING' });
+      }
       const outbox = await processPendingResearchErasureOutbox({
         userDb,
         researchDb: resolveResearchDb(env),
-        receiptSecret: env.INTERNAL_LIFECYCLE_RPC_SECRET || env.RESEARCH_HMAC_SECRET,
+        receiptSecret,
       });
       return jsonWorkerResponse(ctx, 200, { status: 'ok', outbox });
     }

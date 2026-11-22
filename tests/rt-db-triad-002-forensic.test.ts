@@ -58,6 +58,7 @@ import type { RadarQueueEnvelope } from '../worker/queues/queueAndCronProcessor'
 import {
   deriveResearchSubjectKey,
   hashUidForComplianceReceipt,
+  resolveLifecycleReceiptHmacSecret,
 } from '../worker/research/pseudonymizer';
 import { validateAndMinimizeResearchEvent } from '../worker/research/researchEventContract';
 import {
@@ -72,6 +73,7 @@ import type { D1Database, D1PreparedStatement, R2Bucket, WorkerEnv } from '../wo
 
 const TEST_HMAC_SECRET = 'rt_triad_002_hmac_secret_0123456789abcdef0123456789';
 const TEST_RPC_SECRET = 'rt_triad_002_rpc_secret_fedcba9876543210fedcba987654';
+const TEST_RECEIPT_SECRET = 'rt_triad_002_receipt_secret_1234567890abcdef1234567890';
 const TEST_PROJECT_ID = 'gen-lang-client-0713157837';
 
 interface TestSqliteD1Options {
@@ -516,6 +518,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         R2_MEDIA_BUCKET_NAME: 'radar-tehran-media',
         RESEARCH_HMAC_SECRET: TEST_HMAC_SECRET,
         INTERNAL_LIFECYCLE_RPC_SECRET: TEST_RPC_SECRET,
+        LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RECEIPT_SECRET,
         FIREBASE_PROJECT_ID: TEST_PROJECT_ID,
         FIREBASE_APP_CHECK_MODE: 'disabled',
       };
@@ -542,6 +545,19 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
              VALUES ('upl_drain_1', 0, 'AAAA', 1024)`,
           )
           .run();
+
+        const rejectedSecretDeletion = await executeAccountDeletionLifecycle({
+          env: { ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RPC_SECRET },
+          uid,
+          actorUid: uid,
+          idempotencyKey: 'del_reused_receipt_key_01',
+        });
+        assert.equal(rejectedSecretDeletion.statusCode, 503);
+        assert.equal(rejectedSecretDeletion.code, 'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
+        const rejectedJobCount = userSqlite.raw
+          .prepare('SELECT COUNT(*) AS cnt FROM account_deletion_jobs WHERE idempotency_key = ?')
+          .get('del_reused_receipt_key_01') as { cnt: number };
+        assert.equal(rejectedJobCount.cnt, 0, 'Invalid receipt-key configuration must fail before persisting a deletion job');
 
         // 1. Acquire active mutation permit before deletion starts
         const permit = await acquireMutationPermitInD1({ userDb: userSqlite.db, uid, operationName: 'media_upload' });
@@ -617,10 +633,14 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         assert.equal(chunksLeft.cnt, 0);
         assert.equal(reqsLeft.cnt, 0);
 
-        // 6. Verify receipt uid_hash is keyed HMAC-SHA256 (NOT plain unsalted SHA-256!)
-        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET);
-        const unkeyedHash = await hashUidForComplianceReceipt(uid);
-        assert.notEqual(expectedKeyedHash, unkeyedHash);
+        // 6. Verify receipt uid_hash uses a dedicated key and refuses missing or reused secrets.
+        const expectedKeyedHash = await hashUidForComplianceReceipt(uid, TEST_RECEIPT_SECRET);
+        assert.equal(resolveLifecycleReceiptHmacSecret(env), TEST_RECEIPT_SECRET);
+        assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RPC_SECRET }), null);
+        assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_HMAC_SECRET }), null);
+        await assert.rejects(() => hashUidForComplianceReceipt(uid, ''), /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING/);
+        assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET));
+        assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_HMAC_SECRET));
         assert.equal(del2.receiptHash, expectedKeyedHash);
       } finally {
         clearTestJwksForEdgeAuth();

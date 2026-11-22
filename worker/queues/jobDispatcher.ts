@@ -17,6 +17,7 @@ import {
 } from '../research/researchService';
 import { isObjectUnderLegalHold } from '../storage/r2StorageAdapter';
 import type { WorkerEnv } from '../types';
+import { resolveLifecycleReceiptHmacSecret } from '../research/pseudonymizer';
 import {
   convertUtcScheduledTimeToTehranWallClock,
   validateQueueEnvelope,
@@ -416,7 +417,14 @@ async function handleResearchSubjectErasureJob(
     );
   }
   const jobId = typeof envelope.payload?.jobId === 'string' ? envelope.payload.jobId.trim() : undefined;
-  const receiptSecret = env.INTERNAL_LIFECYCLE_RPC_SECRET || env.RESEARCH_HMAC_SECRET;
+  const receiptSecret = resolveLifecycleReceiptHmacSecret(env);
+  if (!receiptSecret) {
+    throw new QueueJobExecutionError(
+      'LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING',
+      'A dedicated lifecycle receipt HMAC secret is required and must not be reused.',
+      true,
+    );
+  }
   const outboxRes = await processPendingResearchErasureOutbox({ userDb, researchDb, jobId, receiptSecret });
   return {
     jobType: 'research_subject_erasure',
