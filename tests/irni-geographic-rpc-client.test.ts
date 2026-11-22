@@ -285,7 +285,7 @@ describe('IRNI v1 geographic RPC client — fail-closed binding and contract gua
     );
   });
 
-  it('rejects malformed query objects before invoking the RPC method', async () => {
+  it('rejects malformed, unversioned, and inherited legacy query fields before invoking RPC', async () => {
     let readCalls = 0;
     const binding = createBinding({
       resolveIdentifier: async () => {
@@ -299,8 +299,9 @@ describe('IRNI v1 geographic RPC client — fail-closed binding and contract gua
         });
       },
     });
+    const client = new IrniGeographicRpcClient({ binding });
 
-    const result = await new IrniGeographicRpcClient({ binding }).resolveIdentifier(
+    const unversioned = await client.resolveIdentifier(
       {
         kind: 'RADAR_LEGACY_ALIAS',
         alias: {
@@ -310,9 +311,31 @@ describe('IRNI v1 geographic RPC client — fail-closed binding and contract gua
       },
       8,
     );
+    const malformedSuffix = await client.resolveIdentifier(
+      {
+        kind: 'RADAR_LEGACY_ALIAS',
+        alias: {
+          legacySystemCode: 'TEHRAN_RADAR',
+          legacyIdentifierValue: 'radar:city-hood:v1:hood:tehran:5',
+        },
+      },
+      8,
+    );
+    const inherited = await client.resolveIdentifier(
+      Object.create({
+        kind: 'RADAR_LEGACY_ALIAS',
+        alias: {
+          legacySystemCode: 'TEHRAN_RADAR',
+          legacyIdentifierValue: 'radar:city-hood:v1:tehran:5',
+        },
+      }) as never,
+      8,
+    );
 
-    assert.equal(result.ok, false);
-    assert.equal(failureCode(result), 'IRNI_RPC_INVALID_PARAMETERS');
+    for (const result of [unversioned, malformedSuffix, inherited]) {
+      assert.equal(result.ok, false);
+      assert.equal(failureCode(result), 'IRNI_RPC_INVALID_PARAMETERS');
+    }
     assert.equal(readCalls, 0);
   });
 
