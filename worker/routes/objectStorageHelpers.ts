@@ -108,7 +108,7 @@ export async function enforceObjectStorageRateLimit(params: {
         retryAfterSeconds: result.retryAfterSeconds,
         message: 'تعداد درخواست‌های بارگذاری بیش از حد مجاز است. لطفاً کمی بعد دوباره تلاش کنید.',
       },
-      { headers: { 'Retry-After': String(result.retryAfterSeconds) } },
+      { extraHeaders: { 'Retry-After': String(result.retryAfterSeconds) } },
     );
   }
   return null;

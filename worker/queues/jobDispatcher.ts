@@ -107,8 +107,10 @@ async function handleFirestoreD1ProjectionSync(
         buy_per_sqm_million: hood.buyPerSqm,
         deal_per_sqm_million: dealPerSqm,
         rahn_80m_million: hood.rahn80m,
-        aqi: hood.aqi ?? 80,
-        investment_score: hood.growthScore ?? 75,
+        // -1 is the explicit "not supplied by the authoritative neighborhood source" sentinel.
+        // Do not fabricate AQI or investment scores from unrelated presentation fields.
+        aqi: -1,
+        investment_score: hood.opportunityScore ?? -1,
         firestore_version_iso: nowIso,
         projected_at_iso: nowIso,
       });
@@ -511,7 +513,7 @@ export function buildCanonicalCronEnvelopes(params: {
       payload: basePayload,
     };
     const validated = validateQueueEnvelope(candidate);
-    if (!validated.valid) {
+    if ('reason' in validated) {
       throw new Error(`CANONICAL_CRON_ENVELOPE_INVALID:${validated.reason}`);
     }
     return validated.envelope;
