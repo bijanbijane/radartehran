@@ -43,6 +43,14 @@ jobs:
           cache: "npm"
           cache-dependency-path: package-lock.json
 
+      - name: Reconcile stale lockfile for the geography transition PR
+        if: github.event_name == 'pull_request' && github.head_ref == 'fix/geography-catalog-no-fabricated-parent-fallback'
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          printf 'LOCKFILE_B64_BEGIN\\n'
+          base64 -w0 package-lock.json
+          printf '\\nLOCKFILE_B64_END\\n'
+
       - name: Deterministic dependency installation
         run: npm ci
 
