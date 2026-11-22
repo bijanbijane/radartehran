@@ -169,6 +169,8 @@ export interface WorkerEnv {
   readonly RESEARCH_HMAC_PREVIOUS_SECRETS?: string;
   readonly RESEARCH_K_ANONYMITY_MIN_COHORT?: string;
   readonly IRNI_PUBLISH_HMAC_SECRET?: string;
+  readonly GEO_REGISTRY_EXPECTED_CONTRACT?: string;
+  readonly GEO_REGISTRY_EXPECTED_ID_ALGORITHM?: string;
   /** Frontend-only Cloudflare Service Binding to the production Radar API Worker. */
   readonly RADAR_API?: WorkerServiceBinding;
   readonly RADAR_QUEUE?: Queue;
