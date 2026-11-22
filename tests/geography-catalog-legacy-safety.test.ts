@@ -14,6 +14,10 @@ describe('legacy geography catalog transition guardrails', () => {
       catalog.authority,
       'RADAR_LEGACY_STATIC_FIXTURE_NON_CANONICAL',
     );
+    assert.equal(
+      catalog.getEntityById('province:tehran')?.boundary.provenance,
+      'UNVERIFIED_SOURCE',
+    );
   });
 
   it('maps only explicitly configured city identifiers to province parents', () => {
