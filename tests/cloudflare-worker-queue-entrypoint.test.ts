@@ -282,7 +282,7 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     const maxAttemptMsg = makeQueueMessage({
       schemaVersion: '1.0',
       messageId: 'msg-retry-5',
-      jobType: 'market_pulse_sync',
+      jobType: 'firestore_d1_projection_sync',
       idempotencyKey: 'idem-retry-1',
       correlationId: 'corr-retry',
       createdAtIso: nowIso,
