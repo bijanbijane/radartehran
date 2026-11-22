@@ -14,7 +14,7 @@ import { useAreaUnit, useExperienceMode, useIntlCurrency, useRadarLocale } from 
 import { useExchangeRateSnapshot } from '../../features/commerce/services/exchangeRateClient';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
 import { matchesPersianSearch } from '../../utils/security';
-import { Stage2MasterWidget, type Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
+import type { Stage2ActiveTab } from '../stage2/Stage2MasterWidget';
 import type { ToolsSubTabId } from '../../navigation/registry/route.types';
 import {
   buildToolCategoriesForHood,
@@ -28,6 +28,7 @@ import {
 const InstantListingVerifierModal = React.lazy(() => import('../modals/InstantListingVerifierModal').then((m) => ({ default: m.InstantListingVerifierModal })));
 const ContractRoomShieldModal = React.lazy(() => import('../modals/ContractRoomShieldModal').then((m) => ({ default: m.ContractRoomShieldModal })));
 const RadarUiLabPanel = React.lazy(() => import('./RadarUiLabPanel').then((m) => ({ default: m.RadarUiLabPanel })));
+const Stage2MasterWidget = React.lazy(() => import('../stage2/Stage2MasterWidget').then((m) => ({ default: m.Stage2MasterWidget })));
 const ValuationWorkspacePage = React.lazy(() => import('../../features/valuation/pages/ValuationWorkspacePage').then((m) => ({ default: m.ValuationWorkspacePage })));
 
 export interface ProductToolsViewProps {
@@ -225,11 +226,13 @@ export function ProductToolsView(p: ProductToolsViewProps): React.ReactElement {
               بستن پنل آزمایشگاه ✕
             </button>
           </div>
-          <Stage2MasterWidget
-            hoodId={selectedHood.id} hoodName={selectedHood.name} basePriceSqm={selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={selectedHood}
-            initialTab={activeDecisionTab} onTabChange={(tab) => setActiveDecisionTab(tab)}
-            onSelectCompareHood={(targetName) => { const match = evaluatedNeighborhoods?.find((h) => h.name === targetName); if (match) onSelectNeighborhood?.(match); }}
-          />
+          <React.Suspense fallback={null}>
+            <Stage2MasterWidget
+              hoodId={selectedHood.id} hoodName={selectedHood.name} basePriceSqm={selectedHood.buyPerSqm} intlCurrency={intlCurrency} hood={selectedHood}
+              initialTab={activeDecisionTab} onTabChange={(tab) => setActiveDecisionTab(tab)}
+              onSelectCompareHood={(targetName) => { const match = evaluatedNeighborhoods?.find((h) => h.name === targetName); if (match) onSelectNeighborhood?.(match); }}
+            />
+          </React.Suspense>
         </div>
       )}
 
