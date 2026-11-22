@@ -34,6 +34,20 @@ const ACCEPTED_VERIFICATION_STATUSES = new Set([
   'VERIFIED_SECONDARY_GAZETTEER',
 ]);
 
+const RADAR_LEGACY_IDENTIFIER_PATTERNS: readonly RegExp[] = Object.freeze([
+  /^radar:city-hood:v1:[a-z][a-z0-9_-]{0,63}:[1-9][0-9]{0,8}$/,
+  /^radar:geography-catalog:v1:hood%3A[a-z][a-z0-9_-]{0,63}%3A[1-9][0-9]{0,8}$/,
+  /^radar:urban-intelligence:v1:[a-z][a-z0-9_-]{0,63}%3Ahood%3A[1-9][0-9]{0,8}$/,
+]);
+
+function isVersionedRadarLegacyIdentifier(value: unknown): value is string {
+  return (
+    isNonEmptyString(value) &&
+    value.length <= 256 &&
+    RADAR_LEGACY_IDENTIFIER_PATTERNS.some((pattern) => pattern.test(value))
+  );
+}
+
 const PERSISTENCE_ERROR_CODES = new Set<IrniGeographicPersistenceErrorCode>([
   'NOT_FOUND',
   'DUPLICATE',
@@ -508,17 +522,29 @@ export class IrniGeographicRpcClient {
   }
 
   private isValidIdentifierQuery(query: IrniGeographicIdentifierQuery): boolean {
-    if (!isRecord(query)) return false;
+    if (!isRecord(query) || !hasOwn(query, 'kind')) return false;
 
     if (query.kind === 'CANONICAL_OR_RETIRED_IDENTIFIER') {
-      return isNonEmptyString(query.identifier) && query.identifier.length <= 128;
+      return (
+        hasOwn(query, 'identifier') &&
+        isNonEmptyString(query.identifier) &&
+        query.identifier.length <= 128
+      );
     }
 
-    if (query.kind !== 'RADAR_LEGACY_ALIAS' || !isRecord(query.alias)) return false;
+    if (
+      query.kind !== 'RADAR_LEGACY_ALIAS' ||
+      !hasOwn(query, 'alias') ||
+      !isRecord(query.alias) ||
+      !hasOwn(query.alias, 'legacySystemCode') ||
+      !hasOwn(query.alias, 'legacyIdentifierValue')
+    ) {
+      return false;
+    }
+
     return (
       query.alias.legacySystemCode === 'TEHRAN_RADAR' &&
-      isNonEmptyString(query.alias.legacyIdentifierValue) &&
-      query.alias.legacyIdentifierValue.length <= 256
+      isVersionedRadarLegacyIdentifier(query.alias.legacyIdentifierValue)
     );
   }
 }
