@@ -4,6 +4,7 @@
  * environment bindings, request context, observability records, and the Phase 2 Migration Register.
  */
 import type { ApiAccessPolicy, ApiRouteMethod } from '../src/utils/expressRouteCatalog';
+import type { IrniGeographicRpcBinding } from './irni/irniGeographicRpcTypes';
 
 export interface WorkerAssetFetcher {
   fetch(input: Request | string | URL, init?: RequestInit): Promise<Response>;
@@ -171,6 +172,8 @@ export interface WorkerEnv {
   readonly IRNI_CACHE_TTL_SECONDS?: string;
   readonly IRNI_STALE_TTL_SECONDS?: string;
   readonly IRNI_API_CONTRACT_STATUS?: string;
+  /** Optional internal Service Binding stub for IRNI's read-only v1 geographic RPC. */
+  readonly IRNI_GEOGRAPHY?: IrniGeographicRpcBinding;
   readonly RADAR_QUEUE?: Queue;
   readonly RADAR_DLQ?: Queue;
   readonly MEDIA_QUEUE?: Queue;
