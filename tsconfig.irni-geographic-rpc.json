@@ -15,7 +15,6 @@
     "noEmit": true
   },
   "include": [
-    "worker/types.ts",
     "worker/irni/irniGeographicRpcTypes.ts",
     "worker/irni/irniGeographicRpcClient.ts",
     "tests/irni-geographic-rpc-client.test.ts"
