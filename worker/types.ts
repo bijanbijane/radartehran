@@ -9,6 +9,10 @@ export interface WorkerAssetFetcher {
   fetch(input: Request | string | URL, init?: RequestInit): Promise<Response>;
 }
 
+export interface WorkerServiceBinding {
+  fetch(input: Request | string | URL, init?: RequestInit): Promise<Response>;
+}
+
 export type DeploymentEnvironmentName = 'development' | 'preview' | 'staging' | 'production';
 export type WorkerEnvironmentName = DeploymentEnvironmentName;
 
@@ -153,7 +157,20 @@ export interface WorkerEnv {
   readonly STRANGLER_FALLBACK_ENABLED?: string;
   readonly STRANGLER_ORIGIN_URL?: string;
   readonly MEDIA_BUCKET?: R2Bucket;
+  /** Canonical account/profile domain. DB remains a compatibility alias to this same D1. */
+  readonly USER_DB?: D1Database;
   readonly DB?: D1Database;
+  /** Physically isolated behavioral research domain. */
+  readonly RESEARCH_DB?: D1Database;
+  /** IRNI-authoritative geographic registry replica. */
+  readonly NEIGHBORHOOD_DB?: D1Database;
+  readonly RESEARCH_HMAC_SECRET?: string;
+  readonly RESEARCH_HMAC_KEY_VERSION?: string;
+  readonly RESEARCH_HMAC_PREVIOUS_SECRETS?: string;
+  readonly RESEARCH_K_ANONYMITY_MIN_COHORT?: string;
+  readonly IRNI_PUBLISH_HMAC_SECRET?: string;
+  /** Frontend-only Cloudflare Service Binding to the production Radar API Worker. */
+  readonly RADAR_API?: WorkerServiceBinding;
   readonly RADAR_QUEUE?: Queue;
   readonly RADAR_DLQ?: Queue;
   readonly MEDIA_QUEUE?: Queue;
