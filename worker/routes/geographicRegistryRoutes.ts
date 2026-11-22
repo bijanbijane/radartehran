@@ -104,15 +104,21 @@ async function consumeNonce(db: D1Database, nonce: string): Promise<boolean> {
   return true;
 }
 async function getCurrentHead(db: D1Database): Promise<ActiveRegistryHead | null> {
-  return db.prepare(
-    `SELECT p.batch_id,p.registry_revision,p.registry_checksum,p.activated_at_iso,
-      h.contract_version,h.id_algorithm_version,h.schema_version,h.canonical_entry_count,
-      h.canonical_entity_count,h.relationship_count,h.anchor_count,h.source_mapping_count,
-      h.legacy_alias_count,h.duplicate_conflict_count,h.integrity_verified
-     FROM geo_registry_publish_pointer p
-     JOIN geo_registry_head h ON h.singleton_id = 'current'
-     WHERE p.singleton_id = 'current'`,
-  ).first<ActiveRegistryHead>();
+  try {
+    return await db.prepare(
+      `SELECT p.batch_id,p.registry_revision,p.registry_checksum,p.activated_at_iso,
+        h.contract_version,h.id_algorithm_version,h.schema_version,h.canonical_entry_count,
+        h.canonical_entity_count,h.relationship_count,h.anchor_count,h.source_mapping_count,
+        h.legacy_alias_count,h.duplicate_conflict_count,h.integrity_verified
+       FROM geo_registry_publish_pointer p
+       JOIN geo_registry_head h ON h.singleton_id = 'current'
+       WHERE p.singleton_id = 'current'`,
+    ).first<ActiveRegistryHead>();
+  } catch {
+    // The pre-publication schema or missing additive migration must report "not published",
+    // not turn the whole backend into a 500 during staged rollout.
+    return null;
+  }
 }
 function normalizeLimit(value: string | null): number {
   const parsed = value ? Number(value) : 50;
@@ -436,6 +442,9 @@ async function publishFinalize(
 
   const timestamp = new Date().toISOString();
   const registryChecksum = String(session.registry_checksum);
+  const previousHead = await db.prepare("SELECT registry_revision FROM geo_registry_head WHERE singleton_id='current'")
+    .first<{registry_revision:number}>();
+  const previousRevision = previousHead ? Number(previousHead.registry_revision) : null;
   const artifacts = asRecord(payload.artifactChecksums) ?? {};
   const statements = [
     db.prepare(
@@ -497,7 +506,7 @@ async function publishFinalize(
               AND excluded.registry_checksum=geo_registry_head.registry_checksum)`,
     ).bind(
       String(session.contract_version),String(session.id_algorithm_version),String(session.schema_version),
-      revision,revision-1,registryChecksum,Number(identityCount?.count ?? 0),actual.entities,
+      revision,previousRevision,registryChecksum,Number(identityCount?.count ?? 0),actual.entities,
       actual.relationships,Number(anchorCount?.count ?? 0),actual.sourceMappings,Number(aliasCount?.count ?? 0),
       0,timestamp,
     ),
