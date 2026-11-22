@@ -215,6 +215,11 @@ export const REGISTERED_API_ROUTES: readonly RegisteredApiRoute[] = [
   route('POST', '/api/disputes/cases/:caseId/transition', DSP, 'VERIFIED_USER', 20, 'general', false, 'Transition dispute case status with server-derived role check'), route('POST', '/api/disputes/cases/:caseId/resolve', DSP, 'VERIFIED_USER', 15, 'general', false, 'Resolve dispute case with non-court legal boundary flags'),
   route('GET', '/api/disputes/cases/:caseId/timeline', DSP, 'VERIFIED_USER', 60, 'general', false, 'Read append-only dispute case timeline'),
 
+  route('GET', '/api/v1/reference/irni/provinces', 'worker/routes/irniReferenceRoutes.ts', 'PUBLIC', 60, 'general', false, 'Legacy read-only IRNI province DTO compatibility facade'),
+  route('GET', '/api/v1/reference/irni/counties', 'worker/routes/irniReferenceRoutes.ts', 'PUBLIC', 60, 'general', false, 'Legacy read-only IRNI county DTO compatibility facade'),
+  route('GET', '/api/v1/reference/irni/cities', 'worker/routes/irniReferenceRoutes.ts', 'PUBLIC', 60, 'general', false, 'Legacy read-only IRNI city DTO compatibility facade'),
+  route('GET', '/api/v1/reference/irni/neighborhoods', 'worker/routes/irniReferenceRoutes.ts', 'PUBLIC', 60, 'general', false, 'Legacy read-only IRNI neighborhood DTO compatibility facade'),
+  route('GET', '/api/v1/reference/irni/neighborhoods/:id', 'worker/routes/irniReferenceRoutes.ts', 'PUBLIC', 60, 'general', false, 'Legacy read-only IRNI neighborhood detail DTO compatibility facade'),
   route('GET', '/api/v2/reference/irni/canonical/metadata', 'worker/routes/irniCanonicalRpcRoutes.ts', 'PUBLIC', 60, 'general', false, 'Read IRNI canonical geographic registry metadata and revision checksum'),
   route('GET', '/api/v2/reference/irni/canonical/entities', 'worker/routes/irniCanonicalRpcRoutes.ts', 'PUBLIC', 60, 'general', false, 'Read revision-pinned approved canonical geographic entities'),
   route('GET', '/api/v2/reference/irni/canonical/entities/:geographicEntityId', 'worker/routes/irniCanonicalRpcRoutes.ts', 'PUBLIC', 60, 'general', false, 'Read one approved canonical geographic entity by stable IRNI identifier'),
