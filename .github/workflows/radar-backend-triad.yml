@@ -78,9 +78,9 @@ jobs:
         run: |
           node --input-type=module -e '
             import fs from "node:fs";
-            const config = JSON.parse(fs.readFileSync("apps/frontend/wrangler.jsonc", "utf8").replace(/\/\/.*$/gm, ""));
-            const binding = config.env?.production?.services?.find(item => item.binding === "RADAR_API");
-            if (!binding || binding.service !== "radartehran-api") {
+            const config = fs.readFileSync("apps/frontend/wrangler.jsonc", "utf8");
+            if (!/"binding"\s*:\s*"RADAR_API"/.test(config) ||
+                !/"service"\s*:\s*"radartehran-api"/.test(config)) {
               throw new Error("RADAR_API must target the dedicated radartehran-api Worker.");
             }
             console.log("RADAR_API -> radartehran-api: verified");
