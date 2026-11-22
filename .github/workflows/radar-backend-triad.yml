@@ -1,0 +1,87 @@
+name: Radar Backend Triad & Frontend Service Binding
+
+on:
+  push:
+    branches: [cursor/rt-infra-001-gate-b-monorepo]
+    paths:
+      - 'worker/**'
+      - 'apps/frontend/worker/**'
+      - 'apps/frontend/wrangler.jsonc'
+      - 'wrangler.backend.jsonc'
+      - 'migrations/user-d1/**'
+      - 'migrations/research-d1/**'
+      - 'migrations/neighborhood-d1/**'
+      - 'tests/d1-triad-binding-isolation.test.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/radar-backend-triad.yml'
+  pull_request:
+    branches: [cursor/rt-infra-001-gate-b-monorepo]
+    paths:
+      - 'worker/**'
+      - 'apps/frontend/worker/**'
+      - 'apps/frontend/wrangler.jsonc'
+      - 'wrangler.backend.jsonc'
+      - 'migrations/user-d1/**'
+      - 'migrations/research-d1/**'
+      - 'migrations/neighborhood-d1/**'
+      - 'tests/d1-triad-binding-isolation.test.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/radar-backend-triad.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radar-backend-triad-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    name: D1 domain isolation, Worker bundle & frontend RPC binding
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NODE_ENV: production
+    steps:
+      - name: Checkout exact PR or branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run Cloudflare Worker and D1 isolation contract tests
+        run: npm run test:cloudflare
+
+      - name: Build the split Frontend assets
+        run: npm run build -w radartehran-frontend
+
+      - name: Dry-run package the dedicated Radar API Worker
+        run: npx wrangler deploy --config wrangler.backend.jsonc --dry-run --outdir /tmp/radartehran-api-dryrun
+
+      - name: Dry-run package the Frontend Worker with RADAR_API Service Binding
+        run: npx wrangler deploy --config apps/frontend/wrangler.jsonc --env production --dry-run --outdir /tmp/radartehran-frontend-dryrun
+
+      - name: Confirm the required service binding is present in committed config
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const config = JSON.parse(fs.readFileSync("apps/frontend/wrangler.jsonc", "utf8").replace(/\/\/.*$/gm, ""));
+            const binding = config.env?.production?.services?.find(item => item.binding === "RADAR_API");
+            if (!binding || binding.service !== "radartehran-api") {
+              throw new Error("RADAR_API must target the dedicated radartehran-api Worker.");
+            }
+            console.log("RADAR_API -> radartehran-api: verified");
+          '
