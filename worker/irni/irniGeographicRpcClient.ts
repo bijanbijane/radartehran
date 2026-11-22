@@ -16,6 +16,7 @@ import type {
   IrniGeographicRegistryMetadata,
   IrniGeographicRelationshipSnapshot,
   IrniGeographicRpcBinding,
+  IrniGeographicRpcFailureCode,
 } from './irniGeographicRpcTypes';
 
 import {
