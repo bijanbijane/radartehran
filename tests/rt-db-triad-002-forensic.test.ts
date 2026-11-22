@@ -658,6 +658,14 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         await assert.rejects(() => hashUidForComplianceReceipt(uid, ''), /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING/);
         const minimumUtf8Secret = 'ا'.repeat(16);
         assert.equal(new TextEncoder().encode(minimumUtf8Secret).byteLength, 32);
+        assert.equal(
+          resolveLifecycleReceiptHmacSecret({ ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: minimumUtf8Secret }),
+          minimumUtf8Secret,
+        );
+        assert.equal(resolveLifecycleReceiptHmacSecret({
+          ...env,
+          LIFECYCLE_RECEIPT_HMAC_SECRET: 'ا'.repeat(15),
+        }), null);
         assert.equal((await hashUidForComplianceReceipt(uid, minimumUtf8Secret)).length, 64);
         await assert.rejects(
           () => hashUidForComplianceReceipt(uid, 'ا'.repeat(15)),
@@ -724,7 +732,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
           userDb: userSqlite.db,
           researchDb: researchSqlite.db,
           nowMs,
-          receiptSecret: TEST_RECEIPT_SECRET,
+          receiptSecret: 'ا'.repeat(16),
         }),
         /ACCOUNT_DELETION_PARENT_JOB_UID_MISSING/,
       );
