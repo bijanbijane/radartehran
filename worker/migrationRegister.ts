@@ -37,6 +37,14 @@ const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'GET /api/v1/telemetry/policy',
 ]);
 
+const GROUP_2_VERIFIED_IRNI_RPC_PATHS = new Set<string>([
+  'GET /api/v2/reference/irni/canonical/metadata',
+  'GET /api/v2/reference/irni/canonical/entities',
+  'GET /api/v2/reference/irni/canonical/entities/:geographicEntityId',
+  'GET /api/v2/reference/irni/canonical/entities/:geographicEntityId/relationships',
+  'GET /api/v2/reference/irni/canonical/resolve',
+]);
+
 const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
   'GET /api/account/profile',
   'PATCH /api/account/profile',
@@ -145,6 +153,24 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       stateStorageTouchpoints: ['.object-storage-bucket/', 'Firestore object_storage_metadata'],
       externalApiTouchpoints: ['S3/R2 Compatible Object Storage'],
       blockerReason: 'Admin storage audit & reconciliation endpoints remain on legacy Express until operator cutover.',
+    };
+  }
+
+  if (GROUP_2_VERIFIED_IRNI_RPC_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_2_PUBLIC_MARKET_AND_GEO_READS',
+      workerHandlerModule: 'worker/routes/irniCanonicalRpcRoutes.ts',
+      status: 'VERIFIED',
+      activeRuntime: 'cloudflare_worker',
+      dependencies: [
+        'worker/irni/irniGeographicRpcClient.ts',
+        'worker/irni/irniGeographicRpcValidation.ts',
+        'worker/irni/irniGeographicRpcTypes.ts',
+      ],
+      stateStorageTouchpoints: [
+        'IRNI canonical geographic registry via read-only internal Workers RPC; no Radar D1 access',
+      ],
+      externalApiTouchpoints: ['IRNI_GEOGRAPHY Cloudflare Workers Service Binding'],
     };
   }
 
