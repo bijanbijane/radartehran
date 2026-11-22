@@ -1,0 +1,66 @@
+name: Temporary Lockfile Reconciliation
+
+on:
+  push:
+    branches:
+      - codex/rt-f09-lifecycle-receipt-key-isolation
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate-lockfile:
+    name: Regenerate package-lock with npm on Node 22
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Regenerate lockfile from package.json
+        run: |
+          node --version
+          npm --version
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --package-lock=true
+
+      - name: Verify root dependency declarations match package.json
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const root = lock.packages?.[''];
+          if (!root) throw new Error('package-lock.json has no root package entry');
+          const sections = ['dependencies', 'devDependencies', 'optionalDependencies'];
+          const errors = [];
+          for (const section of sections) {
+            const expected = pkg[section] || {};
+            const actual = root[section] || {};
+            for (const [name, version] of Object.entries(expected)) {
+              if (actual[name] !== version) errors.push(`${section}.${name}: expected ${version}, got ${actual[name] ?? 'MISSING'}`);
+            }
+            for (const name of Object.keys(actual)) {
+              if (!(name in expected)) errors.push(`${section}.${name}: unexpected lockfile entry`);
+            }
+          }
+          if (errors.length) {
+            console.error(errors.join('\\n'));
+            process.exit(1);
+          }
+          console.log('package.json and package-lock.json root declarations match.');
+          NODE
+
+      - name: Upload generated lockfile for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: regenerated-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 3
