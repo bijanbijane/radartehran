@@ -29,5 +29,7 @@ describe('legacy geography catalog transition guardrails', () => {
     assert.equal(resolveLegacyCityProvinceId('unknown-city'), null);
     assert.equal(resolveLegacyCityProvinceId(''), null);
     assert.equal(resolveLegacyCityProvinceId('   '), null);
+    assert.equal(resolveLegacyCityProvinceId('toString'), null);
+    assert.equal(resolveLegacyCityProvinceId('__proto__'), null);
   });
 });
