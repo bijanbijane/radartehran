@@ -1,6 +1,12 @@
 /**
  * @file server/modules/geography/geographyCatalog.ts
- * @description Authoritative hierarchical geographic catalog across provinces, cities, districts, and neighborhoods.
+ * @description Legacy Radar geography fixture catalog. This is NOT the canonical IRNI registry.
+ *
+ * TRANSITION GUARDRAILS:
+ * - IRNI is the sole canonical geographic identity authority.
+ * - This catalog remains a compatibility fixture until all consumers use the IRNI read port.
+ * - Unknown city identifiers are rejected; they are never silently assigned to Tehran.
+ * - Local seed provenance is explicitly non-authoritative and must not be represented as verified IRNI data.
  */
 
 import { ALL_31_IRAN_PROVINCES } from '../../../src/data/iranProvincesDirectory';
@@ -8,21 +14,40 @@ import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeigh
 import { normalizeGeographicNameFa, computeLevenshteinDistance } from './geographyNormalizer';
 import type { GeographicEntity, GeographicLevel } from './geographyTypes';
 
+export const RADAR_GEOGRAPHY_CATALOG_AUTHORITY = 'RADAR_LEGACY_STATIC_FIXTURE_NON_CANONICAL' as const;
+
+const LEGACY_CITY_PROVINCE_BY_ID: Readonly<Record<string, string>> = Object.freeze({
+  tehran: 'tehran',
+  karaj: 'alborz',
+  mashhad: 'khorasan_razavi',
+  isfahan: 'isfahan',
+  shiraz: 'fars',
+  tabriz: 'east_azerbaijan',
+});
+
+/** Returns null for unknown cities instead of fabricating a Tehran parent. */
+export function resolveLegacyCityProvinceId(cityId: string): string | null {
+  const normalized = String(cityId || '').trim().toLowerCase();
+  const provinceId = LEGACY_CITY_PROVINCE_BY_ID[normalized];
+  return provinceId ? `province:${provinceId}` : null;
+}
+
 export class GeographyCatalog {
+  public readonly authority = RADAR_GEOGRAPHY_CATALOG_AUTHORITY;
   private readonly entities = new Map<string, GeographicEntity>();
   private readonly childToParentIndex = new Map<string, string>(); // childId -> parentId
   private readonly parentToChildrenIndex = new Map<string, Set<string>>(); // parentId -> Set of childIds
   private readonly normalizedNameIndex = new Map<string, Set<string>>(); // normalizedName -> Set of entityIds
 
   constructor() {
-    this.seedAuthoritativeBaseline();
+    this.seedLegacyNonCanonicalBaseline();
   }
 
   /**
-   * Seeds the catalog from the authoritative data sources:
-   * Country -> 31 Provinces -> Configured Multi-Cities -> Districts -> Canonical Neighborhoods
+   * Compatibility-only local seed. It is not a canonical registry and must be
+   * replaced by the IRNI read port as consumers are migrated.
    */
-  private seedAuthoritativeBaseline(): void {
+  private seedLegacyNonCanonicalBaseline(): void {
     const nowIso = '2026-01-01T00:00:00.000Z';
 
     // 1. Country: Iran
@@ -35,9 +60,9 @@ export class GeographyCatalog {
       code: 'IR',
       center: { lat: 32.4279, lng: 53.6880 },
       boundary: {
-        provenance: 'OFFICIAL_CADASTRAL_VERIFIED',
-        sourceAuthority: 'سازمان نقشه‌برداری کشور (NCC)',
-        datasetVersion: 'NCC-2026-V1',
+        provenance: 'UNVERIFIED_SOURCE',
+        sourceAuthority: 'Radar legacy static seed; not verified as an IRNI canonical source',
+        datasetVersion: 'RADAR-LEGACY-SEED',
         boundingBox: { minLat: 25.0, maxLat: 39.8, minLng: 44.0, maxLng: 63.3 },
         centroid: { lat: 32.4279, lng: 53.6880 },
       },
@@ -57,9 +82,9 @@ export class GeographyCatalog {
         altNamesFa: [`استان ${prov.nameFa}`],
         center: { lat: prov.center[0], lng: prov.center[1] },
         boundary: {
-          provenance: 'EMPIRICAL_MUNICIPAL_SURVEY',
-          sourceAuthority: 'وزارت کشور - تقسیمات کشوری',
-          datasetVersion: 'MOI-DIV-2026',
+          provenance: 'UNVERIFIED_SOURCE',
+          sourceAuthority: 'Radar legacy static seed; not verified as an IRNI canonical source',
+          datasetVersion: 'RADAR-LEGACY-SEED',
           centroid: { lat: prov.center[0], lng: prov.center[1] },
         },
         metadata: {
@@ -76,19 +101,11 @@ export class GeographyCatalog {
 
     // 3. Multi-City metropolitan centers
     for (const [cityKey, config] of Object.entries(MULTI_CITY_CONFIGS)) {
-      const parentProvinceId = cityKey === 'tehran'
-        ? 'province:tehran'
-        : cityKey === 'karaj'
-          ? 'province:alborz'
-          : cityKey === 'mashhad'
-            ? 'province:khorasan_razavi'
-            : cityKey === 'isfahan'
-              ? 'province:isfahan'
-              : cityKey === 'shiraz'
-                ? 'province:fars'
-                : cityKey === 'tabriz'
-                  ? 'province:east_azerbaijan'
-                  : 'province:tehran';
+      const parentProvinceId = resolveLegacyCityProvinceId(cityKey);
+      if (!parentProvinceId || !this.entities.has(parentProvinceId)) {
+        // Unknown or unsupported city: do not create a false administrative relationship.
+        continue;
+      }
 
       const cityEntity: GeographicEntity = {
         id: `city:${cityKey}`,
@@ -98,9 +115,9 @@ export class GeographyCatalog {
         altNamesFa: [`شهر ${config.nameFa}`, `کلانشهر ${config.nameFa}`],
         center: { lat: config.center[0], lng: config.center[1] },
         boundary: {
-          provenance: 'EMPIRICAL_MUNICIPAL_SURVEY',
-          sourceAuthority: `شهرداری ${config.nameFa}`,
-          datasetVersion: 'MUN-2026-V1',
+          provenance: 'UNVERIFIED_SOURCE',
+          sourceAuthority: 'Radar legacy static seed; municipal authority not independently verified',
+          datasetVersion: 'RADAR-LEGACY-SEED',
           centroid: { lat: config.center[0], lng: config.center[1] },
         },
         isActive: true,
@@ -120,9 +137,9 @@ export class GeographyCatalog {
         code: String(d),
         altNamesFa: [`منطقه ${d}`, `شهرداری منطقه ${d}`],
         boundary: {
-          provenance: 'EMPIRICAL_MUNICIPAL_SURVEY',
-          sourceAuthority: 'شهرداری تهران',
-          datasetVersion: 'TEH-MUN-DIST-2026',
+          provenance: 'UNVERIFIED_SOURCE',
+          sourceAuthority: 'Radar legacy static seed; municipal authority not independently verified',
+          datasetVersion: 'RADAR-LEGACY-SEED',
         },
         isActive: true,
         createdAtIso: nowIso,
@@ -134,8 +151,10 @@ export class GeographyCatalog {
     // 5. Canonical Neighborhoods
     const allHoods = getAllMultiCityNeighborhoods();
     for (const hood of allHoods) {
-      const cityId = (hood as { cityId?: string }).cityId || resolveCityIdForNeighborhood(hood.id) || 'tehran';
+      const cityId = (hood as { cityId?: string }).cityId || resolveCityIdForNeighborhood(hood.id);
+      if (!cityId) continue;
       const cityEntityId = `city:${cityId}`;
+      if (!this.entities.has(cityEntityId)) continue;
 
       // Extract district if specified in zone
       let parentEntityId = cityEntityId;
@@ -163,7 +182,9 @@ export class GeographyCatalog {
           sourceAuthority: 'رادار تهران - اطلس محلات ایران',
           datasetVersion: 'HOODS-CATALOG-V4',
           centroid: { lat: hood.lat, lng: hood.lng },
-          approximateRadiusMeters: hood.radius || 1000,
+          ...(typeof hood.radius === 'number' && Number.isFinite(hood.radius) && hood.radius > 0
+            ? { approximateRadiusMeters: hood.radius }
+            : {}),
         },
         metadata: {
           buyPerSqm: hood.buyPerSqm,
