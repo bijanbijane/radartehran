@@ -355,7 +355,12 @@ export function findMigrationRegisterEntry(
         const pat = patternSegments[i];
         const seg = pathSegments[i];
         if (pat.startsWith(':')) {
-          params[pat.slice(1)] = decodeURIComponent(seg);
+          try {
+            params[pat.slice(1)] = decodeURIComponent(seg);
+          } catch {
+            matched = false;
+            break;
+          }
         } else if (pat !== seg) {
           matched = false;
           break;
