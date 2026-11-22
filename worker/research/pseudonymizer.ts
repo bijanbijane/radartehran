@@ -149,7 +149,7 @@ export async function deriveAllSubjectKeysForErasure(params: {
  */
 export function resolveLifecycleReceiptHmacSecret(env: WorkerEnv): string | null {
   const candidate = String(env.LIFECYCLE_RECEIPT_HMAC_SECRET || '').trim();
-  if (candidate.length < 32) return null;
+  if (new TextEncoder().encode(candidate).byteLength < 32) return null;
 
   const otherSecrets = [
     env.INTERNAL_LIFECYCLE_RPC_SECRET,

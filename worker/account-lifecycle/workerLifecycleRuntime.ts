@@ -185,9 +185,10 @@ export async function processPendingResearchErasureOutbox(params: {
         .bind(jobId)
         .first<{ uid: string }>();
 
-      const uidHash = jobRow?.uid
-        ? await hashUidForComplianceReceipt(jobRow.uid, receiptSecret)
-        : `unknown_${jobId}`;
+      if (!jobRow?.uid || !jobRow.uid.trim()) {
+        throw new Error('ACCOUNT_DELETION_PARENT_JOB_UID_MISSING');
+      }
+      const uidHash = await hashUidForComplianceReceipt(jobRow.uid, receiptSecret);
       const receiptId = `rcpt_res_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
       await params.userDb
