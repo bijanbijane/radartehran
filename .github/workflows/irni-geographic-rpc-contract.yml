@@ -1,0 +1,35 @@
+name: IRNI Geographic RPC Consumer Contract
+
+on:
+  push:
+    branches:
+      - feat/irni-v1-workers-rpc-consumer
+
+permissions:
+  contents: read
+
+jobs:
+  irni-rpc-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Deterministic dependency installation
+        run: npm ci --no-audit --no-fund
+
+      - name: Focused RPC consumer behavior tests
+        run: npm run test:irni-geographic-rpc
+
+      - name: Strict isolated RPC consumer typecheck
+        run: npm run typecheck:irni-geographic-rpc
