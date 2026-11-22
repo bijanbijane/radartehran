@@ -5,6 +5,7 @@
  */
 import { evaluateTieredWorkerRateLimit } from '../cache/kvAndEdgeRateLimiter';
 import { jsonWorkerResponse } from '../contextAndSecurity';
+import { resolveUserDb } from '../db/bindingResolver';
 import type { D1Database, WorkerEnv, WorkerRequestContext } from '../types';
 
 export const CANONICAL_CHUNK_SIZE_BYTES = 2 * 1024 * 1024; // 2 MiB
@@ -81,7 +82,8 @@ export async function enforceObjectStorageRateLimit(params: {
   maxRequests: number;
   windowSeconds?: number;
 }): Promise<Response | null> {
-  if (!params.ctx.env.DB) {
+  const userDb = resolveUserDb(params.ctx.env);
+  if (!userDb) {
     return jsonWorkerResponse(params.ctx, 503, {
       status: 'error',
       code: 'D1_DATABASE_NOT_BOUND',
@@ -94,7 +96,7 @@ export async function enforceObjectStorageRateLimit(params: {
     subjectKey: params.subjectKey,
     maxRequests: params.maxRequests,
     windowSeconds: params.windowSeconds ?? 60,
-    db: params.ctx.env.DB,
+    db: userDb,
   });
   if (!result.allowed) {
     return jsonWorkerResponse(

@@ -27,7 +27,7 @@
       "devDependencies": {
         "@cloudflare/vite-plugin": "^1.67.0",
         "@firebase/eslint-plugin-security-rules": "^0.0.2",
-        "@firebase/rules-unit-testing": "^4.0.1",
+        "@firebase/rules-unit-testing": "^5.0.0",
         "@playwright/test": "^1.51.0",
         "@types/express": "^4.17.21",
         "@types/leaflet": "^1.9.16",
@@ -256,7 +256,7 @@
 
     "@firebase/remote-config-types": ["@firebase/remote-config-types@0.5.2", "", {}, ""],
 
-    "@firebase/rules-unit-testing": ["@firebase/rules-unit-testing@4.0.1", "", { "peerDependencies": { "firebase": "^11.0.0" } }, "sha512-Vu8iMLP+dO9hCAqUCitWZQdORyM6CxucilRZtleeTZd5bejZmyOiaBPwYm3NOYG6025ac99CEeA+ETmJRxa9zg=="],
+    "@firebase/rules-unit-testing": ["@firebase/rules-unit-testing@5.0.2", "", { "peerDependencies": { "firebase": "^12.0.0" } }, "sha512-g053AaFcuf4gpAQbwRK/GIIGfPHhpomW3qkIYLi4xnaTUrf65yGP+0TPdojoXfB/ejrfevkXmMs5qXOTSwdN6A=="],
 
     "@firebase/storage": ["@firebase/storage@0.14.5", "", { "dependencies": { "@firebase/component": "0.7.5", "@firebase/util": "1.15.3", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-r2tozN/BlEewLi70tJNUQPzWwbex9GM7NgXZsamHKQrjKEfcR0i4jGgHBKAKA4hbwiPE9eNMb3hcxWnDpeJZwg=="],
 

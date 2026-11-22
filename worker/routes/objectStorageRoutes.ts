@@ -4,8 +4,10 @@
  * Delegates upload flows to `objectStorageUploadHandlers.ts` and handles status, R2 file reads
  * (Range 206/416 + signed URL), fail-closed Legal Hold deletions, and bargain media attach/cleanup.
  */
+import { isUserWriteBlockedInD1 } from '../account-lifecycle/d1MutationPermit';
 import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
 import { buildWorkerJsonHeaders, jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
+import { resolveUserDb } from '../db/bindingResolver';
 import type { D1MediaObjectRecord } from '../db/d1SchemaAndMigrations';
 import {
   isObjectUnderLegalHold,
@@ -43,6 +45,8 @@ export async function handleObjectStorageRoute(
   if (!pathname.startsWith('/api/object-storage/')) return null;
   const limits = resolveStorageLimits(env);
 
+  const userDb = resolveUserDb(env);
+
   // 1. Public sanitized storage capabilities
   if (method === 'GET' && pathname === '/api/object-storage/status') {
     const bucketRes = resolveWorkerMediaBucketName(env);
@@ -51,7 +55,7 @@ export async function handleObjectStorageRoute(
       provider: 'r2',
       providerLabelFa: 'ذخیره‌سازی ابری Cloudflare R2',
       r2Bound: Boolean(env.MEDIA_BUCKET),
-      d1Bound: Boolean(env.DB),
+      d1Bound: Boolean(userDb),
       bucketConfigured: bucketRes.ok,
       chunkedUploadSupported: true,
       chunkSizeBytes: CANONICAL_CHUNK_SIZE_BYTES,
@@ -71,10 +75,10 @@ export async function handleObjectStorageRoute(
     if (!isValidObjectId(objectId)) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_OBJECT_ID' });
     }
-    if (!env.DB || !env.MEDIA_BUCKET) {
+    if (!userDb || !env.MEDIA_BUCKET) {
       return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'STORAGE_BACKING_SERVICES_UNAVAILABLE' });
     }
-    const record = await env.DB
+    const record = await userDb
       .prepare('SELECT * FROM media_objects WHERE object_id = ?1')
       .bind(objectId)
       .first<D1MediaObjectRecord>();
@@ -185,7 +189,7 @@ export async function handleObjectStorageRoute(
     if (!isValidObjectId(objectId)) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_OBJECT_ID' });
     }
-    if (!env.DB || !env.MEDIA_BUCKET) {
+    if (!userDb || !env.MEDIA_BUCKET) {
       return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'STORAGE_BACKING_SERVICES_UNAVAILABLE' });
     }
     const auth = await authenticateUploadCaller(ctx);
@@ -195,7 +199,14 @@ export async function handleObjectStorageRoute(
         code: auth.reasonCode || 'UNAUTHORIZED',
       });
     }
-    const record = await env.DB
+    if (!auth.isAdmin && (await isUserWriteBlockedInD1(userDb, auth.uid))) {
+      return jsonWorkerResponse(ctx, 423, {
+        status: 'error',
+        code: 'ACCOUNT_WRITE_BLOCKED',
+        message: 'حساب کاربری در حال حذف است و تغییرات رسانه مسدود شده است.',
+      });
+    }
+    const record = await userDb
       .prepare('SELECT * FROM media_objects WHERE object_id = ?1')
       .bind(objectId)
       .first<D1MediaObjectRecord>();
@@ -209,7 +220,7 @@ export async function handleObjectStorageRoute(
 
     let holdStatus: { held: boolean; reason?: string };
     try {
-      holdStatus = await isObjectUnderLegalHold(env.DB, objectId);
+      holdStatus = await isObjectUnderLegalHold(userDb, objectId);
     } catch {
       return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'LEGAL_HOLD_VERIFICATION_UNAVAILABLE' });
     }
@@ -222,7 +233,7 @@ export async function handleObjectStorageRoute(
     }
 
     const nowIso = new Date().toISOString();
-    await env.DB
+    await userDb
       .prepare('UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3 WHERE object_id = ?4')
       .bind('PENDING_DELETE', 'PENDING_PHYSICAL_DELETE', nowIso, objectId)
       .run();
@@ -232,7 +243,7 @@ export async function handleObjectStorageRoute(
       return jsonWorkerResponse(ctx, 502, { status: 'error', code: 'R2_DELETE_FAILED_SCHEDULED_RECONCILE', id: objectId });
     }
     const finalIso = new Date().toISOString();
-    await env.DB
+    await userDb
       .prepare('UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3, deleted_at_iso = ?4 WHERE object_id = ?5')
       .bind('DELETED', 'PHYSICALLY_DELETED', finalIso, finalIso, objectId)
       .run();
@@ -241,10 +252,10 @@ export async function handleObjectStorageRoute(
 
   // 4. Authenticated POST mutations
   if (method !== 'POST') return null;
-  if (!env.DB || !env.MEDIA_BUCKET) {
+  if (!userDb || !env.MEDIA_BUCKET) {
     return jsonWorkerResponse(ctx, 503, {
       status: 'error',
-      code: !env.DB ? 'D1_DATABASE_NOT_BOUND' : 'R2_MEDIA_BUCKET_NOT_BOUND',
+      code: !userDb ? 'D1_DATABASE_NOT_BOUND' : 'R2_MEDIA_BUCKET_NOT_BOUND',
     });
   }
   const bucketRes = resolveWorkerMediaBucketName(env);
@@ -255,6 +266,13 @@ export async function handleObjectStorageRoute(
     return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 401 : auth.statusCode, {
       status: 'error',
       code: auth.reasonCode || 'UNAUTHORIZED',
+    });
+  }
+  if (!auth.isAdmin && (await isUserWriteBlockedInD1(userDb, auth.uid))) {
+    return jsonWorkerResponse(ctx, 423, {
+      status: 'error',
+      code: 'ACCOUNT_WRITE_BLOCKED',
+      message: 'حساب کاربری در حال حذف است و بارگذاری یا تغییر رسانه مسدود شده است.',
     });
   }
 
@@ -283,7 +301,7 @@ export async function handleObjectStorageRoute(
     const attachedIds: string[] = [];
     const nowIso = new Date().toISOString();
     for (const objectId of mediaIds) {
-      const rec = await env.DB
+      const rec = await userDb
         .prepare('SELECT * FROM media_objects WHERE object_id = ?1')
         .bind(objectId)
         .first<D1MediaObjectRecord>();
@@ -293,7 +311,7 @@ export async function handleObjectStorageRoute(
       if (rec.owner_uid !== auth.uid && !auth.isAdmin) {
         return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'MEDIA_OWNER_MISMATCH', objectId });
       }
-      await env.DB
+      await userDb
         .prepare('UPDATE media_objects SET target_type = ?1, target_id = ?2, updated_at_iso = ?3 WHERE object_id = ?4')
         .bind('bargain', bargainId, nowIso, objectId)
         .run();
@@ -310,7 +328,7 @@ export async function handleObjectStorageRoute(
     if (!bargainId || bargainId.length > 120) {
       return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_BARGAIN_ID' });
     }
-    const rowsRes = await env.DB
+    const rowsRes = await userDb
       .prepare('SELECT * FROM media_objects WHERE target_type = ?1 AND target_id = ?2')
       .bind('bargain', bargainId)
       .all<D1MediaObjectRecord>();
@@ -326,7 +344,7 @@ export async function handleObjectStorageRoute(
       if (rec.deletion_state === 'PHYSICALLY_DELETED') continue;
       let holdStatus: { held: boolean; reason?: string };
       try {
-        holdStatus = await isObjectUnderLegalHold(env.DB, rec.object_id);
+        holdStatus = await isObjectUnderLegalHold(userDb, rec.object_id);
       } catch {
         return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'LEGAL_HOLD_VERIFICATION_UNAVAILABLE' });
       }
@@ -335,13 +353,13 @@ export async function handleObjectStorageRoute(
         continue;
       }
       const ts = new Date().toISOString();
-      await env.DB
+      await userDb
         .prepare('UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3 WHERE object_id = ?4')
         .bind('PENDING_DELETE', 'PENDING_PHYSICAL_DELETE', ts, rec.object_id)
         .run();
       await env.MEDIA_BUCKET.delete(rec.storage_key);
       const doneIso = new Date().toISOString();
-      await env.DB
+      await userDb
         .prepare('UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3, deleted_at_iso = ?4 WHERE object_id = ?5')
         .bind('DELETED', 'PHYSICALLY_DELETED', doneIso, doneIso, rec.object_id)
         .run();

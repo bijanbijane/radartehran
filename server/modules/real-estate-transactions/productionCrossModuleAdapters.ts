@@ -70,7 +70,11 @@ export function createNativeFirestoreBackingAdapter(db: AdminFirestore): Durable
       const snap = await db.collection(collection).doc(docId).get();
       return snap.exists ? ({ ...(snap.data() as T), id: snap.id }) : null;
     },
-    async queryDocs<T extends Record<string, unknown>>(collection, filters, options = {}) {
+    async queryDocs<T extends Record<string, unknown>>(
+      collection: string,
+      filters: FirestoreQueryFilterLike[],
+      options: { orderByField?: string; orderDirection?: 'asc' | 'desc'; limit?: number; cursorDocId?: string | null } = {},
+    ) {
       const limit = Math.max(1, Math.min(50, Math.floor(options.limit ?? 20)));
       let ref: FirebaseFirestore.Query = db.collection(collection);
       for (const f of filters) ref = ref.where(f.field, f.op, f.value);
@@ -145,7 +149,11 @@ export function createStrictFirestoreBackingAdapterForTests(
       const raw = collections.get(collection)?.get(docId);
       return raw ? ({ ...(deepClone(raw) as T), id: docId }) : null;
     },
-    async queryDocs<T extends Record<string, unknown>>(collection, filters, options = {}) {
+    async queryDocs<T extends Record<string, unknown>>(
+      collection: string,
+      filters: FirestoreQueryFilterLike[],
+      options: { orderByField?: string; orderDirection?: 'asc' | 'desc'; limit?: number; cursorDocId?: string | null } = {},
+    ) {
       const limit = Math.max(1, Math.min(50, Math.floor(options.limit ?? 20)));
       const docs = Array.from((collections.get(collection) ?? new Map()).entries())
         .map(([id, data]) => ({ ...(deepClone(data) as T), id }))

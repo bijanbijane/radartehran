@@ -9,7 +9,10 @@ export type RadarQueueJobType =
   | 'firestore_d1_projection_sync'
   | 'r2_orphan_media_reconcile'
   | 'expired_chunk_upload_session_cleanup'
-  | 'telemetry_archive_flush';
+  | 'telemetry_archive_flush'
+  | 'research_event_ingest'
+  | 'research_subject_erasure'
+  | 'research_retention_purge';
 
 export interface RadarQueueEnvelope<TPayload = Record<string, unknown>> {
   schemaVersion: '1.0';
@@ -34,6 +37,9 @@ export const VALID_JOB_TYPES = new Set<RadarQueueJobType>([
   'r2_orphan_media_reconcile',
   'expired_chunk_upload_session_cleanup',
   'telemetry_archive_flush',
+  'research_event_ingest',
+  'research_subject_erasure',
+  'research_retention_purge',
 ]);
 
 export const DEFAULT_JOB_LEASE_DURATION_MS = 60_000;

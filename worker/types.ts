@@ -152,7 +152,25 @@ export interface WorkerEnv {
   readonly STRANGLER_FALLBACK_ENABLED?: string;
   readonly STRANGLER_ORIGIN_URL?: string;
   readonly MEDIA_BUCKET?: R2Bucket;
+  /** Canonical User Database binding (`radar-user-db`). Preferred over legacy alias `DB`. */
+  readonly USER_DB?: D1Database;
+  /** Legacy compatibility alias for `USER_DB` (`radar-user-db`). Scheduled for phased retirement. */
   readonly DB?: D1Database;
+  /** Physically isolated Behavioral Research Database binding (`radar-researcher-db`). */
+  readonly RESEARCH_DB?: D1Database;
+  // ABSOLUTE ARCHITECTURAL INVARIANT: No direct D1 binding for IRNI `radar-neighborhood-db`.
+  readonly RESEARCH_HMAC_SECRET?: string;
+  readonly RESEARCH_HMAC_KEY_VERSION?: string;
+  readonly RESEARCH_HMAC_PREVIOUS_SECRETS?: string;
+  readonly RESEARCH_K_ANONYMITY_MIN_COHORT?: string;
+  readonly INTERNAL_LIFECYCLE_RPC_SECRET?: string;
+  readonly IRNI_API_BASE_URL?: string;
+  readonly IRNI_API_TOKEN?: string;
+  readonly IRNI_API_HEADER_NAME?: string;
+  readonly IRNI_API_TIMEOUT_MS?: string;
+  readonly IRNI_CACHE_TTL_SECONDS?: string;
+  readonly IRNI_STALE_TTL_SECONDS?: string;
+  readonly IRNI_API_CONTRACT_STATUS?: string;
   readonly RADAR_QUEUE?: Queue;
   readonly RADAR_DLQ?: Queue;
   readonly MEDIA_QUEUE?: Queue;

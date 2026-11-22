@@ -226,7 +226,8 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
     assert.equal(ROUTE_MIGRATION_CONTROL_REGISTER.length, REGISTERED_API_ROUTES.length + 1);
     const summary = getMigrationProgressSummary();
     assert.equal(summary.totalCatalogRoutes, REGISTERED_API_ROUTES.length + 1);
-    assert.equal(summary.verifiedWorkerRoutes, 29);
+    // Group 1A (8) + Group 1B (12) + Group 4 Account USER_DB (7) + Group 5 Storage (9) = 36
+    assert.equal(summary.verifiedWorkerRoutes, 36);
     assert.equal(summary.unmountedEnterpriseModules, 10);
     assert.equal(UNMOUNTED_ENTERPRISE_DOMAIN_MODULES.length, 10);
 

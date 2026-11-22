@@ -366,8 +366,8 @@ export class DurableOfferAndParticipantService {
 
       const duplicateActive = existingOffers.find(
         (o) =>
-          o.proposingPartyId === actor.partyId &&
-          o.proposedPriceRials === input.proposedPriceRials &&
+          o.creatorPartyId === actor.partyId &&
+          o.proposedAmountRials === input.proposedPriceRials &&
           (o.status === 'SUBMITTED' || o.status === 'UNDER_REVIEW'),
       );
       if (duplicateActive) {
@@ -380,33 +380,28 @@ export class DurableOfferAndParticipantService {
         transactionId: txRec.id,
         propertyId: txRec.propertyId,
         offerType: input.offerType,
-        proposingPartyId: actor.partyId,
+        creatorPartyId: actor.partyId,
         recipientPartyIds: [...input.recipientPartyIds],
-        proposedPriceRials: Math.round(input.proposedPriceRials),
+        proposedAmountRials: Math.round(input.proposedPriceRials),
         currency: 'IRR',
+        proposedEffectiveDateIso: nowIso,
+        expirationDateIso: new Date(Date.now() + 7 * 86_400_000).toISOString(),
         conditions: [...(input.conditions ?? [])],
-        supersedesOfferId: input.supersedesOfferId,
+        supportingDocumentIds: [],
+        parentOfferId: input.supersedesOfferId,
         status: 'SUBMITTED',
+        isLegallyExecutedContractByAcceptanceAlone: false,
+        isCompletedSalePrice: false,
         version: existingOffers.length + 1,
-        submittedAtIso: nowIso,
+        createdAt: nowIso,
         updatedAt: nowIso,
       };
       const histId = makeTxId('txhist');
       tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.offers, offerId, offer as unknown as Record<string, unknown>);
-      tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.transactions, txRec.id, {
-        ...txRec,
-        status: 'NEGOTIATION',
-        version: txRec.version + 1,
-        updatedAt: nowIso,
-      } as unknown as Record<string, unknown>);
+      tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.transactions, txRec.id, { ...txRec, status: 'NEGOTIATION', version: txRec.version + 1, updatedAt: nowIso } as unknown as Record<string, unknown>);
       tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.history, histId, {
-        id: histId,
-        transactionId: txRec.id,
-        propertyId: txRec.propertyId,
-        entityType: 'OFFER',
-        actionSummary: `Submitted offer ${offerId} (${offer.proposedPriceRials} IRR).`,
-        actorUserId: actor.userId,
-        recordedAtIso: nowIso,
+        id: histId, transactionId: txRec.id, propertyId: txRec.propertyId, entityType: 'OFFER',
+        actionSummary: `Submitted offer ${offerId} (${offer.proposedAmountRials} IRR).`, actorUserId: actor.userId, recordedAtIso: nowIso,
       });
       tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.idempotency, idemId, {
         id: idemId,
@@ -450,7 +445,7 @@ export class DurableOfferAndParticipantService {
         throw new RealEstateTransactionError('INVALID_OFFER_TRANSITION', `پیشنهاد در وضعیت ${offer.status} قابل تصمیم‌گیری نیست.`, 409);
       }
       if (input.decision === 'ACCEPTED') {
-        if (offer.proposingPartyId === actor.partyId) {
+        if (offer.creatorPartyId === actor.partyId) {
           throw new RealEstateTransactionError('SELF_ACCEPTANCE_FORBIDDEN', 'ارائه‌دهنده پیشنهاد مجاز به پذیرش پیشنهاد خود نیست.', 403);
         }
         const alreadyAccepted = allOffers.find((o) => o.status === 'ACCEPTED');

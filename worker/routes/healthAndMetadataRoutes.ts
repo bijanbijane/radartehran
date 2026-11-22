@@ -21,6 +21,7 @@ import { validateCityParam } from '../../src/utils/security';
 import { buildOpenApiSpecification } from '../../src/utils/serverConfigValidator';
 import { resolveCanonicalBaseUrl } from '../../src/utils/serverDeliveryAndAbuseGuard';
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from '../contextAndSecurity';
+import { getTriadDomainBindingDiagnostics, resolveUserDb } from '../db/bindingResolver';
 import { getMigrationProgressSummary } from '../migrationRegister';
 import type { WorkerRequestContext } from '../types';
 
@@ -230,6 +231,7 @@ export async function handleHealthAndMetadataRoute(
       timestampIso: new Date().toISOString(),
       uptimeSeconds,
       migrationProgress: migration,
+      triadDomains: getTriadDomainBindingDiagnostics(ctx.env),
     });
   }
 
@@ -256,9 +258,10 @@ export async function handleHealthAndMetadataRoute(
   }
 
   if (pathname === '/api/health/readiness') {
-    if (ctx.env.DB) {
+    const userDb = resolveUserDb(ctx.env);
+    if (userDb) {
       const { inspectD1OperationalDiagnostics } = await import('../db/d1SchemaAndMigrations');
-      const diag = await inspectD1OperationalDiagnostics(ctx.env.DB);
+      const diag = await inspectD1OperationalDiagnostics(userDb);
       if (!diag.allCanonicalMigrationsApplied) {
         return jsonWorkerResponse(ctx, 503, {
           ok: false,

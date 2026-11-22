@@ -30,7 +30,7 @@ test(
       ...createCanonicalCrossModuleAdapters(engine),
     });
 
-    const buyer: TransactionActorContext = { userId: 'emu_buyer', partyId: 'emu_buyer', role: 'BUYER' };
+    const buyer: TransactionActorContext = { userId: 'emu_buyer', partyId: 'emu_buyer', role: 'PARTICIPANT' };
     const created = await prod.service.createTransactionCase(buyer, {
       transactionType: 'PROPERTY_SALE',
       propertyId: propId,

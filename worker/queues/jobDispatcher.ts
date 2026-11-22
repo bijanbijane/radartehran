@@ -6,7 +6,15 @@
  */
 import { getValidatedCityConfig } from '../../src/data/multiCityData';
 import type { CityId } from '../../src/types/models';
+import { processPendingResearchErasureOutbox } from '../account-lifecycle/workerLifecycleRuntime';
+import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
 import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
+import { validateAndMinimizeResearchEvent, type ValidatedResearchEvent } from '../research/researchEventContract';
+import {
+  purgeExpiredResearchData,
+  verifyQueuedResearchSubjectConsent,
+  writePseudonymizedEventsToResearchDb,
+} from '../research/researchService';
 import { isObjectUnderLegalHold } from '../storage/r2StorageAdapter';
 import type { WorkerEnv } from '../types';
 import {
@@ -21,6 +29,9 @@ export const EXECUTABLE_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
   'r2_orphan_media_reconcile',
   'expired_chunk_upload_session_cleanup',
   'telemetry_archive_flush',
+  'research_event_ingest',
+  'research_subject_erasure',
+  'research_retention_purge',
 ] as const;
 
 export const UPLOAD_SESSION_TTL_MS = 15 * 60 * 1000;
@@ -50,10 +61,11 @@ async function handleFirestoreD1ProjectionSync(
   envelope: RadarQueueEnvelope,
   env: WorkerEnv,
 ): Promise<QueueJobExecutionResult> {
-  if (!env.DB) {
+  const userDb = resolveUserDb(env);
+  if (!userDb) {
     throw new QueueJobExecutionError(
       'D1_BINDING_UNAVAILABLE',
-      'D1 database binding (DB) is required for firestore_d1_projection_sync',
+      'D1 database binding (USER_DB/DB) is required for firestore_d1_projection_sync',
       true,
     );
   }
@@ -86,7 +98,7 @@ async function handleFirestoreD1ProjectionSync(
       const dealPerSqm = Math.round(hood.buyPerSqm * 0.92 * 10) / 10;
       const districtMatch = String(hood.zone || '').match(/\d+/);
       const district = districtMatch ? Number(districtMatch[0]) : 1;
-      await upsertNeighborhoodProjectionD1(env.DB, {
+      await upsertNeighborhoodProjectionD1(userDb, {
         city_id: cityId,
         hood_id: hood.id,
         name_fa: hood.name,
@@ -102,13 +114,13 @@ async function handleFirestoreD1ProjectionSync(
       syncedRows += 1;
     }
 
-    await env.DB
+    await userDb
       .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
       .bind(`d1_projection_sync:${cityId}`, String(sliceLimit), nowIso)
       .run();
   }
 
-  await env.DB
+  await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
     .bind('d1_projection_sync:last_run', nowIso, nowIso)
     .run();
@@ -135,10 +147,11 @@ async function handleExpiredChunkUploadSessionCleanup(
   envelope: RadarQueueEnvelope,
   env: WorkerEnv,
 ): Promise<QueueJobExecutionResult> {
-  if (!env.DB) {
+  const userDb = resolveUserDb(env);
+  if (!userDb) {
     throw new QueueJobExecutionError(
       'D1_BINDING_UNAVAILABLE',
-      'D1 database binding (DB) is required for expired_chunk_upload_session_cleanup',
+      'D1 database binding (USER_DB/DB) is required for expired_chunk_upload_session_cleanup',
       true,
     );
   }
@@ -153,18 +166,18 @@ async function handleExpiredChunkUploadSessionCleanup(
   const cutoffMs = nowMs - ttlMs;
   const nowIso = new Date(nowMs).toISOString();
 
-  const expiredRes = await env.DB
+  const expiredRes = await userDb
     .prepare('SELECT session_id FROM upload_sessions WHERE created_at_ms < ?1')
     .bind(cutoffMs)
     .all<{ session_id: string }>();
 
   const expiredIds = (expiredRes.results ?? []).map((r) => r.session_id);
   for (const sid of expiredIds) {
-    await env.DB.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sid).run();
-    await env.DB.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sid).run();
+    await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sid).run();
+    await userDb.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sid).run();
   }
 
-  await env.DB
+  await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
     .bind('expired_chunk_upload_session_cleanup:last_run', String(expiredIds.length), nowIso)
     .run();
@@ -182,10 +195,11 @@ async function handleR2OrphanMediaReconcile(
   envelope: RadarQueueEnvelope,
   env: WorkerEnv,
 ): Promise<QueueJobExecutionResult> {
-  if (!env.DB || !env.MEDIA_BUCKET) {
+  const userDb = resolveUserDb(env);
+  if (!userDb || !env.MEDIA_BUCKET) {
     throw new QueueJobExecutionError(
       'STORAGE_OR_DB_BINDING_UNAVAILABLE',
-      'Both DB and MEDIA_BUCKET bindings are required for r2_orphan_media_reconcile',
+      'Both USER_DB/DB and MEDIA_BUCKET bindings are required for r2_orphan_media_reconcile',
       true,
     );
   }
@@ -204,7 +218,7 @@ async function handleR2OrphanMediaReconcile(
   let skippedLegalHoldCount = 0;
 
   // 1. Reconcile D1 media_objects stuck in PENDING_UPLOAD / FAILED_UPLOAD / PENDING_PHYSICAL_DELETE
-  const staleObjects = await env.DB
+  const staleObjects = await userDb
     .prepare(
       `SELECT * FROM media_objects WHERE lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE') AND updated_at_iso <= ?1`,
     )
@@ -217,14 +231,14 @@ async function handleR2OrphanMediaReconcile(
     }>();
 
   for (const obj of staleObjects.results ?? []) {
-    const hold = await isObjectUnderLegalHold(env.DB, obj.object_id);
+    const hold = await isObjectUnderLegalHold(userDb, obj.object_id);
     const hasRetentionLock = Boolean(obj.retention_until && Date.parse(obj.retention_until) > nowMs);
     if (hold.held || obj.legal_hold === 1 || hasRetentionLock) {
       skippedLegalHoldCount += 1;
       continue;
     }
     await env.MEDIA_BUCKET.delete(obj.storage_key);
-    await env.DB
+    await userDb
       .prepare(
         'UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3, deleted_at_iso = ?4 WHERE object_id = ?5',
       )
@@ -234,7 +248,7 @@ async function handleR2OrphanMediaReconcile(
   }
 
   // 2. Scan R2 objects under listings/ not tracked as active in D1
-  const knownActiveRes = await env.DB
+  const knownActiveRes = await userDb
     .prepare('SELECT storage_key FROM media_objects WHERE deletion_state != ?1')
     .bind('PHYSICALLY_DELETED')
     .all<{ storage_key: string }>();
@@ -246,7 +260,7 @@ async function handleR2OrphanMediaReconcile(
     const uploadedMs = r2Obj.uploaded instanceof Date ? r2Obj.uploaded.getTime() : 0;
     if (nowMs - uploadedMs < staleThresholdMs) continue;
     const maybeObjectId = r2Obj.customMetadata?.objectId || r2Obj.key;
-    const hold = await isObjectUnderLegalHold(env.DB, maybeObjectId);
+    const hold = await isObjectUnderLegalHold(userDb, maybeObjectId);
     if (hold.held) {
       skippedLegalHoldCount += 1;
       continue;
@@ -255,7 +269,7 @@ async function handleR2OrphanMediaReconcile(
     deletedCount += 1;
   }
 
-  await env.DB
+  await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
     .bind('r2_orphan_media_reconcile:last_run', JSON.stringify({ deletedCount, skippedLegalHoldCount }), nowIso)
     .run();
@@ -273,10 +287,11 @@ async function handleTelemetryArchiveFlush(
   envelope: RadarQueueEnvelope,
   env: WorkerEnv,
 ): Promise<QueueJobExecutionResult> {
-  if (!env.DB || !env.MEDIA_BUCKET) {
+  const userDb = resolveUserDb(env);
+  if (!userDb || !env.MEDIA_BUCKET) {
     throw new QueueJobExecutionError(
       'STORAGE_OR_DB_BINDING_UNAVAILABLE',
-      'Both DB and MEDIA_BUCKET bindings are required for telemetry_archive_flush',
+      'Both USER_DB/DB and MEDIA_BUCKET bindings are required for telemetry_archive_flush',
       true,
     );
   }
@@ -285,7 +300,7 @@ async function handleTelemetryArchiveFlush(
   const safeIdem = envelope.idempotencyKey.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
   const archiveKey = `telemetry-archives/${datePart}/${safeIdem}.json`;
 
-  const watermarks = await env.DB
+  const watermarks = await userDb
     .prepare('SELECT watermark_key, watermark_value, updated_at_iso FROM sync_watermarks ORDER BY updated_at_iso DESC LIMIT 20')
     .all<{ watermark_key: string; watermark_value: string; updated_at_iso: string }>();
 
@@ -306,7 +321,7 @@ async function handleTelemetryArchiveFlush(
     },
   });
 
-  await env.DB
+  await userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
     .bind('telemetry_archive_flush:last_run', archiveKey, nowIso)
     .run();
@@ -317,6 +332,121 @@ async function handleTelemetryArchiveFlush(
     executedAtIso: nowIso,
     affectedCount: 1,
     summary: { archiveKey, watermarksCount: archivePayload.watermarksCount },
+  };
+}
+
+async function handleResearchEventIngestJob(
+  envelope: RadarQueueEnvelope,
+  env: WorkerEnv,
+): Promise<QueueJobExecutionResult> {
+  const userDb = resolveUserDb(env);
+  const researchDb = resolveResearchDb(env);
+  if (!userDb || !researchDb) {
+    throw new QueueJobExecutionError(
+      'TRIAD_DB_BINDING_UNAVAILABLE',
+      'Both USER_DB and RESEARCH_DB bindings are required for consent-verified research_event_ingest',
+      true,
+    );
+  }
+  const subjectKey = String(envelope.payload?.subjectKey || '').trim();
+  const subjectKeyVersion = String(envelope.payload?.subjectKeyVersion || 'v1').trim();
+  const expectedConsentRevision =
+    typeof envelope.payload?.consentRevision === 'number' && Number.isInteger(envelope.payload.consentRevision)
+      ? envelope.payload.consentRevision
+      : undefined;
+  const rawEvents = Array.isArray(envelope.payload?.events) ? envelope.payload.events : [];
+  if (!subjectKey || !subjectKey.startsWith('sk_') || rawEvents.length === 0) {
+    throw new QueueJobExecutionError(
+      'INVALID_RESEARCH_INGEST_PAYLOAD',
+      'research_event_ingest requires pseudonymized subjectKey (sk_*) and non-empty events',
+      false,
+    );
+  }
+
+  // Re-verify active consent, monotonic consent_revision, write-blocks, and erasure outbox
+  // against USER_DB immediately before committing queued events to RESEARCH_DB.
+  const consentCheck = await verifyQueuedResearchSubjectConsent({
+    userDb,
+    subjectKey,
+    subjectKeyVersion,
+    expectedConsentRevision,
+  });
+  if (consentCheck.allowed === false) {
+    throw new QueueJobExecutionError(
+      consentCheck.code,
+      `Queued research_event_ingest rejected by USER_DB consent gate: ${consentCheck.code}`,
+      consentCheck.statusCode === 503,
+    );
+  }
+
+  const validated: ValidatedResearchEvent[] = [];
+  for (const item of rawEvents) {
+    const check = validateAndMinimizeResearchEvent(item);
+    if ('event' in check && check.ok) validated.push(check.event);
+  }
+  if (validated.length === 0) {
+    throw new QueueJobExecutionError('INVALID_RESEARCH_EVENTS', 'Zero valid research events in queue payload', false);
+  }
+  const res = await writePseudonymizedEventsToResearchDb({
+    researchDb,
+    subjectKey,
+    subjectKeyVersion,
+    events: validated,
+  });
+  return {
+    jobType: 'research_event_ingest',
+    idempotencyKey: envelope.idempotencyKey,
+    executedAtIso: new Date().toISOString(),
+    affectedCount: res.acceptedCount,
+    summary: { ...res, consentRevision: consentCheck.consentRevision },
+  };
+}
+
+async function handleResearchSubjectErasureJob(
+  envelope: RadarQueueEnvelope,
+  env: WorkerEnv,
+): Promise<QueueJobExecutionResult> {
+  const userDb = resolveUserDb(env);
+  const researchDb = resolveResearchDb(env);
+  if (!userDb || !researchDb) {
+    throw new QueueJobExecutionError(
+      'TRIAD_DB_BINDING_UNAVAILABLE',
+      'Both USER_DB and RESEARCH_DB bindings are required for research_subject_erasure',
+      true,
+    );
+  }
+  const jobId = typeof envelope.payload?.jobId === 'string' ? envelope.payload.jobId.trim() : undefined;
+  const receiptSecret = env.INTERNAL_LIFECYCLE_RPC_SECRET || env.RESEARCH_HMAC_SECRET;
+  const outboxRes = await processPendingResearchErasureOutbox({ userDb, researchDb, jobId, receiptSecret });
+  return {
+    jobType: 'research_subject_erasure',
+    idempotencyKey: envelope.idempotencyKey,
+    executedAtIso: new Date().toISOString(),
+    affectedCount: outboxRes.erasedEventsTotal,
+    summary: { ...outboxRes },
+  };
+}
+
+async function handleResearchRetentionPurgeJob(
+  envelope: RadarQueueEnvelope,
+  env: WorkerEnv,
+): Promise<QueueJobExecutionResult> {
+  const researchDb = resolveResearchDb(env);
+  if (!researchDb) {
+    throw new QueueJobExecutionError(
+      'RESEARCH_DB_BINDING_UNAVAILABLE',
+      'RESEARCH_DB binding is required for research_retention_purge',
+      true,
+    );
+  }
+  const report = await purgeExpiredResearchData({ researchDb });
+  return {
+    jobType: 'research_retention_purge',
+    idempotencyKey: envelope.idempotencyKey,
+    executedAtIso: report.purgedAtIso,
+    affectedCount:
+      report.deletedEventsCount + report.deletedIdempotencyKeysCount + report.deletedAggregationWindowsCount,
+    summary: { ...report },
   };
 }
 
@@ -333,6 +463,12 @@ export function createCanonicalQueueJobDispatcher(
         return handleR2OrphanMediaReconcile(envelope, env);
       case 'telemetry_archive_flush':
         return handleTelemetryArchiveFlush(envelope, env);
+      case 'research_event_ingest':
+        return handleResearchEventIngestJob(envelope, env);
+      case 'research_subject_erasure':
+        return handleResearchSubjectErasureJob(envelope, env);
+      case 'research_retention_purge':
+        return handleResearchRetentionPurgeJob(envelope, env);
       default:
         throw new QueueJobExecutionError(
           'UNSUPPORTED_JOB_TYPE',

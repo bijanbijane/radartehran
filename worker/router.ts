@@ -6,9 +6,12 @@
  */
 import { buildWorkerJsonHeaders, jsonWorkerResponse } from './contextAndSecurity';
 import { findMigrationRegisterEntry } from './migrationRegister';
+import { handleAccountWorkerRoute } from './routes/accountRoutes';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
+import { handleIrniReferenceRoute } from './routes/irniReferenceRoutes';
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
+import { handleResearchWorkerRoute } from './routes/researchRoutes';
 import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagnosticsRoutes';
 import type { WorkerRequestContext } from './types';
 
@@ -80,6 +83,36 @@ export async function dispatchWorkerApiOrSeoRequest(
     return {
       response: group1BResponse,
       routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Group 4: Worker-native Account, Privacy, Sessions, Data Requests & Deletion Lifecycle (USER_DB)
+  const group4AccountResponse = await handleAccountWorkerRoute(ctx);
+  if (group4AccountResponse) {
+    return {
+      response: group4AccountResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Group 3/Research: Physically Isolated Behavioral Research Domain (RESEARCH_DB)
+  const researchResponse = await handleResearchWorkerRoute(ctx);
+  if (researchResponse) {
+    return {
+      response: researchResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Reference/IRNI: Strictly Read-Only External IRNI Neighborhood Reference API Client
+  const irniRefResponse = await handleIrniReferenceRoute(ctx);
+  if (irniRefResponse) {
+    return {
+      response: irniRefResponse,
+      routePattern: pathname,
       migrationStatus: 'VERIFIED',
     };
   }

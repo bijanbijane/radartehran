@@ -27,6 +27,8 @@ import {
   type TargetMutationPlan,
 } from './moderationTargetResolver';
 
+export type { ModerationTargetType, SocialModerationDecision };
+
 export type ModerationCaseStatus =
   | 'OPEN'
   | 'CLAIMED'
@@ -214,7 +216,7 @@ export function resolveAuthoritativeModerationRole(auth: {
   });
   if (principal.isPrimaryBootstrapAdmin || principal.role === 'super_admin') return 'PRIMARY_ADMIN';
   if (principal.role === 'content_moderator') return 'CONTENT_MODERATOR';
-  if (principal.role === 'support_operator' || principal.role === 'auditor') return 'TRUST_SAFETY_REVIEWER';
+  if (principal.role === 'security_auditor' || principal.role === 'service_verifier') return 'TRUST_SAFETY_REVIEWER';
   return 'DELEGATED_ADMIN';
 }
 

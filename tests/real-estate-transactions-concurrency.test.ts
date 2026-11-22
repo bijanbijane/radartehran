@@ -36,9 +36,9 @@ test('RT-TRANSACTION-CRITICAL-030: concurrent rival offer acceptance guarantees 
     ...createCanonicalCrossModuleAdapters(engine),
   });
 
-  const buyerA: TransactionActorContext = { userId: 'u_buyer_a', partyId: 'buyer_a', role: 'BUYER' };
-  const buyerB: TransactionActorContext = { userId: 'u_buyer_b', partyId: 'buyer_b', role: 'BUYER' };
-  const seller: TransactionActorContext = { userId: 'u_seller_c1', partyId: 'seller_c1', role: 'SELLER' };
+  const buyerA: TransactionActorContext = { userId: 'u_buyer_a', partyId: 'buyer_a', role: 'PARTICIPANT' };
+  const buyerB: TransactionActorContext = { userId: 'u_buyer_b', partyId: 'buyer_b', role: 'PARTICIPANT' };
+  const seller: TransactionActorContext = { userId: 'u_seller_c1', partyId: 'seller_c1', role: 'PARTICIPANT' };
 
   const { transaction } = await prod.service.createTransactionCase(buyerA, {
     transactionType: 'PROPERTY_SALE',

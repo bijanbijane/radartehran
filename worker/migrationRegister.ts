@@ -37,6 +37,16 @@ const GROUP_1B_VERIFIED_PATHS = new Set<string>([
   'GET /api/v1/telemetry/policy',
 ]);
 
+const GROUP_4_VERIFIED_ACCOUNT_PATHS = new Set<string>([
+  'GET /api/account/profile',
+  'PATCH /api/account/profile',
+  'GET /api/account/privacy',
+  'PATCH /api/account/privacy',
+  'GET /api/account/sessions',
+  'POST /api/account/sessions/:id/revoke',
+  'GET /api/account/data-requests',
+]);
+
 const GROUP_5_VERIFIED_STORAGE_PATHS = new Set<string>([
   'GET /api/object-storage/status',
   'POST /api/object-storage/upload',
@@ -99,6 +109,18 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
       ],
       stateStorageTouchpoints: ['stateless_or_ephemeral_isolate_ledger'],
       externalApiTouchpoints: [],
+    };
+  }
+
+  if (GROUP_4_VERIFIED_ACCOUNT_PATHS.has(key)) {
+    return {
+      migrationGroup: 'GROUP_4_AUTHENTICATED_USER_WORKFLOWS',
+      workerHandlerModule: 'worker/routes/accountRoutes.ts',
+      status: 'VERIFIED',
+      activeRuntime: 'cloudflare_worker',
+      dependencies: ['worker/account/d1AccountRepository.ts', 'worker/auth/firebaseEdgeAuth.ts'],
+      stateStorageTouchpoints: ['Cloudflare D1 USER_DB (user_profiles, user_privacy_consents, user_sessions, user_data_requests)'],
+      externalApiTouchpoints: ['Firebase Auth JWKS'],
     };
   }
 

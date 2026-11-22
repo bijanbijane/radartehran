@@ -6,6 +6,7 @@
  */
 import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
 import { jsonWorkerResponse } from '../contextAndSecurity';
+import { getTriadDomainBindingDiagnostics, resolveUserDb } from '../db/bindingResolver';
 import { inspectD1OperationalDiagnostics } from '../db/d1SchemaAndMigrations';
 import { summarizeWorkerTelemetryWindow } from '../telemetry/workerTelemetryEngine';
 import type { DependencyCompatibilityEntry, WorkerRequestContext } from '../types';
@@ -57,15 +58,20 @@ export async function handleStorageAndAdminWorkerRoute(
         code: auth.reasonCode || 'ADMIN_FORBIDDEN',
       });
     }
-    const diag = await inspectD1OperationalDiagnostics(env.DB);
+    const userDb = resolveUserDb(env);
+    const diag = await inspectD1OperationalDiagnostics(userDb);
+    const triadDomains = getTriadDomainBindingDiagnostics(env);
     const telemetrySummary = summarizeWorkerTelemetryWindow();
     return jsonWorkerResponse(ctx, 200, {
       status: 'ok',
       environment: ctx.environment,
       dependencyMatrix: WORKER_DEPENDENCY_COMPATIBILITY_MATRIX,
+      triadDomains,
       operationalVisibility: {
-        workerHealth: diag.allCanonicalMigrationsApplied || !env.DB ? 'healthy' : 'degraded_pending_migrations',
-        d1Status: env.DB ? 'bound' : 'unbound',
+        workerHealth: diag.allCanonicalMigrationsApplied || !userDb ? 'healthy' : 'degraded_pending_migrations',
+        d1Status: userDb ? 'bound' : 'unbound',
+        userDbStatus: triadDomains.userDbBound ? 'bound' : 'unbound',
+        researchDbStatus: triadDomains.researchDbBound ? 'bound' : 'unbound',
         r2Status: env.MEDIA_BUCKET ? 'bound' : 'unbound',
         kvStatus: env.RADAR_KV ? 'bound' : 'unbound',
         queueStatus: env.RADAR_QUEUE ? 'bound' : 'unbound',

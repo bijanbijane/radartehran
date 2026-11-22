@@ -83,7 +83,11 @@ export function createLocalD1DatabaseSimulator(): D1Database {
       } else if (normalized.startsWith('SELECT * FROM media_objects WHERE storage_key')) {
         const key = String(boundValues[0]);
         row = (Array.from(mediaObjects.values()).find((m) => m.storage_key === key) as unknown as Record<string, unknown>) ?? null;
-      } else if (normalized.startsWith('SELECT * FROM auth_revocation_events WHERE idempotency_key') || normalized.startsWith('SELECT event_id FROM auth_revocation_events WHERE idempotency_key')) {
+      } else if (
+        normalized.startsWith('SELECT * FROM auth_revocation_events WHERE idempotency_key') ||
+        normalized.startsWith('SELECT event_id FROM auth_revocation_events WHERE idempotency_key') ||
+        normalized.startsWith('SELECT event_id, uid, action, valid_since_seconds FROM auth_revocation_events WHERE idempotency_key')
+      ) {
         const idem = String(boundValues[0]);
         row = (Array.from(authRevocations.values()).find((e) => e.idempotency_key === idem) as unknown as Record<string, unknown>) ?? null;
       }
@@ -439,10 +443,17 @@ export function createLocalD1DatabaseSimulator(): D1Database {
         } else {
           changes = 0;
         }
-      } else if (normalized.startsWith('INSERT OR IGNORE INTO auth_revocation_events')) {
+      } else if (
+        normalized.startsWith('INSERT OR IGNORE INTO auth_revocation_events') ||
+        normalized.startsWith('INSERT INTO auth_revocation_events')
+      ) {
         const [event_id, uid, action, valid_since_seconds, actor_uid, reason, idempotency_key, created_at_iso] = boundValues;
         const idem = String(idempotency_key);
+        const isIgnore = normalized.startsWith('INSERT OR IGNORE');
         if (Array.from(authRevocations.values()).some((e) => e.idempotency_key === idem)) {
+          if (!isIgnore) {
+            throw new Error('UNIQUE constraint failed: auth_revocation_events.idempotency_key');
+          }
           changes = 0;
         } else {
           authRevocations.set(String(event_id), {
@@ -468,12 +479,25 @@ export function createLocalD1DatabaseSimulator(): D1Database {
       return makeStatement(query);
     },
     async batch<T = unknown>(statements: D1PreparedStatement[]) {
+      const snapWatermarks = new Map(watermarks);
+      const snapAuthRevocations = new Map(authRevocations);
       const out: Array<{ results?: T[]; success: boolean }> = [];
-      for (const stmt of statements) {
-        const res = await stmt.run<T>();
-        out.push({ results: res.results, success: res.success });
+      try {
+        for (const stmt of statements) {
+          const res = await stmt.run<T>();
+          if (!res.success) {
+            throw new Error('D1_BATCH_STATEMENT_FAILED');
+          }
+          out.push({ results: res.results, success: res.success });
+        }
+        return out;
+      } catch (err) {
+        watermarks.clear();
+        for (const [k, v] of snapWatermarks.entries()) watermarks.set(k, v);
+        authRevocations.clear();
+        for (const [k, v] of snapAuthRevocations.entries()) authRevocations.set(k, v);
+        throw err;
       }
-      return out;
     },
     async exec(_query: string) {
       return { count: 1, duration: 1 };

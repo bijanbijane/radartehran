@@ -649,6 +649,98 @@
         "createdAtIso": { "type": "string" }
       },
       "required": ["key", "operation", "actorId", "requestHash", "createdAtIso"]
+    },
+    "SocialModerationAppeal": {
+      "title": "SocialModerationAppeal",
+      "description": "Independent server-only moderation appeal entity with SoD reviewer enforcement (allow read, write: if false)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "appealId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "appellantUid": { "type": "string" },
+        "originalDecisionId": { "type": "string" },
+        "status": { "type": "string" },
+        "submittedAtIso": { "type": "string" },
+        "revision": { "type": "number" }
+      },
+      "required": ["id", "appealId", "caseId", "appellantUid", "originalDecisionId", "status", "submittedAtIso", "revision"]
+    },
+    "SocialActiveReportLock": {
+      "title": "SocialActiveReportLock",
+      "description": "Deterministic SHA-256 uniqueness lock preventing duplicate active moderation reports (allow read, write: if false)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "reporterUserId": { "type": "string" },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "reportId": { "type": "string" },
+        "createdAtIso": { "type": "string" }
+      },
+      "required": ["id", "reporterUserId", "targetType", "targetId", "caseId", "reportId", "createdAtIso"]
+    },
+    "RealEstateTransaction": {
+      "title": "RealEstateTransaction",
+      "description": "Durable server-only real estate transaction case with optimistic revision CAS (allow read, write: if false)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "propertyId": { "type": "string" },
+        "transactionType": { "type": "string" },
+        "status": { "type": "string" },
+        "version": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "propertyId", "transactionType", "status", "version", "createdAt", "updatedAt"]
+    },
+    "RealEstateTransactionSubRecord": {
+      "title": "RealEstateTransactionSubRecord",
+      "description": "Server-only transactional sub-record for participants, offers, contracts, closings, history, idempotency, and outbox (allow read, write: if false)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "transactionId": { "type": "string" }
+      },
+      "required": ["id"]
+    },
+    "DisputeCase": {
+      "title": "DisputeCase",
+      "description": "Canonical durable server-only dispute resolution case with strict legal boundary flags and revision CAS (allow read, write: if false)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string" },
+        "claimantUid": { "type": "string" },
+        "respondentUid": { "type": "string" },
+        "revision": { "type": "number" },
+        "createdAtIso": { "type": "string" },
+        "updatedAtIso": { "type": "string" }
+      },
+      "required": ["id", "category", "status", "claimantUid", "respondentUid", "revision", "createdAtIso", "updatedAtIso"]
+    },
+    "DisputeSubRecord": {
+      "title": "DisputeSubRecord",
+      "description": "Server-only canonical dispute sub-record for parties, claims, responses, evidence, settlements, outcomes, append-only history, idempotency, and outbox (allow read, write: if false)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "caseId": { "type": "string" }
+      },
+      "required": ["id"]
+    },
+    "CanonicalAuthorityRecord": {
+      "title": "CanonicalAuthorityRecord",
+      "description": "Server-only authoritative cross-module reference record (property registry, ownership rights/transfers, brokerage mandates, payment intents, media metadata)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id"]
     }
   },
   "firestore": {
@@ -783,6 +875,154 @@
     "/legal_regulatory_idempotency_v1/{docId}": {
       "schema": { "$ref": "#/entities/LegalRegulatoryIdempotency" },
       "description": "Server-only SHA-256 keyed idempotency ledger with request hash verification (allow read, write: if false)"
+    },
+    "/socialModerationAppeals/{appealId}": {
+      "schema": { "$ref": "#/entities/SocialModerationAppeal" },
+      "description": "Server-only independent moderation appeal records (allow read, write: if false)"
+    },
+    "/socialActiveReportLocks/{lockId}": {
+      "schema": { "$ref": "#/entities/SocialActiveReportLock" },
+      "description": "Server-only deterministic active report uniqueness locks (allow read, write: if false)"
+    },
+    "/real_estate_transactions/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransaction" },
+      "description": "Server-only durable real estate transactions (allow read, write: if false)"
+    },
+    "/real_estate_transaction_participants/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only verified transaction participants (allow read, write: if false)"
+    },
+    "/real_estate_transaction_offers/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction offers and counter-offers (allow read, write: if false)"
+    },
+    "/real_estate_transaction_negotiations/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction negotiation logs (allow read, write: if false)"
+    },
+    "/real_estate_transaction_terms/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction terms records (allow read, write: if false)"
+    },
+    "/real_estate_transaction_conditions/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction conditions precedent (allow read, write: if false)"
+    },
+    "/real_estate_transaction_milestones/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction milestones and payment references (allow read, write: if false)"
+    },
+    "/real_estate_transaction_contracts/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only non-authoritative contract metadata references (allow read, write: if false)"
+    },
+    "/real_estate_transaction_closings/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction closing records (allow read, write: if false)"
+    },
+    "/real_estate_transaction_handovers/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only property handover records (allow read, write: if false)"
+    },
+    "/real_estate_transaction_terminations/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction cancellation and dispute handoff records (allow read, write: if false)"
+    },
+    "/real_estate_transaction_completed_records/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only immutable completed transaction records (allow read, write: if false)"
+    },
+    "/real_estate_transaction_history/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only append-only transaction audit history (allow read, write: if false)"
+    },
+    "/real_estate_transaction_idempotency/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only transaction mutation idempotency ledger (allow read, write: if false)"
+    },
+    "/real_estate_transaction_outbox/{docId}": {
+      "schema": { "$ref": "#/entities/RealEstateTransactionSubRecord" },
+      "description": "Server-only durable transaction notification outbox (allow read, write: if false)"
+    },
+    "/dispute_cases/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeCase" },
+      "description": "Server-only canonical dispute resolution cases (allow read, write: if false)"
+    },
+    "/dispute_parties/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only verified dispute parties (allow read, write: if false)"
+    },
+    "/dispute_claims/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute claims (allow read, write: if false)"
+    },
+    "/dispute_responses/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute claim responses (allow read, write: if false)"
+    },
+    "/dispute_evidence/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute evidence records with confidentiality enforcement (allow read, write: if false)"
+    },
+    "/dispute_communications/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute communications (allow read, write: if false)"
+    },
+    "/dispute_deadlines/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute deadlines (allow read, write: if false)"
+    },
+    "/dispute_mediation_sessions/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute mediation sessions (allow read, write: if false)"
+    },
+    "/dispute_settlement_proposals/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only bilateral dispute settlement proposals (allow read, write: if false)"
+    },
+    "/dispute_settlements/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only finalized non-court dispute settlements (allow read, write: if false)"
+    },
+    "/dispute_resolution_outcomes/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute resolution outcomes (allow read, write: if false)"
+    },
+    "/dispute_case_history/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only append-only dispute case history (allow read, write: if false)"
+    },
+    "/dispute_idempotency/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only dispute mutation idempotency ledger (allow read, write: if false)"
+    },
+    "/dispute_notification_outbox/{docId}": {
+      "schema": { "$ref": "#/entities/DisputeSubRecord" },
+      "description": "Server-only durable dispute notification outbox (allow read, write: if false)"
+    },
+    "/pr_canonical_properties/{docId}": {
+      "schema": { "$ref": "#/entities/CanonicalAuthorityRecord" },
+      "description": "Server-only canonical property registry records (allow read, write: if false)"
+    },
+    "/property_ownership_rights/{docId}": {
+      "schema": { "$ref": "#/entities/CanonicalAuthorityRecord" },
+      "description": "Server-only property ownership rights authority records (allow read, write: if false)"
+    },
+    "/property_ownership_transfers/{docId}": {
+      "schema": { "$ref": "#/entities/CanonicalAuthorityRecord" },
+      "description": "Server-only confirmed property ownership transfer records (allow read, write: if false)"
+    },
+    "/brokerage_mandates/{docId}": {
+      "schema": { "$ref": "#/entities/CanonicalAuthorityRecord" },
+      "description": "Server-only active brokerage mandate records (allow read, write: if false)"
+    },
+    "/payment_intents/{docId}": {
+      "schema": { "$ref": "#/entities/CanonicalAuthorityRecord" },
+      "description": "Server-only authoritative payment ledger intents (allow read, write: if false)"
+    },
+    "/media_object_metadata_v2/{docId}": {
+      "schema": { "$ref": "#/entities/CanonicalAuthorityRecord" },
+      "description": "Server-only verified media document metadata records (allow read, write: if false)"
     }
   }
 }

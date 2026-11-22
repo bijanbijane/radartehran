@@ -62,11 +62,14 @@ export class DurableClosingAndContractService {
         id: contractId,
         transactionId: txRec.id,
         contractType: input.contractType,
-        mediaDocumentId: input.mediaDocumentId,
+        contractVersion: 1,
         contractingPartyIds: [...input.contractingPartyIds],
+        contractDateIso: nowIso,
+        effectiveDateIso: nowIso,
         executionStatus: 'PREPARED',
-        version: 1,
-        isExternallyOfficialized: false,
+        provenanceStage: 'UPLOADED_CONTRACT_UNVERIFIED',
+        mediaDocumentId: input.mediaDocumentId,
+        provesLegalValidityFromPdfImageAlone: false,
         createdAt: nowIso,
         updatedAt: nowIso,
       };
@@ -101,7 +104,7 @@ export class DurableClosingAndContractService {
       const updated: TransactionContractReferenceRecord = {
         ...contract,
         executionStatus: input.executionStatus,
-        version: contract.version + 1,
+        contractVersion: contract.contractVersion + 1,
         updatedAt: nowIso,
       };
       tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.contracts, contract.id, updated as unknown as Record<string, unknown>);
@@ -132,11 +135,14 @@ export class DurableClosingAndContractService {
       const milestone: TransactionMilestoneRecord = {
         id,
         transactionId: txRec.id,
-        milestoneType: 'CLOSING_STEP',
-        titleFa: input.titleFa,
+        milestoneType: 'PROPERTY_HANDOVER_COMPLETED',
+        expectedDateIso: nowIso,
+        actualDateIso: input.epistemicStatus === 'CONFIRMED_MILESTONE' ? nowIso : undefined,
         epistemicStatus: input.epistemicStatus,
         responsiblePartyId: actor.partyId,
         evidenceReferences: [...(input.evidenceReferences ?? [])],
+        sourceProvenance: `milestone:${input.titleFa}`,
+        plannedEqualsCompleted: false,
         createdAt: nowIso,
         updatedAt: nowIso,
       };
@@ -254,7 +260,7 @@ export class DurableClosingAndContractService {
       if (!acceptedOffer) {
         throw new RealEstateTransactionError('COMPLETION_PREREQUISITES_UNMET', 'تکمیل معامله بدون پیشنهاد پذیرفته‌شده مجاز نیست.', 409);
       }
-      const executedContract = contracts.find((c) => c.executionStatus === 'FULLY_EXECUTED' || c.executionStatus === 'SIGNED_BY_ALL_PARTIES');
+      const executedContract = contracts.find((c) => c.executionStatus === 'FULLY_SIGNED');
       if (!executedContract) {
         throw new RealEstateTransactionError('COMPLETION_PREREQUISITES_UNMET', 'تکمیل معامله بدون قرارداد اجراشده مجاز نیست.', 409);
       }
@@ -270,14 +276,20 @@ export class DurableClosingAndContractService {
         transactionId: txRec.id,
         propertyId: txRec.propertyId,
         transactionType: txRec.transactionType,
-        finalAgreedPriceRials: acceptedOffer.proposedPriceRials,
+        completionDateIso: nowIso,
+        finalAgreedAmountRials: acceptedOffer.proposedAmountRials,
+        priceClassification: 'VERIFIED_COMPLETED_TRANSACTION_AMOUNT',
         currency: 'IRR',
-        priceDistinctionClassification: 'VERIFIED_COMPLETED_PRICE',
-        contractReferenceId: executedContract.id,
-        paymentConfirmationRef: input.finalPaymentRef,
-        ownershipTransferConfirmationRef: input.ownershipTransferRef,
-        completedAtIso: nowIso,
-        sourceProvenance: txRec.sourceProvenance,
+        finalContractReferenceId: executedContract.id,
+        participantPartyIds: participants.map((p) => p.partyId),
+        completionEvidenceRefs: [
+          input.finalPaymentRef,
+          ...(input.ownershipTransferRef ? [input.ownershipTransferRef] : []),
+        ],
+        verificationStatus: 'VERIFIED_COMPLETED',
+        publiclyPublishableWithoutConsent: false,
+        version: 1,
+        recordedAtIso: nowIso,
       };
       const histId = makeTxId('txhist');
       tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.transactions, txRec.id, updatedTx as unknown as Record<string, unknown>);
@@ -321,9 +333,20 @@ export class DurableClosingAndContractService {
       const termination: TransactionTerminationRecord = {
         id: makeTxId('txterm'),
         transactionId: txRec.id,
-        outcome: input.mode === 'CANCELLED' ? 'CANCELLED_MUTUAL' : input.mode === 'DISPUTED' ? 'DISPUTED_FREEZE' : 'TERMINATED_BREACH',
-        initiatedByPartyId: actor.partyId,
-        reasonFa: input.reasonFa,
+        distinctionType:
+          input.mode === 'CANCELLED'
+            ? 'CANCELLED_BEFORE_AGREEMENT'
+            : input.mode === 'DISPUTED'
+              ? 'TRANSACTION_DISPUTED'
+              : 'CONTRACT_TERMINATED',
+        reasonCategory: input.mode,
+        explanation: input.reasonFa,
+        initiatingPartyId: actor.partyId,
+        effectiveDateIso: nowIso,
+        supportingEvidenceIds: [],
+        autoCalculatesLegalPenalties: false,
+        autoRefundsDeposits: false,
+        assumesAllObligationsReleased: false,
         recordedAtIso: nowIso,
       };
       tx.set(REAL_ESTATE_TRANSACTION_COLLECTIONS.transactions, txRec.id, updatedTx as unknown as Record<string, unknown>);

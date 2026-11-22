@@ -19,6 +19,7 @@ import {
   createWorkerRequestContext,
   jsonWorkerResponse,
 } from './contextAndSecurity';
+import { resolveUserDb } from './db/bindingResolver';
 import {
   buildCanonicalCronEnvelopes,
   createCanonicalQueueJobDispatcher,
@@ -211,7 +212,7 @@ export default {
   ): Promise<void> {
     await processRadarQueueBatch({
       batch,
-      db: env.DB,
+      db: resolveUserDb(env),
       dlq: env.RADAR_DLQ,
       executeJob: createCanonicalQueueJobDispatcher(env),
     });

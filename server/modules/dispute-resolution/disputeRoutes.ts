@@ -383,3 +383,9 @@ export function createDisputeRouter(
 
   return router;
 }
+
+export {
+  registerDisputeResolutionRoutes,
+  type MountDisputeResolutionRoutesOptions,
+} from './canonicalDisputeRoutes';
+

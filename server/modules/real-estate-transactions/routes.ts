@@ -70,7 +70,7 @@ export function registerRealEstateTransactionsRoutes(
     const actor: TransactionActorContext = {
       userId: auth.uid,
       partyId: auth.uid,
-      role: auth.isAdmin ? 'PLATFORM_VERIFIER_OR_ADMIN' : 'BUYER',
+      role: 'isAdmin' in auth && auth.isAdmin ? 'PLATFORM_VERIFIER_OR_ADMIN' : 'PARTICIPANT',
     };
     return { actor, service: options.service };
   }

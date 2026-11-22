@@ -800,12 +800,19 @@ service cloud.firestore {
     }
 
     match /socialModerationCases/{caseId} {
-      allow get, list, create, update, delete: if isAdmin() && isValidId(caseId);
+      allow read, write: if false;
     }
 
     match /socialModerationEvents/{eventId} {
-      allow get, list, create: if isAdmin() && isValidId(eventId);
-      allow update, delete: if false;
+      allow read, write: if false;
+    }
+
+    match /socialModerationAppeals/{appealId} {
+      allow read, write: if false;
+    }
+
+    match /socialActiveReportLocks/{lockId} {
+      allow read, write: if false;
     }
 
     match /socialOutbox/{outboxId} {
@@ -866,6 +873,149 @@ service cloud.firestore {
     }
 
     match /legal_regulatory_idempotency_v1/{docId} {
+      allow read, write: if false;
+    }
+
+    // Package 4 (RT-TRANSACTION-CRITICAL-030): Real Estate Transactions durable collections (server-only via Admin SDK)
+    match /real_estate_transactions/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_participants/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_offers/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_negotiations/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_terms/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_conditions/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_milestones/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_contracts/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_closings/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_handovers/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_terminations/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_completed_records/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_history/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_idempotency/{docId} {
+      allow read, write: if false;
+    }
+
+    match /real_estate_transaction_outbox/{docId} {
+      allow read, write: if false;
+    }
+
+    // Package 4 (RT-DISPUTE-CRITICAL-031): Canonical Dispute Resolution durable collections (server-only via Admin SDK)
+    match /dispute_cases/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_parties/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_claims/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_responses/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_evidence/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_communications/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_deadlines/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_mediation_sessions/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_settlement_proposals/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_settlements/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_resolution_outcomes/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_case_history/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_idempotency/{docId} {
+      allow read, write: if false;
+    }
+
+    match /dispute_notification_outbox/{docId} {
+      allow read, write: if false;
+    }
+
+    // Package 4 (RT-DOMAIN-CRITICAL-032): Canonical cross-module authority collections (server-only via Admin SDK)
+    match /pr_canonical_properties/{docId} {
+      allow read, write: if false;
+    }
+
+    match /property_ownership_rights/{docId} {
+      allow read, write: if false;
+    }
+
+    match /property_ownership_transfers/{docId} {
+      allow read, write: if false;
+    }
+
+    match /brokerage_mandates/{docId} {
+      allow read, write: if false;
+    }
+
+    match /payment_intents/{docId} {
+      allow read, write: if false;
+    }
+
+    match /media_object_metadata_v2/{docId} {
       allow read, write: if false;
     }
   }

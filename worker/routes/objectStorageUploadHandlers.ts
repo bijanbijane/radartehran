@@ -4,6 +4,7 @@
  * (`upload`) handlers for the canonical Cloudflare Worker Object Storage routes.
  */
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
+import { resolveUserDb } from '../db/bindingResolver';
 import type { D1UploadSessionRecord } from '../db/d1SchemaAndMigrations';
 import { storeValidatedMediaWithD1Saga } from '../storage/r2StorageAdapter';
 import type { WorkerRequestContext } from '../types';
@@ -35,7 +36,8 @@ export async function handleChunkedAndDirectUploadRoutes(
 ): Promise<Response | null> {
   const { ctx, authUid, isAdmin, bucketName, limits } = params;
   const { pathname, env, request } = ctx;
-  if (!env.DB || !env.MEDIA_BUCKET) return null;
+  const userDb = resolveUserDb(env);
+  if (!userDb || !env.MEDIA_BUCKET) return null;
 
   if (pathname === '/api/object-storage/upload-init') {
     const rateLimited = await enforceObjectStorageRateLimit({
@@ -76,16 +78,16 @@ export async function handleChunkedAndDirectUploadRoutes(
     }
 
     const nowMs = Date.now();
-    await purgeExpiredUploadSessions(env.DB, nowMs);
+    await purgeExpiredUploadSessions(userDb, nowMs);
 
-    const userCountRow = await env.DB
+    const userCountRow = await userDb
       .prepare('SELECT COUNT(*) as cnt FROM upload_sessions WHERE owner_uid = ?1 AND completed = 0')
       .bind(authUid)
       .first<{ cnt: number }>();
     if (Number(userCountRow?.cnt ?? 0) >= MAX_ACTIVE_SESSIONS_PER_USER) {
       return jsonWorkerResponse(ctx, 429, { status: 'error', code: 'USER_UPLOAD_SESSION_QUOTA_EXCEEDED' });
     }
-    const globalCountRow = await env.DB
+    const globalCountRow = await userDb
       .prepare('SELECT COUNT(*) as cnt FROM upload_sessions WHERE completed = 0')
       .first<{ cnt: number }>();
     if (Number(globalCountRow?.cnt ?? 0) >= MAX_ACTIVE_SESSIONS_GLOBAL) {
@@ -94,7 +96,7 @@ export async function handleChunkedAndDirectUploadRoutes(
 
     const sessionId = `upl_${nowMs}_${crypto.randomUUID().slice(0, 10)}`;
     const fileName = sanitizeUploadFileName(body.fileName);
-    await env.DB
+    await userDb
       .prepare(
         `INSERT INTO upload_sessions (
           session_id, owner_uid, city_id, hood_id, media_type, mime_type, file_name,
@@ -128,7 +130,7 @@ export async function handleChunkedAndDirectUploadRoutes(
     }
     const sessionId = String(parsed.body.sessionId || '').trim();
     const chunkIndex = Number(parsed.body.chunkIndex);
-    const session = await env.DB
+    const session = await userDb
       .prepare('SELECT * FROM upload_sessions WHERE session_id = ?1')
       .bind(sessionId)
       .first<D1UploadSessionRecord>();
@@ -140,8 +142,8 @@ export async function handleChunkedAndDirectUploadRoutes(
       return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'UPLOAD_SESSION_ALREADY_COMPLETED' });
     }
     if (Date.now() - Number(session.created_at_ms) > UPLOAD_SESSION_TTL_MS) {
-      await env.DB.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sessionId).run();
-      await env.DB.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sessionId).run();
+      await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sessionId).run();
+      await userDb.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sessionId).run();
       return jsonWorkerResponse(ctx, 410, { status: 'error', code: 'UPLOAD_SESSION_EXPIRED' });
     }
     if (!Number.isInteger(chunkIndex) || chunkIndex < 0 || chunkIndex >= Number(session.total_chunks)) {
@@ -154,7 +156,7 @@ export async function handleChunkedAndDirectUploadRoutes(
       return jsonWorkerResponse(ctx, 413, { status: 'error', code: 'CHUNK_SIZE_EXCEEDS_2MB_LIMIT' });
     }
 
-    const existingChunk = await env.DB
+    const existingChunk = await userDb
       .prepare('SELECT chunk_index, chunk_base64, byte_length FROM upload_session_chunks WHERE session_id = ?1 AND chunk_index = ?2')
       .bind(sessionId, chunkIndex)
       .first<{ chunk_index: number; chunk_base64: string; byte_length: number }>();
@@ -171,7 +173,7 @@ export async function handleChunkedAndDirectUploadRoutes(
       return jsonWorkerResponse(ctx, 409, { status: 'error', code: 'DUPLICATE_CHUNK_CONFLICT' });
     }
 
-    const budgetRes = await env.DB
+    const budgetRes = await userDb
       .prepare('UPDATE upload_sessions SET received_bytes = received_bytes + ?1 WHERE session_id = ?2 AND completed = 0 AND received_bytes + ?1 <= max_bytes')
       .bind(decoded.bytes.byteLength, sessionId)
       .run();
@@ -179,7 +181,7 @@ export async function handleChunkedAndDirectUploadRoutes(
       return jsonWorkerResponse(ctx, 413, { status: 'error', code: 'CUMULATIVE_UPLOAD_SIZE_EXCEEDED' });
     }
 
-    await env.DB
+    await userDb
       .prepare('INSERT OR IGNORE INTO upload_session_chunks (session_id, chunk_index, chunk_base64, byte_length) VALUES (?1, ?2, ?3, ?4)')
       .bind(sessionId, chunkIndex, decoded.cleanBase64, decoded.bytes.byteLength)
       .run();
@@ -206,7 +208,7 @@ export async function handleChunkedAndDirectUploadRoutes(
       return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code, message: parsed.messageFa });
     }
     const sessionId = String(parsed.body.sessionId || '').trim();
-    const session = await env.DB
+    const session = await userDb
       .prepare('SELECT * FROM upload_sessions WHERE session_id = ?1')
       .bind(sessionId)
       .first<D1UploadSessionRecord>();
@@ -215,12 +217,12 @@ export async function handleChunkedAndDirectUploadRoutes(
       return jsonWorkerResponse(ctx, 403, { status: 'error', code: 'SESSION_OWNER_MISMATCH' });
     }
     if (Date.now() - Number(session.created_at_ms) > UPLOAD_SESSION_TTL_MS) {
-      await env.DB.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sessionId).run();
-      await env.DB.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sessionId).run();
+      await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sessionId).run();
+      await userDb.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sessionId).run();
       return jsonWorkerResponse(ctx, 410, { status: 'error', code: 'UPLOAD_SESSION_EXPIRED' });
     }
 
-    const chunksRes = await env.DB
+    const chunksRes = await userDb
       .prepare('SELECT chunk_index, chunk_base64, byte_length FROM upload_session_chunks WHERE session_id = ?1 ORDER BY chunk_index ASC')
       .bind(sessionId)
       .all<{ chunk_index: number; chunk_base64: string; byte_length: number }>();
@@ -239,7 +241,7 @@ export async function handleChunkedAndDirectUploadRoutes(
       }
     }
 
-    const claimComplete = await env.DB
+    const claimComplete = await userDb
       .prepare('UPDATE upload_sessions SET completed = 1 WHERE session_id = ?1 AND completed = 0')
       .bind(sessionId)
       .run();
@@ -270,7 +272,7 @@ export async function handleChunkedAndDirectUploadRoutes(
 
     const stored = await storeValidatedMediaWithD1Saga({
       r2: env.MEDIA_BUCKET,
-      db: env.DB,
+      db: userDb,
       bucketName,
       ownerUid: session.owner_uid,
       city: session.city_id,
@@ -282,8 +284,8 @@ export async function handleChunkedAndDirectUploadRoutes(
       maxVideoMb: limits.maxVideoMb,
     });
 
-    await env.DB.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sessionId).run();
-    await env.DB.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sessionId).run();
+    await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sessionId).run();
+    await userDb.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sessionId).run();
 
     if (stored.ok === false) {
       return jsonWorkerResponse(ctx, stored.statusCode, { status: 'error', code: stored.errorCode });
@@ -320,7 +322,7 @@ export async function handleChunkedAndDirectUploadRoutes(
 
     const stored = await storeValidatedMediaWithD1Saga({
       r2: env.MEDIA_BUCKET,
-      db: env.DB,
+      db: userDb,
       bucketName,
       ownerUid: authUid,
       city: String(parsed.body.city || 'tehran').trim().toLowerCase(),

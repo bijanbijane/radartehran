@@ -55,8 +55,8 @@ test('RT-TRANSACTION-CRITICAL-030: durable lifecycle survives restart and enforc
   const adapters1 = createCanonicalCrossModuleAdapters(engine1);
   const prod = createProductionRealEstateTransactionsModule({ store: store1, ...adapters1 });
 
-  const buyer: TransactionActorContext = { userId: 'u_buyer_1', partyId: 'party_buyer_1', role: 'BUYER' };
-  const seller: TransactionActorContext = { userId: 'u_seller_1', partyId: 'party_seller_1', role: 'SELLER' };
+  const buyer: TransactionActorContext = { userId: 'u_buyer_1', partyId: 'party_buyer_1', role: 'PARTICIPANT' };
+  const seller: TransactionActorContext = { userId: 'u_seller_1', partyId: 'party_seller_1', role: 'PARTICIPANT' };
 
   const created = await prod.service.createTransactionCase(buyer, {
     transactionType: 'PROPERTY_SALE',
@@ -83,7 +83,7 @@ test('RT-TRANSACTION-CRITICAL-030: durable lifecycle survives restart and enforc
   await assert.rejects(
     () =>
       prod.service.createTransactionCase(buyer, {
-        transactionType: 'PROPERTY_RENTAL',
+        transactionType: 'RESIDENTIAL_RENTAL',
         propertyId: 'prop_tehran_101',
         jurisdictionCitySlug: 'tehran',
         sourceProvenance: 'verified_test',
@@ -131,12 +131,12 @@ test('RT-TRANSACTION-CRITICAL-030: durable lifecycle survives restart and enforc
   await prod.service.transitionContractWorkflowState(seller, {
     transactionId: created.transaction.id,
     contractId: contract.id,
-    executionStatus: 'FULLY_EXECUTED',
+    executionStatus: 'FULLY_SIGNED',
   });
   await prod.service.upsertClosingMilestone(seller, {
     transactionId: created.transaction.id,
     titleFa: 'تحویل کلید و تنظیم سند رسمی',
-    epistemicStatus: 'COMPLETED_AND_VERIFIED',
+    epistemicStatus: 'CONFIRMED_MILESTONE',
   });
   await prod.service.recordVerifiedPaymentReference(buyer, {
     transactionId: created.transaction.id,
@@ -148,7 +148,7 @@ test('RT-TRANSACTION-CRITICAL-030: durable lifecycle survives restart and enforc
     ownershipTransferRef: 'trf_verified_1',
   });
   assert.equal(completed.transaction.status, 'COMPLETED');
-  assert.equal(completed.completedRecord.finalAgreedPriceRials, 15_000_000_000);
+  assert.equal(completed.completedRecord.finalAgreedAmountRials, 15_000_000_000);
 
   // Simulate full process restart with fresh engine/store/service over shared durable backing
   const engine2 = createStrictFirestoreBackingAdapterForTests(sharedBacking);

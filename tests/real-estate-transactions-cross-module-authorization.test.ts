@@ -58,8 +58,8 @@ test('RT-TRANSACTION-CRITICAL-030: cross-module authorization rejects spoofed se
     ...createCanonicalCrossModuleAdapters(engine),
   });
 
-  const buyer: TransactionActorContext = { userId: 'u_buyer', partyId: 'party_buyer', role: 'BUYER' };
-  const intruder: TransactionActorContext = { userId: 'u_intruder', partyId: 'party_intruder', role: 'BUYER' };
+  const buyer: TransactionActorContext = { userId: 'u_buyer', partyId: 'party_buyer', role: 'PARTICIPANT' };
+  const intruder: TransactionActorContext = { userId: 'u_intruder', partyId: 'party_intruder', role: 'PARTICIPANT' };
 
   const { transaction } = await prod.service.createTransactionCase(buyer, {
     transactionType: 'PROPERTY_SALE',
