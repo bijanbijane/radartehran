@@ -87,22 +87,36 @@ function isPersistenceError(value: unknown): value is IrniGeographicPersistenceE
   );
 }
 
+function failureError(
+  code: IrniGeographicPersistenceErrorCode,
+  messageFa: string,
+  retryable: boolean,
+  details: Readonly<Record<string, string | number | boolean | null>> = {},
+): IrniGeographicPersistenceError {
+  return {
+    code,
+    entityType: 'SYSTEM',
+    entityId: null,
+    messageFa,
+    retryable,
+    details,
+  };
+}
+
 function invalidResponse<T>(
   messageFa = 'پاسخ RPC مرجع جغرافیایی IRNI با قرارداد نسخه ۱ سازگار نیست.',
 ): IrniGeographicPersistenceResult<T> {
   return {
     ok: false,
-    error: {
-      code: 'STORAGE_UNAVAILABLE',
-      entityType: 'SYSTEM',
-      entityId: null,
+    error: failureError(
+      'STORAGE_UNAVAILABLE',
       messageFa,
-      retryable: false,
-      details: {
-        failureCode: 'IRNI_RPC_INVALID_RESPONSE' satisfies IrniGeographicRpcFailureCode,
+      false,
+      {
+        failureCode: 'IRNI_RPC_INVALID_RESPONSE',
         contractVersion: IRNI_GEOGRAPHIC_RPC_CONTRACT_VERSION,
       },
-    },
+    ),
   };
 }
 
@@ -114,18 +128,16 @@ function unavailable<T>(
 ): IrniGeographicPersistenceResult<T> {
   return {
     ok: false,
-    error: {
-      code: 'STORAGE_UNAVAILABLE',
-      entityType: 'SYSTEM',
-      entityId: null,
+    error: failureError(
+      'STORAGE_UNAVAILABLE',
       messageFa,
       retryable,
-      details: {
+      {
         failureCode,
         contractVersion: IRNI_GEOGRAPHIC_RPC_CONTRACT_VERSION,
         ...details,
       },
-    },
+    ),
   };
 }
 
@@ -135,17 +147,15 @@ function versionConflict<T>(
 ): IrniGeographicPersistenceResult<T> {
   return {
     ok: false,
-    error: {
-      code: 'VERSION_CONFLICT',
-      entityType: 'SYSTEM',
-      entityId: null,
-      messageFa: 'نسخه رجیستری جغرافیایی IRNI در فاصله درخواست تغییر کرده است؛ صفحه‌بندی باید از نسخه واحد آغاز شود.',
-      retryable: true,
-      details: {
+    error: failureError(
+      'VERSION_CONFLICT',
+      'نسخه رجیستری جغرافیایی IRNI در فاصله درخواست تغییر کرده است؛ صفحه‌بندی باید از نسخه واحد آغاز شود.',
+      true,
+      {
         expectedRegistryRevision: expectedRevision,
         actualRegistryRevision: actualRevision,
       },
-    },
+    ),
   };
 }
 
@@ -355,11 +365,12 @@ export class IrniGeographicRpcClient {
     expectedRegistryRevision: number,
   ): Promise<IrniGeographicPersistenceError | null> {
     if (!isPositiveSafeInteger(expectedRegistryRevision)) {
-      return unavailable<never>(
-        'IRNI_RPC_INVALID_PARAMETERS',
+      return failureError(
+        'VALIDATION_FAILURE',
         'نسخه رجیستری مورد انتظار باید یک عدد صحیح مثبت و امن باشد.',
         false,
-      ).error;
+        { failureCode: 'IRNI_RPC_INVALID_PARAMETERS' },
+      );
     }
 
     const metadata = await this.getApprovedRegistryMetadata();
@@ -369,25 +380,33 @@ export class IrniGeographicRpcClient {
       metadata.value.contractState !== 'ACTIVE' ||
       metadata.value.integrityVerified !== true
     ) {
-      return unavailable<never>(
+      const failureCode: IrniGeographicRpcFailureCode =
         metadata.value.contractState === 'ACTIVE'
           ? 'IRNI_RPC_REGISTRY_UNVERIFIED'
-          : 'IRNI_RPC_CONTRACT_MISMATCH',
+          : 'IRNI_RPC_CONTRACT_MISMATCH';
+      return failureError(
+        'STORAGE_UNAVAILABLE',
         'قرارداد RPC مرجع جغرافیایی IRNI فعال و یکپارچگی رجیستری تأیید نشده است؛ خواندن داده مسدود شد.',
         true,
         {
+          failureCode,
           contractState: metadata.value.contractState,
           integrityVerified: metadata.value.integrityVerified,
           registryRevision: metadata.value.registryRevision,
         },
-      ).error;
+      );
     }
 
     if (metadata.value.registryRevision !== expectedRegistryRevision) {
-      return versionConflict<never>(
-        expectedRegistryRevision,
-        metadata.value.registryRevision,
-      ).error;
+      return failureError(
+        'VERSION_CONFLICT',
+        'نسخه رجیستری جغرافیایی IRNI در فاصله درخواست تغییر کرده است؛ صفحه‌بندی باید از نسخه واحد آغاز شود.',
+        true,
+        {
+          expectedRegistryRevision,
+          actualRegistryRevision: metadata.value.registryRevision,
+        },
+      );
     }
 
     return null;
