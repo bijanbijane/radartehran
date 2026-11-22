@@ -19,6 +19,7 @@ import type {
 } from './irniGeographicRpcTypes';
 
 import {
+  type DataValidator,
   failureError,
   hasOwn,
   invalidResponse,
