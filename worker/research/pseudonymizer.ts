@@ -158,6 +158,7 @@ export function resolveLifecycleReceiptHmacSecret(env: WorkerEnv): string | null
     env.R2_SIGNING_SECRET,
     env.OBJECT_STORAGE_SIGNING_SECRET,
     env.VALUATION_SEAL_SECRET,
+    env.IRNI_API_TOKEN,
   ].map((value) => String(value || '').trim()).filter(Boolean);
 
   if (otherSecrets.includes(candidate)) return null;

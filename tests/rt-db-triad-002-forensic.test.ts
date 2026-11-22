@@ -638,6 +638,7 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
         assert.equal(resolveLifecycleReceiptHmacSecret(env), TEST_RECEIPT_SECRET);
         assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_RPC_SECRET }), null);
         assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, LIFECYCLE_RECEIPT_HMAC_SECRET: TEST_HMAC_SECRET }), null);
+        assert.equal(resolveLifecycleReceiptHmacSecret({ ...env, IRNI_API_TOKEN: TEST_RECEIPT_SECRET }), null);
         await assert.rejects(() => hashUidForComplianceReceipt(uid, ''), /LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING/);
         assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_RPC_SECRET));
         assert.notEqual(expectedKeyedHash, await hashUidForComplianceReceipt(uid, TEST_HMAC_SECRET));
