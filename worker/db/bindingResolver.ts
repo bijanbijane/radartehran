@@ -71,7 +71,7 @@ export interface TriadDomainBindingDiagnostics {
   readonly userDbBound: boolean; readonly userDbSource: UserDbBindingSource;
   readonly legacyDbAliasBound: boolean; readonly researchDbBound: boolean;
   readonly neighborhoodDbBound: boolean; readonly isolationViolation: boolean;
-  readonly irniDirectDbBindingPresent: true;
+  readonly irniDirectDbBindingPresent: false;
 }
 export function getTriadDomainBindingDiagnostics(env: WorkerEnv): TriadDomainBindingDiagnostics {
   const isolationViolation = hasUserResearchBindingCollision(env);
