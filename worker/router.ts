@@ -9,6 +9,7 @@ import { findMigrationRegisterEntry } from './migrationRegister';
 import { handleAccountWorkerRoute } from './routes/accountRoutes';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
+import { handleIrniCanonicalRpcRoute } from './routes/irniCanonicalRpcRoutes';
 import { handleIrniReferenceRoute } from './routes/irniReferenceRoutes';
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
 import { handleResearchWorkerRoute } from './routes/researchRoutes';
@@ -102,6 +103,16 @@ export async function dispatchWorkerApiOrSeoRequest(
   if (researchResponse) {
     return {
       response: researchResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Canonical IRNI v1: registered, revision-pinned, read-only Workers RPC facade.
+  const canonicalIrniRpcResponse = await handleIrniCanonicalRpcRoute(ctx);
+  if (canonicalIrniRpcResponse) {
+    return {
+      response: canonicalIrniRpcResponse,
       routePattern: registeredMatch?.entry.path || pathname,
       migrationStatus: 'VERIFIED',
     };
