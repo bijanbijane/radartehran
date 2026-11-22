@@ -14,6 +14,8 @@ import { handleStorageAndAdminWorkerRoute } from './routes/storageAndAdminDiagno
 import { handleAccountLifecycleRoute } from './routes/accountLifecycleRoutes';
 import { guardWorkerApiMutationWriteBlock } from './account-lifecycle/workerApiWriteBlockGuard';
 import { handleInternalWriteAdmissionRoute } from './routes/internalWriteAdmissionRoutes';
+import { handleResearchWorkerRoute } from './routes/researchRoutes';
+import { handleGeographicRegistryRoute } from './routes/geographicRegistryRoutes';
 import type { WorkerRequestContext } from './types';
 
 export interface WorkerRouteDispatchResult {
@@ -104,6 +106,12 @@ export async function dispatchWorkerApiOrSeoRequest(
   }
 
   // Group 1A: Health, OpenAPI, PWA manifest, Sitemap, Robots
+  const researchResponse = await handleResearchWorkerRoute(ctx);
+  if (researchResponse) return { response: researchResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
+
+  const geographicResponse = await handleGeographicRegistryRoute(ctx);
+  if (geographicResponse) return { response: geographicResponse, routePattern: pathname, migrationStatus: 'VERIFIED' };
+
   const group1AResponse = await handleHealthAndMetadataRoute(ctx);
   if (group1AResponse) {
     return {
