@@ -4,6 +4,28 @@ on:
   push:
     branches:
       - feat/irni-v1-workers-rpc-consumer
+      - fix/geography-catalog-no-fabricated-parent-fallback
+      - main
+    paths:
+      - "worker/irni/irniGeographicRpc*.ts"
+      - "worker/types.ts"
+      - "tests/irni-geographic-rpc-client.test.ts"
+      - "tsconfig.irni-geographic-rpc.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/irni-geographic-rpc-contract.yml"
+  pull_request:
+    branches:
+      - fix/geography-catalog-no-fabricated-parent-fallback
+      - main
+    paths:
+      - "worker/irni/irniGeographicRpc*.ts"
+      - "worker/types.ts"
+      - "tests/irni-geographic-rpc-client.test.ts"
+      - "tsconfig.irni-geographic-rpc.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/irni-geographic-rpc-contract.yml"
 
 permissions:
   contents: read
