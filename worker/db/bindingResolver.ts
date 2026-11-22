@@ -26,7 +26,6 @@ function userDb(env: WorkerEnv): D1Database | undefined { return env.USER_DB ?? 
 /** USER_DB and legacy DB are aliases; RESEARCH_DB and NEIGHBORHOOD_DB must be physically isolated. */
 export function hasUserResearchBindingCollision(env: WorkerEnv): boolean {
   const user = userDb(env);
-  if (env.USER_DB && env.DB && env.USER_DB !== env.DB) return true;
   if (user && env.RESEARCH_DB && user === env.RESEARCH_DB) return true;
   if (user && env.NEIGHBORHOOD_DB && user === env.NEIGHBORHOOD_DB) return true;
   if (env.RESEARCH_DB && env.NEIGHBORHOOD_DB && env.RESEARCH_DB === env.NEIGHBORHOOD_DB) return true;
@@ -83,6 +82,6 @@ export function getTriadDomainBindingDiagnostics(env: WorkerEnv): TriadDomainBin
     researchDbBound: Boolean(env.RESEARCH_DB) && !isolationViolation,
     neighborhoodDbBound: Boolean(env.NEIGHBORHOOD_DB) && !isolationViolation,
     isolationViolation,
-    irniDirectDbBindingPresent: Boolean(env.NEIGHBORHOOD_DB),
+    irniDirectDbBindingPresent: false,
   };
 }
