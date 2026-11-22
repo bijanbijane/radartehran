@@ -18,13 +18,6 @@
   },
   "d1_databases": [
     {
-      "binding": "USER_DB",
-      "database_name": "radar-user-db",
-      "database_id": "fbb98e6b-5200-4047-b4bc-15a51c06aa84",
-      "migrations_dir": "migrations/user-d1",
-      "migrations_table": "d1_migrations"
-    },
-    {
       "binding": "DB",
       "database_name": "radar-user-db",
       "database_id": "fbb98e6b-5200-4047-b4bc-15a51c06aa84",
