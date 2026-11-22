@@ -24,6 +24,7 @@ import {
   createCanonicalQueueJobDispatcher,
 } from './queues/jobDispatcher';
 import { releaseWorkerMutationPermitIfHeld } from './account-lifecycle/writeBlockWorkerGate';
+import { resolveUserDb } from './db/bindingResolver';
 import {
   processRadarQueueBatch,
   type RadarQueueEnvelope,
