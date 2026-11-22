@@ -6,18 +6,18 @@ on:
       - codex/rt-f09-lifecycle-receipt-key-isolation
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   regenerate-lockfile:
-    name: Regenerate package-lock with npm on Node 22
+    name: Regenerate and commit package-lock with npm on Node 22
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout exact pushed commit
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -57,10 +57,14 @@ jobs:
           console.log('package.json and package-lock.json root declarations match.');
           NODE
 
-      - name: Upload generated lockfile for review
-        uses: actions/upload-artifact@v4
-        with:
-          name: regenerated-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 3
+      - name: Commit regenerated lockfile to this PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "package-lock.json is already up to date."
+            exit 0
+          fi
+          git commit -m "chore(deps): regenerate npm lockfile from package.json"
+          git push origin "HEAD:codex/rt-f09-lifecycle-receipt-key-isolation"
