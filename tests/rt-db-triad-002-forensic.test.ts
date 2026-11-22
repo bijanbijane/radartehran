@@ -40,7 +40,10 @@ import {
   blockUserWritesInD1,
   releaseMutationPermitInD1,
 } from '../worker/account-lifecycle/d1MutationPermit';
-import { executeAccountDeletionLifecycle } from '../worker/account-lifecycle/workerLifecycleRuntime';
+import {
+  executeAccountDeletionLifecycle,
+  processPendingResearchErasureOutbox,
+} from '../worker/account-lifecycle/workerLifecycleRuntime';
 import {
   clearTestJwksForEdgeAuth,
   isTokenRevokedOrUserDisabled,
@@ -666,6 +669,80 @@ describe('RT-DB-TRIAD-002: Forensic Audit & Corrective Engineering Regression Su
       } finally {
         clearTestJwksForEdgeAuth();
       }
+    });
+  });
+
+  describe('F-09 [P1]: Parent lifecycle identity is validated before cross-domain erasure', () => {
+    it('keeps the research data and outbox pending when the parent deletion job is missing', async () => {
+      const userSqlite = createForensicSqliteD1();
+      const researchSqlite = createForensicSqliteD1();
+      applyMigrations(userSqlite.raw, 'migrations/user-d1');
+      applyMigrations(researchSqlite.raw, 'migrations/research-d1');
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+
+      researchSqlite.raw.prepare(
+        `INSERT INTO research_events (
+          event_id, subject_key, subject_key_version, event_type, schema_version,
+          city_id, session_bucket, payload_json, occurred_at_iso, ingested_at_iso,
+          expires_at_iso, idempotency_key
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'evt_orphan_parent_001',
+        'sk_v1_orphan_parent_subject',
+        'v1',
+        'property_view',
+        1,
+        'tehran',
+        'session_bucket_001',
+        '{}',
+        nowIso,
+        nowIso,
+        new Date(nowMs + 86_400_000).toISOString(),
+        'idem_orphan_parent_001',
+      );
+
+      userSqlite.raw.prepare(
+        `INSERT INTO research_erasure_outbox (
+          outbox_id, job_id, subject_key, subject_key_version, status,
+          attempt_count, next_retry_at_ms, created_at_iso, updated_at_iso
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'outbox_orphan_parent_001',
+        'missing_parent_job_001',
+        'sk_v1_orphan_parent_subject',
+        'v1',
+        'PENDING',
+        0,
+        0,
+        nowIso,
+        nowIso,
+      );
+
+      await assert.rejects(
+        () => processPendingResearchErasureOutbox({
+          userDb: userSqlite.db,
+          researchDb: researchSqlite.db,
+          nowMs,
+          receiptSecret: TEST_RECEIPT_SECRET,
+        }),
+        /ACCOUNT_DELETION_PARENT_JOB_UID_MISSING/,
+      );
+
+      const outbox = userSqlite.raw
+        .prepare('SELECT status, attempt_count FROM research_erasure_outbox WHERE outbox_id = ?')
+        .get('outbox_orphan_parent_001') as { status: string; attempt_count: number };
+      const remainingEvents = researchSqlite.raw
+        .prepare('SELECT COUNT(*) AS cnt FROM research_events WHERE subject_key = ?')
+        .get('sk_v1_orphan_parent_subject') as { cnt: number };
+      const erasureReceipts = researchSqlite.raw
+        .prepare('SELECT COUNT(*) AS cnt FROM research_erasure_inbox WHERE outbox_id = ?')
+        .get('outbox_orphan_parent_001') as { cnt: number };
+
+      assert.equal(outbox.status, 'PENDING', 'Outbox must remain retryable when parent identity is missing');
+      assert.equal(outbox.attempt_count, 0, 'No destructive attempt should be recorded before parent validation');
+      assert.equal(remainingEvents.cnt, 1, 'Research data must not be erased without a verifiable parent identity');
+      assert.equal(erasureReceipts.cnt, 0, 'No erasure receipt may be created for an orphaned parent job');
     });
   });
 

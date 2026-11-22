@@ -79,7 +79,7 @@ export async function processPendingResearchErasureOutbox(params: {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
   const receiptSecret = String(params.receiptSecret || '').trim();
-  if (receiptSecret.length < 32) throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
+  if (new TextEncoder().encode(receiptSecret).byteLength < 32) throw new Error('LIFECYCLE_RECEIPT_HMAC_SECRET_MISSING');
 
   const outboxRowsRes = params.jobId
     ? await params.userDb
@@ -104,6 +104,7 @@ export async function processPendingResearchErasureOutbox(params: {
   let pending = 0;
   let erasedEventsTotal = 0;
   const touchedJobIds = new Set<string>();
+  const parentUidByJobId = new Map<string, string>();
 
   for (const row of rows) {
     const outboxId = String(row.outbox_id);
@@ -111,6 +112,21 @@ export async function processPendingResearchErasureOutbox(params: {
     const subjectKey = String(row.subject_key);
     const subjectKeyVersion = String(row.subject_key_version);
     const attempts = Number(row.attempt_count ?? 0) + 1;
+
+    // Validate the durable parent identity BEFORE deleting research data or completing its outbox row.
+    let parentUid = parentUidByJobId.get(jobId);
+    if (!parentUid) {
+      const parentJob = await params.userDb
+        .prepare('SELECT uid FROM account_deletion_jobs WHERE job_id = ?1')
+        .bind(jobId)
+        .first<{ uid: string }>();
+      if (!parentJob?.uid || !parentJob.uid.trim()) {
+        throw new Error('ACCOUNT_DELETION_PARENT_JOB_UID_MISSING');
+      }
+      parentUid = parentJob.uid.trim();
+      parentUidByJobId.set(jobId, parentUid);
+    }
+
     touchedJobIds.add(jobId);
     attempted += 1;
 
@@ -180,15 +196,9 @@ export async function processPendingResearchErasureOutbox(params: {
       .first<{ cnt: number }>();
 
     if (Number(remainingRow?.cnt ?? 0) === 0) {
-      const jobRow = await params.userDb
-        .prepare('SELECT uid FROM account_deletion_jobs WHERE job_id = ?1')
-        .bind(jobId)
-        .first<{ uid: string }>();
-
-      if (!jobRow?.uid || !jobRow.uid.trim()) {
-        throw new Error('ACCOUNT_DELETION_PARENT_JOB_UID_MISSING');
-      }
-      const uidHash = await hashUidForComplianceReceipt(jobRow.uid, receiptSecret);
+      const parentUid = parentUidByJobId.get(jobId);
+      if (!parentUid) throw new Error('ACCOUNT_DELETION_PARENT_JOB_UID_MISSING');
+      const uidHash = await hashUidForComplianceReceipt(parentUid, receiptSecret);
       const receiptId = `rcpt_res_${nowMs}_${crypto.randomUUID().slice(0, 8)}`;
 
       await params.userDb
