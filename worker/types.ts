@@ -159,6 +159,9 @@ export interface WorkerEnv {
   readonly DB?: D1Database;
   /** Physically isolated Behavioral Research Database binding (`radar-researcher-db`). */
   readonly RESEARCH_DB?: D1Database;
+  /** Explicitly verified Cloudflare D1 resource IDs for Stage D lifecycle and authoritative user data. */
+  readonly STAGE_D_LIFECYCLE_DATABASE_ID?: string;
+  readonly STAGE_D_USER_DATABASE_ID?: string;
   readonly NEIGHBORHOOD_DB?: D1Database;
   // ABSOLUTE ARCHITECTURAL INVARIANT: No direct D1 binding for IRNI `radar-neighborhood-db`.
   readonly RESEARCH_HMAC_SECRET?: string;
