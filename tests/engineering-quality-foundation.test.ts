@@ -2301,6 +2301,12 @@ async function runSuite(): Promise<void> {
         `Vite resolve.dedupe must include ${dependency} to prevent split Firebase provider registries`
       );
     }
+    assert.ok(
+      viteConfig.includes("return 'vendor-firebase'") &&
+        !viteConfig.includes("vendor-firebase-firestore") &&
+        !viteConfig.includes("vendor-firebase-auth"),
+      'Vite must keep Firebase provider packages in one Rollup chunk rather than splitting the provider registry',
+    );
   });
 
   console.log(`\n🎉 ALL ${passed} ENGINEERING QUALITY & CONTRACT FOUNDATION TESTS PASSED!\n`);
