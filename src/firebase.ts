@@ -5,7 +5,7 @@ import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import firebaseConfig from '../firebase-applet-config.json';
 import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security';
-import { initClientAppCheckIfConfigured } from './utils/clientAppCheck';
+import { initClientAppCheckIfConfigured, installClientAppCheckFetchInterceptor } from './utils/clientAppCheck';
 import { CLIENT_FIRESTORE_FORBIDDEN } from './platform/data/clientDataPolicy';
 import {
   beginConnectionProbeGeneration,
@@ -29,9 +29,17 @@ import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, t
 
 export const app: FirebaseApp = initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
+const viteAppCheckEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env ?? {};
 initClientAppCheckIfConfigured(app, {
-  VITE_FIREBASE_APP_CHECK_SITE_KEY: String(firebaseConfig.recaptchaSiteKey || ''),
+  ...viteAppCheckEnv,
+  VITE_FIREBASE_APP_CHECK_SITE_KEY: String(
+    viteAppCheckEnv.VITE_FIREBASE_APP_CHECK_SITE_KEY ||
+    viteAppCheckEnv.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY ||
+    firebaseConfig.recaptchaSiteKey ||
+    '',
+  ),
 });
+installClientAppCheckFetchInterceptor(app);
 export const googleProvider: GoogleAuthProvider = (() => {
   const provider = new GoogleAuthProvider();
   try {
