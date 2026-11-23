@@ -35,13 +35,19 @@ export const AuthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ initialUser = null, children }) => {
   const client = getAuthClient();
-  const [state, setState] = useState<AuthLifecycleState>(initialUser ? 'READY' : 'UNAUTHENTICATED');
+  const [state, setState] = useState<AuthLifecycleState>(initialUser ? 'READY' : 'INITIALIZING');
   const [user, setUser] = useState<AuthUserSnapshot | null>(initialUser);
   const [workspaceOverride, setWorkspaceOverride] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    return client.subscribe((next) => setState(next));
-  }, [client]);
+    const unsubscribe = client.subscribe((next, nextUser) => {
+      setState(next);
+      setUser(nextUser);
+    });
+    if (initialUser) client.setUser(initialUser);
+    else void client.refreshSession().catch(() => undefined);
+    return unsubscribe;
+  }, [client, initialUser]);
 
   const access = useMemo(() => {
     const identity = resolveIdentity(user);
@@ -57,7 +63,7 @@ export const AuthProvider: React.FC<{
   const logout = useCallback(() => {
     setUser(null);
     setWorkspaceOverride(undefined);
-    client.logout('provider_logout');
+    void client.logout('provider_logout');
   }, [client]);
 
   const contextValue = useMemo<AuthContextValue>(
