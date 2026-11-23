@@ -98,6 +98,15 @@ function scanVarsForPlaintextSecrets(varsObj, envLabel, errors) {
   }
 }
 
+function validateWritePauseTimestamp(varsObj, envLabel, errors) {
+  const value = String(varsObj?.DB_WRITES_PAUSED_UNTIL_UTC ?? '').trim();
+  if (!value) return;
+  const utcIso = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/;
+  if (!utcIso.test(value) || !Number.isFinite(Date.parse(value))) {
+    errors.push(`INVALID_DB_WRITES_PAUSE_TIMESTAMP:${envLabel}`);
+  }
+}
+
 function scanBindingsForForbiddenIds(d1List, envLabel, errors) {
   if (!Array.isArray(d1List)) return;
   for (const entry of d1List) {
@@ -300,6 +309,8 @@ export function validateBackendWranglerConfig(
   // 6. Plaintext secrets scan
   scanVarsForPlaintextSecrets(config.vars, 'production', errors);
   scanVarsForPlaintextSecrets(staging?.vars, 'staging', errors);
+  validateWritePauseTimestamp(config.vars, 'production', errors);
+  validateWritePauseTimestamp(staging?.vars, 'staging', errors);
 
   return {
     ok: errors.length === 0,
@@ -314,6 +325,7 @@ export function validateBackendWranglerConfig(
       researchMigrationsCount: researchMigrationFiles.length,
       stagingProvisioningStatus,
       irniDirectBindingPresent,
+      dbWritesPausedUntilUtc: config.vars?.DB_WRITES_PAUSED_UNTIL_UTC ?? null,
     },
   };
 }
