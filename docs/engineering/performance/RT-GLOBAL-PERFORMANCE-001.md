@@ -58,7 +58,7 @@ The following items were confirmed by reading files on the recorded `main` commi
 | Map tiles | Service Worker previously cached OSM, CARTO, ArcGIS and `/api/osm-tile/*` tiles; PR #16 changes all recognized map tiles to network-only and purges old Cache API tile entries | Opaque responses do not expose response cache directives to this code. Review provider contracts and change behavior to an explicit, provider-compliant allowlist; default-deny opaque external tile caching. |
 | Worker cache | `worker/cache/kvCacheManager.ts` implements KV TTL envelopes, stale-while-revalidate, negative caching, and an in-flight Promise map | The in-flight map is instance/isolate-local, not a global cross-isolate or cross-PoP lock. Do not claim global single-flight or a universal one-origin-request guarantee. Measure and document scope. |
 | Cache classification | `worker/cache/cachePolicies.ts` classifies public static, public changing, private, authorization, transactional, coordination, and analytical data | Audit every real route's use of the policy and cache key; ensure cache key includes all response-varying dimensions and invalidation follows writes. |
-| RUM | `BrowserPerformanceCollector.ts` supports LCP/INP/CLS and consent checks; percentile evaluation currently exposes p50/p75/p95 | Verify that collection is wired into real routes and a safe ingestion path. Add p99 and map/API-specific metrics only with valid sample semantics and privacy review. |
+| RUM | `BrowserPerformanceCollector.ts` supports LCP/INP/CLS and consent checks; the current `RtFePerformance013Subpanel` exposes a local diagnostic snapshot | No production field-RUM ingestion path or route-wide automatic collection was verified. Do not call RUM active until consented collection, sampling, ingestion, retention, and dashboard/alerts are connected. Add p99 and map/API-specific metrics only with valid sample semantics and privacy review. |
 | Existing map optimization | LOD, viewport selection, geometry cache, marker reconciliation, and map performance modules exist; PR #10 owns additional macro-clustering/labels | Reconcile and validate PR #10; do not implement duplicate clustering or culling. |
 | Edge/network | Cloudflare Workers and Wrangler configuration exist | Repository files do not prove live HTTP/3, TLS, Brotli, Anycast path, CDN cache policy, or regional performance. Verify deployed response headers and network paths separately. |
 | Capacity | Queue, rate-limit, and cache modules exist | Audit actual production bindings and call sites; repository configuration alone does not prove remote resources are provisioned or active. |
@@ -67,7 +67,7 @@ The following items were confirmed by reading files on the recorded `main` commi
 
 ### 4.1 Service Worker external tile cache
 
-At baseline, `public/sw.js` treats requests to `tile.openstreetmap.org`, `basemaps.cartocdn.com`, and `arcgisonline.com` as cacheable map tiles. It stores successful and opaque responses without checking the response's `Cache-Control` directives. Opaque responses cannot be inspected by this code. This is a provider-policy and cache-correctness risk, not a performance feature to expand blindly.
+At baseline, `public/sw.js` treated requests to `tile.openstreetmap.org`, `basemaps.cartocdn.com`, `arcgisonline.com`, and `/api/osm-tile/*` as cacheable map tiles. It stored successful and opaque responses without checking the response's `Cache-Control` directives. Opaque responses cannot be inspected by this code. PR #16 changes all recognized map tiles to network-only at the Service Worker layer, purges old tile entries, and delegates online caching to the browser HTTP cache.
 
 **Required action:** keep all map tiles out of Service Worker Cache API so PWA offline mode does not become an offline-map feature. Let the browser HTTP cache and server-side proxy honor provider Cache-Control directives. Do not prefetch tile regions. Server-side shared cache must honor upstream private/no-store/no-cache and explicit TTLs; see PR #17.
 
@@ -143,4 +143,4 @@ A tranche is done only when:
 
 ## 7. Current status
 
-This commit records the engineering standard and baseline audit only. Runtime changes are proposed separately in PRs #16–#19. No Worker bindings, Cloudflare resources, secrets, D1 migrations, or deployments are changed here. Implementation remains open under issue #13.
+This commit records the engineering standard and baseline audit only. Runtime changes are proposed separately in PRs #16, #17, and #19; the Firebase boundary fix is consolidated into PR #9. No Worker bindings, Cloudflare resources, secrets, D1 migrations, or deployments are changed here. Implementation remains open under issue #13.
