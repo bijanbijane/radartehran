@@ -3,9 +3,47 @@ import { calcDistanceKm, EvaluatedNeighborhood, toPersianNum } from '../data/nei
   } catch { } return neighborhoods.filter((hood) => { if (statusFilter !== 'all' && hood.status !== statusFilter) return false; if (hood.id === selectedHoodId) return true; if (isNeighborhoodInLeafletViewport(map, hood.lat, hood.lng, padRatio)) return true; if (centerLat !== null && centerLng !== null) { const dist = calcDistanceKm(centerLat, centerLng, hood.lat, hood.lng); if (dist !== null && dist <= maxRadiusKm) return true; }
     return false; }); }
 export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], selectedHoodId: number | null, zoom: number, getPalette: (h: EvaluatedNeighborhood) => { stroke: string; fill: string; pillBg: string }
-): MacroCityCluster[] { const mergeRadiusKm = zoom <= 7 ? 85 : zoom === 8 ? 55 : 36; const rawGroups: EvaluatedNeighborhood[][] = [];
-  for (const hood of neighborhoods) { let targetGroup: EvaluatedNeighborhood[] | null = null; for (const group of rawGroups) { const seed = group[0]; const dist = calcDistanceKm(seed.lat, seed.lng, hood.lat, hood.lng); if (dist !== null && dist <= mergeRadiusKm) { targetGroup = group; break; } }
-    if (targetGroup) targetGroup.push(hood); else rawGroups.push([hood]); }
+): MacroCityCluster[] {
+  const mergeRadiusKm = zoom <= 7 ? 85 : zoom === 8 ? 55 : 36;
+  const rawGroups: EvaluatedNeighborhood[][] = [];
+  if (neighborhoods.length === 0) return rawGroups;
+
+  // Spatial hash limits distance checks to nearby seed cells instead of scanning every cluster.
+  const meanLat = neighborhoods.reduce((sum, hood) => sum + hood.lat, 0) / neighborhoods.length;
+  const cellLat = mergeRadiusKm / 111.32;
+  const cellLng = mergeRadiusKm / (111.32 * Math.max(0.15, Math.cos(meanLat * Math.PI / 180)));
+  const seedBuckets = new Map<string, number[]>();
+  const cellKey = (x: number, y: number) => `${x}:${y}`;
+
+  for (const hood of neighborhoods) {
+    const cellX = Math.floor(hood.lng / cellLng);
+    const cellY = Math.floor(hood.lat / cellLat);
+    const nearbyGroupIndexes: number[] = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const indexes = seedBuckets.get(cellKey(cellX + dx, cellY + dy));
+        if (indexes) nearbyGroupIndexes.push(...indexes);
+      }
+    }
+    nearbyGroupIndexes.sort((a, b) => a - b);
+    let targetGroupIndex = -1;
+    for (const groupIndex of nearbyGroupIndexes) {
+      const seed = rawGroups[groupIndex][0];
+      const dist = calcDistanceKm(seed.lat, seed.lng, hood.lat, hood.lng);
+      if (dist !== null && dist <= mergeRadiusKm) { targetGroupIndex = groupIndex; break; }
+    }
+    if (targetGroupIndex >= 0) {
+      rawGroups[targetGroupIndex].push(hood);
+    } else {
+      const newGroupIndex = rawGroups.length;
+      rawGroups.push([hood]);
+      const key = cellKey(cellX, cellY);
+      const bucket = seedBuckets.get(key);
+      if (bucket) bucket.push(newGroupIndex);
+      else seedBuckets.set(key, [newGroupIndex]);
+    }
+  }
+
   return rawGroups.map((group, idx) => { let sumLat = 0, sumLng = 0, sumBuy = 0, sumRahn = 0, containsSelected = false; const sorted = [...group].sort((a, b) => b.overallScore - a.overallScore); const primary = sorted[0];
     for (const h of group) { sumLat += h.lat; sumLng += h.lng; sumBuy += h.buyPerSqm; sumRahn += h.rahn80m; if (h.id === selectedHoodId) containsSelected = true; }
     const count = group.length; const palette = getPalette(primary); return {
