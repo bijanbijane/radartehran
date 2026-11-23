@@ -72,13 +72,23 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
        WHERE city_id = ?1 AND status IN (${query.includeAdminRecords ? "'approved', 'pending'" : "'approved'"})${hoodFilter.sql}
        ORDER BY created_at_iso DESC LIMIT 500`,
     ).bind(...baseValues).all<Record<string, unknown>>(),
-    db.prepare(
-      `SELECT vote_id, owner_uid, city_id, hood_id, air_score, power_score, internet_score,
-              metro_score, security_score, flat_score, comment, user_display_name, updated_at_iso
-       FROM neighborhood_votes
-       WHERE city_id = ?1${hoodFilter.sql}
-       ORDER BY updated_at_iso DESC LIMIT 2000`,
-    ).bind(...baseValues).all<Record<string, unknown>>(),
+    query.includeAdminRecords
+      ? db.prepare(
+          `SELECT vote_id, owner_uid, city_id, hood_id, air_score, power_score, internet_score,
+                  metro_score, security_score, flat_score, comment, user_display_name, updated_at_iso
+           FROM neighborhood_votes
+           WHERE city_id = ?1${hoodFilter.sql}
+           ORDER BY updated_at_iso DESC LIMIT 2000`,
+        ).bind(...baseValues).all<Record<string, unknown>>()
+      : query.uid
+        ? db.prepare(
+            `SELECT vote_id, owner_uid, city_id, hood_id, air_score, power_score, internet_score,
+                    metro_score, security_score, flat_score, comment, user_display_name, updated_at_iso
+             FROM neighborhood_votes
+             WHERE city_id = ?1 AND owner_uid = ?2${makeHoodFilter(query.hoodIds, 3).sql}
+             ORDER BY updated_at_iso DESC LIMIT 1000`,
+          ).bind(cityId, query.uid, ...makeHoodFilter(query.hoodIds, 3).values).all<Record<string, unknown>>()
+        : Promise.resolve({ results: [] as Record<string, unknown>[] }),
     db.prepare(
       `SELECT city_id, hood_id, buy_per_sqm, rahn_80m, sponsor_json, override_source,
               manual_lock_until_ms, updated_at_iso
@@ -148,7 +158,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     id: String(row.vote_id),
     hoodId: Number(row.hood_id),
     hoodName: '',
-    userId: query.includeAdminRecords ? String(row.owner_uid || '') : 'anon',
+    userId: String(row.owner_uid || ''),
     userDisplayName: String(row.user_display_name || 'ساکن محله'),
     air: Number(row.air_score),
     powerWater: Number(row.power_score),
