@@ -885,11 +885,11 @@ export async function handleGeographicRegistryRoute(ctx: WorkerRequestContext): 
   if (pathname === '/api/v1/geography/entities' || pathname === '/api/v1/geography/neighborhoods') {
     const limit = normalizeLimit(url.searchParams.get('limit'));
     const offset = normalizeOffset(url.searchParams.get('offset'));
-    const clauses = ['batch_id=?1'];
+    const clauses = ['e.batch_id=?1'];
     const params: unknown[] = [batchId];
     const addClause = (column: string,value:unknown) => {
       params.push(value);
-      clauses.push(`${column}=?${params.length}`);
+      clauses.push(`e.${column}=?${params.length}`);
     };
     if (pathname.endsWith('/neighborhoods')) {
       clauses.push("entity_type IN ('URBAN_NEIGHBORHOOD','URBAN_ZONE')");
@@ -906,16 +906,22 @@ export async function handleGeographicRegistryRoute(ctx: WorkerRequestContext): 
     if(query) { params.push(`%${query.slice(0,80)}%`); clauses.push(`canonical_name_fa LIKE ?${params.length}`); }
     params.push(limit,offset);
     const rows=await db.prepare(
-      `SELECT geographic_entity_id,entity_type,classification_system_id,canonical_name_fa,
-       parent_geographic_entity_id,province_geographic_entity_id,identity_status,verification_status,
-       lifecycle_status,entity_json FROM geo_registry_entity_stage
-       WHERE ${clauses.join(' AND ')} ORDER BY canonical_name_fa,geographic_entity_id
+      `SELECT e.geographic_entity_id,e.entity_type,e.classification_system_id,e.canonical_name_fa,
+       e.parent_geographic_entity_id,e.province_geographic_entity_id,e.identity_status,e.verification_status,
+       e.lifecycle_status,e.entity_json,i.entry_json
+       FROM geo_registry_entity_stage e
+       INNER JOIN geo_registry_identity_entry_stage i
+         ON i.batch_id=e.batch_id AND i.geographic_entity_id=e.geographic_entity_id
+       WHERE ${clauses.join(' AND ')} ORDER BY i.issued_order_index,e.geographic_entity_id
        LIMIT ?${params.length-1} OFFSET ?${params.length}`,
     ).bind(...params).all<Record<string,unknown>>();
     if(!rows.success) return jsonWorkerResponse(ctx,503,{status:'error',code:'GEOGRAPHIC_QUERY_FAILED'});
     return jsonWorkerResponse(ctx,200,{
       status:'ok',registryRevision:revision,
-      items:rows.results.map((row)=>JSON.parse(String(row.entity_json))),
+      items:rows.results.map((row)=>{
+        const entity=JSON.parse(String(row.entity_json)) as Record<string,unknown>;
+        return {...entity,registryIdentity:JSON.parse(String(row.entry_json))};
+      }),
       pagination:{limit,offset,nextOffset:rows.results.length===limit?offset+limit:null},
       source:'IRNI_CANONICAL_REGISTRY',
     });
@@ -931,10 +937,18 @@ export async function handleGeographicRegistryRoute(ctx: WorkerRequestContext): 
       return jsonWorkerResponse(ctx,200,{status:'ok',registryRevision:revision,items:rows.results.map(row=>JSON.parse(row.relationship_json))});
     }
     const row=await db.prepare(
-      'SELECT entity_json FROM geo_registry_entity_stage WHERE batch_id=?1 AND geographic_entity_id=?2',
-    ).bind(batchId,id).first<{entity_json:string}>();
+      `SELECT e.entity_json,i.entry_json
+       FROM geo_registry_entity_stage e
+       INNER JOIN geo_registry_identity_entry_stage i
+         ON i.batch_id=e.batch_id AND i.geographic_entity_id=e.geographic_entity_id
+       WHERE e.batch_id=?1 AND e.geographic_entity_id=?2`,
+    ).bind(batchId,id).first<{entity_json:string;entry_json:string}>();
     if(!row) return jsonWorkerResponse(ctx,404,{status:'error',code:'GEOGRAPHIC_ENTITY_NOT_FOUND'});
-    return jsonWorkerResponse(ctx,200,{status:'ok',registryRevision:revision,item:JSON.parse(row.entity_json)});
+    const entity=JSON.parse(row.entity_json) as Record<string,unknown>;
+    return jsonWorkerResponse(ctx,200,{
+      status:'ok',registryRevision:revision,
+      item:{...entity,registryIdentity:JSON.parse(row.entry_json)},
+    });
   }
   return jsonWorkerResponse(ctx,404,{status:'error',code:'GEOGRAPHY_ROUTE_NOT_FOUND'});
 }
