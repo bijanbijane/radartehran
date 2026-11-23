@@ -2,7 +2,8 @@
  * @fileoverview Layer 1 & Layer 4: Firebase SDK Initialization, Long-Polling Resilience, * Connection Health Verification, and Structured Firestore Security Error Handler.
  */
 import { initializeApp, FirebaseApp } from 'firebase/app'; import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth'; import { getFirestore, initializeFirestore, setLogLevel, doc, getDocFromServer,
-  Firestore, } from 'firebase/firestore'; import firebaseConfig from '../firebase-applet-config.json'; import { createExecutionTimer, recordDiagnosticEvent, sanitizePayload } from './utils/security'; import { initClientAppCheckIfConfigured } from './utils/clientAppCheck';
+  Firestore, } from 'firebase/firestore'; import firebaseConfig from '../firebase-applet-config.json'; import { createExecutionTimer, recordDiagnosticEvent } from './utils/security'; import { initClientAppCheckIfConfigured } from './utils/clientAppCheck';
+export { prepareFirestorePayload } from './utils/firestorePayload';
 // Suppress noisy internal WebChannel 10s timeout logs on high-latency/proxy networks
 try { setLogLevel('silent'); } catch {
   // Ignore if setLogLevel is unavailable in test environments
@@ -98,42 +99,6 @@ export function getFirestoreStatusIntlSummary(areaUnit: AreaUnit = 'sqm', curren
     displayAreaUnitLabel: formatAreaUnitLabel(areaUnit),
     referenceValuationIntlText: formatMillionTomanAsIntlCurrency(100, currency),
   };
-}
-
-/**
- * Sanitizes and validates a document payload before writing to Firestore so no `undefined` fields
- * or oversized strings cause SDK or security rule rejections.
- * @param data Raw document object to write.
- * @returns Cleaned object safe for `addDoc`, `setDoc`, or `updateDoc`.
- */
-export function prepareFirestorePayload<T extends Record<string, unknown>>(data: T): T {
-  try {
-    const sanitized = sanitizePayload(data);
-    if (
-      sanitized === null ||
-      typeof sanitized !== 'object' ||
-      Array.isArray(sanitized)
-    ) {
-      throw new Error('INVALID_SANITIZED_PAYLOAD');
-    }
-    const cleaned: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(sanitized)) {
-      if (v !== undefined) {
-        cleaned[k] = v;
-      }
-    }
-    return cleaned as T;
-  } catch {
-    recordDiagnosticEvent(
-      'Firestore',
-      'Payload rejected before write',
-      'blocked',
-    );
-
-    throw new Error(
-      'FIRESTORE_PAYLOAD_SANITIZATION_FAILED',
-    );
-  }
 }
 
 export interface FirestoreErrorLogEntry extends FirestoreErrorInfo {
