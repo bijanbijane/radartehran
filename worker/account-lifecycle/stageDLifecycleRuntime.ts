@@ -32,7 +32,7 @@ import {
 import { validateQueueEnvelope, type RadarQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import { countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
 import { countActiveMutationPermitsInD1 } from './d1MutationPermit.ts';
-import { assertUserDbDeletionWriteBlock, ensureUserDbDeletionWriteBlock } from './d1UserLifecycleWriteBarrier.ts';
+import { assertNoActiveUserDbLegalHold, assertUserDbDeletionWriteBlock, ensureUserDbDeletionWriteBlock } from './d1UserLifecycleWriteBarrier.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 import type { WorkerEnv } from '../types.ts';
 
@@ -86,6 +86,10 @@ const REQUIRED_USER_DB_BARRIER_COLUMNS: Readonly<Record<string, readonly string[
   account_deletion_jobs: ['job_id', 'uid', 'completed_at_iso'],
   account_write_blocks: ['uid', 'job_id', 'block_reason', 'blocked_at_iso', 'released_at_iso'],
   account_mutation_permits: ['permit_id', 'uid', 'operation_name', 'acquired_at_ms', 'expires_at_ms', 'released_at_ms'],
+  legal_holds: ['resource_id', 'reason', 'active'],
+  upload_sessions: ['session_id', 'owner_uid', 'total_chunks', 'received_bytes', 'completed', 'created_at_ms'],
+  upload_session_chunks: ['session_id', 'chunk_index', 'chunk_base64', 'byte_length'],
+  media_objects: ['object_id', 'owner_uid', 'bucket_name', 'storage_key', 'lifecycle_state', 'deletion_state', 'created_at_iso', 'updated_at_iso', 'deleted_at_iso'],
 };
 
 const REQUIRED_STAGE_D_COLUMNS: Readonly<Record<string, readonly string[]>> = {
@@ -127,9 +131,6 @@ const REQUIRED_STAGE_D_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   account_deletion_batch_receipts: ['receipt_id', 'job_id', 'target_uid', 'domain_source', 'idempotency_key', 'batch_cursor', 'outcome_json', 'recorded_at_iso', 'status', 'completed_at_iso'],
   account_deletion_execution_receipts: ['receipt_id', 'job_id', 'target_uid', 'status', 'receipt_json', 'recorded_at_iso'],
   account_deletion_retention_records: ['record_id', 'job_id', 'target_uid', 'policy_code', 'retention_reason', 'retained_payload_json', 'expires_at_iso', 'recorded_at_iso'],
-  media_objects: ['object_id', 'owner_uid', 'bucket_name', 'storage_key', 'lifecycle_state', 'deletion_state', 'created_at_iso', 'updated_at_iso', 'deleted_at_iso'],
-  upload_sessions: ['session_id', 'owner_uid', 'created_at_ms'],
-  upload_session_chunks: ['session_id', 'chunk_index', 'chunk_base64', 'byte_length'],
 };
 
 export function buildLifecycleActorFromPrincipal(params: {
@@ -442,6 +443,7 @@ export async function initiateWorkerAccountDeletion(params: {
   await assertUserDbBarrierSchema(params.env.USER_DB);
   const runtime = createRuntime(params.env);
   assertStoreHealthy(await runtime.store.probeHealth());
+  await assertNoActiveUserDbLegalHold({ userDb: params.env.USER_DB!, uid: params.actor.uid });
 
   const created = await runtime.orchestrator.initiateAccountDeletionJob(params.actor, {
     targetUid: params.actor.uid,
@@ -507,6 +509,12 @@ export async function recoverPendingLifecycleDispatch(env: WorkerEnv, limit = 25
 
   for (const job of jobs) {
     if (isTerminalAccountDeletionState(job.state)) continue;
+    try {
+      await assertNoActiveUserDbLegalHold({ userDb: env.USER_DB!, uid: job.targetUid });
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code === 'LEGAL_HOLD_ACTIVE') continue;
+      throw error;
+    }
     await ensureUserDbDeletionWriteBlock({ userDb: env.USER_DB!, uid: job.targetUid, jobId: job.jobId });
     if (job.state === 'PARTIAL_FAILURE_RETRYABLE') {
       const retryAt = Date.parse(job.updatedAtIso) + RETRYABLE_LIFECYCLE_DELAY_MS;
@@ -568,6 +576,7 @@ export async function executeBoundedDeletionStep(params: {
   if (isTerminalAccountDeletionState(job.state)) {
     return { terminal: true, state: job.state, leaseAcquired: true, revision: job.revision };
   }
+  await assertNoActiveUserDbLegalHold({ userDb: params.env.USER_DB!, uid: job.targetUid });
 
   const nowMs = Date.now();
   const leaseToken = crypto.randomUUID();
@@ -624,6 +633,7 @@ export async function executeBoundedDeletionStep(params: {
       freshAuthVerified: true,
       primaryBootstrapAdminEmail: String(params.env.ADMIN_EMAIL || '').trim().toLowerCase() || undefined,
     };
+    await assertNoActiveUserDbLegalHold({ userDb, uid: job.targetUid });
     const updated = await runtime.orchestrator.executeDeletionJob(systemActor, job.jobId, {
       batchSize: DEFAULT_EXECUTION_BATCH_SIZE,
       maxBatchesPerInvocation: Math.max(
