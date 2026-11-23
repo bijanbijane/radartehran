@@ -141,6 +141,15 @@ export interface WorkerEnv {
   readonly APP_ENV?: DeploymentEnvironmentName;
   readonly WORKER_ENV?: DeploymentEnvironmentName;
   readonly APP_URL?: string;
+  /** Google OIDC client configuration; never populated with Firebase credentials. */
+  readonly GOOGLE_OAUTH_CLIENT_ID?: string;
+  readonly GOOGLE_OAUTH_CLIENT_SECRET?: string;
+  readonly GOOGLE_OAUTH_REDIRECT_URI?: string;
+  /** Kavenegar SMS OTP provider configuration. */
+  readonly KAVENEGAR_API_KEY?: string;
+  readonly KAVENEGAR_VERIFY_TEMPLATE?: string;
+  /** HMAC key for phone/IP pseudonymization and OTP digests (minimum 32 random bytes). */
+  readonly AUTH_PII_HMAC_SECRET?: string;
   /** UTC deadline for the temporary global D1 write pause; expired values are inert. */
   readonly DB_WRITES_PAUSED_UNTIL_UTC?: string;
   readonly FIREBASE_PROJECT_ID?: string;
