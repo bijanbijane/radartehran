@@ -1,6 +1,6 @@
 /** @file src/features/knowledge/pages/KnowledgeCenterPage.tsx — Stages 81, 83 & 85 Server-Backed Knowledge Base, Research & Account Bookmarks */
 import React, { useEffect, useMemo, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { BookOpen, Info, RefreshCw, Search } from 'lucide-react';
 import type { CityId } from '../../../data/multiCityData';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
@@ -40,7 +40,7 @@ export interface KnowledgeCenterPageProps {
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
   unitPrice: number;
   fxSample: string;
-  currentUser?: User | null;
+  currentUser?: AuthUserSnapshot | null;
   onSelectNeighborhood?: (hood: EvaluatedNeighborhood) => void;
   onNavigateView: (view: PrimaryViewId, subTab?: ModuleSubTabId) => void;
   onOpenPulseModal: () => void;
