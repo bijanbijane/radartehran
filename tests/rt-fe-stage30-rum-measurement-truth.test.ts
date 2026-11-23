@@ -1,7 +1,7 @@
 /**
  * @file tests/rt-fe-stage30-rum-measurement-truth.test.ts
  * @description Comprehensive acceptance test suite for Stage 30 Browser Performance & RUM Measurement Truth
- * (`RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030`) — 246 tests verifying real PerformanceObserver collection,
+ * (`RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030`) — 247 tests verifying real PerformanceObserver collection,
  * zero inference of longTaskCount from LCP, P50/P75/P95/P99 distributions, INSUFFICIENT_SAMPLE handling,
  * FIELD_RUM vs LAB vs SYNTHETIC_LOCAL provenance separation, and Stage 26 telemetry consent gating.
  */
