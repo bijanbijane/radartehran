@@ -16,6 +16,7 @@ import {
   writePseudonymizedEventsToResearchDb,
 } from '../research/researchService';
 import { isObjectUnderLegalHold } from '../storage/r2StorageAdapter';
+import { isValidLifecycleReceiptSecret } from '../research/pseudonymizer';
 import type { WorkerEnv } from '../types';
 import {
   convertUtcScheduledTimeToTehranWallClock,
@@ -416,7 +417,14 @@ async function handleResearchSubjectErasureJob(
     );
   }
   const jobId = typeof envelope.payload?.jobId === 'string' ? envelope.payload.jobId.trim() : undefined;
-  const receiptSecret = env.INTERNAL_LIFECYCLE_RPC_SECRET || env.RESEARCH_HMAC_SECRET;
+  const receiptSecret = env.INTERNAL_LIFECYCLE_RPC_SECRET;
+  if (!isValidLifecycleReceiptSecret(receiptSecret)) {
+    throw new QueueJobExecutionError(
+      'INTERNAL_LIFECYCLE_RPC_SECRET_UNAVAILABLE',
+      'A dedicated 32-byte hexadecimal lifecycle receipt secret is required.',
+      false,
+    );
+  }
   const outboxRes = await processPendingResearchErasureOutbox({ userDb, researchDb, jobId, receiptSecret });
   return {
     jobType: 'research_subject_erasure',
