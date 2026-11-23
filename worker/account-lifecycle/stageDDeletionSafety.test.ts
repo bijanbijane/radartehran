@@ -131,7 +131,15 @@ test('production domain adapters never treat the Stage D lifecycle D1 as authori
     isDomainUnavailable,
   );
   await assert.rejects(
+    () => profile.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
+    isDomainUnavailable,
+  );
+  await assert.rejects(
     () => media.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
+    isDomainUnavailable,
+  );
+  await assert.rejects(
+    () => media.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10, jobId: 'job_1' }),
     isDomainUnavailable,
   );
 });
@@ -139,11 +147,21 @@ test('production domain adapters never treat the Stage D lifecycle D1 as authori
 test('media coordinator refuses to use lifecycle D1 without an explicit authoritative USER_DB', async () => {
   const { db } = fakeD1();
   const adapter = createWorkerMediaDeletionAdapter({ db, bucketName: 'radar-media' });
+  const isDomainUnavailable = (error: unknown) => error instanceof AccountLifecycleStoreError &&
+    error.code === 'DOMAIN_ADAPTER_UNAVAILABLE' &&
+    error.httpStatus === 503;
   await assert.rejects(
     () => adapter.listOwnedMediaPage({ targetUid: 'uid_1', cursor: null, pageSize: 10 }),
-    (error: unknown) => error instanceof AccountLifecycleStoreError &&
-      error.code === 'DOMAIN_ADAPTER_UNAVAILABLE' &&
-      error.httpStatus === 503,
+    isDomainUnavailable,
+  );
+  await assert.rejects(
+    () => adapter.deleteOwnedMediaObject({
+      actor: { uid: 'uid_1', isAdmin: true, freshAuthVerified: true },
+      targetUid: 'uid_1',
+      objectId: 'media_1',
+      jobId: 'job_1',
+    }),
+    isDomainUnavailable,
   );
 });
 
