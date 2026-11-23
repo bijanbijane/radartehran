@@ -13,6 +13,8 @@ export interface AuthUserSnapshot {
   readonly displayName: string | null;
   readonly emailVerified: boolean;
   readonly authProvider: 'google' | 'phone' | 'unknown';
+  readonly providerIds: readonly string[];
+  readonly isAnonymous: false;
   readonly customClaims?: Record<string, unknown>;
 }
 
@@ -111,6 +113,8 @@ export class AuthClient {
         displayName: payload.user.displayName ?? null,
         emailVerified: Boolean(payload.user.emailVerified),
         authProvider: payload.user.authProvider || 'unknown',
+        providerIds: payload.user.authProvider === 'google' ? ['google.com'] : payload.user.authProvider === 'phone' ? ['phone'] : [],
+        isAnonymous: false,
         customClaims: payload.user.isAdmin ? { isAdmin: true } : {},
       };
       this.user = nextUser;
