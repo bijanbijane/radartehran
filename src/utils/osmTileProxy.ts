@@ -32,6 +32,17 @@ const MIN_SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60; // OSM fallback only when upstr
 const tileMemoryCache = new Map<string, UpstreamTileResult>();
 const tileInflightRequests = new Map<string, Promise<UpstreamTileResult | null>>();
 
+function resolveTileProxyReferer(): string {
+  const configuredAppUrl = process.env.APP_URL || 'https://tehranradar.ir';
+  try {
+    const parsed = new URL(configuredAppUrl);
+    if (parsed.protocol === 'https:') return parsed.origin + '/';
+  } catch {
+    // Use the canonical production origin when APP_URL is absent or invalid.
+  }
+  return 'https://tehranradar.ir/';
+}
+
 function hasValidRasterTileMagicBytes(buf: Buffer): boolean {
   if (buf.length < 12) return false;
   const isPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
@@ -62,6 +73,7 @@ export function resolveUpstreamTileCachePolicy(
   areaUnit: AreaUnit = 'sqm',
   intlCurrency: IntlCurrencyCode = 'USD',
   referenceValuationMillionToman = 10000,
+  fallbackTtlSeconds = 0,
 ): { cacheControl: string; cacheable: boolean; expiresAt: number; etag?: string; lastModified?: string; displayAreaUnitLabel: string; referenceValuationIntlText: string } {
   const rawCacheControl = (headers.get('cache-control') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim();
   const rawExpires = (headers.get('expires') || '').replace(/[\r\n\u0000-\u001F\u007F]/g, '').trim();
@@ -100,12 +112,14 @@ export function resolveUpstreamTileCachePolicy(
   }
 
   const usedFallback = ttlSeconds === null;
-  if (usedFallback) ttlSeconds = MIN_SEVEN_DAYS_SECONDS;
+  if (usedFallback) ttlSeconds = Math.max(0, Math.floor(fallbackTtlSeconds));
   const safeTtlSeconds = Math.max(0, Number.isFinite(ttlSeconds) ? ttlSeconds : 0);
   const cacheable = safeTtlSeconds > 0;
-  const cacheControl = rawCacheControl || (usedFallback
-    ? `public, max-age=${MIN_SEVEN_DAYS_SECONDS}, stale-while-revalidate=${MIN_SEVEN_DAYS_SECONDS}`
-    : `public, max-age=${safeTtlSeconds}`);
+  const cacheControl = rawCacheControl || (usedFallback && safeTtlSeconds > 0
+    ? 'public, max-age=' + safeTtlSeconds
+    : safeTtlSeconds > 0
+      ? 'public, max-age=' + safeTtlSeconds
+      : 'no-store');
 
   return {
     cacheControl,
@@ -130,6 +144,7 @@ export async function fetchTileFromMirror(
     const resp = await fetchImpl(url, {
       headers: {
         'User-Agent': 'TehranHousingRadar/2.0 (https://tehranradar.ir; Free OpenStreetMap Client)',
+        Referer: resolveTileProxyReferer(),
         Accept: 'image/png,image/webp,image/*;q=0.8',
       },
       signal: controller.signal,
@@ -144,7 +159,16 @@ export async function fetchTileFromMirror(
     const buffer = Buffer.from(arrayBuf);
     if (!hasValidRasterTileMagicBytes(buffer)) return null;
 
-    const cachePolicy = resolveUpstreamTileCachePolicy(resp.headers);
+    const upstreamHost = new URL(url).hostname.toLowerCase();
+    const osmStandardFallbackTtl = upstreamHost === 'tile.openstreetmap.org' ? MIN_SEVEN_DAYS_SECONDS : 0;
+    const cachePolicy = resolveUpstreamTileCachePolicy(
+      resp.headers,
+      Date.now(),
+      'sqm',
+      'USD',
+      10000,
+      osmStandardFallbackTtl,
+    );
     return {
       buffer,
       contentType,
