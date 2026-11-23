@@ -9,8 +9,8 @@ export interface TileHealthSnapshot {
   fallbackActivated: boolean;
 }
 
-export const PRIMARY_TILE_URL_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-export const PRIMARY_TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+export const PRIMARY_TILE_URL_DARK = '/api/osm-tile/{z}/{x}/{y}.png'; // Legacy alias; no unlicensed CARTO endpoint.
+export const PRIMARY_TILE_URL_LIGHT = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const FALLBACK_TILE_URL_OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 export class TileProviderHealthTracker {
