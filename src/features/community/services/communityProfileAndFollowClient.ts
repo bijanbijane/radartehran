@@ -1,5 +1,5 @@
 /** @file src/features/community/services/communityProfileAndFollowClient.ts — Profile Timeline & User Follow Graph API Client Helpers (RT-SOCIAL-IMPL-008 & RT-SOCIAL-IMPL-009) */
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { COMMUNITY_AUTH_REQUIRED_FA } from './communityTrustService';
 import type {
   CommunityAbuseReport,
@@ -17,21 +17,13 @@ import {
   type CommunityApiCallResult,
 } from './communityApiClient';
 
-async function buildOptionalAuthHeaders(currentUser?: User | null): Promise<{
+async function buildOptionalAuthHeaders(currentUser?: AuthUserSnapshot | null): Promise<{
   ok: boolean;
   headers: Record<string, string>;
   errorFa?: string;
 }> {
-  if (!currentUser || !currentUser.uid || typeof currentUser.getIdToken !== 'function') {
-    return { ok: false, headers: {}, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
-  }
-  try {
-    const token = await currentUser.getIdToken();
-    if (!token) return { ok: false, headers: {}, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
-    return { ok: true, headers: { Authorization: `Bearer ${token}` } };
-  } catch {
-    return { ok: false, headers: {}, errorFa: 'نشست کاربری معتبر نیست؛ لطفاً مجدداً وارد حساب خود شوید.' };
-  }
+  if (!currentUser?.uid) return { ok: false, headers: {}, errorFa: COMMUNITY_AUTH_REQUIRED_FA };
+  return { ok: true, headers: {} };
 }
 
 async function fetchHelperJson<T>(
@@ -41,7 +33,7 @@ async function fetchHelperJson<T>(
 ): Promise<CommunityApiCallResult<T>> {
   if (init.signal?.aborted) return { ok: false, status: 0, errorFa: 'ABORTED' };
   try {
-    const res = await fetch(url, init);
+    const res = await fetch(url, { ...init, credentials: init.credentials ?? 'same-origin' });
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
       return {
@@ -69,7 +61,7 @@ export async function getCommunityProfileContributions(
     kind?: 'all' | ProfileContributionKind;
     limit?: number;
     cursor?: string | null;
-    currentUser?: User | null;
+    currentUser?: AuthUserSnapshot | null;
     signal?: AbortSignal;
   },
 ): Promise<CommunityApiCallResult<ProfileContributionPage>> {
@@ -115,7 +107,7 @@ function extractFollowResult(targetUserId: string, b: Record<string, unknown>): 
 
 export async function followCommunityUser(
   targetUserId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ): Promise<CommunityApiCallResult<CommunityUserFollowResult>> {
   const auth = await buildOptionalAuthHeaders(currentUser);
@@ -137,7 +129,7 @@ export async function followCommunityUser(
 
 export async function unfollowCommunityUser(
   targetUserId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   idempotencyKey?: string,
 ): Promise<CommunityApiCallResult<CommunityUserFollowResult>> {
   const auth = await buildOptionalAuthHeaders(currentUser);
@@ -158,7 +150,7 @@ export async function unfollowCommunityUser(
 
 export async function getCommunityUserFollowStatus(
   targetUserId: string,
-  currentUser: User | null | undefined,
+  currentUser: AuthUserSnapshot | null | undefined,
   signal?: AbortSignal,
 ): Promise<CommunityApiCallResult<{ targetUserId: string; isFollowing: boolean }>> {
   const auth = await buildOptionalAuthHeaders(currentUser);
@@ -176,7 +168,7 @@ export async function getCommunityUserFollowStatus(
   );
 }
 
-export async function getAdminCommunityModerationQueue(signal?: AbortSignal, currentUser?: User | null) {
+export async function getAdminCommunityModerationQueue(signal?: AbortSignal, currentUser?: AuthUserSnapshot | null) {
   const auth = currentUser ? await buildOptionalAuthHeaders(currentUser) : { ok: false, headers: {} };
   return fetchHelperJson<{
     corrections: DataCorrectionProposal[];
@@ -197,7 +189,7 @@ export async function getAdminCommunityModerationQueue(signal?: AbortSignal, cur
 
 export async function submitAdminCommunityModerationAction(
   payload: { targetType: CommunityAbuseReport['targetType']; targetId: string; actionType: ModerationActionRecord['actionType']; reasonFa: string; actorRole?: string },
-  currentUser?: User | null,
+  currentUser?: AuthUserSnapshot | null,
 ) {
   const auth = currentUser ? await buildOptionalAuthHeaders(currentUser) : { ok: false, headers: {} };
   return fetchHelperJson<ModerationActionRecord>(
@@ -213,7 +205,7 @@ export async function submitAdminCommunityModerationAction(
 
 export async function resolveAdminCommunityAppeal(
   payload: { appealId: string; decision: 'upheld' | 'overturned'; reviewerNoteFa: string },
-  currentUser?: User | null,
+  currentUser?: AuthUserSnapshot | null,
 ) {
   const auth = currentUser ? await buildOptionalAuthHeaders(currentUser) : { ok: false, headers: {} };
   return fetchHelperJson<ModerationAppeal>(
