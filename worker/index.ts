@@ -63,7 +63,12 @@ function applyStaticResponseSecurityHeaders(
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), payment=(), usb=()');
   headers.set('X-Correlation-Id', correlationId);
-  if (!headers.has('Cache-Control')) {
+  // Never cache missing/error assets, even when their URL looks like a versioned asset.
+  // Otherwise a transient 404 could inherit the hashed asset's one-year immutable TTL.
+  if (sourceResponse.status >= 400) {
+    headers.set('Cache-Control', 'no-store');
+    headers.set('Pragma', 'no-cache');
+  } else if (!headers.has('Cache-Control')) {
     headers.set('Cache-Control', classifyStaticAssetCachePolicy(pathname).cacheControl);
   }
   return new Response(sourceResponse.body, {
@@ -140,6 +145,8 @@ async function handleSpaOrStaticAssetRequest(
       status: 404,
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Pragma': 'no-cache',
         'X-Content-Type-Options': 'nosniff',
         'X-Correlation-Id': correlationId,
       },
