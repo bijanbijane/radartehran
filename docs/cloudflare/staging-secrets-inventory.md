@@ -21,6 +21,7 @@ To maintain strict least privilege and zero-trust security boundaries, credentia
 [TIER 2: WORKER RUNTIME SECRETS]  ---> Cloudflare Worker V8 Isolate Memory ONLY
    - ADMIN_API_SECRET                 (Injected via `wrangler secret put`)
    - VALUATION_SEAL_SECRET            (Injected via `wrangler secret put`)
+   - INTERNAL_LIFECYCLE_RPC_SECRET    (Independent 32-byte hex key; never reuse RESEARCH_HMAC_SECRET)
    - FIREBASE_PROJECT_ID              (Set in staging environment vars)
 ```
 
@@ -43,6 +44,7 @@ To maintain strict least privilege and zero-trust security boundaries, credentia
 |---|---|:---:|:---:|---|---|---|
 | `ADMIN_API_SECRET` | Auth & Administration | **Yes** | **Mandatory** (Must not match Production) | `worker/auth/authorizationPolicy.ts` | Generate high-entropy 256-bit token; execute `wrangler secret put ADMIN_API_SECRET --env staging` | High: Unauthorized administrative inspection or maintenance mode trigger. |
 | `VALUATION_SEAL_SECRET` | Hedonic Pricing Engine | **Yes** | **Mandatory** (Must not match Production) | `worker/routes/intelligenceAndCommerceRoutes.ts` | Generate 32-byte hexadecimal key; execute `wrangler secret put VALUATION_SEAL_SECRET --env staging` | High: Forged valuation certificate signatures in staging. |
+| `INTERNAL_LIFECYCLE_RPC_SECRET` | Account Erasure & Internal RPC | **Yes** | **Mandatory** (Must not match Production or `RESEARCH_HMAC_SECRET`) | `worker/account-lifecycle/d1InternalRpcNonceStore.ts`, `worker/account-lifecycle/workerLifecycleRuntime.ts` | Generate a separate 32-byte hexadecimal key; execute `wrangler secret put INTERNAL_LIFECYCLE_RPC_SECRET --env staging` | Critical: Forged internal actor tokens or incomplete/unverifiable erasure receipts. |
 | `FIREBASE_PROJECT_ID` | Identity & App Check | **Yes** | Recommended (Separate staging project) | `worker/auth/firebaseTokenVerifier.ts`, `worker/auth/appCheckVerifier.ts` | Update `APP_ENV` / `vars` in `wrangler.jsonc` | Medium: Token audience mismatch if misconfigured. |
 
 ---
