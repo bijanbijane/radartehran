@@ -21,8 +21,32 @@ export const app: FirebaseApp = initializeApp(firebaseConfig);
  */
 export const db: Firestore = (() => { const endTimer = createExecutionTimer('Firebase', 'initializeFirestore'); try { const instance = initializeFirestore(
       app, { experimentalAutoDetectLongPolling: true }, firebaseConfig.firestoreDatabaseId );
-    endTimer('success'); return instance; } catch { endTimer('fallback');
-    return getFirestore(app, firebaseConfig.firestoreDatabaseId); }
+    endTimer('success'); return instance; } catch (initializationError) {
+      endTimer('fallback');
+      const originalMessage = initializationError instanceof Error
+        ? initializationError.message
+        : String(initializationError);
+      const safeMessage = originalMessage
+        .replace(/AIza[0-9A-Za-z_-]{20,}/g, '[redacted-api-key]')
+        .replace(/https?:\/\/[^\s)]+/g, '[redacted-url]')
+        .slice(0, 200);
+      recordDiagnosticEvent(
+        'Firebase',
+        `initializeFirestore failed before fallback: ${initializationError instanceof Error ? initializationError.name : 'UnknownError'}: ${safeMessage}`,
+        'fallback',
+      );
+      try {
+        return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+      } catch (fallbackError) {
+        const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+        recordDiagnosticEvent(
+          'Firebase',
+          `getFirestore fallback also failed: ${fallbackMessage.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[redacted-api-key]').slice(0, 200)}`,
+          'blocked',
+        );
+        throw fallbackError;
+      }
+    }
 })();
 /**
  * Standard Firestore CRUD operation types used for structured security rule diagnostics.
