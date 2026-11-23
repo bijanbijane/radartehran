@@ -202,6 +202,7 @@ const USER_D1_MIGRATION_FILES = [
   '0007_cloudflare_native_identity_and_sessions.sql',
   '0008_sms_otp_ip_rate_limit.sql',
   '0009_sms_otp_code_digest.sql',
+  '0010_marketplace_and_neighborhood_core.sql',
 ] as const;
 
 const USER_D1_MIGRATION_LEDGER = USER_D1_MIGRATION_FILES.map((fileName) => ({
