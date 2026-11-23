@@ -524,7 +524,7 @@ export async function verifyFirebaseIdTokenOnEdge(params: {
     return unauthenticated(revocation.reason || 'AUTH_REVOCATION_STORE_UNAVAILABLE', 503);
   }
   if (revocation.revoked) {
-    return unauthenticated(revocation.reason || 'TOKEN_REVOKED', 401);
+    return unauthenticated('INVALID_OR_REVOKED_FIREBASE_TOKEN', 401);
   }
 
   const email = typeof payload.email === 'string' ? payload.email.trim().toLowerCase() : null;
