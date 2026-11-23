@@ -113,3 +113,37 @@ Do not place secret values in Git, Wrangler vars, logs, or this checkpoint.
 - USER_DB readiness now uses its own 0001–0010 migration catalog instead of incorrectly checking only the legacy D1 catalog. Migration 0010 adds D1-owned marketplace and neighborhood state tables; binary media remains excluded.
 - Tests were added for OIDC authorized-party validation and USER_DB migration readiness.
 - R2-dependent media routes are blocked until the operator explicitly approves a provider.
+
+
+## 23 November 2026 — independent read-only verification (audit source HEAD: `fd970261c2dfc4c33d593bef17f667f260b8ff3e`)
+
+This note supersedes the earlier working-HEAD and partial-schema statements above where they conflict. The audit was performed against the actual PR #23 branch ref. The checkpoint update itself advances that branch by one documentation commit.
+
+### Branch and CI state
+
+- The branch advanced by 62 commits after the previously recorded `00be8d494bfac30076121d538716ee124b89f3f9` checkpoint.
+- PR #23 is still OPEN/DRAFT and not deployable. No merge, deployment, or Firebase/Firestore data deletion was performed.
+- CI run `45156557286` failed in Gate A (TypeScript/Lint/Typecheck); Gate B browser E2E was skipped. The failing TypeScript job logged 51 diagnostics across legacy server modules, frontend contracts, D1 migration code, queue types, Worker routes, and storage helpers. This is not a test pass.
+- PR #23 overlaps 20 files with open PR #9; PR #28 also depends on files changed by PR #9. Do not make parallel edits to shared files until the dependency/merge plan is reconciled.
+
+### Live USER_DB state (Cloudflare API, read-only)
+
+- Account and database ownership were matched against `wrangler.backend.jsonc`; only Radar-owned `radar-user-db` and `radar-researcher-db` were queried. The IRNI-owned `radar-neighborhood-db` was not queried or modified.
+- USER_DB migration ledger contains only migrations 0001–0006.
+- The production `user_sessions` table currently contains `token_hash` and `expires_at_iso`, but not `auth_provider`. This is a two-column partial application of migration 0007, not the one-column state described in the older note.
+- `auth_identities`, `auth_oauth_states`, and `auth_phone_challenges` are absent. Migration 0010 marketplace tables (including `bargains`, `sponsor_requests`, `buyer_alerts`, `neighborhood_votes`, `neighborhood_overrides`, and `app_config`) are also absent.
+- Read-only aggregate counts were zero for `user_profiles`, `user_sessions`, `admin_role_bindings`, `bargain_projections`, `media_objects`, `user_favorites`, `user_privacy_consents`, `user_saved_searches`, `upload_sessions`, `account_deletion_jobs`, `admin_audit_logs`, and `research_erasure_outbox`. No row contents were returned.
+- The current recovery script at `scripts/cloudflare/recover-user-d1-identity-migrations.mjs` is dry-run by default and uses idempotent existence checks. It skips the two columns already present, adds the missing `auth_provider`, creates the missing auth tables/indexes, verifies the schema, then reconciles only migrations 0007–0009. It performs no DROP/DELETE or row rewrite. It does **not** apply migration 0010. Re-run only after the D1 write quota is available; then independently apply and verify migration 0010 before unblocking marketplace routes.
+
+### Firebase/Firestore retirement is not complete
+
+- Direct active Firestore client operations remain in `src/components/useRadarAdminActions.ts` and `src/data/firestoreNeighborhoodRepository.ts`.
+- `src/components/AdminPanel.tsx` still exposes live Firestore audit, repair, and quarantine-delete actions.
+- `src/firebase.ts` still initializes the Firestore SDK. `src/utils/serverAdminAndTelegramSecurity.ts` and the legacy `server.ts` path still use Firebase Admin/Express behavior; `src/utils/serverConfigValidator.ts` still validates Firebase project/database configuration.
+- The branch tree still contains 35 Firebase/Firestore-named paths, and the package manifest still declares `firebase`, `firebase-admin`, and Firebase rules test tooling.
+- The migration register still marks authentication, account workflows, marketplace writes, object storage, and admin/governance routes as BLOCKED or legacy-Express; several public market/telemetry routes remain DISCOVERED.
+- The connected GitHub/Cloudflare tools provide no authenticated Firebase/Firestore inventory or export. Firestore document counts and migration parity are therefore **unknown**.
+
+### Safety decision
+
+Do not delete the Firebase project, Firestore database/collections, Firebase configuration, or packages yet. The active frontend/admin paths still depend on Firestore, the production Cloudflare replacement schema is incomplete, no Firestore-to-D1 data parity proof exists, and the current branch does not pass typecheck. Complete and verify every replacement path, obtain an authenticated Firestore export/inventory, prove record and authorization parity, and only then schedule a separate decommissioning operation. No production database mutation was made during this audit.
