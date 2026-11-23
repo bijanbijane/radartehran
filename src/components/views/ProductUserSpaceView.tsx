@@ -255,7 +255,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
                       autoComplete="one-time-code"
                       maxLength={10}
                       value={phoneCode}
-                      onChange={(event) => setPhoneCode(event.target.value.replace(/\D/g, '').slice(0, 10))}
+                      onChange={(event) => setPhoneCode(event.target.value.replace(/[۰-۹٠-٩]/g, (digit) => { const code = digit.charCodeAt(0); return String(code >= 0x06f0 && code <= 0x06f9 ? code - 0x06f0 : code - 0x0660); }).replace(/\D/g, '').slice(0, 10))}
                       placeholder={isEn ? 'SMS verification code' : 'کد پیامک‌شده'}
                       aria-label={isEn ? 'SMS verification code' : 'کد پیامک‌شده'}
                       className="min-w-0 flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs outline-none focus:ring-2 focus:ring-emerald-500/30"
