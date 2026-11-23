@@ -75,13 +75,10 @@ test('RT-MAP-UX-002: text-label budget scales with map dimensions and has hard l
 test('RT-MAP-UX-003: zoom 12–13 exposes only the selected neighborhood label', () => {
   const hoods = evaluateSeeds();
   const selectedId = hoods[0].id;
-  const tiers = computeDeclutteredMarkerTiers(
-    { latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng * 10000, y: lat * 10000 }) },
-    hoods,
-    13,
-    selectedId,
-    () => false,
-  );
+  const map = { latLngToContainerPoint: ([lat, lng]: [number, number]) => ({ x: lng * 10000, y: lat * 10000 }) };
+  const lowZoomTiers = computeDeclutteredMarkerTiers(map, hoods, 11, selectedId, () => false);
+  assert.ok(hoods.every((hood) => lowZoomTiers.get(hood.id) === 'dot'), 'zoom 10–11 must not render text labels');
+  const tiers = computeDeclutteredMarkerTiers(map, hoods, 13, selectedId, () => false);
   assert.equal(tiers.get(selectedId), 'standard_pill');
   assert.ok(hoods.slice(1).every((hood) => tiers.get(hood.id) === 'dot'));
 });
