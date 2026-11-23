@@ -205,7 +205,7 @@ const USER_D1_MIGRATION_FILES = [
 ] as const;
 
 const USER_D1_MIGRATION_LEDGER = USER_D1_MIGRATION_FILES.map((fileName) => ({
-  name: fileName.replace(/\\.sql$/, ''),
+  name: fileName.replace(/\.sql$/, ''),
   fileName,
   checksumSha256: null as string | null,
 }));
