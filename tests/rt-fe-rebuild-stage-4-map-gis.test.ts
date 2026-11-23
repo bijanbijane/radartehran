@@ -1630,6 +1630,8 @@ const tileProviderCases: Array<{ name: string; run: () => void }> = [
   {
     name: 'GEO-140: Primary and fallback tile URLs contain {z}/{x}/{y} placeholders',
     run: () => {
+      assert.equal(PRIMARY_TILE_URL_DARK, '/api/osm-tile/{z}/{x}/{y}.png', 'Legacy dark URL must not call unlicensed CARTO basemaps');
+      assert.equal(PRIMARY_TILE_URL_LIGHT, 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'Light fallback must use the exact OSM Standard endpoint');
       assert.equal(PRIMARY_TILE_URL_DARK.includes('{z}/{x}/{y}'), true);
       assert.equal(PRIMARY_TILE_URL_LIGHT.includes('{z}/{x}/{y}'), true);
       assert.equal(FALLBACK_TILE_URL_OSM.includes('{z}/{x}/{y}'), true);
