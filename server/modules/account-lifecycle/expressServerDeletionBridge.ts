@@ -58,7 +58,7 @@ function paginateIds(ids: string[], cursor: string | null, pageSize: number): Pa
   const hasMore = start + pageSize < sorted.length;
   return {
     items: slice.map((recordId) => ({ recordId })),
-    nextCursor: hasMore && slice.length > 0 ? slice[slice.length - 1].recordId : null,
+    nextCursor: hasMore && slice.length > 0 ? slice[slice.length - 1] : null,
     hasMore,
   };
 }
