@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
+import { getAuthClient } from '../../platform/auth';
 import { ShieldCheck, ThumbsUp, ThumbsDown, Award, Send, CheckCircle2, MessageSquarePlus, Sparkles, AlertTriangle, Lock } from 'lucide-react';
-import { auth } from '../../firebase';
+
 import { INITIAL_NEIGHBORHOODS, toPersianNum as toPersianDigits, type Neighborhood } from '../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, type CityId } from '../../data/multiCityData';
 import { aggregateNeighborhoodMarketMetrics, buildNeighborhoodListingSamples } from '../../data/realMarketPriceAggregator';
@@ -91,8 +92,8 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [votedIds, setVotedIds] = useState<Record<string, 'UP' | 'DOWN'>>({});
-  const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
-  const [authReady, setAuthReady] = useState<boolean>(() => Boolean(auth.currentUser));
+  const [currentUser, setCurrentUser] = useState<AuthUserSnapshot | null>(() => getAuthClient().getUser());
+  const [authReady, setAuthReady] = useState<boolean>(() => getAuthClient().getState() !== 'INITIALIZING');
   const [submitting, setSubmitting] = useState(false);
   const [votingClaimId, setVotingClaimId] = useState<string | null>(null);
 
@@ -105,9 +106,10 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const client = getAuthClient();
+    const unsubscribe = client.subscribe((status, user) => {
       setCurrentUser(user);
-      setAuthReady(true);
+      if (status === 'READY' || status === 'UNAUTHENTICATED') setAuthReady(true);
       if (!user) {
         setShowForm(false);
         setSubmitMessage(null);
@@ -115,6 +117,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
         setVotedIds({});
       }
     });
+    void client.refreshSession().catch(() => setAuthReady(true));
     return () => unsubscribe();
   }, []);
 
@@ -215,7 +218,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
     try {
       const res = await fetch('/api/v1/claims', {
         method: 'POST',
-        headers: authHeaders.headers,
+        headers: authHeaders.headers, credentials: 'same-origin',
         body: JSON.stringify(
           buildCrowdClaimRequestBody({
             hoodId,
