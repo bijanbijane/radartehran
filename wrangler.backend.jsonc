@@ -44,7 +44,10 @@
 
   // Non-secret runtime configuration ONLY.
   // Required Cloudflare Worker Secrets (provision via `wrangler secret put`, NEVER in vars):
-  //   - GOOGLE_OAUTH_CLIENT_SECRET\n  //   - KAVENEGAR_API_KEY\n  //   - AUTH_PII_HMAC_SECRET\n  //   - ADMIN_API_SECRET
+  //   - GOOGLE_OAUTH_CLIENT_SECRET
+  //   - KAVENEGAR_API_KEY
+  //   - AUTH_PII_HMAC_SECRET
+  //   - ADMIN_API_SECRET
   //   - R2_SIGNING_SECRET
   //   - RESEARCH_HMAC_SECRET
   //   - RESEARCH_HMAC_PREVIOUS_SECRETS (optional JSON map for key rotation during erasure)
