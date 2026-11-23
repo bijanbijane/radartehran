@@ -143,6 +143,7 @@ export interface WorkerEnv {
   readonly TWILIO_ACCOUNT_SID?: string;
   readonly TWILIO_AUTH_TOKEN?: string;
   readonly TWILIO_VERIFY_SERVICE_SID?: string;
+  readonly AUTH_PII_HMAC_SECRET?: string;
   readonly ADMIN_EMAIL?: string;
   readonly ADMIN_API_SECRET?: string;
   readonly VALUATION_SEAL_SECRET?: string;
