@@ -892,7 +892,7 @@ export async function handleGeographicRegistryRoute(ctx: WorkerRequestContext): 
       clauses.push(`e.${column}=?${params.length}`);
     };
     if (pathname.endsWith('/neighborhoods')) {
-      clauses.push("entity_type IN ('URBAN_NEIGHBORHOOD','URBAN_ZONE')");
+      clauses.push("e.entity_type IN ('URBAN_NEIGHBORHOOD','URBAN_ZONE')");
     } else if (url.searchParams.has('entityType')) {
       const entityType=String(url.searchParams.get('entityType')||'').trim();
       if (!/^[A-Z_]{2,64}$/.test(entityType)) return jsonWorkerResponse(ctx,400,{status:'error',code:'INVALID_ENTITY_TYPE'});
@@ -903,7 +903,7 @@ export async function handleGeographicRegistryRoute(ctx: WorkerRequestContext): 
     const parentId=url.searchParams.get('parentId');
     if(parentId) addClause('parent_geographic_entity_id',parentId);
     const query=url.searchParams.get('q');
-    if(query) { params.push(`%${query.slice(0,80)}%`); clauses.push(`canonical_name_fa LIKE ?${params.length}`); }
+    if(query) { params.push(`%${query.slice(0,80)}%`); clauses.push(`e.canonical_name_fa LIKE ?${params.length}`); }
     params.push(limit,offset);
     const rows=await db.prepare(
       `SELECT e.geographic_entity_id,e.entity_type,e.classification_system_id,e.canonical_name_fa,
