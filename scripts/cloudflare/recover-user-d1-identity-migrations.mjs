@@ -97,6 +97,8 @@ function resolvePinnedTarget() {
     throw new Error('CLOUDFLARE_ACCOUNT_ID must exactly match the hard-pinned Radar Cloudflare account.');
   }
   const prod = config.env?.production;
+  const vars = prod?.vars && typeof prod.vars === 'object' ? prod.vars : config.vars;
+  const writePauseUntilUtc = String(vars?.DB_WRITES_PAUSED_UNTIL_UTC || '').trim();
   const bindings = Array.isArray(prod?.d1_databases) ? prod.d1_databases : config.d1_databases;
   const binding = Array.isArray(bindings)
     ? bindings.find((item) => (item.binding || item.name) === EXPECTED_BINDING)
@@ -109,7 +111,23 @@ function resolvePinnedTarget() {
   }
   const token = String(process.env.CLOUDFLARE_API_TOKEN || '').trim();
   if (token.length < 20) throw new Error('CLOUDFLARE_API_TOKEN is required; token value is never printed.');
-  return { accountId, databaseId: binding.database_id, token };
+  return { accountId, databaseId: binding.database_id, token, writePauseUntilUtc };
+}
+
+
+/**
+ * Direct D1 REST writes bypass the Worker's request-level write-pause gate.
+ * Never let the recovery script bypass an active, missing, or malformed production pause.
+ */
+function assertD1WritePauseExpired(target, nowMs = Date.now()) {
+  const deadline = String(target.writePauseUntilUtc || '').trim();
+  if (!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(deadline)) {
+    throw new Error('Production DB_WRITES_PAUSED_UNTIL_UTC must be a valid UTC ISO-8601 timestamp before --apply.');
+  }
+  const deadlineMs = Date.parse(deadline);
+  if (!Number.isSafeInteger(deadlineMs) || !Number.isSafeInteger(nowMs) || nowMs < deadlineMs) {
+    throw new Error(`Production D1 write pause is still active until ${deadline}; refusing direct D1 recovery writes.`);
+  }
 }
 
 async function query(target, sql) {
@@ -208,6 +226,10 @@ async function main() {
   const target = resolvePinnedTarget();
   console.log(`USER_DB target: ${EXPECTED_DATABASE_NAME} (${target.databaseId})`);
   console.log(apply ? 'Mode: APPLY additive recovery' : 'Mode: DRY RUN (no writes)');
+  if (apply) {
+    assertD1WritePauseExpired(target);
+    console.log(`Production D1 write pause expired at ${target.writePauseUntilUtc}; continuing with additive recovery.`);
+  }
 
   const users = await query(target, 'SELECT COUNT(*) AS count FROM user_profiles;');
   const sessions = await query(target, 'SELECT COUNT(*) AS count FROM user_sessions;');
