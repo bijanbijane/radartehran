@@ -260,8 +260,8 @@ export async function handleHealthAndMetadataRoute(
   if (pathname === '/api/health/readiness') {
     const userDb = resolveUserDb(ctx.env);
     if (userDb) {
-      const { inspectD1OperationalDiagnostics } = await import('../db/d1SchemaAndMigrations');
-      const diag = await inspectD1OperationalDiagnostics(userDb);
+      const { inspectD1OperationalDiagnostics, USER_D1_MIGRATION_FILES } = await import('../db/d1SchemaAndMigrations');
+      const diag = await inspectD1OperationalDiagnostics(userDb, USER_D1_MIGRATION_FILES);
       if (!diag.allCanonicalMigrationsApplied) {
         return jsonWorkerResponse(ctx, 503, {
           ok: false,
