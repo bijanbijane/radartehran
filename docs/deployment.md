@@ -21,6 +21,7 @@ Copy `.env.example` to `.env` (or configure in your hosting environment). All se
 | `FIREBASE_API_KEY` | Optional | From applet config | **Secret** | Optional server-side Firebase Web API key override. |
 | `ADMIN_EMAIL` | Optional | `radio837isf@gmail.com` | Public | Primary bootstrap administrator email address. |
 | `ADMIN_API_SECRET` | Optional | Empty | **Secret** | Optional `>= 24`-char server-to-server token for `X-Admin-Token` automation. |
+| `VALUATION_SEAL_SECRET` | Required for valuation seals | Empty | **Secret** | 32-byte hexadecimal HMAC-SHA256 key; set via deployment secret store / `wrangler secret put`, never runtime config. |
 | `VITE_NESHAN_API_KEY` | Optional | OSM/CARTO Fallback | Public/Server | Optional Neshan raster tile API key used by `/api/neshan-tile/:z/:x/:y`. |
 | `OBJECT_STORAGE_PROVIDER` | Optional | `local` / `r2` | Public | Storage driver: `local` (`.object-storage-bucket/`), `r2` (Cloudflare R2 `auto` region), `arvan`, `liara`, or `s3`. |
 | `OBJECT_STORAGE_BUCKET` | Optional | `radartehran-staging-media` | Public | Bucket name for property photos and videos. |
