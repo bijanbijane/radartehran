@@ -148,6 +148,50 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
     }, { cacheControl: 'private, no-store' });
   }
 
+  if (ctx.method === 'POST' && ctx.pathname === '/api/v1/market/bargains') {
+    const auth = await requireAuthenticatedMutation(ctx);
+    if (auth.response) return auth.response;
+    const body = await readValidatedJsonBody(ctx.request, 16 * 1024);
+    if (!body.ok) return jsonWorkerResponse(ctx, body.status, { status: 'error', code: body.code, message: body.messageFa });
+    const cityId = safeText(body.body.cityId || 'tehran', 20).toLowerCase();
+    const hoodId = boundedNumber(body.body.hoodId, 1, 9999);
+    const title = safeText(body.body.title, 160);
+    const listingType = body.body.listingType === 'خرید' || body.body.listingType === 'اجاره' ? body.body.listingType : null;
+    const sqm = boundedNumber(body.body.sqm, 25, 1000);
+    const priceMillions = boundedNumber(body.body.priceMillions, 0.01, 100000000);
+    const priceText = safeText(body.body.priceText, 160);
+    const discountPercent = boundedNumber(body.body.discountPercent, 10, 60);
+    const buyerProfitText = safeText(body.body.buyerProfitText, 160);
+    const street = safeText(body.body.street, 120);
+    const mediaObjectIds = Array.isArray(body.body.mediaObjectIds) ? body.body.mediaObjectIds : [];
+    if (!SUPPORTED_CITY_IDS.has(cityId) || hoodId === null || !title || !listingType || sqm === null
+      || priceMillions === null || !priceText || discountPercent === null || mediaObjectIds.length > 0) {
+      return jsonWorkerResponse(ctx, mediaObjectIds.length > 0 ? 503 : 400, {
+        status: 'error',
+        code: mediaObjectIds.length > 0 ? 'MEDIA_STORAGE_NOT_AVAILABLE' : 'INVALID_BARGAIN_PAYLOAD',
+        message: mediaObjectIds.length > 0
+          ? 'ذخیره‌سازی رسانه تا زمان تأمین ارائه‌دهنده مجاز فعال نیست؛ آگهی را بدون فایل رسانه ثبت کنید.'
+          : 'اطلاعات آگهی نامعتبر است.',
+      });
+    }
+    const rateLimited = await enforceMutationLimit(ctx, auth.db!, auth.uid!, 'buyer_lead', 8);
+    if (rateLimited) return rateLimited;
+    const bargainId = `brg_${crypto.randomUUID()}`;
+    const now = new Date().toISOString();
+    await auth.db!.prepare(
+      `INSERT INTO bargains (
+        bargain_id, owner_uid, city_id, hood_id, title, listing_type, sqm, price_millions,
+        price_text, discount_percent, buyer_profit_text, street, media_metadata_json,
+        status, created_at_iso, updated_at_iso
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, '[]', 'pending', ?13, ?13)`,
+    ).bind(bargainId, auth.uid, cityId, hoodId, title, listingType, sqm, priceMillions, priceText, discountPercent, buyerProfitText, street, now).run();
+    return jsonWorkerResponse(ctx, 201, {
+      status: 'ok',
+      durable: true,
+      bargain: { id: `cloud-${bargainId}`, hoodId, title, type: listingType, sqm, priceText, discountPercent, buyerProfitText, street, status: 'pending', createdAtIso: now },
+    }, { cacheControl: 'private, no-store' });
+  }
+
   if (ctx.method === 'POST' && ctx.pathname === '/api/v1/market/votes') {
     const auth = await requireAuthenticatedMutation(ctx);
     if (auth.response) return auth.response;
