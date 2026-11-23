@@ -110,8 +110,11 @@ jobs:
 
       # These suites use local node:sqlite-backed D1 simulators. No Cloudflare
       # credentials, remote D1 bindings, migrations, or production writes are used.
-      - name: Run isolated Cloudflare Worker backend regression suites
-        run: npm run test:cloudflare
+      - name: Run queue processor unit regressions
+        run: npm run test:queues
+
+      - name: Run queue entrypoint, bounded cleanup, and R2 cursor regressions
+        run: npm run test:queue-entrypoint
 
   e2e-browser:
     name: Real Browser E2E & Accessibility Suite (Playwright)
