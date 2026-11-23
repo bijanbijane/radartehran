@@ -7,7 +7,7 @@
 import { verifyFirebaseIdTokenOnEdge } from '../auth/firebaseEdgeAuth';
 import { jsonWorkerResponse } from '../contextAndSecurity';
 import { getTriadDomainBindingDiagnostics, resolveUserDb } from '../db/bindingResolver';
-import { inspectD1OperationalDiagnostics } from '../db/d1SchemaAndMigrations';
+import { inspectD1OperationalDiagnostics, USER_D1_MIGRATION_FILES } from '../db/d1SchemaAndMigrations';
 import { summarizeWorkerTelemetryWindow } from '../telemetry/workerTelemetryEngine';
 import type { DependencyCompatibilityEntry, WorkerRequestContext } from '../types';
 
@@ -59,7 +59,7 @@ export async function handleStorageAndAdminWorkerRoute(
       });
     }
     const userDb = resolveUserDb(env);
-    const diag = await inspectD1OperationalDiagnostics(userDb);
+    const diag = await inspectD1OperationalDiagnostics(userDb, USER_D1_MIGRATION_FILES);
     const triadDomains = getTriadDomainBindingDiagnostics(env);
     const telemetrySummary = summarizeWorkerTelemetryWindow();
     return jsonWorkerResponse(ctx, 200, {
