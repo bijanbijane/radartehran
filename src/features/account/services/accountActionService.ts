@@ -232,8 +232,8 @@ export function buildAccountExportDownloadPayload(params: {
         excludedSources: Array.isArray(params.serverData.excludedSources)
           ? params.serverData.excludedSources
           : params.includeLocalWorkspace
-            ? ['firebase_auth_credentials_and_tokens', 'server_audit_logs_anonymized']
-            : ['local_workspace_browser_storage', 'firebase_auth_credentials_and_tokens'],
+            ? ['authentication_credentials_and_session_secrets', 'server_audit_logs_anonymized']
+            : ['local_workspace_browser_storage', 'authentication_credentials_and_session_secrets'],
         data: cleanServer,
       },
       localWorkspaceData: localBundle ? { origin: 'local_workspace', data: localBundle.localWorkspaceData ?? localBundle } : null,
