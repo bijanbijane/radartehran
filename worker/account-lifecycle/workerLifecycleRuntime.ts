@@ -14,7 +14,7 @@
  */
 import { recordUserRevocationInD1 } from '../auth/firebaseEdgeAuth';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
-import { deriveAllSubjectKeysForErasure, hashUidForComplianceReceipt } from '../research/pseudonymizer';
+import { deriveAllSubjectKeysForErasure, hashUidForComplianceReceipt, isValidLifecycleReceiptSecret } from '../research/pseudonymizer';
 import { executeResearchSubjectErasure } from '../research/researchService';
 import type { D1Database, WorkerEnv } from '../types';
 import { blockUserWritesInD1, countActiveMutationPermitsInD1 } from './d1MutationPermit';
@@ -76,6 +76,9 @@ export async function processPendingResearchErasureOutbox(params: {
   readonly pending: number;
   readonly erasedEventsTotal: number;
 }> {
+  if (!isValidLifecycleReceiptSecret(params.receiptSecret)) {
+    throw new Error('INTERNAL_LIFECYCLE_RPC_SECRET_UNAVAILABLE');
+  }
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
@@ -254,7 +257,7 @@ export async function executeAccountDeletionLifecycle(params: {
   const nowMs = params.nowMs ?? Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
-  const receiptSecret = params.env.INTERNAL_LIFECYCLE_RPC_SECRET || params.env.RESEARCH_HMAC_SECRET;
+  const receiptSecret = params.env.INTERNAL_LIFECYCLE_RPC_SECRET;
 
   // 1. Idempotency check (with resumable PENDING_PERMIT_DRAIN support)
   let resumedJobId: string | null = null;
@@ -335,6 +338,22 @@ export async function executeAccountDeletionLifecycle(params: {
       researchEventsErased: 0,
       receiptHash: null,
       code: 'LEGAL_HOLD_ACTIVE',
+    };
+  }
+
+  if (!isValidLifecycleReceiptSecret(receiptSecret)) {
+    return {
+      ok: false,
+      statusCode: 503,
+      jobId: resumedJobId ?? '',
+      status: 'FAILED',
+      idempotentReplay: false,
+      userDbDeletedRecords: 0,
+      outboxItemsQueued: 0,
+      outboxItemsCompleted: 0,
+      researchEventsErased: 0,
+      receiptHash: null,
+      code: 'INTERNAL_LIFECYCLE_RPC_SECRET_UNAVAILABLE',
     };
   }
 
