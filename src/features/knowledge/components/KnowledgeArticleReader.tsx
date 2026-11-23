@@ -1,6 +1,6 @@
 /** @file src/features/knowledge/components/KnowledgeArticleReader.tsx — Stages 82, 84, 86 & 87 Provenance Reader, Version History, Structured Corrections & Safe Export */
 import React, { useEffect, useState } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { ArrowRight, Bookmark, Calculator, Compass, Database, Download, FileText, Flag, History, MapPin, ShieldCheck, UserCheck } from 'lucide-react';
 import { toPersianNum, type EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import type { PrimaryViewId } from '../../../utils/areaUnit';
@@ -33,7 +33,7 @@ import {
 export interface KnowledgeArticleReaderProps {
   publication: KnowledgePublication;
   linkedSources?: KnowledgeSourceRecord[];
-  currentUser?: User | null;
+  currentUser?: AuthUserSnapshot | null;
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
   isSaved?: boolean;
   isSavingBookmark?: boolean;
