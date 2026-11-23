@@ -113,7 +113,7 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
         await createSponsorRequest(reqDocId, { hoodId: targetHood.id, hoodName: targetHood.name, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths, totalPayableMillion, trackingCode: cleanTracking, expiresAtIso, status: initialSponsorStatus });
       } catch (err) {
         p.setSponsorSubmitMsg('ثبت درخواست اسپانسر در پایگاه داده انجام نشد.');
-        recordDiagnosticEvent(`sponsor_request_write_failed:${reqDocId}`);
+        recordDiagnosticEvent('Sponsors', `sponsor_request_write_failed:${reqDocId}`, 'fallback');
         return;
       }
     }
