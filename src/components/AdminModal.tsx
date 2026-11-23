@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'; import { KeyRound, Lock, X } from 'lucide-react'; import { BuyerAlertLeadItem, MapTileServerId, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { FeatureFlags, ServerAuditLogEntry, SystemHealthData } from '../types/models'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, getDiagnosticSnapshots, recordDiagnosticEvent, } from '../utils/security'; import { validateTelegramPostText } from '../utils/forms/formInputHelpers'; import { auth } from '../firebase'; import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; import { AdminOverviewAndModerationTabs } from './AdminOverviewAndModerationTabs'; import { AdminSecurityAndBackupTabs } from './AdminSecurityAndBackupTabs'; import { AdminMapProviderConfigPanel } from './AdminMapProviderConfigPanel'; export type AdminTabId = 'crm' | 'leads' | 'bargains' | 'prices' | 'security' | 'backup'; export type { ServerAuditLogEntry, SystemHealthData };
+import React, { useState, useEffect, useMemo } from 'react'; import { KeyRound, Lock, X } from 'lucide-react'; import { BuyerAlertLeadItem, MapTileServerId, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { CityId } from '../data/multiCityData'; import { FeatureFlags, ServerAuditLogEntry, SystemHealthData } from '../types/models'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { createExecutionTimer, getDiagnosticSnapshots, recordDiagnosticEvent, } from '../utils/security'; import { validateTelegramPostText } from '../utils/forms/formInputHelpers';  import { AreaUnitToggle, useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { useDialogFocus } from './useDialogFocus'; import { AdminOverviewAndModerationTabs } from './AdminOverviewAndModerationTabs'; import { AdminSecurityAndBackupTabs } from './AdminSecurityAndBackupTabs'; import { AdminMapProviderConfigPanel } from './AdminMapProviderConfigPanel'; export type AdminTabId = 'crm' | 'leads' | 'bargains' | 'prices' | 'security' | 'backup'; export type { ServerAuditLogEntry, SystemHealthData };
 export interface AdminModalProps { open: boolean; asPageView?: boolean; onClose: () => void; adminUnlocked: boolean; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; adminPassError: string; setAdminPassError?: React.Dispatch<React.SetStateAction<string>>; onAdminLogin: (e: React.FormEvent) => void; adminTab: AdminTabId; setAdminTab: React.Dispatch<React.SetStateAction<AdminTabId>>; sponsorRequests: SponsorCrmRequestItem[]; buyerLeads: BuyerAlertLeadItem[]; totalLiveBargainsCount: number; neighborhoods: Neighborhood[]; activeCity?: CityId; onAdminApproveSponsor: (req: SponsorCrmRequestItem) => void; onAdminDeleteSponsorRequest: (reqId: string) => void; onDownloadBuyerLeadsCsv: () => void; onAdminDeleteBargain: (hoodId: number, bargainId: string) => void; onAdminApproveBargain?: (hoodId: number, bargainId: string) => void; adminEditHoodId: number; setAdminEditHoodId: React.Dispatch<React.SetStateAction<number>>; adminEditBuySqm: number;
   setAdminEditBuySqm: React.Dispatch<React.SetStateAction<number>>; adminEditRahn80m: number; setAdminEditRahn80m: React.Dispatch<React.SetStateAction<number>>; adminPriceSavedMsg: string; setAdminPriceSavedMsg?: React.Dispatch<React.SetStateAction<string>>; onAdminQuickPriceSave: (e: React.FormEvent) => void; deepSyncing: boolean; onDeepWebSync: () => void; newAdminPassword: string;
   setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; adminPassChangeMsg: string; setAdminPassChangeMsg?: React.Dispatch<React.SetStateAction<string>>;
@@ -57,13 +57,10 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     try {
-      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : '';
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (idToken) {
-        headers.Authorization = `Bearer ${idToken}`;
-      }
       const res = await fetch(`/api/send-telegram?city=${encodeURIComponent(activeCity)}`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers,
         body: JSON.stringify({
           city: activeCity,
@@ -108,7 +105,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700/70 pb-3.5 mb-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
+            <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
               <Lock className="w-4 h-4 stroke-[1.75]" />
             </span>
             <div>
@@ -146,12 +143,12 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
           <form onSubmit={onAdminLogin} className="max-w-md mx-auto py-6 space-y-4 text-xs">
             <div className="apple-grouped-card p-4 space-y-3">
               <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <KeyRound className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
-                <span>احراز هویت مدیر سیستم (Firebase Admin Auth)</span>
+                <KeyRound className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <span>احراز هویت مدیر سیستم (Cloudflare Session Auth)</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                 دسترسی به اطلاعات CRM املاک، شماره متقاضیان خرید و تنظیمات کلود توسط قوانین امنیتی
-                سرور (Firestore Security Rules) محافظت می‌شود و نیازمند ورود با حساب رسمی مدیر
+                سرور (Cloudflare Worker Authorization) محافظت می‌شود و نیازمند ورود با حساب رسمی مدیر
                 سیستم است.
               </p>
               {!currentUserEmail ? (
@@ -207,7 +204,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
               )}
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer"
+                className="w-full py-2.5 rounded-[10px] bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer"
               >
                 بررسی مجوز و بازگشایی پنل مدیریت
               </button>

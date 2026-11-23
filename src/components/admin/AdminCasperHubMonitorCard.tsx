@@ -7,8 +7,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Activity, AlertCircle, CheckCircle2, Cpu, Globe, KeyRound, RefreshCw, Send, ShieldCheck, Zap } from 'lucide-react';
-import { auth } from '../../firebase';
+
 import { toPersianNum } from '../../data/neighborhoods';
+import { getAuthClient } from '../../platform/auth';
 export interface CasperHubEpistemicTelemetry { readonly minSeq: number; readonly maxSeq: number; readonly isMonotonic: boolean; readonly sequenceGapCount: number; readonly syncCursorLag: number; readonly agentContributionEntropyBits: number; readonly noteTypeEntropyBits: number; readonly criticalNotesCount: number; readonly activeBlockersCount: number; }
 export interface CasperHubWhoAmIData { readonly authenticated: boolean; readonly agent_id?: string; readonly database?: string; readonly permissions?: string[]; readonly active_roadmaps_count?: number; readonly open_tasks_count?: number; }
 export interface CasperHubNoteRecord { readonly id?: string; readonly author_agent?: string; readonly note_type?: string; readonly importance?: number | string; readonly title?: string; readonly summary?: string; }
@@ -30,10 +31,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
 
   const getAdminHeaders = async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
+    // Worker authenticates the HttpOnly Cloudflare session cookie.
     return headers;
   };
 
@@ -42,7 +40,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
     setLoading(true); setErrorMsg(null);
     try {
       const headers = await getAdminHeaders();
-      const [whoRes, bootRes] = await Promise.all([fetch('/api/casper-hub/whoami', { headers }), fetch('/api/casper-hub/bootstrap', { headers })]);
+      const [whoRes, bootRes] = await Promise.all([fetch('/api/casper-hub/whoami', { headers, credentials: 'same-origin' }), fetch('/api/casper-hub/bootstrap', { headers, credentials: 'same-origin' })]);
       if (!isMountedRef.current) return;
       if (whoRes.ok) {
         const whoJson = await whoRes.json();
@@ -72,8 +70,12 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
   useEffect(() => {
     isMountedRef.current = true;
     void fetchHubState();
-    const unsub = typeof auth.onAuthStateChanged === 'function' ? auth.onAuthStateChanged((u) => { if (u && isMountedRef.current) void fetchHubState(); }) : undefined;
-    return () => { isMountedRef.current = false; if (typeof unsub === 'function') unsub(); };
+    const client = getAuthClient();
+    const unsub = client.subscribe((_status, user) => {
+      if (user && isMountedRef.current) void fetchHubState();
+    });
+    void client.refreshSession().catch(() => undefined);
+    return () => { isMountedRef.current = false; unsub(); };
   }, [fetchHubState]);
 
   const handlePostNote = async (e: React.FormEvent) => {
@@ -134,7 +136,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
 
       {noteSuccessMsg && (
         <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--color-brand-600)]" />
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{noteSuccessMsg}</span>
         </div>
       )}
@@ -145,7 +147,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
             <span>هویت نماینده محلی</span> <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 font-mono">{whoami?.agent_id || 'CASPER-05'}</div>
-          <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">{whoami?.authenticated ? 'احراز هویت سرور: تاییدشده' : 'نیازمند ورود حساب مدیر'}</div>
+          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">{whoami?.authenticated ? 'احراز هویت سرور: تاییدشده' : 'نیازمند ورود حساب مدیر'}</div>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
@@ -169,7 +171,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
             <span>سلامت دنباله (Gap Count)</span> <Zap className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? toPersianNum(telemetry.sequenceGapCount) : '۰'} شکاف</div>
-          <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">دنباله تغییرات: یکنواخت اکید</div>
+          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">دنباله تغییرات: یکنواخت اکید</div>
         </div>
       </div>
 
