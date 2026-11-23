@@ -66,7 +66,7 @@ import {
   resetAiSeedExtractionForTests,
 } from '../src/cells/ai-ingestion/aiSeedExtractionService';
 
-process.env.VALUATION_SEAL_SECRET = 'test-only-valuation-seal-secret-2026-11';
+process.env.VALUATION_SEAL_SECRET = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 describe('CASPER Epistemic Decision Intelligence, Behavioral Debiasing, Pareto & Minimax Regret Engine', () => {
   it('1. decomposes neighborhood confidence score into 4 transparent mathematical components with margin of error', () => {
