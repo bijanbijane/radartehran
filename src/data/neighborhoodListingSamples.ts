@@ -155,19 +155,49 @@ export function buildIllustrativeSeedListingSamples(
   });
 }
 
+type ListingBargainRecord = NonNullable<NeighborhoodListingSource['bargains']>[number];
+type ListingTransactionType = 'sale' | 'rent';
+
+/**
+ * Parsed samples are reused while the immutable bargains array identity is stable.
+ * WeakMap keys let obsolete neighborhood snapshots be garbage-collected.
+ */
+const neighborhoodListingSampleCache = new WeakMap<
+  ReadonlyArray<ListingBargainRecord>,
+  Map<ListingTransactionType, readonly NeighborhoodMarketSample[]>
+>();
+
 /**
  * Market samples are only live `live-divar-*` rows with real extracted prices.
  * Seed catalog bargains stay out of the mean, IQR, and coverage index.
  */
 export function buildNeighborhoodListingSamples(
   hood?: NeighborhoodListingSource | null,
-  transactionType: 'sale' | 'rent' = 'sale',
+  transactionType: ListingTransactionType = 'sale',
 ): NeighborhoodMarketSample[] {
-  if (!hood || !Array.isArray(hood.bargains) || hood.bargains.length === 0) return [];
-  const live = hood.bargains.filter(
+  const bargains = hood?.bargains;
+  if (!Array.isArray(bargains) || bargains.length === 0) return [];
+
+  let byTransactionType = neighborhoodListingSampleCache.get(bargains);
+  if (!byTransactionType) {
+    byTransactionType = new Map<ListingTransactionType, readonly NeighborhoodMarketSample[]>();
+    neighborhoodListingSampleCache.set(bargains, byTransactionType);
+  }
+
+  const cached = byTransactionType.get(transactionType);
+  if (cached) {
+    // Never expose the cached array: callers retain the historical mutable return contract.
+    return cached.slice();
+  }
+
+  const live = bargains.filter(
     (b) => isLiveDivarBargainId(b.id) && (transactionType === 'rent' ? b.type === 'اجاره' : b.type !== 'اجاره'),
   );
-  if (live.length === 0) return [];
+  if (live.length === 0) {
+    byTransactionType.set(transactionType, Object.freeze([]));
+    return [];
+  }
+
   const out: NeighborhoodMarketSample[] = [];
   for (const b of live) {
     if (!(typeof b.sqm === 'number' && Number.isFinite(b.sqm) && b.sqm > 0)) continue;
@@ -213,7 +243,9 @@ export function buildNeighborhoodListingSamples(
       }
     }
   }
-  return out;
+
+  byTransactionType.set(transactionType, out);
+  return out.slice();
 }
 
 const PUBLIC_HOODS: ReadonlyArray<readonly [number, string]> = [
