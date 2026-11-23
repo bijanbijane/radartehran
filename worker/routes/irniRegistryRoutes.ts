@@ -362,7 +362,7 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
       Number(mappingCount?.count || 0) !== batch.expected_source_mappings
     ) return jsonResponse(ctx, 409, { status: 'error', code: 'IRNI_PUBLISH_COUNTS_INCOMPLETE' });
 
-    const [badRelationships, badMappings, badParents, syntheticCount] = await Promise.all([
+    const [badRelationships, badMappings, badParents, syntheticCount, identityMismatch, distinctIdentityOrder] = await Promise.all([
       db.prepare(`SELECT COUNT(*) AS count FROM geo_publish_staging_records r
         WHERE r.batch_id = ? AND r.dataset_kind = 'relationships' AND (
           NOT EXISTS (SELECT 1 FROM geo_publish_staging_records e WHERE e.batch_id = r.batch_id AND e.dataset_kind = 'entities' AND json_extract(e.record_json, '$.geographicEntityId') = json_extract(r.record_json, '$.sourceGeographicEntityId')) OR
@@ -380,13 +380,25 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
           AND json_extract(p.record_json, '$.geographicEntityId') = json_extract(e.record_json, '$.parentGeographicEntityId'))`).bind(batchId).first<{ count: number }>(),
       db.prepare(`SELECT COUNT(*) AS count FROM geo_publish_staging_records e
         WHERE e.batch_id = ? AND e.dataset_kind = 'entities' AND json_extract(e.record_json, '$.isSyntheticFixture') = 1`).bind(batchId).first<{ count: number }>(),
+      db.prepare(`SELECT COUNT(*) AS count FROM geo_publish_staging_records e
+        WHERE e.batch_id = ? AND e.dataset_kind = 'entities' AND (
+          json_extract(e.record_json, '$.identityRegistryEntry.geographicEntityId') != json_extract(e.record_json, '$.geographicEntityId') OR
+          json_extract(e.record_json, '$.identityAnchorRecord.geographicEntityId') != json_extract(e.record_json, '$.geographicEntityId') OR
+          json_extract(e.record_json, '$.identityRegistryEntry.identityAnchor') != json_extract(e.record_json, '$.identityAnchor') OR
+          json_extract(e.record_json, '$.identityAnchorRecord.identityAnchor') != json_extract(e.record_json, '$.identityAnchor')
+        )`).bind(batchId).first<{ count: number }>(),
+      db.prepare(`SELECT COUNT(DISTINCT json_extract(record_json, '$.identityRegistryEntry.issuedOrderIndex')) AS count
+        FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId).first<{ count: number }>(),
     ]);
     if (Number(badRelationships?.count || 0) > 0 || Number(badMappings?.count || 0) > 0 ||
-        Number(badParents?.count || 0) > 0 || Number(syntheticCount?.count || 0) > 0) {
+        Number(badParents?.count || 0) > 0 || Number(syntheticCount?.count || 0) > 0 ||
+        Number(identityMismatch?.count || 0) > 0 || Number(distinctIdentityOrder?.count || 0) !== batch.expected_entities) {
       return jsonResponse(ctx, 422, {
         status: 'error', code: 'IRNI_PUBLISH_REFERENTIAL_INTEGRITY_FAILED',
         badRelationships: Number(badRelationships?.count || 0), badMappings: Number(badMappings?.count || 0),
         badParents: Number(badParents?.count || 0), syntheticRecords: Number(syntheticCount?.count || 0),
+        identityMismatches: Number(identityMismatch?.count || 0),
+        distinctIdentityOrderValues: Number(distinctIdentityOrder?.count || 0),
       });
     }
 
@@ -578,7 +590,7 @@ async function handleCanonicalRead(ctx: WorkerRequestContext): Promise<Response 
         JOIN geo_identity_registry_entries i ON i.geographic_entity_id = e.geographic_entity_id
         JOIN geo_identity_anchors a ON a.geographic_entity_id = e.geographic_entity_id
         WHERE ${where.replaceAll('lifecycle_status', 'e.lifecycle_status').replaceAll('entity_type', 'e.entity_type').replaceAll('parent_geographic_entity_id', 'e.parent_geographic_entity_id').replaceAll('province_geographic_entity_id', 'e.province_geographic_entity_id').replaceAll('classification_system_id', 'e.classification_system_id')}
-        ORDER BY e.geographic_entity_id LIMIT ? OFFSET ?`).bind(...params, limitRaw, offsetRaw)
+        ORDER BY i.issued_order_index, e.geographic_entity_id LIMIT ? OFFSET ?`).bind(...params, limitRaw, offsetRaw)
         .all<{ entity_json: string; entry_json: string; anchor_json: string }>(), 
       db.prepare(`SELECT COUNT(*) AS count FROM geo_canonical_entities WHERE ${where}`)
         .bind(...params).first<{ count: number }>(),
