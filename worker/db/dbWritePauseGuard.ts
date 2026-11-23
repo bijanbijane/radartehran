@@ -38,6 +38,12 @@ export function isDbWritePauseExempt(method: string, pathname: string): boolean 
 
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
   if (normalizedMethod !== 'POST') return false;
+  if ([
+    '/api/v1/ai/intelligent-search',
+    '/api/ai/gateway/infer',
+    '/api/v1/ai/gateway/infer',
+    '/api/v1/valuation/verify-seal',
+  ].includes(normalizedPath)) return true;
   if (
     normalizedPath === '/api/account/deletion-requests' ||
     normalizedPath === '/api/account/deletion-requests/reconcile' ||
