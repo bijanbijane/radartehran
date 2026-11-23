@@ -22,7 +22,7 @@ export function buildMacroZoomClusters( neighborhoods: EvaluatedNeighborhood[], 
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         const indexes = seedBuckets.get(cellKey(cellX + dx, cellY + dy));
-        if (indexes) nearbyGroupIndexes.push(...indexes);
+        if (indexes) for (const index of indexes) nearbyGroupIndexes.push(index);
       }
     }
     nearbyGroupIndexes.sort((a, b) => a - b);
@@ -141,8 +141,7 @@ export function computeDeclutteredMarkerTiers(
       result.set(hood.id, tier); continue;
     }
     if (zoom < 14 || placedLabelCount >= labelBudget) { result.set(hood.id, 'dot'); continue; }
-    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> =
-      zoom < 16 && hasSponsor ? ['standard_pill', 'compact_chip'] : ['compact_chip'];
+    const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = ['compact_chip'];
     let placed = false;
     for (const tier of candidateTiers) {
       const box = markerBox(hood, tier, hasSponsor);
