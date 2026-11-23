@@ -100,12 +100,22 @@ export async function authenticateWorkerSession(
     const uid = String(row.uid || '');
     if (!uid) return unauthenticated('SESSION_INVALID');
 
+    const createdAtMs = Date.parse(String(row.created_at_iso || ''));
+    if (!Number.isFinite(createdAtMs)) return unauthenticated('SESSION_INVALID');
+    const revocationWatermark = row.revocation_watermark;
+    if (revocationWatermark === 'DISABLED') return unauthenticated('ACCOUNT_DISABLED');
+    if (revocationWatermark !== null && revocationWatermark !== undefined && String(revocationWatermark).trim() !== '') {
+      const revokedBeforeSeconds = Number(revocationWatermark);
+      if (!Number.isFinite(revokedBeforeSeconds) || createdAtMs <= revokedBeforeSeconds * 1000) {
+        return unauthenticated('SESSION_REVOKED');
+      }
+    }
+
     const email = typeof row.email === 'string' ? row.email.toLowerCase() : null;
     const configuredAdminEmail = String(ctx.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const isPrimaryAdmin = Boolean(email && configuredAdminEmail && email === configuredAdminEmail && row.email_verified === 1);
     const isAdmin = isPrimaryAdmin || row.delegated_admin === 1;
-    const createdAtMs = Date.parse(String(row.created_at_iso || ''));
-    const authTimeSeconds = Number.isFinite(createdAtMs) ? Math.floor(createdAtMs / 1000) : null;
+    const authTimeSeconds = Math.floor(createdAtMs / 1000);
 
     const lastSeenMs = Date.parse(String(row.last_seen_at_iso || ''));
     if (!Number.isFinite(lastSeenMs) || Date.now() - lastSeenMs > 5 * 60 * 1000) {
