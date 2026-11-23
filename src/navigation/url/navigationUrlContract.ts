@@ -83,7 +83,7 @@ export function resolveRouteFromLocation(pathname: string, search: string): Pars
   }
 
   // Dynamic /areas/:slug neighborhood scorecard route
-  if (normPath.startsWith('/areas/')) {
+  if (normPath.startsWith('/areas/') && !REGISTRY.some((route) => route.path === normPath)) {
     const slug = safeDecodeSegment(normPath.slice('/areas/'.length));
     if (slug) {
       return { viewId: 'discover', areaSlug: slug, isUnknownPath: false, isLegacyTehranPath: false };
