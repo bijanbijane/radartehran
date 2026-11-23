@@ -102,7 +102,7 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
                     </h3>
                     <div className="mt-1 text-[11px] font-medium">
                       {hood.status === 'green'
-                        ? <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{copy.inBudgetBadge}</span>
+                        ? <span className="inline-flex items-center gap-1 text-[var(--color-brand-600)] dark:text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{copy.inBudgetBadge}</span>
                         : <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{copy.aboveBudgetBadge(hood.diffPercent)}</span>}
                     </div>
                   </button>
@@ -158,7 +158,7 @@ export const DiscoverNeighborhoodResults: React.FC<DiscoverNeighborhoodResultsPr
               onClick={() => onSelectNeighborhood(hood)}
               className={`flex items-center gap-3 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-emerald-600 ${copy.dir === 'rtl' ? 'text-right' : 'text-left'}`}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black tabular-nums shrink-0 ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'}`}>{formatNum(hood.overallScore)}</div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black tabular-nums shrink-0 ${isSelected ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'}`}>{formatNum(hood.overallScore)}</div>
               <div className="min-w-0">
                 <div className="font-bold text-slate-900 dark:text-white text-sm flex flex-wrap items-center gap-1.5">
                   <span>{copy.neighborhoodPrefix ? `${copy.neighborhoodPrefix} ${hood.name}` : hood.name}</span>

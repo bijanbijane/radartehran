@@ -4,6 +4,24 @@ import assert from 'node:assert/strict';
 import { PUBLIC_ROUTES } from './registry/public.routes';
 import { ADMIN_ROUTES, ADMIN_SIDEBAR_SECTIONS } from './registry/admin.routes';
 import {
+  UNIFIED_NAVIGATION_ROUTE_COUNT,
+  UNIFIED_NAVIGATION_ROUTES,
+  auditNavigationRegistryIntegrity,
+  findUnifiedRouteByPath,
+  resolveNavigationOwnership,
+} from './registry/unifiedNavigationRegistry';
+import { isUnifiedRouteActive, resolveActiveUnifiedRoute } from './registry/navigationActiveState';
+import { filterVisibleNavigationRoutes, canViewNavigationEntry } from './registry/navigationVisibility';
+import {
+  buildNavigationVisibilityContext,
+  expandPlatformPermissionsForNavigation,
+} from './registry/navigationPermissionBridge';
+import { getCanonicalRouteForPrimaryView, PRIMARY_SHELL_VIEW_ORDER } from './registry/primaryNavigationMetadata';
+import { getProductNavigationItems } from '../components/navigation/primaryNavigation';
+import { buildNavigationDiscoveryCatalog, searchNavigationDiscovery } from './discovery/navigationDiscoveryCatalog';
+import { isDynamicPublicNavigationPath } from './url/navigationDeepLinkPaths';
+import { resolveDeepLinkDestination } from '../features/onboarding/services/rtFeNavigation014Engine';
+import {
   buildCanonicalPathForDestination,
   resolveRouteFromLocation,
   sanitizePublicNavigationQuery,
@@ -17,6 +35,48 @@ import {
   resolveLayoutContractForView,
   resolveViewContainerClass,
 } from '../layout-system/contracts/layoutRegistry';
+
+test('RT-FE-NAV-014: Unified registry integrity, ownership, and role visibility', () => {
+  assert.equal(UNIFIED_NAVIGATION_ROUTE_COUNT, PUBLIC_ROUTES.length + ADMIN_ROUTES.length);
+  const issues = auditNavigationRegistryIntegrity();
+  assert.deepEqual(issues, [], `Registry audit issues: ${JSON.stringify(issues)}`);
+  assert.ok(findUnifiedRouteByPath('/market/prices'));
+  assert.equal(resolveNavigationOwnership('/market/prices').owner, 'unified_navigation');
+  assert.equal(resolveNavigationOwnership('/login').owner, 'app_shell');
+
+  const adminRoutes = UNIFIED_NAVIGATION_ROUTES.filter((r) => r.shell === 'admin');
+  const adminVisible = filterVisibleNavigationRoutes(adminRoutes, {
+    authReady: true,
+    isAuthenticated: true,
+    userPermissions: ['admin:access'],
+    userRoles: ['admin'],
+    enabledFeatures: {},
+  });
+  assert.ok(adminVisible.length > 0);
+
+  const adminHidden = filterVisibleNavigationRoutes(adminRoutes, {
+    authReady: true,
+    isAuthenticated: false,
+    userPermissions: [],
+    userRoles: [],
+    enabledFeatures: {},
+  });
+  assert.equal(adminHidden.length, 0);
+
+  const active = resolveActiveUnifiedRoute({ pathname: '/market/prices', viewId: 'intelligence', subTab: 'prices' });
+  assert.ok(active);
+  assert.equal(isUnifiedRouteActive(active!, { pathname: '/market/prices', viewId: 'intelligence', subTab: 'prices' }), true);
+
+  const discovery = buildNavigationDiscoveryCatalog({
+    authReady: true,
+    isAuthenticated: true,
+    userPermissions: [],
+    userRoles: [],
+    enabledFeatures: {},
+  });
+  assert.ok(discovery.pages.some((p) => p.href === '/explore/map'));
+  assert.ok(discovery.commands.length > 0);
+});
 
 test('NAV-011: Admin routes stay strictly isolated from public registry and Mega Menu', () => {
   assert.equal(PUBLIC_ROUTES.some((r) => r.shell === 'admin' || r.viewId === 'admin'), false);
@@ -67,6 +127,53 @@ test('Public route paths are unique and support URL round-trip resolution + 404 
   assert.equal(resolveRouteFromLocation('/', '?view=admin').viewId, 'admin');
   assert.equal(resolveRouteFromLocation('/this-route-does-not-exist', '').viewId, 'not_found');
   assert.equal(buildCanonicalPathForDestination('properties', 'rent'), '/properties/rent');
+  assert.equal(resolveRouteFromLocation('/neighborhoods/saadat-abad', '').viewId, 'discover');
+  assert.equal(resolveRouteFromLocation('/neighborhoods/saadat-abad', '').areaSlug, 'saadat-abad');
+});
+
+test('RT-FE-NAV-016: Lifecycle, least-privilege admin mapping, legacy deep links, logout safety', () => {
+  assert.ok(isDynamicPublicNavigationPath('/neighborhoods/saadat-abad'));
+  assert.equal(
+    resolveDeepLinkDestination({
+      rawUrl: '/neighborhoods/saadat-abad',
+      isAuthenticated: true,
+      userPermissions: [],
+    }).status,
+    'VALID',
+  );
+
+  const supportCtx = buildNavigationVisibilityContext({
+    state: 'READY',
+    permissions: ['admin:dashboard:view', 'admin:moderation:approve'],
+    activeRole: 'operator_support',
+  });
+  const adminUsersRoute = UNIFIED_NAVIGATION_ROUTES.find((r) => r.id === 'admin.users');
+  assert.ok(adminUsersRoute);
+  assert.equal(canViewNavigationEntry(adminUsersRoute!, supportCtx), false);
+  const adminContentRoute = UNIFIED_NAVIGATION_ROUTES.find((r) => r.id === 'admin.content');
+  assert.equal(canViewNavigationEntry(adminContentRoute!, supportCtx), true);
+
+  const expiredItems = getProductNavigationItems(
+    'fa',
+    buildNavigationVisibilityContext({ state: 'SESSION_EXPIRED', permissions: ['admin:governance'], activeRole: 'admin' }),
+  );
+  assert.equal(expiredItems.some((i) => i.id === 'admin'), false);
+
+  const resolvingCtx = buildNavigationVisibilityContext({
+    state: 'RESOLVING_ACCESS',
+    permissions: ['admin:governance', 'admin:dashboard:view'],
+    activeRole: 'admin',
+  });
+  assert.equal(resolvingCtx.authReady, false);
+  assert.equal(resolvingCtx.userPermissions.includes('admin:access'), false);
+
+  const reauthNav = buildNavigationVisibilityContext({
+    state: 'REAUTH_REQUIRED',
+    permissions: ['admin:dashboard:view', 'admin:governance'],
+    activeRole: 'admin',
+  });
+  assert.equal(reauthNav.authReady, true);
+  assert.ok(reauthNav.userPermissions.includes('admin:access'));
 });
 
 test('sanitizePublicNavigationQuery strips sensitive parameters cleanly', () => {
@@ -119,6 +226,74 @@ test('Map Tool Rail keeps layers active when closing panel and toggles cleanly',
     hasSavedViews: false,
   });
   assert.equal(closedWithLayer, 'active');
+});
+
+test('RT-FE-NAV-015: Primary nav metadata, permission bridge, and fail-safe discovery', () => {
+  for (const viewId of PRIMARY_SHELL_VIEW_ORDER) {
+    const route = getCanonicalRouteForPrimaryView(viewId);
+    assert.ok(route, `Missing canonical primary route for ${viewId}`);
+    assert.equal(route!.viewId, viewId);
+  }
+
+  const guestItems = getProductNavigationItems('fa', buildNavigationVisibilityContext({
+    state: 'UNAUTHENTICATED',
+    permissions: ['map:view', 'neighborhood:read', 'property:read', 'valuation:calculate'],
+    activeRole: 'guest',
+  }));
+  assert.equal(guestItems.some((i) => i.id === 'admin'), false);
+  assert.ok(guestItems.some((i) => i.id === 'map'));
+
+  const loadingAdmin = buildNavigationVisibilityContext({
+    state: 'RESOLVING_ACCESS',
+    permissions: ['admin:dashboard:view', 'admin:governance'],
+    activeRole: 'admin',
+  });
+  assert.equal(loadingAdmin.authReady, false);
+  const adminWhileLoading = filterVisibleNavigationRoutes(
+    UNIFIED_NAVIGATION_ROUTES.filter((r) => r.shell === 'admin'),
+    loadingAdmin,
+  );
+  assert.equal(adminWhileLoading.length, 0);
+
+  const readyAdminPerms = expandPlatformPermissionsForNavigation(
+    ['admin:dashboard:view', 'admin:governance', 'admin:moderation:approve'],
+    'admin',
+  );
+  assert.ok(readyAdminPerms.includes('admin:access'));
+  const readyAdmin = buildNavigationVisibilityContext({
+    state: 'READY',
+    permissions: ['admin:dashboard:view', 'admin:governance', 'admin:moderation:approve'],
+    activeRole: 'admin',
+  });
+  const adminVisible = filterVisibleNavigationRoutes(
+    UNIFIED_NAVIGATION_ROUTES.filter((r) => r.shell === 'admin'),
+    readyAdmin,
+  );
+  assert.ok(adminVisible.length > 0);
+
+  const expiredCtx = buildNavigationVisibilityContext({
+    state: 'SESSION_EXPIRED',
+    permissions: [],
+    activeRole: 'guest',
+  });
+  const expiredAdmin = filterVisibleNavigationRoutes(
+    UNIFIED_NAVIGATION_ROUTES.filter((r) => r.shell === 'admin'),
+    expiredCtx,
+  );
+  assert.equal(expiredAdmin.length, 0);
+
+  const discoveryPublic = searchNavigationDiscovery('نقشه', readyAdmin);
+  const hrefs = discoveryPublic.pages.map((p) => p.href);
+  assert.equal(new Set(hrefs).size, hrefs.length);
+
+  const anonDiscovery = buildNavigationDiscoveryCatalog(
+    buildNavigationVisibilityContext({
+      state: 'UNAUTHENTICATED',
+      permissions: ['map:view', 'neighborhood:read', 'property:read', 'valuation:calculate'],
+      activeRole: 'guest',
+    }),
+  );
+  assert.ok(anonDiscovery.pages.some((p) => p.href === '/explore/map'));
 });
 
 test('RT-UI-LAYOUT-001 contracts distinguish page max-widths and spacing tokens', () => {

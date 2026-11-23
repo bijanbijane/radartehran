@@ -72,13 +72,13 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
         <div role="tablist" aria-label="تب‌های ابزار مکانی و کاتالوگ لایه" className="flex items-center gap-1">
           <button
             type="button" role="tab" aria-selected={panelTab === 'tools_15'} data-testid="spatial-tab-tools-15" onClick={() => setPanelTab('tools_15')}
-            className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'tools_15' ? 'bg-[#176B63] text-white' : 'text-[#34433E] dark:text-slate-300'}`}
+            className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'tools_15' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[#34433E] dark:text-slate-300'}`}
           >
             ابزار نقشه (۱۵)
           </button>
           <button
             type="button" role="tab" aria-selected={panelTab === 'catalog_16'} data-testid="spatial-tab-catalog-16" onClick={() => setPanelTab('catalog_16')}
-            className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'catalog_16' ? 'bg-[#176B63] text-white' : 'text-[#34433E] dark:text-slate-300'}`}
+            className={`px-2.5 py-1 rounded-[8px] font-bold cursor-pointer ${panelTab === 'catalog_16' ? 'bg-[var(--color-brand-600)] text-white' : 'text-[#34433E] dark:text-slate-300'}`}
           >
             کاتالوگ لایه‌ها (۱۶)
           </button>
@@ -97,7 +97,7 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
                 <button
                   key={m.id} type="button" data-testid={`map-mode-btn-${m.id}`} aria-pressed={activeMode === m.id} onClick={() => setActiveMode(m.id)}
                   className={`py-1.5 rounded-[8px] font-bold border transition cursor-pointer ${
-                    activeMode === m.id ? 'bg-[#176B63] text-white border-[#176B63]' : 'border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'
+                    activeMode === m.id ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'
                   }`}
                 >
                   {m.label}
@@ -112,9 +112,9 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
           {activeMode === 'draw' && (
             <div className="p-2.5 rounded-[10px] border border-[#DCE3DF] dark:border-slate-700 bg-[#F6F8F6] dark:bg-slate-800/60 space-y-2" data-testid="map-draw-validator-box">
               <div className="flex items-center justify-between font-bold text-[#182522] dark:text-white">
-                <span className="flex items-center gap-1"><PenTool className="w-3.5 h-3.5 text-[#176B63]" /> اعتبارسنجی هندسه WGS84</span>
+                <span className="flex items-center gap-1"><PenTool className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> اعتبارسنجی هندسه WGS84</span>
                 <div className="flex gap-1 text-[10px]">
-                  <button type="button" onClick={() => setPolygonPreset('valid')} className={`px-1.5 py-0.5 rounded ${polygonPreset === 'valid' ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900'}`}>معتبر</button>
+                  <button type="button" onClick={() => setPolygonPreset('valid')} className={`px-1.5 py-0.5 rounded ${polygonPreset === 'valid' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900'}`}>معتبر</button>
                   <button type="button" onClick={() => setPolygonPreset('self_intersect')} className={`px-1.5 py-0.5 rounded ${polygonPreset === 'self_intersect' ? 'bg-rose-600 text-white' : 'bg-white dark:bg-slate-900'}`}>خودمتقاطع</button>
                 </div>
               </div>
@@ -134,10 +134,10 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
           {activeMode === 'measure' && (
             <div className="p-2.5 rounded-[10px] border border-[#DCE3DF] dark:border-slate-700 bg-[#F6F8F6] dark:bg-slate-800/60 space-y-2" data-testid="map-measure-box">
               <div className="flex items-center justify-between font-bold text-[#182522] dark:text-white">
-                <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5 text-[#176B63]" /> محاسبه ژئودزیک (WGS84)</span>
+                <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> محاسبه ژئودزیک (WGS84)</span>
                 <div className="flex gap-1 text-[10px]">
-                  <button type="button" onClick={() => setMeasureKind('linear_distance')} className={`px-1.5 py-0.5 rounded ${measureKind === 'linear_distance' ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900'}`}>فاصله خطی</button>
-                  <button type="button" onClick={() => setMeasureKind('area')} className={`px-1.5 py-0.5 rounded ${measureKind === 'area' ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900'}`}>مساحت</button>
+                  <button type="button" onClick={() => setMeasureKind('linear_distance')} className={`px-1.5 py-0.5 rounded ${measureKind === 'linear_distance' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900'}`}>فاصله خطی</button>
+                  <button type="button" onClick={() => setMeasureKind('area')} className={`px-1.5 py-0.5 rounded ${measureKind === 'area' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900'}`}>مساحت</button>
                 </div>
               </div>
               <div className="text-sm font-black text-[#182522] dark:text-white tabular-nums">
@@ -166,10 +166,10 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
             <input
               type="text" value={layerQuery} onChange={(e) => setLayerQuery(e.target.value)}
               placeholder="جست‌وجوی لایه اطلاعاتی..." aria-label="جست‌وجوی کاتالوگ لایه‌ها"
-              className="flex-1 px-2.5 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-[#F6F8F6] dark:bg-slate-800 text-xs focus:outline-none focus:border-[#176B63]"
+              className="flex-1 px-2.5 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-[#F6F8F6] dark:bg-slate-800 text-xs focus:outline-none focus:border-[var(--color-brand-600)]"
             />
             <button type="button" onClick={() => setCatalogView('all')} className={`px-2 py-1.5 rounded-[8px] font-bold cursor-pointer ${catalogView === 'all' ? 'bg-[#182522] text-white' : 'bg-[#F1F4F2] dark:bg-slate-800 text-[#34433E]'}`}>همه ({toPersianNum(publicLayers.length)})</button>
-            <button type="button" onClick={() => setCatalogView('active')} className={`px-2 py-1.5 rounded-[8px] font-bold cursor-pointer ${catalogView === 'active' ? 'bg-[#176B63] text-white' : 'bg-[#F1F4F2] dark:bg-slate-800 text-[#34433E]'}`}>فعال‌ها ({toPersianNum(activeStack.length)})</button>
+            <button type="button" onClick={() => setCatalogView('active')} className={`px-2 py-1.5 rounded-[8px] font-bold cursor-pointer ${catalogView === 'active' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F1F4F2] dark:bg-slate-800 text-[#34433E]'}`}>فعال‌ها ({toPersianNum(activeStack.length)})</button>
           </div>
 
           {compatibilityMsg && (
@@ -192,7 +192,7 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
                       <button type="button" onClick={() => setSelectedDetailsLayerId(ly.id)} aria-label={`جزئیات لایه ${ly.title}`} className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 cursor-pointer"><Info className="w-3.5 h-3.5" /></button>
                       <button
                         type="button" onClick={() => dispatchStackAction(inStack ? { type: 'remove', layerId: ly.id } : { type: 'activate', layerId: ly.id })}
-                        className={`px-2 py-1 rounded-[6px] text-[10.5px] font-bold cursor-pointer ${inStack ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'}`}
+                        className={`px-2 py-1 rounded-[6px] text-[10.5px] font-bold cursor-pointer ${inStack ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200'}`}
                       >
                         {inStack ? 'فعال' : 'افزودن'}
                       </button>
@@ -209,10 +209,10 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
                 return (
                   <div key={item.layerId} className="p-2 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-[#182522] dark:text-white flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[#176B63]" /><span>{meta.title}</span></span>
+                      <span className="font-bold text-[#182522] dark:text-white flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>{meta.title}</span></span>
                       <div className="flex items-center gap-1">
                         <button type="button" onClick={() => dispatchStackAction({ type: 'mute_toggle', layerId: item.layerId })} aria-label={item.visible ? 'خاموش‌کردن موقت لایه' : 'روشن‌کردن لایه'} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 cursor-pointer">
-                          {item.visible ? <Eye className="w-3.5 h-3.5 text-[#176B63]" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
+                          {item.visible ? <Eye className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
                         </button>
                         <button type="button" onClick={() => dispatchStackAction({ type: 'remove', layerId: item.layerId })} aria-label="حذف لایه از ترکیب فعال" className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer">
                           <Trash2 className="w-3.5 h-3.5" />
@@ -224,7 +224,7 @@ export const MapSpatialToolsPopover: React.FC<MapSpatialToolsPopoverProps> = (p)
                       <input
                         type="range" min={20} max={100} step={10} value={item.opacity} aria-label={`شفافیت لایه ${meta.title}`}
                         onChange={(e) => dispatchStackAction({ type: 'set_opacity', layerId: item.layerId, opacity: Number(e.target.value) })}
-                        className="w-24 accent-[#176B63] cursor-pointer"
+                        className="w-24 accent-[var(--color-brand-600)] cursor-pointer"
                       />
                     </div>
                   </div>

@@ -37,7 +37,18 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
-      dedupe: ['react', 'react-dom'],
+      dedupe: [
+        'react',
+        'react-dom',
+        'firebase',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/app-check',
+        '@firebase/app',
+        '@firebase/auth',
+        '@firebase/component',
+        '@firebase/app-check',
+      ],
     },
     optimizeDeps: {
       include: [
@@ -49,7 +60,11 @@ export default defineConfig(({ mode }) => {
         'd3-scale',
         'firebase/app',
         'firebase/auth',
-        'firebase/firestore',
+        'firebase/app-check',
+        '@firebase/app',
+        '@firebase/auth',
+        '@firebase/component',
+        '@firebase/app-check',
       ],
     },
     build: {
@@ -62,9 +77,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('@firebase/firestore') || id.includes('firebase/firestore')) {
-                return 'vendor-firebase-firestore';
-              }
               if (id.includes('firebase')) {
                 return 'vendor-firebase-auth';
               }
@@ -214,6 +226,19 @@ export default defineConfig(({ mode }) => {
     server: {
       // Task 448: Explicit allowedHosts list instead of unrestricted `allowedHosts: true`
       allowedHosts,
+      port: Number(env.VITE_DEV_PORT || process.env.VITE_DEV_PORT) || undefined,
+      proxy:
+        env.RADAR_DEV_SPLIT === '1' ||
+        env.VITE_RADAR_DEV_SPLIT === '1' ||
+        process.env.RADAR_DEV_SPLIT === '1'
+          ? {
+              '/api': {
+                target: env.VITE_API_PROXY_TARGET || process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3001',
+                changeOrigin: true,
+                secure: false,
+              },
+            }
+          : undefined,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: {
         ignored: [

@@ -41,38 +41,34 @@ export function resetObjectStorageIndexForTests(): void {
   bucketLoadPromise = null;
 }
 export async function syncMediaObjectToFirestore(record: StoredObjectRecord, remove = false): Promise<void> {
+  const registry = await import('./serverObjectStorageMetadataRegistry');
+  if (registry.isDurableObjectMetadataProductionMode()) {
+    if (remove) await registry.deleteStoredObjectMetadata(record.id);
+    else await registry.upsertStoredObjectMetadata(record);
+    return;
+  }
   if (testIsolatedResetActive || process.env.PREVENT_PROD_FIREBASE_IN_TEST === 'true') return;
-  try {
-    const { getFirebaseAdminFirestoreForServer } = await import('./serverAdminAndTelegramSecurity');
-    const db = getFirebaseAdminFirestoreForServer();
-    const ref = db.collection('mediaObjects').doc(record.id);
-    if (remove) await ref.delete();
-    else await ref.set({ ...record, updatedAtIso: new Date().toISOString() }, { merge: true });
-  } catch { /* Offline fallback */ }
 }
 export async function recoverObjectStoreIndexFromFirestore(): Promise<StoredObjectRecord[]> {
-  try {
-    const { getFirebaseAdminFirestoreForServer } = await import('./serverAdminAndTelegramSecurity');
-    const db = getFirebaseAdminFirestoreForServer();
-    const snap = await db.collection('mediaObjects').limit(MAX_STORED_OBJECTS).get();
-    const recovered: StoredObjectRecord[] = [];
-    const seenIds = new Set<string>();
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      if (isSafeStoredObjectRecord(data) && !seenIds.has(data.id.toLowerCase())) {
-        seenIds.add(data.id.toLowerCase());
-        recovered.push(data);
-      }
-    }
-    return recovered;
-  } catch { return []; }
+  const registry = await import('./serverObjectStorageMetadataRegistry');
+  if (registry.isDurableObjectMetadataProductionMode()) {
+    return registry.loadStoredObjectRecordsFromDurableRegistry();
+  }
+  return [];
 }
 export async function ensureBucketLoaded(): Promise<void> {
   if (indexLoaded) return;
   if (!bucketLoadPromise) {
     bucketLoadPromise = (async () => {
+      const registry = await import('./serverObjectStorageMetadataRegistry');
       await fs.promises.mkdir(BUCKET_DIR, { recursive: true, mode: 0o700 });
       await cleanupStaleTemporaryFiles();
+      if (registry.isDurableObjectMetadataProductionMode()) {
+        const durableRecords = await registry.loadStoredObjectRecordsFromDurableRegistry();
+        objectStoreIndex.splice(0, objectStoreIndex.length, ...durableRecords.slice(0, MAX_STORED_OBJECTS));
+        indexLoaded = true;
+        return;
+      }
       let raw = '[]';
       let indexMissing = false;
       try {
@@ -124,8 +120,13 @@ export async function ensureBucketLoaded(): Promise<void> {
   }
 }
 export async function persistObjectStoreIndexNow(): Promise<void> {
-  const { withFileLock } = await import('./serverJournalAdapters');
+  const registry = await import('./serverObjectStorageMetadataRegistry');
   const writeTask = indexWriteChain.catch(() => {}).then(async () => {
+    if (registry.isDurableObjectMetadataProductionMode()) {
+      await registry.persistAllStoredObjectMetadataToRegistry(objectStoreIndex);
+      return;
+    }
+    const { withFileLock } = await import('./serverJournalAdapters');
     await fs.promises.mkdir(BUCKET_DIR, { recursive: true, mode: 0o700 });
     await withFileLock(`${INDEX_FILE}.lock`, async () => {
       const snapshot = JSON.stringify(objectStoreIndex, null, 2);
@@ -141,9 +142,6 @@ export async function persistObjectStoreIndexNow(): Promise<void> {
         await fs.promises.unlink(tmpPath).catch(() => {});
       }
     });
-    if (!testIsolatedResetActive && process.env.PREVENT_PROD_FIREBASE_IN_TEST !== 'true') {
-      for (const rec of objectStoreIndex.slice(0, 25)) { void syncMediaObjectToFirestore(rec); }
-    }
   });
   indexWriteChain = writeTask;
   await writeTask;

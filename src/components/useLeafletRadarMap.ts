@@ -91,6 +91,19 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
   presentationRef.current = { mode, targetSqm, rentAgeMultiplier, mapLens, isDarkMap, areaUnit, intlCurrency, locale, showGoldPins };
 
   const activeCityHoodIds = useMemo(() => new Set((MULTI_CITY_CONFIGS[activeCity]?.neighborhoods || []).map((h) => h.id)), [activeCity]);
+  const cityScopedMapNeighborhoods = useMemo(
+    () => deferredMapNeighborhoods.filter((h) => activeCityHoodIds.has(h.id)),
+    [deferredMapNeighborhoods, activeCityHoodIds],
+  );
+  const d3PriceScaleForCity = useMemo(
+    () =>
+      buildD3PriceDensityScale(
+        cityScopedMapNeighborhoods.length > 0 ? cityScopedMapNeighborhoods : deferredMapNeighborhoods,
+        mode,
+        rentAgeMultiplier,
+      ),
+    [cityScopedMapNeighborhoods, deferredMapNeighborhoods, mode, rentAgeMultiplier],
+  );
 
   useEffect(() => {
     const el = mapContainerRef.current;
@@ -224,12 +237,17 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
       const hadPrev = Boolean(heatmapLayerRef.current);
       if (heatmapLayerRef.current) { map.removeLayer(heatmapLayerRef.current); heatmapLayerRef.current = null; }
       if (!isMapIntersectingViewport || mapLens !== 'heatmap') return { created: 0, updated: 0, removed: hadPrev ? 1 : 0, retained: 0 };
-      const cityScoped = deferredMapNeighborhoods.filter((h) => activeCityHoodIds.has(h.id));
-      const scale = buildD3PriceDensityScale(cityScoped.length > 0 ? cityScoped : deferredMapNeighborhoods, mode, rentAgeMultiplier);
-      heatmapLayerRef.current = renderPriceDensityHeatmapOnLeaflet(L, map, deferredMapNeighborhoods.filter((h) => statusFilter === 'all' || h.status === statusFilter), scale, mode, (hood) => onSelectNeighborhoodRef.current(hood));
+      heatmapLayerRef.current = renderPriceDensityHeatmapOnLeaflet(
+        L,
+        map,
+        deferredMapNeighborhoods.filter((h) => statusFilter === 'all' || h.status === statusFilter),
+        d3PriceScaleForCity,
+        mode,
+        (hood) => onSelectNeighborhoodRef.current(hood),
+      );
       return { created: hadPrev ? 0 : 1, updated: hadPrev ? 1 : 0, removed: 0, retained: 0 };
     });
-  }, [mapLens, isMapIntersectingViewport, deferredMapNeighborhoods, activeCityHoodIds, mode, rentAgeMultiplier, statusFilter, isMapLoaded]);
+  }, [mapLens, isMapIntersectingViewport, deferredMapNeighborhoods, d3PriceScaleForCity, mode, statusFilter, isMapLoaded]);
 
   const getSlice = () => selectVisibleMapNeighborhoods({
     map: mapInstanceRef.current, allNeighborhoods: deferredMapNeighborhoods, activeCity, activeCityHoodIds,
@@ -245,12 +263,11 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     const { cityScopedHoods, renderHoods, visibleHoods, lazyPolicy, currentZoom, currentSelectedId } = getSlice();
     const pres = presentationRef.current;
     clientGeoJsonLruCache.setMaxEntries(lazyPolicy.maxLruCacheSize);
-    const d3PriceScale = buildD3PriceDensityScale(cityScopedHoods.length > 0 ? cityScopedHoods : deferredMapNeighborhoods, pres.mode, pres.rentAgeMultiplier);
     reconcileNeighborhoodLayers({
       L, map, refs: reconcilerRefs.current, visibleHoods, allCityHoods: renderHoods, selectedHoodId: currentSelectedId,
       currentZoom, activeCity, mode: pres.mode, targetSqm: pres.targetSqm, rentAgeMultiplier: pres.rentAgeMultiplier,
       mapLens: pres.mapLens, isDarkMap: pres.isDarkMap, skipGoldPins: true, lowBandwidthMode: advancedOverlayState.lowBandwidthGeoLazyMode,
-      enableSponsorBilling: featureFlags.enableSponsorBilling, osmBoundariesByHood, d3PriceScale,
+      enableSponsorBilling: featureFlags.enableSponsorBilling, osmBoundariesByHood, d3PriceScale: d3PriceScaleForCity,
       areaUnit: pres.areaUnit, intlCurrency: pres.intlCurrency, locale: pres.locale, reason: 'reconcileGeometryAndLod',
       onSelectNeighborhood: (hood) => onSelectNeighborhoodRef.current(hood),
     });
@@ -261,19 +278,17 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     });
     markersMapRef.current = nextMarkersMap;
     timer('success');
-  }, [deferredMapNeighborhoods, mapZoomLevel, selectedHoodId, viewportEpoch, statusFilter, osmBoundariesByHood, activeCity, activeCityHoodIds, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, isMapLoaded]);
+  }, [deferredMapNeighborhoods, mapZoomLevel, selectedHoodId, viewportEpoch, statusFilter, osmBoundariesByHood, activeCity, activeCityHoodIds, featureFlags.enableSponsorBilling, isMapIntersectingViewport, advancedOverlayState.lowBandwidthGeoLazyMode, isMapLoaded, d3PriceScaleForCity]);
 
   useEffect(() => {
     const map = mapInstanceRef.current, L = window.L;
     if (!map || !L || !isMapIntersectingViewport) return;
-    const cityScoped = deferredMapNeighborhoods.filter((h) => activeCityHoodIds.has(h.id));
-    const d3PriceScale = buildD3PriceDensityScale(cityScoped.length > 0 ? cityScoped : deferredMapNeighborhoods, mode, rentAgeMultiplier);
     updateNeighborhoodMarkerPresentation({
       L, refs: reconcilerRefs.current, selectedHoodId: selectedHoodIdRef.current, currentZoom: mapZoomLevelRef.current,
       activeCity, mode, targetSqm, rentAgeMultiplier, mapLens, isDarkMap,
-      enableSponsorBilling: featureFlags.enableSponsorBilling, d3PriceScale, areaUnit, intlCurrency, locale,
+      enableSponsorBilling: featureFlags.enableSponsorBilling, d3PriceScale: d3PriceScaleForCity, areaUnit, intlCurrency, locale,
     });
-  }, [mode, targetSqm, rentAgeMultiplier, mapLens, mapTileStyle, isDarkTheme, areaUnit, intlCurrency, locale]);
+  }, [mode, targetSqm, rentAgeMultiplier, mapLens, mapTileStyle, isDarkTheme, areaUnit, intlCurrency, locale, d3PriceScaleForCity]);
 
   useEffect(() => {
     const map = mapInstanceRef.current, L = window.L;
@@ -290,19 +305,17 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     const { missingSelected } = updateSelectionPillsInPlace({ refs: reconcilerRefs.current, selectedHoodId, mapZoomLevel, isDarkMap });
     if (missingSelected && mapInstanceRef.current && window.L && isMapIntersectingViewport) {
       const pres = presentationRef.current;
-      const cityScoped = deferredMapNeighborhoods.filter((h) => activeCityHoodIds.has(h.id));
-      const d3PriceScale = buildD3PriceDensityScale(cityScoped.length > 0 ? cityScoped : deferredMapNeighborhoods, pres.mode, pres.rentAgeMultiplier);
       ensureSelectedMarkerExists({
         L: window.L, map: mapInstanceRef.current, refs: reconcilerRefs.current, selectedHood, allCityHoods: deferredMapNeighborhoods,
         currentZoom: mapZoomLevel, activeCity, mode: pres.mode, targetSqm: pres.targetSqm, rentAgeMultiplier: pres.rentAgeMultiplier,
         mapLens: pres.mapLens, isDarkMap, lowBandwidthMode: advancedOverlayState.lowBandwidthGeoLazyMode,
-        enableSponsorBilling: featureFlags.enableSponsorBilling, osmBoundariesByHood, d3PriceScale,
+        enableSponsorBilling: featureFlags.enableSponsorBilling, osmBoundariesByHood, d3PriceScale: d3PriceScaleForCity,
         areaUnit: pres.areaUnit, intlCurrency: pres.intlCurrency, locale: pres.locale,
         onSelectNeighborhood: (hood) => onSelectNeighborhoodRef.current(hood),
       });
     }
     timer('success');
-  }, [selectedHoodId, mapZoomLevel, mapTileStyle, isDarkTheme]);
+  }, [selectedHoodId, mapZoomLevel, mapTileStyle, isDarkTheme, d3PriceScaleForCity, deferredMapNeighborhoods, activeCity, featureFlags.enableSponsorBilling, advancedOverlayState.lowBandwidthGeoLazyMode, osmBoundariesByHood, isMapIntersectingViewport, selectedHood]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
@@ -314,5 +327,5 @@ export function useLeafletRadarMap(params: UseLeafletRadarMapParams) {
     if (mapInstanceRef.current && hood) mapInstanceRef.current.flyTo([hood.lat + lm.latOffset, hood.lng + lm.lngOffset], 15, { duration: 0.7 });
   }, []);
 
-  return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded };
+  return { mapContainerRef, mapInstanceRef, tileLayerRef, markersMapRef, osmBoundariesByHood, handleFocusLandmarkOnMap, isMapLoaded, mapZoomLevel };
 }

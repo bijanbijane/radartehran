@@ -2,10 +2,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { isDurableRepositoryProductionMode } from './repositoryPersistencePolicy';
+import { isRepositoryRemotePersistenceActive } from './durableRepositorySnapshotStore';
+import { loadRepositorySnapshot, persistRepositorySnapshot } from './durableRepositorySnapshotStore';
 
 const DEFAULT_BASE_DIR = path.resolve(process.cwd(), '.cache', 'repositories');
 let customBaseDirForTests: string | null = null;
 const registeredFlushers = new Set<() => void>();
+const registeredAsyncFlushers = new Set<() => Promise<void>>();
 
 export function setRepositoryBaseDirForTests(dirPath: string | null): void {
   customBaseDirForTests = dirPath ? path.resolve(dirPath) : null;
@@ -20,6 +24,13 @@ export function flushAllRepositoriesSync(): void {
     try { flusher(); } catch { /* ignore shutdown flush errors */ }
   }
 }
+
+export async function flushAllRepositoriesAsync(): Promise<void> {
+  for (const flusher of registeredAsyncFlushers) {
+    try { await flusher(); } catch { /* ignore shutdown flush errors */ }
+  }
+}
+
 
 const SENSITIVE_KEY_PATTERN = /^(token|idToken|accessToken|refreshToken|secret|password|apiKey|privateKey|botToken|adminSecret)$/i;
 
@@ -40,10 +51,14 @@ export class AtomicJsonRepository<T> {
   private pendingData: T | null = null;
   private loaded = false;
   private cachedData: T | null = null;
+  private durablePersistChain: Promise<void> = Promise.resolve();
+  private lastPersistError: Error | null = null;
+  private hydrating: Promise<void> | null = null;
 
   constructor(fileName: string) {
     this.fileName = fileName;
     registeredFlushers.add(() => this.flushSync());
+    registeredAsyncFlushers.add(() => this.awaitPendingPersistence());
   }
 
   public getFilePath(): string {
@@ -58,6 +73,41 @@ export class AtomicJsonRepository<T> {
     this.pendingData = null;
     this.cachedData = null;
     this.loaded = false;
+    this.durablePersistChain = Promise.resolve();
+    this.lastPersistError = null;
+    this.hydrating = null;
+  }
+
+  public getLastPersistError(): Error | null {
+    return this.lastPersistError;
+  }
+
+  public async awaitPendingPersistence(): Promise<void> {
+    await this.durablePersistChain;
+    if (this.lastPersistError) throw this.lastPersistError;
+  }
+
+  public async ensureRemoteHydrated(defaultFactory: () => T): Promise<T> {
+    if (!isRepositoryRemotePersistenceActive()) return this.load(defaultFactory);
+    if (this.loaded && this.cachedData !== null) return this.cachedData;
+    if (!this.hydrating) {
+      this.hydrating = (async () => {
+        try {
+          const raw = await loadRepositorySnapshot(this.fileName);
+          if (raw && raw.trim()) {
+            this.cachedData = JSON.parse(raw) as T;
+          } else {
+            this.cachedData = defaultFactory();
+          }
+          this.loaded = true;
+        } catch {
+          this.cachedData = defaultFactory();
+          this.loaded = true;
+        }
+      })();
+    }
+    await this.hydrating;
+    return this.cachedData as T;
   }
 
   public load(defaultFactory: () => T): T {
@@ -87,7 +137,10 @@ export class AtomicJsonRepository<T> {
     if (this.flushTimer) clearTimeout(this.flushTimer);
     this.flushTimer = setTimeout(() => {
       this.flushTimer = null;
-      this.flushSync();
+      const data = this.pendingData ?? this.cachedData;
+      if (data === null) return;
+      if (isRepositoryRemotePersistenceActive()) this.writeImmediate(data);
+      else this.flushSync();
     }, delayMs);
     this.flushTimer.unref?.();
   }
@@ -100,10 +153,28 @@ export class AtomicJsonRepository<T> {
     this.cachedData = data;
     this.pendingData = data;
     this.loaded = true;
+    if (isRepositoryRemotePersistenceActive()) {
+      this.lastPersistError = null;
+      this.durablePersistChain = this.durablePersistChain.then(async () => {
+        try {
+          await persistRepositorySnapshot(this.fileName, targetDataForPersist(data));
+        } catch (error) {
+          this.lastPersistError = error instanceof Error ? error : new Error(String(error));
+          throw this.lastPersistError;
+        }
+      });
+      return;
+    }
     this.flushSync();
   }
 
+  public async writeImmediateAwait(data: T): Promise<void> {
+    this.writeImmediate(data);
+    await this.awaitPendingPersistence();
+  }
+
   public flushSync(): void {
+    if (isRepositoryRemotePersistenceActive()) return;
     const targetData = this.pendingData ?? this.cachedData;
     if (targetData === null) return;
     this.pendingData = null;
@@ -115,4 +186,8 @@ export class AtomicJsonRepository<T> {
     fs.writeFileSync(tmpPath, JSON.stringify(sanitized, null, 2), { encoding: 'utf-8', mode: 0o600 });
     fs.renameSync(tmpPath, filePath);
   }
+}
+
+function targetDataForPersist<T>(data: T): T {
+  return stripSecretKeysDeep(data);
 }

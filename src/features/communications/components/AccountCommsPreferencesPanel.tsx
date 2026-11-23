@@ -200,7 +200,7 @@ export const AccountCommsPreferencesPanel: React.FC<AccountCommsPreferencesPanel
       {/* Registered Push Devices */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-          <Smartphone className="w-4 h-4 text-emerald-600" />
+          <Smartphone className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>دستگاه‌های ثبت‌شده اعلان (Push)</span>
         </h3>
         <div className="flex flex-wrap gap-2">

@@ -19,6 +19,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@radartehran/contracts": [
+        "./packages/contracts/src/index.ts"
       ]
     },
     "allowImportingTsExtensions": true,

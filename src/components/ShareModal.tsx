@@ -123,7 +123,7 @@ export function ShareModal({
         <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-3 focus:outline-none">
           <AlertCircle className="w-6 h-6 stroke-[1.75] text-amber-600 mx-auto" />
           <p className="text-xs font-bold text-slate-700 dark:text-slate-300">محله‌ای برای اشتراک‌گذاری انتخاب نشده است.</p>
-          <button type="button" aria-label={isEn ? 'Close' : 'بستن کارت اشتراک‌گذاری'} onClick={onClose} className="px-4 py-2 rounded-[10px] bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer">بستن</button>
+          <button type="button" aria-label={isEn ? 'Close' : 'بستن کارت اشتراک‌گذاری'} onClick={onClose} className="px-4 py-2 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer">بستن</button>
         </div>
       </div>
     );
@@ -143,7 +143,7 @@ export function ShareModal({
       <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-sm w-full p-5 space-y-3.5 max-h-[92vh] overflow-y-auto focus:outline-none shadow-2xl">
         <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-slate-800">
           <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+            <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
               <Share2 className="w-3.5 h-3.5 stroke-[1.75]" />
             </span>
             <span>{isEn ? 'Neighborhood Scorecard & Story' : 'کارت کارنامه و استوری محله'}</span>
@@ -204,7 +204,7 @@ export function ShareModal({
         </div>
 
         <div className="space-y-2 pt-1">
-          <button type="button" onClick={handleDownloadStoryClick} disabled={isGeneratingStory} aria-label={isEn ? 'Download Story Image' : 'دانلود تصویر آماده استوری'} className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60">
+          <button type="button" onClick={handleDownloadStoryClick} disabled={isGeneratingStory} aria-label={isEn ? 'Download Story Image' : 'دانلود تصویر آماده استوری'} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-60">
             {isGeneratingStory ? (
               <><Loader2 className="w-4 h-4 animate-spin" /><span>{isEn ? 'Rendering Story (1080×1920)...' : 'در حال رندر تصویر استوری (1080×1920)...'}</span></>
             ) : storyGeneratedSuccess ? (

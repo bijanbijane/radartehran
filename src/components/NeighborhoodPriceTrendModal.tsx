@@ -79,7 +79,7 @@ export function NeighborhoodPriceTrendModal({
                 {isEn ? `12-Month Price Trend — ${selectedHood.name}` : `روند تاریخی ۱۲ ماهه قیمت خرید و اجاره — ${selectedHood.name}`}
               </h2>
               <p className="text-[10.5px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
-                <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /><span>{summaryStats.firstMonth} {isEn ? 'to' : 'تا'} {summaryStats.lastMonth}</span></span>
+                <span className="inline-flex items-center gap-1"><Calendar className="w-3 h-3 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>{summaryStats.firstMonth} {isEn ? 'to' : 'تا'} {summaryStats.lastMonth}</span></span>
                 <span>·</span><span>{cityNameFa} ({selectedHood.zone})</span>
               </p>
             </div>
@@ -105,8 +105,8 @@ export function NeighborhoodPriceTrendModal({
             <div className="bg-emerald-50/70 dark:bg-emerald-950/25 border border-emerald-200/80 dark:border-emerald-900/40 rounded-xl p-3 space-y-1">
               <div className="flex items-center justify-between text-[11px] text-emerald-900 dark:text-emerald-300 font-semibold">
                 <span>{isEn ? `Buy Price (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `قیمت خرید (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`}</span>
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-600/10 dark:bg-emerald-400/10 text-emerald-800 dark:text-emerald-300 font-extrabold text-[10.5px]">
-                  {summaryStats.buyGrowth12m >= 0 ? <ArrowUpRight className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <ArrowDownRight className="w-3 h-3 text-rose-600 dark:text-rose-400" />}{summaryStats.buyGrowth12m > 0 ? '+' : ''}{toPersianNum(summaryStats.buyGrowth12m)}٪
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[var(--color-brand-600)]/10 dark:bg-emerald-400/10 text-emerald-800 dark:text-emerald-300 font-extrabold text-[10.5px]">
+                  {summaryStats.buyGrowth12m >= 0 ? <ArrowUpRight className="w-3 h-3 text-[var(--color-brand-600)] dark:text-emerald-400" /> : <ArrowDownRight className="w-3 h-3 text-rose-600 dark:text-rose-400" />}{summaryStats.buyGrowth12m > 0 ? '+' : ''}{toPersianNum(summaryStats.buyGrowth12m)}٪
                 </span>
               </div>
               <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white">{toPersianNum(Number(convertPricePerSqmToUnit(summaryStats.endBuy, areaUnit).toFixed(1)))} <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{isEn ? 'M IRT' : 'میلیون تومان'}</span></div>
@@ -166,7 +166,7 @@ export function NeighborhoodPriceTrendModal({
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
             <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 font-bold">
-              <div className="flex items-center gap-1 text-slate-800 dark:text-white"><TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>روند تاریخی ۱۲ ماهه قیمت — {selectedHood.name}</span></div>
+              <div className="flex items-center gap-1 text-slate-800 dark:text-white"><TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>روند تاریخی ۱۲ ماهه قیمت — {selectedHood.name}</span></div>
               <span className="text-[10px] text-slate-400">نشانگر را روی نقاط ببرید</span>
             </div>
             <div dir="ltr" className="w-full h-[270px] min-w-[260px]">
@@ -244,7 +244,7 @@ export function NeighborhoodPriceTrendModal({
 
         <div className="px-4 py-2.5 sm:px-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-slate-500 dark:text-slate-400 shrink-0">
           <div className="flex items-center gap-1.5">
-            <Maximize2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <Maximize2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>{isEn ? '12-month synthesized closing price and market rent trends.' : 'سری زمانی ۱۲ ماهه بر اساس قیمت فعلی محله، داده‌های ۶ ماهه و ضرایب فصلی استخراج شده است.'}</span>
           </div>
           <button type="button" onClick={onClose} className="px-3.5 py-1 rounded-lg bg-slate-900 dark:bg-white hover:bg-slate-800 text-white dark:text-slate-900 font-bold transition cursor-pointer">

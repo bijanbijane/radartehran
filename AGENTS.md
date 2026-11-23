@@ -24,6 +24,7 @@ For durable operator decisions, verified technical knowledge, and session resump
    - **Leaflet HTML**: Always escape dynamic strings inside `L.divIcon` and `marker.bindTooltip` using `escapeHtmlAttr()` from `src/utils/security.ts`.
    - **Multi-City Links**: Always generate external Divar listing links via `buildExternalDivarUrl(city, mode, hoodName)` from `src/utils/security.ts`.
    - **Server Disk I/O & Secrets**: Use debounced asynchronous atomic writes (`0o600`) in `src/utils/serverMarketPulseEngine.ts`, `src/utils/serverRuntimeEnvStore.ts`, and `src/utils/serverObjectStorage.ts`. Never persist `SECRET_ENV_KEYS` or buyer PII (`buyerLeads`) to `.cache-data.json` or `.runtime-config.json`.
+   - **Client data plane (RT-DATA-001)**: The browser SPA must **not** import `firebase/firestore`. Use `src/firebase.ts` for Auth only; persist and sync via Express `/api/*` and `src/platform/data/clientDataPolicy.ts` (`CLIENT_FIRESTORE_FORBIDDEN`). Server/admin Firestore remains on the backend.
 
 4. **Mandatory Verification Commands**:
    Always run these checks before completing any task:

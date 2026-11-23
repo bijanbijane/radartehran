@@ -14,9 +14,11 @@ import {
 } from '../../core';
 import {
   buildInsurancePolicyDetailViewModel,
-  createPropertyInsuranceService,
   filterAndSortPropertyInsurancePolicies,
   InsurancePoliciesView,
+} from '../../../../src/components/property-insurance/InsurancePoliciesView.tsx';
+import {
+  createPropertyInsuranceService,
   PROPERTY_INSURANCE_COLLECTIONS,
   type InsuranceMediaReadAdapter,
   type InsuranceNotificationDispatchAdapter,

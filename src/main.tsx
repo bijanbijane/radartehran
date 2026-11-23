@@ -95,7 +95,7 @@ class RootErrorBoundary extends React.Component<RootErrorBoundaryProps, RootErro
               <button
                 type="button"
                 onClick={this.handleNonDestructiveRetry}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition"
               >
                 تلاش مجدد
               </button>

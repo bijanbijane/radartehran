@@ -93,7 +93,7 @@ export const AccountNotificationsPanel: React.FC<AccountNotificationsPanelProps>
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Bell className="w-4 h-4 text-emerald-600" />
+            <Bell className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مرکز اعلان‌ها و پیام‌های مرتبط ({toPersianNum(unreadTotal)} خوانده‌نشده)</span>
           </h2>
           <p className="text-slate-500 mt-1">
@@ -129,7 +129,7 @@ export const AccountNotificationsPanel: React.FC<AccountNotificationsPanelProps>
             onClick={() => setHubTab(id)}
             className={`px-3.5 py-2 rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer ${
               hubTab === id
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-[var(--color-brand-600)] text-white'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200'
             }`}
           >

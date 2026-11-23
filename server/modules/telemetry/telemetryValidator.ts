@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { sanitizeInput } from '../../../src/utils/security';
+import { deriveDailyTelemetrySalt } from './telemetrySessionSalt';
 import type {
   IngestibleTelemetryBatchItem,
   TelemetryEventCategory,
@@ -80,9 +81,10 @@ export function validateAndSanitizeTelemetryItem(
   const dateKey = toTehranDateKey(nowMs);
   const clientSentAtMs = typeof item.timestampMs === 'number' && Number.isFinite(item.timestampMs) ? item.timestampMs : undefined;
   const clientTimeDriftMs = clientSentAtMs !== undefined ? Math.abs(nowMs - clientSentAtMs) : undefined;
+  const origin = options.origin || 'web_client';
 
   const provenance: TelemetryEventProvenance = {
-    origin: options.origin || 'web_client',
+    origin,
     appVersion: options.appVersion || '6.0.0',
     tehranDateKey: dateKey,
     ingestedAtMs: nowMs,
@@ -90,7 +92,7 @@ export function validateAndSanitizeTelemetryItem(
     clientTimeDriftMs,
   };
 
-  const salt = options.dailySalt || 'default_radar_salt_2026';
+  const salt = options.dailySalt || deriveDailyTelemetrySalt(dateKey);
   const sessionHash = computeDailySessionHash(item.sessionSeed, salt, dateKey);
 
   // Validate and sanitize metrics
@@ -131,7 +133,42 @@ export function validateAndSanitizeTelemetryItem(
       : undefined;
   const cityId = typeof item.cityId === 'string' ? sanitizeInput(item.cityId.toLowerCase(), 32) : undefined;
 
-  const category: TelemetryEventCategory = item.category || 'USER_INTERACTION';
+  const clientCategory = item.category;
+  if (
+    (clientCategory === 'FRAUD_SECURITY' || clientCategory === 'SYSTEM_HEALTH') &&
+    origin !== 'backend_service'
+  ) {
+    return {
+      valid: false,
+      errorCode: 'FORBIDDEN_CLIENT_CATEGORY',
+      errorMessageFa: 'رویدادهای عملیاتی داخلی فقط از سرویس پشتیبان مجازند.',
+    };
+  }
+
+  const ALLOWED_CLIENT_CATEGORIES: readonly TelemetryEventCategory[] = [
+    'USER_INTERACTION',
+    'SEARCH_EXPLORATION',
+    'VALUATION_CALCULATION',
+    'CONVERSION_MILESTONE',
+  ];
+
+  let category: TelemetryEventCategory = 'USER_INTERACTION';
+  if (origin === 'backend_service') {
+    if (clientCategory === 'SYSTEM_HEALTH' || clientCategory === 'FRAUD_SECURITY') {
+      category = clientCategory;
+    } else {
+      category = 'SYSTEM_HEALTH';
+    }
+  } else if (clientCategory && ALLOWED_CLIENT_CATEGORIES.includes(clientCategory)) {
+    category = clientCategory;
+  } else if (clientCategory && clientCategory !== 'USER_INTERACTION') {
+    return {
+      valid: false,
+      errorCode: 'FORBIDDEN_CLIENT_CATEGORY',
+      errorMessageFa: 'دسته‌بندی رویداد از سمت کلاینت پذیرفته نشد.',
+    };
+  }
+
   const privacyClassification: TelemetryPrivacyClassification =
     category === 'FRAUD_SECURITY' || category === 'SYSTEM_HEALTH'
       ? 'RESTRICTED_OPERATIONAL'

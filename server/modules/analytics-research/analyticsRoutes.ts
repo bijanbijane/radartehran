@@ -17,6 +17,16 @@ import {
   getAnalyticsState,
   saveAnalyticsState,
 } from './analyticsRepository';
+import {
+  classifyExportFromRegistry,
+  lookupDatasetRegistry,
+  resolveDatasetIdForExport,
+} from './datasetClassificationRegistry';
+import {
+  executeAnalyticsPipelineRun,
+  tryCancelPipelineRun,
+  type PipelineRunExtendedStatus,
+} from './pipelineExecutionEngine';
 
 const cleanEngine = new AnalyticsPlatformEngine({ seedDemo: false });
 
@@ -126,9 +136,16 @@ export function registerAnalyticsResearchRoutes(
     const adminAuth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     const placeId = typeof req.body?.placeId === 'string' ? sanitizeInput(req.body.placeId, 64).trim() : null;
     const format = req.body?.format === 'json' ? 'json' : 'csv';
-    const rawClassification = req.body?.classification;
-    const classification: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED' =
-      rawClassification === 'INTERNAL' || rawClassification === 'RESTRICTED' ? rawClassification : 'PUBLIC';
+    const datasetId = resolveDatasetIdForExport(placeId);
+    const { classification, clientMismatch } = classifyExportFromRegistry(datasetId, req.body?.classification);
+    const registry = lookupDatasetRegistry(datasetId);
+    if (!registry) {
+      res.status(422).json({ ok: false, errorFa: 'شناسه مجموعه داده در ثبت طبقه‌بندی سرور یافت نشد.' });
+      return;
+    }
+    if (clientMismatch) {
+      recordAbuseSignal(deps.getIp(req), 'auth_failure');
+    }
     const callerRole: 'PUBLIC_USER' | 'RESEARCHER' | 'ADMIN' = adminAuth.authorized
       ? 'ADMIN'
       : auth.authorized
@@ -138,6 +155,10 @@ export function registerAnalyticsResearchRoutes(
       ? buildRealSnapshotAndComparison(placeId)
       : { snapshot: cleanEngine.getMetricSnapshotForPlace(null), periodComparison: null };
     const sampleCount = snapshot.distribution?.count ?? 0;
+    if (!registry.allowedCallerRoles.includes(callerRole)) {
+      res.status(403).json({ ok: false, errorFa: 'نقش فراخوان‌کننده برای این مجموعه داده مجاز نیست.' });
+      return;
+    }
     const gate = cleanEngine.canExportDatasetSlice({
       sampleCount,
       uniqueEntityCount: snapshot.distribution?.uniqueEntityCount ?? 0,
@@ -169,10 +190,18 @@ export function registerAnalyticsResearchRoutes(
           ].join(','),
         ].join('\n');
     const state = getAnalyticsState();
+    const createdAtIso = new Date().toISOString();
+    const expiresAtIso = new Date(Date.now() + registry.retentionPolicyDays * 24 * 60 * 60 * 1000).toISOString();
     state.exportJobs.unshift({
       exportId, placeId, format, requestedByUid: auth.uid || 'public', callerRole, datasetClassification: classification,
       sampleCount, status: 'READY', fileName, mimeType: format === 'json' ? 'application/json' : 'text/csv; charset=utf-8',
-      contentText, limitationsFa: snapshot.limitationsFa, createdAtIso: new Date().toISOString(),
+      contentText,
+      limitationsFa: snapshot.limitationsFa,
+      createdAtIso,
+      expiresAtIso,
+      registryDatasetId: datasetId,
+      registryClassificationAtCreate: classification,
+      ...(clientMismatch ? { rejectionReasonFa: 'CLIENT_CLASSIFICATION_MISMATCH_LOGGED' } : {}),
     });
     if (state.exportJobs.length > 100) state.exportJobs.length = 100;
     saveAnalyticsState();
@@ -188,6 +217,23 @@ export function registerAnalyticsResearchRoutes(
       const job = getAnalyticsState().exportJobs.find((j) => j.exportId === req.params.exportId);
       if (!job || job.status !== 'READY') {
         res.status(404).json({ ok: false, errorFa: 'فایل خروجی تحلیلی یافت نشد یا منقضی شده است.' });
+        return;
+      }
+      if (job.expiresAtIso && Date.parse(job.expiresAtIso) < Date.now()) {
+        res.status(410).json({ ok: false, errorFa: 'مدت اعتبار این خروجی به پایان رسیده است.' });
+        return;
+      }
+      const registryId = job.registryDatasetId ?? resolveDatasetIdForExport(job.placeId);
+      const currentReg = lookupDatasetRegistry(registryId);
+      const currentClassification = currentReg?.dataClassification ?? job.datasetClassification;
+      if (
+        job.registryClassificationAtCreate &&
+        job.registryClassificationAtCreate !== currentClassification
+      ) {
+        res.status(403).json({
+          ok: false,
+          errorFa: 'طبقه‌بندی مجموعه داده پس از تولید خروجی حساس‌تر شده است؛ دانلود متوقف شد.',
+        });
         return;
       }
       if (job.datasetClassification !== 'PUBLIC') {
@@ -271,17 +317,33 @@ export function registerAnalyticsResearchRoutes(
     const def = state.pipelineDefinitions.find((p) => p.id === req.params.pipelineId);
     if (!def) { res.status(404).json({ ok: false, errorFa: 'تعریف پایپ‌لاین یافت نشد.' }); return; }
     const nowIso = new Date().toISOString();
-    const run = {
-      runId: `run-${Date.now()}-${crypto.randomBytes(2).toString('hex')}`,
-      pipelineId: def.id, pipelineCode: def.pipelineCode, status: 'SUCCEEDED' as const,
+    const correlationId = crypto.randomBytes(8).toString('hex');
+    const run = executeAnalyticsPipelineRun({
+      def,
+      state,
       triggeredBy: auth.email || auth.uid || 'admin',
-      recordsProcessed: Object.values(state.observedSeriesByPlace).reduce((sum, arr) => sum + arr.length, 0),
-      failedRecords: state.quarantinedPayloads.length,
-      computeDurationMs: 42, startedAtIso: nowIso, finishedAtIso: nowIso,
-    };
-    state.pipelineRuns.unshift(run);
+      correlationId,
+      nowIso,
+    });
+    state.pipelineRuns.unshift({
+      runId: run.runId,
+      pipelineId: run.pipelineId,
+      pipelineCode: run.pipelineCode,
+      status: run.status === 'SUCCEEDED' || run.status === 'FAILED' || run.status === 'CANCELLED' || run.status === 'RUNNING' || run.status === 'PENDING'
+        ? run.status
+        : run.status === 'PARTIAL'
+          ? 'SUCCEEDED'
+          : 'FAILED',
+      triggeredBy: run.triggeredBy,
+      recordsProcessed: run.recordsProcessed,
+      failedRecords: run.failedRecords,
+      computeDurationMs: run.actualComputeDurationMs,
+      errorFa: run.errorFa,
+      startedAtIso: run.startedAtIso,
+      finishedAtIso: run.finishedAtIso,
+    });
     saveAnalyticsState();
-    res.status(201).json({ ok: true, run });
+    res.status(run.status === 'SUCCEEDED' || run.status === 'PARTIAL' ? 201 : 422).json({ ok: run.status === 'SUCCEEDED' || run.status === 'PARTIAL', run });
   });
 
   app.post('/api/admin/analytics/runs/:runId/cancel', async (req: Request, res: Response) => {
@@ -290,7 +352,12 @@ export function registerAnalyticsResearchRoutes(
     const state = getAnalyticsState();
     const run = state.pipelineRuns.find((r) => r.runId === req.params.runId);
     if (!run) { res.status(404).json({ ok: false, errorFa: 'اجرای پایپ‌لاین یافت نشد.' }); return; }
-    run.status = 'CANCELLED'; run.finishedAtIso = new Date().toISOString();
+    const cancel = tryCancelPipelineRun(run as typeof run & { status: PipelineRunExtendedStatus });
+    if (!cancel.ok || !cancel.run) {
+      res.status(409).json({ ok: false, errorFa: cancel.errorFa || 'لغو مجاز نیست.' });
+      return;
+    }
+    Object.assign(run, cancel.run);
     saveAnalyticsState();
     res.status(200).json({ ok: true, run });
   });

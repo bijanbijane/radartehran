@@ -68,7 +68,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
       <div className="space-y-4 text-xs" data-testid="account-profile-panel">
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <UserCheck className="w-4 h-4 text-emerald-600" />
+            <UserCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>هویت کاربری، نقش‌ها و وضعیت دسترسی</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -84,7 +84,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
                     if (savedTimerRef.current !== null) window.clearTimeout(savedTimerRef.current);
                     savedTimerRef.current = window.setTimeout(() => { setSavedNotice(false); savedTimerRef.current = null; }, 2000);
                   }}
-                  className="px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer"
+                  className="px-3 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
                 >
                   {savedNotice ? 'ذخیره شد' : 'ثبت'}
                 </button>
@@ -94,7 +94,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
               <span className="text-slate-400 block text-[10.5px]">ایمیل و وضعیت احراز</span>
               <strong className="text-slate-900 dark:text-white flex items-center gap-1 mt-1">
                 {p.currentUser?.email || 'حالت مهمان (ذخیره‌سازی محلی)'}
-                {p.currentUser?.emailVerified && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                {p.currentUser?.emailVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />}
               </strong>
             </div>
           </div>
@@ -111,7 +111,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
                     onClick={() => toggleRole(role)}
                     className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer border ${
                       active
-                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        ? 'bg-[var(--color-brand-600)] text-white border-emerald-600'
                         : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                     }`}
                   >
@@ -125,7 +125,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800" data-testid="account-workspace-switcher">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <strong className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
+                <Briefcase className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
                 <span>تغییر نمای فضای کاری (بدون نیاز به حساب جداگانه)</span>
               </strong>
               <span className="text-[10.5px] text-slate-500">مجوزهای حساس همیشه در سمت سرور کنترل می‌شوند</span>
@@ -168,7 +168,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
       <SystemHealthDashboardCard />
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-          <Lock className="w-4 h-4 text-emerald-600" />
+          <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>تنظیمات حریم خصوصی و انتشار اطلاعات</span>
         </h2>
         <div className="space-y-2.5">
@@ -189,7 +189,7 @@ export const AccountProfileAndSettingsPanel: React.FC<AccountProfileAndSettingsP
 
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-          <Laptop className="w-4 h-4 text-emerald-600" />
+          <Laptop className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>نشست‌ها و دستگاه‌های فعال ({p.sessions.length})</span>
         </h2>
         <div className="space-y-2">

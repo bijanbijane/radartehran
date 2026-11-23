@@ -41,7 +41,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
         <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <Calculator className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <Calculator className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>مشخصات فنی و نوع سند در محله {activeHood.name}</span>
             </span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">پایه محله: {areaUnit === 'sqft' ? 'هر ft² ' : 'متری '}{toPersianNum(convertPricePerSqmToUnit(activeHood.buyPerSqm, areaUnit))} م · سناریو مذاکره: {toPersianNum(convertPricePerSqmToUnit(aggregateMarketMetricsForHood(activeHood).estimatedDealPricePerSqm, areaUnit))} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(convertPricePerSqmToUnit(activeHood.buyPerSqm, areaUnit), intlCurrency, locale)})` : ''}</span>
@@ -71,8 +71,8 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] font-bold text-slate-700 dark:text-slate-300 pt-0.5">
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={valHasElevator} onChange={(e) => setValHasElevator(e.target.checked)} aria-label="آسانسور در کارشناسی تفصیلی" className="rounded text-emerald-600" /><span>آسانسور</span></label>
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={valHasStorage} onChange={(e) => setValHasStorage(e.target.checked)} aria-label="انباری سندی در کارشناسی تفصیلی" className="rounded text-emerald-600" /><span>انباری سندی</span></label>
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={valHasElevator} onChange={(e) => setValHasElevator(e.target.checked)} aria-label="آسانسور در کارشناسی تفصیلی" className="rounded text-[var(--color-brand-600)]" /><span>آسانسور</span></label>
+              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={valHasStorage} onChange={(e) => setValHasStorage(e.target.checked)} aria-label="انباری سندی در کارشناسی تفصیلی" className="rounded text-[var(--color-brand-600)]" /><span>انباری سندی</span></label>
             </div>
             <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
               <span>نرخ طلای ۱۸ عیار:</span>
@@ -104,7 +104,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
                 <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">گزارش تحلیلی کارشناسی هوشمند ارزش ملک (مدل هدونیک · غیررسمی)</div>
                 <div className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">واحد {formatAreaValue(valSqm, areaUnit, true)} در {activeHood.name}</div>
               </div>
-              <Award className="w-6 h-6 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <Award className="w-6 h-6 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             </div>
             <div className="bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-3 space-y-1">
               <div className="text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold">ارزش منصفانه روز بازار (Fair Market Value):</div>
@@ -137,7 +137,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
             </div>
           </div>
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <button type="button" onClick={handleSaveToPortfolio} className="w-full py-2 px-3 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition">
+            <button type="button" onClick={handleSaveToPortfolio} className="w-full py-2 px-3 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition">
               <Home className="w-4 h-4 stroke-[1.75]" />
               <span>افزودن این خانه به «پرتفوی دارایی ملکی من»</span>
             </button>
@@ -204,7 +204,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
         </div>
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-            <Scale className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <Scale className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>مربی تخفیف‌گیری سر جلسه قولنامه</span>
           </div>
           <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 space-y-1.5">
@@ -240,7 +240,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-          <Building2 className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <Building2 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>فرمول خرید ترکیبی مسکن با تجمیع سرمایه‌ها و وام</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -254,7 +254,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
           <div className="text-xl font-black text-emerald-950 dark:text-emerald-200 tabular-nums">{toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد تومان{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(combinedPowerResult.totalPurchasingPowerWithRahnMillion, intlCurrency, locale)})` : ''}</div>
           <div className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">ودیعهٔ مستأجر یک تعهد بازپرداخت است و به دارایی خالص شما اضافه نمی‌شود. در محله فعلی (<strong>{activeHood.name}</strong> · متری {toPersianNum(activeHood.buyPerSqm)} م) این آورده خالص برای حدود <strong>{formatAreaValue(Math.floor(combinedPowerResult.totalEquityBeforeRahnMillion / Math.max(15, activeHood.buyPerSqm)), areaUnit, true)}</strong> کافی است (و با فرض قیمت متری ۷۵ میلیون تومان، از نظر قیمت پایه برای حدود <strong>{formatAreaValue(combinedPowerResult.maxAffordableSqmAt75m ?? 0, areaUnit, true)}</strong>). هزینه‌های معامله، تعمیر و تعهدات احتمالی باید جداگانه بررسی شوند.</div>
           {onApplyCombinedBudget && (
-            <button type="button" onClick={() => onApplyCombinedBudget(combinedPowerResult.totalPurchasingPowerWithRahnMillion, valSqm)} className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition shadow-2xs">اعمال این بودجه ترکیبی روی رادار نقشه ({toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد)</button>
+            <button type="button" onClick={() => onApplyCombinedBudget(combinedPowerResult.totalPurchasingPowerWithRahnMillion, valSqm)} className="w-full py-2 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs cursor-pointer transition shadow-2xs">اعمال این بودجه ترکیبی روی رادار نقشه ({toPersianNum((combinedPowerResult.totalPurchasingPowerWithRahnMillion / 1000).toFixed(2))} میلیارد)</button>
           )} </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-1.5">
           <div className="font-bold text-slate-900 dark:text-slate-100 text-[11px]">محاسبه‌گر آب رفتن پول پیش مستأجر در تورم ۴۰٪:</div>
@@ -263,7 +263,7 @@ export function SuperModulesValuationAndFakeTabs(props: SuperModulesValuationAnd
       </div>
       <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-          <TrendingUp className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <TrendingUp className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>آربیتراژ رهن کامل در برابر سرمایه‌گذاری در صندوق طلا</span>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">

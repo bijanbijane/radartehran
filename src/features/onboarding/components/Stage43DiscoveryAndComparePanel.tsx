@@ -80,7 +80,7 @@ export const Stage43DiscoveryAndComparePanel: React.FC<Props> = ({ providers, on
               </div>
             ))}
             <div className="flex flex-wrap gap-1.5">
-              <button type="button" data-testid={`req-direct-${p.providerId}`} onClick={() => onStartDirectRequest(p)} className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">
+              <button type="button" data-testid={`req-direct-${p.providerId}`} onClick={() => onStartDirectRequest(p)} className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 text-[11px] font-bold text-white">
                 ثبت درخواست مستقیم
               </button>
               <button type="button" onClick={() => toggleCompare(p.providerId)} className="rounded border border-slate-700 px-2.5 py-1 text-[11px] text-slate-200">

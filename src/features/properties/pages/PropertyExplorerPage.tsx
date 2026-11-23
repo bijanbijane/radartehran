@@ -99,7 +99,7 @@ export const PropertyExplorerPage: React.FC<PropertyExplorerPageProps> = (p) => 
       });
     } else if (p.activeSubTab === 'rent') {
       setDraft((prev) => {
-        const next: PropertyFilterDraft = { ...prev, transactionType: 'rent', propertyType: 'all' };
+        const next: PropertyFilterDraft = { ...prev, transactionType: 'rent' as const, propertyType: 'all' };
         setApplied(commitPropertyFilterDraft(next));
         return next;
       });

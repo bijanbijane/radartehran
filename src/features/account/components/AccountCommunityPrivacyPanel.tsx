@@ -73,7 +73,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Lock className="w-4 h-4 text-[#176B63]" />
+              <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>تنظیمات حریم خصوصی و فعالیت‌های جامعه من</span>
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
@@ -83,7 +83,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
           <button
             type="button"
             onClick={() => onNavigateView?.('userspace', 'overview')}
-            className="px-3.5 py-2 rounded-lg bg-[#176B63] text-white font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-lg bg-[var(--color-brand-600)] text-white font-bold inline-flex items-center gap-1.5 cursor-pointer"
           >
             <LogIn className="w-3.5 h-3.5" /><span>ورود به حساب</span>
           </button>
@@ -154,14 +154,14 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Lock className="w-4 h-4 text-[#176B63]" />
+              <Lock className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>تنظیمات حریم خصوصی و فعالیت‌های جامعه من</span>
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
               اطلاعات تماس، ایمیل و پیش‌نویس‌های شما هرگز در نمایه عمومی جامعه نمایش داده نمی‌شوند.
             </p>
           </div>
-          <button type="button" onClick={() => onNavigateView?.('contributions', 'overview')} className="px-3 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => onNavigateView?.('contributions', 'overview')} className="px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             ورود به جامعه کاربران
           </button>
         </div>
@@ -179,7 +179,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
               onClick={() => handleVisibilityChange(opt.id)}
               className={`p-2.5 rounded-xl border text-start font-bold cursor-pointer transition ${
                 visibility === opt.id
-                  ? 'border-[#176B63] bg-[#EAF3F0]/60 dark:bg-emerald-950/40 text-[#14534E] dark:text-emerald-200'
+                  ? 'border-[var(--color-brand-600)] bg-[#EAF3F0]/60 dark:bg-emerald-950/40 text-[var(--color-brand-700)] dark:text-emerald-200'
                   : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
               }`}
             >
@@ -200,7 +200,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
                 checked={profile ? profile[t.key] : true}
                 disabled={loading || !profile}
                 onChange={() => handleToggleDisplay(t.key)}
-                className="accent-[#176B63]"
+                className="accent-[var(--color-brand-600)]"
               />
               <span>{t.label}</span>
             </label>
@@ -224,7 +224,7 @@ export const AccountCommunityPrivacyPanel: React.FC<Props> = ({ currentUser, onN
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <section className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
           <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#176B63]" />
+            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>وضعیت اعتبار ۵ محوری و مشارکت‌های ثبت‌شده ({toPersianNum(myContributions.length)})</span>
           </h3>
           {profile && (

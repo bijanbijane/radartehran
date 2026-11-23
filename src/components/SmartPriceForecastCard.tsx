@@ -72,7 +72,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
-            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>پیش‌بینی هوشمند ۳ ماهه ({effectiveName})</span>
           </div>
           <span data-testid="forecast-epistemic-badge" className="text-[9.5px] font-semibold text-slate-500 dark:text-slate-400">
@@ -158,7 +158,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
             className="w-full flex items-center justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white py-1 cursor-pointer transition"
           >
             <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
               <span>شفافیت کمیسیون اتحادیه، سهم عرصه و تبدیل رهن ({formatAreaShort(80, areaUnit)})</span>
             </span>
             {showAuditBreakdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -185,7 +185,7 @@ export function SmartPriceForecastCard({ selectedHood, hoodName, currentBuyPerSq
         <div className="space-y-1 pt-0.5">
           {forecast.drivers.map((driver, idx) => (
             <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-              <span className="text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">•</span>
+              <span className="text-[var(--color-brand-600)] dark:text-emerald-400 mt-0.5 shrink-0">•</span>
               <span>{driver}</span>
             </div>
           ))}
@@ -257,7 +257,7 @@ export function InspectorSponsorFooter({
                 )} target="_blank"
                 rel="noopener noreferrer"
                 title="ارسال پیام آماده در واتساپ"
-                className="px-2.5 py-2 rounded-[10px] bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1 whitespace-nowrap shrink-0"
+                className="px-2.5 py-2 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1 whitespace-nowrap shrink-0"
               >
                 <SendIcon className="w-3.5 h-3.5 stroke-[1.75]" />
                 <span>واتساپ</span>

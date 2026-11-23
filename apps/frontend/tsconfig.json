@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"]
+  },
+  "include": [
+    "../../index.html",
+    "../../src/**/*.ts",
+    "../../src/**/*.tsx",
+    "../../vite.config.ts"
+  ],
+  "exclude": [
+    "../../server/**",
+    "../../apps/api/**",
+    "../../worker/**",
+    "../../tests/**"
+  ]
+}

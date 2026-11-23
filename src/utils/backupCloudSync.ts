@@ -4,8 +4,7 @@
  * plus clean override sponsor sanitization matching `firestore.rules:isValidOverrideSponsor`.
  */
 
-import { doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
-import { db } from '../firebase';
+import { CLIENT_FIRESTORE_FORBIDDEN } from '../platform/data/clientDataPolicy';
 import type { Neighborhood, NeighborhoodSponsor } from '../data/neighborhoods';
 import type { FeatureFlags } from './security';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from './areaUnit';
@@ -46,44 +45,8 @@ export async function persistRestoredStateToFirestore(params: {
   seedNeighborhoods: Neighborhood[];
   featureFlags?: FeatureFlags;
 }): Promise<{ syncedOverridesCount: number; syncedFlags: boolean }> {
-  let syncedFlags = false;
-  if (params.featureFlags) {
-    await setDoc(doc(db, 'appConfig', 'featureFlags'), {
-      ...params.featureFlags,
-      updatedAt: serverTimestamp(),
-    });
-    syncedFlags = true;
+  if (CLIENT_FIRESTORE_FORBIDDEN) {
+    return { syncedOverridesCount: 0, syncedFlags: false };
   }
-
-  const seedById = new Map(params.seedNeighborhoods.map((h) => [h.id, h]));
-  const changedHoods = params.restoredNeighborhoods.filter((h) => {
-    const seed = seedById.get(h.id);
-    if (!seed) return true;
-    const baseBuy = (h as Neighborhood & { baseBuyPerSqm?: number }).baseBuyPerSqm ?? h.buyPerSqm;
-    return baseBuy !== seed.buyPerSqm || h.rahn80m !== seed.rahn80m || Boolean(h.sponsor) !== Boolean(seed.sponsor) || h.sponsor?.expiresAtIso !== seed.sponsor?.expiresAtIso;
-  });
-
-  let syncedOverridesCount = 0;
-  for (let i = 0; i < changedHoods.length; i += 350) {
-    const chunk = changedHoods.slice(i, i + 350);
-    const batch = writeBatch(db);
-    for (const hood of chunk) {
-      const buyVal = Math.min(5000, Math.max(10, Math.round((hood as Neighborhood & { baseBuyPerSqm?: number }).baseBuyPerSqm ?? hood.buyPerSqm)));
-      const rahnVal = Math.min(100000, Math.max(50, Math.round(hood.rahn80m)));
-      const cleanSponsor = sanitizeSponsorForOverrideDoc(hood.sponsor);
-      batch.set(doc(db, 'neighborhoodOverrides', String(hood.id)), {
-        hoodId: hood.id,
-        buyPerSqm: buyVal,
-        rahn80m: rahnVal,
-        ...(cleanSponsor ? { sponsor: cleanSponsor } : {}),
-        overrideSource: 'ADMIN_MANUAL',
-        manualLockUntilMs: Date.now() + 7 * 24 * 60 * 60 * 1000,
-        updatedAt: serverTimestamp(),
-      });
-      syncedOverridesCount += 1;
-    }
-    if (chunk.length > 0) await batch.commit();
-  }
-
-  return { syncedOverridesCount, syncedFlags };
+  return { syncedOverridesCount: 0, syncedFlags: false };
 }

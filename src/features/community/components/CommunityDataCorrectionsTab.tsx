@@ -125,71 +125,71 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
   return (
     <div className="space-y-4 text-xs" data-testid="community-data-corrections-tab">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <button type="button" onClick={onOpenAgencySubmit} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63] text-start space-y-1 cursor-pointer transition">
-          <div className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-[#176B63]" /><span>ثبت فایل زیر قیمت یا مشاهده معامله</span>
+        <button type="button" onClick={onOpenAgencySubmit} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1 cursor-pointer transition">
+          <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-[var(--color-brand-600)]" /><span>ثبت فایل زیر قیمت یا مشاهده معامله</span>
           </div>
-          <p className="text-[#586760] dark:text-slate-400 text-[11px]">ارسال مشاهده قیمتی واقعی برای محله {selectedHood.name}</p>
+          <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-[11px]">ارسال مشاهده قیمتی واقعی برای محله {selectedHood.name}</p>
         </button>
-        <button type="button" onClick={onOpenListingVerifier} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63] text-start space-y-1 cursor-pointer transition">
-          <div className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
+        <button type="button" onClick={onOpenListingVerifier} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)] text-start space-y-1 cursor-pointer transition">
+          <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-amber-600" /><span>راستی‌آزمایی و مچ‌گیر آگهی ساختگی</span>
           </div>
-          <p className="text-[#586760] dark:text-slate-400 text-[11px]">بررسی نابهنجاری قیمت در آگهی‌های پرت محله</p>
+          <p className="text-[var(--color-text-muted)] dark:text-slate-400 text-[11px]">بررسی نابهنجاری قیمت در آگهی‌های پرت محله</p>
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-3">
+      <form onSubmit={handleSubmit} className="p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-base font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <MapPinPlus className="w-4 h-4 text-[#176B63]" />
+          <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <MapPinPlus className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>گزارش خطا و پیشنهاد اصلاح داده‌های مکانی یا شهری</span>
           </h2>
           <CommunityAuthorBadges profile={currentUserProfile} onSelectUsername={onSelectAuthor} />
         </div>
 
-        <p className="text-[11px] text-[#586760] dark:text-slate-400">
+        <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
           مسیر چرخه داده: ثبت‌شده ← اعتبارسنجی اولیه ← بررسی تخصصی ← تأیید ← اعمال در نسخه داده مرجع. پیش‌نویس فرم به‌صورت خودکار در مرورگر ذخیره می‌شود.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
-            <label htmlFor="corr-hood-select" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">محله هدف</label>
-            <select id="corr-hood-select" value={hoodId} onChange={(e) => { setHoodId(Number(e.target.value)); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
+            <label htmlFor="corr-hood-select" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">محله هدف</label>
+            <select id="corr-hood-select" value={hoodId} onChange={(e) => { setHoodId(Number(e.target.value)); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
               {visibleHoodOptions.map((h) => (<option key={h.id} value={h.id}>{h.name} ({h.zone})</option>))}
             </select>
           </div>
           <div>
-            <label htmlFor="corr-cat-select" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">دسته خطای داده</label>
-            <select id="corr-cat-select" value={category} onChange={(e) => { setCategory(e.target.value as DataCorrectionCategory); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
+            <label htmlFor="corr-cat-select" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">دسته خطای داده</label>
+            <select id="corr-cat-select" value={category} onChange={(e) => { setCategory(e.target.value as DataCorrectionCategory); if (feedback) setFeedback(null); }} className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
               {(Object.keys(DATA_CORRECTION_CATEGORY_LABELS_FA) as DataCorrectionCategory[]).map((k) => (<option key={k} value={k}>{DATA_CORRECTION_CATEGORY_LABELS_FA[k]}</option>))}
             </select>
           </div>
           <div>
-            <label htmlFor="corr-date-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">تاریخ مشاهده میدانی</label>
-            <input id="corr-date-input" type="text" value={observedDateFa} onChange={(e) => { setObservedDateFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۱۴۰۵/۰۱/۲۰" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+            <label htmlFor="corr-date-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">تاریخ مشاهده میدانی</label>
+            <input id="corr-date-input" type="text" value={observedDateFa} onChange={(e) => { setObservedDateFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۱۴۰۵/۰۱/۲۰" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
           </div>
         </div>
 
         <div>
-          <label htmlFor="corr-title-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">عنوان خطا یا اصلاح</label>
-          <input id="corr-title-input" type="text" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً تغییر دسترسی خروجی مترو یا اصلاح مرز غربی محله" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+          <label htmlFor="corr-title-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">عنوان خطا یا اصلاح</label>
+          <input id="corr-title-input" type="text" value={titleFa} onChange={(e) => { setTitleFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً تغییر دسترسی خروجی مترو یا اصلاح مرز غربی محله" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
-            <label htmlFor="corr-curr-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">مقدار یا وضعیت فعلی در سامانه</label>
-            <input id="corr-curr-input" type="text" value={currentValueFa} onChange={(e) => { setCurrentValueFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً فاصله پیاده درج‌شده ۱۲ دقیقه" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+            <label htmlFor="corr-curr-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">مقدار یا وضعیت فعلی در سامانه</label>
+            <input id="corr-curr-input" type="text" value={currentValueFa} onChange={(e) => { setCurrentValueFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً فاصله پیاده درج‌شده ۱۲ دقیقه" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
           </div>
           <div>
-            <label htmlFor="corr-val-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">مقدار پیشنهادی مستند</label>
-            <input id="corr-val-input" type="text" value={suggestedFa} onChange={(e) => { setSuggestedFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۶ دقیقه پس از بازگشایی گذر شرقی" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+            <label htmlFor="corr-val-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">مقدار پیشنهادی مستند</label>
+            <input id="corr-val-input" type="text" value={suggestedFa} onChange={(e) => { setSuggestedFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="مثلاً ۶ دقیقه پس از بازگشایی گذر شرقی" className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
           </div>
         </div>
 
         <div>
-          <label htmlFor="corr-evidence-input" className="block text-[11px] font-bold text-[#34433E] dark:text-slate-300 mb-1">شواهد میدانی و توضیح دقیق (بدون شماره تماس یا لینک)</label>
-          <textarea id="corr-evidence-input" rows={2} value={evidenceFa} onChange={(e) => { setEvidenceFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="جزئیات مشاهده میدانی، نشانی تقاطع عمومی و دلیل مغایرت..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+          <label htmlFor="corr-evidence-input" className="block text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 mb-1">شواهد میدانی و توضیح دقیق (بدون شماره تماس یا لینک)</label>
+          <textarea id="corr-evidence-input" rows={2} value={evidenceFa} onChange={(e) => { setEvidenceFa(e.target.value); if (feedback) setFeedback(null); }} placeholder="جزئیات مشاهده میدانی، نشانی تقاطع عمومی و دلیل مغایرت..." className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
         </div>
 
         {feedback && (
@@ -198,7 +198,7 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
           </div>
         )}
 
-        <button type="submit" disabled={submitting} data-testid="submit-data-correction-btn" className="px-4 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white font-bold cursor-pointer disabled:opacity-50">
+        <button type="submit" disabled={submitting} data-testid="submit-data-correction-btn" className="px-4 py-2 rounded-[9px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer disabled:opacity-50">
           {submitting ? 'در حال ارسال...' : 'ارسال به صف راستی‌آزمایی داده'}
         </button>
       </form>
@@ -208,9 +208,9 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
           const st = STATUS_META[item.status] || STATUS_META.submitted;
           const canWithdraw = item.ownerUserId === currentUserProfile.userId && !['applied', 'approved', 'verified', 'withdrawn', 'rejected'].includes(item.status);
           return (
-            <article key={item.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2">
+            <article key={item.id} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                <span className="text-[#586760] dark:text-slate-400 font-bold">
+                <span className="text-[var(--color-text-muted)] dark:text-slate-400 font-bold">
                   محله {item.neighborhoodNameFa} · {DATA_CORRECTION_CATEGORY_LABELS_FA[item.category]} · مشاهده: {item.observedDateFa || item.createdAtFa}
                 </span>
                 <span className={`font-bold inline-flex items-center gap-1 ${st.cls}`}>
@@ -218,11 +218,11 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
                   <span>{st.label}</span>
                 </span>
               </div>
-              <h3 className="font-black text-sm text-[#182522] dark:text-white">{item.titleFa}</h3>
-              <p className="text-[#34433E] dark:text-slate-300 leading-relaxed">{item.evidenceSummaryFa}</p>
+              <h3 className="font-black text-sm text-[var(--color-text-primary)] dark:text-white">{item.titleFa}</h3>
+              <p className="text-[var(--color-text-secondary)] dark:text-slate-300 leading-relaxed">{item.evidenceSummaryFa}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-[11px]">
-                <div><span className="text-[#586760]">مقدار فعلی:</span> <strong className="text-[#182522] dark:text-slate-200">{item.currentValueFa || 'داده موجود سامانه'}</strong></div>
-                <div><span className="text-[#176B63] dark:text-emerald-400">مقدار پیشنهادی:</span> <strong className="text-[#14534E] dark:text-emerald-300">{item.suggestedValueFa}</strong></div>
+                <div><span className="text-[var(--color-text-muted)]">مقدار فعلی:</span> <strong className="text-[var(--color-text-primary)] dark:text-slate-200">{item.currentValueFa || 'داده موجود سامانه'}</strong></div>
+                <div><span className="text-[var(--color-brand-600)] dark:text-emerald-400">مقدار پیشنهادی:</span> <strong className="text-[var(--color-brand-700)] dark:text-emerald-300">{item.suggestedValueFa}</strong></div>
               </div>
               {item.appliedDataVersionId && (
                 <div className="text-[11px] font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
@@ -230,7 +230,7 @@ export const CommunityDataCorrectionsTab: React.FC<Props> = ({
                 </div>
               )}
               {item.moderatorNoteFa && (
-                <div className="text-[11px] text-[#586760] dark:text-slate-400 border-t border-[#DCE3DF] dark:border-slate-800 pt-1.5">
+                <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400 border-t border-[var(--color-border-subtle)] dark:border-slate-800 pt-1.5">
                   یادداشت ممیز: {item.moderatorNoteFa}
                 </div>
               )}

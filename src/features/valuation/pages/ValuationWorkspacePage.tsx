@@ -179,13 +179,13 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
 
   return (
     <section className="space-y-4 animate-fadeIn" data-testid="valuation-workspace-page">
-      <div className="p-4 sm:p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 sm:p-5 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <span className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400">
+          <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
             ارزش‌گذاری ساختاریافته و شفاف (موتور هدونیک مرجع · شهر {cityNameFa})
           </span>
-          <h2 className="text-lg sm:text-xl font-black text-[#182522] dark:text-white flex items-center gap-2 mt-0.5">
-            <Calculator className="w-5 h-5 text-[#176B63]" />
+          <h2 className="text-lg sm:text-xl font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-2 mt-0.5">
+            <Calculator className="w-5 h-5 text-[var(--color-brand-600)]" />
             <span>میز کار ارزش‌گذاری ملک در {activeHood.name}</span>
           </h2>
         </div>
@@ -193,7 +193,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
           <button
             type="button"
             onClick={() => setInput(createDefaultValuationInput(selectedHood.id, {}, resolvedCity))}
-            className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#48534F] dark:text-slate-300 flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[#48534F] dark:text-slate-300 flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>ملک جدید</span>
@@ -202,7 +202,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
             <button
               type="button"
               onClick={onOpenModalCalculator}
-              className="px-3 py-1.5 rounded-[8px] bg-[#182522] text-white font-bold cursor-pointer"
+              className="px-3 py-1.5 rounded-[8px] bg-[var(--color-text-primary)] text-white font-bold cursor-pointer"
             >
               باز کردن خروجی چاپی / PNG
             </button>
@@ -211,7 +211,7 @@ export const ValuationWorkspacePage: React.FC<ValuationWorkspacePageProps> = ({
       </div>
 
       {statusNoticeFa && (
-        <div className="p-3 rounded-[10px] bg-[#EAF3F0] dark:bg-emerald-950/40 border border-[#B8D7CE] text-xs font-bold text-[#14534E] dark:text-emerald-200">
+        <div className="p-3 rounded-[10px] bg-[#EAF3F0] dark:bg-emerald-950/40 border border-[#B8D7CE] text-xs font-bold text-[var(--color-brand-700)] dark:text-emerald-200">
           {statusNoticeFa}
         </div>
       )}

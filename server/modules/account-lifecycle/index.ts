@@ -16,6 +16,22 @@ export * from './durableJobStore.ts';
 export * from './exportService.ts';
 export * from './deletionOrchestrator.ts';
 export * from './moduleAdapters.ts';
+export * from './stateMachine.ts';
+export * from './storeContract.ts';
+export * from './telemetryErasureContract.ts';
+export * from './privacyConsentContract.ts';
+export * from './officialApiContract.ts';
+export * from './canonicalDeletionService.ts';
+export * from './expressServerDeletionBridge.ts';
+export * from './clientStorageKeys.ts';
+export * from './storeFactory.ts';
+export * from './batchReceiptRecorder.ts';
+export * from './deletionWorkflowSupport.ts';
+export * from './deletionOrchestratorPhases.ts';
+export * from './deletionOrchestratorRunners.ts';
+export * from './batchPersistenceContract.ts';
+export * from './deletionDomainBatchExecutor.ts';
+export * from './domainAdapterCoverageMatrix.ts';
 
 import {
   AuthIdentityDeletionAdapter,
@@ -29,6 +45,9 @@ import {
 import { AccountDataExportService } from './exportService.ts';
 import { AccountDeletionOrchestrator } from './deletionOrchestrator.ts';
 import { ConfigurableAuthIdentityDeletionAdapter } from './moduleAdapters.ts';
+import type { AccountDeletionBatchReceiptRecorder } from './batchReceiptRecorder.ts';
+import type { AccountTelemetryErasureAdapter } from './telemetryErasureContract.ts';
+import type { LegacyFirestoreSupplementRunner } from './deletionOrchestratorPhases.ts';
 
 export interface CreateAccountLifecycleFacadeOptions {
   durableJournalPath?: string;
@@ -37,6 +56,9 @@ export interface CreateAccountLifecycleFacadeOptions {
   domainAdapters: Iterable<UserOwnedDomainRepositoryAdapter>;
   mediaAdapter: MediaDeletionCoordinationAdapter;
   authAdapter?: AuthIdentityDeletionAdapter;
+  batchReceiptRecorder?: AccountDeletionBatchReceiptRecorder;
+  telemetryErasureAdapter?: AccountTelemetryErasureAdapter;
+  legacyFirestoreSupplement?: LegacyFirestoreSupplementRunner;
 }
 
 export interface AccountLifecycleFacade {
@@ -66,6 +88,9 @@ export function createAccountLifecycleFacade(
     domainAdapters: adapterList,
     mediaAdapter: options.mediaAdapter,
     authAdapter,
+    batchReceiptRecorder: options.batchReceiptRecorder,
+    telemetryErasureAdapter: options.telemetryErasureAdapter,
+    legacyFirestoreSupplement: options.legacyFirestoreSupplement,
   });
 
   return {

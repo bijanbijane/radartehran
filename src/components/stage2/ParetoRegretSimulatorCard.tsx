@@ -112,7 +112,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
 
       {/* Minimax Winner Callout */}
       <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 flex items-start gap-2.5">
-        <Trophy className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <Trophy className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0 mt-0.5" />
         <p className="text-xs text-emerald-950 dark:text-emerald-200 leading-relaxed font-medium">
           {analysis.minimaxSummaryFa}
         </p>
@@ -170,7 +170,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100">{st.titleFa}</span>
                       {st.isMinimaxOptimal && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-600)] text-white">
                           <CheckCircle2 className="w-3 h-3" />
                           <span>بهینه ساواج (Minimax)</span>
                         </span>
@@ -193,7 +193,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
                     </div>
                     <div className="text-left border-r border-slate-200 dark:border-slate-700 pr-3">
                       <div className="text-[10px] text-slate-400">امتیاز هورwicz / پشیمانی</div>
-                      <div className={`font-black ${st.maxRegretMillion === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <div className={`font-black ${st.maxRegretMillion === 0 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {toPersianNum(st.hurwiczScoreMillion)} م‌ت / {st.maxRegretMillion === 0 ? '۰ پشیمانی' : `-${toPersianNum(st.maxRegretMillion)} م‌ت`}
                       </div>
                     </div>
@@ -209,7 +209,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
       <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-            <ArrowLeftRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <ArrowLeftRight className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>جایگزین‌های بهینه پارتو (محلات هم‌کیفیت بدون گلوگاه بحرانی با قیمت پایین‌تر)</span>
           </div>
           <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
@@ -219,7 +219,7 @@ export const ParetoRegretSimulatorCard: React.FC<ParetoRegretSimulatorCardProps>
 
         {analysis.paretoAlternatives.length === 0 ? (
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-emerald-600 shrink-0" />
+            <ShieldAlert className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
             <span>محله {hoodName} هم‌اکنون روی مرز کارایی پارتو (Pareto Frontier) در بازه قیمتی خود قرار دارد و محله ارزان‌تر با مطلوبیت بالاتر یافت نشد.</span>
           </div>
         ) : (

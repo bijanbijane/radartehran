@@ -16,7 +16,6 @@
  *  8. Never marks a step or job complete unless its durable operation succeeded.
  */
 
-import crypto from 'node:crypto';
 import {
   AccountLifecycleActorContext,
   AccountLifecycleError,
@@ -26,13 +25,33 @@ import {
   MediaDeletionCoordinationAdapter,
   RETENTION_POLICY_SOURCES,
   UserOwnedDomainRepositoryAdapter,
-  UserOwnedDomainSource,
 } from './types.ts';
-import {
-  createInitialDomainSteps,
-  DurableAccountLifecycleStore,
-} from './durableJobStore.ts';
+import { createInitialDomainSteps } from './deletionJobBootstrap.ts';
+import type { DurableAccountLifecycleStore } from './storeContract.ts';
 import { assertAuthorizedForTargetAccount } from './exportService.ts';
+import { isTerminalAccountDeletionState } from './stateMachine.ts';
+import type { AccountDeletionBatchReceiptRecorder } from './batchReceiptRecorder.ts';
+import { NoOpAccountDeletionBatchReceiptRecorder } from './batchReceiptRecorder.ts';
+import type { AccountTelemetryErasureAdapter } from './telemetryErasureContract.ts';
+import {
+  createJobIdSuffix,
+  ensureDeletionWriteBlock,
+  initialLegacySupplementJournal,
+  initialTelemetryErasureJournal,
+  prepareDeletionJobForResume,
+} from './deletionWorkflowSupport.ts';
+import {
+  type LegacyFirestoreSupplementRunner,
+  recordTerminalExecutionReceipt,
+  runLegacyFirestoreSupplementPhase,
+  runTelemetryErasurePhase,
+} from './deletionOrchestratorPhases.ts';
+import {
+  assertAllDependentStepsCompletedBeforeAuth,
+  runAuthIdentityDeletion,
+  runDomainSourceBatches,
+  runMediaCleanupBatches,
+} from './deletionOrchestratorRunners.ts';
 
 export const DEFAULT_DELETION_BATCH_SIZE = 10;
 export const MAX_DELETION_BATCH_SIZE = 50;
@@ -48,18 +67,26 @@ export interface ExecuteDeletionStepOptions {
   maxBatchesPerInvocation?: number;
 }
 
+export interface AccountDeletionOrchestratorOptions {
+  store: DurableAccountLifecycleStore;
+  domainAdapters: Iterable<UserOwnedDomainRepositoryAdapter>;
+  mediaAdapter: MediaDeletionCoordinationAdapter;
+  authAdapter: AuthIdentityDeletionAdapter;
+  batchReceiptRecorder?: AccountDeletionBatchReceiptRecorder;
+  telemetryErasureAdapter?: AccountTelemetryErasureAdapter;
+  legacyFirestoreSupplement?: LegacyFirestoreSupplementRunner;
+}
+
 export class AccountDeletionOrchestrator {
   private readonly store: DurableAccountLifecycleStore;
   private readonly domainAdapters: Map<UserOwnedDomainSource, UserOwnedDomainRepositoryAdapter>;
   private readonly mediaAdapter: MediaDeletionCoordinationAdapter;
   private readonly authAdapter: AuthIdentityDeletionAdapter;
+  private readonly batchReceiptRecorder: AccountDeletionBatchReceiptRecorder;
+  private readonly telemetryErasureAdapter?: AccountTelemetryErasureAdapter;
+  private readonly legacyFirestoreSupplement?: LegacyFirestoreSupplementRunner;
 
-  constructor(params: {
-    store: DurableAccountLifecycleStore;
-    domainAdapters: Iterable<UserOwnedDomainRepositoryAdapter>;
-    mediaAdapter: MediaDeletionCoordinationAdapter;
-    authAdapter: AuthIdentityDeletionAdapter;
-  }) {
+  constructor(params: AccountDeletionOrchestratorOptions) {
     this.store = params.store;
     this.domainAdapters = new Map();
     for (const adapter of params.domainAdapters) {
@@ -67,6 +94,10 @@ export class AccountDeletionOrchestrator {
     }
     this.mediaAdapter = params.mediaAdapter;
     this.authAdapter = params.authAdapter;
+    this.batchReceiptRecorder =
+      params.batchReceiptRecorder ?? new NoOpAccountDeletionBatchReceiptRecorder();
+    this.telemetryErasureAdapter = params.telemetryErasureAdapter;
+    this.legacyFirestoreSupplement = params.legacyFirestoreSupplement;
   }
 
   public async assertUserWritePermitted(targetUid: string): Promise<void> {
@@ -111,7 +142,7 @@ export class AccountDeletionOrchestrator {
 
     const nowIso = new Date().toISOString();
     const newJob: DurableAccountDeletionJob = {
-      jobId: `deljob_${request.targetUid}_${crypto.randomUUID().slice(0, 8)}`,
+      jobId: `deljob_${request.targetUid}_${createJobIdSuffix()}`,
       targetUid: request.targetUid,
       targetEmail: request.targetEmail,
       requestedByUid: actor.uid,
@@ -139,9 +170,23 @@ export class AccountDeletionOrchestrator {
       completedAtIso: null,
       lastFailureReason: null,
       revision: 1,
+      legacyFirestoreSupplement: this.legacyFirestoreSupplement
+        ? initialLegacySupplementJournal(nowIso)
+        : undefined,
+      telemetryErasureStep: this.telemetryErasureAdapter
+        ? initialTelemetryErasureJournal(nowIso)
+        : undefined,
     };
 
     return this.store.createOrGetActiveJob(newJob);
+  }
+
+  public async resumeDeletionJob(
+    actor: AccountLifecycleActorContext,
+    jobId: string,
+    options?: ExecuteDeletionStepOptions,
+  ): Promise<DurableAccountDeletionJob> {
+    return this.executeDeletionJob(actor, jobId, options);
   }
 
   public async executeDeletionJob(
@@ -152,6 +197,15 @@ export class AccountDeletionOrchestrator {
     let job = await this.getDeletionJobStatus(actor, jobId);
     if (job.state === 'COMPLETED') {
       return job;
+    }
+
+    const prepared = prepareDeletionJobForResume(job);
+    if (
+      prepared.state !== job.state ||
+      prepared.lastFailureReason !== job.lastFailureReason ||
+      JSON.stringify(prepared.domainSteps) !== JSON.stringify(job.domainSteps)
+    ) {
+      job = await this.store.saveJobProgress(job.jobId, job.revision, () => prepared);
     }
 
     const batchSize = options?.batchSize ?? DEFAULT_DELETION_BATCH_SIZE;
@@ -166,15 +220,7 @@ export class AccountDeletionOrchestrator {
     const maxBatches = options?.maxBatchesPerInvocation ?? Number.MAX_SAFE_INTEGER;
     let batchesExecutedThisRun = 0;
 
-    await this.store.upsertWriteBlock({
-      targetUid: job.targetUid,
-      state: 'WRITE_BLOCKED_DELETION_IN_PROGRESS',
-      activeDeletionJobId: job.jobId,
-      blockedAtIso: job.createdAtIso,
-      updatedAtIso: new Date().toISOString(),
-      reason: `Executing deletion job ${job.jobId}`,
-      revision: 1,
-    });
+    await ensureDeletionWriteBlock(this.store, job);
 
     job = await this.store.saveJobProgress(job.jobId, job.revision, (curr) => ({
       ...curr,
@@ -183,49 +229,90 @@ export class AccountDeletionOrchestrator {
       updatedAtIso: new Date().toISOString(),
     }));
 
+    if (this.legacyFirestoreSupplement) {
+      job = await runLegacyFirestoreSupplementPhase({
+        store: this.store,
+        job,
+        runner: this.legacyFirestoreSupplement,
+      });
+      if (job.legacyFirestoreSupplement?.status === 'FAILED_RETRYABLE') {
+        await recordTerminalExecutionReceipt({ recorder: this.batchReceiptRecorder, job });
+        return job;
+      }
+    }
+
+    if (this.telemetryErasureAdapter && job.telemetryErasureStep?.status !== 'COMPLETED') {
+      job = await runTelemetryErasurePhase({
+        store: this.store,
+        job,
+        adapter: this.telemetryErasureAdapter,
+        batchSize,
+      });
+      if (job.telemetryErasureStep?.status === 'FAILED_RETRYABLE') {
+        await recordTerminalExecutionReceipt({ recorder: this.batchReceiptRecorder, job });
+        return job;
+      }
+      if (job.telemetryErasureStep?.status !== 'COMPLETED') {
+        await recordTerminalExecutionReceipt({ recorder: this.batchReceiptRecorder, job });
+        return job;
+      }
+    }
+
     // PHASE 1: Purge dependent domain records in bounded batches
     for (const source of DEPENDENT_PURGE_SOURCES) {
-      const result = await this.runDomainSourceBatches(
-        job,
+      const result = await runDomainSourceBatches({
+        store: this.store,
+        domainAdapters: this.domainAdapters,
+        batchReceiptRecorder: this.batchReceiptRecorder,
+        initialJob: job,
         source,
-        'PURGING_DEPENDENT_RECORDS',
+        phaseState: 'PURGING_DEPENDENT_RECORDS',
         batchSize,
-        maxBatches - batchesExecutedThisRun,
-      );
+        remainingBatchesAllowed: maxBatches - batchesExecutedThisRun,
+      });
       job = result.job;
       batchesExecutedThisRun += result.batchesRun;
       if (result.failed || batchesExecutedThisRun >= maxBatches) {
+        await recordTerminalExecutionReceipt({ recorder: this.batchReceiptRecorder, job });
         return job;
       }
     }
 
     // PHASE 2: Coordinate Media cleanup (Employee 6 interface)
     if (job.mediaStep.status !== 'COMPLETED') {
-      const mediaResult = await this.runMediaCleanupBatches(
+      const mediaResult = await runMediaCleanupBatches({
+        store: this.store,
+        mediaAdapter: this.mediaAdapter,
+        batchReceiptRecorder: this.batchReceiptRecorder,
         actor,
-        job,
+        initialJob: job,
         batchSize,
-        maxBatches - batchesExecutedThisRun,
-      );
+        remainingBatchesAllowed: maxBatches - batchesExecutedThisRun,
+      });
       job = mediaResult.job;
       batchesExecutedThisRun += mediaResult.batchesRun;
       if (mediaResult.failed || batchesExecutedThisRun >= maxBatches) {
+        await recordTerminalExecutionReceipt({ recorder: this.batchReceiptRecorder, job });
         return job;
       }
     }
 
     // PHASE 3: Apply retention/anonymization policies to compliance/crowd-claim sources
     for (const source of RETENTION_POLICY_SOURCES) {
-      const result = await this.runDomainSourceBatches(
-        job,
+      const result = await runDomainSourceBatches({
+        store: this.store,
+        domainAdapters: this.domainAdapters,
+        batchReceiptRecorder: this.batchReceiptRecorder,
+        initialJob: job,
         source,
-        'APPLYING_RETENTION_POLICIES',
+        phaseState: 'APPLYING_RETENTION_POLICIES',
         batchSize,
-        maxBatches - batchesExecutedThisRun,
-      );
+        remainingBatchesAllowed: maxBatches - batchesExecutedThisRun,
+      });
       job = result.job;
       batchesExecutedThisRun += result.batchesRun;
       if (result.failed || batchesExecutedThisRun >= maxBatches) {
+        await recordTerminalExecutionReceipt({ recorder: this.batchReceiptRecorder, job });
         return job;
       }
     }
@@ -246,247 +333,14 @@ export class AccountDeletionOrchestrator {
       }));
     }
 
-    this.assertAllDependentStepsCompletedBeforeAuth(job);
+    assertAllDependentStepsCompletedBeforeAuth(job);
 
     // PHASE 4: Delete Firebase Auth identity strictly after all dependent records & media succeeded
-    return this.runAuthIdentityDeletion(job);
+    const finalJob = await runAuthIdentityDeletion(this.store, this.authAdapter, job);
+    if (isTerminalAccountDeletionState(finalJob.state)) {
+      await recordTerminalExecutionReceipt({ recorder: this.batchReceiptRecorder, job: finalJob });
+    }
+    return finalJob;
   }
 
-  private async runDomainSourceBatches(
-    initialJob: DurableAccountDeletionJob,
-    source: UserOwnedDomainSource,
-    phaseState: 'PURGING_DEPENDENT_RECORDS' | 'APPLYING_RETENTION_POLICIES',
-    batchSize: number,
-    remainingBatchesAllowed: number,
-  ): Promise<{ job: DurableAccountDeletionJob; batchesRun: number; failed: boolean }> {
-    let job = initialJob;
-    let batchesRun = 0;
-
-    if (job.domainSteps[source].status === 'COMPLETED') {
-      return { job, batchesRun: 0, failed: false };
-    }
-
-    const adapter = this.domainAdapters.get(source);
-    if (!adapter) {
-      const reason = `Missing repository adapter for domain source "${source}".`;
-      job = await this.markDomainStepFailed(job, source, reason);
-      return { job, batchesRun, failed: true };
-    }
-
-    while (batchesRun < remainingBatchesAllowed && job.domainSteps[source].status !== 'COMPLETED') {
-      const step = job.domainSteps[source];
-      try {
-        const batchResult = await adapter.disposeOwnedRecordsBatch({
-          targetUid: job.targetUid,
-          cursor: step.resumableCursor,
-          batchSize,
-          jobId: job.jobId,
-        });
-        batchesRun += 1;
-
-        job = await this.store.saveJobProgress(job.jobId, job.revision, (curr) => {
-          const now = new Date().toISOString();
-          const prevStep = curr.domainSteps[source];
-          const deletedSet = new Set(prevStep.permanentlyDeletedIds);
-          const retainedMap = new Map(prevStep.retainedRecords.map((r) => [r.recordId, r]));
-
-          for (const receipt of batchResult.receipts) {
-            if (receipt.outcome === 'PERMANENTLY_DELETED') {
-              deletedSet.add(receipt.recordId);
-            } else {
-              retainedMap.set(receipt.recordId, {
-                recordId: receipt.recordId,
-                outcome: receipt.outcome,
-                retentionPolicyCode: receipt.retentionPolicyCode,
-                retentionReason: receipt.retentionReason ?? 'Retained under statutory audit policy',
-              });
-            }
-          }
-
-          return {
-            ...curr,
-            state: phaseState,
-            updatedAtIso: now,
-            domainSteps: {
-              ...curr.domainSteps,
-              [source]: {
-                ...prevStep,
-                status: !batchResult.hasMore ? 'COMPLETED' : 'IN_PROGRESS',
-                resumableCursor: batchResult.nextCursor,
-                batchesProcessed: prevStep.batchesProcessed + 1,
-                permanentlyDeletedIds: Array.from(deletedSet),
-                retainedRecords: Array.from(retainedMap.values()),
-                attempts: prevStep.attempts + 1,
-                lastError: undefined,
-                updatedAtIso: now,
-              },
-            },
-          };
-        });
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : String(err);
-        job = await this.markDomainStepFailed(job, source, reason);
-        return { job, batchesRun, failed: true };
-      }
-    }
-
-    return { job, batchesRun, failed: false };
-  }
-
-  private async markDomainStepFailed(
-    job: DurableAccountDeletionJob,
-    source: UserOwnedDomainSource,
-    reason: string,
-  ): Promise<DurableAccountDeletionJob> {
-    return this.store.saveJobProgress(job.jobId, job.revision, (curr) => {
-      const now = new Date().toISOString();
-      const prevStep = curr.domainSteps[source];
-      return {
-        ...curr,
-        state: 'PARTIAL_FAILURE_RETRYABLE',
-        lastFailureReason: `Domain "${source}" batch failed: ${reason}`,
-        updatedAtIso: now,
-        domainSteps: {
-          ...curr.domainSteps,
-          [source]: { ...prevStep, status: 'FAILED_RETRYABLE', attempts: prevStep.attempts + 1, lastError: reason, updatedAtIso: now },
-        },
-      };
-    });
-  }
-
-  private async runMediaCleanupBatches(
-    actor: AccountLifecycleActorContext,
-    initialJob: DurableAccountDeletionJob,
-    batchSize: number,
-    remainingBatchesAllowed: number,
-  ): Promise<{ job: DurableAccountDeletionJob; batchesRun: number; failed: boolean }> {
-    let job = initialJob;
-    let batchesRun = 0;
-
-    while (batchesRun < remainingBatchesAllowed && job.mediaStep.status !== 'COMPLETED') {
-      try {
-        const page = await this.mediaAdapter.listOwnedMediaPage({
-          targetUid: job.targetUid,
-          cursor: job.mediaStep.resumableCursor,
-          pageSize: batchSize,
-        });
-        batchesRun += 1;
-        const newlyDeleted: string[] = [];
-        const pendingRetry: string[] = [];
-        let lastFailureReason: string | undefined;
-
-        for (const item of page.mediaItems) {
-          if (item.ownerUid !== job.targetUid) {
-            throw new AccountLifecycleError(
-              'CROSS_USER_DATA_LEAK_DETECTED',
-              `Media cleanup refused cross-user object "${item.objectId}" owned by "${item.ownerUid}".`,
-              500,
-            );
-          }
-          const delRes = await this.mediaAdapter.deleteOwnedMediaObject({
-            actor,
-            targetUid: job.targetUid,
-            objectId: item.objectId,
-            jobId: job.jobId,
-          });
-          if (delRes.status === 'DELETED' || delRes.status === 'ALREADY_DELETED') {
-            newlyDeleted.push(item.objectId);
-          } else {
-            pendingRetry.push(item.objectId);
-            lastFailureReason = delRes.failureReason ?? `Media object "${item.objectId}" returned PENDING_RETRY.`;
-          }
-        }
-
-        const anyPendingRetry = pendingRetry.length > 0;
-        const isStepComplete = !anyPendingRetry && !page.hasMore;
-        job = await this.store.saveJobProgress(job.jobId, job.revision, (curr) => {
-          const now = new Date().toISOString();
-          const deletedSet = new Set([...curr.mediaStep.deletedObjectIds, ...newlyDeleted]);
-          return {
-            ...curr,
-            state: anyPendingRetry ? 'PARTIAL_FAILURE_RETRYABLE' : 'CLEANING_UP_MEDIA',
-            lastFailureReason: anyPendingRetry ? (lastFailureReason ?? 'Media cleanup incomplete; retry required.') : null,
-            updatedAtIso: now,
-            mediaStep: {
-              status: anyPendingRetry ? 'FAILED_RETRYABLE' : isStepComplete ? 'COMPLETED' : 'IN_PROGRESS',
-              resumableCursor: anyPendingRetry ? curr.mediaStep.resumableCursor : page.nextCursor,
-              deletedObjectIds: Array.from(deletedSet),
-              pendingRetryObjectIds: pendingRetry,
-              attempts: curr.mediaStep.attempts + 1,
-              lastError: lastFailureReason,
-              updatedAtIso: now,
-            },
-          };
-        });
-        if (anyPendingRetry) return { job, batchesRun, failed: true };
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : String(err);
-        job = await this.store.saveJobProgress(job.jobId, job.revision, (curr) => {
-          const now = new Date().toISOString();
-          return {
-            ...curr,
-            state: 'PARTIAL_FAILURE_RETRYABLE',
-            lastFailureReason: `Media cleanup failed: ${reason}`,
-            updatedAtIso: now,
-            mediaStep: { ...curr.mediaStep, status: 'FAILED_RETRYABLE', attempts: curr.mediaStep.attempts + 1, lastError: reason, updatedAtIso: now },
-          };
-        });
-        return { job, batchesRun, failed: true };
-      }
-    }
-    return { job, batchesRun, failed: false };
-  }
-
-  private assertAllDependentStepsCompletedBeforeAuth(job: DurableAccountDeletionJob): void {
-    for (const source of [...DEPENDENT_PURGE_SOURCES, ...RETENTION_POLICY_SOURCES]) {
-      if (job.domainSteps[source].status !== 'COMPLETED') {
-        throw new AccountLifecycleError(
-          'AUTH_DELETION_PRECONDITION_FAILED',
-          `Cannot delete Firebase Auth identity for "${job.targetUid}": dependent domain "${source}" is in status "${job.domainSteps[source].status}".`,
-          409,
-        );
-      }
-    }
-    if (job.mediaStep.status !== 'COMPLETED') {
-      throw new AccountLifecycleError(
-        'AUTH_DELETION_PRECONDITION_FAILED',
-        `Cannot delete Firebase Auth identity for "${job.targetUid}": media cleanup step is in status "${job.mediaStep.status}".`,
-        409,
-      );
-    }
-  }
-
-  private async runAuthIdentityDeletion(initialJob: DurableAccountDeletionJob): Promise<DurableAccountDeletionJob> {
-    const job = await this.store.saveJobProgress(initialJob.jobId, initialJob.revision, (curr) => ({
-      ...curr,
-      state: 'DELETING_AUTH_IDENTITY',
-      updatedAtIso: new Date().toISOString(),
-    }));
-    try {
-      const authRes = await this.authAdapter.deleteFirebaseAuthUser({ targetUid: job.targetUid, jobId: job.jobId });
-      return this.store.saveJobProgress(job.jobId, job.revision, (curr) => {
-        const now = new Date().toISOString();
-        return {
-          ...curr,
-          state: 'COMPLETED',
-          completedAtIso: now,
-          lastFailureReason: null,
-          updatedAtIso: now,
-          authStep: { status: 'COMPLETED', deletedAtIso: authRes.deletedAtIso || now, attempts: curr.authStep.attempts + 1, lastError: undefined, updatedAtIso: now },
-        };
-      });
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      return this.store.saveJobProgress(job.jobId, job.revision, (curr) => {
-        const now = new Date().toISOString();
-        return {
-          ...curr,
-          state: 'PARTIAL_FAILURE_RETRYABLE',
-          lastFailureReason: `Firebase Auth identity deletion failed: ${reason}`,
-          updatedAtIso: now,
-          authStep: { ...curr.authStep, status: 'FAILED_RETRYABLE', attempts: curr.authStep.attempts + 1, lastError: reason, updatedAtIso: now },
-        };
-      });
-    }
-  }
 }

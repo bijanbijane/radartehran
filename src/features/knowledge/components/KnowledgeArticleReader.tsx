@@ -231,9 +231,9 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
   };
 
   return (
-    <article data-testid="knowledge-article-reader" className="p-5 sm:p-6 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-5 text-xs animate-fadeIn">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
-        <button type="button" onClick={onBack} className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold flex items-center gap-1.5 cursor-pointer">
+    <article data-testid="knowledge-article-reader" className="p-5 sm:p-6 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-5 text-xs animate-fadeIn">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
+        <button type="button" onClick={onBack} className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1.5 cursor-pointer">
           <ArrowRight className="w-3.5 h-3.5" /><span>بازگشت به فهرست</span>
         </button>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -247,11 +247,11 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
                 bookmarkStatusUnknown
                   ? 'border-amber-300 bg-amber-50 text-amber-800'
                   : isSaved
-                    ? 'border-[#176B63] bg-[#EAF3F0] dark:bg-emerald-950/60 text-[#14534E] dark:text-emerald-300'
-                    : 'border-[#DCE3DF] dark:border-slate-700'
+                    ? 'border-[var(--color-brand-600)] bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300'
+                    : 'border-[var(--color-border-subtle)] dark:border-slate-700'
               }`}
             >
-              <Bookmark className={`w-3.5 h-3.5 ${isSaved && !bookmarkStatusUnknown ? 'fill-[#176B63]' : ''}`} />
+              <Bookmark className={`w-3.5 h-3.5 ${isSaved && !bookmarkStatusUnknown ? 'fill-[var(--color-brand-600)]' : ''}`} />
               <span>{bookmarkStatusUnknown ? 'وضعیت ذخیره نامشخص' : isSaved ? 'ذخیره‌شده در حساب' : 'ذخیره مطالعه'}</span>
             </button>
           )}
@@ -264,7 +264,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
               if (started) { setErrorFa(null); setNoticeFa('نسخه چاپی گزارش (HTML) آماده و فایل ذخیره شد.'); }
               else { setErrorFa('عملیات دانلود نسخه چاپی در مرورگر آغاز نشد.'); }
             }}
-            className="px-3 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5" /><span>خروجی چاپی</span>
           </button>
@@ -277,7 +277,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
               if (started) { setErrorFa(null); setNoticeFa('فایل ساختاریافته JSON ذخیره شد.'); }
               else { setErrorFa('عملیات دانلود فایل JSON آغاز نشد.'); }
             }}
-            className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" /><span>JSON</span>
           </button>
@@ -298,7 +298,7 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
 
       <header className="space-y-2.5">
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-          <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF3F0] dark:bg-emerald-950/60 text-[#14534E] dark:text-emerald-300 font-bold">{displayedPub.categoryLabelFa}</span>
+          <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold">{displayedPub.categoryLabelFa}</span>
           <span className={`px-2 py-0.5 rounded-[6px] border font-bold ${freshness.badgeClass}`}>{freshness.labelFa}</span>
           <span className="px-2 py-0.5 rounded-[6px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold" dir="ltr">
             {displayedPub.version} {viewingHistoricalVersion ? '(نسخه پیشین)' : '(نسخه فعلی)'}
@@ -307,25 +307,25 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
             {KNOWLEDGE_PUBLICATION_STATUS_LABELS_FA[pubStatus]}
           </span>
         </div>
-        <h2 className="text-[20px] sm:text-[22px] font-bold text-[#182522] dark:text-white leading-[1.5]">{displayedPub.titleFa}</h2>
-        <p className="editorial-prose text-[#34433E] dark:text-slate-300">{displayedPub.summaryFa}</p>
+        <h2 className="text-[20px] sm:text-[22px] font-bold text-[var(--color-text-primary)] dark:text-white leading-[1.5]">{displayedPub.titleFa}</h2>
+        <p className="editorial-prose text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.summaryFa}</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 text-[11px]">
-          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[#586760] block">محدوده و دوره:</span><strong className="text-[#182522] dark:text-white">{displayedPub.geographyScopeFa} · {displayedPub.periodLabelFa}</strong></div>
-          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[#586760] block">نویسنده پژوهش:</span><strong className="text-[#182522] dark:text-white flex items-center gap-1"><UserCheck className="w-3.5 h-3.5 text-[#176B63]" /> {displayedPub.author.nameFa}</strong></div>
-          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[#586760] block">بازبین فنی مستقل:</span><strong className="text-[#182522] dark:text-white flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-[#176B63]" /> {displayedPub.technicalReviewer.nameFa}</strong></div>
+          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">محدوده و دوره:</span><strong className="text-[var(--color-text-primary)] dark:text-white">{displayedPub.geographyScopeFa} · {displayedPub.periodLabelFa}</strong></div>
+          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">نویسنده پژوهش:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><UserCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.author.nameFa}</strong></div>
+          <div className="p-2.5 rounded-[9px] bg-[#F8F9FA] dark:bg-slate-800/70"><span className="text-[var(--color-text-muted)] block">بازبین فنی مستقل:</span><strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /> {displayedPub.technicalReviewer.nameFa}</strong></div>
         </div>
       </header>
 
-      <section id="tier-1-raw" data-testid="knowledge-tier-raw-data" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[#DCE3DF] dark:border-slate-700 space-y-1.5">
-        <h3 className="font-black text-[#182522] dark:text-white flex items-center gap-1.5"><Database className="w-4 h-4 text-[#176B63]" /><span>لایه ۱: داده خام و منابع پایه (Raw Data)</span></h3>
-        <p className="editorial-prose text-[#34433E] dark:text-slate-300">{displayedPub.rawDataSummaryFa}</p>
+      <section id="tier-1-raw" data-testid="knowledge-tier-raw-data" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1.5">
+        <h3 className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><Database className="w-4 h-4 text-[var(--color-brand-600)]" /><span>لایه ۱: داده خام و منابع پایه (Raw Data)</span></h3>
+        <p className="editorial-prose text-[var(--color-text-secondary)] dark:text-slate-300">{displayedPub.rawDataSummaryFa}</p>
       </section>
 
-      <section id="tier-2-ind" data-testid="knowledge-tier-indicators" className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#176B63]/40 space-y-2.5">
+      <section id="tier-2-ind" data-testid="knowledge-tier-indicators" className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-brand-600)]/40 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-black text-[#182522] dark:text-white flex items-center gap-1.5"><Calculator className="w-4 h-4 text-[#176B63]" /><span>لایه ۲: شاخص‌های محاسبه‌شده و سناریوهای آموزشی</span></h3>
-          <span className="text-[11px] px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[#14534E] dark:text-emerald-300 font-bold" dir="ltr">{displayedPub.formulaVersion}</span>
+          <h3 className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><Calculator className="w-4 h-4 text-[var(--color-brand-600)]" /><span>لایه ۲: شاخص‌های محاسبه‌شده و سناریوهای آموزشی</span></h3>
+          <span className="text-[11px] px-2 py-0.5 rounded bg-[#EAF3F0] dark:bg-emerald-950/60 text-[var(--color-brand-700)] dark:text-emerald-300 font-bold" dir="ltr">{displayedPub.formulaVersion}</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {displayedPub.calculatedIndicators.map((ind) => {
@@ -333,9 +333,9 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
             const isPending = ind.calculationStatus === 'pending';
             const isUnavailable = ind.calculationStatus === 'unavailable';
             return (
-              <div key={ind.id} className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 border border-[#DCE3DF] dark:border-slate-700 space-y-1.5">
+              <div key={ind.id} className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-1">
-                  <span className="font-bold text-[#182522] dark:text-white">{ind.labelFa}</span>
+                  <span className="font-bold text-[var(--color-text-primary)] dark:text-white">{ind.labelFa}</span>
                   {isIllustrative ? (
                     <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 text-[10px] font-bold">مثال آموزشی</span>
                   ) : isPending ? (
@@ -346,11 +346,11 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
                     <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-300 text-[10px] font-bold">محاسبه تأییدشده</span>
                   )}
                 </div>
-                <div className={`text-base font-black tabular-nums ${isIllustrative ? 'text-amber-800 dark:text-amber-300' : isPending || isUnavailable ? 'text-slate-500' : 'text-[#176B63] dark:text-emerald-400'}`}>
+                <div className={`text-base font-black tabular-nums ${isIllustrative ? 'text-amber-800 dark:text-amber-300' : isPending || isUnavailable ? 'text-slate-500' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`}>
                   {formatIndicatorExportValue(ind)}{' '}
-                  {!isPending && !isUnavailable && <span className="text-[11px] font-medium text-[#586760]">({ind.unitFa})</span>}
+                  {!isPending && !isUnavailable && <span className="text-[11px] font-medium text-[var(--color-text-muted)]">({ind.unitFa})</span>}
                 </div>
-                <div className="text-[10.5px] text-[#586760]">
+                <div className="text-[10.5px] text-[var(--color-text-muted)]">
                   دامنه: {ind.sampleScopeFa} · دوره: {ind.periodLabelFa}
                   {typeof ind.sampleSize === 'number' && ` · نمونه: ${toPersianNum(ind.sampleSize)} رکورد`}
                   {ind.datasetVersion && ` · نسخه دیتاست: ${ind.datasetVersion}`}
@@ -362,33 +362,33 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
         </div>
       </section>
 
-      <section id="tier-3-interp" data-testid="knowledge-tier-interpretation" className="p-4 rounded-[12px] bg-[#EAF3F0]/50 dark:bg-emerald-950/20 border border-[#DCE3DF] dark:border-emerald-900 space-y-2">
-        <h3 className="font-black text-[#14534E] dark:text-emerald-300 flex items-center gap-1.5"><Compass className="w-4 h-4" /><span>لایه ۳: تفسیر پژوهشی و محدودیت‌ها (تفکیک‌شده از آمار خام)</span></h3>
-        <p className="editorial-prose text-[#182522] dark:text-slate-200">{displayedPub.researchInterpretationFa}</p>
-        <div className="pt-1 border-t border-[#DCE3DF] dark:border-slate-800 text-[11px] text-[#586760] space-y-1">
-          <strong className="block text-[#182522] dark:text-slate-200">سابقه نسخه ({displayedPub.version}) و محدودیت‌ها:</strong>
+      <section id="tier-3-interp" data-testid="knowledge-tier-interpretation" className="p-4 rounded-[12px] bg-[#EAF3F0]/50 dark:bg-emerald-950/20 border border-[var(--color-border-subtle)] dark:border-emerald-900 space-y-2">
+        <h3 className="font-black text-[var(--color-brand-700)] dark:text-emerald-300 flex items-center gap-1.5"><Compass className="w-4 h-4" /><span>لایه ۳: تفسیر پژوهشی و محدودیت‌ها (تفکیک‌شده از آمار خام)</span></h3>
+        <p className="editorial-prose text-[var(--color-text-primary)] dark:text-slate-200">{displayedPub.researchInterpretationFa}</p>
+        <div className="pt-1 border-t border-[var(--color-border-subtle)] dark:border-slate-800 text-[11px] text-[var(--color-text-muted)] space-y-1">
+          <strong className="block text-[var(--color-text-primary)] dark:text-slate-200">سابقه نسخه ({displayedPub.version}) و محدودیت‌ها:</strong>
           <p>{displayedPub.changelogFa}</p>
           <ul className="list-disc pr-4 space-y-0.5">{displayedPub.limitationsFa.map((lim) => <li key={lim}>{lim}</li>)}</ul>
         </div>
       </section>
 
       {(publication.versionHistory?.length ?? 0) > 0 && (
-        <section id="tier-versions" data-testid="knowledge-version-history" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[#DCE3DF] dark:border-slate-700 space-y-2">
-          <strong className="text-[#182522] dark:text-white flex items-center gap-1.5"><History className="w-4 h-4 text-[#176B63]" /><span>تاریخچه نسخه‌های گزارش</span></strong>
+        <section id="tier-versions" data-testid="knowledge-version-history" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-2">
+          <strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5"><History className="w-4 h-4 text-[var(--color-brand-600)]" /><span>تاریخچه نسخه‌های گزارش</span></strong>
           <div className="space-y-1.5">
             {(publication.versionHistory ?? []).map((ver, idx) => {
               const isCurrentSelection = displayedPub.version === ver.version;
               const isLatestVersion = idx === 0 && ver.version === publication.version;
               return (
-                <div key={ver.versionId} className="p-2.5 rounded-[8px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <div key={ver.versionId} className="p-2.5 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-[11px]">
                   <div>
-                    <span className="font-bold text-[#182522] dark:text-white" dir="ltr">{ver.version}</span>
-                    <span className="mx-1.5 text-[#586760]">· {ver.publishedAtFa} ·</span>
-                    <span className="font-bold text-[#176B63]">{isLatestVersion ? 'نسخه فعلی' : 'نسخه آرشیوی قبلی'}</span>
-                    <p className="text-[#586760] mt-0.5">{ver.changelogFa}</p>
+                    <span className="font-bold text-[var(--color-text-primary)] dark:text-white" dir="ltr">{ver.version}</span>
+                    <span className="mx-1.5 text-[var(--color-text-muted)]">· {ver.publishedAtFa} ·</span>
+                    <span className="font-bold text-[var(--color-brand-600)]">{isLatestVersion ? 'نسخه فعلی' : 'نسخه آرشیوی قبلی'}</span>
+                    <p className="text-[var(--color-text-muted)] mt-0.5">{ver.changelogFa}</p>
                   </div>
                   {!isCurrentSelection && (
-                    <button type="button" onClick={() => handleSelectVersion(ver.versionId, isLatestVersion)} className="px-2.5 py-1 rounded border border-[#176B63] text-[#176B63] font-bold cursor-pointer">
+                    <button type="button" onClick={() => handleSelectVersion(ver.versionId, isLatestVersion)} className="px-2.5 py-1 rounded border border-[var(--color-brand-600)] text-[var(--color-brand-600)] font-bold cursor-pointer">
                       مشاهده این نسخه
                     </button>
                   )}
@@ -399,25 +399,25 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
         </section>
       )}
 
-      <section id="tier-4-sources" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[#DCE3DF] dark:border-slate-700 space-y-2.5">
+      <section id="tier-4-sources" className="p-4 rounded-[12px] bg-[#F8F9FA] dark:bg-slate-800/60 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="text-[#182522] dark:text-white">شناسنامه منابع مرتبط با این گزارش ({toPersianNum(effectiveSources.length)} منبع)</strong>
+          <strong className="text-[var(--color-text-primary)] dark:text-white">شناسنامه منابع مرتبط با این گزارش ({toPersianNum(effectiveSources.length)} منبع)</strong>
           <button type="button" data-testid="knowledge-toggle-correction-btn" onClick={() => setShowCorrForm((v) => !v)} className="text-[11px] font-bold text-[#875000] dark:text-amber-300 flex items-center gap-1 cursor-pointer">
             <Flag className="w-3.5 h-3.5" /><span>گزارش خطا / پیشنهاد اصلاحیه</span>
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {effectiveSources.map((src) => (
-            <div key={src.sourceId} className="p-3 rounded-[8px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 space-y-1 text-[11px]">
+            <div key={src.sourceId} className="p-3 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-1 text-[11px]">
               <div className="flex items-center justify-between gap-1">
-                <span className="font-bold text-[#182522] dark:text-white">{src.titleFa}</span>
+                <span className="font-bold text-[var(--color-text-primary)] dark:text-white">{src.titleFa}</span>
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${src.licenseStatus === 'approved' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
                   {KNOWLEDGE_SOURCE_LICENSE_LABELS_FA[src.licenseStatus]}
                 </span>
               </div>
-              <div className="text-[#586760]">شناسه: <code dir="ltr">{src.sourceId}</code> · {src.sourceTypeFa} · نسخه {src.version}</div>
-              {src.geographicCoverage && <div className="text-[#586760]">پوشش: {src.geographicCoverage} · دوره: {src.temporalCoverage}</div>}
-              <div className="text-[#586760]">{src.reliabilityNoteFa}</div>
+              <div className="text-[var(--color-text-muted)]">شناسه: <code dir="ltr">{src.sourceId}</code> · {src.sourceTypeFa} · نسخه {src.version}</div>
+              {src.geographicCoverage && <div className="text-[var(--color-text-muted)]">پوشش: {src.geographicCoverage} · دوره: {src.temporalCoverage}</div>}
+              <div className="text-[var(--color-text-muted)]">{src.reliabilityNoteFa}</div>
               {src.restrictionsFa && src.restrictionsFa.length > 0 && (
                 <div className="text-[10.5px] text-amber-800 dark:text-amber-300 font-medium">محدودیت مجوز: {src.restrictionsFa.join(' — ')}</div>
               )}
@@ -425,20 +425,20 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
           ))}
         </div>
         {showCorrForm && (
-          <div data-testid="knowledge-correction-form" className="p-3 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 space-y-2">
+          <div data-testid="knowledge-correction-form" className="p-3 rounded-[10px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 space-y-2">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <select aria-label="نوع خطا" value={corrType} onChange={(e) => setCorrType(e.target.value as KnowledgeCorrectionType)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700 font-bold">
+              <select aria-label="نوع خطا" value={corrType} onChange={(e) => setCorrType(e.target.value as KnowledgeCorrectionType)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold">
                 {(Object.keys(KNOWLEDGE_CORRECTION_TYPE_LABELS_FA) as KnowledgeCorrectionType[]).map((k) => (
                   <option key={k} value={k}>{KNOWLEDGE_CORRECTION_TYPE_LABELS_FA[k]}</option>
                 ))}
               </select>
-              <select aria-label="بخش گزارش" value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700">
+              <select aria-label="بخش گزارش" value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
                 <option value="tier-1-raw">لایه ۱: داده خام</option>
                 <option value="tier-2-ind">لایه ۲: شاخص‌های محاسبه‌شده</option>
                 <option value="tier-3-interp">لایه ۳: تفسیر پژوهشی</option>
                 <option value="tier-4-sources">لایه ۴: منابع و مجوزها</option>
               </select>
-              <select aria-label="شاخص مرتبط" value={targetIndicatorId} onChange={(e) => setTargetIndicatorId(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700">
+              <select aria-label="شاخص مرتبط" value={targetIndicatorId} onChange={(e) => setTargetIndicatorId(e.target.value)} className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700">
                 <option value="">همه شاخص‌ها / عمومی</option>
                 {displayedPub.calculatedIndicators.map((ind) => (
                   <option key={ind.id} value={ind.id}>{ind.labelFa}</option>
@@ -451,11 +451,11 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
               value={corrNote}
               onChange={(e) => setCorrNote(e.target.value)}
               placeholder="توضیح دقیق خطا یا پیشنهاد اصلاحیه علمی (حداقل ۱۰ و حداکثر ۱۰۰۰ نویسه)..."
-              className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+              className="w-full p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input type="text" aria-label="شرح مستندات" value={evidenceDesc} onChange={(e) => setEvidenceDesc(e.target.value)} placeholder="توضیح مستندات یا مرجع پشتیبان (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
-              <input type="url" aria-label="نشانی منبع" dir="ltr" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://... (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700" />
+              <input type="text" aria-label="شرح مستندات" value={evidenceDesc} onChange={(e) => setEvidenceDesc(e.target.value)} placeholder="توضیح مستندات یا مرجع پشتیبان (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
+              <input type="url" aria-label="نشانی منبع" dir="ltr" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://... (اختیاری)" className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700" />
             </div>
             <div className="flex items-center justify-end gap-2">
               <button
@@ -464,11 +464,11 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
                   saveKnowledgeCorrectionLocalDraft(displayedPub.id, { correctionType: corrType, targetSection, targetIndicatorId: targetIndicatorId || undefined, noteFa: corrNote, evidenceDescriptionFa: evidenceDesc, sourceUrl });
                   setNoticeFa('پیش‌نویس محلی ذخیره شد.');
                 }}
-                className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 font-bold cursor-pointer"
+                className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold cursor-pointer"
               >
                 ذخیره پیش‌نویس محلی
               </button>
-              <button type="button" disabled={submittingCorr} onClick={handleSubmitCorrection} className="px-3.5 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50">
+              <button type="button" disabled={submittingCorr} onClick={handleSubmitCorrection} className="px-3.5 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50">
                 {submittingCorr ? 'در حال ارسال به سرور...' : 'ارسال رسمی اصلاحیه به سرور'}
               </button>
             </div>
@@ -476,17 +476,17 @@ export const KnowledgeArticleReader: React.FC<KnowledgeArticleReaderProps> = ({
         )}
       </section>
 
-      <footer className="pt-2 border-t border-[#DCE3DF] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <footer className="pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           {displayedPub.relatedNeighborhoodNames.map((name) => (
-            <button key={name} type="button" onClick={() => handleOpenNeighborhood(name)} className="px-2.5 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 hover:border-[#176B63] font-bold flex items-center gap-1 cursor-pointer">
-              <MapPin className="w-3.5 h-3.5 text-[#176B63]" /><span>نقشه {name}</span>
+            <button key={name} type="button" onClick={() => handleOpenNeighborhood(name)} className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 hover:border-[var(--color-brand-600)] font-bold flex items-center gap-1 cursor-pointer">
+              <MapPin className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>نقشه {name}</span>
             </button>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {displayedPub.crossReferences.map((xref) => (
-            <button key={xref.labelFa} type="button" onClick={() => onNavigateView(xref.targetView, xref.targetSubTab)} className="px-3 py-1.5 rounded-[8px] bg-[#182522] dark:bg-white text-white dark:text-[#182522] font-bold cursor-pointer">{xref.labelFa}</button>
+            <button key={xref.labelFa} type="button" onClick={() => onNavigateView(xref.targetView, xref.targetSubTab)} className="px-3 py-1.5 rounded-[8px] bg-[var(--color-text-primary)] dark:bg-white text-white dark:text-[var(--color-text-primary)] font-bold cursor-pointer">{xref.labelFa}</button>
           ))}
         </div>
       </footer>

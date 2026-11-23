@@ -133,7 +133,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <span className="text-[11px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase block mb-0.5">
+            <span className="text-[11px] font-bold tracking-widest text-[var(--color-brand-600)] dark:text-emerald-400 uppercase block mb-0.5">
               {isEn ? 'Budget-to-Map Geospatial Match' : 'تطبیق توان مالی با نقشه شهر'}
             </span>
             <h2 className="text-lg font-black text-slate-900 dark:text-white">
@@ -169,7 +169,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-base font-black text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-slate-900 dark:focus:border-white transition"
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
                 {budgetCheck.verbalPersianText} ({formatMillionTomanAsIntlCurrency(totalBudgetMillion, intlCurrency, radarLocale)}){useLoanBooster ? ' + ۱.۲ میلیارد وام' : ''}{deductTenantRahnInBuy ? ' · با کسر رهن و تنفس سند' : ''}
               </span>
               <div className="flex items-center gap-1">
@@ -251,7 +251,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                       <span className="text-[11px] text-slate-400">{hood.zoneLabel || (isEn ? `Dist. ${fmt.format(hood.districtNumber)}` : `منطقه ${fmt.format(hood.districtNumber)}`)}</span>
                       <span className="text-[11px] font-semibold">
                         {hood.status === 'AFFORDABLE' ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">{isEn ? '● Within Budget' : '● همخوان با بودجه'}</span>
+                          <span className="text-[var(--color-brand-600)] dark:text-emerald-400">{isEn ? '● Within Budget' : '● همخوان با بودجه'}</span>
                         ) : hood.isDealWithinBudget ? (
                           <span className="text-teal-600 dark:text-teal-400">{isEn ? '● Within Budget via v6.4 Negotiation' : '● در بودجه با سناریوی مذاکره v6.4'}</span>
                         ) : (
@@ -260,7 +260,7 @@ export const ReverseBudgetDiscoveryModal: React.FC<ReverseBudgetDiscoveryModalPr
                       </span>
                     </div>
                     <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                      {isEn ? `Asking: ${fmt.format(uAsk)}M${uLabel}` : `${uLabel}${fmt.format(uAsk)} م`} · <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{isEn ? `Deal v6.4: ${fmt.format(uDeal)}M` : `سناریو v6.4 (غیرثبتی): ${fmt.format(uDeal)} م`}</span> · {isEn ? `Unit Total: ${fmt.format(hood.estimatedTotalMillion)}M` : `کل واحد: ${formatMillionToVerbalPersian(hood.estimatedTotalMillion)}`}
+                      {isEn ? `Asking: ${fmt.format(uAsk)}M${uLabel}` : `${uLabel}${fmt.format(uAsk)} م`} · <span className="text-[var(--color-brand-600)] dark:text-emerald-400 font-semibold">{isEn ? `Deal v6.4: ${fmt.format(uDeal)}M` : `سناریو v6.4 (غیرثبتی): ${fmt.format(uDeal)} م`}</span> · {isEn ? `Unit Total: ${fmt.format(hood.estimatedTotalMillion)}M` : `کل واحد: ${formatMillionToVerbalPersian(hood.estimatedTotalMillion)}`}
                     </div>
                   </div>
                   <button

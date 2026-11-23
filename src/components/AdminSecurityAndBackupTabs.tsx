@@ -20,7 +20,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
         <AdminPanel neighborhoods={neighborhoods} sponsorRequests={sponsorRequests} buyerLeads={buyerLeads} isVerifiedAdmin={isVerifiedAdmin} />
         <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <ShieldCheck className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <div>
               <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
                 مانیتورینگ زنده سلامت سرور، Rate Limiter و لاگ‌های امنیتی
@@ -56,7 +56,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
               <CheckCircle2 className="w-4 h-4 stroke-[1.75] text-emerald-400" />
               <span>{runningAudit ? 'در حال اجرای آزمون...' : 'اجرای دیباگ ۱۰۰ مرحله‌ای'}</span>
             </button>
-            <button type="button" onClick={onRefreshSystemHealth} disabled={loadingSystemHealth} className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 shadow-xs">
+            <button type="button" onClick={onRefreshSystemHealth} disabled={loadingSystemHealth} className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 shadow-xs">
               <RefreshCw className={`w-4 h-4 stroke-[1.75] ${loadingSystemHealth ? 'animate-spin' : ''}`} />
               <span>بروزرسانی وضعیت سلامت</span>
             </button>
@@ -67,7 +67,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           <div className="bg-emerald-950/5 dark:bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-4 space-y-3 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-2.5">
               <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-black text-sm">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <CheckCircle2 className="w-5 h-5 text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>نتایج دیباگ {toPersianNum(auditReport.totalSteps)} مرحله‌ای: {toPersianNum(auditReport.totalPassed)} از {toPersianNum(auditReport.totalSteps)} آزمون موفق (۰ خطا)</span>
               </div>
               <span className="text-xs font-bold text-emerald-700 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-1 rounded-lg">
@@ -92,7 +92,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
               <span>آپ‌تایم سرور (Uptime)</span>
-              <Clock className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <Clock className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
             <div className="text-base font-black text-slate-900 dark:text-slate-100 tabular-nums">
               {systemHealth ? `${toPersianNum(systemHealth.uptimeMinutes)} دقیقه (${toPersianNum(systemHealth.uptimeHours)} ساعت)` : loadingSystemHealth ? 'در حال دریافت...' : 'آماده بروزرسانی'}
@@ -102,7 +102,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
               <span>مصرف حافظه رم (RSS)</span>
-              <Cpu className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <Cpu className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
             <div className="text-base font-black text-slate-900 dark:text-slate-100 tabular-nums">
               {systemHealth ? `${toPersianNum(systemHealth.memoryRssMb)} مگابایت` : loadingSystemHealth ? 'در حال دریافت...' : 'آماده بروزرسانی'}
@@ -114,7 +114,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
               <span>سپر ضدحمله (Rate Limiter)</span>
-              <ShieldCheck className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
             <div className="text-sm font-black text-slate-900 dark:text-slate-100">
               {systemHealth?.securityMetrics?.generalRateLimit || '180 req / min'} · {systemHealth?.securityMetrics?.heavySyncRateLimit || '3 req / 10 min'}
@@ -126,7 +126,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 space-y-1.5">
             <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
               <span>وضعیت API هوا و هوش مصنوعی</span>
-              <Server className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <Server className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${systemHealth?.apiConnectivity?.openMeteoStatus === 'OK' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'}`}>
@@ -154,7 +154,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
         <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
           <div className="bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between font-extrabold text-slate-800 dark:text-slate-100">
             <div className="flex items-center gap-1.5">
-              <Activity className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <Activity className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۲۰ لاگ اخیر رویدادها و همگام‌سازی سرور (Audit Ring Buffer)</span>
             </div>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">بروزرسانی لحظه‌ای</span>
@@ -187,7 +187,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
             <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>موتور مدیریت ماژول‌های سال اول (Feature Flags)</span>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold">ذخیره در مرورگر و کلود</span>
@@ -204,7 +204,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
                   <button
                     type="button" onClick={() => onToggleFeatureFlag(item.key)}
                     className={`px-3 py-1.5 rounded-xl font-extrabold text-[11px] shrink-0 transition cursor-pointer border ${
-                      active ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      active ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
                     }`}
                   >
                     {active ? 'فعال (ON)' : 'غیرفعال (OFF)'}
@@ -217,20 +217,20 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
         <div className="space-y-4">
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
             <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-              <Database className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <Database className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>پشتیبان‌گیری کامل و بازیابی ۱-کلیکی دیتابیس</span>
             </div>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
               شامل تمامی محله‌ها، قیمت‌های ویرایش‌شده، حامیان املاک (CRM)، آگهی‌های شکار طلایی، شماره‌های خریداران و تنظیمات ماژول‌ها در قالب یک فایل استاندارد JSON.
             </p>
-            <button type="button" onClick={onDownloadFullBackupJson} className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs">
+            <button type="button" onClick={onDownloadFullBackupJson} className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs">
               <Download className="w-4 h-4 stroke-[1.75]" />
               <span>دانلود فایل پشتیبان کامل دیتابیس (Full JSON Backup)</span>
             </button>
             <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700 space-y-2">
               <label className="block font-bold text-slate-800 dark:text-slate-200">بازیابی دیتابیس از فایل پشتیبان (Restore JSON):</label>
               <label className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 border-dashed font-bold flex items-center justify-center gap-2 transition cursor-pointer">
-                <Upload className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <Upload className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>انتخاب فایل JSON و بازیابی فوری اطلاعات</span>
                 <input type="file" aria-label="انتخاب فایل پشتیبان JSON دیتابیس" accept=".json,application/json" onChange={onRestoreFullBackupJson} className="hidden" />
               </label>
@@ -257,7 +257,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
             <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <Send className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                  <Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>خروجی زنده کانال تلگرام و ربات Webhook</span>
                 </div>
                 <button type="button" onClick={() => loadAdminTelegramDigest(activeCity)} className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold hover:underline cursor-pointer">
@@ -265,7 +265,7 @@ export function AdminSecurityAndBackupTabs( props: AdminSecurityAndBackupTabsPro
                 </button>
               </div>
               <textarea rows={6} aria-label="متن خروجی کانال تلگرام" value={adminTelegramText} onChange={(e) => setAdminTelegramText(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-slate-200 text-[11px] leading-relaxed" />
-              <button type="button" onClick={() => { navigator.clipboard?.writeText(adminTelegramText).catch(() => {}); setAdminTgCopied(true); if (tgCopyTimerRef.current !== null) window.clearTimeout(tgCopyTimerRef.current); tgCopyTimerRef.current = window.setTimeout(() => { tgCopyTimerRef.current = null; setAdminTgCopied(false); }, 2000); }} className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer">
+              <button type="button" onClick={() => { navigator.clipboard?.writeText(adminTelegramText).catch(() => {}); setAdminTgCopied(true); if (tgCopyTimerRef.current !== null) window.clearTimeout(tgCopyTimerRef.current); tgCopyTimerRef.current = window.setTimeout(() => { tgCopyTimerRef.current = null; setAdminTgCopied(false); }, 2000); }} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer">
                 <Copy className="w-4 h-4 stroke-[1.75]" />
                 <span>{adminTgCopied ? 'پست آماده تلگرام کپی شد!' : 'کپی پست آماده کانال تلگرام'}</span>
               </button>

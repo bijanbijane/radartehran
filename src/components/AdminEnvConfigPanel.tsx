@@ -57,7 +57,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
       </div>
       {statusMsg && (
         <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>{statusMsg}</span>
         </div>
       )}
@@ -122,7 +122,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
           <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
               <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>۱. تنظیمات مدل هوش مصنوعی (GEMINI_MODEL)</span>
               </div>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
@@ -167,7 +167,7 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700 pb-2.5">
             <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-              <Cloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Cloud className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۳. پارامترهای غیرمحرمانه آبجکت استوریج (سقف حجم و CDN)</span>
             </div>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
@@ -242,12 +242,12 @@ export function AdminEnvConfigPanel({ areaUnit: propAreaUnit, intlCurrency: prop
         </div>
         <div className="flex items-center justify-between gap-3 pt-1">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             <span>ذخیره این فرم نیازمند احراز هویت مدیر اصلی (Primary Bootstrap Admin) از طریق توکن Firebase است.</span>
           </div>
           <button
             type="submit"
-            disabled={saving} className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
+            disabled={saving} className="px-5 py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center gap-2 cursor-pointer transition disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? 'در حال ذخیره...' : 'ذخیره تنظیمات عملیاتی مجاز'}</span>

@@ -279,4 +279,4 @@ export function runLocalLegalRuleEngine(
   void formatMillionTomanAsIntlCurrency(referenceValuationMillionToman, intlCurrency, 'en');
   return runCanonicalLegalRuleEngine(clauseText, contractType, areaUnit, intlCurrency, referenceValuationMillionToman);
 }
-export { requireAppCheckToken, createRequireAppCheckTokenMiddleware } from './appCheck';
+export { requireAppCheckToken, createRequireAppCheckTokenMiddleware } from './appCheckServerMiddleware';

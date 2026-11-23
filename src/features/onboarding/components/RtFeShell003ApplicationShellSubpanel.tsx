@@ -56,7 +56,7 @@ export const RtFeShell003ApplicationShellSubpanel: React.FC = () => {
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               data-testid={`rt-fe-shell-tab-${tab.id}`}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-                activeTab === tab.id ? 'bg-emerald-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+                activeTab === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
               }`}
             >
               {tab.label}
@@ -129,7 +129,7 @@ export const RtFeShell003ApplicationShellSubpanel: React.FC = () => {
             <h5 className="font-bold text-emerald-300">شبیه‌ساز زنده LayoutResolver و نقاط شکست (XS تا 2XL)</h5>
             <div className="flex flex-wrap gap-1.5">
               {['/map', '/properties/PR-1024', '/housing-market', '/account/saved/properties', '/admin/data-sources', '/404'].map((samplePath) => (
-                <button key={samplePath} type="button" onClick={() => setSimPath(samplePath)} className={`rounded px-2 py-1 font-mono text-[11px] ${simPath === samplePath ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`} dir="ltr">
+                <button key={samplePath} type="button" onClick={() => setSimPath(samplePath)} className={`rounded px-2 py-1 font-mono text-[11px] ${simPath === samplePath ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-800 text-slate-300'}`} dir="ltr">
                   {samplePath}
                 </button>
               ))}

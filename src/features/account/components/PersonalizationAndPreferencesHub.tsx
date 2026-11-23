@@ -63,7 +63,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Bookmark className="w-4 h-4 text-emerald-600" />
+              <Bookmark className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>ذخیره‌های من (نگهداری یکپارچه املاک، محله‌ها، جست‌وجوها، نقشه‌ها و مطالب)</span>
             </strong>
             <p className="text-[11px] text-slate-500 mt-0.5">
@@ -107,7 +107,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
               aria-selected={filterKind === t.id}
               data-testid={`saved-filter-tab-${t.id.toLowerCase()}`}
               onClick={() => setFilterKind(t.id as typeof filterKind)}
-              className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${filterKind === t.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
+              className={`px-2.5 py-1.5 rounded-xl font-bold cursor-pointer ${filterKind === t.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
             >
               {t.label}
             </button>
@@ -153,7 +153,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
       <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3" data-testid="user-preferences-and-personalization-section">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <strong className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Sliders className="w-4 h-4 text-emerald-600" />
+            <Sliders className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ترجیحات من و کنترل سطح شخصی‌سازی (بدون تغییر حقیقت داده پایگاه داده)</span>
           </strong>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -203,7 +203,7 @@ export const PersonalizationAndPreferencesHub: React.FC = () => {
         {activePrefSection === 'MAP' && (
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2" data-testid="prefs-map-panel">
             <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-emerald-600" />
+              <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>تفکیک سه وضعیت مکانی نقشه (مشاهده موقت شهر دیگر، شهر پیش‌فرض حساب شما را بازنویسی نمی‌کند):</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

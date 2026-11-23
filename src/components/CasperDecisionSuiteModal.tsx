@@ -190,14 +190,14 @@ export function CasperDecisionSuiteModal({
         {activeDilemma === 'rent_vs_buy' && (
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-3">
             <div className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Scale className="w-4 h-4 text-emerald-600" />
+              <Scale className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>مدل بی‌تفاوتی سرمایه در {selectedHood.name} (واحد ۸۰ متری)</span>
             </div>
             <div className="grid grid-cols-2 gap-2.5 text-xs tabular-nums">
               <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 space-y-1">
                 <div className="text-[11px] font-bold text-slate-500">گزینه ۱: خرید مستقیم سنددار</div>
                 <div className="text-sm font-black text-slate-900 dark:text-white">{toPersianNum(((selectedHood.buyPerSqm * 80) / 1000).toFixed(2))} میلیارد تومان</div>
-                <div className="text-[10px] text-emerald-600">مصونیت کامل در برابر تورم زمین</div>
+                <div className="text-[10px] text-[var(--color-brand-600)]">مصونیت کامل در برابر تورم زمین</div>
               </div>
               <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 space-y-1">
                 <div className="text-[11px] font-bold text-slate-500">گزینه ۲: رهن کامل + آربیتراژ</div>

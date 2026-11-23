@@ -1,11 +1,12 @@
-import crypto from 'crypto'; import express, { Express, Request, Response } from 'express'; import { FieldPath } from 'firebase-admin/firestore'; import fs from 'fs'; import path from 'path'; import { ObjectStorageStatusPayload, buildListingObjectKey, getStorageProviderLabelFa } from './objectStorage'; import { deleteFromRemoteS3Compatible, processImageToWebpMax800, resolveObjectStorageRuntimeConfig, uploadToRemoteS3Compatible, validateObjectStoragePayload } from './objectStorageUpload'; import { sanitizeInput } from './security'; import { resolveCityParamOrReject } from './geo/cityGeospatialResolver'; import { getFirebaseAdminFirestoreForServer, verifyAdminApiAuthorization, verifyFirebaseUserAuthorization } from './serverAdminAndTelegramSecurity'; import { BUCKET_DIR, INDEX_FILE, MAX_STORED_OBJECTS, MAX_TOTAL_STORAGE_BYTES, MAX_OBJECTS_PER_OWNER, MAX_BYTES_PER_OWNER, SAFE_OBJECT_ID, StoredObjectRecord, ParsedByteRange, DetectedMediaSignature, MagicByteValidationResult, ReleaseUploadReservation, MediaAuditReferences, MediaAuditClassification, MediaAuditObject, classifyStoredObjectReference, cleanupStaleTemporaryFiles, detectMediaFormatByMagicBytes, ensureBucketLoaded, isSafeStoredObjectRecord, objectStoreIndex, parseSingleByteRange, persistObjectStoreIndexNow, reserveUploadCapacity, resetObjectStorageIndexForTests, scheduleAsyncIndexPersist, validateMediaMagicBytesAndExtension, verifyMediaMagicBytes, writeFileAtomically } from './serverObjectStorageHelpers'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
+import crypto from 'crypto'; import express, { Express, Request, Response } from 'express'; import { FieldPath } from 'firebase-admin/firestore'; import fs from 'fs'; import path from 'path'; import { ObjectStorageStatusPayload, buildListingObjectKey, getStorageProviderLabelFa } from './objectStorage'; import { assertProductionObjectStorageConfigured } from './serverPersistencePolicy';
+import { deleteFromRemoteS3Compatible, downloadFromRemoteS3Compatible, processImageToWebpMax800, resolveObjectStorageRuntimeConfig, uploadToRemoteS3Compatible, validateObjectStoragePayload } from './objectStorageUpload'; import { sanitizeInput } from './security'; import { resolveCityParamOrReject } from './geo/cityGeospatialResolver'; import { getFirebaseAdminFirestoreForServer, verifyAdminApiAuthorization, verifyFirebaseUserAuthorization } from './serverAdminAndTelegramSecurity'; import { BUCKET_DIR, INDEX_FILE, MAX_STORED_OBJECTS, MAX_TOTAL_STORAGE_BYTES, MAX_OBJECTS_PER_OWNER, MAX_BYTES_PER_OWNER, SAFE_OBJECT_ID, StoredObjectRecord, ParsedByteRange, DetectedMediaSignature, MagicByteValidationResult, ReleaseUploadReservation, MediaAuditReferences, MediaAuditClassification, MediaAuditObject, classifyStoredObjectReference, cleanupStaleTemporaryFiles, detectMediaFormatByMagicBytes, ensureBucketLoaded, isSafeStoredObjectRecord, objectStoreIndex, parseSingleByteRange, persistObjectStoreIndexNow, reserveUploadCapacity, resetObjectStorageIndexForTests, scheduleAsyncIndexPersist, validateMediaMagicBytesAndExtension, verifyMediaMagicBytes, writeFileAtomically } from './serverObjectStorageHelpers'; import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
 import { ORPHAN_AUDIT_JOB_SCHEMA_INVALID, ORPHAN_AUDIT_MAX_JOBS, ORPHAN_AUDIT_MAX_PAGES_PER_STEP, ORPHAN_AUDIT_MAX_TOTAL_PAGES, ORPHAN_AUDIT_PAGE_SIZE, StoredObjectDeleteResult, buildOrphanAuditReport, cleanupExpiredOrphanAuditJobs, collectMatchingString, collectMatchingStringArray, countOrphanAuditJobs, createOrphanAuditJob, deleteStoredObjectSafely, getTrackedAuditTargetSets, loadOrphanAuditJob, orphanAuditJobsInProgress, parseBoundedQueryInteger, persistOrphanAuditJob } from './serverObjectStorageOrphanAudit'; import { cleanupBargainObjects, decidePendingDeleteRecovery, deleteStoredObjectWithRetry, describeRecoveryEvent, type PendingDeleteFirestoreState, type StoredObjectCleanupFailure } from './serverObjectStorageCleanup'; import { syncDeletionJournalReconciliationMetrics } from './deletionJournal'; import { getClientIp, recordAbuseSignal } from './serverDeliveryAndAbuseGuard'; const bargainCleanupInProgress = new Set<string>(); const MAX_PENDING_DELETE_RECOVERY_PER_REQUEST = 25; function getRecoveryLimit(raw: unknown): number { const value = typeof raw === 'string' ? Number(raw) : Array.isArray(raw) && typeof raw[0] === 'string' ? Number(raw[0]) : NaN; return !Number.isSafeInteger(value) || value < 1 ? MAX_PENDING_DELETE_RECOVERY_PER_REQUEST : Math.min(value, MAX_PENDING_DELETE_RECOVERY_PER_REQUEST); }
 function createLocalDeleteCallback() { return async (record: Readonly<StoredObjectRecord>): Promise<void> => { const root = path.resolve(BUCKET_DIR); const localPath = path.resolve(root, record.localFileName);
     if (path.basename(record.localFileName) !== record.localFileName || !record.localFileName.startsWith(`${record.id}.`) || path.dirname(localPath) !== root) throw new Error('INVALID_LOCAL_OBJECT_PATH');
     try { await fs.promises.unlink(localPath); } catch (error) { if ((error && typeof error === 'object' && 'code' in error ? error.code : undefined) !== 'ENOENT') throw error; } }; } export { BUCKET_DIR, INDEX_FILE, MAX_STORED_OBJECTS, MAX_TOTAL_STORAGE_BYTES, MAX_OBJECTS_PER_OWNER, MAX_BYTES_PER_OWNER, SAFE_OBJECT_ID, ORPHAN_AUDIT_JOB_SCHEMA_INVALID, classifyStoredObjectReference, cleanupBargainObjects, cleanupStaleTemporaryFiles, decidePendingDeleteRecovery, deleteFromRemoteS3Compatible, deleteStoredObjectSafely, deleteStoredObjectWithRetry, describeRecoveryEvent, detectMediaFormatByMagicBytes, ensureBucketLoaded, isSafeStoredObjectRecord, parseSingleByteRange, persistObjectStoreIndexNow, reserveUploadCapacity, resetObjectStorageIndexForTests, scheduleAsyncIndexPersist, validateMediaMagicBytesAndExtension, verifyMediaMagicBytes, writeFileAtomically, type DetectedMediaSignature, type MagicByteValidationResult, type MediaAuditClassification, type MediaAuditObject, type MediaAuditReferences, type ParsedByteRange, type PendingDeleteFirestoreState, type ReleaseUploadReservation, type StoredObjectDeleteResult, type StoredObjectRecord }; const registeredObjectStorageApps = new WeakSet<Express>(); const safeStorageAsync = (fn: (req: Request, res: Response) => Promise<void>) => (req: Request, res: Response) => { void fn(req, res).catch(() => { if (!res.headersSent) res.status(500).json({ status: 'error', code: 'INTERNAL_STORAGE_ERROR' }); }); }; export function registerObjectStorageRoutes(app: Express, pushAuditLog: (level: 'INFO' | 'WARN' | 'SYNC', event: string) => void): void { if (registeredObjectStorageApps.has(app)) return; registeredObjectStorageApps.add(app); const uploadJsonParser = express.json({ limit: '70mb', strict: true }); const smallJsonParser = express.json({ limit: '16kb', strict: true }); const requireVerifiedFirebaseUser: import('express').RequestHandler = async (req, res, next) => { try { const authResult = await verifyFirebaseUserAuthorization(req.headers as Record<string, string | string[] | undefined>); if (!authResult.authorized || !authResult.uid) {
         res.setHeader('Cache-Control', 'no-store'); res.status(authResult.statusCode).json({ status: 'error', code: authResult.reason, message: authResult.statusCode === 503 ? 'سرویس احراز هویت موقتاً در دسترس نیست.' : 'برای آپلود رسانه باید وارد حساب کاربری تأییدشده شوید.' }); return; }
       res.locals.firebaseUid = authResult.uid; next(); } catch { res.status(503).json({ status: 'error', code: 'UPLOAD_AUTHENTICATION_UNAVAILABLE', message: 'احراز هویت آپلود در دسترس نیست.' }); } }; app.get('/api/object-storage/status', (_req: Request, res: Response) => { res.setHeader('Cache-Control', 'no-store'); res.setHeader('Pragma', 'no-cache'); res.setHeader('X-Content-Type-Options', 'nosniff'); const cfg = resolveObjectStorageRuntimeConfig(); res.status(200).json({ status: 'ok', providerLabelFa: getStorageProviderLabelFa(cfg.provider), maxImageMb: cfg.maxImageMb, maxVideoMb: cfg.maxVideoMb } satisfies ObjectStorageStatusPayload); }); app.get('/api/object-storage/admin/status', safeStorageAsync(async (req: Request, res: Response) => { const authCheck = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>); if (!authCheck.authorized) { if (authCheck.statusCode === 401 || authCheck.statusCode === 403) recordAbuseSignal(getClientIp(req), 'auth_failure'); res.status(authCheck.statusCode).json({ status: 'error', code: authCheck.reason, message: 'مشاهده وضعیت کامل آبجکت استوریج نیازمند احراز هویت ادمین است.' }); return; }
-    await ensureBucketLoaded(); const cfg = resolveObjectStorageRuntimeConfig(); const totalStoredBytes = objectStoreIndex.reduce((acc, item) => acc + (item.sizeBytes || 0), 0); const areaUnit: AreaUnit = req.query.areaUnit === 'sqft' ? 'sqft' : 'sqm'; const intlCurrency: IntlCurrencyCode = req.query.intlCurrency === 'EUR' || req.query.intlCurrency === 'AED' || req.query.intlCurrency === 'IRT' ? req.query.intlCurrency : 'USD'; res.setHeader('Cache-Control', 'no-store'); res.status(200).json({ status: 'ok', provider: cfg.provider, providerLabelFa: getStorageProviderLabelFa(cfg.provider), bucket: cfg.bucket, region: cfg.region, endpointHost: cfg.endpointHost, publicBaseUrl: cfg.publicBaseUrl, s3CredentialsConfigured: cfg.s3CredentialsConfigured, maxImageMb: cfg.maxImageMb, maxVideoMb: cfg.maxVideoMb, totalObjectsCount: objectStoreIndex.length, totalStoredBytes, displayAreaUnitLabel: formatAreaUnitLabel(areaUnit), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(120, intlCurrency, 'en'), recentObjects: objectStoreIndex.slice(0, 12).map(({ localFileName: _lf, ownerUid: _ou, ...pub }) => pub) }); })); app.post('/api/object-storage/upload', requireVerifiedFirebaseUser, uploadJsonParser, safeStorageAsync(async (req: Request, res: Response) => { let releaseCapacityReservation: ReleaseUploadReservation | null = null; try { await ensureBucketLoaded(); const ownerUid = res.locals.firebaseUid as string | undefined; if (!ownerUid) { res.status(401).json({ status: 'error', code: 'MISSING_VERIFIED_OWNER', message: 'شناسهٔ کاربر تأییدشده برای ثبت مالکیت فایل موجود نیست.' }); return; } const cfg = resolveObjectStorageRuntimeConfig(); const rawMediaType = req.body?.mediaType; if (rawMediaType !== 'image' && rawMediaType !== 'video') { res.status(400).json({ status: 'error', code: 'INVALID_MEDIA_TYPE', message: 'نوع رسانه باید تصویر یا ویدیو باشد.' }); return; } const mediaType: 'image' | 'video' = rawMediaType; const inputMimeType = sanitizeInput(req.body?.mimeType || '', 60).toLowerCase(); const rawHoodId = Number(req.body?.hoodId); if (!Number.isSafeInteger(rawHoodId) || rawHoodId < 1 || rawHoodId > 999) { res.status(400).json({ status: 'error', code: 'INVALID_NEIGHBORHOOD_ID', message: 'شناسهٔ محله معتبر نیست.' }); return; }
+    await ensureBucketLoaded(); const cfg = resolveObjectStorageRuntimeConfig(); const totalStoredBytes = objectStoreIndex.reduce((acc, item) => acc + (item.sizeBytes || 0), 0); const areaUnit: AreaUnit = req.query.areaUnit === 'sqft' ? 'sqft' : 'sqm'; const intlCurrency: IntlCurrencyCode = req.query.intlCurrency === 'EUR' || req.query.intlCurrency === 'AED' || req.query.intlCurrency === 'IRT' ? req.query.intlCurrency : 'USD'; res.setHeader('Cache-Control', 'no-store'); res.status(200).json({ status: 'ok', provider: cfg.provider, providerLabelFa: getStorageProviderLabelFa(cfg.provider), bucket: cfg.bucket, region: cfg.region, endpointHost: cfg.endpointHost, publicBaseUrl: cfg.publicBaseUrl, s3CredentialsConfigured: cfg.s3CredentialsConfigured, maxImageMb: cfg.maxImageMb, maxVideoMb: cfg.maxVideoMb, totalObjectsCount: objectStoreIndex.length, totalStoredBytes, displayAreaUnitLabel: formatAreaUnitLabel(areaUnit), referenceValuationIntlText: formatMillionTomanAsIntlCurrency(120, intlCurrency, 'en'), recentObjects: objectStoreIndex.slice(0, 12).map(({ localFileName: _lf, ownerUid: _ou, ...pub }) => pub) }); })); app.post('/api/object-storage/upload', requireVerifiedFirebaseUser, uploadJsonParser, safeStorageAsync(async (req: Request, res: Response) => { let releaseCapacityReservation: ReleaseUploadReservation | null = null; try { await ensureBucketLoaded(); const ownerUid = res.locals.firebaseUid as string | undefined; if (!ownerUid) { res.status(401).json({ status: 'error', code: 'MISSING_VERIFIED_OWNER', message: 'شناسهٔ کاربر تأییدشده برای ثبت مالکیت فایل موجود نیست.' }); return; } const cfg = resolveObjectStorageRuntimeConfig(); const productionStorage = assertProductionObjectStorageConfigured(cfg, process.env); if (!productionStorage.ok) { res.status(503).json({ status: 'error', code: productionStorage.code, message: productionStorage.message }); return; } const rawMediaType = req.body?.mediaType; if (rawMediaType !== 'image' && rawMediaType !== 'video') { res.status(400).json({ status: 'error', code: 'INVALID_MEDIA_TYPE', message: 'نوع رسانه باید تصویر یا ویدیو باشد.' }); return; } const mediaType: 'image' | 'video' = rawMediaType; const inputMimeType = sanitizeInput(req.body?.mimeType || '', 60).toLowerCase(); const rawHoodId = Number(req.body?.hoodId); if (!Number.isSafeInteger(rawHoodId) || rawHoodId < 1 || rawHoodId > 999) { res.status(400).json({ status: 'error', code: 'INVALID_NEIGHBORHOOD_ID', message: 'شناسهٔ محله معتبر نیست.' }); return; }
       const hoodId = rawHoodId; const cityRes = resolveCityParamOrReject(req.body?.city, { allowOmittedDefault: 'tehran' }); if (!cityRes.ok) { res.status(400).json({ status: 'error', code: cityRes.code, message: cityRes.messageFa }); return; } const city = cityRes.cityId; const rawBase64 = typeof req.body?.dataBase64 === 'string' ? req.body.dataBase64.trim() : ''; if (!rawBase64) { res.status(400).json({ status: 'error', code: 'EMPTY_FILE', message: 'محتوای فایل خالی است.' }); return; }
       const maxAllowedBytes = (mediaType === 'video' ? cfg.maxVideoMb : cfg.maxImageMb) * 1024 * 1024; if (rawBase64.length > Math.ceil(maxAllowedBytes / 3) * 4) { res.status(413).json({ status: 'error', code: 'BASE64_PAYLOAD_TOO_LARGE', message: 'حجم فایل از سقف مجاز بیشتر است.' }); return; }
       if (rawBase64.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(rawBase64)) { res.status(400).json({ status: 'error', code: 'INVALID_BASE64', message: 'کدگذاری Base64 فایل معتبر نیست.' }); return; }
@@ -20,13 +21,60 @@ function createLocalDeleteCallback() { return async (record: Readonly<StoredObje
       if (!finalMagicCheck.valid) { res.status(400).json({ status: 'error', code: finalMagicCheck.reason || 'FINAL_MAGIC_EXTENSION_MISMATCH', message: 'محتوای نهایی فایل با پسوند ذخیره‌سازی تطابق ندارد.' }); return; }
       releaseCapacityReservation = reserveUploadCapacity(ownerUid, finalBuffer.length); if (!releaseCapacityReservation) { res.setHeader('Cache-Control', 'no-store'); res.status(507).json({ status: 'error', code: 'STORAGE_QUOTA_EXCEEDED', message: 'سهمیهٔ فضای رسانهٔ حساب شما یا ظرفیت کلی مخزن تکمیل شده است.' }); return; }
       const localFileName = `${objectId}${ext}`; const localFilePath = path.join(BUCKET_DIR, localFileName);
-      try { await writeFileAtomically(localFilePath, finalBuffer, 0o600); } catch (error) { releaseCapacityReservation?.(); releaseCapacityReservation = null; console.error('[OBJECT_STORAGE_LOCAL_WRITE_FAILED]', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
-        res.status(500).json({ status: 'error', code: 'LOCAL_FILE_WRITE_FAILED', message: 'ذخیرهٔ پایدار فایل روی سرور انجام نشد؛ آپلود تأیید نشد.' }); return; }
       const record: StoredObjectRecord = { id: objectId, objectKey, bucket: cfg.bucket, provider: cfg.provider, mediaType, mimeType: finalMimeType, sizeBytes: finalBuffer.length, url: `/api/object-storage/file/${objectId}`, remoteS3Synced: false, createdAtIso: new Date().toISOString(), localFileName, ownerUid };
-      objectStoreIndex.unshift(record); releaseCapacityReservation?.(); releaseCapacityReservation = null; try { await persistObjectStoreIndexNow(); } catch (error) { const recordIndex = objectStoreIndex.findIndex((item) => item.id === objectId);
-        if (recordIndex >= 0) objectStoreIndex.splice(recordIndex, 1); await fs.promises.unlink(localFilePath).catch(() => {}); console.error('[OBJECT_STORAGE_UPLOAD_ROLLBACK]', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
-        res.status(500).json({ status: 'error', code: 'OBJECT_INDEX_PERSIST_FAILED', message: 'ذخیرهٔ پایدار اطلاعات فایل ناموفق بود؛ آپلود تأیید نشد.' }); return; }
-      record.remoteS3Synced = await uploadToRemoteS3Compatible(objectKey, finalBuffer, finalMimeType, cfg); try { await persistObjectStoreIndexNow(); } catch (error) { record.remoteS3Synced = false; console.error('[OBJECT_STORAGE_REMOTE_STATUS_PERSIST_FAILED]', error instanceof Error ? error.message : 'UNKNOWN_ERROR'); }
+      const { isDurableObjectMetadataProductionMode, upsertStoredObjectMetadata } = await import('./serverObjectStorageMetadataRegistry');
+      const durableMetadataMode = isDurableObjectMetadataProductionMode(process.env);
+      if (durableMetadataMode) {
+        record.remoteS3Synced = await uploadToRemoteS3Compatible(objectKey, finalBuffer, finalMimeType, cfg);
+        if (!record.remoteS3Synced) {
+          releaseCapacityReservation?.(); releaseCapacityReservation = null;
+          res.status(503).json({
+            status: 'error',
+            code: 'OBJECT_STORAGE_REMOTE_UPLOAD_FAILED',
+            message: 'آپلود به فضای ذخیره‌سازی دور production انجام نشد.',
+          });
+          return;
+        }
+        try {
+          await upsertStoredObjectMetadata(record);
+          objectStoreIndex.unshift(record);
+        } catch (metadataError) {
+          releaseCapacityReservation?.(); releaseCapacityReservation = null;
+          await deleteFromRemoteS3Compatible(objectKey, cfg).catch(() => {});
+          console.error('[OBJECT_STORAGE_METADATA_PERSIST_FAILED]', metadataError instanceof Error ? metadataError.message : 'UNKNOWN_ERROR');
+          res.status(503).json({
+            status: 'error',
+            code: 'OBJECT_STORAGE_METADATA_PERSIST_FAILED',
+            message: 'ثبت پایدار متادیتای فایل در Firestore ناموفق بود؛ آپلود لغو شد.',
+          });
+          return;
+        }
+        releaseCapacityReservation?.(); releaseCapacityReservation = null;
+        await writeFileAtomically(localFilePath, finalBuffer, 0o600).catch(() => {});
+      } else {
+        try { await writeFileAtomically(localFilePath, finalBuffer, 0o600); } catch (error) { releaseCapacityReservation?.(); releaseCapacityReservation = null; console.error('[OBJECT_STORAGE_LOCAL_WRITE_FAILED]', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+          res.status(500).json({ status: 'error', code: 'LOCAL_FILE_WRITE_FAILED', message: 'ذخیرهٔ پایدار فایل روی سرور انجام نشد؛ آپلود تأیید نشد.' }); return; }
+        objectStoreIndex.unshift(record); releaseCapacityReservation?.(); releaseCapacityReservation = null;
+        try { await persistObjectStoreIndexNow(); } catch (error) { const recordIndex = objectStoreIndex.findIndex((item) => item.id === objectId);
+          if (recordIndex >= 0) objectStoreIndex.splice(recordIndex, 1); await fs.promises.unlink(localFilePath).catch(() => {}); console.error('[OBJECT_STORAGE_UPLOAD_ROLLBACK]', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+          res.status(500).json({ status: 'error', code: 'OBJECT_INDEX_PERSIST_FAILED', message: 'ذخیرهٔ پایدار اطلاعات فایل ناموفق بود؛ آپلود تأیید نشد.' }); return; }
+        record.remoteS3Synced = await uploadToRemoteS3Compatible(objectKey, finalBuffer, finalMimeType, cfg);
+        if (process.env.NODE_ENV === 'production' && !record.remoteS3Synced) {
+          const recordIndex = objectStoreIndex.findIndex((item) => item.id === objectId);
+          if (recordIndex >= 0) objectStoreIndex.splice(recordIndex, 1);
+          await fs.promises.unlink(localFilePath).catch(() => {});
+          res.status(503).json({
+            status: 'error',
+            code: 'OBJECT_STORAGE_REMOTE_UPLOAD_FAILED',
+            message: 'آپلود به فضای ذخیره‌سازی دور production انجام نشد؛ فایل روی دیسک محلی نگه‌داری نشد.',
+          });
+          return;
+        }
+        try { await persistObjectStoreIndexNow(); } catch (error) {
+          record.remoteS3Synced = false;
+          console.error('[OBJECT_STORAGE_REMOTE_STATUS_PERSIST_FAILED]', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+        }
+      }
       pushAuditLog('INFO', `ذخیره ${mediaType === 'video' ? 'ویدیو' : 'تصویر بهینه‌شده WebP (<=800px)'} در آبجکت استوریج (${cfg.bucket}/${objectKey})`);
       const { localFileName: _hiddenLocalFile, ownerUid: _hiddenOwner, ...publicObject } = record; res.setHeader('Cache-Control', 'no-store'); res.status(200).json({ status: 'ok', mediaObject: publicObject }); } catch (error) { releaseCapacityReservation?.();
       console.error('[OBJECT_STORAGE_UPLOAD_ERROR]', error instanceof Error ? error.message : 'UNKNOWN_ERROR'); res.status(500).json({ status: 'error', code: 'OBJECT_STORAGE_UPLOAD_FAILED', message: 'خطای داخلی در ذخیره‌سازی فایل روی فضای رسانه رخ داد.' }); } }));
@@ -89,8 +137,17 @@ function createLocalDeleteCallback() { return async (record: Readonly<StoredObje
     await ensureBucketLoaded();
     const objectId = req.params.objectId || '';
     if (!/^obj-\d{10,16}-[a-f0-9]{8}$/i.test(objectId)) { res.status(404).json({ status: 'error', code: 'OBJECT_NOT_FOUND', message: 'فایل موردنظر پیدا نشد.' }); return; }
-    const record = objectStoreIndex.find((item) => item.id === objectId);
+    let record = objectStoreIndex.find((item) => item.id === objectId);
+    const metadataRegistry = await import('./serverObjectStorageMetadataRegistry');
+    if (!record && metadataRegistry.isDurableObjectMetadataProductionMode()) {
+      record = (await metadataRegistry.getStoredObjectMetadata(objectId)) ?? undefined;
+      if (record) objectStoreIndex.push(record);
+    }
     if (!record || (record.deletionState !== undefined && record.deletionState !== 'active')) { res.status(404).json({ status: 'error', code: 'OBJECT_NOT_FOUND', message: record?.deletionState ? 'این رسانه دیگر در دسترس نیست.' : 'فایل موردنظر پیدا نشد.' }); return; }
+    if (!metadataRegistry.isAuthoritativeProductionMetadataRecord(record)) {
+      res.status(404).json({ status: 'error', code: 'LEGACY_LOCAL_ONLY_METADATA', message: 'این رسانه فقط روی دیسک محلی ثبت شده و در production قابل ارائه نیست.' });
+      return;
+    }
     const allowedExtensions = new Set(['.webp', '.jpg', '.jpeg', '.png', '.mp4', '.mov', '.webm']);
     const filename = record.localFileName; const extension = path.extname(filename).toLowerCase();
     if (path.basename(filename) !== filename || !filename.startsWith(`${record.id}.`) || !allowedExtensions.has(extension) || !isSafeStoredObjectRecord(record)) {
@@ -100,7 +157,25 @@ function createLocalDeleteCallback() { return async (record: Readonly<StoredObje
     const bucketRoot = path.resolve(BUCKET_DIR); const filePath = path.resolve(bucketRoot, filename);
     if (path.dirname(filePath) !== bucketRoot) { res.status(500).json({ status: 'error', code: 'INVALID_OBJECT_PATH', message: 'مسیر داخلی رسانه معتبر نیست.' }); return; }
     try {
-      const stat = await fs.promises.lstat(filePath);
+      let stat: import('fs').Stats | null = null;
+      try {
+        stat = await fs.promises.lstat(filePath);
+      } catch {
+        if (record.remoteS3Synced && process.env.NODE_ENV === 'production') {
+          const cfg = resolveObjectStorageRuntimeConfig();
+          const remoteBuffer = await downloadFromRemoteS3Compatible(record.objectKey, cfg);
+          if (remoteBuffer && remoteBuffer.length > 0) {
+            res.setHeader('Content-Type', record.mimeType);
+            res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+            res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+            res.setHeader('Content-Length', String(remoteBuffer.length));
+            res.status(200).send(remoteBuffer);
+            return;
+          }
+        }
+        res.status(404).end();
+        return;
+      }
       if (stat.isSymbolicLink() || !stat.isFile()) { res.status(404).end(); return; }
       res.setHeader('Content-Type', record.mimeType); res.setHeader('Content-Disposition', `inline; filename="${filename}"`); res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'; sandbox"); res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate'); res.setHeader('Accept-Ranges', 'bytes');
       const rangeHeader = req.headers.range;

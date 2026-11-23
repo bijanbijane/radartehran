@@ -98,7 +98,7 @@ export function HedonicInlineWidget({
     <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 space-y-3 text-xs">
       <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-2">
         <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-          <Calculator className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <Calculator className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>{inspectorCopy.hedonicCta}</span>
         </span>
         <button
@@ -167,7 +167,7 @@ export function HedonicInlineWidget({
               onClick={() => setRenovationStatus(opt.id)}
               className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition cursor-pointer truncate ${
                 renovationStatus === opt.id
-                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  ? 'bg-[var(--color-brand-600)] text-white border-emerald-600'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
             >
@@ -223,7 +223,7 @@ export function HedonicInlineWidget({
           <span>
             رهن کارشناسی: <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{toPersianNum(result.estimatedRahnMillion)} م (اجاره: {toPersianNum(Math.round(result.estimatedRahnMillion * 0.03))} م)</strong>
             {intlCurrency !== 'IRT' && (
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mr-1">
+              <span className="text-[10px] text-[var(--color-brand-600)] dark:text-emerald-400 mr-1">
                 ({formatMillionTomanAsIntlCurrency(result.estimatedRahnMillion, intlCurrency, radarLocale)})
               </span>
             )}

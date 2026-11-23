@@ -196,7 +196,7 @@ export const RealOptionsLiquidityCard: React.FC<RealOptionsLiquidityCardProps> =
               <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
               <span>بتای سرریز کلان (Macro Beta)</span>
             </span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px]">
+            <span className="text-[var(--color-brand-600)] dark:text-emerald-400 font-extrabold text-[10px]">
               تأخیر {toPersianNum(report.elasticity.lagMonthsToFullPassThrough)} ماهه
             </span>
           </div>

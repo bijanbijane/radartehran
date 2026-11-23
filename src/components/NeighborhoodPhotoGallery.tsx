@@ -129,15 +129,15 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
         title: isEn ? `Residential Fabric & Boulevards of ${selectedHood.name}` : `بافت مسکونی و بلوارهای اصلی ${selectedHood.name}`,
         category: isEn ? 'Residential Fabric' : 'بافت مسکونی',
         desc: isEn ? `Urban density, architectural layout, and street terrain in ${selectedHood.name}` : `فضای معماری، تراکم شهری و شاخص همواری زمین در محله ${selectedHood.name}`,
-        icon: <Building className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />,
+        icon: <Building className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />,
         svgDataUri: buildNeighborhoodSvg(selectedHood.name, 'residential', selectedHood.overallScore),
       },
     ];
     hoodLandmarks.forEach((lm) => {
       let type: 'residential' | 'metro' | 'park' | 'shopping' | 'health' = 'residential';
-      let icon = <Building className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />;
+      let icon = <Building className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />;
       if (lm.category === 'مترو و حمل‌ونقل') { type = 'metro'; icon = <TrainFront className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />; }
-      else if (lm.category === 'پارک و فضای سبز') { type = 'park'; icon = <Wind className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />; }
+      else if (lm.category === 'پارک و فضای سبز') { type = 'park'; icon = <Wind className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />; }
       else if (lm.category === 'مرکز خرید و رفاهی') { type = 'shopping'; icon = <ShoppingBag className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />; }
       else if (lm.category === 'درمانی و بیمارستان') { type = 'health'; icon = <HeartPulse className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />; }
       items.push({
@@ -157,7 +157,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
     <div className="my-3 apple-grouped-card overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs rounded-2xl">
       <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50">
+          <div className="w-7 h-7 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/40 text-[var(--color-brand-600)] dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50">
             <Camera className="w-4 h-4 stroke-[1.75]" />
           </div>
           <div>
@@ -215,7 +215,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
               className="w-full py-1.5 px-3 rounded-[9px] bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between gap-1.5 transition cursor-pointer"
             >
               <span className="flex items-center gap-1.5 truncate">
-                <Compass className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2] shrink-0" />
+                <Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 stroke-[2] shrink-0" />
                 <span className="truncate">{isEn ? 'Focus on map' : 'تمرکز و مسیریابی روی نقشه'}</span>
               </span>
               <span className="px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 text-[10px] font-black text-emerald-900 dark:text-emerald-300 tabular-nums shrink-0">
@@ -259,7 +259,7 @@ export function NeighborhoodPhotoGallery({ selectedHood, hoodLandmarks, onFocusL
               <p className="text-xs text-slate-300 pt-1 leading-relaxed">{activeItem.desc}</p>
             </div>
             {activeItem.landmark && onFocusLandmarkOnMap && (
-              <button type="button" onClick={() => { setShowLightbox(false); onFocusLandmarkOnMap(activeItem.landmark!); }} className="w-full py-2 px-3 rounded-[10px] bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition">
+              <button type="button" onClick={() => { setShowLightbox(false); onFocusLandmarkOnMap(activeItem.landmark!); }} className="w-full py-2 px-3 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition">
                 <Compass className="w-4 h-4 stroke-[2]" />
                 <span>{isEn ? 'View location on aerial map' : 'مشاهده موقعیت روی نقشه هوایی'}</span>
               </button>

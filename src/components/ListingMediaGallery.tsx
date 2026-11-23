@@ -83,7 +83,7 @@ export function ListingMediaGallery({
     <div className="space-y-2 pt-1">
       <div className="flex flex-wrap items-center justify-between gap-1.5 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-xl px-2.5 py-1.5 text-[10.5px]">
         <span className="flex items-center gap-1 font-bold text-emerald-900 dark:text-emerald-200">
-          <Database className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <Database className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>
             مدیای آگهی ({formatAreaShort(listing.sqm, areaUnit)} · هر {areaUnit === 'sqft' ? 'ft²' : 'متر'}: {toPersianNum(unitPrice)} م · کل: {toPersianNum(effectiveMillion.toLocaleString('en-US'))} م ({formatMillionTomanAsIntlCurrency(effectiveMillion, intlCurrency, radarLocale)}) · اجاره ماهانه: {toPersianNum(estMonthlyRentMillions)} م ({formatMillionTomanAsIntlCurrency(estMonthlyRentMillions, intlCurrency, radarLocale)})) روی Object Storage ({toPersianNum(imageUrls.length)} عکس
             {videoUrl ? ' + ۱ فیلم' : ''})

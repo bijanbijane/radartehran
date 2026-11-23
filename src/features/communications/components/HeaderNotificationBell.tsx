@@ -115,7 +115,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
         >
           <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
             <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Bell className="w-3.5 h-3.5 text-emerald-600" />
+              <Bell className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
               <span>اعلان‌های اخیر ({toPersianNum(unreadCount)} جدید)</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -155,7 +155,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
                 onClick={() => setTab(t.id)}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
                   tab === t.id
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-[var(--color-brand-600)] text-white'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                 }`}
               >

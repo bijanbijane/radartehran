@@ -216,10 +216,14 @@ export interface SearchResultAggregations {
   topNeighborhoodBuckets: SearchResultFacetBucket[];
 }
 
+export type PropertySearchCountAccuracy = 'EXACT_TOTAL' | 'ESTIMATED_TOTAL' | 'BOUNDED_PARTIAL_TOTAL';
+
 export interface PropertySearchResponse {
   items: SearchPropertyItem[];
   sponsoredPlacements?: SponsoredSearchPlacement[];
   totalEstimatedCount: number;
+  countAccuracy?: PropertySearchCountAccuracy;
+  sourceExhausted?: boolean;
   nextCursor?: string;
   hasMore: boolean;
   appliedSort: SearchSortMode;

@@ -91,8 +91,8 @@ export const ValidationAndImplementLabTab: React.FC = () => {
     <div className="space-y-5" data-testid="validation-implement-lab-tab">
       <RadarCard padding="standard" elevated>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-[15px] font-bold text-[#182522] dark:text-white flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-[#176B63]" />
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۱. دروازه‌های پذیرش مرحله دهم و ثبت اشکال (S0–S4 · Design Freeze Gate)</span>
           </h3>
           <span
@@ -111,7 +111,7 @@ export const ValidationAndImplementLabTab: React.FC = () => {
               ? 'تایید رفع خطای شبیه‌سازی‌شده (S1)'
               : 'شبیه‌سازی بروز خطای بحرانی (S1)'}
           </RadarButton>
-          <span className="text-[11.5px] text-[#586760] tabular-nums">
+          <span className="text-[11.5px] text-[var(--color-text-muted)] tabular-nums">
             دامنه‌های QA: {QA_VALIDATION_DOMAINS.length}/۵ · صفحات VP: {PROTOTYPE_SCOPE_VP.length}/۱۴ · جریان‌ها: {CORE_USER_JOURNEYS.length}/۵ · چک‌لیست پذیرش: {STAGE_10_ACCEPTANCE_COUNT}
           </span>
         </div>
@@ -122,15 +122,15 @@ export const ValidationAndImplementLabTab: React.FC = () => {
             return (
               <div
                 key={iss.id}
-                className="p-2.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-2 text-[12px]"
+                className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-2 text-[12px]"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={`px-1.5 py-0.5 rounded-[4px] font-bold text-[11px] ${iss.status === 'open' ? 'bg-[#FDECEC] text-[#A61B1B]' : 'bg-[#EAF5EE] text-[#176B4C]'}`}>
                     {iss.severity} · اولویت {score}
                   </span>
-                  <span className="font-medium text-[#182522] dark:text-slate-100 truncate">{iss.descriptionFa}</span>
+                  <span className="font-medium text-[var(--color-text-primary)] dark:text-slate-100 truncate">{iss.descriptionFa}</span>
                 </div>
-                <span className="text-[11px] font-semibold text-[#586760]">
+                <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">
                   {iss.pageId} · {iss.status === 'open' ? 'باز (مانع انتشار)' : 'تایید و بسته‌شده'}
                 </span>
               </div>
@@ -142,8 +142,8 @@ export const ValidationAndImplementLabTab: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <RadarCard padding="standard" elevated>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[15px] font-bold text-[#182522] dark:text-white flex items-center gap-2">
-              <Gauge className="w-4 h-4 text-[#176B63]" />
+            <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+              <Gauge className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>۲. بودجه Core Web Vitals و نقشه (MAP-P01..P06)</span>
             </h3>
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-[6px] ${budgetEval.passedAll ? 'bg-[#EAF5EE] text-[#176B4C]' : 'bg-[#FFF4E5] text-[#875000]'}`}>
@@ -151,10 +151,10 @@ export const ValidationAndImplementLabTab: React.FC = () => {
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-[12px] mb-3 tabular-nums">
-            <div className="p-2 rounded-[8px] bg-[#F1F4F2] dark:bg-slate-800">LCP: <strong>{cwvSample.lcpMs}ms</strong> (≤ 2500ms)</div>
-            <div className="p-2 rounded-[8px] bg-[#F1F4F2] dark:bg-slate-800">INP: <strong>{cwvSample.inpMs}ms</strong> (≤ 200ms)</div>
-            <div className="p-2 rounded-[8px] bg-[#F1F4F2] dark:bg-slate-800">CLS: <strong>{cwvSample.cls}</strong> (≤ 0.1)</div>
-            <div className="p-2 rounded-[8px] bg-[#F1F4F2] dark:bg-slate-800">MAP-P06: <strong>{cwvSample.selectionLatencyMs}ms</strong> (≤ 300ms)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">LCP: <strong>{cwvSample.lcpMs}ms</strong> (≤ 2500ms)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">INP: <strong>{cwvSample.inpMs}ms</strong> (≤ 200ms)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">CLS: <strong>{cwvSample.cls}</strong> (≤ 0.1)</div>
+            <div className="p-2 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800">MAP-P06: <strong>{cwvSample.selectionLatencyMs}ms</strong> (≤ 300ms)</div>
           </div>
           <div className="flex items-center gap-2">
             <RadarButton variant="outline" size="sm" onClick={() => setCwvSample({ lcpMs: 3100, inpMs: 240, cls: 0.08, selectionLatencyMs: 360 })}>
@@ -168,15 +168,15 @@ export const ValidationAndImplementLabTab: React.FC = () => {
 
         <RadarCard padding="standard" elevated>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[15px] font-bold text-[#182522] dark:text-white flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#176B63]" />
+            <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>۳. دامنه پایلوت نقشه (RT-PILOT-MAP-001)</span>
             </h3>
-            <span className="text-[11px] font-bold text-[#586760] tabular-nums">پذیرش: {STAGE_11_ACCEPTANCE_COUNT} بند</span>
+            <span className="text-[11px] font-bold text-[var(--color-text-muted)] tabular-nums">پذیرش: {STAGE_11_ACCEPTANCE_COUNT} بند</span>
           </div>
           <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto text-[11.5px]">
             {PILOT_MAP_SCOPE_ITEMS.map((item) => (
-              <div key={item.key} className="p-1.5 rounded-[6px] border border-[#DCE3DF] dark:border-slate-800 flex items-center justify-between gap-1">
+              <div key={item.key} className="p-1.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-1">
                 <span className="truncate font-medium">{item.titleFa}</span>
                 {item.status === 'required' ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#176B4C] shrink-0" />
@@ -191,8 +191,8 @@ export const ValidationAndImplementLabTab: React.FC = () => {
 
       <RadarCard padding="standard" elevated>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-[15px] font-bold text-[#182522] dark:text-white flex items-center gap-2">
-            <Flag className="w-4 h-4 text-[#176B63]" />
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+            <Flag className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۴. پرچم‌های انتشار تدریجی و بازگشت فوری (UI_FLAGS & Rollback · §9)</span>
           </h3>
           <RadarButton
@@ -208,18 +208,18 @@ export const ValidationAndImplementLabTab: React.FC = () => {
           {flags.map((flag) => (
             <label
               key={flag.key}
-              className="p-2.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 cursor-pointer text-[12px]"
+              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 cursor-pointer text-[12px]"
             >
               <div className="min-w-0">
-                <div className="font-bold text-[#182522] dark:text-white truncate">{flag.titleFa}</div>
-                <div className="text-[10.5px] text-[#586760]">{flag.rolloutPhase} · مالک: {flag.owner}</div>
+                <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{flag.titleFa}</div>
+                <div className="text-[10.5px] text-[var(--color-text-muted)]">{flag.rolloutPhase} · مالک: {flag.owner}</div>
               </div>
               <input
                 type="checkbox"
                 checked={flag.enabled}
                 onChange={(e) => setFlags((prev) => toggleRolloutFlagSafe(prev, flag.key, e.target.checked))}
                 aria-label={`وضعیت ${flag.key}`}
-                className="accent-[#176B63] shrink-0"
+                className="accent-[var(--color-brand-600)] shrink-0"
               />
             </label>
           ))}
@@ -227,7 +227,7 @@ export const ValidationAndImplementLabTab: React.FC = () => {
       </RadarCard>
 
       <RadarCard padding="standard" elevated data-testid="stages-1-to-17-audit-matrix">
-        <h3 className="text-[15px] font-bold text-[#182522] dark:text-white mb-2.5">
+        <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white mb-2.5">
           ۵. ماتریس ممیزی و پذیرش مراحل ۱ تا ۱۷ (End-to-End Stage 1–17 Verification)
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11.5px] tabular-nums">

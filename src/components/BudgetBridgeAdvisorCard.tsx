@@ -130,7 +130,7 @@ export function BudgetBridgeAdvisorCard({
         <div className="bg-white/90 dark:bg-slate-900/90 border border-amber-200/80 dark:border-amber-900/40 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
             <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
-              <Maximize2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <Maximize2 className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>۱. تعدیل متراژ متناسب با بودجه فعلی</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300">
@@ -192,7 +192,7 @@ export function BudgetBridgeAdvisorCard({
                 </button>
               )}
               {mode === 'buy' && !deductTenantRahnInBuy && (
-                <button type="button" onClick={onToggleDeductTenantRahn} className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-[10.5px] font-bold cursor-pointer">+ کسر رهن مستأجر</button>
+                <button type="button" onClick={onToggleDeductTenantRahn} className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-[var(--color-brand-600)] text-white text-[10.5px] font-bold cursor-pointer">+ کسر رهن مستأجر</button>
               )}
             </div>
           </div>

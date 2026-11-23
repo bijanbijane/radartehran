@@ -59,7 +59,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Calculator className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <div>
@@ -143,7 +143,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                   <span className="font-extrabold text-emerald-950 dark:text-emerald-200 text-sm">
                     {commDealType === 'buy' ? 'سهم پرداختی خریدار' : 'سهم پرداختی مستاجر'}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">نرخ مصوب اتحادیه</span>
+                  <span className="px-2 py-0.5 rounded-md bg-[var(--color-brand-600)] text-white text-[10px] font-bold">نرخ مصوب اتحادیه</span>
                 </div>
                 <div className="space-y-1.5 text-slate-700 dark:text-slate-300">
                   <div className="flex justify-between">
@@ -203,7 +203,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
             </div>
             <button
               type="button" onClick={handleCopyCommissionSheet}
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+              className="w-full py-2.5 px-4 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
             >
               {copiedCommission ? (
                 <><CheckCircle2 className="w-4 h-4 stroke-[1.75]" /><span>برگه محاسبه کمیسیون کپی شد!</span></>
@@ -221,7 +221,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Send className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <div>
@@ -253,7 +253,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
                 type="button"
                 onClick={() => {
                   const textToCopy = intlCurrency !== 'IRT' || areaUnit === 'sqft' ? `${telegramText}\n${tgHoodSummary}` : telegramText;
-                  navigator.clipboard?.writeText(textToCopy).catch(() => {}); setCopiedTelegram(true); setTimeout(() => setCopiedTelegram(false), 2200); }} className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                  navigator.clipboard?.writeText(textToCopy).catch(() => {}); setCopiedTelegram(true); setTimeout(() => setCopiedTelegram(false), 2200); }} className="w-full py-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
               >
                 {copiedTelegram ? (
                   <><CheckCircle2 className="w-4 h-4 stroke-[1.75]" /><span>پست تلگرام در حافظه کپی شد!</span></>
@@ -263,7 +263,7 @@ function formatTomanReadable(toman: number): string { const safeToman = Number.i
             </div>
             <form onSubmit={handleSendToTelegramWebhook} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
               <div className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Send className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>ارسال مستقیم به کانال رسمی تلگرام (از طریق تنظیمات امن سرور ویژه ادمین)</span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">

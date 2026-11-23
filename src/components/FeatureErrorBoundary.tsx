@@ -153,7 +153,7 @@ export class FeatureErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleSafeRetry}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               تلاش مجدد امن ({MAX_SAFE_RETRIES - this.state.retryCount} فرصت باقی‌مانده)

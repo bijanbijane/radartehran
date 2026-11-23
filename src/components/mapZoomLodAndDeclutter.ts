@@ -101,12 +101,14 @@ export function buildNeighborhoodLodDivIconConfig(params: {
   const safeShortPrice = escapeHtmlAttr(shortPriceLabel);
   const safeFullPrice = escapeHtmlAttr(fullPriceLabel);
   const safeSponsorName = escapeHtmlAttr(hood.sponsor?.name || '');
+  const markerState = isSelected ? 'selected' : hood.status === 'red' ? 'unavailable' : 'default';
+  const markerStateAttr = `data-marker-state="${markerState}"`;
   if (tier === 'dot' || zoom < 12) {
     const dotSize = isSelected ? 16 : zoom <= 10 ? 10 : 12;
     const ringBorder = isSelected ? (isDarkMap ? '2.5px solid #38bdf8' : '2.5px solid #0f172a') : hasSponsor ? '2px solid #fbbf24' : isDarkMap ? '2px solid rgba(255,255,255,0.92)' : '2px solid #ffffff';
     const dotShadow = isSelected ? '0 0 14px rgba(16,185,129,0.95), 0 0 0 4px rgba(56,189,248,0.35)' : `0 2px 6px rgba(0,0,0,0.45), 0 0 0 2px ${stroke}33`;
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="dot" style="display:inline-block;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${pillBg};border:${ringBorder};box-shadow:${dotShadow};transition:transform 0.15s ease;"></span><span class="hood-text-label" style="display:none;opacity:0;">${safeHoodName}</span><span class="hood-price-label" style="display:none;opacity:0;"></span></div>`,
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="dot" ${markerStateAttr} style="display:inline-block;width:${dotSize}px;height:${dotSize}px;border-radius:9999px;background:${pillBg};border:${ringBorder};box-shadow:${dotShadow};transition:transform 0.15s ease;"></span><span class="hood-text-label" style="display:none;opacity:0;">${safeHoodName}</span><span class="hood-price-label" style="display:none;opacity:0;"></span></div>`,
       iconSize: [dotSize + 8, dotSize + 8], iconAnchor: [(dotSize + 8) / 2, (dotSize + 8) / 2],
     };
   }
@@ -117,7 +119,7 @@ export function buildNeighborhoodLodDivIconConfig(params: {
   if (tier === 'compact_chip') {
     const safeTruncName = escapeHtmlAttr(formatCompactNeighborhoodName(hood.name));
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="compact" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.8px;font-weight:800;color:#ffffff;background:${pillBg}e6;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeTruncName}</span><span class="hood-price-label" style="opacity:0.92;font-weight:700;font-size:9.2px;border-right:1px solid rgba(255,255,255,0.3);padding-right:3px;">${safeShortPrice}</span></span></div>`,
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="compact" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.8px;font-weight:800;color:#ffffff;background:${pillBg}e6;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeTruncName}</span><span class="hood-price-label" style="opacity:0.92;font-weight:700;font-size:9.2px;border-right:1px solid rgba(255,255,255,0.3);padding-right:3px;">${safeShortPrice}</span></span></div>`,
       iconSize: [sz.w, sz.h], iconAnchor: [Math.round(sz.w / 2), Math.round(sz.h / 2)],
     };
   }
@@ -126,12 +128,12 @@ export function buildNeighborhoodLodDivIconConfig(params: {
     const safeGrowth = escapeHtmlAttr(`${growth6m > 0 ? '+' : ''}${toPersianNum(growth6m)}٪`);
     const safeMetro = escapeHtmlAttr(`مترو ${toPersianNum(hood.metro)}`);
     return {
-      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="detailed" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.8px;font-weight:800;color:#ffffff;background:${pillBg}f0;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="opacity:0.94;font-weight:700;border-right:1px solid rgba(255,255,255,0.3);padding-right:4px;">${safeFullPrice}</span><span class="hood-price-label" style="font-size:9.2px;background:rgba(0,0,0,0.22);padding:0.5px 4.5px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span></span></div>`,
+      html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="detailed" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.8px;font-weight:800;color:#ffffff;background:${pillBg}f0;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="opacity:0.94;font-weight:700;border-right:1px solid rgba(255,255,255,0.3);padding-right:4px;">${safeFullPrice}</span><span class="hood-price-label" style="font-size:9.2px;background:rgba(0,0,0,0.22);padding:0.5px 4.5px;border-radius:9999px;">${safeGrowth} · ${safeMetro}</span></span></div>`,
       iconSize: [sz.w, sz.h], iconAnchor: [Math.round(sz.w / 2), Math.round(sz.h / 2)],
     };
   }
   return {
-    html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="standard" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3.5px;padding:2px 7.5px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.3px;font-weight:800;color:#ffffff;background:${pillBg}eb;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:3.5px;">${safeShortPrice}</span></span></div>`,
+    html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="standard" ${markerStateAttr} style="white-space:nowrap;display:inline-flex;align-items:center;gap:3.5px;padding:2px 7.5px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:10.3px;font-weight:800;color:#ffffff;background:${pillBg}eb;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeHoodName}</span><span class="hood-price-label" style="opacity:0.92;font-weight:600;border-right:1px solid rgba(255,255,255,0.28);padding-right:3.5px;">${safeShortPrice}</span></span></div>`,
     iconSize: [sz.w, sz.h], iconAnchor: [Math.round(sz.w / 2), Math.round(sz.h / 2)],
   };
 }

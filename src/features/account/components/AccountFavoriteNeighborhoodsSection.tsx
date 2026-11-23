@@ -45,7 +45,7 @@ export const AccountFavoriteNeighborhoodsSection: React.FC<AccountFavoriteNeighb
         <div className="flex items-center gap-2">
           {favoriteHoods.length >= 2 && onOpenShortlistMatrix && (
             <button type="button" onClick={onOpenShortlistMatrix} className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600" /><span>{isEn ? 'Shortlist Decision Matrix' : 'ماتریس مقایسه منتخب‌ها'}</span>
+              <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>{isEn ? 'Shortlist Decision Matrix' : 'ماتریس مقایسه منتخب‌ها'}</span>
             </button>
           )}
           <span className="text-xs text-slate-400 hidden sm:inline">{isEn ? 'Click any card to center live map' : 'کلیک روی هر کارت، نقشه زنده را متمرکز می‌کند'}</span>
@@ -105,11 +105,11 @@ export const AccountFavoriteNeighborhoodsSection: React.FC<AccountFavoriteNeighb
                 <div className="py-3 my-3 border-y border-slate-100 dark:border-slate-800 grid grid-cols-2 text-xs tabular-nums">
                   <div>
                     <span className="text-[10px] text-slate-400 block font-medium">{unitBuy === unitDeal ? 'سناریو v6.4 (غیرثبتی):' : 'اعلامی / سناریو v6.4 (غیرثبتی):'}</span>
-                    <strong className="text-slate-900 dark:text-white font-black text-sm">{toPersianNum(unitBuy)} {unitBuy !== unitDeal && <span className="text-emerald-600 dark:text-emerald-400">({toPersianNum(unitDeal)})</span>} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}</strong>
+                    <strong className="text-slate-900 dark:text-white font-black text-sm">{toPersianNum(unitBuy)} {unitBuy !== unitDeal && <span className="text-[var(--color-brand-600)] dark:text-emerald-400">({toPersianNum(unitDeal)})</span>} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(unitDeal, intlCurrency, radarLocale)}` : ''}</strong>
                   </div>
                   <div className="border-r border-slate-100 dark:border-slate-800 pr-3">
                     <span className="text-[10px] text-slate-400 block font-medium">رهن ۸۰ متر:</span>
-                    <strong className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{toPersianNum(hood.rahn80m)} م.ت</strong>
+                    <strong className="text-[var(--color-brand-600)] dark:text-emerald-400 font-black text-sm">{toPersianNum(hood.rahn80m)} م.ت</strong>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

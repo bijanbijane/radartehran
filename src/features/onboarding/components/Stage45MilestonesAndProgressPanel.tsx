@@ -169,7 +169,7 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
           </div>
           {awaitingSub && (
             <div className="flex gap-1.5">
-              <button type="button" data-testid="del-quick-accept-btn" onClick={() => handleReviewDeliverable(awaitingSub.submissionId, 'پذیرفته‌شده')} className="rounded bg-emerald-600 px-2.5 py-1 font-bold text-slate-950 cursor-pointer">
+              <button type="button" data-testid="del-quick-accept-btn" onClick={() => handleReviewDeliverable(awaitingSub.submissionId, 'پذیرفته‌شده')} className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 font-bold text-slate-950 cursor-pointer">
                 تأیید تحویل منتظر بررسی
               </button>
               <button type="button" data-testid="del-quick-revision-btn" onClick={() => handleReviewDeliverable(awaitingSub.submissionId, 'نیازمند اصلاح')} className="rounded border border-amber-500 bg-slate-900 px-2.5 py-1 font-bold text-amber-200 cursor-pointer">
@@ -225,7 +225,7 @@ export const Stage45MilestonesAndProgressPanel: React.FC<Stage45MilestonesAndPro
             <div className="flex items-center gap-2">
               <label className="text-slate-300">درصد اعلام‌شده:</label>
               <input type="text" aria-label="درصد اعلام‌شده" aria-invalid={Boolean(progressError)} value={declaredPct} onChange={(e) => { setDeclaredPct(e.target.value); if (progressError) setProgressError(null); }} className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white" />
-              <button type="submit" data-testid="del-submit-progress-btn" className="mr-auto rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
+              <button type="submit" data-testid="del-submit-progress-btn" className="mr-auto rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
                 ثبت در تاریخچه پیشرفت
               </button>
             </div>

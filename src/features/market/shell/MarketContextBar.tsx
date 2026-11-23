@@ -50,18 +50,18 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
     )?.labelFa || 'ملک';
 
   return (
-    <header className="space-y-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
+    <header className="space-y-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-3">
         <div className="space-y-0.5">
-          <div className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400">
+          <div className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
             {isEn
               ? 'RT-UI-MARKET-001 · Contextual Market Analysis · Map-Synced'
               : 'مرکز تحلیل بازار املاک · تفکیک قیمت پیشنهادی، برآوردی و معامله · همگام با نقشه'}
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-[#182522] dark:text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] dark:text-white tracking-tight">
             {isEn ? 'Analyze the Real Estate Market with Data' : 'بازار املاک را با داده بررسی کنید'}
           </h1>
-          <p className="text-xs text-[#586760] dark:text-slate-400">
+          <p className="text-xs text-[var(--color-text-muted)] dark:text-slate-400">
             {isEn
               ? 'Compare asking prices, v6.4 negotiation estimates, rent structure, and supply with sample provenance.'
               : 'بررسی وضعیت قیمت پیشنهادی، سناریوی برآوردی معامله، رهن و اجاره، ترکیب عرضه و کیفیت نمونه.'}
@@ -73,33 +73,33 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
             type="button"
             onClick={onOpenSaved}
             data-testid="market-open-saved-btn"
-            className="min-h-[34px] px-2.5 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-[#F6F8F6] dark:hover:bg-slate-800 text-[11.5px] font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer transition"
+            className="min-h-[34px] px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 text-[11.5px] font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1 cursor-pointer transition"
           >
-            <Bookmark className="w-3.5 h-3.5 text-[#176B63] dark:text-emerald-400" />
+            <Bookmark className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>{isEn ? 'Saved Views' : 'ذخیره‌شده‌ها'}</span>
           </button>
           <button
             type="button"
             onClick={onOpenMethodology}
             data-testid="market-open-methodology-btn"
-            className="min-h-[34px] px-2.5 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-[#F6F8F6] dark:hover:bg-slate-800 text-[11.5px] font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer transition"
+            className="min-h-[34px] px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 text-[11.5px] font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1 cursor-pointer transition"
           >
-            <BookOpen className="w-3.5 h-3.5 text-[#176B63] dark:text-emerald-400" />
+            <BookOpen className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>{isEn ? 'Methodology' : 'روش‌شناسی'}</span>
           </button>
           <button
             type="button"
             onClick={onExportCsv}
             data-testid="market-export-csv-btn"
-            className="min-h-[34px] px-2.5 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-[#F6F8F6] dark:hover:bg-slate-800 text-[11.5px] font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer transition"
+            className="min-h-[34px] px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 text-[11.5px] font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1 cursor-pointer transition"
           >
-            <Download className="w-3.5 h-3.5 text-[#586760]" />
+            <Download className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
             <span>{isEn ? 'Export CSV' : 'خروجی CSV'}</span>
           </button>
           <button
             type="button"
             onClick={onOpenFullMap}
-            className="min-h-[34px] px-3 py-1 rounded-lg bg-[#176B63] hover:bg-[#14534E] text-white text-[11.5px] font-bold flex items-center gap-1 cursor-pointer transition"
+            className="min-h-[34px] px-3 py-1 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-[11.5px] font-bold flex items-center gap-1 cursor-pointer transition"
           >
             <MapPin className="w-3.5 h-3.5" />
             <span>{isEn ? 'Full Map' : 'نقشه کامل'}</span>
@@ -110,7 +110,7 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
       {/* Market Hierarchy + Active Context Summary */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
         <div className="flex flex-wrap items-center gap-2">
-          <div role="group" aria-label="ساختار نوع بازار" className="inline-flex bg-[#F1F4F2] dark:bg-slate-800 p-0.5 rounded-lg border border-[#DCE3DF] dark:border-slate-700">
+          <div role="group" aria-label="ساختار نوع بازار" className="inline-flex bg-[var(--color-bg-muted)] dark:bg-slate-800 p-0.5 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-700">
             {MARKET_LABELS.map((m) => (
               <button
                 key={m.id}
@@ -119,8 +119,8 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
                 onClick={() => onSelectMarketType(m.id)}
                 className={`min-h-[32px] px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
                   appliedFilters.marketType === m.id
-                    ? 'bg-white dark:bg-slate-900 text-[#182522] dark:text-white shadow-2xs'
-                    : 'text-[#586760] dark:text-slate-400 hover:text-[#182522] dark:hover:text-white'
+                    ? 'bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white shadow-2xs'
+                    : 'text-[var(--color-text-muted)] dark:text-slate-400 hover:text-[var(--color-text-primary)] dark:hover:text-white'
                 }`}
               >
                 {isEn ? m.en : m.fa}
@@ -129,15 +129,15 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
           </div>
 
           {appliedFilters.marketType !== 'land' && (
-            <div role="group" aria-label="نوع معامله بازار" className="inline-flex bg-[#F1F4F2] dark:bg-slate-800 p-0.5 rounded-lg border border-[#DCE3DF] dark:border-slate-700">
+            <div role="group" aria-label="نوع معامله بازار" className="inline-flex bg-[var(--color-bg-muted)] dark:bg-slate-800 p-0.5 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-700">
               <button
                 type="button"
                 data-testid="market-tx-sale"
                 onClick={() => onSelectTransaction('sale')}
                 className={`min-h-[32px] px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
                   appliedFilters.transactionType === 'sale'
-                    ? 'bg-[#176B63] text-white'
-                    : 'text-[#586760] dark:text-slate-400 hover:text-[#182522]'
+                    ? 'bg-[var(--color-brand-600)] text-white'
+                    : 'text-[var(--color-text-muted)] dark:text-slate-400 hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 {isEn ? 'Buy / Sale' : 'فروش'}
@@ -148,8 +148,8 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
                 onClick={() => onSelectTransaction('rent')}
                 className={`min-h-[32px] px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
                   appliedFilters.transactionType === 'rent'
-                    ? 'bg-[#176B63] text-white'
-                    : 'text-[#586760] dark:text-slate-400 hover:text-[#182522]'
+                    ? 'bg-[var(--color-brand-600)] text-white'
+                    : 'text-[var(--color-text-muted)] dark:text-slate-400 hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 {isEn ? 'Rent / Deposit' : 'رهن و اجاره'}
@@ -161,9 +161,9 @@ export const MarketContextBar: React.FC<MarketContextBarProps> = ({
         {/* Zero-pill active context line */}
         <div
           data-testid="market-active-context-summary"
-          className="text-xs text-[#34433E] dark:text-slate-300 font-medium tabular-nums flex flex-wrap items-center gap-x-2 gap-y-1"
+          className="text-xs text-[var(--color-text-secondary)] dark:text-slate-300 font-medium tabular-nums flex flex-wrap items-center gap-x-2 gap-y-1"
         >
-          <span className="font-bold text-[#182522] dark:text-white">{geoText}</span>
+          <span className="font-bold text-[var(--color-text-primary)] dark:text-white">{geoText}</span>
           <span className="text-[#94A39B]">·</span>
           <span>{MARKET_LABELS.find((x) => x.id === appliedFilters.marketType)?.fa} ({subTypeLabel})</span>
           <span className="text-[#94A39B]">·</span>

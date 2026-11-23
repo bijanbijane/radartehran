@@ -143,7 +143,7 @@ export const ProductViewRouter: React.FC<ProductViewRouterProps> = (p) => {
           <button
             type="button"
             onClick={() => navigateTo('map')}
-            className="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-emerald-600 hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 transition cursor-pointer shadow-xs whitespace-nowrap"
+            className="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-[var(--color-brand-600)] hover:opacity-90 text-white text-[11px] font-bold flex items-center gap-1 transition cursor-pointer shadow-xs whitespace-nowrap"
           >
             <span>{isEn ? 'Full Map' : 'نقشه کامل'}</span>
           </button>

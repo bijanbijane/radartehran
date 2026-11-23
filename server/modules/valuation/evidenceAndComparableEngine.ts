@@ -11,6 +11,10 @@ import type {
   ValuationTransactionType,
 } from './types';
 import { normalizeCurrencyToMillionToman } from './validation';
+import {
+  isEvidenceEligibleForOfficialBaseline,
+  resolveInitialEvidenceVerificationStatus,
+} from './evidenceVerificationPolicy';
 
 export function createDefaultModelConfiguration(nowIso = new Date().toISOString()): ValuationModelConfiguration {
   return {
@@ -185,7 +189,7 @@ export function buildMarketEvidenceRecord(params: {
           e.transactionType === params.transactionType &&
           !e.outlierFlag &&
           !e.duplicateOfEvidenceId &&
-          e.verificationStatus !== 'REJECTED',
+          isEvidenceEligibleForOfficialBaseline(e.verificationStatus, !!e.outlierFlag, e.duplicateOfEvidenceId),
       )
       .map((e) => e.normalizedPricePerSqmMillion);
 
@@ -236,7 +240,7 @@ export function buildMarketEvidenceRecord(params: {
     isAskingPrice,
     isCompletedTransaction,
     reliabilityWeight: SOURCE_RELIABILITY_WEIGHTS[params.sourceType],
-    verificationStatus: outlierFlag ? 'FLAGGED_OUTLIER' : 'VERIFIED',
+    verificationStatus: resolveInitialEvidenceVerificationStatus(params.sourceType, outlierFlag),
     outlierFlag,
     outlierReason,
     duplicateOfEvidenceId: duplicate?.id,
@@ -307,7 +311,13 @@ export function selectAndScoreComparables(params: {
   const duplicateExcludedIds: string[] = [];
 
   const validPsmValues = rawCandidates
-    .filter((c) => c.sqm > 0 && c.priceNumericMillion > 0 && !c.duplicateOfEvidenceId && c.verificationStatus !== 'REJECTED')
+    .filter(
+      (c) =>
+        c.sqm > 0 &&
+        c.priceNumericMillion > 0 &&
+        !c.duplicateOfEvidenceId &&
+        isEvidenceEligibleForOfficialBaseline(String(c.verificationStatus || 'PENDING_REVIEW'), !!c.outlierFlag, c.duplicateOfEvidenceId),
+    )
     .map((c) => c.priceNumericMillion / c.sqm);
   const medianRawPsm = validPsmValues.length > 0 ? computeMedian(validPsmValues) : baselinePerSqmMillion;
 
@@ -442,24 +452,24 @@ export function computeNeighborhoodBaselineFromEvidence(params: {
     });
   };
 
+  const isBaselineEligible = (e: MarketEvidenceRecord) =>
+    isEvidenceEligibleForOfficialBaseline(e.verificationStatus, !!e.outlierFlag, e.duplicateOfEvidenceId);
   let chosenLevel: NeighborhoodBaselineRecord['geographicLevel'] = 'neighborhood';
   let scopedAll = filterByScope('neighborhood');
 
   if (subNeighborhoodId) {
-    const subRecords = filterByScope('sub_neighborhood').filter((e) => !e.outlierFlag && !e.duplicateOfEvidenceId && e.verificationStatus !== 'REJECTED');
+    const subRecords = filterByScope('sub_neighborhood').filter(isBaselineEligible);
     if (subRecords.length >= config.minComparableSampleCount) {
       chosenLevel = 'sub_neighborhood';
       scopedAll = filterByScope('sub_neighborhood');
     }
   }
 
-  let eligible = scopedAll.filter(
-    (e) => !e.outlierFlag && !e.duplicateOfEvidenceId && e.verificationStatus !== 'REJECTED',
-  );
+  let eligible = scopedAll.filter(isBaselineEligible);
 
   if (eligible.length === 0 && districtId) {
     const distAll = filterByScope('district');
-    const distEligible = distAll.filter((e) => !e.outlierFlag && !e.duplicateOfEvidenceId && e.verificationStatus !== 'REJECTED');
+    const distEligible = distAll.filter(isBaselineEligible);
     if (distEligible.length > 0) {
       chosenLevel = 'district';
       scopedAll = distAll;
@@ -469,7 +479,7 @@ export function computeNeighborhoodBaselineFromEvidence(params: {
 
   if (eligible.length === 0) {
     const cityAll = filterByScope('city');
-    const cityEligible = cityAll.filter((e) => !e.outlierFlag && !e.duplicateOfEvidenceId && e.verificationStatus !== 'REJECTED');
+    const cityEligible = cityAll.filter(isBaselineEligible);
     if (cityEligible.length > 0) {
       chosenLevel = 'city';
       scopedAll = cityAll;

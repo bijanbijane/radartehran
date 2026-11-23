@@ -1,4 +1,5 @@
-import React from 'react'; import { signInWithPopup, type User as FirebaseUser } from 'firebase/auth'; import { collection, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch } from 'firebase/firestore'; import { auth, db, googleProvider, OperationType, handleFirestoreError } from '../firebase'; import { BargainListing, BubbleReport, BuyerAlertLeadItem, calcDistanceKm, EvaluatedNeighborhood, getHoodMonthlySponsorTariff, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood } from '../data/multiCityData'; import { formatBrandCityTitle } from '../utils/geo/cityGeospatialResolver'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { cleanIranianMobile, FeatureFlags, isValidIranianMobile, recordDiagnosticEvent, sanitizeInput } from '../utils/security'; import { isValidNormalizedIranianMobile, normalizeIranianMobileInput } from '../utils/forms/formInputHelpers'; import { classifyPropertyDuplicateCandidate, sanitizeSafeTelHref } from '../utils/marketDataIntegrity'; import { acquireSafeCityLocation } from '../utils/geolocationGuard'; import { detectBrowserEnvironment } from '../utils/inAppBrowserGuard'; import type { ListingMediaObject } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { persistHoodOverrideToCloud, useRadarAdminActions } from './useRadarAdminActions'; export interface UseRadarCrudActionsParams { currentUser: FirebaseUser | null; isVerifiedAdmin: boolean; activeCity: CityId; mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number;
+import React from 'react'; import { signInWithPopup, type User as FirebaseUser } from 'firebase/auth'; import { auth, googleProvider } from '../firebase';
+import { createBargainWithOwner, createSponsorRequest, saveUserPreferences, submitResidentVote, upsertBuyerAlertLead } from '../data/neighborhoodRemoteRepository'; import { BargainListing, BubbleReport, BuyerAlertLeadItem, calcDistanceKm, EvaluatedNeighborhood, getHoodMonthlySponsorTariff, Neighborhood, SponsorCrmRequestItem, toPersianNum } from '../data/neighborhoods'; import { CityId, MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood } from '../data/multiCityData'; import { formatBrandCityTitle } from '../utils/geo/cityGeospatialResolver'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { cleanIranianMobile, FeatureFlags, isValidIranianMobile, recordDiagnosticEvent, sanitizeInput } from '../utils/security'; import { isValidNormalizedIranianMobile, normalizeIranianMobileInput } from '../utils/forms/formInputHelpers'; import { classifyPropertyDuplicateCandidate, sanitizeSafeTelHref } from '../utils/marketDataIntegrity'; import { acquireSafeCityLocation } from '../utils/geolocationGuard'; import { detectBrowserEnvironment } from '../utils/inAppBrowserGuard'; import type { ListingMediaObject } from '../utils/objectStorage'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { persistHoodOverrideToCloud, useRadarAdminActions } from './useRadarAdminActions'; export interface UseRadarCrudActionsParams { currentUser: FirebaseUser | null; isVerifiedAdmin: boolean; activeCity: CityId; mode: 'rent' | 'buy'; deposit: number; monthlyRent: number; buyTotalBudget: number;
   targetSqm: number; workHubId: string; favoriteHoodIds: number[]; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; featureFlags: FeatureFlags; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; neighborhoods: Neighborhood[]; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; evaluatedNeighborhoods: EvaluatedNeighborhood[]; selectedHood: EvaluatedNeighborhood; selectedHoodId: number; setSelectedHoodId: React.Dispatch<React.SetStateAction<number>>; onSelectNeighborhood: (hood: EvaluatedNeighborhood) => void; setMobileSheetOpen: React.Dispatch<React.SetStateAction<boolean>>; setActiveTab: React.Dispatch<React.SetStateAction<'scorecard' | 'market' | 'bargains' | 'reviews' | 'vote'>>; setShowGoldPins: React.Dispatch<React.SetStateAction<boolean>>; mapInstanceRef: React.MutableRefObject<any>; allExpansionSeeds: Neighborhood[]; bargainHoodId: number; bargainType: 'خرید' | 'اجاره'; bargainSqm: number; bargainTitle: string; setBargainTitle: React.Dispatch<React.SetStateAction<string>>; bargainStreet: string; setBargainStreet: React.Dispatch<React.SetStateAction<string>>; bargainProposedPrice: number; bargainUploadedMedia: ListingMediaObject[]; setBargainUploadedMedia: React.Dispatch<React.SetStateAction<ListingMediaObject[]>>; setBargainSubmitMsg: React.Dispatch<React.SetStateAction<{ type: 'error' | 'success'; text: string } | null>>;
   targetBargainHood: EvaluatedNeighborhood | Neighborhood; liveBargainCheck: { maxAllowedFor10Percent: number; discountPercent: number; isEligible: boolean; buyerProfitMillion: number }; sponsorHoodId: number; sponsorAgencyName: string; sponsorPhone: string; sponsorSpecialty: string; sponsorExpYears: number; sponsorPlanMonths: 1 | 3; sponsorTrackingCode: string; setSponsorTrackingCode: React.Dispatch<React.SetStateAction<string>>; setSponsorSubmitMsg: React.Dispatch<React.SetStateAction<string>>; sponsorRequests: SponsorCrmRequestItem[]; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; alertHoodId: number; alertFullName: string; setAlertFullName: React.Dispatch<React.SetStateAction<string>>; alertPhone: string; setAlertPhone: React.Dispatch<React.SetStateAction<string>>; alertDealType: 'خرید' | 'اجاره'; alertMaxBudget: string; setAlertSubmitMsg: React.Dispatch<React.SetStateAction<string>>;
   buyerLeads: BuyerAlertLeadItem[]; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setAdminUnlocked: React.Dispatch<React.SetStateAction<boolean>>; adminPassInput: string; setAdminPassInput: React.Dispatch<React.SetStateAction<string>>; setAdminPassError: React.Dispatch<React.SetStateAction<string>>; savedAdminPassword: string; setSavedAdminPassword: React.Dispatch<React.SetStateAction<string>>; newAdminPassword: string; setNewAdminPassword: React.Dispatch<React.SetStateAction<string>>; setAdminPassChangeMsg: React.Dispatch<React.SetStateAction<string>>;
@@ -20,14 +21,51 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     ); if (isDuplicate) { p.setBargainSubmitMsg({ type: 'error', text: 'این آگهی با همین مشخصات و آدرس پیش‌تر در این محله ثبت شده است.' }); return; }
     const attachedMedia = p.bargainUploadedMedia.slice(0, 6); const imageUrls = attachedMedia.filter((m) => m.mediaType === 'image').map((m) => m.url).slice(0, 5); const videoObj = attachedMedia.find((m) => m.mediaType === 'video'); const objectStorageBucket = attachedMedia[0]?.bucket;
     const objectStorageKeys = attachedMedia.map((m) => m.objectKey).filter((k): k is string => typeof k === 'string' && k.length > 0); const objectStorageObjectIds = p.bargainUploadedMedia.map((m) => m.id).filter((id) => typeof id === 'string' && /^obj-\d{10,16}-[a-f0-9]{8}$/i.test(id)).slice(0, 6);
-    const bargainRef = doc(collection(db, 'bargains')); const bargainDocId = bargainRef.id; const ownerRef = doc(db, 'bargainOwners', bargainDocId); const mediaPayload = { ...(imageUrls.length > 0 ? { imageUrl: imageUrls[0], imageUrls } : {}), ...(videoObj?.url ? { videoUrl: videoObj.url } : {}),
-      ...(objectStorageBucket ? { objectStorageBucket } : {}), ...(objectStorageKeys.length > 0 ? { objectStorageKeys } : {}), ...(objectStorageObjectIds.length > 0 ? { objectStorageObjectIds } : {}), }; const newBargain: BargainListing = {
-      id: `cloud-${bargainDocId}`, title: cleanTitle, type: p.bargainType, sqm, priceText: formattedPriceText,
-      discountPercent, buyerProfitText: formattedProfitText, street: cleanStreet, ...mediaPayload, }; try { const batch = writeBatch(db); batch.set(bargainRef, { hoodId, title: newBargain.title, type: newBargain.type, sqm: newBargain.sqm, priceText: newBargain.priceText,
-        discountPercent: newBargain.discountPercent, buyerProfitText: newBargain.buyerProfitText, street: newBargain.street, ...mediaPayload, status: p.isVerifiedAdmin ? 'approved' : 'pending', createdAt: serverTimestamp(), }); batch.set(ownerRef, { bargainId: bargainDocId, userId: p.currentUser.uid, createdAt: serverTimestamp() }); await batch.commit(); } catch (err) {
+    const newBargain: BargainListing = {
+      id: `cloud-pending-${Date.now()}`,
+      title: cleanTitle,
+      type: p.bargainType,
+      sqm,
+      priceText: formattedPriceText,
+      discountPercent,
+      buyerProfitText: formattedProfitText,
+      street: cleanStreet,
+      ...(imageUrls.length > 0 ? { imageUrl: imageUrls[0], imageUrls } : {}),
+      ...(videoObj?.url ? { videoUrl: videoObj.url } : {}),
+      ...(objectStorageBucket ? { objectStorageBucket } : {}),
+      ...(objectStorageKeys.length > 0 ? { objectStorageKeys } : {}),
+      ...(objectStorageObjectIds.length > 0 ? { objectStorageObjectIds } : {}),
+      status: p.isVerifiedAdmin ? 'approved' : 'pending',
+    };
+    const operationCity = resolveCityIdForNeighborhood(p.targetBargainHood.id) || p.activeCity;
+  let bargainDocId = '';
+    try {
+      const created = await createBargainWithOwner(
+        {
+          hoodId,
+          hoodName: p.targetBargainHood.name,
+          title: newBargain.title,
+          type: newBargain.type,
+          sqm: newBargain.sqm,
+          priceText: newBargain.priceText,
+          discountPercent: newBargain.discountPercent,
+          buyerProfitText: newBargain.buyerProfitText,
+          street: newBargain.street,
+          imageUrl: newBargain.imageUrl,
+          imageUrls: newBargain.imageUrls,
+          videoUrl: newBargain.videoUrl,
+          objectStorageBucket: newBargain.objectStorageBucket,
+          objectStorageKeys: newBargain.objectStorageKeys,
+          objectStorageObjectIds: newBargain.objectStorageObjectIds,
+        },
+        p.currentUser.uid,
+      );
+      bargainDocId = created.bargainDocId;
+      newBargain.id = `cloud-${bargainDocId}`;
+    } catch {
       p.setBargainSubmitMsg({ type: 'error', text: 'ثبت آگهی در پایگاه داده انجام نشد. لطفاً اتصال و سطح دسترسی حساب خود را بررسی کنید.' });
-      try { handleFirestoreError(err, OperationType.WRITE, `bargains/${bargainDocId}`); } catch { /* logged */ }
-      return; }
+      return;
+    }
     let mediaAssociationWarning = ''; if (objectStorageObjectIds.length > 0) { try { const idToken = await p.currentUser.getIdToken(); const response = await fetch('/api/object-storage/attach-to-bargain', {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
           cache: 'no-store', body: JSON.stringify({ bargainId: bargainDocId, objectIds: objectStorageObjectIds }), }); const result: unknown = await response.json(); if (!response.ok || !result || typeof result !== 'object' || !('status' in result) || result.status !== 'ok') {
@@ -67,15 +105,15 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       if (apiRes.status === 400 || apiRes.status === 409) { p.setSponsorSubmitMsg(apiJson?.message || 'اطلاعات درخواست اسپانسر نامعتبر است.'); return; }
       if (apiRes.ok && apiJson?.status === 'ok' && apiJson.request) {
         persistedOnServer = true; if (apiJson.request.id) reqDocId = apiJson.request.id; if (typeof apiJson.request.monthlyTariffMillion === 'number') newCrmItem.monthlyTariffMillion = apiJson.request.monthlyTariffMillion; if (typeof apiJson.request.totalPayableMillion === 'number') newCrmItem.totalPayableMillion = apiJson.request.totalPayableMillion; if (apiJson.request.trackingCode) newCrmItem.trackingCode = apiJson.request.trackingCode; newCrmItem.id = `cloud-${reqDocId}`;
-        if (p.isVerifiedAdmin) { await updateDoc(doc(db, 'sponsorRequests', reqDocId), { status: 'approved', expiresAtIso }).catch(() => { recordDiagnosticEvent('Sponsor', `Admin auto-approve updateDoc deferred for ${reqDocId}`, 'fallback'); }); }
+        
       }
     } catch { /* fallback to Firestore SDK */ }
     if (!persistedOnServer) {
       try {
-        await setDoc(doc(db, 'sponsorRequests', reqDocId), { hoodId: targetHood.id, hoodName: targetHood.name.slice(0, 80), agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths, totalPayableMillion, trackingCode: cleanTracking, ...(p.isVerifiedAdmin ? { expiresAtIso } : {}), status: initialSponsorStatus, createdAt: serverTimestamp() });
+        await createSponsorRequest(reqDocId, { hoodId: targetHood.id, hoodName: targetHood.name, agencyName: cleanAgency, phone: cleanPhone, specialty: cleanSpec, experienceYears: expYears, monthlyTariffMillion: tariff, planMonths: activePlanMonths, totalPayableMillion, trackingCode: cleanTracking, expiresAtIso, status: initialSponsorStatus });
       } catch (err) {
         p.setSponsorSubmitMsg('ثبت درخواست اسپانسر در پایگاه داده انجام نشد.');
-        try { handleFirestoreError(err, OperationType.WRITE, `sponsorRequests/${reqDocId}`); } catch { /* local */ }
+        recordDiagnosticEvent(`sponsor_request_write_failed:${reqDocId}`);
         return;
       }
     }
@@ -143,18 +181,21 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
         if (!response.ok || result?.status !== 'ok' || result?.durable !== true) {
           serverErrorMessage = result?.message || '';
         }
-      } catch { /* Network failure: proceed to client-side fallback below */ }
-      const alertDocId = `${p.currentUser.uid}_hood_${targetHood.id}`;
+      } catch { /* Network failure: proceed to repository fallback below */ }
       try {
-        const alertRef = doc(db, 'buyerAlerts', alertDocId);
-        const existingAlert = await getDoc(alertRef);
-        const mutableAlertFields = { hoodName: targetHood.name.slice(0, 80), fullName: cleanName, phone: cleanPhone, dealType: p.alertDealType, maxBudgetText: cleanBudget };
-        if (existingAlert.exists()) await updateDoc(alertRef, { ...mutableAlertFields, updatedAt: serverTimestamp() });
-        else await setDoc(alertRef, { ...mutableAlertFields, userId: p.currentUser.uid, hoodId: targetHood.id, consentVersion: 'buyer-alert-2026-10-v1', consentAt: serverTimestamp(), expiresAt: Timestamp.fromDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)), createdAt: serverTimestamp() });
+        await upsertBuyerAlertLead({
+          userId: p.currentUser.uid,
+          hoodId: targetHood.id,
+          hoodName: targetHood.name,
+          fullName: cleanName,
+          phone: cleanPhone,
+          dealType: p.alertDealType,
+          maxBudgetText: cleanBudget,
+        });
         p.setAlertSubmitMsg(`درخواست شما با شماره ${toPersianNum(cleanPhone)} برای محلهٔ ${targetHood.name} با مهلت ۹۰ روزه ثبت شد.`);
-        p.setAlertFullName(''); p.setAlertPhone('');
-      } catch (err) {
-        try { handleFirestoreError(err, OperationType.WRITE, `buyerAlerts/${alertDocId}`); } catch { /* ignore */ }
+        p.setAlertFullName('');
+        p.setAlertPhone('');
+      } catch {
         p.setAlertSubmitMsg(serverErrorMessage || 'درخواست در پایگاه داده پایدار ذخیره نشد. لطفاً دوباره تلاش کنید.');
       }
     } catch {
@@ -178,36 +219,26 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
       p.setVoteStatus({ type: 'warning', text: 'برای ثبت رأی در فضای ابری، ایمیل حساب کاربری شما باید تأیید شده باشد.' });
       return;
     }
-    const voteId = `${p.currentUser.uid}_hood_${p.selectedHood.id}`;
-    const voteRef = doc(db, 'votes', voteId);
-    const cleanComment = (sanitizeInput(p.voteComment, 500) || 'ثبت امتیاز کیفیت زندگی توسط ساکن محله').slice(0, 500);
-    const cleanName = (sanitizeInput(p.currentUser.displayName, 100) || 'کاربر تاییدشده').slice(0, 100);
-    const mutablePayload = {
-      hoodId: p.selectedHood.id, hoodName: p.selectedHood.name.slice(0, 80),
-      userId: p.currentUser.uid, userDisplayName: cleanName,
-      air: Number(p.voteAir), powerWater: Number(p.votePower), internet: Number(p.voteInternet),
-      metro: Number(p.voteMetro), security: Number(p.voteSecurity), flatTerrain: Number(p.voteFlat),
-      comment: cleanComment, locationVerified: Boolean(locationVerified),
-    };
     try {
-      const existingSnap = await getDoc(voteRef);
-      if (existingSnap.exists()) {
-        await updateDoc(voteRef, {
-          hoodName: mutablePayload.hoodName, userDisplayName: mutablePayload.userDisplayName,
-          air: mutablePayload.air, powerWater: mutablePayload.powerWater, internet: mutablePayload.internet,
-          metro: mutablePayload.metro, security: mutablePayload.security, flatTerrain: mutablePayload.flatTerrain,
-          comment: mutablePayload.comment, locationVerified: mutablePayload.locationVerified,
-          lastUpdatedAt: serverTimestamp(),
-        });
-      } else {
-        await setDoc(voteRef, { ...mutablePayload, createdAt: serverTimestamp(), lastUpdatedAt: serverTimestamp() });
-      }
+      await submitResidentVote({
+        hoodId: p.selectedHood.id,
+        hoodName: p.selectedHood.name,
+        userId: p.currentUser.uid,
+        userDisplayName: p.currentUser.displayName || 'ساکن محله',
+        air: p.voteAir,
+        powerWater: p.votePower,
+        internet: p.voteInternet,
+        metro: p.voteMetro,
+        security: p.voteSecurity,
+        flatTerrain: p.voteFlat,
+        comment: p.voteComment,
+        locationVerified,
+      });
       recordLocalVoteCooldown();
       p.setVoteComment('');
       p.setVoteStatus({ type: 'success', text: statusMsg });
-    } catch (err) {
+    } catch {
       p.setVoteStatus({ type: 'warning', text: 'ثبت رأی انجام نشد. هر کاربر در هر ۲۴ ساعت فقط یک بار می‌تواند رأی همان محله را تغییر دهد.' });
-      try { handleFirestoreError(err, OperationType.WRITE, `votes/${voteId}`); } catch { /* local */ }
     }
   };
   const handleResidentVote = (useGeolocation: boolean) => {
@@ -267,18 +298,15 @@ export function useRadarCrudActions(p: UseRadarCrudActionsParams) { const adminA
     }
     p.setSavingPrefs(true);
     try {
-      await setDoc(doc(db, 'userPreferences', targetUid), {
-        userId: targetUid, mode: p.mode,
-        deposit: Math.min(100000, Math.max(0, Number(p.deposit) || 0)),
-        monthlyRent: Math.min(1000, Math.max(0, Number(p.monthlyRent) || 0)),
-        buyTotalBudget: Math.min(1000000, Math.max(500, Number(p.buyTotalBudget) || 500)),
-        targetSqm: Math.min(1000, Math.max(20, Number(p.targetSqm) || 80)),
-        workHubId: (p.workHubId || 'none').slice(0, 40),
-        favoriteHoodIds: p.favoriteHoodIds.filter((id) => Number.isInteger(id) && id >= 1 && id <= 999).slice(0, 25),
-        updatedAt: serverTimestamp(),
-      }); p.setPrefsMessage('ذخیره شد'); setTimeout(() => p.setPrefsMessage(''), 2500); } catch (err) {
-      try { handleFirestoreError(err, OperationType.WRITE, `userPreferences/${targetUid}`); } catch {
-        p.setPrefsMessage('ذخیره در مرورگر انجام شد'); setTimeout(() => p.setPrefsMessage(''), 2500); } } finally { p.setSavingPrefs(false); } }; const handleTrackSponsorCall = async (hood: Neighborhood, sponsor: { name: string; phone: string }) => { p.setCallingSponsorHoodId(hood.id); p.setRevealedSponsorPhoneHoodId(hood.id); navigator.clipboard?.writeText(sponsor.phone).catch(() => {});
+      await saveUserPreferences({ userId: targetUid, mode: p.mode, deposit: p.deposit, monthlyRent: p.monthlyRent, buyTotalBudget: p.buyTotalBudget, targetSqm: p.targetSqm, workHubId: p.workHubId, favoriteHoodIds: p.favoriteHoodIds });
+      p.setPrefsMessage('ذخیره شد');
+      setTimeout(() => p.setPrefsMessage(''), 2500);
+    } catch {
+      p.setPrefsMessage('ذخیره در مرورگر انجام شد');
+      setTimeout(() => p.setPrefsMessage(''), 2500);
+    } finally {
+      p.setSavingPrefs(false);
+    } }; const handleTrackSponsorCall = async (hood: Neighborhood, sponsor: { name: string; phone: string }) => { p.setCallingSponsorHoodId(hood.id); p.setRevealedSponsorPhoneHoodId(hood.id); navigator.clipboard?.writeText(sponsor.phone).catch(() => {});
     p.setLastSyncNotice(`شماره تماس ${sponsor.name} (${sponsor.phone}) کپی و نمایش داده شد`);
     try { await fetch('/api/track-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hoodId: hood.id, hoodName: hood.name, agencyName: sponsor.name, phone: sponsor.phone }) });
     } catch { /* ignore */ } finally { setTimeout(() => p.setCallingSponsorHoodId(null), 1500); }

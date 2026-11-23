@@ -142,7 +142,7 @@ export const Stage51ClustersMultiCriteriaAndGovernancePanel: React.FC<{
               onUpdateArtifact(artifactLifecycle.updatedArtifact);
               onFeedbackFa(`نسخه جدید تحلیل مکانی (${artifactLifecycle.updatedArtifact.methodVersion}) بدون بازنویسی نسخه قبلی ثبت شد.`);
             }}
-            className="rounded bg-emerald-600/30 border border-emerald-500/50 px-2.5 py-1 text-emerald-200 font-bold cursor-pointer"
+            className="rounded bg-[var(--color-brand-600)]/30 border border-emerald-500/50 px-2.5 py-1 text-emerald-200 font-bold cursor-pointer"
           >
             ثبت نسخه جدید تحلیل پس از تغییر پارامتر (Tests 19, 24)
           </button>

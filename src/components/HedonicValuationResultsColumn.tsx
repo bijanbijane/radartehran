@@ -155,7 +155,7 @@ export function HedonicValuationResultsColumn({
               </div>
               <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-600 rounded-full transition-all duration-300"
+                  className="h-full bg-[var(--color-brand-600)] rounded-full transition-all duration-300"
                   style={{ width: `${hedonicBarWidth}%` }}
                 />
               </div>
@@ -238,7 +238,7 @@ export function HedonicValuationResultsColumn({
         <button
           type="button"
           onClick={onCopyValuation}
-          className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+          className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
         >
           {copiedReport ? (
             <>

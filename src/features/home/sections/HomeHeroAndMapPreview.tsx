@@ -89,7 +89,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
         <div className="lg:col-span-5 flex flex-col justify-between space-y-5">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold text-[#176B63] dark:text-emerald-400">معرفی محصول · شناخت مکانی و تحلیلی شهر</span>
+              <span className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400">معرفی محصول · شناخت مکانی و تحلیلی شهر</span>
               <div role="group" aria-label="حالت معامله" className="inline-flex items-center bg-[#F1F4F2] dark:bg-slate-800 p-0.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 text-[11px]">
                 <button type="button" onClick={() => p.onSelectMode('buy')} className={`px-2.5 py-1 rounded-[6px] font-bold transition cursor-pointer ${p.mode === 'buy' ? 'bg-white dark:bg-slate-900 text-[#182522] dark:text-white shadow-2xs' : 'text-[#34433E] dark:text-slate-400'}`}>خرید</button>
                 <button type="button" onClick={() => p.onSelectMode('rent')} className={`px-2.5 py-1 rounded-[6px] font-bold transition cursor-pointer ${p.mode === 'rent' ? 'bg-white dark:bg-slate-900 text-[#182522] dark:text-white shadow-2xs' : 'text-[#34433E] dark:text-slate-400'}`}>رهن و اجاره</button>
@@ -110,7 +110,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
             <label htmlFor="home-global-search-input" className="block text-xs font-bold text-[#182522] dark:text-slate-200">
               محله، منطقه، خیابان یا ملک را جست‌وجو کنید
             </label>
-            <div className="flex items-center gap-2 min-h-[48px] px-3 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800/90 border border-[#DCE3DF] dark:border-slate-700 focus-within:border-[#176B63]">
+            <div className="flex items-center gap-2 min-h-[48px] px-3 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800/90 border border-[#DCE3DF] dark:border-slate-700 focus-within:border-[var(--color-brand-600)]">
               <Search className="w-4 h-4 text-[#34433E] dark:text-slate-400 shrink-0" aria-hidden="true" />
               <input
                 id="home-global-search-input" data-testid="home-global-search-input" type="text"
@@ -134,7 +134,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
                     <div className="text-[11px] text-slate-500">مسیرهای جایگزین: فهرست همه محله‌ها یا نقشه کامل شهر را بررسی کنید.</div>
                     <div className="flex items-center gap-2 pt-1">
                       <button type="button" onClick={() => p.onNavigateView('discover')} className="px-2.5 py-1 rounded-[8px] bg-[#F1F4F2] dark:bg-slate-800 text-[#182522] dark:text-slate-200 font-bold cursor-pointer">فهرست محله‌ها</button>
-                      <button type="button" onClick={() => p.onNavigateView('map')} className="px-2.5 py-1 rounded-[8px] bg-[#176B63] text-white font-bold cursor-pointer">کاوش روی نقشه</button>
+                      <button type="button" onClick={() => p.onNavigateView('map')} className="px-2.5 py-1 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">کاوش روی نقشه</button>
                     </div>
                   </div>
                 ) : (
@@ -149,7 +149,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
                         <div className="font-bold text-[#182522] dark:text-white truncate">{item.titleFa}</div>
                         <div className="text-[11px] text-slate-500 truncate">{item.subtitleFa}</div>
                       </div>
-                      <span className="text-[10.5px] font-semibold text-[#176B63] dark:text-emerald-400 shrink-0">{item.categoryLabelFa} ←</span>
+                      <span className="text-[10.5px] font-semibold text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0">{item.categoryLabelFa} ←</span>
                     </button>
                   ))
                 )}
@@ -161,7 +161,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
             <button
               type="button" data-testid="home-primary-cta-map"
               onClick={() => { p.onRecordTelemetry?.(buildPrivacySafeHomeTelemetry('home_map_open', { cityId: p.activeCity, targetDestination: '/explore/map' })); p.onNavigateView('map'); }}
-              className="min-h-[48px] px-5 py-2.5 rounded-[8px] bg-[#176B63] hover:bg-[#125650] text-white text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer"
+              className="min-h-[48px] px-5 py-2.5 rounded-[8px] bg-[var(--color-brand-600)] hover:bg-[#125650] text-white text-xs sm:text-sm font-bold flex items-center gap-2 transition cursor-pointer"
             >
               <MapIcon className="w-4 h-4" aria-hidden="true" /> <span>ورود به نقشه</span>
             </button>
@@ -175,7 +175,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
             <button
               type="button"
               onClick={() => { p.onRecordTelemetry?.(buildPrivacySafeHomeTelemetry('home_neighborhood_open', { cityId: p.activeCity, targetDestination: '/neighborhoods' })); p.onNavigateView('discover'); }}
-              className="min-h-[44px] px-3.5 py-2 rounded-[8px] text-xs font-bold text-[#34433E] dark:text-slate-300 hover:text-[#176B63] dark:hover:text-emerald-400 transition cursor-pointer"
+              className="min-h-[44px] px-3.5 py-2 rounded-[8px] text-xs font-bold text-[#34433E] dark:text-slate-300 hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 transition cursor-pointer"
             >
               شناخت محله‌ها ←
             </button>
@@ -185,22 +185,22 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
         <div className="lg:col-span-7 flex flex-col">
           {p.resilienceScenario === 'map_unavailable' ? (
             <div data-testid="home-map-unavailable-fallback" className="flex-1 min-h-[260px] rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 bg-[#F1F4F2] dark:bg-slate-800/60 p-6 flex flex-col items-center justify-center text-center space-y-3">
-              <Compass className="w-7 h-7 text-[#176B63]" aria-hidden="true" />
+              <Compass className="w-7 h-7 text-[var(--color-brand-600)]" aria-hidden="true" />
               <div className="text-sm font-bold text-[#182522] dark:text-white">پیش‌نمایش نقشه در حال حاضر در دسترس نیست</div>
               <p className="text-xs text-[#34433E] dark:text-slate-400 max-w-md">می‌توانید مستقیماً از فهرست ساختاریافته محله‌ها یا شناسنامه هر منطقه برای بررسی شاخص‌های قیمتی و کالبدی استفاده کنید.</p>
-              <button type="button" onClick={() => p.onNavigateView('discover')} className="min-h-[44px] px-4 py-2 rounded-[8px] bg-[#176B63] text-white text-xs font-bold cursor-pointer">مشاهده فهرست محله‌ها</button>
+              <button type="button" onClick={() => p.onNavigateView('discover')} className="min-h-[44px] px-4 py-2 rounded-[8px] bg-[var(--color-brand-600)] text-white text-xs font-bold cursor-pointer">مشاهده فهرست محله‌ها</button>
             </div>
           ) : (
             <div data-testid="home-lightweight-map-preview" className="flex-1 min-h-[260px] sm:min-h-[320px] rounded-[12px] border border-[#DCE3DF] dark:border-slate-700 bg-[#E9EFEC] dark:bg-slate-950 p-3.5 flex flex-col justify-between relative overflow-hidden">
               <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 bg-white/95 dark:bg-slate-900/95 px-3 py-2 rounded-[8px] border border-[#DCE3DF] dark:border-slate-800 text-xs">
                 <div className="flex items-center gap-1.5 font-bold text-[#182522] dark:text-white">
-                  <Layers className="w-3.5 h-3.5 text-[#176B63]" aria-hidden="true" /> <span>کاوش در نقشه · محدوده جغرافیایی معتبر</span>
+                  <Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" aria-hidden="true" /> <span>کاوش در نقشه · محدوده جغرافیایی معتبر</span>
                 </div>
                 <div role="group" aria-label="تغییر لایه پیش‌نمایش نقشه" className="flex items-center gap-1 text-[11px]">
                   {([{ id: 'price', label: 'قیمت پیشنهادی' }, { id: 'budget', label: 'تطابق بودجه' }, { id: 'air', label: 'کیفیت هوا' }] as const).map((ly) => (
                     <button
                       key={ly.id} type="button" aria-pressed={previewLayer === ly.id} onClick={() => setPreviewLayer(ly.id)}
-                      className={`px-2 py-0.5 rounded-[6px] font-bold transition cursor-pointer ${previewLayer === ly.id ? 'bg-[#176B63] text-white' : 'text-[#34433E] dark:text-slate-300 hover:bg-[#F1F4F2] dark:hover:bg-slate-800'}`}
+                      className={`px-2 py-0.5 rounded-[6px] font-bold transition cursor-pointer ${previewLayer === ly.id ? 'bg-[var(--color-brand-600)] text-white' : 'text-[#34433E] dark:text-slate-300 hover:bg-[#F1F4F2] dark:hover:bg-slate-800'}`}
                     >
                       {ly.label}
                     </button>
@@ -223,7 +223,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
                       key={hood.id} type="button" style={{ left: `${xPct}%`, top: `${yPct}%` }}
                       onClick={() => { p.onSelectNeighborhood(hood); p.onNavigateView('map'); }} title={`ورود به نقشه محله ${hood.name}`}
                       className={`-translate-x-1/2 -translate-y-1/2 absolute px-2 py-1 rounded-[6px] border text-[10.5px] font-bold transition cursor-pointer whitespace-nowrap tabular-nums ${
-                        isCurrent ? 'bg-[#176B63] text-white border-[#176B63] z-10 shadow-sm' : 'bg-white/95 dark:bg-slate-800/95 text-[#182522] dark:text-slate-200 border-[#DCE3DF] dark:border-slate-700 hover:border-[#176B63]'
+                        isCurrent ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)] z-10 shadow-sm' : 'bg-white/95 dark:bg-slate-800/95 text-[#182522] dark:text-slate-200 border-[#DCE3DF] dark:border-slate-700 hover:border-[var(--color-brand-600)]'
                       }`}
                     >
                       <span>{hood.name}</span> <span className="mx-1 opacity-60">·</span> <span>{metricText}</span>
@@ -236,7 +236,7 @@ export const HomeHeroAndMapPreview: React.FC<HomeHeroAndMapPreviewProps> = (p) =
                 <div className="text-[#34433E] dark:text-slate-300 truncate">
                   کانون فعلی: <strong className="text-[#182522] dark:text-white">محله {p.selectedHood.name}</strong> · {toPersianNum(p.selectedHood.buyPerSqm)} میلیون تومان / مترمربع
                 </div>
-                <button type="button" onClick={() => p.onNavigateView('map')} className="text-[#176B63] dark:text-emerald-400 font-bold flex items-center gap-1 hover:underline shrink-0 cursor-pointer">
+                <button type="button" onClick={() => p.onNavigateView('map')} className="text-[var(--color-brand-600)] dark:text-emerald-400 font-bold flex items-center gap-1 hover:underline shrink-0 cursor-pointer">
                   <span>باز کردن نقشه اصلی</span> <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </div>

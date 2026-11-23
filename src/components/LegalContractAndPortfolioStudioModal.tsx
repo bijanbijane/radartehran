@@ -46,7 +46,7 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <AreaUnitToggle compact showIntlControls />
-            <button type="button" onClick={() => setShowCrmAutomationModal(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
+            <button type="button" onClick={() => setShowCrmAutomationModal(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-600)]/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
               <Workflow className="h-3.5 w-3.5" /> مرکز CRM و اتوماسیون آژانس (۱۱۳)
             </button>
             <button type="button" onClick={() => setShowBiGisModal(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500">
@@ -76,7 +76,7 @@ export interface LegalContractAndPortfolioStudioModalProps { isOpen: boolean; on
                 type="button"
                 onClick={() => setActiveTab(tab.id as StudioTabId)}
                 className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-                  active ? 'bg-emerald-600 text-white shadow' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800'
+                  active ? 'bg-[var(--color-brand-600)] text-white shadow' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800'
                 }`}
               >
                 <Icon className="h-4 w-4" />

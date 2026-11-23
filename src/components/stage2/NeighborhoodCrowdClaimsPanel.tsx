@@ -361,7 +361,7 @@ export const NeighborhoodCrowdClaimsPanel: React.FC<NeighborhoodCrowdClaimsPanel
             <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">شرح دقیق و مستند</label>
             <textarea rows={2} aria-invalid={Boolean(errorMessage) && body.trim().length < 8} value={body} onChange={(e) => { setBody(e.target.value); if (errorMessage) setErrorMessage(null); if (submitMessage) setSubmitMessage(null); }} placeholder="گزارش دقیق خود را بنویسید؛ در صورت تایید همسایگان به عنوان مرجع قیمت محله ثبت می‌شود..." className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100" />
           </div>
-          <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
+          <div className="flex justify-end"><button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] disabled:opacity-50 text-white text-xs font-bold cursor-pointer"><Send className="w-3.5 h-3.5" /><span>{submitting ? 'در حال ثبت...' : 'ثبت گزارش برای بررسی اهالی'}</span></button></div>
         </form>
       )}
       {verifiedRefs.length > 0 && (

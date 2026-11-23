@@ -69,7 +69,7 @@ export function SecondaryModals({
           <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-2xl w-full p-5 space-y-3.5 text-xs max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Wind className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">
@@ -161,7 +161,7 @@ export function SecondaryModals({
             )}
             <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Clock className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <Clock className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>زمان‌بند خودکار هر ۲ ساعت (۸ صبح تا ۸ شب به وقت تهران)</span>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 tabular-nums">
@@ -180,7 +180,7 @@ export function SecondaryModals({
               </button>
               <button
                 type="button" onClick={onDeepWebSync} disabled={deepSyncing}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
               >
                 <Sparkles className={`w-4 h-4 stroke-[1.75] ${deepSyncing ? 'animate-spin' : ''}`} />
                 <span>{deepSyncing ? 'در حال بروزرسانی رادار...' : 'بروزرسانی فوری رادار'}</span>
@@ -194,7 +194,7 @@ export function SecondaryModals({
           <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl max-w-4xl w-full p-5 max-h-[88vh] overflow-y-auto space-y-4 text-xs focus:outline-none shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <span className="w-7 h-7 rounded-lg bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                   <Globe className="w-4 h-4 stroke-[1.75]" />
                 </span>
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">
@@ -218,7 +218,7 @@ export function SecondaryModals({
             </div>
             <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5">
               <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-2.5 flex items-center gap-1.5">
-                <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>{activeCityNameFa === 'تهران' ? 'مقایسه‌های پرطرفدار محله‌های تهران:' : `مقایسه سریع محله‌های ${activeCityNameFa}:`}</span>
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -244,7 +244,7 @@ export function SecondaryModals({
             <div className="apple-grouped-card bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3.5 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                  <MapPin className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>صفحات اختصاصی قیمت مسکن محله‌های {activeCityNameFa}:</span>
                 </h4>
                 <div className="flex flex-wrap items-center gap-1 bg-slate-200/60 dark:bg-slate-800 p-0.5 rounded-lg">

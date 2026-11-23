@@ -7,6 +7,10 @@ export async function deleteStoredObjectSafely( record: StoredObjectRecord
   ) { return 'invalid_path'; } const previousState = current.deletionState; current.deletionState = 'pending_delete'; try { await persistObjectStoreIndexNow(); } catch { current.deletionState = previousState; return 'index_persist_failed'; } if (current.remoteS3Synced) { let remoteDeleted = false; try { remoteDeleted = await deleteFromRemoteS3Compatible( current.objectKey, resolveObjectStorageRuntimeConfig() ); } catch { remoteDeleted = false; } if (!remoteDeleted) return 'remote_delete_failed'; const previousRemoteState = current.remoteS3Synced; current.remoteS3Synced = false; try { await persistObjectStoreIndexNow(); } catch { current.remoteS3Synced = previousRemoteState; return 'index_persist_failed'; } }
   try { await fs.promises.unlink(localPath); } catch (error) { const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined; if (code !== 'ENOENT') return 'local_delete_failed'; }
   const finalIndex = objectStoreIndex.findIndex((item) => item.id === current.id); if (finalIndex < 0) return 'deleted'; const removed = objectStoreIndex.splice(finalIndex, 1)[0]; try {
+    const registry = await import('./serverObjectStorageMetadataRegistry');
+    if (registry.isDurableObjectMetadataProductionMode()) {
+      await registry.deleteStoredObjectMetadata(removed.id);
+    }
     await persistObjectStoreIndexNow(); } catch { objectStoreIndex.splice(Math.min(finalIndex, objectStoreIndex.length), 0, removed); await persistObjectStoreIndexNow().catch(() => {}); return 'index_persist_failed'; }
   return 'deleted'; } finally { inFlightOrphanDeletes.delete(record.id); } }
 export const ORPHAN_AUDIT_DIR = path.join(BUCKET_DIR, 'orphan-audit-jobs'); export const ORPHAN_AUDIT_PAGE_SIZE = 200; export const ORPHAN_AUDIT_MAX_PAGES_PER_STEP = 10; export const ORPHAN_AUDIT_MAX_TOTAL_PAGES = 500; export const ORPHAN_AUDIT_MAX_JOBS = 20; export const ORPHAN_AUDIT_MAX_FILE_BYTES = 5 * 1024 * 1024;

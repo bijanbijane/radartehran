@@ -141,11 +141,11 @@ export function CasperNegotiationPlaybookModal({
           </div>
 
           <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800">
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mb-0.5">پیشنهاد بازگشایی</span>
+            <span className="text-[10px] text-[var(--color-brand-600)] dark:text-emerald-400 font-bold block mb-0.5">پیشنهاد بازگشایی</span>
             <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
               {toPersianNum(totalOfferBillion)} م.م
             </span>
-            <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 block mt-0.5">متری {toPersianNum(targetOfferPerSqm)} م</span>
+            <span className="text-[10px] text-[var(--color-brand-600)]/80 dark:text-emerald-400/80 block mt-0.5">متری {toPersianNum(targetOfferPerSqm)} م</span>
           </div>
 
           <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800">
@@ -164,7 +164,7 @@ export function CasperNegotiationPlaybookModal({
               <FileText className="w-3.5 h-3.5 text-emerald-500" />
               متن آماده برای قرائت یا ارسال به مشاور/مالک:
             </span>
-            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
               سود بالقوه چانه‌زنی: {toPersianNum(savingsMillion)} میلیون تومان
             </span>
           </div>
@@ -183,7 +183,7 @@ export function CasperNegotiationPlaybookModal({
             onClick={handleCopy}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm ${
               copied
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-[var(--color-brand-600)] text-white'
                 : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90'
             }`}
           >

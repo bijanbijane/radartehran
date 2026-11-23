@@ -55,7 +55,7 @@ export function AdminMapProviderConfigPanel({
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <MapPin className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
               تنظیم موتور و ارائه‌دهنده نقشه پایه (مدیریت)
             </span>
@@ -93,7 +93,7 @@ export function AdminMapProviderConfigPanel({
                 <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">
                   نقشه تفصیلی نشان (Neshan)
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-brand-600)] text-white">
                   پیش‌فرض
                 </span>
               </div>
@@ -103,7 +103,7 @@ export function AdminMapProviderConfigPanel({
               </p>
             </div>
             {currentStyle === 'neshan' && (
-              <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-5 h-5 rounded-full bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
               </div>
             )}
@@ -111,7 +111,7 @@ export function AdminMapProviderConfigPanel({
 
           <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>کلید اختصاصی وب:</span>
               <code className="font-mono bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
                 {maskedKey}
@@ -146,7 +146,7 @@ export function AdminMapProviderConfigPanel({
               </p>
             </div>
             {currentStyle === 'osm' && (
-              <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-5 h-5 rounded-full bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
               </div>
             )}
@@ -176,7 +176,7 @@ export function AdminMapProviderConfigPanel({
             onClick={() => onSelectStyle(s.id)}
             className={`px-2.5 py-1 rounded-md border text-xs font-semibold cursor-pointer transition ${
               currentStyle === s.id
-                ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600'
+                ? 'bg-slate-900 dark:bg-[var(--color-brand-600)] text-white border-slate-900 dark:border-emerald-600'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-300'
             }`}
           >

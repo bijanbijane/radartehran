@@ -344,67 +344,19 @@ export function createValuationService(deps: ValuationModuleDependencies) {
     hoodId: number;
     propertyCategory?: PropertyCategory;
   }): Promise<NeighborhoodMarketIntelligenceIndicators> {
-    const benchmark = await deps.dataConsumer.getNeighborhoodBenchmark({
-      cityId: params.cityId,
-      hoodId: params.hoodId,
-    });
-    if (!benchmark) {
+    const { buildNeighborhoodMarketIndicators } = await import('./neighborhoodMarketIndicators');
+    try {
+      return await buildNeighborhoodMarketIndicators({
+        ...params,
+        dataConsumer: deps.dataConsumer,
+      });
+    } catch {
       throw new CoreApiError(
         'NOT_FOUND',
         404,
         `Neighborhood benchmark not found for city '${params.cityId}' hood #${params.hoodId}.`,
       );
     }
-
-    const rawComps = await deps.dataConsumer.queryComparableListings({
-      cityId: params.cityId,
-      hoodId: params.hoodId,
-      propertyCategory: params.propertyCategory ?? 'residential',
-      transactionType: 'sale',
-      sqm: 100,
-      limit: 50,
-    });
-
-    const psmList: number[] = [];
-    let outlierExcludedCount = 0;
-
-    for (const c of rawComps) {
-      if (c.sqm <= 0 || c.priceNumericMillion <= 0) continue;
-      const psm = c.priceNumericMillion / c.sqm;
-      if (Math.abs(psm - benchmark.basePricePerSqmMillion) / benchmark.basePricePerSqmMillion > 0.45) {
-        outlierExcludedCount++;
-      } else {
-        psmList.push(psm);
-      }
-    }
-
-    const medianPsm = psmList.length > 0 ? computeMedian(psmList) : benchmark.basePricePerSqmMillion;
-    const avgPsm =
-      psmList.length > 0
-        ? psmList.reduce((acc, v) => acc + v, 0) / psmList.length
-        : benchmark.basePricePerSqmMillion;
-    const p25 = psmList.length > 0 ? computePercentile(psmList, 0.25) : benchmark.basePricePerSqmMillion * 0.92;
-    const p75 = psmList.length > 0 ? computePercentile(psmList, 0.75) : benchmark.basePricePerSqmMillion * 1.08;
-
-    const sampleSufficiency =
-      psmList.length >= 10 ? 'sufficient' : psmList.length >= 3 ? 'limited' : 'insufficient';
-
-    return {
-      cityId: params.cityId,
-      hoodId: params.hoodId,
-      hoodName: benchmark.hoodName,
-      zone: benchmark.zone,
-      medianAskingPricePerSqmMillion: Number(medianPsm.toFixed(2)),
-      averageAskingPricePerSqmMillion: Number(avgPsm.toFixed(2)),
-      p25PricePerSqmMillion: Number(p25.toFixed(2)),
-      p75PricePerSqmMillion: Number(p75.toFixed(2)),
-      activeListingCount: psmList.length,
-      outlierExcludedCount,
-      priceChange30dPct: 2.4,
-      marketHeatStatus: psmList.length >= 15 ? 'hot' : 'balanced',
-      sampleSufficiency,
-      freshnessTimestampIso: benchmark.lastUpdatedIso,
-    };
   }
 
   async function persistValuationSnapshot(params: {
@@ -641,7 +593,9 @@ export function createValuationService(deps: ValuationModuleDependencies) {
           matchingSnapshots++;
         }
       }
-      job.recalculatedSnapshotsCount = matchingSnapshots;
+      job.matchingHistoricalSnapshotsCount = matchingSnapshots;
+      job.actuallyRecalculatedSnapshotsCount = 0;
+      job.recalculatedSnapshotsCount = job.actuallyRecalculatedSnapshotsCount;
       job.status = 'COMPLETED';
       job.completedAtIso = nowFn().toISOString();
       recalculationJobs.set(job.id, job);

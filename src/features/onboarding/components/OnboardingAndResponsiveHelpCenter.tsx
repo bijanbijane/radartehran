@@ -93,7 +93,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-4">
         <div>
-          <span className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400 block">
+          <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 block">
             RT-UI-ONBOARDING-001 · RT-UI-RESPONSIVE-001 · RT-UI-ACCESSIBILITY-001 · RT-UI-MOTION-001
           </span>
           <h2 className="text-lg font-black text-[#182522] dark:text-white">
@@ -110,7 +110,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               data-testid={t.testId}
               onClick={() => setStageTab(t.id)}
               className={`px-3 py-2 min-h-[40px] max-w-full rounded-[8px] font-bold cursor-pointer text-right whitespace-normal break-words ${
-                stageTab === t.id ? 'bg-[#176B63] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'
+                stageTab === t.id ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'
               }`}
             >
               {t.labelFa}
@@ -119,7 +119,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
         </div>
       </div>
 
-      <div role="status" aria-live="polite" data-testid="a11y-live-region" className="px-3 py-2 rounded-[8px] bg-[#EAF3F0]/70 dark:bg-emerald-950/30 border border-[#DCE3DF] dark:border-emerald-900 text-[#14534E] dark:text-emerald-200 flex items-center justify-between gap-2">
+      <div role="status" aria-live="polite" data-testid="a11y-live-region" className="px-3 py-2 rounded-[8px] bg-[#EAF3F0]/70 dark:bg-emerald-950/30 border border-[#DCE3DF] dark:border-emerald-900 text-[var(--color-brand-700)] dark:text-emerald-200 flex items-center justify-between gap-2">
         <span>اعلان وضعیت صفحه‌خوان (`role="status"`): <strong>{liveStatusMsg}</strong></span>
         <span className="tabular-nums font-bold">هدف انطباق: WCAG {WCAG_22_TARGET_STANDARD.wcagVersion} سطح {WCAG_22_TARGET_STANDARD.targetLevel}</span>
       </div>
@@ -130,7 +130,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#176B63]" />
+                  <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)]" />
                   <span>چک‌لیست شروع کار رادار (پیشرفت: {toPersianNum(completedCount)}/{toPersianNum(checklist.length)})</span>
                 </h3>
                 <span className="text-[11px] text-[#586760]">کاملاً اختیاری و غیرمسدودکننده</span>
@@ -139,7 +139,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
                 {checklist.map((item) => (
                   <li key={item.id} className="flex items-center justify-between gap-2 p-2 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800/70">
                     <label className="flex items-center gap-2 cursor-pointer font-bold text-[#182522] dark:text-slate-100">
-                      <input type="checkbox" checked={item.completed} onChange={() => { toggleChecklistItem(item.id); setLiveStatusMsg(`گام «${item.titleFa}» به‌روزرسانی شد.`); }} className="accent-[#176B63] w-4 h-4" />
+                      <input type="checkbox" checked={item.completed} onChange={() => { toggleChecklistItem(item.id); setLiveStatusMsg(`گام «${item.titleFa}» به‌روزرسانی شد.`); }} className="accent-[var(--color-brand-600)] w-4 h-4" />
                       <span>{item.titleFa} — <span className="font-normal text-[#586760]">{item.descriptionFa}</span></span>
                     </label>
                     {onNavigateView && (
@@ -153,10 +153,10 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 text-[#176B63]" />
+                  <Compass className="w-4 h-4 text-[var(--color-brand-600)]" />
                   <span>راهنمای تطبیقی نقشه و لایه‌های وابسته به زوم</span>
                 </h3>
-                <button type="button" data-testid="toggle-gesture-device-btn" onClick={() => setDeviceTouch((v) => !v)} className="px-2.5 py-1 rounded-[6px] bg-[#176B63] text-white font-bold cursor-pointer">
+                <button type="button" data-testid="toggle-gesture-device-btn" onClick={() => setDeviceTouch((v) => !v)} className="px-2.5 py-1 rounded-[6px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
                   {deviceTouch ? 'حالت لمسی (موبایل)' : 'حالت ماوس (دسکتاپ)'}
                 </button>
               </div>
@@ -165,7 +165,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               <div className="p-2.5 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 space-y-1">
                 <div className="font-bold text-[#182522] dark:text-white">تداوم اقدام پس از ورود (Post-Auth Action Continuation):</div>
                 <p className="text-[#586760]">{authPrompt.messageFa}</p>
-                <div className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400">
+                <div className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
                   مسیر بازگشت خودکار پس از ورود: <span dir="ltr">{authPrompt.pendingContinuation.returnRoute}</span> · سلب مسئولیت ارزش‌گذاری: {VALUATION_DISCLAIMER_FA}
                 </div>
               </div>
@@ -184,9 +184,9 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
                       <div className="text-[11px] text-[#586760]">وضعیت فعلی: <strong>{st}</strong> · حداکثر راهنمای شناور هم‌زمان: ۱</div>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <button type="button" onClick={() => { manager.completeGuide(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`راهنمای ${g.titleFa} تکمیل شد.`); }} className="px-2 py-1 rounded bg-[#176B63] text-white font-bold cursor-pointer">تکمیل</button>
+                      <button type="button" onClick={() => { manager.completeGuide(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`راهنمای ${g.titleFa} تکمیل شد.`); }} className="px-2 py-1 rounded bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">تکمیل</button>
                       <button type="button" onClick={() => { manager.skipGuide(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`راهنمای ${g.titleFa} رد شد (Skipped !== Completed).`); }} className="px-2 py-1 rounded border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 font-bold cursor-pointer">رد کردن</button>
-                      <button type="button" onClick={() => { manager.replayGuideFromHelpCenter(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`اجرای مجدد راهنمای ${g.titleFa} آغاز شد.`); }} className="px-2 py-1 rounded border border-[#176B63] text-[#176B63] dark:text-emerald-400 font-bold inline-flex items-center gap-1 cursor-pointer"><RotateCcw className="w-3 h-3" />بازپخش</button>
+                      <button type="button" onClick={() => { manager.replayGuideFromHelpCenter(g.guideId); setGuideStatusTick((t) => t + 1); setLiveStatusMsg(`اجرای مجدد راهنمای ${g.titleFa} آغاز شد.`); }} className="px-2 py-1 rounded border border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-400 font-bold inline-flex items-center gap-1 cursor-pointer"><RotateCcw className="w-3 h-3" />بازپخش</button>
                     </div>
                   </div>
                 );
@@ -197,8 +197,8 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-black text-[#182522] dark:text-white">تفکیک مسیر ورود بازارچه خدمات (متقاضی در برابر ارائه‌دهنده)</h3>
                 <div className="inline-flex rounded-[6px] border border-[#DCE3DF] dark:border-slate-700 p-0.5">
-                  <button type="button" onClick={() => setServiceRole('seeker')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'seeker' ? 'bg-[#176B63] text-white' : ''}`}>متقاضی خدمت (۷ گام)</button>
-                  <button type="button" onClick={() => setServiceRole('provider')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'provider' ? 'bg-[#176B63] text-white' : ''}`}>ارائه‌دهنده (۶ گام)</button>
+                  <button type="button" onClick={() => setServiceRole('seeker')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'seeker' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>متقاضی خدمت (۷ گام)</button>
+                  <button type="button" onClick={() => setServiceRole('provider')} className={`px-2.5 py-1 rounded font-bold cursor-pointer ${serviceRole === 'provider' ? 'bg-[var(--color-brand-600)] text-white' : ''}`}>ارائه‌دهنده (۶ گام)</button>
                 </div>
               </div>
               <ol className="list-decimal list-inside space-y-1 text-[#34433E] dark:text-slate-200 font-medium">
@@ -216,12 +216,12 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
               <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-                <Smartphone className="w-4 h-4 text-[#176B63]" />
+                <Smartphone className="w-4 h-4 text-[var(--color-brand-600)]" />
                 <span>شبیه‌ساز ۵ رده نمایشگر و حفظ وضعیت در تغییر ابعاد (Stage 33)</span>
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {[320, 390, 768, 1024, 1440].map((w) => (
-                  <button key={w} type="button" data-testid={`viewport-btn-${w}`} onClick={() => { setViewportWidthPx(w); setLiveStatusMsg(`عرض نمایشگر به ${toPersianNum(w)} پیکسل تغییر یافت؛ فیلترها و موقعیت نقشه بدون تغییر حفظ شدند.`); }} className={`px-3 py-1.5 rounded-[8px] font-bold tabular-nums cursor-pointer ${viewportWidthPx === w ? 'bg-[#176B63] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'}`}>{toPersianNum(w)}px</button>
+                  <button key={w} type="button" data-testid={`viewport-btn-${w}`} onClick={() => { setViewportWidthPx(w); setLiveStatusMsg(`عرض نمایشگر به ${toPersianNum(w)} پیکسل تغییر یافت؛ فیلترها و موقعیت نقشه بدون تغییر حفظ شدند.`); }} className={`px-3 py-1.5 rounded-[8px] font-bold tabular-nums cursor-pointer ${viewportWidthPx === w ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'}`}>{toPersianNum(w)}px</button>
                 ))}
               </div>
               <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 space-y-1 tabular-nums">
@@ -234,12 +234,12 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
 
             <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
               <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-[#176B63]" />
+                <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
                 <span>قرارداد Bottom Sheet سه‌حالته موبایل و تفکیک ژست لمسی نقشه</span>
               </h3>
               <div className="flex gap-2">
                 {(['collapsed', 'half', 'expanded'] as const).map((snap) => (
-                  <button key={snap} type="button" data-testid={`sheet-snap-${snap}`} onClick={() => setSheetSnap(snap)} className={`px-3 py-1.5 rounded-[8px] font-bold cursor-pointer ${sheetSnap === snap ? 'bg-[#176B63] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'}`}>
+                  <button key={snap} type="button" data-testid={`sheet-snap-${snap}`} onClick={() => setSheetSnap(snap)} className={`px-3 py-1.5 rounded-[8px] font-bold cursor-pointer ${sheetSnap === snap ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800 text-[#34433E] dark:text-slate-200'}`}>
                     {snap === 'collapsed' ? 'جمع‌شده (72–120px)' : snap === 'half' ? 'میانی (40–55%)' : 'باز کامل (80–90%)'}
                   </button>
                 ))}
@@ -250,7 +250,7 @@ export const OnboardingAndResponsiveHelpCenter: React.FC<OnboardingAndResponsive
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {GIS_ACCORDION_LAYER_GROUPS.map((grp) => (
-                  <button key={grp.groupId} type="button" aria-expanded={expandedGisGroup === grp.groupId} onClick={() => setExpandedGisGroup(grp.groupId)} className={`px-2.5 py-1 rounded border text-[11px] font-bold cursor-pointer ${expandedGisGroup === grp.groupId ? 'border-[#176B63] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[#14534E] dark:text-emerald-200' : 'border-[#DCE3DF] dark:border-slate-700'}`}>
+                  <button key={grp.groupId} type="button" aria-expanded={expandedGisGroup === grp.groupId} onClick={() => setExpandedGisGroup(grp.groupId)} className={`px-2.5 py-1 rounded border text-[11px] font-bold cursor-pointer ${expandedGisGroup === grp.groupId ? 'border-[var(--color-brand-600)] bg-[#EAF3F0] dark:bg-emerald-950/50 text-[var(--color-brand-700)] dark:text-emerald-200' : 'border-[#DCE3DF] dark:border-slate-700'}`}>
                     {grp.titleFa} ({toPersianNum(grp.layerIds.length)})
                   </button>
                 ))}

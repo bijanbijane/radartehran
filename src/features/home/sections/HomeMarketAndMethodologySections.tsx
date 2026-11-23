@@ -27,7 +27,7 @@ export interface HomeMarketAndMethodologyProps {
 }
 
 function renderQuickAccessIcon(iconName: HomeQuickAccessItem['iconName']) {
-  const cls = 'w-4 h-4 text-[#176B63] dark:text-emerald-400 shrink-0';
+  const cls = 'w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0';
   switch (iconName) {
     case 'map': return <MapIcon className={cls} aria-hidden="true" />;
     case 'compass': return <Compass className={cls} aria-hidden="true" />;
@@ -59,8 +59,8 @@ export const QuickAccessAndMarketSnapshotSection: React.FC<HomeMarketAndMethodol
               onClick={() => { if (item.intentId === 'estimate_property_value') p.onOpenHedonic(); else p.onNavigateView(item.targetView, item.targetSubTab); }}
               className={`min-h-[104px] p-3.5 rounded-[12px] border text-start flex flex-col justify-between transition cursor-pointer ${
                 item.visualWeight === 'primary'
-                  ? 'bg-[#F1F4F2] dark:bg-emerald-950/30 border-[#176B63]/40 hover:border-[#176B63]'
-                  : 'bg-white dark:bg-slate-900 border-[#DCE3DF] dark:border-slate-800 hover:bg-[#F6F8F6] dark:hover:bg-slate-800/70 hover:border-[#176B63]/50'
+                  ? 'bg-[#F1F4F2] dark:bg-emerald-950/30 border-[var(--color-brand-600)]/40 hover:border-[var(--color-brand-600)]'
+                  : 'bg-white dark:bg-slate-900 border-[#DCE3DF] dark:border-slate-800 hover:bg-[#F6F8F6] dark:hover:bg-slate-800/70 hover:border-[var(--color-brand-600)]/50'
               }`}
             >
               <div className="flex items-center justify-between gap-2">{renderQuickAccessIcon(item.iconName)}<ArrowLeft className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" /></div>
@@ -139,14 +139,14 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
             <h2 id="home-research-heading" className="text-lg sm:text-xl font-extrabold text-[#182522] dark:text-white">داده‌ها و تحلیل‌های شهری</h2>
             <p className="text-xs text-[#34433E] dark:text-slate-400 mt-0.5">گزارش‌های تحلیلی مستقل با تاریخ انتشار، محدوده جغرافیایی و قابلیت ردیابی تا منبع داده</p>
           </div>
-          <button type="button" onClick={() => p.onNavigateView('knowledge', 'reports')} className="text-xs font-bold text-[#176B63] dark:text-emerald-400 hover:underline cursor-pointer shrink-0">مرکز پژوهش ←</button>
+          <button type="button" onClick={() => p.onNavigateView('knowledge', 'reports')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer shrink-0">مرکز پژوهش ←</button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {HOME_RESEARCH_REPORTS.map((rep) => (
             <article key={rep.id} data-testid={`home-research-card-${rep.id}`} className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 flex flex-col justify-between space-y-3">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2 text-[11px] text-[#34433E] dark:text-slate-400">
-                  <span className="font-bold text-[#176B63] dark:text-emerald-400">{rep.categoryLabelFa}</span>
+                  <span className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400">{rep.categoryLabelFa}</span>
                   <span>{rep.status === 'archived' ? 'وضعیت: آرشیوی' : 'گزارش تحلیلی'}</span>
                 </div>
                 <h3 className="text-sm sm:text-base font-bold text-[#182522] dark:text-white leading-snug">{rep.titleFa}</h3>
@@ -162,7 +162,7 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
                   <button
                     type="button"
                     onClick={() => { p.onRecordTelemetry?.(buildPrivacySafeHomeTelemetry('home_report_open', { cityId: p.activeCity, targetDestination: rep.id })); p.onNavigateView(rep.targetView, rep.targetSubTab); }}
-                    className="font-bold text-[#176B63] dark:text-emerald-400 hover:underline cursor-pointer shrink-0"
+                    className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer shrink-0"
                   >
                     مشاهده گزارش ←
                   </button>
@@ -204,10 +204,10 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
       <section aria-labelledby="home-methodology-heading" data-testid="home-methodology-section" className="p-4 sm:p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#DCE3DF]/80 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#176B63]" aria-hidden="true" />
+            <ShieldCheck className="w-5 h-5 text-[var(--color-brand-600)]" aria-hidden="true" />
             <h2 id="home-methodology-heading" className="text-base sm:text-lg font-extrabold text-[#182522] dark:text-white">اطلاعات را با منبع و زمینه آن بررسی کنید.</h2>
           </div>
-          <span className="text-xs font-bold text-[#176B63] dark:text-emerald-400 tabular-nums">
+          <span className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums">
             کنترل پذیرش صفحه خانه: {HOME_ACCEPTANCE_CHECKLIST_18.length}/{HOME_ACCEPTANCE_CHECKLIST_18.length} · معماری نقشه (RT-UI-MAP-001): {STAGE_15_MAP_ARCHITECTURE_SPEC.length}/15
           </span>
         </div>
@@ -234,31 +234,31 @@ export const ResearchServicesAndMethodologySection: React.FC<HomeMarketAndMethod
           <div className="space-y-2">
             <div className="font-bold text-[#182522] dark:text-white">رادارتهران</div>
             <ul className="space-y-1.5">
-              <li><button type="button" onClick={() => p.onNavigateView('knowledge', 'guide')} className="hover:text-[#176B63] cursor-pointer">درباره و معرفی محصول</button></li>
-              <li><button type="button" onClick={() => p.onNavigateView('contributions', 'submit')} className="hover:text-[#176B63] cursor-pointer">مشارکت و ارتباط</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('knowledge', 'guide')} className="hover:text-[var(--color-brand-600)] cursor-pointer">درباره و معرفی محصول</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('contributions', 'submit')} className="hover:text-[var(--color-brand-600)] cursor-pointer">مشارکت و ارتباط</button></li>
             </ul>
           </div>
           <div className="space-y-2">
             <div className="font-bold text-[#182522] dark:text-white">کاوش</div>
             <ul className="space-y-1.5">
-              <li><button type="button" onClick={() => p.onNavigateView('map')} className="hover:text-[#176B63] cursor-pointer">نقشه تعاملی</button></li>
-              <li><button type="button" onClick={() => p.onNavigateView('discover')} className="hover:text-[#176B63] cursor-pointer">محله‌ها و مناطق</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('map')} className="hover:text-[var(--color-brand-600)] cursor-pointer">نقشه تعاملی</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('discover')} className="hover:text-[var(--color-brand-600)] cursor-pointer">محله‌ها و مناطق</button></li>
             </ul>
           </div>
           <div className="space-y-2">
             <div className="font-bold text-[#182522] dark:text-white">بازار و ابزارها</div>
             <ul className="space-y-1.5">
-              <li><button type="button" onClick={() => p.onNavigateView('intelligence', 'overview')} className="hover:text-[#176B63] cursor-pointer">تحلیل بازار</button></li>
-              <li><button type="button" onClick={() => p.onNavigateView('properties', 'all')} className="hover:text-[#176B63] cursor-pointer">املاک</button></li>
-              <li><button type="button" onClick={p.onOpenHedonic} className="hover:text-[#176B63] cursor-pointer">ارزش‌گذاری هدونیک</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('intelligence', 'overview')} className="hover:text-[var(--color-brand-600)] cursor-pointer">تحلیل بازار</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('properties', 'all')} className="hover:text-[var(--color-brand-600)] cursor-pointer">املاک</button></li>
+              <li><button type="button" onClick={p.onOpenHedonic} className="hover:text-[var(--color-brand-600)] cursor-pointer">ارزش‌گذاری هدونیک</button></li>
             </ul>
           </div>
           <div className="space-y-2">
             <div className="font-bold text-[#182522] dark:text-white">اطلاعات</div>
             <ul className="space-y-1.5">
-              <li><button type="button" onClick={() => p.onNavigateView('knowledge', 'reports')} className="hover:text-[#176B63] cursor-pointer">گزارش‌ها</button></li>
-              <li><button type="button" onClick={() => p.onNavigateView('knowledge', 'methodology')} className="hover:text-[#176B63] cursor-pointer">روش‌شناسی داده</button></li>
-              <li><button type="button" onClick={() => p.onNavigateView('userspace', 'settings')} className="hover:text-[#176B63] cursor-pointer">حریم خصوصی و تنظیمات</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('knowledge', 'reports')} className="hover:text-[var(--color-brand-600)] cursor-pointer">گزارش‌ها</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('knowledge', 'methodology')} className="hover:text-[var(--color-brand-600)] cursor-pointer">روش‌شناسی داده</button></li>
+              <li><button type="button" onClick={() => p.onNavigateView('userspace', 'settings')} className="hover:text-[var(--color-brand-600)] cursor-pointer">حریم خصوصی و تنظیمات</button></li>
             </ul>
           </div>
         </div>

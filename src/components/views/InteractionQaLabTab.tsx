@@ -97,8 +97,8 @@ export const InteractionQaLabTab: React.FC = () => {
     <div className="space-y-5" data-testid="interaction-qa-lab-tab">
       <RadarCard padding="standard" elevated>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="text-[15px] font-bold text-[#182522] dark:text-white flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-[#176B63]" />
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+            <SlidersHorizontal className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۱. تفکیک Draft و Applied Filters (§4.1 - §4.4)</span>
           </h3>
           {hasPendingDraftChanges && (
@@ -113,7 +113,7 @@ export const InteractionQaLabTab: React.FC = () => {
               type="checkbox"
               checked={filters.draft.hasParking}
               onChange={(e) => setFilters((s) => ({ ...s, draft: { ...s.draft, hasParking: e.target.checked } }))}
-              className="accent-[#176B63]"
+              className="accent-[var(--color-brand-600)]"
             />
             <span>پارکینگ</span>
           </label>
@@ -122,7 +122,7 @@ export const InteractionQaLabTab: React.FC = () => {
               type="checkbox"
               checked={filters.draft.hasElevator}
               onChange={(e) => setFilters((s) => ({ ...s, draft: { ...s.draft, hasElevator: e.target.checked } }))}
-              className="accent-[#176B63]"
+              className="accent-[var(--color-brand-600)]"
             />
             <span>آسانسور</span>
           </label>
@@ -131,7 +131,7 @@ export const InteractionQaLabTab: React.FC = () => {
               type="checkbox"
               checked={filters.draft.hasStorage}
               onChange={(e) => setFilters((s) => ({ ...s, draft: { ...s.draft, hasStorage: e.target.checked } }))}
-              className="accent-[#176B63]"
+              className="accent-[var(--color-brand-600)]"
             />
             <span>انباری</span>
           </label>
@@ -150,8 +150,8 @@ export const InteractionQaLabTab: React.FC = () => {
             {boundsNeedsRefresh ? 'جست‌وجو در این محدوده' : 'شبیه‌سازی جابه‌جایی نقشه'}
           </RadarButton>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[12px] font-semibold text-[#586760]">فیلترهای فعال:</span>
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
+          <span className="text-[12px] font-semibold text-[var(--color-text-muted)]">فیلترهای فعال:</span>
           {chips.map((c) => (
             <button
               key={c.key}
@@ -169,12 +169,12 @@ export const InteractionQaLabTab: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <RadarCard padding="standard" elevated>
-          <h3 className="text-[15px] font-bold text-[#182522] dark:text-white mb-2">۲. کنترل Race Condition و Telemetry بدون PII</h3>
-          <p className="text-[12.5px] text-[#586760] mb-3">ارسال متوالی درخواست «پاسداران» و بلافاصله «ونک» — پاسخ قدیمی منقضی می‌شود.</p>
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white mb-2">۲. کنترل Race Condition و Telemetry بدون PII</h3>
+          <p className="text-[12.5px] text-[var(--color-text-muted)] mb-3">ارسال متوالی درخواست «پاسداران» و بلافاصله «ونک» — پاسخ قدیمی منقضی می‌شود.</p>
           <RadarButton variant="secondary" size="sm" leadingIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={runRaceSimulation}>
             شبیه‌سازی جست‌وجوی همزمان A ← B
           </RadarButton>
-          <div className="mt-3 p-2.5 rounded-[8px] bg-[#F1F4F2] dark:bg-slate-800 text-[12px] font-semibold text-[#176B4C] dark:text-emerald-300">
+          <div className="mt-3 p-2.5 rounded-[8px] bg-[var(--color-bg-muted)] dark:bg-slate-800 text-[12px] font-semibold text-[#176B4C] dark:text-emerald-300">
             {raceWinner}
           </div>
           {telemetryPreview && (
@@ -185,7 +185,7 @@ export const InteractionQaLabTab: React.FC = () => {
         </RadarCard>
 
         <RadarCard padding="standard" elevated>
-          <h3 className="text-[15px] font-bold text-[#182522] dark:text-white mb-2">۳. بازیابی خطای ارزش‌گذاری و شناسه یکتا (§9.3 - §9.5)</h3>
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white mb-2">۳. بازیابی خطای ارزش‌گذاری و شناسه یکتا (§9.3 - §9.5)</h3>
           <div className="flex items-center gap-2 mb-3">
             <input
               type="text"
@@ -198,7 +198,7 @@ export const InteractionQaLabTab: React.FC = () => {
                 const validSqm = Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 95;
                 setRequestKey(createIdempotentRequestKey({ hoodId: 5, sqm: validSqm, buildYear: 1398, attemptNonce: 'demo1' }));
               }}
-              className="w-24 px-2.5 py-1.5 rounded-[8px] border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] tabular-nums"
+              className="w-24 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[13px] tabular-nums"
             />
             <RadarButton variant="outline" size="sm" loading={valSubmitting} onClick={() => runValuationSimulation(true)}>
               شبیه‌سازی خطای شبکه
@@ -214,8 +214,8 @@ export const InteractionQaLabTab: React.FC = () => {
 
       <RadarCard padding="standard" elevated>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[15px] font-bold text-[#182522] dark:text-white flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#176B63]" />
+          <h3 className="text-[15px] font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>۴. سناریوهای پذیرش تعاملات و Design QA (Stage 10 · RT-UI-VALIDATION-001)</span>
           </h3>
           <span className="text-[12px] font-bold text-[#176B4C] tabular-nums">
@@ -228,9 +228,9 @@ export const InteractionQaLabTab: React.FC = () => {
               key={sc.id}
               type="button"
               onClick={() => setPassedFlows((p) => ({ ...p, [sc.id]: !p[sc.id] }))}
-              className="p-2.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-start flex items-center justify-between gap-2 text-[12px] cursor-pointer"
+              className="p-2.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 text-start flex items-center justify-between gap-2 text-[12px] cursor-pointer"
             >
-              <span className="font-medium text-[#182522] dark:text-slate-100">{sc.id}: {sc.titleFa}</span>
+              <span className="font-medium text-[var(--color-text-primary)] dark:text-slate-100">{sc.id}: {sc.titleFa}</span>
               <CheckCircle2 className={`w-4 h-4 shrink-0 ${passedFlows[sc.id] ? 'text-[#176B4C]' : 'text-slate-300'}`} />
             </button>
           ))}

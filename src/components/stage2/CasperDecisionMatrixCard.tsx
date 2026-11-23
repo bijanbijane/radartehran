@@ -112,7 +112,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
     <div dir="rtl" className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-4 text-right" data-testid="casper-decision-matrix-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div className="flex items-center gap-2">
-          <BrainCircuit className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <BrainCircuit className="h-5 w-5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
               موتور تصمیم‌گیری چندمعیاره و تفکیک اعتبار داده — {hoodName}
@@ -159,7 +159,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-3.5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200">
-            <SlidersHorizontal className="h-4 w-4 text-emerald-600" />
+            <SlidersHorizontal className="h-4 w-4 text-[var(--color-brand-600)]" />
             <span>شبیه‌ساز وزن‌دهی اولویت‌های تصمیم‌گیری شما (MCDA)</span>
           </div>
           <div className="flex flex-wrap items-center gap-1">
@@ -176,7 +176,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
                 onClick={() => applyPreset(p.id)}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                   activePreset === p.id
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-[var(--color-brand-600)] text-white'
                     : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
                 }`}
               >
@@ -199,7 +199,7 @@ export const CasperDecisionMatrixCard: React.FC<CasperDecisionMatrixCardProps> =
               <label key={item.key} className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between gap-1 font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">
                   <span>{item.label}</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  <span className="text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums">
                     {toPersianNum(normalizedSharePct)}٪ (وزن {toPersianNum(weights[item.key])})
                   </span>
                 </div>

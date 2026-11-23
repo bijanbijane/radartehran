@@ -87,32 +87,32 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-[16px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 p-5 space-y-4 text-xs"
+        className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-[16px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 p-5 space-y-4 text-xs"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
           <div>
-            <span className="text-[10.5px] font-bold text-[#176B63]">
+            <span className="text-[10.5px] font-bold text-[var(--color-brand-600)]">
               {CANONICAL_CATEGORY_LABELS_FA[provider.canonicalCategory]} · {provider.identity.primaryNeighborhoodName}
             </span>
-            <h3 className="text-base font-black text-[#182522] dark:text-white mt-0.5">
+            <h3 className="text-base font-black text-[var(--color-text-primary)] dark:text-white mt-0.5">
               {provider.identity.displayName}
             </h3>
           </div>
-          <button type="button" aria-label="بستن جزئیات" onClick={onClose} className="p-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 cursor-pointer">
+          <button type="button" aria-label="بستن جزئیات" onClick={onClose} className="p-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="space-y-3">
           <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 space-y-1.5">
-            <strong className="text-[#182522] dark:text-white block">۱. هویت، موقعیت دفتر و محدوده پوشش</strong>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[#34433E] dark:text-slate-300 tabular-nums">
+            <strong className="text-[var(--color-text-primary)] dark:text-white block">۱. هویت، موقعیت دفتر و محدوده پوشش</strong>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[var(--color-text-secondary)] dark:text-slate-300 tabular-nums">
               <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#176B63]" />
+                <MapPin className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
                 <span>{provider.coverage.officeAddressSummaryFa} · پوشش: {provider.coverage.coveredAreaNames.join('، ')}</span>
               </span>
               <span className="font-bold flex items-center gap-1" dir="ltr">
-                <Phone className="w-3.5 h-3.5 text-[#176B63]" />
+                <Phone className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
                 {provider.identity.phone || 'ثبت‌نشده'}
               </span>
             </div>
@@ -126,13 +126,13 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {provider.credential.tracks.map((tr) => (
                 <div key={tr.track} className="p-2 rounded-[8px] bg-white/80 dark:bg-slate-900/80 border border-[#F4D3A1]/70 dark:border-amber-900/50 space-y-0.5">
-                  <div className="flex items-center justify-between font-bold text-[#182522] dark:text-white">
+                  <div className="flex items-center justify-between font-bold text-[var(--color-text-primary)] dark:text-white">
                     <span>{tr.labelFa}</span>
-                    <span className={tr.status === 'verified' ? 'text-[#176B63]' : tr.status === 'expired' ? 'text-[#B3261E]' : 'text-[#875000]'}>
+                    <span className={tr.status === 'verified' ? 'text-[var(--color-brand-600)]' : tr.status === 'expired' ? 'text-[#B3261E]' : 'text-[#875000]'}>
                       {tr.badgeTextFa}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#586760] dark:text-slate-400">{tr.noteFa}</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] dark:text-slate-400">{tr.noteFa}</p>
                 </div>
               ))}
             </div>
@@ -140,26 +140,26 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
           </div>
 
           <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 space-y-1.5">
-            <strong className="text-[#182522] dark:text-white block">۳. خدمات، اقلام شامل‌شده و تعرفه شفاف</strong>
-            <p className="text-[#34433E] dark:text-slate-300">{provider.specialtyFa}</p>
-            <p className="text-[10.5px] text-[#586760]">
+            <strong className="text-[var(--color-text-primary)] dark:text-white block">۳. خدمات، اقلام شامل‌شده و تعرفه شفاف</strong>
+            <p className="text-[var(--color-text-secondary)] dark:text-slate-300">{provider.specialtyFa}</p>
+            <p className="text-[10.5px] text-[var(--color-text-muted)]">
               {provider.pricingModelFa} · سابقه اظهارشده: {toPersianNum(provider.activity.experienceYearsDeclared)} سال · زمان پاسخ: {provider.activity.responseTimeLabelFa}
             </p>
             {primaryOffering && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[10.5px]">
-                <div className="text-[#14534E] dark:text-emerald-300">
+                <div className="text-[var(--color-brand-700)] dark:text-emerald-300">
                   <strong>شامل خدمت:</strong> {primaryOffering.pricing.includesListFa.join('، ')}
                 </div>
-                <div className="text-[#586760] dark:text-slate-400">
+                <div className="text-[var(--color-text-muted)] dark:text-slate-400">
                   <strong>خارج از تعرفه پایه:</strong> {primaryOffering.pricing.excludesListFa.join('، ')}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 space-y-2 text-[#586760]">
-            <strong className="text-[#182522] dark:text-white flex items-center gap-1">
-              <Info className="w-3.5 h-3.5 text-[#176B63]" />
+          <div className="p-3 rounded-[10px] bg-[#F8F9FA] dark:bg-slate-800/80 space-y-2 text-[var(--color-text-muted)]">
+            <strong className="text-[var(--color-text-primary)] dark:text-white flex items-center gap-1">
+              <Info className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
               <span>۴. بازخوردهای متصل به درخواست معتبر ({toPersianNum(publishedReviews.length)} مورد)</span>
             </strong>
             {publishedReviews.length === 0 ? (
@@ -167,10 +167,10 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             ) : (
               <div className="space-y-1.5">
                 {publishedReviews.slice(0, 4).map((rev) => (
-                  <div key={rev.reviewId} className="p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-[#182522] dark:text-slate-200">
+                  <div key={rev.reviewId} className="p-2 rounded-[8px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-primary)] dark:text-slate-200">
                     <div className="flex items-center justify-between text-[10.5px] font-bold">
                       <span>{rev.reviewerLabelFa} · درخواست تأییدشده</span>
-                      <span className="tabular-nums text-[#176B63]">امتیاز {toPersianNum(rev.overallScore)} از ۵</span>
+                      <span className="tabular-nums text-[var(--color-brand-600)]">امتیاز {toPersianNum(rev.overallScore)} از ۵</span>
                     </div>
                     <p className="text-[11px] mt-1">{rev.commentFa}</p>
                   </div>
@@ -184,7 +184,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
         <button
           type="button"
           onClick={() => { onClose(); onOpenRequestModal(provider); }}
-          className="w-full py-2.5 rounded-[10px] bg-[#176B63] hover:bg-[#14534E] text-white font-bold cursor-pointer"
+          className="w-full py-2.5 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold cursor-pointer"
         >
           ثبت درخواست خدمت از این مجموعه
         </button>
@@ -194,9 +194,9 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
             e.preventDefault();
             handleDispute();
           }}
-          className="pt-3 border-t border-[#DCE3DF] dark:border-slate-800 space-y-2"
+          className="pt-3 border-t border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2"
         >
-          <div className="font-bold text-[#182522] dark:text-white flex items-center gap-1">
+          <div className="font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5 text-[#B3261E]" />
             <span>گزارش مغایرت اطلاعات یا شکایت خصوصی خدماتی</span>
           </div>
@@ -209,7 +209,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
                 if (disputeError) setDisputeError('');
                 if (disputeSent) setDisputeSent(false);
               }}
-              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+              className="p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
             >
               <option value="misleading_credential">ادعای نادرست صلاحیت/پروانه</option>
               <option value="fee_dispute">اختلاف در حق‌الزحمه/کمیسیون</option>
@@ -226,7 +226,7 @@ export const ServiceProviderModal: React.FC<ServiceProviderModalProps> = ({
                 if (disputeSent) setDisputeSent(false);
               }}
               placeholder="توضیح کوتاه مغایرت (حداقل ۸ حرف)..."
-              className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[#DCE3DF] dark:border-slate-700"
+              className="sm:col-span-2 p-2 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800 border border-[var(--color-border-subtle)] dark:border-slate-700"
             />
           </div>
           <div className="flex items-center justify-between gap-2">

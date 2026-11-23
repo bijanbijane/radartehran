@@ -36,14 +36,14 @@ export const PropertyExplorerHeader: React.FC<PropertyExplorerHeaderProps> = ({
   onOpenCompare,
 }) => (
   <>
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#DCE3DF] dark:border-slate-800 pb-4">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4">
       <div>
-        <span className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400 block mb-1">
+        <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 block mb-1">
           {isEn
             ? 'Verified Property Discovery & Valuation Context'
             : 'کشف، مقایسه و راستی‌آزمایی فایل‌های ملکی · همگام با نقشه و ارزش‌گذاری'}
         </span>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#182522] dark:text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] dark:text-white tracking-tight">
           {isEn ? 'Property Explorer' : 'بازار املاک و فایل‌های هدف'}
         </h1>
       </div>
@@ -54,9 +54,9 @@ export const PropertyExplorerHeader: React.FC<PropertyExplorerHeaderProps> = ({
             data-testid="properties-split-map-toggle"
             aria-pressed={Boolean(splitMapMode)}
             onClick={() => { onToggleSplitMap(); onToggleViewMode(); }}
-            className="hidden lg:inline-flex px-3 py-2 rounded-[9px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-[#34433E] dark:text-slate-200 text-xs font-bold items-center gap-1.5 cursor-pointer"
+            className="hidden lg:inline-flex px-3 py-2 rounded-[9px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 text-[var(--color-text-secondary)] dark:text-slate-200 text-xs font-bold items-center gap-1.5 cursor-pointer"
           >
-            <Layers className="w-3.5 h-3.5 text-[#176B63]" />
+            <Layers className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>{viewMode === 'split' ? 'بزرگ‌نمایی فهرست' : 'چیدمان فهرست + نقشه'}</span>
           </button>
         )}
@@ -64,7 +64,7 @@ export const PropertyExplorerHeader: React.FC<PropertyExplorerHeaderProps> = ({
           type="button"
           data-testid="open-submit-listing-btn"
           onClick={() => onChangeSection('submit')}
-          className="px-3.5 py-2 rounded-[9px] border border-[#176B63] text-[#176B63] dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 hover:bg-[#EAF3F0] dark:hover:bg-emerald-950/40 cursor-pointer"
+          className="px-3.5 py-2 rounded-[9px] border border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 hover:bg-[#EAF3F0] dark:hover:bg-emerald-950/40 cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>ثبت فایل جدید</span>
@@ -72,7 +72,7 @@ export const PropertyExplorerHeader: React.FC<PropertyExplorerHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenValuation}
-          className="px-3.5 py-2 rounded-[9px] bg-[#176B63] hover:bg-[#14534E] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          className="px-3.5 py-2 rounded-[9px] bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
         >
           <Calculator className="w-4 h-4" />
           <span>ارزش‌گذاری یک ملک دلخواه</span>
@@ -97,8 +97,8 @@ export const PropertyExplorerHeader: React.FC<PropertyExplorerHeaderProps> = ({
               onClick={() => onChangeSection(t.id)}
               className={`px-3 py-1.5 rounded-[8px] font-bold flex items-center gap-1.5 cursor-pointer transition ${
                 sectionTab === t.id
-                  ? 'bg-[#182522] text-white'
-                  : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
+                  ? 'bg-[var(--color-text-primary)] text-white'
+                  : 'bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[#48534F] dark:text-slate-300'
               }`}
             >
               <IconC className="w-3.5 h-3.5" />
@@ -113,7 +113,7 @@ export const PropertyExplorerHeader: React.FC<PropertyExplorerHeaderProps> = ({
           type="button"
           data-testid="open-compare-drawer-btn"
           onClick={onOpenCompare}
-          className="px-3 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold flex items-center gap-1.5 cursor-pointer"
+          className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1.5 cursor-pointer"
         >
           <GitCompare className="w-3.5 h-3.5" />
           <span>مقایسه ({toPersianNum(compareCount)} فایل)</span>

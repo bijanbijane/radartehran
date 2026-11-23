@@ -85,7 +85,7 @@ export const RtFeIaNavigation007Subpanel: React.FC = () => {
               data-testid={`rt-fe-ia-nav-tab-${tab.id}`}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-[var(--color-brand-600)] text-white'
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
               }`}
             >

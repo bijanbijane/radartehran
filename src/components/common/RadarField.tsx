@@ -53,7 +53,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
   return (
     <div className="space-y-1.5 text-start">
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={fieldId} className="text-[14px] font-medium text-[#182522] dark:text-slate-100 leading-[1.5]">
+        <label htmlFor={fieldId} className="text-[14px] font-medium text-[var(--color-text-primary)] dark:text-slate-100 leading-[1.5]">
           {label}
         </label>
         {required && (
@@ -61,7 +61,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
         )}
       </div>
       <div className="relative flex items-center">
-        {leadingIcon && <span className="absolute right-3 text-[#586760] pointer-events-none">{leadingIcon}</span>}
+        {leadingIcon && <span className="absolute right-3 text-[var(--color-text-muted)] pointer-events-none">{leadingIcon}</span>}
         <input
           id={fieldId}
           type="text"
@@ -75,14 +75,14 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
           aria-describedby={hasError ? errorId : helperText ? helperId : undefined}
           placeholder={placeholder}
           onChange={(e) => onChangeValue(numeric ? normalizeNumericFieldDigits(e.target.value) : e.target.value)}
-          className={`w-full ${INPUT_HEIGHTS[size]} rounded-[8px] border bg-white dark:bg-slate-900 px-3 text-[15px] text-[#182522] dark:text-slate-100 placeholder:text-[#64716B] transition-colors focus:outline-none focus:ring-2 ${
+          className={`w-full ${INPUT_HEIGHTS[size]} rounded-[8px] border bg-[var(--color-bg-surface)] dark:bg-slate-900 px-3 text-[15px] text-[var(--color-text-primary)] dark:text-slate-100 placeholder:text-[var(--color-text-muted)] transition-colors focus:outline-none focus:ring-2 ${
             hasError
               ? 'border-[#A61B1B] focus:border-[#A61B1B] focus:ring-[#A61B1B]/20'
-              : 'border-[#C5D0CA] dark:border-slate-700 focus:border-[#176B63] focus:ring-[#2864DC]/20'
-          } ${leadingIcon ? 'pr-9' : ''} ${unitLabel || trailingIcon ? 'pl-20' : ''} ${numeric ? 'tabular-nums text-left' : ''} disabled:bg-[#F1F4F2] disabled:text-[#64716B] disabled:cursor-not-allowed`}
+              : 'border-[var(--color-border-strong)] dark:border-slate-700 focus:border-[var(--color-brand-600)] focus:ring-[var(--color-focus)]/20'
+          } ${leadingIcon ? 'pr-9' : ''} ${unitLabel || trailingIcon ? 'pl-20' : ''} ${numeric ? 'tabular-nums text-left' : ''} disabled:bg-[var(--color-bg-muted)] disabled:text-[var(--color-text-muted)] disabled:cursor-not-allowed`}
         />
         {(unitLabel || trailingIcon) && (
-          <span className="absolute left-3 flex items-center gap-1.5 text-[13px] font-medium text-[#586760] dark:text-slate-400 pointer-events-none">
+          <span className="absolute left-3 flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-text-muted)] dark:text-slate-400 pointer-events-none">
             {unitLabel}
             {trailingIcon}
           </span>
@@ -94,7 +94,7 @@ export const RadarInputField: React.FC<RadarInputFieldProps> = ({
           <span>{errorText}</span>
         </p>
       ) : helperText ? (
-        <p id={helperId} className="text-[13px] text-[#586760] dark:text-slate-400 leading-[1.6]">
+        <p id={helperId} className="text-[13px] text-[var(--color-text-muted)] dark:text-slate-400 leading-[1.6]">
           {helperText}
         </p>
       ) : null}
@@ -107,9 +107,9 @@ export const RadarEmptyStateCard: React.FC<{
   description: string;
   action?: React.ReactNode;
 }> = ({ title, description, action }) => (
-  <div className="rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 bg-[#F6F8F6] dark:bg-slate-900/60 p-5 text-center space-y-2">
-    <h4 className="text-[15px] font-semibold text-[#182522] dark:text-slate-100">{title}</h4>
-    <p className="text-[14px] text-[#586760] dark:text-slate-400 leading-[1.7] max-w-md mx-auto">{description}</p>
+  <div className="rt-card dark:border-slate-800 dark:bg-slate-900/60 p-5 text-center space-y-2 bg-[var(--color-bg-canvas)]">
+    <h4 className="text-[15px] font-semibold text-[var(--color-text-primary)] dark:text-slate-100">{title}</h4>
+    <p className="text-[14px] text-[var(--color-text-muted)] dark:text-slate-400 leading-[1.7] max-w-md mx-auto">{description}</p>
     {action && <div className="pt-2 flex justify-center">{action}</div>}
   </div>
 );

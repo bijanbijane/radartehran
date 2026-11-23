@@ -263,7 +263,8 @@ async function runTests() {
   assert.ok(aiRoutesSrc.includes('/api/ai/gateway/infer'));
   assert.ok(aiRoutesSrc.includes('/api/v1/commerce/neighborhood-dossier/:hoodId'));
 
-  const serverSrc = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf-8');
+  const { readServerEntrySource } = await import('./helpers/readServerEntrySource.ts');
+  const serverSrc = readServerEntrySource(process.cwd());
   assert.ok(serverSrc.includes('registerSponsorAndBargainRoutes(app'));
   assert.ok(serverSrc.includes('registerBackupAndChunkUploadRoutes(app'));
   assert.ok(serverSrc.includes('registerAiAndCommerceRoutes(app'));

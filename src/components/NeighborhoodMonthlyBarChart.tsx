@@ -89,7 +89,7 @@ export function NeighborhoodMonthlyBarChart({ selectedHood, marketReport, active
     <div className="apple-grouped-card dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 mb-3.5 space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-2.5">
         <div className="flex items-center gap-1.5 min-w-0">
-          <BarChart3 className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <BarChart3 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <div className="min-w-0">
             <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs truncate block">
               {isEn ? `Monthly Price Bar Chart (${hoodName})` : `نمودار میله‌ای تغییرات قیمت ماهانه (${hoodName})`}

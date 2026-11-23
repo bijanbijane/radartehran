@@ -176,7 +176,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 flex flex-wrap items-center justify-between gap-2">
           <span className="font-bold text-amber-900 dark:text-amber-200">آیا از اجرای این عملیات حساس مدیریتی (ثبت در Audit Trail تغییرناپذیر) اطمینان دارید؟</span>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => void executeConfirmedAction(confirmAction)} className="px-3 py-1 rounded-lg bg-emerald-600 text-white font-extrabold cursor-pointer">تایید و اجرا</button>
+            <button type="button" onClick={() => void executeConfirmedAction(confirmAction)} className="px-3 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-extrabold cursor-pointer">تایید و اجرا</button>
             <button type="button" onClick={() => setConfirmAction(null)} className="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold cursor-pointer">انصراف</button>
           </div>
         </div>
@@ -185,7 +185,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
         {activeSection === 'platform' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-600" /><span>ماژول‌های ثبت‌شده پلتفرم (Employees 53–80): <strong>{toPersianNum(liveState.modulesCount)} ماژول</strong> · چرخه وابستگی راه‌اندازی: <strong>۰ (DAG Verified)</strong></span></div>
+            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /><span>ماژول‌های ثبت‌شده پلتفرم (Employees 53–80): <strong>{toPersianNum(liveState.modulesCount)} ماژول</strong> · چرخه وابستگی راه‌اندازی: <strong>۰ (DAG Verified)</strong></span></div>
             <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-mono text-[10px]">OPERATIONAL_LOCAL_ADAPTERS</span>
           </div>
         )}
@@ -197,26 +197,26 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         )}
         {activeSection === 'processing' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2"><Cpu className="w-4 h-4 text-emerald-600" /><span>صف توزیع‌شده، Lease انحصاری کارگر، Outbox تراکنشی و جبران Saga (Employee 75)</span></div>
+            <div className="flex items-center gap-2"><Cpu className="w-4 h-4 text-[var(--color-brand-600)]" /><span>صف توزیع‌شده، Lease انحصاری کارگر، Outbox تراکنشی و جبران Saga (Employee 75)</span></div>
             <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-mono text-[10px]">Cloudflare Queues: {liveState.readiness?.externalCloudBindings?.cloudflareQueues || 'NOT_CONFIGURED'} (Local Adapter: ACTIVE)</span>
           </div>
         )}
         {activeSection === 'performance' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2"><Activity className="w-4 h-4 text-emerald-600" /><span>۹ فضای نام کش با کلید Deterministic Tenant-Safe · Single-Flight فعال · KV خارجی: <code className="font-mono">{liveState.cacheHealth?.externalDistributedKvProvider || 'NOT_CONFIGURED'}</code></span></div>
+            <div className="flex items-center gap-2"><Activity className="w-4 h-4 text-[var(--color-brand-600)]" /><span>۹ فضای نام کش با کلید Deterministic Tenant-Safe · Single-Flight فعال · KV خارجی: <code className="font-mono">{liveState.cacheHealth?.externalDistributedKvProvider || 'NOT_CONFIGURED'}</code></span></div>
             <button type="button" onClick={() => setConfirmAction('invalidate_search_cache')} className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer">ابطال کش نتایج جست‌وجو</button>
           </div>
         )}
         {activeSection === 'security' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2"><Lock className="w-4 h-4 text-emerald-600" /><span>موجودی متادیتای رمزها: <strong>{toPersianNum(liveState.secretsCount)} مرجع</strong> (افشای مقدار خام: <strong>۰</strong>) · KMS خارجی: <code className="font-mono">NOT_CONFIGURED</code></span></div>
+            <div className="flex items-center gap-2"><Lock className="w-4 h-4 text-[var(--color-brand-600)]" /><span>موجودی متادیتای رمزها: <strong>{toPersianNum(liveState.secretsCount)} مرجع</strong> (افشای مقدار خام: <strong>۰</strong>) · KMS خارجی: <code className="font-mono">NOT_CONFIGURED</code></span></div>
             <button type="button" onClick={() => setConfirmAction('rotate_webhook_secret')} className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer">چرخش کنترل‌شده رمز Webhook</button>
           </div>
         )}
         {activeSection === 'recovery' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2"><HardDriveDownload className="w-4 h-4 text-emerald-600" /><span>منابع بازیابی: <strong>{toPersianNum(liveState.recoveryResourcesCount)} منبع</strong> · دروازه ۵ سطحی Legal Hold (Employee 72): <strong>فعال</strong> · بازیابی روی PRODUCTION: <strong>مسدود</strong></span></div>
-            <button type="button" onClick={() => setConfirmAction('run_isolated_dr_drill')} className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer">اجرای مانور بازیابی ایزوله (DR Drill)</button>
+            <div className="flex items-center gap-2"><HardDriveDownload className="w-4 h-4 text-[var(--color-brand-600)]" /><span>منابع بازیابی: <strong>{toPersianNum(liveState.recoveryResourcesCount)} منبع</strong> · دروازه ۵ سطحی Legal Hold (Employee 72): <strong>فعال</strong> · بازیابی روی PRODUCTION: <strong>مسدود</strong></span></div>
+            <button type="button" onClick={() => setConfirmAction('run_isolated_dr_drill')} className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold cursor-pointer">اجرای مانور بازیابی ایزوله (DR Drill)</button>
           </div>
         )}
         {activeSection === 'analytics' && (
@@ -227,7 +227,7 @@ export function AdminUnifiedControlPlanePanel(): React.ReactElement {
         )}
         {activeSection === 'reliability' && (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-600" /><span>وضعیت آمادگی پلتفرم: <strong>{liveState.readiness?.readiness || 'READY'}</strong> · اصلاح خودکار اختلاف مالی/مالکیت/Legal Hold: <strong>مسدود (نیازمند تایید دستی)</strong></span></div>
+            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /><span>وضعیت آمادگی پلتفرم: <strong>{liveState.readiness?.readiness || 'READY'}</strong> · اصلاح خودکار اختلاف مالی/مالکیت/Legal Hold: <strong>مسدود (نیازمند تایید دستی)</strong></span></div>
             <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-mono text-[10px]">SLO External KMS: INSUFFICIENT_MEASUREMENT_DATA</span>
           </div>
         )}

@@ -1,5 +1,6 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
-import React, { useId, useRef } from 'react';
+/** OP-DEC-001 FX parity: formatMillionTomanAsIntlCurrency (via ExperienceModeToggle / AreaUnitToggle). */
+import React, { useId, useMemo, useRef } from 'react';
 import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
@@ -7,6 +8,7 @@ import { CANONICAL_BRAND_EN, CANONICAL_BRAND_FA } from '../../utils/geo/cityGeos
 import { PrimaryViewId } from '../../utils/areaUnit';
 import { ExperienceModeToggle, useRadarLocale } from '../AreaUnitToggle';
 import { getProductNavigationItems } from './primaryNavigation';
+import { useNavigationVisibilityContext } from '../../navigation/hooks/useNavigationVisibilityContext';
 import { DesktopMegaMenu } from './DesktopMegaMenu';
 import { useMegaMenuLifecycle } from './useMegaMenuLifecycle';
 import { HeaderNotificationBell } from '../../features/communications/components/HeaderNotificationBell';
@@ -63,18 +65,22 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
   const activeCityName = invalidCityParam
     ? (isEn ? 'Unsupported City' : 'شهر پشتیبانی‌نشده')
     : (isEn ? (CITIES.find((c) => c.id === activeCity)?.labelEn || 'Tehran') : (activePlaceLabelFa || cityCfg.nameFa || 'تهران'));
-  const navigationItems = getProductNavigationItems(radarLocale);
+  const visibilityCtx = useNavigationVisibilityContext();
+  const navigationItems = useMemo(
+    () => getProductNavigationItems(radarLocale, visibilityCtx),
+    [radarLocale, visibilityCtx],
+  );
   const primaryNavItems = (['map', 'discover', 'intelligence', 'properties', 'tools'] as const)
     .map((id) => navigationItems.find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const isMoreActive = primaryView === 'services' || primaryView === 'knowledge' || primaryView === 'contributions' || primaryView === 'home';
 
   return (
-    <header className="sticky top-0 z-[45] w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+    <header dir="rtl" className="sticky top-0 z-[45] w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
       <a
         id="radar-skip-to-main-link"
         href="#radar-main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-4 focus:z-50 focus:px-3 focus:py-1.5 focus:rounded-lg focus:bg-[#176B63] focus:text-white focus:font-bold focus:text-xs"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-4 focus:z-50 focus:px-3 focus:py-1.5 focus:rounded-lg focus:bg-[var(--color-brand-600)] focus:text-white focus:font-bold focus:text-xs"
       >
         {isEn ? 'Skip to main content' : 'رفتن به محتوای اصلی'}
       </a>
@@ -88,10 +94,11 @@ export const ProductGlobalHeader: React.FC<ProductGlobalHeaderProps> = ({
             title={isEn ? `${brandLabel} | ${activeCityName} Home` : `صفحه نخست ${brandLabel} | ${activeCityName}`}
             className="flex items-center gap-2 group text-start focus-visible:outline-2 focus-visible:outline-emerald-600 rounded-lg cursor-pointer"
           >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition ${primaryView === 'home' ? 'bg-emerald-600 text-white' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 group-hover:bg-emerald-700'}`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition ${primaryView === 'home' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 group-hover:bg-[var(--color-brand-700)]'}`}>
               <MapIcon className="w-4 h-4 stroke-[2.2]" aria-hidden="true" />
             </div>
             <div className="block">
+              <span className="sr-only">{isEn ? `${brandLabel} ${activeCityName}` : `رادار ${activeCityName}`}</span>
               <span data-testid="global-brand-name" className="font-black text-[11px] sm:text-sm tracking-tight text-slate-900 dark:text-white whitespace-nowrap flex items-center gap-1">
                 <span>{brandLabel}</span>
                 <span className="text-slate-300 dark:text-slate-600 font-normal" aria-hidden="true">|</span>

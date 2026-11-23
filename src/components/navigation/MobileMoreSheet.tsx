@@ -115,7 +115,7 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
                     : 'bg-slate-50/70 border-slate-200/70 text-slate-800 dark:bg-slate-800/70 dark:border-slate-700/70 dark:text-slate-100'
                 }`}
               >
-                <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+                <Icon className="h-4 w-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" aria-hidden="true" />
                 <div className="min-w-0">
                   <div className="text-[11px] font-extrabold truncate">{isEn ? item.labelEn : item.labelFa}</div>
                   <div className="text-[9.5px] text-slate-500 dark:text-slate-400 truncate">{item.descFa}</div>
@@ -127,7 +127,7 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
 
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-emerald-600" /><span>{isEn ? 'Active City' : 'تغییر کلان‌شهر'}</span></span>
+            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>{isEn ? 'Active City' : 'تغییر کلان‌شهر'}</span></span>
           </div>
           <div className="grid grid-cols-5 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             {CITY_LABELS.map((c) => (
@@ -148,10 +148,10 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <button type="button" onClick={() => { onClose(); onOpenVisitedLog(); }} className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 cursor-pointer">
-              <Bookmark className="w-3.5 h-3.5 text-emerald-600" /><span>{isEn ? 'Visits Log' : 'دفترچه بازدید'}</span>
+              <Bookmark className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>{isEn ? 'Visits Log' : 'دفترچه بازدید'}</span>
             </button>
             <button type="button" onClick={() => { onClose(); onOpenOnboarding(); }} className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 cursor-pointer">
-              <Compass className="w-3.5 h-3.5 text-emerald-600" /><span>{isEn ? 'Guide' : 'راهنما'}</span>
+              <Compass className="w-3.5 h-3.5 text-[var(--color-brand-600)]" /><span>{isEn ? 'Guide' : 'راهنما'}</span>
             </button>
             <button type="button" onClick={onToggleAppleTheme} className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 cursor-pointer">
               {appleTheme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5" />}
