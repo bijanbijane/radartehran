@@ -4,6 +4,34 @@
 **Working branch:** `migration/cloudflare-native-auth-firebase-retirement`  
 **Base commit:** `e2940da21c2f65fa85a5c26cdafb3495503ca27c`
 
+## 23 November 2026 — continuation checkpoint
+
+**Working HEAD:** `00be8d494bfac30076121d538716ee124b89f3f9`  
+**Comparison:** 190 commits ahead of `main`, 0 behind; 99 changed files in the branch comparison.  
+**Deployment:** No deployment or production data mutation was performed in this continuation.
+
+### Completed in this continuation
+
+- Replaced Firebase bearer-token usage in the admin Telegram, AI control-center, CASPER monitor, unified control-plane, storage-recovery, and environment-diagnostics UI requests with same-origin HttpOnly Cloudflare session-cookie requests.
+- Replaced the legacy environment configuration form (which called an endpoint not implemented in the Worker router and exposed Firebase project/database identifiers) with a read-only `GET /api/admin/worker-diagnostics` view backed by the existing Worker admin diagnostics route. Secret and binding changes remain deployment-managed.
+- Migrated the listing media uploader to the Cloudflare session client; removed Firebase App Check token generation from this upload flow. All chunk-init, chunk, completion, single-upload, status, and delete requests now send same-origin credentials.
+- Removed Firebase Storage from the browser storage-provider type and provider allowlist. Legacy `firebase` provider labels now normalize to generic S3-compatible mode, which still requires explicit S3 credentials and does not silently fall back to Firebase.
+- Changed default `dev` and `start` package scripts so the default development/runtime commands target Cloudflare Vite and Wrangler rather than the legacy Express server.
+- Hardened Google OIDC `azp` validation and made OTP challenge finalization revoke a newly issued session if challenge finalization fails.
+
+### Remaining blockers — do not claim full Firebase retirement
+
+- The frontend still contains direct `firebase/firestore` imports and active Firestore-backed hooks/repositories, including `useRadarCloudSync`, `useRadarAdminActions`, `useRadarCrudActions`, and `firestoreNeighborhoodRepository`. These require explicit Worker/D1 API contracts and replacement, not mass deletion.
+- `src/firebase.ts`, `src/utils/appCheck.ts`, `src/utils/clientAppCheck.ts`, `src/utils/serverAdminAndTelegramSecurity.ts`, `src/utils/serverConfigValidator.ts`, and legacy Express media/domain adapters still contain Firebase or Firestore runtime code.
+- `package.json` still declares `firebase`, `firebase-admin`, and Firebase emulator test dependencies because source imports remain. They must not be removed until the replacement graph typechecks and builds.
+- Several legacy server modules still implement Firestore stores. The Worker migration register must remain the source of truth for which routes are actually available; an Express route is not considered migrated merely because a Worker route has a similarly named path.
+- The production Worker remains on its previously observed configuration and does not yet have the Google OAuth, Kavenegar, and HMAC secrets needed for login. The D1 0007–0009 partial-migration recovery described above remains unresolved.
+- The repository was not built or tested by this connector. GitHub Actions currently reports no workflow runs for this branch; the changes above are source edits, not verified CI results.
+
+### Safety boundary
+
+Do not delete Firestore-backed repositories, Firebase configuration, or packages in bulk until each active caller has a working Worker/D1 replacement and tests prove parity. Do not deploy the branch until D1 migration recovery, required secrets, OAuth callback configuration, and Worker binding alignment are verified. R2 remains deferred.
+
 ## Target architecture
 
 - Google sign-in through Google OpenID Connect directly to the Cloudflare Worker.
