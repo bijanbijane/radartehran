@@ -37,7 +37,7 @@ import {
   mergeNeighborhoodWithSeed,
   validateAndBuildRestoredState,
 } from '../src/data/neighborhoods';
-import { explainNeighborhoodRecommendation } from '../src/components/useEvaluatedNeighborhoods';
+import { explainNeighborhoodRecommendation, precomputeNeighborhoodStaticReports } from '../src/components/useEvaluatedNeighborhoods';
 import {
   buildNeighborhoodSeedReviews,
   mergeCloudAndSeedReviews,
@@ -170,6 +170,31 @@ function runDomainRegressionTests(): void {
     if (priorLocalStorage === undefined) delete (globalThis as any).localStorage;
     else (globalThis as any).localStorage = priorLocalStorage;
   }
+
+  const staticReportBase = { ...INITIAL_NEIGHBORHOODS[0] };
+  const staticReportFirst = precomputeNeighborhoodStaticReports(staticReportBase);
+  const staticReportSecond = precomputeNeighborhoodStaticReports(staticReportBase);
+  assert(
+    '0. Static neighborhood reports are reused for unchanged immutable records',
+    staticReportFirst === staticReportSecond,
+    'same base object and cloud inputs reuse the same precomputed reports'
+  );
+  const staticReportCloudA = { [staticReportBase.id]: [] as any[] };
+  const staticReportCloudB = { [staticReportBase.id]: [] as any[] };
+  const cloudReportFirst = precomputeNeighborhoodStaticReports(staticReportBase, staticReportCloudA);
+  const cloudReportSecond = precomputeNeighborhoodStaticReports(staticReportBase, staticReportCloudA);
+  const cloudReportChanged = precomputeNeighborhoodStaticReports(staticReportBase, staticReportCloudB);
+  assert(
+    '0. Static report cache invalidates when a neighborhood cloud-bargain snapshot is replaced',
+    cloudReportFirst === cloudReportSecond && cloudReportChanged !== cloudReportFirst,
+    'same cloud array is reused; replacement cloud array recomputes'
+  );
+  const changedStaticReportBase = { ...staticReportBase, buyPerSqm: staticReportBase.buyPerSqm + 1 };
+  assert(
+    '0. Static report cache does not cross immutable neighborhood revisions',
+    precomputeNeighborhoodStaticReports(changedStaticReportBase) !== staticReportFirst,
+    'a new neighborhood record identity gets a fresh report'
+  );
 
   const sampleHood: EvaluatedNeighborhood = {
     ...INITIAL_NEIGHBORHOODS[0],
