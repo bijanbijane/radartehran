@@ -6,6 +6,8 @@
 export const RT_FE_RUM_MEASUREMENT_TRUTH_SPEC_ID = 'RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030' as const;
 export const RT_FE_RUM_MEASUREMENT_TRUTH_READY = 'RT_FE_STAGE30_RUM_MEASUREMENT_TRUTH_READY' as const;
 
+const MAX_TRACKED_INTERACTIONS = 10_000;
+
 export type PerformanceMeasurementSource = 'FIELD_RUM' | 'LAB' | 'SYNTHETIC_LOCAL';
 export type MetricAvailabilityStatus = 'MEASURED' | 'NO_DATA_YET' | 'UNSUPPORTED_API';
 export type RumBudgetVerdict = 'GOOD' | 'NEEDS_IMPROVEMENT' | 'BUDGET_VIOLATION' | 'INSUFFICIENT_SAMPLE';
@@ -165,7 +167,9 @@ export class BrowserRumCollector {
   private longTaskCount = 0;
   private totalBlockingTimeMs = 0;
   private slowResourceCount = 0;
-  private interactionDurations: number[] = [];
+  // Keep one maximum duration per interaction ID; repeated event entries must not
+  // overweight a single interaction in the page-level INP percentile.
+  private interactionDurationsById = new Map<number, number>();
   private supportedTypes: Set<string>;
   private readonly observerFactory?: ObserverFactory;
   private routeKey: string;
@@ -199,10 +203,20 @@ export class BrowserRumCollector {
       for (const entry of entries) {
         const interactionId = Number(entry.interactionId ?? 0);
         const duration = Number(entry.duration);
-        if (interactionId > 0 && Number.isFinite(duration) && duration >= 0) {
-          this.interactionDurations.push(duration);
-          const p98 = computeSamplePercentile(this.interactionDurations, 98);
-          this.inpMs = p98 !== null ? Math.round(p98) : Math.round(duration);
+        if (Number.isSafeInteger(interactionId) && interactionId > 0 && Number.isFinite(duration) && duration >= 0) {
+          const previousMax = this.interactionDurationsById.get(interactionId);
+          if (previousMax === undefined || duration > previousMax) {
+            // Refresh insertion order for active interactions while retaining only
+            // a bounded rolling window for unusually long-lived SPA sessions.
+            this.interactionDurationsById.delete(interactionId);
+            this.interactionDurationsById.set(interactionId, duration);
+            if (this.interactionDurationsById.size > MAX_TRACKED_INTERACTIONS) {
+              const oldestInteractionId = this.interactionDurationsById.keys().next().value;
+              if (oldestInteractionId !== undefined) this.interactionDurationsById.delete(oldestInteractionId);
+            }
+            const p98 = computeSamplePercentile([...this.interactionDurationsById.values()], 98);
+            if (p98 !== null) this.inpMs = Math.round(p98);
+          }
         }
       }
     });
