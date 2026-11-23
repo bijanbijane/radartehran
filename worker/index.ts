@@ -25,6 +25,7 @@ import {
 } from './queues/jobDispatcher';
 import { releaseWorkerMutationPermitIfHeld } from './account-lifecycle/writeBlockWorkerGate';
 import { resolveUserDb } from './db/bindingResolver';
+import { resolveD1WritePauseState } from './db/writePause';
 import {
   processRadarQueueBatch,
   type RadarQueueEnvelope,
@@ -213,6 +214,11 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
+    const d1WritePause = resolveD1WritePauseState(env);
+    if (d1WritePause.paused) {
+      batch.retryAll({ delaySeconds: Math.max(60, d1WritePause.retryAfterSeconds) });
+      return;
+    }
     await processRadarQueueBatch({
       batch,
       db: resolveUserDb(env),
@@ -226,6 +232,7 @@ export default {
     env: WorkerEnv = {},
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
+    if (resolveD1WritePauseState(env).paused) return;
     if (event.cron === '0 * * * *' && env.DB) {
       const { recoverPendingLifecycleDispatch } = await import('./account-lifecycle/workerLifecycleRuntime.ts');
       await recoverPendingLifecycleDispatch(env, 25);
