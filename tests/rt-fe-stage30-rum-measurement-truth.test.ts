@@ -2,7 +2,7 @@
  * @file tests/rt-fe-stage30-rum-measurement-truth.test.ts
  * @description Comprehensive acceptance test suite for Stage 30 Browser Performance & RUM Measurement Truth
  * (`RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030`) — >= 240 tests verifying real PerformanceObserver collection,
- * zero inference of longTaskCount from LCP, P50/P75/P95 distributions, INSUFFICIENT_SAMPLE handling,
+ * zero inference of longTaskCount from LCP, P50/P75/P95/P99 distributions, INSUFFICIENT_SAMPLE handling,
  * FIELD_RUM vs LAB vs SYNTHETIC_LOCAL provenance separation, and Stage 26 telemetry consent gating.
  */
 
@@ -43,6 +43,7 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(snap.lcpMs, highLcpMs);
       assert.equal(snap.longTaskCount, 0); // Must be 0, NEVER 4!
       assert.equal(snap.totalBlockingTimeMs, 0);
+      assert.equal(snap.availability.longtask, 'NO_DATA_YET');
 
       const budget = evaluatePagePerformanceBudget({
         lcpMs: highLcpMs,
@@ -126,10 +127,11 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(snapUnsupported.availability.lcp, 'UNSUPPORTED_API');
       assert.equal(snapUnsupported.availability.inp, 'UNSUPPORTED_API');
       assert.equal(snapUnsupported.availability.cls, 'UNSUPPORTED_API');
+      assert.equal(snapUnsupported.availability.longtask, 'UNSUPPORTED_API');
 
       const idleCollector = new BrowserRumCollector({
         routePath: '/map',
-        supportedEntryTypes: ['largest-contentful-paint', 'event', 'layout-shift'],
+        supportedEntryTypes: ['largest-contentful-paint', 'event', 'layout-shift', 'longtask'],
         observerFactory: () => ({ observe: () => {}, disconnect: () => {} }),
       });
       idleCollector.start();
@@ -137,6 +139,7 @@ describe('RT-FE-REBUILD-RUM-MEASUREMENT-TRUTH-030 — Stage 30 RUM Measurement T
       assert.equal(snapIdle.lcpMs, null);
       assert.equal(snapIdle.availability.lcp, 'NO_DATA_YET');
       assert.equal(snapIdle.availability.inp, 'NO_DATA_YET');
+      assert.equal(snapIdle.availability.longtask, 'NO_DATA_YET');
       idleCollector.disconnect();
     });
   }
