@@ -5,13 +5,18 @@ import type { D1Database, D1PreparedStatement, WorkerRequestContext, WorkerEnv }
 
 type SessionRow = Record<string, unknown>;
 
-function makeD1(row: SessionRow | null): D1Database {
+function makeD1(row: SessionRow | null, updateCalls?: { count: number }): D1Database {
   const db = {
-    prepare(_sql: string): D1PreparedStatement {
+    prepare(sql: string): D1PreparedStatement {
       const statement = {
         bind(..._values: unknown[]) { return statement as unknown as D1PreparedStatement; },
         async first<T = Record<string, unknown>>(): Promise<T | null> { return row as T | null; },
-        async run() { return { success: true, meta: { changes: 0 } }; },
+        async run() {
+          if (/^\\s*UPDATE user_sessions SET last_seen_at_iso/i.test(sql)) {
+            if (updateCalls) updateCalls.count += 1;
+          }
+          return { success: true, meta: { changes: 0 } };
+        },
         async all<T = Record<string, unknown>>() { return { results: row ? [row as T] : [], success: true }; },
       };
       return statement as unknown as D1PreparedStatement;
@@ -22,11 +27,15 @@ function makeD1(row: SessionRow | null): D1Database {
   return db as unknown as D1Database;
 }
 
-function makeContext(db: D1Database | undefined, token = 'A'.repeat(64)): WorkerRequestContext {
+function makeContext(
+  db: D1Database | undefined,
+  token = 'A'.repeat(64),
+  envOverrides: Partial<WorkerEnv> = {},
+): WorkerRequestContext {
   const request = new Request('https://radartehran.ir/api/auth/session', {
     headers: token ? { cookie: `${RADAR_SESSION_COOKIE}=${token}` } : {},
   });
-  const env: WorkerEnv = { USER_DB: db, APP_URL: 'https://radartehran.ir' };
+  const env: WorkerEnv = { USER_DB: db, APP_URL: 'https://radartehran.ir', ...envOverrides };
   return {
     request,
     env,
@@ -70,6 +79,29 @@ describe('Cloudflare-native session authentication', () => {
     assert.equal(result.email, 'verified@example.com');
     assert.equal(result.authProvider, 'google');
     assert.equal(result.statusCode, 200);
+  });
+
+  it('keeps session reads available without touching last_seen while D1 writes are paused', async () => {
+    const updateCalls = { count: 0 };
+    const staleLastSeen = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const pauseDeadline = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const result = await authenticateWorkerSession(makeContext(
+      makeD1(sessionRow({ last_seen_at_iso: staleLastSeen }), updateCalls),
+      'A'.repeat(64),
+      { DB_WRITES_PAUSED_UNTIL_UTC: pauseDeadline },
+    ));
+    assert.equal(result.authenticated, true);
+    assert.equal(updateCalls.count, 0);
+  });
+
+  it('refreshes last_seen after the stale interval when D1 writes are not paused', async () => {
+    const updateCalls = { count: 0 };
+    const staleLastSeen = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const result = await authenticateWorkerSession(makeContext(
+      makeD1(sessionRow({ last_seen_at_iso: staleLastSeen }), updateCalls),
+    ));
+    assert.equal(result.authenticated, true);
+    assert.equal(updateCalls.count, 1);
   });
 
   it('rejects a disabled-account watermark even when the profile row is active', async () => {
