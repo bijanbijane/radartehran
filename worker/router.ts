@@ -10,6 +10,7 @@ import { handleAccountWorkerRoute } from './routes/accountRoutes';
 import { handleAuthWorkerRoute } from './routes/authRoutes';
 import { handleHealthAndMetadataRoute } from './routes/healthAndMetadataRoutes';
 import { handleIntelligenceAndCommerceRoute } from './routes/intelligenceAndCommerceRoutes';
+import { handleMarketplaceWorkerRoute } from './routes/marketplaceRoutes';
 import { handleIrniReferenceRoute } from './routes/irniReferenceRoutes';
 import { handleObjectStorageRoute } from './routes/objectStorageRoutes';
 import { handleResearchWorkerRoute } from './routes/researchRoutes';
@@ -103,6 +104,16 @@ export async function dispatchWorkerApiOrSeoRequest(
   if (group4AccountResponse) {
     return {
       response: group4AccountResponse,
+      routePattern: registeredMatch?.entry.path || pathname,
+      migrationStatus: 'VERIFIED',
+    };
+  }
+
+  // Group 4: D1-backed public marketplace and neighborhood state
+  const marketplaceResponse = await handleMarketplaceWorkerRoute(ctx);
+  if (marketplaceResponse) {
+    return {
+      response: marketplaceResponse,
       routePattern: registeredMatch?.entry.path || pathname,
       migrationStatus: 'VERIFIED',
     };
