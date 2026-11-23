@@ -1,4 +1,5 @@
-import { authenticateWorkerSession } from '../auth/sessionAuth';
+import { authenticateWorkerSession, sha256Hex } from '../auth/sessionAuth';
+import { persistIdempotentMutation } from '../marketplace/d1MarketplaceMutations';
 import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity';
 import { evaluateTieredWorkerRateLimit } from '../cache/kvAndEdgeRateLimiter';
 import { requireUserDb } from '../db/bindingResolver';
@@ -36,7 +37,7 @@ function validMutationOrigin(ctx: WorkerRequestContext): boolean {
 
 async function requireAuthenticatedMutation(ctx: WorkerRequestContext) {
   if (!validMutationOrigin(ctx)) {
-    return { response: jsonWorkerResponse(ctx, 403, { status: 'error', code: 'UNTRUSTED_MUTATION_ORIGIN' }), db: null, uid: null };
+    return { response: jsonWorkerResponse(ctx, 403, { status: 'error', code: 'UNTRUSTED_MUTATION_ORIGIN' }), db: null, uid: null, isAdmin: false };
   }
   const userDbResult = requireUserDb(ctx.env);
   if (!userDbResult.ok) {
@@ -46,6 +47,7 @@ async function requireAuthenticatedMutation(ctx: WorkerRequestContext) {
       }),
       db: null,
       uid: null,
+      isAdmin: false,
     };
   }
   const principal = await authenticateWorkerSession(ctx, true);
@@ -59,15 +61,15 @@ async function requireAuthenticatedMutation(ctx: WorkerRequestContext) {
     };
   }
   if (!principal.emailVerified && !principal.phoneNumber) {
-    return { response: jsonWorkerResponse(ctx, 403, { status: 'error', code: 'VERIFIED_IDENTITY_REQUIRED' }), db: null, uid: null };
+    return { response: jsonWorkerResponse(ctx, 403, { status: 'error', code: 'VERIFIED_IDENTITY_REQUIRED' }), db: null, uid: null, isAdmin: false };
   }
   const writeBlock = await userDbResult.db.prepare(
     'SELECT block_reason FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL LIMIT 1',
   ).bind(principal.uid).first<{ block_reason: string }>();
   if (writeBlock) {
-    return { response: jsonWorkerResponse(ctx, 423, { status: 'error', code: 'ACCOUNT_WRITE_BLOCKED', reason: writeBlock.block_reason }), db: null, uid: null };
+    return { response: jsonWorkerResponse(ctx, 423, { status: 'error', code: 'ACCOUNT_WRITE_BLOCKED', reason: writeBlock.block_reason }), db: null, uid: null, isAdmin: false };
   }
-  return { response: null, db: userDbResult.db, uid: principal.uid };
+  return { response: null, db: userDbResult.db, uid: principal.uid, isAdmin: principal.isAdmin };
 }
 
 async function enforceMutationLimit(
@@ -91,6 +93,26 @@ async function enforceMutationLimit(
     code: 'MARKET_MUTATION_RATE_LIMITED',
     retryAfterSeconds: result.retryAfterSeconds,
   });
+}
+
+function normalizeIranianPhone(value: unknown): string {
+  let digits = String(value || '').replace(/\\D/g, '');
+  if (digits.startsWith('0098')) digits = digits.slice(2);
+  if (digits.startsWith('98') && digits.length === 12) return `+${digits}`;
+  if (digits.startsWith('0') && digits.length === 11) digits = `98${digits.slice(1)}`;
+  if (digits.length === 10 && digits.startsWith('9')) digits = `98${digits}`;
+  return digits.startsWith('98') && digits.length === 12 ? `+${digits}` : '';
+}
+
+function readIdempotencyKey(ctx: WorkerRequestContext): string {
+  const value = (ctx.request.headers.get('idempotency-key') || '').trim();
+  return /^[A-Za-z0-9._:-]{8,128}$/.test(value) ? value : '';
+}
+
+function idempotencyFailure(ctx: WorkerRequestContext, result: 'conflict' | 'not_committed'): Response {
+  return result === 'conflict'
+    ? jsonWorkerResponse(ctx, 409, { status: 'error', code: 'IDEMPOTENCY_KEY_REUSED_OR_CONFLICT' })
+    : jsonWorkerResponse(ctx, 503, { status: 'error', code: 'MARKET_MUTATION_NOT_COMMITTED' });
 }
 
 export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): Promise<Response | null> {
