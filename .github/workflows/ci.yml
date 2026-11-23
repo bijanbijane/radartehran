@@ -139,6 +139,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref }}
           persist-credentials: true
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
