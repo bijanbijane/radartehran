@@ -101,8 +101,8 @@ function scanVarsForPlaintextSecrets(varsObj, envLabel, errors) {
 function validateWritePauseTimestamp(varsObj, envLabel, errors) {
   const value = String(varsObj?.DB_WRITES_PAUSED_UNTIL_UTC ?? '').trim();
   if (!value) return;
-  const utcIso = new RegExp('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z
-  if (!utcIso.test(value) || !Number.isFinite(Date.parse(value))) {
+  const timestamp = Date.parse(value);
+  if (!value.includes('T') || !value.endsWith('Z') || !Number.isFinite(timestamp)) {
     errors.push(`INVALID_DB_WRITES_PAUSE_TIMESTAMP:${envLabel}`);
   }
 }
