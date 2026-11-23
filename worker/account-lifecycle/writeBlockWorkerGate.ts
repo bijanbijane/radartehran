@@ -4,12 +4,25 @@ import {
   MUTATION_HTTP_METHODS,
 } from '../../server/modules/account-lifecycle/mutationWriteBlockGuard.ts';
 import { resolveWriteAdmissionFromD1 } from './d1WriteAdmissionResolver.ts';
+import { resolveWriteAdmissionFromUserDb } from './d1UserWriteAdmissionResolver.ts';
+import { requireUserDb } from '../db/bindingResolver.ts';
+import { acquireD1MutationPermit, releaseD1MutationPermit } from './d1WriteAdmissionPermit.ts';
+import { acquireMutationPermitInD1, releaseMutationPermitInD1 } from './d1MutationPermit.ts';
 import type { WorkerRequestContext } from '../types.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 import { jsonWorkerResponse } from '../contextAndSecurity.ts';
-import { acquireD1MutationPermit, releaseD1MutationPermit } from './d1MutationPermit.ts';
 
-const ACTIVE_PERMITS = new WeakMap<Request, { permitId: string; targetUid: string }>();
+type PermitRelease = () => Promise<void>;
+const ACTIVE_PERMITS = new WeakMap<Request, PermitRelease>();
+
+function unavailable(ctx: WorkerRequestContext, code: string): Response {
+  return jsonWorkerResponse(ctx, 503, {
+    status: 'error',
+    code,
+    correlationId: ctx.correlationId,
+    message: 'Cannot verify write-admission state; mutation refused.',
+  });
+}
 
 export async function enforceWorkerMutationWriteBlock(
   ctx: WorkerRequestContext,
@@ -17,51 +30,74 @@ export async function enforceWorkerMutationWriteBlock(
 ): Promise<Response | null> {
   if (!authenticatedUid) return null;
   if (isLifecycleExemptPath(ctx.pathname, ctx.method)) return null;
-  if (!ctx.env.DB) {
-    return jsonWorkerResponse(ctx, 503, {
-      status: 'error',
-      code: 'STORE_UNAVAILABLE',
-      correlationId: ctx.correlationId,
-      message: 'Cannot verify write-block state; mutation refused.',
-    });
-  }
+
   try {
+    if (ctx.env.USER_DB) {
+      const userDbResult = requireUserDb(ctx.env);
+      if (userDbResult.ok === false) return unavailable(ctx, userDbResult.code);
+      const userDb = userDbResult.db;
+      const decision = await resolveWriteAdmissionFromUserDb(userDb, authenticatedUid);
+      assertWriteAdmissionPermitsMutation(decision);
+
+      if (MUTATION_HTTP_METHODS.has(ctx.method.toUpperCase())) {
+        const permit = await acquireMutationPermitInD1({
+          userDb,
+          uid: authenticatedUid,
+          operationName: ctx.method.toUpperCase() + ' ' + ctx.pathname,
+        });
+        if (permit.ok === false) {
+          throw Object.assign(new Error(permit.code), {
+            code: permit.code,
+            httpStatus: permit.statusCode,
+          });
+        }
+        ACTIVE_PERMITS.set(ctx.request, async () => {
+          await releaseMutationPermitInD1({ userDb, permitId: permit.permitId });
+        });
+      }
+      return null;
+    }
+
+    if (!ctx.env.DB) return unavailable(ctx, 'D1_BINDING_UNAVAILABLE');
     const db = ctx.env.DB as unknown as D1DatabaseBinding;
     const decision = await resolveWriteAdmissionFromD1(db, authenticatedUid);
     assertWriteAdmissionPermitsMutation(decision);
+
     if (MUTATION_HTTP_METHODS.has(ctx.method.toUpperCase())) {
-      const { permitId } = await acquireD1MutationPermit({
+      const permit = await acquireD1MutationPermit({
         db,
         targetUid: authenticatedUid,
         holderId: ctx.correlationId,
-        routeSignature: `${ctx.method} ${ctx.pathname}`,
+        routeSignature: ctx.method.toUpperCase() + ' ' + ctx.pathname,
       });
-      ACTIVE_PERMITS.set(ctx.request, { permitId, targetUid: authenticatedUid });
+      ACTIVE_PERMITS.set(ctx.request, async () => {
+        await releaseD1MutationPermit({ db, targetUid: authenticatedUid, permitId: permit.permitId });
+      });
     }
     return null;
-  } catch (err) {
-    const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : 'USER_WRITES_BLOCKED_BY_DELETION';
-    const status = err && typeof err === 'object' && 'httpStatus' in err ? Number((err as { httpStatus: number }).httpStatus) : 423;
+  } catch (error) {
+    const record = error && typeof error === 'object' ? error as Record<string, unknown> : {};
+    const code = typeof record.code === 'string' ? record.code : 'WRITE_ADMISSION_UNAVAILABLE';
+    const candidateStatus = typeof record.httpStatus === 'number' ? record.httpStatus : 503;
+    const status = Number.isInteger(candidateStatus) && candidateStatus >= 400 && candidateStatus <= 599
+      ? candidateStatus
+      : 503;
     return jsonWorkerResponse(ctx, status, {
       status: 'error',
       code,
       correlationId: ctx.correlationId,
-      message: 'Account mutation blocked during deletion.',
+      message: 'Account mutation blocked because write admission could not be verified.',
     });
   }
 }
 
 export async function releaseWorkerMutationPermitIfHeld(ctx: WorkerRequestContext): Promise<void> {
-  const held = ACTIVE_PERMITS.get(ctx.request);
-  if (!held || !ctx.env.DB) return;
+  const release = ACTIVE_PERMITS.get(ctx.request);
+  if (!release) return;
   ACTIVE_PERMITS.delete(ctx.request);
   try {
-    await releaseD1MutationPermit({
-      db: ctx.env.DB as unknown as D1DatabaseBinding,
-      targetUid: held.targetUid,
-      permitId: held.permitId,
-    });
+    await release();
   } catch {
-    /* permit may already be released or expired */
+    /* The permit remains bounded by its durable expiry if release fails. */
   }
 }

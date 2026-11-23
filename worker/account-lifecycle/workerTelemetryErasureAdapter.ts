@@ -18,14 +18,18 @@ export function createWorkerD1TelemetryErasureAdapter(db: D1DatabaseBinding): Ac
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      const rows = res.results;
       const nowIso = new Date().toISOString();
       let erased = 0;
       for (const row of rows) {
-        await db
+        const deleted = await db
           .prepare('DELETE FROM account_lifecycle_audit WHERE audit_id = ?1 AND target_uid = ?2')
           .bind(String(row.audit_id), targetUid)
           .run();
+        if (!deleted.success || (deleted.meta?.changes ?? 0) !== 1) {
+          throw new Error(deleted.error || 'D1_TELEMETRY_ERASURE_FAILED');
+        }
         erased += 1;
       }
       const lastId = rows.length > 0 ? String(rows[rows.length - 1].audit_id) : null;

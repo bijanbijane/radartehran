@@ -13,6 +13,14 @@ import type {
 import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
 import { ALL_USER_OWNED_DOMAIN_SOURCES, DEPENDENT_PURGE_SOURCES } from '../../server/modules/account-lifecycle/types.ts';
 
+async function runD1Mutation(db: D1DatabaseBinding, sql: string, ...values: unknown[]): Promise<number> {
+  const result = await db.prepare(sql).bind(...values).run();
+  if (!result.success) {
+    throw new AccountLifecycleError('STORE_UNAVAILABLE', result.error || 'D1 domain mutation failed.', 503);
+  }
+  return result.meta?.changes ?? 0;
+}
+
 const FIRESTORE_AUTHORITATIVE_SOURCES = new Set<UserOwnedDomainSource>([
   'BARGAIN_LISTINGS',
   'BUYER_ALERTS',
@@ -55,7 +63,8 @@ function createUploadSessionAdapter(db: D1DatabaseBinding): UserOwnedDomainRepos
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.session_id),
         ownerUid: String(r.owner_uid),
@@ -75,8 +84,9 @@ function createUploadSessionAdapter(db: D1DatabaseBinding): UserOwnedDomainRepos
       const receipts = [];
       for (const item of page.items) {
         if (item.ownerUid !== targetUid) continue;
-        await db.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(item.recordId).run();
-        await db.prepare('DELETE FROM upload_sessions WHERE session_id = ?1 AND owner_uid = ?2').bind(item.recordId, targetUid).run();
+        await runD1Mutation(db, 'DELETE FROM upload_session_chunks WHERE session_id = ?1', item.recordId);
+        const sessionChanges = await runD1Mutation(db, 'DELETE FROM upload_sessions WHERE session_id = ?1 AND owner_uid = ?2', item.recordId, targetUid);
+        if (sessionChanges !== 1) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Owned upload session could not be verified as deleted.', 503);
         receipts.push({
           recordId: item.recordId,
           source: 'USER_PROFILE',
@@ -103,7 +113,8 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.request_id),
         ownerUid: String(r.target_uid),
@@ -122,10 +133,8 @@ function createDataRequestsAdapter(db: D1DatabaseBinding): UserOwnedDomainReposi
       const page = await this.fetchOwnedRecordsPage({ targetUid, cursor, pageSize: batchSize ?? 25 });
       const receipts = [];
       for (const item of page.items) {
-        await db
-          .prepare('DELETE FROM account_data_requests WHERE request_id = ?1 AND target_uid = ?2')
-          .bind(item.recordId, targetUid)
-          .run();
+        const deleted = await runD1Mutation(db, 'DELETE FROM account_data_requests WHERE request_id = ?1 AND target_uid = ?2', item.recordId, targetUid);
+        if (deleted !== 1) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Owned data request could not be verified as deleted.', 503);
         receipts.push({
           recordId: item.recordId,
           source: 'USER_PROFILE',
@@ -189,7 +198,8 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success) throw new AccountLifecycleError('STORE_UNAVAILABLE', res.error || 'D1_DOMAIN_QUERY_FAILED', 503);
+      const rows = res.results;
       const items: OwnedDomainRecordItem[] = rows.map((r) => ({
         recordId: String(r.object_id),
         ownerUid: String(r.owner_uid),
@@ -210,13 +220,15 @@ function createMediaMetadataD1Adapter(db: D1DatabaseBinding): UserOwnedDomainRep
       const nowIso = new Date().toISOString();
       for (const item of page.items) {
         if (item.ownerUid !== targetUid) continue;
-        await db
-          .prepare(
-            `UPDATE media_objects SET lifecycle_state = 'PURGED', deletion_state = 'DELETED', updated_at_iso = ?1
-             WHERE object_id = ?2 AND owner_uid = ?3`,
-          )
-          .bind(nowIso, item.recordId, targetUid)
-          .run();
+        const updated = await runD1Mutation(
+          db,
+          `UPDATE media_objects SET lifecycle_state = 'PURGED', deletion_state = 'DELETED', updated_at_iso = ?1
+           WHERE object_id = ?2 AND owner_uid = ?3`,
+          nowIso,
+          item.recordId,
+          targetUid,
+        );
+        if (updated !== 1) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Owned media metadata could not be verified as deleted.', 503);
         receipts.push({
           recordId: item.recordId,
           source: 'MEDIA_METADATA',

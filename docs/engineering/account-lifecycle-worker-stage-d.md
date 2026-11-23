@@ -22,7 +22,9 @@ Main edge Worker: `worker/index.ts` (`wrangler.jsonc`). Frontend SPA Worker: `ap
 
 ## Composition
 
-`worker/account-lifecycle/workerLifecycleRuntime.ts` → `D1AccountLifecycleStore` + `AccountDeletionOrchestrator` + Worker adapters.
+`worker/account-lifecycle/stageDLifecycleRuntime.ts` → dedicated `migrations/d1` D1 schema + `D1AccountLifecycleStore` + `AccountDeletionOrchestrator` + Worker adapters.
+
+`workerLifecycleRuntime.ts` remains the separate USER_DB / RESEARCH_DB triad runtime and is not the Stage D Store composition.
 
 ## Queue
 
@@ -63,14 +65,21 @@ Main edge Worker: `worker/index.ts` (`wrangler.jsonc`). Frontend SPA Worker: `ap
 
 Worker remains fail-closed (`WORKER_IDENTITY_DELETION_BLOCKED`) pending trusted admin credentials.
 
-## Hardening migrations
+## Hardening migrations (`migrations/d1`)
 
-- `0007` dispatch outbox + leases
-- `0008` mutation permits
+- `0007` dispatch outbox + per-job leases.
+- `0008` D1 mutation permits and drain barrier.
+- `0009` replay-resistant internal Write Admission RPC nonces.
 
-## Local test
+The runtime verifies required tables and columns before serving Stage D routes. It refuses `USER_DB`-bound deployments because `migrations/user-d1` defines a different account lifecycle schema.
+
+## Local tests
 
 ```bash
+npm ci
+npm run test:stage-d-lifecycle
 npx wrangler d1 migrations apply radartehran-staging-db --local --env staging
-npx tsx worker/account-lifecycle/phaseDLifecycleWorker.test.ts
+npx tsx worker/account-lifecycle/d1WranglerLocalIntegration.test.ts
 ```
+
+The queue worker verifies the durable write block, drains active mutation permits, and uses a fenced per-job lease. Scheduled recovery re-enqueues nonterminal jobs without a live lease. Firestore-authoritative domains and Firebase Auth identity deletion remain fail-closed until their trusted adapters are configured; no successful full-account deletion is claimed by the current Worker adapter set.

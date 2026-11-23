@@ -411,7 +411,12 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
         idempotency_key: values[4],
         dispatch_status: values[5],
         attempt_count: values[6],
+        next_attempt_at_iso: values[7] ?? null,
+        last_error_redacted: values[8] ?? null,
         correlation_id: values[9],
+        created_at_iso: values[10],
+        updated_at_iso: values[11],
+        dispatched_at_iso: values[12] ?? null,
       });
       return { rows: [], changes: 1 };
     }
@@ -419,14 +424,38 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
       const row = this.dispatchOutbox.get(String(values[0]));
       return { rows: row ? [deepClone(row)] : [], changes: 0 };
     }
+    if (sql === DQ.SQL_MARK_DISPATCH_SENT.replace(/\s+/g, ' ').trim()) {
+      const row = this.dispatchOutbox.get(String(values[1]));
+      if (!row || !['PENDING', 'DISPATCH_FAILED'].includes(String(row.dispatch_status))) return { rows: [], changes: 0 };
+      row.dispatch_status = 'DISPATCHED';
+      row.dispatched_at_iso = values[0];
+      row.updated_at_iso = values[0];
+      row.last_error_redacted = null;
+      row.attempt_count = Number(row.attempt_count || 0) + 1;
+      return { rows: [], changes: 1 };
+    }
+    if (sql === DQ.SQL_MARK_DISPATCH_FAILED.replace(/\s+/g, ' ').trim()) {
+      const row = this.dispatchOutbox.get(String(values[3]));
+      if (!row || !['PENDING', 'DISPATCH_FAILED'].includes(String(row.dispatch_status))) return { rows: [], changes: 0 };
+      row.dispatch_status = 'DISPATCH_FAILED';
+      row.last_error_redacted = values[0];
+      row.updated_at_iso = values[1];
+      row.next_attempt_at_iso = values[2];
+      row.attempt_count = Number(row.attempt_count || 0) + 1;
+      return { rows: [], changes: 1 };
+    }
     if (sql === DQ.SQL_INSERT_JOB_LEASE.replace(/\s+/g, ' ').trim()) {
-      this.jobLeases.set(String(values[0]), {
+      const jobId = String(values[0]);
+      if (this.jobLeases.has(jobId)) return { rows: [], changes: 0 };
+      this.jobLeases.set(jobId, {
         job_id: values[0],
         target_uid: values[1],
         lease_token: values[2],
-        fencing_revision: values[3],
-        lease_owner: values[4],
-        lease_expires_at_ms: values[5],
+        fencing_revision: 1,
+        lease_owner: values[3],
+        lease_expires_at_ms: values[4],
+        acquired_at_iso: values[5],
+        updated_at_iso: values[5],
       });
       return { rows: [], changes: 1 };
     }
@@ -435,25 +464,47 @@ export class InMemoryAccountLifecycleD1 implements D1DatabaseBinding {
       return { rows: row ? [deepClone(row)] : [], changes: 0 };
     }
     if (sql === DQ.SQL_CLAIM_JOB_LEASE.replace(/\s+/g, ' ').trim()) {
-      const jobId = String(values[5]);
+      const jobId = String(values[4]);
       const row = this.jobLeases.get(jobId);
       if (!row) return { rows: [], changes: 0 };
       const expires = Number(row.lease_expires_at_ms);
       const token = String(values[0]);
-      if (expires > Number(values[6]) && String(row.lease_token) !== token) {
-        return { rows: [], changes: 0 };
-      }
+      const nowMs = Number(values[5]);
+      if (expires > nowMs && String(row.lease_token) !== token) return { rows: [], changes: 0 };
       row.lease_token = token;
-      row.fencing_revision = values[1];
-      row.lease_owner = values[2];
-      row.lease_expires_at_ms = values[3];
+      row.fencing_revision = Number(row.fencing_revision || 0) + 1;
+      row.lease_owner = values[1];
+      row.lease_expires_at_ms = values[2];
+      row.updated_at_iso = values[3];
       this.jobLeases.set(jobId, row);
       return { rows: [], changes: 1 };
     }
+    if (sql === DQ.SQL_RELEASE_JOB_LEASE.replace(/\s+/g, ' ').trim()) {
+      const jobId = String(values[2]);
+      const row = this.jobLeases.get(jobId);
+      if (!row || String(row.lease_token) !== String(values[3]) ||
+          Number(row.fencing_revision) !== Number(values[4])) return { rows: [], changes: 0 };
+      row.lease_expires_at_ms = values[0];
+      row.updated_at_iso = values[1];
+      return { rows: [], changes: 1 };
+    }
+    if (sql === DQ.SQL_LIST_EXPIRED_JOB_LEASES.replace(/\s+/g, ' ').trim()) {
+      const nowMs = Number(values[0]);
+      const limit = Number(values[1]);
+      const rows = Array.from(this.jobLeases.values())
+        .filter((r) => Number(r.lease_expires_at_ms) <= nowMs)
+        .slice(0, limit)
+        .map((r) => ({ job_id: r.job_id, target_uid: r.target_uid }));
+      return { rows: rows.map(deepClone), changes: 0 };
+    }
     if (sql === DQ.SQL_LIST_PENDING_DISPATCH.replace(/\s+/g, ' ').trim()) {
-      const rows = Array.from(this.dispatchOutbox.values()).filter((r) =>
-        ['PENDING', 'DISPATCH_FAILED'].includes(String(r.dispatch_status)),
-      );
+      const nowIso = String(values[0]);
+      const rows = Array.from(this.dispatchOutbox.values())
+        .filter((r) =>
+          ['PENDING', 'DISPATCH_FAILED'].includes(String(r.dispatch_status)) &&
+          (!r.next_attempt_at_iso || String(r.next_attempt_at_iso) <= nowIso),
+        )
+        .sort((a, b) => String(a.created_at_iso).localeCompare(String(b.created_at_iso)));
       return { rows: rows.slice(0, Number(values[1])).map(deepClone), changes: 0 };
     }
 

@@ -63,6 +63,9 @@ jobs:
           npm run test:contracts
           npm run test:mutation
 
+      - name: Gate C2 — Stage D Lifecycle Queue, Lease, and Persistence Tests
+        run: npm run test:stage-d-lifecycle
+
       - name: Gate D — 50-Cycle Stress & Fuzzing Suite
         run: npx tsx tests/stress-50-cycles.test.ts
 

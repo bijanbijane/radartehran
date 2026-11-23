@@ -27,7 +27,8 @@ export function createWorkerMediaDeletionAdapter(params: {
         )
         .bind(targetUid, cursorKey, limit)
         .all<Record<string, unknown>>();
-      const rows = res.success ? res.results : [];
+      if (!res.success) throw new Error(res.error || 'MEDIA_METADATA_QUERY_FAILED');
+      const rows = res.results;
       const items = rows.map((r) => ({
         objectId: String(r.object_id),
         ownerUid: String(r.owner_uid),
@@ -67,20 +68,24 @@ export function createWorkerMediaDeletionAdapter(params: {
       if (rowBucket !== bucketName) {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'BUCKET_OWNERSHIP_MISMATCH' };
       }
-      if (mediaBucket) {
-        try {
-          await mediaBucket.delete(storageKey);
-        } catch {
-          return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_DELETE_FAILED' };
-        }
+      if (!mediaBucket) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_MEDIA_BUCKET_UNAVAILABLE' };
+      }
+      try {
+        await mediaBucket.delete(storageKey);
+      } catch {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_DELETE_FAILED' };
       }
       const nowIso = new Date().toISOString();
-      await db
+      const updated = await db
         .prepare(
           `UPDATE media_objects SET deletion_state = 'DELETED', lifecycle_state = 'PURGED', updated_at_iso = ?1, deleted_at_iso = ?1 WHERE object_id = ?2 AND owner_uid = ?3`,
         )
         .bind(nowIso, nowIso, objectId, targetUid)
         .run();
+      if (!updated.success || (updated.meta?.changes ?? 0) !== 1) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'D1_MEDIA_METADATA_UPDATE_FAILED' };
+      }
       return { objectId, status: 'DELETED' };
     },
   };

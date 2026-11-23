@@ -7,6 +7,8 @@
 import { getValidatedCityConfig } from '../../src/data/multiCityData';
 import type { CityId } from '../../src/types/models';
 import { processPendingResearchErasureOutbox } from '../account-lifecycle/workerLifecycleRuntime';
+import { executeBoundedDeletionStep } from '../account-lifecycle/stageDLifecycleRuntime.ts';
+import { validateLifecycleQueuePayload } from '../account-lifecycle/lifecycleQueueContract.ts';
 import { resolveResearchDb, resolveUserDb } from '../db/bindingResolver';
 import { upsertNeighborhoodProjectionD1 } from '../db/d1SchemaAndMigrations';
 import { validateAndMinimizeResearchEvent, type ValidatedResearchEvent } from '../research/researchEventContract';
@@ -32,6 +34,7 @@ export const EXECUTABLE_CANONICAL_JOB_TYPES: readonly RadarQueueJobType[] = [
   'research_event_ingest',
   'research_subject_erasure',
   'research_retention_purge',
+  'account_lifecycle_deletion_step',
 ] as const;
 
 export const UPLOAD_SESSION_TTL_MS = 15 * 60 * 1000;
@@ -450,6 +453,48 @@ async function handleResearchRetentionPurgeJob(
   };
 }
 
+async function handleAccountLifecycleDeletionStep(
+  envelope: RadarQueueEnvelope,
+  env: WorkerEnv,
+): Promise<QueueJobExecutionResult> {
+  if (env.USER_DB) {
+    throw new QueueJobExecutionError(
+      'STAGE_D_SCHEMA_NOT_BOUND',
+      'Account lifecycle deletion messages require the dedicated migrations/d1 schema.',
+      false,
+    );
+  }
+  const parsed = validateLifecycleQueuePayload(envelope.payload);
+  if (!parsed.ok) {
+    throw new QueueJobExecutionError(
+      'INVALID_LIFECYCLE_QUEUE_PAYLOAD',
+      'Invalid account lifecycle queue payload: ' + parsed.reason,
+      false,
+    );
+  }
+  const result = await executeBoundedDeletionStep({
+    env,
+    jobId: parsed.payload.jobId,
+    targetUid: parsed.payload.targetUid,
+    leaseOwner: envelope.correlationId,
+    maxBatchesPerInvocation: 5,
+  });
+  if (!result.leaseAcquired) {
+    throw new QueueJobExecutionError(
+      'LIFECYCLE_JOB_LEASE_HELD',
+      'Another queue consumer currently owns the account lifecycle execution lease.',
+      true,
+    );
+  }
+  return {
+    jobType: 'account_lifecycle_deletion_step',
+    idempotencyKey: envelope.idempotencyKey,
+    executedAtIso: new Date().toISOString(),
+    affectedCount: 0,
+    summary: { terminal: result.terminal, state: result.state, revision: result.revision },
+  };
+}
+
 export function createCanonicalQueueJobDispatcher(
   env: WorkerEnv,
 ): (envelope: RadarQueueEnvelope) => Promise<QueueJobExecutionResult> {
@@ -469,6 +514,8 @@ export function createCanonicalQueueJobDispatcher(
         return handleResearchSubjectErasureJob(envelope, env);
       case 'research_retention_purge':
         return handleResearchRetentionPurgeJob(envelope, env);
+      case 'account_lifecycle_deletion_step':
+        return handleAccountLifecycleDeletionStep(envelope, env);
       default:
         throw new QueueJobExecutionError(
           'UNSUPPORTED_JOB_TYPE',

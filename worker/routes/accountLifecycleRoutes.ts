@@ -6,14 +6,14 @@ import { ACCOUNT_LIFECYCLE_API_PREFIX, OFFICIAL_ACCOUNT_LIFECYCLE_ROUTES } from 
 import { resolveWorkerAuthContext, evaluateWorkerAuthorization } from '../auth/authorizationPolicy.ts';
 import { jsonWorkerResponse } from '../contextAndSecurity.ts';
 import type { WorkerRequestContext } from '../types.ts';
-import { createD1AccountLifecycleStore } from '../../server/modules/account-lifecycle/storeFactory.ts';
 import {
   buildLifecycleActorFromPrincipal,
   initiateWorkerAccountDeletion,
   mapLifecycleErrorToHttp,
   requireWorkerLifecycleBindings,
   createWorkerLifecycleOrchestrator,
-} from '../account-lifecycle/workerLifecycleRuntime.ts';
+  executeBoundedDeletionStep,
+} from '../account-lifecycle/stageDLifecycleRuntime.ts';
 
 export function isAccountLifecyclePath(pathname: string): boolean {
   return pathname.startsWith(ACCOUNT_LIFECYCLE_API_PREFIX);
@@ -32,7 +32,7 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
   if (!isAccountLifecyclePath(ctx.pathname)) return null;
 
   try {
-    requireWorkerLifecycleBindings(ctx.env);
+    await requireWorkerLifecycleBindings(ctx.env);
   } catch (err) {
     const mapped = mapLifecycleErrorToHttp(err);
     return jsonWorkerResponse(ctx, mapped.status, {
@@ -65,6 +65,7 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
       email: auth.principal.email,
       isAdmin: auth.principal.isPrimaryAdmin || auth.principal.isDelegatedAdmin,
       authTimeSeconds: auth.principal.authTimeSeconds,
+      primaryBootstrapAdminEmail: ctx.env.ADMIN_EMAIL,
     });
     if (!actor.freshAuthVerified) {
       return jsonWorkerResponse(ctx, 403, {
@@ -133,20 +134,21 @@ export async function handleAccountLifecycleRoute(ctx: WorkerRequestContext): Pr
         message: adminDecision.reasonEn,
       });
     }
-    const store = createD1AccountLifecycleStore(ctx.env.DB!);
-    const job = await store.getJobById(jobId);
-    if (!job) {
-      return jsonWorkerResponse(ctx, 404, { status: 'error', code: 'JOB_NOT_FOUND', correlationId: ctx.correlationId });
-    }
-    const { executeBoundedDeletionStep } = await import('../account-lifecycle/workerLifecycleRuntime.ts');
     try {
       const result = await executeBoundedDeletionStep({
         env: ctx.env,
         jobId,
-        targetUid: job.targetUid,
         leaseOwner: ctx.correlationId,
         maxBatchesPerInvocation: 5,
       });
+      if (!result.leaseAcquired) {
+        return jsonWorkerResponse(ctx, 409, {
+          status: 'error',
+          code: 'LIFECYCLE_JOB_LEASE_HELD',
+          correlationId: ctx.correlationId,
+          message: 'Another worker is currently processing this deletion job.',
+        });
+      }
       return jsonWorkerResponse(ctx, 200, { status: 'ok', terminal: result.terminal, jobState: result.state, correlationId: ctx.correlationId });
     } catch (err) {
       const mapped = mapLifecycleErrorToHttp(err);

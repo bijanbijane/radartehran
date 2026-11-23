@@ -17,6 +17,42 @@ function timingSafeHexEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+/**
+ * Atomically consumes a previously authenticated Write Admission RPC nonce.
+ * HMAC and timestamp verification must be completed by the caller before this function.
+ */
+export async function consumeLifecycleRpcNonce(params: {
+  db: D1Database;
+  nonce: string;
+  nowMs?: number;
+}): Promise<{ consumed: true } | { consumed: false; code: string }> {
+  const nonce = String(params.nonce || '').trim();
+  const nowMs = params.nowMs ?? Date.now();
+  if (nonce.length < 12 || nonce.length > 128 || !Number.isSafeInteger(nowMs) || nowMs < 0) {
+    return { consumed: false, code: 'RPC_NONCE_INVALID' };
+  }
+  try {
+    const cleanup = await params.db.prepare(
+      'DELETE FROM lifecycle_internal_rpc_nonces WHERE expires_at_ms <= ?1',
+    ).bind(nowMs).run();
+    if (!cleanup.success) return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
+
+    const inserted = await params.db.prepare(
+      'INSERT OR IGNORE INTO lifecycle_internal_rpc_nonces (nonce, issuer, expires_at_ms, created_at_iso) VALUES (?1, ?2, ?3, ?4)',
+    ).bind(
+      nonce,
+      'WRITE_ADMISSION_RPC',
+      nowMs + MAX_RPC_CLOCK_SKEW_MS * 2,
+      new Date(nowMs).toISOString(),
+    ).run();
+    if (!inserted.success) return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
+    if ((inserted.meta?.changes ?? 0) !== 1) return { consumed: false, code: 'RPC_NONCE_REPLAYED' };
+    return { consumed: true };
+  } catch {
+    return { consumed: false, code: 'RPC_NONCE_STORE_UNAVAILABLE' };
+  }
+}
+
 export async function signInternalLifecycleRpc(params: {
   secret: string;
   issuer: string;

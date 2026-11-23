@@ -10,6 +10,8 @@ import { createInitialDomainSteps } from '../../server/modules/account-lifecycle
 import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
 import type { DurableAccountDeletionJob } from '../../server/modules/account-lifecycle/types.ts';
 import { D1AccountLifecycleStore } from './d1AccountLifecycleStore.ts';
+import { requireWorkerLifecycleBindings } from './stageDLifecycleRuntime.ts';
+import { AccountLifecycleError } from '../../server/modules/account-lifecycle/types.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 
 import { fileURLToPath } from 'node:url';
@@ -76,6 +78,12 @@ async function main(): Promise<void> {
     console.log('SKIP: DB binding missing from getPlatformProxy');
     return;
   }
+
+  await requireWorkerLifecycleBindings({ DB: db } as unknown as import('../types.ts').WorkerEnv);
+  await assert.rejects(
+    () => requireWorkerLifecycleBindings({ DB: db, USER_DB: db } as unknown as import('../types.ts').WorkerEnv),
+    (error: unknown) => error instanceof AccountLifecycleError && error.code === 'STORE_UNAVAILABLE',
+  );
 
   const store = new D1AccountLifecycleStore(db);
   const health = await store.probeHealth();

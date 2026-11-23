@@ -64,6 +64,45 @@ async function run(): Promise<void> {
   });
   assert.equal(leaseB.acquired, false);
 
+  const leaseAfterExpiry = await dispatch.acquireJobLease({
+    jobId: 'deljob_u1',
+    targetUid: 'u1',
+    leaseToken: 'tok_c',
+    leaseOwner: 'worker_c',
+    nowMs: Date.now() + 121_000,
+  });
+  assert.equal(leaseAfterExpiry.acquired, true);
+  assert.equal(leaseAfterExpiry.fencingRevision, 2);
+  assert.equal(await dispatch.verifyJobLease('deljob_u1', 'tok_c', 2, Date.now() + 121_001), true);
+
+  const pending = await dispatch.listPendingDispatch(10, new Date(Date.now() + 1_000).toISOString());
+  assert.equal(pending.length, 1);
+  assert.equal(await dispatch.markDispatchSent(idem, new Date().toISOString()), true);
+  assert.equal((await dispatch.listPendingDispatch(10, new Date(Date.now() + 1_000).toISOString())).length, 0);
+
+  const failedKey = buildLifecycleQueueIdempotencyKey('deljob_u1', 'retry');
+  await dispatch.enqueueDispatchEvent({
+    eventId: 'evt2',
+    jobId: 'deljob_u1',
+    targetUid: 'u1',
+    operationType: 'DELETION_STEP',
+    idempotencyKey: failedKey,
+    correlationId: 'c2',
+    createdAtIso: new Date().toISOString(),
+  });
+  await dispatch.markDispatchFailed(failedKey, new Date().toISOString(), new Date(Date.now() + 30_000).toISOString(), 'QUEUE_UNAVAILABLE');
+  assert.equal((await dispatch.listPendingDispatch(10, new Date(Date.now() + 10_000).toISOString())).length, 0);
+  assert.equal((await dispatch.listPendingDispatch(10, new Date(Date.now() + 31_000).toISOString())).length, 1);
+
+  const raceDb = new InMemoryAccountLifecycleD1();
+  const raceDispatch = new D1AccountLifecycleDispatch(raceDb);
+  const raceNow = Date.now();
+  const claims = await Promise.all([
+    raceDispatch.acquireJobLease({ jobId: 'deljob_race', targetUid: 'u1', leaseToken: 'race_a', leaseOwner: 'a', nowMs: raceNow }),
+    raceDispatch.acquireJobLease({ jobId: 'deljob_race', targetUid: 'u1', leaseToken: 'race_b', leaseOwner: 'b', nowMs: raceNow }),
+  ]);
+  assert.equal(claims.filter((claim) => claim.acquired).length, 1, 'only one concurrent first-lease claimant may win');
+
   console.log('RT-ACCOUNT-LIFECYCLE-WORKERS-001-D phase tests: PASSED');
 }
 

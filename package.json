@@ -73,7 +73,8 @@
     "verify": "npm run typecheck && npm run test:security && npm run test:roadmap && npm run build && npm run arch:check",
     "dev:api": "npm run dev -w radartehran-api",
     "dev:frontend": "npm run dev -w radartehran-frontend",
-    "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend"
+    "dev:split": "npm run dev:api & npm run dev:split -w radartehran-frontend",
+    "test:stage-d-lifecycle": "tsx worker/account-lifecycle/phaseDLifecycleWorker.test.ts && tsx worker/account-lifecycle/workerQueueLifecycleIntegration.test.ts && tsx worker/account-lifecycle/d1AccountLifecycleStore.test.ts && tsx worker/account-lifecycle/d1WranglerLocalIntegration.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
