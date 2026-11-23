@@ -10,6 +10,19 @@ import type { D1DatabaseBinding } from '../db/types.ts';
 export const DEFAULT_D1_MUTATION_PERMIT_TTL_MS = 120_000;
 export const MAX_D1_MUTATION_PERMIT_TTL_MS = 300_000;
 
+export const SQL_ACQUIRE_D1_MUTATION_PERMIT = `INSERT INTO account_mutation_permits (
+  permit_id, target_uid, holder_id, route_signature, acquired_at_iso, expires_at_ms, released_at_iso, status
+)
+SELECT ?1, ?2, ?3, ?4, ?5, ?6, NULL, 'ACTIVE'
+WHERE NOT EXISTS (
+  SELECT 1 FROM account_write_blocks
+  WHERE target_uid = ?2 AND state <> 'ACTIVE_WRITES_ALLOWED'
+)`;
+
+export const SQL_RELEASE_D1_MUTATION_PERMIT = `UPDATE account_mutation_permits
+SET released_at_iso = ?1, status = 'RELEASED'
+WHERE permit_id = ?2 AND target_uid = ?3 AND status = 'ACTIVE' AND released_at_iso IS NULL`;
+
 export class D1MutationPermitError extends Error {
   readonly code: string;
   readonly httpStatus: number;
@@ -51,16 +64,7 @@ export async function acquireD1MutationPermit(params: {
     // This single INSERT..SELECT is the TOCTOU barrier: once a write block is
     // closed, no concurrent request can acquire a new active permit.
     const result = await params.db
-      .prepare(
-        `INSERT INTO account_mutation_permits (
-          permit_id, target_uid, holder_id, route_signature, acquired_at_iso, expires_at_ms, released_at_iso, status
-        )
-        SELECT ?1, ?2, ?3, ?4, ?5, ?6, NULL, 'ACTIVE'
-        WHERE NOT EXISTS (
-          SELECT 1 FROM account_write_blocks
-          WHERE target_uid = ?2 AND state <> 'ACTIVE_WRITES_ALLOWED'
-        )`,
-      )
+      .prepare(SQL_ACQUIRE_D1_MUTATION_PERMIT)
       .bind(permitId, targetUid, holderId, routeSignature, acquiredAtIso, expiresAtMs)
       .run();
 
@@ -97,11 +101,7 @@ export async function releaseD1MutationPermit(params: {
 
   try {
     const result = await params.db
-      .prepare(
-        `UPDATE account_mutation_permits
-         SET released_at_iso = ?1, status = 'RELEASED'
-         WHERE permit_id = ?2 AND target_uid = ?3 AND status = 'ACTIVE' AND released_at_iso IS NULL`,
-      )
+      .prepare(SQL_RELEASE_D1_MUTATION_PERMIT)
       .bind(new Date(nowMs).toISOString(), permitId, targetUid)
       .run();
     return { released: (result.meta?.changes ?? 0) === 1 };
