@@ -30,6 +30,9 @@ interface PublishManifest {
     readonly snapshot: string;
     readonly relationships: string;
     readonly sourceMappings: string;
+    readonly identityRegistry: string;
+    readonly identityAnchors: string;
+    readonly legacyAliases: string;
   };
 }
 
@@ -160,7 +163,10 @@ function getManifest(body: Record<string, unknown>): PublishManifest | null {
     !isRecord(checksums) ||
     !isHexSha256(checksums.snapshot) ||
     !isHexSha256(checksums.relationships) ||
-    !isHexSha256(checksums.sourceMappings)
+    !isHexSha256(checksums.sourceMappings) ||
+    !isHexSha256(checksums.identityRegistry) ||
+    !isHexSha256(checksums.identityAnchors) ||
+    !isHexSha256(checksums.legacyAliases)
   ) return null;
   if (counts.entities > 100_000 || counts.relationships > 200_000 || counts.sourceMappings > 250_000) return null;
   return body as unknown as PublishManifest;
@@ -190,6 +196,20 @@ function validateDatasetRecord(kind: DatasetKind, item: Record<string, unknown>)
       typeof item.verificationStatus === 'string' &&
       typeof item.lifecycleStatus === 'string' &&
       item.isSyntheticFixture !== true &&
+      isRecord(item.identityRegistryEntry) &&
+      item.identityRegistryEntry.geographicEntityId === item.geographicEntityId &&
+      typeof item.identityRegistryEntry.identityAnchor === 'string' &&
+      item.identityRegistryEntry.identityAnchor === item.identityAnchor &&
+      typeof item.identityRegistryEntry.anchorType === 'string' &&
+      typeof item.identityRegistryEntry.canonicalNameFa === 'string' &&
+      typeof item.identityRegistryEntry.identityStatus === 'string' &&
+      isPositiveInteger(item.identityRegistryEntry.issuedAtRegistryRevision) &&
+      isNonNegativeInteger(item.identityRegistryEntry.issuedOrderIndex) &&
+      isRecord(item.identityAnchorRecord) &&
+      item.identityAnchorRecord.geographicEntityId === item.geographicEntityId &&
+      item.identityAnchorRecord.identityAnchor === item.identityAnchor &&
+      item.identityAnchorRecord.immutable === true &&
+      isPositiveInteger(item.identityAnchorRecord.issuedAtRegistryRevision) &&
       (item.parentGeographicEntityId === null || typeof item.parentGeographicEntityId === 'string') &&
       (item.provinceGeographicEntityId === null || typeof item.provinceGeographicEntityId === 'string');
   }
@@ -376,7 +396,10 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
     if (!isRecord(parsed.body.artifactChecksums) ||
       parsed.body.artifactChecksums.snapshot !== artifactChecksums.snapshot ||
       parsed.body.artifactChecksums.relationships !== artifactChecksums.relationships ||
-      parsed.body.artifactChecksums.sourceMappings !== artifactChecksums.sourceMappings) {
+      parsed.body.artifactChecksums.sourceMappings !== artifactChecksums.sourceMappings ||
+      parsed.body.artifactChecksums.identityRegistry !== artifactChecksums.identityRegistry ||
+      parsed.body.artifactChecksums.identityAnchors !== artifactChecksums.identityAnchors ||
+      parsed.body.artifactChecksums.legacyAliases !== artifactChecksums.legacyAliases) {
       return jsonResponse(ctx, 409, { status: 'error', code: 'IRNI_PUBLISH_ARTIFACT_CHECKSUM_MISMATCH' });
     }
 
@@ -394,27 +417,33 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
         json_extract(record_json, '$.parentGeographicEntityId'), json_extract(record_json, '$.provinceGeographicEntityId'),
         json_extract(record_json, '$.identityStatus'), json_extract(record_json, '$.verificationStatus'),
         json_extract(record_json, '$.lifecycleStatus'), CASE WHEN json_extract(record_json, '$.isSyntheticFixture') = 1 THEN 1 ELSE 0 END,
-        record_json FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId),
+        json_remove(record_json, '$.identityRegistryEntry', '$.identityAnchorRecord')
+      FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId),
       db.prepare('DELETE FROM geo_identity_anchors'),
       db.prepare(`INSERT INTO geo_identity_anchors (
         identity_anchor, geographic_entity_id, anchor_type, entity_type, classification_system_id,
         fallback_token, issued_at_registry_revision, immutable, anchor_json
-      ) SELECT json_extract(record_json, '$.identityAnchor'), json_extract(record_json, '$.geographicEntityId'),
-        json_extract(record_json, '$.identityAnchorType'), json_extract(record_json, '$.entityType'),
-        json_extract(record_json, '$.classificationSystemId'), json_extract(record_json, '$.fallbackToken'),
-        ?, 1, record_json FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batch.registry_revision, batchId),
+      ) SELECT json_extract(record_json, '$.identityAnchorRecord.identityAnchor'), json_extract(record_json, '$.geographicEntityId'),
+        json_extract(record_json, '$.identityAnchorRecord.anchorType'), json_extract(record_json, '$.identityAnchorRecord.entityType'),
+        json_extract(record_json, '$.identityAnchorRecord.classificationSystemId'), json_extract(record_json, '$.identityAnchorRecord.fallbackToken'),
+        json_extract(record_json, '$.identityAnchorRecord.issuedAtRegistryRevision'),
+        CASE WHEN json_extract(record_json, '$.identityAnchorRecord.immutable') = 1 THEN 1 ELSE 0 END,
+        json_extract(record_json, '$.identityAnchorRecord') FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId),
       db.prepare('DELETE FROM geo_identity_registry_entries'),
       db.prepare(`INSERT INTO geo_identity_registry_entries (
         geographic_entity_id, identity_anchor, anchor_type, entity_type, classification_system_id,
         canonical_name_fa, identity_status, issued_at_registry_revision, issued_order_index,
         surviving_geographic_entity_id, retired_reason, retired_at_registry_revision, entry_json
-      ) SELECT json_extract(record_json, '$.geographicEntityId'), json_extract(record_json, '$.identityAnchor'),
-        json_extract(record_json, '$.identityAnchorType'), json_extract(record_json, '$.entityType'),
-        json_extract(record_json, '$.classificationSystemId'), json_extract(record_json, '$.canonicalNameFa'),
-        json_extract(record_json, '$.identityStatus'), ?, ROW_NUMBER() OVER (ORDER BY chunk_index, record_index) - 1,
-        json_extract(record_json, '$.survivingGeographicEntityId'), json_extract(record_json, '$.retiredReason'),
-        json_extract(record_json, '$.retiredAtRegistryRevision'), record_json
-      FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batch.registry_revision, batchId),
+      ) SELECT json_extract(record_json, '$.identityRegistryEntry.geographicEntityId'), json_extract(record_json, '$.identityRegistryEntry.identityAnchor'),
+        json_extract(record_json, '$.identityRegistryEntry.anchorType'), json_extract(record_json, '$.identityRegistryEntry.entityType'),
+        json_extract(record_json, '$.identityRegistryEntry.classificationSystemId'), json_extract(record_json, '$.identityRegistryEntry.canonicalNameFa'),
+        json_extract(record_json, '$.identityRegistryEntry.identityStatus'), json_extract(record_json, '$.identityRegistryEntry.issuedAtRegistryRevision'),
+        json_extract(record_json, '$.identityRegistryEntry.issuedOrderIndex'),
+        json_extract(record_json, '$.identityRegistryEntry.survivingGeographicEntityId'),
+        json_extract(record_json, '$.identityRegistryEntry.retiredReason'),
+        json_extract(record_json, '$.identityRegistryEntry.retiredAtRegistryRevision'),
+        json_extract(record_json, '$.identityRegistryEntry')
+      FROM geo_publish_staging_records WHERE batch_id = ? AND dataset_kind = 'entities'`).bind(batchId),
       db.prepare('DELETE FROM geo_relationships'),
       db.prepare(`INSERT INTO geo_relationships (
         relationship_id, source_geographic_entity_id, target_geographic_entity_id, relationship_type,
@@ -456,6 +485,18 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
       db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
         VALUES (?, ?, ?, ?, ?)`).bind(
         'data/geography/identity/GEOGRAPHIC-SOURCE-ID-MAPPINGS.json', artifactChecksums.sourceMappings, batch.expected_source_mappings, batch.registry_revision, importedAt,
+      ),
+      db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
+        VALUES (?, ?, ?, ?, ?)`).bind(
+        'GEOGRAPHIC-CANONICAL-ID-REGISTRY.json', artifactChecksums.identityRegistry, batch.expected_entities, batch.registry_revision, importedAt,
+      ),
+      db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
+        VALUES (?, ?, ?, ?, ?)`).bind(
+        'GEOGRAPHIC-IDENTITY-ANCHOR-REGISTER.json', artifactChecksums.identityAnchors, batch.expected_entities, batch.registry_revision, importedAt,
+      ),
+      db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
+        VALUES (?, ?, ?, ?, ?)`).bind(
+        'GEOGRAPHIC-LEGACY-ID-ALIASES.json', artifactChecksums.legacyAliases, 0, batch.registry_revision, importedAt,
       ),
       db.prepare(`UPDATE geo_publish_batches SET status = 'PUBLISHED', updated_at_iso = ? WHERE batch_id = ?`).bind(importedAt, batchId),
       db.prepare('DELETE FROM geo_publish_staging_records WHERE batch_id = ?').bind(batchId),
