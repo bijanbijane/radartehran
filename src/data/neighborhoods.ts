@@ -230,22 +230,8 @@ export function withoutDemonstrationBuyerLeads(items: BuyerAlertLeadItem[]): Buy
 export function withoutDemonstrationSponsorRequests(items: SponsorCrmRequestItem[]): SponsorCrmRequestItem[] {
   return items.filter((item) => item && !isDemonstrationSponsorRequest(item));
 }
-export type FreeKeylessTileServerId = 'voyager' | 'osm';
-export type MapTileServerId = 'neshan' | FreeKeylessTileServerId;
-export const FREE_KEYLESS_TILE_SERVERS: Record<
-  FreeKeylessTileServerId, { url: string; label: string; next: FreeKeylessTileServerId }
-> = {
-  osm: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    label: 'OpenStreetMap Standard (best-effort; no production SLA)',
-    next: 'voyager',
-  },
-  voyager: {
-    url: '/api/osm-tile/{z}/{x}/{y}.png',
-    label: 'OSM Standard via Radar proxy (upstream policy applies)',
-    next: 'osm',
-  },
-};
+export type FreeKeylessTileServerId = 'voyager' | 'osm'; export type MapTileServerId = 'neshan' | FreeKeylessTileServerId;
+export const FREE_KEYLESS_TILE_SERVERS: Record<FreeKeylessTileServerId, { url: string; label: string; next: FreeKeylessTileServerId }> = { osm: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', label: 'OpenStreetMap Standard (best-effort; no production SLA)', next: 'voyager' }, voyager: { url: '/api/osm-tile/{z}/{x}/{y}.png', label: 'OSM Standard via Radar proxy (upstream policy applies)', next: 'osm' } };
 export function parseInitialUrlParams(): { initialHoodId: number; initialCompareId1: number; initialCompareId2: number; initialShowCompare: boolean; initialCity?: 'tehran' | 'karaj' | 'mashhad' | 'isfahan' | 'shiraz'; invalidCityParam?: string; initialMode?: 'rent' | 'buy'; initialDeposit?: number; initialMonthlyRent?: number; initialBuyBudget?: number; initialTargetSqm?: number; initialWorkHubId?: string; hasUrlBudgetParams?: boolean; } { if (typeof window === 'undefined') { return { initialHoodId: 5, initialCompareId1: 5, initialCompareId2: 14, initialShowCompare: false, }; }
   try { const params = new URLSearchParams(window.location.search); const cityRaw = (params.get('city') || '').trim().toLowerCase(); const initialCity =
       cityRaw === 'tehran' || cityRaw === 'karaj' || cityRaw === 'mashhad' || cityRaw === 'isfahan' || cityRaw === 'shiraz'
