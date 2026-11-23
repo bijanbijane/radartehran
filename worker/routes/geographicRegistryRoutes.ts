@@ -716,15 +716,28 @@ async function publishFinalize(
         currentRevision: head?.registry_revision ?? null,
       });
     }
-    const imported = await db.prepare(
-      'SELECT artifact_path,artifact_sha256,record_count,registry_revision FROM geo_registry_imports WHERE registry_revision=?1',
-    ).bind(finalizeManifest.registryRevision).all<{
+    let importedArtifacts: {
       artifact_path: string;
       artifact_sha256: string;
       record_count: number;
       registry_revision: number;
-    }>();
-    if (!imported.success) {
+    }[];
+    try {
+      const imported = await db.prepare(
+        'SELECT artifact_path,artifact_sha256,record_count,registry_revision FROM geo_registry_imports WHERE registry_revision=?1',
+      ).bind(finalizeManifest.registryRevision).all<{
+        artifact_path: string;
+        artifact_sha256: string;
+        record_count: number;
+        registry_revision: number;
+      }>();
+      if (!imported.success) {
+        return jsonWorkerResponse(ctx, 503, {
+          status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
+        });
+      }
+      importedArtifacts = imported.results;
+    } catch {
       return jsonWorkerResponse(ctx, 503, {
         status: 'error', code: 'PUBLISH_ACTIVE_ARTIFACT_MANIFEST_UNAVAILABLE',
       });
@@ -732,7 +745,7 @@ async function publishFinalize(
     const comparison = compareActiveGeographicPublishManifest({
       activeHead: head,
       expected: finalizeManifest,
-      importedArtifacts: imported.results,
+      importedArtifacts,
     });
     if (!comparison.matches) {
       return jsonWorkerResponse(ctx, 409, {
