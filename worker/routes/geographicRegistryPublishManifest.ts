@@ -54,6 +54,7 @@ export interface ExpectedGeographicPublishManifest {
 
 export interface ActiveGeographicPublishHead {
   readonly registry_revision: number;
+  readonly registry_checksum: string;
   readonly contract_version: string;
   readonly id_algorithm_version: string;
   readonly schema_version: string;
@@ -136,6 +137,7 @@ export function compareActiveGeographicPublishManifest(input: {
   const mismatches: string[] = [];
 
   if (Number(activeHead.registry_revision) !== expected.registryRevision) mismatches.push('registryRevision');
+  if (String(activeHead.registry_checksum).toLowerCase() !== expected.registryChecksum.toLowerCase()) mismatches.push('registryChecksum');
   if (activeHead.contract_version !== expected.contractVersion) mismatches.push('contractVersion');
   if (activeHead.id_algorithm_version !== expected.idAlgorithmVersion) mismatches.push('idAlgorithmVersion');
   if (activeHead.schema_version !== expected.schemaVersion) mismatches.push('schemaVersion');
