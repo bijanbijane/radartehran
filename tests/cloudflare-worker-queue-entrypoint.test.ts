@@ -270,6 +270,47 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     assert.equal(executions, 1, 'A completed canonical job must not execute again.');
   });
 
+  it('dead-letters idempotency-key reuse across different jobs instead of dropping unrelated work', async () => {
+    const { db, env, sentToDlq } = await setupMigratedEnv();
+    let executions = 0;
+    const original: RadarQueueEnvelope = {
+      schemaVersion: '1.0',
+      messageId: 'msg-idem-original',
+      jobType: 'expired_chunk_upload_session_cleanup',
+      idempotencyKey: 'idem-cross-job-conflict',
+      correlationId: 'corr-original',
+      createdAtIso: new Date().toISOString(),
+      payload: {},
+    };
+    const first = makeQueueMessage(original);
+    await processRadarQueueBatch({
+      batch: { queue: 'radartehran-jobs', messages: [first.msg], ackAll() {}, retryAll() {} },
+      db,
+      dlq: env.RADAR_DLQ,
+      executeJob: async () => { executions += 1; return { ok: true }; },
+    });
+    assert.equal(first.getState().acked, true);
+
+    const conflicting: RadarQueueEnvelope = {
+      ...original,
+      messageId: 'msg-idem-conflicting',
+      jobType: 'research_retention_purge',
+      correlationId: 'corr-conflicting',
+    };
+    const second = makeQueueMessage(conflicting);
+    await processRadarQueueBatch({
+      batch: { queue: 'radartehran-jobs', messages: [second.msg], ackAll() {}, retryAll() {} },
+      db,
+      dlq: env.RADAR_DLQ,
+      executeJob: async () => { executions += 1; return { ok: true }; },
+    });
+
+    assert.equal(second.getState().acked, true);
+    assert.equal(executions, 1, 'Conflicting idempotency-key reuse must not execute.');
+    assert.equal(sentToDlq.length, 1);
+    assert.equal((sentToDlq[0] as { deadLetterReason?: string }).deadLetterReason, 'IDEMPOTENCY_KEY_CONFLICT');
+  });
+
   it('3. handles retryable errors, terminal DLQ routing, poison unknown jobs, stale lease takeover, and missing D1 fail-closed', async () => {
     const { db, env, sentToDlq } = await setupMigratedEnv();
 
