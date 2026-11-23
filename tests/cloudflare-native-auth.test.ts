@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { authenticateWorkerSession, RADAR_SESSION_COOKIE } from '../worker/auth/sessionAuth';
+import { consumeGoogleOAuthState } from '../worker/routes/authRoutes';
 import type { D1Database, D1PreparedStatement, WorkerRequestContext, WorkerEnv } from '../worker/types';
 
 type SessionRow = Record<string, unknown>;
@@ -12,7 +13,7 @@ function makeD1(row: SessionRow | null, updateCalls?: { count: number }): D1Data
         bind(..._values: unknown[]) { return statement as unknown as D1PreparedStatement; },
         async first<T = Record<string, unknown>>(): Promise<T | null> { return row as T | null; },
         async run() {
-          if (/^\\s*UPDATE user_sessions SET last_seen_at_iso/i.test(sql)) {
+          if (/^\s*UPDATE user_sessions SET last_seen_at_iso/i.test(sql)) {
             if (updateCalls) updateCalls.count += 1;
           }
           return { success: true, meta: { changes: 0 } };
@@ -71,7 +72,73 @@ function sessionRow(overrides: SessionRow = {}): SessionRow {
   };
 }
 
+
+function makeOAuthStateDb(
+  stateHash: string,
+  state: { nonce: string; code_verifier: string; return_path: string } | null,
+  expiresAtMs: number,
+): D1Database {
+  let availableState = state;
+  const db = {
+    prepare(sql: string): D1PreparedStatement {
+      const values: unknown[] = [];
+      const statement = {
+        bind(...bound: unknown[]) {
+          values.splice(0, values.length, ...bound);
+          return statement as unknown as D1PreparedStatement;
+        },
+        async first<T = Record<string, unknown>>(): Promise<T | null> {
+          assert.match(sql, /DELETE FROM auth_oauth_states[\s\S]*RETURNING nonce, code_verifier, return_path/i);
+          const [candidateHash, nowMs] = values;
+          if (candidateHash !== stateHash || !availableState || Number(nowMs) < 0 || expiresAtMs <= Number(nowMs)) return null;
+          const consumed = availableState;
+          availableState = null;
+          return consumed as T;
+        },
+        async run() { return { success: true, meta: { changes: 0 } }; },
+        async all<T = Record<string, unknown>>() { return { results: [] as T[], success: true }; },
+      };
+      return statement as unknown as D1PreparedStatement;
+    },
+    async batch() { return []; },
+    async exec() { return { count: 0, duration: 0 }; },
+  };
+  return db as unknown as D1Database;
+}
+
 describe('Cloudflare-native session authentication', () => {
+  it('atomically allows only one concurrent callback to consume an OAuth state', async () => {
+    const nowMs = Date.now();
+    const stateHash = 'a'.repeat(64);
+    const db = makeOAuthStateDb(stateHash, {
+      nonce: 'nonce-once',
+      code_verifier: 'pkce-verifier-once',
+      return_path: '/account',
+    }, nowMs + 60_000);
+    const results = await Promise.all([
+      consumeGoogleOAuthState(db, stateHash, nowMs),
+      consumeGoogleOAuthState(db, stateHash, nowMs),
+    ]);
+    assert.equal(results.filter(Boolean).length, 1);
+    assert.deepEqual(results.find(Boolean), {
+      nonce: 'nonce-once',
+      code_verifier: 'pkce-verifier-once',
+      return_path: '/account',
+    });
+  });
+
+  it('does not consume an expired or malformed OAuth state hash', async () => {
+    const nowMs = Date.now();
+    const stateHash = 'b'.repeat(64);
+    const db = makeOAuthStateDb(stateHash, {
+      nonce: 'expired',
+      code_verifier: 'expired',
+      return_path: '/',
+    }, nowMs);
+    assert.equal(await consumeGoogleOAuthState(db, stateHash, nowMs), null);
+    assert.equal(await consumeGoogleOAuthState(db, 'not-a-state-hash', nowMs), null);
+  });
+
   it('accepts a valid D1-backed opaque session', async () => {
     const result = await authenticateWorkerSession(makeContext(makeD1(sessionRow())));
     assert.equal(result.authenticated, true);
