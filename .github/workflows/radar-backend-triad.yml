@@ -2,7 +2,7 @@ name: Radar Backend Triad & Frontend Service Binding
 
 on:
   push:
-    branches: [cursor/rt-infra-001-gate-b-monorepo]
+    branches: [cursor/rt-infra-001-gate-b-monorepo, rt-db-triad-production-connection-001]
     paths:
       - 'worker/**'
       - 'apps/frontend/worker/**'
