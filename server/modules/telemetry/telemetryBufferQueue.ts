@@ -23,6 +23,7 @@ export class DurableTelemetryBufferQueue {
   private readonly bufferDir: string;
   private readonly maxInMemoryDedupeSize = 10_000;
   private readonly seenEventIds = new Set<string>();
+  private unprocessedJournalLines = 0;
   private readonly maxFileSizeBytes: number;
   private deduplicatedCount = 0;
   private droppedOverflowCount = 0;
@@ -121,6 +122,7 @@ export class DurableTelemetryBufferQueue {
         if (oldest !== undefined) this.seenEventIds.delete(oldest);
       }
       this.seenEventIds.add(event.eventId);
+      this.unprocessedJournalLines += 1;
 
       return { accepted: true, isDuplicate: false };
     } catch {
@@ -199,7 +201,7 @@ export class DurableTelemetryBufferQueue {
     }
 
     return {
-      pendingCount: this.seenEventIds.size,
+      pendingCount: Math.max(this.unprocessedJournalLines, 0),
       bufferFileSizeBytes: totalBytes,
       deduplicatedCount: this.deduplicatedCount,
       droppedOverflowCount: this.droppedOverflowCount,
@@ -207,8 +209,13 @@ export class DurableTelemetryBufferQueue {
     };
   }
 
+  public acknowledgeProcessed(count: number): void {
+    this.unprocessedJournalLines = Math.max(0, this.unprocessedJournalLines - Math.max(0, count));
+  }
+
   public clearForTests(): void {
     this.seenEventIds.clear();
+    this.unprocessedJournalLines = 0;
     this.deduplicatedCount = 0;
     this.droppedOverflowCount = 0;
     try {

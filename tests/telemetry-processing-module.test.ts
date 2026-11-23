@@ -135,10 +135,7 @@ async function runAllTests() {
     }
 
     let snapshots = aggregator.generateSnapshots();
-    assert.equal(snapshots.length, 1);
-    assert.equal(snapshots[0].distinctSessionsCount, 10);
-    assert.equal(snapshots[0].isKAnonymityPreserved, false);
-    assert.equal(snapshots[0].avgMetrics.dwellSeconds, 0, 'Must redact avg when k < 15');
+    assert.equal(snapshots.length, 0, 'Buckets below k must be omitted from public output');
 
     // Add 6 more sessions (total 16 >= 15)
     for (let i = 11; i <= 16; i++) {

@@ -81,17 +81,17 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
         ref={dialogRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 p-5 space-y-4 text-xs"
+        className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 p-5 space-y-4 text-xs"
       >
-        <div className="flex items-center justify-between border-b border-[#DCE3DF] dark:border-slate-800 pb-3">
-          <strong className="text-sm font-black text-[#182522] dark:text-white">
+        <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-3">
+          <strong className="text-sm font-black text-[var(--color-text-primary)] dark:text-white">
             ذخیره تحلیل، اشتراک‌گذاری و خروجی مجاز
           </strong>
           <button
             type="button"
             aria-label="بستن پنجره تحلیل‌های ذخیره‌شده"
             onClick={onClose}
-            className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-lg border border-[#DCE3DF] dark:border-slate-700 cursor-pointer"
+            className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-700 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -109,12 +109,12 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
               placeholder="نام تحلیل فعلی (مثلاً: مقایسه مسکونی پونک ۶ ماهه)"
               aria-label="نام تحلیل برای ذخیره"
               aria-invalid={Boolean(titleError)}
-              className="flex-1 min-h-[40px] px-3 rounded-lg border border-[#C5D0CA] dark:border-slate-700 bg-white dark:bg-slate-950 text-[#182522] dark:text-white"
+              className="flex-1 min-h-[40px] px-3 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 bg-white dark:bg-slate-950 text-[var(--color-text-primary)] dark:text-white"
             />
             <button
               type="submit"
               data-testid="market-save-submit-btn"
-              className="min-h-[40px] px-3.5 rounded-lg bg-[#176B63] text-white font-bold flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[40px] px-3.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <BookmarkPlus className="w-4 h-4" />
               <span>ذخیره</span>
@@ -131,7 +131,7 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
           <button
             type="button"
             onClick={handleCopyShare}
-            className="min-h-[34px] px-2.5 rounded-lg border border-[#C5D0CA] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer"
+            className="min-h-[34px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>{copied ? 'لینک وضعیت کپی شد' : 'کپی لینک وضعیت تحلیلی'}</span>
@@ -139,30 +139,30 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
           <button
             type="button"
             onClick={() => onExportFormat('json')}
-            className="min-h-[34px] px-2.5 rounded-lg border border-[#C5D0CA] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer"
+            className="min-h-[34px] px-2.5 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>خروجی تجمیعی JSON</span>
           </button>
         </div>
 
-        <div className="space-y-2 pt-2 border-t border-[#DCE3DF] dark:border-slate-800">
-          <div className="font-bold text-[#182522] dark:text-white">
+        <div className="space-y-2 pt-2 border-t border-[var(--color-border-subtle)] dark:border-slate-800">
+          <div className="font-bold text-[var(--color-text-primary)] dark:text-white">
             نماهای ذخیره‌شده ({savedItems.length})
           </div>
           {savedItems.length === 0 ? (
-            <div className="py-4 text-center text-[#586760] dark:text-slate-400">
+            <div className="py-4 text-center text-[var(--color-text-muted)] dark:text-slate-400">
               هنوز تحلیلی ذخیره نکرده‌اید.
             </div>
           ) : (
             savedItems.map((item) => (
               <div
                 key={item.id}
-                className="p-3 rounded-lg border border-[#DCE3DF] dark:border-slate-800 flex items-center justify-between gap-2"
+                className="p-3 rounded-lg border border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between gap-2"
               >
                 <div>
-                  <div className="font-bold text-[#182522] dark:text-white">{item.title}</div>
-                  <div className="text-[11px] text-[#586760] dark:text-slate-400">
+                  <div className="font-bold text-[var(--color-text-primary)] dark:text-white">{item.title}</div>
+                  <div className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
                     محله {item.neighborhoodName} · {item.filters.marketType} · {item.filters.period}
                   </div>
                 </div>
@@ -181,7 +181,7 @@ export const SavedAnalysisPanel: React.FC<SavedAnalysisPanelProps> = ({
                     type="button"
                     aria-label={`حذف ${item.title}`}
                     onClick={() => onDeleteItem(item.id)}
-                    className="p-1.5 text-[#586760] hover:text-[#A61B1B] cursor-pointer"
+                    className="p-1.5 text-[var(--color-text-muted)] hover:text-[#A61B1B] cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

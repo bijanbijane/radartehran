@@ -109,7 +109,7 @@ export const DetailHeader: React.FC<DetailHeaderProps> = ({
               type="button"
               data-testid="detail-action-edit"
               onClick={() => onEdit?.(entity)}
-              className="rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-600/30"
+              className="rounded-lg border border-emerald-500/40 bg-[var(--color-brand-600)]/20 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-[var(--color-brand-600)]/30"
             >
               ویرایش اطلاعات
             </button>

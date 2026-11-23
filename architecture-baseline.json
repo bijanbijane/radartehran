@@ -514,12 +514,12 @@
       "owner": "module:property-financing",
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     },
-    "server/modules/property-insurance/InsurancePoliciesView.tsx": {
+    "src/components/property-insurance/InsurancePoliciesView.tsx": {
       "baselineLines": 567,
       "maxLines": 567,
       "targetLines": 300,
       "owner": "module:property-insurance",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "RT-INFRA-001 frontend ownership; migrated from server/modules."
     },
     "server/modules/property-insurance/services/propertyInsuranceClaimsService.ts": {
       "baselineLines": 1337,
@@ -809,11 +809,11 @@
       "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
     },
     "server/modules/valuation/evidenceAndComparableEngine.ts": {
-      "baselineLines": 542,
-      "maxLines": 542,
+      "baselineLines": 558,
+      "maxLines": 558,
       "targetLines": 300,
       "owner": "module:valuation",
-      "rationale": "Pre-existing backend module legacy size debt registered under RT-SOCIAL-WAVE1-ARCH-CONTRACT-002 (non-increasing ratchet; no forced rewrite)."
+      "rationale": "RT-VALUATION-CRITICAL-038 evidence eligibility gates; extracted policy to evidenceVerificationPolicy.ts to limit growth."
     },
     "server/modules/valuation/hedonicPricingAndExplainEngine.ts": {
       "baselineLines": 549,

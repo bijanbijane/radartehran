@@ -91,7 +91,7 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
             <span className="text-teal-600 dark:text-teal-400">{report.epistemicReliabilityIndex}٪</span>
             <span className="text-slate-300 dark:text-slate-600">|</span>
             <span className="text-slate-500 dark:text-slate-400">امتیاز کل تصمیم:</span>
-            <span className={report.overallDecisionScore >= 75 ? 'text-emerald-600 dark:text-emerald-400' : report.overallDecisionScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}>
+            <span className={report.overallDecisionScore >= 75 ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : report.overallDecisionScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}>
               {report.overallDecisionScore}/۱۰۰
             </span>
           </div>
@@ -106,7 +106,7 @@ export const CasperDecisionIntelligencePanel: React.FC<Props> = ({
           </div>
           <div className={`p-2 rounded-lg border ${mutedBg}`}>
             <div className="text-[10px] text-slate-500 dark:text-slate-400">سقف ورود منطقی شما</div>
-            <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">{report.scenarioTargetTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
+            <div className="text-xs font-black text-[var(--color-brand-600)] dark:text-emerald-400 tabular-nums mt-0.5">{report.scenarioTargetTotalMillion.toLocaleString('fa-IR')} م‌ت</div>
             <div className="text-[10px] text-slate-400 tabular-nums" dir="ltr">{report.scenarioTargetTotalIntl}</div>
           </div>
           <div className={`p-2 rounded-lg border ${mutedBg}`}>

@@ -15,12 +15,17 @@ export interface RadarButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLBu
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-[#176B63] hover:bg-[#14534E] active:bg-[#103B38] text-white border border-transparent shadow-xs',
-  secondary: 'bg-[#EAF3F0] hover:bg-[#DCECE6] active:bg-[#CCE3DB] text-[#103B38] dark:bg-emerald-950/60 dark:text-emerald-200 dark:hover:bg-emerald-900/70 border border-[#C5D0CA] dark:border-emerald-800/70',
-  tertiary: 'bg-transparent hover:bg-[#F1F4F2] active:bg-[#E9EFEC] text-[#34433E] dark:text-slate-300 dark:hover:bg-slate-800 border border-transparent',
-  outline: 'bg-white dark:bg-slate-900 hover:bg-[#F6F8F6] dark:hover:bg-slate-800 text-[#182522] dark:text-slate-100 border border-[#C5D0CA] dark:border-slate-700',
+  primary:
+    'bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] active:bg-[var(--color-brand-900)] text-[var(--color-text-on-brand)] border border-transparent shadow-xs',
+  secondary:
+    'bg-[var(--color-brand-50)] hover:bg-[var(--color-brand-100)] active:bg-[var(--color-brand-100)] text-[var(--color-brand-900)] dark:bg-emerald-950/60 dark:text-emerald-200 dark:hover:bg-emerald-900/70 border border-[var(--color-border-strong)] dark:border-emerald-800/70',
+  tertiary:
+    'bg-transparent hover:bg-[var(--color-bg-muted)] active:bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] dark:text-slate-300 dark:hover:bg-slate-800 border border-transparent',
+  outline:
+    'bg-[var(--color-bg-surface)] dark:bg-slate-900 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 text-[var(--color-text-primary)] dark:text-slate-100 border border-[var(--color-border-strong)] dark:border-slate-700',
   destructive: 'bg-[#A61B1B] hover:bg-[#8E1515] active:bg-[#751010] text-white border border-transparent shadow-xs',
-  icon: 'bg-white dark:bg-slate-900 hover:bg-[#F1F4F2] dark:hover:bg-slate-800 text-[#34433E] dark:text-slate-200 border border-[#DCE3DF] dark:border-slate-700 aspect-square !px-0',
+  icon:
+    'bg-[var(--color-bg-surface)] dark:bg-slate-900 hover:bg-[var(--color-bg-muted)] dark:hover:bg-slate-800 text-[var(--color-text-secondary)] dark:text-slate-200 border border-[var(--color-border-subtle)] dark:border-slate-700 aspect-square !px-0',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -61,7 +66,7 @@ export const RadarButton: React.FC<RadarButtonProps> = ({
       aria-busy={loading || undefined}
       aria-label={accessibleLabel || rest['aria-label']}
       onClick={handleClick}
-      className={`inline-flex items-center justify-center gap-2 font-semibold leading-[1.4] transition-colors cursor-pointer select-none touch-manipulation focus-visible:outline-2 focus-visible:outline-[#2864DC] focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-semibold leading-[1.4] transition-colors cursor-pointer select-none touch-manipulation focus-visible:outline-2 focus-visible:outline-[var(--color-focus)] focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...rest}
     >
       {loading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" /> : leadingIcon}

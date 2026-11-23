@@ -6,13 +6,14 @@
  * - Stage 31 (RT-UI-PERSONALIZATION-001): Personal Workspace, Saved Items & User Preferences
  */
 import type { Express, Request, Response } from 'express';
-import {
-  defaultSearchEngine,
-  validateUserPolygonGeometry,
-} from '../../../src/features/search/services/searchOrchestratorEngine';
+import { validateUserPolygonGeometry } from '../../../src/features/search/services/searchOrchestratorEngine';
 import { validateRawSearchQuery } from '../../../src/features/search/services/searchNormalizerAndPlanner';
 import { defaultSearchWorkspaceService } from '../../../src/features/search/services/searchWorkspaceService';
-import type { SearchScope, SearchSortOption } from '../../../src/features/search/models/search.types';
+import type { SearchIndexJob, SearchScope, SearchSortOption } from '../../../src/features/search/models/search.types';
+import { executeCanonicalSearch } from './searchApplicationService';
+import { getCanonicalSearchEngine } from './searchCompositionRoot';
+import { getSearchWorkspaceRepository } from './searchCompositionRoot';
+import { enqueueReindexJob, getJobSnapshot, listRecentJobs, type DurableSearchIndexJob } from './searchIndexRepository';
 import { defaultPersonalizationEngine } from '../../../src/features/account/services/personalizationAndPreferencesEngine';
 import {
   verifyAdminApiAuthorization,
@@ -45,6 +46,58 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
     return auth.authorized && auth.uid ? auth.uid : null;
   };
 
+  const resolveSearchAuth = async (req: Request): Promise<{ uid?: string; isAdmin: boolean }> => {
+    const admin = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    if (admin.authorized) return { uid: 'admin', isAdmin: true };
+    const uid = await resolveOptionalAuthUid(req);
+    return { uid: uid ?? undefined, isAdmin: false };
+  };
+
+  const mapDurableJob = (job: DurableSearchIndexJob): SearchIndexJob => ({
+    id: job.jobId,
+    jobType: job.jobType,
+    scope: job.scope,
+    status:
+      job.status === 'COMPLETED'
+        ? 'COMPLETED'
+        : job.status === 'FAILED' || job.status === 'CANCELLED'
+          ? 'FAILED'
+          : job.status === 'PENDING'
+            ? 'QUEUED'
+            : 'RUNNING',
+    documentsProcessed: job.processedCount,
+    lagMs: 0,
+    startedAt: job.startedAtIso,
+    completedAt: job.completedAtIso,
+  });
+
+  const runCanonicalSearchFromLegacyBody = async (req: Request, res: Response, legacy: {
+    rawQuery: string;
+    scope: SearchScope;
+    sort: SearchSortOption;
+    filters: Record<string, unknown>;
+    requestId?: string;
+    degradedScopes?: SearchScope[];
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const auth = await resolveSearchAuth(req);
+    const out = executeCanonicalSearch(
+      {
+        requestId: legacy.requestId,
+        query: legacy.rawQuery,
+        scope: legacy.scope,
+        sort: legacy.sort,
+        filters: legacy.filters,
+        degradedScopes: legacy.degradedScopes,
+        limit: legacy.limit,
+        cursor: legacy.cursor,
+      },
+      auth,
+    );
+    res.status(200).json(out);
+  };
+
   app.get(['/api/v1/search', '/api/search'], async (req: Request, res: Response) => {
     try {
       if (!checkLimit(getIp(req), 'v1-search', 90, 60_000)) {
@@ -58,9 +111,17 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
       if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
       const scope = (typeof req.query.scope === 'string' ? req.query.scope : 'ALL') as SearchScope;
       const sort = (typeof req.query.sort === 'string' ? req.query.sort : 'RELEVANCE') as SearchSortOption;
-      const verifiedUid = await resolveOptionalAuthUid(req);
       const explicitFilters = cityCheck.wasOmitted ? undefined : { cityId: cityCheck.cityId };
-      const searchOut = defaultSearchEngine.executeSearch({ rawQuery, scope, sort, explicitFilters, caller: { isAuthenticated: Boolean(verifiedUid) } });
+      const auth = await resolveSearchAuth(req);
+      const searchOut = executeCanonicalSearch(
+        {
+          query: rawQuery,
+          scope,
+          sort,
+          filters: explicitFilters ?? {},
+        },
+        auth,
+      );
       res.status(200).json({ ...searchOut, cityId: cityCheck.wasOmitted ? undefined : cityCheck.cityId });
     } catch {
       if (!res.headersSent) res.status(500).json({ errorCode: 'SEARCH_FAILED', messageFa: 'خطا در اجرای جست‌وجو.' });
@@ -87,12 +148,51 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
         const geoValid = validateUserPolygonGeometry(nextFilters.polygon);
         if (!geoValid.valid) { res.status(400).json({ errorCode: geoValid.errorCode, messageFa: geoValid.messageFa }); return; }
       }
-      const verifiedUid = await resolveOptionalAuthUid(req);
-      res.status(200).json(defaultSearchEngine.executeSearch({
+      await runCanonicalSearchFromLegacyBody(req, res, {
         requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
-        rawQuery, scope: body.scope || 'ALL', explicitFilters: nextFilters, sort: body.sort || 'RELEVANCE',
-        caller: { isAuthenticated: Boolean(verifiedUid) },
-      }));
+        rawQuery,
+        scope: (body.scope || 'ALL') as SearchScope,
+        sort: (body.sort || 'RELEVANCE') as SearchSortOption,
+        filters: nextFilters,
+        degradedScopes: Array.isArray(body.degradedScopes) ? body.degradedScopes : undefined,
+        limit: typeof body.limit === 'number' ? body.limit : undefined,
+        cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+      });
+    } catch {
+      if (!res.headersSent) res.status(500).json({ errorCode: 'SEARCH_FAILED', messageFa: 'خطا در اجرای جست‌وجو.' });
+    }
+  });
+
+  app.post('/api/v2/search/query', async (req: Request, res: Response) => {
+    try {
+      if (!checkLimit(getIp(req), 'v2-search-query', 90, 60_000)) {
+        res.status(429).json({ errorCode: 'RATE_LIMITED', messageFa: 'تعداد درخواست‌های جست‌وجو بیش از حد مجاز است.' });
+        return;
+      }
+      const body = req.body || {};
+      const query = typeof body.query === 'string' ? body.query : typeof body.q === 'string' ? body.q : '';
+      const valid = validateRawSearchQuery(query);
+      if (!valid.valid) { res.status(400).json({ errorCode: valid.errorCode, messageFa: valid.messageFa }); return; }
+      const filters = { ...(body.filters || {}) };
+      if (filters.cityId) {
+        const cityCheck = resolveCityParamOrReject(filters.cityId);
+        if (!cityCheck.ok) { res.status(400).json({ errorCode: cityCheck.code, messageFa: cityCheck.messageFa }); return; }
+        filters.cityId = cityCheck.cityId;
+      }
+      if (filters.polygon) {
+        const geoValid = validateUserPolygonGeometry(filters.polygon);
+        if (!geoValid.valid) { res.status(400).json({ errorCode: geoValid.errorCode, messageFa: geoValid.messageFa }); return; }
+      }
+      await runCanonicalSearchFromLegacyBody(req, res, {
+        requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
+        rawQuery: query,
+        scope: (body.scope || 'ALL') as SearchScope,
+        sort: (body.sort || 'RELEVANCE') as SearchSortOption,
+        filters,
+        degradedScopes: Array.isArray(body.degradedScopes) ? body.degradedScopes : undefined,
+        limit: typeof body.limit === 'number' ? body.limit : undefined,
+        cursor: typeof body.cursor === 'string' ? body.cursor : undefined,
+      });
     } catch {
       if (!res.headersSent) res.status(500).json({ errorCode: 'SEARCH_FAILED', messageFa: 'خطا در اجرای جست‌وجو.' });
     }
@@ -118,7 +218,16 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
     const cityCheck = resolveCityParamOrReject(req.query.city, { allowOmittedDefault: 'tehran' });
     if (!cityCheck.ok) { res.status(400).json({ errorCode: cityCheck.code, messageFa: cityCheck.messageFa }); return; }
     const q = typeof req.query.q === 'string' ? req.query.q : '';
-    const out = defaultSearchEngine.executeSearch({ rawQuery: q, explicitFilters: cityCheck.wasOmitted ? undefined : { cityId: cityCheck.cityId } });
+    const auth = { isAdmin: false };
+    const out = executeCanonicalSearch(
+      {
+        query: q,
+        scope: 'ALL',
+        sort: 'RELEVANCE',
+        filters: cityCheck.wasOmitted ? {} : { cityId: cityCheck.cityId },
+      },
+      auth,
+    );
     res.status(200).json({ cityId: cityCheck.wasOmitted ? undefined : cityCheck.cityId, facets: out.facets, groupedCounts: out.groupedCounts });
   });
 
@@ -142,14 +251,16 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   app.get(['/api/v1/saved-searches', '/api/search/saved'], async (req: Request, res: Response) => {
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
-    res.status(200).json({ items: defaultSearchWorkspaceService.getSavedSearches(auth.uid) });
+    const repo = getSearchWorkspaceRepository();
+    res.status(200).json({ items: repo.listSavedSearches(auth.uid) });
   });
 
   app.post(['/api/v1/saved-searches', '/api/search/saved'], async (req: Request, res: Response) => {
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
     const body = req.body || {};
-    const created = defaultSearchWorkspaceService.createSavedSearch({
+    const repo = getSearchWorkspaceRepository();
+    const created = repo.createSavedSearch({
       userId: auth.uid,
       titleFa: String(body.titleFa || body.query || 'جست‌وجوی ذخیره‌شده'),
       query: String(body.query || ''), scope: (body.scope || 'ALL') as SearchScope,
@@ -161,27 +272,54 @@ export function registerGlobalSearchGovernanceAndAnalyticsRoutes(
   app.get('/api/v1/search-history', async (req: Request, res: Response) => {
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
-    res.status(200).json({ items: defaultSearchWorkspaceService.getSearchHistory(auth.uid), privacy: defaultSearchWorkspaceService.getPrivacySettings() });
+    const repo = getSearchWorkspaceRepository();
+    const prefs = repo.getPreferences(auth.uid);
+    res.status(200).json({
+      items: repo.listSearchHistory(auth.uid),
+      privacy: { historyRecordingEnabled: prefs.historyRecordingEnabled, personalizationEnabled: prefs.personalizationEnabled },
+    });
   });
 
   app.delete('/api/v1/search-history', async (req: Request, res: Response) => {
     const auth = await verifyAuthenticatedUserHeader(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized || !auth.uid) { res.status(401).json({ status: 'error', code: auth.reason }); return; }
-    defaultSearchWorkspaceService.clearSearchHistory(auth.uid);
+    getSearchWorkspaceRepository().clearSearchHistory(auth.uid);
     res.status(200).json({ cleared: true });
   });
 
   app.get('/api/admin/search/overview', async (req: Request, res: Response) => {
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) { recordAbuseSignal(getIp(req), 'auth_failure'); res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
-    res.status(200).json(defaultSearchEngine.getAdminDiagnostics());
+    const mapped = listRecentJobs(10).map(mapDurableJob);
+    res.status(200).json(getCanonicalSearchEngine().getAdminDiagnostics(mapped));
   });
 
   app.post('/api/admin/search/reindex', async (req: Request, res: Response) => {
     const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
     if (!auth.authorized) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
     const scope = (req.body?.scope || 'ALL') as SearchScope;
-    res.status(200).json({ job: defaultSearchEngine.triggerReindex(scope) });
+    const idempotencyKey =
+      (typeof req.headers['idempotency-key'] === 'string' && req.headers['idempotency-key']) ||
+      (typeof req.body?.idempotencyKey === 'string' && req.body.idempotencyKey) ||
+      '';
+    if (!idempotencyKey.trim()) {
+      res.status(400).json({ status: 'error', code: 'IDEMPOTENCY_KEY_REQUIRED' });
+      return;
+    }
+    const job = enqueueReindexJob({
+      scope,
+      idempotencyKey: idempotencyKey.trim(),
+      correlationId: typeof req.headers['x-correlation-id'] === 'string' ? req.headers['x-correlation-id'] : undefined,
+    });
+    res.status(202).json({ jobId: job.jobId, status: job.status });
+  });
+
+  app.get('/api/admin/search/reindex/:jobId', async (req: Request, res: Response) => {
+    const auth = await verifyAdminApiAuthorization(req.headers as Record<string, string | string[] | undefined>);
+    if (!auth.authorized) { res.status(auth.statusCode).json({ status: 'error', code: auth.reason }); return; }
+    const snap = getJobSnapshot(String(req.params.jobId));
+    if (!snap) { res.status(404).json({ status: 'error', code: 'JOB_NOT_FOUND' }); return; }
+    res.status(200).json({ job: snap });
   });
 
   registerDataGovernanceRoutes(app, { getIp });

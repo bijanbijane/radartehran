@@ -88,7 +88,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
       {/* Drill-down Breadcrumb + Linked View Neighborhood Selector */}
       <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-[10px] bg-[#F6F8F6] dark:bg-slate-800">
         <div className="flex items-center gap-1.5 font-bold text-[#182522] dark:text-white" data-testid="drilldown-breadcrumb">
-          <MapPin className="w-4 h-4 text-[#176B63]" />
+          <MapPin className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>مسیر Drill-down مکانی: تهران / {hood.districtFa} / {hood.nameFa} / توزیع و روند قیمت آگهی‌ها</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -102,7 +102,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
                 onAnnounceStatus(`نماهای مرتبط (نقشه، نمودار و جدول) برای «${v.nameFa}» همگام‌سازی شدند.`);
               }}
               className={`px-2.5 py-1.5 rounded-[8px] font-bold cursor-pointer ${
-                selectedHoodKey === k ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
+                selectedHoodKey === k ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
               }`}
             >
               {v.nameFa}
@@ -115,7 +115,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400">
+            <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400">
               {primaryMetric.titleFa} ({primaryMetric.methodologyVersion})
             </span>
             <span className="font-bold text-[#34433E] dark:text-slate-300">وضعیت کفایت: {sufficiency.status}</span>
@@ -138,10 +138,10 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <BarChart3 className="w-4 h-4 text-[#176B63]" />
+            <BarChart3 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>توزیع صدک‌ها و نمودار جعبه‌ای (Box Plot & IQR)</span>
           </h3>
-          <p className="text-[11px] font-semibold text-[#14534E] dark:text-emerald-300">{BOX_PLOT_PLAIN_GUIDE_FA}</p>
+          <p className="text-[11px] font-semibold text-[var(--color-brand-700)] dark:text-emerald-300">{BOX_PLOT_PLAIN_GUIDE_FA}</p>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center tabular-nums">
             {[
               { label: 'P10', val: dist.p10 },
@@ -167,7 +167,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Database className="w-4 h-4 text-[#176B63]" />
+            <Database className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>سری زمانی با حفظ گسست داده مفقود (عدم تبدیل Null به صفر)</span>
           </h3>
           <table className="w-full text-right border-collapse tabular-nums">
@@ -193,7 +193,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <GitCompare className="w-4 h-4 text-[#176B63]" />
+            <GitCompare className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>انتخابگر نمودار (ONS) و نگهبان هم‌جنس بودن مقایسه (بند ۳۰.۳)</span>
           </h3>
           <div>
@@ -216,7 +216,7 @@ export const Stage36DataVisSubpanel: React.FC<Stage36DataVisSubpanelProps> = ({ 
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-bold">آزمون مقایسه با سری دوم:</span>
-            <button type="button" data-testid="compare-homogeneous-btn" onClick={() => setCompareOriginB('asking_price')} className={`px-2 py-1 rounded font-bold cursor-pointer ${compareOriginB === 'asking_price' ? 'bg-[#176B63] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'}`}>قیمت آگهی (هم‌جنس)</button>
+            <button type="button" data-testid="compare-homogeneous-btn" onClick={() => setCompareOriginB('asking_price')} className={`px-2 py-1 rounded font-bold cursor-pointer ${compareOriginB === 'asking_price' ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'}`}>قیمت آگهی (هم‌جنس)</button>
             <button type="button" data-testid="compare-heterogeneous-btn" onClick={() => setCompareOriginB('transaction_price')} className={`px-2 py-1 rounded font-bold cursor-pointer ${compareOriginB === 'transaction_price' ? 'bg-rose-700 text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'}`}>قیمت معامله (نامتجانس)</button>
           </div>
           <div className="font-bold text-[#182522] dark:text-white" data-testid="comparison-homogeneity-verdict">

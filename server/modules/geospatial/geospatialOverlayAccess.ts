@@ -1,0 +1,40 @@
+import { CoreApiError } from '../core';
+import type { GeographicOverlayLayer, GeospatialObservabilityMetrics } from './types';
+
+export function executeUpsertGeographicOverlay(
+  layer: GeographicOverlayLayer,
+  overlayStore: Map<string, GeographicOverlayLayer>,
+  overlayCache: Map<string, GeographicOverlayLayer>,
+): GeographicOverlayLayer {
+  overlayStore.set(layer.layerId, structuredClone(layer));
+  overlayCache.delete(layer.layerId);
+  return structuredClone(layer);
+}
+
+export function executeGetGeographicOverlay(params: {
+  layerId: string;
+  isAdminCaller: boolean;
+  overlayStore: Map<string, GeographicOverlayLayer>;
+  overlayCache: Map<string, GeographicOverlayLayer>;
+  metrics: GeospatialObservabilityMetrics;
+}): GeographicOverlayLayer {
+  const cached = params.overlayCache.get(params.layerId);
+  if (cached) {
+    if (cached.visibilityPolicy === 'ADMIN_ONLY' && !params.isAdminCaller) {
+      throw new CoreApiError('FORBIDDEN', 403, 'Access to administrative geographic overlay is restricted.');
+    }
+    params.metrics.cacheHitsCount += 1;
+    return structuredClone(cached);
+  }
+
+  params.metrics.cacheMissesCount += 1;
+  const layer = params.overlayStore.get(params.layerId);
+  if (!layer) {
+    throw new CoreApiError('NOT_FOUND', 404, `Geographic overlay '${params.layerId}' not found.`);
+  }
+  if (layer.visibilityPolicy === 'ADMIN_ONLY' && !params.isAdminCaller) {
+    throw new CoreApiError('FORBIDDEN', 403, 'Access to administrative geographic overlay is restricted.');
+  }
+  params.overlayCache.set(params.layerId, structuredClone(layer));
+  return structuredClone(layer);
+}

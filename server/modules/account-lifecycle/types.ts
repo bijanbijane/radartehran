@@ -236,7 +236,9 @@ export type AccountDeletionJobState =
   | 'DELETING_AUTH_IDENTITY'
   | 'COMPLETED'
   | 'PARTIAL_FAILURE_RETRYABLE'
-  | 'BLOCKED_MANUAL_REVIEW';
+  | 'BLOCKED_MANUAL_REVIEW'
+  | 'FAILED_TERMINAL'
+  | 'CANCELLED';
 
 export type DeletionPhaseStepStatus =
   | 'PENDING'
@@ -279,6 +281,31 @@ export interface AuthDeletionStepJournal {
   updatedAtIso: string;
 }
 
+export interface LegacyFirestoreSupplementJournal {
+  status: DeletionPhaseStepStatus;
+  attempts: number;
+  lastError?: string;
+  updatedAtIso: string;
+  result?: {
+    userPrefsOk: boolean;
+    votesOk: boolean;
+    firestoreBargainsOk: boolean;
+    alertsReconcileOk: boolean;
+    authDeletedOnServer: boolean;
+  };
+}
+
+export interface TelemetryErasureStepJournal {
+  status: DeletionPhaseStepStatus;
+  resumableCursor: string | null;
+  batchesProcessed: number;
+  recordsErased: number;
+  recordsRetained: number;
+  attempts: number;
+  lastError?: string;
+  updatedAtIso: string;
+}
+
 export interface DurableAccountDeletionJob {
   jobId: string;
   targetUid: string;
@@ -290,6 +317,8 @@ export interface DurableAccountDeletionJob {
   domainSteps: Record<UserOwnedDomainSource, DomainDeletionStepJournal>;
   mediaStep: MediaDeletionStepJournal;
   authStep: AuthDeletionStepJournal;
+  legacyFirestoreSupplement?: LegacyFirestoreSupplementJournal;
+  telemetryErasureStep?: TelemetryErasureStepJournal;
   totalAttempts: number;
   createdAtIso: string;
   updatedAtIso: string;
@@ -308,7 +337,86 @@ export type AccountLifecycleErrorCode =
   | 'JOB_NOT_FOUND'
   | 'CONCURRENT_MODIFICATION_CONFLICT'
   | 'AUTH_DELETION_PRECONDITION_FAILED'
-  | 'INVALID_PAGINATION_OPTIONS';
+  | 'INVALID_PAGINATION_OPTIONS'
+  | 'STORE_UNAVAILABLE'
+  | 'STORE_SNAPSHOT_CORRUPT'
+  | 'WRITE_BLOCK_UNVERIFIED'
+  | 'DOMAIN_ADAPTER_UNAVAILABLE'
+  | 'MUTATION_DRAIN_INCOMPLETE';
+
+export type AccountDeletionExecutionReceiptStatus = 'SUCCEEDED' | 'PARTIAL' | 'FAILED';
+
+export interface AccountDeletionExecutionReceipt {
+  receiptId: string;
+  jobId: string;
+  targetUid: string;
+  status: AccountDeletionExecutionReceiptStatus;
+  jobState: AccountDeletionJobState;
+  completedAtIso: string | null;
+  message: string;
+}
+
+export type AccountExportJobState =
+  | 'REQUESTED'
+  | 'COLLECTING'
+  | 'PACKAGING'
+  | 'READY'
+  | 'EXPIRED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export interface DurableAccountExportJob {
+  exportJobId: string;
+  targetUid: string;
+  requestedByUid: string;
+  state: AccountExportJobState;
+  downloadTokenHash: string | null;
+  downloadExpiresAtIso: string | null;
+  artifactStorageKey: string | null;
+  completenessStatus: ExportCompletenessStatus | null;
+  revision: number;
+  createdAtIso: string;
+  updatedAtIso: string;
+  completedAtIso: string | null;
+  lastError: string | null;
+}
+
+export type PrivacyConsentScope = 'PRODUCT_ANALYTICS_OPTIONAL' | 'SECURITY_ESSENTIAL';
+
+export interface AccountPrivacyConsentRecord {
+  consentId: string;
+  targetUid: string;
+  scope: PrivacyConsentScope;
+  granted: boolean;
+  policyVersion: string;
+  recordedAtIso: string;
+  revokedAtIso: string | null;
+  sourceChannel: 'api' | 'admin' | 'migration';
+  revision: number;
+}
+
+export type AccountDataRequestKind = 'EXPORT' | 'DELETION' | 'PORTABILITY';
+
+export interface AccountDataRequestRecord {
+  requestId: string;
+  targetUid: string;
+  kind: AccountDataRequestKind;
+  linkedJobId: string | null;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  requestedAtIso: string;
+  completedAtIso: string | null;
+  revision: number;
+}
+
+export interface AccountDeletionAuditRecord {
+  auditId: string;
+  jobId: string;
+  targetUid: string;
+  actorUid: string;
+  action: string;
+  detailRedacted: string;
+  recordedAtIso: string;
+}
 
 export class AccountLifecycleError extends Error {
   public readonly code: AccountLifecycleErrorCode;

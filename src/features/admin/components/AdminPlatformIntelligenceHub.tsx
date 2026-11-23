@@ -95,7 +95,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
           <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-[#176B63]" />
+            <Cpu className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مرکز هوشمندی، حاکمیت پلتفرم، اتوماسیون و درگاه داده (مراحل ۶ تا ۲۸)</span>
           </h2>
           <p className="text-[11px] text-slate-500">
@@ -116,7 +116,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                 data-testid={`hub-tab-${tab.id}`}
                 onClick={() => { setActiveTab(tab.id); setFeedbackFa(null); }}
                 className={`px-3 py-1.5 rounded-[9px] font-bold inline-flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === tab.id ? 'bg-[#176B63] text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                  activeTab === tab.id ? 'bg-[var(--color-brand-600)] text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" /><span>{tab.labelFa}</span>
@@ -166,7 +166,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                   const res = await runConsistencyCheck(currentUser);
                   setFeedbackFa(res.ok && res.data ? `کنترل سازگاری متقابل: ${res.data.report.consistent ? 'پاک' : 'دارای مغایرت'} (${toPersianNum(res.data.report.checkedPosts)} پست)` : (res.errorFa || 'خطا'));
                 })}
-                className="mt-1.5 px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold text-[10.5px] cursor-pointer disabled:opacity-50"
+                className="mt-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold text-[10.5px] cursor-pointer disabled:opacity-50"
               >
                 اجرای کنترل سازگاری
               </button>
@@ -187,7 +187,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                 <div className="text-[10.5px] text-slate-500">طرح بازگشت: {sug.reversalPlanFa}</div>
               </div>
               <div className="flex gap-1.5">
-                <button type="button" disabled={busyActionKey !== null} onClick={() => runHubAction(`approve:${sug.id}`, async () => { const r = await reviewIntelligenceDecision(sug.id, 'APPROVED', currentUser); if (r.ok) { setFeedbackFa('تصمیم انسانی تایید شد.'); await loadHub(); } else setErrorFa(r.errorFa || 'خطا در تایید تصمیم.'); })} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer disabled:opacity-50">تایید انسانی</button>
+                <button type="button" disabled={busyActionKey !== null} onClick={() => runHubAction(`approve:${sug.id}`, async () => { const r = await reviewIntelligenceDecision(sug.id, 'APPROVED', currentUser); if (r.ok) { setFeedbackFa('تصمیم انسانی تایید شد.'); await loadHub(); } else setErrorFa(r.errorFa || 'خطا در تایید تصمیم.'); })} className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50">تایید انسانی</button>
                 <button type="button" disabled={busyActionKey !== null} onClick={() => runHubAction(`reject:${sug.id}`, async () => { const r = await reviewIntelligenceDecision(sug.id, 'REJECTED', currentUser); if (r.ok) { setFeedbackFa('تصمیم انسانی رد شد.'); await loadHub(); } else setErrorFa(r.errorFa || 'خطا در رد تصمیم.'); })} className="px-2.5 py-1 rounded-lg border border-rose-500 text-rose-700 font-bold cursor-pointer disabled:opacity-50">رد</button>
               </div>
             </div>
@@ -217,7 +217,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                   if (res.ok) { setFeedbackFa(next ? 'Kill Switch فعال شد.' : 'اتوماسیون مجدداً باز شد.'); await loadHub(); }
                   else setErrorFa(res.errorFa || 'تغییر وضعیت Kill Switch ناموفق بود.');
                 })}
-                className={`px-3 py-1.5 rounded-lg font-bold text-white cursor-pointer disabled:opacity-50 ${autoState?.killSwitchEngaged ? 'bg-emerald-600' : 'bg-rose-600'}`}
+                className={`px-3 py-1.5 rounded-lg font-bold text-white cursor-pointer disabled:opacity-50 ${autoState?.killSwitchEngaged ? 'bg-[var(--color-brand-600)]' : 'bg-rose-600'}`}
               >
                 {autoState?.killSwitchEngaged ? 'غیرفعال‌سازی Kill Switch' : 'توقف اضطراری (Kill Switch)'}
               </button>
@@ -229,7 +229,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                   setFeedbackFa(res.ok ? 'وظیفه سندباکس A1 در صف ثبت شد.' : `مسدود شد: ${res.data?.code || res.errorFa}`);
                   await loadHub();
                 })}
-                className="px-3 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50"
               >
                 اجرای تست A1
               </button>
@@ -250,13 +250,13 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
             <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Scale className="w-4 h-4 text-[#176B63]" /> حقوقی و تجاری (Stages 17–20)
+              <Scale className="w-4 h-4 text-[var(--color-brand-600)]" /> حقوقی و تجاری (Stages 17–20)
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-300">
               حقوقی: <strong>{gov?.legal.readinessStatus}</strong> · تجاری: <strong>{gov?.commercial.commercialStatus}</strong> (Entry Gate: {gov?.commercial.commercialEntryGate}) · پرداخت زنده: غیرفعال
             </div>
             <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5 pt-1">
-              <Database className="w-4 h-4 text-[#176B63]" /> تبادل داده و بازار ملک (Stages 27–28)
+              <Database className="w-4 h-4 text-[var(--color-brand-600)]" /> تبادل داده و بازار ملک (Stages 27–28)
             </div>
             <div className="text-[11px] text-slate-600 dark:text-slate-300">
               منابع ثبت‌شده: {toPersianNum(dxSummary?.sourcesCount ?? 0)} (منابع فاقد مجوز مسدود: {toPersianNum(dxSummary?.blockedUnlicensed ?? 0)}) · نوع قیمت: <strong>{marketSummary?.priceKind || 'ASKING_PRICE'}</strong> · معامله واقعی: <strong>{marketSummary?.txStatus || 'NOT_AVAILABLE'}</strong>
@@ -264,7 +264,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
           </div>
           <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
             <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-[#176B63]" /> پایلوت درگاه بیرونی (Stage 26 · SSRF Hardened)
+              <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" /> پایلوت درگاه بیرونی (Stage 26 · SSRF Hardened)
             </div>
             {providers.map((p) => (
               <div key={p.providerId} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between gap-2">
@@ -279,7 +279,7 @@ export const AdminPlatformIntelligenceHub: React.FC<Props> = ({ isVerifiedAdmin,
                     const out = await triggerGatewaySandboxPilot(p.providerId, currentUser);
                     setFeedbackFa(out.ok && out.data?.envelope ? `پاسخ سندباکس ${out.data.envelope.envelopeId} ثبت شد.` : (out.errorFa || 'خطا'));
                   })}
-                  className="px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold shrink-0 cursor-pointer disabled:opacity-50"
+                  className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold shrink-0 cursor-pointer disabled:opacity-50"
                 >
                   تست سندباکس
                 </button>

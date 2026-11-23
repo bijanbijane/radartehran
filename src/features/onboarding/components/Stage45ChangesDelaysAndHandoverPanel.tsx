@@ -183,7 +183,7 @@ export const Stage45ChangesDelaysAndHandoverPanel: React.FC<Stage45ChangesDelays
             <option value="درخواست اصلاح">درخواست اصلاح</option>
             <option value="رد پذیرش با ذکر دلیل">رد پذیرش با ذکر دلیل</option>
           </select>
-          <button type="button" data-testid="del-submit-handover-btn" onClick={handleAttemptHandover} className="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
+          <button type="button" data-testid="del-submit-handover-btn" onClick={handleAttemptHandover} className="rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 cursor-pointer">
             ثبت نتیجه بررسی تحویل نهایی
           </button>
         </div>

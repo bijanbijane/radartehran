@@ -31,15 +31,15 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
   return (
     <section
       aria-label="ارتباط هم‌زمان تحلیل بازار با نقشه"
-      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-4"
+      className="p-4 sm:p-5 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DCE3DF]/80 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border-subtle)]/80 dark:border-slate-800 pb-3">
         <div className="space-y-0.5">
-          <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[#176B63] dark:text-emerald-400" />
+          <h3 className="text-sm font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>همگام‌سازی فضایی با نقشه زنده ({geoScopeFa})</span>
           </h3>
-          <p className="text-[11px] text-[#586760] dark:text-slate-400">
+          <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">
             انتخاب محدوده یا تغییر لایه نقشه بلافاصله هر دو پنل را هم‌سو می‌کند.
           </p>
         </div>
@@ -48,21 +48,21 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
           <button
             type="button"
             onClick={() => onSyncMapLens?.('heatmap')}
-            className="px-2.5 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 hover:bg-[#F6F8F6] dark:hover:bg-slate-800 font-bold text-[#182522] dark:text-slate-200 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 font-bold text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
           >
             لنز هیت‌مپ قیمت
           </button>
           <button
             type="button"
             onClick={() => onSyncMapLens?.('bubble')}
-            className="px-2.5 py-1 rounded-lg border border-[#C5D0CA] dark:border-slate-700 hover:bg-[#F6F8F6] dark:hover:bg-slate-800 font-bold text-[#182522] dark:text-slate-200 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg border border-[var(--color-border-strong)] dark:border-slate-700 hover:bg-[var(--color-bg-canvas)] dark:hover:bg-slate-800 font-bold text-[var(--color-text-primary)] dark:text-slate-200 cursor-pointer"
           >
             لنز حباب قیمتی
           </button>
           <button
             type="button"
             onClick={onOpenFullMap}
-            className="px-2.5 py-1 rounded-lg bg-[#176B63] hover:bg-[#14534E] text-white font-bold flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white font-bold flex items-center gap-1 cursor-pointer"
           >
             <MapPin className="w-3 h-3" />
             <span>نقشه تمام‌صفحه</span>
@@ -71,9 +71,9 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
       </div>
 
       {/* Explicit Spatial Legend with Sparse / Insufficient Data separation */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-[#34433E] dark:text-slate-300 bg-[#F6F8F6] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[#DCE3DF]/80 dark:border-slate-800">
-        <span className="font-bold text-[#182522] dark:text-white">راهنمای نقشه:</span>
-        <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[#176B63] inline-block" />متعادل / زیر ارزش</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-[var(--color-text-secondary)] dark:text-slate-300 bg-[var(--color-bg-canvas)] dark:bg-slate-800/50 p-2.5 rounded-lg border border-[var(--color-border-subtle)]/80 dark:border-slate-800">
+        <span className="font-bold text-[var(--color-text-primary)] dark:text-white">راهنمای نقشه:</span>
+        <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[var(--color-brand-600)] inline-block" />متعادل / زیر ارزش</span>
         <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[#D97706] inline-block" />پرنوسان / نیاز به مذاکره</span>
         <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-xs bg-[#CBD5E1] dark:bg-slate-600 inline-block" />بدون داده زنده کافی (به‌عنوان ارزان رنگی نمی‌شود)</span>
       </div>
@@ -104,18 +104,18 @@ export const MarketMapSyncPanel: React.FC<MarketMapSyncPanelProps> = ({
               }}
               className={`p-3 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${
                 isCurrent
-                  ? 'border-[#176B63] bg-[#EAF3F0]/50 dark:bg-emerald-950/20 dark:border-emerald-500'
-                  : 'border-[#DCE3DF] dark:border-slate-800 hover:border-[#182522] dark:hover:border-slate-600'
+                  ? 'border-[var(--color-brand-600)] bg-[#EAF3F0]/50 dark:bg-emerald-950/20 dark:border-emerald-500'
+                  : 'border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-text-primary)] dark:hover:border-slate-600'
               }`}
             >
               <div className="min-w-0">
-                <div className="font-bold text-[#182522] dark:text-white truncate">{h.name}</div>
-                <div className="text-[10.5px] text-[#586760] dark:text-slate-400">
+                <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">{h.name}</div>
+                <div className="text-[10.5px] text-[var(--color-text-muted)] dark:text-slate-400">
                   {agg.observedSampleCount === 0 ? 'مرجع داخلی (۰ آگهی زنده)' : `${toPersianNum(agg.observedSampleCount)} آگهی زنده`}
                 </div>
               </div>
               <div className="text-left shrink-0">
-                <div className="font-black text-[#182522] dark:text-white">{toPersianNum(uAsk)} م</div>
+                <div className="font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(uAsk)} م</div>
                 {agg.observedSampleCount === 0 && (
                   <ShieldAlert className="w-3 h-3 text-[#94A39B] mr-auto mt-0.5" aria-label="داده محدود" />
                 )}

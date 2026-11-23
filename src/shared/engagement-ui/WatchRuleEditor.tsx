@@ -84,7 +84,7 @@ export const WatchRuleEditor: React.FC<WatchRuleEditorProps> = ({
               cooldownMinutes,
             })
           }
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 cursor-pointer"
+          className="rounded-lg bg-[var(--color-brand-600)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 cursor-pointer"
         >
           ثبت قاعده رصد
         </button>

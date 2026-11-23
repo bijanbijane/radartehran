@@ -23,7 +23,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                 <strong className="text-emerald-700 dark:text-emerald-400">{toPersianNum(selectedHood.rahn80m)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(selectedHood.rahn80m, intlCurrency, radarLocale)})` : ''}</strong>
               </div>
             </button>
-            <button type="button" onClick={() => { setMobileSheetOpen(true); setDesktopCollapsed(false); }} aria-expanded={!desktopCollapsed && mobileSheetOpen} aria-controls="neighborhood-inspector-content" className="px-3 py-2 rounded-[10px] bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 shrink-0 shadow-xs cursor-pointer hover:bg-emerald-700 active:scale-95 transition-all">
+            <button type="button" onClick={() => { setMobileSheetOpen(true); setDesktopCollapsed(false); }} aria-expanded={!desktopCollapsed && mobileSheetOpen} aria-controls="neighborhood-inspector-content" className="px-3 py-2 rounded-[10px] bg-[var(--color-brand-600)] text-white text-xs font-bold flex items-center gap-1 shrink-0 shadow-xs cursor-pointer hover:bg-[var(--color-brand-700)] active:scale-95 transition-all">
               <span>{isEn ? 'Inspect' : 'بررسی محله'}</span>
               {desktopCollapsed ? <ChevronDown className="w-4 h-4 stroke-[1.75] hidden lg:block" aria-hidden="true" /> : null}
               <ChevronUp className={`w-4 h-4 stroke-[1.75] ${desktopCollapsed ? 'lg:hidden' : ''}`} aria-hidden="true" />
@@ -60,7 +60,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   <span>منتخب من ({toPersianNum(favoriteHoodIds.length)})</span>
                 </span>
                 {favoriteHoodIds.length >= 2 && ( <button type="button" onClick={onOpenShortlistMatrix} className="px-2 py-0.5 rounded-[7px] bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10.5px] font-extrabold flex items-center gap-1 cursor-pointer">
-                    <ArrowLeftRight className="w-3 h-3 text-emerald-600" /><span>مقایسه جدولی منتخب‌ها</span>
+                    <ArrowLeftRight className="w-3 h-3 text-[var(--color-brand-600)]" /><span>مقایسه جدولی منتخب‌ها</span>
                   </button> )}
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -68,7 +68,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   const isCurrent = favHood.id === selectedHood.id; const favUnitBuy = convertPricePerSqmToUnit(favHood.buyPerSqm, areaUnit); const favMetricText = mode === 'rent' ? `رهن (${formatAreaShort(80, areaUnit)}): ${toPersianNum(favHood.rahn80m)} م${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(favHood.rahn80m, intlCurrency, radarLocale)}` : ''}` : `${toPersianNum(favUnitBuy)}م${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(favUnitBuy, intlCurrency, radarLocale)}` : ''}`; return ( <div key={favHood.id} className={`flex items-center gap-1 px-2 py-1 rounded-[9px] text-[11px] font-bold border transition ${isCurrent ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent' : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50'}`}>
                       <button type="button" onClick={() => { if (isOtherCity && onSwitchCity) onSwitchCity(favCityId, favHood.id); onSelectNeighborhood(favHood as EvaluatedNeighborhood); }} className="cursor-pointer flex items-center gap-1">
                         <span>{isOtherCity ? `${MULTI_CITY_CONFIGS[favCityId]?.nameFa || ''} · ${favHood.name}` : favHood.name}</span>
-                        <span className={`text-[10px] tabular-nums ${isCurrent ? 'text-emerald-300 dark:text-emerald-700' : 'text-emerald-600 dark:text-emerald-400'}`}>({favMetricText})</span>
+                        <span className={`text-[10px] tabular-nums ${isCurrent ? 'text-emerald-300 dark:text-emerald-700' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`}>({favMetricText})</span>
                       </button>
                       <button type="button" onClick={() => onToggleFavoriteHood(favHood.id)} title="حذف" className="text-slate-400 hover:text-rose-600 mr-0.5 cursor-pointer">
                         <X className="w-3 h-3 stroke-[1.75]" />
@@ -81,7 +81,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
                 <span className="break-words leading-snug">{selectedHood.zone}</span><span aria-hidden="true">·</span>
-                <span className={`whitespace-nowrap ${selectedHood.status === 'green' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : selectedHood.status === 'yellow' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}`}>
+                <span className={`whitespace-nowrap ${selectedHood.status === 'green' ? 'text-[var(--color-brand-600)] dark:text-emerald-400 font-bold' : selectedHood.status === 'yellow' ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}`}>
                   {selectedHood.status === 'green' ? 'متناسب با بودجه' : `${toPersianNum(selectedHood.diffPercent)}٪ بالاتر از بودجه`}
                 </span>
               </div>
@@ -208,16 +208,16 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                   className="flex-1 py-2 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between transition cursor-pointer"
                 >
                   <span className="flex items-center gap-1.5">
-                    <Calculator className="w-3.5 h-3.5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                    <Calculator className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                     <span>ماشین‌حساب کمیسیون و محضر ({selectedHood.name})</span>
                   </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold">{intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(selectedHood.buyPerSqm * targetSqm, intlCurrency, radarLocale) : 'محاسبه آنلاین'}</span>
+                  <span className="text-[10px] text-[var(--color-brand-600)] dark:text-emerald-400 font-extrabold">{intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(selectedHood.buyPerSqm * targetSqm, intlCurrency, radarLocale) : 'محاسبه آنلاین'}</span>
                 </button>
                 {featureFlags.enableAiContractCheck && ( <button
                     type="button" onClick={() => setExpansionModalType('contract')} title="مشاور حقوقی هوشمند قولنامه"
                     className="py-2 px-2.5 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 transition cursor-pointer shrink-0"
                   >
-                    <Scale className="w-3.5 h-3.5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                    <Scale className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                     <span>قولنامه</span>
                   </button> )}
               </div>
@@ -226,7 +226,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
               <div className="grid grid-cols-3 gap-1.5 text-[11px]">
                 {featureFlags.enableAiValuation && (
                   <button type="button" onClick={() => { setSuperModuleInitialTab('valuation'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
-                    <Sparkles className="w-3.5 h-3.5 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" /><span className="truncate">کارشناسی قیمت ملک</span>
+                    <Sparkles className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" /><span className="truncate">کارشناسی قیمت ملک</span>
                   </button>
                 )}
                 {featureFlags.enableFakeAdDetector && (
@@ -236,7 +236,7 @@ export function NeighborhoodInspectorDrawer(props: NeighborhoodInspectorDrawerPr
                 )}
                 {(featureFlags.enableMortgageSimulator || featureFlags.enablePropertySwap) && (
                   <button type="button" onClick={() => { setSuperModuleInitialTab(featureFlags.enableMortgageSimulator ? 'mortgage' : 'swap_suburb'); setShowSuperModulesModal(true); }} className="py-1.5 px-2 rounded-[10px] bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center gap-1 transition cursor-pointer truncate">
-                    <Building2 className="w-3.5 h-3.5 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" /><span className="truncate">وام و تهاتر</span>
+                    <Building2 className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" /><span className="truncate">وام و تهاتر</span>
                   </button>
                 )}
               </div>

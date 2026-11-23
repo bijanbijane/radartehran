@@ -165,31 +165,31 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
 
   return (
     <div data-testid="product-contributions-view" className="w-full max-w-6xl mx-auto px-4 py-6 space-y-5 animate-fadeIn">
-      <div className="border-b border-[#DCE3DF] dark:border-slate-800 pb-4 space-y-3">
+      <div className="border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4 space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <span className="text-[12px] font-bold text-[#176B63] dark:text-emerald-400 flex items-center gap-1.5 mb-1">
+            <span className="text-[12px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 flex items-center gap-1.5 mb-1">
               <MessageSquarePlus className="w-4 h-4 shrink-0" />
               <span>جامعه کاربران، پرسش‌وپاسخ تخصصی و مشارکت مکانی</span>
             </span>
-            <h1 className="text-2xl font-black text-[#182522] dark:text-white">
+            <h1 className="text-2xl font-black text-[var(--color-text-primary)] dark:text-white">
               جامعه تخصصی رادار {cityNameFa} · محله {selectedHood.name}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 text-[11px] font-bold text-[#34433E] dark:text-slate-300 cursor-pointer">
+            <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[11px] font-bold text-[var(--color-text-secondary)] dark:text-slate-300 cursor-pointer">
               <input
                 type="checkbox"
                 checked={includeSeeds}
                 onChange={(e) => setIncludeSeeds(e.target.checked)}
-                className="accent-[#176B63]"
+                className="accent-[var(--color-brand-600)]"
               />
               <span>نمایش محتوای نمونه</span>
             </label>
             <button
               type="button"
               onClick={() => onNavigateView('userspace', 'community')}
-              className="px-3 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 text-xs font-bold text-[#34433E] dark:text-slate-200 hover:border-[#176B63] cursor-pointer whitespace-nowrap"
+              className="px-3 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-bold text-[var(--color-text-secondary)] dark:text-slate-200 hover:border-[var(--color-brand-600)] cursor-pointer whitespace-nowrap"
             >
               تنظیمات جامعه من
             </button>
@@ -208,8 +208,8 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
               }}
               className={`px-3 py-1.5 rounded-[9px] font-bold cursor-pointer whitespace-nowrap shrink-0 transition ${
                 activeTab === tab.id
-                  ? 'bg-[#176B63] text-white'
-                  : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-200'
+                  ? 'bg-[var(--color-brand-600)] text-white'
+                  : 'bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)] dark:text-slate-200'
               }`}
             >
               {tab.labelFa}
@@ -231,7 +231,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
           <button
             type="button"
             onClick={() => onNavigateView('userspace', 'overview')}
-            className="px-3 py-1.5 rounded-[8px] bg-[#176B63] text-white font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white font-bold inline-flex items-center gap-1.5 cursor-pointer"
           >
             <LogIn className="w-3.5 h-3.5" /><span>ورود به حساب</span>
           </button>
@@ -272,7 +272,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
       )}
 
       {loading && posts.length === 0 && (
-        <div className="p-6 rounded-[14px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-xs text-[#586760] text-center font-bold">
+        <div className="p-6 rounded-[14px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-xs text-[var(--color-text-muted)] text-center font-bold">
           در حال دریافت داده‌های جامعه از سرور...
         </div>
       )}
@@ -367,7 +367,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({
                 data-testid="community-load-more-posts"
                 disabled={loadingMore}
                 onClick={loadMorePosts}
-                className="px-4 py-2 rounded-[10px] border border-[#176B63] text-[#176B63] dark:text-emerald-300 font-bold text-xs cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-[10px] border border-[var(--color-brand-600)] text-[var(--color-brand-600)] dark:text-emerald-300 font-bold text-xs cursor-pointer disabled:opacity-50"
               >
                 {loadingMore ? 'در حال بارگذاری...' : 'بارگذاری بیشتر'}
               </button>

@@ -112,7 +112,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
               <MapPin className="w-3.5 h-3.5 stroke-[1.75]" />
               <span>{isArcPinned ? 'کمان نقشه پین شد' : 'پین کمان روی نقشه'}</span>
             </button>
-            <button type="button" onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
+            <button type="button" onClick={handleCopySummary} aria-label="کپی خلاصه مقایسه" title="کپی خلاصه مقایسه در کلیپ‌بورد" className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs ${copied ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
               {copied ? <Check className="w-3.5 h-3.5 stroke-[2]" /> : <Copy className="w-3.5 h-3.5 stroke-[1.75]" />}
               <span>{copied ? 'کپی شد' : 'کپی خلاصه'}</span>
             </button>
@@ -189,7 +189,7 @@ export function CompareModal({ open, onClose, evaluatedNeighborhoods, compareId1
                       )}
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 font-extrabold">
-                          <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <Award className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
                           <span>
                             نبرد تن‌به‌تن: محله {compHood1.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win1)} شاخص</span> و محله {compHood2.name} در <span className="text-emerald-700 dark:text-emerald-400">{toPersianNum(summaryStats.win2)} شاخص</span> برتر است.
                           </span>

@@ -38,7 +38,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-[10px] bg-emerald-600 text-white text-xs font-bold cursor-pointer"
+            className="px-4 py-2 rounded-[10px] bg-[var(--color-brand-600)] text-white text-xs font-bold cursor-pointer"
           >
             بستن پنجره
           </button>
@@ -50,7 +50,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
       <div ref={dialogRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} className="apple-window-sheet bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl w-full p-5 max-h-[88vh] overflow-y-auto focus:outline-none shadow-2xl">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-800 pb-3.5 mb-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0"><Award className="w-4 h-4 stroke-[1.75]" /></span>
+            <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0"><Award className="w-4 h-4 stroke-[1.75]" /></span>
             <div>
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">ثبت ملک زیر قیمت و رزرو کارشناس رسمی محله</h3>
               {resolveCityIdForNeighborhood(agencyModalTab === 'reserve_sponsor' ? sponsorHoodId : bargainHoodId) !== activeCity && (
@@ -97,7 +97,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
         {agencyModalTab === 'submit_bargain' && (
           <form onSubmit={onSubmitBargainListing} className="space-y-3.5 text-xs">
             <div className="bg-emerald-50/90 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/70 rounded-[12px] p-3 text-emerald-900 dark:text-emerald-200 leading-relaxed flex items-start gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0 mt-0.5" />
               <div>
                 سیستم به صورت خودکار قیمت پیشنهادی شما را با میانگین روز محله مقایسه می‌کند.{' '}
                 <strong>فقط فایل‌هایی که حداقل ۱۰٪ زیر میانگین محله باشند</strong> تایید و منتشر
@@ -130,7 +130,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
                 <button
                   type="button"
                   onClick={handleNlpExtract}
-                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-[8px] text-[11px] shrink-0 transition cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1.5 bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold rounded-[8px] text-[11px] shrink-0 transition cursor-pointer flex items-center gap-1"
                 >
                   <Sparkles className="w-3 h-3" />
                   تحلیل و ثبت
@@ -229,7 +229,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
               {liveBargainCheck.isEligible ? (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5 font-semibold">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
                     <span>
                       واجد شرایط ثبت ({toPersianNum(liveBargainCheck.discountPercent)}٪ زیر میانگین
                       محله)
@@ -274,7 +274,7 @@ export function AgencyModal({ open, onClose, agencyModalTab, setAgencyModalTab, 
             )}
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition cursor-pointer"
+              className="w-full py-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-xs transition cursor-pointer"
             >
               ثبت فوری فایل در محله {targetBargainHood.name}
             </button>

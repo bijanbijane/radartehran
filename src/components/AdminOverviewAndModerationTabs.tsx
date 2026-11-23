@@ -130,7 +130,7 @@ export function AdminOverviewAndModerationTabs(
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => onAdminApproveSponsor(req)} className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition cursor-pointer">
+                    <button type="button" onClick={() => onAdminApproveSponsor(req)} className="px-3 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold transition cursor-pointer">
                       تایید و انتشار
                     </button>
                     <button type="button" onClick={() => onAdminDeleteSponsorRequest(req.id)} className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold transition cursor-pointer">
@@ -153,7 +153,7 @@ export function AdminOverviewAndModerationTabs(
           <span className="text-slate-700 dark:text-slate-200">
             لیست شماره موبایل متقاضیان فایل‌های زیر قیمت ({toPersianNum((buyerLeads || []).length)} نفر):
           </span>
-          <button type="button" onClick={onDownloadBuyerLeadsCsv} className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition cursor-pointer">
+          <button type="button" onClick={onDownloadBuyerLeadsCsv} className="px-3.5 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition cursor-pointer">
             <Download className="w-4 h-4 stroke-[1.75]" />
             <span>دانلود فایل CSV</span>
           </button>
@@ -228,7 +228,7 @@ export function AdminOverviewAndModerationTabs(
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <form onSubmit={onAdminQuickPriceSave} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-          <Edit3 className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <Edit3 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>ویرایش دستی قیمت خرید و رهن محله‌ها</span>
         </div>
         <div>
@@ -279,7 +279,7 @@ export function AdminOverviewAndModerationTabs(
             </div>
           );
         })()}
-        <button type="submit" className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer">
+        <button type="submit" className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer">
           ذخیره فوری قیمت محله
         </button>
       </form>
@@ -287,17 +287,17 @@ export function AdminOverviewAndModerationTabs(
       <div className="space-y-4">
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>اجرای دستی رصد عمیق ۲ ساعته</span>
           </div>
-          <button type="button" onClick={onDeepWebSync} disabled={deepSyncing} className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer disabled:opacity-50">
+          <button type="button" onClick={onDeepWebSync} disabled={deepSyncing} className="w-full py-2.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer disabled:opacity-50">
             {deepSyncing ? 'در حال بروزرسانی عمیق رادار...' : 'اجرای فوری رصد عمیق بازار، هوا و ترافیک'}
           </button>
         </div>
 
         <form onSubmit={onAdminChangePassword} className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-2.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-            <KeyRound className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <KeyRound className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>قفل موقت نشست فعلی پنل مدیریت (در حافظه مرورگر)</span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">احراز هویت اصلی از طریق Google Auth انجام می‌شود؛ این رمز صرفاً برای قفل صفحه‌نمایش در همین نشست فعال است و روی سرور ذخیره نمی‌شود.</p>

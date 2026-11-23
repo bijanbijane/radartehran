@@ -48,10 +48,10 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Calculator className="w-4 h-4 text-emerald-600" />
+            <Calculator className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>تاریخچه گزارش‌های ارزش‌گذاری ملک ({toPersianNum(savedValuations.length)})</span>
           </h2>
-          <button type="button" onClick={() => onNavigateView?.('tools', 'valuation')} className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => onNavigateView?.('tools', 'valuation')} className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             ارزش‌گذاری جدید
           </button>
         </div>
@@ -97,7 +97,7 @@ export const AccountActivityAndValuationsPanel: React.FC<AccountActivityAndValua
       {/* Unified Activity Stream */}
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-          <History className="w-4 h-4 text-emerald-600" />
+          <History className="w-4 h-4 text-[var(--color-brand-600)]" />
           <span>خط زمانی فعالیت‌های حساب</span>
         </h2>
         {timeline.length === 0 ? (

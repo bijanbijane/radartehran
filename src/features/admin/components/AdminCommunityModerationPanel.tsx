@@ -126,7 +126,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <button type="button" disabled={busyId === c.id} onClick={() => handleDataDecision(c.id, c.titleFa, 'approved')} className="px-2 py-1 rounded-lg bg-emerald-600 text-white font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50">
+            <button type="button" disabled={busyId === c.id} onClick={() => handleDataDecision(c.id, c.titleFa, 'approved')} className="px-2 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50">
               <CheckCircle2 className="w-3.5 h-3.5" /><span>تأیید ممیز</span>
             </button>
             <button type="button" disabled={busyId === c.id} onClick={() => handleDataDecision(c.id, c.titleFa, 'applied')} className="px-2 py-1 rounded-lg bg-sky-700 text-white font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50">
@@ -227,7 +227,7 @@ export const AdminCommunityModerationPanel: React.FC<Props> = ({
                     appendAdminAuditLog({ actorRole: activeRole, actorLabelFa: 'مرجع بازبینی', actionCode: 'COMMUNITY_APPEAL_OVERTURNED', targetType: 'listing', targetId: ap.targetId, reasonFa: moderatorNoteFa, severity: 'info' });
                     onFeedback(`اعتراض ${ap.id} پذیرفته شد و تصمیم قبلی لغو گردید.`);
                   })}
-                  className="px-2 py-0.5 rounded bg-emerald-600 text-white font-bold cursor-pointer disabled:opacity-50"
+                  className="px-2 py-0.5 rounded bg-[var(--color-brand-600)] text-white font-bold cursor-pointer disabled:opacity-50"
                 >
                   پذیرش اعتراض
                 </button>

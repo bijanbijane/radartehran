@@ -157,7 +157,7 @@ export function SearchHistory({
         </span>
         {recentSearches.map((name) => (
           <span key={name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200/80 dark:hover:bg-slate-700 transition">
-            <button type="button" onClick={(e) => handleItemClick(e, name)} className="hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer">{name}</button>
+            <button type="button" onClick={(e) => handleItemClick(e, name)} className="hover:text-[var(--color-brand-600)] dark:hover:text-emerald-400 cursor-pointer">{name}</button>
             {showIndividualRemove && (
               <button type="button" aria-label={`حذف ${name} از تاریخچه`} onClick={(e) => { e.stopPropagation(); removeSearch(name); }} className="text-slate-400 hover:text-rose-500 rounded-full p-0.5 cursor-pointer">
                 <X className="w-3 h-3" />

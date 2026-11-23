@@ -193,7 +193,7 @@ export const Stage40ReportsSubpanel: React.FC = () => {
                 </div>
                 <div className="flex gap-2 pt-1">
                   {step > 1 && <button type="button" onClick={() => setStep((s) => s - 1)} className="rounded border border-slate-700 px-2.5 py-1 text-[11px] text-slate-300">مرحله قبل (حفظ تنظیمات)</button>}
-                  <button type="button" data-testid="go-stage40-preview-btn" onClick={() => setViewTab('preview')} className="rounded bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white">مشاهده پیش‌نمایش و خروجی</button>
+                  <button type="button" data-testid="go-stage40-preview-btn" onClick={() => setViewTab('preview')} className="rounded bg-[var(--color-brand-600)] px-3 py-1 text-[11px] font-bold text-white">مشاهده پیش‌نمایش و خروجی</button>
                 </div>
               </div>
 

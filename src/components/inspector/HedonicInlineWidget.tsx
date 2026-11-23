@@ -117,7 +117,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
           </h3>
         </div>
         <div className="text-left">
-          <div className="radar-tabular-num text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
+          <div className="radar-tabular-num text-lg font-extrabold text-[var(--color-brand-600)] dark:text-emerald-400">
             {formatMillionToVerbalPersian(estimation.estimatedTotalMillion)} ({formatMillionTomanAsIntlCurrency(estimation.estimatedTotalMillion, intlCurrency, radarLocale)})
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -191,7 +191,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
                 onClick={item.toggle}
                 aria-pressed={item.active}
                 aria-label={item.label}
-                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer ${item.active ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                className={`radar-interactive-chip rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer ${item.active ? 'bg-[var(--color-brand-600)] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
               >
                 {item.label}
               </button>
@@ -213,7 +213,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
           <div className="rounded-xl bg-slate-50 dark:bg-slate-950/80 p-3">
             <div className="flex flex-wrap items-center justify-between text-xs text-slate-700 dark:text-slate-300">
               <span>تبدیل رهن و اجاره (نرخ عرف: {fmt.format(monthlyConversionRate)}٪ ماهانه)</span>
-              <span className="text-emerald-600 dark:text-emerald-400">بازده اجاره سالانه (Cap Rate): {fmt.format(estimation.annualCapRatePercent)}٪</span>
+              <span className="text-[var(--color-brand-600)] dark:text-emerald-400">بازده اجاره سالانه (Cap Rate): {fmt.format(estimation.annualCapRatePercent)}٪</span>
             </div>
             <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
@@ -244,7 +244,7 @@ export const HedonicInlineWidget: React.FC<HedonicInlineWidgetProps> = ({
               onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
               className="radar-tabular-num mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
             />
-            <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">{offeredValidation.verbalPersianText}</div>
+            <div className="mt-1 text-xs text-[var(--color-brand-600)] dark:text-emerald-400">{offeredValidation.verbalPersianText}</div>
             {offeredValidation.warningMessage && (
               <div className="mt-1 flex items-center justify-between rounded-lg bg-amber-500/15 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
                 <span>{offeredValidation.warningMessage}</span>

@@ -6,13 +6,20 @@ import type {
 import { validateAndSanitizeTelemetryItem } from './telemetryValidator';
 import { DurableTelemetryBufferQueue } from './telemetryBufferQueue';
 import { BoundedTelemetryAggregationEngine } from './telemetryAggregator';
+import { deriveDailyTelemetrySalt } from './telemetrySessionSalt';
+import { toTehranDateKey } from './telemetryValidator';
+
+export const TELEMETRY_MAX_BATCH_SIZE = 500;
 
 export interface TelemetryIngestOutcome {
+  readonly receivedCount: number;
   readonly acceptedCount: number;
   readonly deduplicatedCount: number;
   readonly droppedPiiCount: number;
   readonly invalidCount: number;
   readonly failedStorageCount: number;
+  readonly truncatedCount: number;
+  readonly rejectedCount: number;
   readonly eventReceipts: Array<{
     readonly eventId: string;
     readonly status: 'ACCEPTED' | 'DEDUPLICATED' | 'REJECTED';
@@ -66,6 +73,7 @@ export class TelemetryDataProcessingService {
     let droppedPiiCount = 0;
     let invalidCount = 0;
     let failedStorageCount = 0;
+    const receivedCount = items.length;
 
     const eventReceipts: Array<{
       eventId: string;
@@ -73,13 +81,29 @@ export class TelemetryDataProcessingService {
       reason?: string;
     }> = [];
 
-    // Bounded batch size enforcement (max 500 items per call)
-    const boundedItems = items.slice(0, 500);
+    if (receivedCount > TELEMETRY_MAX_BATCH_SIZE) {
+      return {
+        receivedCount,
+        acceptedCount: 0,
+        deduplicatedCount: 0,
+        droppedPiiCount: 0,
+        invalidCount: 0,
+        failedStorageCount: 0,
+        truncatedCount: receivedCount - TELEMETRY_MAX_BATCH_SIZE,
+        rejectedCount: receivedCount,
+        eventReceipts: [],
+      };
+    }
 
-    for (const item of boundedItems) {
+  const dateKey = toTehranDateKey(options.nowMs ?? Date.now());
+    const dailySalt = deriveDailyTelemetrySalt(dateKey);
+
+    for (const item of items) {
       const validation: TelemetryValidationResult = validateAndSanitizeTelemetryItem(item, {
         nowMs: options.nowMs,
         appVersion: options.appVersion,
+        dailySalt,
+        origin: 'web_client',
       });
 
       if (!validation.valid || !validation.sanitizedEvent) {
@@ -126,28 +150,44 @@ export class TelemetryDataProcessingService {
         continue;
       }
 
-      // Successful durable enqueue -> pass to aggregator
       acceptedCount += 1;
       this.totalIngested += 1;
-      this.aggregator.aggregateEvent(event);
+      const aggregated = this.aggregator.aggregateEvent(event);
       eventReceipts.push({
         eventId: event.eventId,
         status: 'ACCEPTED',
+        reason: aggregated ? undefined : 'RESTRICTED_SKIPPED_PUBLIC_AGGREGATE',
       });
     }
 
     return {
+      receivedCount,
       acceptedCount,
       deduplicatedCount,
       droppedPiiCount,
       invalidCount,
       failedStorageCount,
+      truncatedCount: 0,
+      rejectedCount: invalidCount + droppedPiiCount + failedStorageCount,
       eventReceipts,
     };
   }
 
-  public getAggregatedMetrics() {
+  public getPublicAggregatedMetrics() {
     return this.aggregator.generateSnapshots();
+  }
+
+  public getAggregatedMetrics() {
+    return this.getPublicAggregatedMetrics();
+  }
+
+  public replayJournalBatchToAggregator(maxBatch = 200): number {
+    const batch = this.bufferQueue.readBatch(maxBatch);
+    let replayed = 0;
+    for (const rec of batch) {
+      if (this.aggregator.aggregateEvent(rec.payload)) replayed += 1;
+    }
+    return replayed;
   }
 
   public getDiagnostics(): TelemetryServiceMetrics {

@@ -55,7 +55,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
         <button
           type="button"
           onClick={onResetCategoryToResidential}
-          className="px-4 py-2 rounded-[9px] bg-[#176B63] text-white font-bold cursor-pointer"
+          className="px-4 py-2 rounded-[9px] bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
         >
           بازگشت به ارزش‌گذاری واحد مسکونی
         </button>
@@ -73,10 +73,10 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
       {/* Main Estimation Card */}
       <div className="p-5 rounded-[14px] bg-[#EAF3F0] dark:bg-emerald-950/30 border border-[#B8D7CE] dark:border-emerald-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-bold text-[#14534E] dark:text-emerald-300">
+          <span className="font-bold text-[var(--color-brand-700)] dark:text-emerald-300">
             ارزش برآوردی مدل (غیررسمی) · {VALUATION_PURPOSE_LABELS_FA[purpose]} · {h.hoodName}
           </span>
-          <span className="text-[10.5px] font-bold text-[#586760] dark:text-slate-400">
+          <span className="text-[10.5px] font-bold text-[var(--color-text-muted)] dark:text-slate-400">
             {result.snapshot.modelId} · {result.modelVersion}
           </span>
         </div>
@@ -85,7 +85,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
           <div>
             {rentRes ? (
               <>
-                <div className="text-3xl font-black text-[#182522] dark:text-white" data-testid="valuation-primary-rent-output">
+                <div className="text-3xl font-black text-[var(--color-text-primary)] dark:text-white" data-testid="valuation-primary-rent-output">
                   {toPersianNum(rentRes.estimatedFullRahnMillion)}{' '}
                   <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیون تومان (برآورد محدود رهن کامل)</span>
                 </div>
@@ -95,7 +95,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
               </>
             ) : currentRes ? (
               <>
-                <div className="text-3xl font-black text-[#182522] dark:text-white" data-testid="valuation-primary-current-output">
+                <div className="text-3xl font-black text-[var(--color-text-primary)] dark:text-white" data-testid="valuation-primary-current-output">
                   {toPersianNum(h.hedonicTotalBillion)}{' '}
                   <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیارد تومان (ارزش جاری فروش دارایی)</span>
                 </div>
@@ -105,7 +105,7 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
               </>
             ) : (
               <>
-                <div className="text-3xl font-black text-[#182522] dark:text-white" data-testid="valuation-primary-sale-output">
+                <div className="text-3xl font-black text-[var(--color-text-primary)] dark:text-white" data-testid="valuation-primary-sale-output">
                   {toPersianNum(h.hedonicTotalBillion)}{' '}
                   <span className="text-sm font-bold text-[#48534F] dark:text-slate-300">میلیارد تومان</span>
                 </div>
@@ -117,9 +117,9 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
             )}
           </div>
 
-          <div className="text-left bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 rounded-[10px] px-3 py-2">
-            <div className="text-[10px] text-[#586760]">بازه حساسیت پارامتری مدل (±{toPersianNum(result.uncertainty.bandPercent)}٪)</div>
-            <strong className="text-xs font-black text-[#182522] dark:text-white">
+          <div className="text-left bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 rounded-[10px] px-3 py-2">
+            <div className="text-[10px] text-[var(--color-text-muted)]">بازه حساسیت پارامتری مدل (±{toPersianNum(result.uncertainty.bandPercent)}٪)</div>
+            <strong className="text-xs font-black text-[var(--color-text-primary)] dark:text-white">
               {rentRes
                 ? `${toPersianNum(rentRes.sensitivityRahnRangeMillion.min)} تا ${toPersianNum(rentRes.sensitivityRahnRangeMillion.max)} میلیون رهن`
                 : `${toPersianNum((h.sensitivityRangeMillion.min / 1000).toFixed(2))} تا ${toPersianNum((h.sensitivityRangeMillion.max / 1000).toFixed(2))} میلیارد`}
@@ -130,31 +130,31 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-[#B8D7CE] dark:border-emerald-800/70 tabular-nums">
           {purpose === 'sale' ? (
             <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-              <span className="text-[10.5px] text-[#586760] block">فروش فوری نقدی (-۱۲٪)</span>
+              <span className="text-[10.5px] text-[var(--color-text-muted)] block">فروش فوری نقدی (-۱۲٪)</span>
               <strong className="font-black text-[#875000] dark:text-amber-300">{toPersianNum((h.fastSaleTotalMillion / 1000).toFixed(2))} میلیارد</strong>
             </div>
           ) : (
             <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-              <span className="text-[10.5px] text-[#586760] block">وضعیت تبدیل اجاره ماهانه</span>
-              <strong className="font-black text-[#586760] dark:text-slate-300">نیازمند نرخ توافقی طرفین</strong>
+              <span className="text-[10.5px] text-[var(--color-text-muted)] block">وضعیت تبدیل اجاره ماهانه</span>
+              <strong className="font-black text-[var(--color-text-muted)] dark:text-slate-300">نیازمند نرخ توافقی طرفین</strong>
             </div>
           )}
           <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-            <span className="text-[10.5px] text-[#586760] block">رهن کامل شاخص محله</span>
-            <strong className="font-black text-[#176B63] dark:text-emerald-400">{toPersianNum(h.estimatedRahnMillion)} میلیون</strong>
+            <span className="text-[10.5px] text-[var(--color-text-muted)] block">رهن کامل شاخص محله</span>
+            <strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-400">{toPersianNum(h.estimatedRahnMillion)} میلیون</strong>
           </div>
           <div className="p-2.5 rounded-[8px] bg-white/80 dark:bg-slate-900/80">
-            <span className="text-[10.5px] text-[#586760] block">شاخص پایه محله (غیرفایل)</span>
-            <strong className="font-black text-[#182522] dark:text-white">{toPersianNum(convertPricePerSqmToUnit(result.v64NeighborhoodDealPerSqm, areaUnit))} م/{unitLabel}</strong>
+            <span className="text-[10.5px] text-[var(--color-text-muted)] block">شاخص پایه محله (غیرفایل)</span>
+            <strong className="font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(convertPricePerSqmToUnit(result.v64NeighborhoodDealPerSqm, areaUnit))} م/{unitLabel}</strong>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <button type="button" onClick={onSaveSnapshot} data-testid="save-valuation-report-btn" className="px-3.5 py-2 rounded-[9px] bg-[#176B63] text-white font-bold flex items-center gap-1.5 cursor-pointer">
+          <button type="button" onClick={onSaveSnapshot} data-testid="save-valuation-report-btn" className="px-3.5 py-2 rounded-[9px] bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1.5 cursor-pointer">
             <BookmarkPlus className="w-4 h-4" />
             <span>ذخیره این گزارش ارزش‌گذاری</span>
           </button>
-          <button type="button" onClick={onCopySummary} className="px-3.5 py-2 rounded-[9px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 font-bold text-[#182522] dark:text-white flex items-center gap-1.5 cursor-pointer">
+          <button type="button" onClick={onCopySummary} className="px-3.5 py-2 rounded-[9px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 font-bold text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5 cursor-pointer">
             {copied ? <Check className="w-4 h-4 text-[#176B4C]" /> : <Copy className="w-4 h-4" />}
             <span>{copied ? 'خلاصه کپی شد' : 'کپی گزارش تحلیلی'}</span>
           </button>
@@ -163,21 +163,21 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
 
       {/* 4 Separated Quality & Epistemic Axes */}
       <div className="grid grid-cols-2 gap-2 text-[11px] tabular-nums" data-testid="valuation-four-quality-axes">
-        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[#586760] block">۱. کیفیت تکمیل ورودی ملک</span>
-          <strong className="font-black text-[#182522] dark:text-white">{toPersianNum(result.completenessPercent)}٪ وزن‌دهی منشأ</strong>
+        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800">
+          <span className="text-[var(--color-text-muted)] block">۱. کیفیت تکمیل ورودی ملک</span>
+          <strong className="font-black text-[var(--color-text-primary)] dark:text-white">{toPersianNum(result.completenessPercent)}٪ وزن‌دهی منشأ</strong>
         </div>
-        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[#586760] block">۲. کفایت نمونه مقایسه</span>
-          <strong className="font-black text-[#182522] dark:text-white">{result.sufficiency.labelFa}</strong>
+        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800">
+          <span className="text-[var(--color-text-muted)] block">۲. کفایت نمونه مقایسه</span>
+          <strong className="font-black text-[var(--color-text-primary)] dark:text-white">{result.sufficiency.labelFa}</strong>
         </div>
-        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[#586760] block">۳. حساسیت پارامتری مدل</span>
+        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800">
+          <span className="text-[var(--color-text-muted)] block">۳. حساسیت پارامتری مدل</span>
           <strong className="font-black text-[#875000] dark:text-amber-300">{result.uncertainty.labelFa}</strong>
         </div>
-        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800">
-          <span className="text-[#586760] block">۴. وضعیت اعتبارسنجی مدل</span>
-          <strong className="font-black text-[#182522] dark:text-white">{result.validation.labelFa}</strong>
+        <div className="p-2.5 rounded-[10px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800">
+          <span className="text-[var(--color-text-muted)] block">۴. وضعیت اعتبارسنجی مدل</span>
+          <strong className="font-black text-[var(--color-text-primary)] dark:text-white">{result.validation.labelFa}</strong>
         </div>
       </div>
 
@@ -196,10 +196,10 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
       </div>
 
       {purpose === 'sale' && h.sellerPriceEvaluation && (
-        <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-1">
-          <div className="font-black text-[#182522] dark:text-white flex items-center justify-between">
+        <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-1">
+          <div className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center justify-between">
             <span>سنجش قیمت اعلامی فروشنده</span>
-            <span className="text-[#176B63]">{h.sellerPriceEvaluation.verdictLabel}</span>
+            <span className="text-[var(--color-brand-600)]">{h.sellerPriceEvaluation.verdictLabel}</span>
           </div>
           <p className="text-[11px] text-[#48534F] dark:text-slate-300 leading-relaxed">{h.sellerPriceEvaluation.verdictDescription}</p>
         </div>
@@ -217,18 +217,18 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
       )}
 
       {/* Factor Breakdown */}
-      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
-        <h3 className="font-black text-[#182522] dark:text-white">ضرایب اثرگذار در برآورد</h3>
-        <div className="divide-y divide-[#DCE3DF] dark:divide-slate-800 tabular-nums">
+      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
+        <h3 className="font-black text-[var(--color-text-primary)] dark:text-white">ضرایب اثرگذار در برآورد</h3>
+        <div className="divide-y divide-[var(--color-border-subtle)] dark:divide-slate-800 tabular-nums">
           {h.factors.map((f) => (
             <div key={f.id} className="py-2 flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="font-bold text-[#182522] dark:text-white">
-                  {f.label}: <span className="font-normal text-[#586760]">{f.valueLabel}</span>
+                <div className="font-bold text-[var(--color-text-primary)] dark:text-white">
+                  {f.label}: <span className="font-normal text-[var(--color-text-muted)]">{f.valueLabel}</span>
                 </div>
-                <div className="text-[10.5px] text-[#586760] truncate">{f.explanation}</div>
+                <div className="text-[10.5px] text-[var(--color-text-muted)] truncate">{f.explanation}</div>
               </div>
-              <strong className={f.impactPercent > 0 ? 'text-[#176B4C]' : f.impactPercent < 0 ? 'text-[#B3261E]' : 'text-[#586760]'}>
+              <strong className={f.impactPercent > 0 ? 'text-[#176B4C]' : f.impactPercent < 0 ? 'text-[#B3261E]' : 'text-[var(--color-text-muted)]'}>
                 {f.impactPercent > 0 ? '+' : ''}{toPersianNum(f.impactPercent)}٪
               </strong>
             </div>
@@ -237,19 +237,19 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
       </div>
 
       {/* Separated Comparable Properties vs Neighborhood Baseline */}
-      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
+      <div className="p-4 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[#176B63]" />
+          <h3 className="font-black text-[var(--color-text-primary)] dark:text-white flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>شواهد مقایسه‌ای ({toPersianNum(result.sufficiency.usableListingsCount)} آگهی کامل · {toPersianNum(result.sufficiency.verifiedTransactionCount)} معامله ثبتی)</span>
           </h3>
-          <span className="text-[10.5px] text-[#586760]">تفکیک فایل از شاخص پایه محله</span>
+          <span className="text-[10.5px] text-[var(--color-text-muted)]">تفکیک فایل از شاخص پایه محله</span>
         </div>
 
         <div className="p-2.5 rounded-[8px] bg-[#EEF5FC]/70 dark:bg-sky-950/30 border border-[#BBD6F2] dark:border-sky-800 flex items-center justify-between gap-2 tabular-nums">
           <div>
             <div className="font-bold text-[#1D4E89] dark:text-sky-300">{result.neighborhoodBaselineEvidence.title}</div>
-            <div className="text-[10px] text-[#586760] dark:text-slate-400">
+            <div className="text-[10px] text-[var(--color-text-muted)] dark:text-slate-400">
               {COMPARABLE_EVIDENCE_KIND_LABELS_FA[result.neighborhoodBaselineEvidence.evidenceKind]} · {result.neighborhoodBaselineEvidence.observedAt}
             </div>
           </div>
@@ -260,25 +260,25 @@ export const ValuationResultsPanel: React.FC<ValuationResultsPanelProps> = ({
 
         <div className="space-y-2 tabular-nums">
           {result.comparables.length === 0 ? (
-            <div className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-[11px] text-[#586760]">
+            <div className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/60 text-[11px] text-[var(--color-text-muted)]">
               فایل دارای متراژ و قیمت مستقل در این محله ثبت نشده است؛ برآورد صرفاً بر شاخص مرجع محله بالا تکیه دارد.
             </div>
           ) : (
             result.comparables.map((c) => (
               <div key={c.id} className="p-2.5 rounded-[8px] bg-[#F8F9FA] dark:bg-slate-800/70 flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-bold text-[#182522] dark:text-white truncate">
+                  <div className="font-bold text-[var(--color-text-primary)] dark:text-white truncate">
                     {c.title} {c.sqm ? `(${toPersianNum(c.sqm)} متر)` : ''}
                   </div>
-                  <div className="text-[10.5px] text-[#586760]">
+                  <div className="text-[10.5px] text-[var(--color-text-muted)]">
                     {COMPARABLE_EVIDENCE_KIND_LABELS_FA[c.evidenceKind]} · {c.street} · {c.similarityReason}
                   </div>
                 </div>
                 <div className="text-left shrink-0">
-                  <strong className="font-black text-[#176B63] dark:text-emerald-400">
+                  <strong className="font-black text-[var(--color-brand-600)] dark:text-emerald-400">
                     {toPersianNum(convertPricePerSqmToUnit(c.askPerSqmMillion, areaUnit))} م/{unitLabel}
                   </strong>
-                  <div className="text-[10px] text-[#586760]">شباهت: {toPersianNum(c.similarityScore)}٪</div>
+                  <div className="text-[10px] text-[var(--color-text-muted)]">شباهت: {toPersianNum(c.similarityScore)}٪</div>
                 </div>
               </div>
             ))

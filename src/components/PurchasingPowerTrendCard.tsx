@@ -75,7 +75,7 @@ export function PurchasingPowerTrendCard({
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
           <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
             {sqmDiff >= 0 ? (
-              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <TrendingUp className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
             ) : (
               <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             )}

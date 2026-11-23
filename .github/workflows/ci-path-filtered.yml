@@ -1,0 +1,86 @@
+name: Tehran Radar Path-Filtered Checks
+
+on:
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: path-filtered-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      api: ${{ steps.filter.outputs.api }}
+      contracts: ${{ steps.filter.outputs.contracts }}
+      worker: ${{ steps.filter.outputs.worker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'src/**'
+              - 'index.html'
+              - 'vite.config.ts'
+              - 'apps/frontend/**'
+            api:
+              - 'apps/api/**'
+              - 'server/**'
+              - 'src/utils/server*.ts'
+              - 'src/cells/**'
+            contracts:
+              - 'packages/contracts/**'
+            worker:
+              - 'worker/**'
+              - 'wrangler.jsonc'
+
+  frontend-gates:
+    needs: detect
+    if: needs.detect.outputs.frontend == 'true' || needs.detect.outputs.worker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:worker
+      - run: npm run build
+
+  api-gates:
+    needs: detect
+    if: needs.detect.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run arch:check
+      - run: npm run test:contracts
+
+  contracts-gates:
+    needs: detect
+    if: needs.detect.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:contracts

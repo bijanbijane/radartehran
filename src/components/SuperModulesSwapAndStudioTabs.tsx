@@ -9,7 +9,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
     }
     return `✨ معرفی فایل خاص و لوکس در تاپ لوکیشن ${hName}\nسازه‌ای مهندسی‌ساز با متریال برند وارداتی\nواحد ${areaStr} پلان تفکیکی با ۲ کله غرق در نور (ارزش کارشناسی: ${toPersianNum(totB)} میلیارد${intlTotStr})\nسالن پرده‌خور، آشپزخانه فول مدرن، مشاعات هتلی، لابی شیک و پارکینگ اختصاصی\nسند ششدانگ تک‌برگ آماده انتقال قطعی در دفتر اسناد رسمی.`;
   }, [activeHood.name, valSqm, areaUnit, valBedrooms, fairPerSqm, fairTotalMillion, fullRahnMillion, aiAdTone, intlCurrency, locale]); if (activeTab === 'swap_suburb') { return ( <div className="grid grid-cols-1 lg:grid-cols-12 gap-4"> <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
-          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"> <Building2 className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5"> <Building2 className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>محاسبه‌گر امتیاز تعاونی‌های مسکن منطقه ۲۲ چیتگر</span> </div>
           <div className="grid grid-cols-3 gap-2 text-[10px]"> <div>
               <label className="text-slate-500 dark:text-slate-400">واریزی تا امروز (م)</label> <NumericDraftInput aria-label="واریزی تا امروز" min={100} max={20000} fallback={1800} value={coopPaidMillion} onValueChange={setCoopPaidMillion} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 font-bold text-slate-900 dark:text-slate-100 mt-0.5" />
@@ -40,7 +40,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
         <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>سود مهاجرت مالی بین کلان‌شهرها</span>
             </span>
             <select aria-label="شهر مقصد مهاجرت" value={targetMigrationCity} onChange={(e) => setTargetMigrationCity(e.target.value as CityId)} className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-bold text-slate-900 dark:text-slate-100 text-xs">
@@ -69,10 +69,10 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
         <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <ClipboardCheck className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+              <ClipboardCheck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
               <span>چک‌لیست ۱۲گانه بازدید حضوری آپارتمان</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-xs tabular-nums">
+            <span className="px-2 py-0.5 rounded-full bg-[var(--color-brand-600)] text-white font-black text-xs tabular-nums">
               امتیاز: {toPersianNum(checklistScore)} / ۱۰۰
             </span>
           </div>
@@ -88,7 +88,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
                   checklistChecks[item.key] ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-600 dark:border-emerald-500 text-emerald-900 dark:text-emerald-200' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
                 }`}
               >
-                <CheckCircle2 className={`w-4 h-4 shrink-0 ${checklistChecks[item.key] ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'}`} />
+                <CheckCircle2 className={`w-4 h-4 shrink-0 ${checklistChecks[item.key] ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'}`} />
                 <span className="leading-tight">{item.label}</span>
               </button> ))}
           </div>
@@ -109,7 +109,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
                 if (visitTimerRef.current !== null) window.clearTimeout(visitTimerRef.current);
                 visitTimerRef.current = window.setTimeout(() => { visitTimerRef.current = null; setVisitSaveNotice(''); }, 2500);
               }}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer transition"
+              className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer transition"
             >
               + ثبت در دفترچه بازدیدها
             </button>
@@ -122,7 +122,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
         </div>
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-            <Compass className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <Compass className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>کیفیت آب شرب، نویز و قنات‌های محله {activeHood.name}</span>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2 text-[11px]">
@@ -160,7 +160,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-            <GraduationCap className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <GraduationCap className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>رادار مدارس برتر، سمپاد و آموزش در محله {activeHood.name}</span>
           </div>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
@@ -183,7 +183,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
         </div>
         <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
           <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-            <Layers className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <Layers className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>خطوط مترو آینده و ایمنی گسل زلزله</span>
           </div>
           <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3.5 space-y-2">
@@ -219,7 +219,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
       <div className="lg:col-span-6 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+            <Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
             <span>استودیو هوشمند آگهی‌نویسی املاک</span>
           </span>
           <div className="flex items-center gap-1 text-[10px]">
@@ -227,7 +227,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
               { id: 'vip' as const, label: 'VIP لوکس' }, { id: 'bargain' as const, label: 'شکار قیمتی' }, { id: 'investor' as const, label: 'سرمایه‌گذاری' }, ].map((t) => ( <button
                 key={t.id} type="button" onClick={() => setAiAdTone(t.id)}
                 className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition ${
-                  aiAdTone === t.id ? 'bg-slate-900 dark:bg-emerald-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  aiAdTone === t.id ? 'bg-slate-900 dark:bg-[var(--color-brand-600)] text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                 }`}
               >
                 {t.label} </button>
@@ -237,7 +237,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           {generatedAdText} </pre>
         <button
           type="button"
-          onClick={() => { navigator.clipboard?.writeText(generatedAdText).catch(() => {}); setCopiedAdNotice(true); if (adCopyTimerRef.current !== null) window.clearTimeout(adCopyTimerRef.current); adCopyTimerRef.current = window.setTimeout(() => { adCopyTimerRef.current = null; setCopiedAdNotice(false); }, 2000); }} className="w-full py-2 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition text-xs"
+          onClick={() => { navigator.clipboard?.writeText(generatedAdText).catch(() => {}); setCopiedAdNotice(true); if (adCopyTimerRef.current !== null) window.clearTimeout(adCopyTimerRef.current); adCopyTimerRef.current = window.setTimeout(() => { adCopyTimerRef.current = null; setCopiedAdNotice(false); }, 2000); }} className="w-full py-2 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition text-xs"
         >
           <Copy className="w-3.5 h-3.5 stroke-[1.75]" />
           <span>{copiedAdNotice ? 'متن آگهی کپی شد!' : 'کپی متن آگهی آماده انتشار در دیوار / شیپور / اینستاگرام'}</span>
@@ -245,7 +245,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
       </div>
       <div className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3.5">
         <div className="font-extrabold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-1.5">
-          <Truck className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+          <Truck className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
           <span>ماشین‌حساب اسباب‌کشی و ثبت در سامانه املاک و اسکان</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
@@ -271,7 +271,7 @@ export function SuperModulesSwapAndStudioTabs(props: SuperModulesSwapAndStudioTa
           </div>
         </div>
         <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-          <input type="checkbox" checked={!moveHasElevator} onChange={(e) => setMoveHasElevator(!e.target.checked)} aria-label="حمل از پله بدون آسانسور باربر" className="rounded text-emerald-600" />
+          <input type="checkbox" checked={!moveHasElevator} onChange={(e) => setMoveHasElevator(!e.target.checked)} aria-label="حمل از پله بدون آسانسور باربر" className="rounded text-[var(--color-brand-600)]" />
           <span>حمل از پله (بدون آسانسور باربر)</span>
         </label>
         <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 flex items-center justify-between text-xs">

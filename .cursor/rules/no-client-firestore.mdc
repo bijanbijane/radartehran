@@ -1,0 +1,14 @@
+---
+description: RT-DATA-001 — browser SPA must not use Firebase Firestore SDK
+globs: src/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+# No client Firestore (RT-DATA-001)
+
+- `src/**` must **not** import `firebase/firestore` or `@firebase/firestore`.
+- `src/firebase.ts` is **Auth-only** (Google sign-in, ID tokens).
+- Durable reads/writes from the browser go through **Express** `/api/*` and `src/data/neighborhoodRemoteRepository.ts`.
+- Server-side Firestore (`firebase-admin`, rules, emulators) remains valid; do not conflate with client policy.
+- Policy constant: `CLIENT_FIRESTORE_FORBIDDEN` in `src/platform/data/clientDataPolicy.ts`.
+- CI: `npm run arch:check` enforces `CLIENT_FIRESTORE_IMPORT`.

@@ -51,7 +51,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
         {(primaryView === 'map' || showToolsPopover) && <div className="shrink-0 flex items-center gap-1.5 pointer-events-auto relative">
           {primaryView === 'map' && onOpenReverseBudgetModal && <button type="button" onClick={onOpenReverseBudgetModal} className="hidden 2xl:flex items-center gap-1.5 apple-vibrancy-bar hover:bg-white px-2.5 py-1.5 rounded-[12px] text-[11px] font-bold text-indigo-700 dark:text-indigo-300 transition cursor-pointer"><Sparkles className="w-3.5 h-3.5 text-indigo-600" /><span>{isEn ? 'Find by Budget' : 'کشف محله با بودجه'}</span></button>}
           {primaryView === 'map' && <button type="button" aria-expanded={showToolsPopover} onClick={() => { const next = !showToolsPopover; if (next) onBeforeOpenFloatingPanel?.('tools'); setShowToolsPopover(next); setMobileFilterOpen(false); }} className="flex items-center gap-1 sm:gap-1.5 apple-vibrancy-bar hover:bg-white px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-[12px] text-xs font-bold text-slate-800 dark:text-slate-100 transition cursor-pointer whitespace-nowrap">
-            <LayoutGrid className="w-4 h-4 stroke-[1.75] text-emerald-600 shrink-0" /><span>{topCopy.toolsBtnLabel}</span><ChevronDown className="w-3.5 h-3.5 stroke-[1.75] text-slate-400 shrink-0" />
+            <LayoutGrid className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] shrink-0" /><span>{topCopy.toolsBtnLabel}</span><ChevronDown className="w-3.5 h-3.5 stroke-[1.75] text-slate-400 shrink-0" />
           </button>}
           {showToolsPopover && (
             <div role="dialog" className="fixed lg:absolute bottom-[calc(4.75rem+var(--safe-bottom))] lg:bottom-auto lg:top-12 left-3 right-3 lg:left-0 lg:right-auto lg:w-68 max-h-[calc(100dvh-6rem-var(--safe-bottom))] overflow-y-auto apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-[16px] p-2.5 z-50 space-y-1.5 text-xs">
@@ -70,19 +70,19 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                 </div>
               </div>
               <button type="button" onClick={() => { setSuperModuleInitialTab('valuation'); setShowSuperModulesModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100/80 border border-emerald-200/80 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200 font-extrabold flex items-center justify-between gap-2 transition cursor-pointer">
-                <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 stroke-[1.75] text-emerald-600 shrink-0" /><span>ابرماژول‌ها و جعبه ابزار جامع مسکن</span></span>
-                <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-md font-bold tabular-nums shrink-0">ابرماژول‌های تخصصی · {toPersianNum(superSummary.tabCount)} تب · {toPersianNum(superSummary.toolCount)} ابزار</span>
+                <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] shrink-0" /><span>ابرماژول‌ها و جعبه ابزار جامع مسکن</span></span>
+                <span className="text-[10px] bg-[var(--color-brand-600)] text-white px-1.5 py-0.5 rounded-md font-bold tabular-nums shrink-0">ابرماژول‌های تخصصی · {toPersianNum(superSummary.tabCount)} تب · {toPersianNum(superSummary.toolCount)} ابزار</span>
               </button>
               <button type="button" onClick={() => { setShowHedonicModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                <span className="flex items-center gap-2"><Calculator className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>ماشین‌حساب هوشمند قیمت‌گذاری (Hedonic)</span></span>
+                <span className="flex items-center gap-2"><Calculator className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>ماشین‌حساب هوشمند قیمت‌گذاری (Hedonic)</span></span>
                 <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-extrabold">کارشناسی</span>
               </button>
               <button type="button" onClick={() => { setShowSmartSuggestModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>پیشنهاد هوشمند محله</span></span>
+                <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>پیشنهاد هوشمند محله</span></span>
                 <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-extrabold tabular-nums">{toPersianNum(counts.green + counts.yellow)} محله</span>
               </button>
               <button type="button" onClick={() => { setShowOnboardingModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                <span className="flex items-center gap-2"><Compass className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>راهنمای ۳ مرحله‌ای ورود</span></span>
+                <span className="flex items-center gap-2"><Compass className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>راهنمای ۳ مرحله‌ای ورود</span></span>
                 <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-bold">ویزارد</span>
               </button>
               <button type="button" onClick={() => { setShowCompareModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center gap-2 transition cursor-pointer">
@@ -90,24 +90,24 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
               </button>
               {featureFlags.enableCommissionCalc && (
                 <button type="button" onClick={() => { setExpansionModalType('commission'); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                  <span className="flex items-center gap-2"><Calculator className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>ماشین‌حساب کمیسیون و محضر</span></span>
+                  <span className="flex items-center gap-2"><Calculator className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>ماشین‌حساب کمیسیون و محضر</span></span>
                   <span className="text-[10px] text-emerald-700 font-bold">نرخ اتحادیه</span>
                 </button>
               )} {featureFlags.enableAiContractCheck && (
                 <button type="button" onClick={() => { setExpansionModalType('contract'); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                  <span className="flex items-center gap-2"><Scale className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>مشاور حقوقی هوشمند قولنامه</span></span>
+                  <span className="flex items-center gap-2"><Scale className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>مشاور حقوقی هوشمند قولنامه</span></span>
                   <span className="text-[10px] text-emerald-700 font-bold">ضدکلاهبرداری</span>
                 </button>
               )} <button type="button" onClick={() => { setBargainHoodId(selectedHoodId); setSponsorHoodId(selectedHoodId); setShowAgencyModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                <span className="flex items-center gap-2"><PlusCircle className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>ثبت ملک زیر قیمت</span></span>
+                <span className="flex items-center gap-2"><PlusCircle className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>ثبت ملک زیر قیمت</span></span>
                 <span className="text-[10px] text-slate-400 tabular-nums">{toPersianNum(totalLiveBargainsCount)} فایل</span>
               </button>
               <button type="button" onClick={() => { setShowVisitedModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                <span className="flex items-center gap-2"><Bookmark className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>دفترچه بازدیدهای من</span></span>
+                <span className="flex items-center gap-2"><Bookmark className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>دفترچه بازدیدهای من</span></span>
                 <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md font-bold tabular-nums">{toPersianNum(visitedHomesCount)} ملک</span>
               </button>
               <button type="button" onClick={() => { setTradeUpCurrentHoodId(selectedHood?.id || selectedHoodId || 1); setShowTradeUpModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                <span className="flex items-center gap-2"><ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>معاوضه و ارتقای متراژ (Trade-Up)</span></span>
+                <span className="flex items-center gap-2"><ArrowLeftRight className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>معاوضه و ارتقای متراژ (Trade-Up)</span></span>
                 <span className="text-[10px] text-slate-400">محاسبه آنلاین</span>
               </button>
               <button type="button" onClick={() => { setAlertHoodId(selectedHoodId); setAlertSubmitMsg(''); setShowBuyerAlertModal(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center gap-2 transition cursor-pointer">
@@ -118,21 +118,21 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                 <span className="text-[10px] font-extrabold text-emerald-700 tabular-nums">{marketPulse?.airQuality?.tehranAverageAqi ? `AQI ${toPersianNum(marketPulse.airQuality.tehranAverageAqi)}` : 'AQI —'}</span>
               </button>
               {featureFlags.enableTelegramFeed && ( <button type="button" onClick={() => { setExpansionModalType('telegram'); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between transition cursor-pointer">
-                  <span className="flex items-center gap-2"><Send className="w-4 h-4 stroke-[1.75] text-emerald-600" /><span>خروجی کانال تلگرام</span></span>
+                  <span className="flex items-center gap-2"><Send className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)]" /><span>خروجی کانال تلگرام</span></span>
                   <span className="text-[10px] text-slate-400">وب‌هوک ربات</span>
                 </button>
               )} <button type="button" onClick={() => { setShowSeoDrawer(true); setShowToolsPopover(false); }} className="w-full px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold flex items-center gap-2 transition cursor-pointer">
                 <Compass className="w-4 h-4 stroke-[1.75] text-slate-600" /><span>فهرست سئو</span>
               </button>
               <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1">
-                <button type="button" onClick={() => setMapTileStyle((prev) => (prev === 'satellite' ? 'neshan' : 'satellite'))} className={`flex-1 px-2.5 py-2 rounded-xl font-bold flex items-center justify-center gap-1 transition cursor-pointer ${mapTileStyle === 'satellite' ? 'bg-emerald-600 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`} title="نمای ماهواره‌ای (Satellite)">
+                <button type="button" onClick={() => setMapTileStyle((prev) => (prev === 'satellite' ? 'neshan' : 'satellite'))} className={`flex-1 px-2.5 py-2 rounded-xl font-bold flex items-center justify-center gap-1 transition cursor-pointer ${mapTileStyle === 'satellite' ? 'bg-[var(--color-brand-600)] text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`} title="نمای ماهواره‌ای (Satellite)">
                   <Layers className="w-4 h-4 stroke-[1.75]" /><span className="text-[10px]">{mapTileStyle === 'satellite' ? 'ماهواره فعال' : 'نمای ماهواره'}</span>
                 </button>
                 <button type="button" onClick={() => setMapTileStyle((prev) => prev === 'neshan' ? 'osm' : prev === 'voyager' ? 'neshan' : (FREE_KEYLESS_TILE_SERVERS[prev] || FREE_KEYLESS_TILE_SERVERS.osm).next)} className="px-2 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1 transition cursor-pointer" title="تغییر سبک نقشه (نشان / OSM / ماهواره / تاریک)">
                   <span className="text-[10px]">{mapTileStyle === 'neshan' ? 'نشان' : 'سبک نقشه'}</span>
                 </button>
                 {currentUser ? ( <button type="button" onClick={onSignOut} title="خروج از حساب" aria-label="خروج از حساب" className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-rose-600 transition cursor-pointer"><LogOut className="w-4 h-4 stroke-[1.75]" /></button>
-                ) : ( <button type="button" onClick={onGoogleSignIn} title="ورود با گوگل" aria-label="ورود با گوگل" className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-emerald-600 transition cursor-pointer"><LogIn className="w-4 h-4 stroke-[1.75]" /></button>
+                ) : ( <button type="button" onClick={onGoogleSignIn} title="ورود با گوگل" aria-label="ورود با گوگل" className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-[var(--color-brand-600)] transition cursor-pointer"><LogIn className="w-4 h-4 stroke-[1.75]" /></button>
                 )} </div>
             </div>
           )}
@@ -170,10 +170,10 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
         {/* Floating Budget & Loan Filter Popover Card */}
         {mobileFilterOpen && ( <div role="dialog" aria-label="تنظیم بودجه، وام مسکن و محل کار" className="self-start w-full sm:w-[410px] apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-[16px] p-4 space-y-3.5 text-xs pointer-events-auto max-h-[82vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2.5">
-              <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white"><SlidersHorizontal className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" /><span>تنظیم بودجه، وام مسکن و محل کار</span></div>
+              <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white"><SlidersHorizontal className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>تنظیم بودجه، وام مسکن و محل کار</span></div>
               <div className="flex items-center gap-1.5">
                 {onOpenReverseBudgetModal && <button type="button" onClick={() => { onOpenReverseBudgetModal(); setMobileFilterOpen(false); }} title={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} aria-label={`با بودجه من کجای ${MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران'} می‌تونم خانه بخرم؟`} className="px-2 py-1 rounded-[8px] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-[10.5px] font-bold border border-indigo-200 dark:border-indigo-800 cursor-pointer whitespace-nowrap">یافتن محله با بودجه من</button>}
-                <button type="button" onClick={() => { setShowOnboardingModal(true); setMobileFilterOpen(false); }} className="px-2 py-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-[10.5px] font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 cursor-pointer"><Compass className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /><span>راهنما</span></button>
+                <button type="button" onClick={() => { setShowOnboardingModal(true); setMobileFilterOpen(false); }} className="px-2 py-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-[10.5px] font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 cursor-pointer"><Compass className="w-3 h-3 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>راهنما</span></button>
                 <button type="button" aria-label="بستن تنظیمات بودجه" onClick={() => setMobileFilterOpen(false)} className="w-7 h-7 rounded-full bg-slate-200/70 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer"><X className="w-3.5 h-3.5 stroke-[2]" /></button>
               </div>
             </div>
@@ -234,7 +234,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
                 </div>
               </div>
               {mode === 'buy' && ( <label className="flex items-start gap-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 cursor-pointer">
-                  <input type="checkbox" checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} aria-label="کسر خودکار رهن مستأجر و ۱۰٪ تنفس سند" className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
+                  <input type="checkbox" checked={deductTenantRahnInBuy} onChange={(e) => setDeductTenantRahnInBuy(e.target.checked)} aria-label="کسر خودکار رهن مستأجر و ۱۰٪ تنفس سند" className="mt-0.5 rounded text-[var(--color-brand-600)] focus:ring-emerald-500 cursor-pointer" />
                   <div className="text-[11px] leading-tight">
                     <span className="font-extrabold text-slate-900 dark:text-white">کسر خودکار رهن مستأجر + ۱۰٪ تنفس سند</span>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">رهن مستأجر و ۱۰٪ تحویل سند از نقدینگی موردنیاز کسر می‌گردد.</p>
@@ -245,7 +245,7 @@ const LENS_OPTIONS = [{ id: 'budget' as const, label: 'بودجه من', labelEn
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button type="button" onClick={() => setUseLoanBooster((prev) => !prev)} className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center justify-between transition cursor-pointer ${useLoanBooster ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-600 text-emerald-800 dark:text-emerald-300' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                 <span>افزودن وام مسکن</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold tabular-nums">+{toPersianNum(extraGreenWithLoan)} محله</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-600)]/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold tabular-nums">+{toPersianNum(extraGreenWithLoan)} محله</span>
               </button>
               <select value={workHubId} onChange={(e) => setWorkHubId(e.target.value)} aria-label="منطقه محل کار" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs rounded-xl px-2.5 py-2 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-600 cursor-pointer">
                 {activeCityWorkHubs.map((hub) => <option key={hub.id} value={hub.id}>محل کار: {hub.name}</option>)}

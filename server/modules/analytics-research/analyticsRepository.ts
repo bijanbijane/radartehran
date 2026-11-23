@@ -68,6 +68,9 @@ export interface AnalyticsExportJobRecord {
   contentText: string;
   limitationsFa: string[];
   createdAtIso: string;
+  expiresAtIso?: string;
+  registryDatasetId?: string;
+  registryClassificationAtCreate?: 'PUBLIC' | 'INTERNAL' | 'RESTRICTED';
 }
 
 export interface GovernedModelEntry extends PredictiveModelRegistryEntry {

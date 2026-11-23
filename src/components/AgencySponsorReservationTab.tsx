@@ -176,10 +176,10 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
           <div className="bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-2xl p-3.5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
-                <Receipt className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <Receipt className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>انتخاب طرح اشتراک و صورت‌حساب خودکار</span>
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">
+              <span className="px-2 py-0.5 rounded-md bg-[var(--color-brand-600)] text-white text-[10px] font-bold">
                 انقضای خودکار ۳۰/۹۰ روزه
               </span>
             </div>
@@ -229,7 +229,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
               </div>
               <div>
                 <label className="block text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
-                  <CreditCard className="w-3.5 h-3.5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                  <CreditCard className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                   <span>کد پیگیری واریز بانکی:</span>
                 </label>
                 <input
@@ -266,7 +266,7 @@ export function AgencySponsorReservationTab({ safeNeighborhoods, targetBargainHo
         )}
         <button
           type="submit"
-          className="w-full py-3 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold text-xs transition cursor-pointer"
+          className="w-full py-3 rounded-xl bg-slate-900 dark:bg-[var(--color-brand-600)] hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-extrabold text-xs transition cursor-pointer"
         >
           ثبت و جایگزینی در کارت کارشناس رسمی محله
         </button>

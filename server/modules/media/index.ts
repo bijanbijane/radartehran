@@ -37,6 +37,12 @@ import {
   createDurableMediaMetadataStore,
   type MediaMetadataPersistenceStore,
 } from './metadataStore';
+import {
+  isProductionDurableMediaMetadataRequired,
+  isProductionMediaMetadataAuthority,
+  resolveMediaMetadataBackendId,
+  verifyMediaDurableMetadataRepository,
+} from './durableMediaMetadataRepository';
 import { MediaDomainService } from './mediaDomainService';
 import { MediaOrphanAndCleanupEngine } from './orphanAndCleanupEngine';
 import {
@@ -56,14 +62,39 @@ export interface MediaModuleFacade {
  * Factory creating a complete Media and Object Storage module facade.
  * Uses `ConfiguredS3ByteStorageProvider` by default in production unless a custom provider is injected.
  */
+export { ensureMediaMetadataDurableBootstrap, getOrCreateProductionMediaMetadataStore } from './mediaBootstrap';
+export {
+  buildMediaMetadataReconciliationReport,
+  type MediaMetadataReconciliationReport,
+} from './mediaMetadataReconciliation';
+export {
+  classifyMediaObjectMetadataDocument,
+  projectStoredObjectAsMediaReadModel,
+} from './mediaObjectRegistryConvergence';
+export { registerMediaModuleRoutes } from './mediaRoutes';
+export {
+  resolveMediaMetadataBackendId,
+  verifyMediaDurableMetadataRepository,
+  isProductionDurableMediaMetadataRequired,
+  isProductionMediaMetadataAuthority,
+} from './durableMediaMetadataRepository';
+export { MEDIA_METADATA_NATIVE_SCHEMA } from './firestoreMetadataAuthority';
+
 export function createMediaModuleFacade(options?: {
   metadataStore?: MediaMetadataPersistenceStore;
   byteStorage?: MediaByteStorageProvider;
   durableSnapshotPath?: string;
+  requireDurableFirestore?: boolean;
 }): MediaModuleFacade {
+  const requireDurable =
+    options?.requireDurableFirestore ??
+    (options?.metadataStore ? false : isProductionDurableMediaMetadataRequired());
   const metadataStore =
     options?.metadataStore ??
-    createDurableMediaMetadataStore({ durableSnapshotPath: options?.durableSnapshotPath });
+    createDurableMediaMetadataStore({
+      durableSnapshotPath: options?.durableSnapshotPath,
+      requireDurableFirestore: requireDurable,
+    });
   const byteStorage =
     options?.byteStorage ??
     (process.env.NODE_ENV === 'production'

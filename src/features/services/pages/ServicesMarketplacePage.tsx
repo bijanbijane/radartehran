@@ -94,14 +94,14 @@ export const ServicesMarketplacePage: React.FC<ServicesMarketplacePageProps> = (
   return (
     <div data-testid="product-services-view" className="w-full max-w-6xl mx-auto px-4 py-6 space-y-5 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-[#DCE3DF] dark:border-slate-800 pb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="border-b border-[var(--color-border-subtle)] dark:border-slate-800 pb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <span className="text-[11px] font-bold text-[#176B63] dark:text-emerald-400 flex items-center gap-1 mb-1">
+          <span className="text-[11px] font-bold text-[var(--color-brand-600)] dark:text-emerald-400 flex items-center gap-1 mb-1">
             <Briefcase className="w-3.5 h-3.5" />
             <span>بازار شفاف خدمات و متخصصان ملکی · {selectedHood.name}</span>
           </span>
-          <h1 className="text-2xl font-black text-[#182522] dark:text-white">خدمات تخصصی، حقوقی و دفاتر فعال املاک</h1>
-          <p className="text-xs text-[#586760] mt-1 tabular-nums">
+          <h1 className="text-2xl font-black text-[var(--color-text-primary)] dark:text-white">خدمات تخصصی، حقوقی و دفاتر فعال املاک</h1>
+          <p className="text-xs text-[var(--color-text-muted)] mt-1 tabular-nums">
             نرخ پایه مرجع در محله {selectedHood.name}: {toPersianNum(unitPrice)} م{fxSample}
           </p>
         </div>
@@ -122,8 +122,8 @@ export const ServicesMarketplacePage: React.FC<ServicesMarketplacePageProps> = (
                 onClick={() => setActiveTab(t.id)}
                 className={`px-3 py-1.5 rounded-[9px] font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition ${
                   activeTab === t.id
-                    ? 'bg-[#176B63] text-white'
-                    : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-200'
+                    ? 'bg-[var(--color-brand-600)] text-white'
+                    : 'bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)] dark:text-slate-200'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

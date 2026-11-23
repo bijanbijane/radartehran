@@ -42,7 +42,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs" data-testid="account-saved-properties">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Home className="w-4 h-4 text-emerald-600" />
+              <Home className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>فایل‌های ملکی ذخیره‌شده ({toPersianNum(p.savedProperties.length)})</span>
             </h2>
             <button type="button" onClick={() => p.onNavigateView?.('properties')} className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
@@ -85,7 +85,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Compass className="w-4 h-4 text-emerald-600" />
+              <Compass className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>جست‌وجوها و دیدبان‌های ذخیره‌شده ({toPersianNum(p.savedSearches.length)})</span>
             </h2>
             <button type="button" onClick={p.onOpenBudgetFilter} className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold flex items-center gap-1 cursor-pointer">
@@ -110,7 +110,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
                   setNewTitle('');
                   setNewQuery('');
                 }}
-                className="px-3 py-2 rounded-lg bg-emerald-600 text-white font-bold flex items-center gap-1 cursor-pointer"
+                className="px-3 py-2 rounded-lg bg-[var(--color-brand-600)] text-white font-bold flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /><span>ذخیره</span>
               </button>
@@ -168,10 +168,10 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Bookmark className="w-4 h-4 text-emerald-600" />
+            <Bookmark className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>نماهای ذخیره‌شده نقشه ({toPersianNum(p.savedMapViews.length)})</span>
           </h2>
-          <button type="button" onClick={() => p.onNavigateView?.('map')} className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => p.onNavigateView?.('map')} className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             ساخت نمای جدید روی نقشه
           </button>
         </div>
@@ -202,7 +202,7 @@ export const AccountSavedItemsPanel: React.FC<AccountSavedItemsPanelProps> = (p)
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <BarChart3 className="w-4 h-4 text-emerald-600" />
+            <BarChart3 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>گزارش‌ها و تحلیل‌های بازار ذخیره‌شده ({toPersianNum(p.savedMarketAnalyses.length)})</span>
           </h2>
           <button type="button" onClick={() => p.onNavigateView?.('intelligence', 'reports')} className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold cursor-pointer">

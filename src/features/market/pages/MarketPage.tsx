@@ -168,7 +168,7 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
       />
 
       {p.marketPulse && (
-        <div className="px-4 py-2.5 rounded-xl bg-[#182522] text-white flex flex-wrap items-center justify-between gap-2 text-xs tabular-nums">
+        <div className="px-4 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-white flex flex-wrap items-center justify-between gap-2 text-xs tabular-nums">
           <span>
             نبض کلان {bundle.cityNameFa}: میانگین پیشنهادی متری{' '}
             <strong>{toPersianNum(convertPricePerSqmToUnit(p.marketPulse.marketSummary.tehranAverageBuyPerSqm, areaUnit))} م</strong>{' '}
@@ -196,7 +196,7 @@ export const MarketPage: React.FC<MarketPageProps> = (p) => {
           <span>
             داده کالیبره‌شده برای بازار <strong>{applied.marketType === 'commercial' ? 'تجاری' : applied.marketType === 'office' ? 'اداری' : 'زمین'}</strong> هنوز در این نسخه منتشر نشده است و از داده مسکونی برای پر کردن آن استفاده نمی‌شود.
           </span>
-          <button type="button" onClick={() => handleSelectMarketType('residential')} className="px-3 py-1.5 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => handleSelectMarketType('residential')} className="px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             بازگشت به بازار مسکونی
           </button>
         </div>

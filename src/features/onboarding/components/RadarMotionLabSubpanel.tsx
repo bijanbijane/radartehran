@@ -87,7 +87,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
                 onAnnounceStatus(`حالت سیستم حرکت به «${m}» تغییر یافت.`);
               }}
               className={`px-3 py-1.5 min-h-[40px] rounded-[8px] font-bold cursor-pointer ${
-                motionMode === m ? 'bg-[#176B63] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
+                motionMode === m ? 'bg-[var(--color-brand-600)] text-white' : 'bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-700'
               }`}
             >
               {m === 'standard' ? 'حرکت عادی' : m === 'no_decorative' ? 'بدون حرکت تزئینی' : 'حرکت محدود (Reduced)'}
@@ -115,7 +115,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-[#176B63]" />
+            <Activity className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>توکن‌های استاندارد زمان‌بندی و منحنی حرکت (Compositor-Only)</span>
           </h3>
           <table className="w-full text-right border-collapse">
@@ -147,13 +147,13 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-3">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#176B63]" />
+            <ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>ماشین وضعیت دکمه ذخیره (ممنوعیت جعل موفقیت پیش از تأیید سرور)</span>
           </h3>
           <div className="p-3 rounded-[8px] bg-[#F6F8F6] dark:bg-slate-800 flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="font-bold text-[#182522] dark:text-white">
-                برچسب فعلی دکمه: <span data-testid="motion-save-btn-label" className="text-[#176B63] dark:text-emerald-400">«{saveState.labelFa}»</span>
+                برچسب فعلی دکمه: <span data-testid="motion-save-btn-label" className="text-[var(--color-brand-600)] dark:text-emerald-400">«{saveState.labelFa}»</span>
               </div>
               <div className="text-[11px] text-[#586760]">
                 مرحله: <strong>{saveState.phase}</strong> · قفل ارسال تکراری: <strong>{saveState.preventDuplicateClick ? 'فعال' : 'آزاد'}</strong>
@@ -165,7 +165,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
                 data-testid="sim-save-request-btn"
                 disabled={saveState.preventDuplicateClick}
                 onClick={() => handleSaveLifecycle('click_request')}
-                className="px-2.5 py-1.5 rounded bg-[#176B63] text-white font-bold disabled:opacity-50 cursor-pointer"
+                className="px-2.5 py-1.5 rounded bg-[var(--color-brand-600)] text-white font-bold disabled:opacity-50 cursor-pointer"
               >
                 <Play className="w-3 h-3 inline ml-1" />۱. ارسال درخواست
               </button>
@@ -188,7 +188,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
             </div>
           </div>
           {saveState.toastFeedbackFa && (
-            <div className="p-2 rounded bg-[#EAF3F0] dark:bg-emerald-950/40 text-[#14534E] dark:text-emerald-200 font-bold">
+            <div className="p-2 rounded bg-[#EAF3F0] dark:bg-emerald-950/40 text-[var(--color-brand-700)] dark:text-emerald-200 font-bold">
               پیام بازخورد: {saveState.toastFeedbackFa}
             </div>
           )}
@@ -203,7 +203,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Navigation className="w-4 h-4 text-[#176B63]" />
+            <Navigation className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>جلوگیری از رقابت حرکت‌های نقشه (لغو خودکار مقصد قبلی)</span>
           </h3>
           <div className="flex flex-wrap gap-1.5">
@@ -230,7 +230,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
 
         <div className="p-4 rounded-[12px] border border-[#DCE3DF] dark:border-slate-800 space-y-2.5">
           <h3 className="text-sm font-black text-[#182522] dark:text-white flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[#176B63]" />
+            <Layers className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>سناریوی تغییر لایه بازار و وضعیت بدون داده (بند ۴۶)</span>
           </h3>
           <div className="flex flex-wrap gap-1.5">
@@ -244,7 +244,7 @@ export const RadarMotionLabSubpanel: React.FC<RadarMotionLabSubpanelProps> = ({ 
                   onAnnounceStatus(resolveMapLayerTransitionFeedback({ layerId: 'sqm_price_heatmap', layerTitleFa: 'پهنه قیمت بازار', phase: ph }).statusMessageFa);
                 }}
                 className={`px-2.5 py-1.5 rounded-[8px] font-bold cursor-pointer ${
-                  layerPhase === ph ? 'bg-[#176B63] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'
+                  layerPhase === ph ? 'bg-[var(--color-brand-600)] text-white' : 'bg-[#F6F8F6] dark:bg-slate-800'
                 }`}
               >
                 {ph === 'loading' ? 'در حال دریافت' : ph === 'loaded_with_data' ? 'داده معتبر' : ph === 'loaded_empty' ? 'بدون داده' : 'خطای شبکه'}

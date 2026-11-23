@@ -82,7 +82,7 @@ export const Stage41WorkspaceMembersAndPerms: React.FC<Props> = ({
             <option value="editor">ویرایشگر</option>
             <option value="viewer">مشاهده‌گر</option>
           </select>
-          <button type="button" data-testid="wks-invite-btn" onClick={handleInvite} className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">ارسال دعوت</button>
+          <button type="button" data-testid="wks-invite-btn" onClick={handleInvite} className="rounded bg-[var(--color-brand-600)] px-2.5 py-1 text-[11px] font-bold text-white">ارسال دعوت</button>
         </div>
 
         <div className="space-y-1.5">

@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import { runClient100StepAudit } from '../src/data/diagnosticRunner';
 import { parseSingleByteRange, detectMediaFormatByMagicBytes } from '../src/utils/serverObjectStorageHelpers';
+import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 
 export async function runHundredStepDebug(): Promise<void> {
   console.log('========================================================================');
@@ -32,7 +33,7 @@ export async function runHundredStepDebug(): Promise<void> {
   assert.equal(report.allPassed, true, 'allPassed flag must be true');
 
   // Additional server & static security verification on top of the 100 steps
-  const serverSrc = fs.readFileSync('server.ts', 'utf8');
+  const serverSrc = readServerEntrySource();
   const storageSrc = fs.readFileSync('src/utils/serverObjectStorage.ts', 'utf8');
   const rulesSrc = fs.readFileSync('firestore.rules', 'utf8');
   const gallerySrc = fs.readFileSync('src/components/ListingMediaGallery.tsx', 'utf8');

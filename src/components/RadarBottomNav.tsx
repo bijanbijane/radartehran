@@ -4,6 +4,7 @@ import { MoreHorizontal } from 'lucide-react';
 import { useRadarLocale, useIntlCurrency } from './AreaUnitToggle';
 import { formatMillionTomanAsIntlCurrency, type PrimaryViewId } from '../utils/areaUnit';
 import { getProductNavigationItems, type ProductNavigationItem } from './navigation/primaryNavigation';
+import { useNavigationVisibilityContext } from '../navigation/hooks/useNavigationVisibilityContext';
 import { MOBILE_NAV_ORDER, MapCenterButton, NavTabButton, tabActive, tabIdle } from './navigation/radarBottomNavParts';
 import { MobileMoreSheet } from './navigation/MobileMoreSheet';
 import type { CityId } from '../data/multiCityData';
@@ -36,7 +37,11 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
   const activeView = p.primaryView || 'map';
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const navigationItems = getProductNavigationItems(radarLocale);
+  const visibilityCtx = useNavigationVisibilityContext();
+  const navigationItems = useMemo(
+    () => getProductNavigationItems(radarLocale, visibilityCtx),
+    [radarLocale, visibilityCtx],
+  );
   const navById = useMemo(() => new Map(navigationItems.map((item) => [item.id, item])), [navigationItems]);
 
   // Never render public mobile nav inside the isolated Admin Shell (NAV-011)
@@ -101,7 +106,7 @@ export function RadarBottomNav(p: RadarBottomNavProps) {
             }}
             className={`relative min-h-14 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-[10.5px] font-bold transition active:scale-95 cursor-pointer touch-manipulation ${moreOpen || isMoreView ? tabActive : tabIdle}`}
           >
-            {(moreOpen || isMoreView) && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />}
+            {(moreOpen || isMoreView) && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[var(--color-brand-600)] dark:bg-emerald-400" aria-hidden="true" />}
             <MoreHorizontal className="h-[18px] w-[18px]" aria-hidden="true" />
             <span>{isEn ? 'More' : 'بیشتر'}</span>
           </button>

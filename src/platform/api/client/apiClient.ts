@@ -11,6 +11,7 @@ import {
   getRegisteredApiAuthTokenSupplier,
 } from '../interceptors/authInterceptor';
 import { interceptFailedApiResponse } from '../interceptors/errorInterceptor';
+import { resolveApiUrl } from '../../../utils/apiBaseUrl';
 
 export type FetchExecutor = typeof fetch;
 
@@ -71,8 +72,9 @@ export async function executePlatformApiRequest<TResponse = unknown, TBody = unk
     config.signal?.addEventListener('abort', onExternalAbort, { once: true });
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+    const requestUrl = resolveApiUrl(config.path);
     try {
-      const response = await fetchFn(config.path, {
+      const response = await fetchFn(requestUrl, {
         method,
         headers,
         body: config.body !== undefined ? JSON.stringify(config.body) : undefined,

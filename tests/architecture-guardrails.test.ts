@@ -7,6 +7,7 @@ import { calculateHedonicValuation, FAST_SALE_FACTOR } from '../src/data/hedonic
 import { calculateDetailedValuation } from '../src/data/superModulesLogic';
 import { INITIAL_NEIGHBORHOODS, type EvaluatedNeighborhood } from '../src/data/neighborhoods';
 import { readAndReconcileExecutionState, PINNED_MASTER_PROMPT_SHA256 } from '../src/utils/rmepExecutionStateEngine';
+import { readServerEntrySource } from './helpers/readServerEntrySource.ts';
 
 console.log('🛡️ Running Architecture Guardrails & Refactoring Verification Suite...\n');
 
@@ -225,7 +226,7 @@ verify('calculateDetailedValuation delegates core hedonic factors and FAST_SALE_
 
 // 10. RMEP-001 Contract, Route Registration & Blueprint Parity Verification
 verify('server.ts mounts all contracted route modules and firebase-blueprint.json covers the 9 provisioned Firestore collections', () => {
-  const serverSrc = fs.readFileSync(path.join(rootDir, 'server.ts'), 'utf8');
+  const serverSrc = readServerEntrySource(rootDir);
   for (const requiredToken of [
     'registerSponsorAndBargainRoutes(app',
     'registerBackupAndChunkUploadRoutes(app)',
@@ -268,9 +269,9 @@ verify('server.ts mounts all contracted route modules and firebase-blueprint.jso
       if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !staticDatasets.has(`${relDir}/${entry}`)) allNonDatasetFiles.push(`${relDir}/${entry}`);
     }
   }
-  assert.equal(allNonDatasetFiles.length, 273, `Expected 273 non-dataset source files, got ${allNonDatasetFiles.length}`);
+  assert.equal(allNonDatasetFiles.length, 276, `Expected 276 non-dataset source files, got ${allNonDatasetFiles.length}`);
   const all242RepoFiles = [...allNonDatasetFiles, ...staticDatasets];
-  assert.equal(all242RepoFiles.length, 282, `Expected 282 total repository source files, got ${all242RepoFiles.length}`);
+  assert.equal(all242RepoFiles.length, 285, `Expected 285 total repository source files, got ${all242RepoFiles.length}`);
   for (const rel of all242RepoFiles) {
     const srcText = fs.readFileSync(path.join(rootDir, rel), 'utf8');
     const lc = srcText.split(/\r?\n/).length;

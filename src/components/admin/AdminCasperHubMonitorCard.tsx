@@ -134,7 +134,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
 
       {noteSuccessMsg && (
         <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--color-brand-600)]" />
           <span>{noteSuccessMsg}</span>
         </div>
       )}
@@ -145,7 +145,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
             <span>هویت نماینده محلی</span> <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 font-mono">{whoami?.agent_id || 'CASPER-05'}</div>
-          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">{whoami?.authenticated ? 'احراز هویت سرور: تاییدشده' : 'نیازمند ورود حساب مدیر'}</div>
+          <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">{whoami?.authenticated ? 'احراز هویت سرور: تاییدشده' : 'نیازمند ورود حساب مدیر'}</div>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5">
@@ -169,7 +169,7 @@ export function AdminCasperHubMonitorCard(): React.ReactElement {
             <span>سلامت دنباله (Gap Count)</span> <Zap className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-1 tabular-nums">{telemetry ? toPersianNum(telemetry.sequenceGapCount) : '۰'} شکاف</div>
-          <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">دنباله تغییرات: یکنواخت اکید</div>
+          <div className="text-[10px] text-[var(--color-brand-600)] font-semibold mt-0.5">دنباله تغییرات: یکنواخت اکید</div>
         </div>
       </div>
 

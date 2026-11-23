@@ -40,7 +40,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
         type="button"
         aria-label="بازگشت به نمای کلانشهر تهران"
         onClick={onResetTehran}
-        className="px-2 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 text-[10px] font-semibold"
+        className="px-2 py-1 rounded-lg bg-[var(--color-brand-600)]/20 text-emerald-300 hover:bg-[var(--color-brand-600)]/30 text-[10px] font-semibold"
       >
         تهران
       </button>

@@ -84,7 +84,7 @@ export function CommuteHubsMatrixCard({
       >
         <div className="flex items-center justify-between gap-1">
           <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1 truncate">
-            <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
+            <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[var(--color-brand-600)] dark:text-emerald-400' : 'text-slate-400'}`} />
             <span className="truncate">{hub.name}</span>
           </span>
           <span className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
@@ -106,7 +106,7 @@ export function CommuteHubsMatrixCard({
     <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
         <div className="flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-white">
-          <Navigation className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <Navigation className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <span>فاصله، مترو و زمان تردد به قطب‌های کاری</span>
         </div>
         <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function CommuteHubsMatrixCard({
                   aria-label={overlayState.showCommuteIsochrones ? 'مخفی‌سازی محدوده‌های شعاعی محل کار' : 'نمایش محدوده‌های شعاعی محل کار'}
                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                     overlayState.showCommuteIsochrones
-                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      ? 'bg-[var(--color-brand-600)] text-white border-emerald-600'
                       : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
                   }`}
                 >

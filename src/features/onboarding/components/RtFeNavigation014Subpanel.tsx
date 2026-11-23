@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigationVisibilityContext } from '../../../navigation/hooks/useNavigationVisibilityContext';
+import { useAppAuth } from '../../../app/providers/AuthProvider';
 import { Compass, Link2, Search, Terminal } from 'lucide-react';
 import {
   RT_FE_NAVIGATION_WORKSPACE_014_SPEC_ID, RT_FE_STAGE15_BRIDGE_SPEC_ID,
@@ -15,16 +17,22 @@ export const RtFeNavigation014Subpanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTabId>('subsystems_workspaces');
   const [searchQuery, setSearchQuery] = useState<string>('سعادت');
   const [deepLinkInput, setDeepLinkInput] = useState<string>('/neighborhoods/saadat-abad');
-  const [hasAdminRole, setHasAdminRole] = useState<boolean>(false);
   const [targetWorkspace, setTargetWorkspace] = useState<string>('research');
+  const visibilityCtx = useNavigationVisibilityContext();
+  const { state: authState } = useAppAuth();
 
   const searchOut = useMemo(
-    () => searchDiscoveryAndEntities(searchQuery, hasAdminRole ? ['admin.access'] : []),
-    [searchQuery, hasAdminRole],
+    () => searchDiscoveryAndEntities(searchQuery, visibilityCtx),
+    [searchQuery, visibilityCtx],
   );
   const deepLinkOut = useMemo(
-    () => resolveDeepLinkDestination({ rawUrl: deepLinkInput, isAuthenticated: true, userPermissions: hasAdminRole ? ['admin.access'] : [] }),
-    [deepLinkInput, hasAdminRole],
+    () =>
+      resolveDeepLinkDestination({
+        rawUrl: deepLinkInput,
+        isAuthenticated: visibilityCtx.isAuthenticated,
+        userPermissions: visibilityCtx.userPermissions,
+      }),
+    [deepLinkInput, visibilityCtx],
   );
   const transferOut = useMemo(
     () =>
@@ -135,10 +143,13 @@ export const RtFeNavigation014Subpanel: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 min-w-[160px] rounded border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-white"
               />
-              <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                <input type="checkbox" data-testid="rt-fe-nav-admin-toggle" checked={hasAdminRole} onChange={(e) => setHasAdminRole(e.target.checked)} />
-                دارای مجوز مدیریت
-              </label>
+              <span
+                data-testid="rt-fe-nav-auth-lifecycle"
+                className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] font-mono text-cyan-300"
+                dir="ltr"
+              >
+                auth:{authState} · navReady:{visibilityCtx.authReady ? 'yes' : 'no'}
+              </span>
             </div>
             <div className="space-y-1.5">
               <div className="text-[11px] font-bold text-indigo-300">قابلیت‌ها و صفحات (Feature Discovery — {searchOut.features.length}):</div>

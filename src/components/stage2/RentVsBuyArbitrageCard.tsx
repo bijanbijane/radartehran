@@ -112,7 +112,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
             onClick={() => setShowRealPurchasingPower((p) => !p)}
             className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${
               showRealPurchasingPower
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
             }`}
           >
@@ -260,7 +260,7 @@ export const RentVsBuyArbitrageCard: React.FC<RentVsBuyArbitrageCardProps> = ({
       <div className="p-3 rounded-lg border border-indigo-200/80 dark:border-indigo-900/60 bg-gradient-to-r from-indigo-50/50 via-white to-slate-50/50 dark:from-slate-900 dark:to-indigo-950/20 text-xs space-y-2">
         <div className="flex items-center justify-between">
           <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <CheckCircle2 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>حکم نهایی تصمیم‌یار: {analysis.verdictFa}</span>
           </span>
           <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300 tabular-nums">

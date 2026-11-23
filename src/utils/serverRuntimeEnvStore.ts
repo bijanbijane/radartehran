@@ -6,6 +6,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { shouldLoadRuntimeConfigFromDisk } from './serverPersistencePolicy';
 import { clampNumber, sanitizeInput } from './security';
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
 
@@ -91,6 +92,7 @@ let runtimeWriteMutexChain: Promise<void> = Promise.resolve();
 function ensureDiskOverridesLoaded(): void {
   if (diskLoaded) return;
   diskLoaded = true;
+  if (!shouldLoadRuntimeConfigFromDisk(process.env)) return;
   try {
     if (!fs.existsSync(RUNTIME_CONFIG_PATH)) return;
     const parsed = JSON.parse(fs.readFileSync(RUNTIME_CONFIG_PATH, 'utf-8'));

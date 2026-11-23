@@ -45,14 +45,14 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
         tabIndex={-1}
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl border border-[#DCE3DF] dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
+        className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl border border-[var(--color-border-subtle)] dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
       >
-        <div className="px-5 py-4 border-b border-[#DCE3DF] dark:border-slate-800 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] dark:border-slate-800 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-black text-[#182522] dark:text-white">مقایسه فایل‌های انتخاب‌شده ({toPersianNum(items.length)})</h2>
-            <p className="text-[11px] text-[#586760] dark:text-slate-400">مقادیر نامشخص با «نامشخص» نمایش داده می‌شوند و با صفر/ندارد یکی گرفته نمی‌شوند.</p>
+            <h2 className="text-base font-black text-[var(--color-text-primary)] dark:text-white">مقایسه فایل‌های انتخاب‌شده ({toPersianNum(items.length)})</h2>
+            <p className="text-[11px] text-[var(--color-text-muted)] dark:text-slate-400">مقادیر نامشخص با «نامشخص» نمایش داده می‌شوند و با صفر/ندارد یکی گرفته نمی‌شوند.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="بستن مقایسه" className="w-8 h-8 rounded-full bg-[#F1F4F2] dark:bg-slate-800 flex items-center justify-center cursor-pointer">
+          <button type="button" onClick={onClose} aria-label="بستن مقایسه" className="w-8 h-8 rounded-full bg-[var(--color-bg-muted)] dark:bg-slate-800 flex items-center justify-center cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -66,20 +66,20 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
           )}
 
           {items.length === 0 ? (
-            <div className="text-center py-10 text-[#586760]">فایلی برای مقایسه انتخاب نشده است.</div>
+            <div className="text-center py-10 text-[var(--color-text-muted)]">فایلی برای مقایسه انتخاب نشده است.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-right min-w-[640px] tabular-nums">
                 <thead>
-                  <tr className="border-b border-[#DCE3DF] dark:border-slate-800">
-                    <th className="py-2.5 px-3 text-[#586760] font-bold w-40">شاخص مقایسه</th>
+                  <tr className="border-b border-[var(--color-border-subtle)] dark:border-slate-800">
+                    <th className="py-2.5 px-3 text-[var(--color-text-muted)] font-bold w-40">شاخص مقایسه</th>
                     {items.map((it) => (
                       <th key={it.listing.listingId} className="py-2.5 px-3 align-top">
                         <div className="flex items-start justify-between gap-1.5">
                           <button
                             type="button"
                             onClick={() => { onClose(); onOpenDetail(it.listing.listingId); }}
-                            className="text-start font-black text-[#176B63] dark:text-emerald-400 hover:underline cursor-pointer line-clamp-2"
+                            className="text-start font-black text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer line-clamp-2"
                           >
                             {it.listing.title}
                           </button>
@@ -96,9 +96,9 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#DCE3DF] dark:divide-slate-800">
+                <tbody className="divide-y divide-[var(--color-border-subtle)] dark:divide-slate-800">
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[#586760]">محله و کاربری</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">محله و کاربری</td>
                     {items.map((it) => (
                       <td key={it.listing.listingId} className="py-2.5 px-3">
                         {it.property.hoodName} · {PROPERTY_TYPE_LABELS_FA[it.property.propertyType]}
@@ -106,7 +106,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[#586760]">نوع معامله</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">نوع معامله</td>
                     {items.map((it) => (
                       <td key={it.listing.listingId} className="py-2.5 px-3 font-bold">
                         {TRANSACTION_TYPE_LABELS_FA[it.listing.transactionType]}
@@ -114,9 +114,9 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[#586760]">مبلغ اعلامی</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">مبلغ اعلامی</td>
                     {items.map((it) => (
-                      <td key={it.listing.listingId} className="py-2.5 px-3 font-black text-[#182522] dark:text-white">
+                      <td key={it.listing.listingId} className="py-2.5 px-3 font-black text-[var(--color-text-primary)] dark:text-white">
                         {it.listing.price.priceType === 'undisclosed'
                           ? 'توافقی / نامشخص'
                           : it.listing.price.saleTotalMillion
@@ -126,7 +126,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[#586760]">متراژ</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">متراژ</td>
                     {items.map((it) => (
                       <td key={it.listing.listingId} className="py-2.5 px-3">
                         {it.property.areaSqm ? formatAreaShort(it.property.areaSqm, areaUnit) : 'نامشخص'}
@@ -134,7 +134,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[#586760]">نوع سند</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">نوع سند</td>
                     {items.map((it) => (
                       <td key={it.listing.listingId} className="py-2.5 px-3">
                         {DOCUMENT_TYPE_LABELS_FA[it.property.documentType]}
@@ -142,7 +142,7 @@ export const PropertyComparisonModal: React.FC<PropertyComparisonModalProps> = (
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[#586760]">پارکینگ / آسانسور</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--color-text-muted)]">پارکینگ / آسانسور</td>
                     {items.map((it) => (
                       <td key={it.listing.listingId} className="py-2.5 px-3">
                         {AMENITY_VALUE_LABELS_FA[it.property.unitFeatures.parking]} / {AMENITY_VALUE_LABELS_FA[it.property.unitFeatures.elevator]}

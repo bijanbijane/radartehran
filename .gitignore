@@ -23,5 +23,7 @@ test-results/
 *.p12
 *.key
 
-# Local Cloudflare Wrangler / Miniflare state (never commit)
+.wrangler/
+.cache/account-lifecycle-express-journal.v1.json
 **/.wrangler/
+.cache/

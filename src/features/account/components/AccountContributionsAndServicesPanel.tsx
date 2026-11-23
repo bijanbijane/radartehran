@@ -68,7 +68,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Building2 className="w-4 h-4 text-emerald-600" />
+            <Building2 className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>فایل‌های ملکی ثبت‌شده من ({toPersianNum(myListings.length)})</span>
           </h2>
           <button type="button" onClick={() => onNavigateView?.('properties')} className="px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold cursor-pointer">
@@ -101,10 +101,10 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Briefcase className="w-4 h-4 text-emerald-600" />
+            <Briefcase className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>درخواست‌های خدمات و پیشنهادهای دریافتی ({toPersianNum(serviceRequests.length)})</span>
           </h2>
-          <button type="button" onClick={() => onNavigateView?.('services')} className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold cursor-pointer">
+          <button type="button" onClick={() => onNavigateView?.('services')} className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
             مدیریت کامل در بازار خدمات
           </button>
         </div>
@@ -137,12 +137,12 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
       <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <MessageSquarePlus className="w-4 h-4 text-emerald-600" />
+            <MessageSquarePlus className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>مشارکت‌های میدانی و اصلاح داده ({toPersianNum(loadDataCorrectionProposals().length)} مورد)</span>
           </h2>
           <p className="text-slate-500 mt-1">ثبت فایل زیر قیمت، اصلاح نقشه، گفت‌وگوی ساکنان و پیشنهاد موضوع پژوهش.</p>
         </div>
-        <button type="button" onClick={() => onNavigateView?.('contributions', 'submit')} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold cursor-pointer">
+        <button type="button" onClick={() => onNavigateView?.('contributions', 'submit')} className="px-4 py-2 rounded-xl bg-[var(--color-brand-600)] text-white font-bold cursor-pointer">
           ورود به بخش مشارکت
         </button>
       </div>
@@ -152,7 +152,7 @@ export const AccountContributionsAndServicesPanel: React.FC<AccountContributions
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-              <BookMarked className="w-4 h-4 text-emerald-600" />
+              <BookMarked className="w-4 h-4 text-[var(--color-brand-600)]" />
               <span>گزارش‌های ذخیره‌شده پایگاه دانش ({toPersianNum(savedKnowledgeItems.length)} مطالعه)</span>
             </h2>
             <p className="text-slate-500 mt-1">

@@ -89,7 +89,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
           ].map((t) => {
             const Icon = t.icon;
             return (
-              <button key={t.id} type="button" onClick={() => setActiveTab(t.id as StudioTabId)} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${activeTab === t.id ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-300 hover:bg-slate-800'}`}>
+              <button key={t.id} type="button" onClick={() => setActiveTab(t.id as StudioTabId)} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${activeTab === t.id ? 'bg-[var(--color-brand-600)] text-white shadow-sm' : 'bg-slate-800/70 text-slate-300 hover:bg-slate-800'}`}>
                 <Icon className="h-4 w-4" /> {t.label}
               </button>
             );
@@ -150,7 +150,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                   >
                     <div className="flex gap-2">
                       <input type="text" aria-invalid={Boolean(interactionError)} aria-label="خلاصه تماس تلفنی یا جلسه حضوری جدید" value={newInteractionSubject} onChange={(e) => { setNewInteractionSubject(e.target.value); if (interactionError) setInteractionError(''); }} placeholder="ثبت خلاصه تماس تلفنی یا جلسه حضوری جدید (۱۲۰۴)..." className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" />
-                      <button type="submit" className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white cursor-pointer"><PhoneCall className="h-3.5 w-3.5" /> ثبت تعامل</button>
+                      <button type="submit" className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-brand-600)] px-3.5 py-1.5 font-semibold text-white cursor-pointer"><PhoneCall className="h-3.5 w-3.5" /> ثبت تعامل</button>
                     </div>
                     {interactionError && <div role="alert" className="text-[11px] font-bold text-rose-300">{interactionError}</div>}
                   </form>
@@ -210,7 +210,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                       type="button"
                       onClick={() => {
                         const res = appendCounterOfferImmutable(offers, { offerId: `off-${offers.length + 1}`, parentOfferId: offers[offers.length - 1].offerId, caseId: 'case-101', proposerRole: 'BUYER', proposedAmountToman: 13_500_000_000, conditionsFa: 'پیشنهاد نهایی خریدار', createdAtIso: new Date().toISOString() });
-                        if (res.ok) setOffers(res.updatedHistory); }} className="rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white"
+                        if (res.ok) setOffers(res.updatedHistory); }} className="rounded bg-[var(--color-brand-600)] px-2 py-1 text-[11px] font-semibold text-white"
                     >
                       + ثبت پیشنهاد جدید
                     </button>
@@ -240,7 +240,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <input type="text" aria-label="علت تایید یا رد درخواست" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="علت تایید یا رد..." className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-white" />
-                    <button type="button" onClick={() => handleApprovalAction('APPROVED')} className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white">تأیید درخواست</button>
+                    <button type="button" onClick={() => handleApprovalAction('APPROVED')} className="rounded-lg bg-[var(--color-brand-600)] px-3 py-1.5 font-semibold text-white">تأیید درخواست</button>
                     <button type="button" onClick={() => handleApprovalAction('REJECTED')} className="rounded-lg bg-rose-600 px-3 py-1.5 font-semibold text-white">رد درخواست</button>
                   </div>
                 </div>
@@ -277,7 +277,7 @@ import { detectStalledDealsExplainable, evaluateAgencyDuplicateLeadSignals, exec
                 >
                   <label className="inline-flex items-center gap-1.5 text-slate-200"><input type="checkbox" checked={consentGranted} onChange={(e) => { setConsentGranted(e.target.checked); if (msgFeedbackFa) setMsgFeedbackFa(null); }} aria-label="رضایت صریح مشتری جهت ارسال پیامک" /> رضایت صریح مشتری (cust-101) فعال است</label>
                   <input type="text" aria-invalid={msgFeedbackFa ? classifyFeedbackTone(msgFeedbackFa) === 'error' : false} aria-label="کلید Idempotency ارسال پیام" value={idempotencyKeyInput} onChange={(e) => { setIdempotencyKeyInput(e.target.value); if (msgFeedbackFa) setMsgFeedbackFa(null); }} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-white" dir="ltr" />
-                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 font-semibold text-white cursor-pointer"><Send className="h-3.5 w-3.5" /> ارسال پیام</button>
+                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-brand-600)] px-3.5 py-1.5 font-semibold text-white cursor-pointer"><Send className="h-3.5 w-3.5" /> ارسال پیام</button>
                 </form>
                 {msgFeedbackFa && (
                   <div

@@ -36,7 +36,7 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-            <ClipboardCheck className="w-4 h-4 text-emerald-600" />
+            <ClipboardCheck className="w-4 h-4 text-[var(--color-brand-600)]" />
             <span>نمای کلی صف‌های عملیاتی و ماتریس نقش حاکمیتی</span>
           </h2>
           <p className="text-[11px] text-slate-500 mt-0.5">{activeRoleMeta.scopeSummaryFa}</p>
@@ -83,7 +83,7 @@ export const AdminOperationsOverviewCard: React.FC<AdminOperationsOverviewCardPr
         <span className="inline-flex items-center gap-1.5 font-bold text-slate-600 dark:text-slate-300">
           {p.isVerifiedAdmin ? (
             <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
               <span>احراز هویت سرور (Firebase Admin Auth) برقرار است؛ تغییرات در لاگ ممیزی ثبت می‌شوند.</span>
             </>
           ) : (

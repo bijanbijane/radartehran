@@ -34,7 +34,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
     > {open && (
         <div role="region" aria-label="جزئیات راهنمای نقشه و فیلتر رنگ‌ها" className="mb-2 ml-13 sm:ml-14 w-72 sm:w-80 max-w-[calc(100vw-4.75rem)] max-h-[calc(100dvh-19rem-var(--safe-bottom))] lg:max-h-[calc(100dvh-9rem)] overflow-y-auto apple-inspector-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl p-3 space-y-2.5 text-xs pointer-events-auto shadow-2xl">
           <div className="flex items-start justify-between gap-1.5 px-1 pb-1.5 border-b border-slate-200/70 dark:border-slate-800"> <div className="font-extrabold text-slate-900 dark:text-white flex flex-wrap items-center gap-1 min-w-0" title={`${areaUnitLabel} · ${referenceIntlSample}`}>
-              <Layers className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400 shrink-0" /> <span>{legendCopy.legendHeaderTitle}</span>
+              <Layers className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" /> <span>{legendCopy.legendHeaderTitle}</span>
               <span className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">({formatAreaShort(80, areaUnit)} · ۱۰ م.ت{intlCurrency !== 'IRT' ? ` ≈ ${referenceIntlSample}` : ''})</span>
             </div> <div className="flex items-center gap-1 shrink-0">{statusFilter !== 'all' && (
               <button type="button" onClick={() => onChangeStatusFilter('all')} className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer">
@@ -48,7 +48,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
               {[
                 { id: 'neshan' as const, label: 'نشان' }, { id: 'osm' as const, label: 'OSM' }, { id: 'satellite' as const, label: 'ماهواره' },
                 { id: 'carto_dark' as const, label: 'تاریک' }, ].map((st) => (
-                <button key={st.id} type="button" onClick={() => selectMapProviderStyle(st.id)} className={`py-1 px-1 rounded-lg font-bold border transition cursor-pointer ${providerState.effectiveProvider === st.id ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                <button key={st.id} type="button" onClick={() => selectMapProviderStyle(st.id)} className={`py-1 px-1 rounded-lg font-bold border transition cursor-pointer ${providerState.effectiveProvider === st.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {st.label}
                 </button> ))}
             </div>
@@ -73,7 +73,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
               </span>
             </div>
             <div className="grid grid-cols-2 gap-1">
-              <button type="button" aria-pressed={overlayState.showCommuteIsochrones} onClick={() => updateMapAdvancedOverlayState({ showCommuteIsochrones: !overlayState.showCommuteIsochrones })} className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-bold border transition cursor-pointer text-center ${overlayState.showCommuteIsochrones ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              <button type="button" aria-pressed={overlayState.showCommuteIsochrones} onClick={() => updateMapAdvancedOverlayState({ showCommuteIsochrones: !overlayState.showCommuteIsochrones })} className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-bold border transition cursor-pointer text-center ${overlayState.showCommuteIsochrones ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                 {legendCopy.commuteRingsLabel}
               </button>
               <button type="button" aria-pressed={overlayState.lowBandwidthGeoLazyMode} onClick={() => updateMapAdvancedOverlayState({ lowBandwidthGeoLazyMode: !overlayState.lowBandwidthGeoLazyMode })} title="کاهش رئوس GeoJSON و بارگذاری تنبل محدود به کادر دید برای موبایل و اینترنت ضعیف" className={`py-1.5 px-1.5 rounded-lg text-[10.5px] font-bold border transition cursor-pointer text-center ${overlayState.lowBandwidthGeoLazyMode ? 'bg-amber-600 text-white border-amber-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
@@ -112,7 +112,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
               <span>کپسول ۳سطحی: خلاصه در زوم پایین، کامل در زوم بالا</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white shrink-0">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-brand-600)] text-white shrink-0">
                 <Navigation className="w-3 h-3" />
               </span>
               <span>{radarLocale === 'en' ? `${legendCopy.directConnectionLabel} · Radial rings: 4.3 / 8.2 / 12.5 km` : `${legendCopy.directConnectionLabel} · حلقه‌های شعاعی ۴٫۳ / ۸٫۲ / ۱۲٫۵ کیلومتر تا محل کار`}</span>
@@ -131,7 +131,7 @@ import React from 'react'; import { CheckCircle2, AlertTriangle, XCircle, Layers
           <div dir="ltr" className="hidden sm:flex apple-vibrancy-bar dark:bg-slate-900/90 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold text-slate-700 dark:text-slate-200 items-center gap-1.5 border border-slate-200/60 dark:border-slate-800" title={providerState.fallbackNotice || providerState.statusBadgeText}>
             <span className="w-2 h-2 rounded-full shrink-0 bg-amber-500" />
             <span className="truncate max-w-[195px]">{providerState.statusBadgeText}</span>
-            <button type="button" onClick={() => triggerManualNeshanRetry()} className="px-1.5 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[9.5px] font-extrabold transition cursor-pointer shrink-0">
+            <button type="button" onClick={() => triggerManualNeshanRetry()} className="px-1.5 py-0.5 rounded-md bg-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] text-white text-[9.5px] font-extrabold transition cursor-pointer shrink-0">
               تلاش مجدد نشان
             </button>
           </div>

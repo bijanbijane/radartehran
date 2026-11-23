@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "./server.ts",
+    "../../server/**/*.ts",
+    "../../src/utils/**/*.ts",
+    "../../src/cells/**/*.ts",
+    "../../src/types/**/*.ts",
+    "../../src/data/**/*.ts",
+    "../../packages/contracts/**/*.ts"
+  ],
+  "exclude": [
+    "../../**/*.test.ts",
+    "../../**/*.test.tsx",
+    "../../server/modules/**/__tests__/**",
+    "../../server/modules/**/tests/**"
+  ]
+}

@@ -50,7 +50,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
       <div className="space-y-3 text-xs">
         <div className="apple-grouped-card dark:bg-slate-900 p-3.5 space-y-2.5 border-emerald-200/80 dark:border-slate-800">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>کارشناسی هوشمند متن آگهی دیوار/شیپور</span></span>
+            <span className="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>کارشناسی هوشمند متن آگهی دیوار/شیپور</span></span>
             <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md tabular-nums">ضریب کیفی: {toPersianNum(qMult)}x</span>
           </div>
           <textarea rows={2} aria-label="متن کامل آگهی دیوار یا شیپور" value={adText} onChange={(e) => handlePasteAdText(e.target.value)} placeholder="متن کامل آگهی دیوار یا شیپور را اینجا الصاق (Paste) کنید تا متراژ، طبقه، سن بنا، قیمت و ریسک‌ها خودکار استخراج شوند..." className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] p-2 text-[11px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600" />
@@ -86,7 +86,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
                 <span className="font-bold text-slate-800 dark:text-slate-200">{devPct > 0 ? `+${toPersianNum(devPct)}٪ بالاتر از ارزش عادلانه` : `${toPersianNum(Math.abs(devPct))}٪ زیر ارزش عادلانه`}</span>
               </div>
             )}
-            <button type="button" data-testid="save-analyzed-ad-to-visits-btn" onClick={() => { setNewVisitAddress(`آگهی کارشناسی‌شده ${formatAreaShort(anSqm, areaUnit)} (طبقه ${toPersianNum(anFloor)}، ${toPersianNum(anAge)} ساله) - ${selectedHood.name}`); setNewVisitPrice(effectiveAskingTotal > 0 ? effectiveAskingTotal : fairDealTotal); setShowVisitedModal(true); }} className="w-full mt-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10.5px] flex items-center justify-center gap-1.5 transition cursor-pointer">
+            <button type="button" data-testid="save-analyzed-ad-to-visits-btn" onClick={() => { setNewVisitAddress(`آگهی کارشناسی‌شده ${formatAreaShort(anSqm, areaUnit)} (طبقه ${toPersianNum(anFloor)}، ${toPersianNum(anAge)} ساله) - ${selectedHood.name}`); setNewVisitPrice(effectiveAskingTotal > 0 ? effectiveAskingTotal : fairDealTotal); setShowVisitedModal(true); }} className="w-full mt-1 py-1.5 px-2.5 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-[10.5px] flex items-center justify-center gap-1.5 transition cursor-pointer">
               <Bookmark className="w-3.5 h-3.5 stroke-[1.75]" /><span>ثبت این آگهی در دفترچه بازدیدهای میدانی من</span>
             </button>
           </div>
@@ -99,12 +99,12 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
                 معیار {formatAreaShort(targetSqm, areaUnit)}: {mode === 'buy' ? `${toPersianNum(convertPricePerSqmToUnit(selectedHood.buyPerSqm, areaUnit))} م/${areaUnit === 'sqft' ? 'ft²' : 'متر'} (کل: ${toPersianNum(Math.round((selectedHood.buyPerSqm * targetSqm) / 100) / 10)} میلیارد${intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(selectedHood.buyPerSqm * targetSqm, intlCurrency, radarLocale)}` : ''})` : `رهن ~${toPersianNum(Math.round(selectedHood.rahn80m * (targetSqm / 80)))} م`}
               </span>
             </div>
-            <button type="button" onClick={() => { setBargainHoodId(selectedHood.id); setAgencyModalTab('submit_bargain'); setShowAgencyModal(true); }} className="px-2.5 py-1.5 rounded-[9px] bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer">
+            <button type="button" onClick={() => { setBargainHoodId(selectedHood.id); setAgencyModalTab('submit_bargain'); setShowAgencyModal(true); }} className="px-2.5 py-1.5 rounded-[9px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer">
               <PlusCircle className="w-3.5 h-3.5 stroke-[1.75]" /><span>ثبت فایل</span>
             </button>
           </div>
           <button type="button" onClick={() => { setAlertHoodId(selectedHood.id); setAlertSubmitMsg(''); setShowBuyerAlertModal(true); }} className="w-full py-2 px-3 rounded-[10px] bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
-            <Bell className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" /><span>خبرم کن وقتی فایل جدید زیر قیمت در {selectedHood.name} ثبت شد</span>
+            <Bell className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>خبرم کن وقتی فایل جدید زیر قیمت در {selectedHood.name} ثبت شد</span>
           </button>
           <a href={buildExternalDivarUrl(activeCity, mode, selectedHood.name, { targetSqm, buyTotalBudget, deposit, monthlyRent })} target="_blank" rel="noopener noreferrer" className="w-full py-2 px-3 rounded-[10px] bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-300 font-bold flex items-center justify-center gap-1.5 transition text-xs">
             <span>مشاهده تمام آگهی‌های دیوار محله {selectedHood.name} ↗</span>
@@ -164,7 +164,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
                   </div>
                   <ListingMediaGallery listing={b} estimatedMillionToman={estMillion} />
                   <button type="button" onClick={() => { setNewVisitAddress(`${b.type === 'اجاره' ? '[رهن/اجاره] ' : ''}واحد ${formatAreaValue(b.sqm, areaUnit)} - ${b.street}`); setNewVisitPrice(estMillion); setShowVisitedModal(true); }} className="w-full py-1.5 px-2 rounded-[8px] bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] flex items-center justify-center gap-1.5 transition cursor-pointer">
-                    <Bookmark className="w-3.5 h-3.5 stroke-[1.75] text-emerald-600 dark:text-emerald-400" /><span>افزودن به دفترچه بازدیدهای من</span>
+                    <Bookmark className="w-3.5 h-3.5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>افزودن به دفترچه بازدیدهای من</span>
                   </button>
                 </div>
               </ViewportLazyRender>
@@ -180,7 +180,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
     <div className="space-y-3.5 text-xs">
       <div className="apple-grouped-card dark:bg-slate-900 dark:border-slate-800 p-3.5 space-y-2.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Compass className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" /><span>مراکز مهم {selectedHood.name} روی نقشه</span></span>
+          <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5"><Compass className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" /><span>مراکز مهم {selectedHood.name} روی نقشه</span></span>
           <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-semibold tabular-nums">شعاع {toPersianNum(selectedHood.radius || 900)} متر{areaUnit === 'sqft' ? ` (${toPersianNum(Math.round((selectedHood.radius || 900) * 3.28084).toLocaleString('en-US'))} ft)` : ''}</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -209,7 +209,7 @@ export function NeighborhoodBargainsAndVotesTabs(props: NeighborhoodBargainsAndV
         ))}
         <input type="text" aria-label={`تجربه کوتاه از سکونت در ${selectedHood.name}`} maxLength={300} value={voteComment} onChange={(e) => setVoteComment(e.target.value)} placeholder={`تجربه کوتاه شما از سکونت در ${selectedHood.name}...`} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-          <button type="button" onClick={() => onResidentVote(true)} disabled={verifyingGeo} className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <button type="button" onClick={() => onResidentVote(true)} disabled={verifyingGeo} className="py-2 px-3 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
             <MapPin className="w-4 h-4 stroke-[1.75] shrink-0" /><span className="truncate">{verifyingGeo ? 'بررسی مکان‌یاب...' : 'تایید مکانی و ثبت رای'}</span>
           </button>
           <button type="button" onClick={() => onResidentVote(false)} className="py-2 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition flex items-center justify-center gap-1.5 cursor-pointer">

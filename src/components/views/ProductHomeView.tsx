@@ -91,7 +91,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
   const activeCityNameFa = MULTI_CITY_CONFIGS[activeCity]?.nameFa || 'تهران';
 
   return (
-    <div className="w-full max-w-[1280px] mx-auto px-4 py-6 sm:py-10 space-y-12 animate-fadeIn text-[#182522] dark:text-slate-100" data-testid="product-home-view">
+    <div className="w-full max-w-[1280px] mx-auto px-4 py-6 sm:py-10 space-y-12 animate-fadeIn text-[var(--color-text-primary)] dark:text-slate-100" data-testid="product-home-view">
       {/* 02. بخش معرفی و جست‌وجوی اصلی (Hero + Global Search + Lightweight Spatial Map Preview) */}
       <HomeHeroAndMapPreview
         evaluatedNeighborhoods={p.evaluatedNeighborhoods}
@@ -119,29 +119,29 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
       <section aria-labelledby="home-featured-hoods-heading" data-testid="home-featured-neighborhoods-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <h2 id="home-featured-hoods-heading" className="text-lg sm:text-xl font-extrabold text-[#182522] dark:text-white">
+            <h2 id="home-featured-hoods-heading" className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] dark:text-white">
               محله‌های {activeCityNameFa} را دقیق‌تر بشناسید
             </h2>
-            <p className="text-xs text-[#34433E] dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-[var(--color-text-secondary)] dark:text-slate-400 mt-0.5">
               معرفی مستند محله‌ها بر پایه پوشش اطلاعاتی، کیفیت داده و تنوع جغرافیایی · بودجه فعال: <strong className="tabular-nums">{budgetDisplay}{fxBudget}</strong>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div role="group" aria-label="روش انتخاب محله‌های منتخب" className="inline-flex items-center bg-[#F1F4F2] dark:bg-slate-800 p-0.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 text-[11px]">
+            <div role="group" aria-label="روش انتخاب محله‌های منتخب" className="inline-flex items-center bg-[var(--color-bg-muted)] dark:bg-slate-800 p-0.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[11px]">
               {([
                 { id: 'editorial_curated', label: 'منتخب تحریریه‌ای' },
                 { id: 'data_completeness', label: 'کیفیت و پوشش داده' },
                 { id: 'budget_fit', label: 'انطباق با بودجه' },
               ] as const).map((m) => (
-                <button key={m.id} type="button" onClick={() => { setSelectionMode(m.id); setHomePage(1); }} className={`px-2.5 py-1 rounded-[6px] font-bold transition cursor-pointer ${selectionMode === m.id ? 'bg-white dark:bg-slate-900 text-[#182522] dark:text-white shadow-2xs' : 'text-[#34433E] dark:text-slate-400'}`}>
+                <button key={m.id} type="button" onClick={() => { setSelectionMode(m.id); setHomePage(1); }} className={`px-2.5 py-1 rounded-[6px] font-bold transition cursor-pointer ${selectionMode === m.id ? 'bg-white dark:bg-slate-900 text-[var(--color-text-primary)] dark:text-white shadow-2xs' : 'text-[var(--color-text-secondary)] dark:text-slate-400'}`}>
                   {m.label}
                 </button>
               ))}
             </div>
-            <button type="button" onClick={p.onOpenBudgetFilter} className="px-2.5 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-[#182522] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
+            <button type="button" onClick={p.onOpenBudgetFilter} className="px-2.5 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200 flex items-center gap-1 cursor-pointer">
               <SlidersHorizontal className="w-3.5 h-3.5" /><span>تنظیم بودجه</span>
             </button>
-            <button type="button" onClick={() => p.onNavigateView('discover')} className="text-xs font-bold text-[#176B63] dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
+            <button type="button" onClick={() => p.onNavigateView('discover')} className="text-xs font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
               <span>همه محله‌ها</span><ChevronLeft className="w-4 h-4" />
             </button>
           </div>
@@ -151,7 +151,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
           <div role="group" aria-label={p.mode === 'rent' ? 'بازه رهن کامل' : 'بازه قیمت کل خرید'} className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
             {getPriceBracketOptions(p.mode, isEn).map((b) => (
-              <button key={b.id} type="button" onClick={() => { setPriceBracket(b.id); setHomePage(1); }} className={`px-3 py-1 rounded-[8px] text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-[#176B63] text-white' : 'text-[#34433E] dark:text-slate-400 bg-[#F1F4F2] dark:bg-slate-800'}`}>
+              <button key={b.id} type="button" onClick={() => { setPriceBracket(b.id); setHomePage(1); }} className={`px-3 py-1 rounded-[8px] text-xs font-bold transition whitespace-nowrap cursor-pointer ${priceBracket === b.id ? 'bg-[var(--color-brand-600)] text-white' : 'text-[var(--color-text-secondary)] dark:text-slate-400 bg-[var(--color-bg-muted)] dark:bg-slate-800'}`}>
                 {b.label}
               </button>
             ))}
@@ -163,7 +163,7 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
               onChange={(e) => { setHomeQuery(e.target.value); setHomePage(1); }}
               placeholder="فیلتر سریع نام محله..."
               aria-label="فیلتر محله‌های منتخب"
-              className="px-3 pl-7 py-1.5 rounded-[8px] border border-[#DCE3DF] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-[#182522] dark:text-slate-100 focus:outline-none focus:border-[#176B63]"
+              className="px-3 pl-7 py-1.5 rounded-[8px] border border-[var(--color-border-subtle)] dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-[var(--color-text-primary)] dark:text-slate-100 focus:outline-none focus:border-[var(--color-brand-600)]"
             />
             {homeQuery && (
               <button type="button" aria-label="پاک کردن فیلتر محله‌ها" onClick={() => { setHomeQuery(''); setHomePage(1); }} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer">
@@ -174,9 +174,9 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
         </div>
 
         {featuredHoods.length === 0 ? (
-          <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 text-center space-y-2">
-            <div className="text-sm font-bold text-[#182522] dark:text-white">محله‌ای با این فیلتر یافت نشد</div>
-            <button type="button" onClick={() => { setHomeQuery(''); setPriceBracket('all'); setHomePage(1); }} className="px-3 py-1.5 rounded-[8px] bg-[#176B63] text-white text-xs font-bold cursor-pointer">بازنشانی فیلتر محله‌ها</button>
+          <div className="p-6 rounded-[12px] bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 text-center space-y-2">
+            <div className="text-sm font-bold text-[var(--color-text-primary)] dark:text-white">محله‌ای با این فیلتر یافت نشد</div>
+            <button type="button" onClick={() => { setHomeQuery(''); setPriceBracket('all'); setHomePage(1); }} className="px-3 py-1.5 rounded-[8px] bg-[var(--color-brand-600)] text-white text-xs font-bold cursor-pointer">بازنشانی فیلتر محله‌ها</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -191,23 +191,23 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
               const fabricLabel = hood.overallScore >= 8 ? 'بافت نوساز و برنامه‌ریزی‌شده' : hood.overallScore >= 6.5 ? 'بافت میانی و متعادل' : 'بافت در حال نوسازی';
 
               return (
-                <div key={hood.id} className={`p-4 rounded-[12px] bg-white dark:bg-slate-900 border transition flex flex-col justify-between group ${isSelected ? 'border-[#176B63] ring-1 ring-[#176B63]/30' : 'border-[#DCE3DF] dark:border-slate-800 hover:border-[#176B63]/60'}`}>
+                <div key={hood.id} className={`p-4 rounded-[12px] bg-white dark:bg-slate-900 border transition flex flex-col justify-between group ${isSelected ? 'border-[var(--color-brand-600)] ring-1 ring-[var(--color-brand-600)]/30' : 'border-[var(--color-border-subtle)] dark:border-slate-800 hover:border-[var(--color-brand-600)]/60'}`}>
                   <div role="button" tabIndex={0} onClick={() => p.onSelectNeighborhood(hood)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSelectNeighborhood(hood); } }} className="cursor-pointer">
-                    <div className="flex items-center justify-between text-xs text-[#34433E] dark:text-slate-400">
+                    <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] dark:text-slate-400">
                       <span className="truncate">{hood.zone} · {fabricLabel}</span>
-                      <span className="font-mono font-bold text-[#182522] dark:text-slate-200 tabular-nums">{toPersianNum(hood.overallScore)}/۱۰</span>
+                      <span className="font-mono font-bold text-[var(--color-text-primary)] dark:text-slate-200 tabular-nums">{toPersianNum(hood.overallScore)}/۱۰</span>
                     </div>
-                    <h3 className="text-base sm:text-lg font-extrabold text-[#182522] dark:text-white group-hover:text-[#176B63] dark:group-hover:text-emerald-400 transition">محله {hood.name}</h3>
-                    <p className="text-xs text-[#34433E] dark:text-slate-400 line-clamp-2 leading-relaxed">
+                    <h3 className="text-base sm:text-lg font-extrabold text-[var(--color-text-primary)] dark:text-white group-hover:text-[var(--color-brand-600)] dark:group-hover:text-emerald-400 transition">محله {hood.name}</h3>
+                    <p className="text-xs text-[var(--color-text-secondary)] dark:text-slate-400 line-clamp-2 leading-relaxed">
                       {hood.pros || `محدوده شهری در ${hood.zone} با دسترسی مترو ${toPersianNum(hood.metro)}/۱۰ و شاخص هوا ${toPersianNum(hood.air)}/۱۰.`}
                     </p>
-                    <p className={`mt-1 text-[11px] truncate ${explain.nonCompensatoryWarningsFa[0] ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-[#176B63] dark:text-emerald-400 font-semibold'}`}>
+                    <p className={`mt-1 text-[11px] truncate ${explain.nonCompensatoryWarningsFa[0] ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-[var(--color-brand-600)] dark:text-emerald-400 font-semibold'}`}>
                       {explain.nonCompensatoryWarningsFa[0] || explain.primaryReasonFa}
                     </p>
-                    <div className="pt-2.5 border-t border-[#DCE3DF]/70 dark:border-slate-800 space-y-1 text-xs tabular-nums">
+                    <div className="pt-2.5 border-t border-[var(--color-border-subtle)]/70 dark:border-slate-800 space-y-1 text-xs tabular-nums">
                       <div className="flex justify-between gap-2">
                         <span className="text-slate-500">{p.mode === 'buy' ? `${pres.buyReferenceLabelFa}:` : `${pres.rahnAreaLabelFa}:`}</span>
-                        <strong className="text-[#182522] dark:text-white">{p.mode === 'buy' ? pres.buyValueWithUnitFa : pres.rahnValueWithUnitFa}</strong>
+                        <strong className="text-[var(--color-text-primary)] dark:text-white">{p.mode === 'buy' ? pres.buyValueWithUnitFa : pres.rahnValueWithUnitFa}</strong>
                       </div>
                       <div className="flex justify-between gap-2 text-[11px] text-slate-500">
                         <span>{p.mode === 'buy' ? `${pres.rahnAreaLabelFa}:` : `${pres.buyReferenceLabelFa}:`}</span>
@@ -216,8 +216,8 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                       <div className="text-[11px] text-slate-500" title="سناریو v6.4 (برآورد غیرثبتی)">{pres.dealScenarioLineFa}</div>
                     </div>
                   </div>
-                  <div className="mt-3 pt-2.5 border-t border-[#DCE3DF]/70 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className={hood.status === 'green' ? 'text-[#176B63] dark:text-emerald-400 font-bold' : 'text-slate-500'}>
+                  <div className="mt-3 pt-2.5 border-t border-[var(--color-border-subtle)]/70 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <span className={hood.status === 'green' ? 'text-[var(--color-brand-600)] dark:text-emerald-400 font-bold' : 'text-slate-500'}>
                       {hood.status === 'green' ? 'در محدوده بودجه' : `${toPersianNum(hood.diffPercent)}٪ بالاتر از بودجه`}
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -229,12 +229,12 @@ export function ProductHomeView(p: ProductHomeViewProps): React.ReactElement {
                             updateMapAdvancedOverlayState({ comparisonArc: { active: !isArcActive, isPinned: !isArcActive, hoodA: p.selectedHood, hoodB: hood } });
                           }}
                           aria-label={`کمان مقایسه ${hood.name} روی نقشه`}
-                          className={`p-1.5 rounded-[6px] border transition cursor-pointer ${isArcActive ? 'bg-[#176B63] text-white border-[#176B63]' : 'border-[#DCE3DF] dark:border-slate-700 text-[#34433E] dark:text-slate-300'}`}
+                          className={`p-1.5 rounded-[6px] border transition cursor-pointer ${isArcActive ? 'bg-[var(--color-brand-600)] text-white border-[var(--color-brand-600)]' : 'border-[var(--color-border-subtle)] dark:border-slate-700 text-[var(--color-text-secondary)] dark:text-slate-300'}`}
                         >
                           <Scale className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      <button type="button" onClick={(e) => { e.stopPropagation(); if (p.onOpenInspector) p.onOpenInspector(hood); else p.onSelectNeighborhood(hood); }} className="font-bold text-[#176B63] dark:text-emerald-400 hover:underline cursor-pointer">
+                      <button type="button" onClick={(e) => { e.stopPropagation(); if (p.onOpenInspector) p.onOpenInspector(hood); else p.onSelectNeighborhood(hood); }} className="font-bold text-[var(--color-brand-600)] dark:text-emerald-400 hover:underline cursor-pointer">
                         شناسنامه محله ←
                       </button>
                     </div>

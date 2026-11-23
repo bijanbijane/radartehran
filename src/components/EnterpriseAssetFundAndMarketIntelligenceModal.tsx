@@ -102,7 +102,7 @@ import { evaluateOwnershipSeparationRegistryAndTitleConflicts, evaluateSettlemen
             { id: 'b131_construction_delivery' as const, label: '🚧 ۱۳۱: پیمانکاران و تحویل', icon: HardHat }, ].map((t) => {
             const Icon = t.icon;
             return (
-              <button key={t.id} type="button" onClick={() => setActiveTab(t.id)} className={`px-2 py-1 rounded-xl flex items-center gap-1 border transition cursor-pointer ${activeTab === t.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+              <button key={t.id} type="button" onClick={() => setActiveTab(t.id)} className={`px-2 py-1 rounded-xl flex items-center gap-1 border transition cursor-pointer ${activeTab === t.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
                 <Icon className="w-3.5 h-3.5" />
                 <span>{t.label}</span>
               </button>
@@ -164,10 +164,10 @@ import { evaluateOwnershipSeparationRegistryAndTitleConflicts, evaluateSettlemen
               </div>
               <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /><span>۲. پایشگر Lazy Loading لایه‌های GeoJSON نقشه</span></span>
+                  <span className="font-extrabold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5"><Layers className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400" /><span>۲. پایشگر Lazy Loading لایه‌های GeoJSON نقشه</span></span>
                   <button type="button" onClick={() => updateMapAdvancedOverlayState({ lowBandwidthGeoLazyMode: !overlayState.lowBandwidthGeoLazyMode })} className="px-2.5 py-1 rounded-lg text-[10.5px] font-bold bg-emerald-700 text-white cursor-pointer">حالت کم‌مصرف موبایل: {overlayState.lowBandwidthGeoLazyMode ? 'فعال' : 'استاندارد'}</button>
                 </div>
-                <div className="text-[11px] text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>حداکثر رئوس پولیگون (LOD): <strong>{toPersianNum(b120MarketResult.lazyPolicy.maxVerticesPerPolygon)} رأس</strong> | کش LRU: <strong>{toPersianNum(b120MarketResult.lruStats.size)}/{toPersianNum(b120MarketResult.lazyPolicy.maxLruCacheSize)}</strong></span></div>
+                <div className="text-[11px] text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" /><span>حداکثر رئوس پولیگون (LOD): <strong>{toPersianNum(b120MarketResult.lazyPolicy.maxVerticesPerPolygon)} رأس</strong> | کش LRU: <strong>{toPersianNum(b120MarketResult.lruStats.size)}/{toPersianNum(b120MarketResult.lazyPolicy.maxLruCacheSize)}</strong></span></div>
               </div>
             </div>
           )}

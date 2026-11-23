@@ -144,7 +144,7 @@ export function ShortlistMatrixModal({
                       </div>
                       <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mb-2">{hood.zone}</div>
                       <div className="space-y-1">
-                        <button type="button" onClick={() => { onSelectNeighborhood(hood); onClose(); }} aria-label={isEn ? `Jump to ${hood.name} on map` : `پرش به ${hood.name} روی نقشه`} className="w-full py-1 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer transition">
+                        <button type="button" onClick={() => { onSelectNeighborhood(hood); onClose(); }} aria-label={isEn ? `Jump to ${hood.name} on map` : `پرش به ${hood.name} روی نقشه`} className="w-full py-1 px-2 rounded-lg bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer transition">
                           <MapPin className="w-3 h-3" />
                           <span>{isEn ? 'Jump on Map' : 'پرش روی نقشه'}</span>
                         </button>

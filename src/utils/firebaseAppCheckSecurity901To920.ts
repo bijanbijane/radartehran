@@ -287,4 +287,4 @@ export function evaluateStagedAppCheckRolloutReadiness(params: {
     referenceValuationIntlText: formatMillionTomanAsIntlCurrency(params.referenceValuationMillionToman ?? 0, params.intlCurrency ?? 'IRT'),
   };
 }
-export { requireAppCheckToken, createRequireAppCheckTokenMiddleware, initializeFirebaseAppCheck, initializeAppServicesWithAppCheck } from './appCheck';
+export { requireAppCheckToken, createRequireAppCheckTokenMiddleware } from './appCheckServerMiddleware';

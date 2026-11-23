@@ -264,7 +264,7 @@ export const Stage37DataTrustSubpanel: React.FC = () => {
                 type="button"
                 data-testid="submit-data-issue-btn"
                 onClick={() => setIssueSubmitted(true)}
-                className="rounded-lg bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500"
+                className="rounded-lg bg-[var(--color-brand-600)] px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-500"
               >
                 ثبت نمایشی گزارش خطا
               </button>

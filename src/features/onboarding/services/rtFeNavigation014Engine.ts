@@ -3,6 +3,16 @@
  * Spec ID: RT-FE-NAVIGATION-WORKSPACE-014
  */
 
+import { searchNavigationDiscovery } from '../../../navigation/discovery/navigationDiscoveryCatalog';
+import {
+  expandPlatformPermissionsForNavigation,
+  GUEST_BASELINE_PERMISSIONS,
+  mergeLegacyDiscoveryPermissions,
+} from '../../../navigation/registry/navigationPermissionBridge';
+import type { NavigationVisibilityContext } from '../../../navigation/registry/navigationVisibility';
+import { UNIFIED_NAVIGATION_ROUTES } from '../../../navigation/registry/unifiedNavigationRegistry';
+import { isDynamicPublicNavigationPath } from '../../../navigation/url/navigationDeepLinkPaths';
+
 export * from './rtFeNavigation014Specs';
 
 export type NavigationStatus = 'active' | 'beta' | 'experimental' | 'disabled' | 'deprecated';
@@ -112,14 +122,23 @@ export function resolveDeepLinkDestination(input: {
   }
 
   const normalizedPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
-  if (normalizedPath.startsWith('/admin') && !input.userPermissions.includes('admin.access')) {
+  const hasAdminNavAccess =
+    input.userPermissions.includes('admin.access') || input.userPermissions.includes('admin:access');
+  if (normalizedPath.startsWith('/admin') && !hasAdminNavAccess) {
     return { status: 'FORBIDDEN_403', normalizedPath, reasonFa: 'خطای 403 (تفکیک‌شده از 404): دسترسی مدیریت نیازمند مجوز معتبر است.' };
   }
   if (normalizedPath === '/property/PR-1024') {
     return { status: 'REDIRECT_SAFE', normalizedPath: '/properties/PR-1024', reasonFa: 'مسیر قدیمی به آدرس استاندارد جدید هدایت شد.' };
   }
-  const knownPrefixes = ['/properties', '/neighborhoods', '/valuation', '/market', '/reports', '/workspace', '/admin', '/'];
-  const validPrefix = knownPrefixes.some((p) => (p === '/' ? normalizedPath === '/' : normalizedPath.startsWith(p)));
+  const knownPrefixes = [
+    ...new Set([
+      '/',
+      ...UNIFIED_NAVIGATION_ROUTES.flatMap((r) => [r.path, ...(r.aliases ?? [])]),
+    ]),
+  ];
+  const validPrefix =
+    knownPrefixes.some((p) => (p === '/' ? normalizedPath === '/' : normalizedPath.startsWith(p))) ||
+    isDynamicPublicNavigationPath(normalizedPath);
   if (!validPrefix) {
     return { status: 'NOT_FOUND_404', normalizedPath, reasonFa: 'خطای 404: مقصد درخواستی در Route Registry ثبت نشده است.' };
   }
@@ -141,21 +160,53 @@ export function buildValidatedBreadcrumbs(input: {
   ];
 }
 
+function resolveDiscoveryVisibilityContext(
+  visibility: NavigationVisibilityContext | readonly string[],
+): NavigationVisibilityContext {
+  if (!Array.isArray(visibility)) return visibility;
+  const { platformPermissions, legacyAliases, activeRole } = mergeLegacyDiscoveryPermissions(visibility);
+  const userPermissions = expandPlatformPermissionsForNavigation(
+    platformPermissions,
+    activeRole,
+    legacyAliases,
+  );
+  return {
+    authReady: true,
+    isAuthenticated: userPermissions.length > GUEST_BASELINE_PERMISSIONS.length,
+    userPermissions,
+    userRoles: activeRole === 'admin' || activeRole === 'platform_admin' ? [activeRole] : [],
+    enabledFeatures: {},
+  };
+}
+
 /** Distinguishes Feature Discovery from Entity/Content Search with Persian normalization & Permission filtering (§14.13 & §14.14). */
-export function searchDiscoveryAndEntities(query: string, userPermissions: string[]): {
+export function searchDiscoveryAndEntities(
+  query: string,
+  visibility: NavigationVisibilityContext | readonly string[],
+): {
   features: GlobalSearchResult[];
   entitiesAndReports: GlobalSearchResult[];
   commands: NavigationCommand[];
 } {
   const norm = normalizeFa(query);
-  const matchingResults = RT_NAV_DISCOVERY_CATALOG_SAMPLE.filter((item) =>
-    norm.length === 0 || normalizeFa(item.title).includes(norm),
-  );
-  const matchingCommands = RT_NAV_COMMANDS_SAMPLE.filter((cmd) => {
-    if (!cmd.enabled) return false;
-    if (cmd.requiredPermissions?.some((perm) => !userPermissions.includes(perm))) return false;
-    return norm.length === 0 || normalizeFa(cmd.label).includes(norm) || cmd.keywords.some((k) => normalizeFa(k).includes(norm));
-  });
+  const ctx = resolveDiscoveryVisibilityContext(visibility);
+  const resolvedPermissions = ctx.userPermissions;
+  const registryDiscovery = searchNavigationDiscovery(query, ctx);
+
+  const matchingResults = [
+    ...registryDiscovery.pages,
+    ...RT_NAV_DISCOVERY_CATALOG_SAMPLE.filter(
+      (item) => norm.length === 0 || normalizeFa(item.title).includes(norm),
+    ),
+  ];
+  const matchingCommands = [
+    ...registryDiscovery.commands,
+    ...RT_NAV_COMMANDS_SAMPLE.filter((cmd) => {
+      if (!cmd.enabled) return false;
+      if (cmd.requiredPermissions?.some((perm) => !resolvedPermissions.includes(perm))) return false;
+      return norm.length === 0 || normalizeFa(cmd.label).includes(norm) || cmd.keywords.some((k) => normalizeFa(k).includes(norm));
+    }),
+  ];
   return {
     features: matchingResults.filter((r) => r.type === 'feature' || r.type === 'page'),
     entitiesAndReports: matchingResults.filter((r) => r.type !== 'feature' && r.type !== 'page'),

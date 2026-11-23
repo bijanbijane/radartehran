@@ -62,7 +62,9 @@ export interface TelemetryValidationResult {
     | 'ILLEGAL_PII_KEY'
     | 'ILLEGAL_PII_VALUE'
     | 'INVALID_METRICS'
-    | 'INVALID_DIMENSIONS';
+    | 'INVALID_DIMENSIONS'
+    | 'FORBIDDEN_CLIENT_CATEGORY'
+    | 'FORBIDDEN_EVENT_NAME';
   readonly errorMessageFa?: string;
   readonly sanitizedEvent?: TelemetryEventPayload;
 }

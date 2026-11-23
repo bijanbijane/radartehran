@@ -53,7 +53,7 @@ export const ProductSecondaryHubView: React.FC<ProductSecondaryHubViewProps> = (
           نشانی واردشده در ساختار فعلی رادار {cityNameFa} تعریف نشده یا جابه‌جا شده است. می‌توانید به نقشه تعاملی، صفحه نخست یا لیست محله‌ها بازگردید.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
-          <button type="button" onClick={() => p.onNavigateView('map')} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+          <button type="button" onClick={() => p.onNavigateView('map')} className="px-4 py-2 rounded-xl bg-[var(--color-brand-600)] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
             <MapIcon className="w-4 h-4" /><span>بازگشت به نقشه زنده</span>
           </button>
           <button type="button" onClick={() => p.onNavigateView('home')} className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer">

@@ -4,8 +4,18 @@
  * Validation, Error Mapping, Operation Timeout Policies, Safe Firestore/JSON Serialization &
  * Environment-Aware CORS Policy Engine (Section 21 — Prompts 401 to 420).
  */
+import {
+  buildStandardApiSuccess,
+  mapExceptionToStandardApiResponse,
+  type StandardApiErrorCode,
+  type StandardApiErrorEnvelope,
+  type StandardApiSuccessEnvelope,
+} from '../../packages/contracts/src/index.ts';
 import { cleanIranianMobile, isValidIranianMobile, sanitizeInput } from './security';
 import { formatAreaUnitLabel, formatMillionTomanAsIntlCurrency, getStoredAreaUnit, getStoredIntlCurrency, type AreaUnit, type IntlCurrencyCode } from './areaUnit';
+
+export type { StandardApiErrorCode, StandardApiErrorEnvelope, StandardApiSuccessEnvelope };
+export { buildStandardApiSuccess, mapExceptionToStandardApiResponse };
 const VALID_CITY_IDS = new Set(['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz']);
 // ============================================================================
 // 1. PROMPT 401 — COMPLETE REPOSITORY-BACKED API ENDPOINT INVENTORY
@@ -13,61 +23,8 @@ const VALID_CITY_IDS = new Set(['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz
 export type { RegisteredApiRoute as ApiEndpointInventoryItem } from './expressRouteCatalog';
 export { RADAR_API_ROUTE_INVENTORY } from './expressRouteCatalog';
 // ============================================================================
-// 2. PROMPTS 402 & 404 — STANDARDIZED API RESPONSE & ERROR CONTRACTS
+// 2. PROMPTS 402 & 404 — STANDARDIZED API RESPONSE & ERROR CONTRACTS (@radartehran/contracts)
 // ============================================================================
-export type StandardApiErrorCode = 'VALIDATION_FAILED' | 'AUTHENTICATION_REQUIRED' | 'FORBIDDEN_INSUFFICIENT_ROLE' | 'RESOURCE_NOT_FOUND' | 'IDEMPOTENCY_OR_VERSION_CONFLICT' | 'PAYLOAD_TOO_LARGE' | 'UNSUPPORTED_MEDIA_TYPE' | 'RATE_LIMIT_EXCEEDED' | 'UPSTREAM_TIMEOUT' | 'INTERNAL_SERVER_ERROR';
-export interface StandardApiSuccessEnvelope<T> { status: 'ok'; correlationId: string; timestampIso: string; data: T; }
-export interface StandardApiErrorEnvelope { status: 'error';
-  code: StandardApiErrorCode; message: string;
-  correlationId: string; retryable: boolean;
-  fieldErrors?: Record<string, string>;
-}
-export function buildStandardApiSuccess<T>(
-  data: T,
-  correlationId = 'req-default',
-  nowIso = new Date().toISOString(),
-): StandardApiSuccessEnvelope<T> {
-  return {
-    status: 'ok',
-    correlationId: sanitizeInput(correlationId, 64),
-    timestampIso: nowIso,
-    data,
-  };
-}
-export function mapExceptionToStandardApiResponse(params: {
-  errorCategory: StandardApiErrorCode;
-  userMessageFa: string;
-  correlationId?: string;
-  fieldErrors?: Record<string, string>;
-}): {
-  httpStatus: number;
-  body: StandardApiErrorEnvelope;
-} {
-  const statusMap: Record<StandardApiErrorCode, { status: number; retryable: boolean }> = {
-    VALIDATION_FAILED: { status: 400, retryable: false },
-    AUTHENTICATION_REQUIRED: { status: 401, retryable: false },
-    FORBIDDEN_INSUFFICIENT_ROLE: { status: 403, retryable: false },
-    RESOURCE_NOT_FOUND: { status: 404, retryable: false },
-    IDEMPOTENCY_OR_VERSION_CONFLICT: { status: 409, retryable: false },
-    PAYLOAD_TOO_LARGE: { status: 413, retryable: false },
-    UNSUPPORTED_MEDIA_TYPE: { status: 415, retryable: false },
-    RATE_LIMIT_EXCEEDED: { status: 429, retryable: true },
-    UPSTREAM_TIMEOUT: { status: 503, retryable: true },
-    INTERNAL_SERVER_ERROR: { status: 500, retryable: true },
-  };
-  const mapped = statusMap[params.errorCategory] ?? statusMap.INTERNAL_SERVER_ERROR;
-  return {
-    httpStatus: mapped.status,
-    body: {
-      status: 'error',
-      code: params.errorCategory,
-      message: sanitizeInput(params.userMessageFa, 240),
-      correlationId: sanitizeInput(params.correlationId ?? 'req-untracked', 64),
-      retryable: mapped.retryable,
-      ...(params.fieldErrors ? { fieldErrors: params.fieldErrors } : {}),
-    },
-  };
-}
 // ============================================================================
 // 3. PROMPT 403 — CENTRALIZED API INPUT & SCHEMA VALIDATOR
 // ============================================================================

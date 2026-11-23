@@ -82,7 +82,7 @@ export function ListingVerdictHero({
       data-testid="listing-verdict-hero"
     >
       <div className="flex items-start gap-2">
-        <div className="p-2 rounded-xl bg-emerald-600 text-white shrink-0">
+        <div className="p-2 rounded-xl bg-[var(--color-brand-600)] text-white shrink-0">
           <ShieldAlert className="w-5 h-5" />
         </div>
         <div>
@@ -117,7 +117,7 @@ export function ListingVerdictHero({
           type="button"
           disabled={loading || !text.trim()}
           onClick={() => void runVerdict()}
-          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer flex items-center gap-1"
+          className="px-4 py-2 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer flex items-center gap-1"
         >
           <Sparkles className="w-3.5 h-3.5" /> {loading ? 'در حال خواندن…' : 'بررسی فوری'}
         </button>

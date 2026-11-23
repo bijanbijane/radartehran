@@ -127,7 +127,7 @@ export const DiscoverPriceSummary: React.FC<DiscoverPriceSummaryProps> = ({
         <strong
           className={`text-sm font-black mt-0.5 block ${
             scaledDeposit !== null
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-[var(--color-brand-600)] dark:text-emerald-400'
               : 'text-amber-600 dark:text-amber-400 text-xs'
           }`}
         >

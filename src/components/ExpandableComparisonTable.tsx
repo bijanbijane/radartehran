@@ -77,10 +77,10 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
     return [
       { id: 'cost_buy', label: formatUnitBuyPriceTitle(areaUnit), icon: <Coins className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />, valA: `${toPersianNum(uBuyA)} میلیون`, valB: `${toPersianNum(uBuyB)} میلیون`, winner: costBuyA < costBuyB ? 'A' : costBuyA > costBuyB ? 'B' : 'equal', subA: fxBuySubA, subB: fxBuySubB },
       { id: 'cost_deal', label: isEn ? `Deal Price v6.4 (${areaUnit === 'sqft' ? 'ft²' : 'm²'})` : `سناریوی فرضی مذاکره (غیرثبتی) (${areaUnit === 'sqft' ? 'هر ft²' : 'هر متر'})`, icon: <Coins className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />, valA: `${toPersianNum(uDealA)} میلیون`, valB: `${toPersianNum(uDealB)} میلیون`, winner: aggA.estimatedDealPricePerSqm < aggB.estimatedDealPricePerSqm ? 'A' : aggA.estimatedDealPricePerSqm > aggB.estimatedDealPricePerSqm ? 'B' : 'equal', subA: intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(uDealA, intlCurrency, radarLocale) : undefined, subB: intlCurrency !== 'IRT' ? formatMillionTomanAsIntlCurrency(uDealB, intlCurrency, radarLocale) : undefined },
-      { id: 'cost_rent', label: isEn ? `Full Deposit (${formatAreaShort(targetSqm, areaUnit)})` : `رهن کامل (${formatAreaShort(targetSqm, areaUnit)})`, icon: <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />, valA: `${toPersianNum(scaledRahnA)} میلیون`, valB: `${toPersianNum(scaledRahnB)} میلیون`, winner: scaledRahnA < scaledRahnB ? 'A' : scaledRahnA > scaledRahnB ? 'B' : 'equal', subA: fxRahnSubA, subB: fxRahnSubB },
+      { id: 'cost_rent', label: isEn ? `Full Deposit (${formatAreaShort(targetSqm, areaUnit)})` : `رهن کامل (${formatAreaShort(targetSqm, areaUnit)})`, icon: <Coins className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />, valA: `${toPersianNum(scaledRahnA)} میلیون`, valB: `${toPersianNum(scaledRahnB)} میلیون`, winner: scaledRahnA < scaledRahnB ? 'A' : scaledRahnA > scaledRahnB ? 'B' : 'equal', subA: fxRahnSubA, subB: fxRahnSubB },
       { id: 'air', label: isEn ? 'Air Quality & Cleanliness' : 'کیفیت و پاکی هوا', icon: <Wind className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />, valA: `${toPersianNum(hoodA.air)} / ۱۰`, valB: `${toPersianNum(hoodB.air)} / ۱۰`, winner: hoodA.air > hoodB.air ? 'A' : hoodA.air < hoodB.air ? 'B' : 'equal' },
       { id: 'metro', label: isEn ? 'Metro & Transit Access' : 'دسترسی به خطوط مترو', icon: <TrainFront className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />, valA: `${toPersianNum(hoodA.metro)} / ۱۰`, valB: `${toPersianNum(hoodB.metro)} / ۱۰`, winner: hoodA.metro > hoodB.metro ? 'A' : hoodA.metro < hoodB.metro ? 'B' : 'equal', subA: hoodA.distKm != null ? `${toPersianNum(hoodA.distKm.toFixed(1))} km` : undefined, subB: hoodB.distKm != null ? `${toPersianNum(hoodB.distKm.toFixed(1))} km` : undefined },
-      { id: 'security', label: isEn ? 'Security & Neighborhood Calm' : 'امنیت و آرامش محیطی', icon: <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />, valA: `${toPersianNum(hoodA.security)} / ۱۰`, valB: `${toPersianNum(hoodB.security)} / ۱۰`, winner: hoodA.security > hoodB.security ? 'A' : hoodA.security < hoodB.security ? 'B' : 'equal' },
+      { id: 'security', label: isEn ? 'Security & Neighborhood Calm' : 'امنیت و آرامش محیطی', icon: <Shield className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400" />, valA: `${toPersianNum(hoodA.security)} / ۱۰`, valB: `${toPersianNum(hoodB.security)} / ۱۰`, winner: hoodA.security > hoodB.security ? 'A' : hoodA.security < hoodB.security ? 'B' : 'equal' },
       { id: 'internet', label: isEn ? 'Fiber & Internet Reliability' : 'پایداری اینترنت و فیبر', icon: <Wifi className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />, valA: `${toPersianNum(hoodA.internet)} / ۱۰`, valB: `${toPersianNum(hoodB.internet)} / ۱۰`, winner: hoodA.internet > hoodB.internet ? 'A' : hoodA.internet < hoodB.internet ? 'B' : 'equal' },
       { id: 'overall', label: isEn ? 'Livability Score (±0.3 tie-band)' : 'امتیاز جامع کالبدی (بازه ±۰.۳ هم‌تراز)', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />, valA: `${toPersianNum(hoodA.overallScore)} / ۱۰${isScoreTieBand ? ' (≈ هم‌تراز)' : ''}`, valB: `${toPersianNum(hoodB.overallScore)} / ۱۰${isScoreTieBand ? ' (≈ هم‌تراز)' : ''}`, winner: isScoreTieBand ? 'equal' : hoodA.overallScore > hoodB.overallScore ? 'A' : 'B', subA: explainA.nonCompensatoryWarningsFa[0] ? `${explainA.tradeOffSummaryFa} · ${explainA.nonCompensatoryWarningsFa[0]}` : explainA.tradeOffSummaryFa, subB: explainB.nonCompensatoryWarningsFa[0] ? `${explainB.tradeOffSummaryFa} · ${explainB.nonCompensatoryWarningsFa[0]}` : explainB.tradeOffSummaryFa },
     ];
@@ -122,7 +122,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
             aria-label={isPinnedA ? (isEn ? 'Map Arc Active' : 'کمان نقشه فعال') : (isEn ? 'Pin comparison arc on map' : 'پین کمان مقایسه روی نقشه')}
             className={`px-2 py-1 rounded-[7px] text-[10px] font-bold border flex items-center gap-1 transition cursor-pointer ${
               isPinnedA
-                ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-2xs'
+                ? 'bg-slate-900 dark:bg-[var(--color-brand-600)] text-white border-slate-900 dark:border-emerald-600 shadow-2xs'
                 : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
             title="قفل کردن محله اول و ترسیم کمان مقایسه زنده روی نقشه با کلیک روی سایر محلات"
@@ -159,7 +159,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
                     : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700'
                 }`}
               >
-                <Pin className={`w-2.5 h-2.5 ${isPinnedA ? 'text-emerald-600 fill-emerald-600' : 'text-slate-500'}`} />
+                <Pin className={`w-2.5 h-2.5 ${isPinnedA ? 'text-[var(--color-brand-600)] fill-emerald-600' : 'text-slate-500'}`} />
                 <span>{isPinnedA ? (isEn ? 'Slot 1 (Pinned)' : 'محله اول (پین قفل شد)') : (isEn ? 'Slot 1 (Pin)' : 'محله اول (پین کردن)')}</span>
               </button>
               <div className="font-black text-slate-900 dark:text-slate-100 truncate">{hoodA.name}</div>
@@ -202,7 +202,7 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
 
           <div className="flex flex-wrap items-center justify-between gap-1 px-2.5 py-1.5 rounded-[8px] bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-[11px] font-bold text-slate-900 dark:text-slate-100">
             <span className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <Sparkles className="w-3.5 h-3.5 text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
               <span>{isEn ? 'Summary Result' : 'نتیجه مقایسه'} ({formatAreaShort(targetSqm, areaUnit)}: {isEn ? 'Diff ' : 'اختلاف '}{toPersianNum((diffTotalMillion / 1000).toFixed(1))} م.ت{intlCurrency !== 'IRT' ? ` · ${formatMillionTomanAsIntlCurrency(diffTotalMillion, intlCurrency, radarLocale)}` : ''}):</span>
             </span>
             <span className="tabular-nums text-emerald-700 dark:text-emerald-400">
@@ -262,14 +262,14 @@ export function ExpandableComparisonTable({ currentHood, allNeighborhoods, targe
               <button
                 type="button"
                 onClick={() => onSelectNeighborhood(hoodA)}
-                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodA.id ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}
+                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodA.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}
               >
                 {currentHood.id === hoodA.id ? (isEn ? 'Current Hood' : 'محله فعلی در پنل') : `${isEn ? 'View ' : 'مشاهده '}${hoodA.name}`}
               </button>
               <button
                 type="button"
                 onClick={() => onSelectNeighborhood(hoodB)}
-                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodB.id ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}
+                className={`flex-1 py-1 px-2 rounded-[7px] text-[11px] font-bold border transition cursor-pointer text-center ${currentHood.id === hoodB.id ? 'bg-[var(--color-brand-600)] text-white border-emerald-600' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}
               >
                 {currentHood.id === hoodB.id ? (isEn ? 'Current Hood' : 'محله فعلی در پنل') : `${isEn ? 'View ' : 'مشاهده '}${hoodB.name}`}
               </button>

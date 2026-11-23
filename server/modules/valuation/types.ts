@@ -349,9 +349,11 @@ export interface NeighborhoodMarketIntelligenceIndicators {
   p25PricePerSqmMillion: number;
   p75PricePerSqmMillion: number;
   activeListingCount: number;
+  confirmedTransactionCount?: number;
+  medianConfirmedTransactionPricePerSqmMillion?: number | null;
   outlierExcludedCount: number;
-  priceChange30dPct: number;
-  marketHeatStatus: 'hot' | 'balanced' | 'cool';
+  priceChange30dPct: number | null;
+  marketHeatStatus: 'hot' | 'balanced' | 'cool' | 'INSUFFICIENT_DATA';
   sampleSufficiency: 'sufficient' | 'limited' | 'insufficient';
   freshnessTimestampIso: string;
 }
@@ -409,6 +411,8 @@ export interface RecalculationJobRecord {
   reason: string;
   status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
   recalculatedSnapshotsCount: number;
+  matchingHistoricalSnapshotsCount?: number;
+  actuallyRecalculatedSnapshotsCount?: number;
   recalculatedBaselinesCount: number;
   requestedByUid: string;
   createdAtIso: string;

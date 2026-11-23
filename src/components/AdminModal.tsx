@@ -108,7 +108,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700/70 pb-3.5 mb-4">
           <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-[10px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
+            <span className="w-8 h-8 rounded-[10px] bg-[var(--color-brand-600)] text-white flex items-center justify-center shrink-0">
               <Lock className="w-4 h-4 stroke-[1.75]" />
             </span>
             <div>
@@ -146,7 +146,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
           <form onSubmit={onAdminLogin} className="max-w-md mx-auto py-6 space-y-4 text-xs">
             <div className="apple-grouped-card p-4 space-y-3">
               <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <KeyRound className="w-4 h-4 stroke-[1.75] text-emerald-600 dark:text-emerald-400" />
+                <KeyRound className="w-4 h-4 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400" />
                 <span>احراز هویت مدیر سیستم (Firebase Admin Auth)</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -207,7 +207,7 @@ export function AdminModal(props: AdminModalProps) { const { open, asPageView = 
               )}
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-[10px] bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer"
+                className="w-full py-2.5 rounded-[10px] bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-extrabold transition cursor-pointer"
               >
                 بررسی مجوز و بازگشایی پنل مدیریت
               </button>

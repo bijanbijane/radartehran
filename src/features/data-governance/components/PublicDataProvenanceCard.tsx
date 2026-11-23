@@ -77,7 +77,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <FileCheck2 className="w-4 h-4 text-[#176B63]" />
+          <FileCheck2 className="w-4 h-4 text-[var(--color-brand-600)]" />
           <strong className="text-sm font-black text-slate-900 dark:text-white">
             کارت شفافیت منشأ داده، کیفیت نمونه و روش‌شناسی ({resolvedNameFa})
           </strong>
@@ -134,7 +134,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
         <div className="text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-1">
-          <Info className="w-3.5 h-3.5 text-[#176B63]" />
+          <Info className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
           <span>{contract.limitationsFa[0]}</span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -144,7 +144,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             onClick={() => setExpandedTab(expandedTab === 'LINEAGE' ? 'NONE' : 'LINEAGE')}
             className="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
           >
-            <GitBranch className="w-3.5 h-3.5 text-[#176B63]" />
+            <GitBranch className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>مشاهده منشأ و روش‌شناسی</span>
           </button>
           <button
@@ -153,14 +153,14 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
             onClick={() => setExpandedTab(expandedTab === 'VERSIONS' ? 'NONE' : 'VERSIONS')}
             className="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
           >
-            <History className="w-3.5 h-3.5 text-[#176B63]" />
+            <History className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>تاریخچه نسخه و مقایسه (Diff)</span>
           </button>
           <button
             type="button"
             data-testid="btn-toggle-provenance-correction"
             onClick={() => setExpandedTab(expandedTab === 'CORRECTION' ? 'NONE' : 'CORRECTION')}
-            className="px-2.5 py-1 rounded-lg bg-[#176B63] text-white font-bold cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
           >
             پیشنهاد اصلاح مستند داده
           </button>
@@ -170,7 +170,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
       {expandedTab === 'LINEAGE' && (
         <div data-testid="provenance-lineage-drawer" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
           <strong className="font-black text-slate-900 dark:text-white flex items-center gap-1">
-            <Database className="w-3.5 h-3.5 text-[#176B63]" />
+            <Database className="w-3.5 h-3.5 text-[var(--color-brand-600)]" />
             <span>زنجیره منشأ داده (Data Lineage) و منابع قابل انتشار:</span>
           </strong>
           {lineageEdges.length === 0 ? (
@@ -250,7 +250,7 @@ export const PublicDataProvenanceCard: React.FC<PublicDataProvenanceCardProps> =
               setProposedVal('');
               setProposalReason('');
             }}
-            className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-[var(--color-brand-600)] text-white font-bold cursor-pointer"
           >
             ثبت در صف بررسی انسانی
           </button>
