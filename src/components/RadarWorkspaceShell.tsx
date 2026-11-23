@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
-import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
+import { MULTI_CITY_CONFIGS, getCityExpansionSeeds, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
 import { FloatingTopBar } from './FloatingTopBar';
 import { NeighborhoodInspectorDrawer } from './NeighborhoodInspectorDrawer';
@@ -37,9 +37,15 @@ export function RadarWorkspaceShell() {
   const intlCurrency = SHOW_INTL_UNIT_CURRENCY_CONTROLS ? getStoredIntlCurrency() : 'IRT';
   const radarLocale = SHOW_INTL_UNIT_CURRENCY_CONTROLS ? getStoredRadarLocale() : 'fa';
   const initialUrlState = useMemo(() => parseInitialUrlParams(), []);
-  const allExpansionSeeds = useMemo(() => getAllMultiCityNeighborhoods().filter((n) => n.id >= 100 && !(n.id >= 500 && n.id <= 599)), []);
-  const activeCityRef = useRef<CityId>(initialUrlState.initialCity || 'tehran');
-  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>(() => hydrateNeighborhoodsFromStorage(allExpansionSeeds));
+  const initialCity = initialUrlState.initialCity || 'tehran';
+  const initialExpansionSeeds = useMemo(() => getCityExpansionSeeds(initialCity), [initialCity]);
+  const activeCityRef = useRef<CityId>(initialCity);
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>(() =>
+    hydrateNeighborhoodsFromStorage(
+      initialExpansionSeeds,
+      (id) => id >= 100 && !(id >= 500 && id <= 599) && resolveCityIdForNeighborhood(id) === initialCity,
+    ),
+  );
   const [mode, setMode] = useState<'rent' | 'buy'>(initialUrlState.initialMode || 'rent'), [deposit, setDeposit] = useState<number>(initialUrlState.initialDeposit ?? 2800), [monthlyRent, setMonthlyRent] = useState<number>(initialUrlState.initialMonthlyRent ?? 45);
   const [buyTotalBudget, setBuyTotalBudget] = useState<number>(initialUrlState.initialBuyBudget ?? 24500), [targetSqm, setTargetSqm] = useState<number>(initialUrlState.initialTargetSqm ?? 80);
   const [buildingAgeSegment, setBuildingAgeSegment] = useState<'new' | 'mid' | 'older'>('new'), [deductTenantRahnInBuy, setDeductTenantRahnInBuy] = useState<boolean>(false), [workHubId, setWorkHubId] = useState<string>(initialUrlState.initialWorkHubId || 'none'), [showReverseBudgetModal, setShowReverseBudgetModal] = useState<boolean>(false);
@@ -55,6 +61,21 @@ export function RadarWorkspaceShell() {
   }, [appleTheme]);
   const toggleAppleTheme = () => setAppleTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   const ui = useAppUiState(initialUrlState);
+  useEffect(() => {
+    const cityId = ui.activeCity;
+    const cityNeighborhoods = hydrateNeighborhoodsFromStorage(
+      getCityExpansionSeeds(cityId),
+      (id) => id >= 100 && !(id >= 500 && id <= 599) && resolveCityIdForNeighborhood(id) === cityId,
+    );
+    const cityExpansionRecords = cityNeighborhoods.filter(
+      (hood) => hood.id >= 100 && !(hood.id >= 500 && hood.id <= 599) && resolveCityIdForNeighborhood(hood.id) === cityId,
+    );
+    setNeighborhoods((prev) => {
+      const existingIds = new Set(prev.map((hood) => hood.id));
+      const additions = cityExpansionRecords.filter((hood) => !existingIds.has(hood.id));
+      return additions.length > 0 ? [...prev, ...additions] : prev;
+    });
+  }, [ui.activeCity]);
   const anatomyTabsRef = useRef<HTMLDivElement | null>(null);
   const searchFocusTimerRef = useRef<number | null>(null);
   useEffect(() => () => { if (searchFocusTimerRef.current !== null) window.clearTimeout(searchFocusTimerRef.current); }, []);
@@ -66,7 +87,7 @@ export function RadarWorkspaceShell() {
   });
   const isVerifiedAdmin = useMemo(() => isAuthorizedAdminUser(currentUser, ui.hasDelegatedAdminDoc), [ui.hasDelegatedAdminDoc, currentUser?.uid, currentUser?.email, currentUser?.emailVerified]);
   useEffect(() => { setActiveAccountScopeUid(currentUser?.uid ?? null); }, [currentUser?.uid]);
-  const { fetchMarketPulse, handleDeepWebSync } = useMarketPulseSync({ ui, activeCityRef, currentUser, allExpansionSeeds, setNeighborhoods });
+  const { fetchMarketPulse, handleDeepWebSync } = useMarketPulseSync({ ui, activeCityRef, currentUser, setNeighborhoods });
   const activeCityWorkHubs = useMemo(() => (ui.activeCity === 'tehran' ? WORK_HUBS : (MULTI_CITY_CONFIGS[ui.activeCity]?.workHubs || WORK_HUBS)), [ui.activeCity]);
   const selectedWorkHub = useMemo(() => activeCityWorkHubs.find((w) => w.id === workHubId) || activeCityWorkHubs[0] || WORK_HUBS[0], [activeCityWorkHubs, workHubId]);
   const { totalRahnEquivalent, maxAffordablePerSqm, extraGreenWithLoan, evaluatedNeighborhoods, nationwideEvaluatedNeighborhoods, nationwideFilteredNeighborhoods, counts, smartSuggestedNeighborhoods } = useEvaluatedNeighborhoods({
@@ -184,7 +205,7 @@ export function RadarWorkspaceShell() {
     currentUser, isVerifiedAdmin, activeCity: ui.activeCity, mode, deposit, monthlyRent, buyTotalBudget, targetSqm, workHubId, useLoanBooster: ui.useLoanBooster, deductTenantRahnInBuy, buildingAgeSegment,
     favoriteHoodIds, setFavoriteHoodIds, featureFlags, setFeatureFlags, neighborhoods, setNeighborhoods, evaluatedNeighborhoods,
     selectedHood, selectedHoodId: ui.selectedHoodId, setSelectedHoodId: ui.setSelectedHoodId, onSelectNeighborhood: handleSelectNeighborhood,
-    setMobileSheetOpen: ui.setMobileSheetOpen, setActiveTab: ui.setActiveTab, setShowGoldPins: ui.setShowGoldPins, mapInstanceRef, allExpansionSeeds,
+    setMobileSheetOpen: ui.setMobileSheetOpen, setActiveTab: ui.setActiveTab, setShowGoldPins: ui.setShowGoldPins, mapInstanceRef,
     bargainHoodId: ui.bargainHoodId, bargainType: ui.bargainType, bargainSqm: ui.bargainSqm, bargainTitle: ui.bargainTitle, setBargainTitle: ui.setBargainTitle,
     bargainStreet: ui.bargainStreet, setBargainStreet: ui.setBargainStreet, bargainProposedPrice: ui.bargainProposedPrice,
     bargainUploadedMedia: ui.bargainUploadedMedia, setBargainUploadedMedia: ui.setBargainUploadedMedia, setBargainSubmitMsg: ui.setBargainSubmitMsg,
