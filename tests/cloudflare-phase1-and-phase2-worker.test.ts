@@ -252,7 +252,7 @@ describe('Phase 2: Modular API & Strangler Migration Verification (Group 1A & Gr
   });
 
   it('7. verifies Group 1A SEO and OpenAPI endpoints (/api/openapi.json, /manifest.json, /sitemap.xml, /robots.txt)', async () => {
-    const env: WorkerEnv = { ENVIRONMENT: 'production', APP_URL: 'https://radartehran.ir' };
+    const env: WorkerEnv = { ENVIRONMENT: 'production', APP_URL: 'https://radartehran.ir', VALUATION_SEAL_SECRET: 'a'.repeat(64) };
 
     const openApiRes = await workerEntrypoint.fetch(
       new Request('https://radartehran.ir/api/openapi.json?areaUnit=sqft&intlCurrency=EUR'),
