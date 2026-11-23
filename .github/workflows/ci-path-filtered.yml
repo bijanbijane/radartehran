@@ -56,6 +56,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:worker
+      - run: npm run test:write-admission-persistence
       - run: npm run build
 
   api-gates:
