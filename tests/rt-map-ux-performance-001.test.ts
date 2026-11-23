@@ -12,6 +12,7 @@ import {
   computeDeclutteredMarkerTiers,
   getMapLabelBudget,
   getNeighborhoodMapLabel,
+  renderMacroClustersOnLeaflet,
 } from '../src/components/mapZoomLodAndDeclutter';
 
 function evaluateSeeds(): EvaluatedNeighborhood[] {
@@ -131,4 +132,36 @@ test('RT-MAP-UX-006: spatial macro clustering retains every neighborhood and sel
   assert.ok(clusters.some((cluster) => cluster.containsSelected));
   assert.equal(clusters[0].primaryName, hoods[0].name, 'cluster titles must not infer Tehran from numeric neighborhood IDs');
   assert.equal(clusters.length, 1, 'nearby neighborhoods should collapse into one macro cluster at zoom 7');
+});
+
+test('RT-MAP-UX-007: single-neighborhood cluster delegates flyTo to the selection handler', () => {
+  const hood = evaluateSeeds()[0];
+  let clickHandler: (() => void) | undefined;
+  let selectedId: number | null = null;
+  const flyToCalls: unknown[][] = [];
+  const marker: any = {
+    addTo: () => marker,
+    bindTooltip: () => marker,
+    on: (event: string, handler: () => void) => { if (event === 'click') clickHandler = handler; return marker; },
+  };
+  const map = { flyTo: (...args: unknown[]) => flyToCalls.push(args) };
+  const L = { divIcon: (config: unknown) => config, marker: () => marker };
+  const clusters = buildMacroZoomClusters([hood], hood.id, 7, () => ({
+    stroke: '#0f766e',
+    fill: '#14b8a6',
+    pillBg: '#0d9488',
+  }));
+
+  renderMacroClustersOnLeaflet({
+    L,
+    map,
+    clusters,
+    mode: 'buy',
+    currentZoom: 7,
+    onSelectNeighborhood: (selected) => { selectedId = selected.id; },
+  });
+  clickHandler?.();
+
+  assert.equal(selectedId, hood.id);
+  assert.equal(flyToCalls.length, 0, 'selection owner is responsible for the single neighborhood flyTo');
 });
