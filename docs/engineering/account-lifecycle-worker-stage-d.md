@@ -55,7 +55,7 @@ Main edge Worker: `worker/index.ts` (`wrangler.jsonc`). Frontend SPA Worker: `ap
 
 ## Domain adapters (Worker D1)
 
-`workerD1DomainAdapters.ts`: real deletes for `USER_PROFILE` (upload sessions, data requests), `MEDIA_METADATA` (D1 rows). Firestore-backed sources fail closed with `DOMAIN_ADAPTER_UNAVAILABLE`.
+`workerD1DomainAdapters.ts`: production wiring currently returns fail-closed adapters for every user-owned domain source. The limited `USER_PROFILE` and `MEDIA_METADATA` D1 adapters are contract-test helpers only and are not used by the runtime. Firestore-authoritative sources also remain fail-closed. Do not treat the presence of these partial helpers as proof of complete domain erasure.
 
 ## Telemetry
 
@@ -71,7 +71,11 @@ Worker remains fail-closed (`WORKER_IDENTITY_DELETION_BLOCKED`) pending trusted 
 - `0008` D1 mutation permits and drain barrier.
 - `0009` replay-resistant internal Write Admission RPC nonces.
 
-Stage D is disabled by default. It requires both the explicit `STAGE_D_LIFECYCLE_ENABLED=true` opt-in and a dedicated `migrations/d1` D1 binding; it refuses `USER_DB`-bound deployments because `migrations/user-d1` defines a different account lifecycle schema. The runtime verifies required tables and columns and probes store health before serving Stage D routes.
+Stage D is disabled by default. It requires `STAGE_D_LIFECYCLE_ENABLED=true`, a dedicated `migrations/d1` lifecycle D1 binding, and a distinct authoritative `USER_DB` binding. The runtime requires the two D1 bindings and their configured database IDs to be distinct; it rejects deployments where `DB` aliases `USER_DB`. It verifies both schemas and probes lifecycle-store health before serving Stage D routes.
+
+## Deletion Readiness Gate
+
+`getStageDDeletionReadiness` reports all currently unavailable capabilities. `assertStageDDeletionReady` runs before a deletion job/write-block is created, before scheduled recovery re-enqueues work, and before a worker acquires an execution lease. While any required domain or identity adapter is missing, those paths return a 503 `DOMAIN_ADAPTER_UNAVAILABLE` response and do not start or advance deletion. This is intentional fail-closed behavior; no full-account deletion is currently available through Stage D.
 
 ## Local tests
 
@@ -90,7 +94,7 @@ Stage D is **not ready for staging activation** until the dedicated D1 resource 
 
 At the current PR review, the live `radartehran-api-staging` Worker has a `DB` binding pointing to D1 ID `9bcadfaf-7dc1-4ee9-b821-19c8b57658b4`, which Cloudflare returns as not found. The repository's staging `wrangler.jsonc` entry still contains an all-zero placeholder D1 ID. The account currently has no `radartehran-staging-db` or other dedicated Stage D lifecycle database.
 
-Do not substitute `radar-user-db`: its existing account deletion jobs, write-blocks, permits, nonce, and user-data-request schemas are materially different from the Stage D `migrations/d1` contract. Do not bind Stage D to `radar-neighborhood-db` or `radar-researcher-db`. The Stage D runtime currently receives one D1 handle for its lifecycle store and domain adapters; provisioning an empty lifecycle DB alone does not make user-owned records in other stores available for erasure.
+Do not substitute `radar-user-db`: its existing account deletion jobs, write-blocks, permits, nonce, and user-data-request schemas are materially different from the Stage D `migrations/d1` contract. Do not bind Stage D to `radar-neighborhood-db` or `radar-researcher-db`. The Stage D runtime receives separate lifecycle D1 and authoritative `USER_DB` bindings, plus the R2 media bucket. The lifecycle database stores jobs, leases, outbox events, permits, receipts and write-block state; it is not a substitute for user-owned domain data. The current domain-adapter factory still fails closed for every user-owned source, the media adapter is only one part of the required workflow, and the current identity adapter also fails closed. Provisioning both D1 databases does not by itself make every user-owned record available for erasure.
 
 Before any staging binding or migration change, complete and review the data-ownership design for each deletion domain, provision the dedicated D1, apply the `migrations/d1` chain only to that dedicated resource, verify every required table/column and the live binding ID, and prove that all user-owned data sources are either erased or retained under an explicit policy. Keep `STAGE_D_LIFECYCLE_ENABLED` unset/false until this gate and the auth, telemetry, and identity-deletion adapter gates are complete. Production bindings and the shared IRNI geographic D1 are out of scope.
 
