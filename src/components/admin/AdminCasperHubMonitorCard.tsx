@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Activity, AlertCircle, CheckCircle2, Cpu, Globe, KeyRound, RefreshCw, Send, ShieldCheck, Zap } from 'lucide-react';
-import { getAuthClient } from '../../platform/auth';
+
 import { toPersianNum } from '../../data/neighborhoods';
 export interface CasperHubEpistemicTelemetry { readonly minSeq: number; readonly maxSeq: number; readonly isMonotonic: boolean; readonly sequenceGapCount: number; readonly syncCursorLag: number; readonly agentContributionEntropyBits: number; readonly noteTypeEntropyBits: number; readonly criticalNotesCount: number; readonly activeBlockersCount: number; }
 export interface CasperHubWhoAmIData { readonly authenticated: boolean; readonly agent_id?: string; readonly database?: string; readonly permissions?: string[]; readonly active_roadmaps_count?: number; readonly open_tasks_count?: number; }
