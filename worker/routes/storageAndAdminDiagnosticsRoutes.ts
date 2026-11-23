@@ -44,14 +44,7 @@ export async function handleStorageAndAdminWorkerRoute(
   const { method, pathname, env, request } = ctx;
 
   if (method === 'GET' && pathname === '/api/admin/worker-diagnostics') {
-    const auth = await verifyFirebaseIdTokenOnEdge({
-      authorizationHeader: request.headers.get('authorization'),
-      appCheckHeader: request.headers.get('x-firebase-appcheck'),
-      appCheckDebugHeader: request.headers.get('x-firebase-appcheck-debug'),
-      request,
-      env,
-      sensitiveRoute: true,
-    });
+    const auth = await authenticateWorkerSession(ctx, true);
     if (!auth.authenticated || !auth.isAdmin) {
       return jsonWorkerResponse(ctx, auth.statusCode === 200 ? 403 : auth.statusCode, {
         status: 'error',
