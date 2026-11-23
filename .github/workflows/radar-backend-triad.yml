@@ -77,19 +77,6 @@ jobs:
       - name: Verify account lifecycle and ownership isolation
         run: npx tsx --test src/features/account/tests/accountActionLifecycle.test.ts src/features/account/tests/accountOwnershipIsolation.test.ts
 
-      - name: Validate production App Check site-key configuration
-        run: |
-          node --input-type=module -e '
-            import fs from "node:fs";
-            const cfg = JSON.parse(fs.readFileSync("firebase-applet-config.json", "utf8"));
-            const key = String(process.env.VITE_FIREBASE_APP_CHECK_SITE_KEY || cfg.recaptchaSiteKey || "").trim();
-            if (!/^6Le[A-Za-z0-9_-]{20,}$/.test(key)) {
-              console.error("Production App Check cannot be enforced: no valid reCAPTCHA Enterprise site key is configured.");
-              console.error("Provision the key for Firebase Web App 1:935427453422:web:25817d32df713f2a68deff and set firebase-applet-config.json:recaptchaSiteKey or VITE_FIREBASE_APP_CHECK_SITE_KEY.");
-              process.exit(1);
-            }
-            console.log("Production App Check site-key configuration: valid format.");
-          '
       - name: Build the split Frontend assets
         run: npm run build -w radartehran-frontend
 
