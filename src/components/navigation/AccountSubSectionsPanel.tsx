@@ -1,6 +1,6 @@
 /** @file src/components/navigation/AccountSubSectionsPanel.tsx — Sub-section Views for Account Module (State-Driven Snapshot & UID Isolation) */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import type { PrimaryViewId } from '../../utils/areaUnit';
 import type { AccountSubTabId, ModuleSubTabId, SavedMapViewItem } from '../../navigation/registry/route.types';
@@ -39,7 +39,7 @@ import { AccountCommunityPrivacyPanel } from '../../features/account/components/
 
 export interface AccountSubSectionsPanelProps {
   activeSubTab: AccountSubTabId;
-  currentUser: FirebaseUser | null;
+  currentUser: AuthUserSnapshot | null;
   evaluatedNeighborhoods: EvaluatedNeighborhood[];
   mode: 'rent' | 'buy';
   visitedHomesCount: number;

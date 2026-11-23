@@ -1,7 +1,6 @@
 /** @file src/components/RadarWorkspaceShell.tsx — Extracted Spatial GIS & PropTech Workspace Shell (< 275 lines) [RULE-01] */
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import { getAuthClient } from '../platform/auth';
 import { WORK_HUBS, Neighborhood, EvaluatedNeighborhood, isAuthorizedAdminUser, MapTileServerId, parseInitialUrlParams, hydrateNeighborhoodsFromStorage, DEFAULT_FEATURE_FLAGS, FeatureFlags, CityId } from '../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, getAllMultiCityNeighborhoods, resolveCityIdForNeighborhood } from '../data/multiCityData';
 import { findProvinceForHood } from '../data/iranProvincesDirectory';
@@ -24,8 +23,6 @@ import { formatAreaShort, formatMillionTomanAsIntlCurrency, getRadarLocaleDirect
 import { SHOW_INTL_UNIT_CURRENCY_CONTROLS } from './AreaUnitToggle';
 import { ProductGlobalHeader } from './navigation/ProductGlobalHeader';
 import { MapToolRail } from './navigation/MapToolRail';
-import { MapExplorerResultsSidebar } from './map/MapExplorerResultsSidebar';
-import { MapExplorerToolbar } from './map/MapExplorerToolbar';
 import { ProductViewRouter } from './views/ProductViewRouter';
 import { DevPerformancePanel } from './DevPerformancePanel';
 import { setActiveAccountScopeUid } from '../features/account/services/accountStorageScope';
@@ -146,7 +143,7 @@ export function RadarWorkspaceShell() {
     else if (saved.cityId in MULTI_CITY_CONFIGS) handleSwitchCity(saved.cityId as CityId, saved.hoodId);
     ui.setPrimaryView('map'); ui.setActiveSubTab(undefined);
   };
-  const { mapContainerRef, mapInstanceRef, handleFocusLandmarkOnMap, isMapLoaded, mapZoomLevel } = useLeafletRadarMap({
+  const { mapContainerRef, mapInstanceRef, handleFocusLandmarkOnMap, isMapLoaded } = useLeafletRadarMap({
     activeCity: ui.activeCity, mapTileStyle, setMapTileStyle,
     deferredMapNeighborhoods: nationwideFilteredNeighborhoods, selectedHoodId: ui.selectedHoodId, selectedHood,
     mode, targetSqm, rentAgeMultiplier, selectedWorkHub, statusFilter: ui.statusFilter, mapLens: ui.mapLens,
@@ -208,7 +205,7 @@ export function RadarWorkspaceShell() {
   });
 
   return (
-    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-full overflow-hidden bg-[var(--color-bg-canvas)] dark:bg-slate-950 text-[var(--color-text-primary)] dark:text-slate-100 flex flex-col">
+    <div id="top" dir={getRadarLocaleDirection(radarLocale)} data-area-unit={areaUnit} data-intl-currency={intlCurrency} data-radar-locale={radarLocale} data-intl-budget={`${formatMillionTomanAsIntlCurrency(buyTotalBudget, intlCurrency)} · ${formatAreaShort(targetSqm, areaUnit)}`} style={{ height: 'var(--app-height, 100dvh)' }} className="relative w-full overflow-hidden bg-[#F6F8F6] dark:bg-slate-950 text-[#182522] dark:text-slate-100 flex flex-col">
       {ui.primaryView !== 'admin' && (
         <ProductGlobalHeader
           primaryView={ui.primaryView} activeSubTab={ui.activeSubTab} activeCity={ui.activeCity} onSwitchCity={handleSwitchCity}
@@ -235,9 +232,9 @@ export function RadarWorkspaceShell() {
       <div id={ui.primaryView === 'map' ? 'radar-main-content' : undefined} tabIndex={ui.primaryView === 'map' ? -1 : undefined} role="region" aria-label="نقشه تعاملی محله‌ها" className={`fixed inset-0 ${ui.primaryView === 'admin' ? 'top-0' : ui.primaryView === 'map' ? 'top-[56px]' : 'top-[56px] lg:top-[68px]'} z-0 focus:outline-none`}>
         <div ref={mapContainerRef} className="w-full h-full bg-[#E9EFEC]" />
         {!isMapLoaded && (
-          <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg-canvas)]/70 dark:bg-slate-900/60 backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-800/95 shadow-md border border-[var(--color-border-subtle)] dark:border-slate-700 text-xs font-bold text-[var(--color-text-primary)] dark:text-slate-200">
-              <span className="w-3 h-3 border-2 border-[var(--color-brand-600)] border-t-transparent rounded-full animate-spin" />
+          <div data-testid="map-loading-indicator" className="absolute inset-0 flex items-center justify-center bg-[#F6F8F6]/70 dark:bg-slate-900/60 backdrop-blur-[2px] pointer-events-none z-10 transition-opacity duration-300">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-800/95 shadow-md border border-[#DCE3DF] dark:border-slate-700 text-xs font-bold text-[#182522] dark:text-slate-200">
+              <span className="w-3 h-3 border-2 border-[#176B63] border-t-transparent rounded-full animate-spin" />
               <span>در حال بارگذاری نقشه محله‌ها...</span>
             </div>
           </div>
@@ -254,7 +251,7 @@ export function RadarWorkspaceShell() {
             </p>
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
               {SUPPORTED_CITY_IDS.map((cid) => (
-                <button key={cid} type="button" onClick={() => handleSwitchCity(cid)} className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-[var(--color-brand-700)] dark:hover:bg-emerald-200 transition cursor-pointer">
+                <button key={cid} type="button" onClick={() => handleSwitchCity(cid)} className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-emerald-700 dark:hover:bg-emerald-200 transition cursor-pointer">
                   {CITY_DISPLAY_NAMES[cid].fa}
                 </button>
               ))}
@@ -269,7 +266,7 @@ export function RadarWorkspaceShell() {
               ? 'مرکز نقشه در مرز هم‌پوشان شهری قرار دارد؛ شهر فعال تغییر نکرد.'
               : 'مرکز نقشه خارج از محدودهٔ کلان‌شهرهای پشتیبانی‌شده است.'}
           </span>
-          <button type="button" onClick={() => handleSwitchCity(ui.activeCity)} className="px-2.5 py-1 rounded-lg bg-[var(--color-brand-600)] text-white font-bold shrink-0 cursor-pointer">
+          <button type="button" onClick={() => handleSwitchCity(ui.activeCity)} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold shrink-0 cursor-pointer">
             بازگشت به {CITY_DISPLAY_NAMES[ui.activeCity].fa}
           </button>
         </div>
@@ -290,7 +287,7 @@ export function RadarWorkspaceShell() {
         setBargainHoodId={ui.setBargainHoodId} setSponsorHoodId={ui.setSponsorHoodId} setShowAgencyModal={ui.setShowAgencyModal} totalLiveBargainsCount={totalLiveBargainsCount}
         setShowVisitedModal={ui.setShowVisitedModal} visitedHomesCount={ui.visitedHomes.length} setTradeUpCurrentHoodId={ui.setTradeUpCurrentHoodId} setShowTradeUpModal={ui.setShowTradeUpModal}
         setAlertHoodId={ui.setAlertHoodId} setAlertSubmitMsg={ui.setAlertSubmitMsg} setShowBuyerAlertModal={ui.setShowBuyerAlertModal} setShowPulseModal={ui.setShowPulseModal} marketPulse={ui.marketPulse}
-        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={() => signOut(auth)} onGoogleSignIn={crudActions.handleSaveUserPreferences}
+        setShowSeoDrawer={ui.setShowSeoDrawer} mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} onSignOut={() => { void getAuthClient().logout('workspace_sign_out').catch(() => undefined); }} onGoogleSignIn={() => getAuthClient().startGoogleLogin(`${window.location.pathname}${window.location.search}`)}
         showMapLegendPopover={ui.showMapLegendPopover} setShowMapLegendPopover={ui.setShowMapLegendPopover} mobileSheetOpen={ui.mobileSheetOpen} lastSyncNotice={ui.lastSyncNotice}
         setShowNationwideProvinceModal={ui.setShowNationwideProvinceModal} connectionStatus={connectionStatus} onOpenReverseBudgetModal={() => setShowReverseBudgetModal(true)}
         onFlyToCityCenter={() => { const cfg = MULTI_CITY_CONFIGS[ui.activeCity]; if (mapInstanceRef.current) mapInstanceRef.current.flyTo(cfg.center, cfg.defaultZoom, { duration: 0.7 }); }}
@@ -300,29 +297,7 @@ export function RadarWorkspaceShell() {
         mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} mode={mode} hasFilterApplied={ui.statusFilter !== 'all' || ui.onlyOutsideTrafficZone || ui.onlyHighMetro}
         openPanel={ui.mapRailPanel} onChangeOpenPanel={ui.setMapRailPanel} showSpatialTools={ui.showSpatialTools} onChangeShowSpatialTools={ui.setShowSpatialTools}
         onCloseCompetingPanels={() => closeFloatingMapPanels('rail')} onToggleFilterPopover={() => { closeFloatingMapPanels('filter'); ui.setMobileFilterOpen((p) => !p); }} onLocateNearestHood={crudActions.handleLocateNearestHood}
-        onOpenCompareModal={() => ui.setShowCompareModal(true)} onOpenPriceTrendModal={() => ui.setShowPriceTrendModal(true)} onOpenInspectorDrawer={() => ui.setMobileSheetOpen(true)} onRestoreSavedView={handleRestoreSavedView}
-        statusFilter={ui.statusFilter} setStatusFilter={ui.setStatusFilter} />
-      {ui.primaryView === 'map' && (
-        <>
-          <MapExplorerResultsSidebar
-            evaluatedNeighborhoods={evaluatedNeighborhoods}
-            selectedHoodId={ui.selectedHoodId}
-            onSelectNeighborhood={handleSelectNeighborhood}
-            mode={mode}
-          />
-          <MapExplorerToolbar
-            mapInstanceRef={mapInstanceRef}
-            activeCity={ui.activeCity}
-            mapZoomLevel={mapZoomLevel}
-            locale={radarLocale}
-            onLocateNearestHood={crudActions.handleLocateNearestHood}
-            onOpenFilters={() => {
-              closeFloatingMapPanels('filter');
-              ui.setMobileFilterOpen(true);
-            }}
-          />
-        </>
-      )}
+        onOpenCompareModal={() => ui.setShowCompareModal(true)} onOpenPriceTrendModal={() => ui.setShowPriceTrendModal(true)} onOpenInspectorDrawer={() => ui.setMobileSheetOpen(true)} onRestoreSavedView={handleRestoreSavedView} />
       {ui.primaryView !== 'map' && (
         <main id="radar-main-content" tabIndex={-1} className="relative z-10 w-full flex-1 overflow-hidden pointer-events-none flex justify-start focus:outline-none">
           <ProductViewRouter
@@ -330,7 +305,7 @@ export function RadarWorkspaceShell() {
             selectedHood={selectedHood} handleSelectNeighborhood={handleSelectNeighborhood} favoriteHoodIds={favoriteHoodIds} toggleFavoriteHood={toggleFavoriteHood} mode={mode}
             setMode={setMode} targetSqm={targetSqm} totalRahnEquivalent={totalRahnEquivalent} buyTotalBudget={buyTotalBudget} deposit={deposit} monthlyRent={monthlyRent} counts={counts}
             featureFlags={featureFlags} currentUser={currentUser} isVerifiedAdmin={isVerifiedAdmin} activeCity={ui.activeCity} crudActions={crudActions} handleDeepWebSync={handleDeepWebSync}
-            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={() => signOut(auth)} />
+            mapTileStyle={mapTileStyle} setMapTileStyle={setMapTileStyle} setShowReverseBudgetModal={setShowReverseBudgetModal} onRestoreSavedView={handleRestoreSavedView} onSignOut={() => { void getAuthClient().logout('workspace_sign_out').catch(() => getAuthClient().setUser(null)); }} />
         </main>
       )}
       {(ui.primaryView === 'map' || ui.mobileSheetOpen) && ui.primaryView !== 'admin' && (
