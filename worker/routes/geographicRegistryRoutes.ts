@@ -862,6 +862,26 @@ export async function handleGeographicRegistryRoute(ctx: WorkerRequestContext): 
     return jsonWorkerResponse(ctx, 200, { status: 'ok', registry: head });
   }
 
+  if (pathname === '/api/v1/geography/legacy-aliases') {
+    const systemCode = url.searchParams.get('legacySystemCode');
+    if (systemCode && !['TEHRAN_RADAR','LEGACY_IRAN_NEIGHBORHOOD_ID','RETIRED_CANONICAL_ID','OTHER_LEGACY'].includes(systemCode)) {
+      return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'INVALID_LEGACY_SYSTEM_CODE' });
+    }
+    const query = systemCode
+      ? db.prepare('SELECT alias_json FROM geo_registry_legacy_alias_stage WHERE batch_id=?1 AND legacy_system_code=?2 ORDER BY legacy_identifier_value')
+        .bind(batchId, systemCode)
+      : db.prepare('SELECT alias_json FROM geo_registry_legacy_alias_stage WHERE batch_id=?1 ORDER BY legacy_system_code,legacy_identifier_value')
+        .bind(batchId);
+    const rows = await query.all<{ alias_json: string }>();
+    if (!rows.success) return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'GEOGRAPHIC_ALIAS_QUERY_FAILED' });
+    return jsonWorkerResponse(ctx, 200, {
+      status: 'ok',
+      registryRevision: revision,
+      items: rows.results.map((row) => JSON.parse(row.alias_json)),
+      source: 'IRNI_CANONICAL_REGISTRY',
+    });
+  }
+
   if (pathname === '/api/v1/geography/entities' || pathname === '/api/v1/geography/neighborhoods') {
     const limit = normalizeLimit(url.searchParams.get('limit'));
     const offset = normalizeOffset(url.searchParams.get('offset'));
