@@ -207,7 +207,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
 
     // 5. GET /api/account/export-data — D1-only, explicitly partial until all legacy domains migrate.
     if (pathname === '/api/account/export-data' && method === 'GET') {
-      const [profile, privacy, favorites, dataRequests, savedSearches, notificationChannels, mediaResult] = await Promise.all([
+      const [profile, privacy, favorites, dataRequests, savedSearches, notificationChannels, mediaResult, preferences] = await Promise.all([
         getUserProfileFromD1(userDb, uid),
         getUserPrivacyConsentFromD1(userDb, uid),
         listUserFavoritesFromD1(userDb, uid),
@@ -221,6 +221,9 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
         userDb.prepare(
           'SELECT object_id, media_type, mime_type, size_bytes, target_type, target_id, lifecycle_state, created_at_iso, updated_at_iso FROM media_objects WHERE owner_uid = ?1 ORDER BY created_at_iso DESC LIMIT 500',
         ).bind(uid).all<Record<string, unknown>>(),
+        userDb.prepare(
+          'SELECT mode, deposit, monthly_rent, buy_total_budget, target_sqm, work_hub_id, updated_at_iso FROM user_preferences WHERE uid = ?1 LIMIT 1',
+        ).bind(uid).first<Record<string, unknown>>(),
       ]);
 
       const searches = savedSearches.results ?? [];
@@ -228,7 +231,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
       const media = mediaResult.results ?? [];
       const availableSources = [
         { sourceId: 'USER_PROFILE', domainSource: 'USER_PROFILE', origin: 'server', included: true, available: true, count: 1 + channels.length + dataRequests.length },
-        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, count: favorites.length + searches.length },
+        { sourceId: 'FAVORITES_AND_WORKSPACES', domainSource: 'FAVORITES_AND_WORKSPACES', origin: 'server', included: true, available: true, count: favorites.length + searches.length + (preferences ? 1 : 0) },
         { sourceId: 'BUYER_ALERTS', domainSource: 'BUYER_ALERTS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
         { sourceId: 'BARGAIN_LISTINGS', domainSource: 'BARGAIN_LISTINGS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'جدول projection فعلی مالکیت آگهی را نگهداری نمی‌کند؛ داده مالکیت از منبع قدیمی قابل انتساب امن نیست.' },
         { sourceId: 'SPONSOR_RECORDS', domainSource: 'SPONSOR_RECORDS', origin: 'server', included: false, available: false, count: 0, reasonFa: 'مخزن D1 متناظر هنوز مهاجرت و فعال نشده است.' },
@@ -255,6 +258,7 @@ export async function handleAccountWorkerRoute(ctx: WorkerRequestContext): Promi
           privacy,
           notificationChannels: channels,
           savedSearches: searches,
+          preferences,
           dataRequests,
         },
         favoriteNeighborhoodKeys: favorites.map((favorite) => `${favorite.cityId}_${favorite.hoodId}`),
