@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { User, LogIn, LogOut, CheckCircle2, SlidersHorizontal, ArrowLeftRight, Download, Trash2 } from 'lucide-react';
-import { deleteUser, type User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
 import type { EvaluatedNeighborhood } from '../../data/neighborhoods';
 import { getNeighborhoodMarketReport, getNeighborhoodTrafficInfo, toPersianNum } from '../../data/neighborhoods';
 import { type CityId, getAllMultiCityNeighborhoods } from '../../data/multiCityData';
@@ -30,7 +30,7 @@ import { AccountSavedItemsPanel } from '../../features/account/components/Accoun
 import { AccountFavoriteNeighborhoodsSection } from '../../features/account/components/AccountFavoriteNeighborhoodsSection';
 import { explainNeighborhoodRecommendation } from '../useEvaluatedNeighborhoods';
 export interface ProductUserSpaceViewProps {
-  currentUser: FirebaseUser | null; onGoogleSignIn: () => void; onSignOut: () => void;
+  currentUser: AuthUserSnapshot | null; onGoogleSignIn: () => void; onSignOut: () => void;
   favoriteHoodIds: number[]; onToggleFavorite: (id: number) => void;
   evaluatedNeighborhoods: EvaluatedNeighborhood[]; nationwideEvaluatedNeighborhoods?: EvaluatedNeighborhood[];
   activeCity?: CityId; selectedHood?: EvaluatedNeighborhood; activeSubTab?: AccountSubTabId;
@@ -97,7 +97,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
     const scope = includeLocalWorkspace ? 'combined_account_and_workspace' : 'server_account';
     const requestId = generateStableAccountId('dreq');
     try {
-      const serverRes = await requestAccountServerExport({ getToken: () => p.currentUser!.getIdToken(), expectedUid: p.currentUser.uid });
+      const serverRes = await requestAccountServerExport({ currentUser: p.currentUser, expectedUid: p.currentUser.uid });
       if (serverRes.ok === false) {
         const failRes = serverRes as Extract<typeof serverRes, { ok: false }>;
         recordDataRequest('export', 'failed', { uid: effectiveUid, requestId, scope, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });
@@ -128,7 +128,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
     setBusyAction('delete'); setPrivacyNotice(null); setDeleteLayers(null);
     const requestId = generateStableAccountId('dreq');
     try {
-      const res = await executeAccountDeletionFlow({ currentUser: p.currentUser, deleteFirebaseUserFn: (u) => deleteUser(u as FirebaseUser) });
+      const res = await executeAccountDeletionFlow({ currentUser: p.currentUser, idempotencyKey: requestId });
       if (res.ok === false && !res.data) {
         const failRes = res as Extract<typeof res, { ok: false }>;
         recordDataRequest('delete', 'failed', { uid: effectiveUid, requestId, errorCode: failRes.code, retentionNotesFa: failRes.messageFa });
@@ -157,7 +157,7 @@ export function ProductUserSpaceView(p: ProductUserSpaceViewProps): React.ReactE
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-black text-slate-900 dark:text-white">{p.currentUser?.displayName || (isEn ? 'Guest User Account' : 'حساب کاربری مهمان')}</h1>
-                {p.currentUser?.emailVerified && (
+                {(p.currentUser?.emailVerified || p.currentUser?.phoneNumber) && (
                   <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10.5px] font-bold border border-emerald-200 dark:border-emerald-800">
                     <CheckCircle2 className="w-3 h-3" /><span>{isEn ? 'Verified' : 'تأییدشده'}</span>
                   </span>
