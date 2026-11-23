@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS } from '../src/data/multiCityData';
 import {
   calculateDetailedValuation,
   calculateLandShare,
@@ -110,6 +111,21 @@ function assert(name: string, condition: boolean, details: string): void {
 }
 
 function runDomainRegressionTests(): void {
+  const nationwideFirst = getAllMultiCityNeighborhoods();
+  const shirazSeeds = MULTI_CITY_CONFIGS.shiraz.neighborhoods;
+  const sentinelId = 999999;
+  const sentinel = { ...shirazSeeds[0], id: sentinelId };
+  shirazSeeds.push(sentinel);
+  const nationwideSecond = getAllMultiCityNeighborhoods();
+  shirazSeeds.pop();
+  assert(
+    '0. Nationwide neighborhood aggregation is memoized and returns isolated arrays',
+    !nationwideSecond.some((hood) => hood.id === sentinelId) &&
+      nationwideFirst !== nationwideSecond &&
+      nationwideFirst.length === nationwideSecond.length,
+    `first=${nationwideFirst.length}, second=${nationwideSecond.length}`
+  );
+
   const sampleHood: EvaluatedNeighborhood = {
     ...INITIAL_NEIGHBORHOODS[0],
     buyPerSqm: 100,
