@@ -90,12 +90,12 @@ async function getGitHubSigningKeys(): Promise<JsonWebKey[]> {
   };
   return githubJwksCache.keys;
 }
-async function verifyGitHubActionsIdentity(token: string): Promise<boolean> {
+async function verifyGitHubActionsIdentity(token: string): Promise<string | null> {
   const parts = token.split('.');
-  if (parts.length !== 3) return false;
+  if (parts.length !== 3) return 'JWT_SHAPE';
   const header = parseJwtPart(parts[0]);
   const claims = parseJwtPart(parts[1]);
-  if (!header || !claims || header.alg !== 'RS256' || !isString(header.kid, 256)) return false;
+  if (!header || !claims || header.alg !== 'RS256' || !isString(header.kid, 256)) return 'JWT_HEADER';
 
   const now = Math.floor(Date.now() / 1000);
   const exp = Number(claims.exp);
@@ -104,30 +104,37 @@ async function verifyGitHubActionsIdentity(token: string): Promise<boolean> {
   const audience = claims.aud;
   const audienceMatches = audience === GITHUB_OIDC_AUDIENCE ||
     (Array.isArray(audience) && audience.includes(GITHUB_OIDC_AUDIENCE));
-  if (claims.iss !== GITHUB_OIDC_ISSUER || !audienceMatches ||
-      !Number.isSafeInteger(exp) || exp <= now ||
-      (Number.isFinite(nbf) && nbf > now + 30) ||
-      (Number.isFinite(iat) && iat > now + 30) ||
-      claims.repository !== GITHUB_OIDC_REPOSITORY ||
-      claims.repository_id !== GITHUB_OIDC_REPOSITORY_ID ||
-      claims.repository_owner_id !== GITHUB_OIDC_OWNER_ID ||
-      claims.ref !== GITHUB_OIDC_REF ||
-      claims.environment !== GITHUB_OIDC_ENVIRONMENT ||
-      claims.workflow_ref !== GITHUB_OIDC_WORKFLOW_REF ||
-      claims.sub !== 'repo:bijanbijane@338238765/Iran-Neighborhood-Intelligence@1466860862:environment:radar-publisher') {
-    return false;
-  }
+  if (claims.iss !== GITHUB_OIDC_ISSUER) return 'ISSUER';
+  if (!audienceMatches) return 'AUDIENCE';
+  if (!Number.isSafeInteger(exp) || exp <= now) return 'EXPIRY';
+  if (Number.isFinite(nbf) && nbf > now + 30) return 'NOT_BEFORE';
+  if (Number.isFinite(iat) && iat > now + 30) return 'ISSUED_AT';
+  if (claims.repository !== GITHUB_OIDC_REPOSITORY) return 'REPOSITORY';
+  if (String(claims.repository_id ?? '') !== GITHUB_OIDC_REPOSITORY_ID) return 'REPOSITORY_ID';
+  if (String(claims.repository_owner_id ?? '') !== GITHUB_OIDC_OWNER_ID) return 'OWNER_ID';
+  if (claims.ref !== GITHUB_OIDC_REF) return 'REF';
+  if (claims.environment !== GITHUB_OIDC_ENVIRONMENT) return 'ENVIRONMENT';
+  if (claims.workflow_ref !== GITHUB_OIDC_WORKFLOW_REF) return 'WORKFLOW_REF';
+  if (claims.sub !== 'repo:bijanbijane@338238765/Iran-Neighborhood-Intelligence@1466860862:environment:radar-publisher') return 'SUBJECT';
 
-  const keys = await getGitHubSigningKeys();
-  const jwk = keys.find((candidate) => candidate.kid === header.kid);
+  let keys: JsonWebKey[];
+  try {
+    keys = await getGitHubSigningKeys();
+  } catch {
+    return 'JWKS_UNAVAILABLE';
+  }
+  let jwk = keys.find((candidate) => candidate.kid === header.kid);
   if (!jwk) {
     githubJwksCache = null;
-    const refreshed = await getGitHubSigningKeys();
-    const refreshedKey = refreshed.find((candidate) => candidate.kid === header.kid);
-    if (!refreshedKey) return false;
-    return verifyJwtSignature(parts, refreshedKey);
+    try {
+      const refreshed = await getGitHubSigningKeys();
+      jwk = refreshed.find((candidate) => candidate.kid === header.kid);
+    } catch {
+      return 'JWKS_REFRESH_FAILED';
+    }
   }
-  return verifyJwtSignature(parts, jwk);
+  if (!jwk) return 'SIGNING_KEY_NOT_FOUND';
+  return await verifyJwtSignature(parts, jwk) ? null : 'SIGNATURE_INVALID';
 }
 async function verifyJwtSignature(parts: string[], jwk: JsonWebKey): Promise<boolean> {
   try {
@@ -147,8 +154,9 @@ async function verifyJwtSignature(parts: string[], jwk: JsonWebKey): Promise<boo
 async function verifySignedPayload(request: Request): Promise<SignedPayload> {
   const authorization = request.headers.get('authorization') || '';
   const match = authorization.match(/^Bearer ([A-Za-z0-9._-]+)$/);
-  if (!match || !await verifyGitHubActionsIdentity(match[1])) {
-    return { ok: false, status: 401, code: 'PUBLISH_GITHUB_OIDC_IDENTITY_INVALID' };
+  const identityFailure = match ? await verifyGitHubActionsIdentity(match[1]) : 'BEARER_TOKEN_MISSING';
+  if (identityFailure) {
+    return { ok: false, status: 401, code: 'PUBLISH_GITHUB_OIDC_IDENTITY_INVALID_' + identityFailure };
   }
   const nonce = request.headers.get('x-irni-nonce') || '';
   if (!/^[A-Za-z0-9._-]{16,128}$/.test(nonce)) {
