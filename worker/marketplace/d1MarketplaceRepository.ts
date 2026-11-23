@@ -141,7 +141,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     expiresAtIso: row.expires_at_iso ? String(row.expires_at_iso) : undefined,
     status: row.status === 'approved' ? 'approved' : 'pending',
     createdAtFa: 'ثبت ابری',
-    ownerUserId: String(row.owner_uid || ''),
+    ownerUserId: ownerUidVisible(row.owner_uid, query),
   }));
 
   const votes = (voteRows.results ?? []).map((row) => ({
