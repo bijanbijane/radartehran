@@ -311,6 +311,62 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     assert.equal((sentToDlq[0] as { deadLetterReason?: string }).deadLetterReason, 'IDEMPOTENCY_KEY_CONFLICT');
   });
 
+  it('does not rerun a terminally failed job when DLQ delivery temporarily fails', async () => {
+    const { db, env } = await setupMigratedEnv();
+    let executions = 0;
+    let dlqAttempts = 0;
+    const retryableDlq = {
+      async send() {
+        dlqAttempts += 1;
+        if (dlqAttempts === 1) throw new Error('DLQ_TEMPORARY_UNAVAILABLE');
+      },
+      async sendBatch() {},
+    };
+    const envWithDlq = { ...env, RADAR_DLQ: retryableDlq };
+    const envelope: RadarQueueEnvelope = {
+      schemaVersion: '1.0',
+      messageId: 'msg-terminal-dlq-1',
+      jobType: 'expired_chunk_upload_session_cleanup',
+      idempotencyKey: 'idem-terminal-dlq-1',
+      correlationId: 'corr-terminal-dlq-1',
+      createdAtIso: new Date().toISOString(),
+      payload: {},
+    };
+
+    const first = makeQueueMessage(envelope, 1);
+    await processRadarQueueBatch({
+      batch: { queue: 'radartehran-jobs', messages: [first.msg], ackAll() {}, retryAll() {} },
+      db,
+      dlq: envWithDlq.RADAR_DLQ,
+      maxRetries: 1,
+      executeJob: async () => {
+        executions += 1;
+        throw new Error('PERMANENT_VALIDATION_FAILURE');
+      },
+    });
+    assert.equal(first.getState().acked, false);
+    assert.equal(first.getState().retried, true);
+    const terminal = await db.prepare(
+      'SELECT status FROM queue_job_executions WHERE idempotency_key = ?1',
+    ).bind(envelope.idempotencyKey).first<{ status: string }>();
+    assert.equal(terminal?.status, 'PERMANENT_FAILURE');
+
+    const replay = makeQueueMessage(envelope, 2);
+    await processRadarQueueBatch({
+      batch: { queue: 'radartehran-jobs', messages: [replay.msg], ackAll() {}, retryAll() {} },
+      db,
+      dlq: envWithDlq.RADAR_DLQ,
+      maxRetries: 1,
+      executeJob: async () => {
+        executions += 1;
+        throw new Error('PERMANENT_VALIDATION_FAILURE');
+      },
+    });
+    assert.equal(replay.getState().acked, true);
+    assert.equal(executions, 1, 'A terminal job must retry DLQ delivery without rerunning its handler.');
+    assert.equal(dlqAttempts, 2);
+  });
+
   it('3. handles retryable errors, terminal DLQ routing, poison unknown jobs, stale lease takeover, and missing D1 fail-closed', async () => {
     const { db, env, sentToDlq } = await setupMigratedEnv();
 
