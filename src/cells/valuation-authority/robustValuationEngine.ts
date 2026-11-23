@@ -195,11 +195,27 @@ export function filterOutliersUsingMAD(
   };
 }
 
+export interface ServerValuationSealOptions {
+  /** Explicit secret supplied by Worker bindings; Node callers may use process.env. */
+  readonly sealSecret?: string;
+}
+
+function resolveValuationSealSecret(explicitSecret?: string): string {
+  const secret = String(explicitSecret ?? process.env.VALUATION_SEAL_SECRET ?? '').trim();
+  if (secret.length < 32) {
+    throw new Error('VALUATION_SEAL_SECRET_MISSING_OR_WEAK');
+  }
+  return secret;
+}
+
 function buildSealCanonicalPayload(cityId: string, hv: HedonicValuationResult, fastSaleFactor: number = FAST_SALE_FACTOR): string {
   return [cityId, hv.hoodId, hv.sqm, hv.buildYear, hv.floor, hv.renovationStatus, hv.hedonicPerSqm, hv.hedonicTotalMillion, hv.fastSaleTotalMillion, fastSaleFactor].join('|');
 }
 
-export function computeServerValuationSeal(input: ServerValuationSealInput): ServerValuationSealResult {
+export function computeServerValuationSeal(
+  input: ServerValuationSealInput,
+  options?: ServerValuationSealOptions,
+): ServerValuationSealResult {
   const cityId = validateCityParam(input.cityId, 'tehran') as CityId;
   const cityHoods = MULTI_CITY_CONFIGS[cityId]?.neighborhoods ?? INITIAL_NEIGHBORHOODS;
   const rawHood = cityHoods.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS.find((h) => h.id === input.hoodId) ?? INITIAL_NEIGHBORHOODS[0];
@@ -226,7 +242,7 @@ export function computeServerValuationSeal(input: ServerValuationSealInput): Ser
   const hedonicValuation = calculateHedonicValuation(hedonicParams);
   const issuedAtIso = new Date().toISOString();
   const canonicalPayload = buildSealCanonicalPayload(cityId, hedonicValuation, FAST_SALE_FACTOR);
-  const sealSecret = process.env.VALUATION_SEAL_SECRET || 'radar-stage2-canonical-valuation-seal-v1';
+  const sealSecret = resolveValuationSealSecret(options?.sealSecret);
   const sealSignature = crypto.createHmac('sha256', sealSecret).update(canonicalPayload, 'utf8').digest('hex');
   const sealId = `SEAL-${cityId.toUpperCase()}-H${hedonicValuation.hoodId}-${sealSignature.slice(0, 10).toUpperCase()}`;
   const intlCurrency: IntlCurrencyCode = input.intlCurrency ?? 'USD';
@@ -239,9 +255,17 @@ export function computeServerValuationSeal(input: ServerValuationSealInput): Ser
   };
 }
 
-export function verifyServerValuationSeal(seal: Pick<ServerValuationSealResult, 'cityId' | 'sealSignature' | 'fastSaleFactor' | 'hedonicValuation'>): boolean {
+export function verifyServerValuationSeal(
+  seal: Pick<ServerValuationSealResult, 'cityId' | 'sealSignature' | 'fastSaleFactor' | 'hedonicValuation'>,
+  options?: ServerValuationSealOptions,
+): boolean {
   if (!seal || typeof seal.sealSignature !== 'string' || !/^[0-9a-f]{64}$/i.test(seal.sealSignature) || !seal.hedonicValuation) return false;
-  const sealSecret = process.env.VALUATION_SEAL_SECRET || 'radar-stage2-canonical-valuation-seal-v1';
+  let sealSecret: string;
+  try {
+    sealSecret = resolveValuationSealSecret(options?.sealSecret);
+  } catch {
+    return false;
+  }
   const canonicalPayload = buildSealCanonicalPayload(validateCityParam(seal.cityId, 'tehran'), seal.hedonicValuation, seal.fastSaleFactor || FAST_SALE_FACTOR);
   const expectedHex = crypto.createHmac('sha256', sealSecret).update(canonicalPayload, 'utf8').digest('hex');
   return crypto.timingSafeEqual(Buffer.from(seal.sealSignature.toLowerCase(), 'utf8'), Buffer.from(expectedHex.toLowerCase(), 'utf8'));
