@@ -23,6 +23,7 @@ import {
 } from '../utils/areaUnit';
 import type { AppUiState } from './useAppUiState';
 import { mergeEffectiveBargains } from '../utils/marketDataIntegrity';
+import { getCityExpansionSeeds } from '../data/multiCityData';
 
 export const activeCloudOverrideHoodIds = new Set<number>();
 
@@ -67,7 +68,6 @@ export interface UseMarketPulseSyncParams {
   ui: AppUiState;
   activeCityRef: React.MutableRefObject<CityId>;
   currentUser: FirebaseUser | null;
-  allExpansionSeeds: Neighborhood[];
   setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>;
 }
 
@@ -75,7 +75,6 @@ export function useMarketPulseSync({
   ui,
   activeCityRef,
   currentUser,
-  allExpansionSeeds,
   setNeighborhoods,
 }: UseMarketPulseSyncParams) {
   const pulseAbortRef = useRef<AbortController | null>(null);
@@ -96,6 +95,7 @@ export function useMarketPulseSync({
   const fetchMarketPulse = useCallback(
     async (forceRefresh = false, cityOverride?: CityId) => {
       const targetCity = cityOverride || ui.activeCity;
+      const targetExpansionSeeds = getCityExpansionSeeds(targetCity);
       activeCityRef.current = targetCity;
       pulseAbortRef.current?.abort();
       const controller = new AbortController();
@@ -127,7 +127,7 @@ export function useMarketPulseSync({
                 const parsed = JSON.parse(rawSaved);
                 if (Array.isArray(parsed)) {
                   parsed.forEach((item: any) => {
-                    const seed = [...INITIAL_NEIGHBORHOODS, ...allExpansionSeeds].find((s) => s.id === Number(item?.id));
+                    const seed = [...INITIAL_NEIGHBORHOODS, ...targetExpansionSeeds].find((s) => s.id === Number(item?.id));
                     if (seed && (item.buyPerSqm !== seed.buyPerSqm || item.rahn80m !== seed.rahn80m)) {
                       customIds.add(seed.id);
                     }
@@ -150,7 +150,7 @@ export function useMarketPulseSync({
         }
       }
     },
-    [ui.activeCity, currentUser, allExpansionSeeds, activeCityRef, setNeighborhoods]
+    [ui.activeCity, currentUser, activeCityRef, setNeighborhoods]
   );
 
   const handleDeepWebSync = useCallback(async () => {
