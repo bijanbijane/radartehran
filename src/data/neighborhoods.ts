@@ -259,7 +259,32 @@ export function mergeNeighborhoodWithSeed(seed: Neighborhood, match?: any): Neig
   const rawTraffic = match.trafficInfo && typeof match.trafficInfo === 'object' ? match.trafficInfo : {}; const hasExplicitBargainsArray = Array.isArray(match.bargains); const mergedBargains = hasExplicitBargainsArray ? match.bargains.filter((b: any) => b && typeof b === 'object' && b.title) : seed.bargains;
   const validScore = (v: any, def: number) => typeof v === 'number' && !Number.isNaN(v) && v >= 1 && v <= 10 ? v : def;
   return { ...seed, buyPerSqm: typeof match.buyPerSqm === 'number' && Number.isFinite(match.buyPerSqm) && match.buyPerSqm >= MIN_BUY_PER_SQM_MILLION && match.buyPerSqm <= MAX_BUY_PER_SQM_MILLION ? match.buyPerSqm : seed.buyPerSqm, rahn80m: typeof match.rahn80m === 'number' && Number.isFinite(match.rahn80m) && match.rahn80m >= MIN_RAHN_80M_MILLION && match.rahn80m <= MAX_RAHN_80M_MILLION ? match.rahn80m : seed.rahn80m, air: validScore(match.air, seed.air), powerWater: validScore(match.powerWater, seed.powerWater), internet: validScore(match.internet, seed.internet), metro: validScore(match.metro, seed.metro), security: validScore(match.security, seed.security), flatTerrain: validScore(match.flatTerrain, seed.flatTerrain), votesCount: typeof match.votesCount === 'number' && !Number.isNaN(match.votesCount) ? match.votesCount : seed.votesCount, pros: typeof match.pros === 'string' && match.pros.trim() ? match.pros.trim().slice(0, 500) : seed.pros, cons: typeof match.cons === 'string' && match.cons.trim() ? match.cons.trim().slice(0, 500) : seed.cons, sponsor: sanitizeSponsorRecord(match.sponsor, seed.sponsor), bargains: hasExplicitBargainsArray ? mergedBargains : seed.bargains, trafficInfo: { liveStatus: typeof rawTraffic.liveStatus === 'string' && rawTraffic.liveStatus.trim() ? rawTraffic.liveStatus : seedTraffic.liveStatus, liveSeverity: rawTraffic.liveSeverity === 'heavy' || rawTraffic.liveSeverity === 'semi' || rawTraffic.liveSeverity === 'smooth' ? rawTraffic.liveSeverity : seedTraffic.liveSeverity, peakHours: typeof rawTraffic.peakHours === 'string' && rawTraffic.peakHours.trim() ? rawTraffic.peakHours : seedTraffic.peakHours, seasonalAnalysis: typeof rawTraffic.seasonalAnalysis === 'string' && rawTraffic.seasonalAnalysis.trim() ? rawTraffic.seasonalAnalysis : seedTraffic.seasonalAnalysis, bottlenecks: typeof rawTraffic.bottlenecks === 'string' && rawTraffic.bottlenecks.trim() ? rawTraffic.bottlenecks : Array.isArray(rawTraffic.bottlenecks) ? rawTraffic.bottlenecks.join('، ') : seedTraffic.bottlenecks, trafficScore: typeof rawTraffic.trafficScore === 'number' && !Number.isNaN(rawTraffic.trafficScore) ? rawTraffic.trafficScore : seedTraffic.trafficScore, }, }; }
-export function hydrateNeighborhoodsFromStorage(expansionSeeds: Neighborhood[] = []): Neighborhood[] { const allSeeds = [...INITIAL_NEIGHBORHOODS, ...expansionSeeds]; try { const saved = typeof window !== 'undefined' ? localStorage.getItem(LOCAL_STORAGE_KEY) : null; if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed)) { const hydrated = allSeeds.map((seed) => { const match = parsed.find((p: any) => p && Number(p.id) === seed.id); return mergeNeighborhoodWithSeed(seed, match); }); for (const p of parsed) { if (p && typeof p === 'object' && typeof p.id === 'number' && p.id >= 100 && p.id <= 999 && typeof p.name === 'string' && !allSeeds.some((s) => s.id === p.id) && typeof p.lat === 'number' && typeof p.lng === 'number' && typeof p.buyPerSqm === 'number' && typeof p.rahn80m === 'number') { hydrated.push(mergeNeighborhoodWithSeed(p as Neighborhood, p)); } } return hydrated; } } } catch { /* Fallback to seed data */ } return allSeeds.map((seed) => mergeNeighborhoodWithSeed(seed)); }
+export function hydrateNeighborhoodsFromStorage(
+  expansionSeeds: Neighborhood[] = [],
+  includeSavedExpansionForId?: (id: number) => boolean,
+): Neighborhood[] {
+  const allSeeds = [...INITIAL_NEIGHBORHOODS, ...expansionSeeds];
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem(LOCAL_STORAGE_KEY) : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        const hydrated = allSeeds.map((seed) => {
+          const match = parsed.find((p: any) => p && Number(p.id) === seed.id);
+          return mergeNeighborhoodWithSeed(seed, match);
+        });
+        for (const p of parsed) {
+          const belongsToRequestedCity = !includeSavedExpansionForId || (typeof p?.id === 'number' && includeSavedExpansionForId(p.id));
+          if (belongsToRequestedCity && p && typeof p === 'object' && typeof p.id === 'number' && p.id >= 100 && p.id <= 999 && typeof p.name === 'string' && !allSeeds.some((s) => s.id === p.id) && typeof p.lat === 'number' && typeof p.lng === 'number' && typeof p.buyPerSqm === 'number' && typeof p.rahn80m === 'number') {
+            hydrated.push(mergeNeighborhoodWithSeed(p as Neighborhood, p));
+          }
+        }
+        return hydrated;
+      }
+    }
+  } catch { /* Fallback to seed data */ }
+  return allSeeds.map((seed) => mergeNeighborhoodWithSeed(seed));
+}
 export interface ValidatedBackupRestoreResult { ok: boolean; errorMessage?: string; restoredNeighborhoods?: Neighborhood[]; sponsorRequests?: SponsorCrmRequestItem[]; buyerLeads?: BuyerAlertLeadItem[]; favoriteHoodIds?: number[]; featureFlags?: FeatureFlags; }
 export function validateAndBuildRestoredState(rawJson: string, expansionSeeds: Neighborhood[] = []): ValidatedBackupRestoreResult {
   if (typeof rawJson !== 'string' || !rawJson.trim()) return { ok: false, errorMessage: 'فایل پشتیبان خالی است یا قابل خواندن نیست.' };
