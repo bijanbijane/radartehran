@@ -143,16 +143,21 @@ export async function deriveAllSubjectKeysForErasure(params: {
   return { ok: true, keys: Array.from(byKey.values()) };
 }
 
+/** Lifecycle receipt keys are 32-byte hexadecimal secrets, separate from research pseudonymization keys. */
+export function isValidLifecycleReceiptSecret(secret?: string): boolean {
+  return /^[0-9a-f]{64}$/i.test(String(secret || '').trim());
+}
+
 /**
- * Produces a keyed HMAC-SHA256 compliance digest of UID (when server secret is available;
- * domain-separated SHA-256 fallback only in secret-free unit contexts).
+ * Produces a keyed HMAC-SHA256 compliance digest of UID.
  * Classified as a sensitive pseudonymous compliance digest — NEVER treated as full anonymization.
+ * Fails closed when the dedicated lifecycle receipt secret is unavailable.
  */
 export async function hashUidForComplianceReceipt(uid: string, receiptSecret?: string): Promise<string> {
   const canonical = `rt-lifecycle-receipt-uid:${uid.trim()}`;
   const cleanSecret = String(receiptSecret || '').trim();
-  if (cleanSecret.length >= 16) {
-    return computeHmacSha256Hex(cleanSecret, canonical);
+  if (!isValidLifecycleReceiptSecret(cleanSecret)) {
+    throw new Error('INTERNAL_LIFECYCLE_RPC_SECRET_UNAVAILABLE');
   }
-  return computeSha256Hex(canonical);
+  return computeHmacSha256Hex(cleanSecret, canonical);
 }
