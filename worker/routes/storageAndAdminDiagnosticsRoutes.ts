@@ -52,7 +52,7 @@ export async function handleStorageAndAdminWorkerRoute(
       });
     }
     const userDb = resolveUserDb(env);
-    const diag = await inspectD1OperationalDiagnostics(userDb);
+    const diag = await inspectD1OperationalDiagnostics(userDb, 'user');
     const triadDomains = getTriadDomainBindingDiagnostics(env);
     const telemetrySummary = summarizeWorkerTelemetryWindow();
     return jsonWorkerResponse(ctx, 200, {
