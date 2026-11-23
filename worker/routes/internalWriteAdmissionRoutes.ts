@@ -18,6 +18,7 @@ import { resolveWriteAdmissionFromUserDb } from '../account-lifecycle/d1UserWrit
 import { consumeLifecycleRpcNonce as consumeUserDbNonce } from '../account-lifecycle/d1InternalRpcNonceStore.ts';
 import { consumeLifecycleRpcNonce as consumeStageDNonce } from '../account-lifecycle/d1WriteAdmissionNonceStore.ts';
 import { requireUserDb } from '../db/bindingResolver.ts';
+import { acquireMutationPermitInD1, releaseMutationPermitInD1 } from '../account-lifecycle/d1MutationPermit.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 
 export function isInternalWriteAdmissionPath(pathname: string, method: string): boolean {
@@ -77,13 +78,66 @@ export async function handleInternalWriteAdmissionRoute(ctx: WorkerRequestContex
           : 503;
       return jsonWorkerResponse(ctx, status, { status: 'error', code: nonceResult.code });
     }
-    const decision = await resolveWriteAdmissionFromUserDb(userDbResult.db, targetUid);
+    const userDb = userDbResult.db;
+    const action = body.action ?? 'check';
+
+    // Release is intentionally permitted after the write block is installed so
+    // the deletion worker can drain already-admitted Express requests.
+    if (action === 'release') {
+      const permitId = typeof body.permitId === 'string' ? body.permitId.trim() : '';
+      if (!permitId || permitId.length > 160) {
+        return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'MUTATION_PERMIT_ID_INVALID' });
+      }
+      try {
+        await releaseMutationPermitInD1({ userDb, permitId, uid: targetUid });
+      } catch {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'USER_DB_MUTATION_PERMIT_RELEASE_FAILED' });
+      }
+      return jsonWorkerResponse(ctx, 200, { status: 'ok', action: 'released' });
+    }
+
+    const decision = await resolveWriteAdmissionFromUserDb(userDb, targetUid);
     if (decision.status === 'UNAVAILABLE') {
       return jsonWorkerResponse(ctx, 503, { status: 'error', code: decision.code });
+    }
+    if (action === 'acquire') {
+      const operationName = typeof body.operationName === 'string' ? body.operationName.trim() : '';
+      if (!operationName || operationName.length > 240) {
+        return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'MUTATION_OPERATION_NAME_INVALID' });
+      }
+      if (decision.status === 'CLOSED') {
+        return jsonWorkerResponse(ctx, 423, { status: 'error', code: 'ACCOUNT_WRITE_BLOCKED' });
+      }
+      try {
+        const permit = await acquireMutationPermitInD1({
+          userDb,
+          uid: targetUid,
+          operationName,
+          ttlMs: 120_000,
+        });
+        if (permit.ok === false) {
+          return jsonWorkerResponse(ctx, 423, { status: 'error', code: permit.code });
+        }
+        return jsonWorkerResponse(ctx, 200, {
+          status: 'ok',
+          action: 'acquired',
+          decision,
+          permitId: permit.permitId,
+          expiresAtMs: permit.expiresAtMs,
+        });
+      } catch {
+        return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'USER_DB_MUTATION_PERMIT_ACQUIRE_FAILED' });
+      }
+    }
+    if (action !== 'check') {
+      return jsonWorkerResponse(ctx, 400, { status: 'error', code: 'WRITE_ADMISSION_ACTION_INVALID' });
     }
     return jsonWorkerResponse(ctx, 200, { status: 'ok', decision });
   }
 
+  if (body.action === 'acquire' || body.action === 'release') {
+    return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'USER_DB_REQUIRED_FOR_MUTATION_PERMITS' });
+  }
   if (!ctx.env.DB) {
     return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'D1_BINDING_UNAVAILABLE' });
   }

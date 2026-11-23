@@ -76,7 +76,7 @@ export async function enforceWorkerMutationWriteBlock(
           });
           ACTIVE_PERMITS.set(ctx.request, async () => {
             const released = await Promise.allSettled([
-              releaseMutationPermitInD1({ userDb, permitId: userPermit.permitId }),
+              releaseMutationPermitInD1({ userDb, permitId: userPermit.permitId, uid: authenticatedUid }),
               releaseD1MutationPermit({ db: lifecycleDb, targetUid: authenticatedUid, permitId: lifecyclePermit.permitId }),
             ]);
             if (released.some((result) => result.status === 'rejected')) {
@@ -84,7 +84,7 @@ export async function enforceWorkerMutationWriteBlock(
             }
           });
         } catch (error) {
-          await releaseMutationPermitInD1({ userDb, permitId: userPermit.permitId }).catch(() => undefined);
+          await releaseMutationPermitInD1({ userDb, permitId: userPermit.permitId, uid: authenticatedUid }).catch(() => undefined);
           throw error;
         }
       }
@@ -111,7 +111,7 @@ export async function enforceWorkerMutationWriteBlock(
           });
         }
         ACTIVE_PERMITS.set(ctx.request, async () => {
-          await releaseMutationPermitInD1({ userDb, permitId: permit.permitId });
+          await releaseMutationPermitInD1({ userDb, permitId: permit.permitId, uid: authenticatedUid });
         });
       }
       return null;

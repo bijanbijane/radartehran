@@ -14,6 +14,9 @@ import { InMemoryAccountLifecycleD1 } from '../../../worker/account-lifecycle/in
 import { D1AccountLifecycleStore } from '../../../worker/account-lifecycle/d1AccountLifecycleStore.ts';
 import { queryWriteAdmissionViaWorkerRpc } from './expressWriteAdmissionRpcClient.ts';
 import { handleInternalWriteAdmissionRoute } from '../../../worker/routes/internalWriteAdmissionRoutes.ts';
+import { EventEmitter } from 'node:events';
+import { createExpressMutationWriteBlockMiddleware } from './expressMutationWriteBlockMiddleware.ts';
+
 import {
   WRITE_ADMISSION_RPC_NONCE_HEADER,
   WRITE_ADMISSION_RPC_SIGNATURE_HEADER,
@@ -100,6 +103,71 @@ async function runD1ConsistencyTests(): Promise<void> {
   assert.equal(bobDecision.status, 'OPEN');
 }
 
+function createMockUserDb(options: { denyPermit?: boolean } = {}): {
+  db: import('../../../worker/types.ts').D1Database;
+  calls: string[];
+} {
+  const calls: string[] = [];
+  const db = {
+    prepare(sql: string) {
+      let values: unknown[] = [];
+      const statement = {
+        bind(...next: unknown[]) { values = next; return statement; },
+        async first<T = Record<string, unknown>>() {
+          calls.push('first:' + sql);
+          if (sql.includes('SELECT released_at_ms')) return { released_at_ms: Date.now() } as T;
+          return null as T | null;
+        },
+        async all<T = Record<string, unknown>>() {
+          calls.push('all:' + sql);
+          return { success: true, results: [] as T[] };
+        },
+        async run() {
+          calls.push('run:' + sql);
+          if (sql.includes('INSERT INTO account_mutation_permits')) {
+            return { success: true, meta: { changes: options.denyPermit ? 0 : 1 } };
+          }
+          return { success: true, meta: { changes: 1 } };
+        },
+      };
+      return statement;
+    },
+  };
+  return { db: db as unknown as import('../../../worker/types.ts').D1Database, calls };
+}
+
+async function invokeUserDbWriteAdmissionRpc(params: {
+  db: import('../../../worker/types.ts').D1Database;
+  body: Record<string, unknown>;
+}): Promise<Response> {
+  const body = JSON.stringify(params.body);
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonce = generateRpcNonce();
+  const signature = await signBody(body, timestamp, nonce);
+  const request = new Request('http://localhost/api/internal/v1/lifecycle/write-admission', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      [WRITE_ADMISSION_RPC_TIMESTAMP_HEADER]: timestamp,
+      [WRITE_ADMISSION_RPC_NONCE_HEADER]: nonce,
+      [WRITE_ADMISSION_RPC_SIGNATURE_HEADER]: signature,
+    },
+    body,
+  });
+  const response = await handleInternalWriteAdmissionRoute({
+    request,
+    method: 'POST',
+    pathname: '/api/internal/v1/lifecycle/write-admission',
+    url: new URL(request.url),
+    correlationId: 'user-db-rpc-test',
+    requestId: 'user-db-rpc-test',
+    environment: 'test',
+    env: { USER_DB: params.db, LIFECYCLE_WRITE_ADMISSION_RPC_SECRET: TEST_SECRET },
+  } as import('../../../worker/types.ts').WorkerRequestContext);
+  assert.ok(response);
+  return response!;
+}
+
 async function runInternalRouteTests(): Promise<void> {
   const db = new InMemoryAccountLifecycleD1();
   const body = JSON.stringify({ targetUid: 'u1' });
@@ -145,6 +213,81 @@ async function runInternalRouteTests(): Promise<void> {
   } as import('../../../worker/types.ts').WorkerRequestContext);
   assert.ok(replay);
   assert.equal(replay!.status, 409);
+
+  const userDb = createMockUserDb();
+  const acquired = await invokeUserDbWriteAdmissionRpc({
+    db: userDb.db,
+    body: { targetUid: 'u1', action: 'acquire', operationName: 'POST /api/listings' },
+  });
+  assert.equal(acquired.status, 200);
+  const acquiredBody = await acquired.json() as Record<string, unknown>;
+  assert.equal(acquiredBody.action, 'acquired');
+  assert.equal(typeof acquiredBody.permitId, 'string');
+  assert.ok(userDb.calls.some((sql) => sql.includes('INSERT INTO account_mutation_permits')));
+
+  const released = await invokeUserDbWriteAdmissionRpc({
+    db: userDb.db,
+    body: { targetUid: 'u1', action: 'release', permitId: String(acquiredBody.permitId) },
+  });
+  assert.equal(released.status, 200);
+  assert.equal((await released.json() as Record<string, unknown>).action, 'released');
+  assert.ok(userDb.calls.some((sql) => sql.includes('WHERE permit_id = ?2 AND uid = ?3')));
+
+  const blockedUserDb = createMockUserDb({ denyPermit: true });
+  const blockedAcquire = await invokeUserDbWriteAdmissionRpc({
+    db: blockedUserDb.db,
+    body: { targetUid: 'u1', action: 'acquire', operationName: 'POST /api/listings' },
+  });
+  assert.equal(blockedAcquire.status, 423);
+}
+
+class FakeExpressResponse extends EventEmitter {
+  statusCode = 200;
+  payload: unknown;
+  status(code: number): this { this.statusCode = code; return this; }
+  json(value: unknown): this { this.payload = value; return this; }
+}
+
+async function runExpressPermitLifetimeTests(): Promise<void> {
+  const response = new FakeExpressResponse();
+  let nextCalled = false;
+  let releases = 0;
+  const middleware = createExpressMutationWriteBlockMiddleware({
+    verifyUserAuth: async () => ({ authorized: true, uid: 'u1' }) as Awaited<ReturnType<typeof import('../../../src/utils/serverAdminAndTelegramSecurity.ts').verifyFirebaseUserAuthorization>>,
+    acquirePermit: async (_uid, operationName) => {
+      assert.equal(operationName, 'POST /api/listings');
+      return { ok: true, permitId: 'permit_1', expiresAtMs: Date.now() + 60_000 };
+    },
+    releasePermit: async (uid, permitId) => {
+      assert.equal(uid, 'u1');
+      assert.equal(permitId, 'permit_1');
+      releases += 1;
+    },
+  });
+  await middleware(
+    { path: '/api/listings', method: 'POST', headers: {} } as import('express').Request,
+    response as unknown as import('express').Response,
+    (() => { nextCalled = true; }) as import('express').NextFunction,
+  );
+  assert.equal(nextCalled, true);
+  response.emit('finish');
+  response.emit('close');
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(releases, 1, 'permit must be released exactly once on response completion/close');
+
+  const blockedResponse = new FakeExpressResponse();
+  let blockedNext = false;
+  const blocked = createExpressMutationWriteBlockMiddleware({
+    verifyUserAuth: async () => ({ authorized: true, uid: 'u1' }) as Awaited<ReturnType<typeof import('../../../src/utils/serverAdminAndTelegramSecurity.ts').verifyFirebaseUserAuthorization>>,
+    acquirePermit: async () => ({ ok: false, statusCode: 423, code: 'ACCOUNT_WRITE_BLOCKED' }),
+  });
+  await blocked(
+    { path: '/api/listings', method: 'POST', headers: {} } as import('express').Request,
+    blockedResponse as unknown as import('express').Response,
+    (() => { blockedNext = true; }) as import('express').NextFunction,
+  );
+  assert.equal(blockedNext, false);
+  assert.equal(blockedResponse.statusCode, 423);
 }
 
 async function runExpressClientConfigTests(): Promise<void> {
@@ -163,6 +306,7 @@ async function run(): Promise<void> {
   await runD1ConsistencyTests();
   await runInternalRouteTests();
   await runExpressClientConfigTests();
+  await runExpressPermitLifetimeTests();
   console.log('writeAdmissionDh2H201.test.ts: PASSED (unit + mock-handler; see writeAdmissionWranglerAcceptance for HTTP)');
 }
 

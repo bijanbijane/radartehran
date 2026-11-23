@@ -19,7 +19,24 @@ export const WRITE_ADMISSION_RPC_MAX_SKEW_SECONDS = 60;
 
 export interface WriteAdmissionRpcRequestBody {
   readonly targetUid: string;
+  /** Omitted or "check" preserves the original read-only RPC contract. */
+  readonly action?: 'check' | 'acquire' | 'release';
+  readonly operationName?: string;
+  readonly permitId?: string;
 }
+export interface WriteAdmissionRpcAcquireSuccessBody {
+  readonly status: 'ok';
+  readonly action: 'acquired';
+  readonly decision: import('./writeAdmissionAuthority.ts').WriteAdmissionDecision;
+  readonly permitId: string;
+  readonly expiresAtMs: number;
+}
+
+export interface WriteAdmissionRpcReleaseSuccessBody {
+  readonly status: 'ok';
+  readonly action: 'released';
+}
+
 
 export interface WriteAdmissionRpcSuccessBody {
   readonly status: 'ok';
