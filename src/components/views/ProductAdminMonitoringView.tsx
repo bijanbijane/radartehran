@@ -1,8 +1,8 @@
 /** @file src/components/views/ProductAdminMonitoringView.tsx — Independent Admin Shell with 6-Section RTL Sidebar (< 220 lines) */
 import React, { useEffect, useState } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { getAuthClient } from '../../platform/auth';
 import { Database, FileText, LayoutDashboard, LogOut, Menu, Shield, Users, Wrench, X } from 'lucide-react';
-import { auth, googleProvider } from '../../firebase';
+
 import type { EvaluatedNeighborhood, Neighborhood, MapTileServerId, CityId } from '../../data/neighborhoods';
 import type { FeatureFlags, SystemHealthData } from '../../types/models';
 import { AdminModal } from '../AdminModal';
@@ -62,9 +62,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
     }
     ui.setLoadingSystemHealth(true);
     try {
-      const idToken = await p.currentUser.getIdToken();
-      if (!idToken) { ui.setSystemHealth(null); return; }
-      const res = await fetch('/api/system-health', { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' });
+      const res = await fetch('/api/system-health', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
       if (!res.ok) { ui.setSystemHealth(null); return; }
       const payload: unknown = await res.json();
       if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !('status' in payload) || payload.status !== 'ok') {
@@ -99,7 +97,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
   const sampleFx = formatMillionTomanAsIntlCurrency(100, 'IRT', 'fa');
 
   return (
-    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[var(--color-bg-canvas)] dark:bg-slate-950 flex flex-col">
+    <div data-testid="admin-monitoring-full-page" data-admin-fx-sample={sampleFx} className="w-full min-h-full bg-[#F6F8F6] dark:bg-slate-950 flex flex-col">
       {/* Independent Admin Context Top Bar */}
       <header className="sticky top-0 z-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
@@ -139,7 +137,7 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
                 onClick={() => handleSelectSection(sec)}
                 className={`w-full text-start px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition cursor-pointer ${
                   active
-                    ? 'bg-[var(--color-brand-600)] text-white shadow-xs'
+                    ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -176,16 +174,16 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
           )}
 
           {(currentSection === 'overview' || currentSection === 'operations') && (
-            <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[var(--color-border-subtle)] dark:border-slate-800 space-y-2 text-xs">
+            <div data-testid="admin-ux-health-monitor" className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-[#DCE3DF] dark:border-slate-800 space-y-2 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-extrabold text-[var(--color-text-primary)] dark:text-white">پایش سلامت تجربه کاربری (UX Health Monitor · غیرشخصی)</span>
+                <span className="font-extrabold text-[#182522] dark:text-white">پایش سلامت تجربه کاربری (UX Health Monitor · غیرشخصی)</span>
                 <span className="px-2 py-0.5 rounded-[6px] bg-[#EAF5EE] text-[#176B4C] font-bold text-[11px]">
                   پایلوت نقشه (RT-PILOT-MAP-001) · S0/S1 Gate: پاک
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {DEFAULT_UI_ROLLOUT_FLAGS.map((flag) => (
-                  <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[var(--color-border-subtle)] dark:border-slate-700 text-[10.5px] font-semibold text-[var(--color-text-secondary)] dark:text-slate-300">
+                  <span key={flag.key} className="px-2 py-0.5 rounded-[6px] border border-[#DCE3DF] dark:border-slate-700 text-[10.5px] font-semibold text-[#34433E] dark:text-slate-300">
                     {flag.key}: {flag.enabled ? 'فعال' : 'غیرفعال'}
                   </span>
                 ))}
@@ -257,19 +255,8 @@ export const ProductAdminMonitoringView: React.FC<ProductAdminMonitoringViewProp
             featureFlags={p.featureFlags} onToggleFeatureFlag={crudActions.handleToggleFeatureFlag}
             onDownloadFullBackupJson={crudActions.handleDownloadFullBackupJson} onRestoreFullBackupJson={crudActions.handleRestoreFullBackupJson}
             backupStatusMsg={ui.backupStatusMsg} isVerifiedAdmin={p.isVerifiedAdmin} currentUserEmail={p.currentUser?.email || null}
-            onGoogleSignIn={() => {
-              ui.setAdminPassError('');
-              signInWithPopup(auth, googleProvider).catch((err) =>
-                ui.setAdminPassError(
-                  err?.code === 'auth/popup-blocked'
-                    ? 'پنجره ورود گوگل توسط مرورگر مسدود شد؛ لطفاً مسدودکننده پاپ‌آپ را غیرفعال کنید.'
-                    : err?.code === 'auth/popup-closed-by-user'
-                      ? 'پنجره ورود گوگل بسته شد.'
-                      : 'خطا در ورود با حساب گوگل؛ لطفاً دوباره تلاش کنید.',
-                ),
-              );
-            }}
-            onExtendSponsor30Days={crudActions.handleExtendSponsor30Days} onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
+            onGoogleSignIn={() => { ui.setAdminPassError(''); getAuthClient().startGoogleLogin(); }}
+          onExtendSponsor30Days={crudActions.handleExtendSponsor30Days} onReleaseHoodSponsor={crudActions.handleReleaseHoodSponsor}
             mapTileStyle={p.mapTileStyle} onSelectMapTileStyle={p.setMapTileStyle}
             onRetryNeshan={triggerManualNeshanRetry} isFallbackActive={readPersistedFallbackCircuit()}
           />

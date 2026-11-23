@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import {
   AuthLifecycleState,
   AuthUserSnapshot,
@@ -8,9 +8,7 @@ import {
   resolveIdentity,
   resolveProfile,
   resolveRoleAndPermissions,
-  GUEST_BASELINE_PERMISSIONS,
 } from '../../platform/auth';
-import { subscribeFirebaseAuthSession } from './authProviderFirebaseSession';
 
 export interface AuthContextValue {
   state: AuthLifecycleState;
@@ -22,13 +20,11 @@ export interface AuthContextValue {
   logout: () => void;
 }
 
-const defaultGuestPermissions: PermissionKey[] = [...GUEST_BASELINE_PERMISSIONS];
-
 const AuthContext = createContext<AuthContextValue>({
   state: 'UNAUTHENTICATED',
   user: null,
   activeRole: 'guest',
-  permissions: defaultGuestPermissions,
+  permissions: ['map:view', 'neighborhood:read', 'property:read', 'valuation:calculate'],
   workspaceId: 'ws:guest',
   switchRole: () => undefined,
   logout: () => undefined,
@@ -42,82 +38,38 @@ export const AuthProvider: React.FC<{
   const [state, setState] = useState<AuthLifecycleState>(initialUser ? 'READY' : 'INITIALIZING');
   const [user, setUser] = useState<AuthUserSnapshot | null>(initialUser);
   const [workspaceOverride, setWorkspaceOverride] = useState<string | undefined>(undefined);
-  const sessionGenerationRef = useRef(0);
 
   useEffect(() => {
-    setState(client.getState());
-    setUser(client.getUser());
-    if (!initialUser) {
-      client.transition('INITIALIZING');
-    } else {
-      client.setUser(initialUser);
-      client.transition('READY');
-    }
-
-    const unsubClient = client.subscribe((lifecycle, clientUser) => {
-      setState(lifecycle);
-      setUser(clientUser);
+    const unsubscribe = client.subscribe((next, nextUser) => {
+      setState(next);
+      setUser(nextUser);
     });
-
-    const unsubFirebase = subscribeFirebaseAuthSession({
-      client,
-      getGeneration: () => sessionGenerationRef.current,
-      bumpGeneration: () => {
-        sessionGenerationRef.current += 1;
-        return sessionGenerationRef.current;
-      },
-    });
-
-    return () => {
-      unsubClient();
-      unsubFirebase();
-    };
+    if (initialUser) client.setUser(initialUser);
+    else void client.refreshSession().catch(() => undefined);
+    return unsubscribe;
   }, [client, initialUser]);
 
   const access = useMemo(() => {
-    if (state === 'SESSION_EXPIRED' || state === 'UNAUTHENTICATED' || state === 'ACCESS_DENIED') {
-      const identity = resolveIdentity(null);
-      return resolveRoleAndPermissions(identity, resolveProfile(identity), workspaceOverride);
-    }
-    if (state === 'INITIALIZING' || state === 'RESOLVING_ACCESS' || state === 'AUTHENTICATED') {
-      return {
-        activeRole: 'guest' as AppRole,
-        availableRoles: ['guest'] as AppRole[],
-        permissions: defaultGuestPermissions,
-        workspaceId: 'ws:guest',
-        permissionVersion: 1,
-      };
-    }
     const identity = resolveIdentity(user);
     const profile = resolveProfile(identity);
     return resolveRoleAndPermissions(identity, profile, workspaceOverride);
-  }, [state, user, workspaceOverride]);
+  }, [user, workspaceOverride]);
 
   const switchRole = useCallback((role: AppRole, workspaceId?: string) => {
+    setUser((prev) => (prev ? { ...prev, customClaims: { ...prev.customClaims, role } } : prev));
     setWorkspaceOverride(workspaceId);
-    setUser((prev) => {
-      if (!prev) return prev;
-      const tokenRoles = Array.isArray(prev.customClaims?.roles)
-        ? (prev.customClaims.roles as AppRole[])
-        : [];
-      const tokenRole = typeof prev.customClaims?.role === 'string' ? (prev.customClaims.role as AppRole) : null;
-      const allowed = new Set<AppRole>([...tokenRoles, ...(tokenRole ? [tokenRole] : [])]);
-      if (!allowed.has(role)) return prev;
-      return { ...prev, customClaims: { ...prev.customClaims, role } };
-    });
   }, []);
 
   const logout = useCallback(() => {
-    sessionGenerationRef.current += 1;
     setUser(null);
     setWorkspaceOverride(undefined);
-    client.logout('provider_logout');
+    void client.logout('provider_logout');
   }, [client]);
 
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       state,
-      user: state === 'SESSION_EXPIRED' ? null : user,
+      user,
       activeRole: access.activeRole,
       permissions: access.permissions,
       workspaceId: access.workspaceId,
@@ -127,7 +79,11 @@ export const AuthProvider: React.FC<{
     [state, user, access.activeRole, access.permissions, access.workspaceId, switchRole, logout],
   );
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export function useAppAuth(): AuthContextValue {
