@@ -125,7 +125,7 @@ export async function handleChunkedAndDirectUploadRoutes(
     if (rateLimited) return rateLimited;
 
     const parsed = await readValidatedJsonBody(request, 3 * 1024 * 1024);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       return jsonWorkerResponse(ctx, parsed.status, { status: 'error', code: parsed.code, message: parsed.messageFa });
     }
     const sessionId = String(parsed.body.sessionId || '').trim();
