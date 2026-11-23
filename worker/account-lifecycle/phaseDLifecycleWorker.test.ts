@@ -9,7 +9,7 @@ import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
 import { acquireD1MutationPermit, releaseD1MutationPermit, countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
 import { SQL_UPSERT_WRITE_BLOCK } from './d1Queries.ts';
 import { InMemoryAccountLifecycleD1 } from './inMemoryAccountLifecycleD1.ts';
-import { calculateLifecycleRecoveryOffset, isStageDLifecycleEnabled } from './stageDLifecycleRuntime.ts';
+import { calculateLifecycleRecoveryOffset, isStageDLifecycleEnabled, getStageDDeletionReadiness, assertStageDDeletionReady } from './stageDLifecycleRuntime.ts';
 import type { WorkerEnv } from '../types.ts';
 
 async function run(): Promise<void> {
@@ -39,6 +39,23 @@ async function run(): Promise<void> {
     ...configuredStageEnv,
     USER_DB: undefined,
   }), false);
+
+  const provisionedBindingsButIncompleteAdapters = {
+    ...configuredStageEnv,
+    MEDIA_BUCKET: {} as NonNullable<WorkerEnv['MEDIA_BUCKET']>,
+    R2_MEDIA_BUCKET_NAME: 'radartehran-staging-media',
+  } as WorkerEnv;
+  const deletionReadiness = getStageDDeletionReadiness(provisionedBindingsButIncompleteAdapters);
+  assert.equal(deletionReadiness.ready, false);
+  assert.ok(deletionReadiness.blockers.includes('DOMAIN_ERASURE_ADAPTER_NOT_READY:BARGAIN_LISTINGS'));
+  assert.ok(deletionReadiness.blockers.includes('DOMAIN_ERASURE_ADAPTER_NOT_READY:USER_PROFILE'));
+  assert.ok(deletionReadiness.blockers.includes('DOMAIN_ERASURE_ADAPTER_NOT_READY:MEDIA_METADATA'));
+  assert.ok(deletionReadiness.blockers.includes('AUTH_IDENTITY_ERASURE_ADAPTER_NOT_READY'));
+  assert.throws(
+    () => assertStageDDeletionReady(provisionedBindingsButIncompleteAdapters),
+    /Account deletion was not started because required erasure capabilities are unavailable/,
+  );
+
   assert.equal(calculateLifecycleRecoveryOffset(40, 50, 0), 0);
   assert.equal(calculateLifecycleRecoveryOffset(120, 50, 0), 0);
   assert.equal(calculateLifecycleRecoveryOffset(120, 50, 1), 50);
