@@ -39,14 +39,14 @@ export async function fetchMediaMetadataRecordFromFirestore(objectId: string): P
 
 export function parseMediaMetadataDocument(data: Record<string, unknown> | undefined): MediaMetadataRecord | null {
   if (!data) return null;
-  if (data.schemaVersion === MEDIA_METADATA_NATIVE_SCHEMA && data.record && typeof data.record === 'object') {
-    return data.record as MediaMetadataRecord;
+  if (data.schemaVersion === MEDIA_METADATA_NATIVE_SCHEMA && isMediaMetadataRecordPayload(data.record)) {
+    return data.record;
   }
   if (data.schemaVersion === STORED_OBJECT_METADATA_SCHEMA) {
     return null;
   }
-  if (typeof data.objectId === 'string' && typeof data.revision === 'number') {
-    return data as MediaMetadataRecord;
+  if (isMediaMetadataRecordPayload(data)) {
+    return data;
   }
   return null;
 }
