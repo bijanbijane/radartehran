@@ -4,6 +4,7 @@ import { authenticateWorkerSession, RADAR_SESSION_COOKIE, readSessionCookie } fr
 import { consumeGoogleOAuthState } from '../worker/routes/authRoutes';
 import { normalizePhone } from '../worker/routes/authRoutes';
 import { resolveWorkerAuthContext } from '../worker/auth/authorizationPolicy';
+import { authenticateWorkerRouteCompat } from '../worker/auth/routeAuthCompat';
 import type { D1Database, D1PreparedStatement, WorkerRequestContext, WorkerEnv } from '../worker/types';
 
 type SessionRow = Record<string, unknown>;
@@ -288,6 +289,46 @@ describe('Cloudflare-native session authentication', () => {
     assert.equal(result.principal?.authMode, 'cloudflare_d1_session');
     assert.equal(result.principal?.isPrimaryAdmin, true);
     assert.equal(result.principal?.role, 'primary_admin');
+  });
+
+  it('maps a verified D1 session to the existing route auth contract', async () => {
+    const context = makeContext(
+      makeD1(sessionRow()),
+      'A'.repeat(64),
+      { ADMIN_EMAIL: 'verified@example.com' },
+    );
+    const result = await authenticateWorkerRouteCompat(context, { requireAppCheck: true });
+    assert.equal(result.authenticated, true);
+    assert.equal(result.uid, 'usr_test_1');
+    assert.equal(result.isAdmin, true);
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.reasonCode, 'VERIFIED');
+  });
+
+  it('does not broaden primary-admin-only route access to delegated administrators', async () => {
+    const context = makeContext(
+      makeD1(sessionRow({ delegated_admin: 1 })),
+      'A'.repeat(64),
+    );
+    const result = await authenticateWorkerRouteCompat(context, { requireAppCheck: true });
+    assert.equal(result.authenticated, true);
+    assert.equal(result.uid, 'usr_test_1');
+    assert.equal(result.isAdmin, false);
+  });
+
+  it('keeps invalid native cookies fail-closed in compatibility routes even with a Bearer header', async () => {
+    const context = makeContext(makeD1(null));
+    const request = new Request(context.request.url, {
+      headers: {
+        cookie: `${RADAR_SESSION_COOKIE}=${'A'.repeat(64)}`,
+        authorization: 'Bearer deliberately-invalid-transition-token',
+      },
+    });
+    const result = await authenticateWorkerRouteCompat({ ...context, request }, { requireAppCheck: false });
+    assert.equal(result.authenticated, false);
+    assert.equal(result.uid, null);
+    assert.equal(result.statusCode, 401);
+    assert.equal(result.reasonCode, 'SESSION_INVALID');
   });
 
   it('fails closed on an invalid session cookie instead of falling back to a bearer token', async () => {

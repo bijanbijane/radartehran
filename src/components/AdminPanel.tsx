@@ -1,25 +1,87 @@
-import React, { useEffect, useMemo, useState } from 'react'; import { AlertTriangle, Bug, CheckCircle2, Database, FileWarning, FlaskConical, MapPinOff, RefreshCw, ShieldAlert, Trash2, } from 'lucide-react'; import { clearFirestoreErrorLogs, FirestoreErrorLogEntry, getFirestoreErrorLogs, OperationType, recordFirestoreQueryError, } from '../firebase'; import { BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { auditLocalRadarDatasets, checkDatabaseRelationalAndSchemaIntegrity, checkNeighborhoodGeoAndCityHealth, checkOrphanedHoodReferences, DataAnomalySeverity, DatabaseIntegrityIssue, fetchLiveFirestoreSamplesForAudit, NeighborhoodGeoCityCandidate, NeighborhoodGeoCityHealthIssue, RawDocumentAuditSample, sanitizeCorruptedDocumentPayload, } from '../data/firestoreDataAuditor'; import { quarantineDeleteFirestoreDocument, repairFirestoreDocumentInCloud, } from '../data/firestoreNeighborhoodRepository'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood, aggregateMarketMetricsForScalars } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
-import { AdminWeeklyDatabaseHealthChart } from './AdminWeeklyDatabaseHealthChart'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export { checkDatabaseRelationalAndSchemaIntegrity, checkNeighborhoodGeoAndCityHealth, checkOrphanedHoodReferences, sanitizeCorruptedDocumentPayload, }; export type { DatabaseIntegrityIssue, NeighborhoodGeoCityCandidate, NeighborhoodGeoCityHealthIssue }; export interface AdminPanelProps { neighborhoods: Neighborhood[]; sponsorRequests: SponsorCrmRequestItem[]; buyerLeads: BuyerAlertLeadItem[]; isVerifiedAdmin?: boolean; }
-export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerifiedAdmin = true, }: AdminPanelProps): React.ReactElement { const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const avgBuySqm = neighborhoods.length > 0 ? Math.round(neighborhoods.reduce((acc, h) => acc + h.buyPerSqm, 0) / neighborhoods.length) : 120; const avgUnitBuy = convertPricePerSqmToUnit(avgBuySqm, areaUnit); const avgUnitDeal = convertPricePerSqmToUnit(aggregateMarketMetricsForScalars(1, "تهران", avgBuySqm).estimatedDealPricePerSqm, areaUnit); const [errorLogs, setErrorLogs] = useState<FirestoreErrorLogEntry[]>(() => getFirestoreErrorLogs()); const [extraSamples, setExtraSamples] = useState<RawDocumentAuditSample[]>([]);
-  const [extraGeoCandidates, setExtraGeoCandidates] = useState<NeighborhoodGeoCityCandidate[]>([]); const [scanningCloud, setScanningCloud] = useState<boolean>(false); const [severityFilter, setSeverityFilter] = useState<'ALL' | DataAnomalySeverity>('ALL'); useEffect(() => {
-    setErrorLogs(getFirestoreErrorLogs()); }, [neighborhoods, sponsorRequests, buyerLeads]); const auditReport = useMemo(
+import React, { useEffect, useMemo, useState } from 'react'; import { AlertTriangle, Bug, CheckCircle2, Database, FileWarning, FlaskConical, MapPinOff, RefreshCw, ShieldAlert, Trash2, } from 'lucide-react'; import { BuyerAlertLeadItem, Neighborhood, SponsorCrmRequestItem, toPersianNum, } from '../data/neighborhoods'; import { auditLocalRadarDatasets, checkDatabaseRelationalAndSchemaIntegrity, checkNeighborhoodGeoAndCityHealth, checkOrphanedHoodReferences, DataAnomalySeverity, DatabaseIntegrityIssue, NeighborhoodGeoCityCandidate, NeighborhoodGeoCityHealthIssue, RawDocumentAuditSample, sanitizeCorruptedDocumentPayload, } from '../data/firestoreDataAuditor'; import { aggregateNeighborhoodMarketMetrics, aggregateMarketMetricsForHood, aggregateMarketMetricsForScalars } from '../data/realMarketPriceAggregator'; import { convertPricePerSqmToUnit, formatAreaShort, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import { AdminWeeklyDatabaseHealthChart } from './AdminWeeklyDatabaseHealthChart'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; export { checkDatabaseRelationalAndSchemaIntegrity, checkNeighborhoodGeoAndCityHealth, checkOrphanedHoodReferences, sanitizeCorruptedDocumentPayload, }; export type { DatabaseIntegrityIssue, NeighborhoodGeoCityCandidate, NeighborhoodGeoCityHealthIssue }; interface LocalDiagnosticErrorLogEntry { id: string; operationType: string; timeFa: string; path: string | null; authInfo: { email?: string | null; userId?: string | null }; error: string; }
+export interface AdminPanelProps { neighborhoods: Neighborhood[]; sponsorRequests: SponsorCrmRequestItem[]; buyerLeads: BuyerAlertLeadItem[]; isVerifiedAdmin?: boolean; }
+export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerifiedAdmin = true, }: AdminPanelProps): React.ReactElement { const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const avgBuySqm = neighborhoods.length > 0 ? Math.round(neighborhoods.reduce((acc, h) => acc + h.buyPerSqm, 0) / neighborhoods.length) : 120; const avgUnitBuy = convertPricePerSqmToUnit(avgBuySqm, areaUnit); const avgUnitDeal = convertPricePerSqmToUnit(aggregateMarketMetricsForScalars(1, "تهران", avgBuySqm).estimatedDealPricePerSqm, areaUnit); const [errorLogs, setErrorLogs] = useState<LocalDiagnosticErrorLogEntry[]>([]); const [extraSamples, setExtraSamples] = useState<RawDocumentAuditSample[]>([]);
+  const [extraGeoCandidates, setExtraGeoCandidates] = useState<NeighborhoodGeoCityCandidate[]>([]); const [scanningCloud, setScanningCloud] = useState<boolean>(false); const [severityFilter, setSeverityFilter] = useState<'ALL' | DataAnomalySeverity>('ALL'); const auditReport = useMemo(
     () => auditLocalRadarDatasets({ neighborhoods, sponsorRequests, buyerLeads, extraSamples }), [neighborhoods, sponsorRequests, buyerLeads, extraSamples]
   ); const geoCityIssues = useMemo( () => checkNeighborhoodGeoAndCityHealth([...(neighborhoods as unknown as NeighborhoodGeoCityCandidate[]), ...extraGeoCandidates]), [neighborhoods, extraGeoCandidates]
   ); const orphanedIssues = useMemo( () => checkOrphanedHoodReferences({ validHoodIds: neighborhoods.map((h) => h.id), sponsorRequests, buyerLeads, extraSamples }), [neighborhoods, sponsorRequests, buyerLeads, extraSamples] );
   const integrityIssues = useMemo( () => checkDatabaseRelationalAndSchemaIntegrity({ neighborhoods, sponsorRequests, buyerLeads, extraSamples }), [neighborhoods, sponsorRequests, buyerLeads, extraSamples] );
-  const handleApplyAutoSanitize = (collectionName: string, docId: string, sanitizedData: Record<string, unknown>) => { setExtraSamples((prev) =>
-      prev.map((item) => (item.collection === collectionName && item.docId === docId ? { ...item, data: sanitizedData } : item)) ); if (!docId.startsWith('sim_')) void repairFirestoreDocumentInCloud(collectionName, docId, sanitizedData); }; const handleRemoveSampleDoc = (collectionName: string, docId: string) => {
-    setExtraSamples((prev) => prev.filter((item) => !(item.collection === collectionName && item.docId === docId))); if (!docId.startsWith('sim_')) void quarantineDeleteFirestoreDocument(collectionName, docId); }; const filteredIssues = useMemo(() => { if (severityFilter === 'ALL') return auditReport.issues;
-    return auditReport.issues.filter((item) => item.severity === severityFilter); }, [auditReport.issues, severityFilter]); const handleRunLiveCloudAudit = async () => { setScanningCloud(true);
-    try { const liveDocs = await fetchLiveFirestoreSamplesForAudit(isVerifiedAdmin);
-      setExtraSamples(liveDocs); setErrorLogs(getFirestoreErrorLogs());
-    } finally { setScanningCloud(false); }
-  }; const handleInjectDiagnosticSamples = () => {
-    recordFirestoreQueryError(
-      new Error('Missing or insufficient permissions: Simulated query error on unindexed/negative filter'),
-      OperationType.LIST,
-      'neighborhoodOverrides?where=buyPerSqm<0'
-    );
+  const handleApplyAutoSanitize = (collectionName: string, docId: string, sanitizedData: Record<string, unknown>) => {
+    setExtraSamples((prev) => prev.map((item) =>
+      item.collection === collectionName && item.docId === docId ? { ...item, data: sanitizedData } : item,
+    ));
+  };
+  const handleRemoveSampleDoc = (collectionName: string, docId: string) => {
+    setExtraSamples((prev) => prev.filter((item) => !(item.collection === collectionName && item.docId === docId)));
+  };
+  const filteredIssues = useMemo(() => { if (severityFilter === 'ALL') return auditReport.issues;
+    return auditReport.issues.filter((item) => item.severity === severityFilter); }, [auditReport.issues, severityFilter]); const handleRunLiveCloudAudit = async () => {
+    if (!isVerifiedAdmin) throw new Error('ADMIN_SESSION_REQUIRED');
+    setScanningCloud(true);
+    try {
+      const response = await fetch('/api/v1/market/state?cityId=tehran', {
+        method: 'GET', credentials: 'same-origin', cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+      const state = await response.json().catch(() => ({})) as {
+        status?: string;
+        bargains?: Array<Record<string, unknown>>;
+        sponsors?: Array<Record<string, unknown>>;
+        buyerAlerts?: Array<Record<string, unknown>>;
+        overrides?: Array<Record<string, unknown>>;
+      };
+      if (!response.ok || state.status === 'error') throw new Error('D1_MARKET_AUDIT_FAILED');
+      const samples: RawDocumentAuditSample[] = [];
+      for (const [index, row] of (state.bargains || []).entries()) {
+        samples.push({ collection: 'bargains', docId: String(row.id || index), data: {
+          hoodId: row.hoodId, title: row.title, priceText: row.priceText, street: row.street,
+          sqm: row.sqm, discountPercent: row.discountPercent, status: row.status,
+        } });
+      }
+      for (const [index, row] of (state.sponsors || []).entries()) {
+        samples.push({ collection: 'sponsorRequests', docId: String(row.id || index), data: {
+          hoodId: row.hoodId, hoodName: row.hoodName, agencyName: row.agencyName,
+          phone: row.phone ? '[REDACTED]' : '', monthlyTariffMillion: row.monthlyTariffMillion,
+          totalPayableMillion: row.totalPayableMillion, experienceYears: row.experienceYears, status: row.status,
+        } });
+      }
+      for (const [index, row] of (state.buyerAlerts || []).entries()) {
+        samples.push({ collection: 'buyerAlerts', docId: String(row.id || index), data: {
+          hoodId: row.hoodId, fullName: row.fullName ? '[REDACTED]' : '', phone: row.phone ? '[REDACTED]' : '',
+          maxBudgetMillion: row.maxBudgetMillion, dealType: row.dealType, expiresAtIso: row.expiresAtIso,
+        } });
+      }
+      for (const [index, row] of (state.overrides || []).entries()) {
+        const sponsor = row.sponsor && typeof row.sponsor === 'object' ? row.sponsor as Record<string, unknown> : null;
+        samples.push({ collection: 'neighborhoodOverrides', docId: String(row.hoodId || index), data: {
+          hoodId: row.hoodId, buyPerSqm: row.buyPerSqm, rahn80m: row.rahn80m,
+          sponsor: sponsor ? {
+            name: sponsor.name, specialty: sponsor.specialty, experienceYears: sponsor.experienceYears,
+            expiresAtIso: sponsor.expiresAtIso, planType: sponsor.planType, phone: sponsor.phone ? '[REDACTED]' : '',
+          } : undefined,
+        } });
+      }
+      setExtraSamples(samples.slice(0, 1500));
+      setErrorLogs([]);
+    } catch (error) {
+      setErrorLogs([{
+        id: `d1-audit-${Date.now()}`, operationType: 'GET',
+        timeFa: new Date().toLocaleString('fa-IR'), path: '/api/v1/market/state?cityId=tehran',
+        authInfo: { email: null, userId: 'admin-session' },
+        error: error instanceof Error ? error.message : 'D1_MARKET_AUDIT_FAILED',
+      }]);
+    } finally {
+      setScanningCloud(false);
+    }
+  };
+  const handleInjectDiagnosticSamples = () => {
+    setErrorLogs([{
+      id: `sim-${Date.now()}`, operationType: 'SIMULATED_GET',
+      timeFa: new Date().toLocaleString('fa-IR'), path: '/api/v1/market/state?cityId=tehran',
+      authInfo: { email: null, userId: 'local-simulation' },
+      error: 'نمونهٔ شبیه‌سازی‌شده برای آزمون نمایش خطا؛ درخواست واقعی ارسال نشده است.',
+    }]);
     setExtraSamples([
       { collection: 'neighborhoodOverrides', docId: 'sim_negative_hood_12', data: { hoodId: 12, buyPerSqm: -145, rahn80m: -1800, air: -3 } },
       { collection: 'bargains', docId: 'sim_broken_bargain_99', data: { hoodId: 5, title: '', priceText: 'متری ۱۲۰ میلیون', street: '', sqm: -75, discountPercent: 85 } },
@@ -29,17 +91,16 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
       { id: 888, name: 'محله آزمایشی بدون مختصات', cityId: 'tehran', zone: 'شمال تهران', lat: 0, lng: -51.4 },
       { id: 950, name: 'محله آزمایشی فاقد شناسه منطقه (cityId)', cityId: '', zone: '', lat: 35.72, lng: 51.41 },
     ]);
-    setErrorLogs(getFirestoreErrorLogs());
+    
   };
   const handleClearDiagnostics = () => {
-    clearFirestoreErrorLogs();
     setErrorLogs([]);
     setExtraSamples([]);
     setExtraGeoCandidates([]);
   };
   return (
     <div
-      data-testid="admin-firestore-diagnostics-panel"
+      data-testid="admin-d1-diagnostics-panel"
       className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-4 shadow-xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
@@ -47,17 +108,17 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
           <Bug className="w-5 h-5 stroke-[1.75] text-[var(--color-brand-600)] dark:text-emerald-400 shrink-0" />
           <div>
             <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-              ابزار گزارش‌گیری خطاهای کوئری Firestore و بازرس داکیومنت‌های نامعتبر (Database Debugger)
+              ابزار گزارش‌گیری خطاهای کوئری Cloudflare D1 و بازرس داکیومنت‌های نامعتبر (Database Debugger)
             </h4>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              شناسایی آنی فیلدهای عددی منفی، مقادیر خارج از بازه، فیلدهای ناقص و خطاهای قواعد امنیتی فایراستور · میانگین {formatAreaShort(80, areaUnit)} ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(avgUnitBuy)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(avgUnitBuy, intlCurrency, locale)})` : ''} · سناریو v6.4 (غیرثبتی): {toPersianNum(avgUnitDeal)} م · آخرین بررسی: {auditReport.scannedAtFa}
+              شناسایی آنی فیلدهای عددی منفی، مقادیر خارج از بازه، فیلدهای ناقص و خطاهای قواعد اعتبارسنجی داده · میانگین {formatAreaShort(80, areaUnit)} ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(avgUnitBuy)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(avgUnitBuy, intlCurrency, locale)})` : ''} · سناریو v6.4 (غیرثبتی): {toPersianNum(avgUnitDeal)} م · آخرین بررسی: {auditReport.scannedAtFa}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={handleRunLiveCloudAudit} disabled={scanningCloud} className="px-3 py-1.5 rounded-xl bg-[var(--color-brand-600)] hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50">
             <RefreshCw className={`w-3.5 h-3.5 ${scanningCloud ? 'animate-spin' : ''}`} />
-            <span>{scanningCloud ? 'در حال اسکن کلود...' : 'اسکن زنده کالکشن‌های Firestore'}</span>
+            <span>{scanningCloud ? 'در حال اسکن کلود...' : 'اسکن زنده داده‌های بازار در Cloudflare D1'}</span>
           </button>
           <button type="button" onClick={handleInjectDiagnosticSamples} className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer">
             <FlaskConical className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
@@ -102,7 +163,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
         </div>
         <div className={`border rounded-xl p-2.5 ${errorLogs.length > 0 ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200' : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100'}`}>
           <div className="text-[11px] opacity-80 flex items-center justify-between">
-            <span>خطاهای کوئری Firestore</span>
+            <span>خطاهای API و خواندن D1</span>
             <ShieldAlert className={`w-3.5 h-3.5 ${errorLogs.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--color-brand-600)] dark:text-emerald-400'}`} />
           </div>
           <div className="text-sm font-black mt-1">
@@ -110,7 +171,7 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
           </div>
         </div>
       </div>
-      {/* نمودار هفتگی Recharts تعداد داکیومنت‌های نامعتبر، بازرس مراجع یتیم و پنل تعمیر خودکار */}
+      {/* نمودار هفتگی Recharts تعداد داکیومنت‌های نامعتبر، بازرس مراجع یتیم و پیش‌نمایش اصلاح محلی */}
       <AdminWeeklyDatabaseHealthChart
         auditReport={auditReport}
         orphanedIssues={orphanedIssues}
@@ -192,14 +253,14 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
           )}
         </div>
       </div>
-      {/* بخش ۲: لاگ خطاهای کوئری‌های Firestore */}
+      {/* بخش ۲: لاگ خطاهای API و عملیات D1 */}
       <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div className="font-extrabold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span>لاگ خطاهای کوئری و عملیات Firestore ({toPersianNum(errorLogs.length)} مورد)</span>
           </div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">ثبت خودکار از handleFirestoreError و onSnapshot</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400">خطاهای خواندن API در نشست فعلی؛ بدون دسترسی مستقیم مرورگر به پایگاه داده</span>
         </div>
         <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
           {errorLogs.length === 0 ? (
@@ -274,4 +335,5 @@ export function AdminPanel({ neighborhoods, sponsorRequests, buyerLeads, isVerif
           )} </div>
       </div>
     </div>
-  ); } export const AdminFirestoreDiagnosticsPanel = AdminPanel; export default AdminPanel;
+  ); } export const AdminDatabaseDiagnosticsPanel = AdminPanel;
+export const AdminFirestoreDiagnosticsPanel = AdminPanel; export default AdminPanel;

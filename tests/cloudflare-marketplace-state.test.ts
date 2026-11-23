@@ -91,3 +91,57 @@ describe('D1 marketplace state favorite city isolation', () => {
     }
   });
 });
+
+function makeSponsorProjectionD1(row: Record<string, unknown>): D1Database {
+  const db: D1Database = {
+    prepare(sql: string): D1PreparedStatement {
+      const statement: D1PreparedStatement = {
+        bind(..._values: unknown[]) { return statement; },
+        async first<T = Record<string, unknown>>(): Promise<T | null> { return null; },
+        async run<T = unknown>() { return { success: true, results: [] as T[], meta: { changes: 0 } }; },
+        async all<T = Record<string, unknown>>() {
+          return {
+            success: true,
+            results: (sql.includes('FROM sponsor_requests') ? [row] : []) as T[],
+          };
+        },
+      };
+      return statement;
+    },
+    async batch() { return []; },
+    async exec() { return { count: 0, duration: 0 }; },
+  };
+  return db;
+}
+
+describe('public marketplace sponsor projection', () => {
+  it('does not expose internal sponsor tracking codes in public state', async () => {
+    const state = await getMarketStateFromD1(
+      makeSponsorProjectionD1({
+        request_id: 'request-1',
+        owner_uid: 'owner-1',
+        city_id: 'tehran',
+        hood_id: 12,
+        hood_name: 'محله آزمایشی',
+        agency_name: 'آژانس آزمایشی',
+        phone_ciphertext: 'not-used-for-public-projection',
+        phone_last4: '4567',
+        specialty: 'مسکونی',
+        experience_years: 8,
+        monthly_tariff_million: 10,
+        plan_months: 1,
+        total_payable_million: 10,
+        tracking_code: 'INTERNAL-TRACK-123',
+        status: 'approved',
+        expires_at_iso: null,
+        created_at_iso: '2026-11-20T00:00:00.000Z',
+      }),
+      { cityId: 'tehran' },
+      {} as WorkerEnv,
+    );
+
+    assert.equal(state.sponsors.length, 1);
+    assert.equal(state.sponsors[0].trackingCode, undefined);
+    assert.equal(state.sponsors[0].phone, '+98***4567');
+  });
+});

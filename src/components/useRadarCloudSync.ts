@@ -193,6 +193,7 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
   const [reconnectGeneration, setReconnectGeneration] = useState(0);
   const mountedRef = useRef(true);
   const lastUidRef = useRef<string | null>(null);
+  const lastCityRef = useRef(activeCity);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -224,6 +225,10 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
 
   useEffect(() => {
     if (!authReady) return;
+    if (lastCityRef.current !== activeCity) {
+      lastCityRef.current = activeCity;
+      setFavoriteHoodIds([]);
+    }
     const controller = new AbortController();
     let cancelled = false;
     const loadMarketState = async () => {
