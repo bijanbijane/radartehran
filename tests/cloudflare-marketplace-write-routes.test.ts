@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { RADAR_SESSION_COOKIE } from '../worker/auth/sessionAuth';
 import { handleMarketplaceWorkerRoute } from '../worker/routes/marketplaceRoutes';
+import { persistIdempotentMutation } from '../worker/marketplace/d1MarketplaceMutations';
 import type { D1Database, D1PreparedStatement, WorkerRequestContext, WorkerEnv } from '../worker/types';
 
 const TOKEN = 'S'.repeat(64);
@@ -84,6 +85,80 @@ function makeContext(body: Record<string, unknown>, origin = 'https://radartehra
     implementationId: 'cloudflare-d1-marketplace',
   };
 }
+
+function makeAmbiguousBatchD1(
+  rowAfterBatch: { request_hash: string; resource_id: string } | null,
+): D1Database {
+  let firstCalls = 0;
+  const db = {
+    prepare(_sql: string): D1PreparedStatement {
+      const statement = {
+        bind(..._values: unknown[]) {
+          return statement as unknown as D1PreparedStatement;
+        },
+        async first<T = Record<string, unknown>>(): Promise<T | null> {
+          firstCalls += 1;
+          return (firstCalls === 1 ? null : rowAfterBatch) as T | null;
+        },
+        async run() { return { success: true, meta: { changes: 1 } }; },
+        async all<T = Record<string, unknown>>() { return { results: [] as T[], success: true }; },
+      };
+      return statement as unknown as D1PreparedStatement;
+    },
+    async batch() {
+      throw new Error('simulated D1 response loss after atomic batch');
+    },
+    async exec() { return { count: 0, duration: 0 }; },
+  };
+  return db as unknown as D1Database;
+}
+
+describe('marketplace idempotency reconciliation', () => {
+  it('reports not_committed when an atomic batch fails and no idempotency row exists', async () => {
+    const db = makeAmbiguousBatchD1(null);
+    const result = await persistIdempotentMutation({
+      db,
+      uid: 'usr_market_test',
+      operationName: 'sponsor.create',
+      idempotencyKey: 'idem-no-commit',
+      requestHash: 'hash-1',
+      resourceId: 'resource-1',
+      createdAtIso: new Date().toISOString(),
+      resourceStatements: [db.prepare('INSERT INTO sponsor_requests DEFAULT VALUES')],
+    });
+    assert.deepEqual(result, { status: 'not_committed' });
+  });
+
+  it('reconciles an ambiguous batch error when the idempotency row was committed', async () => {
+    const db = makeAmbiguousBatchD1({ request_hash: 'hash-1', resource_id: 'resource-1' });
+    const result = await persistIdempotentMutation({
+      db,
+      uid: 'usr_market_test',
+      operationName: 'sponsor.create',
+      idempotencyKey: 'idem-committed',
+      requestHash: 'hash-1',
+      resourceId: 'resource-1',
+      createdAtIso: new Date().toISOString(),
+      resourceStatements: [db.prepare('INSERT INTO sponsor_requests DEFAULT VALUES')],
+    });
+    assert.deepEqual(result, { status: 'created', resourceId: 'resource-1' });
+  });
+
+  it('rejects a different payload when another request committed the same idempotency key', async () => {
+    const db = makeAmbiguousBatchD1({ request_hash: 'different-hash', resource_id: 'resource-other' });
+    const result = await persistIdempotentMutation({
+      db,
+      uid: 'usr_market_test',
+      operationName: 'sponsor.create',
+      idempotencyKey: 'idem-conflict',
+      requestHash: 'hash-1',
+      resourceId: 'resource-1',
+      createdAtIso: new Date().toISOString(),
+      resourceStatements: [db.prepare('INSERT INTO sponsor_requests DEFAULT VALUES')],
+    });
+    assert.deepEqual(result, { status: 'conflict' });
+  });
+});
 
 describe('Cloudflare D1 marketplace vote writes', () => {
   it('accepts an authenticated phone session and returns the canonical persisted vote id', async () => {
