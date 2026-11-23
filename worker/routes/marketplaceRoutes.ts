@@ -3,7 +3,7 @@ import { jsonWorkerResponse, readValidatedJsonBody } from '../contextAndSecurity
 import { evaluateTieredWorkerRateLimit } from '../cache/kvAndEdgeRateLimiter';
 import { requireUserDb } from '../db/bindingResolver';
 import { getMarketStateFromD1 } from '../marketplace/d1MarketplaceRepository';
-import type { WorkerRequestContext } from '../types';
+import type { D1Database, WorkerRequestContext } from '../types';
 
 const SUPPORTED_CITY_IDS = new Set(['tehran', 'karaj', 'mashhad', 'isfahan', 'shiraz']);
 
@@ -50,7 +50,7 @@ async function requireAuthenticatedMutation(ctx: WorkerRequestContext) {
 
 async function enforceMutationLimit(
   ctx: WorkerRequestContext,
-  db: NonNullable<ReturnType<typeof requireUserDb> extends never ? never : unknown> & import('../types').D1Database,
+  db: D1Database,
   uid: string,
   action: 'buyer_lead' | 'account_auth',
   maxRequests: number,
@@ -161,9 +161,12 @@ export async function handleMarketplaceWorkerRoute(ctx: WorkerRequestContext): P
         comment = excluded.comment, user_display_name = excluded.user_display_name,
         updated_at_iso = excluded.updated_at_iso`,
     ).bind(voteId, auth.uid, cityId, hoodId, air, power, internet, metro, security, flat, comment, displayName, now).run();
+    const persistedVote = await auth.db!.prepare(
+      'SELECT vote_id FROM neighborhood_votes WHERE owner_uid = ?1 AND city_id = ?2 AND hood_id = ?3 LIMIT 1',
+    ).bind(auth.uid, cityId, hoodId).first<{ vote_id: string }>();
     return jsonWorkerResponse(ctx, 201, {
       status: 'ok', durable: true,
-      vote: { id: voteId, cityId, hoodId, air, powerWater: power, internet, metro, security, flatTerrain: flat, comment, userDisplayName: displayName, updatedAtIso: now },
+      vote: { id: String(persistedVote?.vote_id || voteId), cityId, hoodId, air, powerWater: power, internet, metro, security, flatTerrain: flat, comment, userDisplayName: displayName, updatedAtIso: now },
     }, { cacheControl: 'private, no-store' });
   }
 
