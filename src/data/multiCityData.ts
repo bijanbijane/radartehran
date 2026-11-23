@@ -103,7 +103,14 @@ export function getValidatedCityConfig(cityId: unknown): CityConfig {
  * Aggregates and validates all 996 neighborhoods and county cities across all 31 Iranian provinces.
  * @returns Array of all valid `Neighborhood` objects across the 5 regional hubs.
  */
+let cachedAllMultiCityNeighborhoods: Neighborhood[] | null = null;
+
 export function getAllMultiCityNeighborhoods(): Neighborhood[] {
+  if (cachedAllMultiCityNeighborhoods) {
+    // Keep callers from mutating the shared cache while avoiding repeated
+    // validation, de-duplication, and traversal of all nationwide records.
+    return cachedAllMultiCityNeighborhoods.slice();
+  }
   try {
     const result: Neighborhood[] = [];
     const seenIds = new Set<number>();
@@ -117,9 +124,10 @@ export function getAllMultiCityNeighborhoods(): Neighborhood[] {
         }
       }
     }
-    return result;
+    cachedAllMultiCityNeighborhoods = result;
+    return result.slice();
   } catch {
-    return INITIAL_NEIGHBORHOODS;
+    return INITIAL_NEIGHBORHOODS.slice();
   }
 }
 export function resolveCityIdForNeighborhood(hoodId: number): CityId {
