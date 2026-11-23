@@ -17,7 +17,9 @@ import { parseJsonc } from './jsoncUtils.mjs';
 
 const ROOT = process.cwd();
 const CONFIG_PATH = path.join(ROOT, 'wrangler.backend.jsonc');
+const EXPECTED_ACCOUNT_ID = '5bafb2033937006704e81afcc0b18b38';
 const EXPECTED_DATABASE_NAME = 'radar-user-db';
+const EXPECTED_DATABASE_ID = 'fbb98e6b-5200-4047-b4bc-15a51c06aa84';
 const EXPECTED_BINDING = 'USER_DB';
 const MIGRATION_LEDGER = 'd1_migrations';
 const API_BASE = 'https://api.cloudflare.com/client/v4';
@@ -89,10 +91,10 @@ function parseArgs(argv) {
 
 function resolvePinnedTarget() {
   const config = parseJsonc(fs.readFileSync(CONFIG_PATH, 'utf8'), 'wrangler.backend.jsonc');
-  const accountId = String(config.account_id || '').trim();
+  const accountId = EXPECTED_ACCOUNT_ID;
   const configuredAccountId = String(process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
-  if (!/^[0-9a-f]{32}$/i.test(accountId) || configuredAccountId !== accountId) {
-    throw new Error('CLOUDFLARE_ACCOUNT_ID must exactly match wrangler.backend.jsonc account_id.');
+  if (configuredAccountId !== EXPECTED_ACCOUNT_ID) {
+    throw new Error('CLOUDFLARE_ACCOUNT_ID must exactly match the hard-pinned Radar Cloudflare account.');
   }
   const prod = config.env?.production;
   const bindings = Array.isArray(prod?.d1_databases) ? prod.d1_databases : config.d1_databases;
@@ -100,7 +102,7 @@ function resolvePinnedTarget() {
     ? bindings.find((item) => (item.binding || item.name) === EXPECTED_BINDING)
     : undefined;
   if (!binding || binding.database_name !== EXPECTED_DATABASE_NAME
-    || !/^[0-9a-f-]{36}$/i.test(String(binding.database_id || ''))
+    || String(binding.database_id || '') !== EXPECTED_DATABASE_ID
     || binding.migrations_dir !== 'migrations/user-d1'
     || (binding.migrations_table || MIGRATION_LEDGER) !== MIGRATION_LEDGER) {
     throw new Error('USER_DB binding does not match the pinned production database and canonical migration directory.');
