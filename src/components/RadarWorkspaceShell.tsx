@@ -51,6 +51,7 @@ export function RadarWorkspaceShell() {
     document.documentElement.classList.toggle('dark', appleTheme === 'dark'); document.documentElement.classList.toggle('apple-dark', appleTheme === 'dark');
     document.documentElement.setAttribute('data-apple-theme', appleTheme);
     try { localStorage.setItem('tehran_radar_apple_theme_v1', appleTheme); } catch { /* ignore */ }
+    setMapTileStyle((prev) => (appleTheme === 'dark' && prev === 'osm' ? 'carto_dark' : appleTheme === 'light' && prev === 'carto_dark' ? 'osm' : prev));
   }, [appleTheme]);
   const toggleAppleTheme = () => setAppleTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   const ui = useAppUiState(initialUrlState);
