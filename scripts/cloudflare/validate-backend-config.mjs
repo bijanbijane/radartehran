@@ -269,7 +269,31 @@ export function validateBackendWranglerConfig(
     }
   }
 
-  // 5. Plaintext secrets scan
+  // 5. Background processing wiring: Cron handlers enqueue work and cannot run without
+  // a producer, matching consumer, and durable DLQ. The nightly cron also emits R2 jobs.
+  const configuredCrons = Array.isArray(config.triggers?.crons) ? config.triggers.crons : [];
+  const queueProducers = Array.isArray(config.queues?.producers) ? config.queues.producers : [];
+  const queueConsumers = Array.isArray(config.queues?.consumers) ? config.queues.consumers : [];
+  if (configuredCrons.length > 0) {
+    const mainQueueProducer = queueProducers.find((p) => p.binding === 'RADAR_QUEUE' && p.queue);
+    const dlqProducer = queueProducers.find((p) => p.binding === 'RADAR_DLQ' && p.queue);
+    if (!mainQueueProducer) errors.push('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_PRODUCER');
+    if (!dlqProducer) errors.push('CRON_TRIGGERS_REQUIRE_RADAR_DLQ_PRODUCER');
+    const matchingConsumer = mainQueueProducer
+      ? queueConsumers.find((c) => c.queue === mainQueueProducer.queue)
+      : undefined;
+    if (!matchingConsumer) errors.push('CRON_TRIGGERS_REQUIRE_RADAR_QUEUE_CONSUMER');
+    if (matchingConsumer && dlqProducer && matchingConsumer.dead_letter_queue !== dlqProducer.queue) {
+      errors.push('RADAR_QUEUE_DLQ_BINDING_MISMATCH');
+    }
+  }
+  if (configuredCrons.includes('30 18 * * *')) {
+    const hasMediaBucket = Array.isArray(config.r2_buckets) &&
+      config.r2_buckets.some((bucket) => bucket.binding === 'MEDIA_BUCKET' && bucket.bucket_name);
+    if (!hasMediaBucket) errors.push('NIGHTLY_MEDIA_CRON_REQUIRES_MEDIA_BUCKET');
+  }
+
+  // 6. Plaintext secrets scan
   scanVarsForPlaintextSecrets(config.vars, 'production', errors);
   scanVarsForPlaintextSecrets(staging?.vars, 'staging', errors);
 
