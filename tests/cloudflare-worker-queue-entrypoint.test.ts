@@ -130,22 +130,24 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
       env,
     );
     assert.equal(sentToQueue.length, 2);
-    assert.equal(sentToQueue[0].jobType, 'market_pulse_sync');
-    assert.equal(sentToQueue[1].jobType, 'd1_projection_sync');
+    assert.equal(sentToQueue[0].jobType, 'firestore_d1_projection_sync');
+    assert.equal(sentToQueue[1].jobType, 'expired_chunk_upload_session_cleanup');
 
     await workerEntrypoint.scheduled(
       { cron: '30 18 * * *', scheduledTime: Date.UTC(2026, 4, 10, 18, 30, 0) },
       env,
     );
-    assert.equal(sentToQueue.length, 3);
+    assert.equal(sentToQueue.length, 5);
     assert.equal(sentToQueue[2].jobType, 'r2_orphan_media_reconcile');
+    assert.equal(sentToQueue[3].jobType, 'telemetry_archive_flush');
+    assert.equal(sentToQueue[4].jobType, 'expired_chunk_upload_session_cleanup');
 
     await workerEntrypoint.scheduled(
       { cron: '0 * * * *', scheduledTime: Date.UTC(2026, 4, 10, 10, 0, 0) },
       env,
     );
-    assert.equal(sentToQueue.length, 4);
-    assert.equal(sentToQueue[3].jobType, 'upload_session_gc');
+    assert.equal(sentToQueue.length, 6);
+    assert.equal(sentToQueue[5].jobType, 'expired_chunk_upload_session_cleanup');
 
     await assert.rejects(
       () => workerEntrypoint.scheduled({ cron: '0 * * * *', scheduledTime: Date.now() }, { ENVIRONMENT: 'staging' }),
@@ -156,7 +158,7 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
   it('2. queue() executes all 4 canonical jobs end-to-end, writes D1 leases, and deduplicates replays', async () => {
     const { db, r2, env, sentToDlq } = await setupMigratedEnv();
 
-    // Seed expired upload session for upload_session_gc and orphan media for r2_orphan_media_reconcile
+    // Seed expired upload session for expired upload-session cleanup and orphan media for r2_orphan_media_reconcile
     const oldMs = Date.now() - 48 * 60 * 60 * 1000;
     await db
       .prepare(
@@ -178,10 +180,10 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
 
     const nowIso = new Date().toISOString();
     const envelopes: RadarQueueEnvelope[] = [
-      { schemaVersion: '1.0', messageId: 'msg-mp-1', jobType: 'market_pulse_sync', idempotencyKey: 'idem-mp-1', correlationId: 'corr-mp-1', createdAtIso: nowIso, payload: { cities: ['tehran'] } },
-      { schemaVersion: '1.0', messageId: 'msg-gc-1', jobType: 'upload_session_gc', idempotencyKey: 'idem-gc-1', correlationId: 'corr-gc-1', createdAtIso: nowIso, payload: {} },
+      { schemaVersion: '1.0', messageId: 'msg-mp-1', jobType: 'firestore_d1_projection_sync', idempotencyKey: 'idem-mp-1', correlationId: 'corr-mp-1', createdAtIso: nowIso, payload: { city: 'tehran', maxNeighborhoodsPerCity: 1 } },
+      { schemaVersion: '1.0', messageId: 'msg-gc-1', jobType: 'expired_chunk_upload_session_cleanup', idempotencyKey: 'idem-gc-1', correlationId: 'corr-gc-1', createdAtIso: nowIso, payload: {} },
       { schemaVersion: '1.0', messageId: 'msg-rec-1', jobType: 'r2_orphan_media_reconcile', idempotencyKey: 'idem-rec-1', correlationId: 'corr-rec-1', createdAtIso: nowIso, payload: {} },
-      { schemaVersion: '1.0', messageId: 'msg-proj-1', jobType: 'd1_projection_sync', idempotencyKey: 'idem-proj-1', correlationId: 'corr-proj-1', createdAtIso: nowIso, payload: { cityId: 'tehran', hoodId: 1, buyPerSqmMillion: 120, dealPerSqmMillion: 112, rahn80mMillion: 1500, aqi: 75, investmentScore: 81 } },
+      { schemaVersion: '1.0', messageId: 'msg-proj-1', jobType: 'telemetry_archive_flush', idempotencyKey: 'idem-proj-1', correlationId: 'corr-proj-1', createdAtIso: nowIso, payload: { cityId: 'tehran', hoodId: 1, buyPerSqmMillion: 120, dealPerSqmMillion: 112, rahn80mMillion: 1500, aqi: 75, investmentScore: 81 } },
     ];
 
     const wrapped = envelopes.map((e) => makeQueueMessage(e));
@@ -276,7 +278,7 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     const noDbMsg = makeQueueMessage({
       schemaVersion: '1.0',
       messageId: 'msg-nodb-1',
-      jobType: 'upload_session_gc',
+      jobType: 'expired_chunk_upload_session_cleanup',
       idempotencyKey: 'idem-nodb-1',
       correlationId: 'corr-nodb',
       createdAtIso: nowIso,
@@ -304,7 +306,7 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     const retryMsg = makeQueueMessage({
       schemaVersion: '1.0',
       messageId: 'msg-retry-1',
-      jobType: 'market_pulse_sync',
+      jobType: 'firestore_d1_projection_sync',
       idempotencyKey: 'idem-retry-1',
       correlationId: 'corr-retry',
       createdAtIso: nowIso,
@@ -326,7 +328,7 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
     const maxAttemptMsg = makeQueueMessage({
       schemaVersion: '1.0',
       messageId: 'msg-retry-5',
-      jobType: 'market_pulse_sync',
+      jobType: 'firestore_d1_projection_sync',
       idempotencyKey: 'idem-retry-1',
       correlationId: 'corr-retry',
       createdAtIso: nowIso,
@@ -350,13 +352,13 @@ describe('Package 1 E2E: Cloudflare Worker Queue & Cron Entrypoints', () => {
         `INSERT INTO queue_job_executions (idempotency_key, job_type, message_id, correlation_id, status, attempt_count, lease_owner, lease_expires_at_ms, created_at_iso, updated_at_iso)
          VALUES (?1, ?2, ?3, ?4, 'PROCESSING', 1, 'dead-worker', ?5, ?6, ?6)`,
       )
-      .bind('idem-stale-lease', 'upload_session_gc', 'm-old-1', 'corr-old-1', expiredLeaseMs, nowIso)
+      .bind('idem-stale-lease', 'expired_chunk_upload_session_cleanup', 'm-old-1', 'corr-old-1', expiredLeaseMs, nowIso)
       .run();
 
     const takeoverMsg = makeQueueMessage({
       schemaVersion: '1.0',
       messageId: 'msg-takeover-1',
-      jobType: 'upload_session_gc',
+      jobType: 'expired_chunk_upload_session_cleanup',
       idempotencyKey: 'idem-stale-lease',
       correlationId: 'corr-new-1',
       createdAtIso: nowIso,
