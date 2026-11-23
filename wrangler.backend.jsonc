@@ -19,6 +19,17 @@
     "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
     "GEO_REGISTRY_EXPECTED_ID_ALGORITHM": "IRGEO1-SHA256-FULL-V1"
   },
+  "previews": {
+    "vars": {
+      "APP_ENV": "preview",
+      "WORKER_ENV": "preview",
+      "APP_URL": "https://preview.invalid",
+      "FIREBASE_PROJECT_ID": "preview-disabled",
+      "FIREBASE_APP_CHECK_MODE": "enforced",
+      "GEO_REGISTRY_EXPECTED_CONTRACT": "IRGEO-IDENTITY-1.0.0",
+      "GEO_REGISTRY_EXPECTED_ID_ALGORITHM": "IRGEO1-SHA256-FULL-V1"
+    }
+  },
   "d1_databases": [
     {
       "binding": "DB",
