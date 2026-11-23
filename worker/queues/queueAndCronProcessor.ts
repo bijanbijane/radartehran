@@ -386,7 +386,7 @@ export function convertUtcScheduledTimeToTehranWallClock(scheduledTimeMs: number
   tehranHour: number;
   tehranMinute: number;
   tehranFormatted: string;
-  matchedScheduleTask: 'morning_market_and_d1_sync' | 'nightly_orphan_and_telemetry_flush' | 'ad_hoc_maintenance';
+  matchedScheduleTask: 'morning_cleanup_only' | 'nightly_orphan_and_telemetry_flush' | 'ad_hoc_maintenance';
 } {
   const tehranOffsetMs = (3 * 60 + 30) * 60 * 1000;
   const tehranDate = new Date(scheduledTimeMs + tehranOffsetMs);
@@ -394,10 +394,10 @@ export function convertUtcScheduledTimeToTehranWallClock(scheduledTimeMs: number
   const minute = tehranDate.getUTCMinutes();
   const tehranFormatted = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} Asia/Tehran`;
 
-  let matchedScheduleTask: 'morning_market_and_d1_sync' | 'nightly_orphan_and_telemetry_flush' | 'ad_hoc_maintenance' =
+  let matchedScheduleTask: 'morning_cleanup_only' | 'nightly_orphan_and_telemetry_flush' | 'ad_hoc_maintenance' =
     'ad_hoc_maintenance';
   if (hour === 4 && minute === 0) {
-    matchedScheduleTask = 'morning_market_and_d1_sync';
+    matchedScheduleTask = 'morning_cleanup_only';
   } else if (hour === 22 && minute === 0) {
     matchedScheduleTask = 'nightly_orphan_and_telemetry_flush';
   }
