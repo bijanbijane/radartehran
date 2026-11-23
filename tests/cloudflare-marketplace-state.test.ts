@@ -2,6 +2,16 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { describe, it } from 'node:test';
 import { getMarketStateFromD1 } from '../worker/marketplace/d1MarketplaceRepository';
+import {
+  buildSanitizedBargainPayload,
+  buildSanitizedOverridePayload,
+  buildSanitizedVotePayload,
+  clearNeighborhoodRepositoryCache,
+  mapFirestoreDocToBargain,
+  mapFirestoreDocToOverride,
+  recordOverrideCache,
+  shouldSkipRedundantOverrideWrite,
+} from '../src/data/firestoreNeighborhoodMappers';
 import type { D1Database, D1PreparedStatement, WorkerEnv } from '../worker/types';
 
 function makeSqliteD1(): { db: D1Database; close: () => void } {
@@ -145,3 +155,57 @@ describe('public marketplace sponsor projection', () => {
     assert.equal(state.sponsors[0].phone, '+98***4567');
   });
 });
+
+describe('multi-city neighborhood DTO boundaries and override cache', () => {
+  it('accepts four-digit hood IDs for override, bargain, vote, and read DTOs', () => {
+    const override = buildSanitizedOverridePayload({
+      cityId: 'karaj',
+      hoodId: 9999,
+      buyPerSqm: 120,
+      rahn80m: 1300,
+    });
+    assert.equal(override.hoodId, 9999);
+
+    const bargain = buildSanitizedBargainPayload({
+      cityId: 'karaj',
+      hoodId: 9999,
+      hoodName: 'محله آزمایشی',
+      title: 'آگهی آزمایشی',
+      type: 'خرید',
+      sqm: 80,
+      priceText: '۹۰۰۰ میلیون',
+      discountPercent: 12,
+      buyerProfitText: '۱۰۰ میلیون',
+      street: 'خیابان آزمایشی',
+    });
+    assert.equal(bargain.hoodId, 9999);
+
+    const vote = buildSanitizedVotePayload({
+      cityId: 'karaj',
+      hoodId: 9999,
+      hoodName: 'محله آزمایشی',
+      userId: 'user-1',
+      userDisplayName: 'کاربر',
+      air: 7, powerWater: 7, internet: 7, metro: 7,
+      security: 7, flatTerrain: 7,
+      comment: '',
+      locationVerified: false,
+    });
+    assert.equal(vote.createFields.hoodId, 9999);
+
+    assert.equal(mapFirestoreDocToOverride('9999', { hoodId: 9999, buyPerSqm: 120, rahn80m: 1300 }, undefined, undefined, 'karaj')?.hoodId, 9999);
+    assert.equal(mapFirestoreDocToBargain('bargain-1', {
+      hoodId: 9999, title: 'آگهی', priceText: 'قیمت', street: 'خیابان',
+    })?.hoodId, 9999);
+  });
+
+  it('keeps identical neighborhood override payloads isolated across cities', () => {
+    clearNeighborhoodRepositoryCache();
+    const payload = { hoodId: 1001, buyPerSqm: 120, rahn80m: 1300 };
+    recordOverrideCache(1001, payload, 'karaj');
+    assert.equal(shouldSkipRedundantOverrideWrite(1001, payload, 'karaj'), true);
+    assert.equal(shouldSkipRedundantOverrideWrite(1001, payload, 'mashhad'), false);
+    clearNeighborhoodRepositoryCache();
+  });
+});
+
