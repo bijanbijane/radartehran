@@ -209,6 +209,9 @@ function validateDatasetRecord(kind: DatasetKind, item: Record<string, unknown>)
       item.identityAnchorRecord.geographicEntityId === item.geographicEntityId &&
       item.identityAnchorRecord.identityAnchor === item.identityAnchor &&
       item.identityAnchorRecord.immutable === true &&
+      item.identityAnchorRecord.anchorType === item.identityAnchorType &&
+      item.identityAnchorRecord.entityType === item.entityType &&
+      item.identityAnchorRecord.classificationSystemId === item.classificationSystemId &&
       isPositiveInteger(item.identityAnchorRecord.issuedAtRegistryRevision) &&
       (item.parentGeographicEntityId === null || typeof item.parentGeographicEntityId === 'string') &&
       (item.provinceGeographicEntityId === null || typeof item.provinceGeographicEntityId === 'string');
@@ -488,15 +491,15 @@ async function handlePublisherRequest(ctx: WorkerRequestContext): Promise<Respon
       ),
       db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
         VALUES (?, ?, ?, ?, ?)`).bind(
-        'GEOGRAPHIC-CANONICAL-ID-REGISTRY.json', artifactChecksums.identityRegistry, batch.expected_entities, batch.registry_revision, importedAt,
+        'data/geography/identity/GEOGRAPHIC-CANONICAL-ID-REGISTRY.json', artifactChecksums.identityRegistry, batch.expected_entities, batch.registry_revision, importedAt,
       ),
       db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
         VALUES (?, ?, ?, ?, ?)`).bind(
-        'GEOGRAPHIC-IDENTITY-ANCHOR-REGISTER.json', artifactChecksums.identityAnchors, batch.expected_entities, batch.registry_revision, importedAt,
+        'data/geography/identity/GEOGRAPHIC-IDENTITY-ANCHOR-REGISTER.json', artifactChecksums.identityAnchors, batch.expected_entities, batch.registry_revision, importedAt,
       ),
       db.prepare(`INSERT OR REPLACE INTO geo_registry_imports (artifact_path, artifact_sha256, record_count, registry_revision, imported_at_iso)
         VALUES (?, ?, ?, ?, ?)`).bind(
-        'GEOGRAPHIC-LEGACY-ID-ALIASES.json', artifactChecksums.legacyAliases, 0, batch.registry_revision, importedAt,
+        'data/geography/identity/GEOGRAPHIC-LEGACY-ID-ALIASES.json', artifactChecksums.legacyAliases, 0, batch.registry_revision, importedAt,
       ),
       db.prepare(`UPDATE geo_publish_batches SET status = 'PUBLISHED', updated_at_iso = ? WHERE batch_id = ?`).bind(importedAt, batchId),
       db.prepare('DELETE FROM geo_publish_staging_records WHERE batch_id = ?').bind(batchId),
@@ -533,10 +536,17 @@ async function handleCanonicalRead(ctx: WorkerRequestContext): Promise<Response 
   if (pathname.startsWith(singlePrefix)) {
     const id = decodeURIComponent(pathname.slice(singlePrefix.length));
     if (!CANONICAL_ID_RE.test(id)) return jsonResponse(ctx, 400, { status: 'error', code: 'INVALID_CANONICAL_GEOGRAPHIC_ID' });
-    const row = await db.prepare('SELECT entity_json FROM geo_canonical_entities WHERE geographic_entity_id = ? AND lifecycle_status = ?')
-      .bind(id, 'ACTIVE').first<{ entity_json: string }>();
+    const row = await db.prepare(`SELECT e.entity_json, i.entry_json, a.anchor_json
+      FROM geo_canonical_entities e
+      JOIN geo_identity_registry_entries i ON i.geographic_entity_id = e.geographic_entity_id
+      JOIN geo_identity_anchors a ON a.geographic_entity_id = e.geographic_entity_id
+      WHERE e.geographic_entity_id = ? AND e.lifecycle_status = ?`).bind(id, 'ACTIVE')
+      .first<{ entity_json: string; entry_json: string; anchor_json: string }>();
     if (!row) return jsonResponse(ctx, 404, { status: 'error', code: 'GEOGRAPHIC_ENTITY_NOT_FOUND' });
-    return jsonResponse(ctx, 200, { status: 'ok', registry: head, entity: JSON.parse(row.entity_json) });
+    return jsonResponse(ctx, 200, {
+      status: 'ok', registry: head,
+      item: { entity: JSON.parse(row.entity_json), identityRegistryEntry: JSON.parse(row.entry_json), identityAnchor: JSON.parse(row.anchor_json) },
+    });
   }
   if (pathname === prefix + '/entities') {
     const entityType = url.searchParams.get('entityType');
@@ -563,13 +573,21 @@ async function handleCanonicalRead(ctx: WorkerRequestContext): Promise<Response 
     if (classification) { clauses.push('classification_system_id = ?'); params.push(classification); }
     const where = clauses.join(' AND ');
     const [rows, count] = await Promise.all([
-      db.prepare(`SELECT entity_json FROM geo_canonical_entities WHERE ${where}
-        ORDER BY geographic_entity_id LIMIT ? OFFSET ?`).bind(...params, limitRaw, offsetRaw)
-        .all<{ entity_json: string }>(),
+      db.prepare(`SELECT e.entity_json, i.entry_json, a.anchor_json
+        FROM geo_canonical_entities e
+        JOIN geo_identity_registry_entries i ON i.geographic_entity_id = e.geographic_entity_id
+        JOIN geo_identity_anchors a ON a.geographic_entity_id = e.geographic_entity_id
+        WHERE ${where.replaceAll('lifecycle_status', 'e.lifecycle_status').replaceAll('entity_type', 'e.entity_type').replaceAll('parent_geographic_entity_id', 'e.parent_geographic_entity_id').replaceAll('province_geographic_entity_id', 'e.province_geographic_entity_id').replaceAll('classification_system_id', 'e.classification_system_id')}
+        ORDER BY e.geographic_entity_id LIMIT ? OFFSET ?`).bind(...params, limitRaw, offsetRaw)
+        .all<{ entity_json: string; entry_json: string; anchor_json: string }>(), 
       db.prepare(`SELECT COUNT(*) AS count FROM geo_canonical_entities WHERE ${where}`)
         .bind(...params).first<{ count: number }>(),
     ]);
-    const items = (rows.results || []).map((row) => JSON.parse(row.entity_json));
+    const items = (rows.results || []).map((row) => ({
+      entity: JSON.parse(row.entity_json),
+      identityRegistryEntry: JSON.parse(row.entry_json),
+      identityAnchor: JSON.parse(row.anchor_json),
+    }));
     const totalItems = Number(count?.count || 0);
     return jsonResponse(ctx, 200, {
       status: 'ok', registry: head, items,
