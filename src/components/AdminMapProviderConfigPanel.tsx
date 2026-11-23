@@ -1,6 +1,6 @@
 /**
  * @file src/components/AdminMapProviderConfigPanel.tsx
- * @description پنل مدیریت ارائه‌دهنده نقشه: سوییچ اختصاصی مدیر بین نقشه نشان (پیش‌فرض) و نقشه رایگان OpenStreetMap.
+ * @description پنل مدیریت ارائه‌دهنده نقشه: سوییچ اختصاصی مدیر بین نشان و OpenStreetMap Standard از مسیرهای مجاز.
  */
 
 import React from 'react';
@@ -61,7 +61,7 @@ export function AdminMapProviderConfigPanel({
             </span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-            انتخاب بین نقشه اختصاصی و پرجزئیات نشان (پیش‌فرض) یا نقشه رایگان OpenStreetMap · واحد پین ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(samplePinPrice)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(samplePinPrice, intlCurrency, locale)})` : ''} · معیار {formatAreaShort(85, areaUnit)}: {toPersianNum(sample85mTotalMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sample85mTotalMillions, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(sampleMonthlyRentMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleMonthlyRentMillions, intlCurrency, locale)})` : ''}
+            انتخاب بین نقشه اختصاصی و پرجزئیات نشان (پیش‌فرض) یا OpenStreetMap Standard (best-effort; no SLA) · واحد پین ({formatAreaUnitLabel(areaUnit)}): {toPersianNum(samplePinPrice)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(samplePinPrice, intlCurrency, locale)})` : ''} · معیار {formatAreaShort(85, areaUnit)}: {toPersianNum(sample85mTotalMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sample85mTotalMillions, intlCurrency, locale)})` : ''} · اجاره ماهانه: {toPersianNum(sampleMonthlyRentMillions)} م{intlCurrency !== 'IRT' ? ` (${formatMillionTomanAsIntlCurrency(sampleMonthlyRentMillions, intlCurrency, locale)})` : ''}
           </p>
         </div>
 
