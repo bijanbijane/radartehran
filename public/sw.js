@@ -108,6 +108,11 @@ function isPrivateOrSensitiveRequest(request, url) {
 /**
  * Determines whether a request is for a map tile (local proxy or public OSM/CARTO tile server).
  */
+/**
+ * Recognizes map tiles for network-only fetch handling and old-cache cleanup.
+ * Keep the same-origin OSM proxy in this predicate: proxy responses are still
+ * OSM-derived and must not become persistent offline-map tiles in Cache API.
+ */
 function isMapTileRequest(url) {
   const pathname = url.pathname || '';
   if (pathname.startsWith('/api/osm-tile/')) return true;
