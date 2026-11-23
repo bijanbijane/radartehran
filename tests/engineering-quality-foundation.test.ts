@@ -2331,11 +2331,16 @@ async function runSuite(): Promise<void> {
     const viteConfig = fs.readFileSync(path.join(process.cwd(), 'vite.config.ts'), 'utf8');
     for (const dependency of [
       'firebase',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/app-check',
       '@firebase/app',
       '@firebase/auth',
       '@firebase/firestore',
       '@firebase/component',
       '@firebase/util',
+      '@firebase/app-check',
     ]) {
       assert.ok(
         viteConfig.includes(`'${dependency}'`),
