@@ -438,9 +438,12 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
     });
 
     const originalFetch = globalThis.fetch;
-    let forwardedHeaders: Headers | null = null;
+    const forwardedHeaderValues: string[] = [];
     globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
-      forwardedHeaders = new Headers(init?.headers);
+      const headers = new Headers(init?.headers);
+      forwardedHeaderValues.push(headers.get('x-radar-session-assertion') || '');
+      forwardedHeaderValues.push(headers.get('x-radar-worker-hop') || '');
+      forwardedHeaderValues.push(headers.get('x-correlation-id') || '');
       return new Response('ok', { status: 200 });
     }) as typeof fetch;
 
@@ -459,9 +462,7 @@ describe('Cloudflare Worker -> Express session assertion bridge', () => {
       globalThis.fetch = originalFetch;
     }
 
-    assert.equal(forwardedHeaders?.get('x-radar-session-assertion'), signed);
-    assert.equal(forwardedHeaders?.get('x-radar-worker-hop'), '1');
-    assert.equal(forwardedHeaders?.get('x-correlation-id'), correlationId);
+    assert.deepEqual(forwardedHeaderValues, [signed, '1', correlationId]);
   });
 
   it('rejects internally inconsistent admin-role claims', async () => {
