@@ -308,7 +308,7 @@ export async function handleChunkedAndDirectUploadRoutes(
     const mediaType = parsed.body.mediaType === 'video' ? 'video' : 'image';
     const mimeType = String(parsed.body.mimeType || (mediaType === 'video' ? 'video/mp4' : 'image/webp')).trim().toLowerCase();
     const decoded = decodeStrictBase64(parsed.body.base64Data ?? parsed.body.dataBase64);
-    if (!decoded.ok) return jsonWorkerResponse(ctx, 400, { status: 'error', code: decoded.code });
+    if (decoded.ok === false) return jsonWorkerResponse(ctx, 400, { status: 'error', code: decoded.code });
     if (mediaType === 'video' && decoded.bytes.byteLength > CANONICAL_CHUNK_SIZE_BYTES) {
       return jsonWorkerResponse(ctx, 413, {
         status: 'error',
