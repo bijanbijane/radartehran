@@ -54,8 +54,8 @@ The following items were confirmed by reading files on the recorded `main` commi
 | Frontend build | `vite.config.ts` uses `manualChunks`, esbuild minification, no public sourcemaps, and a 700 KB chunk warning threshold | A manual chunk is not lazy loading. Establish actual entry and route chunk sizes, compressed transfer sizes, and a hard regression budget. |
 | Route loading | `RadarWorkspaceShell.tsx` has at least one `React.lazy` feature import | Audit every route and heavyweight feature; prove unused pages and libraries are absent from the initial critical path. |
 | Initial data | `RadarWorkspaceShell.tsx` constructs `allExpansionSeeds` using `getAllMultiCityNeighborhoods()` and hydrates state from all expansion seeds | Likely unnecessary nationwide work for a single-city initial session. Profile and replace only with a tested active-city-first strategy that preserves URL, storage, and city-switch behavior. |
-| PWA | `public/sw.js` has shell/assets/data caches, offline shell, network-first market pulse, map tile handling, and bounded tile count | Verify cache headers, eviction behavior, update lifecycle, offline semantics, and provider-specific permission before caching external tiles. |
-| Map tiles | Service Worker classifies OSM, CARTO, ArcGIS and `/api/osm-tile/*` as tiles; external opaque responses are currently eligible for Cache API storage | Opaque responses do not expose response cache directives to this code. Review provider contracts and change behavior to an explicit, provider-compliant allowlist; default-deny opaque external tile caching. |
+| PWA | `public/sw.js` has shell/assets/data caches, offline shell, and network-first market pulse; map tiles are being moved to network-only Service Worker handling | Verify cache headers, eviction behavior, update lifecycle, offline semantics, and provider-specific permission before caching external tiles. |
+| Map tiles | Service Worker previously cached OSM, CARTO, ArcGIS and `/api/osm-tile/*` tiles; PR #16 changes all recognized map tiles to network-only and purges old Cache API tile entries | Opaque responses do not expose response cache directives to this code. Review provider contracts and change behavior to an explicit, provider-compliant allowlist; default-deny opaque external tile caching. |
 | Worker cache | `worker/cache/kvCacheManager.ts` implements KV TTL envelopes, stale-while-revalidate, negative caching, and an in-flight Promise map | The in-flight map is instance/isolate-local, not a global cross-isolate or cross-PoP lock. Do not claim global single-flight or a universal one-origin-request guarantee. Measure and document scope. |
 | Cache classification | `worker/cache/cachePolicies.ts` classifies public static, public changing, private, authorization, transactional, coordination, and analytical data | Audit every real route's use of the policy and cache key; ensure cache key includes all response-varying dimensions and invalidation follows writes. |
 | RUM | `BrowserPerformanceCollector.ts` supports LCP/INP/CLS and consent checks; percentile evaluation currently exposes p50/p75/p95 | Verify that collection is wired into real routes and a safe ingestion path. Add p99 and map/API-specific metrics only with valid sample semantics and privacy review. |
@@ -69,7 +69,7 @@ The following items were confirmed by reading files on the recorded `main` commi
 
 At baseline, `public/sw.js` treats requests to `tile.openstreetmap.org`, `basemaps.cartocdn.com`, and `arcgisonline.com` as cacheable map tiles. It stores successful and opaque responses without checking the response's `Cache-Control` directives. Opaque responses cannot be inspected by this code. This is a provider-policy and cache-correctness risk, not a performance feature to expand blindly.
 
-**Required action:** provider-specific explicit policy, default-deny for opaque external responses, and tests for no-store/private/no-cache/max-age behavior. Preserve caching only where the response and provider terms authorize it. Do not prefetch tile regions.
+**Required action:** keep all map tiles out of Service Worker Cache API so PWA offline mode does not become an offline-map feature. Let the browser HTTP cache and server-side proxy honor provider Cache-Control directives. Do not prefetch tile regions. Server-side shared cache must honor upstream private/no-store/no-cache and explicit TTLs; see PR #17.
 
 ### 4.2 Single-flight scope
 
@@ -143,4 +143,4 @@ A tranche is done only when:
 
 ## 7. Current status
 
-This commit records the engineering standard and baseline audit only. It does not change runtime behavior, Worker bindings, Cloudflare resources, secrets, D1 migrations, or deployments. Implementation remains open under issue #13.
+This commit records the engineering standard and baseline audit only. Runtime changes are proposed separately in PRs #16–#19. No Worker bindings, Cloudflare resources, secrets, D1 migrations, or deployments are changed here. Implementation remains open under issue #13.
