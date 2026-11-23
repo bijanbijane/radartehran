@@ -308,7 +308,7 @@ async function runSuite(): Promise<void> {
   await check('early map connection hint matches the default Neshan provider, not the fallback', () => {
     const html = fs.readFileSync('index.html', 'utf8');
     const preconnects = html
-      .split('\\n')
+      .split(String.fromCharCode(10))
       .filter((line) => line.includes('rel="preconnect"'))
       .map((line) => line.match(/href="([^"]+)"/)?.[1])
       .filter((href): href is string => Boolean(href));
