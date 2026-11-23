@@ -119,6 +119,19 @@ CREATE TABLE IF NOT EXISTS app_config (
   updated_at_iso TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS market_mutation_idempotency (
+  uid TEXT NOT NULL REFERENCES user_profiles(uid) ON DELETE CASCADE,
+  operation_name TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  request_hash TEXT NOT NULL,
+  resource_id TEXT NOT NULL,
+  created_at_iso TEXT NOT NULL,
+  PRIMARY KEY(uid, operation_name, idempotency_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_market_mutation_idempotency_created
+  ON market_mutation_idempotency(created_at_iso);
+
 CREATE TABLE IF NOT EXISTS user_preferences (
   uid TEXT PRIMARY KEY REFERENCES user_profiles(uid) ON DELETE CASCADE,
   mode TEXT NOT NULL DEFAULT 'rent' CHECK (mode IN ('rent', 'buy')),
