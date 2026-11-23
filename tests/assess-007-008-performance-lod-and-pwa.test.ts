@@ -183,7 +183,7 @@ const allHoods: EvaluatedNeighborhood[] = getAllMultiCityNeighborhoods().map((h)
     1,
     (hood) => hood.id === 3
   );
-  assert.equal(sponsorPriorityTiers.get(3), 'standard_pill', 'Sponsored neighborhoods retain priority without using long labels');
+  assert.equal(sponsorPriorityTiers.get(3), 'compact_chip', 'Sponsored neighborhoods retain placement priority while using short labels');
   assert.equal(sponsorPriorityTiers.get(2), 'dot', 'Lower-priority colliding markers demote to a dot');
 
   const denseZoomTiers = computeDeclutteredMarkerTiers(
