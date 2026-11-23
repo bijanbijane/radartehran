@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { findMigrationRegisterEntry } from '../worker/migrationRegister';
 
 describe('Cloudflare cutover migration gate', () => {
-  it('keeps Google and SMS authentication endpoints blocked until D1 and provider configuration are ready', () => {
+  it('routes implemented Google and SMS authentication endpoints to the Worker while runtime schema checks remain fail-closed', () => {
     for (const [method, path] of [
       ['GET', '/api/auth/google/start'],
       ['GET', '/api/auth/google/callback'],
@@ -14,7 +14,9 @@ describe('Cloudflare cutover migration gate', () => {
     ] as const) {
       const match = findMigrationRegisterEntry(method, path);
       assert.ok(match, `expected registered auth route: ${method} ${path}`);
-      assert.equal(match.entry.status, 'BLOCKED');
+      assert.equal(match.entry.status, 'IMPLEMENTED');
+      assert.equal(match.entry.activeRuntime, 'cloudflare_worker');
+      assert.equal(match.entry.workerHandlerModule, 'worker/routes/authRoutes.ts');
       assert.equal(match.entry.migrationGroup, 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH');
     }
   });

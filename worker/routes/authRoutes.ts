@@ -229,12 +229,49 @@ function errorRedirect(ctx: WorkerRequestContext, code: string): Response {
   return new Response(null, { status: 303, headers: { Location: url.toString(), 'Cache-Control': 'no-store' } });
 }
 
+/**
+ * Probe the complete auth/session schema before dispatching any auth route.
+ * A missing or partially applied USER_DB migration must produce an explicit 503,
+ * never a generic Worker exception or a partially created identity/session.
+ */
+export async function isAuthSchemaReady(db: D1Database): Promise<boolean> {
+  try {
+    await db.prepare(`
+      SELECT
+        i.provider, i.provider_subject, i.uid, i.email, i.email_verified, i.phone_e164,
+        i.created_at_iso, i.last_authenticated_at_iso,
+        o.state_hash, o.nonce, o.code_verifier, o.return_path, o.expires_at_ms, o.created_at_ms,
+        c.challenge_id, c.phone_e164, c.phone_hash, c.provider_reference, c.status, c.attempts,
+        c.expires_at_ms, c.created_at_ms, c.verified_at_ms, c.ip_hash, c.code_hash,
+        s.session_id, s.uid, s.device_label, s.user_agent_summary, s.ip_prefix, s.status,
+        s.created_at_iso, s.last_seen_at_iso, s.token_hash, s.expires_at_iso, s.auth_provider,
+        s.revoked_at_iso, s.revoked_by_uid,
+        p.uid, p.display_name, p.account_status,
+        w.watermark_key, w.watermark_value, a.uid, a.active
+      FROM auth_identities AS i
+      CROSS JOIN auth_oauth_states AS o
+      CROSS JOIN auth_phone_challenges AS c
+      CROSS JOIN user_sessions AS s
+      JOIN user_profiles AS p ON p.uid = s.uid
+      LEFT JOIN sync_watermarks AS w ON 1 = 0
+      LEFT JOIN admin_role_bindings AS a ON 1 = 0
+      LIMIT 0
+    `).first();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function handleAuthWorkerRoute(ctx: WorkerRequestContext): Promise<Response | null> {
   const { method, pathname, request, env } = ctx;
   if (!pathname.startsWith('/api/auth/')) return null;
   const dbRes = requireUserDb(env);
   if (!dbRes.ok) return jsonWorkerResponse(ctx, 503, { status: 'error', code: dbRes.code });
   const db = dbRes.db;
+  if (!await isAuthSchemaReady(db)) {
+    return jsonWorkerResponse(ctx, 503, { status: 'error', code: 'AUTH_SCHEMA_NOT_READY' });
+  }
 
   if (method === 'GET' && pathname === '/api/auth/google/start') {
     const clientId = String(env.GOOGLE_OAUTH_CLIENT_ID || '').trim();

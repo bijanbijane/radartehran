@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { normalizePhone, verifyGoogleIdToken } from '../worker/routes/authRoutes';
+import { isAuthSchemaReady, normalizePhone, verifyGoogleIdToken } from '../worker/routes/authRoutes';
+import type { D1Database } from '../worker/types';
 
 const CLIENT_ID = 'radar-web-client.apps.googleusercontent.com';
 const NONCE = 'test-nonce-bound-to-oauth-state';
@@ -102,5 +103,26 @@ describe('Google OIDC ID-token verification', () => {
       verifyGoogleIdToken(token, CLIENT_ID, NONCE),
       /GOOGLE_ID_TOKEN_AUTHORIZED_PARTY_INVALID/,
     );
+  });
+});
+
+
+describe('Cloudflare auth schema readiness', () => {
+  it('fails closed when required USER_DB auth migrations are missing or partially applied', async () => {
+    const db = {
+      prepare: () => ({
+        first: async () => { throw new Error('no such table: auth_oauth_states'); },
+      }),
+    } as unknown as D1Database;
+    assert.equal(await isAuthSchemaReady(db), false);
+  });
+
+  it('accepts the auth schema only when the complete schema probe succeeds', async () => {
+    const db = {
+      prepare: () => ({
+        first: async () => null,
+      }),
+    } as unknown as D1Database;
+    assert.equal(await isAuthSchemaReady(db), true);
   });
 });

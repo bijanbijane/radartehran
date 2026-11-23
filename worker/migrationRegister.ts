@@ -141,13 +141,13 @@ function classifyRouteMigrationMetadata(route: RegisteredApiRoute): {
   if (GROUP_3A_AUTH_PATHS.has(key)) {
     return {
       migrationGroup: 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH',
-      workerHandlerModule: null,
-      status: 'BLOCKED',
-      activeRuntime: 'legacy_express_server',
+      workerHandlerModule: 'worker/routes/authRoutes.ts',
+      status: 'IMPLEMENTED',
+      activeRuntime: 'cloudflare_worker',
       dependencies: ['worker/routes/authRoutes.ts', 'worker/auth/sessionAuth.ts', 'migrations/user-d1/0007_cloudflare_native_identity_and_sessions.sql', 'migrations/user-d1/0008_sms_otp_ip_rate_limit.sql', 'migrations/user-d1/0009_sms_otp_code_digest.sql'],
       stateStorageTouchpoints: ['Cloudflare D1 USER_DB (auth_identities, auth_oauth_states, auth_phone_challenges, user_sessions)'],
       externalApiTouchpoints: ['Google OpenID Connect', 'Kavenegar SMS Verify API'],
-      blockerReason: 'Auth D1 migrations are pending and the production Worker lacks the required Google OAuth and Kavenegar credentials. Keep all login endpoints blocked until both schema and credentials are ready.',
+      blockerReason: 'The Worker route is implemented but fails closed with AUTH_SCHEMA_NOT_READY until the USER_DB auth migrations are applied; Google OAuth remains unavailable until its client ID and secret are provisioned.',
     };
   }
 

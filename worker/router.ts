@@ -40,7 +40,10 @@ export async function dispatchWorkerApiOrSeoRequest(
 
   // Authoritative Migration Control Register check FIRST — zero route bypasses
   const registeredMatch = findMigrationRegisterEntry(method, pathname);
-  if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED') {
+  const conditionallyRoutedAuth =
+    registeredMatch?.entry.migrationGroup === 'GROUP_3A_CLOUDFLARE_NATIVE_AUTH' &&
+    registeredMatch.entry.status === 'IMPLEMENTED';
+  if (registeredMatch && registeredMatch.entry.status !== 'VERIFIED' && !conditionallyRoutedAuth) {
     const { entry } = registeredMatch;
     const response = jsonWorkerResponse(ctx, 501, {
       status: 'error',
