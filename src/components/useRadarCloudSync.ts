@@ -1,297 +1,498 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'; import type { AuthUserSnapshot } from '../platform/auth'; import { getAuthClient } from '../platform/auth'; import { collection, doc, getDoc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore'; import { db, handleFirestoreError, OperationType, updateFirestoreSnapshotMetadata } from '../firebase'; import { BargainListing, BUYER_ALERTS_STORAGE_KEY, BuyerAlertLeadItem, INITIAL_NEIGHBORHOODS, isAuthorizedAdminUser, Neighborhood, NeighborhoodSponsor, ResidentVoteDoc, SPONSOR_CRM_STORAGE_KEY, SponsorCrmRequestItem } from '../data/neighborhoods'; import { chunkHoodIdsForInQuery, CLOUD_COLLECTION_LISTENER_LIMIT, isPubliclyVisibleBargainStatus, sponsorFromNeighborhoodOverride } from '../utils/publicSponsorSync'; import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS } from '../data/multiCityData'; import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit'; import { activateCloudListener, cloudSyncConnectionStatus, createCloudSyncListenerHealth, deactivateCloudListener, noteCloudListenerError, noteCloudListenerSnapshot, noteExplicitCloudReconnect, type CloudSyncListenerId } from '../utils/firestoreConnectionState'; import { FeatureFlags, safeJsonParse } from '../utils/security'; import { normalizeListingTimestampIso, sortBargainListingsByCreatedAt } from '../utils/listingTimestampAndMediaQuality'; import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle'; import { activeCloudOverrideHoodIds } from './useMarketPulseSync';
-export interface UseRadarCloudSyncParams { activeCity?: string; hasUrlBudgetParams?: boolean; setMode: React.Dispatch<React.SetStateAction<'rent' | 'buy'>>; setDeposit: React.Dispatch<React.SetStateAction<number>>; setMonthlyRent: React.Dispatch<React.SetStateAction<number>>; setBuyTotalBudget: React.Dispatch<React.SetStateAction<number>>; setTargetSqm: React.Dispatch<React.SetStateAction<number>>; setWorkHubId: React.Dispatch<React.SetStateAction<string>>; setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>; setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>; setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>; setCloudVotes: React.Dispatch<React.SetStateAction<ResidentVoteDoc[]>>; setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>; setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>; setHasDelegatedAdminDoc: React.Dispatch<React.SetStateAction<boolean>>; }
-export function useRadarCloudSync(params: UseRadarCloudSyncParams) { const { activeCity = 'tehran', hasUrlBudgetParams, setMode, setDeposit, setMonthlyRent, setBuyTotalBudget, setTargetSqm, setWorkHubId, setFavoriteHoodIds, setFeatureFlags, setNeighborhoods, setCloudVotes, setSponsorRequests, setBuyerLeads, setHasDelegatedAdminDoc, } = params; const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const [currentUser, setCurrentUser] = useState<AuthUserSnapshot | null>(null); const [authReady, setAuthReady] = useState<boolean>(false); const [isDelegatedAdmin, setIsDelegatedAdmin] = useState<boolean>(false); const listenerHealthRef = useRef(createCloudSyncListenerHealth()); const [listenerHealth, setListenerHealth] = useState(listenerHealthRef.current); const [reconnectGeneration, setReconnectGeneration] = useState(0); const publishListenerHealth = (next: ReturnType<typeof noteCloudListenerSnapshot>) => { const prev = listenerHealthRef.current; listenerHealthRef.current = next; if (prev.active.join('|') !== next.active.join('|') || prev.failed.join('|') !== next.failed.join('|') || prev.succeeded.join('|') !== next.succeeded.join('|')) setListenerHealth(next); }; const markCloudListenerActive = (id: CloudSyncListenerId) => publishListenerHealth(activateCloudListener(listenerHealthRef.current, id)); const markCloudListenerInactive = (id: CloudSyncListenerId) => publishListenerHealth(deactivateCloudListener(listenerHealthRef.current, id)); const markCloudListenerSnapshot = (id: CloudSyncListenerId) => publishListenerHealth(noteCloudListenerSnapshot(listenerHealthRef.current, id)); const markCloudListenerError = (id: CloudSyncListenerId) => publishListenerHealth(noteCloudListenerError(listenerHealthRef.current, id)); const [cloudBargainsByHood, setCloudBargainsByHood] = useState<Record<number, BargainListing[]>>({}); const [cloudSponsorsByHood, setCloudSponsorsByHood] = useState<Record<number, NeighborhoodSponsor>>({}); const reqSponsorsByHoodRef = useRef<Record<number, NeighborhoodSponsor>>({}); const ovSponsorsByHoodRef = useRef<Record<number, NeighborhoodSponsor>>({}); const releasedOverrideIdsRef = useRef<Set<number>>(new Set());
-  const syncMergedCloudSponsors = () => { const merged: Record<number, NeighborhoodSponsor> = { ...reqSponsorsByHoodRef.current }; for (const id of releasedOverrideIdsRef.current) delete merged[id]; Object.assign(merged, ovSponsorsByHoodRef.current); setCloudSponsorsByHood((prev) => (Object.keys(prev).length === 0 && Object.keys(merged).length === 0 ? prev : merged)); };
-  const previousUidRef = useRef<string | null>(null); const authSeqRef = useRef<number>(0); const isMountedRef = useRef<boolean>(true); const activeCityRef = useRef<string>(activeCity); activeCityRef.current = activeCity; useEffect(() => { isMountedRef.current = true; const handleAuthChange = async (user: AuthUserSnapshot | null) => {
-      if (!isMountedRef.current) return; const authSeq = ++authSeqRef.current; const nextUid = user?.uid ?? null; const switchedAccount = previousUidRef.current !== null && previousUidRef.current !== nextUid; previousUidRef.current = nextUid; setCurrentUser(user); setAuthReady(true); if (!user || switchedAccount) { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); setCloudVotes([]); setBuyerLeads([]); setSponsorRequests([]); reqSponsorsByHoodRef.current = {}; syncMergedCloudSponsors(); try { localStorage.removeItem(BUYER_ALERTS_STORAGE_KEY); localStorage.removeItem(SPONSOR_CRM_STORAGE_KEY); } catch { /* ignore */ }
-        if (!user) return; } if (user.emailVerified) { try { const adminSnap = await getDoc(doc(db, 'admins', user.uid)); if (!isMountedRef.current || authSeq !== authSeqRef.current) return; updateFirestoreSnapshotMetadata(adminSnap.metadata); const delegated = adminSnap.exists() && isAuthorizedAdminUser(user, adminSnap.data() as any); setIsDelegatedAdmin(delegated); setHasDelegatedAdminDoc(delegated); } catch { if (isMountedRef.current && authSeq === authSeqRef.current) { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); } } } else { setIsDelegatedAdmin(false); setHasDelegatedAdminDoc(false); }
-      const prefPath = `userPreferences/${user.uid}`;
-      try { const snap = await getDoc(doc(db, 'userPreferences', user.uid)); if (!isMountedRef.current || authSeq !== authSeqRef.current) return; updateFirestoreSnapshotMetadata(snap.metadata); if (!snap.exists()) return; const data = snap.data(); if (!hasUrlBudgetParams) { if (data.mode === 'rent' || data.mode === 'buy') setMode(data.mode); if (typeof data.deposit === 'number' && data.deposit >= 0 && data.deposit <= 100000) setDeposit(data.deposit); if (typeof data.monthlyRent === 'number' && data.monthlyRent >= 0 && data.monthlyRent <= 1000) setMonthlyRent(data.monthlyRent); if (typeof data.buyTotalBudget === 'number' && data.buyTotalBudget >= 500 && data.buyTotalBudget <= 1000000) setBuyTotalBudget(data.buyTotalBudget); if (typeof data.targetSqm === 'number' && data.targetSqm >= 20 && data.targetSqm <= 1000) setTargetSqm(data.targetSqm); if (typeof data.workHubId === 'string' && data.workHubId.length >= 1 && data.workHubId.length <= 40) setWorkHubId(data.workHubId); }
-        if (Array.isArray(data.favoriteHoodIds)) { const cleanFavs = data.favoriteHoodIds.filter((id: unknown): id is number => typeof id === 'number' && Number.isInteger(id) && id >= 1 && id <= 999).slice(0, 50); setFavoriteHoodIds((prevGuest) => Array.from(new Set([...prevGuest, ...cleanFavs])).slice(0, 50)); }
-      } catch (err) { if (!isMountedRef.current || authSeq !== authSeqRef.current) return; try { handleFirestoreError(err, OperationType.GET, prefPath); } catch { /* Non-fatal fallback */ }
-      } }; const authClient = getAuthClient(); const unsubAuth = authClient.subscribe((status, user) => { if (status === 'READY' || status === 'UNAUTHENTICATED') void handleAuthChange(user); }); void authClient.refreshSession().catch(() => { if (isMountedRef.current) setAuthReady(true); }); markCloudListenerActive('featureFlags'); const unsubFlags = onSnapshot( doc(db, 'appConfig', 'featureFlags'), { includeMetadataChanges: true }, (snap) => { if (!isMountedRef.current || !activeCityRef.current) return; updateFirestoreSnapshotMetadata(snap.metadata); markCloudListenerSnapshot('featureFlags'); if (!snap.exists()) return;
-        const d = snap.data(); setFeatureFlags({ enableCommissionCalc: Boolean(d.enableCommissionCalc ?? true), enableMultiCity: Boolean(d.enableMultiCity ?? true),
-          enableSponsorBilling: Boolean(d.enableSponsorBilling ?? false), enableAiContractCheck: Boolean(d.enableAiContractCheck ?? true), enableTelegramFeed: Boolean(d.enableTelegramFeed ?? true), enableAiValuation: Boolean(d.enableAiValuation ?? true),
-          enableFakeAdDetector: Boolean(d.enableFakeAdDetector ?? true), enableMortgageSimulator: Boolean(d.enableMortgageSimulator ?? true), enableTenantRights: Boolean(d.enableTenantRights ?? true), enableMunicipalityCalc: Boolean(d.enableMunicipalityCalc ?? true),
-          enablePropertySwap: Boolean(d.enablePropertySwap ?? true), enableVisitChecklist: Boolean(d.enableVisitChecklist ?? true),
-          enableSchoolRadar: Boolean(d.enableSchoolRadar ?? true), enableRealtorStudio: Boolean(d.enableRealtorStudio ?? true),
-          enableRenovationCalc: Boolean(d.enableRenovationCalc ?? true), enableInvestmentSim: Boolean(d.enableInvestmentSim ?? true),
-          enableSafetyRadar: Boolean(d.enableSafetyRadar ?? true), enableCommercialRadar: Boolean(d.enableCommercialRadar ?? true),
-          enableSuburbRadar: Boolean(d.enableSuburbRadar ?? true), enablePreSaleRadar: Boolean(d.enablePreSaleRadar ?? true),
-          enableMovingPlanner: Boolean(d.enableMovingPlanner ?? true), enableFractionalInvest: Boolean(d.enableFractionalInvest ?? true),
-          enableTrafficZoneCalc: Boolean(d.enableTrafficZoneCalc ?? true), enableSeoContentGen: Boolean(d.enableSeoContentGen ?? true),
-        });
-      }, () => { markCloudListenerError('featureFlags'); }
-    );
-    const unsubMonetization = onSnapshot(doc(db, 'appConfig', 'monetization'), (snap) => { if (!isMountedRef.current || !snap.exists()) return; const disc = snap.data()?.campaignDiscountPercent; if (typeof disc === 'number' && !Number.isNaN(disc) && disc >= 0 && disc <= 100) { const clamped = Math.round(disc); try { if (typeof window !== 'undefined') { localStorage.setItem('tehran_radar_campaign_discount_v1', String(clamped)); window.dispatchEvent(new CustomEvent('radar:monetization-discount', { detail: clamped })); } } catch { /* ignore */ } } }, () => { /* non-fatal */ }); return () => { isMountedRef.current = false; unsubAuth(); unsubFlags(); unsubMonetization(); }; }, [hasUrlBudgetParams, reconnectGeneration]);
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { AuthUserSnapshot } from '../platform/auth';
+import { getAuthClient } from '../platform/auth';
+import {
+  BargainListing,
+  BUYER_ALERTS_STORAGE_KEY,
+  BuyerAlertLeadItem,
+  DEFAULT_FEATURE_FLAGS,
+  INITIAL_NEIGHBORHOODS,
+  Neighborhood,
+  NeighborhoodSponsor,
+  ResidentVoteDoc,
+  SPONSOR_CRM_STORAGE_KEY,
+  SponsorCrmRequestItem,
+} from '../data/neighborhoods';
+import { getAllMultiCityNeighborhoods, MULTI_CITY_CONFIGS } from '../data/multiCityData';
+import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
+import {
+  activateCloudListener,
+  cloudSyncConnectionStatus,
+  createCloudSyncListenerHealth,
+  deactivateCloudListener,
+  noteCloudListenerError,
+  noteCloudListenerSnapshot,
+  noteExplicitCloudReconnect,
+  type CloudSyncListenerId,
+} from '../utils/firestoreConnectionState';
+import { FeatureFlags, safeJsonParse } from '../utils/security';
+import { sortBargainListingsByCreatedAt } from '../utils/listingTimestampAndMediaQuality';
+import { useAreaUnit, useIntlCurrency, useRadarLocale } from './AreaUnitToggle';
+import { activeCloudOverrideHoodIds } from './useMarketPulseSync';
+
+type MarketStatePayload = {
+  status?: string;
+  isAdmin?: boolean;
+  bargains?: Array<Record<string, unknown>>;
+  sponsors?: Array<Record<string, unknown>>;
+  votes?: Array<Record<string, unknown>>;
+  overrides?: Array<Record<string, unknown>>;
+  buyerAlerts?: Array<Record<string, unknown>>;
+  featureFlags?: Record<string, unknown> | null;
+  monetization?: Record<string, unknown> | null;
+  preferences?: Record<string, unknown> | null;
+  favoriteHoodIds?: number[];
+};
+
+export interface UseRadarCloudSyncParams {
+  activeCity?: string;
+  hasUrlBudgetParams?: boolean;
+  setMode: React.Dispatch<React.SetStateAction<'rent' | 'buy'>>;
+  setDeposit: React.Dispatch<React.SetStateAction<number>>;
+  setMonthlyRent: React.Dispatch<React.SetStateAction<number>>;
+  setBuyTotalBudget: React.Dispatch<React.SetStateAction<number>>;
+  setTargetSqm: React.Dispatch<React.SetStateAction<number>>;
+  setWorkHubId: React.Dispatch<React.SetStateAction<string>>;
+  setFavoriteHoodIds: React.Dispatch<React.SetStateAction<number[]>>;
+  setFeatureFlags: React.Dispatch<React.SetStateAction<FeatureFlags>>;
+  setNeighborhoods: React.Dispatch<React.SetStateAction<Neighborhood[]>>;
+  setCloudVotes: React.Dispatch<React.SetStateAction<ResidentVoteDoc[]>>;
+  setSponsorRequests: React.Dispatch<React.SetStateAction<SponsorCrmRequestItem[]>>;
+  setBuyerLeads: React.Dispatch<React.SetStateAction<BuyerAlertLeadItem[]>>;
+  setHasDelegatedAdminDoc: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+function asText(value: unknown, max = 160): string {
+  return typeof value === 'string' ? value.slice(0, max) : '';
+}
+
+function asNumber(value: unknown, min: number, max: number, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function mapSponsorRecord(row: Record<string, unknown>): SponsorCrmRequestItem | null {
+  const hoodId = Number(row.hoodId);
+  if (!Number.isInteger(hoodId) || hoodId < 1 || typeof row.agencyName !== 'string') return null;
+  return {
+    id: asText(row.id, 100),
+    hoodId,
+    hoodName: asText(row.hoodName, 80),
+    agencyName: asText(row.agencyName, 120),
+    phone: asText(row.phone, 30),
+    specialty: asText(row.specialty, 140),
+    experienceYears: asNumber(row.experienceYears, 0, 80, 0),
+    monthlyTariffMillion: asNumber(row.monthlyTariffMillion, 0, 1000, 0),
+    planMonths: Number(row.planMonths) === 3 ? 3 : 1,
+    totalPayableMillion: asNumber(row.totalPayableMillion, 0, 5000, 0),
+    trackingCode: asText(row.trackingCode, 80),
+    expiresAtIso: asText(row.expiresAtIso, 60),
+    status: row.status === 'approved' ? 'approved' : 'pending',
+    createdAtFa: asText(row.createdAtFa, 60) || 'ثبت ابری',
+  };
+}
+
+function mapBuyerLead(row: Record<string, unknown>): BuyerAlertLeadItem | null {
+  const hoodId = Number(row.hoodId);
+  if (!Number.isInteger(hoodId) || hoodId < 1 || typeof row.fullName !== 'string') return null;
+  return {
+    id: asText(row.id, 100),
+    hoodId,
+    hoodName: asText(row.hoodName, 80),
+    fullName: asText(row.fullName, 100),
+    phone: asText(row.phone, 30),
+    dealType: row.dealType === 'اجاره' ? 'اجاره' : 'خرید',
+    maxBudgetText: asText(row.maxBudgetText, 120),
+    createdAtFa: asText(row.createdAtFa, 60) || 'ثبت ابری',
+    createdAtIso: asText(row.createdAtIso, 40),
+    expiresAtIso: asText(row.expiresAtIso, 40),
+    consentVersion: asText(row.consentVersion, 80),
+    submittedByUid: asText(row.submittedByUid, 100),
+  };
+}
+
+function mapVote(row: Record<string, unknown>): ResidentVoteDoc | null {
+  const hoodId = Number(row.hoodId);
+  if (!Number.isInteger(hoodId) || hoodId < 1) return null;
+  return {
+    id: asText(row.id, 100),
+    hoodId,
+    hoodName: asText(row.hoodName, 80),
+    userId: asText(row.userId, 100),
+    userDisplayName: asText(row.userDisplayName, 100) || 'ساکن محله',
+    air: asNumber(row.air, 0, 10, 7),
+    powerWater: asNumber(row.powerWater, 0, 10, 7),
+    internet: asNumber(row.internet, 0, 10, 7),
+    metro: asNumber(row.metro, 0, 10, 7),
+    security: asNumber(row.security, 0, 10, 7),
+    flatTerrain: asNumber(row.flatTerrain, 0, 10, 7),
+    comment: asText(row.comment, 500),
+    locationVerified: false,
+  };
+}
+
+export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
+  const {
+    activeCity = 'tehran',
+    hasUrlBudgetParams,
+    setMode,
+    setDeposit,
+    setMonthlyRent,
+    setBuyTotalBudget,
+    setTargetSqm,
+    setWorkHubId,
+    setFavoriteHoodIds,
+    setFeatureFlags,
+    setNeighborhoods,
+    setCloudVotes,
+    setSponsorRequests,
+    setBuyerLeads,
+    setHasDelegatedAdminDoc,
+  } = params;
+  const [areaUnit] = useAreaUnit();
+  const [intlCurrency] = useIntlCurrency();
+  const [locale] = useRadarLocale();
+  const [currentUser, setCurrentUser] = useState<AuthUserSnapshot | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [isDelegatedAdmin, setIsDelegatedAdmin] = useState(false);
+  const listenerHealthRef = useRef(createCloudSyncListenerHealth());
+  const [listenerHealth, setListenerHealth] = useState(listenerHealthRef.current);
+  const [reconnectGeneration, setReconnectGeneration] = useState(0);
+  const [cloudBargainsByHood, setCloudBargainsByHood] = useState<Record<number, BargainListing[]>>({});
+  const [cloudSponsorsByHood, setCloudSponsorsByHood] = useState<Record<number, NeighborhoodSponsor>>({});
+  const reqSponsorsByHoodRef = useRef<Record<number, NeighborhoodSponsor>>({});
+  const ovSponsorsByHoodRef = useRef<Record<number, NeighborhoodSponsor>>({});
+  const releasedOverrideIdsRef = useRef<Set<number>>(new Set());
+  const previousUidRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  const publishListenerHealth = (next: ReturnType<typeof noteCloudListenerSnapshot>) => {
+    const previous = listenerHealthRef.current;
+    listenerHealthRef.current = next;
+    if (
+      previous.active.join('|') !== next.active.join('|') ||
+      previous.failed.join('|') !== next.failed.join('|') ||
+      previous.succeeded.join('|') !== next.succeeded.join('|')
+    ) setListenerHealth(next);
+  };
+  const markCloudListenerActive = (id: CloudSyncListenerId) =>
+    publishListenerHealth(activateCloudListener(listenerHealthRef.current, id));
+  const markCloudListenerInactive = (id: CloudSyncListenerId) =>
+    publishListenerHealth(deactivateCloudListener(listenerHealthRef.current, id));
+  const markCloudListenerSnapshot = (id: CloudSyncListenerId) =>
+    publishListenerHealth(noteCloudListenerSnapshot(listenerHealthRef.current, id));
+  const markCloudListenerError = (id: CloudSyncListenerId) =>
+    publishListenerHealth(noteCloudListenerError(listenerHealthRef.current, id));
+
+  const syncMergedCloudSponsors = () => {
+    const merged: Record<number, NeighborhoodSponsor> = { ...reqSponsorsByHoodRef.current };
+    for (const id of releasedOverrideIdsRef.current) delete merged[id];
+    Object.assign(merged, ovSponsorsByHoodRef.current);
+    setCloudSponsorsByHood(merged);
+  };
+
   useEffect(() => {
-    if (!authReady || !currentUser || (!currentUser.emailVerified && !currentUser.phoneNumber)) { setCloudVotes([]); markCloudListenerInactive('votes'); return; } markCloudListenerActive('votes');
-    const isVerifiedAdmin = isAuthorizedAdminUser(currentUser, isDelegatedAdmin);
-    const votesQuery = isVerifiedAdmin
-      ? query(collection(db, 'votes'), where('hoodId', '>=', 1), where('hoodId', '<=', 999), orderBy('hoodId'), limit(CLOUD_COLLECTION_LISTENER_LIMIT))
-      : query(collection(db, 'votes'), where('userId', '==', currentUser.uid), where('hoodId', '>=', 1), where('hoodId', '<=', 999), orderBy('hoodId'), limit(CLOUD_COLLECTION_LISTENER_LIMIT));
-    let cancelled = false;
-    const unsubVotes = onSnapshot(
-      votesQuery,
-      { includeMetadataChanges: true },
-      (snapshot) => {
-        if (cancelled) return;
-        updateFirestoreSnapshotMetadata(snapshot.metadata); markCloudListenerSnapshot('votes');
-        const docs: ResidentVoteDoc[] = [];
-        snapshot.forEach((docSnap) => {
-          const d = docSnap.data();
-          const hoodId = Number(d.hoodId);
-          if (Number.isNaN(hoodId) || hoodId < 1) return;
-          const validScore = (v: unknown) => typeof v === 'number' && !Number.isNaN(v) && v >= 1 && v <= 10 ? v : 7;
-          docs.push({
-            id: docSnap.id, hoodId,
-            hoodName: typeof d.hoodName === 'string' ? d.hoodName.slice(0, 60) : '',
-            userId: typeof d.userId === 'string' ? d.userId : 'anon',
-            userDisplayName: typeof d.userDisplayName === 'string' ? d.userDisplayName.slice(0, 60) : 'ساکن محله',
-            air: validScore(d.air), powerWater: validScore(d.powerWater), internet: validScore(d.internet),
-            metro: validScore(d.metro), security: validScore(d.security), flatTerrain: validScore(d.flatTerrain),
-            comment: typeof d.comment === 'string' ? d.comment.slice(0, 500) : '',
-            locationVerified: Boolean(d.locationVerified),
-          });
-        });
-        setCloudVotes((prev) => (prev.length === 0 && docs.length === 0 ? prev : docs));
-      },
-      (err) => {
-        if (cancelled) return;
-        markCloudListenerError('votes'); setCloudVotes([]);
-        try { handleFirestoreError(err, OperationType.LIST, 'votes'); } catch { /* Graceful fallback */ }
-      }
-    );
-    return () => { cancelled = true; unsubVotes(); };
-  }, [authReady, currentUser, isDelegatedAdmin, reconnectGeneration, setCloudVotes]);
-  useEffect(() => {
-    if (!authReady) { markCloudListenerInactive('bargains'); return; }
-    markCloudListenerActive('bargains');
-    const cityHoods = activeCity === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[activeCity as keyof typeof MULTI_CITY_CONFIGS]?.neighborhoods || INITIAL_NEIGHBORHOODS;
-    const chunks = chunkHoodIdsForInQuery(cityHoods.map((h) => h.id));
-    const perChunkDocs: Record<number, Record<number, BargainListing[]>> = {};
-    const readyChunks = new Set<number>();
-    let cancelled = false;
-    const unsubs = chunks.map((chunk, chunkIdx) => onSnapshot(
-      query(collection(db, 'bargains'), where('hoodId', 'in', chunk), limit(CLOUD_COLLECTION_LISTENER_LIMIT)),
-      { includeMetadataChanges: true },
-      (snapshot) => {
-        if (cancelled) return;
-        updateFirestoreSnapshotMetadata(snapshot.metadata);
-        readyChunks.add(chunkIdx);
-        const bucket: Record<number, BargainListing[]> = {};
-        snapshot.docs.forEach((docSnap) => {
-          const d = docSnap.data();
-          if (!isPubliclyVisibleBargainStatus(d.status)) return;
-          const hoodId = Number(d.hoodId);
-          if (Number.isNaN(hoodId) || hoodId < 1 || hoodId > 999 || typeof d.title !== 'string' || typeof d.priceText !== 'string' || typeof d.street !== 'string') return;
-          const imageUrls = Array.isArray(d.imageUrls) ? d.imageUrls.filter((u: unknown): u is string => typeof u === 'string' && u.length <= 600).slice(0, 6) : undefined;
-          const objectStorageKeys = Array.isArray(d.objectStorageKeys) ? d.objectStorageKeys.filter((k: unknown): k is string => typeof k === 'string' && k.length <= 240).slice(0, 6) : undefined;
-          const objectStorageObjectIds = Array.isArray(d.objectStorageObjectIds) ? d.objectStorageObjectIds.filter((id: unknown): id is string => typeof id === 'string' && id.length <= 64).slice(0, 6) : undefined;
-          const createdAtIso = normalizeListingTimestampIso(d.createdAt ?? d.createdAtIso);
-          if (!bucket[hoodId]) bucket[hoodId] = [];
-          bucket[hoodId].push({
-            id: `cloud-${docSnap.id}`, title: d.title.slice(0, 160), type: d.type === 'اجاره' ? 'اجاره' : 'خرید',
-            sqm: Math.min(1000, Math.max(20, Number(d.sqm) || 75)), priceText: d.priceText.slice(0, 160),
-            discountPercent: Math.min(60, Math.max(10, Number(d.discountPercent) || 12)),
-            buyerProfitText: typeof d.buyerProfitText === 'string' ? d.buyerProfitText.slice(0, 160) : '', street: d.street.slice(0, 120),
-            ...(typeof d.imageUrl === 'string' ? { imageUrl: d.imageUrl.slice(0, 600) } : {}),
-            ...(imageUrls && imageUrls.length > 0 ? { imageUrls } : {}),
-            ...(typeof d.videoUrl === 'string' ? { videoUrl: d.videoUrl.slice(0, 600) } : {}),
-            ...(typeof d.objectStorageBucket === 'string' ? { objectStorageBucket: d.objectStorageBucket.slice(0, 80) } : {}),
-            ...(objectStorageKeys && objectStorageKeys.length > 0 ? { objectStorageKeys } : {}),
-            ...(objectStorageObjectIds && objectStorageObjectIds.length > 0 ? { objectStorageObjectIds } : {}),
-            ...(createdAtIso ? { createdAtIso } : {}),
-          });
-        });
-        perChunkDocs[chunkIdx] = bucket;
-        if (readyChunks.size >= chunks.length) markCloudListenerSnapshot('bargains');
-        const merged: Record<number, BargainListing[]> = {};
-        for (const groupMap of Object.values(perChunkDocs)) {
-          for (const [hIdStr, rows] of Object.entries(groupMap)) {
-            const numId = Number(hIdStr);
-            merged[numId] = [...(merged[numId] || []), ...rows];
-          }
-        }
-        for (const hId of Object.keys(merged)) { const numId = Number(hId); merged[numId] = sortBargainListingsByCreatedAt(merged[numId]); }
-        setCloudBargainsByHood((prev) => (Object.keys(prev).length === 0 && Object.keys(merged).length === 0 ? prev : merged));
-      },
-      (err) => { if (cancelled) return; markCloudListenerError('bargains'); if (currentUser) { try { handleFirestoreError(err, OperationType.LIST, 'bargains'); } catch { /* Graceful fallback */ } } }
-    ));
-    return () => { cancelled = true; unsubs.forEach((u) => u()); };
-  }, [authReady, currentUser, activeCity, reconnectGeneration]);
-  useEffect(() => {
-    if (!authReady) { markCloudListenerInactive('sponsors'); markCloudListenerInactive('buyerAlerts'); return; }
-    let isCancelled = false, unsubSponsors: (() => void) | null = null, unsubAlerts: (() => void) | null = null;
-    const verifyAndSubscribeAdminCollections = async () => {
-      if (!currentUser || (!currentUser.emailVerified && !currentUser.phoneNumber)) {
-        setBuyerLeads([]); setSponsorRequests([]); markCloudListenerInactive('sponsors'); markCloudListenerInactive('buyerAlerts'); return;
-      }
-      let isVerifiedAdmin = isAuthorizedAdminUser(currentUser, isDelegatedAdmin);
-      if (!isVerifiedAdmin) {
+    isMountedRef.current = true;
+    const authClient = getAuthClient();
+    const handleAuthChange = (user: AuthUserSnapshot | null) => {
+      if (!isMountedRef.current) return;
+      const previousUid = previousUidRef.current;
+      const nextUid = user?.uid ?? null;
+      const switchedAccount = previousUid !== null && previousUid !== nextUid;
+      previousUidRef.current = nextUid;
+      setCurrentUser(user);
+      setAuthReady(true);
+      const admin = Boolean(user?.customClaims?.isAdmin);
+      setIsDelegatedAdmin(admin);
+      setHasDelegatedAdminDoc(admin);
+      if (!user || switchedAccount) {
+        setCloudVotes([]);
+        setBuyerLeads([]);
+        setSponsorRequests([]);
+        reqSponsorsByHoodRef.current = {};
         try {
-          const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
-          if (adminDoc.exists() && isAuthorizedAdminUser(currentUser, adminDoc.data() as any)) isVerifiedAdmin = true;
-        } catch { isVerifiedAdmin = false; }
+          localStorage.removeItem(BUYER_ALERTS_STORAGE_KEY);
+          localStorage.removeItem(SPONSOR_CRM_STORAGE_KEY);
+        } catch { /* ignore */ }
+        syncMergedCloudSponsors();
       }
-      if (isCancelled) return;
-      if (!isVerifiedAdmin) {
-        setBuyerLeads([]); setSponsorRequests([]); markCloudListenerInactive('sponsors'); markCloudListenerInactive('buyerAlerts');
-        try { localStorage.removeItem(BUYER_ALERTS_STORAGE_KEY); localStorage.removeItem(SPONSOR_CRM_STORAGE_KEY); } catch { /* ignore */ }
-        return;
-      }
-      markCloudListenerActive('sponsors'); markCloudListenerActive('buyerAlerts');
-      const sponsorsQuery = query(collection(db, 'sponsorRequests'), where('hoodId', '>=', 1), where('hoodId', '<=', 999), limit(150));
-      unsubSponsors = onSnapshot(
-        sponsorsQuery,
-        (snapshot) => {
-          if (isCancelled) return;
-          markCloudListenerSnapshot('sponsors');
-          const reqs: SponsorCrmRequestItem[] = [];
-          const activeSponsors: Record<number, NeighborhoodSponsor> = {};
-          snapshot.forEach((docSnap) => {
-            const d = docSnap.data();
-            const hoodId = Number(d.hoodId);
-            if (Number.isNaN(hoodId) || typeof d.agencyName !== 'string' || typeof d.phone !== 'string') return;
-            const status = d.status === 'approved' ? 'approved' : 'pending';
-            const planMonths = d.planMonths === 3 ? 3 : 1;
-            const rawMonthly = Number(d.monthlyTariffMillion); const monthlyTariffMillion = Number.isFinite(rawMonthly) && rawMonthly >= 0 ? Math.min(200, rawMonthly) : 5;
-            const rawTotal = Number(d.totalPayableMillion); const totalPayableMillion = Number.isFinite(rawTotal) && rawTotal >= 0 ? Math.min(2000, rawTotal) : monthlyTariffMillion;
-            const item: SponsorCrmRequestItem = {
-              id: `cloud-${docSnap.id}`, hoodId,
-              hoodName: typeof d.hoodName === 'string' ? d.hoodName.slice(0, 80) : '',
-              agencyName: d.agencyName.slice(0, 120), phone: d.phone.slice(0, 30),
-              specialty: typeof d.specialty === 'string' ? d.specialty.slice(0, 140) : '',
-              experienceYears: Math.min(60, Math.max(1, Number(d.experienceYears) || 10)),
-              monthlyTariffMillion, planMonths, totalPayableMillion,
-              trackingCode: typeof d.trackingCode === 'string' ? d.trackingCode.slice(0, 80) : '',
-              expiresAtIso: typeof d.expiresAtIso === 'string' ? d.expiresAtIso : '', status,
-              createdAtFa: typeof d.createdAtFa === 'string' ? d.createdAtFa : 'ثبت ابری',
-            };
-            reqs.push(item);
-            const notExpired = !item.expiresAtIso || Date.parse(item.expiresAtIso) > Date.now();
-            if (status === 'approved' && notExpired) {
-              activeSponsors[hoodId] = {
-                name: item.agencyName, phone: item.phone, specialty: item.specialty,
-                experienceYears: item.experienceYears, expiresAtIso: item.expiresAtIso,
-                planType: planMonths === 3 ? 'paid_3m' : 'paid_1m',
-              };
-            }
-          });
-          setSponsorRequests((prev) => (prev.length === 0 && reqs.length === 0 ? prev : reqs));
-          reqSponsorsByHoodRef.current = activeSponsors;
-          syncMergedCloudSponsors();
-        },
-        (err) => {
-          if (isCancelled) return;
-          setSponsorRequests([]); markCloudListenerError('sponsors'); reqSponsorsByHoodRef.current = {}; syncMergedCloudSponsors();
-          if (unsubSponsors) { unsubSponsors(); unsubSponsors = null; }
-          try { handleFirestoreError(err, OperationType.LIST, 'sponsorRequests'); } catch { /* Non-fatal */ }
-        }
-      );
-      const alertsQuery = query(collection(db, 'buyerAlerts'), where('hoodId', '>=', 1), where('hoodId', '<=', 999), limit(150));
-      unsubAlerts = onSnapshot(
-        alertsQuery,
-        (snapshot) => {
-          if (isCancelled) return;
-          markCloudListenerSnapshot('buyerAlerts');
-          const leads: BuyerAlertLeadItem[] = [];
-          snapshot.forEach((docSnap) => {
-            const d = docSnap.data();
-            const hoodId = Number(d.hoodId);
-            if (Number.isNaN(hoodId) || typeof d.fullName !== 'string' || typeof d.phone !== 'string') return;
-            leads.push({
-              id: `cloud-${docSnap.id}`, hoodId,
-              hoodName: typeof d.hoodName === 'string' ? d.hoodName.slice(0, 80) : '',
-              fullName: d.fullName.slice(0, 100), phone: d.phone.slice(0, 30),
-              dealType: d.dealType === 'اجاره' ? 'اجاره' : 'خرید',
-              maxBudgetText: typeof d.maxBudgetText === 'string' ? d.maxBudgetText.slice(0, 120) : '',
-              createdAtFa: typeof d.createdAtFa === 'string' ? d.createdAtFa : 'ثبت ابری',
-            });
-          });
-          setBuyerLeads((prev) => (prev.length === 0 && leads.length === 0 ? prev : leads));
-        },
-        (err) => {
-          if (isCancelled) return;
-          setBuyerLeads([]); markCloudListenerError('buyerAlerts');
-          if (unsubAlerts) { unsubAlerts(); unsubAlerts = null; }
-          try { handleFirestoreError(err, OperationType.LIST, 'buyerAlerts'); } catch { /* Non-fatal */ }
-        }
-      );
     };
-    void verifyAndSubscribeAdminCollections();
-    return () => { isCancelled = true; if (unsubSponsors) unsubSponsors(); if (unsubAlerts) unsubAlerts(); };
-  }, [authReady, currentUser, isDelegatedAdmin, reconnectGeneration]);
+    const unsubscribe = authClient.subscribe((status, user) => {
+      if (status === 'READY' || status === 'UNAUTHENTICATED') handleAuthChange(user);
+    });
+    void authClient.refreshSession().catch(() => {
+      if (isMountedRef.current) setAuthReady(true);
+    });
+    return () => {
+      isMountedRef.current = false;
+      unsubscribe();
+    };
+  }, [setHasDelegatedAdminDoc, setBuyerLeads, setSponsorRequests, setCloudVotes]);
+
   useEffect(() => {
-    if (!authReady) { markCloudListenerInactive('overrides'); return; }
-    markCloudListenerActive('overrides');
-    const cityHoods = activeCity === 'tehran' ? INITIAL_NEIGHBORHOODS : MULTI_CITY_CONFIGS[activeCity as keyof typeof MULTI_CITY_CONFIGS]?.neighborhoods || INITIAL_NEIGHBORHOODS;
-    const chunks = chunkHoodIdsForInQuery(cityHoods.map((h) => h.id));
-    const perChunkSponsors: Record<number, Record<number, NeighborhoodSponsor>> = {};
-    const readyChunks = new Set<number>();
+    if (!authReady) return;
+    const cityHoods = activeCity === 'tehran'
+      ? INITIAL_NEIGHBORHOODS
+      : MULTI_CITY_CONFIGS[activeCity as keyof typeof MULTI_CITY_CONFIGS]?.neighborhoods || INITIAL_NEIGHBORHOODS;
+    const hoodIds = cityHoods.map((hood) => hood.id).filter((id) => Number.isInteger(id) && id > 0).slice(0, 100);
+    const query = new URLSearchParams({ cityId: activeCity, hoodIds: hoodIds.join(',') });
     let cancelled = false;
-    const unsubs = chunks.map((chunk, chunkIdx) => onSnapshot(
-      query(collection(db, 'neighborhoodOverrides'), where('hoodId', 'in', chunk), limit(CLOUD_COLLECTION_LISTENER_LIMIT)),
-      (snapshot) => {
-        if (cancelled) return;
-        readyChunks.add(chunkIdx);
-        if (readyChunks.size >= chunks.length) markCloudListenerSnapshot('overrides');
-        const pub: Record<number, NeighborhoodSponsor> = {}; snapshot.forEach((docSnap) => { const data = docSnap.data() as Record<string, unknown>; const hoodId = Number(data.hoodId ?? docSnap.id); if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 999) return; if (data.sponsor === null) { releasedOverrideIdsRef.current.add(hoodId); return; } const sponsor = sponsorFromNeighborhoodOverride(data); if (sponsor) { releasedOverrideIdsRef.current.delete(hoodId); pub[hoodId] = sponsor; } }); perChunkSponsors[chunkIdx] = pub; ovSponsorsByHoodRef.current = Object.assign({}, ...Object.values(perChunkSponsors)); syncMergedCloudSponsors();
-        const removedIds = new Set<number>();
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'removed') {
-            const idNum = Number(change.doc.data()?.hoodId ?? change.doc.id);
-            if (Number.isInteger(idNum)) { removedIds.add(idNum); activeCloudOverrideHoodIds.delete(idNum); }
-          }
+    let activeController: AbortController | null = null;
+    const listenerIds: CloudSyncListenerId[] = ['featureFlags', 'votes', 'bargains', 'sponsors', 'buyerAlerts', 'overrides'];
+    listenerIds.forEach(markCloudListenerActive);
+
+    const loadState = async () => {
+      activeController?.abort();
+      const controller = new AbortController();
+      activeController = controller;
+      try {
+        const response = await fetch(`/api/v1/market/state?${query.toString()}`, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
         });
-        const overridesMap: Record<number, { buyPerSqm?: number; rahn80m?: number; pros?: string; cons?: string; sponsor?: any }> = {};
-        snapshot.forEach((docSnap) => {
-          const d = docSnap.data();
-          const hoodId = Number(d.hoodId ?? docSnap.id);
-          if (Number.isNaN(hoodId) || hoodId < 1 || hoodId > 999) return;
-          const buyPerSqm = typeof d.buyPerSqm === 'number' && d.buyPerSqm >= 10 && d.buyPerSqm <= 5000 ? d.buyPerSqm : undefined;
-          const rahn80m = typeof d.rahn80m === 'number' && d.rahn80m >= 50 && d.rahn80m <= 100000 ? d.rahn80m : undefined;
-          if (buyPerSqm !== undefined || rahn80m !== undefined) activeCloudOverrideHoodIds.add(hoodId);
-          overridesMap[hoodId] = {
-            buyPerSqm, rahn80m, pros: typeof d.pros === 'string' ? d.pros.slice(0, 400) : undefined, cons: typeof d.cons === 'string' ? d.cons.slice(0, 400) : undefined,
-            sponsor: d.sponsor === null ? null : d.sponsor && typeof d.sponsor === 'object' ? d.sponsor : undefined,
+        const payload = await response.json().catch(() => null) as MarketStatePayload | null;
+        if (!response.ok || !payload || payload.status !== 'ok') {
+          throw new Error(typeof payload === 'object' && payload && 'code' in payload ? String(payload.code) : `MARKET_STATE_HTTP_${response.status}`);
+        }
+        if (cancelled || !isMountedRef.current) return;
+
+        const admin = Boolean(payload.isAdmin || currentUser?.customClaims?.isAdmin);
+        setIsDelegatedAdmin(admin);
+        setHasDelegatedAdminDoc(admin);
+
+        const rawFlags = payload.featureFlags || {};
+        const validFlags = Object.fromEntries(
+          Object.entries(rawFlags).filter(([key, value]) => key in DEFAULT_FEATURE_FLAGS && typeof value === 'boolean'),
+        );
+        setFeatureFlags({ ...DEFAULT_FEATURE_FLAGS, ...validFlags } as FeatureFlags);
+
+        const discount = Number(payload.monetization?.campaignDiscountPercent);
+        if (Number.isFinite(discount) && discount >= 0 && discount <= 100) {
+          const clamped = Math.round(discount);
+          try {
+            localStorage.setItem('tehran_radar_campaign_discount_v1', String(clamped));
+            window.dispatchEvent(new CustomEvent('radar:monetization-discount', { detail: clamped }));
+          } catch { /* ignore */ }
+        }
+
+        if (currentUser && payload.preferences && !hasUrlBudgetParams) {
+          const prefs = payload.preferences;
+          if (prefs.mode === 'rent' || prefs.mode === 'buy') setMode(prefs.mode);
+          setDeposit(asNumber(prefs.deposit, 0, 100000, 0));
+          setMonthlyRent(asNumber(prefs.monthlyRent, 0, 1000, 0));
+          setBuyTotalBudget(asNumber(prefs.buyTotalBudget, 500, 1000000, 6500));
+          setTargetSqm(asNumber(prefs.targetSqm, 20, 1000, 80));
+          setWorkHubId(asText(prefs.workHubId, 40) || 'none');
+        }
+        if (currentUser && Array.isArray(payload.favoriteHoodIds)) {
+          const favorites = payload.favoriteHoodIds.filter((id): id is number => Number.isInteger(id) && id >= 1 && id <= 999).slice(0, 50);
+          setFavoriteHoodIds((previous) => Array.from(new Set([...previous, ...favorites])).slice(0, 50));
+        }
+
+        const bargainMap: Record<number, BargainListing[]> = {};
+        for (const row of payload.bargains || []) {
+          const hoodId = Number(row.hoodId);
+          if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999 || typeof row.title !== 'string' || typeof row.priceText !== 'string') continue;
+          if (row.status !== 'approved' && !(admin && row.status === 'pending')) continue;
+          const listing: BargainListing = {
+            id: asText(row.id, 100),
+            title: asText(row.title, 160),
+            type: row.type === 'اجاره' ? 'اجاره' : 'خرید',
+            sqm: asNumber(row.sqm, 25, 1000, 75),
+            priceText: asText(row.priceText, 160),
+            discountPercent: asNumber(row.discountPercent, 10, 60, 10),
+            buyerProfitText: asText(row.buyerProfitText, 160),
+            street: asText(row.street, 120),
+            status: row.status === 'rejected' ? 'rejected' : row.status === 'pending' ? 'pending' : 'approved',
+            createdAtIso: asText(row.createdAtIso, 40),
+            updatedAtIso: asText(row.updatedAtIso, 40),
+            ownerUserId: asText(row.ownerUserId, 100),
           };
-        });
-        if (Object.keys(overridesMap).length === 0 && removedIds.size === 0) return;
-        const allCitySeeds = [...INITIAL_NEIGHBORHOODS, ...getAllMultiCityNeighborhoods()];
-        setNeighborhoods((prev) => {
-          const next = prev.map((n) => {
-            if (removedIds.has(n.id) && !overridesMap[n.id]) { const seed = allCitySeeds.find((s) => s.id === n.id); return seed ? { ...seed } : n; }
-            const ov = overridesMap[n.id];
-            if (!ov) return n;
-            return { ...n, buyPerSqm: ov.buyPerSqm ?? n.buyPerSqm, rahn80m: ov.rahn80m ?? n.rahn80m, pros: ov.pros ?? n.pros, cons: ov.cons ?? n.cons, sponsor: ov.sponsor === null ? undefined : ov.sponsor ? { ...n.sponsor, ...ov.sponsor } : n.sponsor };
-          });
-          for (const [idStr, ov] of Object.entries(overridesMap)) {
-            const numId = Number(idStr);
-            if (!next.some((n) => n.id === numId)) {
-              const seed = allCitySeeds.find((s) => s.id === numId);
-              if (seed) next.push({ ...seed, buyPerSqm: ov.buyPerSqm ?? seed.buyPerSqm, rahn80m: ov.rahn80m ?? seed.rahn80m, pros: ov.pros ?? seed.pros, cons: ov.cons ?? seed.cons, sponsor: ov.sponsor === null ? undefined : ov.sponsor ? { ...seed.sponsor, ...ov.sponsor } : seed.sponsor });
-            }
+          if (!bargainMap[hoodId]) bargainMap[hoodId] = [];
+          bargainMap[hoodId].push(listing);
+        }
+        for (const rows of Object.values(bargainMap)) rows.splice(0, rows.length, ...sortBargainListingsByCreatedAt(rows));
+        setCloudBargainsByHood(bargainMap);
+
+        const sponsorRequests = (payload.sponsors || []).map(mapSponsorRecord).filter((item): item is SponsorCrmRequestItem => Boolean(item));
+        const activeSponsors: Record<number, NeighborhoodSponsor> = {};
+        for (const item of sponsorRequests) {
+          const notExpired = !item.expiresAtIso || Date.parse(item.expiresAtIso) > Date.now();
+          if (item.status === 'approved' && notExpired) {
+            activeSponsors[item.hoodId] = {
+              name: item.agencyName,
+              phone: item.phone,
+              specialty: item.specialty,
+              experienceYears: item.experienceYears,
+              expiresAtIso: item.expiresAtIso,
+              planType: item.planMonths === 3 ? 'paid_3m' : 'paid_1m',
+            };
           }
-          return next;
-        });
-      },
-      () => { if (!cancelled) markCloudListenerError('overrides'); }
-    ));
-    return () => { cancelled = true; unsubs.forEach((u) => u()); };
-  }, [authReady, currentUser, isDelegatedAdmin, activeCity, reconnectGeneration, setNeighborhoods]);
+        }
+        reqSponsorsByHoodRef.current = activeSponsors;
+        setSponsorRequests(admin ? sponsorRequests : []);
+        const buyerLeads = admin ? (payload.buyerAlerts || []).map(mapBuyerLead).filter((item): item is BuyerAlertLeadItem => Boolean(item)) : [];
+        setBuyerLeads(buyerLeads);
+        syncMergedCloudSponsors();
+
+        const votes = (payload.votes || []).map(mapVote).filter((item): item is ResidentVoteDoc => Boolean(item));
+        setCloudVotes(votes);
+
+        const overridesMap: Record<number, Record<string, unknown>> = {};
+        const nextOverrideIds = new Set<number>();
+        const nextOverrideSponsors: Record<number, NeighborhoodSponsor> = {};
+        const nextReleasedIds = new Set<number>();
+        for (const row of payload.overrides || []) {
+          const hoodId = Number(row.hoodId);
+          if (!Number.isInteger(hoodId) || hoodId < 1 || hoodId > 9999) continue;
+          const buyPerSqm = typeof row.buyPerSqm === 'number' && row.buyPerSqm >= 10 && row.buyPerSqm <= 5000 ? row.buyPerSqm : undefined;
+          const rahn80m = typeof row.rahn80m === 'number' && row.rahn80m >= 50 && row.rahn80m <= 100000 ? row.rahn80m : undefined;
+          if (buyPerSqm !== undefined || rahn80m !== undefined) nextOverrideIds.add(hoodId);
+          const sponsor = row.sponsor && typeof row.sponsor === 'object' ? row.sponsor as Record<string, unknown> : null;
+          if (sponsor) {
+            nextOverrideSponsors[hoodId] = {
+              name: asText(sponsor.name || sponsor.agencyName, 120),
+              phone: asText(sponsor.phone, 30),
+              specialty: asText(sponsor.specialty, 120),
+              experienceYears: asNumber(sponsor.experienceYears, 0, 80, 0),
+              expiresAtIso: asText(sponsor.expiresAtIso, 60),
+              planType: sponsor.planType === 'paid_3m' ? 'paid_3m' : sponsor.planType === 'paid_1m' ? 'paid_1m' : 'free',
+            };
+          } else if (row.sponsor === null) {
+            nextReleasedIds.add(hoodId);
+          }
+          overridesMap[hoodId] = {
+            buyPerSqm,
+            rahn80m,
+            pros: asText(row.pros, 400),
+            cons: asText(row.cons, 400),
+            sponsor: row.sponsor === null ? null : nextOverrideSponsors[hoodId],
+          };
+        }
+        for (const oldId of activeCloudOverrideHoodIds) {
+          if (!nextOverrideIds.has(oldId)) activeCloudOverrideHoodIds.delete(oldId);
+        }
+        for (const id of nextOverrideIds) activeCloudOverrideHoodIds.add(id);
+        ovSponsorsByHoodRef.current = nextOverrideSponsors;
+        releasedOverrideIdsRef.current = nextReleasedIds;
+        const allCitySeeds = [...INITIAL_NEIGHBORHOODS, ...getAllMultiCityNeighborhoods()];
+        if (Object.keys(overridesMap).length > 0) {
+          setNeighborhoods((previous) => {
+            const next = previous.map((neighborhood) => {
+              const override = overridesMap[neighborhood.id];
+              if (!override) return neighborhood;
+              return {
+                ...neighborhood,
+                buyPerSqm: (override.buyPerSqm as number | undefined) ?? neighborhood.buyPerSqm,
+                rahn80m: (override.rahn80m as number | undefined) ?? neighborhood.rahn80m,
+                pros: (override.pros as string | undefined) ?? neighborhood.pros,
+                cons: (override.cons as string | undefined) ?? neighborhood.cons,
+                sponsor: override.sponsor === null ? undefined : (override.sponsor as NeighborhoodSponsor | undefined) ?? neighborhood.sponsor,
+              };
+            });
+            for (const [idText, override] of Object.entries(overridesMap)) {
+              const id = Number(idText);
+              if (next.some((neighborhood) => neighborhood.id === id)) continue;
+              const seed = allCitySeeds.find((neighborhood) => neighborhood.id === id);
+              if (seed) next.push({
+                ...seed,
+                buyPerSqm: (override.buyPerSqm as number | undefined) ?? seed.buyPerSqm,
+                rahn80m: (override.rahn80m as number | undefined) ?? seed.rahn80m,
+                pros: (override.pros as string | undefined) ?? seed.pros,
+                cons: (override.cons as string | undefined) ?? seed.cons,
+                sponsor: override.sponsor === null ? undefined : (override.sponsor as NeighborhoodSponsor | undefined) ?? seed.sponsor,
+              });
+            }
+            return next;
+          });
+        }
+
+        listenerIds.forEach(markCloudListenerSnapshot);
+      } catch (error) {
+        if (cancelled || (error instanceof Error && error.name === 'AbortError')) return;
+        listenerIds.forEach(markCloudListenerError);
+        setCloudVotes([]);
+        setBuyerLeads([]);
+        setSponsorRequests([]);
+        setCloudBargainsByHood({});
+        reqSponsorsByHoodRef.current = {};
+        ovSponsorsByHoodRef.current = {};
+        releasedOverrideIdsRef.current = new Set();
+        syncMergedCloudSponsors();
+      }
+    };
+
+    void loadState();
+    const poll = window.setInterval(() => {
+      if (typeof navigator === 'undefined' || navigator.onLine !== false) void loadState();
+    }, 30_000);
+    return () => {
+      cancelled = true;
+      activeController?.abort();
+      window.clearInterval(poll);
+      listenerIds.forEach(markCloudListenerInactive);
+    };
+  }, [
+    activeCity,
+    authReady,
+    currentUser?.uid,
+    hasUrlBudgetParams,
+    reconnectGeneration,
+    setMode,
+    setDeposit,
+    setMonthlyRent,
+    setBuyTotalBudget,
+    setTargetSqm,
+    setWorkHubId,
+    setFavoriteHoodIds,
+    setFeatureFlags,
+    setNeighborhoods,
+    setCloudVotes,
+    setSponsorRequests,
+    setBuyerLeads,
+    setHasDelegatedAdminDoc,
+  ]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const reconnect = () => { publishListenerHealth(noteExplicitCloudReconnect(listenerHealthRef.current)); setReconnectGeneration((generation) => generation + 1); };
+    const reconnect = () => {
+      publishListenerHealth(noteExplicitCloudReconnect(listenerHealthRef.current));
+      setReconnectGeneration((generation) => generation + 1);
+    };
     window.addEventListener('online', reconnect);
     return () => window.removeEventListener('online', reconnect);
   }, []);
+
   const connectionStatus: 'LIVE_SYNC' | 'CACHED_OFFLINE' | 'RECONNECTING' =
-    cloudSyncConnectionStatus({ authReady, navigatorOnLine: typeof navigator === 'undefined' || navigator.onLine !== false, health: listenerHealth });
+    cloudSyncConnectionStatus({
+      authReady,
+      navigatorOnLine: typeof navigator === 'undefined' || navigator.onLine !== false,
+      health: listenerHealth,
+    });
   const cloudSyncUnitContext = useMemo(
-    () => ({ areaUnit, unitLabel: formatAreaUnitLabel(areaUnit), intlCurrency, sampleUnitPrice: convertPricePerSqmToUnit(100, areaUnit), sampleIntlText: formatMillionTomanAsIntlCurrency(100, intlCurrency, locale) }),
+    () => ({
+      areaUnit,
+      unitLabel: formatAreaUnitLabel(areaUnit),
+      intlCurrency,
+      sampleUnitPrice: convertPricePerSqmToUnit(100, areaUnit),
+      sampleIntlText: formatMillionTomanAsIntlCurrency(100, intlCurrency, locale),
+    }),
     [areaUnit, intlCurrency, locale],
   );
-  return { currentUser, authReady, connectionStatus, cloudBargainsByHood, setCloudBargainsByHood, cloudSponsorsByHood, cloudSyncUnitContext, safeJsonParse };
+
+  return {
+    currentUser,
+    authReady,
+    connectionStatus,
+    cloudBargainsByHood,
+    setCloudBargainsByHood,
+    cloudSponsorsByHood,
+    cloudSyncUnitContext,
+    safeJsonParse,
+  };
 }
+
 export { useMarketSync, useSponsorSync, useUserCacheSync, pruneLocalCache, type ConnectionStatusState } from './useMarketPulseSync';
