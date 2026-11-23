@@ -58,7 +58,7 @@ test('queue batches are delayed until the pause expires instead of being process
   } as unknown as MessageBatch<RadarQueueEnvelope>;
 
   await worker.queue(batch, { DB_WRITES_PAUSED_UNTIL_UTC: '2099-01-01T00:00:00Z' } as WorkerEnv);
-  assert.equal(retryDelay, 43_200, 'queue retry delay is capped at Cloudflare Queue's 12-hour delay window');
+  assert.equal(retryDelay, 43_200, 'queue retry delay uses a bounded 12-hour recheck interval');
 });
 
 test('scheduled jobs are not enqueued while the DB write pause is active', async () => {
