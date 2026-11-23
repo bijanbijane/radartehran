@@ -9,17 +9,21 @@ export interface TileHealthSnapshot {
   fallbackActivated: boolean;
 }
 
-export const PRIMARY_TILE_URL_DARK = '/api/osm-tile/{z}/{x}/{y}.png'; // Legacy alias; no unlicensed CARTO endpoint.
-export const PRIMARY_TILE_URL_LIGHT = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-export const FALLBACK_TILE_URL_OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+export const PRIMARY_TILE_URL_PROXY = '/api/osm-tile/{z}/{x}/{y}.png';
+export const PRIMARY_TILE_URL_OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+/** @deprecated Use PRIMARY_TILE_URL_PROXY. Retained for legacy imports. */
+export const PRIMARY_TILE_URL_DARK = PRIMARY_TILE_URL_PROXY;
+/** @deprecated Use PRIMARY_TILE_URL_OSM. Retained for legacy imports. */
+export const PRIMARY_TILE_URL_LIGHT = PRIMARY_TILE_URL_OSM;
+export const FALLBACK_TILE_URL_OSM = PRIMARY_TILE_URL_OSM;
 
 export class TileProviderHealthTracker {
   private loadedCount = 0;
   private errorCount = 0;
-  private activeProviderUrl = PRIMARY_TILE_URL_DARK;
+  private activeProviderUrl = PRIMARY_TILE_URL_PROXY;
   private fallbackActivated = false;
 
-  constructor(initialUrl = PRIMARY_TILE_URL_DARK) {
+  constructor(initialUrl = PRIMARY_TILE_URL_PROXY) {
     this.activeProviderUrl = initialUrl;
   }
 
@@ -38,7 +42,7 @@ export class TileProviderHealthTracker {
     return this.getSnapshot();
   }
 
-  reset(providerUrl = PRIMARY_TILE_URL_DARK): void {
+  reset(providerUrl = PRIMARY_TILE_URL_PROXY): void {
     this.loadedCount = 0;
     this.errorCount = 0;
     this.activeProviderUrl = providerUrl;
