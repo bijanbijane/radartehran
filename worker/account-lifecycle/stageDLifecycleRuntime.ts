@@ -439,6 +439,7 @@ export async function initiateWorkerAccountDeletion(params: {
   }
   const db = requireStageDDatabase(params.env);
   await assertStageDSchema(db);
+  await assertUserDbBarrierSchema(params.env.USER_DB);
   const runtime = createRuntime(params.env);
   assertStoreHealthy(await runtime.store.probeHealth());
 
@@ -493,6 +494,7 @@ export async function recoverPendingLifecycleDispatch(env: WorkerEnv, limit = 25
   }
   const db = requireStageDDatabase(env);
   await assertStageDSchema(db);
+  await assertUserDbBarrierSchema(env.USER_DB);
   const runtime = createRuntime(env);
   assertStoreHealthy(await runtime.store.probeHealth());
 
@@ -548,6 +550,7 @@ export async function executeBoundedDeletionStep(params: {
   }
   const db = requireStageDDatabase(params.env);
   await assertStageDSchema(db);
+  await assertUserDbBarrierSchema(params.env.USER_DB);
   const runtime = createRuntime(params.env);
   assertStoreHealthy(await runtime.store.probeHealth());
 
