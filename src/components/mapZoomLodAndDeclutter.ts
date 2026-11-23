@@ -21,6 +21,25 @@ export function formatCompactNeighborhoodName(name: string): string {
   const primary = cleaned.split(/\s+و\s+|[/،]/)[0]?.trim() || cleaned;
   return primary.length > 14 ? `${primary.slice(0, 13)}…` : primary;
 }
+/** A short map-only label; the canonical neighborhood name remains unchanged in data and tooltips. */
+export function getNeighborhoodMapLabel(name: string): string {
+  return formatCompactNeighborhoodName(name);
+}
+
+/** Hard upper bound for visible text labels, scaled to the actual map surface. */
+export function getMapLabelBudget(map: any): number {
+  let width = 390;
+  let height = 844;
+  try {
+    const size = map?.getSize?.();
+    const container = map?.getContainer?.();
+    width = Number(size?.x ?? container?.clientWidth ?? width);
+    height = Number(size?.y ?? container?.clientHeight ?? height);
+  } catch { /* retain conservative mobile defaults */ }
+  if (!Number.isFinite(width) || width <= 0) width = 390;
+  if (!Number.isFinite(height) || height <= 0) height = 844;
+  return Math.max(12, Math.min(40, Math.floor((width * height) / 18000)));
+}
 export function estimateLodPillSize(params: {
   tier: MarkerVisualTier; hoodName: string; shortPriceLabel?: string; fullPriceLabel?: string; hasSponsor?: boolean;
 }): { w: number; h: number } {
@@ -44,6 +63,8 @@ export function computeDeclutteredMarkerTiers(
 ): Map<number, MarkerVisualTier> {
   const result = new Map<number, MarkerVisualTier>();
   if (zoom < 12) { for (const h of visibleHoods) result.set(h.id, 'dot'); return result; }
+  const labelBudget = getMapLabelBudget(map);
+  let placedLabelCount = 0;
   const prioritized = [...visibleHoods].sort((a, b) => {
     if (a.id === selectedHoodId) return -1; if (b.id === selectedHoodId) return 1;
     const spA = isSponsorCheck(a) ? 1 : 0; const spB = isSponsorCheck(b) ? 1 : 0;
@@ -78,14 +99,17 @@ export function computeDeclutteredMarkerTiers(
       const tier: MarkerVisualTier = zoom >= 14 ? 'detailed_pill' : 'standard_pill';
       const box = markerBox(hood, tier, hasSponsor);
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
+      placedLabelCount++;
       result.set(hood.id, tier); continue;
     }
+    if (placedLabelCount >= labelBudget) { result.set(hood.id, 'dot'); continue; }
     const candidateTiers: Array<Exclude<MarkerVisualTier, 'dot'>> = zoom < 13 ? ['compact_chip'] : zoom < 14 ? ['standard_pill', 'compact_chip'] : ['detailed_pill', 'standard_pill', 'compact_chip'];
     let placed = false;
     for (const tier of candidateTiers) {
       const box = markerBox(hood, tier, hasSponsor);
       if (!canPlaceBox(pt.x, pt.y, box.w, box.h)) continue;
       placedBoxes.push({ x: pt.x, y: pt.y, ...box });
+      placedLabelCount++;
       result.set(hood.id, tier); placed = true; break;
     }
     if (!placed) result.set(hood.id, 'dot');
@@ -115,7 +139,7 @@ export function buildNeighborhoodLodDivIconConfig(params: {
   const shadowRule = isSelected ? '0 0 16px rgba(16,185,129,0.85)' : '0 2px 7px rgba(15,23,42,0.32)';
   const sz = estimateLodPillSize({ tier, hoodName: hood.name, shortPriceLabel, fullPriceLabel, hasSponsor });
   if (tier === 'compact_chip') {
-    const safeTruncName = escapeHtmlAttr(formatCompactNeighborhoodName(hood.name));
+    const safeTruncName = escapeHtmlAttr(getNeighborhoodMapLabel(hood.name));
     return {
       html: `<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;cursor:pointer;"><span data-hood-pill="${hood.id}" data-lod-tier="compact" style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:9999px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:9.8px;font-weight:800;color:#ffffff;background:${pillBg}e6;backdrop-filter:blur(4px);border:${borderRule};box-shadow:${shadowRule};">${sponsorStar}<span class="hood-text-label">${safeTruncName}</span><span class="hood-price-label" style="opacity:0.92;font-weight:700;font-size:9.2px;border-right:1px solid rgba(255,255,255,0.3);padding-right:3px;">${safeShortPrice}</span></span></div>`,
       iconSize: [sz.w, sz.h], iconAnchor: [Math.round(sz.w / 2), Math.round(sz.h / 2)],
