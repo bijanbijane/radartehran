@@ -819,7 +819,9 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
 
     it('fails closed before account deletion when the dedicated lifecycle receipt key is absent', async () => {
       const userSqlite = createRealSqliteD1();
+      const researchSqlite = createRealSqliteD1();
       applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
+      applyMigrationDirToSqlite(researchSqlite.raw, 'migrations/research-d1');
       const uid = 'uid_missing_lifecycle_receipt_key';
       const result = await executeAccountDeletionLifecycle({
         env: {
@@ -836,6 +838,11 @@ describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', ()
       assert.equal(result.jobId, '');
       const jobs = userSqlite.raw.prepare('SELECT COUNT(*) AS cnt FROM account_deletion_jobs').get() as { cnt: number };
       assert.equal(jobs.cnt, 0, 'No deletion job or destructive mutation may begin without the dedicated receipt key.');
+      await assert.rejects(
+        processPendingResearchErasureOutbox({ userDb: userSqlite.db, researchDb: researchSqlite.db }),
+        /INTERNAL_LIFECYCLE_RPC_SECRET_UNAVAILABLE/,
+        'The outbox must not erase research data without a receipt-signing key.',
+      );
     });
 
     it('enforces Legal Hold blocking account deletion (423)', async () => {
