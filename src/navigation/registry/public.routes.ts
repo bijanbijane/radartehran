@@ -18,6 +18,11 @@ export const PUBLIC_ROUTES: readonly RouteDefinition[] = [
     navigationGroup: 'primary', breadcrumbFa: 'محله‌ها', breadcrumbEn: 'Neighborhoods', mobileVisibility: 'bottom_bar', status: 'active',
   },
   {
+    id: 'areas.registry', viewId: 'discover', subTab: 'registry', path: '/areas/registry', parentId: 'areas',
+    titleFa: 'رجیستری ملی جغرافیایی', titleEn: 'National Geographic Registry', shell: 'public', requiredPermissions: [],
+    navigationGroup: 'primary', breadcrumbFa: 'مرجع رسمی جغرافیایی', breadcrumbEn: 'Official Geographic Registry', mobileVisibility: 'hidden', status: 'active',
+  },
+  {
     id: 'market.overview', viewId: 'intelligence', subTab: 'overview', path: '/market', aliases: ['/intelligence', '/analytics', '/workspace/analytics'], parentId: 'home',
     titleFa: 'بازار', titleEn: 'Market', shell: 'public', requiredPermissions: [],
     navigationGroup: 'primary', breadcrumbFa: 'تحلیل بازار', breadcrumbEn: 'Market', mobileVisibility: 'bottom_bar', status: 'active',
