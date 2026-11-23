@@ -1,0 +1,39 @@
+name: Navigation Route and Menu Parity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/navigation/navigationArchitecture.test.ts"
+      - ".github/workflows/navigation-parity-check.yml"
+  push:
+    branches:
+      - main
+      - codex/rt-ux-arch-002-route-menu-parity-mainline
+    paths:
+      - "src/navigation/navigationArchitecture.test.ts"
+      - ".github/workflows/navigation-parity-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: navigation-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  navigation-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Run canonical route, alias, navigation and admin isolation tests
+        run: npx tsx --test src/navigation/navigationArchitecture.test.ts
