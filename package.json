@@ -50,7 +50,7 @@
     "test:assess": "tsx tests/assess-004-hedonic-accuracy-benchmark.test.ts && tsx tests/assess-005-legal-and-tax-formulas.test.ts && tsx tests/assess-006-trade-up-swap-model.test.ts && tsx tests/assess-007-008-performance-lod-and-pwa.test.ts && tsx tests/assess-009-010-seo-deeplink-and-crm-funnel.test.ts",
     "test:vitest": "vitest run",
     "test:worker": "tsx --test tests/cloudflare-phase1-and-phase2-worker.test.ts",
-    "test:auth": "tsx --test tests/cloudflare-native-auth.test.ts",
+    "test:auth": "tsx --test tests/cloudflare-native-auth.test.ts tests/cloudflare-worker-auth-failclosed.test.ts",
     "test:r2": "tsx --test tests/cloudflare-phase4-r2-and-storage.test.ts",
     "test:d1": "tsx --test tests/cloudflare-phase5-d1-and-database.test.ts",
     "test:queues": "tsx --test tests/cloudflare-phase6-queues-and-cron.test.ts",
@@ -61,7 +61,7 @@
     "cf:preview": "CLOUDFLARE_VITE=1 vite preview --mode cloudflare",
     "cf:config:check": "wrangler deploy --dry-run",
     "cf:staging:preflight": "wrangler deploy --env staging --dry-run",
-    "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:roadmap && npm run test:assess && npm run test:storage && npm run test:insights",
+    "test": "npm run lint && npm run arch:check && npm run test:unit && npm run test:roadmap && npm run test:assess && npm run test:auth && npm run test:storage && npm run test:insights",
     "verify": "npm run typecheck && npm run test:security && npm run test:roadmap && npm run build && npm run arch:check"
   },
   "dependencies": {
