@@ -142,14 +142,15 @@ function runDomainRegressionTests(): void {
   const karajCustomId = Array.from({ length: 100 }, (_, index) => 600 + index).find((id) => !karajExpansionSeeds.some((hood) => hood.id === id));
   const shirazCustomId = Array.from({ length: 99 }, (_, index) => 900 + index).find((id) => !shirazExpansionSeeds.some((hood) => hood.id === id));
   assert('0. City hydration test IDs are available', karajCustomId !== undefined && shirazCustomId !== undefined && karajExpansionSeeds[0] !== undefined, 'Karaj and Shiraz custom IDs selected');
-  if (karajCustomId === undefined || shirazCustomId === undefined || !karajExpansionSeeds[0]) {
+  const karajSeed = karajExpansionSeeds[0];
+  if (karajCustomId === undefined || shirazCustomId === undefined || !karajSeed) {
     throw new Error('Unable to construct city-scoped hydration test fixtures');
   }
   const priorWindow = (globalThis as any).window;
   const priorLocalStorage = (globalThis as any).localStorage;
   const savedCityExpansion = [
-    { ...karajExpansionSeeds[0], id: karajCustomId, name: 'Saved Karaj custom' },
-    { ...karajExpansionSeeds[0], id: shirazCustomId, name: 'Saved Shiraz custom' },
+    { ...karajSeed, id: karajCustomId, name: 'Saved Karaj custom' },
+    { ...karajSeed, id: shirazCustomId, name: 'Saved Shiraz custom' },
   ];
   (globalThis as any).window = {};
   (globalThis as any).localStorage = { getItem: () => JSON.stringify(savedCityExpansion) };
