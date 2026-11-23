@@ -148,7 +148,7 @@ export async function getMarketStateFromD1(db: D1Database, query: MarketStateQue
     monthlyTariffMillion: Number(row.monthly_tariff_million || 0),
     planMonths: Number(row.plan_months) === 3 ? 3 : 1,
     totalPayableMillion: Number(row.total_payable_million || 0),
-    trackingCode: String(row.tracking_code || ''),
+    trackingCode: query.includeAdminRecords ? String(row.tracking_code || '') : undefined,
     expiresAtIso: row.expires_at_iso ? String(row.expires_at_iso) : undefined,
     status: row.status === 'approved' ? 'approved' : 'pending',
     createdAtFa: 'ثبت ابری',
