@@ -12,7 +12,7 @@
  * - Preserves minimal compliance deletion receipts using keyed HMAC-SHA256 `uid_hash`
  *   (sensitive pseudonymous compliance digest; never claims cross-D1 single-transaction atomicity).
  */
-import { recordUserRevocationInD1 } from '../auth/firebaseEdgeAuth';
+import { recordUserRevocationInD1 } from '../auth/authRevocationStore';
 import { requireUserDb, resolveResearchDb } from '../db/bindingResolver';
 import { deriveAllSubjectKeysForErasure, hashUidForComplianceReceipt } from '../research/pseudonymizer';
 import { executeResearchSubjectErasure } from '../research/researchService';
