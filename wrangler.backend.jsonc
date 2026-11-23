@@ -3,7 +3,7 @@
   // Tehran Radar Backend API Worker — RT-DB-TRIAD-001 Canonical Configuration
   // ============================================================================
   // Three Data Domains Architecture:
-  //   1. USER_DB (+ legacy alias DB) -> radar-user-db (Owned by Radar Tehran)
+  //   1. USER_DB -> radar-user-db (Owned by Radar Tehran)
   //   2. RESEARCH_DB                 -> radar-researcher-db (Owned by Radar Tehran, isolated)
   //   3. IRNI Neighborhood Reference -> External Read-Only API Client ONLY
   //      ABSOLUTE PROHIBITION: radar-neighborhood-db (f335efe8-37ac-4c7d-a057-bc9f4480f6c6)
@@ -34,12 +34,6 @@
       "migrations_table": "d1_migrations"
     },
     {
-      "binding": "DB",
-      "database_name": "radar-user-db",
-      "database_id": "fbb98e6b-5200-4047-b4bc-15a51c06aa84",
-      "migrations_dir": "migrations/user-d1",
-      "migrations_table": "d1_migrations"
-    },
     {
       "binding": "RESEARCH_DB",
       "database_name": "radar-researcher-db",
@@ -60,7 +54,6 @@
   "vars": {
     "APP_ENV": "production",
     "APP_URL": "https://radartehran.ir",
-    "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
     "RESEARCH_HMAC_KEY_VERSION": "v1",
     "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
     "IRNI_API_TIMEOUT_MS": "4000",
@@ -68,7 +61,6 @@
     "IRNI_STALE_TTL_SECONDS": "3600",
     "IRNI_API_CONTRACT_STATUS": "BLOCKED_EXTERNAL_IRNI_CONTRACT",
     "STRICT_ORIGIN_ENFORCEMENT": "true",
-    "APP_CHECK_ENFORCEMENT_MODE": "enforce"
   },
 
   "triggers": {
@@ -97,7 +89,6 @@
       "vars": {
         "APP_ENV": "staging",
         "APP_URL": "https://radartehran-api-staging.workers.dev",
-        "FIREBASE_PROJECT_ID": "gen-lang-client-0713157837",
         "RESEARCH_HMAC_KEY_VERSION": "v1",
         "RESEARCH_K_ANONYMITY_MIN_COHORT": "10",
         "IRNI_API_TIMEOUT_MS": "4000",
@@ -106,7 +97,6 @@
         "IRNI_API_CONTRACT_STATUS": "BLOCKED_EXTERNAL_IRNI_CONTRACT",
         "STAGING_D1_PROVISIONING_STATUS": "BLOCKED_STAGING_DATABASES_NOT_PROVISIONED",
         "STRICT_ORIGIN_ENFORCEMENT": "false",
-        "APP_CHECK_ENFORCEMENT_MODE": "monitor"
       }
     }
   }
