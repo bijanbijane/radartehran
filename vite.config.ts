@@ -40,15 +40,20 @@ export default defineConfig(({ mode }) => {
       dedupe: [
         'react',
         'react-dom',
-        // Firebase packages must share one @firebase/app component registry in Vite dev/E2E.
-        // Different nested @firebase/app copies can register Firestore on a different provider
-        // container, causing `Service firestore is not available` during application bootstrap.
+        // Keep every Firebase public entry point and internal provider package on one SDK graph.
+        // App Check is imported before Firestore initialization; a nested @firebase/app-check
+        // dependency can otherwise split the component registry and leave Firestore unregistered.
         'firebase',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore',
+        'firebase/app-check',
         '@firebase/app',
         '@firebase/auth',
         '@firebase/firestore',
         '@firebase/component',
         '@firebase/util',
+        '@firebase/app-check',
       ],
     },
     optimizeDeps: {
@@ -62,6 +67,7 @@ export default defineConfig(({ mode }) => {
         'firebase/app',
         'firebase/auth',
         'firebase/firestore',
+        'firebase/app-check',
       ],
     },
     build: {
