@@ -230,7 +230,7 @@ const TEST_RPC_SECRET = 'rt_test_internal_rpc_secret_0123456789abcdef012345';
 
 describe('RT-DB-TRIAD-001: Three Independent Data Domains Integration Suite', () => {
   describe('12.1 USER_DB — Isolation, Account CRUD, Atomic Revocation & JSON->D1 Migration', () => {
-    it('applies migrations/user-d1 cleanly and enforces strict binding isolation', () => {
+    it('applies migrations/user-d1 cleanly and enforces strict binding isolation', async () => {
       const userSqlite = createRealSqliteD1();
       const researchSqlite = createRealSqliteD1();
       const applied = applyMigrationDirToSqlite(userSqlite.raw, 'migrations/user-d1');
