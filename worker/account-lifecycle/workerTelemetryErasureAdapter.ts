@@ -46,7 +46,7 @@ export function createWorkerD1TelemetryErasureAdapter(db: D1DatabaseBinding): Ac
       };
     },
     async purgePendingIngestionQueueForUser() {
-      return { partitionsDrained: 0, eventsAcknowledged: 0 };
+      throw new Error('TELEMETRY_INGESTION_QUEUE_DRAIN_UNAVAILABLE: deletion cannot advance until queued attributable events are durably drained.');
     },
   };
 }

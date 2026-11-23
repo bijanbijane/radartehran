@@ -67,12 +67,13 @@ export function createWorkerMediaDeletionAdapter(params: {
       if (rowBucket !== bucketName) {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'BUCKET_OWNERSHIP_MISMATCH' };
       }
-      if (mediaBucket) {
-        try {
-          await mediaBucket.delete(storageKey);
-        } catch {
-          return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_DELETE_FAILED' };
-        }
+      if (!mediaBucket) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_MEDIA_BUCKET_UNAVAILABLE' };
+      }
+      try {
+        await mediaBucket.delete(storageKey);
+      } catch {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_DELETE_FAILED' };
       }
       const nowIso = new Date().toISOString();
       await db

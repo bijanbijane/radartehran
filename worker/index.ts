@@ -247,8 +247,8 @@ export default {
     _executionCtx?: WorkerExecutionContext
   ): Promise<void> {
     if (resolveD1WritePauseState(env).paused) return;
-    if (event.cron === '0 * * * *' && env.DB) {
-      const { recoverPendingLifecycleDispatch } = await import('./account-lifecycle/workerLifecycleRuntime.ts');
+    if (event.cron === '0 * * * *' && env.DB && !env.USER_DB) {
+      const { recoverPendingLifecycleDispatch } = await import('./account-lifecycle/stageDLifecycleRuntime.ts');
       await recoverPendingLifecycleDispatch(env, 25);
     }
     if (!env.RADAR_QUEUE) {

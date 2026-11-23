@@ -29,6 +29,7 @@ export class D1AccountLifecycleDispatch {
     idempotencyKey: string;
     correlationId: string;
     createdAtIso: string;
+    nextAttemptAtIso?: string | null;
   }): Promise<{ inserted: boolean }> {
     const res = await this.db
       .prepare(Q.SQL_INSERT_DISPATCH_OUTBOX)
@@ -40,7 +41,7 @@ export class D1AccountLifecycleDispatch {
         params.idempotencyKey,
         'PENDING',
         0,
-        null,
+        params.nextAttemptAtIso ?? null,
         null,
         params.correlationId,
         params.createdAtIso,
@@ -48,6 +49,7 @@ export class D1AccountLifecycleDispatch {
         null,
       )
       .run();
+    if (!res.success) throw new AccountLifecycleStoreError('STORE_UNAVAILABLE', 'Failed to persist lifecycle dispatch outbox event.', 503);
     const inserted = (res.meta?.changes ?? 0) === 1;
     if (!inserted) {
       const existing = await d1FirstRow(this.db, Q.SQL_GET_DISPATCH_BY_IDEM, params.idempotencyKey);
@@ -58,7 +60,7 @@ export class D1AccountLifecycleDispatch {
 
   public async listPendingDispatch(limit: number, nowIso: string): Promise<DispatchOutboxRow[]> {
     const res = await this.db.prepare(Q.SQL_LIST_PENDING_DISPATCH).bind(nowIso, limit).all<Record<string, unknown>>();
-    if (!res.success) return [];
+    if (!res.success) throw new AccountLifecycleStoreError('STORE_UNAVAILABLE', 'Failed to read lifecycle dispatch outbox.', 503);
     return res.results.map((r) => ({
       eventId: String(r.event_id),
       jobId: String(r.job_id),
@@ -71,6 +73,7 @@ export class D1AccountLifecycleDispatch {
 
   public async markDispatchSent(idempotencyKey: string, nowIso: string): Promise<boolean> {
     const res = await this.db.prepare(Q.SQL_MARK_DISPATCH_SENT).bind(nowIso, idempotencyKey).run();
+    if (!res.success) throw new AccountLifecycleStoreError('STORE_UNAVAILABLE', 'Failed to mark lifecycle dispatch as sent.', 503);
     return (res.meta?.changes ?? 0) === 1;
   }
 
@@ -80,10 +83,11 @@ export class D1AccountLifecycleDispatch {
     nextAttemptIso: string,
     errorRedacted: string,
   ): Promise<void> {
-    await this.db
+    const res = await this.db
       .prepare(Q.SQL_MARK_DISPATCH_FAILED)
       .bind(errorRedacted.slice(0, 240), nowIso, nextAttemptIso, idempotencyKey)
       .run();
+    if (!res.success) throw new AccountLifecycleStoreError('STORE_UNAVAILABLE', 'Failed to schedule lifecycle dispatch retry.', 503);
   }
 
   public async acquireJobLease(params: {
