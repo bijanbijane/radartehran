@@ -39,4 +39,4 @@ test('neighborhood store cannot alias research store', () => {
   assert.equal(hasUserResearchBindingCollision({ DB: user, RESEARCH_DB: research, NEIGHBORHOOD_DB: research }), true);
   assert.equal(requireNeighborhoodDb({ DB: user, RESEARCH_DB: research, NEIGHBORHOOD_DB: research }).ok, false);
 });
-// The live smoke also checks that the production App Check site key is present in the deployed JS bundle.
+// The live smoke reports the deployed JS asset count and App Check site-key presence without mutating D1.
