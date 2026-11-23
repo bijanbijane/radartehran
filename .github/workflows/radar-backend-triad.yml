@@ -83,19 +83,14 @@ jobs:
           curl --fail --silent --show-error "$RADAR_FRONTEND_URL/" -o /tmp/radar-frontend.html
           grep -q 'id="root"' /tmp/radar-frontend.html
           : > /tmp/radar-frontend-bundles.js
-          mapfile -t frontend_assets < <(
-            {
-              grep -oE 'src="[^"]+\\.js[^"]*"' /tmp/radar-frontend.html || true
-              grep -oE "src='[^']+\\.js[^']*'" /tmp/radar-frontend.html || true
-            } | sed -E "s/^src=['\\"]//; s/['\\"]$//"
-          )
+          mapfile -t frontend_assets < <(grep -oE 'src="[^"]+\\.js[^"]*"' /tmp/radar-frontend.html | cut -d '"' -f 2)
           echo "Frontend JavaScript asset references: ${#frontend_assets[@]}"
           if [[ ${#frontend_assets[@]} -eq 0 ]]; then
             echo "ERROR: no JavaScript asset references found in deployed frontend HTML."
             sed -n '1,20p' /tmp/radar-frontend.html
             exit 1
           fi
-          printf 'Frontend asset: %s\\n' "${frontend_assets[@]}"
+          printf '%s\\n' "${frontend_assets[@]}"
           for asset in "${frontend_assets[@]}"; do
             case "$asset" in
               http*) asset_url="$asset" ;;
