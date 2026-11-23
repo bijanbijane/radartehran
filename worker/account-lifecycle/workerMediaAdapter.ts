@@ -10,11 +10,26 @@ import { AccountLifecycleStoreError } from '../../server/modules/account-lifecyc
 import { d1FirstRow } from './d1ResultHelpers.ts';
 
 export function createWorkerMediaDeletionAdapter(params: {
+  /** Stage D orchestration database. Never used as the owner of media records. */
   db: D1DatabaseBinding;
+  /** Must be the distinct D1 database that authoritatively owns media_objects. */
+  authoritativeUserDataDb?: D1DatabaseBinding;
   mediaBucket?: WorkerEnv['MEDIA_BUCKET'];
   bucketName: string;
 }): MediaDeletionCoordinationAdapter {
-  const { db, mediaBucket, bucketName } = params;
+  const { mediaBucket, bucketName } = params;
+  const db = params.authoritativeUserDataDb;
+  if (!db) {
+    const unavailable = () => new AccountLifecycleStoreError(
+      'DOMAIN_ADAPTER_UNAVAILABLE',
+      'Media deletion requires the authoritative USER_DB binding; Stage D lifecycle D1 cannot stand in for it.',
+      503,
+    );
+    return {
+      async listOwnedMediaPage() { throw unavailable(); },
+      async deleteOwnedMediaObject() { throw unavailable(); },
+    };
+  }
 
   return {
     async listOwnedMediaPage({ targetUid, cursor, pageSize }) {
