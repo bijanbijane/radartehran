@@ -1,7 +1,7 @@
 /** @file src/components/navigation/ProductGlobalHeader.tsx — RT-UI-NAV-001 Uncluttered Global Top Chrome (<= 290 lines) */
 import React, { useId, useRef } from 'react';
 import { ChevronDown, HelpCircle, Map as MapIcon, Moon, Search, Sun, User } from 'lucide-react';
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../platform/auth';
 import { CityId, MULTI_CITY_CONFIGS } from '../../data/multiCityData';
 import { CANONICAL_BRAND_EN, CANONICAL_BRAND_FA } from '../../utils/geo/cityGeospatialResolver';
 import { PrimaryViewId } from '../../utils/areaUnit';
@@ -27,7 +27,7 @@ export interface ProductGlobalHeaderProps {
   searchQuery?: string;
   activePlaceLabelFa?: string;
   invalidCityParam?: string | null;
-  currentUser?: FirebaseUser | null;
+  currentUser?: AuthUserSnapshot | null;
   unreadNotificationsCount?: number;
 }
 
