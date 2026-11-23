@@ -31,6 +31,8 @@ import {
 } from './lifecycleQueueContract.ts';
 import { validateQueueEnvelope, type RadarQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import { countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
+import { countActiveMutationPermitsInD1 } from './d1MutationPermit.ts';
+import { assertUserDbDeletionWriteBlock, ensureUserDbDeletionWriteBlock } from './d1UserLifecycleWriteBarrier.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 import type { WorkerEnv } from '../types.ts';
 
@@ -57,6 +59,8 @@ export function calculateLifecycleRecoveryOffset(
 
 type StageDLifecycleEnv = WorkerEnv & {
   readonly STAGE_D_LIFECYCLE_ENABLED?: string;
+  readonly STAGE_D_LIFECYCLE_DATABASE_ID?: string;
+  readonly STAGE_D_USER_DATABASE_ID?: string;
 };
 
 /**
@@ -64,10 +68,25 @@ type StageDLifecycleEnv = WorkerEnv & {
  * provisioned and verified. A generic DB binding is never sufficient.
  */
 export function isStageDLifecycleEnabled(env: WorkerEnv): boolean {
-  const flag = (env as StageDLifecycleEnv).STAGE_D_LIFECYCLE_ENABLED;
-  return flag?.trim().toLowerCase() === 'true' && Boolean(env.DB) && !env.USER_DB;
+  const stageEnv = env as StageDLifecycleEnv;
+  const lifecycleId = stageEnv.STAGE_D_LIFECYCLE_DATABASE_ID?.trim();
+  const userId = stageEnv.STAGE_D_USER_DATABASE_ID?.trim();
+  return stageEnv.STAGE_D_LIFECYCLE_ENABLED?.trim().toLowerCase() === 'true' &&
+    Boolean(env.DB) &&
+    Boolean(env.USER_DB) &&
+    env.DB !== env.USER_DB &&
+    Boolean(lifecycleId) &&
+    Boolean(userId) &&
+    lifecycleId !== userId;
 }
 
+
+const VERIFIED_USER_DB_BARRIERS = new WeakSet<object>();
+const REQUIRED_USER_DB_BARRIER_COLUMNS: Readonly<Record<string, readonly string[]>> = {
+  account_deletion_jobs: ['job_id', 'uid', 'completed_at_iso'],
+  account_write_blocks: ['uid', 'job_id', 'block_reason', 'blocked_at_iso', 'released_at_iso'],
+  account_mutation_permits: ['permit_id', 'uid', 'operation_name', 'acquired_at_ms', 'expires_at_ms', 'released_at_ms'],
+};
 
 const REQUIRED_STAGE_D_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   account_deletion_jobs: [
@@ -139,24 +158,48 @@ export function buildLifecycleActorFromPrincipal(params: {
 }
 
 function requireStageDDatabase(env: WorkerEnv): D1DatabaseBinding {
-  if (env.USER_DB) {
+  if (!env.DB || !env.USER_DB) {
     throw new AccountLifecycleError(
       'STORE_UNAVAILABLE',
-      'Stage D lifecycle requires the dedicated migrations/d1 schema; USER_DB is a different schema.',
+      'Stage D requires separate lifecycle DB and authoritative USER_DB bindings.',
       503,
     );
-  }
-  if (!env.DB) {
-    throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Stage D D1 binding is missing.', 503);
   }
   if (!isStageDLifecycleEnabled(env)) {
     throw new AccountLifecycleError(
       'STORE_UNAVAILABLE',
-      'Stage D lifecycle is disabled until the dedicated migrations/d1 database is provisioned and explicitly enabled.',
+      'Stage D is disabled until two distinct, explicitly identified D1 resources are provisioned and verified.',
       503,
     );
   }
   return env.DB as unknown as D1DatabaseBinding;
+}
+
+async function assertUserDbBarrierSchema(userDb: WorkerEnv['USER_DB']): Promise<void> {
+  if (!userDb) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Authoritative USER_DB binding is missing.', 503);
+  const identity = userDb as object;
+  if (VERIFIED_USER_DB_BARRIERS.has(identity)) return;
+  for (const [table, requiredColumns] of Object.entries(REQUIRED_USER_DB_BARRIER_COLUMNS)) {
+    let result;
+    try {
+      result = await userDb.prepare('PRAGMA table_info(' + table + ')').all<{ name: string }>();
+    } catch {
+      throw new AccountLifecycleError('STORE_UNAVAILABLE', 'USER_DB schema verification failed for table ' + table + '.', 503);
+    }
+    if (!result.success) {
+      throw new AccountLifecycleError('STORE_UNAVAILABLE', 'USER_DB schema verification failed for table ' + table + '.', 503);
+    }
+    const actual = new Set((result.results || []).map((column) => String(column.name)));
+    const missing = requiredColumns.filter((column) => !actual.has(column));
+    if (missing.length) {
+      throw new AccountLifecycleError(
+        'STORE_UNAVAILABLE',
+        'USER_DB lifecycle barrier schema is incompatible for table ' + table + '; missing columns: ' + missing.join(', ') + '.',
+        503,
+      );
+    }
+  }
+  VERIFIED_USER_DB_BARRIERS.add(identity);
 }
 
 async function assertStageDSchema(db: D1DatabaseBinding): Promise<void> {
@@ -196,6 +239,7 @@ async function assertStageDSchema(db: D1DatabaseBinding): Promise<void> {
 export async function requireWorkerLifecycleBindings(env: WorkerEnv): Promise<void> {
   const db = requireStageDDatabase(env);
   await assertStageDSchema(db);
+  await assertUserDbBarrierSchema(env.USER_DB);
   const store = new D1AccountLifecycleStore(db);
   assertStoreHealthy(await store.probeHealth());
 }
@@ -207,12 +251,15 @@ function createRuntime(env: WorkerEnv): {
   orchestrator: AccountDeletionOrchestrator;
 } {
   const db = requireStageDDatabase(env);
+  const userDb = env.USER_DB;
+  if (!userDb) throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Authoritative USER_DB binding is missing.', 503);
   const store = new D1AccountLifecycleStore(db);
   const orchestrator = new AccountDeletionOrchestrator({
     store,
     domainAdapters: createWorkerDomainAdapters(db),
     mediaAdapter: createWorkerMediaDeletionAdapter({
       db,
+      authoritativeUserDataDb: userDb,
       mediaBucket: env.MEDIA_BUCKET,
       bucketName: String(env.R2_MEDIA_BUCKET_NAME || '__UNCONFIGURED_MEDIA_BUCKET__').trim(),
     }),
@@ -401,6 +448,14 @@ export async function initiateWorkerAccountDeletion(params: {
     reason: 'USER_REQUESTED_ERASURE',
   });
 
+  // The lifecycle DB job+block is atomic. Mirror that same job ID into USER_DB
+  // before publishing a queue message so legacy user-data writes are blocked too.
+  await ensureUserDbDeletionWriteBlock({
+    userDb: params.env.USER_DB!,
+    uid: created.job.targetUid,
+    jobId: created.job.jobId,
+  });
+
   const idempotencyKey = await enqueueLifecycleStep({
     dispatch: runtime.dispatch,
     jobId: created.job.jobId,
@@ -450,6 +505,7 @@ export async function recoverPendingLifecycleDispatch(env: WorkerEnv, limit = 25
 
   for (const job of jobs) {
     if (isTerminalAccountDeletionState(job.state)) continue;
+    await ensureUserDbDeletionWriteBlock({ userDb: env.USER_DB!, uid: job.targetUid, jobId: job.jobId });
     if (job.state === 'PARTIAL_FAILURE_RETRYABLE') {
       const retryAt = Date.parse(job.updatedAtIso) + RETRYABLE_LIFECYCLE_DELAY_MS;
       if (Number.isFinite(retryAt) && retryAt > nowMs) continue;
@@ -539,15 +595,21 @@ export async function executeBoundedDeletionStep(params: {
       );
     }
 
-    const activePermits = await countActiveD1MutationPermits({
-      db,
-      targetUid: job.targetUid,
-      nowMs: Date.now(),
-    });
-    if (activePermits > 0) {
+    const userDb = params.env.USER_DB;
+    if (!userDb) {
+      throw new AccountLifecycleError('STORE_UNAVAILABLE', 'Authoritative USER_DB binding is missing.', 503);
+    }
+    await ensureUserDbDeletionWriteBlock({ userDb, uid: job.targetUid, jobId: job.jobId });
+    await assertUserDbDeletionWriteBlock({ userDb, uid: job.targetUid, jobId: job.jobId });
+
+    const [activePermits, activeUserDbPermits] = await Promise.all([
+      countActiveD1MutationPermits({ db, targetUid: job.targetUid, nowMs: Date.now() }),
+      countActiveMutationPermitsInD1(userDb, job.targetUid, Date.now()),
+    ]);
+    if (activePermits + activeUserDbPermits > 0) {
       throw new AccountLifecycleError(
         'MUTATION_DRAIN_INCOMPLETE',
-        'Deletion is waiting for ' + activePermits + ' in-flight mutation permit(s) to drain.',
+        'Deletion is waiting for ' + activeUserDbPermits + ' USER_DB and ' + activePermits + ' lifecycle D1 mutation permit(s) to drain.',
         409,
       );
     }
