@@ -4,8 +4,7 @@
  * plus clean override sponsor sanitization matching `firestore.rules:isValidOverrideSponsor`.
  */
 
-import { doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
-import { db } from '../firebase';
+import { loadFirebaseClient } from './firebaseLazy';
 import type { Neighborhood, NeighborhoodSponsor } from '../data/neighborhoods';
 import type { FeatureFlags } from './security';
 import { formatMillionTomanAsIntlCurrency, type IntlCurrencyCode } from './areaUnit';
@@ -46,11 +45,12 @@ export async function persistRestoredStateToFirestore(params: {
   seedNeighborhoods: Neighborhood[];
   featureFlags?: FeatureFlags;
 }): Promise<{ syncedOverridesCount: number; syncedFlags: boolean }> {
+  const firebase = await loadFirebaseClient();
   let syncedFlags = false;
   if (params.featureFlags) {
-    await setDoc(doc(db, 'appConfig', 'featureFlags'), {
+    await firebase.setDoc(firebase.doc(firebase.db, 'appConfig', 'featureFlags'), {
       ...params.featureFlags,
-      updatedAt: serverTimestamp(),
+      updatedAt: firebase.serverTimestamp(),
     });
     syncedFlags = true;
   }
@@ -66,12 +66,12 @@ export async function persistRestoredStateToFirestore(params: {
   let syncedOverridesCount = 0;
   for (let i = 0; i < changedHoods.length; i += 350) {
     const chunk = changedHoods.slice(i, i + 350);
-    const batch = writeBatch(db);
+    const batch = firebase.writeBatch(firebase.db);
     for (const hood of chunk) {
       const buyVal = Math.min(5000, Math.max(10, Math.round((hood as Neighborhood & { baseBuyPerSqm?: number }).baseBuyPerSqm ?? hood.buyPerSqm)));
       const rahnVal = Math.min(100000, Math.max(50, Math.round(hood.rahn80m)));
       const cleanSponsor = sanitizeSponsorForOverrideDoc(hood.sponsor);
-      batch.set(doc(db, 'neighborhoodOverrides', String(hood.id)), {
+      batch.set(firebase.doc(firebase.db, 'neighborhoodOverrides', String(hood.id)), {
         hoodId: hood.id,
         buyPerSqm: buyVal,
         rahn80m: rahnVal,
