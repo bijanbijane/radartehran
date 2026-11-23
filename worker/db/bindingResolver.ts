@@ -71,7 +71,8 @@ export interface TriadDomainBindingDiagnostics {
   readonly userDbBound: boolean; readonly userDbSource: UserDbBindingSource;
   readonly legacyDbAliasBound: boolean; readonly researchDbBound: boolean;
   readonly neighborhoodDbBound: boolean; readonly isolationViolation: boolean;
-  readonly irniDirectDbBindingPresent: false;
+  /** Raw runtime fact: true whenever the Worker receives the IRNI geographic D1 binding. */
+  readonly irniDirectDbBindingPresent: boolean;
 }
 export function getTriadDomainBindingDiagnostics(env: WorkerEnv): TriadDomainBindingDiagnostics {
   const isolationViolation = hasUserResearchBindingCollision(env);
@@ -82,6 +83,7 @@ export function getTriadDomainBindingDiagnostics(env: WorkerEnv): TriadDomainBin
     researchDbBound: Boolean(env.RESEARCH_DB) && !isolationViolation,
     neighborhoodDbBound: Boolean(env.NEIGHBORHOOD_DB) && !isolationViolation,
     isolationViolation,
-    irniDirectDbBindingPresent: false,
+    // Report physical binding presence independently of logical collision/readiness.
+    irniDirectDbBindingPresent: Boolean(env.NEIGHBORHOOD_DB),
   };
 }
