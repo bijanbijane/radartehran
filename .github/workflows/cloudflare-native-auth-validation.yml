@@ -6,7 +6,13 @@ on:
       - migration/rt-cloudflare-native-auth-triad-001
   pull_request:
     branches:
+      - main
       - rt-db-triad-production-connection-001
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
 
 permissions:
