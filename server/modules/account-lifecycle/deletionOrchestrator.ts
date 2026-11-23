@@ -60,6 +60,8 @@ export interface InitiateDeletionJobRequest {
   targetUid: string;
   targetEmail?: string;
   reason?: string;
+  /** Caller-reserved identifier used to install the USER_DB write barrier first. */
+  jobId?: string;
 }
 
 export interface ExecuteDeletionStepOptions {
@@ -141,8 +143,16 @@ export class AccountDeletionOrchestrator {
     }
 
     const nowIso = new Date().toISOString();
+    const requestedJobId = request.jobId?.trim();
+    if (requestedJobId && (requestedJobId.length > 160 || !requestedJobId.startsWith('deljob_'))) {
+      throw new AccountLifecycleError(
+        'INVALID_PAGINATION_OPTIONS',
+        'Caller-reserved account deletion job ID is invalid.',
+        400,
+      );
+    }
     const newJob: DurableAccountDeletionJob = {
-      jobId: `deljob_${request.targetUid}_${createJobIdSuffix()}`,
+      jobId: requestedJobId || `deljob_${request.targetUid}_${createJobIdSuffix()}`,
       targetUid: request.targetUid,
       targetEmail: request.targetEmail,
       requestedByUid: actor.uid,

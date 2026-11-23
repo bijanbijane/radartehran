@@ -6,6 +6,8 @@ import {
   assertUserDbDeletionWriteBlock,
   assertNoActiveUserDbLegalHold,
   ensureUserDbDeletionWriteBlock,
+  rebindUserDbDeletionWriteBlock,
+  releaseUserDbDeletionWriteBlockIfOwned,
 } from './d1UserLifecycleWriteBarrier.ts';
 
 function fakeUserDb(params: {
@@ -146,3 +148,45 @@ test('Stage D refuses deletion when USER_DB legal-hold status cannot be verified
   );
 });
 
+
+
+test('Stage D atomically rebinds its USER_DB reservation when another active lifecycle job won', async () => {
+  const { db, calls } = fakeUserDb({
+    row: { uid: 'uid_1', job_id: 'stage_job_2', released_at_iso: null },
+  });
+  await rebindUserDbDeletionWriteBlock({
+    userDb: db,
+    uid: 'uid_1',
+    reservedJobId: 'reservation_job_1',
+    authoritativeJobId: 'stage_job_2',
+  });
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].sql, /UPDATE account_write_blocks/);
+  assert.match(calls[0].sql, /WHERE uid = \?4 AND job_id = \?5 AND released_at_iso IS NULL/);
+  assert.deepEqual(calls[0].values.slice(0, 5), [
+    'stage_job_2',
+    'STAGE_D_ACCOUNT_DELETION_ACTIVE',
+    calls[0].values[2],
+    'uid_1',
+    'reservation_job_1',
+  ]);
+  assert.match(calls[1].sql, /SELECT uid, job_id, released_at_iso FROM account_write_blocks/);
+});
+
+test('Stage D only rolls back the exact USER_DB reservation owned by the failed initiation', async () => {
+  const releasedAt = '2026-11-24T00:00:00.000Z';
+  const { db, calls } = fakeUserDb({
+    row: { uid: 'uid_1', job_id: 'reservation_job_1', released_at_iso: releasedAt },
+  });
+  await releaseUserDbDeletionWriteBlockIfOwned({
+    userDb: db,
+    uid: 'uid_1',
+    reservedJobId: 'reservation_job_1',
+    nowIso: releasedAt,
+  });
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].sql, /UPDATE account_write_blocks/);
+  assert.match(calls[0].sql, /WHERE uid = \?2 AND job_id = \?3 AND released_at_iso IS NULL/);
+  assert.deepEqual(calls[0].values, [releasedAt, 'uid_1', 'reservation_job_1']);
+  assert.match(calls[1].sql, /SELECT uid, job_id, released_at_iso FROM account_write_blocks/);
+});

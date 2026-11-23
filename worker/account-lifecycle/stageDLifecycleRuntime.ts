@@ -15,6 +15,7 @@ import {
   assertStoreHealthy,
 } from '../../server/modules/account-lifecycle/storeContract.ts';
 import { isTerminalAccountDeletionState } from '../../server/modules/account-lifecycle/stateMachine.ts';
+import { createJobIdSuffix } from '../../server/modules/account-lifecycle/deletionWorkflowSupport.ts';
 import { D1AccountLifecycleStore } from './d1AccountLifecycleStore.ts';
 import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
 import { D1AccountDeletionBatchReceiptRecorder } from './d1BatchReceiptRecorder.ts';
@@ -33,7 +34,13 @@ import {
 import { validateQueueEnvelope, type RadarQueueEnvelope } from '../queues/queueAndCronProcessor.ts';
 import { countActiveD1MutationPermits } from './d1WriteAdmissionPermit.ts';
 import { countActiveMutationPermitsInD1 } from './d1MutationPermit.ts';
-import { assertNoActiveUserDbLegalHold, assertUserDbDeletionWriteBlock, ensureUserDbDeletionWriteBlock } from './d1UserLifecycleWriteBarrier.ts';
+import {
+  assertNoActiveUserDbLegalHold,
+  assertUserDbDeletionWriteBlock,
+  ensureUserDbDeletionWriteBlock,
+  rebindUserDbDeletionWriteBlock,
+  releaseUserDbDeletionWriteBlockIfOwned,
+} from './d1UserLifecycleWriteBarrier.ts';
 import type { D1DatabaseBinding } from '../db/types.ts';
 import type { WorkerEnv } from '../types.ts';
 
@@ -488,19 +495,69 @@ export async function initiateWorkerAccountDeletion(params: {
   assertStoreHealthy(await runtime.store.probeHealth());
   await assertNoActiveUserDbLegalHold({ userDb: params.env.USER_DB!, uid: params.actor.uid });
 
-  const created = await runtime.orchestrator.initiateAccountDeletionJob(params.actor, {
-    targetUid: params.actor.uid,
-    targetEmail: params.actor.email,
-    reason: 'USER_REQUESTED_ERASURE',
-  });
+  // USER_DB is the admission authority for the Express runtime. Install its
+  // durable block before creating the lifecycle job so a partial cross-D1
+  // failure cannot leave Express writes open while Stage D is already blocked.
+  const latestJob = await runtime.store.getLatestJobForUser(params.actor.uid);
+  const activeJob = latestJob && !isTerminalAccountDeletionState(latestJob.state)
+    ? latestJob
+    : null;
+  const reservedJobId = activeJob?.jobId ??
+    `deljob_${params.actor.uid}_${createJobIdSuffix()}`;
+  const reservedNewBarrier = !activeJob;
 
-  // The lifecycle DB job+block is atomic. Mirror that same job ID into USER_DB
-  // before publishing a queue message so legacy user-data writes are blocked too.
   await ensureUserDbDeletionWriteBlock({
     userDb: params.env.USER_DB!,
-    uid: created.job.targetUid,
-    jobId: created.job.jobId,
+    uid: params.actor.uid,
+    jobId: reservedJobId,
   });
+
+  let created: Awaited<ReturnType<typeof runtime.orchestrator.initiateAccountDeletionJob>>;
+  try {
+    created = await runtime.orchestrator.initiateAccountDeletionJob(params.actor, {
+      targetUid: params.actor.uid,
+      targetEmail: params.actor.email,
+      reason: 'USER_REQUESTED_ERASURE',
+      jobId: reservedJobId,
+    });
+  } catch (error) {
+    if (reservedNewBarrier) {
+      // The D1 batch may have committed even if its response was lost. Never
+      // release the reservation until the lifecycle store proves no active
+      // job owns it. If a concurrent active job won, rebind to that job.
+      try {
+        const latestAfterFailure = await runtime.store.getLatestJobForUser(params.actor.uid);
+        if (latestAfterFailure && !isTerminalAccountDeletionState(latestAfterFailure.state)) {
+          if (latestAfterFailure.jobId !== reservedJobId) {
+            await rebindUserDbDeletionWriteBlock({
+              userDb: params.env.USER_DB!,
+              uid: params.actor.uid,
+              reservedJobId,
+              authoritativeJobId: latestAfterFailure.jobId,
+            });
+          }
+        } else {
+          await releaseUserDbDeletionWriteBlockIfOwned({
+            userDb: params.env.USER_DB!,
+            uid: params.actor.uid,
+            reservedJobId,
+          });
+        }
+      } catch {
+        // Preserve the USER_DB block on uncertainty; fail closed.
+      }
+    }
+    throw error;
+  }
+
+  if (created.job.jobId !== reservedJobId) {
+    await rebindUserDbDeletionWriteBlock({
+      userDb: params.env.USER_DB!,
+      uid: created.job.targetUid,
+      reservedJobId,
+      authoritativeJobId: created.job.jobId,
+    });
+  }
 
   const idempotencyKey = await enqueueLifecycleStep({
     dispatch: runtime.dispatch,

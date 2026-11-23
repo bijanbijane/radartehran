@@ -95,3 +95,97 @@ export async function assertUserDbDeletionWriteBlock(params: {
     );
   }
 }
+
+
+/**
+ * Rebinds a USER_DB reservation to the authoritative Stage D job ID when a
+ * concurrent pre-existing Stage D job wins createOrGetActiveJob().
+ * The compare-and-set predicate prevents replacing another account's block.
+ */
+export async function rebindUserDbDeletionWriteBlock(params: {
+  userDb: D1Database;
+  uid: string;
+  reservedJobId: string;
+  authoritativeJobId: string;
+  nowIso?: string;
+}): Promise<void> {
+  if (params.reservedJobId === params.authoritativeJobId) {
+    await assertUserDbDeletionWriteBlock({
+      userDb: params.userDb,
+      uid: params.uid,
+      jobId: params.authoritativeJobId,
+    });
+    return;
+  }
+  const nowIso = params.nowIso ?? new Date().toISOString();
+  const result = await params.userDb.prepare(
+    `UPDATE account_write_blocks
+     SET job_id = ?1, block_reason = ?2, blocked_at_iso = ?3
+     WHERE uid = ?4 AND job_id = ?5 AND released_at_iso IS NULL`,
+  ).bind(
+    params.authoritativeJobId,
+    'STAGE_D_ACCOUNT_DELETION_ACTIVE',
+    nowIso,
+    params.uid,
+    params.reservedJobId,
+  ).run();
+  if (!result.success) {
+    throw new AccountLifecycleStoreError(
+      'STORE_UNAVAILABLE',
+      'USER_DB deletion barrier could not be rebound to the authoritative lifecycle job.',
+      503,
+    );
+  }
+  if ((result.meta?.changes ?? 0) !== 1) {
+    const row = await params.userDb.prepare(
+      'SELECT uid, job_id, released_at_iso FROM account_write_blocks WHERE uid = ?1 LIMIT 1',
+    ).bind(params.uid).first<{ uid: string; job_id: string; released_at_iso: string | null }>();
+    if (!row || row.job_id !== params.authoritativeJobId || row.released_at_iso != null) {
+      throw new AccountLifecycleStoreError(
+        'WRITE_BLOCK_UNVERIFIED',
+        'USER_DB deletion barrier reservation changed before it could be rebound.',
+        503,
+      );
+    }
+  }
+  await assertUserDbDeletionWriteBlock({
+    userDb: params.userDb,
+    uid: params.uid,
+    jobId: params.authoritativeJobId,
+  });
+}
+
+/**
+ * Rolls back only the exact pre-job reservation owned by the failed request.
+ * If the row has been rebound or replaced, this function never releases it.
+ */
+export async function releaseUserDbDeletionWriteBlockIfOwned(params: {
+  userDb: D1Database;
+  uid: string;
+  reservedJobId: string;
+  nowIso?: string;
+}): Promise<void> {
+  const nowIso = params.nowIso ?? new Date().toISOString();
+  const result = await params.userDb.prepare(
+    `UPDATE account_write_blocks
+     SET released_at_iso = ?1
+     WHERE uid = ?2 AND job_id = ?3 AND released_at_iso IS NULL`,
+  ).bind(nowIso, params.uid, params.reservedJobId).run();
+  if (!result.success) {
+    throw new AccountLifecycleStoreError(
+      'STORE_UNAVAILABLE',
+      'Uncommitted USER_DB deletion barrier reservation could not be rolled back.',
+      503,
+    );
+  }
+  const row = await params.userDb.prepare(
+    'SELECT uid, job_id, released_at_iso FROM account_write_blocks WHERE uid = ?1 LIMIT 1',
+  ).bind(params.uid).first<{ uid: string; job_id: string; released_at_iso: string | null }>();
+  if (row && row.job_id === params.reservedJobId && row.released_at_iso == null) {
+    throw new AccountLifecycleStoreError(
+      'WRITE_BLOCK_UNVERIFIED',
+      'Uncommitted USER_DB deletion barrier reservation remains active after rollback.',
+      503,
+    );
+  }
+}
