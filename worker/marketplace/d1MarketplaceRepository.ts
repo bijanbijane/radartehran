@@ -19,19 +19,19 @@ function parseJsonRecord(value: unknown): Record<string, unknown> | null {
   }
 }
 
-function ownerUidVisible(ownerUid: unknown, query: MarketStateQuery): string {
+export function ownerUidVisible(ownerUid: unknown, query: MarketStateQuery): string {
   const uid = String(ownerUid || '');
   return uid && (query.includeAdminRecords || (query.uid && query.uid === uid)) ? uid : '';
 }
 
-function maskPhoneForPublic(value: unknown): string {
+export function maskPhoneForPublic(value: unknown): string {
   const raw = String(value || '');
   const digits = raw.replace(/\D/g, '');
   if (digits.length < 7) return '';
   return `+98***${digits.slice(-4)}`;
 }
 
-function sanitizeSponsorForPublic(value: unknown, includeAdminRecords: boolean): Record<string, unknown> | null {
+export function sanitizeSponsorForPublic(value: unknown, includeAdminRecords: boolean): Record<string, unknown> | null {
   const sponsor = typeof value === 'string' ? parseJsonRecord(value) : value as Record<string, unknown> | null;
   if (!sponsor || typeof sponsor !== 'object' || Array.isArray(sponsor)) return null;
   if (includeAdminRecords) return sponsor;
