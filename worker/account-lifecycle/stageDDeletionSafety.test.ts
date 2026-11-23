@@ -340,6 +340,70 @@ test('D1 media metadata deletion fails closed when its update fails', async () =
 });
 
 
+test('USER_PROFILE pagination preserves the final upload-session page and fills only the remaining request capacity', async () => {
+  const { db, calls } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM upload_sessions': [
+        { session_id: 'session_1', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_000 },
+        { session_id: 'session_2', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_001 },
+      ],
+      'FROM account_data_requests': [
+        { request_id: 'request_1', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:00.000Z' },
+        { request_id: 'request_2', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:01.000Z' },
+        { request_id: 'request_3', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:02.000Z' },
+      ],
+    },
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+
+  const page = await adapter.fetchOwnedRecordsPage({ targetUid: 'uid_1', cursor: null, pageSize: 5 });
+  assert.deepEqual(
+    page.items.map((item) => item.recordId),
+    ['session_1', 'session_2', 'request_1', 'request_2', 'request_3'],
+  );
+  assert.equal(page.hasMore, false);
+  assert.equal(page.nextCursor, null);
+
+  const requestRead = calls.find((call) => call.method === 'all' && call.sql.includes('FROM account_data_requests'));
+  assert.ok(requestRead);
+  assert.deepEqual(requestRead.values, ['uid_1', '', 3]);
+});
+
+test('USER_PROFILE deletion keeps its combined session and request batch within the caller capacity', async () => {
+  const { db, calls } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM upload_sessions': [
+        { session_id: 'session_1', owner_uid: 'uid_1', created_at_ms: 1_700_000_000_000 },
+      ],
+      'FROM account_data_requests': [
+        { request_id: 'request_1', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:00.000Z' },
+        { request_id: 'request_2', target_uid: 'uid_1', requested_at_iso: '2026-11-23T00:00:01.000Z' },
+      ],
+    },
+  });
+  const adapter = createWorkerD1DomainAdapters(db).find((candidate) => candidate.source === 'USER_PROFILE');
+  assert.ok(adapter);
+
+  const batch = await adapter.disposeOwnedRecordsBatch({
+    targetUid: 'uid_1',
+    cursor: null,
+    batchSize: 3,
+    jobId: 'job_1',
+  });
+  assert.deepEqual(
+    batch.receipts.map((receipt) => receipt.recordId),
+    ['session_1', 'request_1', 'request_2'],
+  );
+  assert.equal(batch.receipts.length, 3);
+  assert.equal(batch.hasMore, false);
+  assert.equal(batch.nextCursor, null);
+  assert.equal(calls.filter((call) => call.method === 'run' && call.sql.startsWith('DELETE FROM')).length, 4);
+  const requestRead = calls.find((call) => call.method === 'all' && call.sql.includes('FROM account_data_requests'));
+  assert.ok(requestRead);
+  assert.deepEqual(requestRead.values, ['uid_1', '', 2]);
+});
+
 test('D1 dispatch refuses a persisted lease with a corrupt fencing revision before attempting takeover', async () => {
   const { db, calls } = fakeD1({
     rowsBySqlIncludes: {
