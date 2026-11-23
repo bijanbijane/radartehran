@@ -9,7 +9,7 @@ export interface AppModalsPortalProps { ui: AppUiState; onSwitchCity?: (city: Ci
   mapTileStyle?: MapTileServerId; setMapTileStyle?: (style: MapTileServerId) => void; }
 export function AppModalsPortal(p: AppModalsPortalProps) { const { ui } = p; const [areaUnit] = useAreaUnit(); const [intlCurrency] = useIntlCurrency(); const [locale] = useRadarLocale(); const thresholdAlerts = useBuyerPriceThresholdAlerts(p.evaluatedNeighborhoods); const effectiveBuyBudget = ui.useLoanBooster ? p.buyTotalBudget + 1200 : p.buyTotalBudget; const unitMaxAffordable = convertPricePerSqmToUnit(p.maxAffordablePerSqm, areaUnit); const portalIntlSummary = `${formatAreaUnitLabel(areaUnit)} | ${formatMillionTomanAsIntlCurrency(unitMaxAffordable, intlCurrency, locale)}`; const fetchSystemHealth = async () => { ui.setLoadingSystemHealth(true);
     try { if (!p.isVerifiedAdmin || !p.currentUser || !p.currentUser.emailVerified) { ui.setSystemHealth(null); return; }
-      const idToken = await p.currentUser.getIdToken(); const res = await fetch('/api/system-health', { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' }); if (!res.ok) { ui.setSystemHealth(null); return; }
+      const res = await fetch('/api/system-health', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' }); if (!res.ok) { ui.setSystemHealth(null); return; }
       const payload: unknown = await res.json(); if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !('status' in payload) || payload.status !== 'ok') { ui.setSystemHealth(null); return; }
       ui.setSystemHealth(payload as SystemHealthData); } catch { ui.setSystemHealth(null);
     } finally { ui.setLoadingSystemHealth(false); } };
