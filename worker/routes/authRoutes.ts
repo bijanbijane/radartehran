@@ -1,5 +1,5 @@
 /**
- * Cloudflare-native authentication endpoints: Google OIDC, Twilio Verify SMS, D1 identities and sessions.
+ * Cloudflare-native authentication endpoints: Google OIDC, Kavenegar SMS OTP, D1 identities and sessions.
  * No Firebase SDK, Firebase ID token, Firestore, or App Check dependency is used here.
  */
 import { authenticateWorkerSession, buildClearedSessionCookie, buildSessionCookie, sha256Hex } from '../auth/sessionAuth';
@@ -58,7 +58,7 @@ function normalizePhone(raw: unknown): string | null {
     : /^989\d{9}$/.test(compact)
       ? `+${compact}`
       : compact;
-  return /^\+[1-9]\d{7,14}$/.test(normalized) ? normalized : null;
+  return /^\+989\d{9}$/.test(normalized) ? normalized : null;
 }
 
 async function createOrResolveIdentity(
