@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { verifyGoogleIdToken } from '../worker/routes/authRoutes';
+import { normalizePhone, verifyGoogleIdToken } from '../worker/routes/authRoutes';
 
 const CLIENT_ID = 'radar-web-client.apps.googleusercontent.com';
 const NONCE = 'test-nonce-bound-to-oauth-state';
@@ -9,6 +9,20 @@ const NONCE = 'test-nonce-bound-to-oauth-state';
 function base64Url(value: string | Buffer): string {
   return Buffer.from(value).toString('base64url');
 }
+
+describe('Cloudflare phone-number normalization', () => {
+  it('accepts Persian and Arabic numerals and normalizes them to E.164', () => {
+    assert.equal(normalizePhone('۰۹۱۲۱۲۳۴۵۶۷'), '+989121234567');
+    assert.equal(normalizePhone('٠٩١٢١٢٣٤٥٦٧'), '+989121234567');
+    assert.equal(normalizePhone('+98 912 123 4567'), '+989121234567');
+  });
+
+  it('rejects malformed or non-Iranian phone numbers', () => {
+    assert.equal(normalizePhone('0912123456'), null);
+    assert.equal(normalizePhone('+12025550123'), null);
+    assert.equal(normalizePhone('not-a-phone'), null);
+  });
+});
 
 describe('Google OIDC ID-token verification', () => {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
