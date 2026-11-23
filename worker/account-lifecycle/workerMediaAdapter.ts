@@ -76,7 +76,9 @@ export function createWorkerMediaDeletionAdapter(params: {
     async deleteOwnedMediaObject({ targetUid, objectId }) {
       const row = await d1FirstRow(
         db,
-        `SELECT object_id, owner_uid, storage_key, bucket_name FROM media_objects WHERE object_id = ?1`,
+        `SELECT object_id, owner_uid, storage_key, bucket_name, legal_hold, retention_until,
+           EXISTS (SELECT 1 FROM legal_holds WHERE resource_id = ?1 AND active = 1) AS has_active_legal_hold
+           FROM media_objects WHERE object_id = ?1`,
         objectId,
       );
       if (!row) {
@@ -90,6 +92,29 @@ export function createWorkerMediaDeletionAdapter(params: {
       if (rowBucket !== bucketName) {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'BUCKET_OWNERSHIP_MISMATCH' };
       }
+
+      // Legal holds and retention are authoritative in USER_DB, not the Stage D
+      // orchestration database. Missing or malformed metadata is fail-closed.
+      if (Number(row.legal_hold) !== 0 || !Number.isFinite(Number(row.legal_hold))) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_LEGAL_HOLD' };
+      }
+      if (Number(row.has_active_legal_hold) !== 0 || !Number.isFinite(Number(row.has_active_legal_hold))) {
+        return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_LEGAL_HOLD' };
+      }
+      const retentionUntil = row.retention_until;
+      if (retentionUntil !== null) {
+        if (typeof retentionUntil !== 'string' || !retentionUntil.trim()) {
+          return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_RETENTION_METADATA_INVALID' };
+        }
+        const retentionUntilMs = Date.parse(retentionUntil);
+        if (!Number.isFinite(retentionUntilMs)) {
+          return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_RETENTION_METADATA_INVALID' };
+        }
+        if (retentionUntilMs > Date.now()) {
+          return { objectId, status: 'PENDING_RETRY', failureReason: 'MEDIA_OBJECT_RETENTION_LOCK' };
+        }
+      }
+
       if (!mediaBucket) {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'R2_MEDIA_BUCKET_UNAVAILABLE' };
       }
@@ -101,9 +126,17 @@ export function createWorkerMediaDeletionAdapter(params: {
       const nowIso = new Date().toISOString();
       const updated = await db
         .prepare(
-          `UPDATE media_objects SET deletion_state = 'DELETED', lifecycle_state = 'PURGED', updated_at_iso = ?1, deleted_at_iso = ?1 WHERE object_id = ?2 AND owner_uid = ?3`,
+          `UPDATE media_objects
+           SET deletion_state = 'DELETED', lifecycle_state = 'PURGED',
+               updated_at_iso = ?1, deleted_at_iso = ?1
+           WHERE object_id = ?2 AND owner_uid = ?3 AND legal_hold = 0
+             AND (retention_until IS NULL OR
+               (julianday(retention_until) IS NOT NULL AND julianday(retention_until) <= julianday(?4)))
+             AND NOT EXISTS (
+               SELECT 1 FROM legal_holds WHERE resource_id = ?2 AND active = 1
+             )`,
         )
-        .bind(nowIso, objectId, targetUid)
+        .bind(nowIso, objectId, targetUid, nowIso)
         .run();
       if (!updated.success || (updated.meta?.changes ?? 0) !== 1) {
         return { objectId, status: 'PENDING_RETRY', failureReason: 'D1_MEDIA_METADATA_UPDATE_FAILED' };

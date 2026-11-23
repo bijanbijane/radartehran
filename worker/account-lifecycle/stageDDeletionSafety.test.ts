@@ -195,6 +195,9 @@ test('media adapter uses correctly ordered D1 metadata placeholders', async () =
       owner_uid: 'uid_1',
       storage_key: 'objects/media_1',
       bucket_name: 'radar-media',
+      legal_hold: 0,
+      retention_until: null,
+      has_active_legal_hold: 0,
     }],
   });
   const adapter = createWorkerMediaDeletionAdapter({
@@ -212,9 +215,126 @@ test('media adapter uses correctly ordered D1 metadata placeholders', async () =
   assert.equal(result.status, 'DELETED');
   const update = calls.find((call) => call.method === 'run' && call.sql.includes('UPDATE media_objects'));
   assert.ok(update);
-  assert.equal(update.values.length, 3);
+  assert.equal(update.values.length, 4);
   assert.equal(update.values[1], 'media_1');
   assert.equal(update.values[2], 'uid_1');
+  assert.equal(update.values[3], update.values[0]);
+});
+
+test('media adapter never removes an object-level legal hold from R2', async () => {
+  const { db } = fakeD1({
+    rows: [{
+      object_id: 'media_held',
+      owner_uid: 'uid_1',
+      storage_key: 'objects/media_held',
+      bucket_name: 'radar-media',
+      legal_hold: 1,
+      retention_until: null,
+      has_active_legal_hold: 0,
+    }],
+  });
+  let r2Deletes = 0;
+  const adapter = createWorkerMediaDeletionAdapter({
+    db,
+    authoritativeUserDataDb: db,
+    mediaBucket: { async delete() { r2Deletes += 1; } } as unknown as WorkerEnv['MEDIA_BUCKET'],
+    bucketName: 'radar-media',
+  });
+  const result = await adapter.deleteOwnedMediaObject({
+    actor: { uid: 'uid_1', isAdmin: true, freshAuthVerified: true },
+    targetUid: 'uid_1',
+    objectId: 'media_held',
+    jobId: 'job_held',
+  });
+  assert.equal(result.status, 'PENDING_RETRY');
+  assert.equal(r2Deletes, 0);
+});
+
+test('media adapter never removes an object protected by an active legal_holds row', async () => {
+  const { db } = fakeD1({
+    rows: [{
+      object_id: 'media_held',
+      owner_uid: 'uid_1',
+      storage_key: 'objects/media_held',
+      bucket_name: 'radar-media',
+      legal_hold: 0,
+      retention_until: null,
+      has_active_legal_hold: 1,
+    }],
+  });
+  let r2Deletes = 0;
+  const adapter = createWorkerMediaDeletionAdapter({
+    db,
+    authoritativeUserDataDb: db,
+    mediaBucket: { async delete() { r2Deletes += 1; } } as unknown as WorkerEnv['MEDIA_BUCKET'],
+    bucketName: 'radar-media',
+  });
+  const result = await adapter.deleteOwnedMediaObject({
+    actor: { uid: 'uid_1', isAdmin: true, freshAuthVerified: true },
+    targetUid: 'uid_1',
+    objectId: 'media_held',
+    jobId: 'job_held',
+  });
+  assert.equal(result.status, 'PENDING_RETRY');
+  assert.equal(r2Deletes, 0);
+});
+
+test('media adapter never removes an object before its retention window expires', async () => {
+  const { db } = fakeD1({
+    rows: [{
+      object_id: 'media_retained',
+      owner_uid: 'uid_1',
+      storage_key: 'objects/media_retained',
+      bucket_name: 'radar-media',
+      legal_hold: 0,
+      retention_until: '2999-01-01T00:00:00.000Z',
+      has_active_legal_hold: 0,
+    }],
+  });
+  let r2Deletes = 0;
+  const adapter = createWorkerMediaDeletionAdapter({
+    db,
+    authoritativeUserDataDb: db,
+    mediaBucket: { async delete() { r2Deletes += 1; } } as unknown as WorkerEnv['MEDIA_BUCKET'],
+    bucketName: 'radar-media',
+  });
+  const result = await adapter.deleteOwnedMediaObject({
+    actor: { uid: 'uid_1', isAdmin: true, freshAuthVerified: true },
+    targetUid: 'uid_1',
+    objectId: 'media_retained',
+    jobId: 'job_retained',
+  });
+  assert.equal(result.status, 'PENDING_RETRY');
+  assert.equal(r2Deletes, 0);
+});
+
+test('media adapter fails closed when retention metadata is malformed', async () => {
+  const { db } = fakeD1({
+    rows: [{
+      object_id: 'media_invalid_retention',
+      owner_uid: 'uid_1',
+      storage_key: 'objects/media_invalid_retention',
+      bucket_name: 'radar-media',
+      legal_hold: 0,
+      retention_until: 'not-a-date',
+      has_active_legal_hold: 0,
+    }],
+  });
+  let r2Deletes = 0;
+  const adapter = createWorkerMediaDeletionAdapter({
+    db,
+    authoritativeUserDataDb: db,
+    mediaBucket: { async delete() { r2Deletes += 1; } } as unknown as WorkerEnv['MEDIA_BUCKET'],
+    bucketName: 'radar-media',
+  });
+  const result = await adapter.deleteOwnedMediaObject({
+    actor: { uid: 'uid_1', isAdmin: true, freshAuthVerified: true },
+    targetUid: 'uid_1',
+    objectId: 'media_invalid_retention',
+    jobId: 'job_retained',
+  });
+  assert.equal(result.status, 'PENDING_RETRY');
+  assert.equal(r2Deletes, 0);
 });
 
 test('media adapter leaves metadata pending when the D1 transition fails', async () => {
