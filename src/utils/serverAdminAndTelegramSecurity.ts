@@ -74,7 +74,7 @@ export async function verifyAuthenticatedUserHeader(
   } catch (verifyErr: unknown) {
     const code = typeof (verifyErr as { code?: unknown })?.code === 'string' ? (verifyErr as { code: string }).code : '';
     const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr || '');
-    if (code === 'auth/id-token-revoked') return { authorized: false, authenticated: false, statusCode: 401, reason: 'TOKEN_REVOKED' };
+    if (code === 'auth/id-token-revoked') return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_OR_REVOKED_FIREBASE_TOKEN' };
     if (code === 'auth/user-disabled') return { authorized: false, authenticated: false, statusCode: 401, reason: 'USER_ACCOUNT_DISABLED' };
     if (code === 'auth/id-token-expired' || code === 'auth/argument-error' || code === 'auth/invalid-id-token') {
       return { authorized: false, authenticated: false, statusCode: 401, reason: 'INVALID_OR_REVOKED_FIREBASE_TOKEN' };
