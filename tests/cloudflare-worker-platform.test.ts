@@ -114,6 +114,25 @@ function createRealSqliteD1Database(): D1Database {
   };
 }
 
+async function applyUserD1MigrationsForTest(db: D1Database): Promise<void> {
+  await db.exec(
+    `CREATE TABLE IF NOT EXISTS d1_migrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    );`,
+  );
+  const migrationsDir = path.join(process.cwd(), 'migrations/user-d1');
+  const files = fs.readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort();
+  for (const file of files) {
+    await db.exec(fs.readFileSync(path.join(migrationsDir, file), 'utf-8'));
+    await db
+      .prepare('INSERT INTO d1_migrations (name, applied_at) VALUES (?1, ?2)')
+      .bind(file, new Date().toISOString())
+      .run();
+  }
+}
+
 function toBase64Url(bytes: Uint8Array | string): string {
   const buf = typeof bytes === 'string' ? Buffer.from(bytes, 'utf-8') : Buffer.from(bytes);
   return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
@@ -570,12 +589,13 @@ async function runSuite(): Promise<void> {
     assert.equal(postDecision.reasonCode, 'MUTATION_MISSING_IDEMPOTENCY_KEY');
 
     const sqliteDb = createRealSqliteD1Database();
-    await runD1MigrationsIdempotently(sqliteDb);
+    await applyUserD1MigrationsForTest(sqliteDb);
     const env: WorkerEnv = {
       WORKER_ENV: 'staging',
       FIREBASE_PROJECT_ID: 'gen-lang-client-0713157837',
       ADMIN_EMAIL: 'radio837isf@gmail.com',
       DB: sqliteDb,
+      USER_DB: sqliteDb,
       MEDIA_BUCKET: createLocalR2BucketSimulator(),
       RADAR_KV: createLocalKvNamespaceSimulator(),
     };
@@ -736,8 +756,8 @@ async function runSuite(): Promise<void> {
     assert.equal(diagJson.operationalVisibility.d1Status, 'bound');
     assert.equal(diagJson.operationalVisibility.r2Status, 'bound');
     assert.equal(diagJson.operationalVisibility.migrationStatus.ledgerTable, 'd1_migrations');
-    assert.equal(diagJson.operationalVisibility.migrationStatus.appliedCount, 3);
-    assert.equal(diagJson.operationalVisibility.migrationStatus.expectedCount, 3);
+    assert.equal(diagJson.operationalVisibility.migrationStatus.appliedCount, 6);
+    assert.equal(diagJson.operationalVisibility.migrationStatus.expectedCount, 6);
     assert.equal(diagJson.operationalVisibility.migrationStatus.allCanonicalMigrationsApplied, true);
     assert.equal(diagJson.operationalVisibility.migrationStatus.migrations[0].fileName, '0001_core_projections_and_watermarks.sql');
     assert.equal(diagJson.operationalVisibility.migrationStatus.migrations[1].fileName, '0002_upload_sessions_legal_holds_and_rate_limits.sql');
@@ -846,7 +866,7 @@ async function runSuite(): Promise<void> {
     const unmigratedDb = createRealSqliteD1Database();
     const unmigratedReadinessRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
-      { ...env, DB: unmigratedDb },
+      { ...env, DB: unmigratedDb, USER_DB: unmigratedDb },
       execCtx,
     );
     assert.equal(unmigratedReadinessRes.status, 503);
@@ -858,7 +878,7 @@ async function runSuite(): Promise<void> {
     assert.equal(unmigratedJson.ok, false);
     assert.equal(unmigratedJson.code, 'REQUIRED_D1_MIGRATION_PENDING');
     assert.equal(unmigratedJson.migrationReadiness.allCanonicalMigrationsApplied, false);
-    assert.equal(unmigratedJson.migrationReadiness.pendingMigrations.length, 3);
+    assert.equal(unmigratedJson.migrationReadiness.pendingMigrations.length, 6);
 
     const migratedReadinessRes = await workerEntrypoint.fetch(
       new Request('https://radartehran-staging.bijanbijane-1.workers.dev/api/health/readiness'),
