@@ -15,7 +15,6 @@ import {
   verifyQueuedResearchSubjectConsent,
   writePseudonymizedEventsToResearchDb,
 } from '../research/researchService';
-import { isObjectUnderLegalHold } from '../storage/r2StorageAdapter';
 import { isValidLifecycleReceiptSecret } from '../research/pseudonymizer';
 import type { WorkerEnv } from '../types';
 import {
@@ -167,21 +166,44 @@ async function handleExpiredChunkUploadSessionCleanup(
   const cutoffMs = nowMs - ttlMs;
   const nowIso = new Date(nowMs).toISOString();
 
+  // Bound every scheduled cleanup invocation. An unbounded SELECT followed by two
+  // DELETEs per row was an avoidable D1 read/write-unit amplifier under backlog.
+  const requestedBatchSize =
+    typeof envelope.payload?.maxSessions === 'number' && Number.isInteger(envelope.payload.maxSessions)
+      ? envelope.payload.maxSessions
+      : 50;
+  const batchSize = Math.max(1, Math.min(100, requestedBatchSize));
   const expiredRes = await userDb
-    .prepare('SELECT session_id FROM upload_sessions WHERE created_at_ms < ?1')
-    .bind(cutoffMs)
+    .prepare(
+      'SELECT session_id FROM upload_sessions WHERE created_at_ms < ?1 ORDER BY created_at_ms ASC LIMIT ?2',
+    )
+    .bind(cutoffMs, batchSize)
     .all<{ session_id: string }>();
 
   const expiredIds = (expiredRes.results ?? []).map((r) => r.session_id);
-  for (const sid of expiredIds) {
-    await userDb.prepare('DELETE FROM upload_session_chunks WHERE session_id = ?1').bind(sid).run();
-    await userDb.prepare('DELETE FROM upload_sessions WHERE session_id = ?1').bind(sid).run();
-  }
-
-  await userDb
+  const watermarkStatement = userDb
     .prepare('INSERT OR REPLACE INTO sync_watermarks (watermark_key, watermark_value, updated_at_iso) VALUES (?1, ?2, ?3)')
-    .bind('expired_chunk_upload_session_cleanup:last_run', String(expiredIds.length), nowIso)
-    .run();
+    .bind('expired_chunk_upload_session_cleanup:last_run', String(expiredIds.length), nowIso);
+
+  if (expiredIds.length > 0) {
+    const placeholders = expiredIds.map((_, index) => `?${index + 1}`).join(', ');
+    const deleteChunks = userDb
+      .prepare(`DELETE FROM upload_session_chunks WHERE session_id IN (${placeholders})`)
+      .bind(...expiredIds);
+    const deleteSessions = userDb
+      .prepare(`DELETE FROM upload_sessions WHERE session_id IN (${placeholders})`)
+      .bind(...expiredIds);
+    const results = await userDb.batch([deleteChunks, deleteSessions, watermarkStatement]);
+    if (results.some((result) => result.success === false)) {
+      throw new QueueJobExecutionError(
+        'UPLOAD_SESSION_CLEANUP_BATCH_FAILED',
+        'D1 did not confirm every statement in the bounded upload-session cleanup batch.',
+        true,
+      );
+    }
+  } else {
+    await watermarkStatement.run();
+  }
 
   return {
     jobType: 'expired_chunk_upload_session_cleanup',
@@ -218,10 +240,18 @@ async function handleR2OrphanMediaReconcile(
   let deletedCount = 0;
   let skippedLegalHoldCount = 0;
 
-  // 1. Reconcile D1 media_objects stuck in PENDING_UPLOAD / FAILED_UPLOAD / PENDING_PHYSICAL_DELETE
+  // 1. Reconcile at most 25 stale D1 media records per invocation. Resolve legal holds
+  // with one indexed LEFT JOIN rather than two D1 lookups per object.
   const staleObjects = await userDb
     .prepare(
-      `SELECT * FROM media_objects WHERE lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE') AND updated_at_iso <= ?1`,
+      `SELECT m.object_id, m.storage_key, m.legal_hold, m.retention_until,
+              h.active AS active_legal_hold
+       FROM media_objects AS m
+       LEFT JOIN legal_holds AS h ON h.resource_id = m.object_id AND h.active = 1
+       WHERE m.lifecycle_state IN ('PENDING_UPLOAD', 'FAILED_UPLOAD', 'PENDING_DELETE')
+         AND m.updated_at_iso <= ?1
+       ORDER BY m.updated_at_iso ASC
+       LIMIT 25`,
     )
     .bind(cutoffIso)
     .all<{
@@ -229,45 +259,101 @@ async function handleR2OrphanMediaReconcile(
       storage_key: string;
       legal_hold: number;
       retention_until: string | null;
+      active_legal_hold: number | null;
     }>();
 
-  for (const obj of staleObjects.results ?? []) {
-    const hold = await isObjectUnderLegalHold(userDb, obj.object_id);
+  const eligibleStaleObjects = (staleObjects.results ?? []).filter((obj) => {
     const hasRetentionLock = Boolean(obj.retention_until && Date.parse(obj.retention_until) > nowMs);
-    if (hold.held || obj.legal_hold === 1 || hasRetentionLock) {
-      skippedLegalHoldCount += 1;
-      continue;
+    const held = Number(obj.active_legal_hold ?? 0) === 1 || Number(obj.legal_hold) === 1 || hasRetentionLock;
+    if (held) skippedLegalHoldCount += 1;
+    return !held;
+  });
+
+  if (eligibleStaleObjects.length > 0) {
+    // R2 deletion is idempotent. If the following D1 batch fails, the next delivery
+    // safely repeats deletion and can still commit the canonical metadata transition.
+    await env.MEDIA_BUCKET.delete(eligibleStaleObjects.map((obj) => obj.storage_key));
+    const metadataUpdates = eligibleStaleObjects.map((obj) =>
+      userDb
+        .prepare(
+          'UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3, deleted_at_iso = ?4 WHERE object_id = ?5',
+        )
+        .bind('DELETED', 'PHYSICALLY_DELETED', nowIso, nowIso, obj.object_id),
+    );
+    const updateResults = await userDb.batch(metadataUpdates);
+    if (updateResults.some((result) => result.success === false)) {
+      throw new QueueJobExecutionError(
+        'R2_RECONCILE_METADATA_BATCH_FAILED',
+        'R2 objects were removed but D1 did not confirm every metadata transition.',
+        true,
+      );
     }
-    await env.MEDIA_BUCKET.delete(obj.storage_key);
-    await userDb
-      .prepare(
-        'UPDATE media_objects SET lifecycle_state = ?1, deletion_state = ?2, updated_at_iso = ?3, deleted_at_iso = ?4 WHERE object_id = ?5',
-      )
-      .bind('DELETED', 'PHYSICALLY_DELETED', nowIso, nowIso, obj.object_id)
-      .run();
-    deletedCount += 1;
+    deletedCount += eligibleStaleObjects.length;
   }
 
-  // 2. Scan R2 objects under listings/ not tracked as active in D1
-  const knownActiveRes = await userDb
-    .prepare('SELECT storage_key FROM media_objects WHERE deletion_state != ?1')
-    .bind('PHYSICALLY_DELETED')
-    .all<{ storage_key: string }>();
-  const knownKeys = new Set((knownActiveRes.results ?? []).map((r) => r.storage_key));
-
-  const listed = await env.MEDIA_BUCKET.list({ prefix: 'listings/', limit: 100 });
-  for (const r2Obj of listed.objects) {
-    if (knownKeys.has(r2Obj.key)) continue;
+  // 2. Inspect only the bounded R2 page. The previous full-table scan of every active
+  // storage_key plus per-object legal-hold queries scaled D1 reads with total history.
+  const listed = await env.MEDIA_BUCKET.list({ prefix: 'listings/', limit: 40 });
+  const staleR2Objects = listed.objects.filter((r2Obj) => {
     const uploadedMs = r2Obj.uploaded instanceof Date ? r2Obj.uploaded.getTime() : 0;
-    if (nowMs - uploadedMs < staleThresholdMs) continue;
-    const maybeObjectId = r2Obj.customMetadata?.objectId || r2Obj.key;
-    const hold = await isObjectUnderLegalHold(userDb, maybeObjectId);
-    if (hold.held) {
-      skippedLegalHoldCount += 1;
-      continue;
+    return nowMs - uploadedMs >= staleThresholdMs;
+  });
+
+  if (staleR2Objects.length > 0) {
+    // Keep total bound parameters <= 80 (40 keys + 40 object IDs).
+    const storageKeys = staleR2Objects.map((item) => item.key);
+    const objectIds = staleR2Objects.map((item) => item.customMetadata?.objectId || item.key);
+    const storagePlaceholders = storageKeys.map((_, index) => `?${index + 1}`).join(', ');
+    const objectPlaceholders = objectIds.map((_, index) => `?${storageKeys.length + index + 1}`).join(', ');
+    const trackedRows = await userDb
+      .prepare(
+        `SELECT object_id, storage_key, deletion_state, legal_hold, retention_until
+         FROM media_objects
+         WHERE storage_key IN (${storagePlaceholders}) OR object_id IN (${objectPlaceholders})`,
+      )
+      .bind(...storageKeys, ...objectIds)
+      .all<{
+        object_id: string;
+        storage_key: string;
+        deletion_state: string;
+        legal_hold: number;
+        retention_until: string | null;
+      }>();
+    const legalHoldRows = await userDb
+      .prepare(`SELECT resource_id FROM legal_holds WHERE active = 1 AND resource_id IN (${objectPlaceholders})`)
+      .bind(...objectIds)
+      .all<{ resource_id: string }>();
+
+    const trackedById = new Map((trackedRows.results ?? []).map((row) => [row.object_id, row]));
+    const activeKeys = new Set(
+      (trackedRows.results ?? [])
+        .filter((row) => row.deletion_state !== 'PHYSICALLY_DELETED')
+        .map((row) => row.storage_key),
+    );
+    const activeHoldIds = new Set((legalHoldRows.results ?? []).map((row) => row.resource_id));
+    const orphanKeys: string[] = [];
+
+    for (let index = 0; index < staleR2Objects.length; index += 1) {
+      const r2Obj = staleR2Objects[index];
+      const objectId = objectIds[index];
+      if (activeKeys.has(r2Obj.key)) continue;
+      const tracked = trackedById.get(objectId);
+      const hasRetentionLock = Boolean(tracked?.retention_until && Date.parse(tracked.retention_until) > nowMs);
+      if (
+        activeHoldIds.has(objectId) ||
+        Number(tracked?.legal_hold ?? 0) === 1 ||
+        hasRetentionLock
+      ) {
+        skippedLegalHoldCount += 1;
+        continue;
+      }
+      orphanKeys.push(r2Obj.key);
     }
-    await env.MEDIA_BUCKET.delete(r2Obj.key);
-    deletedCount += 1;
+
+    if (orphanKeys.length > 0) {
+      await env.MEDIA_BUCKET.delete(orphanKeys);
+      deletedCount += orphanKeys.length;
+    }
   }
 
   await userDb
