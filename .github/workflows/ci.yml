@@ -29,7 +29,7 @@ env:
 jobs:
   quality-gates:
     name: TypeScript, Architecture, Unit, Storage, Stress & Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
@@ -95,7 +95,7 @@ jobs:
 
   e2e-browser:
     name: Real Browser E2E & Accessibility Suite (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: quality-gates
     timeout-minutes: 20
 
