@@ -5,10 +5,10 @@
   // Three Data Domains Architecture:
   //   1. USER_DB (+ legacy alias DB) -> radar-user-db (Owned by Radar Tehran)
   //   2. RESEARCH_DB                 -> radar-researcher-db (Owned by Radar Tehran, isolated)
-  //   3. IRNI Neighborhood Reference -> External Read-Only API Client ONLY
-  //      ABSOLUTE PROHIBITION: radar-neighborhood-db (f335efe8-37ac-4c7d-a057-bc9f4480f6c6)
-  //      is owned exclusively by the independent IRNI project and MUST NEVER be bound,
-  //      queried, migrated, or written to directly by Tehran Radar.
+  //   3. NEIGHBORHOOD_DB -> IRNI-owned canonical registry.
+  //      Radar reads canonical geography; only the HMAC-authenticated IRNI publisher
+  //      route may apply a new authoritative revision. Radar users and business routes
+  //      have no geography mutation route.
   // ============================================================================
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "radartehran-api",
@@ -46,6 +46,13 @@
       "database_id": "a04f9716-fb95-44da-841c-b54be252db70",
       "migrations_dir": "migrations/research-d1",
       "migrations_table": "d1_migrations"
+    },
+    {
+      "binding": "NEIGHBORHOOD_DB",
+      "database_name": "radar-neighborhood-db",
+      "database_id": "f335efe8-37ac-4c7d-a057-bc9f4480f6c6",
+      "migrations_dir": "migrations/geography-d1",
+      "migrations_table": "d1_migrations"
     }
   ],
 
@@ -66,7 +73,7 @@
     "IRNI_API_TIMEOUT_MS": "4000",
     "IRNI_CACHE_TTL_SECONDS": "900",
     "IRNI_STALE_TTL_SECONDS": "3600",
-    "IRNI_API_CONTRACT_STATUS": "BLOCKED_EXTERNAL_IRNI_CONTRACT",
+    "IRNI_API_CONTRACT_STATUS": "CANONICAL_D1_REGISTRY_REVISIONED",
     "STRICT_ORIGIN_ENFORCEMENT": "true",
     "APP_CHECK_ENFORCEMENT_MODE": "enforce"
   },
