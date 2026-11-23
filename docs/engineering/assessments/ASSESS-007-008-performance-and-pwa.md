@@ -42,8 +42,10 @@
 |---|---|---|---|---|
 | 1 | **WebAppManifest Compliance** | `public/manifest.json` + `validateManifestOfflineConfig` (`src/utils/pwaOfflineSupport.ts`) | Root `id: "/"`, `start_url: "/"`, `display: "standalone"`, `offline_enabled: true`, separate `any` (192x192, 512x512) and `maskable` icons, and offline exploration shortcuts. | `VERIFIED` (`TEST_EXECUTED`) |
 | 2 | **Zero-Trust Auth & Admin Bypass** | `classifyServiceWorkerRequestStrategy` (`src/utils/pwaOfflineSupport.ts`) | Strictly returns `BypassPrivateOrMutation` for all non-GET mutations, requests with `Authorization` headers, `/api/admin/*`, `/api/system-health`, and `/api/object-storage/*`. | `VERIFIED` (`TEST_EXECUTED`) |
-| 3 | **Provider-Compliant Map Tile Delivery & Asset Caching** | `classifyServiceWorkerRequestStrategy` (`public/sw.js`, `src/utils/pwaOfflineSupport.ts`) | Map tiles (including `/api/osm-tile/*`) use network fetch plus the browser/provider HTTP cache directives; Service Worker Cache API never persists tiles or enables offline map use. Hashed Vite `/assets/*` bundles remain `StaleWhileRevalidate`; `/api/market-pulse` remains `NetworkFirst`. | `IN_PROGRESS` (`PROVIDER_POLICY_ALIGNMENT`) |
+| 3 | **Map Tile Service Worker Cache Baseline (provider-policy follow-up pending)** | `classifyServiceWorkerRequestStrategy` (`public/sw.js`, `src/utils/pwaOfflineSupport.ts`) | The current baseline classifies `/api/osm-tile/*` as `StaleWhileRevalidateMapTile`; provider policy and offline-map restrictions are not implemented in this PR. Hashed Vite `/assets/*` bundles remain `StaleWhileRevalidate`; `/api/market-pulse` remains `NetworkFirst`. | `IN_PROGRESS` (`PROVIDER_POLICY_ALIGNMENT; PR #16`) |
 
+
+**Separation of concerns:** this map-rendering PR covers viewport selection, layer reconciliation, clustering, and LOD. Provider-compliant tile delivery and Service Worker offline-map restrictions remain in the separate PWA hardening tranche (PR #16). No claim of provider-compliant or offline tile storage is made here; bulk tile prefetching remains prohibited unless an explicitly licensed provider authorizes it.
 ---
 
 ## 4. Campaign PROD-03 Conclusion
