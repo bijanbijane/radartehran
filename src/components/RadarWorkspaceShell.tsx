@@ -61,8 +61,11 @@ export function RadarWorkspaceShell() {
   }, [appleTheme]);
   const toggleAppleTheme = () => setAppleTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   const ui = useAppUiState(initialUrlState);
+  const hydratedCitiesRef = useRef<Set<CityId>>(new Set([initialCity]));
   useEffect(() => {
     const cityId = ui.activeCity;
+    if (hydratedCitiesRef.current.has(cityId)) return;
+    hydratedCitiesRef.current.add(cityId);
     const cityNeighborhoods = hydrateNeighborhoodsFromStorage(
       getCityExpansionSeeds(cityId),
       (id) => id >= 100 && !(id >= 500 && id <= 599) && resolveCityIdForNeighborhood(id) === cityId,
