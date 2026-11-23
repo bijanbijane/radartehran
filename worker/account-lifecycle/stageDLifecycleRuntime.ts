@@ -23,6 +23,7 @@ import {
   createWorkerFailClosedAuthAdapter,
   createWorkerTelemetryAdapter,
 } from './workerLifecycleAdapters.ts';
+import { getWorkerD1DomainAdapterReadiness } from './workerD1DomainAdapters.ts';
 import { createWorkerMediaDeletionAdapter } from './workerMediaAdapter.ts';
 import {
   ACCOUNT_LIFECYCLE_QUEUE_JOB_TYPE,
@@ -156,6 +157,47 @@ export function buildLifecycleActorFromPrincipal(params: {
     freshAuthVerified,
     primaryBootstrapAdminEmail: params.primaryBootstrapAdminEmail?.trim().toLowerCase() || undefined,
   };
+}
+
+export interface StageDDeletionReadiness {
+  readonly ready: boolean;
+  readonly blockers: readonly string[];
+}
+
+/**
+ * Prevents a durable deletion job/write-block from being created while any
+ * authoritative domain or identity deletion adapter is missing.
+ */
+export function getStageDDeletionReadiness(env: WorkerEnv): StageDDeletionReadiness {
+  const blockers: string[] = [];
+  if (!env.USER_DB) blockers.push('AUTHORITATIVE_USER_DB_NOT_BOUND');
+  if (env.DB && env.USER_DB && env.DB === env.USER_DB) blockers.push('LIFECYCLE_AND_USER_DB_MUST_BE_DISTINCT');
+  if (!env.MEDIA_BUCKET) blockers.push('R2_MEDIA_BUCKET_NOT_BOUND');
+  const bucketName = String(env.R2_MEDIA_BUCKET_NAME || '').trim();
+  if (!bucketName || bucketName.startsWith('__UNCONFIGURED')) blockers.push('R2_MEDIA_BUCKET_NAME_NOT_CONFIGURED');
+
+  const domainReadiness = getWorkerD1DomainAdapterReadiness();
+  for (const source of domainReadiness.unavailableSources) {
+    blockers.push('DOMAIN_ERASURE_ADAPTER_NOT_READY:' + source);
+  }
+
+  // createWorkerFailClosedAuthAdapter currently rejects identity deletion until
+  // the Worker-native identity erasure adapter is integrated and verified.
+  blockers.push('AUTH_IDENTITY_ERASURE_ADAPTER_NOT_READY');
+
+  return { ready: blockers.length === 0, blockers };
+}
+
+export function assertStageDDeletionReady(env: WorkerEnv): void {
+  const readiness = getStageDDeletionReadiness(env);
+  if (!readiness.ready) {
+    throw new AccountLifecycleError(
+      'DOMAIN_ADAPTER_UNAVAILABLE',
+      'Account deletion was not started because required erasure capabilities are unavailable: ' +
+        readiness.blockers.join(', '),
+      503,
+    );
+  }
 }
 
 function requireStageDDatabase(env: WorkerEnv): D1DatabaseBinding {
@@ -441,6 +483,7 @@ export async function initiateWorkerAccountDeletion(params: {
   const db = requireStageDDatabase(params.env);
   await assertStageDSchema(db);
   await assertUserDbBarrierSchema(params.env.USER_DB);
+  assertStageDDeletionReady(params.env);
   const runtime = createRuntime(params.env);
   assertStoreHealthy(await runtime.store.probeHealth());
   await assertNoActiveUserDbLegalHold({ userDb: params.env.USER_DB!, uid: params.actor.uid });
@@ -497,6 +540,7 @@ export async function recoverPendingLifecycleDispatch(env: WorkerEnv, limit = 25
   const db = requireStageDDatabase(env);
   await assertStageDSchema(db);
   await assertUserDbBarrierSchema(env.USER_DB);
+  assertStageDDeletionReady(env);
   const runtime = createRuntime(env);
   assertStoreHealthy(await runtime.store.probeHealth());
 
@@ -559,6 +603,7 @@ export async function executeBoundedDeletionStep(params: {
   const db = requireStageDDatabase(params.env);
   await assertStageDSchema(db);
   await assertUserDbBarrierSchema(params.env.USER_DB);
+  assertStageDDeletionReady(params.env);
   const runtime = createRuntime(params.env);
   assertStoreHealthy(await runtime.store.probeHealth());
 
