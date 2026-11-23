@@ -2283,6 +2283,26 @@ async function runSuite(): Promise<void> {
     assert.equal(emptySampleCalls.length, 0, `UI must not call aggregateNeighborhoodMarketMetrics with [] samples:\n${emptySampleCalls.join('\n')}`);
   });
 
+  await verify('Vite deduplicates Firebase SDK packages onto one component-provider registry', () => {
+    const viteConfig = fs.readFileSync(path.join(process.cwd(), 'vite.config.ts'), 'utf8');
+    for (const dependency of [
+      'firebase',
+      'firebase/app',
+      'firebase/firestore',
+      'firebase/app-check',
+      '@firebase/app',
+      '@firebase/firestore',
+      '@firebase/component',
+      '@firebase/util',
+      '@firebase/app-check',
+    ]) {
+      assert.ok(
+        viteConfig.includes(`'${dependency}'`),
+        `Vite resolve.dedupe must include ${dependency} to prevent split Firebase provider registries`
+      );
+    }
+  });
+
   console.log(`\n🎉 ALL ${passed} ENGINEERING QUALITY & CONTRACT FOUNDATION TESTS PASSED!\n`);
 }
 
