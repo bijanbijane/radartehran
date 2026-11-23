@@ -26,6 +26,7 @@ import {
 } from '../data/neighborhoodRemoteRepository';
 import { mergeNeighborhoodOverridesIntoList } from '../data/firestoreNeighborhoodMappers';
 import { getAllMultiCityNeighborhoods } from '../data/multiCityData';
+import { attachIrniCanonicalIdentities, fetchIrniLegacyAliases, type IrniLegacyAliasSnapshot } from '../data/irniGeographyClient';
 import { convertPricePerSqmToUnit, formatAreaUnitLabel, formatMillionTomanAsIntlCurrency } from '../utils/areaUnit';
 import {
   activateCloudListener,
@@ -84,6 +85,9 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
   const listenerHealthRef = useRef(createCloudSyncListenerHealth());
   const [listenerHealth, setListenerHealth] = useState(listenerHealthRef.current);
   const [reconnectGeneration, setReconnectGeneration] = useState(0);
+  const [irniAliasRefreshGeneration, setIrniAliasRefreshGeneration] = useState(0);
+  const [irniLegacyAliasSnapshot, setIrniLegacyAliasSnapshot] = useState<IrniLegacyAliasSnapshot | null>(null);
+  const [irniAliasApiUnavailable, setIrniAliasApiUnavailable] = useState(false);
   const [cloudBargainsByHood, setCloudBargainsByHood] = useState<Record<number, BargainListing[]>>({});
   const [cloudSponsorsByHood, setCloudSponsorsByHood] = useState<Record<number, NeighborhoodSponsor>>({});
   const publish = (next: ReturnType<typeof noteCloudListenerSnapshot>) => {
@@ -227,6 +231,52 @@ export function useRadarCloudSync(params: UseRadarCloudSyncParams) {
       markInactive('overrides');
     };
   }, [authReady, reconnectGeneration, setNeighborhoods]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+    fetchIrniLegacyAliases(controller.signal)
+      .then((snapshot) => {
+        if (!active) return;
+        setIrniLegacyAliasSnapshot(snapshot);
+        setIrniAliasApiUnavailable(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setIrniLegacyAliasSnapshot(null);
+        setIrniAliasApiUnavailable(true);
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [reconnectGeneration, irniAliasRefreshGeneration]);
+
+  useEffect(() => {
+    if (irniLegacyAliasSnapshot) {
+      setNeighborhoods((previous) => attachIrniCanonicalIdentities(
+        previous,
+        irniLegacyAliasSnapshot.items,
+        irniLegacyAliasSnapshot.registryRevision,
+        true,
+      ));
+    } else if (irniAliasApiUnavailable) {
+      setNeighborhoods((previous) => attachIrniCanonicalIdentities(previous, [], null, false));
+    }
+  }, [irniLegacyAliasSnapshot, irniAliasApiUnavailable, params.activeCity, setNeighborhoods]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const refreshAliases = () => {
+      if (document.visibilityState === 'visible') setIrniAliasRefreshGeneration((value) => value + 1);
+    };
+    window.addEventListener('focus', refreshAliases);
+    document.addEventListener('visibilitychange', refreshAliases);
+    return () => {
+      window.removeEventListener('focus', refreshAliases);
+      document.removeEventListener('visibilitychange', refreshAliases);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
