@@ -39,3 +39,4 @@ test('neighborhood store cannot alias research store', () => {
   assert.equal(hasUserResearchBindingCollision({ DB: user, RESEARCH_DB: research, NEIGHBORHOOD_DB: research }), true);
   assert.equal(requireNeighborhoodDb({ DB: user, RESEARCH_DB: research, NEIGHBORHOOD_DB: research }).ok, false);
 });
+// Live App Check bundle verification is performed by the read-only Worker smoke workflow.
