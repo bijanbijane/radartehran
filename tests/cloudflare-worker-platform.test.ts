@@ -677,7 +677,8 @@ async function runSuite(): Promise<void> {
     const healthJson = (await healthRes.json()) as { ok: boolean; runtime: string; registeredRoutesCount: number };
     assert.equal(healthJson.ok, true);
     assert.equal(healthJson.runtime, 'cloudflare-workers');
-    assert.equal(healthJson.registeredRoutesCount, 88);
+    // The official Stage D lifecycle route handler adds one registered Worker route.
+    assert.equal(healthJson.registeredRoutesCount, 89);
 
     // Verify D1-backed chunked upload lifecycle on Worker router
     const keyPair = await crypto.subtle.generateKey(
