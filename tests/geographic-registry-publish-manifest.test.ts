@@ -89,6 +89,11 @@ test('computes the same stable batch ID as the IRNI Node publisher', async () =>
   assert.equal(await computeExpectedGeographicPublishBatchId(expected), expectedId);
 });
 
+test('matches the shared IRNI revision-20 golden batch ID', async () => {
+  const sharedManifest = { ...expected, registryRevision: 20 };
+  assert.equal(await computeExpectedGeographicPublishBatchId(sharedManifest), 'irni-r20-345b54872c377339f7d2ff125c55db438b21f49dcc71f6f2a28763af21cf100f');
+});
+
 test('changes the batch ID when any sidecar checksum or expected count changes', async () => {
   const changedRelationship = {
     ...expected,
