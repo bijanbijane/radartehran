@@ -12,6 +12,7 @@ import { d1FirstRow } from './d1ResultHelpers.ts';
 import { createWorkerMediaDeletionAdapter } from './workerMediaAdapter.ts';
 import { createWorkerD1TelemetryErasureAdapter } from './workerTelemetryErasureAdapter.ts';
 import { createWorkerD1DomainAdapters } from './workerD1DomainAdapters.ts';
+import { D1AccountLifecycleDispatch } from './d1LifecycleDispatch.ts';
 
 type FakeOptions = {
   rows?: Record<string, unknown>[];
@@ -276,4 +277,70 @@ test('D1 media metadata deletion fails closed when its update fails', async () =
   await assert.rejects(
     () => adapter.disposeOwnedRecordsBatch({ targetUid: 'uid_1', cursor: null, batchSize: 10 }),
   );
+});
+
+
+test('D1 dispatch refuses a persisted lease with a corrupt fencing revision before attempting takeover', async () => {
+  const { db, calls } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM account_deletion_job_leases': [{
+        job_id: 'job_1',
+        target_uid: 'uid_1',
+        lease_token: 'existing_token',
+        fencing_revision: 'not-a-number',
+        lease_owner: 'worker_existing',
+        lease_expires_at_ms: 60_000,
+      }],
+    },
+  });
+  const dispatch = new D1AccountLifecycleDispatch(db);
+
+  await assert.rejects(
+    () => dispatch.acquireJobLease({
+      jobId: 'job_1',
+      targetUid: 'uid_1',
+      leaseToken: 'new_token',
+      leaseOwner: 'worker_new',
+      nowMs: 1_000,
+    }),
+    isStoreUnavailable,
+  );
+  assert.equal(calls.filter((call) => call.method === 'run').length, 0);
+});
+
+test('D1 dispatch does not report an outbox row sent unless D1 confirms DISPATCHED state', async () => {
+  const { db } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM account_lifecycle_dispatch_outbox': [{
+        event_id: 'event_1',
+        job_id: 'job_1',
+        dispatch_status: 'PENDING',
+        idempotency_key: 'job_1:initial',
+      }],
+    },
+    changesBySqlIncludes: { 'UPDATE account_lifecycle_dispatch_outbox': 0 },
+  });
+  const dispatch = new D1AccountLifecycleDispatch(db);
+
+  await assert.rejects(
+    () => dispatch.markDispatchSent('job_1:initial', '2026-11-24T00:00:00.000Z'),
+    isStoreUnavailable,
+  );
+});
+
+test('D1 dispatch accepts an outbox state already confirmed as DISPATCHED by a concurrent consumer', async () => {
+  const { db } = fakeD1({
+    rowsBySqlIncludes: {
+      'FROM account_lifecycle_dispatch_outbox': [{
+        event_id: 'event_1',
+        job_id: 'job_1',
+        dispatch_status: 'DISPATCHED',
+        idempotency_key: 'job_1:initial',
+      }],
+    },
+    changesBySqlIncludes: { 'UPDATE account_lifecycle_dispatch_outbox': 0 },
+  });
+  const dispatch = new D1AccountLifecycleDispatch(db);
+
+  assert.equal(await dispatch.markDispatchSent('job_1:initial', '2026-11-24T00:00:00.000Z'), false);
 });
