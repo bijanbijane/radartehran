@@ -328,6 +328,14 @@ assert.notEqual(liveSamplesAgain, liveSamples, 'sample cache never exposes its i
 assert.deepEqual(liveSamplesAgain, liveSamples, 'repeated calls preserve canonical parsed sample values');
 liveSamples.pop();
 assert.ok(buildNeighborhoodListingSamples(punakLiveFixture).length >= 2, 'mutating a returned sample array cannot corrupt the cached result');
+const mutableSampleCopy = buildNeighborhoodListingSamples(punakLiveFixture);
+const cachedFirstTotal = mutableSampleCopy[0]?.askingTotalMillion;
+if (mutableSampleCopy[0]) mutableSampleCopy[0].askingTotalMillion = -1;
+assert.equal(
+  buildNeighborhoodListingSamples(punakLiveFixture)[0]?.askingTotalMillion,
+  cachedFirstTotal,
+  'mutating a returned sample object cannot corrupt the cached result',
+);
 const expandedPunakFixture = {
   ...punakLiveFixture,
   bargains: [
