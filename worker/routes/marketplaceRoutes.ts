@@ -58,6 +58,15 @@ async function requireAuthenticatedMutation(ctx: WorkerRequestContext) {
       uid: null,
     };
   }
+  if (!principal.emailVerified && !principal.phoneNumber) {
+    return { response: jsonWorkerResponse(ctx, 403, { status: 'error', code: 'VERIFIED_IDENTITY_REQUIRED' }), db: null, uid: null };
+  }
+  const writeBlock = await userDbResult.db.prepare(
+    'SELECT block_reason FROM account_write_blocks WHERE uid = ?1 AND released_at_iso IS NULL LIMIT 1',
+  ).bind(principal.uid).first<{ block_reason: string }>();
+  if (writeBlock) {
+    return { response: jsonWorkerResponse(ctx, 423, { status: 'error', code: 'ACCOUNT_WRITE_BLOCKED', reason: writeBlock.block_reason }), db: null, uid: null };
+  }
   return { response: null, db: userDbResult.db, uid: principal.uid };
 }
 
