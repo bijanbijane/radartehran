@@ -1,6 +1,6 @@
 /** @file src/features/community/pages/CommunityHubPage.tsx — Stage 73–79 Real-Identity, Server-Backed & Multi-City Community Platform */
 import { useMemo, useState, useEffect } from 'react';
-import type { User } from 'firebase/auth';
+import type { AuthUserSnapshot } from '../../../platform/auth';
 import { LogIn, MessageSquarePlus, RefreshCw } from 'lucide-react';
 import type { EvaluatedNeighborhood } from '../../../data/neighborhoods';
 import { MULTI_CITY_CONFIGS, resolveCityIdForNeighborhood, type CityId } from '../../../data/multiCityData';
@@ -52,7 +52,7 @@ import {
 export interface CommunityHubPageProps {
   activeSubTab?: ContributionsSubTabId;
   activeCity?: CityId;
-  currentUser?: User | null;
+  currentUser?: AuthUserSnapshot | null;
   isVerifiedAdmin?: boolean;
   selectedHood: EvaluatedNeighborhood;
   evaluatedNeighborhoods?: EvaluatedNeighborhood[];
