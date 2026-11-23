@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   GEO_REGISTRY_PUBLISH_ARTIFACTS,
   compareActiveGeographicPublishManifest,
+  computeExpectedGeographicPublishBatchId,
   type ActiveGeographicPublishHead,
   type ExpectedGeographicPublishManifest,
   type ImportedGeographicArtifact,
@@ -13,6 +15,7 @@ const hashB = 'b'.repeat(64);
 
 const expected: ExpectedGeographicPublishManifest = {
   registryRevision: 19,
+  registryChecksum: hashA,
   contractVersion: 'IRNI-GEO-1.0.0',
   idAlgorithmVersion: 'IRGEO-IDENTITY-1.0.0',
   schemaVersion: 'IR-GEO-1.0.0',
@@ -54,6 +57,36 @@ const imports: ImportedGeographicArtifact[] = GEO_REGISTRY_PUBLISH_ARTIFACTS.map
   record_count: expected.expectedCounts[artifact.countKey],
   registry_revision: expected.registryRevision,
 }));
+
+test('computes the same stable batch ID as the IRNI Node publisher', async () => {
+  const canonicalIdentity = {
+    version: 1,
+    registryRevision: expected.registryRevision,
+    registryChecksum: expected.registryChecksum,
+    contractVersion: expected.contractVersion,
+    idAlgorithmVersion: expected.idAlgorithmVersion,
+    schemaVersion: expected.schemaVersion,
+    expectedCounts: {
+      entities: expected.expectedCounts.entities,
+      relationships: expected.expectedCounts.relationships,
+      sourceMappings: expected.expectedCounts.sourceMappings,
+      identityEntries: expected.expectedCounts.identityEntries,
+      anchors: expected.expectedCounts.anchors,
+      legacyAliases: expected.expectedCounts.legacyAliases,
+    },
+    artifactChecksums: {
+      snapshot: expected.artifactChecksums.snapshot,
+      relationships: expected.artifactChecksums.relationships,
+      sourceMappings: expected.artifactChecksums.sourceMappings,
+      identityEntries: expected.artifactChecksums.identityEntries,
+      anchors: expected.artifactChecksums.anchors,
+      legacyAliases: expected.artifactChecksums.legacyAliases,
+    },
+  };
+  const digest = createHash('sha256').update(JSON.stringify(canonicalIdentity), 'utf8').digest('hex');
+  const expectedId = 'irni-r' + expected.registryRevision + '-' + digest;
+  assert.equal(await computeExpectedGeographicPublishBatchId(expected), expectedId);
+});
 
 test('accepts a complete active six-dataset manifest that exactly matches D1', () => {
   const result = compareActiveGeographicPublishManifest({
